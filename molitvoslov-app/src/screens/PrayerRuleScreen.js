@@ -1,30 +1,170 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useState,useRef} from "react";
 import {View, Text,ScrollView,StyleSheet,ActivityIndicator} from "react-native";
 import {api} from '../api'
+import {getReadingProgress, saveReadingProgress} from "../services/readingProgress";
 
 export const PrayerRuleScreen = ({route}) => {
   const {slug} = route.params
 
-  const [rule,setRule] = useState(null)
-  const [loading,setLoading] = useState(true)
+  const [rule, setRule] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    restoredRef.current=false
+    savedAnchorIdRef.current=null
+    currentItemRef.current = null
+    itemPositionsRef.current={}
     loadRule()
-  }, [slug]);
 
-  const loadRule = async () =>{
-    try{
+    return ()=>{
+      if(saveTimerRef.current){
+        clearTimeout(savedAnchorIdRef.current)
+      }
+    }
+  }, [slug]);
+  const scrollRef = useRef(null)
+  const itemPositionsRef = useRef({})
+  const savedAnchorIdRef = useRef(null)
+  const restoredRef = useRef(false)
+  const currentItemRef = useRef(null)
+  const saveTimerRef = useRef(null)
+
+  const [highlightedItemId, setHighlightedItemId] = useState(null)
+
+  const loadRule = async () => {
+    try {
       const response = await api.get(
         `prayer-rules/${slug}/`
       )
-      setRule(response.data)
-    } catch(error){
+      const ruleData = response.data
+      setRule(ruleData)
+
+      try {
+        const progressList = await getReadingProgress()
+        const progress = progressList.find(item => item.source_type === 'prayer_rule' && Number(item.source_id) === Number(ruleData.id))
+
+        if (progress && progress.anchor_type === 'prayer_rule_item') {
+          savedAnchorIdRef.current = progress.anchor_id
+        }
+      } catch (progressError) {
+        console.log('Ошибки загрузки позиции чтения:',
+          progressError.response?.status,
+          progressError.response?.data,
+          progressError.message
+        )
+      }
+    } catch (error) {
       console.error('Ошибка загрузки молитвенного правила:'),
         error
     } finally {
       setLoading(false)
     }
   }
+
+  const handleItemLayout = (itemId, event) => {
+    const y = event.nativeEvent.layout.y
+    itemPositionsRef.current[itemId] = y
+    tryRestorePosition()
+  }
+
+  const tryRestorePosition = () => {
+    if (restoredRef.current) {
+      return
+    }
+    const anchorId = savedAnchorIdRef.current
+
+    if (!anchorId) {
+      return
+    }
+    const y = itemPositionsRef.current[anchorId]
+    if (y === undefined) {
+      return
+    }
+    if (!scrollRef.current) {
+      return
+    }
+    restoredRef.current = true
+
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({
+        y: Math.max(y - 30, 0),
+        animated: false,
+      })
+
+      setHighlightedItemId(anchorId)
+
+      setTimeout(() => {
+        setHighlightedItemId(null)
+      }, 2500)
+    }, 200)
+  }
+
+  const getCurrentItem = (scrollY) => {
+    const positions = Object.entries(itemPositionsRef.current)
+      .map(([id, y]) => ({
+        id: Number(id),
+        y
+      }))
+      .sort((a, b) => a.y - b.y)
+
+    if (!positions.length) {
+      return null
+    }
+    const readingLine = scrollY + 70
+
+    let current = positions[0]
+
+    for (const position of positions) {
+      if (position.y <= readingLine) {
+        current = position
+      } else {
+        break
+      }
+    }
+    return current
+  }
+  const handleScroll = (event) => {
+    if (!rule) {
+      return
+    }
+
+  const scrollY = event.nativeEvent.contentOffset.y
+  const current = getCurrentItem(scrollY)
+
+  if (!current) {
+    return
+  }
+  if (currentItemRef.current === current.id) {
+    return
+  }
+  currentItemRef.current = current.id
+
+  if (saveTimerRef.current) {
+    clearTimeout(saveTimerRef.current)
+  }
+
+  saveTimerRef.current = setTimeout(
+    async () => {
+      try {
+        await saveReadingProgress({
+          sourceType: 'prayer_rule',
+          sourceId: rule.id,
+          anchorType: 'prayer_rule_item',
+          anchorId: current.id,
+          offset: 0,
+        })
+      } catch (error) {
+        console.log(
+          'Ошибка сохранения позиции:',
+          error.response?.status,
+          error.response?.data,
+          error.message
+        )
+      }
+    }, 800
+  )
+}
+
   if(loading){
     return (
       <View style={styles.center}>
@@ -155,8 +295,11 @@ export const PrayerRuleScreen = ({route}) => {
 
   return (
     <ScrollView
+    ref={scrollRef}
     style={styles.container}
     contentContainerStyle={styles.contentContainer}
+    onScroll={handleScroll}
+    scrollEventThrottle={200}
     >
       <Text style={styles.headerTitle}>
         {rule.name}
@@ -169,7 +312,14 @@ export const PrayerRuleScreen = ({route}) => {
       )}
 
       {rule.items.map((item,index)=>(
-        <View key={item.id}>
+        <View
+          key={item.id}
+          onLayout={(event)=> handleItemLayout(item.id,event)}
+          style={[
+            styles.itemWrapper,
+            highlightedItemId === item.id && styles.itemHighlighted
+          ]}
+        >
         {renderItem(item)}
           {index < rule.items.length -1 && (
             <View style={styles.divider}/>
@@ -322,4 +472,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#eee',
     marginVertical: 18,
   },
+  itemWrapper:{
+    borderRadius:8,
+    paddingHorizontal: 4,
+  },
+  itemHighlighted: {
+    backgroundColor:'rgba(255,220,100,0.35)'
+  }
 });

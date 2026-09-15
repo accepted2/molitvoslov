@@ -14,6 +14,7 @@ from .views import (
    PsalmViewSet,
    PsalmVerseViewSet,
    KathismaGloryViewSet,
+   ReadingProgressViewSet,
 )
 
 
@@ -76,6 +77,7 @@ router.register(
    'kathisma-glories',
    KathismaGloryViewSet
 )
+router.register('reading-progress',ReadingProgressViewSet,basename='reading-progress')
 
 
 urlpatterns = [

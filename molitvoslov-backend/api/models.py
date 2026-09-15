@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from slugify import slugify
 import re
+from django.conf import settings
 
 
 class Category(models.Model):
@@ -41,7 +42,6 @@ class Category(models.Model):
         ordering = ['order']
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
-
 
 class Text(models.Model):
     LANGUAGES = [
@@ -176,7 +176,6 @@ class Text(models.Model):
         verbose_name = 'Молитва / текст'
         verbose_name_plural = 'Молитвы и тексты'
 
-
 class CategoryText(models.Model):
     category = models.ForeignKey(
         Category,
@@ -197,7 +196,6 @@ class CategoryText(models.Model):
         ordering = ['order']
         verbose_name = 'Текст в категории'
         verbose_name_plural = 'Тексты в категориях'
-
 
 # =========================================================
 # МОЛИТВЕННЫЕ ПРАВИЛА
@@ -230,7 +228,6 @@ class PrayerRule(models.Model):
     class Meta:
         verbose_name = 'Молитвенное правило'
         verbose_name_plural = 'Молитвенные правила'
-
 
 class PrayerRuleItem(models.Model):
     TYPE_TEXT = 'text'
@@ -351,7 +348,6 @@ class PrayerRuleItem(models.Model):
             ),
         ]
 
-
 class PrayerRuleFootnote(models.Model):
     rule = models.ForeignKey(
         PrayerRule,
@@ -384,7 +380,6 @@ class PrayerRuleFootnote(models.Model):
             )
         ]
 
-
 # =========================================================
 # ПСАЛТИРЬ
 # =========================================================
@@ -395,6 +390,15 @@ class Psalter(models.Model):
 
     description = models.TextField(blank=True, verbose_name='Описание')
     is_visible = models.BooleanField(default=True, verbose_name='Отображать')
+
+    prayers_before = models.TextField(
+        blank=True,
+        verbose_name='Молитвы перед чтением Псалтири'
+    )
+    prayers_after = models.TextField(
+        blank=True,
+        verbose_name='Молитвы после чтения Псалтири'
+    )
 
     def __str__(self):
         return self.name
@@ -407,6 +411,10 @@ class Kathisma(models.Model):
     psalter = models.ForeignKey(Psalter, on_delete=models.CASCADE, related_name='kathismas',verbose_name='Псалтирь')
     number = models.PositiveIntegerField(verbose_name='Номер кафизмы')
     title = models.CharField(max_length=255, blank=True,verbose_name='Название')
+    prayers_after = models.TextField(
+        blank=True,
+        verbose_name='Молитвы после кафизмы'
+    )
 
     def __str__(self):
         return f'Кафизма {self.number}'
@@ -498,8 +506,6 @@ class KathismaGlory(models.Model):
         ),
         ]
 
-
-
 class UserCollection(models.Model):
     user = models.ForeignKey(
         User,
@@ -532,7 +538,6 @@ class UserCollection(models.Model):
         verbose_name = 'Пользовательский сборник'
         verbose_name_plural = 'Пользовательские сборники'
 
-
 class CollectionItem(models.Model):
     collection = models.ForeignKey(
         UserCollection,
@@ -563,7 +568,6 @@ class CollectionItem(models.Model):
 
         verbose_name = 'Текст в сборнике'
         verbose_name_plural = 'Тексты в сборниках'
-
 
 class Bookmark(models.Model):
     user = models.ForeignKey(
@@ -600,3 +604,18 @@ class Bookmark(models.Model):
     class Meta:
         verbose_name = 'Закладка'
         verbose_name_plural = 'Закладки'
+
+class ReadingProgress(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reading_progress',verbose_name='Пользователь')
+    source_type = models.CharField(max_length=50, verbose_name='Тип источника')
+    source_id = models.PositiveIntegerField(verbose_name='ID источника')
+    anchor_type = models.CharField(max_length=50,blank=True,verbose_name='Тип позиции')
+    anchor_id = models.PositiveIntegerField(null=True,blank=True,verbose_name='ID позиции')
+    offset = models.PositiveIntegerField(default=0, verbose_name='Смещение внутри єлемента')
+    updated_at = models.DateTimeField(auto_now=True,verbose_name='Обновлено')
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['user','source_type','source_id',], name='unique_reading_progress_per_source',)]
+
+        def __str__(self):
+            return (f'{self.user} -' f'{self.source_type}:{self.source_id}')

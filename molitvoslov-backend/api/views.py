@@ -24,6 +24,8 @@ from .models import (
     Psalm,
     PsalmVerse,
     KathismaGlory,
+ReadingProgress,
+
 )
 
 from .serializers import (
@@ -40,6 +42,7 @@ from .serializers import (
     PsalmSerializer,
     PsalmVerseSerializer,
     KathismaGlorySerializer,
+    ReadingProgressSerializer
 )
 
 
@@ -71,7 +74,6 @@ class CategoryViewSet(viewsets.ModelViewSet):
         )
 
         return Response(serializer.data)
-
 
 class TextViewSet(viewsets.ModelViewSet):
     queryset = Text.objects.filter(
@@ -138,7 +140,6 @@ class TextViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.data)
 
-
 # =========================================================
 # МОЛИТВЕННЫЕ ПРАВИЛА
 # =========================================================
@@ -157,7 +158,6 @@ class PrayerRuleViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
     lookup_field = 'slug'
 
-
 class PrayerRuleItemViewSet(viewsets.ModelViewSet):
     queryset = (
         PrayerRuleItem.objects
@@ -174,13 +174,11 @@ class PrayerRuleItemViewSet(viewsets.ModelViewSet):
     serializer_class = PrayerRuleItemSerializer
     permission_classes = [AllowAny]
 
-
 # =========================================================
 # ПСАЛТИРЬ
 # =========================================================
-
 class PsalterViewSet(viewsets.ModelViewSet):
-    queryset=(Psalter.objects.filter(is_visible=True).prefetch_related('kathismas'))
+    queryset=(Psalter.objects.filter(is_visible=True).prefetch_related('kathismas__psalms'))
     serializer_class = PsalterSerializer
     permission_classes = [AllowAny]
 
@@ -189,7 +187,7 @@ class PsalterViewSet(viewsets.ModelViewSet):
 class KathismaViewSet(viewsets.ModelViewSet):
     queryset = (
         Kathisma.objects.select_related('psalter').prefetch_related(
-            'psalms_verses',
+            'psalms__verses',
             'glories__after_psalm',
             'glories__after_verse',
         )
@@ -217,7 +215,6 @@ class KathismaGloryViewSet(viewsets.ModelViewSet):
 
     serializer_class = KathismaGlorySerializer
     permission_classes = [AllowAny]
-
 
 # =========================================================
 # ПОЛЬЗОВАТЕЛЬСКИЕ СБОРНИКИ
@@ -315,7 +312,6 @@ class UserCollectionViewSet(viewsets.ModelViewSet):
                 'Удалено из сборника'
         })
 
-
 class CollectionItemViewSet(viewsets.ModelViewSet):
     serializer_class = CollectionItemSerializer
     permission_classes = [IsAuthenticated]
@@ -327,7 +323,6 @@ class CollectionItemViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save()
-
 
 class BookmarkViewSet(viewsets.ModelViewSet):
     serializer_class = BookmarkSerializer
@@ -342,3 +337,37 @@ class BookmarkViewSet(viewsets.ModelViewSet):
         serializer.save(
             user=self.request.user
         )
+
+class ReadingProgressViewSet(viewsets.ModelViewSet):
+    serializer_class = ReadingProgressSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return ReadingProgress.objects.filter(user=self.request.user).order_by('-updated_at')
+
+    def create(self, request, *args, **kwargs):
+        source_type = request.data.get('source_type')
+        source_id = request.data.get('source_id')
+
+        if not source_type or not source_id:
+            return  Response({
+                'detail':'source_type и source_id обяхательны'
+            }, status=status.HTTP_400_BAD_REQUEST,
+
+            )
+        progress, created = (ReadingProgress.objects.update_or_create(
+            user=request.user,
+            source_type=source_type,
+            source_id=source_id,
+            defaults={'anchor_type':request.data.get('anchor_type',''),
+                      'anchor_id':request.data.get('anchor_id'),
+                      'offset': request.data.get('offset', 0),
+
+                      }
+        ))
+        serializer = self.get_serializer(progress)
+
+        return Response(serializer.data,status=(status.HTTP_201_CREATED
+                                                if created
+                                                else status.HTTP_200_OK
+                                                ))

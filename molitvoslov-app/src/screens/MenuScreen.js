@@ -45,6 +45,10 @@ export const MenuScreen = ({ navigation }) => {
 
             return
         }
+        if (category.slug === 'psaltir') {
+            navigation.navigate('Psalter');
+            return;
+        }
 
         if(category.parent) {
             navigation.navigate('Book',{

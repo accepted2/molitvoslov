@@ -10,10 +10,10 @@ from .models import (
     UserCollection,
     CollectionItem,
     Bookmark,
+ReadingProgress,
 
 Psalter,Kathisma,Psalm,PsalmVerse,KathismaGlory
 )
-
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -26,7 +26,6 @@ class CategorySerializer(serializers.ModelSerializer):
             'order',
             'icon',
         ]
-
 
 class TextSerializer(serializers.ModelSerializer):
     categories = CategorySerializer(
@@ -58,7 +57,6 @@ class TextSerializer(serializers.ModelSerializer):
             'slug',
         ]
 
-
 class CategoryTextSerializer(serializers.ModelSerializer):
     text = TextSerializer(
         read_only=True
@@ -77,7 +75,6 @@ class CategoryTextSerializer(serializers.ModelSerializer):
             'text',
             'order',
         ]
-
 
 # =========================================================
 # МОЛИТВЕННЫЕ ПРАВИЛА
@@ -231,19 +228,44 @@ class KathismaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Kathisma
-        fields = ['id','number','title','psalms','glories',]
+        fields = ['id','psalter','number','title','prayers_after','psalms','glories',]
 
 class KathismaSummarySerializer(serializers.ModelSerializer):
+    first_psalm = serializers.SerializerMethodField()
+    last_psalm = serializers.SerializerMethodField()
+
     class Meta:
         model = Kathisma
-        fields = ['id','number','title',]
+        fields = [
+            'id',
+            'number',
+            'title',
+            'first_psalm',
+            'last_psalm',
+        ]
+
+    def get_first_psalm(self, obj):
+        psalm = obj.psalms.order_by('number').first()
+
+        if psalm:
+            return psalm.number
+
+        return None
+
+    def get_last_psalm(self, obj):
+        psalm = obj.psalms.order_by('-number').first()
+
+        if psalm:
+            return psalm.number
+
+        return None
 
 class PsalterSerializer(serializers.ModelSerializer):
     kathismas = KathismaSummarySerializer(many=True,read_only=True)
 
     class Meta:
         model = Psalter
-        fields = ['id','name','slug','description','is_visible','kathismas']
+        fields = ['id','name','slug','description','prayers_before', 'prayers_after','is_visible','kathismas']
 
 # =========================================================
 # ПОЛЬЗОВАТЕЛЬСКИЕ СБОРНИКИ
@@ -310,3 +332,9 @@ class BookmarkSerializer(serializers.ModelSerializer):
             'user',
             'created_at',
         ]
+
+class ReadingProgressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReadingProgress
+        fields = ['id','source_type','source_id','anchor_type','anchor_id','offset','updated_at']
+        read_only_fields = ['id','updated_at',]
