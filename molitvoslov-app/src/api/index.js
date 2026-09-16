@@ -1,8 +1,8 @@
 import axios from 'axios'
 
-const API_URL = 'http://192.168.1.104:8000/api/'
+const API_URL = 'http://192.168.1.102:8000/api/'
 
-const DEV_TOKEN = '0289b4dcdc9ecd3658638f4cc1eccd0040134c01';
+const DEV_TOKEN = process.env.EXPO_PUBLIC_DEV_TOKEN;
 
 export const api = axios.create({
     baseURL: API_URL,
