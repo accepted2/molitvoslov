@@ -1,6 +1,7 @@
 import React, {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -16,7 +17,9 @@ import {
 } from '../api';
 
 import {
+  deleteSavedItem,
   getSavedItems,
+  saveItem,
 } from '../services/savedItems';
 
 import SelectableDocumentReader
@@ -44,6 +47,9 @@ export const ReaderScreen = ({
     setSavedItems,
   ] = useState([]);
 
+  const savedItemsRef =
+    useRef([]);
+
   const [
     loading,
     setLoading,
@@ -69,6 +75,8 @@ export const ReaderScreen = ({
         setError(null);
         setText(null);
         setSavedItems([]);
+        savedItemsRef.current =
+          [];
 
         const response =
           await api.get(
@@ -91,6 +99,9 @@ export const ReaderScreen = ({
               source_id:
                 data.id,
             });
+
+          savedItemsRef.current =
+            saved;
 
           setSavedItems(
             saved
@@ -119,6 +130,126 @@ export const ReaderScreen = ({
           false
         );
       }
+    };
+
+
+  const handleAction =
+    async actionKey => {
+      if (
+        !text ||
+        actionKey !==
+          `text:${text.id}`
+      ) {
+        return null;
+      }
+
+      const existing =
+        savedItemsRef.current
+          .find(
+            item =>
+              item.anchor_type ===
+                'text' &&
+              Number(
+                item.anchor_id
+              ) ===
+                Number(
+                  text.id
+                ) &&
+              item.save_type ===
+                'text'
+          );
+
+      if (existing) {
+        await deleteSavedItem(
+          existing.id
+        );
+
+        savedItemsRef.current =
+          savedItemsRef.current
+            .filter(
+              item =>
+                item.id !==
+                existing.id
+            );
+
+        return {
+          label:
+            'В избранное',
+
+          active:
+            false,
+
+          itemId:
+            1,
+
+          removedSavedItemId:
+            existing.id,
+        };
+      }
+
+      const content =
+        text.content ||
+        '';
+
+      const saved =
+        await saveItem({
+          save_type:
+            'text',
+
+          source_type:
+            'text',
+
+          source_id:
+            text.id,
+
+          anchor_type:
+            'text',
+
+          anchor_id:
+            text.id,
+
+          source_title:
+            text.title ||
+            'Чтение',
+
+          item_title:
+            text.title ||
+            'Текст',
+
+          text:
+            content,
+
+          start_offset:
+            0,
+
+          end_offset:
+            content.length,
+
+          metadata: {
+            slug:
+              text.slug ||
+              slug,
+          },
+        });
+
+      savedItemsRef.current = [
+        saved,
+        ...savedItemsRef.current,
+      ];
+
+      return {
+        label:
+          'В избранном',
+
+        active:
+          true,
+
+        itemId:
+          1,
+
+        savedItem:
+          saved,
+      };
     };
 
 
@@ -162,6 +293,21 @@ export const ReaderScreen = ({
               })
             );
 
+        const wholeTextSaved =
+          savedItems.some(
+            item =>
+              item.anchor_type ===
+                'text' &&
+              Number(
+                item.anchor_id
+              ) ===
+                Number(
+                  text.id
+                ) &&
+              item.save_type ===
+                'text'
+          );
+
         return {
           title:
             text.title ||
@@ -170,6 +316,19 @@ export const ReaderScreen = ({
           description:
             text.description ||
             '',
+
+          action: {
+            key:
+              `text:${text.id}`,
+
+            label:
+              wholeTextSaved
+                ? 'В избранном'
+                : 'В избранное',
+
+            active:
+              wholeTextSaved,
+          },
 
           progressAnchorType:
             'text',
@@ -300,6 +459,9 @@ export const ReaderScreen = ({
       }
       savedProgress={
         null
+      }
+      onAction={
+        handleAction
       }
     />
   );
