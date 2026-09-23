@@ -17,6 +17,8 @@ from .models import (
     KathismaGlory,
     Akathist,
     AkathistSection,
+    Canon,
+    CanonSection,
     DailyQuote,
     SavedItem,
 )
@@ -625,6 +627,101 @@ class AkathistSectionAdmin(admin.ModelAdmin):
         'akathist',
         'order',
     ]
+
+# =========================================================
+# КАНОНЫ
+# =========================================================
+
+class CanonSectionInline(admin.TabularInline):
+    model = CanonSection
+    extra = 0
+
+    autocomplete_fields = [
+        'text',
+    ]
+
+    fields = [
+        'order',
+        'ode_number',
+        'section_type',
+        'heading',
+        'text',
+    ]
+
+    ordering = [
+        'order',
+    ]
+
+    verbose_name = 'Элемент канона'
+    verbose_name_plural = 'Элементы канона'
+
+
+@admin.register(Canon)
+class CanonAdmin(admin.ModelAdmin):
+    list_display = [
+        'title',
+        'slug',
+        'tone',
+        'is_visible',
+    ]
+
+    search_fields = [
+        'title',
+        'description',
+        'slug',
+    ]
+
+    list_filter = [
+        'is_visible',
+        'tone',
+    ]
+
+    prepopulated_fields = {
+        'slug': (
+            'title',
+        )
+    }
+
+    inlines = [
+        CanonSectionInline,
+    ]
+
+
+@admin.register(CanonSection)
+class CanonSectionAdmin(admin.ModelAdmin):
+    list_display = [
+        'canon',
+        'order',
+        'ode_number',
+        'section_type',
+        'heading',
+        'text',
+    ]
+
+    list_filter = [
+        'canon',
+        'ode_number',
+        'section_type',
+    ]
+
+    search_fields = [
+        'canon__title',
+        'heading',
+        'text__title',
+        'text__content',
+        'text__translation',
+    ]
+
+    autocomplete_fields = [
+        'canon',
+        'text',
+    ]
+
+    ordering = [
+        'canon',
+        'order',
+    ]
+
 
 # =========================================================
 # ЦИТАТЫ ДНЯ
