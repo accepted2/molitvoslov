@@ -540,6 +540,180 @@ class AkathistSection(models.Model):
         ]
 
 # =========================================================
+# КАНОНЫ
+# =========================================================
+
+class Canon(models.Model):
+    title = models.CharField(
+        max_length=255,
+        verbose_name='Название',
+    )
+
+    slug = models.SlugField(
+        unique=True,
+        verbose_name='URL-идентификатор',
+    )
+
+    description = models.TextField(
+        blank=True,
+        verbose_name='Описание',
+    )
+
+    tone = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name='Глас',
+    )
+
+    is_visible = models.BooleanField(
+        default=True,
+        verbose_name='Отображать',
+    )
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        verbose_name = 'Канон'
+        verbose_name_plural = 'Каноны'
+
+
+class CanonSection(models.Model):
+    TYPE_IRMOS = 'irmos'
+    TYPE_REFRAIN = 'refrain'
+    TYPE_TROPARION = 'troparion'
+    TYPE_THEOTOKION = 'theotokion'
+    TYPE_GLORY = 'glory'
+    TYPE_NOW = 'now'
+    TYPE_SEDALEN = 'sedalen'
+    TYPE_KONTAKION = 'kontakion'
+    TYPE_IKOS = 'ikos'
+    TYPE_SVETILEN = 'svetilen'
+    TYPE_PRAYER = 'prayer'
+    TYPE_OTHER = 'other'
+
+    TYPE_CHOICES = [
+        (
+            TYPE_IRMOS,
+            'Ирмос',
+        ),
+        (
+            TYPE_REFRAIN,
+            'Припев',
+        ),
+        (
+            TYPE_TROPARION,
+            'Тропарь',
+        ),
+        (
+            TYPE_THEOTOKION,
+            'Богородичен',
+        ),
+        (
+            TYPE_GLORY,
+            'Слава',
+        ),
+        (
+            TYPE_NOW,
+            'И ныне',
+        ),
+        (
+            TYPE_SEDALEN,
+            'Седален',
+        ),
+        (
+            TYPE_KONTAKION,
+            'Кондак',
+        ),
+        (
+            TYPE_IKOS,
+            'Икос',
+        ),
+        (
+            TYPE_SVETILEN,
+            'Светилен',
+        ),
+        (
+            TYPE_PRAYER,
+            'Молитва',
+        ),
+        (
+            TYPE_OTHER,
+            'Прочее',
+        ),
+    ]
+
+    canon = models.ForeignKey(
+        Canon,
+        on_delete=models.CASCADE,
+        related_name='sections',
+        verbose_name='Канон',
+    )
+
+    section_type = models.CharField(
+        max_length=20,
+        choices=TYPE_CHOICES,
+        default=TYPE_OTHER,
+        verbose_name='Тип элемента',
+    )
+
+    ode_number = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Номер песни',
+    )
+
+    heading = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Заголовок / метка',
+    )
+
+    text = models.ForeignKey(
+        Text,
+        on_delete=models.PROTECT,
+        related_name='canon_sections',
+        verbose_name='Текст',
+    )
+
+    order = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Порядок',
+    )
+
+    def __str__(self):
+        ode = (
+            f'Песнь {self.ode_number}: '
+            if self.ode_number
+            else ''
+        )
+
+        return (
+            f'{self.canon}: '
+            f'{ode}'
+            f'{self.get_section_type_display()}'
+        )
+
+    class Meta:
+        ordering = [
+            'order',
+        ]
+
+        verbose_name = 'Элемент канона'
+        verbose_name_plural = 'Элементы канона'
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    'canon',
+                    'order',
+                ],
+                name='unique_order_per_canon',
+            ),
+        ]
+
+
+# =========================================================
 # ПСАЛТИРЬ
 # =========================================================
 
@@ -846,6 +1020,7 @@ class SavedItem(models.Model):
         ('kathisma', 'Кафизма'),
         ('chapter', 'Глава'),
         ('akathist', 'Акафист'),
+        ('canon', 'Канон'),
         ('text', 'Текст'),
     ]
 
