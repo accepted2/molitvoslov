@@ -17,6 +17,7 @@ from .models import (
     KathismaGlory,
     Akathist,
     AkathistSection,
+    DailyQuote,
 )
 
 class CategoryTextInline(admin.TabularInline):
@@ -623,3 +624,48 @@ class AkathistSectionAdmin(admin.ModelAdmin):
         'akathist',
         'order',
     ]
+
+# =========================================================
+# ЦИТАТЫ ДНЯ
+# =========================================================
+
+@admin.register(DailyQuote)
+class DailyQuoteAdmin(admin.ModelAdmin):
+    list_display = [
+        'reference',
+        'text_preview',
+        'quote_date',
+        'is_active',
+        'order',
+    ]
+
+    list_filter = [
+        'is_active',
+        'quote_date',
+    ]
+
+    search_fields = [
+        'text',
+        'source',
+        'reference',
+    ]
+
+    list_editable = [
+        'is_active',
+        'order',
+    ]
+
+    ordering = [
+        'quote_date',
+        'order',
+        'id',
+    ]
+
+    @admin.display(
+        description='Цитата',
+    )
+    def text_preview(self, obj):
+        if len(obj.text) > 90:
+            return obj.text[:90] + '…'
+
+        return obj.text
