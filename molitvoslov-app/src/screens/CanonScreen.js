@@ -831,7 +831,7 @@ export const CanonScreen = ({
 
 
         const wholeSaved =
-          savedItems.find(
+          savedItemsRef.current.find(
             item =>
               item.anchor_type ===
                 'canon' &&
