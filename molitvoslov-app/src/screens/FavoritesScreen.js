@@ -164,6 +164,30 @@ export const FavoritesScreen = ({
 
       if (
         item.source_type ===
+          'akathist' &&
+        metadata.slug
+      ) {
+        navigation.navigate(
+          'Akathist',
+          {
+            akathistId:
+              item.source_id,
+
+            slug:
+              metadata.slug,
+
+            title:
+              item.source_title ||
+              'Акафист',
+          }
+        );
+
+        return;
+      }
+
+
+      if (
+        item.source_type ===
         'psalter'
       ) {
         if (
