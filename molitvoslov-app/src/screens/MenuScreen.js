@@ -141,6 +141,9 @@ export const MenuScreen = ({
   const [akathists, setAkathists] =
     useState([]);
 
+  const [canons, setCanons] =
+    useState([]);
+
   const [prayerRules, setPrayerRules] =
     useState([]);
 
@@ -165,11 +168,13 @@ export const MenuScreen = ({
         const [
           categoriesResponse,
           akathistsResponse,
+          canonsResponse,
           prayerRulesResponse,
           quoteResponse,
         ] = await Promise.all([
           api.get('categories/'),
           api.get('akathists/'),
+          api.get('canons/'),
           api.get(
             'prayer-rules/'
           ),
@@ -197,6 +202,10 @@ export const MenuScreen = ({
 
         setAkathists(
           akathistsResponse.data
+        );
+
+        setCanons(
+          canonsResponse.data
         );
 
         setPrayerRules(
@@ -450,6 +459,98 @@ export const MenuScreen = ({
 
       if (
         progress.source_type ===
+        'canon'
+      ) {
+        const canon =
+          canons.find(
+            item =>
+              Number(
+                item.id
+              ) ===
+                Number(
+                  progress.source_id
+                )
+          );
+
+        if (!canon) {
+          return null;
+        }
+
+        const info =
+          progress.anchor_info;
+
+        let position =
+          'Продолжить канон';
+
+        if (info) {
+          const parts =
+            [];
+
+          if (
+            info.ode_number
+          ) {
+            parts.push(
+              `Песнь ${info.ode_number}`
+            );
+          }
+
+          if (
+            info.heading
+          ) {
+            parts.push(
+              info.heading
+            );
+          } else if (
+            info.section_type_display
+          ) {
+            parts.push(
+              info.section_type_display
+            );
+          }
+
+          if (parts.length) {
+            position =
+              parts.join(
+                ' · '
+              );
+          }
+        }
+
+        return {
+          id:
+            progress.id,
+
+          type:
+            'Канон',
+
+          symbol:
+            '☦',
+
+          title:
+            canon.title,
+
+          position,
+
+          onPress: () =>
+            navigation.navigate(
+              'Canon',
+              {
+                canonId:
+                  canon.id,
+
+                slug:
+                  canon.slug,
+
+                title:
+                  canon.title,
+              }
+            ),
+        };
+      }
+
+
+      if (
+        progress.source_type ===
         'prayer_rule'
       ) {
         const rule =
@@ -573,6 +674,7 @@ export const MenuScreen = ({
         readingProgress,
         categories,
         akathists,
+        canons,
         prayerRules,
       ]
     );
@@ -975,6 +1077,20 @@ export const MenuScreen = ({
                 onPress={() =>
                   navigation.navigate(
                     'AkathistList'
+                  )
+                }
+              />
+
+              <HomeCard
+                title="Каноны"
+                subtitle={
+                  canons.length
+                    ? `${canons.length} текстов`
+                    : 'Покаянные и святым'
+                }
+                onPress={() =>
+                  navigation.navigate(
+                    'CanonList'
                   )
                 }
               />
