@@ -15,7 +15,7 @@ BASE_URL = "https://azbyka.ru"
 
 # Раздел "Каноны" в Молитвослове.
 START_URLS = [
-    "https://azbyka.ru/molitvoslov/1/akafisty",
+    "https://azbyka.ru/molitvoslov/kanony-v-pravoslavnom-kalendare.html",
 ]
 
 OUTPUT_DIR = Path("files/canons")
@@ -101,7 +101,7 @@ def is_canon_page(url):
     filename = Path(path).name
 
     return (
-            filename.startswith("akafist-")
+            filename.startswith("kanon-")
             and filename.endswith(".html")
     )
 
@@ -122,11 +122,8 @@ def discover_canon_pages(
         session,
 ):
     """
-    Находим страницы канонов.
-
-    Сначала пробуем страницу категории.
-    Дополнительно собираем ссылки со страниц
-    категории, если у неё есть пагинация.
+    Находим страницы канонов на странице
+    большого сборника канонов Азбуки веры.
     """
 
     found = set()
@@ -185,29 +182,9 @@ def discover_canon_pages(
                 )
                 continue
 
-            parsed = urlparse(
-                absolute
-            )
-
-            # Возможные страницы пагинации
-            # внутри раздела канонов.
-            if (
-                    parsed.netloc
-                    in {
-                "azbyka.ru",
-                "www.azbyka.ru",
-            }
-                    and
-                    "/molitvoslov/1/akafisty"
-                    in parsed.path.lower()
-                    and
-                    absolute not in visited_indexes
-                    and
-                    absolute not in queue
-            ):
-                queue.append(
-                    absolute
-                )
+            # Страница сборника уже содержит прямые
+            # ссылки на отдельные каноны. В соседние
+            # разделы Молитвослова не переходим.
 
         time.sleep(
             REQUEST_DELAY
