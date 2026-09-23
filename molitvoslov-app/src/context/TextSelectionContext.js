@@ -238,11 +238,7 @@ export const TextSelectionProvider = ({
                   activeSelection
                     .count
                 }
-                /
-                {
-                  activeSelection
-                    .max
-                }
+                {' '}симв.
               </Text>
 
               {activeSelection
