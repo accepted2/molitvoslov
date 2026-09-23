@@ -27,6 +27,10 @@ import {
 } from '../hooks/useReadingProgress';
 
 import {
+  useTextSelection,
+} from '../context/TextSelectionContext';
+
+import {
   deleteSavedItem,
   getSavedItems,
   saveItem,
@@ -45,6 +49,10 @@ import {
 export default function PsalterScreen({
   navigation,
 }) {
+
+  const {
+    activeSelection,
+  } = useTextSelection();
   const [
     psalter,
     setPsalter,
@@ -350,6 +358,9 @@ export default function PsalterScreen({
     >
       <FlatList
         ref={listRef}
+        scrollEnabled={
+          !activeSelection
+        }
         data={
           psalter?.kathismas ||
           []
