@@ -29,6 +29,7 @@ from .models import (
     KathismaGlory,
     ReadingProgress,
     DailyQuote,
+    SavedItem,
     Akathist,
     AkathistSection,
 
@@ -50,6 +51,7 @@ from .serializers import (
     KathismaGlorySerializer,
     ReadingProgressSerializer,
     DailyQuoteSerializer,
+    SavedItemSerializer,
     AkathistSerializer,
     AkathistSectionSerializer,
 )
@@ -451,6 +453,110 @@ class DailyQuoteViewSet(viewsets.ReadOnlyModelViewSet):
         )
 
         return Response(data)
+
+
+class SavedItemViewSet(viewsets.ModelViewSet):
+    serializer_class = SavedItemSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = (
+            SavedItem.objects
+            .filter(
+                user=self.request.user
+            )
+            .order_by(
+                '-created_at'
+            )
+        )
+
+        for field in [
+            'source_type',
+            'source_id',
+            'anchor_type',
+            'anchor_id',
+            'save_type',
+        ]:
+            value = (
+                self.request
+                .query_params
+                .get(field)
+            )
+
+            if value not in [
+                None,
+                '',
+            ]:
+                queryset = queryset.filter(
+                    **{
+                        field:
+                            value
+                    }
+                )
+
+        return queryset
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(
+            data=request.data
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        data = (
+            serializer.validated_data
+        )
+
+        existing = (
+            SavedItem.objects
+            .filter(
+                user=request.user,
+                save_type=
+                    data['save_type'],
+                source_type=
+                    data['source_type'],
+                source_id=
+                    data['source_id'],
+                anchor_type=
+                    data['anchor_type'],
+                anchor_id=
+                    data['anchor_id'],
+                start_offset=
+                    data.get(
+                        'start_offset'
+                    ),
+                end_offset=
+                    data.get(
+                        'end_offset'
+                    ),
+            )
+            .first()
+        )
+
+        if existing:
+            return Response(
+                self.get_serializer(
+                    existing
+                ).data,
+                status=
+                    status.HTTP_200_OK,
+            )
+
+        saved_item = (
+            serializer.save(
+                user=request.user
+            )
+        )
+
+        return Response(
+            self.get_serializer(
+                saved_item
+            ).data,
+            status=
+                status.HTTP_201_CREATED,
+        )
 
 class ReadingProgressViewSet(viewsets.ModelViewSet):
     serializer_class = ReadingProgressSerializer
