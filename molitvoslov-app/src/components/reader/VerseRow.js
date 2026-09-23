@@ -1,83 +1,213 @@
 import React from 'react';
+
 import {
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 
+import SelectableSaveText
+  from './SelectableSaveText';
+
+import {
+  colors,
+  radius,
+} from '../../theme';
+
 
 export default function VerseRow({
-                                   verse,
-                                   psalmId,
-                                   onLayout,
-                                 }) {
-  if (!verse){
-    return null
+  verse,
+  psalmId,
+  psalmNumber,
+  psalterId,
+  kathismaNumber,
+  kathismaTitle,
+  hasSavedFragment = false,
+  onFragmentSaved,
+  onLayout,
+}) {
+  if (!verse) {
+    return null;
   }
+
+
+  const commonMetadata = {
+    kathisma_number:
+      kathismaNumber,
+
+    kathisma_title:
+      kathismaTitle ||
+      '',
+
+    psalm_id:
+      psalmId,
+
+    psalm_number:
+      psalmNumber,
+
+    verse_number:
+      verse.number,
+  };
+
+
   return (
     <View
-      style={styles.row}
-      nativeID={`verse-${verse.id}`}
-      onLayout={onLayout}
-    >
-      <View style={styles.column}>
-        <Text
-          selectable
-          style={styles.text}
-        >
-          <Text style={styles.number}>
-            {verse.number}{' '}
-          </Text>
+      style={[
+        styles.row,
 
-          {verse.church_slavonic}
-        </Text>
+        hasSavedFragment &&
+          styles.rowSaved,
+      ]}
+      nativeID={
+        `verse-${verse.id}`
+      }
+      onLayout={
+        onLayout
+      }
+    >
+      <View
+        style={
+          styles.column
+        }
+      >
+        <SelectableSaveText
+          text={
+            verse
+              .church_slavonic ||
+            ''
+          }
+          textStyle={
+            styles.text
+          }
+          prefix={
+            `${verse.number} `
+          }
+          prefixStyle={
+            styles.number
+          }
+          sourceType="psalter"
+          sourceId={
+            psalterId
+          }
+          anchorType="psalm_verse"
+          anchorId={
+            verse.id
+          }
+          sourceTitle="Псалтирь"
+          itemTitle={
+            `Псалом ${psalmNumber}, стих ${verse.number}`
+          }
+          metadata={{
+            ...commonMetadata,
+            language:
+              'church',
+          }}
+          fullSaveType="verse"
+          fullSaveLabel="Стих"
+          onSaved={
+            onFragmentSaved
+          }
+        />
       </View>
 
-      <View style={styles.separator} />
+      <View
+        style={
+          styles.separator
+        }
+      />
 
-      <View style={styles.column}>
-        <Text
-          selectable
-          style={styles.text}
-        >
-          <Text style={styles.number}>
-            {verse.number}{' '}
-          </Text>
-
-          {verse.russian}
-        </Text>
+      <View
+        style={
+          styles.column
+        }
+      >
+        <SelectableSaveText
+          text={
+            verse.russian ||
+            ''
+          }
+          textStyle={
+            styles.text
+          }
+          prefix={
+            `${verse.number} `
+          }
+          prefixStyle={
+            styles.number
+          }
+          sourceType="psalter"
+          sourceId={
+            psalterId
+          }
+          anchorType="psalm_verse"
+          anchorId={
+            verse.id
+          }
+          sourceTitle="Псалтирь"
+          itemTitle={
+            `Псалом ${psalmNumber}, стих ${verse.number}`
+          }
+          metadata={{
+            ...commonMetadata,
+            language:
+              'russian',
+          }}
+          fullSaveType="verse"
+          fullSaveLabel="Стих"
+          onSaved={
+            onFragmentSaved
+          }
+        />
       </View>
     </View>
   );
 }
 
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    paddingVertical: 8,
-  },
+const styles =
+  StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      paddingVertical: 8,
+      borderRadius:
+        radius.sm,
+      borderLeftWidth: 3,
+      borderLeftColor:
+        'transparent',
+    },
 
-  column: {
-    flex: 1,
-    paddingHorizontal: 10,
-  },
+    rowSaved: {
+      backgroundColor:
+        'rgba(138, 90, 56, 0.045)',
+      borderLeftColor:
+        'rgba(138, 90, 56, 0.24)',
+    },
 
-  separator: {
-    width: StyleSheet.hairlineWidth,
-    backgroundColor:
-      'rgba(0, 0, 0, 0.15)',
-  },
+    column: {
+      flex: 1,
+      paddingHorizontal: 10,
+    },
 
-  text: {
-    fontSize: 17,
-    lineHeight: 26,
-  },
+    separator: {
+      width:
+        StyleSheet
+          .hairlineWidth,
 
-  number: {
-    fontSize: 12,
-    fontWeight: '700',
-    opacity: 0.55,
-  },
-});
+      backgroundColor:
+        colors.borderStrong,
+    },
+
+    text: {
+      fontSize: 17,
+      lineHeight: 26,
+      color:
+        colors.text,
+    },
+
+    number: {
+      fontSize: 12,
+      fontWeight: '700',
+      color:
+        colors.textMuted,
+    },
+  });
