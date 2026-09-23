@@ -89,7 +89,7 @@ export const PrayerRuleScreen = ({
 
   const {
     savedProgress,
-    progressLoading,
+    progressReady,
     scheduleSave,
   } = useReadingProgress({
     sourceType:
@@ -136,7 +136,7 @@ export const PrayerRuleScreen = ({
   useEffect(() => {
     if (
       !rule?.id ||
-      progressLoading ||
+      !progressReady ||
       initialRestoreHandledRef
         .current
     ) {
@@ -165,7 +165,7 @@ export const PrayerRuleScreen = ({
     }
   }, [
     rule?.id,
-    progressLoading,
+    progressReady,
     savedProgress,
   ]);
 
@@ -312,6 +312,9 @@ export const PrayerRuleScreen = ({
         true;
 
       setTimeout(() => {
+        restoringRef.current =
+          true;
+
         scrollRef.current
           ?.scrollTo({
             y:
@@ -326,9 +329,6 @@ export const PrayerRuleScreen = ({
             animated:
               false,
           });
-
-        restoringRef.current =
-          true;
 
         setHighlightedItemId(
           anchorId
