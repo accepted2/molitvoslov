@@ -775,6 +775,9 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
                 'section_id':
                     section.id,
 
+                'variant':
+                    section.variant,
+
                 'section_type':
                     section.section_type,
 
