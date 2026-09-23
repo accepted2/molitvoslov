@@ -8,7 +8,6 @@ import React, {
 import {
   ActivityIndicator,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,6 +19,10 @@ import {
 } from '@react-navigation/native';
 
 import {
+  SafeAreaView,
+} from 'react-native-safe-area-context';
+
+import {
   StatusBar,
 } from 'expo-status-bar';
 
@@ -28,8 +31,13 @@ import {
 } from '../api';
 
 import {
+  deleteReadingProgress,
   getReadingProgress,
 } from '../services/readingProgress';
+
+import {
+  BottomNav,
+} from '../components/navigation/BottomNav';
 
 import {
   colors,
@@ -100,20 +108,24 @@ const HomeCard = ({
     onPress={onPress}
     style={({pressed}) => [
       styles.homeCard,
-      featured && styles.homeCardFeatured,
-      pressed && styles.pressed,
+      featured &&
+      styles.homeCardFeatured,
+      pressed &&
+      styles.pressed,
     ]}
   >
     <View
       style={[
         styles.symbolCircle,
-        featured && styles.symbolCircleFeatured,
+        featured &&
+        styles.symbolCircleFeatured,
       ]}
     >
       <Text
         style={[
           styles.symbolText,
-          featured && styles.symbolTextFeatured,
+          featured &&
+          styles.symbolTextFeatured,
         ]}
       >
         {symbol}
@@ -145,34 +157,68 @@ export const MenuScreen = ({
   const [categories, setCategories] =
     useState([]);
 
+  const [akathists, setAkathists] =
+    useState([]);
+
+  const [prayerRules, setPrayerRules] =
+    useState([]);
+
+  const [
+    readingProgress,
+    setReadingProgress,
+  ] = useState([]);
+
   const [loading, setLoading] =
     useState(true);
 
   const [error, setError] =
     useState(null);
 
-  const [psalterProgress, setPsalterProgress] =
-    useState(null);
 
-
-  const loadCategories =
+  const loadLibrary =
     useCallback(async () => {
       try {
-        const response =
-          await api.get('categories/');
+        const [
+          categoriesResponse,
+          akathistsResponse,
+          prayerRulesResponse,
+        ] = await Promise.all([
+          api.get('categories/'),
+          api.get('akathists/'),
+          api.get(
+            'prayer-rules/'
+          ),
+        ]);
 
-        const sorted =
-          [...response.data].sort(
+        const sortedCategories =
+          [
+            ...categoriesResponse.data,
+          ].sort(
             (a, b) =>
-              Number(a.order || 0) -
-              Number(b.order || 0)
+              Number(
+                a.order || 0
+              ) -
+              Number(
+                b.order || 0
+              )
           );
 
-        setCategories(sorted);
+        setCategories(
+          sortedCategories
+        );
+
+        setAkathists(
+          akathistsResponse.data
+        );
+
+        setPrayerRules(
+          prayerRulesResponse.data
+        );
+
         setError(null);
       } catch (err) {
         console.log(
-          'Ошибка загрузки категорий:',
+          'Ошибка загрузки библиотеки:',
           err
         );
 
@@ -189,20 +235,12 @@ export const MenuScreen = ({
         const progressList =
           await getReadingProgress();
 
-        const psalter =
-          progressList.find(
-            item =>
-              item.source_type ===
-              'psalter' &&
-              item.anchor_info
-          );
-
-        setPsalterProgress(
-          psalter || null
+        setReadingProgress(
+          progressList
         );
       } catch (err) {
         console.log(
-          'Ошибка загрузки прогресса на главной:',
+          'Ошибка загрузки прогресса:',
           err
         );
       }
@@ -215,7 +253,7 @@ export const MenuScreen = ({
         setLoading(true);
 
         await Promise.all([
-          loadCategories(),
+          loadLibrary(),
           loadProgress(),
         ]);
       } finally {
@@ -225,7 +263,7 @@ export const MenuScreen = ({
 
     load();
   }, [
-    loadCategories,
+    loadLibrary,
     loadProgress,
   ]);
 
@@ -266,134 +304,296 @@ export const MenuScreen = ({
     );
 
 
-  const getSubcategories = category =>
-    categories.filter(
-      item =>
-        item.parent ===
-        category.id
-    );
-
-
-  const openCategory = category => {
-    if (
-      category.slug ===
-      'psaltir'
-    ) {
-      navigation.navigate(
-        'Psalter'
+  const getSubcategories =
+    category =>
+      categories.filter(
+        item =>
+          item.parent ===
+          category.id
       );
 
-      return;
-    }
 
-    const subcategories =
-      getSubcategories(category);
+  const openCategory =
+    category => {
+      if (
+        category.slug ===
+        'psaltir'
+      ) {
+        navigation.navigate(
+          'Psalter'
+        );
 
-    if (
-      subcategories.length > 0
-    ) {
-      navigation.navigate(
-        'CategoryMenu',
-        {
-          parentCategory:
-            category,
-
-          subcategories,
-        }
-      );
-
-      return;
-    }
-
-    navigation.navigate(
-      'Book',
-      {
-        categoryId:
-          category.id,
-
-        categorySlug:
-          category.slug,
-
-        categoryName:
-          category.name,
+        return;
       }
-    );
-  };
 
+      const subcategories =
+        getSubcategories(
+          category
+        );
 
-  const renderContinueCard = () => {
-    const info =
-      psalterProgress?.anchor_info;
+      if (
+        subcategories.length > 0
+      ) {
+        navigation.navigate(
+          'CategoryMenu',
+          {
+            parentCategory:
+              category,
 
-    if (!info) {
-      return null;
-    }
+            subcategories,
+          }
+        );
 
-    return (
-      <Pressable
-        style={({pressed}) => [
-          styles.continueCard,
-          pressed && styles.pressed,
-        ]}
-        onPress={() =>
-          navigation.navigate(
-            'Psalter'
-          )
+        return;
+      }
+
+      navigation.navigate(
+        'Book',
+        {
+          categoryId:
+            category.id,
+
+          categorySlug:
+            category.slug,
+
+          categoryName:
+            category.name,
         }
-      >
-        <View
-          style={
-            styles.continueTop
-          }
-        >
-          <Text
-            style={
-              styles.continueEyebrow
-            }
-          >
-            ПРОДОЛЖИТЬ ЧТЕНИЕ
-          </Text>
+      );
+    };
 
-          <Text
-            style={
-              styles.continueArrow
-            }
-          >
-            ›
-          </Text>
-        </View>
 
-        <Text
-          style={
-            styles.continueTitle
-          }
-        >
-          Псалтирь
-        </Text>
+  const makeReadingItem =
+    progress => {
+      if (
+        progress.source_type ===
+        'psalter'
+      ) {
+        const info =
+          progress.anchor_info;
 
-        <Text
-          style={
-            styles.continueMeta
-          }
-        >
-          Кафизма{' '}
-          {info.kathisma_number}
-          {'  ·  '}
-          Псалом{' '}
-          {info.psalm_number}
-          {'  ·  '}
-          стих{' '}
-          {info.verse_number}
-        </Text>
-      </Pressable>
+        return {
+          id: progress.id,
+          type: 'Псалтирь',
+          symbol: '¶',
+          title: 'Псалтирь',
+          position:
+            info
+              ? `Кафизма ${info.kathisma_number} · Псалом ${info.psalm_number} · стих ${info.verse_number}`
+              : 'Продолжить с сохранённого места',
+          onPress: () =>
+            navigation.navigate(
+              'Psalter'
+            ),
+        };
+      }
+
+      if (
+        progress.source_type ===
+        'akathist'
+      ) {
+        const akathist =
+          akathists.find(
+            item =>
+              Number(item.id) ===
+              Number(
+                progress.source_id
+              )
+          );
+
+        if (!akathist) {
+          return null;
+        }
+
+        const section =
+          akathist.sections?.find(
+            item =>
+              Number(item.id) ===
+              Number(
+                progress.anchor_id
+              )
+          );
+
+        let position =
+          'Продолжить акафист';
+
+        if (section) {
+          const names = {
+            kontakion: 'Кондак',
+            ikos: 'Икос',
+            prayer: 'Молитва',
+          };
+
+          position =
+            `${names[section.section_type] || 'Раздел'}${section.number ? ` ${section.number}` : ''}`;
+        }
+
+        return {
+          id: progress.id,
+          type: 'Акафист',
+          symbol: '☦',
+          title:
+            akathist.title,
+          position,
+          onPress: () =>
+            navigation.navigate(
+              'Akathist',
+              {
+                akathistId:
+                  akathist.id,
+
+                slug:
+                  akathist.slug,
+
+                title:
+                  akathist.title,
+              }
+            ),
+        };
+      }
+
+      if (
+        progress.source_type ===
+        'prayer_rule'
+      ) {
+        const rule =
+          prayerRules.find(
+            item =>
+              Number(item.id) ===
+              Number(
+                progress.source_id
+              )
+          );
+
+        if (!rule) {
+          return null;
+        }
+
+        const ruleItem =
+          rule.items?.find(
+            item =>
+              Number(item.id) ===
+              Number(
+                progress.anchor_id
+              )
+          );
+
+        const position =
+          ruleItem?.text?.title ||
+          ruleItem?.title ||
+          'Продолжить правило';
+
+        return {
+          id: progress.id,
+          type:
+            'Молитвенное правило',
+          symbol: '✦',
+          title:
+            rule.name,
+          position,
+          onPress: () =>
+            navigation.navigate(
+              'PrayerRule',
+              {
+                slug:
+                  rule.slug,
+              }
+            ),
+        };
+      }
+
+      if (
+        progress.source_type ===
+        'category'
+      ) {
+        const category =
+          categories.find(
+            item =>
+              Number(item.id) ===
+              Number(
+                progress.source_id
+              )
+          );
+
+        if (!category) {
+          return null;
+        }
+
+        return {
+          id: progress.id,
+          type: 'Молитвы',
+          symbol: '†',
+          title:
+            category.name,
+          position:
+            'Продолжить с сохранённого места',
+          onPress: () =>
+            navigation.navigate(
+              'Book',
+              {
+                categoryId:
+                  category.id,
+
+                categorySlug:
+                  category.slug,
+
+                categoryName:
+                  category.name,
+              }
+            ),
+        };
+      }
+
+      return null;
+    };
+
+
+  const activeReadings =
+    useMemo(
+      () =>
+        readingProgress
+          .map(
+            makeReadingItem
+          )
+          .filter(Boolean),
+      [
+        readingProgress,
+        categories,
+        akathists,
+        prayerRules,
+      ]
     );
-  };
+
+
+  const finishReading =
+    async progressId => {
+      try {
+        await deleteReadingProgress(
+          progressId
+        );
+
+        setReadingProgress(
+          current =>
+            current.filter(
+              item =>
+                item.id !==
+                progressId
+            )
+        );
+      } catch (err) {
+        console.log(
+          'Ошибка завершения чтения:',
+          err
+        );
+      }
+    };
 
 
   if (loading) {
     return (
       <SafeAreaView
         style={styles.safeArea}
+        edges={['top']}
       >
         <StatusBar
           style="dark"
@@ -404,7 +604,9 @@ export const MenuScreen = ({
         >
           <ActivityIndicator
             size="large"
-            color={colors.accent}
+            color={
+              colors.accent
+            }
           />
 
           <Text
@@ -423,215 +625,373 @@ export const MenuScreen = ({
   return (
     <SafeAreaView
       style={styles.safeArea}
+      edges={['top']}
     >
       <StatusBar
         style="dark"
       />
 
-      <ScrollView
-        showsVerticalScrollIndicator={
-          false
-        }
-        contentContainerStyle={
-          styles.content
-        }
+      <View
+        style={styles.screen}
       >
-        <View
-          style={styles.brandRow}
+        <ScrollView
+          showsVerticalScrollIndicator={
+            false
+          }
+          contentContainerStyle={
+            styles.content
+          }
         >
           <View
-            style={styles.brandMark}
+            style={styles.brandRow}
           >
-            <Text
-              style={styles.brandCross}
+            <View
+              style={styles.brandMark}
             >
-              ☦
-            </Text>
+              <Text
+                style={
+                  styles.brandCross
+                }
+              >
+                ☦
+              </Text>
+            </View>
+
+            <View
+              style={styles.brandText}
+            >
+              <Text
+                style={
+                  styles.brandTitle
+                }
+              >
+                Молитвослов
+              </Text>
+
+              <Text
+                style={styles.today}
+              >
+                {formatToday()}
+              </Text>
+            </View>
           </View>
 
-          <View
-            style={styles.brandText}
-          >
-            <Text
-              style={styles.brandTitle}
-            >
-              Молитвослов
-            </Text>
 
-            <Text
-              style={styles.today}
-            >
-              {formatToday()}
-            </Text>
-          </View>
-        </View>
-
-
-        <Text
-          style={styles.intro}
-        >
-          Молитвы и духовное чтение
-          в спокойном ритме дня
-        </Text>
-
-
-        {renderContinueCard()}
-
-
-        <View
-          style={styles.section}
-        >
           <Text
-            style={
-              styles.sectionTitle
-            }
+            style={styles.intro}
           >
-            Молитвенное правило
+            Молитвы и духовное чтение
+            в спокойном ритме дня
           </Text>
 
-          <View
-            style={styles.grid}
-          >
-            {PRAYER_RULES.map(
-              item => (
-                <HomeCard
-                  key={item.key}
-                  symbol={
-                    item.symbol
-                  }
-                  title={
-                    item.title
-                  }
-                  subtitle={
-                    item.subtitle
-                  }
-                  featured
-                  onPress={() =>
-                    navigation.navigate(
-                      'PrayerRule',
-                      {
-                        slug:
-                          item.slug,
-                      }
-                    )
-                  }
-                />
-              )
-            )}
-          </View>
-        </View>
 
-
-        <View
-          style={styles.section}
-        >
-          <Text
-            style={
-              styles.sectionTitle
-            }
-          >
-            Библиотека
-          </Text>
-
-          <View
-            style={styles.grid}
-          >
-            <HomeCard
-              symbol="☦"
-              title="Акафисты"
-              subtitle="Господу, Богородице и святым"
-              onPress={() =>
-                navigation.navigate(
-                  'AkathistList'
-                )
-              }
-            />
-
-            <HomeCard
-              symbol="¶"
-              title="Псалтирь"
-              subtitle="20 кафизм"
-              onPress={() =>
-                navigation.navigate(
-                  'Psalter'
-                )
-              }
-            />
-
-            {libraryCategories.map(
-              category => {
-                const count =
-                  getSubcategories(
-                    category
-                  ).length;
-
-                return (
-                  <HomeCard
-                    key={
-                      category.id
-                    }
-                    symbol={
-                      category.icon ||
-                      '✦'
-                    }
-                    title={
-                      category.name
-                    }
-                    subtitle={
-                      count > 0
-                        ? `${count} разделов`
-                        : 'Открыть'
-                    }
-                    onPress={() =>
-                      openCategory(
-                        category
-                      )
-                    }
-                  />
-                );
-              }
-            )}
-          </View>
-        </View>
-
-
-        {!!error && (
           <View
             style={
-              styles.errorCard
+              styles.readingSection
             }
           >
             <Text
               style={
-                styles.errorText
+                styles.readingSectionTitle
               }
             >
-              {error}
+              Продолжить чтение
             </Text>
+
+            {activeReadings.length ? (
+              <View
+                style={
+                  styles.readingCard
+                }
+              >
+                {activeReadings.map(
+                  (
+                    item,
+                    index
+                  ) => (
+                    <View
+                      key={item.id}
+                    >
+                      <View
+                        style={
+                          styles.readingRow
+                        }
+                      >
+                        <Pressable
+                          style={({pressed}) => [
+                            styles.readingMain,
+                            pressed &&
+                            styles.pressed,
+                          ]}
+                          onPress={
+                            item.onPress
+                          }
+                        >
+                          <View
+                            style={
+                              styles.readingMark
+                            }
+                          >
+                            <Text
+                              style={
+                                styles.readingSymbol
+                              }
+                            >
+                              {item.symbol}
+                            </Text>
+                          </View>
+
+                          <View
+                            style={
+                              styles.readingText
+                            }
+                          >
+                            <Text
+                              style={
+                                styles.readingType
+                              }
+                            >
+                              {item.type}
+                            </Text>
+
+                            <Text
+                              style={
+                                styles.readingTitle
+                              }
+                              numberOfLines={1}
+                            >
+                              {item.title}
+                            </Text>
+
+                            <Text
+                              style={
+                                styles.readingPosition
+                              }
+                              numberOfLines={2}
+                            >
+                              {item.position}
+                            </Text>
+                          </View>
+
+                          <Text
+                            style={
+                              styles.readingArrow
+                            }
+                          >
+                            ›
+                          </Text>
+                        </Pressable>
+
+                        <Pressable
+                          hitSlop={8}
+                          onPress={() =>
+                            finishReading(
+                              item.id
+                            )
+                          }
+                          style={({pressed}) => [
+                            styles.finishButton,
+                            pressed &&
+                            styles.pressed,
+                          ]}
+                        >
+                          <Text
+                            style={
+                              styles.finishText
+                            }
+                          >
+                            ✓
+                          </Text>
+                        </Pressable>
+                      </View>
+
+                      {index <
+                        activeReadings.length -
+                          1 && (
+                        <View
+                          style={
+                            styles.readingDivider
+                          }
+                        />
+                      )}
+                    </View>
+                  )
+                )}
+              </View>
+            ) : (
+              <View
+                style={
+                  styles.noReadingCard
+                }
+              >
+                <Text
+                  style={
+                    styles.noReadingText
+                  }
+                >
+                  Начатых чтений пока нет.
+                  Откройте молитву, акафист
+                  или Псалтирь — место
+                  сохранится автоматически.
+                </Text>
+              </View>
+            )}
+
+            {!!activeReadings.length && (
+              <Text
+                style={
+                  styles.finishHint
+                }
+              >
+                ✓ — отметить чтение завершённым
+              </Text>
+            )}
           </View>
-        )}
 
 
-        <View
-          style={styles.footer}
-        >
-          <Text
-            style={
-              styles.footerCross
-            }
+          <View
+            style={styles.section}
           >
-            ☦
-          </Text>
+            <Text
+              style={
+                styles.sectionTitle
+              }
+            >
+              Молитвенное правило
+            </Text>
 
-          <Text
-            style={
-              styles.footerText
-            }
+            <View
+              style={styles.grid}
+            >
+              {PRAYER_RULES.map(
+                item => (
+                  <HomeCard
+                    key={item.key}
+                    symbol={
+                      item.symbol
+                    }
+                    title={
+                      item.title
+                    }
+                    subtitle={
+                      item.subtitle
+                    }
+                    featured
+                    onPress={() =>
+                      navigation.navigate(
+                        'PrayerRule',
+                        {
+                          slug:
+                            item.slug,
+                        }
+                      )
+                    }
+                  />
+                )
+              )}
+            </View>
+          </View>
+
+
+          <View
+            style={styles.section}
           >
-            Читайте без спешки
-          </Text>
-        </View>
-      </ScrollView>
+            <Text
+              style={
+                styles.sectionTitle
+              }
+            >
+              Библиотека
+            </Text>
+
+            <View
+              style={styles.grid}
+            >
+              <HomeCard
+                symbol="☦"
+                title="Акафисты"
+                subtitle={
+                  akathists.length
+                    ? `${akathists.length} текстов`
+                    : 'Господу, Богородице и святым'
+                }
+                onPress={() =>
+                  navigation.navigate(
+                    'AkathistList'
+                  )
+                }
+              />
+
+              <HomeCard
+                symbol="¶"
+                title="Псалтирь"
+                subtitle="20 кафизм"
+                onPress={() =>
+                  navigation.navigate(
+                    'Psalter'
+                  )
+                }
+              />
+
+              {libraryCategories.map(
+                category => {
+                  const count =
+                    getSubcategories(
+                      category
+                    ).length;
+
+                  return (
+                    <HomeCard
+                      key={
+                        category.id
+                      }
+                      symbol={
+                        category.icon ||
+                        '✦'
+                      }
+                      title={
+                        category.name
+                      }
+                      subtitle={
+                        count > 0
+                          ? `${count} разделов`
+                          : 'Открыть'
+                      }
+                      onPress={() =>
+                        openCategory(
+                          category
+                        )
+                      }
+                    />
+                  );
+                }
+              )}
+            </View>
+          </View>
+
+
+          {!!error && (
+            <View
+              style={
+                styles.errorCard
+              }
+            >
+              <Text
+                style={
+                  styles.errorText
+                }
+              >
+                {error}
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+
+        <BottomNav
+          navigation={navigation}
+          active="home"
+        />
+      </View>
     </SafeAreaView>
   );
 };
@@ -645,12 +1005,17 @@ const styles =
         colors.background,
     },
 
+    screen: {
+      flex: 1,
+    },
+
     content: {
       paddingHorizontal:
         spacing.md,
       paddingTop:
         spacing.sm,
-      paddingBottom: 54,
+      paddingBottom:
+        spacing.xl,
     },
 
     center: {
@@ -678,9 +1043,9 @@ const styles =
     },
 
     brandMark: {
-      width: 50,
-      height: 50,
-      borderRadius: 25,
+      width: 48,
+      height: 48,
+      borderRadius: 24,
       alignItems: 'center',
       justifyContent:
         'center',
@@ -692,7 +1057,7 @@ const styles =
     },
 
     brandCross: {
-      fontSize: 28,
+      fontSize: 26,
       color:
         colors.liturgical,
     },
@@ -704,14 +1069,16 @@ const styles =
     },
 
     brandTitle: {
-      ...typography.title,
+      fontSize: 28,
+      lineHeight: 33,
+      fontWeight: '700',
       color:
         colors.text,
       fontFamily: 'serif',
     },
 
     today: {
-      marginTop: 2,
+      marginTop: 1,
       fontSize: 13,
       color:
         colors.textSecondary,
@@ -732,11 +1099,21 @@ const styles =
       fontFamily: 'serif',
     },
 
-    continueCard: {
-      padding:
-        spacing.lg,
+    readingSection: {
       marginBottom:
         spacing.xl,
+    },
+
+    readingSectionTitle: {
+      ...typography.sectionTitle,
+      marginBottom:
+        spacing.sm,
+      color:
+        colors.text,
+      fontFamily: 'serif',
+    },
+
+    readingCard: {
       borderRadius:
         radius.lg,
       backgroundColor:
@@ -744,47 +1121,146 @@ const styles =
       borderWidth: 1,
       borderColor:
         colors.borderStrong,
+      overflow: 'hidden',
     },
 
-    continueTop: {
+    readingRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom:
+      minHeight: 92,
+    },
+
+    readingMain: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical:
+        13,
+      paddingLeft:
+        spacing.md,
+      paddingRight:
+        spacing.xs,
+    },
+
+    readingMark: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      alignItems: 'center',
+      justifyContent:
+        'center',
+      backgroundColor:
+        colors.surface,
+    },
+
+    readingSymbol: {
+      fontSize: 20,
+      color:
+        colors.accent,
+    },
+
+    readingText: {
+      flex: 1,
+      marginLeft:
         spacing.sm,
     },
 
-    continueEyebrow: {
-      flex: 1,
-      fontSize: 11,
+    readingType: {
+      fontSize: 10,
+      lineHeight: 14,
       fontWeight: '800',
-      letterSpacing: 1,
+      letterSpacing: 0.7,
+      textTransform:
+        'uppercase',
       color:
         colors.accent,
     },
 
-    continueArrow: {
-      fontSize: 30,
-      lineHeight: 30,
-      color:
-        colors.accent,
-    },
-
-    continueTitle: {
-      fontSize: 24,
-      lineHeight: 30,
+    readingTitle: {
+      marginTop: 2,
+      fontSize: 16,
+      lineHeight: 21,
       fontWeight: '700',
       color:
         colors.text,
       fontFamily: 'serif',
     },
 
-    continueMeta: {
-      marginTop:
+    readingPosition: {
+      marginTop: 3,
+      fontSize: 12,
+      lineHeight: 17,
+      color:
+        colors.textSecondary,
+    },
+
+    readingArrow: {
+      marginLeft:
         spacing.xs,
+      fontSize: 26,
+      color:
+        colors.accent,
+    },
+
+    finishButton: {
+      width: 44,
+      alignSelf: 'stretch',
+      alignItems: 'center',
+      justifyContent:
+        'center',
+    },
+
+    finishText: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      textAlign: 'center',
+      textAlignVertical:
+        'center',
+      fontSize: 14,
+      lineHeight: 25,
+      fontWeight: '800',
+      color:
+        colors.accentDark,
+      backgroundColor:
+        colors.surface,
+      overflow: 'hidden',
+    },
+
+    readingDivider: {
+      height: 1,
+      marginLeft: 64,
+      backgroundColor:
+        colors.borderStrong,
+    },
+
+    noReadingCard: {
+      padding:
+        spacing.md,
+      borderRadius:
+        radius.lg,
+      backgroundColor:
+        colors.surfaceMuted,
+      borderWidth: 1,
+      borderColor:
+        colors.border,
+    },
+
+    noReadingText: {
       fontSize: 14,
       lineHeight: 21,
       color:
         colors.textSecondary,
+    },
+
+    finishHint: {
+      marginTop:
+        spacing.xs,
+      paddingHorizontal:
+        spacing.xs,
+      fontSize: 11,
+      color:
+        colors.textMuted,
     },
 
     section: {
@@ -839,12 +1315,7 @@ const styles =
     },
 
     pressed: {
-      opacity: 0.7,
-      transform: [
-        {
-          scale: 0.985,
-        },
-      ],
+      opacity: 0.68,
     },
 
     symbolCircle: {
@@ -907,25 +1378,5 @@ const styles =
         colors.liturgical,
       fontSize: 14,
       lineHeight: 20,
-    },
-
-    footer: {
-      alignItems: 'center',
-      paddingTop:
-        spacing.sm,
-    },
-
-    footerCross: {
-      fontSize: 20,
-      color:
-        colors.textMuted,
-    },
-
-    footerText: {
-      marginTop:
-        spacing.xs,
-      fontSize: 12,
-      color:
-        colors.textMuted,
     },
   });
