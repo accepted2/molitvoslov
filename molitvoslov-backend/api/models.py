@@ -838,6 +838,8 @@ class SavedItem(models.Model):
         ('word', 'Слово'),
         ('sentence', 'Предложение'),
         ('paragraph', 'Абзац'),
+        ('verse', 'Стих'),
+        ('section', 'Раздел'),
         ('prayer', 'Молитва'),
         ('psalm', 'Псалом'),
         ('kathisma', 'Кафизма'),
