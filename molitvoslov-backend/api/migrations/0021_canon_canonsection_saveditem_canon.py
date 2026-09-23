@@ -194,6 +194,7 @@ class Migration(migrations.Migration):
                 'verbose_name_plural':
                     'Элементы канона',
                 'ordering': [
+                    'variant',
                     'order',
                 ],
             },
