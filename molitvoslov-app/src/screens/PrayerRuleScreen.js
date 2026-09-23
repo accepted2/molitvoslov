@@ -136,28 +136,6 @@ export const PrayerRuleScreen = ({
     };
 
 
-  const handleSaved =
-    savedItem => {
-      setSavedItems(
-        current => {
-          if (
-            current.some(
-              item =>
-                item.id ===
-                savedItem.id
-            )
-          ) {
-            return current;
-          }
-
-          return [
-            savedItem,
-            ...current,
-          ];
-        }
-      );
-    };
-
 
   if (
     loading ||
@@ -220,9 +198,6 @@ export const PrayerRuleScreen = ({
       }
       savedProgress={
         savedProgress
-      }
-      onSaved={
-        handleSaved
       }
       onProgress={
         scheduleSave
