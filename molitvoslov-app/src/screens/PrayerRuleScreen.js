@@ -75,8 +75,21 @@ export const PrayerRuleScreen = ({
   const currentItemRef =
     useRef(null);
 
+  const currentOffsetRef =
+    useRef(0);
+
+  const savedOffsetRef =
+    useRef(0);
+
+  const initialRestoreHandledRef =
+    useRef(false);
+
+  const restoringRef =
+    useRef(false);
+
   const {
     savedProgress,
+    progressLoading,
     scheduleSave,
   } = useReadingProgress({
     sourceType:
@@ -97,6 +110,18 @@ export const PrayerRuleScreen = ({
     currentItemRef.current =
       null;
 
+    currentOffsetRef.current =
+      0;
+
+    savedOffsetRef.current =
+      0;
+
+    initialRestoreHandledRef.current =
+      false;
+
+    restoringRef.current =
+      false;
+
     itemPositionsRef.current =
       {};
 
@@ -110,6 +135,18 @@ export const PrayerRuleScreen = ({
 
   useEffect(() => {
     if (
+      !rule?.id ||
+      progressLoading ||
+      initialRestoreHandledRef
+        .current
+    ) {
+      return;
+    }
+
+    initialRestoreHandledRef.current =
+      true;
+
+    if (
       savedProgress
         ?.anchor_type ===
       'prayer_rule_item'
@@ -118,9 +155,17 @@ export const PrayerRuleScreen = ({
         savedProgress
           .anchor_id;
 
+      savedOffsetRef.current =
+        Number(
+          savedProgress
+            .offset || 0
+        );
+
       tryRestorePosition();
     }
   }, [
+    rule?.id,
+    progressLoading,
     savedProgress,
   ]);
 
@@ -271,7 +316,10 @@ export const PrayerRuleScreen = ({
           ?.scrollTo({
             y:
               Math.max(
-                y - 30,
+                y +
+                savedOffsetRef
+                  .current -
+                70,
                 0
               ),
 
@@ -279,15 +327,23 @@ export const PrayerRuleScreen = ({
               false,
           });
 
+        restoringRef.current =
+          true;
+
         setHighlightedItemId(
           anchorId
         );
 
         setTimeout(() => {
+          restoringRef.current =
+            false;
+        }, 350);
+
+        setTimeout(() => {
           setHighlightedItemId(
             null
           );
-        }, 2500);
+        }, 1800);
       }, 200);
     };
 
@@ -345,7 +401,10 @@ export const PrayerRuleScreen = ({
 
   const handleScroll =
     event => {
-      if (!rule) {
+      if (
+        !rule ||
+        restoringRef.current
+      ) {
         return;
       }
 
@@ -362,16 +421,40 @@ export const PrayerRuleScreen = ({
         return;
       }
 
-      if (
+      const readingLine =
+        scrollY + 70;
+
+      const offset =
+        Math.max(
+          0,
+          readingLine -
+          current.y
+        );
+
+      const sameItem =
         currentItemRef
           .current ===
-        current.id
+        current.id;
+
+      const offsetChanged =
+        Math.abs(
+          currentOffsetRef
+            .current -
+          offset
+        ) >= 18;
+
+      if (
+        sameItem &&
+        !offsetChanged
       ) {
         return;
       }
 
       currentItemRef.current =
         current.id;
+
+      currentOffsetRef.current =
+        offset;
 
       scheduleSave({
         anchorType:
@@ -380,7 +463,7 @@ export const PrayerRuleScreen = ({
         anchorId:
           current.id,
 
-        offset: 0,
+        offset,
       });
     };
 
