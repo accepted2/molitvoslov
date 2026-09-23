@@ -828,6 +828,116 @@ class DailyQuote(models.Model):
         verbose_name = 'Цитата дня'
         verbose_name_plural = 'Цитаты дня'
 
+
+# =========================================================
+# СОХРАНЁННЫЕ ФРАГМЕНТЫ И ЦЕЛЫЕ ТЕКСТЫ
+# =========================================================
+
+class SavedItem(models.Model):
+    SAVE_TYPE_CHOICES = [
+        ('word', 'Слово'),
+        ('sentence', 'Предложение'),
+        ('paragraph', 'Абзац'),
+        ('prayer', 'Молитва'),
+        ('psalm', 'Псалом'),
+        ('kathisma', 'Кафизма'),
+        ('chapter', 'Глава'),
+        ('akathist', 'Акафист'),
+        ('text', 'Текст'),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='saved_items',
+        verbose_name='Пользователь',
+    )
+
+    save_type = models.CharField(
+        max_length=30,
+        choices=SAVE_TYPE_CHOICES,
+        verbose_name='Тип сохранения',
+    )
+
+    source_type = models.CharField(
+        max_length=50,
+        verbose_name='Тип источника',
+    )
+
+    source_id = models.PositiveIntegerField(
+        verbose_name='ID источника',
+    )
+
+    anchor_type = models.CharField(
+        max_length=50,
+        verbose_name='Тип элемента',
+    )
+
+    anchor_id = models.PositiveIntegerField(
+        verbose_name='ID элемента',
+    )
+
+    source_title = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Название источника',
+    )
+
+    item_title = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Название элемента',
+    )
+
+    text = models.TextField(
+        blank=True,
+        verbose_name='Сохранённый текст',
+    )
+
+    start_offset = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Начало выделения',
+    )
+
+    end_offset = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Конец выделения',
+    )
+
+    metadata = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name='Дополнительные данные',
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Сохранено',
+    )
+
+    def __str__(self):
+        title = (
+            self.item_title
+            or self.source_title
+            or self.text[:50]
+            or self.get_save_type_display()
+        )
+
+        return (
+            f'{self.get_save_type_display()}: '
+            f'{title}'
+        )
+
+    class Meta:
+        ordering = [
+            '-created_at',
+        ]
+
+        verbose_name = 'Сохранённый элемент'
+        verbose_name_plural = 'Сохранённые элементы'
+
 class ReadingProgress(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reading_progress',verbose_name='Пользователь')
     source_type = models.CharField(max_length=50, verbose_name='Тип источника')
