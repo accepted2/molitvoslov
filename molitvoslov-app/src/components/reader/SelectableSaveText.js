@@ -19,9 +19,6 @@ import {
 } from '../../context/TextSelectionContext';
 
 
-const MAX_SELECTION_LENGTH =
-  500;
-
 const WORD_PATTERN =
   /^[0-9A-Za-zА-Яа-яЁёІіЇїЄєҐґ\u0400-\u052F\u0300-\u036F\u0483-\u0489'’\-]+$/;
 
@@ -443,15 +440,11 @@ export default function SelectableSaveText({
           )
           .trim();
 
-      if (
-        !selectedText ||
-        selectedText.length >
-          MAX_SELECTION_LENGTH
-      ) {
+      if (!selectedText) {
         return {
           ok: false,
           message:
-            'Слишком большой фрагмент',
+            'Пустое выделение',
         };
       }
 
@@ -605,10 +598,11 @@ export default function SelectableSaveText({
         max:
           MAX_SELECTION_LENGTH,
 
-        tooLong,
+        tooLong:
+          false,
 
         canSave:
-          !tooLong,
+          true,
 
         onSave:
           () => {
