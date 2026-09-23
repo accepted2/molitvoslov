@@ -386,6 +386,7 @@ class CanonSectionSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'section_type',
+            'variant',
             'ode_number',
             'heading',
             'text',
