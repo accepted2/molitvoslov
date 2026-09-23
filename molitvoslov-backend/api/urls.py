@@ -17,6 +17,7 @@ from .views import (
    ReadingProgressViewSet,
    AkathistViewSet,
    AkathistSectionViewSet,
+   DailyQuoteViewSet,
 )
 
 
@@ -88,7 +89,17 @@ router.register(
    'akathist-sections',
    AkathistSectionViewSet
 )
-router.register('reading-progress',ReadingProgressViewSet,basename='reading-progress')
+router.register(
+   'daily-quotes',
+   DailyQuoteViewSet,
+   basename='daily-quotes'
+)
+
+router.register(
+   'reading-progress',
+   ReadingProgressViewSet,
+   basename='reading-progress'
+)
 
 
 urlpatterns = [
