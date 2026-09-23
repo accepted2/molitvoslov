@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   },
 
   listContent: {
-    paddingVertical: 8,
+    paddingVertical: 5,
   },
 
   center: {
@@ -191,15 +191,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
 
-    padding: 16,
+    padding: 12,
 
     backgroundColor: '#fff',
 
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
 
-    marginHorizontal: 10,
-    marginVertical: 4,
+    marginHorizontal: 8,
+    marginVertical: 3,
 
     borderRadius: 10,
 
@@ -215,13 +215,13 @@ const styles = StyleSheet.create({
   },
 
   iconContainer: {
-    width: 42,
+    width: 34,
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: 8,
   },
 
   icon: {
-    fontSize: 27,
+    fontSize: 23,
     color: '#8b5e3c',
   },
 
