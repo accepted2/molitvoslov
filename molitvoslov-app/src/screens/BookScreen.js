@@ -1,6 +1,7 @@
 import React, {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -20,7 +21,9 @@ import {
 } from '../hooks/useReadingProgress';
 
 import {
+  deleteSavedItem,
   getSavedItems,
+  saveItem,
 } from '../services/savedItems';
 
 import SelectableDocumentReader
@@ -49,6 +52,9 @@ export const BookScreen = ({
     savedItems,
     setSavedItems,
   ] = useState([]);
+
+  const savedItemsRef =
+    useRef([]);
 
   const [
     loading,
@@ -89,6 +95,8 @@ export const BookScreen = ({
         setError(null);
         setTexts([]);
         setSavedItems([]);
+        savedItemsRef.current =
+          [];
 
         const [
           textsResponse,
@@ -125,6 +133,9 @@ export const BookScreen = ({
           sorted
         );
 
+        savedItemsRef.current =
+          saved;
+
         setSavedItems(
           saved
         );
@@ -143,6 +154,146 @@ export const BookScreen = ({
           false
         );
       }
+    };
+
+
+  const handleAction =
+    async actionKey => {
+      if (
+        !actionKey?.startsWith(
+          'category-text:'
+        )
+      ) {
+        return null;
+      }
+
+      const itemId =
+        Number(
+          actionKey.split(
+            ':'
+          )[1]
+        );
+
+      const item =
+        texts.find(
+          entry =>
+            Number(
+              entry.id
+            ) ===
+              itemId
+        );
+
+      if (
+        !item?.text
+      ) {
+        return null;
+      }
+
+      const existing =
+        savedItemsRef.current
+          .find(
+            saved =>
+              saved.anchor_type ===
+                'category_text' &&
+              Number(
+                saved.anchor_id
+              ) ===
+                itemId &&
+              saved.save_type ===
+                'prayer'
+          );
+
+      if (existing) {
+        await deleteSavedItem(
+          existing.id
+        );
+
+        savedItemsRef.current =
+          savedItemsRef.current
+            .filter(
+              saved =>
+                saved.id !==
+                existing.id
+            );
+
+        return {
+          label:
+            'В избранное',
+
+          active:
+            false,
+
+          itemId,
+
+          removedSavedItemId:
+            existing.id,
+        };
+      }
+
+      const content =
+        item.text.content ||
+        '';
+
+      const saved =
+        await saveItem({
+          save_type:
+            'prayer',
+
+          source_type:
+            'category',
+
+          source_id:
+            categoryId,
+
+          anchor_type:
+            'category_text',
+
+          anchor_id:
+            itemId,
+
+          source_title:
+            categoryName,
+
+          item_title:
+            item.text.title ||
+            item.text.description ||
+            'Молитва',
+
+          text:
+            content,
+
+          start_offset:
+            0,
+
+          end_offset:
+            content.length,
+
+          metadata: {
+            category_slug:
+              categorySlug,
+
+            category_name:
+              categoryName,
+          },
+        });
+
+      savedItemsRef.current = [
+        saved,
+        ...savedItemsRef.current,
+      ];
+
+      return {
+        label:
+          'В избранном',
+
+        active:
+          true,
+
+        itemId,
+
+        savedItem:
+          saved,
+      };
     };
 
 
@@ -181,6 +332,21 @@ export const BookScreen = ({
                 const text =
                   item.text;
 
+                const wholeSaved =
+                  savedItems.some(
+                    saved =>
+                      saved.anchor_type ===
+                        'category_text' &&
+                      Number(
+                        saved.anchor_id
+                      ) ===
+                        Number(
+                          item.id
+                        ) &&
+                      saved.save_type ===
+                        'prayer'
+                  );
+
                 return {
                   progressAnchorId:
                     Number(
@@ -193,6 +359,19 @@ export const BookScreen = ({
                   title:
                     text.title ||
                     'Молитва',
+
+                  action: {
+                    key:
+                      `category-text:${item.id}`,
+
+                    label:
+                      wholeSaved
+                        ? 'В избранном'
+                        : 'В избранное',
+
+                    active:
+                      wholeSaved,
+                  },
 
                   rows: [
                     {
@@ -236,7 +415,7 @@ export const BookScreen = ({
                             'Текст',
 
                           fullSaveType:
-                            'text',
+                            'prayer',
 
                           metadata: {
                             category_slug:
@@ -334,6 +513,9 @@ export const BookScreen = ({
       }
       onProgress={
         scheduleSave
+      }
+      onAction={
+        handleAction
       }
     />
   );
