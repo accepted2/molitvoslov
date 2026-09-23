@@ -174,9 +174,6 @@ export default function KathismaScreen({
               source_id:
                 kathismaData
                   .psalter,
-
-              anchor_type:
-                'psalm',
             });
 
           setSavedItems(
@@ -202,6 +199,29 @@ export default function KathismaScreen({
           false
         );
       }
+    };
+
+
+  const handleFragmentSaved =
+    savedItem => {
+      setSavedItems(
+        current => {
+          if (
+            current.some(
+              item =>
+                item.id ===
+                savedItem.id
+            )
+          ) {
+            return current;
+          }
+
+          return [
+            savedItem,
+            ...current,
+          ];
+        }
+      );
     };
 
 
@@ -560,6 +580,21 @@ export default function KathismaScreen({
                 togglePsalmSaved(
                   psalm
                 )
+              }
+              psalterId={
+                kathisma.psalter
+              }
+              kathismaNumber={
+                kathisma.number
+              }
+              kathismaTitle={
+                kathisma.title
+              }
+              savedItems={
+                savedItems
+              }
+              onFragmentSaved={
+                handleFragmentSaved
               }
             />
           );
