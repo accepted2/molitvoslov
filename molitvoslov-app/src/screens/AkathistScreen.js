@@ -1030,10 +1030,49 @@ export const AkathistScreen = ({ route }) => {
           <View
             style={styles.churchBlock}
           >
-            {renderStyledText(
-              church,
-              styles.churchText
-            )}
+            <SelectableSaveText
+              text={church}
+              textStyle={
+                styles.churchText
+              }
+              sourceType="akathist"
+              sourceId={
+                akathistId
+              }
+              anchorType="akathist_special"
+              anchorId={
+                text.id
+              }
+              sourceTitle={
+                akathist?.title ||
+                title ||
+                'Акафист'
+              }
+              itemTitle={
+                heading ||
+                'Текст акафиста'
+              }
+              metadata={{
+                slug,
+                special:
+                  heading ||
+                  'common',
+
+                language:
+                  'church',
+              }}
+              fullSaveType="text"
+              fullSaveLabel={
+                heading ||
+                'Текст'
+              }
+              wordStyleResolver={
+                getAkathistWordStyle
+              }
+              onSaved={
+                handleSavedItem
+              }
+            />
           </View>
         )}
 
@@ -1041,10 +1080,49 @@ export const AkathistScreen = ({ route }) => {
           <View
             style={styles.russianBlock}
           >
-            {renderStyledText(
-              russian,
-              styles.russianText
-            )}
+            <SelectableSaveText
+              text={russian}
+              textStyle={
+                styles.russianText
+              }
+              sourceType="akathist"
+              sourceId={
+                akathistId
+              }
+              anchorType="akathist_special"
+              anchorId={
+                text.id
+              }
+              sourceTitle={
+                akathist?.title ||
+                title ||
+                'Акафист'
+              }
+              itemTitle={
+                heading ||
+                'Текст акафиста'
+              }
+              metadata={{
+                slug,
+                special:
+                  heading ||
+                  'common',
+
+                language:
+                  'russian',
+              }}
+              fullSaveType="text"
+              fullSaveLabel={
+                heading ||
+                'Текст'
+              }
+              wordStyleResolver={
+                getAkathistWordStyle
+              }
+              onSaved={
+                handleSavedItem
+              }
+            />
           </View>
         )}
       </View>
