@@ -1,0 +1,44 @@
+{
+  "pages": {
+    "https://azbyka.ru/molitvoslov/kanon-angelu-xranitelyu.html": {
+      "title": "Канон Ангелу-Хранителю",
+      "status": "downloaded",
+      "page_url": "https://azbyka.ru/molitvoslov/kanon-angelu-xranitelyu.html",
+      "epub_url": "https://azbyka.ru/molitvoslov/wp-content/uploads/bg_forreaders/kanon-angelu-xranitelyu_129.epub",
+      "file": "files/canons/kanon-angelu-xranitelyu_129.epub",
+      "size": 773121
+    },
+    "https://azbyka.ru/molitvoslov/kanon-apostolu-i-evangelistu-ioannu-bogoslovu-2-j.html": {
+      "title": "Канон апостолу и евангелисту Иоанну Богослову (2-й)",
+      "status": "downloaded",
+      "page_url": "https://azbyka.ru/molitvoslov/kanon-apostolu-i-evangelistu-ioannu-bogoslovu-2-j.html",
+      "epub_url": "https://azbyka.ru/molitvoslov/wp-content/uploads/bg_forreaders/kanon-apostolu-i-evangelistu-ioannu-bogoslovu-2-j_13464.epub",
+      "file": "files/canons/kanon-apostolu-i-evangelistu-ioannu-bogoslovu-2-j_13464.epub",
+      "size": 860458
+    },
+    "https://azbyka.ru/molitvoslov/kanon-apostolu-i-evangelistu-ioannu-bogoslovu-3.html": {
+      "title": "Канон апостолу и евангелисту Иоанну Богослову (3‑й)",
+      "status": "downloaded",
+      "page_url": "https://azbyka.ru/molitvoslov/kanon-apostolu-i-evangelistu-ioannu-bogoslovu-3.html",
+      "epub_url": "https://azbyka.ru/molitvoslov/wp-content/uploads/bg_forreaders/kanon-apostolu-i-evangelistu-ioannu-bogoslovu-3_19607.epub",
+      "file": "files/canons/kanon-apostolu-i-evangelistu-ioannu-bogoslovu-3_19607.epub",
+      "size": 751481
+    },
+    "https://azbyka.ru/molitvoslov/kanon-apostolu-i-evangelistu-ioannu-bogoslovu.html": {
+      "title": "Канон апостолу и евангелисту Иоанну Богослову",
+      "status": "downloaded",
+      "page_url": "https://azbyka.ru/molitvoslov/kanon-apostolu-i-evangelistu-ioannu-bogoslovu.html",
+      "epub_url": "https://azbyka.ru/molitvoslov/wp-content/uploads/bg_forreaders/kanon-apostolu-i-evangelistu-ioannu-bogoslovu_13462.epub",
+      "file": "files/canons/kanon-apostolu-i-evangelistu-ioannu-bogoslovu_13462.epub",
+      "size": 844736
+    },
+    "https://azbyka.ru/molitvoslov/kanon-apostolu-iakovu-bratu-gospodnju-po-ploti-episkopu-ierusalimskomu.html": {
+      "title": "Канон апостолу Иакову, брату Господню по плоти, епископу Иерусалимскому",
+      "status": "downloaded",
+      "page_url": "https://azbyka.ru/molitvoslov/kanon-apostolu-iakovu-bratu-gospodnju-po-ploti-episkopu-ierusalimskomu.html",
+      "epub_url": "https://azbyka.ru/molitvoslov/wp-content/uploads/bg_forreaders/kanon-apostolu-iakovu-bratu-gospodnju-po-ploti-episkopu-ierusalimskomu_13945.epub",
+      "file": "files/canons/kanon-apostolu-iakovu-bratu-gospodnju-po-ploti-episkopu-ierusalimskomu_13945.epub",
+      "size": 1172662
+    }
+  }
+}
