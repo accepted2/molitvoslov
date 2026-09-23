@@ -15,8 +15,9 @@ from .models import (
     Psalm,
     PsalmVerse,
     KathismaGlory,
+    Akathist,
+    AkathistSection,
 )
-
 
 class CategoryTextInline(admin.TabularInline):
     """Inline для добавления категорий с порядком прямо в тексте"""
@@ -30,7 +31,6 @@ class CategoryTextInline(admin.TabularInline):
     verbose_name = 'Категория'
     verbose_name_plural = 'Категории (с порядком)'
 
-
 class CollectionItemInline(admin.TabularInline):
     """Inline для добавления текста в сборник прямо из админки"""
 
@@ -42,7 +42,6 @@ class CollectionItemInline(admin.TabularInline):
 
     verbose_name = 'Сборник'
     verbose_name_plural = 'Сборники (с порядком)'
-
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -69,7 +68,6 @@ class CategoryAdmin(admin.ModelAdmin):
     ordering = [
         'order',
     ]
-
 
 @admin.register(Text)
 class TextAdmin(admin.ModelAdmin):
@@ -189,7 +187,6 @@ class TextAdmin(admin.ModelAdmin):
 
     content_preview.short_description = 'Содержание'
 
-
 @admin.register(CategoryText)
 class CategoryTextAdmin(admin.ModelAdmin):
     list_display = [
@@ -211,7 +208,6 @@ class CategoryTextAdmin(admin.ModelAdmin):
         'category',
         'order',
     ]
-
 
 @admin.register(UserCollection)
 class UserCollectionAdmin(admin.ModelAdmin):
@@ -236,7 +232,6 @@ class UserCollectionAdmin(admin.ModelAdmin):
         'created_at',
     ]
 
-
 @admin.register(CollectionItem)
 class CollectionItemAdmin(admin.ModelAdmin):
     list_display = [
@@ -259,7 +254,6 @@ class CollectionItemAdmin(admin.ModelAdmin):
         'collection',
         'order',
     ]
-
 
 @admin.register(Bookmark)
 class BookmarkAdmin(admin.ModelAdmin):
@@ -314,7 +308,6 @@ class PrayerRuleItemsInline(admin.TabularInline):
     verbose_name = 'Элемент правила'
     verbose_name_plural = 'Элементы правила'
 
-
 class PrayerRuleFootnoteInline(admin.TabularInline):
     model = PrayerRuleFootnote
     extra = 0
@@ -330,7 +323,6 @@ class PrayerRuleFootnoteInline(admin.TabularInline):
 
     verbose_name = 'Сноска'
     verbose_name_plural = 'Сноски'
-
 
 @admin.register(PrayerRule)
 class PrayerRuleAdmin(admin.ModelAdmin):
@@ -357,7 +349,6 @@ class PrayerRuleAdmin(admin.ModelAdmin):
         PrayerRuleItemsInline,
         PrayerRuleFootnoteInline,
     ]
-
 
 @admin.register(PrayerRuleItem)
 class PrayerRuleItemAdmin(admin.ModelAdmin):
@@ -406,7 +397,6 @@ class PrayerRuleItemAdmin(admin.ModelAdmin):
         return obj.content
 
     content_preview.short_description = 'Содержимое'
-
 
 @admin.register(PrayerRuleFootnote)
 class PrayerRuleFootnoteAdmin(admin.ModelAdmin):
@@ -543,4 +533,93 @@ class KathismaGloryAdmin(admin.ModelAdmin):
         'kathisma',
         'after_psalm',
         'after_verse',
+    ]
+
+# =========================================================
+# АКАФИСТЫ
+# =========================================================
+
+class AkathistSectionInline(admin.TabularInline):
+    model = AkathistSection
+    extra = 0
+
+    autocomplete_fields = [
+        'text',
+    ]
+
+    fields = [
+        'order',
+        'section_type',
+        'number',
+        'text',
+        'note',
+    ]
+
+    ordering = [
+        'order',
+    ]
+
+    verbose_name = 'Раздел акафиста'
+    verbose_name_plural = 'Разделы акафиста'
+
+
+@admin.register(Akathist)
+class AkathistAdmin(admin.ModelAdmin):
+    list_display = [
+        'title',
+        'slug',
+        'is_visible',
+    ]
+
+    search_fields = [
+        'title',
+        'description',
+    ]
+
+    list_filter = [
+        'is_visible',
+    ]
+
+    prepopulated_fields = {
+        'slug': ('title',)
+    }
+
+    inlines = [
+        AkathistSectionInline,
+    ]
+
+
+@admin.register(AkathistSection)
+class AkathistSectionAdmin(admin.ModelAdmin):
+    list_display = [
+        'akathist',
+        'order',
+        'section_type',
+        'number',
+        'text',
+        'note',
+    ]
+
+    list_filter = [
+        'akathist',
+        'section_type',
+    ]
+
+    search_fields = [
+        'akathist__title',
+        'text__title',
+        'text__description',
+        'text__content',
+        'text__translation',
+        'note',
+    ]
+
+    autocomplete_fields = [
+        'akathist',
+        'text',
+    ]
+
+    ordering = [
+        'akathist',
+        'order',
     ]

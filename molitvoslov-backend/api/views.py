@@ -24,7 +24,9 @@ from .models import (
     Psalm,
     PsalmVerse,
     KathismaGlory,
-ReadingProgress,
+    ReadingProgress,
+    Akathist,
+    AkathistSection,
 
 )
 
@@ -42,7 +44,9 @@ from .serializers import (
     PsalmSerializer,
     PsalmVerseSerializer,
     KathismaGlorySerializer,
-    ReadingProgressSerializer
+    ReadingProgressSerializer,
+    AkathistSerializer,
+    AkathistSectionSerializer,
 )
 
 
@@ -214,6 +218,40 @@ class KathismaGloryViewSet(viewsets.ModelViewSet):
     queryset = (KathismaGlory.objects.select_related('kathisma','after_psalm','after_verse','after_verse__psalm',))
 
     serializer_class = KathismaGlorySerializer
+    permission_classes = [AllowAny]
+
+# =========================================================
+# АКАФИСТЫ
+# =========================================================
+
+class AkathistViewSet(viewsets.ModelViewSet):
+    queryset = (
+        Akathist.objects
+        .filter(is_visible=True)
+        .prefetch_related(
+            'sections__text__categories'
+        )
+    )
+
+    serializer_class = AkathistSerializer
+    permission_classes = [AllowAny]
+
+    lookup_field = 'slug'
+
+
+class AkathistSectionViewSet(viewsets.ModelViewSet):
+    queryset = (
+        AkathistSection.objects
+        .select_related(
+            'akathist',
+            'text',
+        )
+        .prefetch_related(
+            'text__categories'
+        )
+    )
+
+    serializer_class = AkathistSectionSerializer
     permission_classes = [AllowAny]
 
 # =========================================================

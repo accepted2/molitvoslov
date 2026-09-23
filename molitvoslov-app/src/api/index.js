@@ -1,6 +1,8 @@
 import axios from 'axios'
+import { Platform } from 'react-native';
 
-const API_URL = 'http://192.168.1.102:8000/api/'
+
+const API_URL = 'http://192.168.1.103:8000/api/';
 
 const DEV_TOKEN = process.env.EXPO_PUBLIC_DEV_TOKEN;
 

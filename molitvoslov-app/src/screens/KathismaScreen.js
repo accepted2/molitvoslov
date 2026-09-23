@@ -16,100 +16,39 @@ import {
 import { api } from '../api';
 
 import {
-  getReadingProgress,
-  saveReadingProgress,
-} from '../services/readingProgress';
+  useReadingProgress
+} from '../hooks/useReadingProgress';
 
 import PsalmBlock
   from '../components/reader/PsalmBlock';
 
 
-export default function KathismaScreen({
-                                         route,
-                                         navigation,
-                                       }) {
+export default function KathismaScreen({route, navigation,}) {
   const {
     kathismaNumber,
     kathismaTitle,
   } = route.params;
 
 
-  const [kathisma, setKathisma] =
-    useState(null);
+  const [kathisma, setKathisma] =useState(null);
 
-  const [loading, setLoading] =
-    useState(true);
+  const {
+    savedProgress,
+    scheduleSave,
+  } = useReadingProgress({
+    sourceType: 'psalter',
+    sourceId: kathisma?.psalter,
+  });
 
-  const [error, setError] =
-    useState(null);
-
-
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const scrollRef = useRef(null);
 
-
-  /*
-   * Здесь будут храниться координаты
-   * всех стихов текущей кафизмы.
-   *
-   * Например:
-   *
-   * {
-   *   1532: {
-   *       verseId: 1532,
-   *       psalmNumber: 118,
-   *       verseNumber: 73,
-   *       y: 4850
-   *   }
-   * }
-   */
-  const versePositionsRef =
-    useRef({});
-
-
-  /*
-   * ID стиха, сохранённого в БД.
-   */
-  const savedAnchorIdRef =
-    useRef(null);
-
-
-  /*
-   * Чтобы восстановление позиции
-   * произошло только один раз.
-   */
-  const restoredRef =
-    useRef(false);
-
-
-  /*
-   * Текущий стих во время прокрутки.
-   */
-  const currentVerseRef =
-    useRef(null);
-
-
-  /*
-   * Таймер для отложенного сохранения.
-   */
-  const saveTimerRef =
-    useRef(null);
-
-
-  /*
-   * Последняя позиция, которую
-   * необходимо записать.
-   */
-  const pendingProgressRef =
-    useRef(null);
-
-
-  /*
-   * Не сохраняем позицию обратно
-   * в момент автоматической прокрутки.
-   */
-  const restoringRef =
-    useRef(false);
-
+  const versePositionsRef = useRef({});
+  const savedAnchorIdRef = useRef(null);
+  const restoredRef = useRef(false);
+  const currentVerseRef = useRef(null);
+  const restoringRef = useRef(false);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -123,33 +62,21 @@ export default function KathismaScreen({
     kathismaTitle,
   ]);
 
-
   useEffect(() => {
     loadScreen();
-
-    return () => {
-      if (saveTimerRef.current) {
-        clearTimeout(
-          saveTimerRef.current
-        );
-      }
-
-      /*
-       * Если пользователь вышел
-       * до срабатывания debounce,
-       * всё равно сохраняем последнее
-       * место.
-       */
-      if (
-        pendingProgressRef.current
-      ) {
-        persistProgress(
-          pendingProgressRef.current
-        );
-      }
-    };
   }, [kathismaNumber]);
 
+  useEffect(() => {
+    if (
+      savedProgress?.anchor_type ===
+      'psalm_verse'
+    ) {
+      savedAnchorIdRef.current =
+        savedProgress.anchor_id;
+
+      tryRestorePosition();
+    }
+  }, [savedProgress]);
 
   const loadScreen = async () => {
     try {
@@ -161,81 +88,22 @@ export default function KathismaScreen({
       currentVerseRef.current = null;
       restoredRef.current = false;
 
-
       const kathismaResponse =
         await api.get(
           `kathismas/${kathismaNumber}/`
         );
 
-      const kathismaData =
-        kathismaResponse.data;
-
-      setKathisma(
-        kathismaData
-      );
-
-
-      try {
-        const progressList =
-          await getReadingProgress();
-
-
-        const progress =
-          progressList.find(
-            item =>
-              item.source_type ===
-              'psalter' &&
-              Number(
-                item.source_id
-              ) ===
-              Number(
-                kathismaData
-                  .psalter
-              )
-          );
-
-
-        if (
-          progress &&
-          progress.anchor_type ===
-          'psalm_verse'
-        ) {
-          savedAnchorIdRef.current =
-            progress.anchor_id;
-
-          tryRestorePosition();
-        }
-
-      } catch (progressError) {
-        /*
-         * Ошибка прогресса не должна
-         * мешать чтению Псалтири.
-         */
-        console.log(
-          'Ошибка загрузки позиции чтения:',
-          progressError.response
-            ?.status,
-          progressError.response
-            ?.data,
-          progressError.message
-        );
-      }
+      const kathismaData = kathismaResponse.data;
+      setKathisma(kathismaData);
 
     } catch (err) {
       console.log(
-        'Ошибка загрузки кафизмы:',
-        err
-      );
-
-      setError(
-        'Не удалось загрузить кафизму'
-      );
-
+        'Ошибка загрузки кафизмы:', err);
+      setError('Не удалось загрузить кафизму');
     } finally {
       setLoading(false);
     }
   };
-
 
   const handleVerseLayout = (
     position
@@ -244,17 +112,8 @@ export default function KathismaScreen({
       position.verseId
       ] = position;
 
-    /*
-     * Возможно именно этот стих
-     * является сохранённым.
-     *
-     * Поэтому после каждого layout
-     * проверяем, можем ли восстановить
-     * позицию.
-     */
     tryRestorePosition();
   };
-
 
   const tryRestorePosition = () => {
     if (restoredRef.current) {
@@ -310,7 +169,6 @@ export default function KathismaScreen({
     });
   };
 
-
   const getCurrentVerse = (
     scrollY
   ) => {
@@ -319,28 +177,18 @@ export default function KathismaScreen({
         versePositionsRef.current
       );
 
-
     if (positions.length === 0) {
       return null;
     }
-
-
     positions.sort(
       (a, b) => a.y - b.y
     );
 
-
-    /*
-     * Смотрим не прямо на верхнюю
-     * границу экрана, а немного ниже.
-     */
     const readingLine =
       scrollY + 70;
 
-
     let current =
       positions[0];
-
 
     for (const position of positions) {
       if (
@@ -352,39 +200,28 @@ export default function KathismaScreen({
         break;
       }
     }
-
-
     return current;
   };
-
 
   const handleScroll = event => {
     if (restoringRef.current) {
       return;
     }
 
-
     const scrollY =
       event.nativeEvent
         .contentOffset.y;
-
 
     const current =
       getCurrentVerse(
         scrollY
       );
 
-
-    if (!current) {
+    if (!current)
+    {
       return;
     }
 
-
-    /*
-     * Если пользователь всё ещё
-     * находится на том же стихе,
-     * новый запрос не нужен.
-     */
     if (
       currentVerseRef.current
         ?.verseId ===
@@ -393,104 +230,15 @@ export default function KathismaScreen({
       return;
     }
 
-
     currentVerseRef.current =
       current;
 
-
-    scheduleProgressSave(
-      current
-    );
-  };
-
-
-  const scheduleProgressSave = (
-    position
-  ) => {
-    if (!kathisma) {
-      return;
-    }
-
-
-    const progress = {
-      sourceType: 'psalter',
-      sourceId: kathisma.psalter,
-
-      anchorType:
-        'psalm_verse',
-
-      anchorId:
-      position.verseId,
-
+    scheduleSave({
+      anchorType: 'psalm_verse',
+      anchorId: current.verseId,
       offset: 0,
-    };
-
-
-    pendingProgressRef.current =
-      progress;
-
-
-    if (saveTimerRef.current) {
-      clearTimeout(
-        saveTimerRef.current
-      );
-    }
-
-
-    /*
-     * Не отправляем запрос после
-     * каждого движения пальцем.
-     *
-     * Сохраняем через 800 мс после
-     * изменения текущего стиха.
-     */
-    saveTimerRef.current =
-      setTimeout(() => {
-        persistProgress(
-          progress
-        );
-      }, 800);
+    });
   };
-
-
-  const persistProgress = async (
-    progress
-  ) => {
-    if (!progress) {
-      return;
-    }
-
-
-    try {
-      await saveReadingProgress(
-        progress
-      );
-
-
-      /*
-       * Если сохранена именно
-       * последняя ожидающая позиция,
-       * очищаем её.
-       */
-      if (
-        pendingProgressRef.current
-          ?.anchorId ===
-        progress.anchorId
-      ) {
-        pendingProgressRef.current =
-          null;
-      }
-
-    } catch (err) {
-      console.log(
-        'Ошибка сохранения позиции чтения:',
-        err.response?.status,
-        err.response?.data,
-        err.message
-      );
-    }
-  };
-
 
   if (loading) {
     return (
@@ -502,7 +250,6 @@ export default function KathismaScreen({
     );
   }
 
-
   if (error) {
     return (
       <View style={styles.center}>
@@ -512,7 +259,6 @@ export default function KathismaScreen({
       </View>
     );
   }
-
 
   return (
     <ScrollView

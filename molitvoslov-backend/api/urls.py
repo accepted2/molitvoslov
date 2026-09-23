@@ -15,6 +15,8 @@ from .views import (
    PsalmVerseViewSet,
    KathismaGloryViewSet,
    ReadingProgressViewSet,
+   AkathistViewSet,
+   AkathistSectionViewSet,
 )
 
 
@@ -76,6 +78,15 @@ router.register(
 router.register(
    'kathisma-glories',
    KathismaGloryViewSet
+)
+router.register(
+   'akathists',
+   AkathistViewSet
+)
+
+router.register(
+   'akathist-sections',
+   AkathistSectionViewSet
 )
 router.register('reading-progress',ReadingProgressViewSet,basename='reading-progress')
 

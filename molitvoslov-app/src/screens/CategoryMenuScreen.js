@@ -12,6 +12,7 @@ export const CategoryMenuScreen = ({ route, navigation }) => {
 
     const handlePress = (category) => {
         navigation.navigate('Book', {
+            categoryId: category.id,
             categorySlug: category.slug,
             categoryName: category.name
         });
