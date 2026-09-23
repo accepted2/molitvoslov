@@ -1,4 +1,5 @@
 import React, {
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -413,6 +414,17 @@ export default function SelectableSaveText({
       inputRef.current
         ?.blur();
     };
+
+
+  useEffect(() => {
+    return () => {
+      clearSelection(
+        instanceIdRef.current
+      );
+    };
+  }, [
+    clearSelection,
+  ]);
 
 
   const saveRange =
