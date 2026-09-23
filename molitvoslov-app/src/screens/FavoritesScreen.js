@@ -164,6 +164,23 @@ export const FavoritesScreen = ({
 
       if (
         item.source_type ===
+          'text' &&
+        metadata.slug
+      ) {
+        navigation.navigate(
+          'Reader',
+          {
+            slug:
+              metadata.slug,
+          }
+        );
+
+        return;
+      }
+
+
+      if (
+        item.source_type ===
           'akathist' &&
         metadata.slug
       ) {

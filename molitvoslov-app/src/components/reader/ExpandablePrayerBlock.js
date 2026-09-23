@@ -1,4 +1,6 @@
 import React, {
+  useEffect,
+  useMemo,
   useState,
 } from 'react';
 
@@ -9,8 +11,12 @@ import {
   View,
 } from 'react-native';
 
-import SelectableSaveText
-  from './SelectableSaveText';
+import {
+  getSavedItems,
+} from '../../services/savedItems';
+
+import SelectableDocumentReader
+  from './SelectableDocumentReader';
 
 
 export default function ExpandablePrayerBlock({
@@ -24,30 +30,194 @@ export default function ExpandablePrayerBlock({
     setIsOpen,
   ] = useState(false);
 
+  const [
+    savedItems,
+    setSavedItems,
+  ] = useState([]);
+
+
+  useEffect(() => {
+    if (
+      !isOpen ||
+      !saveProps?.sourceType ||
+      !saveProps?.sourceId
+    ) {
+      return;
+    }
+
+    loadSaved();
+  }, [
+    isOpen,
+    saveProps?.sourceType,
+    saveProps?.sourceId,
+    saveProps?.anchorType,
+    saveProps?.anchorId,
+  ]);
+
+
+  const loadSaved =
+    async () => {
+      try {
+        const saved =
+          await getSavedItems({
+            source_type:
+              saveProps.sourceType,
+
+            source_id:
+              saveProps.sourceId,
+
+            anchor_type:
+              saveProps.anchorType,
+
+            anchor_id:
+              saveProps.anchorId,
+          });
+
+        setSavedItems(
+          saved
+        );
+      } catch (error) {
+        console.log(
+          'Ошибка загрузки сохранений молитвенного блока:',
+          error.response?.data ||
+          error.message
+        );
+      }
+    };
+
+
+  const documentData =
+    useMemo(
+      () => {
+        if (
+          !saveProps ||
+          !text
+        ) {
+          return null;
+        }
+
+        const normalizedSaved =
+          savedItems
+            .filter(
+              item =>
+                item.start_offset !==
+                  null &&
+                item.end_offset !==
+                  null
+            )
+            .map(
+              item => ({
+                ...item,
+
+                anchor_id:
+                  1,
+              })
+            );
+
+        return {
+          title: '',
+
+          description: '',
+
+          progressAnchorType:
+            saveProps.anchorType,
+
+          savedItems:
+            normalizedSaved,
+
+          sections: [
+            {
+              progressAnchorId:
+                Number(
+                  saveProps.anchorId
+                ),
+
+              trackProgress:
+                false,
+
+              title:
+                '',
+
+              rows: [
+                {
+                  layout:
+                    'stack',
+
+                  blocks: [
+                    {
+                      id:
+                        1,
+
+                      text,
+
+                      sourceType:
+                        saveProps.sourceType,
+
+                      sourceId:
+                        saveProps.sourceId,
+
+                      anchorType:
+                        saveProps.anchorType,
+
+                      anchorId:
+                        saveProps.anchorId,
+
+                      sourceTitle:
+                        saveProps.sourceTitle ||
+                        title,
+
+                      itemTitle:
+                        saveProps.itemTitle ||
+                        title,
+
+                      fullSaveType:
+                        'prayer',
+
+                      metadata:
+                        saveProps.metadata ||
+                        {},
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        };
+      },
+      [
+        saveProps,
+        savedItems,
+        text,
+        title,
+      ]
+    );
+
 
   if (!text) {
     return null;
   }
 
 
-  const toggle = () => {
-    if (isOpen) {
+  const toggle =
+    () => {
+      if (isOpen) {
+        setIsOpen(false);
+
+        onCollapse?.();
+
+        return;
+      }
+
+      setIsOpen(true);
+    };
+
+
+  const collapse =
+    () => {
       setIsOpen(false);
 
       onCollapse?.();
-
-      return;
-    }
-
-    setIsOpen(true);
-  };
-
-
-  const collapse = () => {
-    setIsOpen(false);
-
-    onCollapse?.();
-  };
+    };
 
 
   return (
@@ -105,16 +275,21 @@ export default function ExpandablePrayerBlock({
         <View
           style={styles.content}
         >
-          {saveProps ? (
-            <SelectableSaveText
-              text={text}
-              textStyle={
-                styles.prayerText
+          {documentData ? (
+            <View
+              style={
+                styles.reader
               }
-              fullSaveType="prayer"
-              fullSaveLabel="Молитва"
-              {...saveProps}
-            />
+            >
+              <SelectableDocumentReader
+                documentData={
+                  documentData
+                }
+                savedProgress={
+                  null
+                }
+              />
+            </View>
           ) : (
             <Text
               style={
@@ -201,13 +376,20 @@ const styles =
     },
 
     content: {
-      paddingHorizontal: 16,
+      paddingHorizontal: 10,
       paddingBottom: 18,
       borderTopWidth:
         StyleSheet
           .hairlineWidth,
       borderTopColor:
         'rgba(120, 90, 55, 0.15)',
+    },
+
+    reader: {
+      height: 440,
+      marginTop: 10,
+      borderRadius: 10,
+      overflow: 'hidden',
     },
 
     prayerText: {
@@ -220,7 +402,7 @@ const styles =
 
     collapseButton: {
       alignSelf: 'center',
-      marginTop: 22,
+      marginTop: 16,
       paddingVertical: 10,
       paddingHorizontal: 22,
       borderRadius: 20,
