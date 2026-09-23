@@ -657,6 +657,11 @@ class CanonSection(models.Model):
         verbose_name='Тип элемента',
     )
 
+    variant = models.PositiveSmallIntegerField(
+        default=1,
+        verbose_name='Вариант',
+    )
+
     ode_number = models.PositiveSmallIntegerField(
         null=True,
         blank=True,
@@ -706,9 +711,10 @@ class CanonSection(models.Model):
             models.UniqueConstraint(
                 fields=[
                     'canon',
+                    'variant',
                     'order',
                 ],
-                name='unique_order_per_canon',
+                name='unique_order_per_canon_variant',
             ),
         ]
 
