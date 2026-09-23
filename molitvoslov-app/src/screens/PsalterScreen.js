@@ -566,6 +566,12 @@ export default function PsalterScreen({
               </Pressable>
 
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={
+                  saved
+                    ? 'Убрать кафизму из избранного'
+                    : 'Добавить кафизму в избранное'
+                }
                 onPress={() =>
                   toggleKathismaSaved(
                     item
@@ -593,8 +599,8 @@ export default function PsalterScreen({
                 >
                   {
                     saved
-                      ? 'В избранном'
-                      : 'В избранное'
+                      ? '★'
+                      : '☆'
                   }
                 </Text>
               </Pressable>
@@ -726,7 +732,7 @@ const styles =
     },
 
     saveButton: {
-      width: 76,
+      width: 44,
       alignItems: 'center',
       justifyContent:
         'center',
@@ -744,8 +750,8 @@ const styles =
     },
 
     saveButtonText: {
-      fontSize: 11,
-      fontWeight: '700',
+      fontSize: 22,
+      fontWeight: '400',
       color:
         colors.textMuted,
     },
