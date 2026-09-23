@@ -267,6 +267,18 @@ const HTML_TEMPLATE = String.raw`
       line-height: 23px;
     }
 
+    .reader-text.canon-church {
+      color: #292929;
+      font-size: 17px;
+      line-height: 26px;
+    }
+
+    .reader-text.canon-russian {
+      color: #777777;
+      font-size: 16px;
+      line-height: 24px;
+    }
+
     .reader-text {
       color: var(--text);
       font-size: 17px;
