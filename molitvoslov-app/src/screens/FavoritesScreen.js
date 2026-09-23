@@ -1,6 +1,5 @@
 import React, {
   useCallback,
-  useMemo,
   useState,
 } from 'react';
 
@@ -22,12 +21,13 @@ import {
 } from 'react-native-safe-area-context';
 
 import {
-  api,
-} from '../api';
-
-import {
   BottomNav,
 } from '../components/navigation/BottomNav';
+
+import {
+  deleteSavedItem,
+  getSavedItems,
+} from '../services/savedItems';
 
 import {
   colors,
@@ -39,45 +39,38 @@ import {
 export const FavoritesScreen = ({
   navigation,
 }) => {
-  const [collections, setCollections] =
-    useState([]);
+  const [
+    items,
+    setItems,
+  ] = useState([]);
 
-  const [items, setItems] =
-    useState([]);
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
 
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState(null);
+  const [
+    error,
+    setError,
+  ] = useState(null);
 
 
   const loadData =
     useCallback(async () => {
       try {
         setLoading(true);
+
         setError(null);
 
-        const [
-          collectionsResponse,
-          itemsResponse,
-        ] = await Promise.all([
-          api.get('collections/'),
-          api.get(
-            'collection-items/'
-          ),
-        ]);
-
-        setCollections(
-          collectionsResponse.data
-        );
+        const saved =
+          await getSavedItems();
 
         setItems(
-          itemsResponse.data
+          saved
         );
       } catch (err) {
         console.log(
-          'Ошибка загрузки избранного:',
+          'Ошибка загрузки сохранённого:',
           err
         );
 
@@ -93,63 +86,120 @@ export const FavoritesScreen = ({
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [loadData])
+    }, [
+      loadData,
+    ])
   );
 
 
-  const favoriteCollection =
-    useMemo(
-      () =>
-        collections.find(
-          item =>
-            item.is_default
-        ) ||
-        collections.find(
-          item =>
-            item.name
-              ?.trim()
-              .toLowerCase() ===
-            'избранное'
-        ) ||
-        null,
-      [collections]
-    );
+  const removeItem =
+    async itemId => {
+      try {
+        await deleteSavedItem(
+          itemId
+        );
 
-
-  const favoriteItems =
-    useMemo(
-      () =>
-        favoriteCollection
-          ? items.filter(
+        setItems(
+          current =>
+            current.filter(
               item =>
-                Number(
-                  item.collection
-                ) ===
-                Number(
-                  favoriteCollection.id
-                )
+                item.id !==
+                itemId
             )
-          : [],
-      [
-        items,
-        favoriteCollection,
-      ]
-    );
-
-
-  const openItem = item => {
-    if (!item.text?.slug) {
-      return;
-    }
-
-    navigation.navigate(
-      'Reader',
-      {
-        slug:
-          item.text.slug,
+        );
+      } catch (err) {
+        console.log(
+          'Ошибка удаления сохранения:',
+          err
+        );
       }
-    );
-  };
+    };
+
+
+  const openItem =
+    item => {
+      const metadata =
+        item.metadata || {};
+
+      if (
+        item.source_type ===
+          'prayer_rule' &&
+        metadata.slug
+      ) {
+        navigation.navigate(
+          'PrayerRule',
+          {
+            slug:
+              metadata.slug,
+          }
+        );
+
+        return;
+      }
+
+      if (
+        item.source_type ===
+          'category' &&
+        metadata.category_slug
+      ) {
+        navigation.navigate(
+          'Book',
+          {
+            categoryId:
+              item.source_id,
+
+            categorySlug:
+              metadata
+                .category_slug,
+
+            categoryName:
+              metadata
+                .category_name ||
+              item.source_title,
+          }
+        );
+
+        return;
+      }
+
+      if (
+        item.source_type ===
+        'psalter'
+      ) {
+        if (
+          metadata
+            .kathisma_number
+        ) {
+          navigation.navigate(
+            'Kathisma',
+            {
+              kathismaNumber:
+                metadata
+                  .kathisma_number,
+
+              kathismaTitle:
+                metadata
+                  .kathisma_title ||
+                `Кафизма ${metadata.kathisma_number}`,
+            }
+          );
+
+          return;
+        }
+
+        navigation.navigate(
+          'Psalter'
+        );
+      }
+    };
+
+
+  const getItemTitle =
+    item =>
+      item.item_title ||
+      item.source_title ||
+      item.save_type_display ||
+      'Сохранённое';
 
 
   return (
@@ -172,17 +222,21 @@ export const FavoritesScreen = ({
           <Text
             style={styles.subtitle}
           >
-            Любимые молитвы
-            и тексты
+            Цитаты, молитвы,
+            псалмы и другие
+            сохранённые места
           </Text>
         </View>
+
 
         {loading ? (
           <View
             style={styles.center}
           >
             <ActivityIndicator
-              color={colors.accent}
+              color={
+                colors.accent
+              }
             />
           </View>
         ) : error ? (
@@ -197,18 +251,26 @@ export const FavoritesScreen = ({
           </View>
         ) : (
           <FlatList
-            data={favoriteItems}
-            keyExtractor={item =>
-              String(item.id)
+            data={items}
+            keyExtractor={
+              item =>
+                String(
+                  item.id
+                )
+            }
+            showsVerticalScrollIndicator={
+              false
             }
             contentContainerStyle={
-              favoriteItems.length
+              items.length
                 ? styles.list
                 : styles.emptyList
             }
             ListEmptyComponent={
               <View
-                style={styles.emptyCard}
+                style={
+                  styles.emptyCard
+                }
               >
                 <Text
                   style={
@@ -231,73 +293,115 @@ export const FavoritesScreen = ({
                     styles.emptyText
                   }
                 >
-                  Здесь появятся
-                  молитвы и тексты,
-                  которые вы добавите
-                  в избранное.
+                  Выделите слово,
+                  предложение или абзац
+                  во время чтения,
+                  либо сохраните целую
+                  молитву, псалом
+                  или кафизму.
                 </Text>
               </View>
             }
-            renderItem={({item}) => (
-              <Pressable
-                onPress={() =>
-                  openItem(item)
+            renderItem={({
+              item,
+            }) => (
+              <View
+                style={
+                  styles.card
                 }
-                style={({pressed}) => [
-                  styles.card,
-                  pressed &&
-                  styles.pressed,
-                ]}
               >
                 <View
                   style={
-                    styles.cardMark
+                    styles.cardTop
                   }
                 >
                   <Text
                     style={
-                      styles.cardSymbol
+                      styles.typeBadge
                     }
                   >
-                    ♡
+                    {
+                      (
+                        item
+                          .save_type_display ||
+                        item.save_type
+                      ).toUpperCase()
+                    }
                   </Text>
+
+                  <Pressable
+                    hitSlop={8}
+                    onPress={() =>
+                      removeItem(
+                        item.id
+                      )
+                    }
+                    style={({pressed}) => [
+                      styles.deleteButton,
+
+                      pressed &&
+                        styles.pressed,
+                    ]}
+                  >
+                    <Text
+                      style={
+                        styles.deleteText
+                      }
+                    >
+                      Удалить
+                    </Text>
+                  </Pressable>
                 </View>
 
-                <View
-                  style={
-                    styles.cardContent
+                <Pressable
+                  onPress={() =>
+                    openItem(
+                      item
+                    )
                   }
+                  style={({pressed}) => [
+                    styles.cardBody,
+
+                    pressed &&
+                      styles.pressed,
+                  ]}
                 >
                   <Text
                     style={
                       styles.cardTitle
                     }
-                    numberOfLines={2}
                   >
                     {
-                      item.text?.title ||
-                      item.text?.description ||
-                      'Молитва'
+                      getItemTitle(
+                        item
+                      )
                     }
                   </Text>
 
-                  <Text
-                    style={
-                      styles.cardMeta
-                    }
-                  >
-                    Избранное
-                  </Text>
-                </View>
+                  {!!item.text && (
+                    <Text
+                      style={
+                        styles.quote
+                      }
+                      numberOfLines={8}
+                    >
+                      «{item.text}»
+                    </Text>
+                  )}
 
-                <Text
-                  style={
-                    styles.arrow
-                  }
-                >
-                  ›
-                </Text>
-              </Pressable>
+                  {!!item.source_title && (
+                    <Text
+                      style={
+                        styles.source
+                      }
+                    >
+                      {
+                        item.source_title
+                      }
+                    </Text>
+                  )}
+                </Pressable>
+              </View>
             )}
           />
         )}
@@ -343,6 +447,7 @@ const styles =
 
     subtitle: {
       marginTop: 5,
+      maxWidth: 290,
       fontSize: 14,
       lineHeight: 20,
       color:
@@ -361,6 +466,8 @@ const styles =
         spacing.md,
       paddingTop:
         spacing.sm,
+      paddingBottom:
+        spacing.xl,
       gap:
         spacing.sm,
     },
@@ -403,7 +510,7 @@ const styles =
     },
 
     emptyText: {
-      maxWidth: 260,
+      maxWidth: 270,
       marginTop:
         spacing.sm,
       fontSize: 14,
@@ -414,65 +521,84 @@ const styles =
     },
 
     card: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      padding:
-        spacing.md,
       borderRadius:
-        radius.md,
+        radius.lg,
       backgroundColor:
         colors.surface,
       borderWidth: 1,
       borderColor:
         colors.border,
+      overflow: 'hidden',
     },
 
-    pressed: {
-      opacity: 0.65,
-    },
-
-    cardMark: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+    cardTop: {
+      flexDirection: 'row',
       alignItems: 'center',
       justifyContent:
-        'center',
-      backgroundColor:
-        colors.accentSoft,
+        'space-between',
+      paddingHorizontal:
+        spacing.md,
+      paddingTop:
+        spacing.sm,
     },
 
-    cardSymbol: {
-      fontSize: 22,
+    typeBadge: {
+      fontSize: 10,
+      lineHeight: 14,
+      fontWeight: '800',
+      letterSpacing: 0.8,
       color:
         colors.accent,
     },
 
-    cardContent: {
-      flex: 1,
-      marginLeft:
+    deleteButton: {
+      paddingVertical: 4,
+      paddingHorizontal: 4,
+    },
+
+    deleteText: {
+      fontSize: 11,
+      color:
+        colors.textMuted,
+    },
+
+    cardBody: {
+      paddingHorizontal:
+        spacing.md,
+      paddingTop:
+        spacing.sm,
+      paddingBottom:
         spacing.md,
     },
 
+    pressed: {
+      opacity: 0.6,
+    },
+
     cardTitle: {
-      fontSize: 16,
+      fontSize: 17,
+      lineHeight: 22,
       fontWeight: '700',
       color:
         colors.text,
       fontFamily: 'serif',
     },
 
-    cardMeta: {
-      marginTop: 3,
-      fontSize: 12,
+    quote: {
+      marginTop:
+        spacing.sm,
+      fontSize: 15,
+      lineHeight: 23,
       color:
         colors.textSecondary,
+      fontFamily: 'serif',
     },
 
-    arrow: {
-      marginLeft:
+    source: {
+      marginTop:
         spacing.sm,
-      fontSize: 26,
+      fontSize: 12,
+      lineHeight: 17,
       color:
         colors.textMuted,
     },
