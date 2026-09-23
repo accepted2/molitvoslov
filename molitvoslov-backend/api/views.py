@@ -53,6 +53,7 @@ from .serializers import (
     DailyQuoteSerializer,
     SavedItemSerializer,
     AkathistSerializer,
+    AkathistSummarySerializer,
     AkathistSectionSerializer,
 )
 
@@ -232,18 +233,44 @@ class KathismaGloryViewSet(viewsets.ModelViewSet):
 # =========================================================
 
 class AkathistViewSet(viewsets.ModelViewSet):
-    queryset = (
-        Akathist.objects
-        .filter(is_visible=True)
-        .prefetch_related(
-            'sections__text__categories'
-        )
-    )
-
-    serializer_class = AkathistSerializer
     permission_classes = [AllowAny]
-
     lookup_field = 'slug'
+
+    def get_queryset(self):
+        queryset = (
+            Akathist.objects
+            .filter(
+                is_visible=True
+            )
+        )
+
+        if self.action == 'list':
+            return queryset.only(
+                'id',
+                'title',
+                'slug',
+                'description',
+                'is_visible',
+            )
+
+        return (
+            queryset
+            .select_related(
+                'troparion',
+                'kontakion_before',
+            )
+            .prefetch_related(
+                'sections__text__categories'
+            )
+        )
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return (
+                AkathistSummarySerializer
+            )
+
+        return AkathistSerializer
 
 
 class AkathistSectionViewSet(viewsets.ModelViewSet):
