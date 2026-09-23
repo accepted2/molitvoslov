@@ -376,6 +376,31 @@ export default function PsalterScreen({
               onCollapse={
                 handlePrayersCollapse
               }
+              saveProps={{
+                sourceType:
+                  'psalter',
+
+                sourceId:
+                  psalter?.id,
+
+                anchorType:
+                  'psalter_prayers_before',
+
+                anchorId:
+                  psalter?.id,
+
+                sourceTitle:
+                  psalter?.name ||
+                  'Псалтирь',
+
+                itemTitle:
+                  'Молитвы перед чтением Псалтири',
+
+                metadata: {
+                  section:
+                    'prayers_before',
+                },
+              }}
             />
 
             {currentKathisma &&
