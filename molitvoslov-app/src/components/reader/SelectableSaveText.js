@@ -1,15 +1,12 @@
 import React, {
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
 import {
-  ActivityIndicator,
-  Pressable,
   StyleSheet,
-  Text,
   TextInput,
-  View,
 } from 'react-native';
 
 import {
@@ -17,10 +14,8 @@ import {
 } from '../../services/savedItems';
 
 import {
-  colors,
-  radius,
-  spacing,
-} from '../../theme';
+  useTextSelection,
+} from '../../context/TextSelectionContext';
 
 
 const MAX_SELECTION_LENGTH =
@@ -28,6 +23,8 @@ const MAX_SELECTION_LENGTH =
 
 const WORD_PATTERN =
   /^[0-9A-Za-zА-Яа-яЁёІіЇїЄєҐґ\u0400-\u052F\u0300-\u036F\u0483-\u0489'’\-]+$/;
+
+let instanceCounter = 0;
 
 
 const clamp = (
@@ -304,86 +301,6 @@ const classifySelection = ({
 };
 
 
-const renderStyledText = ({
-  text,
-  prefix,
-  prefixStyle,
-  textStyle,
-  wordStyleResolver,
-}) => {
-  if (
-    !wordStyleResolver
-  ) {
-    return (
-      <Text
-        style={
-          textStyle
-        }
-      >
-        {!!prefix && (
-          <Text
-            style={
-              prefixStyle
-            }
-          >
-            {prefix}
-          </Text>
-        )}
-
-        {text}
-      </Text>
-    );
-  }
-
-  const parts =
-    text.split(
-      /(\s+)/
-    );
-
-  return (
-    <Text
-      style={
-        textStyle
-      }
-    >
-      {!!prefix && (
-        <Text
-          style={
-            prefixStyle
-          }
-        >
-          {prefix}
-        </Text>
-      )}
-
-      {parts.map(
-        (
-          part,
-          index
-        ) => (
-          <Text
-            key={
-              index
-            }
-            style={
-              /^\s+$/.test(
-                part
-              )
-                ? null
-                : wordStyleResolver(
-                    part
-                  )
-            }
-          >
-            {part}
-          </Text>
-        )
-      )}
-    </Text>
-  );
-};
-
-
 export default function SelectableSaveText({
   text,
   textStyle,
@@ -396,10 +313,29 @@ export default function SelectableSaveText({
   metadata = {},
   fullSaveType = 'prayer',
   prefix = '',
-  prefixStyle,
-  wordStyleResolver,
   onSaved,
 }) {
+  const inputRef =
+    useRef(null);
+
+  const instanceIdRef =
+    useRef(null);
+
+  if (
+    instanceIdRef.current ===
+    null
+  ) {
+    instanceCounter += 1;
+
+    instanceIdRef.current =
+      `selectable-${instanceCounter}`;
+  }
+
+  const {
+    activateSelection,
+    clearSelection,
+  } = useTextSelection();
+
   const [
     selection,
     setSelection,
@@ -408,15 +344,23 @@ export default function SelectableSaveText({
     end: 0,
   });
 
-  const [
-    saving,
-    setSaving,
-  ] = useState(false);
+  const flattenedStyle =
+    StyleSheet.flatten(
+      textStyle
+    ) || {};
+
+  const initialHeight =
+    Number(
+      flattenedStyle.lineHeight ||
+      26
+    );
 
   const [
-    message,
-    setMessage,
-  ] = useState('');
+    contentHeight,
+    setContentHeight,
+  ] = useState(
+    initialHeight
+  );
 
 
   const displayText =
@@ -459,61 +403,48 @@ export default function SelectableSaveText({
     );
 
 
-  const selectedLength =
-    Math.max(
-      0,
-      normalizedSelection.end -
-        normalizedSelection.start
-    );
+  const clearLocalSelection =
+    () => {
+      setSelection({
+        start: 0,
+        end: 0,
+      });
 
-  const hasSelection =
-    selectedLength > 0;
-
-  const selectionTooLong =
-    selectedLength >
-      MAX_SELECTION_LENGTH;
-
-  const selectedText =
-    text
-      .slice(
-        normalizedSelection.start,
-        normalizedSelection.end
-      )
-      .trim();
-
-  const hasWord =
-    /[0-9A-Za-zА-Яа-яЁёІіЇїЄєҐґ\u0400-\u052F]/.test(
-      selectedText
-    );
-
-  const canSave =
-    hasSelection &&
-    hasWord &&
-    !selectionTooLong &&
-    !saving;
+      inputRef.current
+        ?.blur();
+    };
 
 
-  const handleSave =
-    async () => {
-      if (!canSave) {
-        return;
+  const saveRange =
+    async range => {
+      const selectedText =
+        text
+          .slice(
+            range.start,
+            range.end
+          )
+          .trim();
+
+      if (
+        !selectedText ||
+        selectedText.length >
+          MAX_SELECTION_LENGTH
+      ) {
+        return {
+          ok: false,
+          message:
+            'Слишком большой фрагмент',
+        };
       }
 
       const saveType =
         classifySelection({
           text,
-          range:
-            normalizedSelection,
+          range,
           fullSaveType,
         });
 
       try {
-        setSaving(
-          true
-        );
-
-        setMessage('');
-
         const saved =
           await saveItem({
             save_type:
@@ -541,12 +472,10 @@ export default function SelectableSaveText({
               selectedText,
 
             start_offset:
-              normalizedSelection
-                .start,
+              range.start,
 
             end_offset:
-              normalizedSelection
-                .end,
+              range.end,
 
             metadata,
           });
@@ -555,9 +484,15 @@ export default function SelectableSaveText({
           saved
         );
 
-        setMessage(
-          'Сохранено'
+        clearLocalSelection();
+
+        clearSelection(
+          instanceIdRef.current
         );
+
+        return {
+          ok: true,
+        };
       } catch (error) {
         console.log(
           'Ошибка сохранения:',
@@ -565,257 +500,169 @@ export default function SelectableSaveText({
           error.message
         );
 
-        setMessage(
-          'Не удалось сохранить'
-        );
-      } finally {
-        setSaving(
-          false
-        );
+        return {
+          ok: false,
+          message:
+            'Не удалось сохранить',
+        };
       }
     };
 
 
+  const handleSelectionChange =
+    event => {
+      const next =
+        event.nativeEvent
+          .selection;
+
+      setSelection(
+        next
+      );
+
+      const start =
+        clamp(
+          next.start -
+            prefixLength,
+          0,
+          text.length
+        );
+
+      const end =
+        clamp(
+          next.end -
+            prefixLength,
+          0,
+          text.length
+        );
+
+      const range =
+        trimRange(
+          text,
+          start,
+          end
+        );
+
+      const selectedText =
+        text
+          .slice(
+            range.start,
+            range.end
+          )
+          .trim();
+
+      const count =
+        selectedText.length;
+
+      const hasText =
+        /[0-9A-Za-zА-Яа-яЁёІіЇїЄєҐґ\u0400-\u052F]/.test(
+          selectedText
+        );
+
+      if (
+        count <= 0 ||
+        !hasText
+      ) {
+        clearSelection(
+          instanceIdRef.current
+        );
+
+        return;
+      }
+
+      const tooLong =
+        count >
+          MAX_SELECTION_LENGTH;
+
+      activateSelection({
+        id:
+          instanceIdRef.current,
+
+        count,
+
+        max:
+          MAX_SELECTION_LENGTH,
+
+        tooLong,
+
+        canSave:
+          !tooLong,
+
+        onSave:
+          () =>
+            saveRange(
+              range
+            ),
+
+        onClear:
+          clearLocalSelection,
+      });
+    };
+
+
   return (
-    <View>
-      <View
-        style={
-          styles.textLayer
+    <TextInput
+      ref={
+        inputRef
+      }
+      value={
+        displayText
+      }
+      multiline
+      scrollEnabled={
+        false
+      }
+      showSoftInputOnFocus={
+        false
+      }
+      contextMenuHidden
+      selectTextOnFocus={
+        false
+      }
+      selectionColor={
+        'rgba(206, 162, 72, 0.48)'
+      }
+      underlineColorAndroid="transparent"
+      onChangeText={() => {}}
+      onSelectionChange={
+        handleSelectionChange
+      }
+      onContentSizeChange={
+        event => {
+          setContentHeight(
+            Math.max(
+              initialHeight,
+              Math.ceil(
+                event
+                  .nativeEvent
+                  .contentSize
+                  .height
+              ) + 2
+            )
+          );
         }
-      >
+      }
+      style={[
+        textStyle,
+        styles.input,
         {
-          renderStyledText({
-            text:
-              text || '',
-            prefix,
-            prefixStyle,
-            textStyle,
-            wordStyleResolver,
-          })
-        }
-
-        <TextInput
-          value={
-            displayText
-          }
-          multiline
-          scrollEnabled={
-            false
-          }
-          showSoftInputOnFocus={
-            false
-          }
-          contextMenuHidden
-          selectTextOnFocus={
-            false
-          }
-          selectionColor={
-            'rgba(206, 162, 72, 0.38)'
-          }
-          underlineColorAndroid="transparent"
-          onChangeText={() => {}}
-          onSelectionChange={
-            event => {
-              setSelection(
-                event.nativeEvent
-                  .selection
-              );
-
-              setMessage('');
-            }
-          }
-          style={[
-            StyleSheet
-              .absoluteFillObject,
-
-            textStyle,
-
-            styles.inputOverlay,
-          ]}
-        />
-      </View>
-
-
-      {hasSelection && (
-        <View
-          style={
-            styles.savePanel
-          }
-        >
-          <View
-            style={
-              styles.saveInfo
-            }
-          >
-            <Text
-              style={[
-                styles.counter,
-
-                selectionTooLong &&
-                  styles.counterError,
-              ]}
-            >
-              {selectedLength}
-              /
-              {MAX_SELECTION_LENGTH}
-            </Text>
-
-            {selectionTooLong && (
-              <Text
-                style={
-                  styles.limitText
-                }
-              >
-                Уменьшите выделение
-              </Text>
-            )}
-
-            {!!message && (
-              <Text
-                style={
-                  styles.message
-                }
-              >
-                {message}
-              </Text>
-            )}
-          </View>
-
-          <Pressable
-            disabled={
-              !canSave
-            }
-            onPress={
-              handleSave
-            }
-            style={({pressed}) => [
-              styles.saveButton,
-
-              !canSave &&
-                styles
-                  .saveButtonDisabled,
-
-              pressed &&
-                canSave &&
-                styles
-                  .saveButtonPressed,
-            ]}
-          >
-            {saving ? (
-              <ActivityIndicator
-                size="small"
-                color={
-                  colors.white
-                }
-              />
-            ) : (
-              <Text
-                style={
-                  styles.saveButtonText
-                }
-              >
-                Сохранить
-              </Text>
-            )}
-          </Pressable>
-        </View>
-      )}
-    </View>
+          height:
+            contentHeight,
+        },
+      ]}
+    />
   );
 }
 
 
 const styles =
   StyleSheet.create({
-    textLayer: {
-      position: 'relative',
-    },
-
-    inputOverlay: {
+    input: {
       padding: 0,
       margin: 0,
       borderWidth: 0,
       backgroundColor:
         'transparent',
-      color:
-        'transparent',
       textAlignVertical:
         'top',
-    },
-
-    savePanel: {
-      marginTop:
-        spacing.sm,
-      padding:
-        spacing.sm,
-      flexDirection: 'row',
-      alignItems: 'center',
-      borderRadius:
-        radius.md,
-      borderWidth: 1,
-      borderColor:
-        colors.borderStrong,
-      backgroundColor:
-        colors.surfaceWarm,
-    },
-
-    saveInfo: {
-      flex: 1,
-      paddingRight:
-        spacing.sm,
-    },
-
-    counter: {
-      fontSize: 11,
-      fontWeight: '700',
-      color:
-        colors.textSecondary,
-    },
-
-    counterError: {
-      color:
-        colors.liturgical,
-    },
-
-    limitText: {
-      marginTop: 2,
-      fontSize: 11,
-      color:
-        colors.liturgical,
-    },
-
-    message: {
-      marginTop: 2,
-      fontSize: 11,
-      color:
-        colors.accent,
-    },
-
-    saveButton: {
-      minWidth: 96,
-      minHeight: 36,
-      paddingHorizontal: 14,
-      alignItems: 'center',
-      justifyContent:
-        'center',
-      borderRadius:
-        radius.sm,
-      backgroundColor:
-        colors.accent,
-    },
-
-    saveButtonDisabled: {
-      opacity: 0.38,
-    },
-
-    saveButtonPressed: {
-      opacity: 0.72,
-    },
-
-    saveButtonText: {
-      fontSize: 13,
-      fontWeight: '700',
-      color:
-        colors.white,
     },
   });
