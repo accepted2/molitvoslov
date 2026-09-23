@@ -179,6 +179,22 @@ export default function KathismaScreen({
     };
 
 
+  const getSavedKathisma =
+    () =>
+      savedItemsRef.current
+        .find(
+          item =>
+            item.anchor_type ===
+              'kathisma' &&
+            Number(
+              item.anchor_id
+            ) ===
+              Number(
+                kathisma?.id
+              )
+        );
+
+
   const getSavedPsalm =
     psalmId =>
       savedItemsRef.current
@@ -197,8 +213,90 @@ export default function KathismaScreen({
 
   const togglePsalmSaved =
     async actionKey => {
+      if (!kathisma) {
+        return null;
+      }
+
       if (
-        !kathisma ||
+        actionKey ===
+        `kathisma:${kathisma.id}`
+      ) {
+        const existing =
+          getSavedKathisma();
+
+        if (existing) {
+          await deleteSavedItem(
+            existing.id
+          );
+
+          savedItemsRef.current =
+            savedItemsRef.current
+              .filter(
+                item =>
+                  item.id !==
+                  existing.id
+              );
+
+          return {
+            label:
+              'В избранное',
+
+            active:
+              false,
+          };
+        }
+
+        const saved =
+          await saveItem({
+            save_type:
+              'kathisma',
+
+            source_type:
+              'psalter',
+
+            source_id:
+              kathisma.psalter,
+
+            anchor_type:
+              'kathisma',
+
+            anchor_id:
+              kathisma.id,
+
+            source_title:
+              'Псалтирь',
+
+            item_title:
+              `Кафизма ${kathisma.number}`,
+
+            text:
+              '',
+
+            metadata: {
+              kathisma_number:
+                kathisma.number,
+
+              kathisma_title:
+                kathisma.title ||
+                '',
+            },
+          });
+
+        savedItemsRef.current = [
+          saved,
+          ...savedItemsRef.current,
+        ];
+
+        return {
+          label:
+            'В избранном',
+
+          active:
+            true,
+        };
+      }
+
+      if (
         !actionKey
           ?.startsWith(
             'psalm:'
@@ -250,7 +348,7 @@ export default function KathismaScreen({
 
         return {
           label:
-            'Сохранить псалом',
+            'В избранное',
 
           active:
             false,
@@ -303,7 +401,7 @@ export default function KathismaScreen({
 
       return {
         label:
-          'Сохранено',
+          'В избранном',
 
         active:
           true,
@@ -621,8 +719,8 @@ export default function KathismaScreen({
 
                           label:
                             psalmSaved
-                              ? 'Сохранено'
-                              : 'Сохранить псалом',
+                              ? 'В избранном'
+                              : 'В избранное',
 
                           active:
                             psalmSaved,
@@ -879,6 +977,19 @@ export default function KathismaScreen({
         }
 
 
+        const wholeKathismaSaved =
+          savedItems.some(
+            item =>
+              item.anchor_type ===
+                'kathisma' &&
+              Number(
+                item.anchor_id
+              ) ===
+                Number(
+                  kathisma.id
+                )
+          );
+
         return {
           title:
             `Кафизма ${kathisma.number}`,
@@ -886,6 +997,19 @@ export default function KathismaScreen({
           description:
             kathisma.title ||
             '',
+
+          action: {
+            key:
+              `kathisma:${kathisma.id}`,
+
+            label:
+              wholeKathismaSaved
+                ? 'В избранном'
+                : 'В избранное',
+
+            active:
+              wholeKathismaSaved,
+          },
 
           progressAnchorType:
             'psalm_verse',
