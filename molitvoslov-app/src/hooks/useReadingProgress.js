@@ -25,6 +25,17 @@ export const useReadingProgress = ({
     setProgressLoading,
   ] = useState(true);
 
+  const [
+    loadedSourceKey,
+    setLoadedSourceKey,
+  ] = useState(null);
+
+  const currentSourceKey =
+    sourceType &&
+    sourceId
+      ? `${sourceType}:${sourceId}`
+      : null;
+
   const saveTimerRef =
     useRef(null);
 
@@ -46,6 +57,10 @@ export const useReadingProgress = ({
       sourceKeyRef.current =
         sourceKey;
 
+      setLoadedSourceKey(
+        null
+      );
+
       setSavedProgress(
         null
       );
@@ -54,6 +69,10 @@ export const useReadingProgress = ({
         !sourceType ||
         !sourceId
       ) {
+        setLoadedSourceKey(
+          null
+        );
+
         setProgressLoading(
           false
         );
@@ -92,6 +111,10 @@ export const useReadingProgress = ({
         setSavedProgress(
           progress || null
         );
+
+        setLoadedSourceKey(
+          sourceKey
+        );
       } catch (error) {
         console.log(
           'Ошибка загрузки прогресса:',
@@ -99,6 +122,15 @@ export const useReadingProgress = ({
           error.response?.data,
           error.message
         );
+
+        if (
+          sourceKeyRef.current ===
+          sourceKey
+        ) {
+          setLoadedSourceKey(
+            sourceKey
+          );
+        }
       } finally {
         if (
           sourceKeyRef.current ===
@@ -252,6 +284,12 @@ export const useReadingProgress = ({
   return {
     savedProgress,
     progressLoading,
+
+    progressReady:
+      !!currentSourceKey &&
+      loadedSourceKey ===
+        currentSourceKey,
+
     scheduleSave,
     reloadProgress:
       loadProgress,
