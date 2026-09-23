@@ -46,6 +46,10 @@ import {
   AkathistScreen,
 } from '../screens/AkathistScreen';
 
+import {
+  colors,
+} from '../theme';
+
 
 const Stack =
   createStackNavigator();
@@ -58,19 +62,30 @@ export const AppNavigator = () => {
         screenOptions={{
           headerStyle: {
             backgroundColor:
-              '#2c3e50',
+              colors.background,
+
+            shadowColor:
+              'transparent',
+
+            elevation: 0,
           },
 
           headerTitleStyle: {
-            fontWeight: 'bold',
-            color: '#fff',
+            fontWeight: '700',
+            color:
+              colors.text,
           },
 
           headerTintColor:
-            '#fff',
+            colors.accent,
 
           headerBackTitleVisible:
             false,
+
+          cardStyle: {
+            backgroundColor:
+              colors.background,
+          },
         }}
       >
         <Stack.Screen
@@ -79,8 +94,8 @@ export const AppNavigator = () => {
             MenuScreen
           }
           options={{
-            title:
-              'Молитвослов',
+            headerShown:
+              false,
           }}
         />
 
@@ -178,8 +193,8 @@ export const AppNavigator = () => {
             AkathistScreen
           }
           options={({
-                      route,
-                    }) => ({
+            route,
+          }) => ({
             title:
               route.params
                 ?.title ||
