@@ -12,9 +12,6 @@ import {
 import { api } from '../api';
 import { useReadingProgress } from '../hooks/useReadingProgress';
 
-import {
-  useTextSelection,
-} from '../context/TextSelectionContext';
 
 import {
   getSavedItems,
@@ -269,9 +266,6 @@ export const AkathistScreen = ({ route }) => {
     title,
   } = route.params;
 
-  const {
-    activeSelection,
-  } = useTextSelection();
 
   const [akathist, setAkathist] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1049,9 +1043,6 @@ export const AkathistScreen = ({ route }) => {
 
   return (
     <ScrollView
-      scrollEnabled={
-        !activeSelection
-      }
       ref={scrollRef}
       style={styles.container}
       contentContainerStyle={

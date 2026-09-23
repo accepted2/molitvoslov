@@ -20,9 +20,6 @@ import {
   useReadingProgress,
 } from '../hooks/useReadingProgress';
 
-import {
-  useTextSelection,
-} from '../context/TextSelectionContext';
 
 import {
   getSavedItems,
@@ -44,9 +41,6 @@ export const PrayerRuleScreen = ({
     slug,
   } = route.params;
 
-  const {
-    activeSelection,
-  } = useTextSelection();
 
   const [
     rule,
@@ -795,9 +789,6 @@ export const PrayerRuleScreen = ({
 
   return (
     <ScrollView
-      scrollEnabled={
-        !activeSelection
-      }
       ref={scrollRef}
       style={
         styles.container
