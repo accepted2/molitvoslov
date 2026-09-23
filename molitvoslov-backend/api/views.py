@@ -531,6 +531,11 @@ class SavedItemViewSet(viewsets.ModelViewSet):
                     data.get(
                         'end_offset'
                     ),
+                metadata=
+                    data.get(
+                        'metadata',
+                        {}
+                    ),
             )
             .first()
         )
