@@ -14,6 +14,7 @@ from .models import (
     AkathistSection,
     ReadingProgress,
     DailyQuote,
+    SavedItem,
     AkathistReadingRule,
 
 Psalter,Kathisma,Psalm,PsalmVerse,KathismaGlory
@@ -437,6 +438,62 @@ class DailyQuoteSerializer(serializers.ModelSerializer):
             'reference',
             'quote_date',
         ]
+
+
+class SavedItemSerializer(serializers.ModelSerializer):
+    save_type_display = serializers.CharField(
+        source='get_save_type_display',
+        read_only=True,
+    )
+
+    class Meta:
+        model = SavedItem
+
+        fields = [
+            'id',
+            'save_type',
+            'save_type_display',
+            'source_type',
+            'source_id',
+            'anchor_type',
+            'anchor_id',
+            'source_title',
+            'item_title',
+            'text',
+            'start_offset',
+            'end_offset',
+            'metadata',
+            'created_at',
+        ]
+
+        read_only_fields = [
+            'id',
+            'save_type_display',
+            'created_at',
+        ]
+
+    def validate(self, attrs):
+        start = attrs.get(
+            'start_offset'
+        )
+
+        end = attrs.get(
+            'end_offset'
+        )
+
+        if (
+                start is not None
+                and end is not None
+                and end < start
+        ):
+            raise serializers.ValidationError(
+                {
+                    'end_offset':
+                        'Конец выделения не может быть раньше начала.'
+                }
+            )
+
+        return attrs
 
 class ReadingProgressSerializer(serializers.ModelSerializer):
     anchor_info = serializers.SerializerMethodField()
