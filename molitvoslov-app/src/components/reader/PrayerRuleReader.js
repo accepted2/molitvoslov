@@ -73,11 +73,11 @@ const HTML_TEMPLATE = String.raw`
     }
 
     body {
-      padding: 20px 20px 96px;
+      padding: 16px 14px 88px;
     }
 
     .rule-title {
-      margin: 0 0 24px;
+      margin: 0 0 18px;
       text-align: center;
       font-size: 26px;
       line-height: 32px;
@@ -85,7 +85,7 @@ const HTML_TEMPLATE = String.raw`
     }
 
     .rule-description {
-      margin: -8px 0 24px;
+      margin: -5px 0 18px;
       color: var(--secondary);
       font-size: 14px;
       line-height: 21px;
@@ -94,8 +94,8 @@ const HTML_TEMPLATE = String.raw`
 
     .rule-item {
       position: relative;
-      margin-bottom: 18px;
-      padding-bottom: 18px;
+      margin-bottom: 14px;
+      padding-bottom: 14px;
       border-bottom: 1px solid var(--border);
     }
 
