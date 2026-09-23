@@ -8,6 +8,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 
@@ -22,8 +23,11 @@ import {
 } from '../../theme';
 
 
-const WORD_CHAR =
-  /[0-9A-Za-zА-Яа-яЁёІіЇїЄєҐґ\u0400-\u052F\u0300-\u036F\u0483-\u0489'’\-]/;
+const MAX_SELECTION_LENGTH =
+  500;
+
+const WORD_PATTERN =
+  /^[0-9A-Za-zА-Яа-яЁёІіЇїЄєҐґ\u0400-\u052F\u0300-\u036F\u0483-\u0489'’\-]+$/;
 
 
 const clamp = (
@@ -84,59 +88,14 @@ const trimRange = (
 };
 
 
-const getWordRange = (
-  text,
-  anchor
-) => {
-  let position =
-    clamp(
-      anchor,
-      0,
-      Math.max(
-        text.length - 1,
-        0
-      )
-    );
-
-  while (
-    position > 0 &&
-    !WORD_CHAR.test(
-      text[position] || ''
-    )
-  ) {
-    position -= 1;
-  }
-
-  let start =
-    position;
-
-  let end =
-    position;
-
-  while (
-    start > 0 &&
-    WORD_CHAR.test(
-      text[start - 1]
-    )
-  ) {
-    start -= 1;
-  }
-
-  while (
-    end < text.length &&
-    WORD_CHAR.test(
-      text[end]
-    )
-  ) {
-    end += 1;
-  }
-
-  return trimRange(
-    text,
-    start,
-    end
-  );
-};
+const sameRange = (
+  first,
+  second
+) =>
+  first.start ===
+    second.start &&
+  first.end ===
+    second.end;
 
 
 const getSentenceRange = (
@@ -216,20 +175,14 @@ const getParagraphRange = (
       position
     );
 
-  const beforeDouble =
-    before.lastIndexOf(
-      '\n\n'
-    );
-
-  const beforeWindows =
-    before.lastIndexOf(
-      '\r\n\r\n'
-    );
-
   const leftBreak =
     Math.max(
-      beforeDouble,
-      beforeWindows
+      before.lastIndexOf(
+        '\n\n'
+      ),
+      before.lastIndexOf(
+        '\r\n\r\n'
+      )
     );
 
   const start =
@@ -242,7 +195,6 @@ const getParagraphRange = (
       after.indexOf(
         '\n\n'
       ),
-
       after.indexOf(
         '\r\n\r\n'
       ),
@@ -272,82 +224,164 @@ const getParagraphRange = (
 };
 
 
-const getRange = (
+const classifySelection = ({
   text,
-  anchor,
-  saveType
-) => {
-  if (
-    saveType === 'word'
-  ) {
-    return getWordRange(
+  range,
+  fullSaveType,
+}) => {
+  const normalized =
+    trimRange(
       text,
-      anchor
+      range.start,
+      range.end
     );
+
+  const wholeText =
+    trimRange(
+      text,
+      0,
+      text.length
+    );
+
+  const selected =
+    text
+      .slice(
+        normalized.start,
+        normalized.end
+      )
+      .trim();
+
+  if (
+    fullSaveType &&
+    sameRange(
+      normalized,
+      wholeText
+    )
+  ) {
+    return fullSaveType;
   }
 
   if (
-    saveType === 'sentence'
+    selected &&
+    WORD_PATTERN.test(
+      selected
+    )
   ) {
-    return getSentenceRange(
-      text,
-      anchor
-    );
+    return 'word';
   }
+
+  const sentence =
+    getSentenceRange(
+      text,
+      normalized.start
+    );
 
   if (
-    saveType === 'paragraph'
+    sameRange(
+      normalized,
+      sentence
+    )
   ) {
-    return getParagraphRange(
-      text,
-      anchor
-    );
+    return 'sentence';
   }
 
-  return {
-    start: 0,
-    end: text.length,
-  };
+  const paragraph =
+    getParagraphRange(
+      text,
+      normalized.start
+    );
+
+  if (
+    sameRange(
+      normalized,
+      paragraph
+    )
+  ) {
+    return 'paragraph';
+  }
+
+  return 'fragment';
 };
 
 
-const tokenize =
-  text => {
-    const tokens = [];
+const renderStyledText = ({
+  text,
+  prefix,
+  prefixStyle,
+  textStyle,
+  wordStyleResolver,
+}) => {
+  if (
+    !wordStyleResolver
+  ) {
+    return (
+      <Text
+        style={
+          textStyle
+        }
+      >
+        {!!prefix && (
+          <Text
+            style={
+              prefixStyle
+            }
+          >
+            {prefix}
+          </Text>
+        )}
 
-    const matcher =
-      /\s+|\S+/g;
+        {text}
+      </Text>
+    );
+  }
 
-    let match;
+  const parts =
+    text.split(
+      /(\s+)/
+    );
 
-    while (
-      (
-        match =
-          matcher.exec(
-            text
-          )
-      )
-    ) {
-      tokens.push({
-        text:
-          match[0],
+  return (
+    <Text
+      style={
+        textStyle
+      }
+    >
+      {!!prefix && (
+        <Text
+          style={
+            prefixStyle
+          }
+        >
+          {prefix}
+        </Text>
+      )}
 
-        start:
-          match.index,
-
-        end:
-          match.index +
-          match[0].length,
-
-        whitespace:
-          /^\s+$/.test(
-            match[0]
-          ),
-      });
-    }
-
-    return tokens;
-  };
+      {parts.map(
+        (
+          part,
+          index
+        ) => (
+          <Text
+            key={
+              index
+            }
+            style={
+              /^\s+$/.test(
+                part
+              )
+                ? null
+                : wordStyleResolver(
+                    part
+                  )
+            }
+          >
+            {part}
+          </Text>
+        )
+      )}
+    </Text>
+  );
+};
 
 
 export default function SelectableSaveText({
@@ -361,26 +395,23 @@ export default function SelectableSaveText({
   itemTitle = '',
   metadata = {},
   fullSaveType = 'prayer',
-  fullSaveLabel = 'Молитва',
   prefix = '',
   prefixStyle,
   wordStyleResolver,
   onSaved,
 }) {
   const [
-    anchor,
-    setAnchor,
-  ] = useState(null);
+    selection,
+    setSelection,
+  ] = useState({
+    start: 0,
+    end: 0,
+  });
 
   const [
-    selectedRange,
-    setSelectedRange,
-  ] = useState(null);
-
-  const [
-    savingType,
-    setSavingType,
-  ] = useState(null);
+    saving,
+    setSaving,
+  ] = useState(false);
 
   const [
     message,
@@ -388,130 +419,97 @@ export default function SelectableSaveText({
   ] = useState('');
 
 
-  const tokens =
+  const displayText =
+    `${prefix || ''}${text || ''}`;
+
+  const prefixLength =
+    (prefix || '').length;
+
+
+  const normalizedSelection =
     useMemo(
-      () =>
-        tokenize(
-          text || ''
-        ),
+      () => {
+        const start =
+          clamp(
+            selection.start -
+              prefixLength,
+            0,
+            text.length
+          );
+
+        const end =
+          clamp(
+            selection.end -
+              prefixLength,
+            0,
+            text.length
+          );
+
+        return trimRange(
+          text,
+          start,
+          end
+        );
+      },
       [
+        selection,
+        prefixLength,
         text,
       ]
     );
 
 
-  const actions =
-    useMemo(
-      () => {
-        const base = [
-          {
-            type:
-              'word',
-
-            label:
-              'Слово',
-          },
-
-          {
-            type:
-              'sentence',
-
-            label:
-              'Предложение',
-          },
-
-          {
-            type:
-              'paragraph',
-
-            label:
-              'Абзац',
-          },
-        ];
-
-        if (
-          fullSaveType &&
-          fullSaveLabel
-        ) {
-          base.push({
-            type:
-              fullSaveType,
-
-            label:
-              fullSaveLabel,
-          });
-        }
-
-        return base;
-      },
-      [
-        fullSaveType,
-        fullSaveLabel,
-      ]
+  const selectedLength =
+    Math.max(
+      0,
+      normalizedSelection.end -
+        normalizedSelection.start
     );
 
+  const hasSelection =
+    selectedLength > 0;
 
-  const activateWord =
-    token => {
-      if (
-        token.whitespace
-      ) {
-        return;
-      }
+  const selectionTooLong =
+    selectedLength >
+      MAX_SELECTION_LENGTH;
 
-      const range =
-        getWordRange(
-          text,
-          token.start
-        );
+  const selectedText =
+    text
+      .slice(
+        normalizedSelection.start,
+        normalizedSelection.end
+      )
+      .trim();
 
-      setAnchor(
-        token.start
-      );
+  const hasWord =
+    /[0-9A-Za-zА-Яа-яЁёІіЇїЄєҐґ\u0400-\u052F]/.test(
+      selectedText
+    );
 
-      setSelectedRange(
-        range
-      );
-
-      setMessage('');
-    };
+  const canSave =
+    hasSelection &&
+    hasWord &&
+    !selectionTooLong &&
+    !saving;
 
 
   const handleSave =
-    async saveType => {
-      if (
-        anchor === null ||
-        !text
-      ) {
+    async () => {
+      if (!canSave) {
         return;
       }
 
-      const range =
-        getRange(
+      const saveType =
+        classifySelection({
           text,
-          anchor,
-          saveType
-        );
-
-      const excerpt =
-        text
-          .slice(
-            range.start,
-            range.end
-          )
-          .trim();
-
-      if (!excerpt) {
-        return;
-      }
-
-      setSelectedRange(
-        range
-      );
+          range:
+            normalizedSelection,
+          fullSaveType,
+        });
 
       try {
-        setSavingType(
-          saveType
+        setSaving(
+          true
         );
 
         setMessage('');
@@ -540,13 +538,15 @@ export default function SelectableSaveText({
               itemTitle,
 
             text:
-              excerpt,
+              selectedText,
 
             start_offset:
-              range.start,
+              normalizedSelection
+                .start,
 
             end_offset:
-              range.end,
+              normalizedSelection
+                .end,
 
             metadata,
           });
@@ -569,162 +569,107 @@ export default function SelectableSaveText({
           'Не удалось сохранить'
         );
       } finally {
-        setSavingType(
-          null
+        setSaving(
+          false
         );
       }
     };
 
 
-  const overlapsSelection =
-    token =>
-      !!selectedRange &&
-      token.end >
-        selectedRange.start &&
-      token.start <
-        selectedRange.end;
-
-
   return (
     <View>
-      <Text
+      <View
         style={
-          textStyle
+          styles.textLayer
         }
-        suppressHighlighting
       >
-        {!!prefix && (
-          <Text
-            style={
-              prefixStyle
-            }
-          >
-            {prefix}
-          </Text>
-        )}
+        {
+          renderStyledText({
+            text:
+              text || '',
+            prefix,
+            prefixStyle,
+            textStyle,
+            wordStyleResolver,
+          })
+        }
 
-        {tokens.map(
-          (
-            token,
-            index
-          ) => {
-            if (
-              token.whitespace
-            ) {
-              return (
-                <React.Fragment
-                  key={index}
-                >
-                  {token.text}
-                </React.Fragment>
-              );
-            }
-
-            const extraStyle =
-              wordStyleResolver
-                ? wordStyleResolver(
-                    token.text
-                  )
-                : null;
-
-            return (
-              <Text
-                key={index}
-                onLongPress={() =>
-                  activateWord(
-                    token
-                  )
-                }
-                suppressHighlighting
-                style={[
-                  extraStyle,
-
-                  overlapsSelection(
-                    token
-                  ) &&
-                    styles.selectedText,
-                ]}
-              >
-                {token.text}
-              </Text>
-            );
+        <TextInput
+          value={
+            displayText
           }
-        )}
-      </Text>
+          multiline
+          scrollEnabled={
+            false
+          }
+          showSoftInputOnFocus={
+            false
+          }
+          contextMenuHidden
+          selectTextOnFocus={
+            false
+          }
+          selectionColor={
+            'rgba(206, 162, 72, 0.38)'
+          }
+          underlineColorAndroid="transparent"
+          onChangeText={() => {}}
+          onSelectionChange={
+            event => {
+              setSelection(
+                event.nativeEvent
+                  .selection
+              );
+
+              setMessage('');
+            }
+          }
+          style={[
+            StyleSheet
+              .absoluteFillObject,
+
+            textStyle,
+
+            styles.inputOverlay,
+          ]}
+        />
+      </View>
 
 
-      {anchor !== null && (
+      {hasSelection && (
         <View
-          style={styles.actions}
+          style={
+            styles.savePanel
+          }
         >
-          <Text
-            style={
-              styles.actionsLabel
-            }
-          >
-            Сохранить:
-          </Text>
-
           <View
             style={
-              styles.actionsRow
+              styles.saveInfo
             }
           >
-            {actions.map(
-              action => (
-                <Pressable
-                  key={
-                    action.type
-                  }
-                  disabled={
-                    !!savingType
-                  }
-                  onPress={() =>
-                    handleSave(
-                      action.type
-                    )
-                  }
-                  style={({pressed}) => [
-                    styles.actionButton,
+            <Text
+              style={[
+                styles.counter,
 
-                    pressed &&
-                      styles
-                        .actionPressed,
-                  ]}
-                >
-                  {
-                    savingType ===
-                    action.type
-                      ? (
-                        <ActivityIndicator
-                          size="small"
-                          color={
-                            colors.accent
-                          }
-                        />
-                      )
-                      : (
-                        <Text
-                          style={
-                            styles.actionText
-                          }
-                        >
-                          {
-                            action.label
-                          }
-                        </Text>
-                      )
-                  }
-                </Pressable>
-              )
+                selectionTooLong &&
+                  styles.counterError,
+              ]}
+            >
+              {selectedLength}
+              /
+              {MAX_SELECTION_LENGTH}
+            </Text>
+
+            {selectionTooLong && (
+              <Text
+                style={
+                  styles.limitText
+                }
+              >
+                Уменьшите выделение
+              </Text>
             )}
-          </View>
 
-          <View
-            style={
-              styles.actionFooter
-            }
-          >
             {!!message && (
               <Text
                 style={
@@ -734,36 +679,45 @@ export default function SelectableSaveText({
                 {message}
               </Text>
             )}
+          </View>
 
-            <Pressable
-              onPress={() => {
-                setAnchor(
-                  null
-                );
+          <Pressable
+            disabled={
+              !canSave
+            }
+            onPress={
+              handleSave
+            }
+            style={({pressed}) => [
+              styles.saveButton,
 
-                setSelectedRange(
-                  null
-                );
+              !canSave &&
+                styles
+                  .saveButtonDisabled,
 
-                setMessage('');
-              }}
-              style={({pressed}) => [
-                styles.closeButton,
-
-                pressed &&
-                  styles
-                    .actionPressed,
-              ]}
-            >
+              pressed &&
+                canSave &&
+                styles
+                  .saveButtonPressed,
+            ]}
+          >
+            {saving ? (
+              <ActivityIndicator
+                size="small"
+                color={
+                  colors.white
+                }
+              />
+            ) : (
               <Text
                 style={
-                  styles.closeText
+                  styles.saveButtonText
                 }
               >
-                Закрыть
+                Сохранить
               </Text>
-            </Pressable>
-          </View>
+            )}
+          </Pressable>
         </View>
       )}
     </View>
@@ -773,88 +727,95 @@ export default function SelectableSaveText({
 
 const styles =
   StyleSheet.create({
-    selectedText: {
-      backgroundColor:
-        'rgba(206, 162, 72, 0.28)',
+    textLayer: {
+      position: 'relative',
     },
 
-    actions: {
+    inputOverlay: {
+      padding: 0,
+      margin: 0,
+      borderWidth: 0,
+      backgroundColor:
+        'transparent',
+      color:
+        'transparent',
+      textAlignVertical:
+        'top',
+    },
+
+    savePanel: {
       marginTop:
         spacing.sm,
       padding:
         spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
       borderRadius:
         radius.md,
-      backgroundColor:
-        colors.surfaceWarm,
       borderWidth: 1,
       borderColor:
         colors.borderStrong,
+      backgroundColor:
+        colors.surfaceWarm,
     },
 
-    actionsLabel: {
-      marginBottom: 7,
+    saveInfo: {
+      flex: 1,
+      paddingRight:
+        spacing.sm,
+    },
+
+    counter: {
       fontSize: 11,
       fontWeight: '700',
       color:
         colors.textSecondary,
     },
 
-    actionsRow: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 7,
+    counterError: {
+      color:
+        colors.liturgical,
     },
 
-    actionButton: {
-      minHeight: 32,
-      paddingHorizontal: 10,
+    limitText: {
+      marginTop: 2,
+      fontSize: 11,
+      color:
+        colors.liturgical,
+    },
+
+    message: {
+      marginTop: 2,
+      fontSize: 11,
+      color:
+        colors.accent,
+    },
+
+    saveButton: {
+      minWidth: 96,
+      minHeight: 36,
+      paddingHorizontal: 14,
       alignItems: 'center',
       justifyContent:
         'center',
       borderRadius:
         radius.sm,
       backgroundColor:
-        colors.surface,
-      borderWidth: 1,
-      borderColor:
-        colors.borderStrong,
-    },
-
-    actionPressed: {
-      opacity: 0.6,
-    },
-
-    actionText: {
-      fontSize: 12,
-      fontWeight: '700',
-      color:
-        colors.accentDark,
-    },
-
-    actionFooter: {
-      minHeight: 24,
-      marginTop: 7,
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-
-    message: {
-      flex: 1,
-      fontSize: 11,
-      color:
         colors.accent,
     },
 
-    closeButton: {
-      marginLeft: 'auto',
-      paddingVertical: 3,
-      paddingHorizontal: 5,
+    saveButtonDisabled: {
+      opacity: 0.38,
     },
 
-    closeText: {
-      fontSize: 11,
+    saveButtonPressed: {
+      opacity: 0.72,
+    },
+
+    saveButtonText: {
+      fontSize: 13,
+      fontWeight: '700',
       color:
-        colors.textMuted,
+        colors.white,
     },
   });

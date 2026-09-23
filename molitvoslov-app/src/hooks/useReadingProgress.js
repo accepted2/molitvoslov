@@ -12,58 +12,107 @@ import {
 
 
 export const useReadingProgress = ({
-                                     sourceType,
-                                     sourceId,
-                                   }) => {
-  const [savedProgress, setSavedProgress] =
-    useState(null);
+  sourceType,
+  sourceId,
+}) => {
+  const [
+    savedProgress,
+    setSavedProgress,
+  ] = useState(null);
 
-  const [progressLoading, setProgressLoading] =
-    useState(true);
+  const [
+    progressLoading,
+    setProgressLoading,
+  ] = useState(true);
 
-  const saveTimerRef = useRef(null);
-  const pendingProgressRef = useRef(null);
+  const saveTimerRef =
+    useRef(null);
+
+  const pendingProgressRef =
+    useRef(null);
+
+  const sourceKeyRef =
+    useRef(null);
 
 
-  const loadProgress = useCallback(async () => {
-    if (!sourceType || !sourceId) {
-      setProgressLoading(false);
-      return;
-    }
+  const loadProgress =
+    useCallback(async () => {
+      const sourceKey =
+        sourceType &&
+        sourceId
+          ? `${sourceType}:${sourceId}`
+          : null;
 
-    try {
-      setProgressLoading(true);
-
-      const progressList =
-        await getReadingProgress();
-
-      const progress =
-        progressList.find(
-          item =>
-            item.source_type === sourceType &&
-            Number(item.source_id) ===
-            Number(sourceId)
-        );
+      sourceKeyRef.current =
+        sourceKey;
 
       setSavedProgress(
-        progress || null
+        null
       );
 
-    } catch (error) {
-      console.log(
-        'Ошибка загрузки прогресса:',
-        error.response?.status,
-        error.response?.data,
-        error.message
-      );
+      if (
+        !sourceType ||
+        !sourceId
+      ) {
+        setProgressLoading(
+          false
+        );
 
-    } finally {
-      setProgressLoading(false);
-    }
-  }, [
-    sourceType,
-    sourceId,
-  ]);
+        return;
+      }
+
+      try {
+        setProgressLoading(
+          true
+        );
+
+        const progressList =
+          await getReadingProgress();
+
+        if (
+          sourceKeyRef.current !==
+          sourceKey
+        ) {
+          return;
+        }
+
+        const progress =
+          progressList.find(
+            item =>
+              item.source_type ===
+                sourceType &&
+              Number(
+                item.source_id
+              ) ===
+                Number(
+                  sourceId
+                )
+          );
+
+        setSavedProgress(
+          progress || null
+        );
+      } catch (error) {
+        console.log(
+          'Ошибка загрузки прогресса:',
+          error.response?.status,
+          error.response?.data,
+          error.message
+        );
+      } finally {
+        if (
+          sourceKeyRef.current ===
+          sourceKey
+        ) {
+          setProgressLoading(
+            false
+          );
+        }
+      }
+    }, [
+      sourceType,
+      sourceId,
+    ]);
 
 
   const persistProgress =
@@ -74,22 +123,33 @@ export const useReadingProgress = ({
         }
 
         try {
-          const saved =
-            await saveReadingProgress(
-              progress
-            );
+          await saveReadingProgress(
+            progress
+          );
 
-          setSavedProgress(saved);
-
+          /*
+           * ВАЖНО:
+           * здесь специально НЕ обновляем savedProgress.
+           *
+           * savedProgress нужен для восстановления позиции
+           * при входе на экран. Если обновлять его после
+           * каждого автосохранения во время прокрутки,
+           * экран воспринимает свежее сохранение как команду
+           * снова восстановить позицию и появляется рывок.
+           */
           if (
-            pendingProgressRef.current
+            pendingProgressRef
+              .current
               ?.anchorId ===
-            progress.anchorId
+              progress.anchorId &&
+            pendingProgressRef
+              .current
+              ?.offset ===
+              progress.offset
           ) {
             pendingProgressRef.current =
               null;
           }
-
         } catch (error) {
           console.log(
             'Ошибка сохранения прогресса:',
@@ -106,10 +166,10 @@ export const useReadingProgress = ({
   const scheduleSave =
     useCallback(
       ({
-         anchorType,
-         anchorId,
-         offset = 0,
-       }) => {
+        anchorType,
+        anchorId,
+        offset = 0,
+      }) => {
         if (
           !sourceType ||
           !sourceId ||
@@ -124,13 +184,21 @@ export const useReadingProgress = ({
           sourceId,
           anchorType,
           anchorId,
-          offset,
+          offset:
+            Math.max(
+              0,
+              Math.round(
+                offset
+              )
+            ),
         };
 
         pendingProgressRef.current =
           progress;
 
-        if (saveTimerRef.current) {
+        if (
+          saveTimerRef.current
+        ) {
           clearTimeout(
             saveTimerRef.current
           );
@@ -141,7 +209,7 @@ export const useReadingProgress = ({
             persistProgress(
               progress
             );
-          }, 800);
+          }, 700);
       },
       [
         sourceType,
@@ -153,12 +221,16 @@ export const useReadingProgress = ({
 
   useEffect(() => {
     loadProgress();
-  }, [loadProgress]);
+  }, [
+    loadProgress,
+  ]);
 
 
   useEffect(() => {
     return () => {
-      if (saveTimerRef.current) {
+      if (
+        saveTimerRef.current
+      ) {
         clearTimeout(
           saveTimerRef.current
         );
@@ -172,13 +244,16 @@ export const useReadingProgress = ({
         );
       }
     };
-  }, [persistProgress]);
+  }, [
+    persistProgress,
+  ]);
 
 
   return {
     savedProgress,
     progressLoading,
     scheduleSave,
-    reloadProgress: loadProgress,
+    reloadProgress:
+      loadProgress,
   };
 };
