@@ -18,6 +18,7 @@ from .models import (
     Akathist,
     AkathistSection,
     DailyQuote,
+    SavedItem,
 )
 
 class CategoryTextInline(admin.TabularInline):
@@ -667,5 +668,50 @@ class DailyQuoteAdmin(admin.ModelAdmin):
     def text_preview(self, obj):
         if len(obj.text) > 90:
             return obj.text[:90] + '…'
+
+        return obj.text
+
+
+@admin.register(SavedItem)
+class SavedItemAdmin(admin.ModelAdmin):
+    list_display = [
+        'user',
+        'save_type',
+        'source_title',
+        'item_title',
+        'text_preview',
+        'created_at',
+    ]
+
+    list_filter = [
+        'save_type',
+        'source_type',
+        'anchor_type',
+    ]
+
+    search_fields = [
+        'source_title',
+        'item_title',
+        'text',
+        'user__username',
+    ]
+
+    readonly_fields = [
+        'created_at',
+    ]
+
+    ordering = [
+        '-created_at',
+    ]
+
+    @admin.display(
+        description='Текст',
+    )
+    def text_preview(self, obj):
+        if not obj.text:
+            return ''
+
+        if len(obj.text) > 80:
+            return obj.text[:80] + '…'
 
         return obj.text
