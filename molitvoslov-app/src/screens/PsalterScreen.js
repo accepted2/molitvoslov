@@ -1,8 +1,8 @@
 import React, {
   useCallback,
   useEffect,
-  useState,
   useRef,
+  useState,
 } from 'react';
 
 import {
@@ -15,35 +15,70 @@ import {
 } from 'react-native';
 
 import {
-  useFocusEffect
+  useFocusEffect,
 } from '@react-navigation/native';
 
-import { api } from '../api';
+import {
+  api,
+} from '../api';
 
 import {
-  useReadingProgress
+  useReadingProgress,
 } from '../hooks/useReadingProgress';
+
+import {
+  deleteSavedItem,
+  getSavedItems,
+  saveItem,
+} from '../services/savedItems';
 
 import ExpandablePrayerBlock
   from '../components/reader/ExpandablePrayerBlock';
 
+import {
+  colors,
+  radius,
+  spacing,
+} from '../theme';
 
-export default function PsalterScreen({navigation}) {
-  const [psalter, setPsalter] = useState(null);
 
-  const [loading, setLoading] = useState(true);
+export default function PsalterScreen({
+  navigation,
+}) {
+  const [
+    psalter,
+    setPsalter,
+  ] = useState(null);
 
-  const [error, setError] = useState(null);
+  const [
+    savedItems,
+    setSavedItems,
+  ] = useState([]);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    error,
+    setError,
+  ] = useState(null);
 
   const {
     savedProgress,
     reloadProgress,
   } = useReadingProgress({
-    sourceType: 'psalter',
-    sourceId: psalter?.id,
+    sourceType:
+      'psalter',
+
+    sourceId:
+      psalter?.id,
   });
 
-  const listRef = useRef(null)
+  const listRef =
+    useRef(null);
+
 
   useEffect(() => {
     loadPsalter();
@@ -52,8 +87,14 @@ export default function PsalterScreen({navigation}) {
 
   useFocusEffect(
     useCallback(() => {
-      if (psalter?.id) {
+      if (
+        psalter?.id
+      ) {
         reloadProgress();
+
+        loadSavedKathismas(
+          psalter.id
+        );
       }
     }, [
       psalter?.id,
@@ -62,66 +103,212 @@ export default function PsalterScreen({navigation}) {
   );
 
 
-  const loadPsalter = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  const loadSavedKathismas =
+    async psalterId => {
+      try {
+        const saved =
+          await getSavedItems({
+            source_type:
+              'psalter',
 
-      const response =
-        await api.get(
-          'psalters/psaltir/'
+            source_id:
+              psalterId,
+
+            anchor_type:
+              'kathisma',
+          });
+
+        setSavedItems(
+          saved
+        );
+      } catch (err) {
+        console.log(
+          'Ошибка загрузки сохранённых кафизм:',
+          err
+        );
+      }
+    };
+
+
+  const loadPsalter =
+    async () => {
+      try {
+        setLoading(true);
+
+        setError(null);
+
+        const response =
+          await api.get(
+            'psalters/psaltir/'
+          );
+
+        const data =
+          response.data;
+
+        setPsalter(
+          data
         );
 
-      setPsalter(
-        response.data
-      );
+        await loadSavedKathismas(
+          data.id
+        );
+      } catch (err) {
+        console.log(
+          'Ошибка загрузки Псалтири:',
+          err
+        );
 
-    } catch (err) {
-      console.log(
-        'Ошибка загрузки Псалтири:',
-        err
-      );
-      setError(
-        'Не удалось загрузить Псалтирь'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const openKathisma = kathisma => {
-    navigation.navigate(
-      'Kathisma',
-      {
-        kathismaNumber:
-        kathisma.number,
-
-        kathismaTitle:
-          kathisma.title ||
-          `Кафизма ${kathisma.number}`,
+        setError(
+          'Не удалось загрузить Псалтирь'
+        );
+      } finally {
+        setLoading(
+          false
+        );
       }
-    );
-  };
+    };
 
-  const progressInfo = savedProgress?.anchor_info;
 
-  const currentKathismaNumber = progressInfo?.kathisma_number;
+  const openKathisma =
+    kathisma => {
+      navigation.navigate(
+        'Kathisma',
+        {
+          kathismaNumber:
+            kathisma.number,
+
+          kathismaTitle:
+            kathisma.title ||
+            `Кафизма ${kathisma.number}`,
+        }
+      );
+    };
+
+
+  const getSavedKathisma =
+    kathismaId =>
+      savedItems.find(
+        item =>
+          item.anchor_type ===
+            'kathisma' &&
+          Number(
+            item.anchor_id
+          ) ===
+            Number(
+              kathismaId
+            )
+      );
+
+
+  const toggleKathismaSaved =
+    async kathisma => {
+      const existing =
+        getSavedKathisma(
+          kathisma.id
+        );
+
+      try {
+        if (existing) {
+          await deleteSavedItem(
+            existing.id
+          );
+
+          setSavedItems(
+            current =>
+              current.filter(
+                item =>
+                  item.id !==
+                  existing.id
+              )
+          );
+
+          return;
+        }
+
+        const saved =
+          await saveItem({
+            save_type:
+              'kathisma',
+
+            source_type:
+              'psalter',
+
+            source_id:
+              psalter.id,
+
+            anchor_type:
+              'kathisma',
+
+            anchor_id:
+              kathisma.id,
+
+            source_title:
+              psalter.name ||
+              'Псалтирь',
+
+            item_title:
+              `Кафизма ${kathisma.number}`,
+
+            text: '',
+
+            metadata: {
+              kathisma_number:
+                kathisma.number,
+
+              kathisma_title:
+                kathisma.title ||
+                '',
+            },
+          });
+
+        setSavedItems(
+          current => [
+            saved,
+            ...current,
+          ]
+        );
+      } catch (err) {
+        console.log(
+          'Ошибка сохранения кафизмы:',
+          err.response?.data ||
+          err.message
+        );
+      }
+    };
+
+
+  const progressInfo =
+    savedProgress
+      ?.anchor_info;
+
+  const currentKathismaNumber =
+    progressInfo
+      ?.kathisma_number;
 
   const currentKathisma =
-    psalter?.kathismas?.find(
-      kathisma =>
-        Number(kathisma.number) ===
-        Number(
-          currentKathismaNumber
-        )
-    );
+    psalter
+      ?.kathismas
+      ?.find(
+        kathisma =>
+          Number(
+            kathisma.number
+          ) ===
+            Number(
+              currentKathismaNumber
+            )
+      );
 
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View
+        style={styles.center}
+      >
         <ActivityIndicator
           size="large"
+          color={
+            colors.accent
+          }
         />
       </View>
     );
@@ -130,78 +317,95 @@ export default function PsalterScreen({navigation}) {
 
   if (error) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.error}>
+      <View
+        style={styles.center}
+      >
+        <Text
+          style={styles.error}
+        >
           {error}
         </Text>
       </View>
     );
   }
 
-  const handlePrayersCollapse = ()=>{
-    requestAnimationFrame(()=>{
-      listRef.current?.scrollToOffset({
-        offset:0,
-        animated:true,
-      })
-    })
-  }
+
+  const handlePrayersCollapse =
+    () => {
+      requestAnimationFrame(
+        () => {
+          listRef.current
+            ?.scrollToOffset({
+              offset: 0,
+              animated: true,
+            });
+        }
+      );
+    };
+
 
   return (
-    <View style={styles.container}>
-
+    <View
+      style={styles.container}
+    >
       <FlatList
         ref={listRef}
-        data={psalter?.kathismas || [] }
-
-        keyExtractor={item =>
-          String(item.id)
+        data={
+          psalter?.kathismas ||
+          []
         }
-
+        keyExtractor={
+          item =>
+            String(
+              item.id
+            )
+        }
         contentContainerStyle={
           styles.listContent
         }
-
         ListHeaderComponent={
-          <View style={styles.header}>
-
+          <View
+            style={styles.header}
+          >
             <ExpandablePrayerBlock
               title="Молитвы перед чтением Псалтири"
-              text={psalter?.prayers_before}
-              onCollapse={handlePrayersCollapse}
+              text={
+                psalter
+                  ?.prayers_before
+              }
+              onCollapse={
+                handlePrayersCollapse
+              }
             />
-
 
             {currentKathisma &&
               progressInfo && (
-
                 <Pressable
-                  style={({ pressed }) => [
+                  style={({pressed}) => [
                     styles.continueCard,
 
                     pressed &&
-                    styles.continuePressed,
+                      styles.pressed,
                   ]}
-
                   onPress={() =>
                     openKathisma(
                       currentKathisma
                     )
                   }
                 >
-
                   <Text
                     style={
-                      styles.continueLabel
+                      styles
+                        .continueLabel
                     }
                   >
                     Продолжить чтение
                   </Text>
 
-
                   <Text
                     style={
-                      styles.continueTitle
+                      styles
+                        .continueTitle
                     }
                   >
                     Кафизма{' '}
@@ -211,342 +415,334 @@ export default function PsalterScreen({navigation}) {
                     }
                   </Text>
 
-
-                  <View
+                  <Text
                     style={
                       styles
-                        .continueBottom
+                        .continuePosition
                     }
                   >
+                    Псалом{' '}
+                    {
+                      progressInfo
+                        .psalm_number
+                    }
+                    {' · '}
+                    стих{' '}
+                    {
+                      progressInfo
+                        .verse_number
+                    }
+                  </Text>
+                </Pressable>
+              )}
+          </View>
+        }
+        renderItem={({
+          item,
+        }) => {
+          const isCurrent =
+            Number(
+              item.number
+            ) ===
+              Number(
+                currentKathismaNumber
+              );
+
+          const saved =
+            !!getSavedKathisma(
+              item.id
+            );
+
+          return (
+            <View
+              style={[
+                styles.kathisma,
+
+                isCurrent &&
+                  styles
+                    .kathismaCurrent,
+
+                saved &&
+                  styles
+                    .kathismaSaved,
+              ]}
+            >
+              <Pressable
+                onPress={() =>
+                  openKathisma(
+                    item
+                  )
+                }
+                style={({pressed}) => [
+                  styles.kathismaMain,
+
+                  pressed &&
+                    styles.pressed,
+                ]}
+              >
+                <Text
+                  style={
+                    styles
+                      .kathismaNumber
+                  }
+                >
+                  Кафизма{' '}
+                  {item.number}
+                </Text>
+
+                <Text
+                  style={
+                    styles.psalmRange
+                  }
+                >
+                  {
+                    item.first_psalm ===
+                    item.last_psalm
+                      ? `Псалом ${item.first_psalm}`
+                      : `Псалмы ${item.first_psalm}–${item.last_psalm}`
+                  }
+                </Text>
+
+                {isCurrent &&
+                  progressInfo && (
                     <Text
                       style={
                         styles
-                          .continuePosition
+                          .currentPosition
                       }
                     >
+                      Здесь остановились ·
                       Псалом{' '}
                       {
                         progressInfo
                           .psalm_number
                       }
-                      {' · '}
-                      стих{' '}
+                      , стих{' '}
                       {
                         progressInfo
                           .verse_number
                       }
                     </Text>
+                  )}
 
-                    <Text
-                      style={styles.continueArrow}
-                    >
-                      ›
-                    </Text>
-                  </View>
-
-                </Pressable>
-              )}
-
-          </View>
-        }
-
-
-        renderItem={({ item }) => {
-          const isCurrent =
-            Number(item.number) ===
-            Number(
-              currentKathismaNumber
-            );
-
-
-          return (
-            <Pressable
-              style={({ pressed }) => [
-                styles.kathisma,
-                isCurrent &&
-                styles.kathismaCurrent,
-                pressed &&
-                styles.kathismaPressed,
-              ]}
-
-              onPress={() =>
-                openKathisma(item)
-              }
-            >
-
-              <View
-                style={styles.kathismaRow}
-              >
-
-                <View
-                  style={styles.kathismaInfo}
-                >
-                  <Text
-                    style={styles.kathismaNumber}
-                  >
-                    Кафизма {item.number}
-                  </Text>
-
-
+                {!!item.title && (
                   <Text
                     style={
-                      styles.psalmRange
+                      styles
+                        .kathismaTitle
                     }
                   >
-                    {
-                      item.first_psalm ===
-                      item.last_psalm
-
-                        ? `Псалом ${item.first_psalm}`
-
-                        : `Псалмы ${item.first_psalm}–${item.last_psalm}`
-                    }
+                    {item.title}
                   </Text>
+                )}
+              </Pressable>
 
-                  {isCurrent &&
-                    progressInfo && (
+              <Pressable
+                onPress={() =>
+                  toggleKathismaSaved(
+                    item
+                  )
+                }
+                style={({pressed}) => [
+                  styles.saveButton,
 
-                      <Text
-                        style={
-                          styles
-                            .currentPosition
-                        }
-                      >
-                        Здесь остановились ·
-                        Псалом{' '}
-                        {
-                          progressInfo
-                            .psalm_number
-                        }
-                        , стих{' '}
-                        {
-                          progressInfo
-                            .verse_number
-                        }
-                      </Text>
+                  saved &&
+                    styles
+                      .saveButtonActive,
 
-                    )}
-
-                </View>
-
+                  pressed &&
+                    styles.pressed,
+                ]}
+              >
                 <Text
-                  style={
-                    styles.kathismaArrow
-                  }
+                  style={[
+                    styles.saveButtonText,
+
+                    saved &&
+                      styles
+                        .saveButtonTextActive,
+                  ]}
                 >
-                  ›
-                </Text>
-
-              </View>
-
-              {!!item.title && (
-                <Text
-                  style={
-                    styles.kathismaTitle
+                  {
+                    saved
+                      ? 'Сохранено'
+                      : 'Сохранить'
                   }
-                >
-                  {item.title}
                 </Text>
-              )}
-
-            </Pressable>
+              </Pressable>
+            </View>
           );
         }}
       />
-
     </View>
   );
 }
 
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-
-    backgroundColor: '#F7F4EE',
-  },
-
-
-  listContent: {
-    padding: 16,
-    paddingBottom: 40,
-
-    gap: 12,
-  },
-
-
-  /*
-   * Верхняя часть:
-   * молитвы + продолжить чтение
-   */
-  header: {
-    gap: 14,
-    marginBottom: 4,
-  },
-
-
-  /*
-   * Продолжить чтение
-   */
-  continueCard: {
-    paddingVertical: 17,
-    paddingHorizontal: 18,
-
-    borderRadius: 14,
-
-    backgroundColor: '#EEE6D7',
-
-    borderWidth: 1,
-    borderColor:
-      'rgba(130, 95, 45, 0.20)',
-  },
-
-
-  continuePressed: {
-    opacity: 0.72,
-  },
-
-
-  continueLabel: {
-    marginBottom: 7,
-
-    fontSize: 12,
-    fontWeight: '700',
-
-    textTransform: 'uppercase',
-
-    letterSpacing: 0.8,
-
-    color: '#806A4E',
-  },
-
-
-  continueTitle: {
-    fontSize: 21,
-    fontWeight: '700',
-
-    color: '#322D27',
-  },
-
-
-  continueBottom: {
-    flexDirection: 'row',
-    alignItems: 'center',
-
-    marginTop: 5,
-  },
-
-
-  continuePosition: {
-    flex: 1,
-
-    fontSize: 15,
-
-    color: '#6F665C',
-  },
-
-
-  continueArrow: {
-    fontSize: 28,
-
-    color: '#806A4E',
-  },
-
-
-  /*
-   * Кафизмы
-   */
-  kathisma: {
-    paddingVertical: 16,
-    paddingHorizontal: 17,
-
-    backgroundColor: '#FFFFFF',
-
-    borderRadius: 12,
-
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-
-
-  kathismaCurrent: {
-    backgroundColor: '#FAF4E8',
-
-    borderColor:
-      'rgba(130, 95, 45, 0.30)',
-  },
-
-
-  kathismaPressed: {
-    opacity: 0.7,
-  },
-
-
-  kathismaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-
-  kathismaInfo: {
-    flex: 1,
-  },
-
-
-  kathismaNumber: {
-    fontSize: 18,
-    fontWeight: '600',
-
-    color: '#302C27',
-  },
-
-
-  psalmRange: {
-    marginTop: 4,
-
-    fontSize: 14,
-
-    color: '#777169',
-  },
-
-
-  kathismaArrow: {
-    marginLeft: 12,
-
-    fontSize: 28,
-
-    color: '#9A8A77',
-  },
-
-
-  kathismaTitle: {
-    marginTop: 6,
-
-    fontSize: 14,
-
-    color: '#777169',
-  },
-
-
-  currentPosition: {
-    marginTop: 7,
-
-    fontSize: 13,
-    fontWeight: '600',
-
-    color: '#8A6C45',
-  },
-
-
-  center: {
-    flex: 1,
-
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-
-  error: {
-    fontSize: 16,
-  },
-});
+const styles =
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor:
+        colors.background,
+    },
+
+    listContent: {
+      padding:
+        spacing.md,
+      paddingBottom: 40,
+      gap: 12,
+    },
+
+    header: {
+      gap: 14,
+      marginBottom: 4,
+    },
+
+    continueCard: {
+      paddingVertical: 17,
+      paddingHorizontal: 18,
+      borderRadius:
+        radius.md,
+      backgroundColor:
+        colors.surfaceMuted,
+      borderWidth: 1,
+      borderColor:
+        colors.borderStrong,
+    },
+
+    continueLabel: {
+      marginBottom: 7,
+      fontSize: 12,
+      fontWeight: '700',
+      textTransform:
+        'uppercase',
+      letterSpacing: 0.8,
+      color:
+        colors.accent,
+    },
+
+    continueTitle: {
+      fontSize: 21,
+      fontWeight: '700',
+      color:
+        colors.text,
+    },
+
+    continuePosition: {
+      marginTop: 5,
+      fontSize: 15,
+      color:
+        colors.textSecondary,
+    },
+
+    kathisma: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      backgroundColor:
+        colors.surface,
+      borderRadius:
+        radius.md,
+      borderWidth: 1,
+      borderColor:
+        'transparent',
+      overflow: 'hidden',
+    },
+
+    kathismaCurrent: {
+      backgroundColor:
+        '#FAF4E8',
+      borderColor:
+        colors.borderStrong,
+    },
+
+    kathismaSaved: {
+      borderColor:
+        'rgba(138, 90, 56, 0.30)',
+    },
+
+    kathismaMain: {
+      flex: 1,
+      paddingVertical: 16,
+      paddingLeft: 17,
+      paddingRight: 10,
+    },
+
+    kathismaNumber: {
+      fontSize: 18,
+      fontWeight: '600',
+      color:
+        colors.text,
+    },
+
+    psalmRange: {
+      marginTop: 4,
+      fontSize: 14,
+      color:
+        colors.textSecondary,
+    },
+
+    kathismaTitle: {
+      marginTop: 6,
+      fontSize: 14,
+      color:
+        colors.textSecondary,
+    },
+
+    currentPosition: {
+      marginTop: 7,
+      fontSize: 13,
+      fontWeight: '600',
+      color:
+        colors.accent,
+    },
+
+    saveButton: {
+      width: 86,
+      alignItems: 'center',
+      justifyContent:
+        'center',
+      paddingHorizontal: 8,
+      borderLeftWidth: 1,
+      borderLeftColor:
+        colors.border,
+      backgroundColor:
+        'rgba(255, 255, 255, 0.24)',
+    },
+
+    saveButtonActive: {
+      backgroundColor:
+        colors.surfaceWarm,
+    },
+
+    saveButtonText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color:
+        colors.textMuted,
+    },
+
+    saveButtonTextActive: {
+      color:
+        colors.accentDark,
+    },
+
+    pressed: {
+      opacity: 0.62,
+    },
+
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent:
+        'center',
+      backgroundColor:
+        colors.background,
+    },
+
+    error: {
+      fontSize: 16,
+      color:
+        colors.liturgical,
+    },
+  });
