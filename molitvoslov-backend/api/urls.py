@@ -18,6 +18,7 @@ from .views import (
    AkathistViewSet,
    AkathistSectionViewSet,
    DailyQuoteViewSet,
+   SavedItemViewSet,
 )
 
 
@@ -93,6 +94,12 @@ router.register(
    'daily-quotes',
    DailyQuoteViewSet,
    basename='daily-quotes'
+)
+
+router.register(
+   'saved-items',
+   SavedItemViewSet,
+   basename='saved-items'
 )
 
 router.register(
