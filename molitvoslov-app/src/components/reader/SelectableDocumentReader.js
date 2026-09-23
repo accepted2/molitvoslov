@@ -2824,6 +2824,42 @@ const HTML_TEMPLATE = String.raw`
           );
         },
 
+      removeSavedItem:
+        (
+          itemId,
+          savedItemId
+        ) => {
+          itemId =
+            Number(
+              itemId
+            );
+
+          savedItemId =
+            Number(
+              savedItemId
+            );
+
+          const current =
+            savedRanges.get(
+              itemId
+            ) || [];
+
+          savedRanges.set(
+            itemId,
+            current.filter(
+              range =>
+                Number(
+                  range.id
+                ) !==
+                savedItemId
+            )
+          );
+
+          renderTextItem(
+            itemId
+          );
+        },
+
       updateAction:
         (
           actionKey,
@@ -3083,6 +3119,40 @@ export default function SelectableDocumentReader({
               ) +
               ')'
             );
+
+            if (
+              result.savedItem &&
+              result.itemId
+            ) {
+              inject(
+                'window.readerApi && window.readerApi.saveSucceeded(' +
+                Number(
+                  result.itemId
+                ) +
+                ',' +
+                scriptSafeJson(
+                  result.savedItem
+                ) +
+                ')'
+              );
+            }
+
+            if (
+              result.removedSavedItemId &&
+              result.itemId
+            ) {
+              inject(
+                'window.readerApi && window.readerApi.removeSavedItem(' +
+                Number(
+                  result.itemId
+                ) +
+                ',' +
+                Number(
+                  result.removedSavedItemId
+                ) +
+                ')'
+              );
+            }
           }
         } catch (actionError) {
           console.log(
