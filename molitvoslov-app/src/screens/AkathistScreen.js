@@ -684,141 +684,6 @@ export const AkathistScreen = ({ route }) => {
     const text =
       section.text;
 
-    const churchBlocks =
-      splitReadingBlocks(
-        text?.content
-      );
-
-    const russianBlocks =
-      splitReadingBlocks(
-        text?.translation
-      );
-
-    /*
-     * Если количество строк совпадает,
-     * показываем их строго попарно.
-     */
-    if (
-      churchBlocks.length > 0 &&
-      russianBlocks.length > 0 &&
-      churchBlocks.length ===
-      russianBlocks.length
-    ) {
-      return (
-        <View>
-          {churchBlocks.map(
-            (church, index) => {
-              const russian =
-                russianBlocks[index];
-
-              return (
-                <View
-                  key={index}
-                  style={
-                    styles.parallelParagraph
-                  }
-                >
-                  {showChurch && (
-                    <View
-                      style={
-                        styles.churchBlock
-                      }
-                    >
-                      {renderSaveableText({
-                        value:
-                          church,
-
-                        textStyle:
-                          styles.churchText,
-
-                        section,
-
-                        segmentKey:
-                          `line-${index}`,
-
-                        language:
-                          'church',
-                      })}
-                    </View>
-                  )}
-
-                  {showRussian && (
-                    <View
-                      style={
-                        styles.russianBlock
-                      }
-                    >
-                      {renderSaveableText({
-                        value:
-                          russian,
-
-                        textStyle:
-                          styles.russianText,
-
-                        section,
-
-                        segmentKey:
-                          `line-${index}`,
-
-                        language:
-                          'russian',
-                      })}
-                    </View>
-                  )}
-                </View>
-              );
-            }
-          )}
-        </View>
-      );
-    }
-
-    /*
-     * Если перевода нет вообще:
-     * просто красиво выводим ЦС построчно.
-     */
-    if (!russianBlocks.length) {
-      return (
-        <View>
-          {churchBlocks.map(
-            (church, index) => (
-              <View
-                key={index}
-                style={
-                  styles.singleChurchLine
-                }
-              >
-                {showChurch &&
-                  renderSaveableText({
-                    value:
-                      church,
-
-                    textStyle:
-                      styles.churchText,
-
-                    section,
-
-                    segmentKey:
-                      `line-${index}`,
-
-                    language:
-                      'church',
-                  })}
-              </View>
-            )
-          )}
-        </View>
-      );
-    }
-
-    /*
-     * Если число мелких строк ЦС/RU не совпало,
-     * не пытаемся искусственно склеивать
-     * неправильные строки.
-     *
-     * Возвращаемся к более крупным абзацам,
-     * сформированным импортёром.
-     */
     const churchParagraphs =
       splitParagraphs(
         text?.content
@@ -829,10 +694,15 @@ export const AkathistScreen = ({ route }) => {
         text?.translation
       );
 
-    const count = Math.max(
-      churchParagraphs.length,
-      russianParagraphs.length
-    );
+    const count =
+      Math.max(
+        churchParagraphs.length,
+        russianParagraphs.length
+      );
+
+    if (!count) {
+      return null;
+    }
 
     return (
       <View>
@@ -840,47 +710,56 @@ export const AkathistScreen = ({ route }) => {
           length: count,
         }).map((_, index) => {
           const church =
-            churchParagraphs[index] || '';
+            churchParagraphs[
+              index
+            ] || '';
 
           const russian =
-            russianParagraphs[index] || '';
+            russianParagraphs[
+              index
+            ] || '';
 
           return (
             <View
               key={index}
               style={
-                styles.parallelParagraph
+                styles
+                  .parallelParagraph
               }
             >
-              {showChurch && !!church && (
-                <View
-                  style={
-                    styles.churchBlock
-                  }
-                >
-                  {renderSaveableText({
-                    value:
-                      church,
+              {showChurch &&
+                !!church && (
+                  <View
+                    style={
+                      styles
+                        .churchBlock
+                    }
+                  >
+                    {renderSaveableText({
+                      value:
+                        church,
 
-                    textStyle:
-                      styles.churchText,
+                      textStyle:
+                        styles
+                          .churchText,
 
-                    section,
+                      section,
 
-                    segmentKey:
-                      `paragraph-${index}`,
+                      segmentKey:
+                        `paragraph-${index}`,
 
-                    language:
-                      'church',
-                  })}
-                </View>
-              )}
+                      language:
+                        'church',
+                    })}
+                  </View>
+                )}
 
               {showRussian &&
                 !!russian && (
                   <View
                     style={
-                      styles.russianBlock
+                      styles
+                        .russianBlock
                     }
                   >
                     {renderSaveableText({
@@ -888,7 +767,8 @@ export const AkathistScreen = ({ route }) => {
                         russian,
 
                       textStyle:
-                        styles.russianText,
+                        styles
+                          .russianText,
 
                       section,
 
