@@ -20,9 +20,6 @@ import {
   useReadingProgress,
 } from '../hooks/useReadingProgress';
 
-import {
-  useTextSelection,
-} from '../context/TextSelectionContext';
 
 import {
   getSavedItems,
@@ -46,9 +43,6 @@ export const BookScreen = ({
     categoryName,
   } = route.params;
 
-  const {
-    activeSelection,
-  } = useTextSelection();
 
   const [
     texts,
@@ -534,9 +528,6 @@ export const BookScreen = ({
 
   return (
     <ScrollView
-      scrollEnabled={
-        !activeSelection
-      }
       ref={scrollRef}
       style={
         styles.container
