@@ -140,6 +140,13 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
+                    'variant',
+                    models.PositiveSmallIntegerField(
+                        default=1,
+                        verbose_name='Вариант',
+                    ),
+                ),
+                (
                     'ode_number',
                     models.PositiveSmallIntegerField(
                         blank=True,
@@ -197,9 +204,10 @@ class Migration(migrations.Migration):
             constraint=models.UniqueConstraint(
                 fields=(
                     'canon',
+                    'variant',
                     'order',
                 ),
-                name='unique_order_per_canon',
+                name='unique_order_per_canon_variant',
             ),
         ),
 
