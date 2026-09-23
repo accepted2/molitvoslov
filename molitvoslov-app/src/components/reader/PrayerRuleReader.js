@@ -21,9 +21,6 @@ import {
 } from '../../theme';
 
 
-const MAX_SELECTION_LENGTH = 500;
-
-
 const scriptSafeJson = value =>
   JSON.stringify(value)
     .replace(/</g, '\\u003c')
@@ -340,9 +337,6 @@ const HTML_TEMPLATE = String.raw`
   <script>
     const DATA =
       __READER_PAYLOAD__;
-
-    const MAX_SELECTION =
-      DATA.maxSelection;
 
     const reader =
       document.getElementById(
@@ -1336,10 +1330,6 @@ const HTML_TEMPLATE = String.raw`
           state.active.end -
           state.active.start;
 
-        const tooLong =
-          count >
-          MAX_SELECTION;
-
         selectionBar.classList
           .add(
             'visible'
@@ -1347,32 +1337,26 @@ const HTML_TEMPLATE = String.raw`
 
         selectionCount.textContent =
           count +
-          '/' +
-          MAX_SELECTION;
+          ' симв.';
 
         selectionCount.classList
-          .toggle(
-            'error',
-            tooLong
+          .remove(
+            'error'
           );
 
         selectionHint.classList
-          .toggle(
-            'error',
-            tooLong
+          .remove(
+            'error'
           );
 
         if (
           !state.savePending
         ) {
           selectionHint.textContent =
-            tooLong
-              ? 'Сократите выделение'
-              : 'Выделенный фрагмент';
+            'Выделенный фрагмент';
         }
 
         saveButton.disabled =
-          tooLong ||
           count <= 0 ||
           state.savePending;
       };
@@ -2269,9 +2253,7 @@ const HTML_TEMPLATE = String.raw`
           state.active.start;
 
         if (
-          count <= 0 ||
-          count >
-            MAX_SELECTION
+          count <= 0
         ) {
           return;
         }
@@ -2606,9 +2588,6 @@ const buildHtml = ({
                 ),
             }
           : null,
-
-    maxSelection:
-      MAX_SELECTION_LENGTH,
   };
 
   return HTML_TEMPLATE.replace(
