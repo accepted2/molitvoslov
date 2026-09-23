@@ -650,10 +650,26 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
                 obj.source_type == 'canon'
                 and obj.anchor_type == 'canon_section'
         ):
+            current_section = (
+                CanonSection.objects
+                .filter(
+                    id=obj.anchor_id,
+                    canon_id=obj.source_id,
+                )
+                .only(
+                    'variant',
+                )
+                .first()
+            )
+
+            if not current_section:
+                return 0
+
             queryset = (
                 CanonSection.objects
                 .filter(
-                    canon_id=obj.source_id
+                    canon_id=obj.source_id,
+                    variant=current_section.variant,
                 )
                 .order_by(
                     'order',
