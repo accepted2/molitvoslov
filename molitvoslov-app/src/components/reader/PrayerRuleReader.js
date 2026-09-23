@@ -13,6 +13,7 @@ import {
 } from 'react-native-webview';
 
 import {
+  deleteSavedItem,
   saveItem,
 } from '../../services/savedItems';
 
@@ -100,6 +101,38 @@ const HTML_TEMPLATE = String.raw`
 
     .rule-item:last-child {
       border-bottom: 0;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .section-header .prayer-title {
+      flex: 1;
+      margin-bottom: 0;
+      text-align: left;
+    }
+
+    .favorite-action {
+      min-height: 32px;
+      padding: 0 9px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--surface);
+      color: var(--secondary);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 11px;
+      line-height: 14px;
+      font-weight: 700;
+    }
+
+    .favorite-action.active {
+      color: var(--accent-dark);
+      background: #F3EBDD;
+      border-color: rgba(138, 90, 56, 0.30);
     }
 
     .prayer-title,
@@ -542,15 +575,81 @@ const HTML_TEMPLATE = String.raw`
               itemTitle
             );
 
+            const wholeSaved =
+              (
+                DATA.savedItems ||
+                []
+              ).find(
+                saved =>
+                  saved.anchor_type ===
+                    'prayer_rule_item' &&
+                  Number(
+                    saved.anchor_id
+                  ) ===
+                    Number(
+                      item.id
+                    ) &&
+                  saved.save_type ===
+                    'prayer'
+              );
+
+            const header =
+              el(
+                'div',
+                'section-header'
+              );
+
             if (text.title) {
-              wrapper.appendChild(
+              header.appendChild(
                 el(
                   'h2',
                   'prayer-title',
                   text.title
                 )
               );
+            } else {
+              header.appendChild(
+                el(
+                  'h2',
+                  'prayer-title',
+                  'Молитва'
+                )
+              );
             }
+
+            const favorite =
+              el(
+                'button',
+                wholeSaved
+                  ? 'favorite-action active'
+                  : 'favorite-action',
+                wholeSaved
+                  ? 'В избранном'
+                  : 'В избранное'
+              );
+
+            favorite.type =
+              'button';
+
+            favorite.dataset.itemId =
+              String(
+                item.id
+              );
+
+            favorite.dataset.savedItemId =
+              wholeSaved
+                ? String(
+                    wholeSaved.id
+                  )
+                : '';
+
+            header.appendChild(
+              favorite
+            );
+
+            wrapper.appendChild(
+              header
+            );
 
             if (
               text.description &&
@@ -2015,6 +2114,44 @@ const HTML_TEMPLATE = String.raw`
     );
 
 
+    reader.addEventListener(
+      'click',
+      event => {
+        const favorite =
+          event.target.closest(
+            '.favorite-action'
+          );
+
+        if (!favorite) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        post({
+          type:
+            'whole-prayer-action',
+
+          itemId:
+            Number(
+              favorite.dataset
+                .itemId
+            ),
+
+          savedItemId:
+            favorite.dataset
+              .savedItemId
+              ? Number(
+                  favorite.dataset
+                    .savedItemId
+                )
+              : null,
+        });
+      }
+    );
+
+
     document.addEventListener(
       'pointerdown',
       event => {
@@ -2511,6 +2648,77 @@ const HTML_TEMPLATE = String.raw`
           );
         },
 
+      removeSavedItem:
+        (
+          itemId,
+          savedItemId
+        ) => {
+          itemId =
+            Number(
+              itemId
+            );
+
+          savedItemId =
+            Number(
+              savedItemId
+            );
+
+          const current =
+            savedRanges.get(
+              itemId
+            ) || [];
+
+          savedRanges.set(
+            itemId,
+            current.filter(
+              range =>
+                Number(
+                  range.id
+                ) !==
+                savedItemId
+            )
+          );
+
+          renderTextItem(
+            itemId
+          );
+        },
+
+      updatePrayerAction:
+        (
+          itemId,
+          savedItemId,
+          active
+        ) => {
+          const button =
+            document.querySelector(
+              '.favorite-action[data-item-id="' +
+              itemId +
+              '"]'
+            );
+
+          if (!button) {
+            return;
+          }
+
+          button.dataset.savedItemId =
+            savedItemId
+              ? String(
+                  savedItemId
+                )
+              : '';
+
+          button.textContent =
+            active
+              ? 'В избранном'
+              : 'В избранное';
+
+          button.classList.toggle(
+            'active',
+            !!active
+          );
+        },
+
       saveFailed:
         message => {
           state.savePending =
@@ -2672,6 +2880,143 @@ export default function PrayerRuleReader({
 
         return;
       }
+
+      if (
+        message.type ===
+        'whole-prayer-action'
+      ) {
+        const itemId =
+          Number(
+            message.itemId
+          );
+
+        const item =
+          (
+            rule.items ||
+            []
+          ).find(
+            entry =>
+              Number(
+                entry.id
+              ) ===
+                itemId
+          );
+
+        if (
+          !item?.text
+        ) {
+          return;
+        }
+
+        if (
+          message.savedItemId
+        ) {
+          try {
+            await deleteSavedItem(
+              Number(
+                message.savedItemId
+              )
+            );
+
+            inject(
+              'window.readerApi && window.readerApi.removeSavedItem(' +
+              itemId +
+              ',' +
+              Number(
+                message.savedItemId
+              ) +
+              ')'
+            );
+
+            inject(
+              'window.readerApi && window.readerApi.updatePrayerAction(' +
+              itemId +
+              ',null,false)'
+            );
+          } catch (deleteError) {
+            console.log(
+              'Ошибка удаления молитвы из избранного:',
+              deleteError.response?.data ||
+              deleteError.message
+            );
+          }
+
+          return;
+        }
+
+        const content =
+          item.text.content ||
+          '';
+
+        try {
+          const saved =
+            await saveItem({
+              save_type:
+                'prayer',
+
+              source_type:
+                'prayer_rule',
+
+              source_id:
+                rule.id,
+
+              anchor_type:
+                'prayer_rule_item',
+
+              anchor_id:
+                itemId,
+
+              source_title:
+                rule.name,
+
+              item_title:
+                item.text.title ||
+                item.text.description ||
+                'Молитва',
+
+              text:
+                content,
+
+              start_offset:
+                0,
+
+              end_offset:
+                content.length,
+
+              metadata: {
+                slug:
+                  rule.slug,
+              },
+            });
+
+          inject(
+            'window.readerApi && window.readerApi.saveSucceeded(' +
+            scriptSafeJson(
+              saved
+            ) +
+            ')'
+          );
+
+          inject(
+            'window.readerApi && window.readerApi.updatePrayerAction(' +
+            itemId +
+            ',' +
+            Number(
+              saved.id
+            ) +
+            ',true)'
+          );
+        } catch (saveError) {
+          console.log(
+            'Ошибка добавления молитвы в избранное:',
+            saveError.response?.data ||
+            saveError.message
+          );
+        }
+
+        return;
+      }
+
 
       if (
         message.type !==
