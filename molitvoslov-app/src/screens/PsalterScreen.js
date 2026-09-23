@@ -453,11 +453,11 @@ export default function PsalterScreen({
                       progressInfo
                         .psalm_number
                     }
-                    {' · '}
-                    стих{' '}
                     {
                       progressInfo
                         .verse_number
+                        ? ` · стих ${progressInfo.verse_number}`
+                        : ''
                     }
                   </Text>
                 </Pressable>
@@ -544,10 +544,11 @@ export default function PsalterScreen({
                         progressInfo
                           .psalm_number
                       }
-                      , стих{' '}
                       {
                         progressInfo
                           .verse_number
+                          ? `, стих ${progressInfo.verse_number}`
+                          : ''
                       }
                     </Text>
                   )}
@@ -592,8 +593,8 @@ export default function PsalterScreen({
                 >
                   {
                     saved
-                      ? 'Сохранено'
-                      : 'Сохранить'
+                      ? 'В избранном'
+                      : 'В избранное'
                   }
                 </Text>
               </Pressable>
@@ -616,19 +617,19 @@ const styles =
 
     listContent: {
       padding:
-        spacing.md,
-      paddingBottom: 40,
-      gap: 12,
+        spacing.sm,
+      paddingBottom: 32,
+      gap: 9,
     },
 
     header: {
-      gap: 14,
-      marginBottom: 4,
+      gap: 10,
+      marginBottom: 2,
     },
 
     continueCard: {
-      paddingVertical: 17,
-      paddingHorizontal: 18,
+      paddingVertical: 13,
+      paddingHorizontal: 14,
       borderRadius:
         radius.md,
       backgroundColor:
@@ -690,9 +691,9 @@ const styles =
 
     kathismaMain: {
       flex: 1,
-      paddingVertical: 16,
-      paddingLeft: 17,
-      paddingRight: 10,
+      paddingVertical: 12,
+      paddingLeft: 13,
+      paddingRight: 8,
     },
 
     kathismaNumber: {
@@ -725,7 +726,7 @@ const styles =
     },
 
     saveButton: {
-      width: 86,
+      width: 76,
       alignItems: 'center',
       justifyContent:
         'center',

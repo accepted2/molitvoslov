@@ -371,7 +371,11 @@ export const MenuScreen = ({
           title: 'Псалтирь',
           position:
             info
-              ? `Кафизма ${info.kathisma_number} · Псалом ${info.psalm_number} · стих ${info.verse_number}`
+              ? (
+                  info.verse_number
+                    ? `Кафизма ${info.kathisma_number} · Псалом ${info.psalm_number} · стих ${info.verse_number}`
+                    : `Кафизма ${info.kathisma_number} · Псалом ${info.psalm_number}`
+                )
               : 'Продолжить с сохранённого места',
           onPress: () =>
             navigation.navigate(
