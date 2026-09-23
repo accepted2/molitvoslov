@@ -585,6 +585,12 @@ const HTML_TEMPLATE = String.raw`
               section.progressAnchorId
             );
 
+          wrapper.dataset.trackProgress =
+            section.trackProgress ===
+              false
+              ? 'false'
+              : 'true';
+
           if (
             section.title
           ) {
@@ -2379,7 +2385,7 @@ const HTML_TEMPLATE = String.raw`
         const items =
           Array.from(
             document.querySelectorAll(
-              '.rule-item'
+              '.rule-item[data-track-progress="true"]'
             )
           );
 
@@ -2493,7 +2499,7 @@ const HTML_TEMPLATE = String.raw`
 
         const item =
           document.querySelector(
-            '.rule-item[data-item-id="' +
+            '.rule-item[data-track-progress="true"][data-item-id="' +
             progress.anchorId +
             '"]'
           );
@@ -2755,7 +2761,7 @@ export default function SelectableDocumentReader({
       ) {
         onProgress?.({
           anchorType:
-            DATA.progressAnchorType,
+            documentData.progressAnchorType,
           anchorId:
             Number(
               message.anchorId
