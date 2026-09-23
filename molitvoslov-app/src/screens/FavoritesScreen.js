@@ -479,7 +479,7 @@ const styles =
     },
 
     title: {
-      fontSize: 30,
+      fontSize: 27,
       fontWeight: '700',
       fontFamily: 'serif',
       color:
@@ -524,7 +524,7 @@ const styles =
     emptyCard: {
       alignItems: 'center',
       padding:
-        spacing.lg,
+        spacing.md,
       borderRadius:
         radius.lg,
       backgroundColor:
@@ -607,9 +607,9 @@ const styles =
       paddingHorizontal:
         spacing.md,
       paddingTop:
-        spacing.sm,
+        spacing.xs,
       paddingBottom:
-        spacing.md,
+        spacing.sm,
     },
 
     pressed: {
