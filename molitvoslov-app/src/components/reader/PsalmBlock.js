@@ -29,6 +29,11 @@ export default function PsalmBlock({
   onVerseLayout,
   isSaved = false,
   onToggleSaved,
+  psalterId,
+  kathismaNumber,
+  kathismaTitle,
+  savedItems = [],
+  onFragmentSaved,
 }) {
   const [
     blockY,
@@ -298,6 +303,34 @@ export default function PsalmBlock({
                   verse={verse}
                   psalmId={
                     psalm.id
+                  }
+                  psalmNumber={
+                    psalm.number
+                  }
+                  psalterId={
+                    psalterId
+                  }
+                  kathismaNumber={
+                    kathismaNumber
+                  }
+                  kathismaTitle={
+                    kathismaTitle
+                  }
+                  hasSavedFragment={
+                    savedItems.some(
+                      item =>
+                        item.anchor_type ===
+                          'psalm_verse' &&
+                        Number(
+                          item.anchor_id
+                        ) ===
+                          Number(
+                            verse.id
+                          )
+                    )
+                  }
+                  onFragmentSaved={
+                    onFragmentSaved
                   }
                   onLayout={
                     event => {
