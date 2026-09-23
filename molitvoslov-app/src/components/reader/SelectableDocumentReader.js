@@ -1210,82 +1210,81 @@ const HTML_TEMPLATE = String.raw`
               section,
             ];
 
-      targetSections
-        .forEach(
-          targetSection => {
-            (
-              targetSection.rows ||
-              []
-            ).forEach(
-              row => {
-                (
-                  row.blocks ||
-                  []
-                ).forEach(
-                  block => {
-                    const highlightAnchorType =
-                      section
-                        ?.action
-                        ?.highlightAnchorType ||
-                      DATA.document
-                        .action
-                        ?.highlightAnchorType;
+      targetSections.forEach(
+        targetSection => {
+          (
+            targetSection.rows ||
+            []
+          ).forEach(
+            row => {
+              (
+                row.blocks ||
+                []
+              ).forEach(
+                block => {
+                  const highlightAnchorType =
+                    section
+                      ?.action
+                      ?.highlightAnchorType ||
+                    DATA.document
+                      .action
+                      ?.highlightAnchorType;
 
-                    if (
-                      highlightAnchorType &&
-                      block.anchorType !==
-                        highlightAnchorType
-                    ) {
-                      return;
-                    }
+                  if (
+                    highlightAnchorType &&
+                    block.anchorType !==
+                      highlightAnchorType
+                  ) {
+                    return;
+                  }
 
-              const itemId =
-                Number(
-                  block.id
-                );
+                  const itemId =
+                    Number(
+                      block.id
+                    );
 
-              const text =
-                itemTextMap.get(
-                  itemId
-                ) ||
-                '';
+                  const text =
+                    itemTextMap.get(
+                      itemId
+                    ) ||
+                    '';
 
-              const current =
-                savedRanges.get(
-                  itemId
-                ) ||
-                [];
+                  const current =
+                    savedRanges.get(
+                      itemId
+                    ) ||
+                    [];
 
-              const withoutWhole =
-                current.filter(
-                  range =>
-                    range.actionKey !==
-                      actionKey
-                );
+                  const withoutWhole =
+                    current.filter(
+                      range =>
+                        range.actionKey !==
+                          actionKey
+                    );
 
-              if (
-                active &&
-                text.length
-              ) {
-                withoutWhole.push({
-                  id:
-                    savedItemId ||
-                    actionKey,
+                  if (
+                    active &&
+                    text.length
+                  ) {
+                    withoutWhole.push({
+                      id:
+                        savedItemId ||
+                        actionKey,
 
-                  actionKey,
+                      actionKey,
 
-                  start:
-                    0,
+                      start:
+                        0,
 
-                  end:
-                    text.length,
-                });
-              }
+                      end:
+                        text.length,
+                    });
+                  }
 
-              savedRanges.set(
-                itemId,
-                withoutWhole
-              );
+                  savedRanges.set(
+                    itemId,
+                    withoutWhole
+                  );
 
                   renderTextItem(
                     itemId
@@ -1294,8 +1293,9 @@ const HTML_TEMPLATE = String.raw`
               );
             }
           );
-        };
-
+        }
+      );
+    };
 
 
     const loadSavedRanges =
