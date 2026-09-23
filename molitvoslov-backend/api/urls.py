@@ -83,7 +83,8 @@ router.register(
 )
 router.register(
    'akathists',
-   AkathistViewSet
+   AkathistViewSet,
+   basename='akathist'
 )
 
 router.register(
