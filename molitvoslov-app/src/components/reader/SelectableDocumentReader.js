@@ -21,9 +21,6 @@ import {
 } from '../../theme';
 
 
-const MAX_SELECTION_LENGTH = 500;
-
-
 const scriptSafeJson = value =>
   JSON.stringify(value)
     .replace(/</g, '\\u003c')
@@ -103,6 +100,31 @@ const HTML_TEMPLATE = String.raw`
 
     .rule-item:last-child {
       border-bottom: 0;
+    }
+
+    .document-action-row {
+      display: flex;
+      justify-content: center;
+      margin: -6px 0 16px;
+    }
+
+    .document-action {
+      min-height: 34px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--secondary);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 11px;
+      line-height: 14px;
+      font-weight: 700;
+    }
+
+    .document-action.active {
+      color: var(--accent-dark);
+      background: #F3EBDD;
+      border-color: rgba(138, 90, 56, 0.30);
     }
 
     .section-header {
@@ -437,9 +459,6 @@ const HTML_TEMPLATE = String.raw`
     const DATA =
       __READER_PAYLOAD__;
 
-    const MAX_SELECTION =
-      DATA.maxSelection;
-
     const reader =
       document.getElementById(
         'reader'
@@ -603,6 +622,39 @@ const HTML_TEMPLATE = String.raw`
             'rule-description',
             DATA.document.description
           )
+        );
+      }
+
+      if (
+        DATA.document.action
+      ) {
+        const actionRow =
+          el(
+            'div',
+            'document-action-row'
+          );
+
+        const action =
+          el(
+            'button',
+            DATA.document.action.active
+              ? 'document-action active'
+              : 'document-action',
+            DATA.document.action.label
+          );
+
+        action.type =
+          'button';
+
+        action.dataset.actionKey =
+          DATA.document.action.key;
+
+        actionRow.appendChild(
+          action
+        );
+
+        reader.appendChild(
+          actionRow
         );
       }
 
@@ -1555,10 +1607,6 @@ const HTML_TEMPLATE = String.raw`
           state.active.end -
           state.active.start;
 
-        const tooLong =
-          count >
-          MAX_SELECTION;
-
         selectionBar.classList
           .add(
             'visible'
@@ -1566,32 +1614,26 @@ const HTML_TEMPLATE = String.raw`
 
         selectionCount.textContent =
           count +
-          '/' +
-          MAX_SELECTION;
+          ' симв.';
 
         selectionCount.classList
-          .toggle(
-            'error',
-            tooLong
+          .remove(
+            'error'
           );
 
         selectionHint.classList
-          .toggle(
-            'error',
-            tooLong
+          .remove(
+            'error'
           );
 
         if (
           !state.savePending
         ) {
           selectionHint.textContent =
-            tooLong
-              ? 'Сократите выделение'
-              : 'Выделенный фрагмент';
+            'Выделенный фрагмент';
         }
 
         saveButton.disabled =
-          tooLong ||
           count <= 0 ||
           state.savePending;
       };
@@ -2276,7 +2318,7 @@ const HTML_TEMPLATE = String.raw`
       event => {
         const action =
           event.target.closest(
-            '.section-action'
+            '.section-action, .document-action'
           );
 
         if (!action) {
@@ -2521,9 +2563,7 @@ const HTML_TEMPLATE = String.raw`
           state.active.start;
 
         if (
-          count <= 0 ||
-          count >
-            MAX_SELECTION
+          count <= 0
         ) {
           return;
         }
@@ -2784,6 +2824,42 @@ const HTML_TEMPLATE = String.raw`
           );
         },
 
+      removeSavedItem:
+        (
+          itemId,
+          savedItemId
+        ) => {
+          itemId =
+            Number(
+              itemId
+            );
+
+          savedItemId =
+            Number(
+              savedItemId
+            );
+
+          const current =
+            savedRanges.get(
+              itemId
+            ) || [];
+
+          savedRanges.set(
+            itemId,
+            current.filter(
+              range =>
+                Number(
+                  range.id
+                ) !==
+                savedItemId
+            )
+          );
+
+          renderTextItem(
+            itemId
+          );
+        },
+
       updateAction:
         (
           actionKey,
@@ -2793,6 +2869,8 @@ const HTML_TEMPLATE = String.raw`
           const action =
             document.querySelector(
               '.section-action[data-action-key="' +
+              actionKey +
+              '"], .document-action[data-action-key="' +
               actionKey +
               '"]'
             );
@@ -2885,9 +2963,6 @@ const buildHtml = ({
                 ),
             }
           : null,
-
-    maxSelection:
-      MAX_SELECTION_LENGTH,
   };
 
   return HTML_TEMPLATE.replace(
@@ -3044,6 +3119,40 @@ export default function SelectableDocumentReader({
               ) +
               ')'
             );
+
+            if (
+              result.savedItem &&
+              result.itemId
+            ) {
+              inject(
+                'window.readerApi && window.readerApi.saveSucceeded(' +
+                Number(
+                  result.itemId
+                ) +
+                ',' +
+                scriptSafeJson(
+                  result.savedItem
+                ) +
+                ')'
+              );
+            }
+
+            if (
+              result.removedSavedItemId &&
+              result.itemId
+            ) {
+              inject(
+                'window.readerApi && window.readerApi.removeSavedItem(' +
+                Number(
+                  result.itemId
+                ) +
+                ',' +
+                Number(
+                  result.removedSavedItemId
+                ) +
+                ')'
+              );
+            }
           }
         } catch (actionError) {
           console.log(
