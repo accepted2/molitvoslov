@@ -152,6 +152,9 @@ export const MenuScreen = ({
   const [loading, setLoading] =
     useState(true);
 
+  const [dailyQuote, setDailyQuote] =
+    useState(null);
+
   const [error, setError] =
     useState(null);
 
@@ -163,11 +166,15 @@ export const MenuScreen = ({
           categoriesResponse,
           akathistsResponse,
           prayerRulesResponse,
+          quoteResponse,
         ] = await Promise.all([
           api.get('categories/'),
           api.get('akathists/'),
           api.get(
             'prayer-rules/'
+          ),
+          api.get(
+            'daily-quotes/today/'
           ),
         ]);
 
@@ -194,6 +201,10 @@ export const MenuScreen = ({
 
         setPrayerRules(
           prayerRulesResponse.data
+        );
+
+        setDailyQuote(
+          quoteResponse.data
         );
 
         setError(null);
@@ -675,12 +686,38 @@ export const MenuScreen = ({
           </View>
 
 
-          <Text
-            style={styles.intro}
+          <View
+            style={styles.quoteBlock}
           >
-            Молитвы и духовное чтение
-            в спокойном ритме дня
-          </Text>
+            <Text
+              style={styles.quoteLabel}
+            >
+              ЦИТАТА ДНЯ
+            </Text>
+
+            <Text
+              style={styles.quoteText}
+            >
+              {
+                dailyQuote?.text ||
+                'Молитва и духовное чтение помогают хранить внимание сердца.'
+              }
+            </Text>
+
+            {!!(
+              dailyQuote?.reference ||
+              dailyQuote?.source
+            ) && (
+              <Text
+                style={styles.quoteSource}
+              >
+                {
+                  dailyQuote?.reference ||
+                  dailyQuote?.source
+                }
+              </Text>
+            )}
+          </View>
 
 
           <View
@@ -1097,17 +1134,40 @@ const styles =
         'capitalize',
     },
 
-    intro: {
-      maxWidth: 310,
+    quoteBlock: {
       marginTop:
         spacing.md,
       marginBottom:
         spacing.lg,
+      paddingVertical: 4,
+    },
+
+    quoteLabel: {
+      marginBottom: 7,
+      fontSize: 10,
+      lineHeight: 14,
+      fontWeight: '800',
+      letterSpacing: 1,
+      color:
+        colors.accent,
+    },
+
+    quoteText: {
+      maxWidth: 330,
       fontSize: 16,
-      lineHeight: 24,
+      lineHeight: 23,
       color:
         colors.textSecondary,
       fontFamily: 'serif',
+    },
+
+    quoteSource: {
+      marginTop: 7,
+      fontSize: 12,
+      lineHeight: 17,
+      fontWeight: '600',
+      color:
+        colors.textMuted,
     },
 
     readingSection: {
