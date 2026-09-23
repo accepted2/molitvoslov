@@ -12,6 +12,8 @@ from .models import (
     Bookmark,
     Akathist,
     AkathistSection,
+    Canon,
+    CanonSection,
     ReadingProgress,
     DailyQuote,
     SavedItem,
@@ -370,6 +372,62 @@ class AkathistReadingRuleSerializer(serializers.ModelSerializer):
         ]
 
 # =========================================================
+# КАНОНЫ
+# =========================================================
+
+class CanonSectionSerializer(serializers.ModelSerializer):
+    text = TextSerializer(
+        read_only=True,
+    )
+
+    class Meta:
+        model = CanonSection
+
+        fields = [
+            'id',
+            'section_type',
+            'ode_number',
+            'heading',
+            'text',
+            'order',
+        ]
+
+
+class CanonSummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Canon
+
+        fields = [
+            'id',
+            'title',
+            'slug',
+            'description',
+            'tone',
+            'is_visible',
+        ]
+
+
+class CanonSerializer(serializers.ModelSerializer):
+    sections = CanonSectionSerializer(
+        many=True,
+        read_only=True,
+    )
+
+    class Meta:
+        model = Canon
+
+        fields = [
+            'id',
+            'title',
+            'slug',
+            'description',
+            'tone',
+            'is_visible',
+            'sections',
+        ]
+
+
+# =========================================================
 # ПОЛЬЗОВАТЕЛЬСКИЕ СБОРНИКИ
 # =========================================================
 
@@ -588,6 +646,21 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
             )
 
         elif (
+                obj.source_type == 'canon'
+                and obj.anchor_type == 'canon_section'
+        ):
+            queryset = (
+                CanonSection.objects
+                .filter(
+                    canon_id=obj.source_id
+                )
+                .order_by(
+                    'order',
+                    'id',
+                )
+            )
+
+        elif (
                 obj.source_type == 'prayer_rule'
                 and obj.anchor_type == 'prayer_rule_item'
         ):
@@ -653,6 +726,51 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
         )
 
     def get_anchor_info(self, obj):
+        if (
+                obj.source_type == 'canon'
+                and obj.anchor_type == 'canon_section'
+                and obj.anchor_id
+        ):
+            section = (
+                CanonSection.objects
+                .select_related(
+                    'canon',
+                )
+                .filter(
+                    id=obj.anchor_id
+                )
+                .first()
+            )
+
+            if not section:
+                return None
+
+            return {
+                'canon_id':
+                    section.canon_id,
+
+                'canon_slug':
+                    section.canon.slug,
+
+                'canon_title':
+                    section.canon.title,
+
+                'section_id':
+                    section.id,
+
+                'section_type':
+                    section.section_type,
+
+                'section_type_display':
+                    section.get_section_type_display(),
+
+                'ode_number':
+                    section.ode_number,
+
+                'heading':
+                    section.heading,
+            }
+
         if (
                 obj.source_type == 'psalter'
                 and obj.anchor_type == 'psalm'
