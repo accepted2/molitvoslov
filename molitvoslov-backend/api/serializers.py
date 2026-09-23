@@ -493,6 +493,22 @@ class SavedItemSerializer(serializers.ModelSerializer):
                 }
             )
 
+        saved_text = (
+            attrs.get(
+                'text',
+                ''
+            )
+            or ''
+        )
+
+        if len(saved_text) > 500:
+            raise serializers.ValidationError(
+                {
+                    'text':
+                        'Можно сохранить не более 500 символов.'
+                }
+            )
+
         return attrs
 
 class ReadingProgressSerializer(serializers.ModelSerializer):
