@@ -1,26 +1,49 @@
 import React, {
+  useCallback,
   useEffect,
   useState,
 } from 'react';
 
 import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
   ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
-import { api } from '../api';
+import {
+  useFocusEffect,
+} from '@react-navigation/native';
+
+import {
+  api,
+} from '../api';
+
+import {
+  deleteSavedItem,
+  getSavedItems,
+  saveItem,
+} from '../services/savedItems';
+
+import {
+  colors,
+} from '../theme';
 
 
 export const AkathistListScreen = ({
-                                     navigation,
-                                   }) => {
+  navigation,
+}) => {
   const [
     akathists,
     setAkathists,
+  ] = useState([]);
+
+  const [
+    savedAkathists,
+    setSavedAkathists,
   ] = useState([]);
 
   const [
@@ -28,126 +51,355 @@ export const AkathistListScreen = ({
     setLoading,
   ] = useState(true);
 
+
+  const loadSavedAkathists =
+    useCallback(async () => {
+      try {
+        const saved =
+          await getSavedItems({
+            source_type:
+              'akathist',
+
+            save_type:
+              'akathist',
+          });
+
+        setSavedAkathists(
+          saved.filter(
+            item =>
+              item.anchor_type ===
+              'akathist'
+          )
+        );
+      } catch (error) {
+        console.log(
+          'Ошибка загрузки избранных акафистов:',
+          error.response?.data ||
+          error.message
+        );
+      }
+    }, []);
+
+
   useEffect(() => {
     loadAkathists();
   }, []);
 
-  const loadAkathists = async () => {
-    try {
-      setLoading(true);
 
-      const response = await api.get(
-        'akathists/'
+  useFocusEffect(
+    useCallback(() => {
+      loadSavedAkathists();
+    }, [
+      loadSavedAkathists,
+    ])
+  );
+
+
+  const loadAkathists =
+    async () => {
+      try {
+        setLoading(true);
+
+        const [
+          response,
+        ] = await Promise.all([
+          api.get(
+            'akathists/'
+          ),
+
+          loadSavedAkathists(),
+        ]);
+
+        setAkathists(
+          response.data.filter(
+            item =>
+              item.is_visible
+          )
+        );
+      } catch (error) {
+        console.log(
+          'Ошибка загрузки акафистов:',
+          error.response?.data ||
+          error.message
+        );
+      } finally {
+        setLoading(
+          false
+        );
+      }
+    };
+
+
+  const getSavedAkathist =
+    akathistId =>
+      savedAkathists.find(
+        item =>
+          Number(
+            item.anchor_id
+          ) ===
+            Number(
+              akathistId
+            )
       );
 
-      const visibleAkathists =
-        response.data.filter(
-          item => item.is_visible
+
+  const toggleFavorite =
+    async akathist => {
+      const existing =
+        getSavedAkathist(
+          akathist.id
         );
 
-      setAkathists(
-        visibleAkathists
-      );
-    } catch (error) {
-      console.error(
-        'Ошибка загрузки акафистов:',
-        error
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        if (existing) {
+          await deleteSavedItem(
+            existing.id
+          );
 
-  const handlePress = akathist => {
-    navigation.navigate(
-      'Akathist',
-      {
-        akathistId:
-        akathist.id,
+          setSavedAkathists(
+            current =>
+              current.filter(
+                item =>
+                  item.id !==
+                  existing.id
+              )
+          );
 
-        slug:
-        akathist.slug,
+          return;
+        }
 
-        title:
-        akathist.title,
+        const saved =
+          await saveItem({
+            save_type:
+              'akathist',
+
+            source_type:
+              'akathist',
+
+            source_id:
+              akathist.id,
+
+            anchor_type:
+              'akathist',
+
+            anchor_id:
+              akathist.id,
+
+            source_title:
+              akathist.title,
+
+            item_title:
+              akathist.title,
+
+            text:
+              '',
+
+            metadata: {
+              slug:
+                akathist.slug,
+            },
+          });
+
+        setSavedAkathists(
+          current => [
+            saved,
+            ...current,
+          ]
+        );
+      } catch (error) {
+        console.log(
+          'Ошибка сохранения акафиста:',
+          error.response?.data ||
+          error.message
+        );
       }
-    );
-  };
+    };
+
+
+  const handlePress =
+    akathist => {
+      navigation.navigate(
+        'Akathist',
+        {
+          akathistId:
+            akathist.id,
+
+          slug:
+            akathist.slug,
+
+          title:
+            akathist.title,
+        }
+      );
+    };
+
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View
+        style={
+          styles.center
+        }
+      >
         <ActivityIndicator
           size="large"
-          color="#2c3e50"
+          color={
+            colors.accent
+          }
         />
 
-        <Text style={styles.loadingText}>
+        <Text
+          style={
+            styles.loadingText
+          }
+        >
           Загрузка...
         </Text>
       </View>
     );
   }
 
+
   return (
-    <View style={styles.container}>
+    <View
+      style={
+        styles.container
+      }
+    >
       <FlatList
-        data={akathists}
-        keyExtractor={item =>
-          item.id.toString()
+        data={
+          akathists
+        }
+        keyExtractor={
+          item =>
+            String(
+              item.id
+            )
         }
         contentContainerStyle={
           styles.listContent
         }
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.item}
-            activeOpacity={0.7}
-            onPress={() =>
-              handlePress(item)
-            }
-          >
-            <View
-              style={
-                styles.iconContainer
-              }
-            >
-              <Text style={styles.icon}>
-                ☦
-              </Text>
-            </View>
+        renderItem={({
+          item,
+        }) => {
+          const saved =
+            !!getSavedAkathist(
+              item.id
+            );
 
+          return (
             <View
-              style={
-                styles.textContainer
-              }
+              style={[
+                styles.item,
+
+                saved &&
+                  styles.itemSaved,
+              ]}
             >
-              <Text
-                style={styles.title}
+              <TouchableOpacity
+                style={
+                  styles.itemMain
+                }
+                activeOpacity={
+                  0.7
+                }
+                onPress={() =>
+                  handlePress(
+                    item
+                  )
+                }
               >
-                {item.title}
-              </Text>
-
-              {!!item.description &&
-                item.description !==
-                item.title && (
+                <View
+                  style={
+                    styles.iconContainer
+                  }
+                >
                   <Text
                     style={
-                      styles.description
+                      styles.icon
                     }
                   >
-                    {
-                      item.description
-                    }
+                    ☦
                   </Text>
-                )}
-            </View>
+                </View>
 
-            <Text style={styles.arrow}>
-              ›
-            </Text>
-          </TouchableOpacity>
-        )}
+                <View
+                  style={
+                    styles.textContainer
+                  }
+                >
+                  <Text
+                    style={
+                      styles.title
+                    }
+                  >
+                    {item.title}
+                  </Text>
+
+                  {!!item.description &&
+                    item.description !==
+                      item.title && (
+                      <Text
+                        style={
+                          styles.description
+                        }
+                        numberOfLines={
+                          2
+                        }
+                      >
+                        {
+                          item.description
+                        }
+                      </Text>
+                    )}
+                </View>
+
+                <Text
+                  style={
+                    styles.arrow
+                  }
+                >
+                  ›
+                </Text>
+              </TouchableOpacity>
+
+              <Pressable
+                hitSlop={6}
+                onPress={() =>
+                  toggleFavorite(
+                    item
+                  )
+                }
+                style={({pressed}) => [
+                  styles.favoriteButton,
+
+                  saved &&
+                    styles
+                      .favoriteButtonActive,
+
+                  pressed &&
+                    styles.pressed,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.favoriteText,
+
+                    saved &&
+                      styles
+                        .favoriteTextActive,
+                  ]}
+                >
+                  {
+                    saved
+                      ? '★'
+                      : '☆'
+                  }
+                </Text>
+              </Pressable>
+            </View>
+          );
+        }}
         ListEmptyComponent={
           <View
             style={
@@ -155,7 +407,9 @@ export const AkathistListScreen = ({
             }
           >
             <Text
-              style={styles.emptyText}
+              style={
+                styles.emptyText
+              }
             >
               Акафисты пока не добавлены
             </Text>
@@ -167,95 +421,144 @@ export const AkathistListScreen = ({
 };
 
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-
-  listContent: {
-    paddingVertical: 5,
-  },
-
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  loadingText: {
-    marginTop: 10,
-  },
-
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-
-    padding: 12,
-
-    backgroundColor: '#fff',
-
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-
-    marginHorizontal: 8,
-    marginVertical: 3,
-
-    borderRadius: 10,
-
-    elevation: 2,
-
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
+const styles =
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor:
+        colors.background,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
 
-  iconContainer: {
-    width: 34,
-    alignItems: 'center',
-    marginRight: 8,
-  },
+    listContent: {
+      paddingVertical: 5,
+    },
 
-  icon: {
-    fontSize: 23,
-    color: '#8b5e3c',
-  },
+    center: {
+      flex: 1,
+      justifyContent:
+        'center',
+      alignItems:
+        'center',
+      backgroundColor:
+        colors.background,
+    },
 
-  textContainer: {
-    flex: 1,
-  },
+    loadingText: {
+      marginTop: 8,
+      color:
+        colors.textSecondary,
+    },
 
-  title: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    lineHeight: 23,
-  },
+    item: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      marginHorizontal: 8,
+      marginVertical: 3,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor:
+        colors.border,
+      backgroundColor:
+        colors.surface,
+      overflow: 'hidden',
+    },
 
-  description: {
-    marginTop: 4,
-    fontSize: 13,
-    lineHeight: 18,
-    color: '#7f8c8d',
-  },
+    itemSaved: {
+      borderColor:
+        colors.borderStrong,
+      backgroundColor:
+        colors.surfaceWarm,
+    },
 
-  arrow: {
-    fontSize: 24,
-    color: '#bdc3c7',
-    marginLeft: 8,
-  },
+    itemMain: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 10,
+      paddingLeft: 10,
+      paddingRight: 5,
+    },
 
-  emptyContainer: {
-    padding: 30,
-    alignItems: 'center',
-  },
+    iconContainer: {
+      width: 30,
+      alignItems: 'center',
+      marginRight: 7,
+    },
 
-  emptyText: {
-    color: '#7f8c8d',
-    fontSize: 15,
-  },
-});
+    icon: {
+      fontSize: 22,
+      color:
+        colors.accent,
+    },
+
+    textContainer: {
+      flex: 1,
+    },
+
+    title: {
+      fontSize: 16,
+      fontWeight: '700',
+      color:
+        colors.text,
+      lineHeight: 21,
+      fontFamily: 'serif',
+    },
+
+    description: {
+      marginTop: 3,
+      fontSize: 12,
+      lineHeight: 17,
+      color:
+        colors.textSecondary,
+    },
+
+    arrow: {
+      marginLeft: 5,
+      fontSize: 22,
+      color:
+        colors.textMuted,
+    },
+
+    favoriteButton: {
+      width: 42,
+      alignItems: 'center',
+      justifyContent:
+        'center',
+      borderLeftWidth: 1,
+      borderLeftColor:
+        colors.border,
+      backgroundColor:
+        'rgba(255,255,255,0.25)',
+    },
+
+    favoriteButtonActive: {
+      backgroundColor:
+        colors.surfaceMuted,
+    },
+
+    favoriteText: {
+      fontSize: 23,
+      color:
+        colors.textMuted,
+    },
+
+    favoriteTextActive: {
+      color:
+        colors.accent,
+    },
+
+    pressed: {
+      opacity: 0.6,
+    },
+
+    emptyContainer: {
+      padding: 24,
+      alignItems: 'center',
+    },
+
+    emptyText: {
+      color:
+        colors.textSecondary,
+      fontSize: 14,
+    },
+  });
