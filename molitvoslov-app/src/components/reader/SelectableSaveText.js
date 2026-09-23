@@ -582,10 +582,6 @@ export default function SelectableSaveText({
         return;
       }
 
-      const tooLong =
-        count >
-          MAX_SELECTION_LENGTH;
-
       lastValidRangeRef.current =
         range;
 
@@ -594,9 +590,6 @@ export default function SelectableSaveText({
           instanceIdRef.current,
 
         count,
-
-        max:
-          MAX_SELECTION_LENGTH,
 
         tooLong:
           false,
