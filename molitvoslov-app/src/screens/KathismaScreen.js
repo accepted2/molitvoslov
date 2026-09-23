@@ -468,6 +468,9 @@ export default function KathismaScreen({
 
         active:
           true,
+
+        savedItem:
+          saved,
       };
     };
 
@@ -1099,8 +1102,8 @@ export default function KathismaScreen({
             );
 
 
-            const psalmSaved =
-              savedItems.some(
+            const psalmSavedItem =
+              savedItems.find(
                 item =>
                   (
                     item.anchor_type ===
@@ -1119,6 +1122,9 @@ export default function KathismaScreen({
                       psalm.id
                     )
               );
+
+            const psalmSaved =
+              !!psalmSavedItem;
 
 
             sections.push({
@@ -1144,6 +1150,17 @@ export default function KathismaScreen({
 
                 active:
                   psalmSaved,
+
+                savedItemId:
+                  psalmSavedItem
+                    ?.id ||
+                  null,
+
+                highlightContent:
+                  true,
+
+                highlightAnchorType:
+                  'psalm_text',
               },
 
               rows,
