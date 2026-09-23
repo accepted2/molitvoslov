@@ -13,6 +13,7 @@ from .models import (
     Akathist,
     AkathistSection,
     ReadingProgress,
+    DailyQuote,
     AkathistReadingRule,
 
 Psalter,Kathisma,Psalm,PsalmVerse,KathismaGlory
@@ -418,6 +419,23 @@ class BookmarkSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'user',
             'created_at',
+        ]
+
+
+# =========================================================
+# ЦИТАТА ДНЯ
+# =========================================================
+
+class DailyQuoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DailyQuote
+
+        fields = [
+            'id',
+            'text',
+            'source',
+            'reference',
+            'quote_date',
         ]
 
 class ReadingProgressSerializer(serializers.ModelSerializer):

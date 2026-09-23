@@ -1,3 +1,6 @@
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from django.db import models
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -25,6 +28,7 @@ from .models import (
     PsalmVerse,
     KathismaGlory,
     ReadingProgress,
+    DailyQuote,
     Akathist,
     AkathistSection,
 
@@ -45,6 +49,7 @@ from .serializers import (
     PsalmVerseSerializer,
     KathismaGlorySerializer,
     ReadingProgressSerializer,
+    DailyQuoteSerializer,
     AkathistSerializer,
     AkathistSectionSerializer,
 )
@@ -375,6 +380,77 @@ class BookmarkViewSet(viewsets.ModelViewSet):
         serializer.save(
             user=self.request.user
         )
+
+
+# =========================================================
+# ЦИТАТА ДНЯ
+# =========================================================
+
+class DailyQuoteViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = DailyQuote.objects.filter(
+        is_active=True
+    )
+
+    serializer_class = DailyQuoteSerializer
+    permission_classes = [AllowAny]
+
+    @action(
+        detail=False,
+        methods=['get'],
+    )
+    def today(self, request):
+        today = datetime.now(
+            ZoneInfo('Europe/Kyiv')
+        ).date()
+
+        quote = (
+            self.get_queryset()
+            .filter(
+                quote_date=today
+            )
+            .first()
+        )
+
+        if quote is None:
+            rotation_quotes = list(
+                self.get_queryset()
+                .filter(
+                    quote_date__isnull=True
+                )
+                .order_by(
+                    'order',
+                    'id',
+                )
+            )
+
+            if rotation_quotes:
+                index = (
+                    today.toordinal()
+                    % len(rotation_quotes)
+                )
+
+                quote = rotation_quotes[
+                    index
+                ]
+
+        if quote is None:
+            return Response(
+                {
+                    'detail':
+                        'Цитаты дня пока не добавлены'
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        data = self.get_serializer(
+            quote
+        ).data
+
+        data['date'] = (
+            today.isoformat()
+        )
+
+        return Response(data)
 
 class ReadingProgressViewSet(viewsets.ModelViewSet):
     serializer_class = ReadingProgressSerializer
