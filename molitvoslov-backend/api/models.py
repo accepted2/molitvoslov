@@ -701,6 +701,7 @@ class CanonSection(models.Model):
 
     class Meta:
         ordering = [
+            'variant',
             'order',
         ]
 
