@@ -10,7 +10,10 @@ from .models import (
     UserCollection,
     CollectionItem,
     Bookmark,
-ReadingProgress,
+    Akathist,
+    AkathistSection,
+    ReadingProgress,
+    AkathistReadingRule,
 
 Psalter,Kathisma,Psalm,PsalmVerse,KathismaGlory
 )
@@ -268,6 +271,90 @@ class PsalterSerializer(serializers.ModelSerializer):
         fields = ['id','name','slug','description','prayers_before', 'prayers_after','is_visible','kathismas']
 
 # =========================================================
+# АКАФИСТЫ
+# =========================================================
+
+class AkathistSectionSerializer(serializers.ModelSerializer):
+    text = TextSerializer(
+        read_only=True
+    )
+
+    text_id = serializers.PrimaryKeyRelatedField(
+        source='text',
+        queryset=Text.objects.all(),
+        write_only=True,
+        required=True,
+    )
+
+    class Meta:
+        model = AkathistSection
+
+        fields = [
+            'id',
+            'section_type',
+            'number',
+            'text',
+            'text_id',
+            'note',
+            'order',
+        ]
+
+class AkathistSerializer(serializers.ModelSerializer):
+    sections = AkathistSectionSerializer(
+        many=True,
+        read_only=True,
+    )
+
+    troparion = TextSerializer(
+        read_only=True,
+    )
+
+    kontakion_before = TextSerializer(
+        read_only=True,
+    )
+
+    common_rule = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Akathist
+        fields = [
+            'id',
+            'title',
+            'slug',
+            'description',
+            'is_visible',
+            'troparion',
+            'kontakion_before',
+            'common_rule',
+            'sections',
+        ]
+
+    def get_common_rule(self, obj):
+        rule = AkathistReadingRule.objects.filter(
+            key='default'
+        ).first()
+
+        if not rule:
+            return None
+
+        return AkathistReadingRuleSerializer(
+            rule
+        ).data
+
+class AkathistReadingRuleSerializer(serializers.ModelSerializer):
+    opening = TextSerializer(read_only=True)
+    ending = TextSerializer(read_only=True)
+
+    class Meta:
+        model = AkathistReadingRule
+        fields = [
+            'id',
+            'key',
+            'opening',
+            'ending',
+        ]
+
+# =========================================================
 # ПОЛЬЗОВАТЕЛЬСКИЕ СБОРНИКИ
 # =========================================================
 
@@ -334,7 +421,64 @@ class BookmarkSerializer(serializers.ModelSerializer):
         ]
 
 class ReadingProgressSerializer(serializers.ModelSerializer):
+    anchor_info = serializers.SerializerMethodField()
+
     class Meta:
         model = ReadingProgress
-        fields = ['id','source_type','source_id','anchor_type','anchor_id','offset','updated_at']
-        read_only_fields = ['id','updated_at',]
+
+        fields = [
+            'id',
+            'source_type',
+            'source_id',
+            'anchor_type',
+            'anchor_id',
+            'offset',
+            'anchor_info',
+            'updated_at',
+        ]
+
+        read_only_fields = [
+            'id',
+            'anchor_info',
+            'updated_at',
+        ]
+
+    def get_anchor_info(self, obj):
+        if (
+                obj.source_type == 'psalter'
+                and obj.anchor_type == 'psalm_verse'
+                and obj.anchor_id
+        ):
+            verse = (
+                PsalmVerse.objects
+                .select_related(
+                    'psalm__kathisma'
+                )
+                .filter(id=obj.anchor_id)
+                .first()
+            )
+
+            if not verse:
+                return None
+
+            return {
+                'kathisma_id':
+                    verse.psalm.kathisma.id,
+
+                'kathisma_number':
+                    verse.psalm.kathisma.number,
+
+                'psalm_id':
+                    verse.psalm.id,
+
+                'psalm_number':
+                    verse.psalm.number,
+
+                'verse_id':
+                    verse.id,
+
+                'verse_number':
+                    verse.number,
+            }
+
+        return None

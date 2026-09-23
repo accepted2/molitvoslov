@@ -1,12 +1,21 @@
 import React, {useEffect, useState,useRef} from "react";
 import {View, Text,ScrollView,StyleSheet,ActivityIndicator} from "react-native";
 import {api} from '../api'
-import {getReadingProgress, saveReadingProgress} from "../services/readingProgress";
+import {
+  useReadingProgress
+} from '../hooks/useReadingProgress';
 
 export const PrayerRuleScreen = ({route}) => {
   const {slug} = route.params
 
   const [rule, setRule] = useState(null)
+  const {
+    savedProgress,
+    scheduleSave,
+  }=useReadingProgress({
+    sourceType:'prayer_rule',
+    sourceId:rule?.id,
+  })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -16,43 +25,34 @@ export const PrayerRuleScreen = ({route}) => {
     itemPositionsRef.current={}
     loadRule()
 
-    return ()=>{
-      if(saveTimerRef.current){
-        clearTimeout(savedAnchorIdRef.current)
-      }
-    }
   }, [slug]);
+
   const scrollRef = useRef(null)
   const itemPositionsRef = useRef({})
   const savedAnchorIdRef = useRef(null)
   const restoredRef = useRef(false)
   const currentItemRef = useRef(null)
-  const saveTimerRef = useRef(null)
 
   const [highlightedItemId, setHighlightedItemId] = useState(null)
 
+  useEffect(()=>{
+    if (
+      savedProgress?.anchor_type === 'prayer_rule_item'
+    ) {
+      savedAnchorIdRef.current= savedProgress.anchor_id
+      tryRestorePosition()
+    }
+  },[savedProgress])
+
   const loadRule = async () => {
     try {
+      setLoading(true)
       const response = await api.get(
         `prayer-rules/${slug}/`
       )
       const ruleData = response.data
       setRule(ruleData)
 
-      try {
-        const progressList = await getReadingProgress()
-        const progress = progressList.find(item => item.source_type === 'prayer_rule' && Number(item.source_id) === Number(ruleData.id))
-
-        if (progress && progress.anchor_type === 'prayer_rule_item') {
-          savedAnchorIdRef.current = progress.anchor_id
-        }
-      } catch (progressError) {
-        console.log('Ошибки загрузки позиции чтения:',
-          progressError.response?.status,
-          progressError.response?.data,
-          progressError.message
-        )
-      }
     } catch (error) {
       console.error('Ошибка загрузки молитвенного правила:'),
         error
@@ -139,30 +139,11 @@ export const PrayerRuleScreen = ({route}) => {
   }
   currentItemRef.current = current.id
 
-  if (saveTimerRef.current) {
-    clearTimeout(saveTimerRef.current)
-  }
-
-  saveTimerRef.current = setTimeout(
-    async () => {
-      try {
-        await saveReadingProgress({
-          sourceType: 'prayer_rule',
-          sourceId: rule.id,
-          anchorType: 'prayer_rule_item',
-          anchorId: current.id,
-          offset: 0,
-        })
-      } catch (error) {
-        console.log(
-          'Ошибка сохранения позиции:',
-          error.response?.status,
-          error.response?.data,
-          error.message
-        )
-      }
-    }, 800
-  )
+  scheduleSave({
+    anchorType:'prayer_rule_item',
+    anchorId: current.id,
+    offset:0,
+  })
 }
 
   if(loading){

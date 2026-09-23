@@ -381,6 +381,165 @@ class PrayerRuleFootnote(models.Model):
         ]
 
 # =========================================================
+# АКАФИСТЫ
+# =========================================================
+
+class Akathist(models.Model):
+    title = models.CharField(
+        max_length=255,
+        verbose_name='Название',
+    )
+    slug = models.SlugField(
+        unique=True,
+        verbose_name='URL-идентификатор',
+    )
+    description = models.TextField(
+        blank=True,
+        verbose_name='Описание',
+    )
+    is_visible = models.BooleanField(
+        default=True,
+        verbose_name='Отображать',
+    )
+    troparion = models.ForeignKey(
+        Text,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='akathists_as_troparion',
+        verbose_name='Тропарь перед акафистом',
+    )
+    kontakion_before = models.ForeignKey(
+        Text,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='akathists_as_kontakion_before',
+        verbose_name='Кондак перед акафистом',
+    )
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        verbose_name = 'Акафист'
+        verbose_name_plural = 'Акафисты'
+
+class AkathistReadingRule(models.Model):
+    key = models.CharField(
+        max_length=50,
+        unique=True,
+        default='default',
+        verbose_name='Ключ',
+    )
+
+    opening = models.ForeignKey(
+        Text,
+        on_delete=models.PROTECT,
+        related_name='akathist_opening_rules',
+        verbose_name='Общее начало акафиста',
+    )
+
+    ending = models.ForeignKey(
+        Text,
+        on_delete=models.PROTECT,
+        related_name='akathist_ending_rules',
+        verbose_name='Общее окончание акафиста',
+    )
+
+    def __str__(self):
+        return 'Общий чин чтения акафиста'
+
+    class Meta:
+        verbose_name = 'Общий чин чтения акафиста'
+        verbose_name_plural = 'Общий чин чтения акафиста'
+
+class AkathistSection(models.Model):
+    TYPE_KONTAKION = 'kontakion'
+    TYPE_IKOS = 'ikos'
+    TYPE_PRAYER = 'prayer'
+
+    TYPE_CHOICES = [
+        (
+            TYPE_KONTAKION,
+            'Кондак'
+        ),
+        (
+            TYPE_IKOS,
+            'Икос'
+        ),
+        (
+            TYPE_PRAYER,
+            'Молитва'
+        ),
+    ]
+
+    akathist = models.ForeignKey(
+        Akathist,
+        on_delete=models.CASCADE,
+        related_name='sections',
+        verbose_name='Акафист'
+    )
+
+    section_type = models.CharField(
+        max_length=20,
+        choices=TYPE_CHOICES,
+        verbose_name='Тип раздела'
+    )
+
+    number = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Номер'
+    )
+
+    text = models.ForeignKey(
+        Text,
+        on_delete=models.PROTECT,
+        related_name='akathist_sections',
+        verbose_name='Текст'
+    )
+
+    note = models.TextField(
+        blank=True,
+        verbose_name='Примечание'
+    )
+
+    order = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Порядок'
+    )
+
+    def __str__(self):
+        if self.number:
+            return (
+                f'{self.akathist}: '
+                f'{self.get_section_type_display()} '
+                f'{self.number}'
+            )
+
+        return (
+            f'{self.akathist}: '
+            f'{self.get_section_type_display()}'
+        )
+
+    class Meta:
+        ordering = ['order']
+
+        verbose_name = 'Раздел акафиста'
+        verbose_name_plural = 'Разделы акафиста'
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    'akathist',
+                    'order',
+                ],
+                name='unique_order_per_akathist'
+            )
+        ]
+
+# =========================================================
 # ПСАЛТИРЬ
 # =========================================================
 
