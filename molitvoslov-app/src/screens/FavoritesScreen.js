@@ -201,6 +201,30 @@ export const FavoritesScreen = ({
 
         return;
       }
+      if (
+        item.source_type ===
+          'canon' &&
+        metadata.slug
+      ) {
+        navigation.navigate(
+          'Canon',
+          {
+            canonId:
+              item.source_id,
+
+            slug:
+              metadata.slug,
+
+            title:
+              item.source_title ||
+              'Канон',
+          }
+        );
+
+        return;
+      }
+
+
 
 
       if (
@@ -263,9 +287,9 @@ export const FavoritesScreen = ({
           <Text
             style={styles.subtitle}
           >
-            Цитаты, молитвы,
-            псалмы и другие
-            сохранённые места
+            Молитвы, псалмы,
+            акафисты, каноны и
+            сохранённые фрагменты
           </Text>
         </View>
 
@@ -338,8 +362,9 @@ export const FavoritesScreen = ({
                   предложение или абзац
                   во время чтения,
                   либо сохраните целую
-                  молитву, псалом
-                  или кафизму.
+                  молитву, псалом,
+                  кафизму, акафист
+                  или канон.
                 </Text>
               </View>
             }
