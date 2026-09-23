@@ -31,7 +31,7 @@ const scriptSafeJson = value =>
     .replace(/&/g, '\\u0026');
 
 
-const HTML_TEMPLATE = String.raw\`
+const HTML_TEMPLATE = String.raw`
 <!doctype html>
 <html>
 <head>
@@ -2567,7 +2567,7 @@ const HTML_TEMPLATE = String.raw\`
   </script>
 </body>
 </html>
-\`;
+`;
 
 
 const buildHtml = ({
