@@ -301,6 +301,19 @@ class AkathistSectionSerializer(serializers.ModelSerializer):
             'order',
         ]
 
+class AkathistSummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Akathist
+
+        fields = [
+            'id',
+            'title',
+            'slug',
+            'description',
+            'is_visible',
+        ]
+
+
 class AkathistSerializer(serializers.ModelSerializer):
     sections = AkathistSectionSerializer(
         many=True,
