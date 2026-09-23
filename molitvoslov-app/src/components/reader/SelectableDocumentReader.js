@@ -1170,6 +1170,105 @@ const HTML_TEMPLATE = String.raw`
       };
 
 
+    const setSectionWholeHighlight = (
+      actionKey,
+      savedItemId,
+      active
+    ) => {
+      const section =
+        (
+          DATA.document.sections ||
+          []
+        ).find(
+          item =>
+            item.action?.key ===
+              actionKey &&
+            item.action
+              ?.highlightContent
+        );
+
+      if (!section) {
+        return;
+      }
+
+      (
+        section.rows ||
+        []
+      ).forEach(
+        row => {
+          (
+            row.blocks ||
+            []
+          ).forEach(
+            block => {
+              if (
+                section.action
+                  .highlightAnchorType &&
+                block.anchorType !==
+                  section.action
+                    .highlightAnchorType
+              ) {
+                return;
+              }
+
+              const itemId =
+                Number(
+                  block.id
+                );
+
+              const text =
+                itemTextMap.get(
+                  itemId
+                ) ||
+                '';
+
+              const current =
+                savedRanges.get(
+                  itemId
+                ) ||
+                [];
+
+              const withoutWhole =
+                current.filter(
+                  range =>
+                    range.actionKey !==
+                      actionKey
+                );
+
+              if (
+                active &&
+                text.length
+              ) {
+                withoutWhole.push({
+                  id:
+                    savedItemId ||
+                    actionKey,
+
+                  actionKey,
+
+                  start:
+                    0,
+
+                  end:
+                    text.length,
+                });
+              }
+
+              savedRanges.set(
+                itemId,
+                withoutWhole
+              );
+
+              renderTextItem(
+                itemId
+              );
+            }
+          );
+        }
+      );
+    };
+
+
     const loadSavedRanges =
       () => {
         (
@@ -1227,6 +1326,28 @@ const HTML_TEMPLATE = String.raw`
               itemId,
               current
             );
+          }
+        );
+
+        (
+          DATA.document.sections ||
+          []
+        ).forEach(
+          section => {
+            if (
+              section.action
+                ?.highlightContent &&
+              section.action
+                ?.active
+            ) {
+              setSectionWholeHighlight(
+                section.action.key,
+                section.action
+                  .savedItemId ||
+                  section.action.key,
+                true
+              );
+            }
           }
         );
       };
@@ -2864,7 +2985,8 @@ const HTML_TEMPLATE = String.raw`
         (
           actionKey,
           label,
-          active
+          active,
+          savedItemId = null
         ) => {
           const action =
             document.querySelector(
@@ -2875,18 +2997,22 @@ const HTML_TEMPLATE = String.raw`
               '"]'
             );
 
-          if (!action) {
-            return;
+          if (action) {
+            action.textContent =
+              label;
+
+            action.classList
+              .toggle(
+                'active',
+                !!active
+              );
           }
 
-          action.textContent =
-            label;
-
-          action.classList
-            .toggle(
-              'active',
-              !!active
-            );
+          setSectionWholeHighlight(
+            actionKey,
+            savedItemId,
+            !!active
+          );
         },
 
       saveFailed:
@@ -3116,6 +3242,12 @@ export default function SelectableDocumentReader({
                 result.active
                   ? 'true'
                   : 'false'
+              ) +
+              ',' +
+              (
+                result.savedItem?.id ||
+                result.savedItemId ||
+                'null'
               ) +
               ')'
             );
