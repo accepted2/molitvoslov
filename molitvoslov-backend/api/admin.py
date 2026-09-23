@@ -642,6 +642,7 @@ class CanonSectionInline(admin.TabularInline):
 
     fields = [
         'order',
+        'variant',
         'ode_number',
         'section_type',
         'heading',
@@ -691,6 +692,7 @@ class CanonAdmin(admin.ModelAdmin):
 class CanonSectionAdmin(admin.ModelAdmin):
     list_display = [
         'canon',
+        'variant',
         'order',
         'ode_number',
         'section_type',
@@ -700,6 +702,7 @@ class CanonSectionAdmin(admin.ModelAdmin):
 
     list_filter = [
         'canon',
+        'variant',
         'ode_number',
         'section_type',
     ]
