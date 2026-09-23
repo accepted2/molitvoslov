@@ -1,1027 +1,837 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import {
   ActivityIndicator,
-  ScrollView,
+  Pressable,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 
-import { api } from '../api';
-import { useReadingProgress } from '../hooks/useReadingProgress';
+import {
+  api,
+} from '../api';
 
+import {
+  useReadingProgress,
+} from '../hooks/useReadingProgress';
 
 import {
   getSavedItems,
 } from '../services/savedItems';
 
-import SelectableSaveText
-  from '../components/reader/SelectableSaveText';
+import SelectableDocumentReader
+  from '../components/reader/SelectableDocumentReader';
+
+import {
+  colors,
+  radius,
+  spacing,
+} from '../theme';
 
 
-const MODE_CHURCH = 'church';
-const MODE_BOTH = 'both';
-const MODE_RUSSIAN = 'russian';
+const MODE_CHURCH =
+  'church';
+
+const MODE_BOTH =
+  'both';
+
+const MODE_RUSSIAN =
+  'russian';
 
 
-/*
- * Обычные логические абзацы.
- *
- * Используются там, где нам важно сохранить группировку,
- * полученную от backend/importer.
- */
-const splitParagraphs = text => {
-  if (!text) {
-    return [];
-  }
-
-  return text
-    .trim()
-    .split(/\n\s*\n/)
-    .map(paragraph => paragraph.trim())
-    .filter(Boolean);
-};
-
-
-/*
- * Строки внутри абзаца.
- *
- * EPUB может содержать:
- *
- * <br>
- *
- * Мы сохраняем его в БД как одиночный "\n".
- *
- * Поэтому здесь одиночный перенос тоже считается
- * самостоятельной отображаемой строкой.
- */
-const splitLines = text => {
-  if (!text) {
-    return [];
-  }
-
-  return text
-    .split(/\n+/)
-    .map(line => line.trim())
-    .filter(Boolean);
-};
-
-
-/*
- * Для Кондаков/Икосов превращаем текст в мелкие
- * отображаемые блоки.
- *
- * Например:
- *
- * вступление
- * Радуйся...
- * Радуйся...
- *
- * станет тремя блоками.
- *
- * У Николая это не ломает уже существующее разбиение,
- * потому что \n\n тоже будет корректно обработан.
- */
-const splitReadingBlocks = text => {
-  const paragraphs = splitParagraphs(text);
-  const result = [];
-
-  paragraphs.forEach(paragraph => {
-    const lines = splitLines(paragraph);
-
-    if (lines.length) {
-      result.push(...lines);
-    }
-  });
-
-  return result;
-};
-
-
-/*
- * Убираем ударения и приводим слово к виду,
- * подходящему для сравнения.
- *
- * NFD нужен, чтобы даже составные Unicode-символы
- * разложились на букву + знак ударения.
- */
-const removeAccents = text => {
-  if (!text) {
-    return '';
-  }
-
-  return text
-    .normalize('NFD')
-    .replace(
-      /[\u0300\u0301\u0340\u0341\u0483-\u0487]/g,
-      ''
-    )
-    .replace(
-      /[\u200B-\u200D\uFEFF]/g,
-      ''
-    )
-    .normalize('NFC');
-};
-
-
-const renderStyledLine = (
-  line,
-  baseStyle,
-  key,
-) => {
-  if (!line) {
-    return null;
-  }
-
-  const firstWordMatch = line.match(
-    /^([^\s,.;:!?]+)/u
-  );
-
-  if (!firstWordMatch) {
-    return (
-      <Text key={key} style={baseStyle}>
-        {line}
-      </Text>
-    );
-  }
-
-  const originalWord =
-    firstWordMatch[1];
-
-  const normalizedWord =
-    removeAccents(originalWord);
-
-  const rest = line.slice(
-    originalWord.length
-  );
-
-  let accentStyle = null;
-
-  /*
-   * ВАЖНО:
-   * сравнение регистрозависимое.
-   *
-   * "Радуйся" -> выделяем.
-   * "радуйся" -> НЕ выделяем.
-   */
-  if (normalizedWord === 'Радуйся') {
-    accentStyle = styles.rejoice;
-  }
-
-  if (normalizedWord === 'Иисусе') {
-    accentStyle = styles.jesusInvocation;
-  }
-
-  if (normalizedWord === 'Аллилуиа') {
-    accentStyle = styles.alleluia;
-  }
-
-  if (!accentStyle) {
-    return (
-      <Text key={key} style={baseStyle}>
-        {line}
-      </Text>
-    );
-  }
-
-  return (
-    <Text key={key} selectable style={baseStyle}>
-      <Text style={accentStyle}>
-        {originalWord}
-      </Text>
-
-      {rest}
-    </Text>
-  );
-};
-
-
-const renderStyledText = (
-  text,
-  baseStyle,
-) => {
-  if (!text) {
-    return null;
-  }
-
-  const lines = text.split('\n');
-
-  return (
-    <Text selectable style={baseStyle}>
-      {lines.map((line, index) => (
-        <React.Fragment key={index}>
-          {renderStyledLine(
-            line,
-            baseStyle,
-            index
-          )}
-
-          {index < lines.length - 1
-            ? '\n'
-            : null}
-        </React.Fragment>
-      ))}
-    </Text>
-  );
-};
-
-
-const LanguageButton = ({
-                          title,
-                          active,
-                          onPress,
-                          disabled = false,
-                        }) => {
-  return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      disabled={disabled}
-      onPress={onPress}
-      style={[
-        styles.languageButton,
-        active && styles.languageButtonActive,
-        disabled && styles.languageButtonDisabled,
-      ]}
-    >
-      <Text
-        style={[
-          styles.languageButtonText,
-          active && styles.languageButtonTextActive,
-          disabled && styles.languageButtonTextDisabled,
-        ]}
-      >
-        {title}
-      </Text>
-    </TouchableOpacity>
-  );
-};
-
-
-export const AkathistScreen = ({ route }) => {
-  const {
-    akathistId,
-    slug,
-    title,
-  } = route.params;
-
-
-  const [akathist, setAkathist] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState(MODE_BOTH);
-  const [savedItems, setSavedItems] = useState([]);
-
-  const scrollRef = useRef(null);
-  const sectionPositionsRef = useRef({});
-  const savedAnchorIdRef = useRef(null);
-  const restoredRef = useRef(false);
-  const currentSectionRef = useRef(null);
-  const restoringRef = useRef(false);
-
-  const {
-    savedProgress,
-    scheduleSave,
-  } = useReadingProgress({
-    sourceType: 'akathist',
-    sourceId: akathistId,
-  });
-
-
-  useEffect(() => {
+const getSectionTitle =
+  section => {
     if (
-      savedProgress?.anchor_type !==
-      'akathist_section'
-    ) {
-      return;
-    }
-
-    savedAnchorIdRef.current =
-      savedProgress.anchor_id;
-
-    tryRestorePosition();
-  }, [savedProgress]);
-
-
-  useEffect(() => {
-    sectionPositionsRef.current = {};
-    savedAnchorIdRef.current = null;
-    restoredRef.current = false;
-    currentSectionRef.current = null;
-    restoringRef.current = false;
-
-    loadAkathist();
-  }, [slug]);
-
-
-  const loadAkathist = async () => {
-    try {
-      setLoading(true);
-
-      const response = await api.get(
-        `akathists/${slug}/`
-      );
-
-      const data = response.data;
-
-      setAkathist(data);
-
-      try {
-        const saved =
-          await getSavedItems({
-            source_type:
-              'akathist',
-
-            source_id:
-              akathistId,
-          });
-
-        setSavedItems(
-          saved
-        );
-      } catch (savedError) {
-        console.log(
-          'Ошибка загрузки сохранений акафиста:',
-          savedError
-        );
-      }
-    } catch (error) {
-      console.error(
-        'Ошибка загрузки акафиста:',
-        error
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  const handleSectionLayout = (
-    sectionId,
-    event
-  ) => {
-    sectionPositionsRef.current[sectionId] =
-      event.nativeEvent.layout.y;
-
-    tryRestorePosition();
-  };
-
-
-  const tryRestorePosition = () => {
-    if (restoredRef.current) {
-      return;
-    }
-
-    const anchorId =
-      savedAnchorIdRef.current;
-
-    if (!anchorId) {
-      return;
-    }
-
-    const y =
-      sectionPositionsRef.current[anchorId];
-
-    if (
-      y === undefined ||
-      !scrollRef.current
-    ) {
-      return;
-    }
-
-    restoredRef.current = true;
-    restoringRef.current = true;
-
-    requestAnimationFrame(() => {
-      scrollRef.current?.scrollTo({
-        y: Math.max(y - 30, 0),
-        animated: false,
-      });
-
-      setTimeout(() => {
-        restoringRef.current = false;
-      }, 300);
-    });
-  };
-
-
-  const getCurrentSection = scrollY => {
-    const positions = Object.entries(
-      sectionPositionsRef.current
-    )
-      .map(([id, y]) => ({
-        id: Number(id),
-        y,
-      }))
-      .sort((a, b) => a.y - b.y);
-
-    if (!positions.length) {
-      return null;
-    }
-
-    const readingLine = scrollY + 70;
-    let current = positions[0];
-
-    for (const position of positions) {
-      if (position.y <= readingLine) {
-        current = position;
-      } else {
-        break;
-      }
-    }
-
-    return current;
-  };
-
-
-  const handleScroll = event => {
-    if (restoringRef.current) {
-      return;
-    }
-
-    const scrollY =
-      event.nativeEvent.contentOffset.y;
-
-    const current =
-      getCurrentSection(scrollY);
-
-    if (
-      !current ||
-      currentSectionRef.current === current.id
-    ) {
-      return;
-    }
-
-    currentSectionRef.current = current.id;
-
-    scheduleSave({
-      anchorType: 'akathist_section',
-      anchorId: current.id,
-      offset: 0,
-    });
-  };
-
-
-  const handleSavedItem =
-    savedItem => {
-      setSavedItems(
-        current => {
-          if (
-            current.some(
-              item =>
-                item.id ===
-                savedItem.id
-            )
-          ) {
-            return current;
-          }
-
-          return [
-            savedItem,
-            ...current,
-          ];
-        }
-      );
-    };
-
-
-  const isSectionSaved =
-    sectionId =>
-      savedItems.some(
-        item =>
-          item.anchor_type ===
-            'akathist_section' &&
-          Number(
-            item.anchor_id
-          ) ===
-            Number(
-              sectionId
-            )
-      );
-
-
-  const getAkathistWordStyle =
-    rawWord => {
-      const cleaned =
-        removeAccents(
-          rawWord || ''
-        )
-          .replace(
-            /^[^А-Яа-яЁё\u0400-\u052F]+/,
-            ''
-          )
-          .replace(
-            /[^А-Яа-яЁё\u0400-\u052F]+$/,
-            ''
-          );
-
-      if (
-        cleaned ===
-        'Радуйся'
-      ) {
-        return styles.rejoice;
-      }
-
-      if (
-        cleaned ===
-        'Иисусе'
-      ) {
-        return styles.jesusInvocation;
-      }
-
-      if (
-        cleaned ===
-        'Аллилуиа'
-      ) {
-        return styles.alleluia;
-      }
-
-      return null;
-    };
-
-
-  const renderSaveableText = ({
-    value,
-    textStyle,
-    section,
-    segmentKey,
-    language,
-    fullSaveType = null,
-    fullSaveLabel = null,
-  }) => {
-    if (!value) {
-      return null;
-    }
-
-    return (
-      <SelectableSaveText
-        text={value}
-        textStyle={textStyle}
-        sourceType="akathist"
-        sourceId={akathistId}
-        anchorType="akathist_section"
-        anchorId={section.id}
-        sourceTitle={
-          akathist?.title ||
-          title ||
-          'Акафист'
-        }
-        itemTitle={
-          getSectionTitle(
-            section
-          )
-        }
-        metadata={{
-          slug,
-          section_id:
-            section.id,
-          segment:
-            segmentKey,
-          language,
-        }}
-        fullSaveType={
-          fullSaveType
-        }
-        fullSaveLabel={
-          fullSaveLabel
-        }
-        wordStyleResolver={
-          getAkathistWordStyle
-        }
-        onSaved={
-          handleSavedItem
-        }
-      />
-    );
-  };
-
-
-  const getSectionTitle = section => {
-    if (
-      section.section_type === 'kontakion'
+      section.section_type ===
+      'kontakion'
     ) {
       return `Кондак ${section.number}`;
     }
 
     if (
-      section.section_type === 'ikos'
+      section.section_type ===
+      'ikos'
     ) {
       return `Икос ${section.number}`;
     }
 
     if (
-      section.section_type === 'prayer'
+      section.section_type ===
+      'prayer'
     ) {
       return section.number
         ? `Молитва ${section.number}`
         : 'Молитва';
     }
 
-    return '';
+    return (
+      section.text?.title ||
+      ''
+    );
   };
 
 
-  const showChurch =
-    viewMode === MODE_CHURCH ||
-    viewMode === MODE_BOTH;
-
-  const showRussian =
-    viewMode === MODE_RUSSIAN ||
-    viewMode === MODE_BOTH;
-
-
-  /*
-   * Проверяем, есть ли вообще русский перевод
-   * хотя бы где-нибудь в конкретном акафисте.
-   *
-   * Это пригодится для акафистов вроде
-   * Рождества Богородицы, где EPUB содержит
-   * только церковнославянский текст.
-   */
-  const hasRussianTranslation = (() => {
-    if (!akathist) {
-      return false;
+const LanguageButton = ({
+  title,
+  active,
+  disabled,
+  onPress,
+}) => (
+  <Pressable
+    disabled={
+      disabled
     }
+    onPress={
+      onPress
+    }
+    style={({pressed}) => [
+      styles.languageButton,
 
-    const specialTexts = [
-      akathist.troparion,
-      akathist.kontakion_before,
-      akathist.common_rule?.opening,
-      akathist.common_rule?.ending,
-    ];
+      active &&
+        styles
+          .languageButtonActive,
 
-    const specialHasRussian =
-      specialTexts.some(
-        item => !!item?.translation?.trim()
-      );
+      disabled &&
+        styles
+          .languageButtonDisabled,
 
-    const sectionsHaveRussian =
-      akathist.sections?.some(
-        section =>
-          !!section.text?.translation?.trim()
-      );
+      pressed &&
+        !disabled &&
+        styles.pressed,
+    ]}
+  >
+    <Text
+      style={[
+        styles.languageButtonText,
 
-    return (
-      specialHasRussian ||
-      sectionsHaveRussian
+        active &&
+          styles
+            .languageButtonTextActive,
+      ]}
+    >
+      {title}
+    </Text>
+  </Pressable>
+);
+
+
+export const AkathistScreen = ({
+  route,
+}) => {
+  const {
+    akathistId,
+    slug,
+    title,
+  } = route.params;
+
+  const [
+    akathist,
+    setAkathist,
+  ] = useState(null);
+
+  const [
+    savedItems,
+    setSavedItems,
+  ] = useState([]);
+
+  const [
+    viewMode,
+    setViewMode,
+  ] = useState(
+    MODE_BOTH
+  );
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    error,
+    setError,
+  ] = useState(null);
+
+
+  const {
+    savedProgress,
+    progressReady,
+    scheduleSave,
+  } = useReadingProgress({
+    sourceType:
+      'akathist',
+
+    sourceId:
+      akathistId,
+  });
+
+
+  useEffect(() => {
+    loadAkathist();
+  }, [
+    slug,
+    akathistId,
+  ]);
+
+
+  const loadAkathist =
+    async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        setAkathist(null);
+        setSavedItems([]);
+
+        const [
+          response,
+          saved,
+        ] = await Promise.all([
+          api.get(
+            `akathists/${slug}/`
+          ),
+
+          getSavedItems({
+            source_type:
+              'akathist',
+
+            source_id:
+              akathistId,
+          }),
+        ]);
+
+        setAkathist(
+          response.data
+        );
+
+        setSavedItems(
+          saved
+        );
+      } catch (loadError) {
+        console.log(
+          'Ошибка загрузки акафиста:',
+          loadError.response?.data ||
+          loadError.message
+        );
+
+        setError(
+          'Не удалось загрузить акафист'
+        );
+      } finally {
+        setLoading(
+          false
+        );
+      }
+    };
+
+
+  const hasRussianTranslation =
+    useMemo(
+      () => {
+        if (!akathist) {
+          return false;
+        }
+
+        const specialTexts = [
+          akathist.troparion,
+          akathist.kontakion_before,
+          akathist.common_rule
+            ?.opening,
+          akathist.common_rule
+            ?.ending,
+        ];
+
+        return (
+          specialTexts.some(
+            item =>
+              !!item
+                ?.translation
+                ?.trim()
+          ) ||
+          (
+            akathist.sections ||
+            []
+          ).some(
+            section =>
+              !!section.text
+                ?.translation
+                ?.trim()
+          )
+        );
+      },
+      [
+        akathist,
+      ]
     );
-  })();
 
 
-  /*
-   * Кондаки и Икосы.
-   *
-   * Здесь уже учитываем как:
-   *
-   * 1. Николая:
-   *    много самостоятельных ЦС/RU блоков;
-   *
-   * 2. Иисуса:
-   *    один большой блок, но внутри много <br>;
-   *
-   * 3. акафист только на ЦС:
-   *    русский массив просто будет пустым.
-   */
-  const renderParallelSection = section => {
-    const text =
-      section.text;
-
-    const churchParagraphs =
-      splitParagraphs(
-        text?.content
+  useEffect(() => {
+    if (
+      akathist &&
+      !hasRussianTranslation &&
+      viewMode !==
+        MODE_CHURCH
+    ) {
+      setViewMode(
+        MODE_CHURCH
       );
-
-    const russianParagraphs =
-      splitParagraphs(
-        text?.translation
-      );
-
-    const count =
-      Math.max(
-        churchParagraphs.length,
-        russianParagraphs.length
-      );
-
-    if (!count) {
-      return null;
     }
+  }, [
+    akathist,
+    hasRussianTranslation,
+    viewMode,
+  ]);
 
-    return (
-      <View>
-        {Array.from({
-          length: count,
-        }).map((_, index) => {
+
+  const documentData =
+    useMemo(
+      () => {
+        if (!akathist) {
+          return {
+            title:
+              title ||
+              'Акафист',
+
+            description:
+              '',
+
+            progressAnchorType:
+              'akathist_section',
+
+            savedItems: [],
+
+            sections: [],
+          };
+        }
+
+        let nextBlockId =
+          1;
+
+        const normalizedSaved =
+          [];
+
+        const sections =
+          [];
+
+        const showChurch =
+          viewMode ===
+            MODE_CHURCH ||
+          viewMode ===
+            MODE_BOTH;
+
+        const showRussian =
+          viewMode ===
+            MODE_RUSSIAN ||
+          viewMode ===
+            MODE_BOTH;
+
+        const attachSaved = ({
+          syntheticId,
+          anchorType,
+          anchorId,
+          language,
+          segment,
+          special,
+        }) => {
+          savedItems
+            .filter(
+              item => {
+                if (
+                  item.anchor_type !==
+                    anchorType ||
+                  Number(
+                    item.anchor_id
+                  ) !==
+                    Number(
+                      anchorId
+                    ) ||
+                  item.start_offset ===
+                    null ||
+                  item.end_offset ===
+                    null
+                ) {
+                  return false;
+                }
+
+                const metadata =
+                  item.metadata ||
+                  {};
+
+                if (
+                  language &&
+                  metadata.language &&
+                  metadata.language !==
+                    language
+                ) {
+                  return false;
+                }
+
+                if (
+                  special &&
+                  metadata.special &&
+                  metadata.special !==
+                    special
+                ) {
+                  return false;
+                }
+
+                if (
+                  segment &&
+                  metadata.segment &&
+                  ![
+                    segment,
+                    'whole',
+                    'prayer',
+                  ].includes(
+                    metadata.segment
+                  )
+                ) {
+                  return false;
+                }
+
+                return true;
+              }
+            )
+            .forEach(
+              item => {
+                normalizedSaved.push({
+                  ...item,
+
+                  anchor_id:
+                    syntheticId,
+                });
+              }
+            );
+        };
+
+
+        const makeBlock = ({
+          text,
+          language,
+          anchorType,
+          anchorId,
+          itemTitle,
+          fullSaveType,
+          metadata,
+          className,
+          special,
+        }) => {
+          const syntheticId =
+            nextBlockId++;
+
+          attachSaved({
+            syntheticId,
+            anchorType,
+            anchorId,
+            language,
+            segment:
+              metadata.segment,
+            special,
+          });
+
+          return {
+            id:
+              syntheticId,
+
+            text,
+
+            className,
+
+            sourceType:
+              'akathist',
+
+            sourceId:
+              akathistId,
+
+            anchorType,
+
+            anchorId,
+
+            sourceTitle:
+              akathist.title ||
+              title ||
+              'Акафист',
+
+            itemTitle,
+
+            fullSaveType,
+
+            metadata,
+
+            accentWords: [
+              'Радуйся',
+              'Иисусе',
+              'Аллилуиа',
+            ],
+          };
+        };
+
+
+        const addSpecial = (
+          textObject,
+          heading,
+          specialKey
+        ) => {
+          if (!textObject) {
+            return;
+          }
+
+          const blocks =
+            [];
+
           const church =
-            churchParagraphs[
-              index
-            ] || '';
+            textObject.content
+              ?.trim() ||
+            '';
 
           const russian =
-            russianParagraphs[
-              index
-            ] || '';
+            textObject.translation
+              ?.trim() ||
+            '';
 
-          return (
-            <View
-              key={index}
-              style={
-                styles
-                  .parallelParagraph
-              }
-            >
-              {showChurch &&
-                !!church && (
-                  <View
-                    style={
-                      styles
-                        .churchBlock
-                    }
-                  >
-                    {renderSaveableText({
-                      value:
-                        church,
-
-                      textStyle:
-                        styles
-                          .churchText,
-
-                      section,
-
-                      segmentKey:
-                        `paragraph-${index}`,
-
-                      language:
-                        'church',
-                    })}
-                  </View>
-                )}
-
-              {showRussian &&
-                !!russian && (
-                  <View
-                    style={
-                      styles
-                        .russianBlock
-                    }
-                  >
-                    {renderSaveableText({
-                      value:
-                        russian,
-
-                      textStyle:
-                        styles
-                          .russianText,
-
-                      section,
-
-                      segmentKey:
-                        `paragraph-${index}`,
-
-                      language:
-                        'russian',
-                    })}
-                  </View>
-                )}
-            </View>
-          );
-        })}
-      </View>
-    );
-  };
-
-
-  /*
-   * Молитвы после акафиста.
-   *
-   * Здесь специально НЕ чередуем строки.
-   *
-   * Сначала вся молитва ЦС.
-   * Затем весь перевод целиком.
-   */
-  const renderPrayer = section => {
-    const text =
-      section.text;
-
-    const church =
-      text?.content?.trim() || '';
-
-    const russian =
-      text?.translation?.trim() || '';
-
-    return (
-      <View style={styles.prayerContainer}>
-        {showChurch && !!church && (
-          <View
-            style={
-              styles.wholePrayerBlock
-            }
-          >
-            {renderSaveableText({
-              value:
-                church,
-
-              textStyle:
-                styles.churchText,
-
-              section,
-
-              segmentKey:
-                'prayer',
-
-              language:
-                'church',
-
-              fullSaveType:
-                'prayer',
-
-              fullSaveLabel:
-                'Молитва',
-            })}
-          </View>
-        )}
-
-        {showRussian && !!russian && (
-          <View
-            style={
-              styles.wholePrayerTranslation
-            }
-          >
-            {renderSaveableText({
-              value:
-                russian,
-
-              textStyle:
-                styles.russianText,
-
-              section,
-
-              segmentKey:
-                'prayer',
-
-              language:
-                'russian',
-
-              fullSaveType:
-                'prayer',
-
-              fullSaveLabel:
-                'Молитва',
-            })}
-          </View>
-        )}
-      </View>
-    );
-  };
-
-
-  /*
-   * Общее начало/окончание,
-   * тропарь и кондак.
-   */
-  const renderWholeText = (
-    text,
-    heading
-  ) => {
-    if (!text) {
-      return null;
-    }
-
-    const church =
-      text.content?.trim() || '';
-
-    const russian =
-      text.translation?.trim() || '';
-
-    if (!church && !russian) {
-      return null;
-    }
-
-    return (
-      <View style={styles.specialBlock}>
-        {!!heading && (
-          <Text
-            style={
-              styles.specialHeading
-            }
-          >
-            {heading}
-          </Text>
-        )}
-
-        {showChurch && !!church && (
-          <View
-            style={styles.churchBlock}
-          >
-            <SelectableSaveText
-              text={church}
-              textStyle={
-                styles.churchText
-              }
-              sourceType="akathist"
-              sourceId={
-                akathistId
-              }
-              anchorType="akathist_special"
-              anchorId={
-                text.id
-              }
-              sourceTitle={
-                akathist?.title ||
-                title ||
-                'Акафист'
-              }
-              itemTitle={
-                heading ||
-                'Текст акафиста'
-              }
-              metadata={{
-                slug,
-                special:
-                  heading ||
-                  'common',
+          if (
+            showChurch &&
+            church
+          ) {
+            blocks.push(
+              makeBlock({
+                text:
+                  church,
 
                 language:
                   'church',
-              }}
-              fullSaveType="text"
-              fullSaveLabel={
-                heading ||
-                'Текст'
-              }
-              wordStyleResolver={
-                getAkathistWordStyle
-              }
-              onSaved={
-                handleSavedItem
-              }
-            />
-          </View>
-        )}
 
-        {showRussian && !!russian && (
-          <View
-            style={styles.russianBlock}
-          >
-            <SelectableSaveText
-              text={russian}
-              textStyle={
-                styles.russianText
-              }
-              sourceType="akathist"
-              sourceId={
-                akathistId
-              }
-              anchorType="akathist_special"
-              anchorId={
-                text.id
-              }
-              sourceTitle={
-                akathist?.title ||
-                title ||
-                'Акафист'
-              }
-              itemTitle={
-                heading ||
-                'Текст акафиста'
-              }
-              metadata={{
-                slug,
+                anchorType:
+                  'akathist_special',
+
+                anchorId:
+                  textObject.id,
+
+                itemTitle:
+                  heading,
+
+                fullSaveType:
+                  'text',
+
+                metadata: {
+                  slug,
+                  special:
+                    specialKey,
+                  segment:
+                    'whole',
+                  language:
+                    'church',
+                },
+
+                className:
+                  'akathist-church',
+
                 special:
-                  heading ||
-                  'common',
+                  specialKey,
+              })
+            );
+          }
+
+          if (
+            showRussian &&
+            russian
+          ) {
+            blocks.push(
+              makeBlock({
+                text:
+                  russian,
 
                 language:
                   'russian',
-              }}
-              fullSaveType="text"
-              fullSaveLabel={
-                heading ||
-                'Текст'
-              }
-              wordStyleResolver={
-                getAkathistWordStyle
-              }
-              onSaved={
-                handleSavedItem
-              }
-            />
-          </View>
-        )}
-      </View>
+
+                anchorType:
+                  'akathist_special',
+
+                anchorId:
+                  textObject.id,
+
+                itemTitle:
+                  heading,
+
+                fullSaveType:
+                  'text',
+
+                metadata: {
+                  slug,
+                  special:
+                    specialKey,
+                  segment:
+                    'whole',
+                  language:
+                    'russian',
+                },
+
+                className:
+                  'akathist-russian',
+
+                special:
+                  specialKey,
+              })
+            );
+          }
+
+          if (!blocks.length) {
+            return;
+          }
+
+          sections.push({
+            progressAnchorId:
+              0,
+
+            trackProgress:
+              false,
+
+            title:
+              heading,
+
+            rows:
+              blocks.map(
+                block => ({
+                  layout:
+                    'stack',
+
+                  blocks: [
+                    block,
+                  ],
+                })
+              ),
+          });
+        };
+
+
+        addSpecial(
+          akathist.common_rule
+            ?.opening,
+          'Молитвы перед чтением акафиста',
+          'opening'
+        );
+
+        addSpecial(
+          akathist.troparion,
+          'Тропарь',
+          'troparion'
+        );
+
+        addSpecial(
+          akathist.kontakion_before,
+          'Кондак',
+          'kontakion_before'
+        );
+
+
+        (
+          akathist.sections ||
+          []
+        ).forEach(
+          section => {
+            const church =
+              section.text?.content
+                ?.trim() ||
+              '';
+
+            const russian =
+              section.text
+                ?.translation
+                ?.trim() ||
+              '';
+
+            const blocks =
+              [];
+
+            const sectionTitle =
+              getSectionTitle(
+                section
+              );
+
+            const fullSaveType =
+              section.section_type ===
+                'prayer'
+                ? 'prayer'
+                : 'section';
+
+            if (
+              showChurch &&
+              church
+            ) {
+              blocks.push(
+                makeBlock({
+                  text:
+                    church,
+
+                  language:
+                    'church',
+
+                  anchorType:
+                    'akathist_section',
+
+                  anchorId:
+                    section.id,
+
+                  itemTitle:
+                    sectionTitle,
+
+                  fullSaveType,
+
+                  metadata: {
+                    slug,
+                    section_id:
+                      section.id,
+                    segment:
+                      'whole',
+                    language:
+                      'church',
+                  },
+
+                  className:
+                    'akathist-church',
+                })
+              );
+            }
+
+            if (
+              showRussian &&
+              russian
+            ) {
+              blocks.push(
+                makeBlock({
+                  text:
+                    russian,
+
+                  language:
+                    'russian',
+
+                  anchorType:
+                    'akathist_section',
+
+                  anchorId:
+                    section.id,
+
+                  itemTitle:
+                    sectionTitle,
+
+                  fullSaveType,
+
+                  metadata: {
+                    slug,
+                    section_id:
+                      section.id,
+                    segment:
+                      'whole',
+                    language:
+                      'russian',
+                  },
+
+                  className:
+                    'akathist-russian',
+                })
+              );
+            }
+
+            if (!blocks.length) {
+              return;
+            }
+
+            sections.push({
+              progressAnchorId:
+                Number(
+                  section.id
+                ),
+
+              trackProgress:
+                true,
+
+              title:
+                sectionTitle,
+
+              note:
+                section.note ||
+                '',
+
+              rows:
+                blocks.map(
+                  block => ({
+                    layout:
+                      'stack',
+
+                    blocks: [
+                      block,
+                    ],
+                  })
+                ),
+            });
+          }
+        );
+
+
+        addSpecial(
+          akathist.common_rule
+            ?.ending,
+          'Окончание чтения акафиста',
+          'ending'
+        );
+
+
+        return {
+          title:
+            akathist.title ||
+            title ||
+            'Акафист',
+
+          description:
+            akathist.description ||
+            '',
+
+          progressAnchorType:
+            'akathist_section',
+
+          savedItems:
+            normalizedSaved,
+
+          sections,
+        };
+      },
+      [
+        akathist,
+        akathistId,
+        hasRussianTranslation,
+        savedItems,
+        slug,
+        title,
+        viewMode,
+      ]
     );
-  };
 
 
-  if (loading) {
+  if (
+    loading ||
+    (
+      akathist &&
+      !progressReady
+    )
+  ) {
     return (
-      <View style={styles.center}>
+      <View
+        style={styles.center}
+      >
         <ActivityIndicator
           size="large"
-          color="#2c3e50"
+          color={
+            colors.accent
+          }
         />
 
         <Text
-          style={styles.loadingText}
+          style={
+            styles.loadingText
+          }
         >
           Загрузка...
         </Text>
@@ -1030,11 +840,21 @@ export const AkathistScreen = ({ route }) => {
   }
 
 
-  if (!akathist) {
+  if (
+    error ||
+    !akathist
+  ) {
     return (
-      <View style={styles.center}>
-        <Text>
-          Не удалось загрузить акафист
+      <View
+        style={styles.center}
+      >
+        <Text
+          style={styles.error}
+        >
+          {
+            error ||
+            'Акафист не найден'
+          }
         </Text>
       </View>
     );
@@ -1042,402 +862,157 @@ export const AkathistScreen = ({ route }) => {
 
 
   return (
-    <ScrollView
-      ref={scrollRef}
+    <View
       style={styles.container}
-      contentContainerStyle={
-        styles.contentContainer
-      }
-      onScroll={handleScroll}
-      scrollEventThrottle={200}
     >
-      <Text style={styles.headerTitle}>
-        {akathist.title || title}
-      </Text>
-
       <View
-        style={styles.languageSwitcher}
+        style={
+          styles.languageSwitcher
+        }
       >
         <LanguageButton
           title="ЦС"
           active={
-            viewMode === MODE_CHURCH
+            viewMode ===
+            MODE_CHURCH
           }
           onPress={() =>
-            setViewMode(MODE_CHURCH)
+            setViewMode(
+              MODE_CHURCH
+            )
           }
         />
 
         <LanguageButton
-          title="ЦС + Русский"
+          title="ЦС + Рус."
           active={
-            viewMode === MODE_BOTH
+            viewMode ===
+            MODE_BOTH
           }
           disabled={
             !hasRussianTranslation
           }
           onPress={() =>
-            setViewMode(MODE_BOTH)
+            setViewMode(
+              MODE_BOTH
+            )
           }
         />
 
         <LanguageButton
-          title="Русский"
+          title="Рус."
           active={
-            viewMode === MODE_RUSSIAN
+            viewMode ===
+            MODE_RUSSIAN
           }
           disabled={
             !hasRussianTranslation
           }
           onPress={() =>
-            setViewMode(MODE_RUSSIAN)
+            setViewMode(
+              MODE_RUSSIAN
+            )
           }
         />
       </View>
 
-
-      {!!akathist.common_rule?.opening && (
-        <>
-          <Text
-            style={
-              styles.majorSectionTitle
-            }
-          >
-            Молитвы перед чтением акафиста
-          </Text>
-
-          {renderWholeText(
-            akathist.common_rule.opening
-          )}
-
-          <View
-            style={styles.majorDivider}
-          />
-        </>
-      )}
-
-
-      {!!akathist.troparion &&
-        renderWholeText(
-          akathist.troparion,
-          'Тропарь'
-        )}
-
-
-      {!!akathist.kontakion_before &&
-        renderWholeText(
-          akathist.kontakion_before,
-          'Кондак'
-        )}
-
-
-      {(akathist.troparion ||
-        akathist.kontakion_before) && (
-        <View
-          style={styles.majorDivider}
-        />
-      )}
-
-
-      {akathist.sections.map(
-        (section, index) => {
-          const sectionTitle =
-            getSectionTitle(section);
-
-          const isPrayer =
-            section.section_type ===
-            'prayer';
-
-          return (
-            <View
-              key={section.id}
-              style={[
-                styles.section,
-
-                isSectionSaved(
-                  section.id
-                ) &&
-                  styles.sectionSaved,
-              ]}
-              onLayout={event =>
-                handleSectionLayout(
-                  section.id,
-                  event
-                )
-              }
-            >
-              {!!sectionTitle && (
-                <Text
-                  style={[
-                    styles.sectionTitle,
-                    isPrayer &&
-                    styles.prayerTitle,
-                  ]}
-                >
-                  {sectionTitle}
-                </Text>
-              )}
-
-              {!!section.note && (
-                <Text
-                  style={styles.note}
-                >
-                  {section.note}
-                </Text>
-              )}
-
-              {isPrayer
-                ? renderPrayer(
-                  section
-                )
-                : renderParallelSection(
-                  section
-                )}
-
-              {index <
-                akathist.sections.length -
-                1 && (
-                  <View
-                    style={styles.divider}
-                  />
-                )}
-            </View>
-          );
+      <SelectableDocumentReader
+        documentData={
+          documentData
         }
-      )}
-
-
-      {!!akathist.common_rule?.ending && (
-        <>
-          <View
-            style={styles.majorDivider}
-          />
-
-          <Text
-            style={
-              styles.majorSectionTitle
-            }
-          >
-            Окончание чтения акафиста
-          </Text>
-
-          {renderWholeText(
-            akathist.common_rule.ending
-          )}
-        </>
-      )}
-    </ScrollView>
+        savedProgress={
+          savedProgress
+        }
+        onProgress={
+          scheduleSave
+        }
+      />
+    </View>
   );
 };
 
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#faf8f5',
-  },
+const styles =
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor:
+        colors.background,
+    },
 
-  contentContainer: {
-    paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 60,
-  },
+    languageSwitcher: {
+      flexDirection:
+        'row',
+      marginHorizontal:
+        spacing.md,
+      marginTop:
+        spacing.sm,
+      marginBottom: 4,
+      padding: 4,
+      borderRadius:
+        radius.md,
+      backgroundColor:
+        colors.surfaceMuted,
+    },
 
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+    languageButton: {
+      flex: 1,
+      minHeight: 36,
+      alignItems:
+        'center',
+      justifyContent:
+        'center',
+      borderRadius:
+        radius.sm,
+    },
 
-  loadingText: {
-    marginTop: 10,
-  },
+    languageButtonActive: {
+      backgroundColor:
+        colors.text,
+    },
 
-  headerTitle: {
-    fontSize: 23,
-    lineHeight: 29,
-    fontWeight: '700',
-    color: '#2c3e50',
-    textAlign: 'center',
-    marginBottom: 18,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5dfd8',
-    fontFamily: 'serif',
-  },
+    languageButtonDisabled: {
+      opacity: 0.35,
+    },
 
-  languageSwitcher: {
-    flexDirection: 'row',
-    marginBottom: 24,
-    padding: 4,
-    borderRadius: 10,
-    backgroundColor: '#eee9e3',
-  },
+    languageButtonText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color:
+        colors.textSecondary,
+    },
 
-  languageButton: {
-    flex: 1,
-    paddingVertical: 9,
-    paddingHorizontal: 4,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+    languageButtonTextActive: {
+      color:
+        colors.white,
+    },
 
-  languageButtonActive: {
-    backgroundColor: '#2c3e50',
-  },
+    pressed: {
+      opacity: 0.65,
+    },
 
-  languageButtonDisabled: {
-    opacity: 0.4,
-  },
+    center: {
+      flex: 1,
+      justifyContent:
+        'center',
+      alignItems:
+        'center',
+      backgroundColor:
+        colors.background,
+    },
 
-  languageButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6f6f6f',
-    textAlign: 'center',
-  },
+    loadingText: {
+      marginTop: 10,
+      color:
+        colors.textSecondary,
+    },
 
-  languageButtonTextActive: {
-    color: '#fff',
-  },
-
-  languageButtonTextDisabled: {
-    color: '#999',
-  },
-
-  majorSectionTitle: {
-    fontSize: 20,
-    lineHeight: 26,
-    fontWeight: '700',
-    color: '#80552e',
-    textAlign: 'center',
-    marginBottom: 16,
-    fontFamily: 'serif',
-  },
-
-  section: {
-    marginBottom: 18,
-    paddingHorizontal: 6,
-    borderRadius: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: 'transparent',
-  },
-
-  sectionSaved: {
-    backgroundColor:
-      'rgba(138, 90, 56, 0.05)',
-    borderLeftColor:
-      'rgba(138, 90, 56, 0.28)',
-  },
-
-  sectionTitle: {
-    fontSize: 19,
-    lineHeight: 24,
-    fontWeight: '700',
-    color: '#80552e',
-    textAlign: 'center',
-    marginBottom: 11,
-    fontFamily: 'serif',
-  },
-
-  prayerTitle: {
-    fontSize: 20,
-    marginTop: 4,
-    marginBottom: 12,
-  },
-
-  specialHeading: {
-    fontSize: 18,
-    lineHeight: 23,
-    fontWeight: '700',
-    color: '#80552e',
-    textAlign: 'center',
-    marginBottom: 10,
-    fontFamily: 'serif',
-  },
-
-  note: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: '#ae1721',
-    fontStyle: 'italic',
-    textAlign: 'center',
-    marginBottom: 10,
-    fontFamily: 'serif',
-  },
-
-  churchText: {
-    fontSize: 17,
-    lineHeight: 24,
-    color: '#292929',
-    fontFamily: 'serif',
-  },
-
-  russianText: {
-    fontSize: 16,
-    lineHeight: 22,
-    color: '#777',
-    fontFamily: 'serif',
-  },
-
-  parallelParagraph: {
-    marginBottom: 12,
-  },
-
-  singleChurchLine: {
-    marginBottom: 4,
-  },
-
-  churchBlock: {
-    marginBottom: 4,
-  },
-
-  russianBlock: {
-    marginTop: 2,
-  },
-
-  prayerContainer: {
-    marginBottom: 5,
-  },
-
-  wholePrayerBlock: {
-    marginBottom: 15,
-  },
-
-  wholePrayerTranslation: {
-    marginTop: 4,
-  },
-
-  specialBlock: {
-    marginBottom: 22,
-  },
-
-  alleluia: {
-    fontWeight: '700',
-    color: '#ae1721',
-  },
-
-  rejoice: {
-    fontWeight: '600',
-    color: '#b34a3e',
-  },
-
-  jesusInvocation: {
-    fontWeight: '600',
-    color: '#b34a3e',
-  },
-
-  divider: {
-    height: 1,
-    backgroundColor: '#e6e1dc',
-    marginTop: 20,
-    marginBottom: 6,
-  },
-
-  majorDivider: {
-    height: 1,
-    backgroundColor: '#d8cec4',
-    marginVertical: 24,
-  },
-});
+    error: {
+      paddingHorizontal: 24,
+      textAlign: 'center',
+      color:
+        colors.liturgical,
+      fontSize: 15,
+      lineHeight: 22,
+    },
+  });
