@@ -1,480 +1,931 @@
 import React, {
-    useEffect,
-    useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
 } from 'react';
 
 import {
-    View,
-    Text,
-    FlatList,
-    StyleSheet,
-    TouchableOpacity,
-    ActivityIndicator,
+  ActivityIndicator,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 
-import { api } from '../api';
+import {
+  useFocusEffect,
+} from '@react-navigation/native';
+
+import {
+  StatusBar,
+} from 'expo-status-bar';
+
+import {
+  api,
+} from '../api';
+
+import {
+  getReadingProgress,
+} from '../services/readingProgress';
+
+import {
+  colors,
+  radius,
+  spacing,
+  typography,
+} from '../theme';
+
+
+const PRAYER_RULES = [
+  {
+    key: 'morning',
+    title: 'Утренние',
+    subtitle: 'Начало дня',
+    symbol: '☀',
+    slug: 'molitvy-utrennie',
+  },
+  {
+    key: 'evening',
+    title: 'Вечерние',
+    subtitle: 'Перед сном',
+    symbol: '☾',
+    slug: 'molitvy-na-son-griadushchim',
+  },
+];
+
+
+const formatToday = () => {
+  const weekdays = [
+    'Воскресенье',
+    'Понедельник',
+    'Вторник',
+    'Среда',
+    'Четверг',
+    'Пятница',
+    'Суббота',
+  ];
+
+  const months = [
+    'января',
+    'февраля',
+    'марта',
+    'апреля',
+    'мая',
+    'июня',
+    'июля',
+    'августа',
+    'сентября',
+    'октября',
+    'ноября',
+    'декабря',
+  ];
+
+  const date = new Date();
+
+  return `${weekdays[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]}`;
+};
+
+
+const HomeCard = ({
+  symbol,
+  title,
+  subtitle,
+  onPress,
+  featured = false,
+}) => (
+  <Pressable
+    onPress={onPress}
+    style={({pressed}) => [
+      styles.homeCard,
+      featured && styles.homeCardFeatured,
+      pressed && styles.pressed,
+    ]}
+  >
+    <View
+      style={[
+        styles.symbolCircle,
+        featured && styles.symbolCircleFeatured,
+      ]}
+    >
+      <Text
+        style={[
+          styles.symbolText,
+          featured && styles.symbolTextFeatured,
+        ]}
+      >
+        {symbol}
+      </Text>
+    </View>
+
+    <Text
+      style={styles.cardTitle}
+      numberOfLines={2}
+    >
+      {title}
+    </Text>
+
+    {!!subtitle && (
+      <Text
+        style={styles.cardSubtitle}
+        numberOfLines={2}
+      >
+        {subtitle}
+      </Text>
+    )}
+  </Pressable>
+);
 
 
 export const MenuScreen = ({
-                               navigation,
-                           }) => {
-    const [
-        categories,
-        setCategories,
-    ] = useState([]);
+  navigation,
+}) => {
+  const [categories, setCategories] =
+    useState([]);
 
-    const [
-        loading,
-        setLoading,
-    ] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
+  const [error, setError] =
+    useState(null);
 
-    const prayerRuleMap = {
-        'utrennie-molitvy':
-          'molitvy-utrennie',
-
-        'molitvy-na-son-griadushchim':
-          'molitvy-na-son-griadushchim',
-    };
+  const [psalterProgress, setPsalterProgress] =
+    useState(null);
 
 
-    useEffect(() => {
-        loadCategories();
+  const loadCategories =
+    useCallback(async () => {
+      try {
+        const response =
+          await api.get('categories/');
+
+        const sorted =
+          [...response.data].sort(
+            (a, b) =>
+              Number(a.order || 0) -
+              Number(b.order || 0)
+          );
+
+        setCategories(sorted);
+        setError(null);
+      } catch (err) {
+        console.log(
+          'Ошибка загрузки категорий:',
+          err
+        );
+
+        setError(
+          'Не удалось загрузить библиотеку'
+        );
+      }
     }, []);
 
 
-    const loadCategories = async () => {
-        try {
-            const response =
-              await api.get(
-                'categories/'
-              );
+  const loadProgress =
+    useCallback(async () => {
+      try {
+        const progressList =
+          await getReadingProgress();
 
-            const sorted =
-              response.data.sort(
-                (a, b) =>
-                  a.order - b.order
-              );
-
-            setCategories(
-              sorted
-            );
-        } catch (error) {
-            console.error(
-              'Ошибка загрузки категорий:',
-              error
-            );
-        } finally {
-            setLoading(false);
-        }
-    };
-
-
-    const handlePress = (
-      category
-    ) => {
-        const prayerRuleSlug =
-          prayerRuleMap[
-            category.slug
-            ];
-
-
-        if (prayerRuleSlug) {
-            navigation.navigate(
-              'PrayerRule',
-              {
-                  slug:
-                  prayerRuleSlug,
-              }
-            );
-
-            return;
-        }
-
-
-        if (
-          category.slug ===
-          'psaltir'
-        ) {
-            navigation.navigate(
-              'Psalter'
-            );
-
-            return;
-        }
-
-
-        if (
-          category.parent
-        ) {
-            navigation.navigate(
-              'Book',
-              {
-                  categoryId:
-                  category.id,
-
-                  categorySlug:
-                  category.slug,
-
-                  categoryName:
-                  category.name,
-              }
-            );
-
-            return;
-        }
-
-
-        const subcategories =
-          categories.filter(
+        const psalter =
+          progressList.find(
             item =>
-              item.parent ===
-              category.id
+              item.source_type ===
+              'psalter' &&
+              item.anchor_info
           );
 
-
-        if (
-          subcategories.length > 0
-        ) {
-            navigation.navigate(
-              'CategoryMenu',
-              {
-                  parentCategory:
-                  category,
-
-                  subcategories:
-                  subcategories,
-              }
-            );
-
-            return;
-        }
-
-
-        navigation.navigate(
-          'Book',
-          {
-              categoryId:
-              category.id,
-
-              categorySlug:
-              category.slug,
-
-              categoryName:
-              category.name,
-          }
+        setPsalterProgress(
+          psalter || null
         );
+      } catch (err) {
+        console.log(
+          'Ошибка загрузки прогресса на главной:',
+          err
+        );
+      }
+    }, []);
+
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+
+        await Promise.all([
+          loadCategories(),
+          loadProgress(),
+        ]);
+      } finally {
+        setLoading(false);
+      }
     };
 
-
-    const openAkathists = () => {
-        navigation.navigate(
-          'AkathistList'
-        );
-    };
-
-
-    if (loading) {
-        return (
-          <View style={styles.center}>
-              <ActivityIndicator
-                size="large"
-                color="#2c3e50"
-              />
-
-              <Text
-                style={{
-                    marginTop: 10,
-                }}
-              >
-                  Загрузка...
-              </Text>
-          </View>
-        );
-    }
+    load();
+  }, [
+    loadCategories,
+    loadProgress,
+  ]);
 
 
-    const rootCategories =
-      categories.filter(
-        category =>
-          !category.parent
+  useFocusEffect(
+    useCallback(() => {
+      loadProgress();
+    }, [loadProgress])
+  );
+
+
+  const rootCategories =
+    useMemo(
+      () =>
+        categories.filter(
+          category =>
+            !category.parent
+        ),
+      [categories]
+    );
+
+
+  const libraryCategories =
+    useMemo(
+      () =>
+        rootCategories.filter(
+          category =>
+            ![
+              'utrennie-molitvy',
+              'molitvy-na-son-griadushchim',
+              'psaltir',
+              'akafisty',
+            ].includes(
+              category.slug
+            )
+        ),
+      [rootCategories]
+    );
+
+
+  const getSubcategories = category =>
+    categories.filter(
+      item =>
+        item.parent ===
+        category.id
+    );
+
+
+  const openCategory = category => {
+    if (
+      category.slug ===
+      'psaltir'
+    ) {
+      navigation.navigate(
+        'Psalter'
       );
 
+      return;
+    }
 
-    /*
-     * Акафисты — отдельная модель,
-     * поэтому добавляем их в меню
-     * независимо от Category.
-     */
-    const menuItems = [
-        ...rootCategories,
+    const subcategories =
+      getSubcategories(category);
 
+    if (
+      subcategories.length > 0
+    ) {
+      navigation.navigate(
+        'CategoryMenu',
         {
-            id: 'akathists',
-            name: 'Акафисты',
-            icon: '☦',
-            type: 'akathists',
-        },
-    ];
+          parentCategory:
+            category,
 
+          subcategories,
+        }
+      );
+
+      return;
+    }
+
+    navigation.navigate(
+      'Book',
+      {
+        categoryId:
+          category.id,
+
+        categorySlug:
+          category.slug,
+
+        categoryName:
+          category.name,
+      }
+    );
+  };
+
+
+  const renderContinueCard = () => {
+    const info =
+      psalterProgress?.anchor_info;
+
+    if (!info) {
+      return null;
+    }
 
     return (
-      <View
-        style={
-            styles.container
+      <Pressable
+        style={({pressed}) => [
+          styles.continueCard,
+          pressed && styles.pressed,
+        ]}
+        onPress={() =>
+          navigation.navigate(
+            'Psalter'
+          )
         }
       >
-          <FlatList
-            data={
-                menuItems
+        <View
+          style={
+            styles.continueTop
+          }
+        >
+          <Text
+            style={
+              styles.continueEyebrow
             }
+          >
+            ПРОДОЛЖИТЬ ЧТЕНИЕ
+          </Text>
 
-            keyExtractor={item =>
-              item.id.toString()
+          <Text
+            style={
+              styles.continueArrow
             }
+          >
+            ›
+          </Text>
+        </View>
 
-            renderItem={({
-                             item,
-                         }) => {
-                if (
-                  item.type ===
-                  'akathists'
-                ) {
-                    return (
-                      <TouchableOpacity
-                        style={
-                            styles.menuItem
-                        }
+        <Text
+          style={
+            styles.continueTitle
+          }
+        >
+          Псалтирь
+        </Text>
 
-                        activeOpacity={0.7}
-
-                        onPress={
-                            openAkathists
-                        }
-                      >
-                          <Text
-                            style={
-                                styles.menuIcon
-                            }
-                          >
-                              {item.icon}
-                          </Text>
-
-                          <View
-                            style={
-                                styles.menuTextContainer
-                            }
-                          >
-                              <Text
-                                style={
-                                    styles.menuTitle
-                                }
-                              >
-                                  Акафисты
-                              </Text>
-
-                              <Text
-                                style={
-                                    styles.menuSubtitle
-                                }
-                              >
-                                  Акафисты святым,
-                                  Господу и Богородице
-                              </Text>
-                          </View>
-
-                          <Text
-                            style={
-                                styles.arrow
-                            }
-                          >
-                              ›
-                          </Text>
-                      </TouchableOpacity>
-                    );
-                }
+        <Text
+          style={
+            styles.continueMeta
+          }
+        >
+          Кафизма{' '}
+          {info.kathisma_number}
+          {'  ·  '}
+          Псалом{' '}
+          {info.psalm_number}
+          {'  ·  '}
+          стих{' '}
+          {info.verse_number}
+        </Text>
+      </Pressable>
+    );
+  };
 
 
-                const subcategoriesCount =
-                  categories.filter(
-                    category =>
-                      category.parent ===
-                      item.id
+  if (loading) {
+    return (
+      <SafeAreaView
+        style={styles.safeArea}
+      >
+        <StatusBar
+          style="dark"
+        />
+
+        <View
+          style={styles.center}
+        >
+          <ActivityIndicator
+            size="large"
+            color={colors.accent}
+          />
+
+          <Text
+            style={
+              styles.loadingText
+            }
+          >
+            Загрузка молитвослова...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+
+  return (
+    <SafeAreaView
+      style={styles.safeArea}
+    >
+      <StatusBar
+        style="dark"
+      />
+
+      <ScrollView
+        showsVerticalScrollIndicator={
+          false
+        }
+        contentContainerStyle={
+          styles.content
+        }
+      >
+        <View
+          style={styles.brandRow}
+        >
+          <View
+            style={styles.brandMark}
+          >
+            <Text
+              style={styles.brandCross}
+            >
+              ☦
+            </Text>
+          </View>
+
+          <View
+            style={styles.brandText}
+          >
+            <Text
+              style={styles.brandTitle}
+            >
+              Молитвослов
+            </Text>
+
+            <Text
+              style={styles.today}
+            >
+              {formatToday()}
+            </Text>
+          </View>
+        </View>
+
+
+        <Text
+          style={styles.intro}
+        >
+          Молитвы и духовное чтение
+          в спокойном ритме дня
+        </Text>
+
+
+        {renderContinueCard()}
+
+
+        <View
+          style={styles.section}
+        >
+          <Text
+            style={
+              styles.sectionTitle
+            }
+          >
+            Молитвенное правило
+          </Text>
+
+          <View
+            style={styles.grid}
+          >
+            {PRAYER_RULES.map(
+              item => (
+                <HomeCard
+                  key={item.key}
+                  symbol={
+                    item.symbol
+                  }
+                  title={
+                    item.title
+                  }
+                  subtitle={
+                    item.subtitle
+                  }
+                  featured
+                  onPress={() =>
+                    navigation.navigate(
+                      'PrayerRule',
+                      {
+                        slug:
+                          item.slug,
+                      }
+                    )
+                  }
+                />
+              )
+            )}
+          </View>
+        </View>
+
+
+        <View
+          style={styles.section}
+        >
+          <Text
+            style={
+              styles.sectionTitle
+            }
+          >
+            Библиотека
+          </Text>
+
+          <View
+            style={styles.grid}
+          >
+            <HomeCard
+              symbol="☦"
+              title="Акафисты"
+              subtitle="Господу, Богородице и святым"
+              onPress={() =>
+                navigation.navigate(
+                  'AkathistList'
+                )
+              }
+            />
+
+            <HomeCard
+              symbol="¶"
+              title="Псалтирь"
+              subtitle="20 кафизм"
+              onPress={() =>
+                navigation.navigate(
+                  'Psalter'
+                )
+              }
+            />
+
+            {libraryCategories.map(
+              category => {
+                const count =
+                  getSubcategories(
+                    category
                   ).length;
 
-
                 return (
-                  <TouchableOpacity
-                    style={
-                        styles.menuItem
+                  <HomeCard
+                    key={
+                      category.id
                     }
-
-                    activeOpacity={0.7}
-
+                    symbol={
+                      category.icon ||
+                      '✦'
+                    }
+                    title={
+                      category.name
+                    }
+                    subtitle={
+                      count > 0
+                        ? `${count} разделов`
+                        : 'Открыть'
+                    }
                     onPress={() =>
-                      handlePress(
-                        item
+                      openCategory(
+                        category
                       )
                     }
-                  >
-                      <Text
-                        style={
-                            styles.menuIcon
-                        }
-                      >
-                          {
-                            item.icon ||
-                            '📖'
-                          }
-                      </Text>
-
-                      <View
-                        style={[
-                            styles.menuTextContainer,
-
-                            subcategoriesCount ===
-                            0 &&
-                            styles.menuTextContainerEmpty,
-                        ]}
-                      >
-                          <Text
-                            style={
-                                styles.menuTitle
-                            }
-                          >
-                              {item.name}
-                          </Text>
-
-                          {subcategoriesCount >
-                            0 && (
-                              <Text
-                                style={
-                                    styles.menuSubtitle
-                                }
-                              >
-                                  {
-                                      subcategoriesCount
-                                  }{' '}
-                                  подкатегорий
-                              </Text>
-                            )}
-                      </View>
-
-                      <Text
-                        style={
-                            styles.arrow
-                        }
-                      >
-                          ›
-                      </Text>
-                  </TouchableOpacity>
+                  />
                 );
-            }}
-          />
-      </View>
-    );
+              }
+            )}
+          </View>
+        </View>
+
+
+        {!!error && (
+          <View
+            style={
+              styles.errorCard
+            }
+          >
+            <Text
+              style={
+                styles.errorText
+              }
+            >
+              {error}
+            </Text>
+          </View>
+        )}
+
+
+        <View
+          style={styles.footer}
+        >
+          <Text
+            style={
+              styles.footerCross
+            }
+          >
+            ☦
+          </Text>
+
+          <Text
+            style={
+              styles.footerText
+            }
+          >
+            Читайте без спешки
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
 };
 
 
 const styles =
   StyleSheet.create({
-      container: {
-          flex: 1,
+    safeArea: {
+      flex: 1,
+      backgroundColor:
+        colors.background,
+    },
 
-          backgroundColor:
-            '#f8f9fa',
+    content: {
+      paddingHorizontal:
+        spacing.md,
+      paddingTop:
+        spacing.sm,
+      paddingBottom: 54,
+    },
+
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent:
+        'center',
+      backgroundColor:
+        colors.background,
+    },
+
+    loadingText: {
+      marginTop:
+        spacing.md,
+      color:
+        colors.textSecondary,
+      fontSize: 15,
+    },
+
+    brandRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop:
+        spacing.xs,
+    },
+
+    brandMark: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      alignItems: 'center',
+      justifyContent:
+        'center',
+      backgroundColor:
+        colors.surfaceMuted,
+      borderWidth: 1,
+      borderColor:
+        colors.border,
+    },
+
+    brandCross: {
+      fontSize: 28,
+      color:
+        colors.liturgical,
+    },
+
+    brandText: {
+      flex: 1,
+      marginLeft:
+        spacing.md,
+    },
+
+    brandTitle: {
+      ...typography.title,
+      color:
+        colors.text,
+      fontFamily: 'serif',
+    },
+
+    today: {
+      marginTop: 2,
+      fontSize: 13,
+      color:
+        colors.textSecondary,
+      textTransform:
+        'capitalize',
+    },
+
+    intro: {
+      maxWidth: 310,
+      marginTop:
+        spacing.md,
+      marginBottom:
+        spacing.lg,
+      fontSize: 16,
+      lineHeight: 24,
+      color:
+        colors.textSecondary,
+      fontFamily: 'serif',
+    },
+
+    continueCard: {
+      padding:
+        spacing.lg,
+      marginBottom:
+        spacing.xl,
+      borderRadius:
+        radius.lg,
+      backgroundColor:
+        colors.surfaceMuted,
+      borderWidth: 1,
+      borderColor:
+        colors.borderStrong,
+    },
+
+    continueTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom:
+        spacing.sm,
+    },
+
+    continueEyebrow: {
+      flex: 1,
+      fontSize: 11,
+      fontWeight: '800',
+      letterSpacing: 1,
+      color:
+        colors.accent,
+    },
+
+    continueArrow: {
+      fontSize: 30,
+      lineHeight: 30,
+      color:
+        colors.accent,
+    },
+
+    continueTitle: {
+      fontSize: 24,
+      lineHeight: 30,
+      fontWeight: '700',
+      color:
+        colors.text,
+      fontFamily: 'serif',
+    },
+
+    continueMeta: {
+      marginTop:
+        spacing.xs,
+      fontSize: 14,
+      lineHeight: 21,
+      color:
+        colors.textSecondary,
+    },
+
+    section: {
+      marginBottom:
+        spacing.xl,
+    },
+
+    sectionTitle: {
+      ...typography.sectionTitle,
+      marginBottom:
+        spacing.md,
+      color:
+        colors.text,
+      fontFamily: 'serif',
+    },
+
+    grid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent:
+        'space-between',
+      rowGap:
+        spacing.md,
+    },
+
+    homeCard: {
+      width: '48%',
+      minHeight: 154,
+      padding:
+        spacing.md,
+      borderRadius:
+        radius.lg,
+      backgroundColor:
+        colors.surface,
+      borderWidth: 1,
+      borderColor:
+        colors.border,
+      shadowColor:
+        colors.shadow,
+      shadowOffset: {
+        width: 0,
+        height: 3,
       },
+      shadowOpacity: 0.05,
+      shadowRadius: 10,
+      elevation: 1,
+    },
 
-      center: {
-          flex: 1,
+    homeCardFeatured: {
+      backgroundColor:
+        colors.surfaceWarm,
+    },
 
-          justifyContent:
-            'center',
+    pressed: {
+      opacity: 0.7,
+      transform: [
+        {
+          scale: 0.985,
+        },
+      ],
+    },
 
-          alignItems:
-            'center',
-      },
+    symbolCircle: {
+      width: 42,
+      height: 42,
+      marginBottom:
+        spacing.md,
+      borderRadius: 21,
+      alignItems: 'center',
+      justifyContent:
+        'center',
+      backgroundColor:
+        colors.accentSoft,
+    },
 
-      menuItem: {
-          flexDirection:
-            'row',
+    symbolCircleFeatured: {
+      backgroundColor:
+        colors.surface,
+    },
 
-          alignItems:
-            'center',
+    symbolText: {
+      fontSize: 22,
+      color:
+        colors.accent,
+    },
 
-          padding: 16,
+    symbolTextFeatured: {
+      color:
+        colors.liturgical,
+    },
 
-          backgroundColor:
-            '#fff',
+    cardTitle: {
+      ...typography.cardTitle,
+      color:
+        colors.text,
+      fontFamily: 'serif',
+    },
 
-          borderBottomWidth: 1,
+    cardSubtitle: {
+      ...typography.caption,
+      marginTop:
+        spacing.xs,
+      color:
+        colors.textSecondary,
+    },
 
-          borderBottomColor:
-            '#eee',
+    errorCard: {
+      padding:
+        spacing.md,
+      marginBottom:
+        spacing.xl,
+      borderRadius:
+        radius.md,
+      backgroundColor:
+        '#F6E9E7',
+    },
 
-          marginHorizontal: 10,
+    errorText: {
+      color:
+        colors.liturgical,
+      fontSize: 14,
+      lineHeight: 20,
+    },
 
-          marginVertical: 4,
+    footer: {
+      alignItems: 'center',
+      paddingTop:
+        spacing.sm,
+    },
 
-          borderRadius: 10,
+    footerCross: {
+      fontSize: 20,
+      color:
+        colors.textMuted,
+    },
 
-          elevation: 2,
-
-          shadowColor:
-            '#000',
-
-          shadowOffset: {
-              width: 0,
-              height: 2,
-          },
-
-          shadowOpacity: 0.1,
-
-          shadowRadius: 4,
-      },
-
-      menuIcon: {
-          fontSize: 28,
-
-          marginRight: 15,
-
-          color: '#8b5e3c',
-      },
-
-      menuTextContainer: {
-          flex: 1,
-      },
-
-      menuTextContainerEmpty: {
-          justifyContent:
-            'center',
-      },
-
-      menuTitle: {
-          fontSize: 18,
-
-          fontWeight:
-            'bold',
-
-          color:
-            '#2c3e50',
-      },
-
-      menuSubtitle: {
-          fontSize: 12,
-
-          color:
-            '#7f8c8d',
-
-          marginTop: 2,
-
-          lineHeight: 17,
-      },
-
-      arrow: {
-          fontSize: 24,
-
-          color:
-            '#bdc3c7',
-      },
+    footerText: {
+      marginTop:
+        spacing.xs,
+      fontSize: 12,
+      color:
+        colors.textMuted,
+    },
   });
