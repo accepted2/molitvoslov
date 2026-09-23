@@ -47,6 +47,14 @@ import {
 } from '../screens/AkathistScreen';
 
 import {
+  BookmarksScreen,
+} from '../screens/BookmarksScreen';
+
+import {
+  FavoritesScreen,
+} from '../screens/FavoritesScreen';
+
+import {
   colors,
 } from '../theme';
 
@@ -92,6 +100,28 @@ export const AppNavigator = () => {
           name="Menu"
           component={
             MenuScreen
+          }
+          options={{
+            headerShown:
+              false,
+          }}
+        />
+
+        <Stack.Screen
+          name="Bookmarks"
+          component={
+            BookmarksScreen
+          }
+          options={{
+            headerShown:
+              false,
+          }}
+        />
+
+        <Stack.Screen
+          name="Favorites"
+          component={
+            FavoritesScreen
           }
           options={{
             headerShown:
