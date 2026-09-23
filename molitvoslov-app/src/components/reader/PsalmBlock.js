@@ -5,25 +5,40 @@ import React, {
 } from 'react';
 
 import {
+  Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 
-import VerseRow from './VerseRow';
-import GloryDivider from './GloryDivider';
+import VerseRow
+  from './VerseRow';
+
+import GloryDivider
+  from './GloryDivider';
+
+import {
+  colors,
+  radius,
+} from '../../theme';
 
 
 export default function PsalmBlock({
-                                     psalm,
-                                     glories = [],
-                                     onVerseLayout,
-                                   }) {
-  const [blockY, setBlockY] =
-    useState(null);
+  psalm,
+  glories = [],
+  onVerseLayout,
+  isSaved = false,
+  onToggleSaved,
+}) {
+  const [
+    blockY,
+    setBlockY,
+  ] = useState(null);
 
-  const [versesY, setVersesY] =
-    useState(null);
+  const [
+    versesY,
+    setVersesY,
+  ] = useState(null);
 
   const verseLocalPositions =
     useRef({});
@@ -35,49 +50,65 @@ export default function PsalmBlock({
 
 
   const verses =
-    (psalm.verses || []).filter(Boolean);
+    (
+      psalm.verses ||
+      []
+    ).filter(
+      Boolean
+    );
 
 
-  const verseGlories = glories.filter(
-    glory =>
-      glory.after_verse &&
-      verses.some(
-        verse =>
-          verse.id === glory.after_verse
-      )
-  );
+  const verseGlories =
+    glories.filter(
+      glory =>
+        glory.after_verse &&
+        verses.some(
+          verse =>
+            verse.id ===
+            glory.after_verse
+        )
+    );
 
 
-  const psalmGlory = glories.find(
-    glory =>
-      glory.after_psalm === psalm.id
-  );
+  const psalmGlory =
+    glories.find(
+      glory =>
+        glory.after_psalm ===
+        psalm.id
+    );
 
 
-  const reportVersePosition = (
-    verse,
-    localY
-  ) => {
-    if (
-      blockY === null ||
-      versesY === null
-    ) {
-      return;
-    }
+  const reportVersePosition =
+    (
+      verse,
+      localY
+    ) => {
+      if (
+        blockY === null ||
+        versesY === null
+      ) {
+        return;
+      }
 
-    onVerseLayout?.({
-      verseId: verse.id,
-      verseNumber: verse.number,
+      onVerseLayout?.({
+        verseId:
+          verse.id,
 
-      psalmId: psalm.id,
-      psalmNumber: psalm.number,
+        verseNumber:
+          verse.number,
 
-      y:
-        blockY +
-        versesY +
-        localY,
-    });
-  };
+        psalmId:
+          psalm.id,
+
+        psalmNumber:
+          psalm.number,
+
+        y:
+          blockY +
+          versesY +
+          localY,
+      });
+    };
 
 
   useEffect(() => {
@@ -92,9 +123,14 @@ export default function PsalmBlock({
       verse => {
         const localY =
           verseLocalPositions
-            .current[verse.id];
+            .current[
+            verse.id
+          ];
 
-        if (localY !== undefined) {
+        if (
+          localY !==
+          undefined
+        ) {
           reportVersePosition(
             verse,
             localY
@@ -110,70 +146,147 @@ export default function PsalmBlock({
 
   return (
     <View
-      style={styles.container}
-      onLayout={event => {
-        setBlockY(
-          event.nativeEvent.layout.y
-        );
-      }}
+      style={[
+        styles.container,
+
+        isSaved &&
+          styles.containerSaved,
+      ]}
+      onLayout={
+        event => {
+          setBlockY(
+            event.nativeEvent
+              .layout.y
+          );
+        }
+      }
     >
+      <View
+        style={
+          styles.header
+        }
+      >
+        <Text
+          style={
+            styles.psalmNumber
+          }
+        >
+          Псалом{' '}
+          {psalm.number}
+        </Text>
 
-      <Text style={styles.psalmNumber}>
-        Псалом {psalm.number}
-      </Text>
+        <Pressable
+          onPress={
+            onToggleSaved
+          }
+          style={({pressed}) => [
+            styles.saveButton,
+
+            isSaved &&
+              styles
+                .saveButtonActive,
+
+            pressed &&
+              styles.pressed,
+          ]}
+        >
+          <Text
+            style={[
+              styles
+                .saveButtonText,
+
+              isSaved &&
+                styles
+                  .saveButtonTextActive,
+            ]}
+          >
+            {
+              isSaved
+                ? 'Сохранено'
+                : 'Сохранить'
+            }
+          </Text>
+        </Pressable>
+      </View>
 
 
-      {(psalm.title_church_slavonic ||
-        psalm.title_russian) && (
-
-        <View style={styles.titles}>
-
-          <View style={styles.titleColumn}>
-            {!!psalm.title_church_slavonic && (
-              <Text style={styles.title}>
+      {(
+        psalm
+          .title_church_slavonic ||
+        psalm
+          .title_russian
+      ) && (
+        <View
+          style={styles.titles}
+        >
+          <View
+            style={
+              styles.titleColumn
+            }
+          >
+            {!!psalm
+              .title_church_slavonic && (
+              <Text
+                style={
+                  styles.title
+                }
+              >
                 {
-                  psalm.title_church_slavonic
+                  psalm
+                    .title_church_slavonic
                 }
               </Text>
             )}
           </View>
 
-
           <View
             style={
-              styles.titleSeparator
+              styles
+                .titleSeparator
             }
           />
 
-
-          <View style={styles.titleColumn}>
-            {!!psalm.title_russian && (
-              <Text style={styles.title}>
-                {psalm.title_russian}
+          <View
+            style={
+              styles.titleColumn
+            }
+          >
+            {!!psalm
+              .title_russian && (
+              <Text
+                style={
+                  styles.title
+                }
+              >
+                {
+                  psalm
+                    .title_russian
+                }
               </Text>
             )}
           </View>
-
         </View>
       )}
 
 
       <View
         style={styles.verses}
-        onLayout={event => {
-          setVersesY(
-            event.nativeEvent.layout.y
-          );
-        }}
+        onLayout={
+          event => {
+            setVersesY(
+              event.nativeEvent
+                .layout.y
+            );
+          }
+        }
       >
-
         {verses.map(
           verse => {
-
             const gloryAfterVerse =
               verseGlories.find(
                 glory =>
-                  glory.after_verse ===
+                  glory
+                    .after_verse ===
                   verse.id
               );
 
@@ -181,11 +294,11 @@ export default function PsalmBlock({
               <React.Fragment
                 key={verse.id}
               >
-
                 <VerseRow
                   verse={verse}
-                  psalmId={psalm.id}
-
+                  psalmId={
+                    psalm.id
+                  }
                   onLayout={
                     event => {
                       const localY =
@@ -197,7 +310,7 @@ export default function PsalmBlock({
                       verseLocalPositions
                         .current[
                         verse.id
-                        ] =
+                      ] =
                         localY;
 
                       reportVersePosition(
@@ -208,20 +321,21 @@ export default function PsalmBlock({
                   }
                 />
 
-
-                {gloryAfterVerse && (
-                  <GloryDivider
-                    number={
-                      gloryAfterVerse.number
-                    }
-                  />
-                )}
-
+                {
+                  gloryAfterVerse &&
+                  (
+                    <GloryDivider
+                      number={
+                        gloryAfterVerse
+                          .number
+                      }
+                    />
+                  )
+                }
               </React.Fragment>
             );
           }
         )}
-
       </View>
 
 
@@ -232,56 +346,116 @@ export default function PsalmBlock({
           }
         />
       )}
-
     </View>
   );
 }
 
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 36,
-  },
+const styles =
+  StyleSheet.create({
+    container: {
+      marginBottom: 36,
+      paddingTop: 8,
+      borderRadius:
+        radius.md,
+      borderWidth: 1,
+      borderColor:
+        'transparent',
+    },
 
-  psalmNumber: {
-    marginBottom: 12,
+    containerSaved: {
+      backgroundColor:
+        'rgba(138, 90, 56, 0.045)',
+      borderColor:
+        'rgba(138, 90, 56, 0.20)',
+    },
 
-    textAlign: 'center',
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent:
+        'center',
+      minHeight: 36,
+      marginBottom: 12,
+      paddingHorizontal: 10,
+    },
 
-    fontSize: 21,
-    fontWeight: '700',
-  },
+    psalmNumber: {
+      flex: 1,
+      paddingLeft: 72,
+      textAlign: 'center',
+      fontSize: 21,
+      fontWeight: '700',
+      color:
+        colors.text,
+    },
 
-  titles: {
-    flexDirection: 'row',
+    saveButton: {
+      minWidth: 72,
+      minHeight: 30,
+      paddingHorizontal: 8,
+      alignItems: 'center',
+      justifyContent:
+        'center',
+      borderRadius:
+        radius.sm,
+      borderWidth: 1,
+      borderColor:
+        colors.border,
+      backgroundColor:
+        colors.surface,
+    },
 
-    marginBottom: 12,
-  },
+    saveButtonActive: {
+      backgroundColor:
+        colors.surfaceWarm,
+      borderColor:
+        colors.borderStrong,
+    },
 
-  titleColumn: {
-    flex: 1,
+    saveButtonText: {
+      fontSize: 10,
+      fontWeight: '700',
+      color:
+        colors.textMuted,
+    },
 
-    paddingHorizontal: 10,
-  },
+    saveButtonTextActive: {
+      color:
+        colors.accentDark,
+    },
 
-  titleSeparator: {
-    width:
-    StyleSheet.hairlineWidth,
+    pressed: {
+      opacity: 0.6,
+    },
 
-    backgroundColor:
-      'rgba(0, 0, 0, 0.15)',
-  },
+    titles: {
+      flexDirection: 'row',
+      marginBottom: 12,
+    },
 
-  title: {
-    fontSize: 15,
-    lineHeight: 21,
+    titleColumn: {
+      flex: 1,
+      paddingHorizontal: 10,
+    },
 
-    fontStyle: 'italic',
+    titleSeparator: {
+      width:
+        StyleSheet
+          .hairlineWidth,
 
-    opacity: 0.7,
-  },
+      backgroundColor:
+        'rgba(0, 0, 0, 0.15)',
+    },
 
-  verses: {
-    gap: 2,
-  },
-});
+    title: {
+      fontSize: 15,
+      lineHeight: 21,
+      fontStyle: 'italic',
+      opacity: 0.7,
+    },
+
+    verses: {
+      gap: 2,
+    },
+  });
