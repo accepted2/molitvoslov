@@ -102,6 +102,31 @@ const HTML_TEMPLATE = String.raw`
       border-bottom: 0;
     }
 
+    .document-action-row {
+      display: flex;
+      justify-content: center;
+      margin: -6px 0 16px;
+    }
+
+    .document-action {
+      min-height: 34px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--secondary);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 11px;
+      line-height: 14px;
+      font-weight: 700;
+    }
+
+    .document-action.active {
+      color: var(--accent-dark);
+      background: #F3EBDD;
+      border-color: rgba(138, 90, 56, 0.30);
+    }
+
     .section-header {
       display: flex;
       align-items: center;
@@ -597,6 +622,39 @@ const HTML_TEMPLATE = String.raw`
             'rule-description',
             DATA.document.description
           )
+        );
+      }
+
+      if (
+        DATA.document.action
+      ) {
+        const actionRow =
+          el(
+            'div',
+            'document-action-row'
+          );
+
+        const action =
+          el(
+            'button',
+            DATA.document.action.active
+              ? 'document-action active'
+              : 'document-action',
+            DATA.document.action.label
+          );
+
+        action.type =
+          'button';
+
+        action.dataset.actionKey =
+          DATA.document.action.key;
+
+        actionRow.appendChild(
+          action
+        );
+
+        reader.appendChild(
+          actionRow
         );
       }
 
@@ -2260,7 +2318,7 @@ const HTML_TEMPLATE = String.raw`
       event => {
         const action =
           event.target.closest(
-            '.section-action'
+            '.section-action, .document-action'
           );
 
         if (!action) {
@@ -2775,6 +2833,8 @@ const HTML_TEMPLATE = String.raw`
           const action =
             document.querySelector(
               '.section-action[data-action-key="' +
+              actionKey +
+              '"], .document-action[data-action-key="' +
               actionKey +
               '"]'
             );
