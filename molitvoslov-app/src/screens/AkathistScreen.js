@@ -12,6 +12,13 @@ import {
 import { api } from '../api';
 import { useReadingProgress } from '../hooks/useReadingProgress';
 
+import {
+  getSavedItems,
+} from '../services/savedItems';
+
+import SelectableSaveText
+  from '../components/reader/SelectableSaveText';
+
 
 const MODE_CHURCH = 'church';
 const MODE_BOTH = 'both';
@@ -261,6 +268,7 @@ export const AkathistScreen = ({ route }) => {
   const [akathist, setAkathist] = useState(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState(MODE_BOTH);
+  const [savedItems, setSavedItems] = useState([]);
 
   const scrollRef = useRef(null);
   const sectionPositionsRef = useRef({});
@@ -312,7 +320,29 @@ export const AkathistScreen = ({ route }) => {
         `akathists/${slug}/`
       );
 
-      setAkathist(response.data);
+      const data = response.data;
+
+      setAkathist(data);
+
+      try {
+        const saved =
+          await getSavedItems({
+            source_type:
+              'akathist',
+
+            source_id:
+              akathistId,
+          });
+
+        setSavedItems(
+          saved
+        );
+      } catch (savedError) {
+        console.log(
+          'Ошибка загрузки сохранений акафиста:',
+          savedError
+        );
+      }
     } catch (error) {
       console.error(
         'Ошибка загрузки акафиста:',
@@ -430,6 +460,140 @@ export const AkathistScreen = ({ route }) => {
   };
 
 
+  const handleSavedItem =
+    savedItem => {
+      setSavedItems(
+        current => {
+          if (
+            current.some(
+              item =>
+                item.id ===
+                savedItem.id
+            )
+          ) {
+            return current;
+          }
+
+          return [
+            savedItem,
+            ...current,
+          ];
+        }
+      );
+    };
+
+
+  const isSectionSaved =
+    sectionId =>
+      savedItems.some(
+        item =>
+          item.anchor_type ===
+            'akathist_section' &&
+          Number(
+            item.anchor_id
+          ) ===
+            Number(
+              sectionId
+            )
+      );
+
+
+  const getAkathistWordStyle =
+    rawWord => {
+      const cleaned =
+        removeAccents(
+          rawWord || ''
+        )
+          .replace(
+            /^[^А-Яа-яЁё\u0400-\u052F]+/,
+            ''
+          )
+          .replace(
+            /[^А-Яа-яЁё\u0400-\u052F]+$/,
+            ''
+          );
+
+      if (
+        cleaned ===
+        'Радуйся'
+      ) {
+        return styles.rejoice;
+      }
+
+      if (
+        cleaned ===
+        'Иисусе'
+      ) {
+        return styles.jesusInvocation;
+      }
+
+      if (
+        cleaned ===
+        'Аллилуиа'
+      ) {
+        return styles.alleluia;
+      }
+
+      return null;
+    };
+
+
+  const renderSaveableText = ({
+    value,
+    textStyle,
+    section,
+    segmentKey,
+    language,
+    fullSaveType = null,
+    fullSaveLabel = null,
+  }) => {
+    if (!value) {
+      return null;
+    }
+
+    return (
+      <SelectableSaveText
+        text={value}
+        textStyle={textStyle}
+        sourceType="akathist"
+        sourceId={akathistId}
+        anchorType="akathist_section"
+        anchorId={section.id}
+        sourceTitle={
+          akathist?.title ||
+          title ||
+          'Акафист'
+        }
+        itemTitle={
+          getSectionTitle(
+            section
+          )
+        }
+        metadata={{
+          slug,
+          section_id:
+            section.id,
+          segment:
+            segmentKey,
+          language,
+        }}
+        fullSaveType={
+          fullSaveType
+        }
+        fullSaveLabel={
+          fullSaveLabel
+        }
+        wordStyleResolver={
+          getAkathistWordStyle
+        }
+        onSaved={
+          handleSavedItem
+        }
+      />
+    );
+  };
+
+
   const getSectionTitle = section => {
     if (
       section.section_type === 'kontakion'
@@ -516,7 +680,10 @@ export const AkathistScreen = ({ route }) => {
    * 3. акафист только на ЦС:
    *    русский массив просто будет пустым.
    */
-  const renderParallelSection = text => {
+  const renderParallelSection = section => {
+    const text =
+      section.text;
+
     const churchBlocks =
       splitReadingBlocks(
         text?.content
@@ -557,10 +724,21 @@ export const AkathistScreen = ({ route }) => {
                         styles.churchBlock
                       }
                     >
-                      {renderStyledText(
-                        church,
-                        styles.churchText
-                      )}
+                      {renderSaveableText({
+                        value:
+                          church,
+
+                        textStyle:
+                          styles.churchText,
+
+                        section,
+
+                        segmentKey:
+                          `line-${index}`,
+
+                        language:
+                          'church',
+                      })}
                     </View>
                   )}
 
@@ -570,10 +748,21 @@ export const AkathistScreen = ({ route }) => {
                         styles.russianBlock
                       }
                     >
-                      {renderStyledText(
-                        russian,
-                        styles.russianText
-                      )}
+                      {renderSaveableText({
+                        value:
+                          russian,
+
+                        textStyle:
+                          styles.russianText,
+
+                        section,
+
+                        segmentKey:
+                          `line-${index}`,
+
+                        language:
+                          'russian',
+                      })}
                     </View>
                   )}
                 </View>
@@ -600,10 +789,21 @@ export const AkathistScreen = ({ route }) => {
                 }
               >
                 {showChurch &&
-                  renderStyledText(
-                    church,
-                    styles.churchText
-                  )}
+                  renderSaveableText({
+                    value:
+                      church,
+
+                    textStyle:
+                      styles.churchText,
+
+                    section,
+
+                    segmentKey:
+                      `line-${index}`,
+
+                    language:
+                      'church',
+                  })}
               </View>
             )
           )}
@@ -658,10 +858,21 @@ export const AkathistScreen = ({ route }) => {
                     styles.churchBlock
                   }
                 >
-                  {renderStyledText(
-                    church,
-                    styles.churchText
-                  )}
+                  {renderSaveableText({
+                    value:
+                      church,
+
+                    textStyle:
+                      styles.churchText,
+
+                    section,
+
+                    segmentKey:
+                      `paragraph-${index}`,
+
+                    language:
+                      'church',
+                  })}
                 </View>
               )}
 
@@ -672,10 +883,21 @@ export const AkathistScreen = ({ route }) => {
                       styles.russianBlock
                     }
                   >
-                    {renderStyledText(
-                      russian,
-                      styles.russianText
-                    )}
+                    {renderSaveableText({
+                      value:
+                        russian,
+
+                      textStyle:
+                        styles.russianText,
+
+                      section,
+
+                      segmentKey:
+                        `paragraph-${index}`,
+
+                      language:
+                        'russian',
+                    })}
                   </View>
                 )}
             </View>
@@ -694,7 +916,10 @@ export const AkathistScreen = ({ route }) => {
    * Сначала вся молитва ЦС.
    * Затем весь перевод целиком.
    */
-  const renderPrayer = text => {
+  const renderPrayer = section => {
+    const text =
+      section.text;
+
     const church =
       text?.content?.trim() || '';
 
@@ -709,10 +934,27 @@ export const AkathistScreen = ({ route }) => {
               styles.wholePrayerBlock
             }
           >
-            {renderStyledText(
-              church,
-              styles.churchText
-            )}
+            {renderSaveableText({
+              value:
+                church,
+
+              textStyle:
+                styles.churchText,
+
+              section,
+
+              segmentKey:
+                'prayer',
+
+              language:
+                'church',
+
+              fullSaveType:
+                'prayer',
+
+              fullSaveLabel:
+                'Молитва',
+            })}
           </View>
         )}
 
@@ -722,10 +964,27 @@ export const AkathistScreen = ({ route }) => {
               styles.wholePrayerTranslation
             }
           >
-            {renderStyledText(
-              russian,
-              styles.russianText
-            )}
+            {renderSaveableText({
+              value:
+                russian,
+
+              textStyle:
+                styles.russianText,
+
+              section,
+
+              segmentKey:
+                'prayer',
+
+              language:
+                'russian',
+
+              fullSaveType:
+                'prayer',
+
+              fullSaveLabel:
+                'Молитва',
+            })}
           </View>
         )}
       </View>
@@ -932,7 +1191,14 @@ export const AkathistScreen = ({ route }) => {
           return (
             <View
               key={section.id}
-              style={styles.section}
+              style={[
+                styles.section,
+
+                isSectionSaved(
+                  section.id
+                ) &&
+                  styles.sectionSaved,
+              ]}
               onLayout={event =>
                 handleSectionLayout(
                   section.id,
@@ -962,10 +1228,10 @@ export const AkathistScreen = ({ route }) => {
 
               {isPrayer
                 ? renderPrayer(
-                  section.text
+                  section
                 )
                 : renderParallelSection(
-                  section.text
+                  section
                 )}
 
               {index <
@@ -1092,6 +1358,17 @@ const styles = StyleSheet.create({
 
   section: {
     marginBottom: 18,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: 'transparent',
+  },
+
+  sectionSaved: {
+    backgroundColor:
+      'rgba(138, 90, 56, 0.05)',
+    borderLeftColor:
+      'rgba(138, 90, 56, 0.28)',
   },
 
   sectionTitle: {
