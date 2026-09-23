@@ -345,6 +345,9 @@ export default function SelectableSaveText({
     end: 0,
   });
 
+  const lastValidRangeRef =
+    useRef(null);
+
   const flattenedStyle =
     StyleSheet.flatten(
       textStyle
@@ -406,6 +409,9 @@ export default function SelectableSaveText({
 
   const clearLocalSelection =
     () => {
+      lastValidRangeRef.current =
+        null;
+
       setSelection({
         start: 0,
         end: 0,
@@ -574,16 +580,21 @@ export default function SelectableSaveText({
         count <= 0 ||
         !hasText
       ) {
-        clearSelection(
-          instanceIdRef.current
-        );
-
+        /*
+         * Android часто схлопывает выделение до курсора
+         * сразу после отпускания мыши/пальца.
+         * Это НЕ считаем отменой: последнее валидное
+         * выделение остаётся активным до "Сохранить" или "×".
+         */
         return;
       }
 
       const tooLong =
         count >
           MAX_SELECTION_LENGTH;
+
+      lastValidRangeRef.current =
+        range;
 
       activateSelection({
         id:
@@ -600,10 +611,22 @@ export default function SelectableSaveText({
           !tooLong,
 
         onSave:
-          () =>
-            saveRange(
-              range
-            ),
+          () => {
+            const savedRange =
+              lastValidRangeRef.current;
+
+            if (!savedRange) {
+              return {
+                ok: false,
+                message:
+                  'Нет активного выделения',
+              };
+            }
+
+            return saveRange(
+              savedRange
+            );
+          },
 
         onClear:
           clearLocalSelection,
