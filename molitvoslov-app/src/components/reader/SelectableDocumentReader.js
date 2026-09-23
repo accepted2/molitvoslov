@@ -1223,15 +1223,21 @@ const HTML_TEMPLATE = String.raw`
                   []
                 ).forEach(
                   block => {
-              if (
-                section.action
-                  .highlightAnchorType &&
-                block.anchorType !==
-                  section.action
-                    .highlightAnchorType
-              ) {
-                return;
-              }
+                    const highlightAnchorType =
+                      section
+                        ?.action
+                        ?.highlightAnchorType ||
+                      DATA.document
+                        .action
+                        ?.highlightAnchorType;
+
+                    if (
+                      highlightAnchorType &&
+                      block.anchorType !==
+                        highlightAnchorType
+                    ) {
+                      return;
+                    }
 
               const itemId =
                 Number(
