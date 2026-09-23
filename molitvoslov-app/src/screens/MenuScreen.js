@@ -1095,9 +1095,9 @@ const styles =
     },
 
     brandMark: {
-      width: 48,
-      height: 48,
-      borderRadius: 24,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       alignItems: 'center',
       justifyContent:
         'center',
@@ -1109,7 +1109,7 @@ const styles =
     },
 
     brandCross: {
-      fontSize: 26,
+      fontSize: 23,
       color:
         colors.liturgical,
     },
@@ -1121,8 +1121,8 @@ const styles =
     },
 
     brandTitle: {
-      fontSize: 28,
-      lineHeight: 33,
+      fontSize: 27,
+      lineHeight: 32,
       fontWeight: '700',
       color:
         colors.text,
@@ -1140,10 +1140,10 @@ const styles =
 
     quoteBlock: {
       marginTop:
-        spacing.md,
+        spacing.sm,
       marginBottom:
-        spacing.lg,
-      paddingVertical: 4,
+        spacing.md,
+      paddingVertical: 2,
     },
 
     quoteLabel: {
@@ -1202,7 +1202,7 @@ const styles =
     readingRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      minHeight: 92,
+      minHeight: 78,
     },
 
     readingMain: {
@@ -1210,7 +1210,7 @@ const styles =
       flexDirection: 'row',
       alignItems: 'center',
       paddingVertical:
-        13,
+        10,
       paddingLeft:
         spacing.md,
       paddingRight:
@@ -1292,7 +1292,7 @@ const styles =
     },
 
     finishButton: {
-      width: 44,
+      width: 38,
       alignSelf: 'stretch',
       alignItems: 'center',
       justifyContent:
@@ -1325,8 +1325,8 @@ const styles =
     },
 
     noReadingCard: {
-      paddingVertical: 14,
-      paddingHorizontal: 14,
+      paddingVertical: 11,
+      paddingHorizontal: 12,
       borderRadius:
         radius.md,
       backgroundColor:
@@ -1377,10 +1377,10 @@ const styles =
     },
 
     homeCard: {
-      width: '48%',
-      minHeight: 100,
+      width: '48.5%',
+      minHeight: 84,
       padding:
-        spacing.md,
+        spacing.sm,
       borderRadius:
         radius.lg,
       backgroundColor:
@@ -1395,7 +1395,7 @@ const styles =
         height: 3,
       },
       shadowOpacity: 0.05,
-      shadowRadius: 10,
+      shadowRadius: 7,
       elevation: 1,
     },
 
