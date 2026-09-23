@@ -8,11 +8,17 @@ import {
   AppNavigator,
 } from './src/navigation/AppNavigator';
 
+import {
+  TextSelectionProvider,
+} from './src/context/TextSelectionContext';
+
 
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AppNavigator />
+      <TextSelectionProvider>
+        <AppNavigator />
+      </TextSelectionProvider>
     </SafeAreaProvider>
   );
 }
