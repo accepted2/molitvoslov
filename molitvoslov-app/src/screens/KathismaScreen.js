@@ -30,6 +30,9 @@ import {
 import PsalmBlock
   from '../components/reader/PsalmBlock';
 
+import SelectableSaveText
+  from '../components/reader/SelectableSaveText';
+
 import {
   colors,
 } from '../theme';
@@ -619,18 +622,44 @@ export default function KathismaScreen({
             Молитвы после кафизмы
           </Text>
 
-          <Text
-            selectable
-            style={
-              styles
-                .prayersAfterText
-            }
-          >
-            {
+          <SelectableSaveText
+            text={
               kathisma
                 .prayers_after
             }
-          </Text>
+            textStyle={
+              styles
+                .prayersAfterText
+            }
+            sourceType="psalter"
+            sourceId={
+              kathisma.psalter
+            }
+            anchorType="kathisma_prayers_after"
+            anchorId={
+              kathisma.id
+            }
+            sourceTitle="Псалтирь"
+            itemTitle={
+              `Молитвы после кафизмы ${kathisma.number}`
+            }
+            metadata={{
+              kathisma_number:
+                kathisma.number,
+
+              kathisma_title:
+                kathisma.title ||
+                '',
+
+              section:
+                'prayers_after',
+            }}
+            fullSaveType="prayer"
+            fullSaveLabel="Молитва"
+            onSaved={
+              handleFragmentSaved
+            }
+          />
         </View>
       )}
     </ScrollView>
