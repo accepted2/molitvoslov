@@ -422,6 +422,7 @@ class BookmarkSerializer(serializers.ModelSerializer):
 
 class ReadingProgressSerializer(serializers.ModelSerializer):
     anchor_info = serializers.SerializerMethodField()
+    progress_percent = serializers.SerializerMethodField()
 
     class Meta:
         model = ReadingProgress
@@ -434,6 +435,7 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
             'anchor_id',
             'offset',
             'anchor_info',
+            'progress_percent',
             'updated_at',
         ]
 
@@ -442,6 +444,109 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
             'anchor_info',
             'updated_at',
         ]
+
+    def get_progress_percent(self, obj):
+        if not obj.anchor_id:
+            return 0
+
+        queryset = None
+
+        if (
+                obj.source_type == 'psalter'
+                and obj.anchor_type == 'psalm_verse'
+        ):
+            queryset = (
+                PsalmVerse.objects
+                .filter(
+                    psalm__kathisma__psalter_id=obj.source_id
+                )
+                .order_by(
+                    'psalm__kathisma__number',
+                    'psalm__number',
+                    'number',
+                    'id',
+                )
+            )
+
+        elif (
+                obj.source_type == 'akathist'
+                and obj.anchor_type == 'akathist_section'
+        ):
+            queryset = (
+                AkathistSection.objects
+                .filter(
+                    akathist_id=obj.source_id
+                )
+                .order_by(
+                    'order',
+                    'id',
+                )
+            )
+
+        elif (
+                obj.source_type == 'prayer_rule'
+                and obj.anchor_type == 'prayer_rule_item'
+        ):
+            queryset = (
+                PrayerRuleItem.objects
+                .filter(
+                    rule_id=obj.source_id
+                )
+                .order_by(
+                    'order',
+                    'id',
+                )
+            )
+
+        elif (
+                obj.source_type == 'category'
+                and obj.anchor_type == 'category_text'
+        ):
+            queryset = (
+                CategoryText.objects
+                .filter(
+                    category_id=obj.source_id
+                )
+                .order_by(
+                    'order',
+                    'id',
+                )
+            )
+
+        if queryset is None:
+            return 0
+
+        ids = list(
+            queryset.values_list(
+                'id',
+                flat=True,
+            )
+        )
+
+        if not ids:
+            return 0
+
+        try:
+            position = (
+                ids.index(obj.anchor_id)
+                + 1
+            )
+        except ValueError:
+            return 0
+
+        percent = round(
+            position
+            * 100
+            / len(ids)
+        )
+
+        return max(
+            1,
+            min(
+                percent,
+                100,
+            ),
+        )
 
     def get_anchor_info(self, obj):
         if (
