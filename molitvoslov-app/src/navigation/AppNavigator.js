@@ -47,6 +47,14 @@ import {
 } from '../screens/AkathistScreen';
 
 import {
+  CanonListScreen,
+} from '../screens/CanonListScreen';
+
+import {
+  CanonScreen,
+} from '../screens/CanonScreen';
+
+import {
   BookmarksScreen,
 } from '../screens/BookmarksScreen';
 
@@ -229,6 +237,32 @@ export const AppNavigator = () => {
               route.params
                 ?.title ||
               'Акафист',
+          })}
+        />
+
+        <Stack.Screen
+          name="CanonList"
+          component={
+            CanonListScreen
+          }
+          options={{
+            title:
+              'Каноны',
+          }}
+        />
+
+        <Stack.Screen
+          name="Canon"
+          component={
+            CanonScreen
+          }
+          options={({
+            route,
+          }) => ({
+            title:
+              route.params
+                ?.title ||
+              'Канон',
           })}
         />
       </Stack.Navigator>
