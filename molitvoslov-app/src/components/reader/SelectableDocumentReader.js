@@ -226,6 +226,11 @@ const HTML_TEMPLATE = String.raw`
       white-space: pre-wrap;
     }
 
+    .liturgical-word {
+      color: #AE1721;
+      font-weight: 700;
+    }
+
     .saved-highlight {
       background: var(--saved);
       border-radius: 3px;
@@ -784,6 +789,101 @@ const HTML_TEMPLATE = String.raw`
           : null;
 
 
+    const appendStyledSegment = (
+      parent,
+      value,
+      accentWords
+    ) => {
+      if (
+        !Array.isArray(
+          accentWords
+        ) ||
+        !accentWords.length
+      ) {
+        parent.appendChild(
+          document.createTextNode(
+            value
+          )
+        );
+
+        return;
+      }
+
+      const accents =
+        new Set(
+          accentWords
+        );
+
+      value
+        .split(
+          /(\s+)/
+        )
+        .forEach(
+          part => {
+            if (
+              /^\s+$/.test(
+                part
+              )
+            ) {
+              parent.appendChild(
+                document.createTextNode(
+                  part
+                )
+              );
+
+              return;
+            }
+
+            const clean =
+              part
+                .normalize(
+                  'NFD'
+                )
+                .replace(
+                  /[\u0300\u0301\u0340\u0341\u0483-\u0487]/g,
+                  ''
+                )
+                .normalize(
+                  'NFC'
+                )
+                .replace(
+                  /^[^А-Яа-яЁё\u0400-\u052F]+/,
+                  ''
+                )
+                .replace(
+                  /[^А-Яа-яЁё\u0400-\u052F]+$/,
+                  ''
+                );
+
+            if (
+              accents.has(
+                clean
+              )
+            ) {
+              const word =
+                el(
+                  'span',
+                  'liturgical-word',
+                  part
+                );
+
+              parent.appendChild(
+                word
+              );
+
+              return;
+            }
+
+            parent.appendChild(
+              document.createTextNode(
+                part
+              )
+            );
+          }
+        );
+    };
+
+
     const renderTextItem =
       itemId => {
         const root =
@@ -924,11 +1024,18 @@ const HTML_TEMPLATE = String.raw`
             );
           }
 
-          span.textContent =
+          appendStyledSegment(
+            span,
             text.slice(
               start,
               end
-            );
+            ),
+            itemConfigMap
+              .get(
+                itemId
+              )
+              ?.accentWords
+          );
 
           fragment.appendChild(
             span
