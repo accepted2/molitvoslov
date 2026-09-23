@@ -541,6 +541,22 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
 
         if (
                 obj.source_type == 'psalter'
+                and obj.anchor_type == 'psalm'
+        ):
+            queryset = (
+                Psalm.objects
+                .filter(
+                    kathisma__psalter_id=obj.source_id
+                )
+                .order_by(
+                    'kathisma__number',
+                    'number',
+                    'id',
+                )
+            )
+
+        elif (
+                obj.source_type == 'psalter'
                 and obj.anchor_type == 'psalm_verse'
         ):
             queryset = (
@@ -637,6 +653,43 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
         )
 
     def get_anchor_info(self, obj):
+        if (
+                obj.source_type == 'psalter'
+                and obj.anchor_type == 'psalm'
+                and obj.anchor_id
+        ):
+            psalm = (
+                Psalm.objects
+                .select_related(
+                    'kathisma'
+                )
+                .filter(id=obj.anchor_id)
+                .first()
+            )
+
+            if not psalm:
+                return None
+
+            return {
+                'kathisma_id':
+                    psalm.kathisma.id,
+
+                'kathisma_number':
+                    psalm.kathisma.number,
+
+                'psalm_id':
+                    psalm.id,
+
+                'psalm_number':
+                    psalm.number,
+
+                'verse_id':
+                    None,
+
+                'verse_number':
+                    None,
+            }
+
         if (
                 obj.source_type == 'psalter'
                 and obj.anchor_type == 'psalm_verse'
