@@ -86,7 +86,7 @@ export const BookScreen = ({
 
   const {
     savedProgress,
-    progressLoading,
+    progressReady,
     scheduleSave,
   } = useReadingProgress({
     sourceType:
@@ -100,7 +100,7 @@ export const BookScreen = ({
   useEffect(() => {
     if (
       !categoryId ||
-      progressLoading ||
+      !progressReady ||
       initialRestoreHandledRef
         .current
     ) {
@@ -129,7 +129,7 @@ export const BookScreen = ({
     }
   }, [
     categoryId,
-    progressLoading,
+    progressReady,
     savedProgress,
   ]);
 
