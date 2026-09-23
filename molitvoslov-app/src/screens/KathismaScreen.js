@@ -1,13 +1,13 @@
 import React, {
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
 
 import {
   ActivityIndicator,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -21,22 +21,31 @@ import {
   useReadingProgress,
 } from '../hooks/useReadingProgress';
 
-
 import {
   deleteSavedItem,
   getSavedItems,
   saveItem,
 } from '../services/savedItems';
 
-import PsalmBlock
-  from '../components/reader/PsalmBlock';
-
-import SelectableSaveText
-  from '../components/reader/SelectableSaveText';
+import SelectableDocumentReader
+  from '../components/reader/SelectableDocumentReader';
 
 import {
   colors,
 } from '../theme';
+
+
+const GLORY_TEXT = `Слава Отцу и Сыну и Святому Духу.
+И ныне и присно и во веки веков. Аминь.
+
+Аллилуиа, аллилуиа, аллилуиа, слава Тебе, Боже. ×3
+Господи, помилуй. ×3
+
+Слава Отцу и Сыну и Святому Духу.
+
+[Здесь можно прочитать прошение о здравии / об упокоении и помянуть имена.]
+
+И ныне и присно и во веки веков. Аминь.`;
 
 
 export default function KathismaScreen({
@@ -48,7 +57,6 @@ export default function KathismaScreen({
     kathismaTitle,
   } = route.params;
 
-
   const [
     kathisma,
     setKathisma,
@@ -58,6 +66,9 @@ export default function KathismaScreen({
     savedItems,
     setSavedItems,
   ] = useState([]);
+
+  const savedItemsRef =
+    useRef([]);
 
   const [
     loading,
@@ -69,26 +80,10 @@ export default function KathismaScreen({
     setError,
   ] = useState(null);
 
-  const scrollRef =
-    useRef(null);
-
-  const versePositionsRef =
-    useRef({});
-
-  const savedAnchorIdRef =
-    useRef(null);
-
-  const restoredRef =
-    useRef(false);
-
-  const currentVerseRef =
-    useRef(null);
-
-  const restoringRef =
-    useRef(false);
 
   const {
     savedProgress,
+    progressReady,
     scheduleSave,
   } = useReadingProgress({
     sourceType:
@@ -119,55 +114,26 @@ export default function KathismaScreen({
   ]);
 
 
-  useEffect(() => {
-    if (
-      savedProgress
-        ?.anchor_type ===
-      'psalm_verse'
-    ) {
-      savedAnchorIdRef.current =
-        savedProgress
-          .anchor_id;
-
-      tryRestorePosition();
-    }
-  }, [
-    savedProgress,
-  ]);
-
-
   const loadScreen =
     async () => {
       try {
         setLoading(true);
-
         setError(null);
+        setKathisma(null);
+        setSavedItems([]);
+        savedItemsRef.current =
+          [];
 
-        versePositionsRef.current =
-          {};
-
-        savedAnchorIdRef.current =
-          null;
-
-        currentVerseRef.current =
-          null;
-
-        restoredRef.current =
-          false;
-
-        restoringRef.current =
-          false;
-
-        const kathismaResponse =
+        const response =
           await api.get(
             `kathismas/${kathismaNumber}/`
           );
 
-        const kathismaData =
-          kathismaResponse.data;
+        const data =
+          response.data;
 
         setKathisma(
-          kathismaData
+          data
         );
 
         try {
@@ -177,23 +143,29 @@ export default function KathismaScreen({
                 'psalter',
 
               source_id:
-                kathismaData
-                  .psalter,
+                data.psalter,
             });
+
+          savedItemsRef.current =
+            saved;
 
           setSavedItems(
             saved
           );
-        } catch (savedError) {
+        } catch (
+          savedError
+        ) {
           console.log(
-            'Ошибка загрузки сохранённых псалмов:',
-            savedError
+            'Ошибка загрузки сохранений Псалтири:',
+            savedError.response?.data ||
+            savedError.message
           );
         }
-      } catch (err) {
+      } catch (loadError) {
         console.log(
           'Ошибка загрузки кафизмы:',
-          err
+          loadError.response?.data ||
+          loadError.message
         );
 
         setError(
@@ -207,282 +179,738 @@ export default function KathismaScreen({
     };
 
 
-  const handleFragmentSaved =
-    savedItem => {
-      setSavedItems(
-        current => {
-          if (
-            current.some(
-              item =>
-                item.id ===
-                savedItem.id
-            )
-          ) {
-            return current;
-          }
-
-          return [
-            savedItem,
-            ...current,
-          ];
-        }
-      );
-    };
-
-
   const getSavedPsalm =
     psalmId =>
-      savedItems.find(
-        item =>
-          item.anchor_type ===
-            'psalm' &&
-          Number(
-            item.anchor_id
-          ) ===
+      savedItemsRef.current
+        .find(
+          item =>
+            item.anchor_type ===
+              'psalm' &&
             Number(
-              psalmId
-            )
-      );
+              item.anchor_id
+            ) ===
+              Number(
+                psalmId
+              )
+        );
 
 
   const togglePsalmSaved =
-    async psalm => {
-      const existing =
-        getSavedPsalm(
-          psalm.id
-        );
-
-      try {
-        if (existing) {
-          await deleteSavedItem(
-            existing.id
-          );
-
-          setSavedItems(
-            current =>
-              current.filter(
-                item =>
-                  item.id !==
-                  existing.id
-              )
-          );
-
-          return;
-        }
-
-        const saved =
-          await saveItem({
-            save_type:
-              'psalm',
-
-            source_type:
-              'psalter',
-
-            source_id:
-              kathisma.psalter,
-
-            anchor_type:
-              'psalm',
-
-            anchor_id:
-              psalm.id,
-
-            source_title:
-              'Псалтирь',
-
-            item_title:
-              `Псалом ${psalm.number}`,
-
-            text: '',
-
-            metadata: {
-              kathisma_number:
-                kathisma.number,
-
-              kathisma_title:
-                kathisma.title ||
-                '',
-
-              psalm_number:
-                psalm.number,
-            },
-          });
-
-        setSavedItems(
-          current => [
-            saved,
-            ...current,
-          ]
-        );
-      } catch (err) {
-        console.log(
-          'Ошибка сохранения псалма:',
-          err.response?.data ||
-          err.message
-        );
-      }
-    };
-
-
-  const handleVerseLayout =
-    position => {
-      versePositionsRef.current[
-        position.verseId
-      ] =
-        position;
-
-      tryRestorePosition();
-    };
-
-
-  const tryRestorePosition =
-    () => {
+    async actionKey => {
       if (
-        restoredRef.current
-      ) {
-        return;
-      }
-
-      const anchorId =
-        savedAnchorIdRef.current;
-
-      if (!anchorId) {
-        return;
-      }
-
-      const position =
-        versePositionsRef.current[
-          anchorId
-        ];
-
-      if (!position) {
-        return;
-      }
-
-      if (
-        !scrollRef.current
-      ) {
-        return;
-      }
-
-      restoredRef.current =
-        true;
-
-      restoringRef.current =
-        true;
-
-      requestAnimationFrame(
-        () => {
-          scrollRef.current
-            ?.scrollTo({
-              y:
-                Math.max(
-                  position.y - 30,
-                  0
-                ),
-
-              animated:
-                false,
-            });
-
-          setTimeout(() => {
-            restoringRef.current =
-              false;
-          }, 300);
-        }
-      );
-    };
-
-
-  const getCurrentVerse =
-    scrollY => {
-      const positions =
-        Object.values(
-          versePositionsRef.current
-        );
-
-      if (
-        positions.length ===
-        0
+        !kathisma ||
+        !actionKey
+          ?.startsWith(
+            'psalm:'
+          )
       ) {
         return null;
       }
 
-      positions.sort(
-        (a, b) =>
-          a.y - b.y
-      );
-
-      const readingLine =
-        scrollY + 70;
-
-      let current =
-        positions[0];
-
-      for (
-        const position
-        of positions
-      ) {
-        if (
-          position.y <=
-          readingLine
-        ) {
-          current =
-            position;
-        } else {
-          break;
-        }
-      }
-
-      return current;
-    };
-
-
-  const handleScroll =
-    event => {
-      if (
-        restoringRef.current
-      ) {
-        return;
-      }
-
-      const scrollY =
-        event.nativeEvent
-          .contentOffset.y;
-
-      const current =
-        getCurrentVerse(
-          scrollY
+      const psalmId =
+        Number(
+          actionKey.split(
+            ':'
+          )[1]
         );
 
-      if (!current) {
-        return;
+      const psalm =
+        (
+          kathisma.psalms ||
+          []
+        ).find(
+          item =>
+            Number(
+              item.id
+            ) ===
+              psalmId
+        );
+
+      if (!psalm) {
+        return null;
       }
 
-      if (
-        currentVerseRef.current
-          ?.verseId ===
-        current.verseId
-      ) {
-        return;
+      const existing =
+        getSavedPsalm(
+          psalmId
+        );
+
+      if (existing) {
+        await deleteSavedItem(
+          existing.id
+        );
+
+        savedItemsRef.current =
+          savedItemsRef.current
+            .filter(
+              item =>
+                item.id !==
+                existing.id
+            );
+
+        return {
+          label:
+            'Сохранить псалом',
+
+          active:
+            false,
+        };
       }
 
-      currentVerseRef.current =
-        current;
+      const saved =
+        await saveItem({
+          save_type:
+            'psalm',
 
-      scheduleSave({
-        anchorType:
-          'psalm_verse',
+          source_type:
+            'psalter',
 
-        anchorId:
-          current.verseId,
+          source_id:
+            kathisma.psalter,
 
-        offset: 0,
-      });
+          anchor_type:
+            'psalm',
+
+          anchor_id:
+            psalm.id,
+
+          source_title:
+            'Псалтирь',
+
+          item_title:
+            `Псалом ${psalm.number}`,
+
+          text:
+            '',
+
+          metadata: {
+            kathisma_number:
+              kathisma.number,
+
+            kathisma_title:
+              kathisma.title ||
+              '',
+
+            psalm_number:
+              psalm.number,
+          },
+        });
+
+      savedItemsRef.current = [
+        saved,
+        ...savedItemsRef.current,
+      ];
+
+      return {
+        label:
+          'Сохранено',
+
+        active:
+          true,
+      };
     };
 
 
-  if (loading) {
+  const documentData =
+    useMemo(
+      () => {
+        if (!kathisma) {
+          return {
+            title:
+              `Кафизма ${kathismaNumber}`,
+
+            description:
+              '',
+
+            progressAnchorType:
+              'psalm_verse',
+
+            savedItems: [],
+
+            sections: [],
+          };
+        }
+
+        let nextBlockId =
+          1;
+
+        const normalizedSaved =
+          [];
+
+        const sections =
+          [];
+
+
+        const attachSaved = ({
+          syntheticId,
+          anchorType,
+          anchorId,
+          language,
+          sectionName,
+        }) => {
+          savedItems
+            .filter(
+              item => {
+                if (
+                  item.anchor_type !==
+                    anchorType ||
+                  Number(
+                    item.anchor_id
+                  ) !==
+                    Number(
+                      anchorId
+                    ) ||
+                  item.start_offset ===
+                    null ||
+                  item.end_offset ===
+                    null
+                ) {
+                  return false;
+                }
+
+                const metadata =
+                  item.metadata ||
+                  {};
+
+                if (
+                  language &&
+                  metadata.language &&
+                  metadata.language !==
+                    language
+                ) {
+                  return false;
+                }
+
+                if (
+                  sectionName &&
+                  metadata.section &&
+                  metadata.section !==
+                    sectionName
+                ) {
+                  return false;
+                }
+
+                return true;
+              }
+            )
+            .forEach(
+              item => {
+                normalizedSaved.push({
+                  ...item,
+
+                  anchor_id:
+                    syntheticId,
+                });
+              }
+            );
+        };
+
+
+        const makeBlock = ({
+          text,
+          anchorType,
+          anchorId,
+          language,
+          itemTitle,
+          fullSaveType,
+          metadata,
+          className,
+          sectionName,
+          label,
+        }) => {
+          const syntheticId =
+            nextBlockId++;
+
+          attachSaved({
+            syntheticId,
+            anchorType,
+            anchorId,
+            language,
+            sectionName,
+          });
+
+          return {
+            id:
+              syntheticId,
+
+            text:
+              text || '',
+
+            label:
+              label || '',
+
+            className:
+              className ||
+              'psalter',
+
+            sourceType:
+              'psalter',
+
+            sourceId:
+              kathisma.psalter,
+
+            anchorType,
+
+            anchorId,
+
+            sourceTitle:
+              'Псалтирь',
+
+            itemTitle,
+
+            fullSaveType,
+
+            metadata,
+          };
+        };
+
+
+        (
+          kathisma.psalms ||
+          []
+        ).forEach(
+          psalm => {
+            const psalmSaved =
+              savedItems.some(
+                item =>
+                  item.anchor_type ===
+                    'psalm' &&
+                  Number(
+                    item.anchor_id
+                  ) ===
+                    Number(
+                      psalm.id
+                    )
+              );
+
+            (
+              psalm.verses ||
+              []
+            ).forEach(
+              (
+                verse,
+                verseIndex
+              ) => {
+                const commonMetadata = {
+                  kathisma_number:
+                    kathisma.number,
+
+                  kathisma_title:
+                    kathisma.title ||
+                    '',
+
+                  psalm_id:
+                    psalm.id,
+
+                  psalm_number:
+                    psalm.number,
+
+                  verse_number:
+                    verse.number,
+                };
+
+                const blocks =
+                  [];
+
+                if (
+                  verse.church_slavonic
+                ) {
+                  blocks.push(
+                    makeBlock({
+                      text:
+                        verse
+                          .church_slavonic,
+
+                      anchorType:
+                        'psalm_verse',
+
+                      anchorId:
+                        verse.id,
+
+                      language:
+                        'church',
+
+                      itemTitle:
+                        `Псалом ${psalm.number}, стих ${verse.number}`,
+
+                      fullSaveType:
+                        'verse',
+
+                      metadata: {
+                        ...commonMetadata,
+
+                        language:
+                          'church',
+                      },
+
+                      className:
+                        'psalter',
+
+                      label:
+                        verseIndex ===
+                          0
+                          ? 'Церковнославянский'
+                          : '',
+                    })
+                  );
+                }
+
+                if (
+                  verse.russian
+                ) {
+                  blocks.push(
+                    makeBlock({
+                      text:
+                        verse.russian,
+
+                      anchorType:
+                        'psalm_verse',
+
+                      anchorId:
+                        verse.id,
+
+                      language:
+                        'russian',
+
+                      itemTitle:
+                        `Псалом ${psalm.number}, стих ${verse.number}`,
+
+                      fullSaveType:
+                        'verse',
+
+                      metadata: {
+                        ...commonMetadata,
+
+                        language:
+                          'russian',
+                      },
+
+                      className:
+                        'psalter secondary',
+
+                      label:
+                        verseIndex ===
+                          0
+                          ? 'Русский'
+                          : '',
+                    })
+                  );
+                }
+
+                sections.push({
+                  progressAnchorId:
+                    Number(
+                      verse.id
+                    ),
+
+                  trackProgress:
+                    true,
+
+                  title:
+                    verseIndex ===
+                      0
+                      ? `Псалом ${psalm.number}`
+                      : '',
+
+                  action:
+                    verseIndex ===
+                      0
+                      ? {
+                          key:
+                            `psalm:${psalm.id}`,
+
+                          label:
+                            psalmSaved
+                              ? 'Сохранено'
+                              : 'Сохранить псалом',
+
+                          active:
+                            psalmSaved,
+                        }
+                      : null,
+
+                  rows: [
+                    {
+                      layout:
+                        blocks.length >
+                          1
+                          ? 'parallel'
+                          : 'stack',
+
+                      blocks,
+                    },
+                  ],
+                });
+
+
+                const glory =
+                  (
+                    kathisma.glories ||
+                    []
+                  ).find(
+                    item =>
+                      Number(
+                        item.after_verse
+                      ) ===
+                        Number(
+                          verse.id
+                        )
+                  );
+
+                if (glory) {
+                  const gloryBlock =
+                    makeBlock({
+                      text:
+                        GLORY_TEXT,
+
+                      anchorType:
+                        'kathisma_glory',
+
+                      anchorId:
+                        glory.id,
+
+                      itemTitle:
+                        `Слава после Псалма ${psalm.number}`,
+
+                      fullSaveType:
+                        'prayer',
+
+                      metadata: {
+                        kathisma_number:
+                          kathisma.number,
+
+                        psalm_number:
+                          psalm.number,
+
+                        glory_number:
+                          glory.number,
+                      },
+
+                      className:
+                        '',
+                    });
+
+                  sections.push({
+                    progressAnchorId:
+                      Number(
+                        verse.id
+                      ),
+
+                    trackProgress:
+                      false,
+
+                    title:
+                      'Слава',
+
+                    rows: [
+                      {
+                        layout:
+                          'stack',
+
+                        blocks: [
+                          gloryBlock,
+                        ],
+                      },
+                    ],
+                  });
+                }
+              }
+            );
+
+
+            const psalmGlory =
+              (
+                kathisma.glories ||
+                []
+              ).find(
+                item =>
+                  Number(
+                    item.after_psalm
+                  ) ===
+                    Number(
+                      psalm.id
+                    )
+              );
+
+            if (psalmGlory) {
+              const block =
+                makeBlock({
+                  text:
+                    GLORY_TEXT,
+
+                  anchorType:
+                    'kathisma_glory',
+
+                  anchorId:
+                    psalmGlory.id,
+
+                  itemTitle:
+                    `Слава после Псалма ${psalm.number}`,
+
+                  fullSaveType:
+                    'prayer',
+
+                  metadata: {
+                    kathisma_number:
+                      kathisma.number,
+
+                    psalm_number:
+                      psalm.number,
+
+                    glory_number:
+                      psalmGlory.number,
+                  },
+
+                  className:
+                    '',
+                });
+
+              const lastVerse =
+                psalm.verses?.[
+                  psalm.verses.length -
+                    1
+                ];
+
+              sections.push({
+                progressAnchorId:
+                  Number(
+                    lastVerse?.id ||
+                    0
+                  ),
+
+                trackProgress:
+                  false,
+
+                title:
+                  'Слава',
+
+                rows: [
+                  {
+                    layout:
+                      'stack',
+
+                    blocks: [
+                      block,
+                    ],
+                  },
+                ],
+              });
+            }
+          }
+        );
+
+
+        if (
+          kathisma.prayers_after
+        ) {
+          const block =
+            makeBlock({
+              text:
+                kathisma
+                  .prayers_after,
+
+              anchorType:
+                'kathisma_prayers_after',
+
+              anchorId:
+                kathisma.id,
+
+              itemTitle:
+                `Молитвы после кафизмы ${kathisma.number}`,
+
+              fullSaveType:
+                'prayer',
+
+              metadata: {
+                kathisma_number:
+                  kathisma.number,
+
+                kathisma_title:
+                  kathisma.title ||
+                  '',
+
+                section:
+                  'prayers_after',
+              },
+
+              className:
+                '',
+
+              sectionName:
+                'prayers_after',
+            });
+
+          const lastPsalm =
+            kathisma.psalms?.[
+              kathisma.psalms.length -
+                1
+            ];
+
+          const lastVerse =
+            lastPsalm?.verses?.[
+              lastPsalm.verses.length -
+                1
+            ];
+
+          sections.push({
+            progressAnchorId:
+              Number(
+                lastVerse?.id ||
+                0
+              ),
+
+            trackProgress:
+              false,
+
+            title:
+              'Молитвы после кафизмы',
+
+            rows: [
+              {
+                layout:
+                  'stack',
+
+                blocks: [
+                  block,
+                ],
+              },
+            ],
+          });
+        }
+
+
+        return {
+          title:
+            `Кафизма ${kathisma.number}`,
+
+          description:
+            kathisma.title ||
+            '',
+
+          progressAnchorType:
+            'psalm_verse',
+
+          savedItems:
+            normalizedSaved,
+
+          sections,
+        };
+      },
+      [
+        kathisma,
+        kathismaNumber,
+        savedItems,
+      ]
+    );
+
+
+  if (
+    loading ||
+    (
+      kathisma &&
+      !progressReady
+    )
+  ) {
     return (
       <View
         style={styles.center}
@@ -498,7 +926,10 @@ export default function KathismaScreen({
   }
 
 
-  if (error) {
+  if (
+    error ||
+    !kathisma
+  ) {
     return (
       <View
         style={styles.center}
@@ -506,7 +937,10 @@ export default function KathismaScreen({
         <Text
           style={styles.error}
         >
-          {error}
+          {
+            error ||
+            'Кафизма не найдена'
+          }
         </Text>
       </View>
     );
@@ -514,202 +948,26 @@ export default function KathismaScreen({
 
 
   return (
-    <ScrollView
-      ref={scrollRef}
-      style={
-        styles.container
+    <SelectableDocumentReader
+      documentData={
+        documentData
       }
-      contentContainerStyle={
-        styles.content
+      savedProgress={
+        savedProgress
       }
-      onScroll={
-        handleScroll
+      onProgress={
+        scheduleSave
       }
-      scrollEventThrottle={
-        200
+      onAction={
+        togglePsalmSaved
       }
-    >
-      <View
-        style={
-          styles
-            .languageHeader
-        }
-      >
-        <Text
-          style={styles.language}
-        >
-          Церковнославянский
-        </Text>
-
-        <View
-          style={
-            styles
-              .languageSeparator
-          }
-        />
-
-        <Text
-          style={styles.language}
-        >
-          Русский
-        </Text>
-      </View>
-
-
-      {kathisma.psalms.map(
-        psalm => {
-          const saved =
-            !!getSavedPsalm(
-              psalm.id
-            );
-
-          return (
-            <PsalmBlock
-              key={
-                psalm.id
-              }
-              psalm={
-                psalm
-              }
-              glories={
-                kathisma.glories ||
-                []
-              }
-              onVerseLayout={
-                handleVerseLayout
-              }
-              isSaved={
-                saved
-              }
-              onToggleSaved={() =>
-                togglePsalmSaved(
-                  psalm
-                )
-              }
-              psalterId={
-                kathisma.psalter
-              }
-              kathismaNumber={
-                kathisma.number
-              }
-              kathismaTitle={
-                kathisma.title
-              }
-              savedItems={
-                savedItems
-              }
-              onFragmentSaved={
-                handleFragmentSaved
-              }
-            />
-          );
-        }
-      )}
-
-
-      {!!kathisma
-        .prayers_after && (
-        <View
-          style={
-            styles
-              .prayersAfter
-          }
-        >
-          <Text
-            style={
-              styles
-                .prayersAfterTitle
-            }
-          >
-            Молитвы после кафизмы
-          </Text>
-
-          <SelectableSaveText
-            text={
-              kathisma
-                .prayers_after
-            }
-            textStyle={
-              styles
-                .prayersAfterText
-            }
-            sourceType="psalter"
-            sourceId={
-              kathisma.psalter
-            }
-            anchorType="kathisma_prayers_after"
-            anchorId={
-              kathisma.id
-            }
-            sourceTitle="Псалтирь"
-            itemTitle={
-              `Молитвы после кафизмы ${kathisma.number}`
-            }
-            metadata={{
-              kathisma_number:
-                kathisma.number,
-
-              kathisma_title:
-                kathisma.title ||
-                '',
-
-              section:
-                'prayers_after',
-            }}
-            fullSaveType="prayer"
-            fullSaveLabel="Молитва"
-            onSaved={
-              handleFragmentSaved
-            }
-          />
-        </View>
-      )}
-    </ScrollView>
+    />
   );
 }
 
 
 const styles =
   StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor:
-        colors.background,
-    },
-
-    content: {
-      paddingVertical: 16,
-      paddingHorizontal: 6,
-    },
-
-    languageHeader: {
-      flexDirection: 'row',
-      marginBottom: 24,
-      paddingBottom: 10,
-      borderBottomWidth:
-        StyleSheet
-          .hairlineWidth,
-      borderBottomColor:
-        colors.borderStrong,
-    },
-
-    language: {
-      flex: 1,
-      textAlign: 'center',
-      fontSize: 13,
-      fontWeight: '600',
-      color:
-        colors.textSecondary,
-    },
-
-    languageSeparator: {
-      width:
-        StyleSheet
-          .hairlineWidth,
-      backgroundColor:
-        colors.borderStrong,
-    },
-
     center: {
       flex: 1,
       justifyContent:
@@ -721,29 +979,11 @@ const styles =
     },
 
     error: {
+      paddingHorizontal: 24,
+      textAlign: 'center',
       fontSize: 16,
+      lineHeight: 23,
       color:
         colors.liturgical,
-    },
-
-    prayersAfter: {
-      paddingHorizontal: 12,
-      paddingBottom: 50,
-    },
-
-    prayersAfterTitle: {
-      marginBottom: 14,
-      textAlign: 'center',
-      fontSize: 20,
-      fontWeight: '700',
-      color:
-        colors.text,
-    },
-
-    prayersAfterText: {
-      fontSize: 17,
-      lineHeight: 26,
-      color:
-        colors.text,
     },
   });
