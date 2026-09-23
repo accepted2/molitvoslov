@@ -72,11 +72,21 @@ export const BookScreen = ({
   const currentItemRef =
     useRef(null);
 
+  const currentOffsetRef =
+    useRef(0);
+
+  const savedOffsetRef =
+    useRef(0);
+
+  const initialRestoreHandledRef =
+    useRef(false);
+
   const restoringRef =
     useRef(false);
 
   const {
     savedProgress,
+    progressLoading,
     scheduleSave,
   } = useReadingProgress({
     sourceType:
@@ -89,6 +99,18 @@ export const BookScreen = ({
 
   useEffect(() => {
     if (
+      !categoryId ||
+      progressLoading ||
+      initialRestoreHandledRef
+        .current
+    ) {
+      return;
+    }
+
+    initialRestoreHandledRef.current =
+      true;
+
+    if (
       savedProgress
         ?.anchor_type ===
       'category_text'
@@ -97,9 +119,17 @@ export const BookScreen = ({
         savedProgress
           .anchor_id;
 
+      savedOffsetRef.current =
+        Number(
+          savedProgress
+            .offset || 0
+        );
+
       tryRestorePosition();
     }
   }, [
+    categoryId,
+    progressLoading,
     savedProgress,
   ]);
 
@@ -116,6 +146,15 @@ export const BookScreen = ({
 
     currentItemRef.current =
       null;
+
+    currentOffsetRef.current =
+      0;
+
+    savedOffsetRef.current =
+      0;
+
+    initialRestoreHandledRef.current =
+      false;
 
     restoringRef.current =
       false;
@@ -273,7 +312,10 @@ export const BookScreen = ({
             ?.scrollTo({
               y:
                 Math.max(
-                  y - 30,
+                  y +
+                  savedOffsetRef
+                    .current -
+                  70,
                   0
                 ),
 
@@ -362,15 +404,40 @@ export const BookScreen = ({
         return;
       }
 
+      const readingLine =
+        scrollY + 70;
+
+      const offset =
+        Math.max(
+          0,
+          readingLine -
+          current.y
+        );
+
+      const sameItem =
+        currentItemRef
+          .current ===
+        current.id;
+
+      const offsetChanged =
+        Math.abs(
+          currentOffsetRef
+            .current -
+          offset
+        ) >= 18;
+
       if (
-        currentItemRef.current ===
-        current.id
+        sameItem &&
+        !offsetChanged
       ) {
         return;
       }
 
       currentItemRef.current =
         current.id;
+
+      currentOffsetRef.current =
+        offset;
 
       scheduleSave({
         anchorType:
@@ -379,7 +446,7 @@ export const BookScreen = ({
         anchorId:
           current.id,
 
-        offset: 0,
+        offset,
       });
     };
 
