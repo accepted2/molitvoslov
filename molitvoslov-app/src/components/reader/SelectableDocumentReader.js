@@ -105,6 +105,38 @@ const HTML_TEMPLATE = String.raw`
       border-bottom: 0;
     }
 
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .section-header .prayer-title {
+      flex: 1;
+      margin-bottom: 0;
+    }
+
+    .section-action {
+      min-width: 82px;
+      min-height: 32px;
+      padding: 0 9px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--surface);
+      color: var(--secondary);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 11px;
+      line-height: 14px;
+      font-weight: 700;
+    }
+
+    .section-action.active {
+      color: var(--accent-dark);
+      background: #F3EBDD;
+      border-color: rgba(138, 90, 56, 0.30);
+    }
+
     .prayer-title,
     .section-title {
       margin: 0 0 10px;
@@ -597,14 +629,52 @@ const HTML_TEMPLATE = String.raw`
               : 'true';
 
           if (
-            section.title
+            section.title ||
+            section.action
           ) {
-            wrapper.appendChild(
+            const header =
               el(
-                'h2',
-                'prayer-title',
-                section.title
-              )
+                'div',
+                'section-header'
+              );
+
+            if (
+              section.title
+            ) {
+              header.appendChild(
+                el(
+                  'h2',
+                  'prayer-title',
+                  section.title
+                )
+              );
+            }
+
+            if (
+              section.action
+            ) {
+              const action =
+                el(
+                  'button',
+                  section.action.active
+                    ? 'section-action active'
+                    : 'section-action',
+                  section.action.label
+                );
+
+              action.type =
+                'button';
+
+              action.dataset.actionKey =
+                section.action.key;
+
+              header.appendChild(
+                action
+              );
+            }
+
+            wrapper.appendChild(
+              header
             );
           }
 
@@ -2201,6 +2271,33 @@ const HTML_TEMPLATE = String.raw`
     );
 
 
+    reader.addEventListener(
+      'click',
+      event => {
+        const action =
+          event.target.closest(
+            '.section-action'
+          );
+
+        if (!action) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        post({
+          type:
+            'section-action',
+
+          actionKey:
+            action.dataset
+              .actionKey,
+        });
+      }
+    );
+
+
     const sentenceRange = (
       text,
       anchor
@@ -2687,6 +2784,33 @@ const HTML_TEMPLATE = String.raw`
           );
         },
 
+      updateAction:
+        (
+          actionKey,
+          label,
+          active
+        ) => {
+          const action =
+            document.querySelector(
+              '.section-action[data-action-key="' +
+              actionKey +
+              '"]'
+            );
+
+          if (!action) {
+            return;
+          }
+
+          action.textContent =
+            label;
+
+          action.classList
+            .toggle(
+              'active',
+              !!active
+            );
+        },
+
       saveFailed:
         message => {
           state.savePending =
@@ -2779,6 +2903,7 @@ export default function SelectableDocumentReader({
   savedProgress,
   onSaved,
   onProgress,
+  onAction,
 }) {
   const webViewRef =
     useRef(null);
@@ -2885,6 +3010,51 @@ export default function SelectableDocumentReader({
 
         return;
       }
+
+      if (
+        message.type ===
+        'section-action'
+      ) {
+        if (!onAction) {
+          return;
+        }
+
+        try {
+          const result =
+            await onAction(
+              message.actionKey
+            );
+
+          if (result) {
+            inject(
+              'window.readerApi && window.readerApi.updateAction(' +
+              scriptSafeJson(
+                message.actionKey
+              ) +
+              ',' +
+              scriptSafeJson(
+                result.label ||
+                ''
+              ) +
+              ',' +
+              (
+                result.active
+                  ? 'true'
+                  : 'false'
+              ) +
+              ')'
+            );
+          }
+        } catch (actionError) {
+          console.log(
+            'Ошибка действия reader:',
+            actionError
+          );
+        }
+
+        return;
+      }
+
 
       if (
         message.type !==
