@@ -764,6 +764,70 @@ class Bookmark(models.Model):
         verbose_name = 'Закладка'
         verbose_name_plural = 'Закладки'
 
+
+# =========================================================
+# ЦИТАТА ДНЯ
+# =========================================================
+
+class DailyQuote(models.Model):
+    text = models.TextField(
+        verbose_name='Текст цитаты',
+    )
+
+    source = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Источник / автор',
+    )
+
+    reference = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Ссылка на источник',
+    )
+
+    quote_date = models.DateField(
+        null=True,
+        blank=True,
+        unique=True,
+        verbose_name='Дата показа',
+        help_text=(
+            'Если дата не указана, цитата участвует '
+            'в ежедневной автоматической ротации.'
+        ),
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name='Активна',
+    )
+
+    order = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Порядок',
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Создано',
+    )
+
+    def __str__(self):
+        if self.reference:
+            return f'{self.reference}: {self.text[:60]}'
+
+        return self.text[:60]
+
+    class Meta:
+        ordering = [
+            'quote_date',
+            'order',
+            'id',
+        ]
+
+        verbose_name = 'Цитата дня'
+        verbose_name_plural = 'Цитаты дня'
+
 class ReadingProgress(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reading_progress',verbose_name='Пользователь')
     source_type = models.CharField(max_length=50, verbose_name='Тип источника')
