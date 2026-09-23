@@ -32,6 +32,8 @@ from .models import (
     SavedItem,
     Akathist,
     AkathistSection,
+    Canon,
+    CanonSection,
 
 )
 
@@ -55,6 +57,9 @@ from .serializers import (
     AkathistSerializer,
     AkathistSummarySerializer,
     AkathistSectionSerializer,
+    CanonSerializer,
+    CanonSummarySerializer,
+    CanonSectionSerializer,
 )
 
 
@@ -287,6 +292,67 @@ class AkathistSectionViewSet(viewsets.ModelViewSet):
 
     serializer_class = AkathistSectionSerializer
     permission_classes = [AllowAny]
+
+# =========================================================
+# КАНОНЫ
+# =========================================================
+
+class CanonViewSet(viewsets.ModelViewSet):
+    permission_classes = [
+        AllowAny,
+    ]
+
+    lookup_field = 'slug'
+
+    def get_queryset(self):
+        queryset = (
+            Canon.objects
+            .filter(
+                is_visible=True
+            )
+        )
+
+        if self.action == 'list':
+            return queryset.only(
+                'id',
+                'title',
+                'slug',
+                'description',
+                'tone',
+                'is_visible',
+            )
+
+        return (
+            queryset
+            .prefetch_related(
+                'sections__text__categories'
+            )
+        )
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return CanonSummarySerializer
+
+        return CanonSerializer
+
+
+class CanonSectionViewSet(viewsets.ModelViewSet):
+    queryset = (
+        CanonSection.objects
+        .select_related(
+            'canon',
+            'text',
+        )
+        .prefetch_related(
+            'text__categories'
+        )
+    )
+
+    serializer_class = CanonSectionSerializer
+    permission_classes = [
+        AllowAny,
+    ]
+
 
 # =========================================================
 # ПОЛЬЗОВАТЕЛЬСКИЕ СБОРНИКИ
