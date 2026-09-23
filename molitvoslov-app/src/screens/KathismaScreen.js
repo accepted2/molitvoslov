@@ -21,9 +21,6 @@ import {
   useReadingProgress,
 } from '../hooks/useReadingProgress';
 
-import {
-  useTextSelection,
-} from '../context/TextSelectionContext';
 
 import {
   deleteSavedItem,
@@ -51,9 +48,6 @@ export default function KathismaScreen({
     kathismaTitle,
   } = route.params;
 
-  const {
-    activeSelection,
-  } = useTextSelection();
 
   const [
     kathisma,
@@ -521,9 +515,6 @@ export default function KathismaScreen({
 
   return (
     <ScrollView
-      scrollEnabled={
-        !activeSelection
-      }
       ref={scrollRef}
       style={
         styles.container
