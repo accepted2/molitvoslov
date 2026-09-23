@@ -1,6 +1,7 @@
 import React, {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -21,7 +22,9 @@ import {
 } from '../hooks/useReadingProgress';
 
 import {
+  deleteSavedItem,
   getSavedItems,
+  saveItem,
 } from '../services/savedItems';
 
 import SelectableDocumentReader
@@ -139,6 +142,9 @@ export const AkathistScreen = ({
     setSavedItems,
   ] = useState([]);
 
+  const savedItemsRef =
+    useRef([]);
+
   const [
     viewMode,
     setViewMode,
@@ -185,6 +191,8 @@ export const AkathistScreen = ({
         setError(null);
         setAkathist(null);
         setSavedItems([]);
+        savedItemsRef.current =
+          [];
 
         const [
           response,
@@ -206,6 +214,9 @@ export const AkathistScreen = ({
         setAkathist(
           response.data
         );
+
+        savedItemsRef.current =
+          saved;
 
         setSavedItems(
           saved
@@ -284,6 +295,107 @@ export const AkathistScreen = ({
     hasRussianTranslation,
     viewMode,
   ]);
+
+
+  const handleAction =
+    async actionKey => {
+      if (
+        !actionKey?.startsWith(
+          'akathist:'
+        ) ||
+        !akathist
+      ) {
+        return null;
+      }
+
+      const existing =
+        savedItemsRef.current
+          .find(
+            item =>
+              item.anchor_type ===
+                'akathist' &&
+              Number(
+                item.anchor_id
+              ) ===
+                Number(
+                  akathist.id
+                ) &&
+              item.save_type ===
+                'akathist'
+          );
+
+      if (existing) {
+        await deleteSavedItem(
+          existing.id
+        );
+
+        savedItemsRef.current =
+          savedItemsRef.current
+            .filter(
+              item =>
+                item.id !==
+                existing.id
+            );
+
+        return {
+          label:
+            'В избранное',
+
+          active:
+            false,
+        };
+      }
+
+      const saved =
+        await saveItem({
+          save_type:
+            'akathist',
+
+          source_type:
+            'akathist',
+
+          source_id:
+            akathist.id,
+
+          anchor_type:
+            'akathist',
+
+          anchor_id:
+            akathist.id,
+
+          source_title:
+            akathist.title ||
+            title ||
+            'Акафист',
+
+          item_title:
+            akathist.title ||
+            title ||
+            'Акафист',
+
+          text:
+            '',
+
+          metadata: {
+            slug:
+              akathist.slug ||
+              slug,
+          },
+        });
+
+      savedItemsRef.current = [
+        saved,
+        ...savedItemsRef.current,
+      ];
+
+      return {
+        label:
+          'В избранном',
+
+        active:
+          true,
+      };
+    };
 
 
   const documentData =
@@ -779,6 +891,21 @@ export const AkathistScreen = ({
         );
 
 
+        const wholeAkathistSaved =
+          savedItems.some(
+            item =>
+              item.anchor_type ===
+                'akathist' &&
+              Number(
+                item.anchor_id
+              ) ===
+                Number(
+                  akathist.id
+                ) &&
+              item.save_type ===
+                'akathist'
+          );
+
         return {
           title:
             akathist.title ||
@@ -788,6 +915,19 @@ export const AkathistScreen = ({
           description:
             akathist.description ||
             '',
+
+          action: {
+            key:
+              `akathist:${akathist.id}`,
+
+            label:
+              wholeAkathistSaved
+                ? 'В избранном'
+                : 'В избранное',
+
+            active:
+              wholeAkathistSaved,
+          },
 
           progressAnchorType:
             'akathist_section',
@@ -925,6 +1065,9 @@ export const AkathistScreen = ({
         }
         onProgress={
           scheduleSave
+        }
+        onAction={
+          handleAction
         }
       />
     </View>
