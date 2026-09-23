@@ -17,6 +17,8 @@ from .views import (
    ReadingProgressViewSet,
    AkathistViewSet,
    AkathistSectionViewSet,
+   CanonViewSet,
+   CanonSectionViewSet,
    DailyQuoteViewSet,
    SavedItemViewSet,
 )
@@ -91,6 +93,17 @@ router.register(
    'akathist-sections',
    AkathistSectionViewSet
 )
+router.register(
+   'canons',
+   CanonViewSet,
+   basename='canon'
+)
+
+router.register(
+   'canon-sections',
+   CanonSectionViewSet
+)
+
 router.register(
    'daily-quotes',
    DailyQuoteViewSet,
