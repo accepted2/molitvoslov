@@ -98,7 +98,6 @@ const formatToday = () => {
 
 
 const HomeCard = ({
-  symbol,
   title,
   subtitle,
   onPress,
@@ -114,24 +113,6 @@ const HomeCard = ({
       styles.pressed,
     ]}
   >
-    <View
-      style={[
-        styles.symbolCircle,
-        featured &&
-        styles.symbolCircleFeatured,
-      ]}
-    >
-      <Text
-        style={[
-          styles.symbolText,
-          featured &&
-          styles.symbolTextFeatured,
-        ]}
-      >
-        {symbol}
-      </Text>
-    </View>
-
     <Text
       style={styles.cardTitle}
       numberOfLines={2}
@@ -552,9 +533,26 @@ export const MenuScreen = ({
     useMemo(
       () =>
         readingProgress
-          .map(
-            makeReadingItem
-          )
+          .map(progress => {
+            const item =
+              makeReadingItem(
+                progress
+              );
+
+            if (!item) {
+              return null;
+            }
+
+            return {
+              ...item,
+              progress:
+                Number(
+                  progress
+                    .progress_percent
+                  || 0
+                ),
+            };
+          })
           .filter(Boolean),
       [
         readingProgress,
@@ -729,20 +727,6 @@ export const MenuScreen = ({
                         >
                           <View
                             style={
-                              styles.readingMark
-                            }
-                          >
-                            <Text
-                              style={
-                                styles.readingSymbol
-                              }
-                            >
-                              {item.symbol}
-                            </Text>
-                          </View>
-
-                          <View
-                            style={
                               styles.readingText
                             }
                           >
@@ -771,6 +755,42 @@ export const MenuScreen = ({
                             >
                               {item.position}
                             </Text>
+
+                            <View
+                              style={
+                                styles.progressRow
+                              }
+                            >
+                              <View
+                                style={
+                                  styles.progressTrack
+                                }
+                              >
+                                <View
+                                  style={[
+                                    styles.progressFill,
+                                    {
+                                      width:
+                                        `${Math.max(
+                                          0,
+                                          Math.min(
+                                            item.progress,
+                                            100
+                                          )
+                                        )}%`,
+                                    },
+                                  ]}
+                                />
+                              </View>
+
+                              <Text
+                                style={
+                                  styles.progressPercent
+                                }
+                              >
+                                {item.progress}%
+                              </Text>
+                            </View>
                           </View>
 
                           <Text
@@ -867,9 +887,6 @@ export const MenuScreen = ({
                 item => (
                   <HomeCard
                     key={item.key}
-                    symbol={
-                      item.symbol
-                    }
                     title={
                       item.title
                     }
@@ -908,7 +925,6 @@ export const MenuScreen = ({
               style={styles.grid}
             >
               <HomeCard
-                symbol="☦"
                 title="Акафисты"
                 subtitle={
                   akathists.length
@@ -923,7 +939,6 @@ export const MenuScreen = ({
               />
 
               <HomeCard
-                symbol="¶"
                 title="Псалтирь"
                 subtitle="20 кафизм"
                 onPress={() =>
@@ -944,10 +959,6 @@ export const MenuScreen = ({
                     <HomeCard
                       key={
                         category.id
-                      }
-                      symbol={
-                        category.icon ||
-                        '✦'
                       }
                       title={
                         category.name
@@ -1142,27 +1153,10 @@ const styles =
         spacing.xs,
     },
 
-    readingMark: {
-      width: 38,
-      height: 38,
-      borderRadius: 19,
-      alignItems: 'center',
-      justifyContent:
-        'center',
-      backgroundColor:
-        colors.surface,
-    },
 
-    readingSymbol: {
-      fontSize: 20,
-      color:
-        colors.accent,
-    },
 
     readingText: {
       flex: 1,
-      marginLeft:
-        spacing.sm,
     },
 
     readingType: {
@@ -1190,6 +1184,37 @@ const styles =
       marginTop: 3,
       fontSize: 12,
       lineHeight: 17,
+      color:
+        colors.textSecondary,
+    },
+
+    progressRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 8,
+    },
+
+    progressTrack: {
+      flex: 1,
+      height: 5,
+      borderRadius: 3,
+      overflow: 'hidden',
+      backgroundColor:
+        'rgba(138, 90, 56, 0.14)',
+    },
+
+    progressFill: {
+      height: '100%',
+      borderRadius: 3,
+      backgroundColor:
+        colors.accent,
+    },
+
+    progressPercent: {
+      width: 34,
+      marginLeft: 8,
+      fontSize: 11,
+      textAlign: 'right',
       color:
         colors.textSecondary,
     },
@@ -1229,16 +1254,17 @@ const styles =
 
     readingDivider: {
       height: 1,
-      marginLeft: 64,
+      marginLeft:
+        spacing.md,
       backgroundColor:
         colors.borderStrong,
     },
 
     noReadingCard: {
-      padding:
-        spacing.md,
+      paddingVertical: 14,
+      paddingHorizontal: 14,
       borderRadius:
-        radius.lg,
+        radius.md,
       backgroundColor:
         colors.surfaceMuted,
       borderWidth: 1,
@@ -1288,7 +1314,7 @@ const styles =
 
     homeCard: {
       width: '48%',
-      minHeight: 154,
+      minHeight: 100,
       padding:
         spacing.md,
       borderRadius:
@@ -1318,34 +1344,9 @@ const styles =
       opacity: 0.68,
     },
 
-    symbolCircle: {
-      width: 42,
-      height: 42,
-      marginBottom:
-        spacing.md,
-      borderRadius: 21,
-      alignItems: 'center',
-      justifyContent:
-        'center',
-      backgroundColor:
-        colors.accentSoft,
-    },
 
-    symbolCircleFeatured: {
-      backgroundColor:
-        colors.surface,
-    },
 
-    symbolText: {
-      fontSize: 22,
-      color:
-        colors.accent,
-    },
 
-    symbolTextFeatured: {
-      color:
-        colors.liturgical,
-    },
 
     cardTitle: {
       ...typography.cardTitle,
