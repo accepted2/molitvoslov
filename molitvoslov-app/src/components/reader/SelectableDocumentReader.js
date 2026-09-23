@@ -154,6 +154,65 @@ const HTML_TEMPLATE = String.raw`
       line-height: 26px;
     }
 
+    .reader-row {
+      margin-bottom: 10px;
+    }
+
+    .reader-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .reader-row-parallel {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+    }
+
+    .reader-column {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .reader-row-parallel .reader-column {
+      padding: 0 9px;
+    }
+
+    .reader-row-parallel .reader-column:first-child {
+      padding-left: 0;
+      border-right: 1px solid var(--border);
+    }
+
+    .reader-row-parallel .reader-column:last-child {
+      padding-right: 0;
+    }
+
+    .reader-label {
+      margin-bottom: 5px;
+      color: var(--secondary);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 11px;
+      line-height: 15px;
+      font-weight: 700;
+    }
+
+    .reader-text.secondary {
+      color: var(--secondary);
+      font-size: 16px;
+      line-height: 25px;
+    }
+
+    .reader-text.akathist-church {
+      color: #292929;
+      font-size: 17px;
+      line-height: 24px;
+    }
+
+    .reader-text.akathist-russian {
+      color: #777777;
+      font-size: 16px;
+      line-height: 23px;
+    }
+
     .reader-text {
       color: var(--text);
       font-size: 17px;
@@ -390,6 +449,9 @@ const HTML_TEMPLATE = String.raw`
     const itemTitleMap =
       new Map();
 
+    const itemConfigMap =
+      new Map();
+
     const savedRanges =
       new Map();
 
@@ -483,32 +545,35 @@ const HTML_TEMPLATE = String.raw`
     };
 
 
-    const renderRule = () => {
-      reader.appendChild(
-        el(
-          'h1',
-          'rule-title',
-          DATA.rule.name
-        )
-      );
+
+    const renderDocument = () => {
+      if (DATA.document.title) {
+        reader.appendChild(
+          el(
+            'h1',
+            'rule-title',
+            DATA.document.title
+          )
+        );
+      }
 
       if (
-        DATA.rule.description
+        DATA.document.description
       ) {
         reader.appendChild(
           el(
             'div',
             'rule-description',
-            DATA.rule.description
+            DATA.document.description
           )
         );
       }
 
       (
-        DATA.rule.items ||
+        DATA.document.sections ||
         []
       ).forEach(
-        item => {
+        section => {
           const wrapper =
             el(
               'section',
@@ -517,150 +582,122 @@ const HTML_TEMPLATE = String.raw`
 
           wrapper.dataset.itemId =
             String(
-              item.id
+              section.progressAnchorId
             );
 
           if (
-            item.item_type ===
-            'text' &&
-            item.text
-          ) {
-            const text =
-              item.text;
-
-            const itemTitle =
-              text.title ||
-              text.description ||
-              'Молитва';
-
-            itemTextMap.set(
-              Number(
-                item.id
-              ),
-              text.content ||
-              ''
-            );
-
-            itemTitleMap.set(
-              Number(
-                item.id
-              ),
-              itemTitle
-            );
-
-            if (text.title) {
-              wrapper.appendChild(
-                el(
-                  'h2',
-                  'prayer-title',
-                  text.title
-                )
-              );
-            }
-
-            if (
-              text.description &&
-              text.description_position ===
-                'before'
-            ) {
-              wrapper.appendChild(
-                el(
-                  'div',
-                  'description',
-                  text.description
-                )
-              );
-            }
-
-            const textElement =
-              el(
-                'div',
-                'reader-text'
-              );
-
-            textElement.dataset.itemId =
-              String(
-                item.id
-              );
-
-            wrapper.appendChild(
-              textElement
-            );
-
-            if (
-              text.description &&
-              text.description_position ===
-                'after'
-            ) {
-              wrapper.appendChild(
-                el(
-                  'div',
-                  'description after',
-                  text.description
-                )
-              );
-            }
-
-            if (item.note) {
-              wrapper.appendChild(
-                el(
-                  'div',
-                  'note',
-                  item.note
-                )
-              );
-            }
-
-            appendFootnotes(
-              wrapper,
-              item.footnotes
-            );
-          } else if (
-            item.item_type ===
-            'instruction'
+            section.title
           ) {
             wrapper.appendChild(
               el(
-                'div',
-                'instruction',
-                item.content ||
-                ''
+                'h2',
+                'prayer-title',
+                section.title
               )
             );
+          }
 
-            appendFootnotes(
-              wrapper,
-              item.footnotes
-            );
-          } else if (
-            item.item_type ===
-            'section'
+          if (
+            section.note
           ) {
-            if (item.title) {
-              wrapper.appendChild(
-                el(
-                  'h2',
-                  'section-title',
-                  item.title
-                )
-              );
-            }
-
-            if (item.content) {
-              wrapper.appendChild(
-                el(
-                  'div',
-                  'section-content',
-                  item.content
-                )
-              );
-            }
-
-            appendFootnotes(
-              wrapper,
-              item.footnotes
+            wrapper.appendChild(
+              el(
+                'div',
+                'note',
+                section.note
+              )
             );
           }
+
+          (
+            section.rows ||
+            []
+          ).forEach(
+            row => {
+              const rowNode =
+                el(
+                  'div',
+                  row.layout ===
+                    'parallel'
+                    ? 'reader-row reader-row-parallel'
+                    : 'reader-row'
+                );
+
+              (
+                row.blocks ||
+                []
+              ).forEach(
+                block => {
+                  const itemId =
+                    Number(
+                      block.id
+                    );
+
+                  itemTextMap.set(
+                    itemId,
+                    block.text || ''
+                  );
+
+                  itemTitleMap.set(
+                    itemId,
+                    block.itemTitle ||
+                    section.title ||
+                    'Текст'
+                  );
+
+                  itemConfigMap.set(
+                    itemId,
+                    block
+                  );
+
+                  const column =
+                    el(
+                      'div',
+                      'reader-column'
+                    );
+
+                  if (
+                    block.label
+                  ) {
+                    column.appendChild(
+                      el(
+                        'div',
+                        'reader-label',
+                        block.label
+                      )
+                    );
+                  }
+
+                  const textElement =
+                    el(
+                      'div',
+                      'reader-text ' +
+                      (
+                        block.className ||
+                        ''
+                      )
+                    );
+
+                  textElement.dataset.itemId =
+                    String(
+                      itemId
+                    );
+
+                  column.appendChild(
+                    textElement
+                  );
+
+                  rowNode.appendChild(
+                    column
+                  );
+                }
+              );
+
+              wrapper.appendChild(
+                rowNode
+              );
+            }
+          );
 
           reader.appendChild(
             wrapper
@@ -668,7 +705,6 @@ const HTML_TEMPLATE = String.raw`
         }
       );
     };
-
 
     const normalizeRange = (
       text,
@@ -2189,13 +2225,19 @@ const HTML_TEMPLATE = String.raw`
             )
             .trim();
 
+        const itemConfig =
+          itemConfigMap.get(
+            active.itemId
+          );
+
         if (
+          itemConfig?.fullSaveType &&
           range.start ===
             whole.start &&
           range.end ===
             whole.end
         ) {
-          return 'prayer';
+          return itemConfig.fullSaveType;
         }
 
         if (
@@ -2304,7 +2346,7 @@ const HTML_TEMPLATE = String.raw`
         post({
           type:
             'save-selection',
-          anchorId:
+          itemId:
             state.active.itemId,
           start:
             state.active.start,
@@ -2490,10 +2532,13 @@ const HTML_TEMPLATE = String.raw`
 
     window.readerApi = {
       saveSucceeded:
-        savedItem => {
-          const itemId =
+        (
+          itemId,
+          savedItem
+        ) => {
+          itemId =
             Number(
-              savedItem.anchor_id
+              itemId
             );
 
           const current =
@@ -2548,7 +2593,7 @@ const HTML_TEMPLATE = String.raw`
     };
 
 
-    renderRule();
+    renderDocument();
     loadSavedRanges();
 
     itemTextMap.forEach(
@@ -2571,34 +2616,31 @@ const HTML_TEMPLATE = String.raw`
 
 
 const buildHtml = ({
-  rule,
-  savedItems,
+  documentData,
   savedProgress,
 }) => {
   const payload = {
-    rule,
+    document:
+      documentData,
 
     savedItems:
-      savedItems.filter(
-        item =>
-          item.anchor_type ===
-            'prayer_rule_item' &&
-          item.start_offset !==
-            null &&
-          item.end_offset !==
-            null
-      ),
+      documentData.savedItems ||
+      [],
+
+    progressAnchorType:
+      documentData.progressAnchorType,
 
     progress:
-      savedProgress
-        ?.anchor_type ===
-        'prayer_rule_item'
+      savedProgress &&
+      savedProgress.anchor_type ===
+        documentData.progressAnchorType
           ? {
               anchorId:
                 Number(
                   savedProgress
                     .anchor_id
                 ),
+
               offset:
                 Number(
                   savedProgress
@@ -2619,10 +2661,8 @@ const buildHtml = ({
   );
 };
 
-
-export default function PrayerRuleReader({
-  rule,
-  savedItems,
+export default function SelectableDocumentReader({
+  documentData,
   savedProgress,
   onSaved,
   onProgress,
@@ -2630,17 +2670,56 @@ export default function PrayerRuleReader({
   const webViewRef =
     useRef(null);
 
+  const itemConfigMap =
+    useMemo(
+      () => {
+        const result =
+          new Map();
+
+        (
+          documentData.sections ||
+          []
+        ).forEach(
+          section => {
+            (
+              section.rows ||
+              []
+            ).forEach(
+              row => {
+                (
+                  row.blocks ||
+                  []
+                ).forEach(
+                  block => {
+                    result.set(
+                      Number(
+                        block.id
+                      ),
+                      block
+                    );
+                  }
+                );
+              }
+            );
+          }
+        );
+
+        return result;
+      },
+      [
+        documentData.sections,
+      ]
+    );
+
   const html =
     useMemo(
       () =>
         buildHtml({
-          rule,
-          savedItems,
+          documentData,
           savedProgress,
         }),
       [
-        rule,
-        savedItems,
+        documentData,
         savedProgress,
       ]
     );
@@ -2676,7 +2755,7 @@ export default function PrayerRuleReader({
       ) {
         onProgress?.({
           anchorType:
-            'prayer_rule_item',
+            DATA.progressAnchorType,
           anchorId:
             Number(
               message.anchorId
@@ -2701,49 +2780,74 @@ export default function PrayerRuleReader({
         return;
       }
 
+      const itemConfig =
+        itemConfigMap.get(
+          Number(
+            message.itemId
+          )
+        );
+
+      if (!itemConfig) {
+        return;
+      }
+
       try {
         const saved =
           await saveItem({
             save_type:
               message.saveType ||
               'fragment',
+
             source_type:
-              'prayer_rule',
+              itemConfig.sourceType,
+
             source_id:
-              rule.id,
+              itemConfig.sourceId,
+
             anchor_type:
-              'prayer_rule_item',
+              itemConfig.anchorType,
+
             anchor_id:
-              Number(
-                message.anchorId
-              ),
+              itemConfig.anchorId,
+
             source_title:
-              rule.name,
+              itemConfig.sourceTitle ||
+              documentData.title ||
+              '',
+
             item_title:
-              message.itemTitle ||
-              'Молитва',
+              itemConfig.itemTitle ||
+              '',
+
             text:
               message.text,
+
             start_offset:
               Number(
                 message.start
               ),
+
             end_offset:
               Number(
                 message.end
               ),
-            metadata: {
-              slug:
-                rule.slug,
-            },
+
+            metadata:
+              itemConfig.metadata ||
+              {},
           });
 
         onSaved?.(
-          saved
+          saved,
+          itemConfig
         );
 
         inject(
           'window.readerApi && window.readerApi.saveSucceeded(' +
+          Number(
+            message.itemId
+          ) +
+          ',' +
           scriptSafeJson(
             saved
           ) +
@@ -2751,7 +2855,7 @@ export default function PrayerRuleReader({
         );
       } catch (error) {
         console.log(
-          'Ошибка сохранения выделения молитвы:',
+          'Ошибка сохранения выделения:',
           error.response?.data ||
           error.message
         );
