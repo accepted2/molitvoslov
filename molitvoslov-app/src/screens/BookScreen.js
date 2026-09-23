@@ -72,6 +72,9 @@ export const BookScreen = ({
   const currentItemRef =
     useRef(null);
 
+  const viewportHeightRef =
+    useRef(0);
+
   const currentOffsetRef =
     useRef(0);
 
@@ -265,9 +268,15 @@ export const BookScreen = ({
   ) => {
     itemPositionsRef.current[
       itemId
-    ] =
-      event.nativeEvent
-        .layout.y;
+    ] = {
+      y:
+        event.nativeEvent
+          .layout.y,
+
+      height:
+        event.nativeEvent
+          .layout.height,
+    };
 
     tryRestorePosition();
   };
@@ -288,13 +297,17 @@ export const BookScreen = ({
         return;
       }
 
-      const y =
+      const layout =
         itemPositionsRef.current[
           anchorId
         ];
 
+      const viewportHeight =
+        viewportHeightRef.current;
+
       if (
-        y === undefined ||
+        !layout ||
+        !viewportHeight ||
         !scrollRef.current
       ) {
         return;
@@ -312,10 +325,13 @@ export const BookScreen = ({
             ?.scrollTo({
               y:
                 Math.max(
-                  y +
+                  layout.y +
                   savedOffsetRef
                     .current -
-                  70,
+                  (
+                    viewportHeight /
+                    2
+                  ),
                   0
                 ),
 
@@ -333,18 +349,25 @@ export const BookScreen = ({
 
 
   const getCurrentItem =
-    scrollY => {
+    (
+      scrollY,
+      viewportHeight
+    ) => {
       const positions =
         Object.entries(
           itemPositionsRef
             .current
         )
           .map(
-            ([id, y]) => ({
+            ([id, layout]) => ({
               id:
                 Number(id),
 
-              y,
+              y:
+                layout.y,
+
+              height:
+                layout.height,
             })
           )
           .sort(
@@ -359,7 +382,11 @@ export const BookScreen = ({
       }
 
       const readingLine =
-        scrollY + 70;
+        scrollY +
+        (
+          viewportHeight /
+          2
+        );
 
       let current =
         positions[0];
@@ -395,9 +422,23 @@ export const BookScreen = ({
         event.nativeEvent
           .contentOffset.y;
 
+      const viewportHeight =
+        event.nativeEvent
+          .layoutMeasurement
+          ?.height ||
+        viewportHeightRef.current;
+
+      if (
+        viewportHeight
+      ) {
+        viewportHeightRef.current =
+          viewportHeight;
+      }
+
       const current =
         getCurrentItem(
-          scrollY
+          scrollY,
+          viewportHeight
         );
 
       if (!current) {
@@ -405,13 +446,21 @@ export const BookScreen = ({
       }
 
       const readingLine =
-        scrollY + 70;
+        scrollY +
+        (
+          viewportHeight /
+          2
+        );
 
       const offset =
         Math.max(
           0,
-          readingLine -
-          current.y
+          Math.min(
+            current.height ||
+              0,
+            readingLine -
+              current.y
+          )
         );
 
       const sameItem =
@@ -486,6 +535,15 @@ export const BookScreen = ({
       }
       onScroll={
         handleScroll
+      }
+      onLayout={
+        event => {
+          viewportHeightRef.current =
+            event.nativeEvent
+              .layout.height;
+
+          tryRestorePosition();
+        }
       }
       scrollEventThrottle={
         200
