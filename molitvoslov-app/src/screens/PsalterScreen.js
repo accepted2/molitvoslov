@@ -352,6 +352,7 @@ export default function PsalterScreen({
     >
       <FlatList
         ref={listRef}
+        nestedScrollEnabled
         data={
           psalter?.kathismas ||
           []
