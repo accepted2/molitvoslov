@@ -55,6 +55,10 @@ import {
 } from '../screens/CanonScreen';
 
 import {
+  CommunionPreparationScreen,
+} from '../screens/CommunionPreparationScreen';
+
+import {
   BookmarksScreen,
 } from '../screens/BookmarksScreen';
 
@@ -264,6 +268,17 @@ export const AppNavigator = () => {
                 ?.title ||
               'Канон',
           })}
+        />
+
+        <Stack.Screen
+          name="CommunionPreparation"
+          component={
+            CommunionPreparationScreen
+          }
+          options={{
+            title:
+              'Ко Святому Причащению',
+          }}
         />
       </Stack.Navigator>
     </NavigationContainer>
