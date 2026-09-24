@@ -647,13 +647,11 @@ const HTML_TEMPLATE = String.raw`
             value
           );
 
-        return (
-          /^слава(?: отцу| и ныне)?\b/.test(
-            normalized
-          ) ||
-          /^(?:и ныне|ныне)\b/.test(
-            normalized
-          )
+        return [
+          'слава отцу и сыну и святому духу',
+          'и ныне и присно и во веки веков аминь',
+        ].includes(
+          normalized
         );
       };
 
@@ -687,10 +685,12 @@ const HTML_TEMPLATE = String.raw`
         }
 
         if (
-          /^(слава(?: отцу| и ныне)?\b|(?:и ныне|ныне)\b)/.test(
+          [
+            'слава отцу и сыну и святому духу',
+            'и ныне и присно и во веки веков аминь',
+          ].includes(
             combined
-          ) &&
-          combined.length < 420
+          )
         ) {
           return true;
         }
@@ -1192,50 +1192,155 @@ const HTML_TEMPLATE = String.raw`
               end
             );
 
-          const phrasePattern =
-            /(Слава(?:\s+Отцу\s+и\s+Сыну\s+и\s+Святому\s+Духу)?\s*[:;,.!?]?|(?:И\s+ныне|Ныне)(?:\s+и\s+присно\s+и\s+во\s+веки\s+веков\.?\s*Аминь\.?)?\s*[:;,.!?]?)/giu;
+          const normalizedChars =
+            [];
 
-          let cursor = 0;
+          const originalIndex =
+            [];
+
+          for (
+            let valueIndex = 0;
+            valueIndex <
+              value.length;
+            valueIndex += 1
+          ) {
+            const decomposed =
+              value[
+                valueIndex
+              ].normalize(
+                'NFD'
+              );
+
+            for (
+              const char
+              of decomposed
+            ) {
+              if (
+                /[\u0300-\u036f\u0483-\u0487]/u.test(
+                  char
+                )
+              ) {
+                continue;
+              }
+
+              normalizedChars.push(
+                char
+              );
+
+              originalIndex.push(
+                valueIndex
+              );
+            }
+          }
+
+          const normalized =
+            normalizedChars.join(
+              ''
+            );
+
+          const phrasePattern =
+            /Слава\s+Отцу\s*,?\s*и\s+Сыну\s*,?\s*и\s+Святому\s+Духу\s*[:;,.!?]?|И\s+ныне\s*,?\s*и\s+присно\s*,?\s*и\s+во\s+веки\s+веков\s*[.,;:]?\s*аминь\s*[.!?]?/giu;
+
+          const ranges =
+            [];
+
           let match = null;
 
           while (
             (
               match =
                 phrasePattern.exec(
-                  value
+                  normalized
                 )
             )
           ) {
-            if (
-              match.index >
-              cursor
+            const normalizedStart =
+              match.index;
+
+            const normalizedEnd =
+              match.index +
+              match[0].length -
+              1;
+
+            const rangeStart =
+              originalIndex[
+                normalizedStart
+              ];
+
+            let rangeEnd =
+              (
+                originalIndex[
+                  normalizedEnd
+                ] ??
+                rangeStart
+              ) + 1;
+
+            while (
+              rangeEnd <
+                value.length &&
+              /[\u0300-\u036f\u0483-\u0487]/u.test(
+                value[
+                  rangeEnd
+                ]
+              )
             ) {
+              rangeEnd += 1;
+            }
+
+            if (
+              Number.isFinite(
+                rangeStart
+              ) &&
+              rangeEnd >
+                rangeStart
+            ) {
+              ranges.push({
+                start:
+                  rangeStart,
+
+                end:
+                  rangeEnd,
+              });
+            }
+          }
+
+          let cursor = 0;
+
+          ranges.forEach(
+            range => {
+              if (
+                range.start >
+                cursor
+              ) {
+                span.appendChild(
+                  document.createTextNode(
+                    value.slice(
+                      cursor,
+                      range.start
+                    )
+                  )
+                );
+              }
+
               span.appendChild(
-                document.createTextNode(
+                el(
+                  'span',
+                  'liturgical-phrase',
                   value.slice(
-                    cursor,
-                    match.index
+                    range.start,
+                    range.end
                   )
                 )
               );
+
+              cursor =
+                range.end;
             }
-
-            span.appendChild(
-              el(
-                'span',
-                'liturgical-phrase',
-                match[0]
-              )
-            );
-
-            cursor =
-              match.index +
-              match[0].length;
-          }
+          );
 
           if (
             cursor <
-            value.length
+              value.length
           ) {
             span.appendChild(
               document.createTextNode(
