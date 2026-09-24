@@ -328,6 +328,16 @@ const HTML_TEMPLATE = String.raw`
       display: inline;
     }
 
+    .reader-inline.prayer-inline .reader-inline-label {
+      display: block;
+      margin-right: 0;
+      margin-bottom: 4px;
+    }
+
+    .reader-inline.prayer-inline .reader-text {
+      display: block;
+    }
+
     .reader-text {
       color: var(--text);
       font-size: 17px;
@@ -973,10 +983,30 @@ const HTML_TEMPLATE = String.raw`
                   if (
                     block.inlineLabel
                   ) {
+                    const normalizedInlineLabel =
+                      String(
+                        block.inlineLabel ||
+                        ''
+                      )
+                        .normalize(
+                          'NFD'
+                        )
+                        .replace(
+                          /[\u0300-\u036f\u0483-\u0487]/g,
+                          ''
+                        )
+                        .trim()
+                        .toLowerCase();
+
                     const inline =
                       el(
                         'div',
-                        'reader-inline'
+                        normalizedInlineLabel
+                          .startsWith(
+                            'молитва'
+                          )
+                          ? 'reader-inline prayer-inline'
+                          : 'reader-inline'
                       );
 
                     inline.appendChild(
