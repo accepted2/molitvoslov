@@ -273,12 +273,6 @@ const HTML_TEMPLATE = String.raw`
       line-height: 26px;
     }
 
-    .reader-text.canon-refrain {
-      color: var(--liturgical);
-      font-style: italic;
-      font-weight: 600;
-    }
-
     .reader-text.canon-russian {
       color: #777777 !important;
       font-size: 16px;
