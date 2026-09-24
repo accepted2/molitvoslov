@@ -1782,6 +1782,20 @@ const HTML_TEMPLATE = String.raw`
           fragment.appendChild(
             span
           );
+
+          if (
+            span.classList.contains(
+              'prayer-leading-cue'
+            ) &&
+            end <
+              text.length
+          ) {
+            fragment.appendChild(
+              document.createElement(
+                'br'
+              )
+            );
+          }
         }
 
         root.replaceChildren(
