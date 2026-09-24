@@ -14,8 +14,8 @@ import {
 } from 'react-native';
 
 import {
-  api,
-} from '../api';
+  contentApi as api,
+} from '../services/contentApi';
 
 import {
   useReadingProgress,
