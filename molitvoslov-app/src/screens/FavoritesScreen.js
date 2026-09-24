@@ -208,6 +208,11 @@ export const FavoritesScreen = ({
           {
             slug:
               metadata.slug,
+
+            focusTarget:
+              makeFocusTarget(
+                item
+              ),
           }
         );
 
