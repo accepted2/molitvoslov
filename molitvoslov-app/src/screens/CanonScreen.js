@@ -8,7 +8,6 @@ import React, {
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -156,11 +155,6 @@ export const CanonScreen = ({
     useRef([]);
 
   const [
-    activeVariant,
-    setActiveVariant,
-  ] = useState(1);
-
-  const [
     viewMode,
     setViewMode,
   ] = useState(
@@ -266,111 +260,35 @@ export const CanonScreen = ({
     };
 
 
-  const variants =
+  const primaryVariant =
     useMemo(
       () => {
         const values =
-          new Set(
-            (
-              canon?.sections ||
-              []
-            ).map(
+          (
+            canon?.sections ||
+            []
+          )
+            .map(
               section =>
                 Number(
                   section.variant ||
                   1
                 )
             )
-          );
+            .filter(
+              Number.isFinite
+            );
 
-        return [
-          ...values,
-        ].sort(
-          (
-            left,
-            right
-          ) =>
-            left - right
-        );
+        return values.length
+          ? Math.min(
+              ...values
+            )
+          : 1;
       },
       [
         canon,
       ]
     );
-
-
-  useEffect(() => {
-    if (
-      !canon ||
-      !variants.length
-    ) {
-      return;
-    }
-
-    const targetVariant =
-      Number(
-        focusTarget
-          ?.metadata
-          ?.variant ||
-        0
-      );
-
-    if (
-      targetVariant &&
-      variants.includes(
-        targetVariant
-      )
-    ) {
-      setActiveVariant(
-        targetVariant
-      );
-
-      return;
-    }
-
-    const progressSection =
-      (
-        canon.sections ||
-        []
-      ).find(
-        section =>
-          Number(
-            section.id
-          ) ===
-            Number(
-              savedProgress
-                ?.anchor_id
-            )
-      );
-
-    if (
-      progressSection
-    ) {
-      setActiveVariant(
-        Number(
-          progressSection.variant ||
-          1
-        )
-      );
-
-      return;
-    }
-
-    if (
-      !variants.includes(
-        activeVariant
-      )
-    ) {
-      setActiveVariant(
-        variants[0]
-      );
-    }
-  }, [
-    canon,
-    savedProgress,
-    focusTarget,
-    variants,
-  ]);
 
 
   const activeSections =
@@ -387,7 +305,7 @@ export const CanonScreen = ({
                 1
               ) ===
                 Number(
-                  activeVariant
+                  primaryVariant
                 )
           )
           .sort(
@@ -406,7 +324,7 @@ export const CanonScreen = ({
           ),
       [
         canon,
-        activeVariant,
+        primaryVariant,
       ]
     );
 
@@ -528,7 +446,7 @@ export const CanonScreen = ({
               slug,
 
             variant:
-              activeVariant,
+              primaryVariant,
           },
         });
 
@@ -701,7 +619,7 @@ export const CanonScreen = ({
                 slug,
 
               variant:
-                activeVariant,
+                primaryVariant,
 
               ode_number:
                 section.ode_number,
@@ -758,10 +676,10 @@ export const CanonScreen = ({
                     'church',
 
                   className:
-                    'canon-church',
+                    `canon-church canon-${section.section_type}`,
 
                   label:
-                    label,
+                    '',
                 })
               );
             }
@@ -781,12 +699,10 @@ export const CanonScreen = ({
                     'russian',
 
                   className:
-                    'canon-russian',
+                    `canon-russian canon-${section.section_type}`,
 
                   label:
-                    showChurch
-                      ? 'Русский'
-                      : label,
+                    '',
                 })
               );
             }
@@ -818,9 +734,6 @@ export const CanonScreen = ({
             } else if (
               !odeNumber
             ) {
-              sectionTitle =
-                label;
-
               previousOde =
                 null;
             }
@@ -876,18 +789,8 @@ export const CanonScreen = ({
             'Канон',
 
           description:
-            [
-              canon.tone,
-              variants.length > 1
-                ? `Вариант ${activeVariant}`
-                : '',
-            ]
-              .filter(
-                Boolean
-              )
-              .join(
-                ' · '
-              ),
+            canon.tone ||
+            '',
 
           action: {
             key:
@@ -924,8 +827,7 @@ export const CanonScreen = ({
         title,
         slug,
         activeSections,
-        activeVariant,
-        variants,
+        primaryVariant,
         savedItems,
         viewMode,
       ]
@@ -1027,66 +929,6 @@ export const CanonScreen = ({
         styles.container
       }
     >
-      {variants.length > 1 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={
-            false
-          }
-          contentContainerStyle={
-            styles.variantSwitcher
-          }
-        >
-          {variants.map(
-            variant => (
-              <Pressable
-                key={
-                  variant
-                }
-                onPress={() =>
-                  setActiveVariant(
-                    variant
-                  )
-                }
-                style={({pressed}) => [
-                  styles.variantButton,
-
-                  Number(
-                    activeVariant
-                  ) ===
-                    Number(
-                      variant
-                    ) &&
-                    styles
-                      .variantButtonActive,
-
-                  pressed &&
-                    styles.pressed,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.variantButtonText,
-
-                    Number(
-                      activeVariant
-                    ) ===
-                      Number(
-                        variant
-                      ) &&
-                      styles
-                        .variantButtonTextActive,
-                  ]}
-                >
-                  Вариант{' '}
-                  {variant}
-                </Text>
-              </Pressable>
-            )
-          )}
-        </ScrollView>
-      )}
-
       <View
         style={
           styles.languageSwitcher
@@ -1166,48 +1008,6 @@ const styles =
       flex: 1,
       backgroundColor:
         colors.background,
-    },
-
-    variantSwitcher: {
-      paddingHorizontal:
-        spacing.md,
-      paddingTop:
-        spacing.sm,
-      paddingBottom: 2,
-      gap: 6,
-    },
-
-    variantButton: {
-      minHeight: 34,
-      justifyContent:
-        'center',
-      paddingHorizontal: 12,
-      borderRadius:
-        radius.sm,
-      borderWidth: 1,
-      borderColor:
-        colors.border,
-      backgroundColor:
-        colors.surface,
-    },
-
-    variantButtonActive: {
-      borderColor:
-        colors.text,
-      backgroundColor:
-        colors.text,
-    },
-
-    variantButtonText: {
-      fontSize: 12,
-      fontWeight: '700',
-      color:
-        colors.textSecondary,
-    },
-
-    variantButtonTextActive: {
-      color:
-        colors.white,
     },
 
     languageSwitcher: {
