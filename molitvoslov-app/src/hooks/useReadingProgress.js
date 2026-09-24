@@ -204,6 +204,7 @@ export const useReadingProgress = ({
         anchorId,
         offset = 0,
         progressPercent = 0,
+        metadata = null,
       }) => {
         if (
           !sourceType ||
@@ -244,6 +245,13 @@ export const useReadingProgress = ({
                 100
               )
             ),
+
+          metadata:
+            metadata &&
+            typeof metadata ===
+              'object'
+              ? metadata
+              : null,
         };
 
         pendingProgressRef.current =
