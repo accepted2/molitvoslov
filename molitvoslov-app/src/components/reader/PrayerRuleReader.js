@@ -651,7 +651,7 @@ const HTML_TEMPLATE = String.raw`
           /^слава(?: отцу| и ныне)?\b/.test(
             normalized
           ) ||
-          /^и ныне\b/.test(
+          /^(?:и ныне|ныне)\b/.test(
             normalized
           )
         );
@@ -687,7 +687,7 @@ const HTML_TEMPLATE = String.raw`
         }
 
         if (
-          /^(слава(?: отцу| и ныне)?\b|и ныне\b)/.test(
+          /^(слава(?: отцу| и ныне)?\b|(?:и ныне|ныне)\b)/.test(
             combined
           ) &&
           combined.length < 420
@@ -1193,7 +1193,7 @@ const HTML_TEMPLATE = String.raw`
             );
 
           const phrasePattern =
-            /(Слава(?:\s+Отцу\s+и\s+Сыну\s+и\s+Святому\s+Духу)?\s*[:;,.!?]?|И\s+ныне(?:\s+и\s+присно\s+и\s+во\s+веки\s+веков\.?\s*Аминь\.?)?\s*[:;,.!?]?)/giu;
+            /(Слава(?:\s+Отцу\s+и\s+Сыну\s+и\s+Святому\s+Духу)?\s*[:;,.!?]?|(?:И\s+ныне|Ныне)(?:\s+и\s+присно\s+и\s+во\s+веки\s+веков\.?\s*Аминь\.?)?\s*[:;,.!?]?)/giu;
 
           let cursor = 0;
           let match = null;
