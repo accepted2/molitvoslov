@@ -86,6 +86,58 @@ const SECTION_LABELS = {
 };
 
 
+const getCanonInlineLabel =
+  section => {
+    if (
+      !section ||
+      [
+        'glory',
+        'now',
+        'other',
+      ].includes(
+        section.section_type
+      )
+    ) {
+      return '';
+    }
+
+    const heading =
+      String(
+        section.heading ||
+        ''
+      )
+        .trim()
+        .replace(
+          /[:;]+$/,
+          ''
+        );
+
+    const genericSong =
+      /^песнь\s+\d+/iu.test(
+        heading
+      );
+
+    const value =
+      (
+        heading &&
+        !genericSong &&
+        heading.length <= 48
+      )
+        ? heading
+        : (
+            SECTION_LABELS[
+              section.section_type
+            ] ||
+            ''
+          );
+
+    return value
+      ? `${value}:`
+      : '';
+  };
+
+
+
 const SwitchButton = ({
   title,
   active,
@@ -520,6 +572,7 @@ export const CanonScreen = ({
           language,
           className,
           label,
+          inlineLabel,
         }) => {
           const syntheticId =
             nextBlockId++;
@@ -580,6 +633,10 @@ export const CanonScreen = ({
 
             label:
               label ||
+              '',
+
+            inlineLabel:
+              inlineLabel ||
               '',
 
             className,
@@ -680,6 +737,11 @@ export const CanonScreen = ({
 
                   label:
                     '',
+
+                  inlineLabel:
+                    getCanonInlineLabel(
+                      section
+                    ),
                 })
               );
             }
@@ -702,6 +764,9 @@ export const CanonScreen = ({
                     `canon-russian canon-${section.section_type}`,
 
                   label:
+                    '',
+
+                  inlineLabel:
                     '',
                 })
               );
@@ -739,6 +804,9 @@ export const CanonScreen = ({
             }
 
             sections.push({
+              className:
+                'canon-section',
+
               progressAnchorId:
                 Number(
                   section.id
