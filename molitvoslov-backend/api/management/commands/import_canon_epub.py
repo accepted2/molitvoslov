@@ -1796,9 +1796,37 @@ class Command(BaseCommand):
 
         desired = set()
 
+        variants = [
+            int(
+                section[
+                    'variant'
+                ]
+            )
+            for section in parsed[
+                'sections'
+            ]
+        ]
+
+        primary_variant = (
+            min(
+                variants
+            )
+            if variants
+            else 1
+        )
+
         for section in parsed[
             'sections'
         ]:
+            if (
+                int(
+                    section[
+                        'variant'
+                    ]
+                ) !=
+                primary_variant
+            ):
+                continue
             variant = (
                 section[
                     'variant'
