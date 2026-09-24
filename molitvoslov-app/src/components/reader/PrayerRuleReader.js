@@ -115,11 +115,13 @@ const HTML_TEMPLATE = String.raw`
     .section-header .prayer-title {
       width: 100%;
       margin-bottom: 0;
-      padding: 0 34px 0 0;
+      padding: 0 40px;
       text-align: center;
       font-size: 18px;
       line-height: 24px;
-      white-space: nowrap;
+      white-space: pre-line;
+      overflow-wrap: normal;
+      word-break: normal;
     }
 
     .favorite-action {
@@ -883,11 +885,49 @@ const HTML_TEMPLATE = String.raw`
                     ''
                   );
 
-            const displayTitleText =
+            let displayTitleText =
               displayTitle.replace(
                 /(\d+)-([яй])/giu,
                 '$1‑$2'
               );
+
+            if (
+              displayTitleText.length >
+                32 &&
+              displayTitleText.includes(
+                ','
+              )
+            ) {
+              const commaIndex =
+                displayTitleText.indexOf(
+                  ','
+                );
+
+              const beforeComma =
+                displayTitleText
+                  .slice(
+                    0,
+                    commaIndex + 1
+                  )
+                  .trim();
+
+              const afterComma =
+                displayTitleText
+                  .slice(
+                    commaIndex + 1
+                  )
+                  .trim();
+
+              if (
+                beforeComma &&
+                afterComma
+              ) {
+                displayTitleText =
+                  beforeComma +
+                  '\n' +
+                  afterComma;
+              }
+            }
 
             const churchText =
               text.content ||
