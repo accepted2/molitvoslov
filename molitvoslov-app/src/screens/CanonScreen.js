@@ -86,17 +86,72 @@ const SECTION_LABELS = {
 };
 
 
-const getCanonInlineLabel =
-  section => {
-    if (
-      !section ||
-      [
-        'glory',
-        'now',
-        'other',
-      ].includes(
-        section.section_type
+const normalizeCanonCue =
+  value =>
+    String(
+      value ||
+      ''
+    )
+      .normalize(
+        'NFD'
       )
+      .replace(
+        /[\u0300-\u036f\u0483-\u0487]/g,
+        ''
+      )
+      .toLowerCase()
+      .replace(
+        /ё/g,
+        'е'
+      )
+      .replace(
+        /\s+/g,
+        ' '
+      )
+      .trim();
+
+
+const canonTextSignature =
+  value =>
+    normalizeCanonCue(
+      value
+    )
+      .replace(
+        /^(?:припев|иисусу)\s*:\s*/iu,
+        ''
+      )
+      .replace(
+        /[^а-я0-9]+/giu,
+        ' '
+      )
+      .trim();
+
+
+const getCanonInlineLabel =
+  (
+    section,
+    text
+  ) => {
+    if (!section) {
+      return '';
+    }
+
+    const sectionType =
+      section.section_type;
+
+    // В песнях канона обычные строфы не должны
+    // автоматически подписываться "Тропарь:".
+    if (
+      sectionType ===
+        'troparion' &&
+      section.ode_number
+    ) {
+      return '';
+    }
+
+    if (
+      sectionType ===
+        'other'
     ) {
       return '';
     }
@@ -117,23 +172,71 @@ const getCanonInlineLabel =
         heading
       );
 
-    const value =
+    let value =
       (
         heading &&
         !genericSong &&
         heading.length <= 48
       )
         ? heading
-        : (
-            SECTION_LABELS[
-              section.section_type
-            ] ||
-            ''
-          );
+        : '';
 
-    return value
-      ? `${value}:`
-      : '';
+    if (!value) {
+      if (
+        [
+          'irmos',
+          'refrain',
+          'theotokion',
+          'kontakion',
+          'ikos',
+          'sedalen',
+          'svetilen',
+          'prayer',
+        ].includes(
+          sectionType
+        )
+      ) {
+        value =
+          SECTION_LABELS[
+            sectionType
+          ] ||
+          '';
+      }
+    }
+
+    if (!value) {
+      return '';
+    }
+
+    const normalizedValue =
+      normalizeCanonCue(
+        value
+      );
+
+    const normalizedText =
+      normalizeCanonCue(
+        text
+      );
+
+    // Если "Ирмос:", "Припев:", "Иисусу:" и т.п.
+    // уже находятся в самом тексте EPUB, второй раз
+    // подпись перед текстом не добавляем.
+    if (
+      normalizedText ===
+        normalizedValue ||
+      normalizedText.startsWith(
+        normalizedValue +
+        ':'
+      ) ||
+      normalizedText.startsWith(
+        normalizedValue +
+        ' '
+      )
+    ) {
+      return '';
+    }
+
+    return `${value}:`;
   };
 
 
@@ -381,17 +484,136 @@ export const CanonScreen = ({
     );
 
 
+  const displaySections =
+    useMemo(
+      () => {
+        const refrainCandidates =
+          activeSections
+            .filter(
+              section => {
+                if (
+                  section.section_type !==
+                    'refrain'
+                ) {
+                  return false;
+                }
+
+                const heading =
+                  normalizeCanonCue(
+                    section.heading
+                  );
+
+                if (
+                  heading !==
+                    'припев'
+                ) {
+                  return false;
+                }
+
+                const signature =
+                  canonTextSignature(
+                    section.text
+                      ?.content
+                  );
+
+                if (
+                  !signature ||
+                  signature.length >
+                    220
+                ) {
+                  return false;
+                }
+
+                return (
+                  signature.includes(
+                    'моли бога'
+                  ) ||
+                  signature.includes(
+                    'помилуй'
+                  ) ||
+                  signature.includes(
+                    'спаси нас'
+                  ) ||
+                  signature.includes(
+                    'спаси мя'
+                  ) ||
+                  signature.includes(
+                    'слава тебе'
+                  ) ||
+                  signature.includes(
+                    'радуйся'
+                  )
+                );
+              }
+            );
+
+        const canonical =
+          refrainCandidates[0];
+
+        const canonicalSignature =
+          canonical
+            ? canonTextSignature(
+                canonical.text
+                  ?.content
+              )
+            : '';
+
+        return activeSections.map(
+          section => {
+            const signature =
+              canonTextSignature(
+                section.text
+                  ?.content
+              );
+
+            if (
+              canonicalSignature &&
+              section.section_type ===
+                'troparion' &&
+              signature ===
+                canonicalSignature
+            ) {
+              return {
+                ...section,
+
+                display_section_type:
+                  'refrain',
+
+                display_heading:
+                  'Припев',
+              };
+            }
+
+            return {
+              ...section,
+
+              display_section_type:
+                section.section_type,
+
+              display_heading:
+                section.heading ||
+                '',
+            };
+          }
+        );
+      },
+      [
+        activeSections,
+      ]
+    );
+
+
   const hasRussianTranslation =
     useMemo(
       () =>
-        activeSections.some(
+        displaySections.some(
           section =>
             !!section.text
               ?.translation
               ?.trim()
         ),
       [
-        activeSections,
+        displaySections,
       ]
     );
 
@@ -682,9 +904,13 @@ export const CanonScreen = ({
                 section.ode_number,
 
               section_type:
+                section
+                  .display_section_type ||
                 section.section_type,
 
               heading:
+                section
+                  .display_heading ||
                 section.heading ||
                 '',
 
@@ -694,7 +920,7 @@ export const CanonScreen = ({
         };
 
 
-        activeSections.forEach(
+        displaySections.forEach(
           section => {
             const church =
               section.text
@@ -708,10 +934,31 @@ export const CanonScreen = ({
                 ?.trim() ||
               '';
 
-            const label =
+            const effectiveSectionType =
+              section
+                .display_section_type ||
+              section.section_type;
+
+            const effectiveHeading =
+              section
+                .display_heading ||
               section.heading ||
+              '';
+
+            const displaySection = {
+              ...section,
+
+              section_type:
+                effectiveSectionType,
+
+              heading:
+                effectiveHeading,
+            };
+
+            const label =
+              effectiveHeading ||
               SECTION_LABELS[
-                section.section_type
+                effectiveSectionType
               ] ||
               '';
 
@@ -733,14 +980,15 @@ export const CanonScreen = ({
                     'church',
 
                   className:
-                    `canon-church canon-${section.section_type}`,
+                    `canon-church canon-${effectiveSectionType}`,
 
                   label:
                     '',
 
                   inlineLabel:
                     getCanonInlineLabel(
-                      section
+                      displaySection,
+                      church
                     ),
                 })
               );
@@ -761,7 +1009,7 @@ export const CanonScreen = ({
                     'russian',
 
                   className:
-                    `canon-russian canon-${section.section_type}`,
+                    `canon-russian canon-${effectiveSectionType}`,
 
                   label:
                     '',
@@ -894,7 +1142,7 @@ export const CanonScreen = ({
         canon,
         title,
         slug,
-        activeSections,
+        displaySections,
         primaryVariant,
         savedItems,
         viewMode,
