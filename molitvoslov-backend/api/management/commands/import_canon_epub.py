@@ -1182,15 +1182,56 @@ class Command(BaseCommand):
                 if paragraph_type:
                     open_standalone = None
 
+                    (
+                        cue_text,
+                        paragraph_content,
+                    ) = (
+                        self.split_paragraph_cue(
+                            text
+                        )
+                    )
+
+                    effective_heading = (
+                        cue_text
+                        or paragraph_label
+                    )
+
+                    # В некоторых EPUB "Припев:" /
+                    # "Иисусу:" / "Слава:" / "И ныне:"
+                    # идут отдельным абзацем. В этом случае
+                    # следующий абзац и есть содержимое этого
+                    # элемента, а не новый тропарь.
+                    if (
+                            cue_text
+                            and
+                            not paragraph_content
+                    ):
+                        pending_heading = {
+                            'section_type':
+                                paragraph_type,
+
+                            'heading':
+                                effective_heading,
+
+                            'ode_number':
+                                current_ode,
+                        }
+
+                        continue
+
                     add_section(
                         section_type=(
                             paragraph_type
                         ),
 
-                        content=text,
+                        content=(
+                            paragraph_content
+                            if cue_text
+                            else text
+                        ),
 
                         heading=(
-                            paragraph_label
+                            effective_heading
                         ),
 
                         ode_number=(
@@ -1403,6 +1444,61 @@ class Command(BaseCommand):
                 }
 
         return None
+
+    def split_paragraph_cue(
+            self,
+            value,
+    ):
+        """
+        Разделяет служебную метку в начале абзаца
+        ("Припев:", "Иисусу:", "Слава:", "И ныне:" и т.п.)
+        и сам текст. Это важно для EPUB, где метка может
+        находиться отдельным абзацем, а текст — следующим.
+        """
+        cleaned = self.clean_text(
+            value,
+            preserve_newlines=True,
+        )
+
+        if ':' not in cleaned:
+            return (
+                '',
+                cleaned,
+            )
+
+        cue, remainder = cleaned.split(
+            ':',
+            1,
+        )
+
+        normalized_cue = (
+            self.normalize_heading(
+                cue
+            )
+        )
+
+        allowed = (
+            normalized_cue == 'ирмос'
+            or normalized_cue == 'припев'
+            or normalized_cue == 'иисусу'
+            or normalized_cue == 'слава'
+            or normalized_cue == 'и ныне'
+            or normalized_cue == 'ныне'
+            or normalized_cue == 'богородичен'
+            or normalized_cue == 'крестобогородичен'
+        )
+
+        if not allowed:
+            return (
+                '',
+                cleaned,
+            )
+
+        return (
+            cue.strip(),
+            remainder.strip(),
+        )
+
 
     def classify_paragraph(
             self,
