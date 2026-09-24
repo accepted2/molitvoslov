@@ -65,6 +65,7 @@ export const initDatabase =
         anchor_id INTEGER,
         offset INTEGER DEFAULT 0,
         progress_percent INTEGER DEFAULT 0,
+        metadata TEXT,
         updated_at TEXT NOT NULL,
 
         UNIQUE(
@@ -164,6 +165,17 @@ export const initDatabase =
       await db.execAsync(`
         ALTER TABLE reading_progress
         ADD COLUMN progress_percent INTEGER DEFAULT 0;
+      `);
+    }
+
+    if (
+      !progressColumnNames.includes(
+        'metadata'
+      )
+    ) {
+      await db.execAsync(`
+        ALTER TABLE reading_progress
+        ADD COLUMN metadata TEXT;
       `);
     }
 
