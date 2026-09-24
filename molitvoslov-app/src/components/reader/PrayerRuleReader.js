@@ -205,6 +205,15 @@ const HTML_TEMPLATE = String.raw`
       white-space: pre-wrap;
     }
 
+    .translation-text {
+      margin-top: 8px;
+      color: var(--secondary);
+      font-size: 16px;
+      line-height: 26px;
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
+    }
+
     .liturgical-phrase {
       color: var(--liturgical);
       font-weight: 600;
@@ -522,6 +531,9 @@ const HTML_TEMPLATE = String.raw`
     const itemTitleMap =
       new Map();
 
+    const itemLanguageMap =
+      new Map();
+
     const savedRanges =
       new Map();
 
@@ -658,10 +670,17 @@ const HTML_TEMPLATE = String.raw`
 
     const isMinorLiturgicalItem =
       text => {
-        const title =
+        let title =
           normalizeLiturgicalValue(
             text?.title
           );
+
+        if (
+          title ===
+          'молитва'
+        ) {
+          title = '';
+        }
 
         const content =
           normalizeLiturgicalValue(
@@ -744,17 +763,55 @@ const HTML_TEMPLATE = String.raw`
             const text =
               item.text;
 
+            const normalizedTitle =
+              normalizeLiturgicalValue(
+                text.title
+              );
+
+            const displayTitle =
+              normalizedTitle ===
+                'молитва'
+                ? ''
+                : (
+                    text.title ||
+                    ''
+                  );
+
+            const churchText =
+              text.content ||
+              '';
+
+            const russianText =
+              text.translation ||
+              '';
+
+            const viewMode =
+              DATA.viewMode ||
+              'both';
+
+            const primaryLanguage =
+              viewMode ===
+                'russian' &&
+              russianText
+                ? 'russian'
+                : 'church';
+
+            const primaryText =
+              primaryLanguage ===
+                'russian'
+                ? russianText
+                : churchText;
+
             const itemTitle =
-              text.title ||
+              displayTitle ||
               text.description ||
-              'Молитва';
+              'Текст';
 
             itemTextMap.set(
               Number(
                 item.id
               ),
-              text.content ||
-              ''
+              primaryText
             );
 
             itemTitleMap.set(
@@ -762,6 +819,13 @@ const HTML_TEMPLATE = String.raw`
                 item.id
               ),
               itemTitle
+            );
+
+            itemLanguageMap.set(
+              Number(
+                item.id
+              ),
+              primaryLanguage
             );
 
             const wholeSaved =
@@ -782,77 +846,75 @@ const HTML_TEMPLATE = String.raw`
                     'prayer'
               );
 
-            const header =
-              el(
-                'div',
-                'section-header'
-              );
-
-            if (text.title) {
-              header.appendChild(
-                el(
-                  'h2',
-                  'prayer-title',
-                  text.title
-                )
-              );
-            } else {
-              header.appendChild(
-                el(
-                  'h2',
-                  'prayer-title',
-                  'Молитва'
-                )
-              );
-            }
-
             const allowWholeSave =
+              !!displayTitle &&
               !isMinorLiturgicalItem(
                 text
               );
 
             if (
+              displayTitle ||
               allowWholeSave
             ) {
-              const favorite =
+              const header =
                 el(
-                  'button',
-                  wholeSaved
-                    ? 'favorite-action active'
-                    : 'favorite-action',
-                  wholeSaved
-                    ? '★'
-                    : '☆'
+                  'div',
+                  'section-header'
                 );
 
-              favorite.type =
-                'button';
-
-              favorite.title =
-                wholeSaved
-                  ? 'Убрать из избранного'
-                  : 'Добавить в избранное';
-
-              favorite.dataset.itemId =
-                String(
-                  item.id
+              if (displayTitle) {
+                header.appendChild(
+                  el(
+                    'h2',
+                    'prayer-title',
+                    displayTitle
+                  )
                 );
+              }
 
-              favorite.dataset.savedItemId =
-                wholeSaved
-                  ? String(
-                      wholeSaved.id
-                    )
-                  : '';
+              if (
+                allowWholeSave
+              ) {
+                const favorite =
+                  el(
+                    'button',
+                    wholeSaved
+                      ? 'favorite-action active'
+                      : 'favorite-action',
+                    wholeSaved
+                      ? '★'
+                      : '☆'
+                  );
 
-              header.appendChild(
-                favorite
+                favorite.type =
+                  'button';
+
+                favorite.title =
+                  wholeSaved
+                    ? 'Убрать из избранного'
+                    : 'Добавить в избранное';
+
+                favorite.dataset.itemId =
+                  String(
+                    item.id
+                  );
+
+                favorite.dataset.savedItemId =
+                  wholeSaved
+                    ? String(
+                        wholeSaved.id
+                      )
+                    : '';
+
+                header.appendChild(
+                  favorite
+                );
+              }
+
+              wrapper.appendChild(
+                header
               );
             }
-
-            wrapper.appendChild(
-              header
-            );
 
             if (
               text.description &&
@@ -882,6 +944,20 @@ const HTML_TEMPLATE = String.raw`
             wrapper.appendChild(
               textElement
             );
+
+            if (
+              DATA.viewMode ===
+                'both' &&
+              russianText
+            ) {
+              wrapper.appendChild(
+                el(
+                  'div',
+                  'translation-text',
+                  russianText
+                )
+              );
+            }
 
             if (
               text.description &&
@@ -1378,6 +1454,24 @@ const HTML_TEMPLATE = String.raw`
               itemTextMap.get(
                 itemId
               );
+
+            const language =
+              itemLanguageMap.get(
+                itemId
+              ) ||
+              'church';
+
+            const savedLanguage =
+              item.metadata
+                ?.language ||
+              'church';
+
+            if (
+              savedLanguage !==
+              language
+            ) {
+              return;
+            }
 
             if (!text) {
               return;
@@ -2809,7 +2903,12 @@ const HTML_TEMPLATE = String.raw`
             itemTitleMap.get(
               state.active.itemId
             ) ||
-            'Молитва',
+            'Текст',
+          language:
+            itemLanguageMap.get(
+              state.active.itemId
+            ) ||
+            'church',
         });
       }
     );
@@ -3744,9 +3843,14 @@ const buildHtml = ({
   savedItems,
   savedProgress,
   focusTarget,
+  viewMode,
 }) => {
   const payload = {
     rule,
+
+    viewMode:
+      viewMode ||
+      'both',
 
     savedItems:
       savedItems.filter(
@@ -3796,6 +3900,7 @@ export default function PrayerRuleReader({
   savedItems,
   savedProgress,
   focusTarget,
+  viewMode = 'both',
   onSaved,
   onProgress,
 }) {
@@ -3810,12 +3915,14 @@ export default function PrayerRuleReader({
           savedItems,
           savedProgress,
           focusTarget,
+          viewMode,
         }),
       [
         rule,
         savedItems,
         savedProgress,
         focusTarget,
+        viewMode,
       ]
     );
 
@@ -4046,6 +4153,9 @@ export default function PrayerRuleReader({
             metadata: {
               slug:
                 rule.slug,
+              language:
+                message.language ||
+                'church',
             },
           });
 
