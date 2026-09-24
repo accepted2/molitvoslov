@@ -753,7 +753,7 @@ const HTML_TEMPLATE = String.raw`
           return '';
         }
 
-        return `${rawTitle}:`;
+        return rawTitle + ':';
       };
 
 
