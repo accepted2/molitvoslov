@@ -27,8 +27,8 @@ import {
 } from 'expo-status-bar';
 
 import {
-  api,
-} from '../api';
+  contentApi as api,
+} from '../services/contentApi';
 
 import {
   deleteReadingProgress,

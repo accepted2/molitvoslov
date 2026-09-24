@@ -7,7 +7,7 @@ import {
     TouchableOpacity,
     ActivityIndicator,
 } from 'react-native';
-import { api } from '../api';
+import {contentApi as api} from '../services/contentApi';
 
 export const TextsListScreen = ({ route, navigation }) => {
     const { categorySlug, categoryName } = route.params;
