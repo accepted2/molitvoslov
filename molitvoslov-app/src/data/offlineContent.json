@@ -1,0 +1,27 @@
+{
+  "schema_version": 0,
+  "generated_at": null,
+  "categories": [],
+  "category_texts": {},
+  "texts": {},
+  "prayer_rules": {
+    "list": [],
+    "by_slug": {}
+  },
+  "psalters": {
+    "list": [],
+    "by_slug": {}
+  },
+  "kathismas": {
+    "by_number": {}
+  },
+  "akathists": {
+    "list": [],
+    "by_slug": {}
+  },
+  "canons": {
+    "list": [],
+    "by_slug": {}
+  },
+  "daily_quotes": []
+}
