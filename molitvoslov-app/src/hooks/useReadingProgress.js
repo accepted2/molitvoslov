@@ -160,14 +160,12 @@ export const useReadingProgress = ({
           );
 
           /*
-           * ВАЖНО:
-           * здесь специально НЕ обновляем savedProgress.
-           *
            * savedProgress нужен для восстановления позиции
-           * при входе на экран. Если обновлять его после
-           * каждого автосохранения во время прокрутки,
-           * экран воспринимает свежее сохранение как команду
-           * снова восстановить позицию и появляется рывок.
+           * при входе на экран.
+           *
+           * Здесь его специально не обновляем после каждого
+           * автосохранения, иначе WebView может повторно
+           * восстанавливать позицию во время прокрутки.
            */
           if (
             pendingProgressRef
@@ -177,7 +175,11 @@ export const useReadingProgress = ({
             pendingProgressRef
               .current
               ?.offset ===
-              progress.offset
+              progress.offset &&
+            pendingProgressRef
+              .current
+              ?.progressPercent ===
+              progress.progressPercent
           ) {
             pendingProgressRef.current =
               null;
@@ -201,6 +203,7 @@ export const useReadingProgress = ({
         anchorType,
         anchorId,
         offset = 0,
+        progressPercent = 0,
       }) => {
         if (
           !sourceType ||
@@ -216,11 +219,29 @@ export const useReadingProgress = ({
           sourceId,
           anchorType,
           anchorId,
+
           offset:
             Math.max(
               0,
               Math.round(
-                offset
+                Number(
+                  offset ||
+                  0
+                )
+              )
+            ),
+
+          progressPercent:
+            Math.max(
+              0,
+              Math.min(
+                Math.round(
+                  Number(
+                    progressPercent ||
+                    0
+                  )
+                ),
+                100
               )
             ),
         };
@@ -291,6 +312,7 @@ export const useReadingProgress = ({
         currentSourceKey,
 
     scheduleSave,
+
     reloadProgress:
       loadProgress,
   };

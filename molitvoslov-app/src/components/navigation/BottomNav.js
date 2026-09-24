@@ -35,6 +35,12 @@ const ITEMS = [
     label: 'Избранное',
     symbol: '♡',
   },
+  {
+    key: 'account',
+    route: 'Account',
+    label: 'Аккаунт',
+    symbol: '○',
+  },
 ];
 
 

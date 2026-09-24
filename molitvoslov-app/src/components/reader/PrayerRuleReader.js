@@ -1,25 +1,9 @@
-import React, {
-  useMemo,
-  useRef,
-} from 'react';
+import React, {useMemo, useRef} from 'react';
+import {StyleSheet, View} from 'react-native';
+import {WebView} from 'react-native-webview';
 
-import {
-  StyleSheet,
-  View,
-} from 'react-native';
-
-import {
-  WebView,
-} from 'react-native-webview';
-
-import {
-  deleteSavedItem,
-  saveItem,
-} from '../../services/savedItems';
-
-import {
-  colors,
-} from '../../theme';
+import {deleteSavedItem, saveItem} from '../../services/savedItems';
+import {colors} from '../../theme';
 
 
 const scriptSafeJson = value =>
@@ -3351,17 +3335,20 @@ const HTML_TEMPLATE = String.raw`
             )
           );
 
+        const documentHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight
+        );
+        const maxScroll = Math.max(0, documentHeight - window.innerHeight);
+        const progressPercent = maxScroll > 0
+          ? Math.round((window.scrollY / maxScroll) * 100)
+          : 100;
+
         post({
-          type:
-            'progress',
-          anchorId:
-            Number(
-              current.dataset.itemId
-            ),
-          offset:
-            Math.round(
-              offset
-            ),
+          type: 'progress',
+          anchorId: Number(current.dataset.itemId),
+          offset: Math.round(offset),
+          progressPercent: Math.max(0, Math.min(progressPercent, 100)),
         });
       };
 
@@ -4322,20 +4309,13 @@ export default function PrayerRuleReader({
         'progress'
       ) {
         onProgress?.({
-          anchorType:
-            'prayer_rule_item',
-          anchorId:
-            Number(
-              message.anchorId
-            ),
-          offset:
-            Math.max(
-              0,
-              Number(
-                message.offset ||
-                0
-              )
-            ),
+          anchorType: 'prayer_rule_item',
+          anchorId: Number(message.anchorId),
+          offset: Math.max(0, Number(message.offset || 0)),
+          progressPercent: Math.max(
+            0,
+            Math.min(Number(message.progressPercent || 0), 100)
+          ),
         });
 
         return;

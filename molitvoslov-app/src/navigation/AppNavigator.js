@@ -69,6 +69,9 @@ import {
 import {
   colors,
 } from '../theme';
+import {
+  AccountScreen,
+} from '../screens/AccountScreen';
 
 
 const Stack =
@@ -278,6 +281,16 @@ export const AppNavigator = () => {
           options={{
             title:
               'Ко Святому Причащению',
+          }}
+        />
+        <Stack.Screen
+          name="Account"
+          component={
+            AccountScreen
+          }
+          options={{
+            headerShown:
+              false,
           }}
         />
       </Stack.Navigator>

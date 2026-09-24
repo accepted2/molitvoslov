@@ -1,3 +1,4 @@
+
 import React, {
   useMemo,
   useRef,
@@ -3473,17 +3474,51 @@ appendStyledSegment(
                 current.offsetTop
             )
           );
+        
+        const documentHeight =
+          Math.max(
+            document.body.scrollHeight,
+            document.documentElement.scrollHeight
+          );
+
+        const maxScroll =
+          Math.max(
+            0,
+            documentHeight -
+            window.innerHeight
+          );
+
+        const progressPercent =
+          maxScroll > 0
+            ? Math.round(
+                (
+                  window.scrollY /
+                  maxScroll
+                ) * 100
+              )
+            : 100;
 
         post({
           type:
             'progress',
+
           anchorId:
             Number(
               current.dataset.itemId
             ),
+
           offset:
             Math.round(
               offset
+            ),
+
+          progressPercent:
+            Math.max(
+              0,
+              Math.min(
+                progressPercent,
+                100
+              )
             ),
         });
       };
@@ -4617,16 +4652,30 @@ export default function SelectableDocumentReader({
         onProgress?.({
           anchorType:
             documentData.progressAnchorType,
+
           anchorId:
             Number(
               message.anchorId
             ),
+
           offset:
             Math.max(
               0,
               Number(
                 message.offset ||
                 0
+              )
+            ),
+
+          progressPercent:
+            Math.max(
+              0,
+              Math.min(
+                Number(
+                  message.progressPercent ||
+                  0
+                ),
+                100
               )
             ),
         });
