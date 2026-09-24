@@ -223,6 +223,12 @@ const HTML_TEMPLATE = String.raw`
       display: inline;
     }
 
+    .rule-leading-cue {
+      color: var(--liturgical);
+      font-weight: 700;
+      font-style: italic;
+    }
+
     .translation-text {
       margin-top: 8px;
       color: var(--secondary);
@@ -1247,6 +1253,123 @@ const HTML_TEMPLATE = String.raw`
           : null;
 
 
+    const findLeadingCueRange =
+      value => {
+        const source =
+          String(
+            value ||
+            ''
+          );
+
+        const normalizedChars =
+          [];
+
+        const originalIndex =
+          [];
+
+        for (
+          let index = 0;
+          index <
+            source.length;
+          index += 1
+        ) {
+          const decomposed =
+            source[
+              index
+            ].normalize(
+              'NFD'
+            );
+
+          for (
+            const char
+            of decomposed
+          ) {
+            if (
+              /[\u0300-\u036f\u0483-\u0487]/u.test(
+                char
+              )
+            ) {
+              continue;
+            }
+
+            normalizedChars.push(
+              char
+            );
+
+            originalIndex.push(
+              index
+            );
+          }
+        }
+
+        const normalized =
+          normalizedChars.join(
+            ''
+          );
+
+        const match =
+          normalized.match(
+            /^\s*((?:Ирмос|Припев|Богородичен|Троичен|Крестобогородичен|Слава|И\s+ныне|Седален|Кондак|Икос|Светилен|Тропарь|Иисусу)\s*[:;])/iu
+          );
+
+        if (
+          !match ||
+          !match[1]
+        ) {
+          return null;
+        }
+
+        const normalizedStart =
+          match[0].indexOf(
+            match[1]
+          );
+
+        const normalizedEnd =
+          normalizedStart +
+          match[1].length -
+          1;
+
+        const start =
+          originalIndex[
+            normalizedStart
+          ];
+
+        let end =
+          (
+            originalIndex[
+              normalizedEnd
+            ] ??
+            start
+          ) + 1;
+
+        while (
+          end <
+            source.length &&
+          /[\u0300-\u036f\u0483-\u0487]/u.test(
+            source[
+              end
+            ]
+          )
+        ) {
+          end += 1;
+        }
+
+        if (
+          !Number.isFinite(
+            start
+          ) ||
+          end <= start
+        ) {
+          return null;
+        }
+
+        return {
+          start,
+          end,
+        };
+      };
+
+
     const renderTextItem =
       itemId => {
         const root =
@@ -1277,11 +1400,26 @@ const HTML_TEMPLATE = String.raw`
             itemId
           );
 
+        const leadingCue =
+          findLeadingCueRange(
+            text
+          );
+
         const boundaries =
           new Set([
             0,
             text.length,
           ]);
+
+        if (leadingCue) {
+          boundaries.add(
+            leadingCue.start
+          );
+
+          boundaries.add(
+            leadingCue.end
+          );
+        }
 
         saved.forEach(
           range => {
@@ -1384,6 +1522,18 @@ const HTML_TEMPLATE = String.raw`
           if (isActive) {
             span.classList.add(
               'active-highlight'
+            );
+          }
+
+          if (
+            leadingCue &&
+            start >=
+              leadingCue.start &&
+            end <=
+              leadingCue.end
+          ) {
+            span.classList.add(
+              'rule-leading-cue'
             );
           }
 
