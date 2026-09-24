@@ -47,6 +47,119 @@ const MODE_RUSSIAN =
   'russian';
 
 
+const normalizeAkathistText =
+  value => {
+    let result =
+      String(
+        value ||
+        ''
+      )
+        .replace(
+          /\r\n/g,
+          '\n'
+        )
+        .replace(
+          /\u00ad/g,
+          ''
+        )
+        .replace(
+          /\u200b/g,
+          ''
+        );
+
+    const notesMatch =
+      result.match(
+        /(?:^|\n)\s*Примечани(?:е|я)\s*(?=\n|$)/iu
+      );
+
+    if (
+      notesMatch &&
+      notesMatch.index !==
+        undefined
+    ) {
+      result =
+        result.slice(
+          0,
+          notesMatch.index
+        );
+    }
+
+    const lines =
+      result.split(
+        '\n'
+      );
+
+    const normalizedLines =
+      [];
+
+    for (
+      let index = 0;
+      index <
+        lines.length;
+      index += 1
+    ) {
+      const current =
+        lines[index]
+          .trim();
+
+      if (!current) {
+        continue;
+      }
+
+      const lettersOnly =
+        current
+          .normalize(
+            'NFD'
+          )
+          .replace(
+            /[\u0300-\u036f]/g,
+            ''
+          )
+          .replace(
+            /[^А-Яа-яЁё]/g,
+            ''
+          );
+
+      const next =
+        lines[
+          index + 1
+        ]?.trim() ||
+        '';
+
+      if (
+        lettersOnly.length > 0 &&
+        lettersOnly.length <= 2 &&
+        next &&
+        /^[А-Яа-яЁё\u0300-\u036f]/u.test(
+          next
+        )
+      ) {
+        normalizedLines.push(
+          current +
+          next
+        );
+
+        index += 1;
+        continue;
+      }
+
+      normalizedLines.push(
+        current
+      );
+    }
+
+    return normalizedLines
+      .join(
+        '\n'
+      )
+      .replace(
+        /\n{2,}/g,
+        '\n'
+      )
+      .trim();
+  };
+
+
 const getSectionTitle =
   section => {
     if (
@@ -574,11 +687,15 @@ export const AkathistScreen = ({
 
             metadata,
 
-            accentWords: [
-              'Радуйся',
-              'Иисусе',
-              'Аллилуиа',
-            ],
+            accentWords:
+              language ===
+                'church'
+                ? [
+                    'Радуйся',
+                    'Иисусе',
+                    'Аллилуиа',
+                  ]
+                : [],
           };
         };
 
@@ -596,14 +713,14 @@ export const AkathistScreen = ({
             [];
 
           const church =
-            textObject.content
-              ?.trim() ||
-            '';
+            normalizeAkathistText(
+              textObject.content
+            );
 
           const russian =
-            textObject.translation
-              ?.trim() ||
-            '';
+            normalizeAkathistText(
+              textObject.translation
+            );
 
           if (
             showChurch &&
@@ -746,15 +863,16 @@ export const AkathistScreen = ({
         ).forEach(
           section => {
             const church =
-              section.text?.content
-                ?.trim() ||
-              '';
+              normalizeAkathistText(
+                section.text
+                  ?.content
+              );
 
             const russian =
-              section.text
-                ?.translation
-                ?.trim() ||
-              '';
+              normalizeAkathistText(
+                section.text
+                  ?.translation
+              );
 
             const blocks =
               [];
