@@ -1518,7 +1518,11 @@ const HTML_TEMPLATE = String.raw`
               ''
             ).includes(
               'russian'
-            );
+            ) ||
+            itemConfig
+              ?.metadata
+              ?.language ===
+                'russian';
 
           appendStyledSegment(
             span,
