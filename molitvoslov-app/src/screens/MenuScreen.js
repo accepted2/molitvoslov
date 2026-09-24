@@ -1096,6 +1096,16 @@ export const MenuScreen = ({
               />
 
               <HomeCard
+                title="Ко Святому Причащению"
+                subtitle="3 канона, последование и благодарственные молитвы"
+                onPress={() =>
+                  navigation.navigate(
+                    'CommunionPreparation'
+                  )
+                }
+              />
+
+              <HomeCard
                 title="Псалтирь"
                 subtitle="20 кафизм"
                 onPress={() =>
