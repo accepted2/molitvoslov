@@ -35,6 +35,7 @@ export const ReaderScreen = ({
 }) => {
   const {
     slug,
+    focusTarget = null,
   } = route.params;
 
   const [
@@ -459,6 +460,9 @@ export const ReaderScreen = ({
       }
       savedProgress={
         null
+      }
+      focusTarget={
+        focusTarget
       }
       onAction={
         handleAction
