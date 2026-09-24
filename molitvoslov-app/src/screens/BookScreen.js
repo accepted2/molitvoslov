@@ -41,6 +41,7 @@ export const BookScreen = ({
     categoryId,
     categorySlug,
     categoryName,
+    focusTarget = null,
   } = route.params;
 
   const [
@@ -510,6 +511,9 @@ export const BookScreen = ({
       }
       savedProgress={
         savedProgress
+      }
+      focusTarget={
+        focusTarget
       }
       onProgress={
         scheduleSave
