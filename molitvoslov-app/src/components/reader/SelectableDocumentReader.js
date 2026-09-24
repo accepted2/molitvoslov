@@ -311,6 +311,12 @@ const HTML_TEMPLATE = String.raw`
       background: rgba(126, 175, 223, 0.44);
     }
 
+    .reader-text.focus-target {
+      outline: 2px solid rgba(138, 90, 56, 0.42);
+      outline-offset: 5px;
+      border-radius: 5px;
+    }
+
     .footnotes {
       margin-top: 12px;
       padding-top: 8px;
@@ -2906,8 +2912,429 @@ const HTML_TEMPLATE = String.raw`
     );
 
 
+    const getRangeRect = (
+      root,
+      startOffset,
+      endOffset
+    ) => {
+      if (!root) {
+        return null;
+      }
+
+      const text =
+        root.textContent ||
+        '';
+
+      const start =
+        Math.max(
+          0,
+          Math.min(
+            text.length,
+            Number(
+              startOffset || 0
+            )
+          )
+        );
+
+      const end =
+        Math.max(
+          start,
+          Math.min(
+            text.length,
+            Number(
+              endOffset ?? start
+            )
+          )
+        );
+
+      const walker =
+        document.createTreeWalker(
+          root,
+          NodeFilter.SHOW_TEXT
+        );
+
+      let current = null;
+      let total = 0;
+      let startNode = null;
+      let startLocal = 0;
+      let endNode = null;
+      let endLocal = 0;
+
+      while (
+        (
+          current =
+            walker.nextNode()
+        )
+      ) {
+        const length =
+          current.textContent
+            ?.length ||
+          0;
+
+        if (
+          !startNode &&
+          start <=
+            total + length
+        ) {
+          startNode =
+            current;
+
+          startLocal =
+            Math.max(
+              0,
+              Math.min(
+                length,
+                start - total
+              )
+            );
+        }
+
+        if (
+          endNode === null &&
+          end <=
+            total + length
+        ) {
+          endNode =
+            current;
+
+          endLocal =
+            Math.max(
+              0,
+              Math.min(
+                length,
+                end - total
+              )
+            );
+
+          break;
+        }
+
+        total +=
+          length;
+      }
+
+      if (!startNode) {
+        return null;
+      }
+
+      if (!endNode) {
+        endNode =
+          startNode;
+
+        endLocal =
+          startLocal;
+      }
+
+      try {
+        const range =
+          document.createRange();
+
+        range.setStart(
+          startNode,
+          startLocal
+        );
+
+        range.setEnd(
+          endNode,
+          endLocal
+        );
+
+        const rect =
+          range.getBoundingClientRect();
+
+        if (
+          rect &&
+          (
+            rect.height ||
+            rect.width
+          )
+        ) {
+          return rect;
+        }
+      } catch {
+        return null;
+      }
+
+      return null;
+    };
+
+
+    const findFocusBlockId =
+      target => {
+        if (!target) {
+          return null;
+        }
+
+        const anchorType =
+          target.anchor_type ||
+          target.anchorType;
+
+        const anchorId =
+          Number(
+            target.anchor_id ??
+            target.anchorId
+          );
+
+        const metadata =
+          target.metadata ||
+          {};
+
+        const candidates =
+          [];
+
+        itemConfigMap.forEach(
+          (
+            config,
+            itemId
+          ) => {
+            if (
+              config.anchorType !==
+                anchorType ||
+              Number(
+                config.anchorId
+              ) !==
+                anchorId
+            ) {
+              return;
+            }
+
+            let score = 0;
+
+            const blockMeta =
+              config.metadata ||
+              {};
+
+            if (
+              metadata.language &&
+              blockMeta.language ===
+                metadata.language
+            ) {
+              score += 8;
+            }
+
+            if (
+              metadata.segment &&
+              blockMeta.segment ===
+                metadata.segment
+            ) {
+              score += 4;
+            }
+
+            if (
+              metadata.special &&
+              blockMeta.special ===
+                metadata.special
+            ) {
+              score += 4;
+            }
+
+            if (
+              metadata.chunk_index !==
+                undefined &&
+              Number(
+                blockMeta.chunk_index
+              ) ===
+                Number(
+                  metadata.chunk_index
+                )
+            ) {
+              score += 6;
+            }
+
+            candidates.push({
+              itemId,
+              score,
+            });
+          }
+        );
+
+        if (!candidates.length) {
+          return null;
+        }
+
+        candidates.sort(
+          (
+            left,
+            right
+          ) =>
+            right.score -
+            left.score
+        );
+
+        return Number(
+          candidates[0]
+            .itemId
+        );
+      };
+
+
+    const focusSavedTarget =
+      () => {
+        const target =
+          DATA.focusTarget;
+
+        if (!target) {
+          return false;
+        }
+
+        const itemId =
+          findFocusBlockId(
+            target
+          );
+
+        if (itemId) {
+          const root =
+            document.querySelector(
+              '.reader-text[data-item-id="' +
+              itemId +
+              '"]'
+            );
+
+          if (!root) {
+            return false;
+          }
+
+          const hasOffsets =
+            target.start_offset !==
+              null &&
+            target.start_offset !==
+              undefined &&
+            target.end_offset !==
+              null &&
+            target.end_offset !==
+              undefined;
+
+          const rect =
+            hasOffsets
+              ? getRangeRect(
+                  root,
+                  Number(
+                    target.start_offset
+                  ),
+                  Number(
+                    target.end_offset
+                  )
+                )
+              : root
+                  .getBoundingClientRect();
+
+          if (rect) {
+            const targetY =
+              Math.max(
+                0,
+                window.scrollY +
+                rect.top +
+                (
+                  rect.height /
+                  2
+                ) -
+                (
+                  window.innerHeight /
+                  2
+                )
+              );
+
+            window.scrollTo(
+              0,
+              targetY
+            );
+          } else {
+            root.scrollIntoView({
+              block:
+                'center',
+            });
+          }
+
+          root.classList.add(
+            'focus-target'
+          );
+
+          setTimeout(
+            () =>
+              root.classList.remove(
+                'focus-target'
+              ),
+            1400
+          );
+
+          return true;
+        }
+
+        const metadata =
+          target.metadata ||
+          {};
+
+        const sectionAnchorId =
+          Number(
+            metadata.psalm_id ||
+            metadata.section_id ||
+            target.anchor_id ||
+            target.anchorId
+          );
+
+        if (sectionAnchorId) {
+          const section =
+            document.querySelector(
+              '.rule-item[data-item-id="' +
+              sectionAnchorId +
+              '"]'
+            );
+
+          if (section) {
+            const targetY =
+              Math.max(
+                0,
+                section.offsetTop -
+                12
+              );
+
+            window.scrollTo(
+              0,
+              targetY
+            );
+
+            return true;
+          }
+        }
+
+        if (
+          [
+            'akathist',
+            'canon',
+            'kathisma',
+          ].includes(
+            target.anchor_type ||
+            target.anchorType
+          )
+        ) {
+          window.scrollTo(
+            0,
+            0
+          );
+
+          return true;
+        }
+
+        return false;
+      };
+
+
     const restoreProgress =
       () => {
+        if (
+          focusSavedTarget()
+        ) {
+          setTimeout(
+            () => {
+              state.restoring =
+                false;
+            },
+            350
+          );
+
+          return;
+        }
+
         const progress =
           DATA.progress;
 
@@ -3115,6 +3542,7 @@ const HTML_TEMPLATE = String.raw`
 const buildHtml = ({
   documentData,
   savedProgress,
+  focusTarget,
 }) => {
   const payload = {
     document:
@@ -3126,6 +3554,10 @@ const buildHtml = ({
 
     progressAnchorType:
       documentData.progressAnchorType,
+
+    focusTarget:
+      focusTarget ||
+      null,
 
     progress:
       savedProgress &&
@@ -3158,6 +3590,7 @@ const buildHtml = ({
 export default function SelectableDocumentReader({
   documentData,
   savedProgress,
+  focusTarget,
   onSaved,
   onProgress,
   onAction,
@@ -3212,10 +3645,12 @@ export default function SelectableDocumentReader({
         buildHtml({
           documentData,
           savedProgress,
+          focusTarget,
         }),
       [
         documentData,
         savedProgress,
+        focusTarget,
       ]
     );
 
