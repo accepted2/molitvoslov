@@ -205,6 +205,24 @@ const HTML_TEMPLATE = String.raw`
       white-space: pre-wrap;
     }
 
+    .reader-inline {
+      display: block;
+    }
+
+    .reader-inline-label {
+      display: inline;
+      margin-right: 5px;
+      color: var(--liturgical);
+      font-size: 16px;
+      line-height: 26px;
+      font-weight: 700;
+      font-style: italic;
+    }
+
+    .reader-inline .reader-text {
+      display: inline;
+    }
+
     .translation-text {
       margin-top: 8px;
       color: var(--secondary);
@@ -637,7 +655,7 @@ const HTML_TEMPLATE = String.raw`
             'NFD'
           )
           .replace(
-            /[\u0300-\u036f]/g,
+            /[\u0300-\u036f\u0483-\u0487]/g,
             ''
           )
           .toLowerCase()
@@ -665,6 +683,77 @@ const HTML_TEMPLATE = String.raw`
         ].includes(
           normalized
         );
+      };
+
+
+    const getRuleInlineLabel =
+      text => {
+        const rawTitle =
+          String(
+            text?.title ||
+            ''
+          )
+            .trim()
+            .replace(
+              /[:;]+$/,
+              ''
+            );
+
+        if (!rawTitle) {
+          return '';
+        }
+
+        const normalizedTitle =
+          normalizeLiturgicalValue(
+            rawTitle
+          );
+
+        const inlineTitles =
+          new Set([
+            'ирмос',
+            'припев',
+            'богородичен',
+            'троичен',
+            'крестобогородичен',
+            'слава',
+            'и ныне',
+            'седален',
+            'кондак',
+            'икос',
+            'светилен',
+            'тропарь',
+            'иисусу',
+          ]);
+
+        if (
+          !inlineTitles.has(
+            normalizedTitle
+          )
+        ) {
+          return '';
+        }
+
+        const normalizedText =
+          normalizeLiturgicalValue(
+            text?.content
+          );
+
+        if (
+          normalizedText ===
+            normalizedTitle ||
+          normalizedText.startsWith(
+            normalizedTitle +
+            ':'
+          ) ||
+          normalizedText.startsWith(
+            normalizedTitle +
+            ' '
+          )
+        ) {
+          return '';
+        }
+
+        return `${rawTitle}:`;
       };
 
 
@@ -768,9 +857,17 @@ const HTML_TEMPLATE = String.raw`
                 text.title
               );
 
+            const inlineLabel =
+              getRuleInlineLabel(
+                text
+              );
+
             const displayTitle =
-              normalizedTitle ===
-                'молитва'
+              (
+                normalizedTitle ===
+                  'молитва' ||
+                !!inlineLabel
+              )
                 ? ''
                 : (
                     text.title ||
@@ -941,9 +1038,37 @@ const HTML_TEMPLATE = String.raw`
                 item.id
               );
 
-            wrapper.appendChild(
-              textElement
-            );
+            if (
+              inlineLabel &&
+              primaryLanguage ===
+                'church'
+            ) {
+              const inline =
+                el(
+                  'div',
+                  'reader-inline'
+                );
+
+              inline.appendChild(
+                el(
+                  'span',
+                  'reader-inline-label',
+                  inlineLabel
+                )
+              );
+
+              inline.appendChild(
+                textElement
+              );
+
+              wrapper.appendChild(
+                inline
+              );
+            } else {
+              wrapper.appendChild(
+                textElement
+              );
+            }
 
             if (
               DATA.viewMode ===
