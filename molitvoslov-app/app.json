@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "molitvoslov-app",
-    "slug": "molitvoslov-app",
+    "name": "Молитвослов",
+    "slug": "molitvoslov",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -15,7 +15,9 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.accepted2.molitvoslov",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
