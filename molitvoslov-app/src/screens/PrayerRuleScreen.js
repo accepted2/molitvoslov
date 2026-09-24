@@ -1,10 +1,12 @@
 import React, {
   useEffect,
+  useMemo,
   useState,
 } from 'react';
 
 import {
   ActivityIndicator,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -27,7 +29,64 @@ import PrayerRuleReader
 
 import {
   colors,
+  radius,
+  spacing,
 } from '../theme';
+
+
+const MODE_CHURCH =
+  'church';
+
+const MODE_BOTH =
+  'both';
+
+const MODE_RUSSIAN =
+  'russian';
+
+
+const LanguageButton = ({
+  title,
+  active,
+  disabled,
+  onPress,
+}) => (
+  <Pressable
+    disabled={
+      disabled
+    }
+    onPress={
+      onPress
+    }
+    style={({pressed}) => [
+      styles.languageButton,
+
+      active &&
+        styles
+          .languageButtonActive,
+
+      disabled &&
+        styles
+          .languageButtonDisabled,
+
+      pressed &&
+        !disabled &&
+        styles.pressed,
+    ]}
+  >
+    <Text
+      style={[
+        styles.languageButtonText,
+
+        active &&
+          styles
+            .languageButtonTextActive,
+      ]}
+      numberOfLines={1}
+    >
+      {title}
+    </Text>
+  </Pressable>
+);
 
 
 export const PrayerRuleScreen = ({
@@ -47,6 +106,13 @@ export const PrayerRuleScreen = ({
     savedItems,
     setSavedItems,
   ] = useState([]);
+
+  const [
+    viewMode,
+    setViewMode,
+  ] = useState(
+    MODE_BOTH
+  );
 
   const [
     loading,
@@ -76,6 +142,44 @@ export const PrayerRuleScreen = ({
     loadRule();
   }, [
     slug,
+  ]);
+
+
+  const hasRussianTranslation =
+    useMemo(
+      () =>
+        (
+          rule?.items ||
+          []
+        ).some(
+          item =>
+            item.item_type ===
+              'text' &&
+            !!item.text
+              ?.translation
+              ?.trim()
+        ),
+      [
+        rule,
+      ]
+    );
+
+
+  useEffect(() => {
+    if (
+      rule &&
+      !hasRussianTranslation &&
+      viewMode !==
+        MODE_CHURCH
+    ) {
+      setViewMode(
+        MODE_CHURCH
+      );
+    }
+  }, [
+    rule,
+    hasRussianTranslation,
+    viewMode,
   ]);
 
 
@@ -190,29 +294,144 @@ export const PrayerRuleScreen = ({
 
 
   return (
-    <PrayerRuleReader
-      rule={
-        rule
-      }
-      savedItems={
-        savedItems
-      }
-      savedProgress={
-        savedProgress
-      }
-      focusTarget={
-        focusTarget
-      }
-      onProgress={
-        scheduleSave
-      }
-    />
+    <View
+      style={styles.container}
+    >
+      <View
+        style={
+          styles.languageSwitcher
+        }
+      >
+        <LanguageButton
+          title="ЦС"
+          active={
+            viewMode ===
+            MODE_CHURCH
+          }
+          onPress={() =>
+            setViewMode(
+              MODE_CHURCH
+            )
+          }
+        />
+
+        <LanguageButton
+          title="ЦС + Рус."
+          active={
+            viewMode ===
+            MODE_BOTH
+          }
+          disabled={
+            !hasRussianTranslation
+          }
+          onPress={() =>
+            setViewMode(
+              MODE_BOTH
+            )
+          }
+        />
+
+        <LanguageButton
+          title="Рус."
+          active={
+            viewMode ===
+            MODE_RUSSIAN
+          }
+          disabled={
+            !hasRussianTranslation
+          }
+          onPress={() =>
+            setViewMode(
+              MODE_RUSSIAN
+            )
+          }
+        />
+      </View>
+
+      <PrayerRuleReader
+        rule={
+          rule
+        }
+        savedItems={
+          savedItems
+        }
+        savedProgress={
+          savedProgress
+        }
+        focusTarget={
+          focusTarget
+        }
+        viewMode={
+          viewMode
+        }
+        onProgress={
+          scheduleSave
+        }
+      />
+    </View>
   );
 };
 
 
 const styles =
   StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor:
+        colors.background,
+    },
+
+    languageSwitcher: {
+      flexDirection:
+        'row',
+      marginHorizontal:
+        spacing.md,
+      marginTop:
+        spacing.sm,
+      marginBottom: 4,
+      padding: 4,
+      borderRadius:
+        radius.md,
+      backgroundColor:
+        colors.surfaceMuted,
+    },
+
+    languageButton: {
+      flex: 1,
+      minHeight: 36,
+      alignItems:
+        'center',
+      justifyContent:
+        'center',
+      borderRadius:
+        radius.sm,
+    },
+
+    languageButtonActive: {
+      backgroundColor:
+        colors.text,
+    },
+
+    languageButtonDisabled: {
+      opacity: 0.35,
+    },
+
+    languageButtonText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color:
+        colors.textSecondary,
+    },
+
+    languageButtonTextActive: {
+      color:
+        colors.white,
+    },
+
+    pressed: {
+      opacity: 0.65,
+    },
+
     center: {
       flex: 1,
       alignItems: 'center',
