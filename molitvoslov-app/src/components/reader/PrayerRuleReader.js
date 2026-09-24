@@ -2776,42 +2776,65 @@ const HTML_TEMPLATE = String.raw`
           target.end_offset !==
             undefined;
 
-        const rect =
-          hasOffsets
-            ? getRangeRect(
-                root,
-                Number(
-                  target.start_offset
-                ),
-                Number(
-                  target.end_offset
+        const preciseRange =
+          hasOffsets &&
+          ![
+            'prayer',
+            'section',
+            'text',
+          ].includes(
+            target.save_type ||
+            target.saveType
+          );
+
+        if (preciseRange) {
+          const rect =
+            getRangeRect(
+              root,
+              Number(
+                target.start_offset
+              ),
+              Number(
+                target.end_offset
+              )
+            );
+
+          if (rect) {
+            window.scrollTo(
+              0,
+              Math.max(
+                0,
+                window.scrollY +
+                rect.top +
+                (
+                  rect.height /
+                  2
+                ) -
+                (
+                  window.innerHeight /
+                  2
                 )
               )
-            : root
-                .getBoundingClientRect();
+            );
+          } else {
+            root.scrollIntoView({
+              block:
+                'center',
+            });
+          }
+        } else {
+          const rootRect =
+            root.getBoundingClientRect();
 
-        if (rect) {
           window.scrollTo(
             0,
             Math.max(
               0,
               window.scrollY +
-              rect.top +
-              (
-                rect.height /
-                2
-              ) -
-              (
-                window.innerHeight /
-                2
-              )
+              rootRect.top -
+              18
             )
           );
-        } else {
-          root.scrollIntoView({
-            block:
-              'center',
-          });
         }
 
         root.classList.add(
