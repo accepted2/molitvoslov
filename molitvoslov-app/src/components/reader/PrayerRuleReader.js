@@ -104,29 +104,37 @@ const HTML_TEMPLATE = String.raw`
     }
 
     .section-header {
+      position: relative;
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: center;
+      min-height: 34px;
       margin-bottom: 8px;
     }
 
     .section-header .prayer-title {
-      flex: 1;
+      width: 100%;
       margin-bottom: 0;
-      text-align: left;
+      padding: 0 38px;
+      text-align: center;
     }
 
     .favorite-action {
-      min-height: 32px;
-      padding: 0 9px;
+      position: absolute;
+      top: 50%;
+      right: 0;
+      width: 34px;
+      height: 32px;
+      padding: 0;
+      transform: translateY(-50%);
       border: 1px solid var(--border);
-      border-radius: 9px;
-      background: var(--surface);
+      border-radius: 16px;
+      background: rgba(255, 253, 248, 0.92);
       color: var(--secondary);
       font-family: system-ui, -apple-system, sans-serif;
-      font-size: 11px;
-      line-height: 14px;
-      font-weight: 700;
+      font-size: 21px;
+      line-height: 30px;
+      font-weight: 500;
     }
 
     .favorite-action.active {
@@ -195,6 +203,11 @@ const HTML_TEMPLATE = String.raw`
 
     .reader-text span {
       white-space: pre-wrap;
+    }
+
+    .liturgical-phrase {
+      color: var(--liturgical);
+      font-weight: 600;
     }
 
     .saved-highlight {
@@ -334,6 +347,60 @@ const HTML_TEMPLATE = String.raw`
     #selection-save:disabled {
       opacity: 0.4;
     }
+
+    #reader-scroll-track {
+      position: fixed;
+      top: 10px;
+      right: 1px;
+      bottom: 72px;
+      width: 18px;
+      z-index: 998;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 120ms ease;
+      touch-action: none;
+    }
+
+    #reader-scroll-track.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #reader-scroll-thumb {
+      position: absolute;
+      top: 0;
+      right: 4px;
+      width: 7px;
+      min-height: 44px;
+      border-radius: 999px;
+      background: rgba(104, 66, 41, 0.48);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
+      touch-action: none;
+    }
+
+    #reader-scroll-top {
+      display: none;
+      position: fixed;
+      right: 13px;
+      bottom: 82px;
+      z-index: 999;
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      border: 1px solid rgba(112, 86, 55, 0.24);
+      border-radius: 21px;
+      background: rgba(255, 253, 248, 0.96);
+      color: var(--accent-dark);
+      box-shadow: 0 3px 12px rgba(71, 59, 46, 0.18);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 23px;
+      line-height: 40px;
+      font-weight: 700;
+    }
+
+    #reader-scroll-top.visible {
+      display: block;
+    }
   </style>
 </head>
 
@@ -349,6 +416,18 @@ const HTML_TEMPLATE = String.raw`
     id="end-handle"
     class="selection-handle"
   ></div>
+
+  <div id="reader-scroll-track">
+    <div id="reader-scroll-thumb"></div>
+  </div>
+
+  <button
+    id="reader-scroll-top"
+    type="button"
+    aria-label="Наверх"
+  >
+    ↑
+  </button>
 
   <div id="selection-bar">
     <div class="selection-info">
@@ -415,6 +494,21 @@ const HTML_TEMPLATE = String.raw`
     const endHandle =
       document.getElementById(
         'end-handle'
+      );
+
+    const scrollTrack =
+      document.getElementById(
+        'reader-scroll-track'
+      );
+
+    const scrollThumb =
+      document.getElementById(
+        'reader-scroll-thumb'
+      );
+
+    const scrollTopButton =
+      document.getElementById(
+        'reader-scroll-top'
       );
 
     const itemTextMap =
@@ -514,6 +608,72 @@ const HTML_TEMPLATE = String.raw`
         wrapper
       );
     };
+
+
+    const normalizeLiturgicalValue =
+      value =>
+        String(
+          value ||
+          ''
+        )
+          .normalize(
+            'NFD'
+          )
+          .replace(
+            /[\u0300-\u036f]/g,
+            ''
+          )
+          .toLowerCase()
+          .replace(
+            /ё/g,
+            'е'
+          )
+          .replace(
+            /[^а-я0-9]+/g,
+            ' '
+          )
+          .trim();
+
+
+    const isMinorLiturgicalItem =
+      text => {
+        const title =
+          normalizeLiturgicalValue(
+            text?.title
+          );
+
+        const content =
+          normalizeLiturgicalValue(
+            text?.content
+          );
+
+        const combined =
+          (
+            title +
+            ' ' +
+            content
+          ).trim();
+
+        if (
+          /^господи помилуй\b/.test(
+            combined
+          ) &&
+          combined.length < 260
+        ) {
+          return true;
+        }
+
+        if (
+          /^(слава(?: отцу| и ныне)?\b|и ныне\b)/.test(
+            combined
+          ) &&
+          combined.length < 420
+        ) {
+          return true;
+        }
+
+        return false;
+      };
 
 
     const renderRule = () => {
@@ -623,35 +783,49 @@ const HTML_TEMPLATE = String.raw`
               );
             }
 
-            const favorite =
-              el(
-                'button',
-                wholeSaved
-                  ? 'favorite-action active'
-                  : 'favorite-action',
-                wholeSaved
-                  ? 'В избранном'
-                  : 'В избранное'
+            const allowWholeSave =
+              !isMinorLiturgicalItem(
+                text
               );
 
-            favorite.type =
-              'button';
+            if (
+              allowWholeSave
+            ) {
+              const favorite =
+                el(
+                  'button',
+                  wholeSaved
+                    ? 'favorite-action active'
+                    : 'favorite-action',
+                  wholeSaved
+                    ? '★'
+                    : '☆'
+                );
 
-            favorite.dataset.itemId =
-              String(
-                item.id
+              favorite.type =
+                'button';
+
+              favorite.title =
+                wholeSaved
+                  ? 'Убрать из избранного'
+                  : 'Добавить в избранное';
+
+              favorite.dataset.itemId =
+                String(
+                  item.id
+                );
+
+              favorite.dataset.savedItemId =
+                wholeSaved
+                  ? String(
+                      wholeSaved.id
+                    )
+                  : '';
+
+              header.appendChild(
+                favorite
               );
-
-            favorite.dataset.savedItemId =
-              wholeSaved
-                ? String(
-                    wholeSaved.id
-                  )
-                : '';
-
-            header.appendChild(
-              favorite
-            );
+            }
 
             wrapper.appendChild(
               header
@@ -981,11 +1155,65 @@ const HTML_TEMPLATE = String.raw`
             );
           }
 
-          span.textContent =
+          const value =
             text.slice(
               start,
               end
             );
+
+          const phrasePattern =
+            /(Слава(?:\s+Отцу\s+и\s+Сыну\s+и\s+Святому\s+Духу)?\s*[:;,.!?]?|И\s+ныне(?:\s+и\s+присно\s+и\s+во\s+веки\s+веков\.?\s*Аминь\.?)?\s*[:;,.!?]?)/giu;
+
+          let cursor = 0;
+          let match = null;
+
+          while (
+            (
+              match =
+                phrasePattern.exec(
+                  value
+                )
+            )
+          ) {
+            if (
+              match.index >
+              cursor
+            ) {
+              span.appendChild(
+                document.createTextNode(
+                  value.slice(
+                    cursor,
+                    match.index
+                  )
+                )
+              );
+            }
+
+            span.appendChild(
+              el(
+                'span',
+                'liturgical-phrase',
+                match[0]
+              )
+            );
+
+            cursor =
+              match.index +
+              match[0].length;
+          }
+
+          if (
+            cursor <
+            value.length
+          ) {
+            span.appendChild(
+              document.createTextNode(
+                value.slice(
+                  cursor
+                )
+              )
+            );
+          }
 
           fragment.appendChild(
             span
@@ -2537,10 +2765,301 @@ const HTML_TEMPLATE = String.raw`
       };
 
 
+    const updateScrollControls =
+      () => {
+        const documentHeight =
+          Math.max(
+            document.body.scrollHeight,
+            document.documentElement.scrollHeight
+          );
+
+        const maxScroll =
+          Math.max(
+            0,
+            documentHeight -
+            window.innerHeight
+          );
+
+        const hasOverflow =
+          maxScroll > 16;
+
+        scrollTrack.classList.toggle(
+          'visible',
+          hasOverflow
+        );
+
+        scrollTopButton.classList.toggle(
+          'visible',
+          hasOverflow &&
+          window.scrollY >
+            window.innerHeight * 0.65
+        );
+
+        if (!hasOverflow) {
+          return;
+        }
+
+        const trackHeight =
+          Math.max(
+            1,
+            scrollTrack.clientHeight
+          );
+
+        const thumbHeight =
+          Math.max(
+            44,
+            Math.min(
+              trackHeight,
+              trackHeight *
+              (
+                window.innerHeight /
+                documentHeight
+              )
+            )
+          );
+
+        const maxThumbTop =
+          Math.max(
+            0,
+            trackHeight -
+            thumbHeight
+          );
+
+        const thumbTop =
+          maxScroll
+            ? (
+                window.scrollY /
+                maxScroll
+              ) *
+              maxThumbTop
+            : 0;
+
+        scrollThumb.style.height =
+          thumbHeight +
+          'px';
+
+        scrollThumb.style.transform =
+          'translateY(' +
+          thumbTop +
+          'px)';
+      };
+
+
+    let scrollDrag = null;
+
+
+    scrollThumb.addEventListener(
+      'pointerdown',
+      event => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const documentHeight =
+          Math.max(
+            document.body.scrollHeight,
+            document.documentElement.scrollHeight
+          );
+
+        scrollDrag = {
+          pointerId:
+            event.pointerId,
+
+          startY:
+            event.clientY,
+
+          startScroll:
+            window.scrollY,
+
+          maxScroll:
+            Math.max(
+              0,
+              documentHeight -
+              window.innerHeight
+            ),
+
+          trackHeight:
+            Math.max(
+              1,
+              scrollTrack.clientHeight
+            ),
+
+          thumbHeight:
+            Math.max(
+              1,
+              scrollThumb.offsetHeight
+            ),
+        };
+
+        scrollThumb.setPointerCapture?.(
+          event.pointerId
+        );
+      }
+    );
+
+
+    scrollThumb.addEventListener(
+      'pointermove',
+      event => {
+        if (
+          !scrollDrag ||
+          event.pointerId !==
+            scrollDrag.pointerId
+        ) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const maxThumbTop =
+          Math.max(
+            1,
+            scrollDrag.trackHeight -
+            scrollDrag.thumbHeight
+          );
+
+        const deltaY =
+          event.clientY -
+          scrollDrag.startY;
+
+        window.scrollTo(
+          0,
+          Math.max(
+            0,
+            Math.min(
+              scrollDrag.maxScroll,
+              scrollDrag.startScroll +
+              (
+                deltaY /
+                maxThumbTop
+              ) *
+              scrollDrag.maxScroll
+            )
+          )
+        );
+      }
+    );
+
+
+    const endScrollDrag =
+      event => {
+        if (
+          !scrollDrag ||
+          (
+            event &&
+            event.pointerId !==
+              scrollDrag.pointerId
+          )
+        ) {
+          return;
+        }
+
+        scrollDrag = null;
+      };
+
+
+    scrollThumb.addEventListener(
+      'pointerup',
+      endScrollDrag
+    );
+
+    scrollThumb.addEventListener(
+      'pointercancel',
+      endScrollDrag
+    );
+
+
+    scrollTrack.addEventListener(
+      'pointerdown',
+      event => {
+        if (
+          event.target !==
+            scrollTrack
+        ) {
+          return;
+        }
+
+        event.preventDefault();
+
+        const rect =
+          scrollTrack
+            .getBoundingClientRect();
+
+        const documentHeight =
+          Math.max(
+            document.body.scrollHeight,
+            document.documentElement.scrollHeight
+          );
+
+        const maxScroll =
+          Math.max(
+            0,
+            documentHeight -
+            window.innerHeight
+          );
+
+        const thumbHeight =
+          Math.max(
+            1,
+            scrollThumb.offsetHeight
+          );
+
+        const maxThumbTop =
+          Math.max(
+            1,
+            rect.height -
+            thumbHeight
+          );
+
+        const thumbTop =
+          Math.max(
+            0,
+            Math.min(
+              maxThumbTop,
+              event.clientY -
+              rect.top -
+              (
+                thumbHeight /
+                2
+              )
+            )
+          );
+
+        window.scrollTo(
+          0,
+          (
+            thumbTop /
+            maxThumbTop
+          ) *
+          maxScroll
+        );
+      }
+    );
+
+
+    scrollTopButton.addEventListener(
+      'click',
+      () => {
+        window.scrollTo({
+          top: 0,
+          behavior:
+            'smooth',
+        });
+      }
+    );
+
+
+    window.addEventListener(
+      'resize',
+      updateScrollControls
+    );
+
+
     window.addEventListener(
       'scroll',
       () => {
         updateHandles();
+        updateScrollControls();
 
         if (
           state.progressTimer
@@ -3021,8 +3540,13 @@ const HTML_TEMPLATE = String.raw`
 
           button.textContent =
             active
-              ? 'В избранном'
-              : 'В избранное';
+              ? '★'
+              : '☆';
+
+          button.title =
+            active
+              ? 'Убрать из избранного'
+              : 'Добавить в избранное';
 
           button.classList.toggle(
             'active',
@@ -3063,7 +3587,15 @@ const HTML_TEMPLATE = String.raw`
     );
 
     requestAnimationFrame(
-      restoreProgress
+      () => {
+        updateScrollControls();
+        restoreProgress();
+
+        setTimeout(
+          updateScrollControls,
+          180
+        );
+      }
     );
   </script>
 </body>
@@ -3421,6 +3953,10 @@ export default function PrayerRuleReader({
           '*',
         ]}
         javaScriptEnabled
+        nestedScrollEnabled
+        showsVerticalScrollIndicator={
+          false
+        }
         domStorageEnabled={
           false
         }
