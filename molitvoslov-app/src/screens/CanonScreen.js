@@ -1020,15 +1020,23 @@ export const CanonScreen = ({
               );
             }
 
-            if (!blocks.length) {
+            const showStandaloneHeading =
+              effectiveSectionType ===
+              'other' &&
+              !!effectiveHeading;
+
+            if (
+              !blocks.length &&
+              !showStandaloneHeading
+            ) {
               return;
             }
 
             const odeNumber =
               section.ode_number
                 ? Number(
-                    section.ode_number
-                  )
+                  section.ode_number
+                )
                 : null;
 
             let sectionTitle =
@@ -1037,7 +1045,7 @@ export const CanonScreen = ({
             if (
               odeNumber &&
               odeNumber !==
-                previousOde
+              previousOde
             ) {
               sectionTitle =
                 `Песнь ${odeNumber}`;
@@ -1049,6 +1057,13 @@ export const CanonScreen = ({
             ) {
               previousOde =
                 null;
+
+              if (
+                showStandaloneHeading
+              ) {
+                sectionTitle =
+                  effectiveHeading;
+              }
             }
 
             sections.push({
