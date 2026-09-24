@@ -319,6 +319,11 @@ const HTML_TEMPLATE = String.raw`
       font-style: normal;
     }
 
+    .canon-leading-cue.prayer-leading-cue {
+      display: block;
+      margin-bottom: 4px;
+    }
+
     .reader-inline .reader-text {
       display: inline;
     }
@@ -1335,7 +1340,7 @@ const HTML_TEMPLATE = String.raw`
 
         const match =
           normalized.match(
-            /^\s*(Ирмос|Припев|Иисусу|Богородичен|Кондак|Икос|Седален|Светилен|Молитва|Тропарь|Слава|И\s+ныне|Ныне)\s*:/iu
+            /^\s*((?:Молитва[^:\n]{0,140})|Ирмос|Припев|Иисусу|Богородичен|Кондак|Икос|Седален|Светилен|Тропарь|Слава|И\s+ныне|Ныне)\s*:/iu
           );
 
         if (!match) {
@@ -1384,6 +1389,12 @@ const HTML_TEMPLATE = String.raw`
         return {
           start,
           end,
+
+          prayerTitle:
+            normalizedLabel.startsWith(
+              'молитва'
+            ),
+
           short:
             [
               'слава',
@@ -1439,9 +1450,13 @@ const HTML_TEMPLATE = String.raw`
                     canonCue.end,
 
                   className:
-                    canonCue.short
-                      ? 'canon-leading-cue canon-short-cue'
-                      : 'canon-leading-cue',
+                    canonCue.prayerTitle
+                      ? 'canon-leading-cue prayer-leading-cue'
+                      : (
+                          canonCue.short
+                            ? 'canon-leading-cue canon-short-cue'
+                            : 'canon-leading-cue'
+                        ),
                 },
               ]
             : []),
