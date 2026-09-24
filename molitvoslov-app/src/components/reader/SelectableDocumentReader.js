@@ -1697,28 +1697,43 @@ const HTML_TEMPLATE = String.raw`
               ?.language ===
                 'russian';
 
-          const isCanonChurch =
-            String(
-              itemConfig
-                ?.className ||
-              ''
-            ).includes(
-              'canon-church'
-            ) &&
-            !isRussian;
+const isCanonChurch =
+  String(
+    itemConfig
+      ?.className ||
+    ''
+  ).includes(
+    'canon-church'
+  ) &&
+  !isRussian;
 
-          appendStyledSegment(
-            span,
-            text.slice(
-              start,
-              end
-            ),
-            itemConfig
-              ?.accentWords,
-            !isRussian,
-            isCanonChurch &&
-              start === 0
-          );
+const isCanonPrayer =
+  itemConfig
+    ?.metadata
+    ?.section_type ===
+      'prayer' ||
+  String(
+    itemConfig
+      ?.className ||
+    ''
+  ).includes(
+    'canon-prayer'
+  );
+
+appendStyledSegment(
+  span,
+  text.slice(
+    start,
+    end
+  ),
+  itemConfig
+    ?.accentWords,
+  !isRussian &&
+    !isCanonPrayer,
+  isCanonChurch &&
+    !isCanonPrayer &&
+    start === 0
+);
 
           fragment.appendChild(
             span
