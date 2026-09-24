@@ -19,8 +19,8 @@ import {
 } from '@react-navigation/native';
 
 import {
-  api,
-} from '../api';
+  contentApi as api,
+} from '../services/contentApi';
 
 import {
   deleteSavedItem,
