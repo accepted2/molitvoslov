@@ -273,55 +273,50 @@ const HTML_TEMPLATE = String.raw`
       line-height: 26px;
     }
 
-    .reader-text.canon-russian {
-      color: #777777;
-      font-size: 16px;
-      line-height: 24px;
-    }
-
-    .reader-text.canon-irmos {
-      color: #7A4B2F;
-      font-weight: 600;
-    }
-
-    .reader-text.canon-troparion {
-      color: #4F5D61;
-      font-weight: 500;
-    }
-
-    .reader-text.canon-theotokion {
-      color: #665060;
-    }
-
-    .reader-text.canon-refrain,
-    .reader-text.canon-glory,
-    .reader-text.canon-now {
+    .reader-text.canon-refrain {
       color: var(--liturgical);
       font-style: italic;
       font-weight: 600;
     }
 
-    .reader-text.canon-kontakion,
-    .reader-text.canon-ikos,
-    .reader-text.canon-sedalen,
-    .reader-text.canon-svetilen {
-      color: #5E4939;
+    .reader-text.canon-russian {
+      color: #777777 !important;
+      font-size: 16px;
+      line-height: 24px;
+      font-style: normal !important;
+      font-weight: 400 !important;
     }
 
-    .reader-text.canon-russian.canon-irmos {
-      color: #8A6A56;
-      font-weight: 500;
+    .reader-text.canon-russian .liturgical-word,
+    .reader-text.akathist-russian .liturgical-word {
+      color: inherit;
+      font-style: inherit;
+      font-weight: inherit;
     }
 
-    .reader-text.canon-russian.canon-troparion {
-      color: #718085;
-      font-weight: 400;
+    .rule-item.canon-section .section-header .prayer-title {
+      color: var(--liturgical);
+      font-size: 18px;
+      line-height: 23px;
+      font-weight: 700;
     }
 
-    .reader-text.canon-russian.canon-refrain,
-    .reader-text.canon-russian.canon-glory,
-    .reader-text.canon-russian.canon-now {
-      color: #9B5C56;
+    .reader-inline {
+      display: block;
+    }
+
+    .reader-inline-label {
+      display: inline;
+      margin-right: 5px;
+      color: var(--liturgical);
+      font-size: 16px;
+      line-height: 26px;
+      font-weight: 700;
+      font-style: italic;
+    }
+
+    .reader-inline .reader-text {
+      display: inline;
     }
 
     .reader-text {
@@ -812,7 +807,11 @@ const HTML_TEMPLATE = String.raw`
           const wrapper =
             el(
               'section',
-              'rule-item'
+              'rule-item ' +
+              (
+                section.className ||
+                ''
+              )
             );
 
           wrapper.dataset.itemId =
@@ -962,9 +961,35 @@ const HTML_TEMPLATE = String.raw`
                       itemId
                     );
 
-                  column.appendChild(
-                    textElement
-                  );
+                  if (
+                    block.inlineLabel
+                  ) {
+                    const inline =
+                      el(
+                        'div',
+                        'reader-inline'
+                      );
+
+                    inline.appendChild(
+                      el(
+                        'span',
+                        'reader-inline-label',
+                        block.inlineLabel
+                      )
+                    );
+
+                    inline.appendChild(
+                      textElement
+                    );
+
+                    column.appendChild(
+                      inline
+                    );
+                  } else {
+                    column.appendChild(
+                      textElement
+                    );
+                  }
 
                   rowNode.appendChild(
                     column
@@ -1149,51 +1174,182 @@ const HTML_TEMPLATE = String.raw`
     };
 
 
+    const findLiturgicalPhraseRanges =
+      value => {
+        const normalizedChars =
+          [];
+
+        const originalIndex =
+          [];
+
+        for (
+          let index = 0;
+          index < value.length;
+          index += 1
+        ) {
+          const decomposed =
+            value[index]
+              .normalize(
+                'NFD'
+              );
+
+          for (
+            const char
+            of decomposed
+          ) {
+            if (
+              /[\u0300-\u036f\u0483-\u0487]/u.test(
+                char
+              )
+            ) {
+              continue;
+            }
+
+            normalizedChars.push(
+              char
+            );
+
+            originalIndex.push(
+              index
+            );
+          }
+        }
+
+        const normalized =
+          normalizedChars.join(
+            ''
+          );
+
+        const pattern =
+          /Слава\s+Отцу\s*,?\s*и\s+Сыну\s*,?\s*и\s+Святому\s+Духу\s*[:;,.!?]?|И\s+ныне\s*,?\s*и\s+присно\s*,?\s*и\s+во\s+веки\s+веков\s*[.,;:]?\s*аминь\s*[.!?]?/giu;
+
+        const ranges =
+          [];
+
+        let match = null;
+
+        while (
+          (
+            match =
+              pattern.exec(
+                normalized
+              )
+          )
+        ) {
+          const normalizedStart =
+            match.index;
+
+          const normalizedEnd =
+            match.index +
+            match[0].length -
+            1;
+
+          const start =
+            originalIndex[
+              normalizedStart
+            ];
+
+          let end =
+            (
+              originalIndex[
+                normalizedEnd
+              ] ??
+              start
+            ) + 1;
+
+          while (
+            end < value.length &&
+            /[\u0300-\u036f\u0483-\u0487]/u.test(
+              value[end]
+            )
+          ) {
+            end += 1;
+          }
+
+          if (
+            Number.isFinite(
+              start
+            ) &&
+            end > start
+          ) {
+            ranges.push({
+              start,
+              end,
+            });
+          }
+        }
+
+        return ranges;
+      };
+
+
     const appendStyledSegment = (
       parent,
       value,
-      accentWords
+      accentWords,
+      highlightLiturgicalPhrases =
+        true
     ) => {
-      const phrasePattern =
-        /(Слава(?:\s+Отцу\s+и\s+Сыну\s+и\s+Святому\s+Духу)?\s*[:;,.!?]?|(?:И\s+ныне|Ныне)(?:\s+и\s+присно\s+и\s+во\s+веки\s+веков\.?\s*Аминь\.?)?\s*[:;,.!?]?)/giu;
-
-      let cursor = 0;
-      let match = null;
-
-      while (
-        (
-          match =
-            phrasePattern.exec(
-              value
-            )
-        )
+      if (
+        !highlightLiturgicalPhrases
       ) {
-        if (
-          match.index >
-          cursor
-        ) {
-          appendAccentWords(
-            parent,
-            value.slice(
-              cursor,
-              match.index
-            ),
-            accentWords
-          );
-        }
-
-        parent.appendChild(
-          el(
-            'span',
-            'liturgical-word',
-            match[0]
-          )
+        appendAccentWords(
+          parent,
+          value,
+          accentWords
         );
 
-        cursor =
-          match.index +
-          match[0].length;
+        return;
       }
+
+      const ranges =
+        findLiturgicalPhraseRanges(
+          value
+        );
+
+      if (!ranges.length) {
+        appendAccentWords(
+          parent,
+          value,
+          accentWords
+        );
+
+        return;
+      }
+
+      let cursor = 0;
+
+      ranges.forEach(
+        range => {
+          if (
+            range.start >
+            cursor
+          ) {
+            appendAccentWords(
+              parent,
+              value.slice(
+                cursor,
+                range.start
+              ),
+              accentWords
+            );
+          }
+
+          parent.appendChild(
+            el(
+              'span',
+              'liturgical-word',
+              value.slice(
+                range.start,
+                range.end
+              )
+            )
+          );
+
+          cursor =
+            range.end;
+        }
+      );
 
       if (
         cursor <
@@ -1350,17 +1506,29 @@ const HTML_TEMPLATE = String.raw`
             );
           }
 
+          const itemConfig =
+            itemConfigMap.get(
+              itemId
+            );
+
+          const isRussian =
+            String(
+              itemConfig
+                ?.className ||
+              ''
+            ).includes(
+              'russian'
+            );
+
           appendStyledSegment(
             span,
             text.slice(
               start,
               end
             ),
-            itemConfigMap
-              .get(
-                itemId
-              )
-              ?.accentWords
+            itemConfig
+              ?.accentWords,
+            !isRussian
           );
 
           fragment.appendChild(
