@@ -111,6 +111,7 @@ export default function KathismaScreen({
   const {
     kathismaNumber,
     kathismaTitle,
+    focusTarget = null,
   } = route.params;
 
   const [
@@ -1334,6 +1335,9 @@ export default function KathismaScreen({
       }
       savedProgress={
         readerProgress
+      }
+      focusTarget={
+        focusTarget
       }
       onProgress={
         scheduleSave
