@@ -2,7 +2,7 @@
   "expo": {
     "name": "Молитвослов",
     "slug": "molitvoslov",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -17,7 +17,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "com.accepted2.molitvoslov",
-      "versionCode": 1
+      "versionCode": 2
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -26,6 +26,10 @@
       "expo-status-bar",
       "expo-sqlite",
       "expo-secure-store"
-    ]
+    ],
+    "androidNavigationBar": {
+      "backgroundColor": "#F7F4EE",
+      "barStyle": "dark-content"
+    }
   }
 }
