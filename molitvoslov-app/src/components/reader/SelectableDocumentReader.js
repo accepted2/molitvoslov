@@ -279,6 +279,45 @@ const HTML_TEMPLATE = String.raw`
       line-height: 24px;
     }
 
+    .reader-text.canon-irmos {
+      color: #7A4B2F;
+      font-weight: 600;
+    }
+
+    .reader-text.canon-troparion {
+      color: #302C27;
+    }
+
+    .reader-text.canon-theotokion {
+      color: #665060;
+    }
+
+    .reader-text.canon-refrain,
+    .reader-text.canon-glory,
+    .reader-text.canon-now {
+      color: var(--liturgical);
+      font-style: italic;
+      font-weight: 600;
+    }
+
+    .reader-text.canon-kontakion,
+    .reader-text.canon-ikos,
+    .reader-text.canon-sedalen,
+    .reader-text.canon-svetilen {
+      color: #5E4939;
+    }
+
+    .reader-text.canon-russian.canon-irmos {
+      color: #8A6A56;
+      font-weight: 500;
+    }
+
+    .reader-text.canon-russian.canon-refrain,
+    .reader-text.canon-russian.canon-glory,
+    .reader-text.canon-russian.canon-now {
+      color: #9B5C56;
+    }
+
     .reader-text {
       color: var(--text);
       font-size: 17px;
@@ -434,6 +473,62 @@ const HTML_TEMPLATE = String.raw`
     #selection-save:disabled {
       opacity: 0.4;
     }
+
+    #reader-scroll-track {
+      position: fixed;
+      top: 10px;
+      right: 1px;
+      bottom: 72px;
+      width: 18px;
+      z-index: 998;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 120ms ease;
+      touch-action: none;
+    }
+
+    #reader-scroll-track.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #reader-scroll-thumb {
+      position: absolute;
+      top: 0;
+      right: 4px;
+      width: 7px;
+      min-height: 44px;
+      border-radius: 999px;
+      background: rgba(104, 66, 41, 0.48);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
+      touch-action: none;
+    }
+
+    #reader-scroll-top {
+      display: none;
+      position: fixed;
+      right: 13px;
+      bottom: 82px;
+      z-index: 999;
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(112, 86, 55, 0.24);
+      border-radius: 21px;
+      background: rgba(255, 253, 248, 0.96);
+      color: var(--accent-dark);
+      box-shadow: 0 3px 12px rgba(71, 59, 46, 0.18);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 23px;
+      line-height: 40px;
+      font-weight: 700;
+    }
+
+    #reader-scroll-top.visible {
+      display: block;
+    }
   </style>
 </head>
 
@@ -449,6 +544,18 @@ const HTML_TEMPLATE = String.raw`
     id="end-handle"
     class="selection-handle"
   ></div>
+
+  <div id="reader-scroll-track">
+    <div id="reader-scroll-thumb"></div>
+  </div>
+
+  <button
+    id="reader-scroll-top"
+    type="button"
+    aria-label="Наверх"
+  >
+    ↑
+  </button>
 
   <div id="selection-bar">
     <div class="selection-info">
@@ -515,6 +622,21 @@ const HTML_TEMPLATE = String.raw`
     const endHandle =
       document.getElementById(
         'end-handle'
+      );
+
+    const scrollTrack =
+      document.getElementById(
+        'reader-scroll-track'
+      );
+
+    const scrollThumb =
+      document.getElementById(
+        'reader-scroll-thumb'
+      );
+
+    const scrollTopButton =
+      document.getElementById(
+        'reader-scroll-top'
       );
 
     const itemTextMap =
@@ -929,7 +1051,7 @@ const HTML_TEMPLATE = String.raw`
           : null;
 
 
-    const appendStyledSegment = (
+    const appendAccentWords = (
       parent,
       value,
       accentWords
@@ -1000,15 +1122,12 @@ const HTML_TEMPLATE = String.raw`
                 clean
               )
             ) {
-              const word =
+              parent.appendChild(
                 el(
                   'span',
                   'liturgical-word',
                   part
-                );
-
-              parent.appendChild(
-                word
+                )
               );
 
               return;
@@ -1021,6 +1140,67 @@ const HTML_TEMPLATE = String.raw`
             );
           }
         );
+    };
+
+
+    const appendStyledSegment = (
+      parent,
+      value,
+      accentWords
+    ) => {
+      const phrasePattern =
+        /(Слава(?:\s+Отцу\s+и\s+Сыну\s+и\s+Святому\s+Духу)?\s*[:;,.!?]?|И\s+ныне(?:\s+и\s+присно\s+и\s+во\s+веки\s+веков\.?\s*Аминь\.?)?\s*[:;,.!?]?)/giu;
+
+      let cursor = 0;
+      let match = null;
+
+      while (
+        (
+          match =
+            phrasePattern.exec(
+              value
+            )
+        )
+      ) {
+        if (
+          match.index >
+          cursor
+        ) {
+          appendAccentWords(
+            parent,
+            value.slice(
+              cursor,
+              match.index
+            ),
+            accentWords
+          );
+        }
+
+        parent.appendChild(
+          el(
+            'span',
+            'liturgical-word',
+            match[0]
+          )
+        );
+
+        cursor =
+          match.index +
+          match[0].length;
+      }
+
+      if (
+        cursor <
+        value.length
+      ) {
+        appendAccentWords(
+          parent,
+          value.slice(
+            cursor
+          ),
+          accentWords
+        );
+      }
     };
 
 
@@ -2887,10 +3067,301 @@ const HTML_TEMPLATE = String.raw`
       };
 
 
+    const updateScrollControls =
+      () => {
+        const documentHeight =
+          Math.max(
+            document.body.scrollHeight,
+            document.documentElement.scrollHeight
+          );
+
+        const maxScroll =
+          Math.max(
+            0,
+            documentHeight -
+            window.innerHeight
+          );
+
+        const hasOverflow =
+          maxScroll > 16;
+
+        scrollTrack.classList.toggle(
+          'visible',
+          hasOverflow
+        );
+
+        scrollTopButton.classList.toggle(
+          'visible',
+          hasOverflow &&
+          window.scrollY >
+            window.innerHeight * 0.65
+        );
+
+        if (!hasOverflow) {
+          return;
+        }
+
+        const trackHeight =
+          Math.max(
+            1,
+            scrollTrack.clientHeight
+          );
+
+        const thumbHeight =
+          Math.max(
+            44,
+            Math.min(
+              trackHeight,
+              trackHeight *
+              (
+                window.innerHeight /
+                documentHeight
+              )
+            )
+          );
+
+        const maxThumbTop =
+          Math.max(
+            0,
+            trackHeight -
+            thumbHeight
+          );
+
+        const thumbTop =
+          maxScroll
+            ? (
+                window.scrollY /
+                maxScroll
+              ) *
+              maxThumbTop
+            : 0;
+
+        scrollThumb.style.height =
+          thumbHeight +
+          'px';
+
+        scrollThumb.style.transform =
+          'translateY(' +
+          thumbTop +
+          'px)';
+      };
+
+
+    let scrollDrag = null;
+
+
+    scrollThumb.addEventListener(
+      'pointerdown',
+      event => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const documentHeight =
+          Math.max(
+            document.body.scrollHeight,
+            document.documentElement.scrollHeight
+          );
+
+        scrollDrag = {
+          pointerId:
+            event.pointerId,
+
+          startY:
+            event.clientY,
+
+          startScroll:
+            window.scrollY,
+
+          maxScroll:
+            Math.max(
+              0,
+              documentHeight -
+              window.innerHeight
+            ),
+
+          trackHeight:
+            Math.max(
+              1,
+              scrollTrack.clientHeight
+            ),
+
+          thumbHeight:
+            Math.max(
+              1,
+              scrollThumb.offsetHeight
+            ),
+        };
+
+        scrollThumb.setPointerCapture?.(
+          event.pointerId
+        );
+      }
+    );
+
+
+    scrollThumb.addEventListener(
+      'pointermove',
+      event => {
+        if (
+          !scrollDrag ||
+          event.pointerId !==
+            scrollDrag.pointerId
+        ) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const maxThumbTop =
+          Math.max(
+            1,
+            scrollDrag.trackHeight -
+            scrollDrag.thumbHeight
+          );
+
+        const deltaY =
+          event.clientY -
+          scrollDrag.startY;
+
+        window.scrollTo(
+          0,
+          Math.max(
+            0,
+            Math.min(
+              scrollDrag.maxScroll,
+              scrollDrag.startScroll +
+              (
+                deltaY /
+                maxThumbTop
+              ) *
+              scrollDrag.maxScroll
+            )
+          )
+        );
+      }
+    );
+
+
+    const endScrollDrag =
+      event => {
+        if (
+          !scrollDrag ||
+          (
+            event &&
+            event.pointerId !==
+              scrollDrag.pointerId
+          )
+        ) {
+          return;
+        }
+
+        scrollDrag = null;
+      };
+
+
+    scrollThumb.addEventListener(
+      'pointerup',
+      endScrollDrag
+    );
+
+    scrollThumb.addEventListener(
+      'pointercancel',
+      endScrollDrag
+    );
+
+
+    scrollTrack.addEventListener(
+      'pointerdown',
+      event => {
+        if (
+          event.target !==
+            scrollTrack
+        ) {
+          return;
+        }
+
+        event.preventDefault();
+
+        const rect =
+          scrollTrack
+            .getBoundingClientRect();
+
+        const documentHeight =
+          Math.max(
+            document.body.scrollHeight,
+            document.documentElement.scrollHeight
+          );
+
+        const maxScroll =
+          Math.max(
+            0,
+            documentHeight -
+            window.innerHeight
+          );
+
+        const thumbHeight =
+          Math.max(
+            1,
+            scrollThumb.offsetHeight
+          );
+
+        const maxThumbTop =
+          Math.max(
+            1,
+            rect.height -
+            thumbHeight
+          );
+
+        const thumbTop =
+          Math.max(
+            0,
+            Math.min(
+              maxThumbTop,
+              event.clientY -
+              rect.top -
+              (
+                thumbHeight /
+                2
+              )
+            )
+          );
+
+        window.scrollTo(
+          0,
+          (
+            thumbTop /
+            maxThumbTop
+          ) *
+          maxScroll
+        );
+      }
+    );
+
+
+    scrollTopButton.addEventListener(
+      'click',
+      () => {
+        window.scrollTo({
+          top: 0,
+          behavior:
+            'smooth',
+        });
+      }
+    );
+
+
+    window.addEventListener(
+      'resize',
+      updateScrollControls
+    );
+
+
     window.addEventListener(
       'scroll',
       () => {
         updateHandles();
+        updateScrollControls();
 
         if (
           state.progressTimer
@@ -3561,7 +4032,15 @@ const HTML_TEMPLATE = String.raw`
     );
 
     requestAnimationFrame(
-      restoreProgress
+      () => {
+        updateScrollControls();
+        restoreProgress();
+
+        setTimeout(
+          updateScrollControls,
+          180
+        );
+      }
     );
   </script>
 </body>
@@ -3927,6 +4406,10 @@ export default function SelectableDocumentReader({
           '*',
         ]}
         javaScriptEnabled
+        nestedScrollEnabled
+        showsVerticalScrollIndicator={
+          false
+        }
         domStorageEnabled={
           false
         }
