@@ -1296,6 +1296,10 @@ class Command(BaseCommand):
                     ode_number=None,
                 )
 
+        sections = self.normalize_refrains(
+            sections
+        )
+
         return {
             'tone':
                 (
@@ -1327,6 +1331,422 @@ class Command(BaseCommand):
                     default=1,
                 ),
         }
+
+    def normalize_refrains(
+            self,
+            sections,
+    ):
+        """
+        Нормализует припевы канона.
+
+        В EPUB Азбуки встречаются три варианта:
+        1) "Припев: <текст>" одним абзацем;
+        2) отдельное "Припев:", после которого сразу идёт тропарь;
+        3) повтор самого припева без слова "Припев:".
+
+        В БД приводим это к одной схеме:
+        отдельная CanonSection(TYPE_REFRAIN) с настоящим текстом припева.
+        """
+        if not sections:
+            return sections
+
+        by_variant = {}
+
+        for section in sections:
+            by_variant.setdefault(
+                section[
+                    'variant'
+                ],
+                [],
+            ).append(
+                section
+            )
+
+        normalized_all = []
+
+        for variant in sorted(
+                by_variant
+        ):
+            items = sorted(
+                by_variant[
+                    variant
+                ],
+                key=lambda item: item[
+                    'order'
+                ],
+            )
+
+            candidates = []
+
+            for item in items:
+                if (
+                        item[
+                            'section_type'
+                        ] !=
+                        CanonSection
+                        .TYPE_REFRAIN
+                ):
+                    continue
+
+                heading = (
+                    self.normalize_heading(
+                        item.get(
+                            'heading',
+                            ''
+                        )
+                    )
+                )
+
+                if heading != 'припев':
+                    continue
+
+                content = (
+                    self.strip_refrain_prefix(
+                        item[
+                            'content'
+                        ]
+                    )
+                )
+
+                if not self.looks_like_refrain(
+                        content
+                ):
+                    continue
+
+                candidates.append(
+                    {
+                        'content':
+                            content,
+
+                        'translation':
+                            item.get(
+                                'translation',
+                                ''
+                            ),
+
+                        'signature':
+                            self.refrain_signature(
+                                content
+                            ),
+                    }
+                )
+
+            canonical = None
+
+            if candidates:
+                counts = Counter(
+                    item[
+                        'signature'
+                    ]
+                    for item in candidates
+                    if item[
+                        'signature'
+                    ]
+                )
+
+                if counts:
+                    best_signature = (
+                        counts.most_common(
+                            1
+                        )[0][0]
+                    )
+
+                    matching = [
+                        item
+                        for item in candidates
+                        if item[
+                            'signature'
+                        ] ==
+                        best_signature
+                    ]
+
+                    canonical = min(
+                        matching,
+                        key=lambda item:
+                            len(
+                                item[
+                                    'content'
+                                ]
+                            ),
+                    )
+
+            rebuilt = []
+
+            for item in items:
+                current = dict(
+                    item
+                )
+
+                content = (
+                    self.strip_refrain_prefix(
+                        current[
+                            'content'
+                        ]
+                    )
+                )
+
+                signature = (
+                    self.refrain_signature(
+                        content
+                    )
+                )
+
+                heading = (
+                    self.normalize_heading(
+                        current.get(
+                            'heading',
+                            ''
+                        )
+                    )
+                )
+
+                is_plain_refrain = (
+                    current[
+                        'section_type'
+                    ] ==
+                    CanonSection
+                    .TYPE_REFRAIN
+                    and
+                    heading ==
+                    'припев'
+                )
+
+                if (
+                        canonical
+                        and
+                        is_plain_refrain
+                ):
+                    if (
+                            signature ==
+                            canonical[
+                                'signature'
+                            ]
+                    ):
+                        current[
+                            'content'
+                        ] = (
+                            canonical[
+                                'content'
+                            ]
+                        )
+
+                        current[
+                            'heading'
+                        ] = 'Припев'
+
+                        if (
+                                not current.get(
+                                    'translation'
+                                )
+                                and
+                                canonical.get(
+                                    'translation'
+                                )
+                        ):
+                            current[
+                                'translation'
+                            ] = (
+                                canonical[
+                                    'translation'
+                                ]
+                            )
+
+                        rebuilt.append(
+                            current
+                        )
+
+                        continue
+
+                    # Cue-only "Припев:" из EPUB был ошибочно
+                    # приклеен к следующему тропарю. Восстанавливаем
+                    # настоящий припев, а текущий текст возвращаем
+                    # в тип обычного тропаря.
+                    if not self.looks_like_refrain(
+                            content
+                    ):
+                        rebuilt.append(
+                            {
+                                **current,
+
+                                'section_type':
+                                    CanonSection
+                                    .TYPE_REFRAIN,
+
+                                'heading':
+                                    'Припев',
+
+                                'content':
+                                    canonical[
+                                        'content'
+                                    ],
+
+                                'translation':
+                                    canonical.get(
+                                        'translation',
+                                        ''
+                                    ),
+                            }
+                        )
+
+                        current[
+                            'section_type'
+                        ] = (
+                            CanonSection
+                            .TYPE_TROPARION
+                        )
+
+                        current[
+                            'heading'
+                        ] = ''
+
+                        current[
+                            'content'
+                        ] = content
+
+                        rebuilt.append(
+                            current
+                        )
+
+                        continue
+
+                if (
+                        canonical
+                        and
+                        current[
+                            'section_type'
+                        ] ==
+                        CanonSection
+                        .TYPE_TROPARION
+                        and
+                        signature ==
+                        canonical[
+                            'signature'
+                        ]
+                ):
+                    # В ряде EPUB со 2/3 песни повторяется только
+                    # сам текст припева без слова "Припев:".
+                    current[
+                        'section_type'
+                    ] = (
+                        CanonSection
+                        .TYPE_REFRAIN
+                    )
+
+                    current[
+                        'heading'
+                    ] = 'Припев'
+
+                    current[
+                        'content'
+                    ] = (
+                        canonical[
+                            'content'
+                        ]
+                    )
+
+                    if (
+                            not current.get(
+                                'translation'
+                            )
+                            and
+                            canonical.get(
+                                'translation'
+                            )
+                    ):
+                        current[
+                            'translation'
+                        ] = (
+                            canonical[
+                                'translation'
+                            ]
+                        )
+
+                rebuilt.append(
+                    current
+                )
+
+            for order, item in enumerate(
+                    rebuilt,
+                    start=1,
+            ):
+                item[
+                    'order'
+                ] = order
+
+                normalized_all.append(
+                    item
+                )
+
+        return normalized_all
+
+    def strip_refrain_prefix(
+            self,
+            value,
+    ):
+        cleaned = self.clean_text(
+            value,
+            preserve_newlines=True,
+        )
+
+        return re.sub(
+            r'^\s*припев\s*:\s*',
+            '',
+            cleaned,
+            count=1,
+            flags=re.IGNORECASE,
+        ).strip()
+
+    def refrain_signature(
+            self,
+            value,
+    ):
+        normalized = (
+            self.normalize_heading(
+                self.strip_refrain_prefix(
+                    value
+                )
+            )
+        )
+
+        return re.sub(
+            r'[^а-я0-9]+',
+            ' ',
+            normalized,
+            flags=re.IGNORECASE,
+        ).strip()
+
+    def looks_like_refrain(
+            self,
+            value,
+    ):
+        normalized = (
+            self.refrain_signature(
+                value
+            )
+        )
+
+        if not normalized:
+            return False
+
+        if len(
+            normalized
+        ) > 220:
+            return False
+
+        markers = (
+            'моли бога',
+            'помилуй',
+            'спаси нас',
+            'спаси мя',
+            'слава тебе',
+            'радуйся',
+        )
+
+        return any(
+            marker in normalized
+            for marker in markers
+        )
+
 
     def parse_heading(
             self,
