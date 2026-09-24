@@ -111,6 +111,22 @@ const normalizeCanonCue =
       .trim();
 
 
+const canonTextSignature =
+  value =>
+    normalizeCanonCue(
+      value
+    )
+      .replace(
+        /^(?:припев|иисусу)\s*:\s*/iu,
+        ''
+      )
+      .replace(
+        /[^а-я0-9]+/giu,
+        ' '
+      )
+      .trim();
+
+
 const getCanonInlineLabel =
   (
     section,
@@ -473,17 +489,219 @@ export const CanonScreen = ({
     );
 
 
+  const displaySections =
+    useMemo(
+      () => {
+        const prepared =
+          [];
+
+        let pendingRefrain =
+          null;
+
+        displaySections.forEach(
+          section => {
+            const church =
+              section.text
+                ?.content
+                ?.trim() ||
+              '';
+
+            const normalized =
+              normalizeCanonCue(
+                church
+              );
+
+            const cueOnly =
+              section.section_type ===
+                'refrain' &&
+              /^(?:припев|иисусу)\s*:? *$/iu.test(
+                normalized
+              );
+
+            if (cueOnly) {
+              const sourceCue =
+                String(
+                  section.heading ||
+                  church ||
+                  'Припев'
+                )
+                  .trim()
+                  .replace(
+                    /[:;]+$/,
+                    ''
+                  );
+
+              pendingRefrain = {
+                ode:
+                  Number(
+                    section.ode_number ||
+                    0
+                  ),
+
+                heading:
+                  sourceCue ||
+                  'Припев',
+              };
+
+              return;
+            }
+
+            if (
+              pendingRefrain &&
+              Number(
+                section.ode_number ||
+                0
+              ) ===
+                pendingRefrain.ode
+            ) {
+              prepared.push({
+                ...section,
+
+                display_section_type:
+                  'refrain',
+
+                display_heading:
+                  pendingRefrain.heading,
+              });
+
+              pendingRefrain =
+                null;
+
+              return;
+            }
+
+            pendingRefrain =
+              null;
+
+            prepared.push({
+              ...section,
+
+              display_section_type:
+                section.section_type,
+
+              display_heading:
+                section.heading ||
+                '',
+            });
+          }
+        );
+
+
+        const knownRefrains =
+          new Map();
+
+        prepared.forEach(
+          section => {
+            if (
+              section
+                .display_section_type !==
+                'refrain'
+            ) {
+              return;
+            }
+
+            const signature =
+              canonTextSignature(
+                section.text
+                  ?.content
+              );
+
+            if (!signature) {
+              return;
+            }
+
+            const key =
+              `${Number(
+                section.ode_number ||
+                0
+              )}:${signature}`;
+
+            const heading =
+              String(
+                section
+                  .display_heading ||
+                section.heading ||
+                'Припев'
+              )
+                .trim()
+                .replace(
+                  /[:;]+$/,
+                  ''
+                );
+
+            knownRefrains.set(
+              key,
+              heading ||
+                'Припев'
+            );
+          }
+        );
+
+
+        return prepared.map(
+          section => {
+            if (
+              section
+                .display_section_type !==
+                'troparion'
+            ) {
+              return section;
+            }
+
+            const signature =
+              canonTextSignature(
+                section.text
+                  ?.content
+              );
+
+            if (!signature) {
+              return section;
+            }
+
+            const key =
+              `${Number(
+                section.ode_number ||
+                0
+              )}:${signature}`;
+
+            const refrainHeading =
+              knownRefrains.get(
+                key
+              );
+
+            if (!refrainHeading) {
+              return section;
+            }
+
+            return {
+              ...section,
+
+              display_section_type:
+                'refrain',
+
+              display_heading:
+                refrainHeading,
+            };
+          }
+        );
+      },
+      [
+        activeSections,
+      ]
+    );
+
+
   const hasRussianTranslation =
     useMemo(
       () =>
-        activeSections.some(
+        displaySections.some(
           section =>
             !!section.text
               ?.translation
               ?.trim()
         ),
       [
-        activeSections,
+        displaySections,
       ]
     );
 
@@ -774,9 +992,13 @@ export const CanonScreen = ({
                 section.ode_number,
 
               section_type:
+                section
+                  .display_section_type ||
                 section.section_type,
 
               heading:
+                section
+                  .display_heading ||
                 section.heading ||
                 '',
 
@@ -800,10 +1022,31 @@ export const CanonScreen = ({
                 ?.trim() ||
               '';
 
-            const label =
+            const effectiveSectionType =
+              section
+                .display_section_type ||
+              section.section_type;
+
+            const effectiveHeading =
+              section
+                .display_heading ||
               section.heading ||
+              '';
+
+            const displaySection = {
+              ...section,
+
+              section_type:
+                effectiveSectionType,
+
+              heading:
+                effectiveHeading,
+            };
+
+            const label =
+              effectiveHeading ||
               SECTION_LABELS[
-                section.section_type
+                effectiveSectionType
               ] ||
               '';
 
@@ -825,14 +1068,14 @@ export const CanonScreen = ({
                     'church',
 
                   className:
-                    `canon-church canon-${section.section_type}`,
+                    `canon-church canon-${effectiveSectionType}`,
 
                   label:
                     '',
 
                   inlineLabel:
                     getCanonInlineLabel(
-                      section,
+                      displaySection,
                       church
                     ),
                 })
@@ -854,7 +1097,7 @@ export const CanonScreen = ({
                     'russian',
 
                   className:
-                    `canon-russian canon-${section.section_type}`,
+                    `canon-russian canon-${effectiveSectionType}`,
 
                   label:
                     '',
@@ -987,7 +1230,7 @@ export const CanonScreen = ({
         canon,
         title,
         slug,
-        activeSections,
+        displaySections,
         primaryVariant,
         savedItems,
         viewMode,
