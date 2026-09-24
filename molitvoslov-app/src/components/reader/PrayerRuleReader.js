@@ -210,6 +210,11 @@ const HTML_TEMPLATE = String.raw`
       font-weight: 600;
     }
 
+    .liturgical-block {
+      color: var(--liturgical);
+      font-weight: 600;
+    }
+
     .saved-highlight {
       background: var(--saved);
       border-radius: 3px;
@@ -635,6 +640,24 @@ const HTML_TEMPLATE = String.raw`
           .trim();
 
 
+    const isLiturgicalBlock =
+      value => {
+        const normalized =
+          normalizeLiturgicalValue(
+            value
+          );
+
+        return (
+          /^слава(?: отцу| и ныне)?\b/.test(
+            normalized
+          ) ||
+          /^и ныне\b/.test(
+            normalized
+          )
+        );
+      };
+
+
     const isMinorLiturgicalItem =
       text => {
         const title =
@@ -895,7 +918,11 @@ const HTML_TEMPLATE = String.raw`
             wrapper.appendChild(
               el(
                 'div',
-                'instruction',
+                isLiturgicalBlock(
+                  item.content
+                )
+                  ? 'instruction liturgical-block'
+                  : 'instruction',
                 item.content ||
                 ''
               )
@@ -923,7 +950,11 @@ const HTML_TEMPLATE = String.raw`
               wrapper.appendChild(
                 el(
                   'div',
-                  'section-content',
+                  isLiturgicalBlock(
+                    item.content
+                  )
+                    ? 'section-content liturgical-block'
+                    : 'section-content',
                   item.content
                 )
               );
