@@ -757,6 +757,11 @@ class Command(BaseCommand):
             if not isinstance(element, Tag):
                 continue
 
+            if self.is_notes_heading(
+                    element
+            ):
+                break
+
             if element.name in HEADING_TAGS:
                 raw_heading = self.clean_text(
                     element.get_text(
@@ -866,6 +871,46 @@ class Command(BaseCommand):
 
         return prayers
 
+    def is_notes_heading(
+            self,
+            element,
+    ):
+        if not isinstance(
+                element,
+                Tag,
+        ):
+            return False
+
+        if element.name not in (
+                set(HEADING_TAGS)
+                | {"p", "div"}
+        ):
+            return False
+
+        text = self.clean_text(
+            element.get_text(
+                " ",
+                strip=True,
+            )
+        )
+
+        if not text:
+            return False
+
+        normalized = self.normalize_heading(
+            text
+        )
+
+        return normalized in {
+            "примечание",
+            "примечания",
+            "сноска",
+            "сноски",
+            "комментарий",
+            "комментарии",
+        }
+
+
     def collect_language_nodes_from_paragraph_heading(
             self,
             heading,
@@ -887,6 +932,11 @@ class Command(BaseCommand):
                 continue
 
             if element.name in HEADING_TAGS:
+                break
+
+            if self.is_notes_heading(
+                    element
+            ):
                 break
 
             if (
@@ -977,6 +1027,11 @@ class Command(BaseCommand):
                 continue
 
             if element.name in HEADING_TAGS:
+                break
+
+            if self.is_notes_heading(
+                    element
+            ):
                 break
 
             # В некоторых EPUB Азбуки после Кондака 13
@@ -1111,7 +1166,59 @@ class Command(BaseCommand):
             if line:
                 lines.append(line)
 
-        return "\n".join(lines)
+        normalized_lines = []
+
+        index = 0
+
+        while index < len(lines):
+            current = lines[index]
+
+            plain_letters = (
+                unicodedata.normalize(
+                    "NFD",
+                    current,
+                )
+            )
+
+            plain_letters = "".join(
+                char
+                for char in plain_letters
+                if (
+                    unicodedata.category(
+                        char
+                    ) != "Mn"
+                    and re.match(
+                        r"[А-Яа-яЁё]",
+                        char,
+                    )
+                )
+            )
+
+            if (
+                    0 < len(plain_letters) <= 2
+                    and index + 1 < len(lines)
+                    and re.match(
+                        r"^[А-Яа-яЁё\u0300-\u036f]",
+                        lines[index + 1],
+                    )
+            ):
+                normalized_lines.append(
+                    current
+                    + lines[index + 1]
+                )
+
+                index += 2
+                continue
+
+            normalized_lines.append(
+                current
+            )
+
+            index += 1
+
+        return "\n".join(
+            normalized_lines
+        )
 
     # ============================================================
     # ЦС + RU ДЛЯ КОНДАКОВ И ИКОСОВ
