@@ -130,6 +130,7 @@ export const AkathistScreen = ({
     akathistId,
     slug,
     title,
+    focusTarget = null,
   } = route.params;
 
   const [
@@ -1062,6 +1063,9 @@ export const AkathistScreen = ({
         }
         savedProgress={
           savedProgress
+        }
+        focusTarget={
+          focusTarget
         }
         onProgress={
           scheduleSave
