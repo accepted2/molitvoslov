@@ -7,6 +7,23 @@ import {
 } from './localAuth';
 
 
+const parseMetadata = value => {
+  if (!value) {
+    return {};
+  }
+
+  if (typeof value === 'object') {
+    return value;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return {};
+  }
+};
+
+
 export const getReadingProgress =
   async () => {
     const user =
@@ -30,6 +47,7 @@ export const getReadingProgress =
             anchor_id,
             offset,
             progress_percent,
+            metadata,
             updated_at
           FROM reading_progress
           WHERE user_id = ?
@@ -40,22 +58,26 @@ export const getReadingProgress =
         ]
       );
 
-    return rows.map(
-      item => ({
+    return rows.map(item => {
+      const metadata =
+        parseMetadata(
+          item.metadata
+        );
+
+      return {
         ...item,
-
-        // Пока оставляем для совместимости
-        // с главной страницей.
+        metadata,
         anchor_info:
-          null,
-
+          Object.keys(metadata).length
+            ? metadata
+            : null,
         progress_percent:
           Number(
             item.progress_percent ||
             0
           ),
-      })
-    );
+      };
+    });
   };
 
 
@@ -67,6 +89,7 @@ export const saveReadingProgress =
     anchorId,
     offset = 0,
     progressPercent = 0,
+    metadata = null,
   }) => {
     const user =
       await getCurrentUser();
@@ -97,6 +120,11 @@ export const saveReadingProgress =
         )
       );
 
+    const normalizedMetadata =
+      metadata
+        ? JSON.stringify(metadata)
+        : null;
+
     await db.runAsync(
       `
         INSERT INTO reading_progress (
@@ -107,9 +135,10 @@ export const saveReadingProgress =
           anchor_id,
           offset,
           progress_percent,
+          metadata,
           updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 
         ON CONFLICT(
           user_id,
@@ -125,6 +154,8 @@ export const saveReadingProgress =
             excluded.offset,
           progress_percent =
             excluded.progress_percent,
+          metadata =
+            excluded.metadata,
           updated_at =
             excluded.updated_at
       `,
@@ -136,6 +167,7 @@ export const saveReadingProgress =
         anchorId,
         offset,
         normalizedProgressPercent,
+        normalizedMetadata,
         updatedAt,
       ]
     );
@@ -150,6 +182,7 @@ export const saveReadingProgress =
           anchor_id,
           offset,
           progress_percent,
+          metadata,
           updated_at
         FROM reading_progress
         WHERE user_id = ?
