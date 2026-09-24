@@ -115,8 +115,11 @@ const HTML_TEMPLATE = String.raw`
     .section-header .prayer-title {
       width: 100%;
       margin-bottom: 0;
-      padding: 0 38px;
+      padding: 0 34px 0 0;
       text-align: center;
+      font-size: 18px;
+      line-height: 24px;
+      white-space: nowrap;
     }
 
     .favorite-action {
