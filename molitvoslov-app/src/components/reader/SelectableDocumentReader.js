@@ -9,6 +9,8 @@ import {
   View,
 } from 'react-native';
 
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+
 import {
   WebView,
 } from 'react-native-webview';
@@ -393,8 +395,8 @@ const HTML_TEMPLATE = String.raw`
     .selection-handle {
       display: none;
       position: fixed;
-      width: 28px;
-      height: 38px;
+      width: 36px;
+      height: 44px;
       z-index: 1001;
       touch-action: none;
     }
@@ -402,10 +404,10 @@ const HTML_TEMPLATE = String.raw`
     .selection-handle::before {
       content: "";
       position: absolute;
-      left: 12px;
+      left: 16px;
       top: 0;
-      width: 3px;
-      height: 21px;
+      width: 4px;
+      height: 24px;
       border-radius: 2px;
       background: var(--handle);
     }
@@ -413,10 +415,10 @@ const HTML_TEMPLATE = String.raw`
     .selection-handle::after {
       content: "";
       position: absolute;
-      left: 6px;
-      top: 19px;
-      width: 15px;
-      height: 15px;
+      left: 9px;
+      top: 21px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       background: var(--handle);
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
@@ -427,12 +429,12 @@ const HTML_TEMPLATE = String.raw`
       position: fixed;
       left: 14px;
       right: 14px;
-      bottom: 14px;
+      bottom: 22px;
       z-index: 1002;
-      min-height: 58px;
-      padding: 9px 9px 9px 14px;
+      min-height: 52px;
+      padding: 7px 8px 7px 12px;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       border: 1px solid rgba(112, 86, 55, 0.25);
       border-radius: 18px;
       background: var(--surface);
@@ -469,8 +471,8 @@ const HTML_TEMPLATE = String.raw`
     }
 
     #selection-cancel {
-      width: 34px;
-      height: 34px;
+      width: 32px;
+      height: 32px;
       padding: 0;
       border: 0;
       background: transparent;
@@ -480,8 +482,8 @@ const HTML_TEMPLATE = String.raw`
     }
 
     #selection-save {
-      min-width: 104px;
-      height: 38px;
+      min-width: 96px;
+      height: 36px;
       padding: 0 14px;
       border: 0;
       border-radius: 10px;
@@ -498,9 +500,9 @@ const HTML_TEMPLATE = String.raw`
     #reader-scroll-track {
       position: fixed;
       top: 10px;
-      right: 1px;
+      right: 0;
       bottom: 72px;
-      width: 18px;
+      width: 30px;
       z-index: 998;
       opacity: 0;
       pointer-events: none;
@@ -516,8 +518,8 @@ const HTML_TEMPLATE = String.raw`
     #reader-scroll-thumb {
       position: absolute;
       top: 0;
-      right: 4px;
-      width: 7px;
+      right: 7px;
+      width: 8px;
       min-height: 44px;
       border-radius: 999px;
       background: rgba(104, 66, 41, 0.48);
@@ -2351,7 +2353,7 @@ appendStyledSegment(
         startHandle.style.left =
           (
             first.left -
-            14
+            18
           ) +
           'px';
 
@@ -2365,7 +2367,7 @@ appendStyledSegment(
         endHandle.style.left =
           (
             last.right -
-            14
+            18
           ) +
           'px';
 
@@ -2956,7 +2958,7 @@ appendStyledSegment(
                   event.pointerId
                 );
             },
-            430
+            650
           );
       },
       {
@@ -3607,28 +3609,15 @@ appendStyledSegment(
     let scrollDrag = null;
 
 
-    scrollThumb.addEventListener(
-      'pointerdown',
-      event => {
-        event.preventDefault();
-        event.stopPropagation();
-
+    const getScrollMetrics =
+      () => {
         const documentHeight =
           Math.max(
             document.body.scrollHeight,
             document.documentElement.scrollHeight
           );
 
-        scrollDrag = {
-          pointerId:
-            event.pointerId,
-
-          startY:
-            event.clientY,
-
-          startScroll:
-            window.scrollY,
-
+        return {
           maxScroll:
             Math.max(
               0,
@@ -3648,16 +3637,39 @@ appendStyledSegment(
               scrollThumb.offsetHeight
             ),
         };
-
-        scrollThumb.setPointerCapture?.(
-          event.pointerId
-        );
-      }
-    );
+      };
 
 
-    scrollThumb.addEventListener(
-      'pointermove',
+    const beginScrollDrag =
+      event => {
+        const metrics =
+          getScrollMetrics();
+
+        scrollDrag = {
+          pointerId:
+            event.pointerId,
+
+          startY:
+            event.clientY,
+
+          startScroll:
+            window.scrollY,
+
+          ...metrics,
+        };
+
+        try {
+          event.currentTarget
+            ?.setPointerCapture?.(
+              event.pointerId
+            );
+        } catch {
+          // Некоторые Android WebView не поддерживают pointer capture стабильно.
+        }
+      };
+
+
+    const moveScrollDrag =
       event => {
         if (
           !scrollDrag ||
@@ -3696,8 +3708,7 @@ appendStyledSegment(
             )
           )
         );
-      }
-    );
+      };
 
 
     const endScrollDrag =
@@ -3718,13 +3729,15 @@ appendStyledSegment(
 
 
     scrollThumb.addEventListener(
-      'pointerup',
-      endScrollDrag
-    );
+      'pointerdown',
+      event => {
+        event.preventDefault();
+        event.stopPropagation();
 
-    scrollThumb.addEventListener(
-      'pointercancel',
-      endScrollDrag
+        beginScrollDrag(
+          event
+        );
+      }
     );
 
 
@@ -3732,42 +3745,27 @@ appendStyledSegment(
       'pointerdown',
       event => {
         if (
-          event.target !==
-            scrollTrack
+          event.target ===
+            scrollThumb
         ) {
           return;
         }
 
         event.preventDefault();
+        event.stopPropagation();
 
         const rect =
           scrollTrack
             .getBoundingClientRect();
 
-        const documentHeight =
-          Math.max(
-            document.body.scrollHeight,
-            document.documentElement.scrollHeight
-          );
-
-        const maxScroll =
-          Math.max(
-            0,
-            documentHeight -
-            window.innerHeight
-          );
-
-        const thumbHeight =
-          Math.max(
-            1,
-            scrollThumb.offsetHeight
-          );
+        const metrics =
+          getScrollMetrics();
 
         const maxThumbTop =
           Math.max(
             1,
             rect.height -
-            thumbHeight
+            metrics.thumbHeight
           );
 
         const thumbTop =
@@ -3778,7 +3776,7 @@ appendStyledSegment(
               event.clientY -
               rect.top -
               (
-                thumbHeight /
+                metrics.thumbHeight /
                 2
               )
             )
@@ -3790,9 +3788,32 @@ appendStyledSegment(
             thumbTop /
             maxThumbTop
           ) *
-          maxScroll
+          metrics.maxScroll
+        );
+
+        beginScrollDrag(
+          event
         );
       }
+    );
+
+
+    document.addEventListener(
+      'pointermove',
+      moveScrollDrag,
+      {
+        passive: false,
+      }
+    );
+
+    document.addEventListener(
+      'pointerup',
+      endScrollDrag
+    );
+
+    document.addEventListener(
+      'pointercancel',
+      endScrollDrag
     );
 
 
@@ -4561,6 +4582,9 @@ export default function SelectableDocumentReader({
   onProgress,
   onAction,
 }) {
+  const insets =
+    useSafeAreaInsets();
+
   const webViewRef =
     useRef(null);
 
@@ -4864,7 +4888,16 @@ export default function SelectableDocumentReader({
 
   return (
     <View
-      style={styles.container}
+      style={[
+        styles.container,
+        {
+          paddingBottom:
+            Math.max(
+              insets.bottom,
+              8
+            ),
+        },
+      ]}
     >
       <WebView
         ref={
