@@ -285,7 +285,8 @@ const HTML_TEMPLATE = String.raw`
     }
 
     .reader-text.canon-troparion {
-      color: #302C27;
+      color: #4F5D61;
+      font-weight: 500;
     }
 
     .reader-text.canon-theotokion {
@@ -310,6 +311,11 @@ const HTML_TEMPLATE = String.raw`
     .reader-text.canon-russian.canon-irmos {
       color: #8A6A56;
       font-weight: 500;
+    }
+
+    .reader-text.canon-russian.canon-troparion {
+      color: #718085;
+      font-weight: 400;
     }
 
     .reader-text.canon-russian.canon-refrain,
