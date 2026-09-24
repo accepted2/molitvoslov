@@ -115,8 +115,13 @@ const HTML_TEMPLATE = String.raw`
     .section-header .prayer-title {
       width: 100%;
       margin-bottom: 0;
-      padding: 0 38px;
+      padding: 0 40px;
       text-align: center;
+      font-size: 18px;
+      line-height: 24px;
+      white-space: pre-line;
+      overflow-wrap: normal;
+      word-break: normal;
     }
 
     .favorite-action {
@@ -227,6 +232,11 @@ const HTML_TEMPLATE = String.raw`
       color: var(--liturgical);
       font-weight: 700;
       font-style: italic;
+    }
+
+    .rule-leading-cue.prayer-leading-cue {
+      display: block;
+      margin-bottom: 4px;
     }
 
     .translation-text {
@@ -880,6 +890,50 @@ const HTML_TEMPLATE = String.raw`
                     ''
                   );
 
+            let displayTitleText =
+              displayTitle.replace(
+                /(\d+)-([яй])/giu,
+                '$1‑$2'
+              );
+
+            if (
+              displayTitleText.length >
+                32 &&
+              displayTitleText.includes(
+                ','
+              )
+            ) {
+              const commaIndex =
+                displayTitleText.indexOf(
+                  ','
+                );
+
+              const beforeComma =
+                displayTitleText
+                  .slice(
+                    0,
+                    commaIndex + 1
+                  )
+                  .trim();
+
+              const afterComma =
+                displayTitleText
+                  .slice(
+                    commaIndex + 1
+                  )
+                  .trim();
+
+              if (
+                beforeComma &&
+                afterComma
+              ) {
+                displayTitleText =
+                  beforeComma +
+                  '\n' +
+                  afterComma;
+              }
+            }
+
             const churchText =
               text.content ||
               '';
@@ -970,7 +1024,7 @@ const HTML_TEMPLATE = String.raw`
                   el(
                     'h2',
                     'prayer-title',
-                    displayTitle
+                    displayTitleText
                   )
                 );
               }
@@ -1309,7 +1363,7 @@ const HTML_TEMPLATE = String.raw`
 
         const match =
           normalized.match(
-            /^\s*((?:Ирмос|Припев|Богородичен|Троичен|Крестобогородичен|Слава|И\s+ныне|Седален|Кондак|Икос|Светилен|Тропарь|Иисусу)\s*[:;])/iu
+            /^\s*((?:(?:Молитва[^:\n]{0,140})|Ирмос|Припев|Богородичен|Троичен|Крестобогородичен|Слава|И\s+ныне|Седален|Кондак|Икос|Светилен|Тропарь|Иисусу)\s*[:;])/iu
           );
 
         if (
@@ -1363,9 +1417,23 @@ const HTML_TEMPLATE = String.raw`
           return null;
         }
 
+        const normalizedCue =
+          match[1]
+            .toLowerCase()
+            .replace(
+              /\s+/g,
+              ' '
+            );
+
         return {
           start,
           end,
+
+          prayerTitle:
+            normalizedCue
+              .startsWith(
+                'молитва'
+              ),
         };
       };
 
@@ -1535,6 +1603,15 @@ const HTML_TEMPLATE = String.raw`
             span.classList.add(
               'rule-leading-cue'
             );
+
+            if (
+              leadingCue
+                .prayerTitle
+            ) {
+              span.classList.add(
+                'prayer-leading-cue'
+              );
+            }
           }
 
           const value =
