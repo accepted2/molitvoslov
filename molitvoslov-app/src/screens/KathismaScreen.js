@@ -1285,6 +1285,36 @@ export default function KathismaScreen({
     );
 
 
+  const handleProgress =
+    progress => {
+      if (!kathisma) {
+        return;
+      }
+
+      const psalm =
+        (
+          kathisma.psalms ||
+          []
+        ).find(
+          item =>
+            Number(item.id) ===
+            Number(progress.anchorId)
+        );
+
+      scheduleSave({
+        ...progress,
+        metadata: {
+          kathisma_number:
+            Number(kathisma.number),
+          psalm_number:
+            psalm
+              ? Number(psalm.number)
+              : null,
+        },
+      });
+    };
+
+
   if (
     loading ||
     (
@@ -1340,7 +1370,7 @@ export default function KathismaScreen({
         focusTarget
       }
       onProgress={
-        scheduleSave
+        handleProgress
       }
       onAction={
         handleAction
