@@ -1731,7 +1731,6 @@ appendStyledSegment(
   !isRussian &&
     !isCanonPrayer,
   isCanonChurch &&
-    !isCanonPrayer &&
     start === 0
 );
 
