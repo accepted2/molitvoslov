@@ -1519,6 +1519,21 @@ const HTML_TEMPLATE = String.raw`
             )
           );
 
+          if (
+            range.className
+              .includes(
+                'prayer-leading-cue'
+              ) &&
+            range.end <
+              value.length
+          ) {
+            parent.appendChild(
+              document.createElement(
+                'br'
+              )
+            );
+          }
+
           cursor =
             range.end;
         }
