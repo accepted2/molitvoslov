@@ -211,6 +211,12 @@ const HTML_TEMPLATE = String.raw`
       background: rgba(126, 175, 223, 0.44);
     }
 
+    .reader-text.focus-target {
+      outline: 2px solid rgba(138, 90, 56, 0.42);
+      outline-offset: 5px;
+      border-radius: 5px;
+    }
+
     .footnotes {
       margin-top: 12px;
       padding-top: 8px;
@@ -2556,8 +2562,290 @@ const HTML_TEMPLATE = String.raw`
     );
 
 
+    const getRangeRect = (
+      root,
+      startOffset,
+      endOffset
+    ) => {
+      if (!root) {
+        return null;
+      }
+
+      const text =
+        root.textContent ||
+        '';
+
+      const start =
+        Math.max(
+          0,
+          Math.min(
+            text.length,
+            Number(
+              startOffset || 0
+            )
+          )
+        );
+
+      const end =
+        Math.max(
+          start,
+          Math.min(
+            text.length,
+            Number(
+              endOffset ?? start
+            )
+          )
+        );
+
+      const walker =
+        document.createTreeWalker(
+          root,
+          NodeFilter.SHOW_TEXT
+        );
+
+      let current = null;
+      let total = 0;
+      let startNode = null;
+      let startLocal = 0;
+      let endNode = null;
+      let endLocal = 0;
+
+      while (
+        (
+          current =
+            walker.nextNode()
+        )
+      ) {
+        const length =
+          current.textContent
+            ?.length ||
+          0;
+
+        if (
+          !startNode &&
+          start <=
+            total + length
+        ) {
+          startNode =
+            current;
+
+          startLocal =
+            Math.max(
+              0,
+              Math.min(
+                length,
+                start - total
+              )
+            );
+        }
+
+        if (
+          endNode === null &&
+          end <=
+            total + length
+        ) {
+          endNode =
+            current;
+
+          endLocal =
+            Math.max(
+              0,
+              Math.min(
+                length,
+                end - total
+              )
+            );
+
+          break;
+        }
+
+        total +=
+          length;
+      }
+
+      if (!startNode) {
+        return null;
+      }
+
+      if (!endNode) {
+        endNode =
+          startNode;
+
+        endLocal =
+          startLocal;
+      }
+
+      try {
+        const range =
+          document.createRange();
+
+        range.setStart(
+          startNode,
+          startLocal
+        );
+
+        range.setEnd(
+          endNode,
+          endLocal
+        );
+
+        const rect =
+          range.getBoundingClientRect();
+
+        if (
+          rect &&
+          (
+            rect.height ||
+            rect.width
+          )
+        ) {
+          return rect;
+        }
+      } catch {
+        return null;
+      }
+
+      return null;
+    };
+
+
+    const focusSavedTarget =
+      () => {
+        const target =
+          DATA.focusTarget;
+
+        if (
+          !target ||
+          (
+            target.anchor_type ||
+            target.anchorType
+          ) !==
+            'prayer_rule_item'
+        ) {
+          return false;
+        }
+
+        const itemId =
+          Number(
+            target.anchor_id ??
+            target.anchorId
+          );
+
+        if (!itemId) {
+          return false;
+        }
+
+        const root =
+          document.querySelector(
+            '.reader-text[data-item-id="' +
+            itemId +
+            '"]'
+          );
+
+        const section =
+          document.querySelector(
+            '.rule-item[data-item-id="' +
+            itemId +
+            '"]'
+          );
+
+        if (!root) {
+          if (section) {
+            window.scrollTo(
+              0,
+              Math.max(
+                0,
+                section.offsetTop -
+                12
+              )
+            );
+
+            return true;
+          }
+
+          return false;
+        }
+
+        const hasOffsets =
+          target.start_offset !==
+            null &&
+          target.start_offset !==
+            undefined &&
+          target.end_offset !==
+            null &&
+          target.end_offset !==
+            undefined;
+
+        const rect =
+          hasOffsets
+            ? getRangeRect(
+                root,
+                Number(
+                  target.start_offset
+                ),
+                Number(
+                  target.end_offset
+                )
+              )
+            : root
+                .getBoundingClientRect();
+
+        if (rect) {
+          window.scrollTo(
+            0,
+            Math.max(
+              0,
+              window.scrollY +
+              rect.top +
+              (
+                rect.height /
+                2
+              ) -
+              (
+                window.innerHeight /
+                2
+              )
+            )
+          );
+        } else {
+          root.scrollIntoView({
+            block:
+              'center',
+          });
+        }
+
+        root.classList.add(
+          'focus-target'
+        );
+
+        setTimeout(
+          () =>
+            root.classList.remove(
+              'focus-target'
+            ),
+          1400
+        );
+
+        return true;
+      };
+
+
     const restoreProgress =
       () => {
+        if (
+          focusSavedTarget()
+        ) {
+          setTimeout(
+            () => {
+              state.restoring =
+                false;
+            },
+            350
+          );
+
+          return;
+        }
+
         const progress =
           DATA.progress;
 
@@ -2764,6 +3052,7 @@ const buildHtml = ({
   rule,
   savedItems,
   savedProgress,
+  focusTarget,
 }) => {
   const payload = {
     rule,
@@ -2778,6 +3067,10 @@ const buildHtml = ({
           item.end_offset !==
             null
       ),
+
+    focusTarget:
+      focusTarget ||
+      null,
 
     progress:
       savedProgress
@@ -2811,6 +3104,7 @@ export default function PrayerRuleReader({
   rule,
   savedItems,
   savedProgress,
+  focusTarget,
   onSaved,
   onProgress,
 }) {
@@ -2824,11 +3118,13 @@ export default function PrayerRuleReader({
           rule,
           savedItems,
           savedProgress,
+          focusTarget,
         }),
       [
         rule,
         savedItems,
         savedProgress,
+        focusTarget,
       ]
     );
 
