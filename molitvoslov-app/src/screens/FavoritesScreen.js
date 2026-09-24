@@ -116,6 +116,32 @@ export const FavoritesScreen = ({
     };
 
 
+  const makeFocusTarget =
+    item => ({
+      id:
+        item.id,
+
+      save_type:
+        item.save_type,
+
+      anchor_type:
+        item.anchor_type,
+
+      anchor_id:
+        item.anchor_id,
+
+      start_offset:
+        item.start_offset,
+
+      end_offset:
+        item.end_offset,
+
+      metadata:
+        item.metadata ||
+        {},
+    });
+
+
   const openItem =
     item => {
       const metadata =
@@ -131,6 +157,11 @@ export const FavoritesScreen = ({
           {
             slug:
               metadata.slug,
+
+            focusTarget:
+              makeFocusTarget(
+                item
+              ),
           }
         );
 
@@ -156,6 +187,11 @@ export const FavoritesScreen = ({
               metadata
                 .category_name ||
               item.source_title,
+
+            focusTarget:
+              makeFocusTarget(
+                item
+              ),
           }
         );
 
@@ -196,6 +232,11 @@ export const FavoritesScreen = ({
             title:
               item.source_title ||
               'Акафист',
+
+            focusTarget:
+              makeFocusTarget(
+                item
+              ),
           }
         );
 
@@ -218,6 +259,11 @@ export const FavoritesScreen = ({
             title:
               item.source_title ||
               'Канон',
+
+            focusTarget:
+              makeFocusTarget(
+                item
+              ),
           }
         );
 
@@ -246,6 +292,11 @@ export const FavoritesScreen = ({
                 metadata
                   .kathisma_title ||
                 `Кафизма ${metadata.kathisma_number}`,
+
+              focusTarget:
+                makeFocusTarget(
+                  item
+                ),
             }
           );
 
