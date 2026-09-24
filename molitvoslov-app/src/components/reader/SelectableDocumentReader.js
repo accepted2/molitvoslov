@@ -315,6 +315,16 @@ const HTML_TEMPLATE = String.raw`
       font-style: italic;
     }
 
+    .canon-leading-cue {
+      color: var(--liturgical);
+      font-weight: 700;
+      font-style: italic;
+    }
+
+    .canon-leading-cue.canon-short-cue {
+      font-style: normal;
+    }
+
     .reader-inline .reader-text {
       display: inline;
     }
@@ -1283,29 +1293,183 @@ const HTML_TEMPLATE = String.raw`
       };
 
 
+    const findCanonLeadingCueRange =
+      value => {
+        const normalizedChars =
+          [];
+
+        const originalIndex =
+          [];
+
+        for (
+          let index = 0;
+          index < value.length;
+          index += 1
+        ) {
+          const decomposed =
+            value[index]
+              .normalize(
+                'NFD'
+              );
+
+          for (
+            const char
+            of decomposed
+          ) {
+            if (
+              /[\u0300-\u036f\u0483-\u0487]/u.test(
+                char
+              )
+            ) {
+              continue;
+            }
+
+            normalizedChars.push(
+              char
+            );
+
+            originalIndex.push(
+              index
+            );
+          }
+        }
+
+        const normalized =
+          normalizedChars.join(
+            ''
+          );
+
+        const match =
+          normalized.match(
+            /^\s*(Ирмос|Припев|Иисусу|Богородичен|Кондак|Икос|Седален|Светилен|Молитва|Тропарь|Слава|И\s+ныне|Ныне)\s*:/iu
+          );
+
+        if (!match) {
+          return null;
+        }
+
+        const normalizedStart =
+          match.index || 0;
+
+        const normalizedEnd =
+          normalizedStart +
+          match[0].length -
+          1;
+
+        const start =
+          originalIndex[
+            normalizedStart
+          ] ??
+          0;
+
+        let end =
+          (
+            originalIndex[
+              normalizedEnd
+            ] ??
+            start
+          ) + 1;
+
+        while (
+          end < value.length &&
+          /[\u0300-\u036f\u0483-\u0487]/u.test(
+            value[end]
+          )
+        ) {
+          end += 1;
+        }
+
+        const normalizedLabel =
+          match[1]
+            .toLowerCase()
+            .replace(
+              /\s+/g,
+              ' '
+            );
+
+        return {
+          start,
+          end,
+          short:
+            [
+              'слава',
+              'и ныне',
+              'ныне',
+            ].includes(
+              normalizedLabel
+            ),
+        };
+      };
+
+
     const appendStyledSegment = (
       parent,
       value,
       accentWords,
       highlightLiturgicalPhrases =
-        true
+        true,
+      highlightCanonLeadingCue =
+        false
     ) => {
-      if (
-        !highlightLiturgicalPhrases
-      ) {
-        appendAccentWords(
-          parent,
-          value,
-          accentWords
-        );
+      const canonCue =
+        highlightCanonLeadingCue
+          ? findCanonLeadingCueRange(
+              value
+            )
+          : null;
 
-        return;
-      }
+      const phraseRanges =
+        highlightLiturgicalPhrases
+          ? findLiturgicalPhraseRanges(
+              value
+            )
+          : [];
 
       const ranges =
-        findLiturgicalPhraseRanges(
-          value
-        );
+        [
+          ...phraseRanges.map(
+            range => ({
+              ...range,
+              className:
+                'liturgical-word',
+            })
+          ),
+
+          ...(canonCue
+            ? [
+                {
+                  start:
+                    canonCue.start,
+
+                  end:
+                    canonCue.end,
+
+                  className:
+                    canonCue.short
+                      ? 'canon-leading-cue canon-short-cue'
+                      : 'canon-leading-cue',
+                },
+              ]
+            : []),
+        ]
+          .sort(
+            (
+              left,
+              right
+            ) =>
+              left.start -
+              right.start
+          )
+          .filter(
+            (
+              range,
+              index,
+              all
+            ) =>
+              index === 0 ||
+              range.start >=
+                all[index - 1].end
+          );
 
       if (!ranges.length) {
         appendAccentWords(
@@ -1338,7 +1502,7 @@ const HTML_TEMPLATE = String.raw`
           parent.appendChild(
             el(
               'span',
-              'liturgical-word',
+              range.className,
               value.slice(
                 range.start,
                 range.end
@@ -1524,6 +1688,16 @@ const HTML_TEMPLATE = String.raw`
               ?.language ===
                 'russian';
 
+          const isCanonChurch =
+            String(
+              itemConfig
+                ?.className ||
+              ''
+            ).includes(
+              'canon-church'
+            ) &&
+            !isRussian;
+
           appendStyledSegment(
             span,
             text.slice(
@@ -1532,7 +1706,9 @@ const HTML_TEMPLATE = String.raw`
             ),
             itemConfig
               ?.accentWords,
-            !isRussian
+            !isRussian,
+            isCanonChurch &&
+              start === 0
           );
 
           fragment.appendChild(
