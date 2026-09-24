@@ -131,10 +131,57 @@ export const BookmarksScreen = ({
       return;
     }
 
+    const position =
+      Math.max(
+        0,
+        Number(
+          item.position ||
+          0
+        )
+      );
+
+    const contentLength =
+      (
+        text.content ||
+        ''
+      ).length;
+
     navigation.navigate(
       'Reader',
       {
-        slug: text.slug,
+        slug:
+          text.slug,
+
+        focusTarget: {
+          id:
+            `bookmark:${item.id}`,
+
+          save_type:
+            'bookmark',
+
+          anchor_type:
+            'text',
+
+          anchor_id:
+            text.id,
+
+          start_offset:
+            Math.min(
+              position,
+              contentLength
+            ),
+
+          end_offset:
+            Math.min(
+              position + 1,
+              contentLength
+            ),
+
+          metadata: {
+            slug:
+              text.slug,
+          },
+        },
       }
     );
   };
