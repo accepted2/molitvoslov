@@ -86,16 +86,60 @@ const SECTION_LABELS = {
 };
 
 
+const normalizeCanonCue =
+  value =>
+    String(
+      value ||
+      ''
+    )
+      .normalize(
+        'NFD'
+      )
+      .replace(
+        /[\u0300-\u036f\u0483-\u0487]/g,
+        ''
+      )
+      .toLowerCase()
+      .replace(
+        /ё/g,
+        'е'
+      )
+      .replace(
+        /\s+/g,
+        ' '
+      )
+      .trim();
+
+
 const getCanonInlineLabel =
-  section => {
+  (
+    section,
+    text
+  ) => {
+    if (!section) {
+      return '';
+    }
+
+    const sectionType =
+      section.section_type;
+
+    // В песнях канона обычные строфы не должны
+    // автоматически подписываться "Тропарь:".
     if (
-      !section ||
+      sectionType ===
+        'troparion' &&
+      section.ode_number
+    ) {
+      return '';
+    }
+
+    if (
       [
         'glory',
         'now',
         'other',
       ].includes(
-        section.section_type
+        sectionType
       )
     ) {
       return '';
@@ -117,23 +161,71 @@ const getCanonInlineLabel =
         heading
       );
 
-    const value =
+    let value =
       (
         heading &&
         !genericSong &&
         heading.length <= 48
       )
         ? heading
-        : (
-            SECTION_LABELS[
-              section.section_type
-            ] ||
-            ''
-          );
+        : '';
 
-    return value
-      ? `${value}:`
-      : '';
+    if (!value) {
+      if (
+        [
+          'irmos',
+          'refrain',
+          'theotokion',
+          'kontakion',
+          'ikos',
+          'sedalen',
+          'svetilen',
+          'prayer',
+        ].includes(
+          sectionType
+        )
+      ) {
+        value =
+          SECTION_LABELS[
+            sectionType
+          ] ||
+          '';
+      }
+    }
+
+    if (!value) {
+      return '';
+    }
+
+    const normalizedValue =
+      normalizeCanonCue(
+        value
+      );
+
+    const normalizedText =
+      normalizeCanonCue(
+        text
+      );
+
+    // Если "Ирмос:", "Припев:", "Иисусу:" и т.п.
+    // уже находятся в самом тексте EPUB, второй раз
+    // подпись перед текстом не добавляем.
+    if (
+      normalizedText ===
+        normalizedValue ||
+      normalizedText.startsWith(
+        normalizedValue +
+        ':'
+      ) ||
+      normalizedText.startsWith(
+        normalizedValue +
+        ' '
+      )
+    ) {
+      return '';
+    }
+
+    return `${value}:`;
   };
 
 
@@ -740,7 +832,8 @@ export const CanonScreen = ({
 
                   inlineLabel:
                     getCanonInlineLabel(
-                      section
+                      section,
+                      church
                     ),
                 })
               );
