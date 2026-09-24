@@ -35,6 +35,7 @@ export const PrayerRuleScreen = ({
 }) => {
   const {
     slug,
+    focusTarget = null,
   } = route.params;
 
   const [
@@ -198,6 +199,9 @@ export const PrayerRuleScreen = ({
       }
       savedProgress={
         savedProgress
+      }
+      focusTarget={
+        focusTarget
       }
       onProgress={
         scheduleSave
