@@ -1,5 +1,3 @@
-import {api as networkApi} from '../api';
-
 const bundledContent = require('../data/offlineContent.json');
 
 const bundleReady =
@@ -135,9 +133,11 @@ const getLocal = rawPath => {
 };
 
 export const contentApi = {
-  get: async (path, config) => {
+  get: async path => {
     if (!bundleReady) {
-      return networkApi.get(path, config);
+      throw new Error(
+        'Офлайн-контент не собран. Запустите export_mobile_content.'
+      );
     }
 
     return response(getLocal(path));
