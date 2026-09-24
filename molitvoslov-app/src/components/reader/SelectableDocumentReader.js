@@ -3204,45 +3204,75 @@ const HTML_TEMPLATE = String.raw`
             target.end_offset !==
               undefined;
 
-          const rect =
-            hasOffsets
-              ? getRangeRect(
-                  root,
-                  Number(
-                    target.start_offset
-                  ),
-                  Number(
-                    target.end_offset
-                  )
-                )
-              : root
-                  .getBoundingClientRect();
+          const wholeTypes = [
+            'prayer',
+            'psalm',
+            'kathisma',
+            'chapter',
+            'section',
+            'akathist',
+            'canon',
+            'text',
+          ];
 
-          if (rect) {
-            const targetY =
-              Math.max(
-                0,
-                window.scrollY +
-                rect.top +
-                (
-                  rect.height /
-                  2
-                ) -
-                (
-                  window.innerHeight /
-                  2
+          const preciseRange =
+            hasOffsets &&
+            !wholeTypes.includes(
+              target.save_type ||
+              target.saveType
+            );
+
+          if (preciseRange) {
+            const rect =
+              getRangeRect(
+                root,
+                Number(
+                  target.start_offset
+                ),
+                Number(
+                  target.end_offset
                 )
               );
 
+            if (rect) {
+              const targetY =
+                Math.max(
+                  0,
+                  window.scrollY +
+                  rect.top +
+                  (
+                    rect.height /
+                    2
+                  ) -
+                  (
+                    window.innerHeight /
+                    2
+                  )
+                );
+
+              window.scrollTo(
+                0,
+                targetY
+              );
+            } else {
+              root.scrollIntoView({
+                block:
+                  'center',
+              });
+            }
+          } else {
+            const rootRect =
+              root.getBoundingClientRect();
+
             window.scrollTo(
               0,
-              targetY
+              Math.max(
+                0,
+                window.scrollY +
+                rootRect.top -
+                18
+              )
             );
-          } else {
-            root.scrollIntoView({
-              block:
-                'center',
-            });
           }
 
           root.classList.add(
