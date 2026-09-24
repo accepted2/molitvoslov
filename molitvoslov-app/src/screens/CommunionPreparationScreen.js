@@ -182,6 +182,17 @@ export const CommunionPreparationScreen = ({
     };
 
 
+  const openPrayerRule =
+    slug => {
+      navigation.navigate(
+        'PrayerRule',
+        {
+          slug,
+        }
+      );
+    };
+
+
   if (loading) {
     return (
       <View
@@ -318,15 +329,79 @@ export const CommunionPreparationScreen = ({
         Последование и молитвы
       </Text>
 
-      <PendingItem
-        title="Последование ко Святому Причащению"
-        subtitle="Добавим после подготовки парсера"
-      />
+      <TouchableOpacity
+        style={styles.item}
+        activeOpacity={0.7}
+        onPress={() =>
+          openPrayerRule(
+            'posledovanie-ko-svyatomu-prichashcheniyu'
+          )
+        }
+      >
+        <View
+          style={styles.iconContainer}
+        >
+          <Text
+            style={styles.icon}
+          >
+            ☦
+          </Text>
+        </View>
 
-      <PendingItem
-        title="Благодарственные молитвы по Святом Причащении"
-        subtitle="Добавим после подготовки парсера"
-      />
+        <View
+          style={styles.textContainer}
+        >
+          <Text
+            style={styles.title}
+            numberOfLines={2}
+          >
+            Последование ко Святому Причащению
+          </Text>
+        </View>
+
+        <Text
+          style={styles.arrow}
+        >
+          ›
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.item}
+        activeOpacity={0.7}
+        onPress={() =>
+          openPrayerRule(
+            'blagodarstvennye-molitvy-po-svyatom-prichashchenii'
+          )
+        }
+      >
+        <View
+          style={styles.iconContainer}
+        >
+          <Text
+            style={styles.icon}
+          >
+            ☦
+          </Text>
+        </View>
+
+        <View
+          style={styles.textContainer}
+        >
+          <Text
+            style={styles.title}
+            numberOfLines={2}
+          >
+            Благодарственные молитвы по Святом Причащении
+          </Text>
+        </View>
+
+        <Text
+          style={styles.arrow}
+        >
+          ›
+        </Text>
+      </TouchableOpacity>
 
 
       {!!error && (
