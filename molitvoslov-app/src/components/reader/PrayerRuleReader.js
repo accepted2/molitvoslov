@@ -880,6 +880,12 @@ const HTML_TEMPLATE = String.raw`
                     ''
                   );
 
+            const displayTitleText =
+              displayTitle.replace(
+                /(\d+)-([яй])/giu,
+                '$1‑$2'
+              );
+
             const churchText =
               text.content ||
               '';
@@ -970,7 +976,7 @@ const HTML_TEMPLATE = String.raw`
                   el(
                     'h2',
                     'prayer-title',
-                    displayTitle
+                    displayTitleText
                   )
                 );
               }
