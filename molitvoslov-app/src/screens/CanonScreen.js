@@ -498,7 +498,7 @@ export const CanonScreen = ({
         let pendingRefrain =
           null;
 
-        displaySections.forEach(
+        activeSections.forEach(
           section => {
             const church =
               section.text
@@ -514,7 +514,7 @@ export const CanonScreen = ({
             const cueOnly =
               section.section_type ===
                 'refrain' &&
-              /^(?:припев|иисусу)\s*:? *$/iu.test(
+              /^(?:припев|иисусу)\s*:?\s*$/iu.test(
                 normalized
               );
 
@@ -1008,7 +1008,7 @@ export const CanonScreen = ({
         };
 
 
-        activeSections.forEach(
+        displaySections.forEach(
           section => {
             const church =
               section.text
