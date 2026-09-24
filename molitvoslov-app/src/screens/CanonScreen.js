@@ -139,6 +139,7 @@ export const CanonScreen = ({
     canonId,
     slug,
     title,
+    focusTarget = null,
   } = route.params;
 
   const [
@@ -306,6 +307,27 @@ export const CanonScreen = ({
       return;
     }
 
+    const targetVariant =
+      Number(
+        focusTarget
+          ?.metadata
+          ?.variant ||
+        0
+      );
+
+    if (
+      targetVariant &&
+      variants.includes(
+        targetVariant
+      )
+    ) {
+      setActiveVariant(
+        targetVariant
+      );
+
+      return;
+    }
+
     const progressSection =
       (
         canon.sections ||
@@ -346,6 +368,7 @@ export const CanonScreen = ({
   }, [
     canon,
     savedProgress,
+    focusTarget,
     variants,
   ]);
 
@@ -1121,6 +1144,9 @@ export const CanonScreen = ({
         }
         savedProgress={
           readerProgress
+        }
+        focusTarget={
+          focusTarget
         }
         onProgress={
           scheduleSave
