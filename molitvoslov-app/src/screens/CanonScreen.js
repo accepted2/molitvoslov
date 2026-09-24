@@ -150,13 +150,8 @@ const getCanonInlineLabel =
     }
 
     if (
-      [
-        'glory',
-        'now',
-        'other',
-      ].includes(
-        sectionType
-      )
+      sectionType ===
+        'other'
     ) {
       return '';
     }
@@ -492,88 +487,104 @@ export const CanonScreen = ({
   const displaySections =
     useMemo(
       () => {
-        const prepared =
-          [];
+        const refrainCandidates =
+          activeSections
+            .filter(
+              section => {
+                if (
+                  section.section_type !==
+                    'refrain'
+                ) {
+                  return false;
+                }
 
-        let pendingRefrain =
-          null;
-
-        activeSections.forEach(
-          section => {
-            const church =
-              section.text
-                ?.content
-                ?.trim() ||
-              '';
-
-            const normalized =
-              normalizeCanonCue(
-                church
-              );
-
-            const cueOnly =
-              section.section_type ===
-                'refrain' &&
-              /^(?:припев|иисусу)\s*:?\s*$/iu.test(
-                normalized
-              );
-
-            if (cueOnly) {
-              const sourceCue =
-                String(
-                  section.heading ||
-                  church ||
-                  'Припев'
-                )
-                  .trim()
-                  .replace(
-                    /[:;]+$/,
-                    ''
+                const heading =
+                  normalizeCanonCue(
+                    section.heading
                   );
 
-              pendingRefrain = {
-                ode:
-                  Number(
-                    section.ode_number ||
-                    0
-                  ),
+                if (
+                  heading !==
+                    'припев'
+                ) {
+                  return false;
+                }
 
-                heading:
-                  sourceCue ||
-                  'Припев',
-              };
+                const signature =
+                  canonTextSignature(
+                    section.text
+                      ?.content
+                  );
 
-              return;
-            }
+                if (
+                  !signature ||
+                  signature.length >
+                    220
+                ) {
+                  return false;
+                }
+
+                return (
+                  signature.includes(
+                    'моли бога'
+                  ) ||
+                  signature.includes(
+                    'помилуй'
+                  ) ||
+                  signature.includes(
+                    'спаси нас'
+                  ) ||
+                  signature.includes(
+                    'спаси мя'
+                  ) ||
+                  signature.includes(
+                    'слава тебе'
+                  ) ||
+                  signature.includes(
+                    'радуйся'
+                  )
+                );
+              }
+            );
+
+        const canonical =
+          refrainCandidates[0];
+
+        const canonicalSignature =
+          canonical
+            ? canonTextSignature(
+                canonical.text
+                  ?.content
+              )
+            : '';
+
+        return activeSections.map(
+          section => {
+            const signature =
+              canonTextSignature(
+                section.text
+                  ?.content
+              );
 
             if (
-              pendingRefrain &&
-              Number(
-                section.ode_number ||
-                0
-              ) ===
-                pendingRefrain.ode
+              canonicalSignature &&
+              section.section_type ===
+                'troparion' &&
+              signature ===
+                canonicalSignature
             ) {
-              prepared.push({
+              return {
                 ...section,
 
                 display_section_type:
                   'refrain',
 
                 display_heading:
-                  pendingRefrain.heading,
-              });
-
-              pendingRefrain =
-                null;
-
-              return;
+                  'Припев',
+              };
             }
 
-            pendingRefrain =
-              null;
-
-            prepared.push({
+            return {
               ...section,
 
               display_section_type:
@@ -582,105 +593,6 @@ export const CanonScreen = ({
               display_heading:
                 section.heading ||
                 '',
-            });
-          }
-        );
-
-
-        const knownRefrains =
-          new Map();
-
-        prepared.forEach(
-          section => {
-            if (
-              section
-                .display_section_type !==
-                'refrain'
-            ) {
-              return;
-            }
-
-            const signature =
-              canonTextSignature(
-                section.text
-                  ?.content
-              );
-
-            if (!signature) {
-              return;
-            }
-
-            const key =
-              `${Number(
-                section.ode_number ||
-                0
-              )}:${signature}`;
-
-            const heading =
-              String(
-                section
-                  .display_heading ||
-                section.heading ||
-                'Припев'
-              )
-                .trim()
-                .replace(
-                  /[:;]+$/,
-                  ''
-                );
-
-            knownRefrains.set(
-              key,
-              heading ||
-                'Припев'
-            );
-          }
-        );
-
-
-        return prepared.map(
-          section => {
-            if (
-              section
-                .display_section_type !==
-                'troparion'
-            ) {
-              return section;
-            }
-
-            const signature =
-              canonTextSignature(
-                section.text
-                  ?.content
-              );
-
-            if (!signature) {
-              return section;
-            }
-
-            const key =
-              `${Number(
-                section.ode_number ||
-                0
-              )}:${signature}`;
-
-            const refrainHeading =
-              knownRefrains.get(
-                key
-              );
-
-            if (!refrainHeading) {
-              return section;
-            }
-
-            return {
-              ...section,
-
-              display_section_type:
-                'refrain',
-
-              display_heading:
-                refrainHeading,
             };
           }
         );
