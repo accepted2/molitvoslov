@@ -25,7 +25,7 @@ export const CategoryMenuScreen = ({ route, navigation }) => {
         });
     };
     const insets = useSafeAreaInsets();
-    const headerHeight = insets.top + 62;
+    const headerHeight = insets.top + 56;
 
     return (
       <AppBackground imageOpacity={0.72}>
