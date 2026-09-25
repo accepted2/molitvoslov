@@ -559,6 +559,7 @@ export const BookScreen = ({
         topInset={
           insets.top
         }
+        showTitle={false}
       />
     </View>
   );

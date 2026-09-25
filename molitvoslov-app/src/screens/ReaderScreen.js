@@ -505,6 +505,7 @@ export const ReaderScreen = ({
         topInset={
           insets.top
         }
+        showTitle={false}
       />
     </View>
   );

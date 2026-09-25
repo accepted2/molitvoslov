@@ -1162,6 +1162,7 @@ export const AkathistScreen = ({
         topInset={
           insets.top
         }
+        showTitle={false}
       />
     </View>
   );

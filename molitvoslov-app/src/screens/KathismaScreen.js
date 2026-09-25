@@ -1418,6 +1418,7 @@ export default function KathismaScreen({
         topInset={
           insets.top
         }
+        showTitle={false}
       />
     </View>
   );

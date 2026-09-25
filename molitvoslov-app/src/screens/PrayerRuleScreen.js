@@ -340,6 +340,7 @@ export const PrayerRuleScreen = ({
         topInset={
           insets.top
         }
+        showTitle={false}
       />
     </View>
   );

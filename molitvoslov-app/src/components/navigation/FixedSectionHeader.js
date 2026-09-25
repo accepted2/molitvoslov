@@ -7,6 +7,7 @@ export const FixedSectionHeader = ({
                                      navigation,
                                      topInset = 0,
                                      showBack = true,
+                                     showTitle = true,
                                    }) => {
   const headerHeight = topInset + 56;
 
@@ -55,24 +56,26 @@ export const FixedSectionHeader = ({
           </Pressable>
         )}
 
-        <View style={[
-          styles.titleWrap,
-          !showBack && styles.titleWrapRoot,
-        ]}>
-          <Text
-            style={styles.title}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {title}
-          </Text>
+        {showTitle && (
+          <View style={[
+            styles.titleWrap,
+            !showBack && styles.titleWrapRoot,
+          ]}>
+            <Text
+              style={styles.title}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {title}
+            </Text>
 
-          <View style={styles.ornament}>
-            <View style={styles.line} />
-            <Text style={styles.mark}>✦</Text>
-            <View style={styles.line} />
+            <View style={styles.ornament}>
+              <View style={styles.line} />
+              <Text style={styles.mark}>✦</Text>
+              <View style={styles.line} />
+            </View>
           </View>
-        </View>
+        )}
       </View>
     </View>
   );
