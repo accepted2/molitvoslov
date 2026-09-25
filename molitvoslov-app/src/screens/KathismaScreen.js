@@ -124,7 +124,7 @@ export default function KathismaScreen({
     useSafeAreaInsets();
 
   const headerHeight =
-    insets.top + 62;
+    insets.top + 56;
 
   const [
     kathisma,
