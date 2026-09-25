@@ -134,8 +134,6 @@ const DecorativeCard = ({
       <View
         style={[
           styles.libraryArtworkWash,
-          dark &&
-          styles.libraryArtworkWashDark,
         ]}
       />
     </ImageBackground>
@@ -143,15 +141,11 @@ const DecorativeCard = ({
     <View
       style={[
         styles.libraryIcon,
-        dark &&
-        styles.libraryIconDark,
       ]}
     >
       <Text
         style={[
           styles.libraryIconText,
-          dark &&
-          styles.libraryIconTextDark,
         ]}
       >
         {symbol}
@@ -162,8 +156,6 @@ const DecorativeCard = ({
       <Text
         style={[
           styles.libraryTitle,
-          dark &&
-          styles.libraryTitleDark,
         ]}
         numberOfLines={2}
       >
@@ -174,8 +166,6 @@ const DecorativeCard = ({
         <Text
           style={[
             styles.librarySubtitle,
-            dark &&
-            styles.librarySubtitleDark,
           ]}
           numberOfLines={2}
         >
@@ -187,15 +177,11 @@ const DecorativeCard = ({
     <View
       style={[
         styles.libraryChevron,
-        dark &&
-        styles.libraryChevronDark,
       ]}
     >
       <Text
         style={[
           styles.libraryChevronText,
-          dark &&
-          styles.libraryChevronTextDark,
         ]}
       >
         ›
@@ -917,9 +903,6 @@ export const MenuScreen = ({
                 </Text>
               )}
 
-              <Text style={styles.quoteGhost}>
-                ИЕРУСАЛИМ  ·  СИНАЙ  ·  ПИСАНИЕ
-              </Text>
             </View>
 
 
@@ -1023,9 +1006,6 @@ export const MenuScreen = ({
                       </Text>
                     </View>
 
-                    <Text style={styles.latestReadingArrow}>
-                      ›
-                    </Text>
                   </Pressable>
 
                   <Pressable
@@ -1082,7 +1062,6 @@ export const MenuScreen = ({
                 subtitle="Завершите день в молитве"
                 symbol="☾"
                 artwork={homeArtwork.evening}
-                dark
                 onPress={() =>
                   navigation.navigate(
                     'PrayerRule',
@@ -1111,7 +1090,6 @@ export const MenuScreen = ({
                 subtitle="Покаянные и просительные каноны"
                 symbol="▤"
                 artwork={homeArtwork.canons}
-                dark
                 onPress={() =>
                   navigation.navigate(
                     'CanonList'
@@ -1223,19 +1201,19 @@ const styles =
     safeArea: {
       flex: 1,
       backgroundColor:
-        '#D2A96F',
+        '#F1DFC0',
     },
 
     screen: {
       flex: 1,
       backgroundColor:
-        '#D2A96F',
+        '#F1DFC0',
     },
 
     content: {
-      paddingBottom: 18,
+      paddingBottom: 16,
       backgroundColor:
-        '#D2A96F',
+        '#F1DFC0',
     },
 
     center: {
@@ -1244,7 +1222,7 @@ const styles =
       justifyContent:
         'center',
       backgroundColor:
-        '#F4E7CC',
+        '#F7ECD8',
     },
 
     loadingText: {
@@ -1256,54 +1234,56 @@ const styles =
     },
 
     hero: {
-      height: 270,
+      height: 232,
       alignItems: 'center',
       justifyContent:
         'center',
       paddingHorizontal: 22,
       overflow: 'hidden',
+      backgroundColor:
+        '#E7C58B',
     },
 
     heroImage: {
-      opacity: 0.96,
+      opacity: 0.78,
     },
 
     heroWash: {
       ...StyleSheet.absoluteFillObject,
       backgroundColor:
-        'rgba(255, 239, 204, 0.18)',
+        'rgba(255, 239, 205, 0.32)',
     },
 
     heroOrnament: {
       alignItems: 'center',
-      marginBottom: 2,
+      marginBottom: 0,
     },
 
     heroCross: {
-      color: '#7D4D22',
-      fontSize: 27,
-      lineHeight: 30,
+      color: '#774923',
+      fontSize: 25,
+      lineHeight: 28,
       textShadowColor:
-        'rgba(255,255,255,0.55)',
-      textShadowRadius: 5,
+        'rgba(255,255,255,0.65)',
+      textShadowRadius: 4,
     },
 
     heroFlourish: {
       marginTop: -3,
-      color: '#8A5A2D',
-      fontSize: 12,
+      color: '#8B5A2D',
+      fontSize: 11,
       letterSpacing: 1,
     },
 
     brandTitle: {
-      color: '#4B2817',
+      color: '#452718',
       fontFamily: 'serif',
-      fontSize: 43,
-      lineHeight: 50,
+      fontSize: 39,
+      lineHeight: 45,
       fontWeight: '700',
       textAlign: 'center',
       textShadowColor:
-        'rgba(255,244,218,0.78)',
+        'rgba(255,245,224,0.9)',
       textShadowOffset: {
         width: 0,
         height: 1,
@@ -1312,48 +1292,49 @@ const styles =
     },
 
     today: {
-      marginTop: 1,
-      color: '#4F3524',
+      marginTop: 0,
+      color: '#513824',
       fontFamily: 'serif',
-      fontSize: 16,
-      lineHeight: 22,
+      fontSize: 15,
+      lineHeight: 20,
       textAlign: 'center',
       textTransform:
         'capitalize',
     },
 
     heroDivider: {
-      marginTop: 8,
+      marginTop: 7,
       color: '#8D5D2E',
-      fontSize: 12,
+      fontSize: 10,
       letterSpacing: 1,
     },
 
     pageBody: {
-      marginTop: -8,
-      paddingHorizontal: 14,
-      paddingBottom: 16,
+      marginTop: -4,
+      paddingHorizontal: 12,
+      paddingBottom: 14,
+      backgroundColor:
+        '#F1DFC0',
     },
 
     quoteCard: {
-      minHeight: 176,
-      padding: 18,
-      borderRadius: 20,
+      minHeight: 166,
+      padding: 17,
+      borderRadius: 18,
       backgroundColor:
-        '#F8EED8',
+        '#FFF4DE',
       borderWidth: 1,
       borderColor:
-        'rgba(122, 78, 36, 0.24)',
+        'rgba(123, 79, 36, 0.18)',
       shadowColor:
-        '#3C2418',
+        '#5A321B',
       shadowOffset: {
         width: 0,
-        height: 5,
+        height: 3,
       },
-      shadowOpacity: 0.14,
-      shadowRadius: 12,
-      elevation: 4,
-      overflow: 'hidden',
+      shadowOpacity: 0.11,
+      shadowRadius: 8,
+      elevation: 3,
     },
 
     quoteHeader: {
@@ -1371,110 +1352,102 @@ const styles =
     },
 
     quoteLeaf: {
-      marginRight: 8,
-      color: '#8A5B2E',
-      fontSize: 22,
+      marginRight: 7,
+      color: '#A16E35',
+      fontSize: 20,
     },
 
     quoteLabel: {
-      color: '#83552E',
+      color: '#7A4F2D',
       fontFamily: 'serif',
-      fontSize: 22,
+      fontSize: 20,
       fontWeight: '700',
     },
 
     widgetButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      height: 34,
-      paddingHorizontal: 11,
+      height: 31,
+      paddingHorizontal: 10,
       borderWidth: 1,
       borderColor:
-        'rgba(126, 78, 34, 0.48)',
-      borderRadius: 17,
+        'rgba(126, 78, 34, 0.32)',
+      borderRadius: 16,
       backgroundColor:
-        'rgba(255,250,238,0.52)',
+        'rgba(255,255,255,0.42)',
     },
 
     widgetIcon: {
-      marginRight: 6,
-      color: '#7E502A',
-      fontSize: 13,
+      marginRight: 5,
+      color: '#85572F',
+      fontSize: 11,
     },
 
     widgetText: {
-      color: '#684229',
+      color: '#6F4930',
       fontFamily: 'serif',
-      fontSize: 13,
+      fontSize: 12,
       fontWeight: '600',
     },
 
     quoteRule: {
       flexDirection: 'row',
       alignItems: 'center',
-      width: 190,
-      marginTop: 10,
-      marginBottom: 12,
+      width: 160,
+      marginTop: 9,
+      marginBottom: 11,
     },
 
     quoteRuleLine: {
       flex: 1,
       height: 1,
       backgroundColor:
-        'rgba(146, 98, 47, 0.42)',
+        'rgba(146, 98, 47, 0.32)',
     },
 
     quoteRuleMark: {
-      marginHorizontal: 8,
+      marginHorizontal: 7,
       color: '#A87943',
-      fontSize: 10,
+      fontSize: 9,
     },
 
     quoteText: {
-      color: '#3D271A',
+      color: '#3E2A1D',
       fontFamily: 'serif',
-      fontSize: 21,
-      lineHeight: 29,
+      fontSize: 20,
+      lineHeight: 27,
       fontWeight: '500',
     },
 
     quoteSource: {
-      marginTop: 12,
-      color: '#876A50',
+      marginTop: 10,
+      color: '#8A6C51',
       fontFamily: 'serif',
-      fontSize: 12,
-      lineHeight: 18,
-      letterSpacing: 1.2,
+      fontSize: 11,
+      lineHeight: 16,
+      letterSpacing: 0.7,
       textTransform:
         'uppercase',
     },
 
-    quoteGhost: {
-      marginTop: 12,
-      color: 'rgba(133, 93, 52, 0.25)',
-      fontSize: 9,
-      letterSpacing: 2,
-      textAlign: 'right',
-    },
-
     readingCard: {
-      marginTop: 12,
-      padding: 14,
+      marginTop: 11,
+      padding: 13,
       borderRadius: 18,
       backgroundColor:
-        '#4B2E1D',
+        '#5A341D',
       borderWidth: 1,
       borderColor:
-        '#B8874A',
+        '#B98545',
       shadowColor:
-        '#2D160B',
+        '#3B1D0F',
       shadowOffset: {
         width: 0,
-        height: 5,
+        height: 4,
       },
-      shadowOpacity: 0.22,
-      shadowRadius: 10,
-      elevation: 4,
+      shadowOpacity: 0.18,
+      shadowRadius: 8,
+      elevation: 3,
     },
 
     readingHeader: {
@@ -1482,7 +1455,7 @@ const styles =
       alignItems: 'center',
       justifyContent:
         'space-between',
-      marginBottom: 12,
+      marginBottom: 10,
     },
 
     readingHeadingWrap: {
@@ -1494,13 +1467,13 @@ const styles =
     readingBook: {
       marginRight: 8,
       color: '#F2D79E',
-      fontSize: 24,
+      fontSize: 21,
     },
 
     readingSectionTitle: {
       color: '#F4DCA8',
       fontFamily: 'serif',
-      fontSize: 21,
+      fontSize: 19,
       fontWeight: '700',
     },
 
@@ -1508,24 +1481,25 @@ const styles =
       flexDirection: 'row',
       alignItems: 'center',
       paddingVertical: 5,
-      paddingLeft: 8,
+      paddingLeft: 10,
     },
 
     openReadingsText: {
-      color: '#F7E7C0',
+      color: '#F5E5BE',
       fontFamily: 'serif',
-      fontSize: 14,
+      fontSize: 13,
     },
 
     openReadingsArrow: {
-      marginLeft: 5,
-      color: '#F7E7C0',
-      fontSize: 22,
-      lineHeight: 22,
+      marginLeft: 4,
+      color: '#F5E5BE',
+      fontSize: 20,
+      lineHeight: 20,
     },
 
     latestReading: {
       position: 'relative',
+      paddingRight: 2,
     },
 
     latestReadingMain: {
@@ -1535,284 +1509,266 @@ const styles =
     },
 
     readingCategoryIcon: {
-      width: 62,
-      height: 72,
+      width: 54,
+      height: 64,
       alignItems: 'center',
       justifyContent:
         'center',
       borderRadius: 12,
       backgroundColor:
-        '#F0D39B',
+        '#F1D99F',
       borderWidth: 1,
       borderColor:
-        '#C29355',
+        '#C89C5E',
     },
 
     readingCategoryGlyph: {
-      color: '#6B3F20',
+      color: '#6D4223',
       fontFamily: 'serif',
-      fontSize: 31,
+      fontSize: 27,
       fontWeight: '700',
     },
 
     latestReadingText: {
       flex: 1,
-      marginLeft: 12,
+      marginLeft: 11,
     },
 
     latestReadingTitle: {
-      color: '#FFF7E7',
+      color: '#FFF8E9',
       fontFamily: 'serif',
-      fontSize: 18,
-      lineHeight: 23,
+      fontSize: 16,
+      lineHeight: 20,
       fontWeight: '700',
     },
 
     latestProgressRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginTop: 9,
+      marginTop: 7,
     },
 
     latestProgressTrack: {
       flex: 1,
-      height: 6,
+      height: 5,
       borderRadius: 3,
       overflow: 'hidden',
       backgroundColor:
-        'rgba(244, 222, 177, 0.22)',
-      borderWidth: 1,
-      borderColor:
-        'rgba(244, 222, 177, 0.22)',
+        'rgba(244, 222, 177, 0.20)',
     },
 
     latestProgressFill: {
       height: '100%',
       borderRadius: 3,
       backgroundColor:
-        '#E8C98B',
+        '#E5C583',
     },
 
     latestProgressPercent: {
-      width: 39,
-      marginLeft: 9,
-      color: '#F2DFC0',
-      fontSize: 12,
+      width: 36,
+      marginLeft: 7,
+      color: '#F0DDC0',
+      fontSize: 11,
       textAlign: 'right',
     },
 
     latestReadingPosition: {
-      marginTop: 7,
-      color: '#E8D8C0',
+      marginTop: 6,
+      color: '#E5D2B7',
       fontFamily: 'serif',
-      fontSize: 12,
-      lineHeight: 17,
-    },
-
-    latestReadingArrow: {
-      marginLeft: 8,
-      color: '#F1D08D',
-      fontSize: 32,
-      lineHeight: 32,
+      fontSize: 11,
+      lineHeight: 15,
     },
 
     latestRemove: {
       position: 'absolute',
-      top: -2,
+      top: 0,
       right: 0,
-      width: 28,
-      height: 28,
+      width: 26,
+      height: 26,
       alignItems: 'center',
       justifyContent:
         'center',
-      borderRadius: 14,
+      borderRadius: 13,
       borderWidth: 1,
       borderColor:
-        'rgba(242, 217, 164, 0.4)',
+        'rgba(242, 217, 164, 0.35)',
       backgroundColor:
-        'rgba(255,255,255,0.06)',
+        'rgba(255,255,255,0.05)',
     },
 
     latestRemoveText: {
       color: '#F2D9A4',
-      fontSize: 19,
-      lineHeight: 21,
+      fontSize: 17,
+      lineHeight: 19,
     },
 
     emptyReading: {
       paddingVertical: 8,
-      paddingHorizontal: 4,
+      paddingHorizontal: 3,
     },
 
     emptyReadingTitle: {
       color: '#FFF0CF',
       fontFamily: 'serif',
-      fontSize: 17,
+      fontSize: 16,
       fontWeight: '700',
     },
 
     emptyReadingText: {
-      marginTop: 6,
+      marginTop: 5,
       color: '#DFCDB2',
-      fontSize: 13,
-      lineHeight: 19,
+      fontSize: 12,
+      lineHeight: 18,
     },
 
     libraryList: {
-      marginTop: 12,
-      gap: 9,
+      marginTop: 11,
+      gap: 8,
     },
 
     libraryCard: {
       position: 'relative',
-      minHeight: 78,
+      minHeight: 72,
       flexDirection: 'row',
       alignItems: 'center',
-      paddingLeft: 12,
-      paddingRight: 9,
-      borderRadius: 17,
+      paddingLeft: 11,
+      paddingRight: 10,
+      borderRadius: 16,
       overflow: 'hidden',
       backgroundColor:
-        '#F9EED7',
+        '#FFF2DB',
       borderWidth: 1,
       borderColor:
-        'rgba(126, 82, 38, 0.22)',
+        'rgba(126, 82, 38, 0.17)',
       shadowColor:
         '#5A321B',
       shadowOffset: {
         width: 0,
-        height: 3,
+        height: 2,
       },
-      shadowOpacity: 0.09,
-      shadowRadius: 7,
-      elevation: 2,
+      shadowOpacity: 0.07,
+      shadowRadius: 5,
+      elevation: 1,
     },
 
     libraryCardDark: {
       backgroundColor:
-        '#332A26',
-      borderColor:
-        'rgba(232, 199, 141, 0.32)',
+        '#FFF2DB',
     },
 
     libraryArtwork: {
-      position: 'absolute',
-      top: 0,
-      right: 0,
-      bottom: 0,
-      width: '45%',
+      ...StyleSheet.absoluteFillObject,
     },
 
     libraryArtworkImage: {
-      borderTopRightRadius: 16,
-      borderBottomRightRadius: 16,
+      borderRadius: 15,
+      opacity: 0.30,
     },
 
     libraryArtworkWash: {
       ...StyleSheet.absoluteFillObject,
       backgroundColor:
-        'rgba(248, 232, 200, 0.16)',
+        'rgba(255, 244, 221, 0.66)',
     },
 
     libraryArtworkWashDark: {
       backgroundColor:
-        'rgba(37, 28, 24, 0.18)',
+        'rgba(255, 244, 221, 0.66)',
     },
 
     libraryIcon: {
       zIndex: 2,
-      width: 52,
-      height: 52,
+      width: 47,
+      height: 47,
       alignItems: 'center',
       justifyContent:
         'center',
-      borderRadius: 26,
+      borderRadius: 24,
       backgroundColor:
-        'rgba(255, 247, 230, 0.88)',
+        'rgba(255, 249, 237, 0.94)',
       borderWidth: 1,
       borderColor:
-        'rgba(169, 113, 53, 0.34)',
+        'rgba(169, 113, 53, 0.30)',
     },
 
     libraryIconDark: {
       backgroundColor:
-        'rgba(255, 238, 204, 0.12)',
-      borderColor:
-        'rgba(238, 204, 150, 0.34)',
+        'rgba(255, 249, 237, 0.94)',
     },
 
     libraryIconText: {
-      color: '#93602F',
+      color: '#94602E',
       fontFamily: 'serif',
-      fontSize: 25,
+      fontSize: 23,
       fontWeight: '600',
     },
 
     libraryIconTextDark: {
-      color: '#F1D49B',
+      color: '#94602E',
     },
 
     libraryText: {
       zIndex: 2,
       flex: 1,
-      marginLeft: 12,
-      paddingRight: 60,
+      marginLeft: 11,
+      paddingRight: 44,
     },
 
     libraryTitle: {
-      color: '#392317',
+      color: '#3B271A',
       fontFamily: 'serif',
-      fontSize: 18,
-      lineHeight: 22,
+      fontSize: 17,
+      lineHeight: 20,
       fontWeight: '700',
     },
 
     libraryTitleDark: {
-      color: '#FFF3D8',
+      color: '#3B271A',
     },
 
     librarySubtitle: {
-      marginTop: 3,
-      color: '#785E48',
+      marginTop: 2,
+      color: '#80664F',
       fontFamily: 'serif',
-      fontSize: 12,
-      lineHeight: 16,
+      fontSize: 11,
+      lineHeight: 14,
     },
 
     librarySubtitleDark: {
-      color: '#DCC8AA',
+      color: '#80664F',
     },
 
     libraryChevron: {
       zIndex: 3,
-      width: 31,
-      height: 31,
+      width: 29,
+      height: 29,
       alignItems: 'center',
       justifyContent:
         'center',
-      borderRadius: 16,
+      borderRadius: 15,
       backgroundColor:
-        'rgba(255, 248, 231, 0.72)',
+        'rgba(255, 250, 240, 0.88)',
     },
 
     libraryChevronDark: {
       backgroundColor:
-        'rgba(255, 240, 207, 0.12)',
+        'rgba(255, 250, 240, 0.88)',
     },
 
     libraryChevronText: {
       marginTop: -2,
-      color: '#8B5C2E',
-      fontSize: 28,
-      lineHeight: 28,
+      color: '#91602F',
+      fontSize: 25,
+      lineHeight: 25,
     },
 
     libraryChevronTextDark: {
-      color: '#F2D59D',
+      color: '#91602F',
     },
 
     extraSection: {
-      marginTop: 18,
+      marginTop: 16,
     },
 
     extraHeader: {
@@ -1825,7 +1781,7 @@ const styles =
       flex: 1,
       color: '#52351F',
       fontFamily: 'serif',
-      fontSize: 21,
+      fontSize: 20,
       fontWeight: '700',
     },
 
@@ -1834,20 +1790,20 @@ const styles =
     },
 
     extraCard: {
-      minHeight: 62,
+      minHeight: 58,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent:
         'space-between',
       marginBottom: 8,
-      paddingVertical: 10,
-      paddingHorizontal: 14,
+      paddingVertical: 9,
+      paddingHorizontal: 13,
       borderRadius: 15,
       backgroundColor:
-        '#F6E7CA',
+        '#F8E9CF',
       borderWidth: 1,
       borderColor:
-        'rgba(126, 82, 38, 0.2)',
+        'rgba(126, 82, 38, 0.17)',
     },
 
     extraCardTitle: {
@@ -1865,7 +1821,7 @@ const styles =
 
     extraArrow: {
       color: '#966535',
-      fontSize: 27,
+      fontSize: 25,
     },
 
     errorCard: {
@@ -1883,6 +1839,6 @@ const styles =
     },
 
     pressed: {
-      opacity: 0.7,
+      opacity: 0.68,
     },
   });
