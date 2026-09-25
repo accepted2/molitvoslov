@@ -18,7 +18,7 @@ export const QuoteOfDayWidget = ({quote, width = 240, height = 100,}) => {
   const widgetHeight = Math.max(Number(height) || 100, 1);
 
   const compact = widgetHeight < 105;
-  const veryCompact = widgetHeight < 75;
+  const veryCompact = widgetHeight < 82;
 
   const horizontalPadding = compact ? 10 : 13;
   const verticalPadding = compact ? 5 : 8;
@@ -81,12 +81,44 @@ export const QuoteOfDayWidget = ({quote, width = 240, height = 100,}) => {
         11;
   const sourceLineHeight = sourceFontSize + 3;
 
-  const sourceHeight = source
-    ? sourceLineHeight + 2
+  const usableSourceWidth = Math.max(
+    widgetWidth -
+    horizontalPadding * 2,
+    44
+  );
+
+  const sourceCharsPerLine = Math.max(
+    Math.floor(
+      usableSourceWidth /
+      Math.max(
+        sourceFontSize * 0.58,
+        1
+      )
+    ),
+    12
+  );
+
+  const sourceLines = source
+    ? Math.min(
+        3,
+        Math.max(
+          1,
+          Math.ceil(
+            source.length /
+            sourceCharsPerLine
+          )
+        )
+      )
+    : 0;
+
+  const sourceHeight = sourceLines
+    ? sourceLines *
+        sourceLineHeight +
+      3
     : 0;
 
   const headerHeight =
-    veryCompact ? 14 :
+    veryCompact ? 0 :
       compact ? 20 :
         26;
 
@@ -137,31 +169,33 @@ export const QuoteOfDayWidget = ({quote, width = 240, height = 100,}) => {
           borderColor: '#7B4F2438',
         }}
       >
-        <FlexWidget
-          style={{
-            width: 'match_parent',
-            flexDirection: 'row',
-            alignItems: 'center',
-          }}
-        >
-          <TextWidget
-            text="❧"
+        {!veryCompact && (
+          <FlexWidget
             style={{
-              marginRight: 6,
-              color: '#A16E35',
-              fontSize: headerFontSize,
+              width: 'match_parent',
+              flexDirection: 'row',
+              alignItems: 'center',
             }}
-          />
+          >
+            <TextWidget
+              text="❧"
+              style={{
+                marginRight: 6,
+                color: '#A16E35',
+                fontSize: headerFontSize,
+              }}
+            />
 
-          <TextWidget
-            text="Цитата дня"
-            style={{
-              color: '#7A4F2D',
-              fontSize: headerFontSize,
-              fontWeight: '700',
-            }}
-          />
-        </FlexWidget>
+            <TextWidget
+              text="Цитата дня"
+              style={{
+                color: '#7A4F2D',
+                fontSize: headerFontSize,
+                fontWeight: '700',
+              }}
+            />
+          </FlexWidget>
+        )}
 
         {!veryCompact && (
         <FlexWidget
