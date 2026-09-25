@@ -443,7 +443,7 @@ const styles =
       borderWidth: 1,
       borderColor: 'rgba(126, 82, 38, 0.18)',
 
-      backgroundColor: 'rgba(255, 247, 232, 0.94)',
+      backgroundColor: 'rgba(248, 233, 207, 0.96)',
 
       paddingVertical: 9,
       paddingLeft: 14,
