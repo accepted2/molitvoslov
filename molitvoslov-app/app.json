@@ -22,7 +22,30 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-status-bar", "expo-sqlite", "expo-secure-store"],
+    "plugins": [
+      "expo-status-bar",
+      "expo-sqlite",
+      "expo-secure-store",
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "QuoteOfDay",
+              "label": "Цитата дня",
+              "description": "Ежедневная цитата из приложения Молитвослов",
+              "minWidth": "120dp",
+              "minHeight": "40dp",
+              "targetCellWidth": 3,
+              "targetCellHeight": 1,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 3600000,
+              "widgetFeatures": "reconfigurable"
+            }
+          ]
+        }
+      ]
+    ],
     "androidNavigationBar": {
       "backgroundColor": "#F7F4EE",
       "barStyle": "dark-content"
