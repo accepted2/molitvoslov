@@ -22,11 +22,7 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-status-bar",
-      "expo-sqlite",
-      "expo-secure-store"
-    ],
+    "plugins": ["expo-status-bar", "expo-sqlite", "expo-secure-store"],
     "androidNavigationBar": {
       "backgroundColor": "#F7F4EE",
       "barStyle": "dark-content"
