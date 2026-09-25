@@ -31,7 +31,7 @@ const CATEGORY_ICONS = {
   akathists: require('../../assets/icons/akathists.png'),
   canons: require('../../assets/icons/canons.png'),
   communion: require('../../assets/icons/communion.png'),
-  psalter: require('../../assets/icons/psalter.png'),
+  psalter: require('../../assets/icons/psalter-v2.png'),
 };
 
 const resolveCategoryIcon = (...values) => {
@@ -173,7 +173,7 @@ const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress})
       {iconSource ? (
         <Image
           source={iconSource}
-          resizeMode="contain"
+          resizeMode="cover"
           style={styles.libraryIconImage}
         />
       ) : (
@@ -692,7 +692,7 @@ export const MenuScreen = ({navigation}) => {
                       {latestReading.iconSource ? (
                         <Image
                           source={latestReading.iconSource}
-                          resizeMode="contain"
+                          resizeMode="cover"
                           style={styles.readingCategoryImage}
                         />
                       ) : (
@@ -1132,12 +1132,12 @@ const styles = StyleSheet.create({
     paddingRight: 32,
   },
   readingCategoryIcon: {
-    width: 56,
-    height: 56,
+    width: 54,
+    height: 54,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 14,
-    backgroundColor: '#F8E9CF',
+    backgroundColor: '#F5E2C4',
     overflow: 'hidden',
   },
   readingCategoryGlyph: {
@@ -1147,9 +1147,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   readingCategoryImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
+    width: 64,
+    height: 64,
   },
   latestReadingText: {
     flex: 1,
@@ -1277,7 +1276,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 14,
-    backgroundColor: '#F8E9CF',
+    backgroundColor: '#F5E2C4',
     overflow: 'hidden',
   },
   libraryRightFade: {
@@ -1291,9 +1290,8 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 16,
   },
   libraryIconImage: {
-    width: 54,
-    height: 54,
-    borderRadius: 14,
+    width: 64,
+    height: 64,
   },
   libraryIconText: {
     color: '#94602E',
