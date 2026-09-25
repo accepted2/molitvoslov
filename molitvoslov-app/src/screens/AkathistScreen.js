@@ -7,7 +7,6 @@ import React, {
 
 import {
   ActivityIndicator,
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -32,8 +31,13 @@ import SelectableDocumentReader
 
 import {
   colors,
-  spacing,
 } from '../theme';
+
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {StatusBar} from 'expo-status-bar';
+
+import {FixedSectionHeader}
+  from '../components/navigation/FixedSectionHeader';
 
 
 const MODE_CHURCH =
@@ -191,52 +195,9 @@ const getSectionTitle =
   };
 
 
-const LanguageButton = ({
-  title,
-  active,
-  disabled,
-  onPress,
-}) => (
-  <Pressable
-    disabled={
-      disabled
-    }
-    onPress={
-      onPress
-    }
-    style={({pressed}) => [
-      styles.languageButton,
-
-      active &&
-        styles
-          .languageButtonActive,
-
-      disabled &&
-        styles
-          .languageButtonDisabled,
-
-      pressed &&
-        !disabled &&
-        styles.pressed,
-    ]}
-  >
-    <Text
-      style={[
-        styles.languageButtonText,
-
-        active &&
-          styles
-            .languageButtonTextActive,
-      ]}
-    >
-      {title}
-    </Text>
-  </Pressable>
-);
-
-
 export const AkathistScreen = ({
   route,
+  navigation,
 }) => {
   const {
     akathistId,
@@ -244,6 +205,12 @@ export const AkathistScreen = ({
     title,
     focusTarget = null,
   } = route.params;
+
+  const insets =
+    useSafeAreaInsets();
+
+  const headerHeight =
+    insets.top + 62;
 
   const [
     akathist,
@@ -1047,6 +1014,36 @@ export const AkathistScreen = ({
               wholeAkathistSaved,
           },
 
+          viewSwitcher: {
+            activeKey:
+              viewMode,
+
+            options: [
+              {
+                key:
+                  MODE_CHURCH,
+                label:
+                  'ЦС',
+              },
+              {
+                key:
+                  MODE_BOTH,
+                label:
+                  'ЦС + Рус.',
+                disabled:
+                  !hasRussianTranslation,
+              },
+              {
+                key:
+                  MODE_RUSSIAN,
+                label:
+                  'Рус.',
+                disabled:
+                  !hasRussianTranslation,
+              },
+            ],
+          },
+
           progressAnchorType:
             'akathist_section',
 
@@ -1123,56 +1120,11 @@ export const AkathistScreen = ({
     <View
       style={styles.container}
     >
-      <View
-        style={
-          styles.languageSwitcher
-        }
-      >
-        <LanguageButton
-          title="ЦС"
-          active={
-            viewMode ===
-            MODE_CHURCH
-          }
-          onPress={() =>
-            setViewMode(
-              MODE_CHURCH
-            )
-          }
-        />
-
-        <LanguageButton
-          title="ЦС + Рус."
-          active={
-            viewMode ===
-            MODE_BOTH
-          }
-          disabled={
-            !hasRussianTranslation
-          }
-          onPress={() =>
-            setViewMode(
-              MODE_BOTH
-            )
-          }
-        />
-
-        <LanguageButton
-          title="Рус."
-          active={
-            viewMode ===
-            MODE_RUSSIAN
-          }
-          disabled={
-            !hasRussianTranslation
-          }
-          onPress={() =>
-            setViewMode(
-              MODE_RUSSIAN
-            )
-          }
-        />
-      </View>
+      <StatusBar
+        style="light"
+        translucent
+        backgroundColor="transparent"
+      />
 
       <SelectableDocumentReader
         documentData={
@@ -1184,17 +1136,36 @@ export const AkathistScreen = ({
         focusTarget={
           focusTarget
         }
+        topContentInset={
+          headerHeight
+        }
         onProgress={
           scheduleSave
         }
         onAction={
           handleAction
         }
+        onViewModeChange={
+          setViewMode
+        }
+      />
+
+      <FixedSectionHeader
+        title={
+          akathist.title ||
+          title ||
+          'Акафист'
+        }
+        navigation={
+          navigation
+        }
+        topInset={
+          insets.top
+        }
       />
     </View>
   );
 };
-
 
 const styles =
   StyleSheet.create({
@@ -1202,63 +1173,6 @@ const styles =
       flex: 1,
       backgroundColor:
         '#FFF4DE',
-    },
-
-    languageSwitcher: {
-      flexDirection:
-        'row',
-      marginHorizontal:
-        spacing.md,
-      marginTop:
-        spacing.sm,
-      marginBottom: 6,
-      padding: 4,
-      borderRadius: 14,
-      borderWidth: 1,
-      borderColor:
-        'rgba(123, 79, 36, 0.18)',
-      backgroundColor:
-        'rgba(161, 110, 53, 0.10)',
-    },
-
-    languageButton: {
-      flex: 1,
-      minHeight: 38,
-      alignItems:
-        'center',
-      justifyContent:
-        'center',
-      borderRadius: 10,
-    },
-
-    languageButtonActive: {
-      backgroundColor:
-        '#7A4F2D',
-      shadowColor:
-        '#5A3822',
-      shadowOffset: {
-        width: 0,
-        height: 1,
-      },
-      shadowOpacity: 0.12,
-      shadowRadius: 2,
-      elevation: 2,
-    },
-
-    languageButtonDisabled: {
-      opacity: 0.32,
-    },
-
-    languageButtonText: {
-      fontSize: 12,
-      fontWeight: '700',
-      color:
-        '#765238',
-    },
-
-    languageButtonTextActive: {
-      color:
-        '#FFF8EA',
     },
 
     pressed: {
