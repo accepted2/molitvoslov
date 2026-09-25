@@ -32,7 +32,6 @@ import SelectableDocumentReader
 
 import {
   colors,
-  radius,
   spacing,
 } from '../theme';
 

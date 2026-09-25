@@ -20,11 +20,6 @@ import {
   saveItem,
 } from '../../services/savedItems';
 
-import {
-  colors,
-} from '../../theme';
-
-
 const scriptSafeJson = value =>
   JSON.stringify(value)
     .replace(/</g, '\\u003c')
