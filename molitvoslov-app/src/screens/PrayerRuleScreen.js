@@ -29,7 +29,6 @@ import PrayerRuleReader
 
 import {
   colors,
-  radius,
   spacing,
 } from '../theme';
 
