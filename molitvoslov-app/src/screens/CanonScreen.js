@@ -1295,6 +1295,7 @@ export const CanonScreen = ({
         topInset={
           insets.top
         }
+        showTitle={false}
       />
     </View>
   );
