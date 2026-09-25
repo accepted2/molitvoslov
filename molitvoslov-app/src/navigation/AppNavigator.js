@@ -67,6 +67,10 @@ import {
 } from '../screens/FavoritesScreen';
 
 import {
+  ContinueReadingScreen,
+} from '../screens/ContinueReadingScreen';
+
+import {
   colors,
 } from '../theme';
 import {
@@ -137,6 +141,17 @@ export const AppNavigator = () => {
           name="Favorites"
           component={
             FavoritesScreen
+          }
+          options={{
+            headerShown:
+              false,
+          }}
+        />
+
+        <Stack.Screen
+          name="ContinueReading"
+          component={
+            ContinueReadingScreen
           }
           options={{
             headerShown:
