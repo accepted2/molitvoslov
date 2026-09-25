@@ -364,6 +364,7 @@ export const MenuScreen = ({navigation}) => {
         id: progress.id,
         type: 'Канон',
         symbol: '☦',
+        iconSource: CATEGORY_ICONS.canons,
         title: canon.title,
         position,
         onPress: () =>
