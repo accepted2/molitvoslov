@@ -178,7 +178,7 @@ export const QuoteOfDayWidget = ({quote, width = 240, height = 100,}) => {
             }}
           >
             <TextWidget
-              text="❧"
+              text="🪶"
               style={{
                 marginRight: 6,
                 color: '#A16E35',
