@@ -378,7 +378,7 @@ const styles =
     container: {
       flex: 1,
       backgroundColor:
-        colors.background,
+        '#FFF4DE',
     },
 
     languageSwitcher: {
@@ -388,44 +388,54 @@ const styles =
         spacing.md,
       marginTop:
         spacing.sm,
-      marginBottom: 4,
+      marginBottom: 6,
       padding: 4,
-      borderRadius:
-        radius.md,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor:
+        'rgba(123, 79, 36, 0.18)',
       backgroundColor:
-        colors.surfaceMuted,
+        'rgba(161, 110, 53, 0.10)',
     },
 
     languageButton: {
       flex: 1,
-      minHeight: 36,
+      minHeight: 38,
       alignItems:
         'center',
       justifyContent:
         'center',
-      borderRadius:
-        radius.sm,
+      borderRadius: 10,
     },
 
     languageButtonActive: {
       backgroundColor:
-        colors.text,
+        '#7A4F2D',
+      shadowColor:
+        '#5A3822',
+      shadowOffset: {
+        width: 0,
+        height: 1,
+      },
+      shadowOpacity: 0.12,
+      shadowRadius: 2,
+      elevation: 2,
     },
 
     languageButtonDisabled: {
-      opacity: 0.35,
+      opacity: 0.32,
     },
 
     languageButtonText: {
       fontSize: 12,
       fontWeight: '700',
       color:
-        colors.textSecondary,
+        '#765238',
     },
 
     languageButtonTextActive: {
       color:
-        colors.white,
+        '#FFF8EA',
     },
 
     pressed: {
@@ -438,13 +448,13 @@ const styles =
       justifyContent:
         'center',
       backgroundColor:
-        colors.background,
+        '#FFF4DE',
     },
 
     loadingText: {
       marginTop: 10,
       color:
-        colors.textSecondary,
+        '#765238',
     },
 
     error: {
