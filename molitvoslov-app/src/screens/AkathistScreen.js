@@ -210,7 +210,7 @@ export const AkathistScreen = ({
     useSafeAreaInsets();
 
   const headerHeight =
-    insets.top + 62;
+    insets.top + 56;
 
   const [
     akathist,

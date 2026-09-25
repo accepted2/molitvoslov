@@ -60,7 +60,7 @@ export const PrayerRuleScreen = ({
     useSafeAreaInsets();
 
   const headerHeight =
-    insets.top + 62;
+    insets.top + 56;
 
   const [
     rule,
