@@ -49,7 +49,7 @@ export const ReaderScreen = ({
     useSafeAreaInsets();
 
   const headerHeight =
-    insets.top + 62;
+    insets.top + 56;
 
   const [
     text,

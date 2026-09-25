@@ -55,7 +55,7 @@ export const BookScreen = ({
     useSafeAreaInsets();
 
   const headerHeight =
-    insets.top + 62;
+    insets.top + 56;
 
   const [
     texts,

@@ -259,7 +259,7 @@ export const CanonScreen = ({
     useSafeAreaInsets();
 
   const headerHeight =
-    insets.top + 62;
+    insets.top + 56;
 
   const [
     canon,

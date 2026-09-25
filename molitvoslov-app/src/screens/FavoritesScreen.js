@@ -36,7 +36,7 @@ export const FavoritesScreen = ({
   ] = useState(null);
 
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 62;
+  const headerHeight = insets.top + 56;
   const loadData =
     useCallback(async () => {
       try {

@@ -25,7 +25,7 @@ import {colors} from '../theme';
 
 export const AkathistListScreen = ({navigation}) => {
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 62;
+  const headerHeight = insets.top + 56;
 
   const [akathists, setAkathists] = useState([]);
   const [savedAkathists, setSavedAkathists] = useState([]);
@@ -234,7 +234,7 @@ export const AkathistListScreen = ({navigation}) => {
           style={[
             styles.fixedHeader,
             {
-              height: headerHeight + 34,
+              height: headerHeight + 26,
             },
           ]}
         >
