@@ -15,7 +15,7 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 export const TextsListScreen = ({ route, navigation }) => {
     const { categorySlug, categoryName } = route.params;
     const insets = useSafeAreaInsets();
-    const headerHeight = insets.top + 62;
+    const headerHeight = insets.top + 56;
     const [texts, setTexts] = useState([]);
     const [loading, setLoading] = useState(true);
 
