@@ -95,6 +95,14 @@ export const BottomNav = ({
             >
               {item.label}
             </Text>
+
+            <View
+              style={[
+                styles.activeDot,
+                !isActive &&
+                styles.activeDotHidden,
+              ]}
+            />
           </Pressable>
         );
       })}
@@ -107,37 +115,47 @@ const styles =
   StyleSheet.create({
     container: {
       flexDirection: 'row',
+      paddingTop: 8,
+      paddingHorizontal: 12,
       backgroundColor:
-        colors.surface,
+        '#F7E9CF',
       borderTopWidth: 1,
       borderTopColor:
-        colors.border,
-      paddingTop: 8,
-      paddingHorizontal: 8,
+        'rgba(125, 81, 39, 0.26)',
+      shadowColor:
+        '#4B2A18',
+      shadowOffset: {
+        width: 0,
+        height: -4,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
+      elevation: 8,
     },
 
     item: {
       flex: 1,
-      minHeight: 52,
+      minHeight: 54,
       alignItems: 'center',
       justifyContent:
         'center',
     },
 
     pressed: {
-      opacity: 0.6,
+      opacity: 0.58,
     },
 
     symbol: {
       fontSize: 23,
       lineHeight: 25,
       color:
-        colors.textMuted,
+        '#8A735F',
+      fontFamily: 'serif',
     },
 
     symbolActive: {
       color:
-        colors.accent,
+        '#9A642F',
     },
 
     label: {
@@ -145,11 +163,25 @@ const styles =
       fontSize: 11,
       fontWeight: '600',
       color:
-        colors.textMuted,
+        '#826C58',
+      fontFamily: 'serif',
     },
 
     labelActive: {
       color:
-        colors.accentDark,
+        '#6D421F',
+    },
+
+    activeDot: {
+      width: 4,
+      height: 4,
+      marginTop: 4,
+      borderRadius: 2,
+      backgroundColor:
+        '#9A642F',
+    },
+
+    activeDotHidden: {
+      opacity: 0,
     },
   });
