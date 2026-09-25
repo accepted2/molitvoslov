@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
@@ -10,6 +10,15 @@ import {BottomNav} from '../components/navigation/BottomNav';
 
 import {contentApi as api} from '../services/contentApi';
 import {deleteReadingProgress, getReadingProgress} from '../services/readingProgress';
+
+const CATEGORY_ICONS = {
+  morning: require('../../assets/icons/morning.png'),
+  evening: require('../../assets/icons/evening.png'),
+  akathists: require('../../assets/icons/akathists.png'),
+  canons: require('../../assets/icons/canons.png'),
+  communion: require('../../assets/icons/communion.png'),
+  psalter: require('../../assets/icons/psalter.png'),
+};
 
 export const ContinueReadingScreen = ({navigation}) => {
   const [categories, setCategories] = useState([]);
@@ -67,6 +76,7 @@ export const ContinueReadingScreen = ({navigation}) => {
         id: progressItem.id,
         type: 'Псалтирь',
         glyph: '¶',
+        iconSource: CATEGORY_ICONS.psalter,
         title: 'Псалтирь',
         position: info?.kathisma_number
           ? info.psalm_number
@@ -99,6 +109,7 @@ export const ContinueReadingScreen = ({navigation}) => {
         id: progressItem.id,
         type: 'Акафист',
         glyph: '☦',
+        iconSource: CATEGORY_ICONS.akathists,
         title: akathist.title,
         position: 'Продолжить акафист',
         percent,
@@ -124,6 +135,7 @@ export const ContinueReadingScreen = ({navigation}) => {
         id: progressItem.id,
         type: 'Канон',
         glyph: '▤',
+        iconSource: CATEGORY_ICONS.canons,
         title: canon.title,
         position,
         percent,
@@ -148,6 +160,15 @@ export const ContinueReadingScreen = ({navigation}) => {
         id: progressItem.id,
         type: 'Молитвенное правило',
         glyph: '✦',
+        iconSource:
+          rule.slug?.includes('utren')
+            ? CATEGORY_ICONS.morning
+            : (
+                rule.slug?.includes('son') ||
+                rule.slug?.includes('vechern')
+              )
+              ? CATEGORY_ICONS.evening
+              : CATEGORY_ICONS.canons,
         title: rule.name,
         position: ruleItem?.text?.title || ruleItem?.title || 'Продолжить правило',
         percent,
@@ -165,6 +186,7 @@ export const ContinueReadingScreen = ({navigation}) => {
         id: progressItem.id,
         type: 'Молитвы',
         glyph: '†',
+        iconSource: CATEGORY_ICONS.canons,
         title: category.name,
         position: 'Продолжить с сохранённого места',
         percent,
@@ -233,7 +255,15 @@ export const ContinueReadingScreen = ({navigation}) => {
                   style={({pressed}) => [styles.cardMain, pressed && styles.pressed]}
                 >
                   <View style={styles.icon}>
-                    <Text style={styles.iconText}>{item.glyph}</Text>
+                    {item.iconSource ? (
+                      <Image
+                        source={item.iconSource}
+                        resizeMode="cover"
+                        style={styles.iconImage}
+                      />
+                    ) : (
+                      <Text style={styles.iconText}>{item.glyph}</Text>
+                    )}
                   </View>
 
                   <View style={styles.cardText}>
@@ -338,6 +368,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#EAD0A0',
     borderWidth: 1,
     borderColor: '#C69255',
+  },
+  iconImage: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
   },
   iconText: {
     color: '#6D4326',
