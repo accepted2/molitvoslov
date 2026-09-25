@@ -332,11 +332,11 @@ const styles =
   StyleSheet.create({
     container: {
       backgroundColor:
-        '#FFFFFF',
+        '#FFF8EA',
       borderRadius: 14,
       borderWidth: 1,
       borderColor:
-        'rgba(120, 90, 55, 0.16)',
+        'rgba(123, 79, 36, 0.18)',
       overflow: 'hidden',
     },
 
@@ -359,20 +359,20 @@ const styles =
     title: {
       fontSize: 17,
       fontWeight: '600',
-      color: '#3A342D',
+      color: '#5A3822',
     },
 
     preview: {
       marginTop: 7,
       fontSize: 14,
       lineHeight: 20,
-      color: '#777169',
+      color: '#765238',
       fontFamily: 'serif',
     },
 
     arrow: {
       fontSize: 22,
-      color: '#8A7356',
+      color: '#A16E35',
     },
 
     content: {
@@ -382,7 +382,7 @@ const styles =
         StyleSheet
           .hairlineWidth,
       borderTopColor:
-        'rgba(120, 90, 55, 0.15)',
+        'rgba(123, 79, 36, 0.16)',
     },
 
     reader: {
@@ -396,7 +396,7 @@ const styles =
       paddingTop: 16,
       fontSize: 17,
       lineHeight: 28,
-      color: '#332F2A',
+      color: '#3E2A1D',
       fontFamily: 'serif',
     },
 
@@ -407,7 +407,7 @@ const styles =
       paddingHorizontal: 22,
       borderRadius: 20,
       backgroundColor:
-        '#EEE6D7',
+        '#EEDCC0',
     },
 
     collapsePressed: {
@@ -417,6 +417,6 @@ const styles =
     collapseText: {
       fontSize: 14,
       fontWeight: '600',
-      color: '#68563F',
+      color: '#7A4F2D',
     },
   });
