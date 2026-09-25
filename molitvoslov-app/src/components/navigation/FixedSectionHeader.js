@@ -8,7 +8,7 @@ export const FixedSectionHeader = ({
                                      topInset = 0,
                                      showBack = true,
                                    }) => {
-  const headerHeight = topInset + 62;
+  const headerHeight = topInset + 56;
 
   return (
     <View
@@ -16,7 +16,7 @@ export const FixedSectionHeader = ({
       style={[
         styles.fixedHeader,
         {
-          height: headerHeight + 34,
+          height: headerHeight + 26,
         },
       ]}
     >
@@ -29,7 +29,7 @@ export const FixedSectionHeader = ({
           'rgba(239, 211, 160, 0.34)',
           'rgba(239, 211, 160, 0)',
         ]}
-        locations={[0, 0.48, 0.66, 0.84, 1]}
+        locations={[0, 0.50, 0.68, 0.86, 1]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     width: 38,
-    height: 48,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
