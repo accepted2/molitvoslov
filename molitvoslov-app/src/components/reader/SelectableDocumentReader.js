@@ -41,7 +41,7 @@ const HTML_TEMPLATE = String.raw`
   <style>
     :root {
       --background: #FFF4DE;
-      --surface: #FFF8EA;
+      --surface: #F8E9CF;
       --text: #3E2A1D;
       --secondary: #765238;
       --muted: #9B806A;
@@ -110,7 +110,7 @@ const HTML_TEMPLATE = String.raw`
     }
 
     .rule-title {
-      margin: 0 0 18px;
+      margin: 0 0 12px;
       text-align: center;
       color: var(--accent-dark);
       font-size: 26px;
@@ -586,7 +586,7 @@ const HTML_TEMPLATE = String.raw`
       justify-content: center;
       border: 1px solid rgba(112, 86, 55, 0.24);
       border-radius: 21px;
-      background: rgba(255, 253, 248, 0.96);
+      background: rgba(248, 233, 207, 0.96);
       color: var(--accent-dark);
       box-shadow: 0 3px 12px rgba(71, 59, 46, 0.18);
       font-family: system-ui, -apple-system, sans-serif;
@@ -826,6 +826,18 @@ const HTML_TEMPLATE = String.raw`
 
 
     const renderDocument = () => {
+      if (
+        DATA.document.title
+      ) {
+        reader.appendChild(
+          el(
+            'h1',
+            'rule-title',
+            DATA.document.title
+          )
+        );
+      }
+
       const viewSwitcher =
         DATA.document.viewSwitcher;
 
@@ -2217,18 +2229,29 @@ appendStyledSegment(
       if (
         !isWordChar(
           text[cursor]
-        ) &&
-        cursor > 0
-      ) {
-        cursor -= 1;
-      }
-
-      if (
-        !isWordChar(
-          text[cursor]
         )
       ) {
-        return null;
+        const nearby =
+          [0, -1, 1, -2, 2]
+            .map(delta =>
+              cursor + delta
+            )
+            .find(index =>
+              index >= 0 &&
+              index < text.length &&
+              isWordChar(
+                text[index]
+              )
+            );
+
+        if (
+          nearby ===
+          undefined
+        ) {
+          return null;
+        }
+
+        cursor = nearby;
       }
 
       let start =
@@ -3054,7 +3077,7 @@ appendStyledSegment(
                   event.pointerId
                 );
             },
-            650
+            480
           );
       },
       {
@@ -3092,7 +3115,7 @@ appendStyledSegment(
             );
 
           if (
-            distance > 9 &&
+            distance > 14 &&
             state.longPressTimer
           ) {
             clearTimeout(
