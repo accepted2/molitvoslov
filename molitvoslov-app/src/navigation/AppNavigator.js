@@ -69,20 +69,20 @@ export const AppNavigator = () => (
         component={CategoryMenuScreen}
         options={{headerShown: false}}
       />
-      <Stack.Screen name="TextsList" component={TextsListScreen} options={{title: 'Молитвы'}} />
-      <Stack.Screen name="Book" component={BookScreen} options={{title: 'Чтение'}} />
-      <Stack.Screen name="Reader" component={ReaderScreen} options={{title: 'Чтение'}} />
+      <Stack.Screen name="TextsList" component={TextsListScreen} options={{headerShown: false}} />
+      <Stack.Screen name="Book" component={BookScreen} options={{headerShown: false}} />
+      <Stack.Screen name="Reader" component={ReaderScreen} options={{headerShown: false}} />
       <Stack.Screen
         name="PrayerRule"
         component={PrayerRuleScreen}
-        options={{title: 'Молитвенное правило'}}
+        options={{headerShown: false}}
       />
       <Stack.Screen
         name="Psalter"
         component={PsalterScreen}
         options={{headerShown: false}}
       />
-      <Stack.Screen name="Kathisma" component={KathismaScreen} options={{title: 'Кафизма'}} />
+      <Stack.Screen name="Kathisma" component={KathismaScreen} options={{headerShown: false}} />
       <Stack.Screen
         name="AkathistList"
         component={AkathistListScreen}
@@ -91,7 +91,7 @@ export const AppNavigator = () => (
       <Stack.Screen
         name="Akathist"
         component={AkathistScreen}
-        options={({route}) => ({title: route.params?.title || 'Акафист'})}
+        options={{headerShown: false}}
       />
       <Stack.Screen
         name="CanonList"
@@ -101,7 +101,7 @@ export const AppNavigator = () => (
       <Stack.Screen
         name="Canon"
         component={CanonScreen}
-        options={({route}) => ({title: route.params?.title || 'Канон'})}
+        options={{headerShown: false}}
       />
       <Stack.Screen
         name="CommunionPreparation"

@@ -55,7 +55,40 @@ const HTML_TEMPLATE = String.raw`
     }
 
     body {
-      padding: 16px 14px 88px;
+      padding: __READER_TOP_PADDING__px 14px 88px;
+    }
+
+    .view-switcher {
+      display: flex;
+      gap: 4px;
+      margin: 0 0 14px;
+      padding: 4px;
+      border: 1px solid rgba(123, 79, 36, 0.18);
+      border-radius: 14px;
+      background: rgba(161, 110, 53, 0.10);
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .view-switcher-button {
+      flex: 1;
+      min-height: 38px;
+      padding: 0 8px;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: #765238;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .view-switcher-button.active {
+      background: #7A4F2D;
+      color: #FFF8EA;
+      box-shadow: 0 1px 3px rgba(90, 56, 34, 0.14);
+    }
+
+    .view-switcher-button:disabled {
+      opacity: 0.32;
     }
 
     .rule-title {
@@ -834,6 +867,71 @@ const HTML_TEMPLATE = String.raw`
 
 
     const renderRule = () => {
+      const viewSwitcher =
+        DATA.viewSwitcher;
+
+      if (
+        viewSwitcher &&
+        Array.isArray(
+          viewSwitcher.options
+        ) &&
+        viewSwitcher.options.length
+      ) {
+        const switcher =
+          el(
+            'div',
+            'view-switcher'
+          );
+
+        viewSwitcher.options.forEach(
+          option => {
+            const active =
+              option.key ===
+              viewSwitcher.activeKey;
+
+            const button =
+              el(
+                'button',
+                active
+                  ? 'view-switcher-button active'
+                  : 'view-switcher-button',
+                option.label
+              );
+
+            button.type =
+              'button';
+
+            button.disabled =
+              !!option.disabled;
+
+            button.addEventListener(
+              'click',
+              () => {
+                if (
+                  !button.disabled &&
+                  !active
+                ) {
+                  post({
+                    type:
+                      'view-mode',
+                    value:
+                      option.key,
+                  });
+                }
+              }
+            );
+
+            switcher.appendChild(
+              button
+            );
+          }
+        );
+
+        reader.appendChild(
+          switcher
+        );
+      }
+
       reader.appendChild(
         el(
           'h1',
@@ -4564,6 +4662,8 @@ const buildHtml = ({
   savedProgress,
   focusTarget,
   viewMode,
+  viewSwitcher,
+  topContentInset,
 }) => {
   const payload = {
     rule,
@@ -4571,6 +4671,10 @@ const buildHtml = ({
     viewMode:
       viewMode ||
       'both',
+
+    viewSwitcher:
+      viewSwitcher ||
+      null,
 
     savedItems:
       savedItems.filter(
@@ -4606,12 +4710,25 @@ const buildHtml = ({
           : null,
   };
 
-  return HTML_TEMPLATE.replace(
-    '__READER_PAYLOAD__',
-    scriptSafeJson(
-      payload
+  return HTML_TEMPLATE
+    .replace(
+      '__READER_TOP_PADDING__',
+      String(
+        Math.max(
+          16,
+          Number(
+            topContentInset ||
+            0
+          ) + 16
+        )
+      )
     )
-  );
+    .replace(
+      '__READER_PAYLOAD__',
+      scriptSafeJson(
+        payload
+      )
+    );
 };
 
 
@@ -4621,8 +4738,11 @@ export default function PrayerRuleReader({
   savedProgress,
   focusTarget,
   viewMode = 'both',
+  viewSwitcher = null,
+  topContentInset = 0,
   onSaved,
   onProgress,
+  onViewModeChange,
 }) {
   const insets =
     useSafeAreaInsets();
@@ -4639,6 +4759,8 @@ export default function PrayerRuleReader({
           savedProgress,
           focusTarget,
           viewMode,
+          viewSwitcher,
+          topContentInset,
         }),
       [
         rule,
@@ -4646,6 +4768,8 @@ export default function PrayerRuleReader({
         savedProgress,
         focusTarget,
         viewMode,
+        viewSwitcher,
+        topContentInset,
       ]
     );
 
@@ -4671,6 +4795,17 @@ export default function PrayerRuleReader({
               .data
           );
       } catch {
+        return;
+      }
+
+      if (
+        message.type ===
+        'view-mode'
+      ) {
+        onViewModeChange?.(
+          message.value
+        );
+
         return;
       }
 

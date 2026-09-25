@@ -71,7 +71,40 @@ const HTML_TEMPLATE = String.raw`
     }
 
     body {
-      padding: 14px 14px 88px;
+      padding: __READER_TOP_PADDING__px 14px 88px;
+    }
+
+    .view-switcher {
+      display: flex;
+      gap: 4px;
+      margin: 0 0 14px;
+      padding: 4px;
+      border: 1px solid rgba(123, 79, 36, 0.18);
+      border-radius: 14px;
+      background: rgba(161, 110, 53, 0.10);
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .view-switcher-button {
+      flex: 1;
+      min-height: 38px;
+      padding: 0 8px;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: #765238;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .view-switcher-button.active {
+      background: #7A4F2D;
+      color: #FFF8EA;
+      box-shadow: 0 1px 3px rgba(90, 56, 34, 0.14);
+    }
+
+    .view-switcher-button:disabled {
+      opacity: 0.32;
     }
 
     .rule-title {
@@ -791,6 +824,71 @@ const HTML_TEMPLATE = String.raw`
 
 
     const renderDocument = () => {
+      const viewSwitcher =
+        DATA.document.viewSwitcher;
+
+      if (
+        viewSwitcher &&
+        Array.isArray(
+          viewSwitcher.options
+        ) &&
+        viewSwitcher.options.length
+      ) {
+        const switcher =
+          el(
+            'div',
+            'view-switcher'
+          );
+
+        viewSwitcher.options.forEach(
+          option => {
+            const active =
+              option.key ===
+              viewSwitcher.activeKey;
+
+            const button =
+              el(
+                'button',
+                active
+                  ? 'view-switcher-button active'
+                  : 'view-switcher-button',
+                option.label
+              );
+
+            button.type =
+              'button';
+
+            button.disabled =
+              !!option.disabled;
+
+            button.addEventListener(
+              'click',
+              () => {
+                if (
+                  !button.disabled &&
+                  !active
+                ) {
+                  post({
+                    type:
+                      'view-mode',
+                    value:
+                      option.key,
+                  });
+                }
+              }
+            );
+
+            switcher.appendChild(
+              button
+            );
+          }
+        );
+
+        reader.appendChild(
+          switcher
+        );
+      }
+
       if (DATA.document.title) {
         reader.appendChild(
           el(
@@ -4631,6 +4729,7 @@ const buildHtml = ({
   documentData,
   savedProgress,
   focusTarget,
+  topContentInset,
 }) => {
   const payload = {
     document:
@@ -4667,21 +4766,36 @@ const buildHtml = ({
           : null,
   };
 
-  return HTML_TEMPLATE.replace(
-    '__READER_PAYLOAD__',
-    scriptSafeJson(
-      payload
+  return HTML_TEMPLATE
+    .replace(
+      '__READER_TOP_PADDING__',
+      String(
+        Math.max(
+          14,
+          Number(
+            topContentInset ||
+            0
+          ) + 14
+        )
+      )
     )
-  );
+    .replace(
+      '__READER_PAYLOAD__',
+      scriptSafeJson(
+        payload
+      )
+    );
 };
 
 export default function SelectableDocumentReader({
   documentData,
   savedProgress,
   focusTarget,
+  topContentInset = 0,
   onSaved,
   onProgress,
   onAction,
+  onViewModeChange,
 }) {
   const insets =
     useSafeAreaInsets();
@@ -4737,11 +4851,13 @@ export default function SelectableDocumentReader({
           documentData,
           savedProgress,
           focusTarget,
+          topContentInset,
         }),
       [
         documentData,
         savedProgress,
         focusTarget,
+        topContentInset,
       ]
     );
 
@@ -4767,6 +4883,17 @@ export default function SelectableDocumentReader({
               .data
           );
       } catch {
+        return;
+      }
+
+      if (
+        message.type ===
+        'view-mode'
+      ) {
+        onViewModeChange?.(
+          message.value
+        );
+
         return;
       }
 
