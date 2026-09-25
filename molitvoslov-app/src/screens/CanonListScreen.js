@@ -79,7 +79,7 @@ export const CanonListScreen = ({navigation,}) =>
       }
     }, []);
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 62;
+  const headerHeight = insets.top + 56;
 
   const loadCanons =
     useCallback(async () => {
