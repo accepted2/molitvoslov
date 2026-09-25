@@ -142,7 +142,7 @@ export const MenuScreen = ({navigation}) => {
   const [error, setError] = useState(null);
 
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 62;
+  const headerHeight = insets.top + 56;
   const loadLibrary = useCallback(async () => {
     try {
       const [
