@@ -10,6 +10,10 @@ import {
   Text,
   View,
 } from 'react-native';
+import {getWidgetInfo, requestPinWidget, requestWidgetUpdate,} from 'react-native-android-widget';
+
+import {getDailyQuote} from '../services/dailyQuote';
+import {QuoteOfDayWidget} from '../widgets/QuoteOfDayWidget';
 import {useFocusEffect} from '@react-navigation/native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
@@ -36,7 +40,6 @@ const PRAYER_RULES = [
     slug: 'molitvy-na-son-griadushchim',
   },
 ];
-
 const formatToday = () => {
   const weekdays = [
     'Воскресенье',
@@ -62,7 +65,6 @@ const formatToday = () => {
     'декабря',
   ];
   const date = new Date();
-
   return `${weekdays[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()} года`;
 };
 
@@ -182,18 +184,48 @@ export const MenuScreen = ({navigation}) => {
     }
   }, []);
 
+  const updateQuoteWidget = useCallback(async () => {
+    try {
+      const quote = getDailyQuote();
+
+      await requestWidgetUpdate({
+        widgetName: 'QuoteOfDay',
+
+        renderWidget: widgetInfo => (
+          <QuoteOfDayWidget
+            quote={quote}
+            width={widgetInfo.width}
+            height={widgetInfo.height}
+          />
+        ),
+      });
+    } catch (err) {
+      console.log('Ошибка обновления виджета цитаты:', err);
+    }
+  }, []);
+
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
-        await Promise.all([loadLibrary(), loadProgress()]);
+
+        await Promise.all([
+          loadLibrary(),
+          loadProgress(),
+        ]);
+
+        await updateQuoteWidget();
       } finally {
         setLoading(false);
       }
     };
 
     load();
-  }, [loadLibrary, loadProgress]);
+  }, [
+    loadLibrary,
+    loadProgress,
+    updateQuoteWidget,
+  ]);
 
   useFocusEffect(
     useCallback(() => {
@@ -234,7 +266,6 @@ export const MenuScreen = ({navigation}) => {
       navigation.navigate('CategoryMenu', {parentCategory: category, subcategories});
       return;
     }
-
     navigation.navigate('Book', {
       categoryId: category.id,
       categorySlug: category.slug,
@@ -388,13 +419,37 @@ export const MenuScreen = ({navigation}) => {
   };
 
   const latestReading = activeReadings[0] || null;
+  const showWidgetInfo = async () => {
+    try {
+      const widgets = await getWidgetInfo('QuoteOfDay');
 
-  const showWidgetInfo = () => {
-    Alert.alert(
-      'Цитата дня на главном экране',
-      'Место под виджет уже предусмотрено. Сам Android-виджет подключим отдельным нативным этапом, ' +
-        'чтобы цитата обновлялась на главном экране телефона без запуска приложения.'
-    );
+      if (widgets.length > 0) {
+        Alert.alert(
+          'Виджет уже добавлен',
+          'На главном экране уже установлен виджет «Цитата дня».'
+        );
+        return;
+      }
+
+      const requested = await requestPinWidget({
+        widgetName: 'QuoteOfDay',
+      });
+
+      if (!requested) {
+        Alert.alert(
+          'Добавление виджета',
+          'Зажмите свободное место на главном экране телефона, ' +
+          'откройте «Виджеты» → «Молитвослов» → «Цитата дня».'
+        );
+      }
+    } catch (err) {
+      console.log('Ошибка добавления виджета:', err);
+
+      Alert.alert(
+        'Не удалось добавить виджет',
+        'Попробуйте добавить его через меню виджетов Android.'
+      );
+    }
   };
 
   if (loading) {

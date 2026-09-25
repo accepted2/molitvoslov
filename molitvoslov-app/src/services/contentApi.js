@@ -1,3 +1,5 @@
+import {getDailyQuote} from './dailyQuote';
+
 const bundledContent = require('../data/offlineContent.json');
 
 const bundleReady =
@@ -41,23 +43,6 @@ const getDateOrdinal = date => {
   return utcDays + 719163;
 };
 
-const getTodayQuote = () => {
-  const quotes = bundledContent.daily_quotes || [];
-  const today = getTodayString();
-
-  const exact = quotes.find(item => item.quote_date === today);
-  if (exact) {
-    return {...exact, date: today};
-  }
-
-  const rotation = quotes.filter(item => !item.quote_date);
-  if (!rotation.length) {
-    throw notFound('daily-quotes/today/');
-  }
-
-  const index = getDateOrdinal(new Date()) % rotation.length;
-  return {...rotation[index], date: today};
-};
 
 const getLocal = rawPath => {
   const path = normalizePath(rawPath);
@@ -126,7 +111,7 @@ const getLocal = rawPath => {
   }
 
   if (path === 'daily-quotes/today/') {
-    return getTodayQuote();
+    return getDailyQuote();
   }
 
   throw notFound(path);
