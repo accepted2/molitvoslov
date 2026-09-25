@@ -29,14 +29,27 @@ import {
   colors,
 } from '../theme';
 
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {StatusBar} from 'expo-status-bar';
+
+import {FixedSectionHeader}
+  from '../components/navigation/FixedSectionHeader';
+
 
 export const ReaderScreen = ({
   route,
+  navigation,
 }) => {
   const {
     slug,
     focusTarget = null,
   } = route.params;
+
+  const insets =
+    useSafeAreaInsets();
+
+  const headerHeight =
+    insets.top + 62;
 
   const [
     text,
@@ -454,26 +467,57 @@ export const ReaderScreen = ({
 
 
   return (
-    <SelectableDocumentReader
-      documentData={
-        documentData
-      }
-      savedProgress={
-        null
-      }
-      focusTarget={
-        focusTarget
-      }
-      onAction={
-        handleAction
-      }
-    />
+    <View
+      style={styles.screen}
+    >
+      <StatusBar
+        style="light"
+        translucent
+        backgroundColor="transparent"
+      />
+
+      <SelectableDocumentReader
+        documentData={
+          documentData
+        }
+        savedProgress={
+          null
+        }
+        focusTarget={
+          focusTarget
+        }
+        topContentInset={
+          headerHeight
+        }
+        onAction={
+          handleAction
+        }
+      />
+
+      <FixedSectionHeader
+        title={
+          text.title ||
+          'Чтение'
+        }
+        navigation={
+          navigation
+        }
+        topInset={
+          insets.top
+        }
+      />
+    </View>
   );
 };
 
-
 const styles =
   StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor:
+        '#FFF4DE',
+    },
+
     center: {
       flex: 1,
       justifyContent:
