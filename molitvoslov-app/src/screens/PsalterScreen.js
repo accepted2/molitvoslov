@@ -712,7 +712,7 @@ const styles =
 
     kathismaCurrent: {
       backgroundColor:
-        '#FAF4E8',
+        '#F5DFC0',
       borderColor:
         colors.borderStrong,
     },
@@ -768,7 +768,7 @@ const styles =
       borderLeftColor:
         colors.border,
       backgroundColor:
-        'rgba(255, 255, 255, 0.24)',
+        'rgba(238, 220, 192, 0.72)',
     },
 
     saveButtonActive: {

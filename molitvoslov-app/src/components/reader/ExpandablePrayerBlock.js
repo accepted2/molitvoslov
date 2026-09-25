@@ -35,6 +35,27 @@ export default function ExpandablePrayerBlock({
     setSavedItems,
   ] = useState([]);
 
+  const normalizedText =
+    useMemo(
+      () =>
+        String(
+          text ||
+          ''
+        )
+          .replace(
+            /\r\n/g,
+            '\n'
+          )
+          .replace(
+            /\n[ \t]*\n+/g,
+            '\n'
+          )
+          .trim(),
+      [
+        text,
+      ]
+    );
+
 
   useEffect(() => {
     if (
@@ -91,7 +112,7 @@ export default function ExpandablePrayerBlock({
       () => {
         if (
           !saveProps ||
-          !text
+          !normalizedText
         ) {
           return null;
         }
@@ -148,7 +169,8 @@ export default function ExpandablePrayerBlock({
                       id:
                         1,
 
-                      text,
+                      text:
+                        normalizedText,
 
                       sourceType:
                         saveProps.sourceType,
@@ -187,13 +209,13 @@ export default function ExpandablePrayerBlock({
       [
         saveProps,
         savedItems,
-        text,
+        normalizedText,
         title,
       ]
     );
 
 
-  if (!text) {
+  if (!normalizedText) {
     return null;
   }
 
@@ -244,7 +266,7 @@ export default function ExpandablePrayerBlock({
           <Text
             style={styles.title}
           >
-            ☦ {title}
+            {title}
           </Text>
 
           {!isOpen && (
@@ -254,7 +276,7 @@ export default function ExpandablePrayerBlock({
               }
               numberOfLines={2}
             >
-              {text}
+              {normalizedText}
             </Text>
           )}
         </View>
@@ -264,8 +286,8 @@ export default function ExpandablePrayerBlock({
         >
           {
             isOpen
-              ? '⌃'
-              : '⌄'
+              ? '−'
+              : '+'
           }
         </Text>
       </Pressable>
@@ -296,7 +318,7 @@ export default function ExpandablePrayerBlock({
                 styles.prayerText
               }
             >
-              {text}
+              {normalizedText}
             </Text>
           )}
 
@@ -332,7 +354,7 @@ const styles =
   StyleSheet.create({
     container: {
       backgroundColor:
-        '#FFF8EA',
+        '#F8E9CF',
       borderRadius: 14,
       borderWidth: 1,
       borderColor:
@@ -371,8 +393,17 @@ const styles =
     },
 
     arrow: {
-      fontSize: 22,
-      color: '#A16E35',
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      borderWidth: 1,
+      borderColor: 'rgba(123, 79, 36, 0.20)',
+      backgroundColor: '#EEDCC0',
+      color: '#7A4F2D',
+      fontSize: 20,
+      lineHeight: 27,
+      textAlign: 'center',
+      fontWeight: '600',
     },
 
     content: {
