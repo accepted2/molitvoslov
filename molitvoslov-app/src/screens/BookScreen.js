@@ -33,9 +33,16 @@ import {
   colors,
 } from '../theme';
 
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {StatusBar} from 'expo-status-bar';
+
+import {FixedSectionHeader}
+  from '../components/navigation/FixedSectionHeader';
+
 
 export const BookScreen = ({
   route,
+  navigation,
 }) => {
   const {
     categoryId,
@@ -43,6 +50,12 @@ export const BookScreen = ({
     categoryName,
     focusTarget = null,
   } = route.params;
+
+  const insets =
+    useSafeAreaInsets();
+
+  const headerHeight =
+    insets.top + 62;
 
   const [
     texts,
@@ -505,29 +518,60 @@ export const BookScreen = ({
 
 
   return (
-    <SelectableDocumentReader
-      documentData={
-        documentData
-      }
-      savedProgress={
-        savedProgress
-      }
-      focusTarget={
-        focusTarget
-      }
-      onProgress={
-        scheduleSave
-      }
-      onAction={
-        handleAction
-      }
-    />
+    <View
+      style={styles.screen}
+    >
+      <StatusBar
+        style="light"
+        translucent
+        backgroundColor="transparent"
+      />
+
+      <SelectableDocumentReader
+        documentData={
+          documentData
+        }
+        savedProgress={
+          savedProgress
+        }
+        focusTarget={
+          focusTarget
+        }
+        topContentInset={
+          headerHeight
+        }
+        onProgress={
+          scheduleSave
+        }
+        onAction={
+          handleAction
+        }
+      />
+
+      <FixedSectionHeader
+        title={
+          categoryName ||
+          'Чтение'
+        }
+        navigation={
+          navigation
+        }
+        topInset={
+          insets.top
+        }
+      />
+    </View>
   );
 };
 
-
 const styles =
   StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor:
+        '#FFF4DE',
+    },
+
     center: {
       flex: 1,
       justifyContent:
