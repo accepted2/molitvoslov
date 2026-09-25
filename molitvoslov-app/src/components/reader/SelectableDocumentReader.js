@@ -16,6 +16,7 @@ import {
 } from 'react-native-webview';
 
 import {
+  deleteSavedItem,
   saveItem,
 } from '../../services/savedItems';
 
@@ -103,6 +104,15 @@ const HTML_TEMPLATE = String.raw`
 
     .rule-item:last-child {
       border-bottom: 0;
+    }
+
+    .rule-item.whole-saved {
+      margin-left: -8px;
+      margin-right: -8px;
+      padding: 10px 8px 14px;
+      border-radius: 12px;
+      background: rgba(138, 90, 56, 0.055);
+      box-shadow: inset 0 0 0 1px rgba(138, 90, 56, 0.16);
     }
 
     .document-action-row {
@@ -493,6 +503,10 @@ const HTML_TEMPLATE = String.raw`
       font-weight: 800;
     }
 
+    #selection-save.delete-mode {
+      background: #8E3B35;
+    }
+
     #selection-save:disabled {
       opacity: 0.4;
     }
@@ -551,6 +565,18 @@ const HTML_TEMPLATE = String.raw`
 
     #reader-scroll-top.visible {
       display: block;
+      animation: reader-control-in 120ms ease-out;
+    }
+
+    @keyframes reader-control-in {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
   </style>
 </head>
@@ -683,6 +709,8 @@ const HTML_TEMPLATE = String.raw`
       lastDragPoint: null,
       restoring: true,
       progressTimer: null,
+      scrollUiTimer: null,
+      lastScrollY: 0,
       savePending: false,
     };
 
@@ -846,6 +874,10 @@ const HTML_TEMPLATE = String.raw`
               false
               ? 'false'
               : 'true';
+
+          wrapper.dataset.actionKey =
+            section.action?.key ||
+            '';
 
           if (
             section.title ||
@@ -1122,6 +1154,31 @@ const HTML_TEMPLATE = String.raw`
           )
           ? state.active
           : null;
+
+
+    const removableSavedRange =
+      active => {
+        if (!active) {
+          return null;
+        }
+
+        return (
+          savedForItem(
+            active.itemId
+          ).find(
+            range =>
+              !range.actionKey &&
+              Number.isFinite(
+                Number(range.id)
+              ) &&
+              active.start >=
+                range.start &&
+              active.end <=
+                range.end
+          ) ||
+          null
+        );
+      };
 
 
     const appendAccentWords = (
@@ -1795,128 +1852,41 @@ appendStyledSegment(
 
     const setSectionWholeHighlight = (
       actionKey,
-      savedItemId,
+      _savedItemId,
       active
     ) => {
-      const section =
-        (
-          DATA.document.sections ||
-          []
-        ).find(
-          item =>
-            item.action?.key ===
-              actionKey &&
-            item.action
-              ?.highlightContent
-        );
-
       const documentWide =
         DATA.document.action?.key ===
-          actionKey &&
+        actionKey &&
         DATA.document.action
           ?.highlightContent;
 
-      if (
-        !section &&
-        !documentWide
-      ) {
+      if (documentWide) {
+        document
+          .querySelectorAll(
+            '.rule-item'
+          )
+          .forEach(
+            wrapper =>
+              wrapper.classList.toggle(
+                'whole-saved',
+                !!active
+              )
+          );
+
         return;
       }
 
-      const targetSections =
-        documentWide
-          ? (
-              DATA.document.sections ||
-              []
-            )
-          : [
-              section,
-            ];
+      const wrapper =
+        document.querySelector(
+          '.rule-item[data-action-key="' +
+          actionKey +
+          '"]'
+        );
 
-      targetSections.forEach(
-        targetSection => {
-          (
-            targetSection.rows ||
-            []
-          ).forEach(
-            row => {
-              (
-                row.blocks ||
-                []
-              ).forEach(
-                block => {
-                  const highlightAnchorType =
-                    section
-                      ?.action
-                      ?.highlightAnchorType ||
-                    DATA.document
-                      .action
-                      ?.highlightAnchorType;
-
-                  if (
-                    highlightAnchorType &&
-                    block.anchorType !==
-                      highlightAnchorType
-                  ) {
-                    return;
-                  }
-
-                  const itemId =
-                    Number(
-                      block.id
-                    );
-
-                  const text =
-                    itemTextMap.get(
-                      itemId
-                    ) ||
-                    '';
-
-                  const current =
-                    savedRanges.get(
-                      itemId
-                    ) ||
-                    [];
-
-                  const withoutWhole =
-                    current.filter(
-                      range =>
-                        range.actionKey !==
-                          actionKey
-                    );
-
-                  if (
-                    active &&
-                    text.length
-                  ) {
-                    withoutWhole.push({
-                      id:
-                        savedItemId ||
-                        actionKey,
-
-                      actionKey,
-
-                      start:
-                        0,
-
-                      end:
-                        text.length,
-                    });
-                  }
-
-                  savedRanges.set(
-                    itemId,
-                    withoutWhole
-                  );
-
-                  renderTextItem(
-                    itemId
-                  );
-                }
-              );
-            }
-          );
-        }
+      wrapper?.classList.toggle(
+        'whole-saved',
+        !!active
       );
     };
 
@@ -2421,6 +2391,21 @@ appendStyledSegment(
             'Выделенный фрагмент';
         }
 
+        const savedRange =
+          removableSavedRange(
+            state.active
+          );
+
+        saveButton.textContent =
+          savedRange
+            ? 'Удалить'
+            : 'Сохранить';
+
+        saveButton.classList.toggle(
+          'delete-mode',
+          !!savedRange
+        );
+
         saveButton.disabled =
           count <= 0 ||
           state.savePending;
@@ -2616,20 +2601,44 @@ appendStyledSegment(
         state.drag.mode ===
         'start'
       ) {
-        start =
-          Math.min(
-            point.offset,
-            end - 1
-          );
+        if (
+          point.offset <
+          end
+        ) {
+          start =
+            point.offset;
+        } else {
+          start =
+            end;
+          end =
+            Math.max(
+              point.offset,
+              start + 1
+            );
+          state.drag.mode =
+            'end';
+        }
       } else if (
         state.drag.mode ===
         'end'
       ) {
-        end =
-          Math.max(
-            point.offset,
-            start + 1
-          );
+        if (
+          point.offset >
+          start
+        ) {
+          end =
+            point.offset;
+        } else {
+          end =
+            start;
+          start =
+            Math.min(
+              point.offset,
+              end - 1
+            );
+          state.drag.mode =
+            'start';
+        }
       } else if (
         point.offset <
         state.active.anchorStart
@@ -3356,6 +3365,34 @@ appendStyledSegment(
           return;
         }
 
+        const savedRange =
+          removableSavedRange(
+            state.active
+          );
+
+        if (savedRange) {
+          state.savePending =
+            true;
+
+          selectionHint.textContent =
+            'Удаляем...';
+
+          updateBar();
+
+          post({
+            type:
+              'remove-selection',
+            itemId:
+              state.active.itemId,
+            savedItemId:
+              Number(
+                savedRange.id
+              ),
+          });
+
+          return;
+        }
+
         const text =
           itemTextMap.get(
             state.active.itemId
@@ -3541,22 +3578,13 @@ appendStyledSegment(
             window.innerHeight
           );
 
-        const hasOverflow =
-          maxScroll > 16;
-
-        scrollTrack.classList.toggle(
-          'visible',
-          hasOverflow
-        );
-
-        scrollTopButton.classList.toggle(
-          'visible',
-          hasOverflow &&
-          window.scrollY >
-            window.innerHeight * 0.65
-        );
-
-        if (!hasOverflow) {
+        if (
+          maxScroll <= 16
+        ) {
+          scrollTrack.classList
+            .remove('visible');
+          scrollTopButton.classList
+            .remove('visible');
           return;
         }
 
@@ -3606,6 +3634,47 @@ appendStyledSegment(
       };
 
 
+    const showScrollControls =
+      direction => {
+        updateScrollControls();
+
+        scrollTrack.classList
+          .add('visible');
+
+        scrollTopButton.classList.toggle(
+          'visible',
+          direction === 'up' &&
+          window.scrollY >
+            window.innerHeight *
+            0.65
+        );
+
+        if (
+          state.scrollUiTimer
+        ) {
+          clearTimeout(
+            state.scrollUiTimer
+          );
+        }
+
+        state.scrollUiTimer =
+          setTimeout(
+            () => {
+              if (scrollDrag) {
+                return;
+              }
+
+              scrollTrack.classList
+                .remove('visible');
+
+              scrollTopButton.classList
+                .remove('visible');
+            },
+            950
+          );
+      };
+
+
     let scrollDrag = null;
 
 
@@ -3642,6 +3711,10 @@ appendStyledSegment(
 
     const beginScrollDrag =
       event => {
+        showScrollControls(
+          'none'
+        );
+
         const metrics =
           getScrollMetrics();
 
@@ -3725,6 +3798,10 @@ appendStyledSegment(
         }
 
         scrollDrag = null;
+
+        showScrollControls(
+          'none'
+        );
       };
 
 
@@ -3839,7 +3916,22 @@ appendStyledSegment(
       'scroll',
       () => {
         updateHandles();
-        updateScrollControls();
+
+        const currentY =
+          window.scrollY;
+
+        const direction =
+          currentY <
+          state.lastScrollY
+            ? 'up'
+            : 'down';
+
+        state.lastScrollY =
+          currentY;
+
+        showScrollControls(
+          direction
+        );
 
         if (
           state.progressTimer
@@ -4438,9 +4530,21 @@ appendStyledSegment(
             )
           );
 
-          renderTextItem(
-            itemId
-          );
+          state.savePending =
+            false;
+
+          if (
+            state.active &&
+            Number(
+              state.active.itemId
+            ) === itemId
+          ) {
+            clearSelection();
+          } else {
+            renderTextItem(
+              itemId
+            );
+          }
         },
 
       updateAction:
@@ -4791,6 +4895,42 @@ export default function SelectableDocumentReader({
         return;
       }
 
+
+      if (
+        message.type ===
+        'remove-selection'
+      ) {
+        try {
+          await deleteSavedItem(
+            Number(
+              message.savedItemId
+            )
+          );
+
+          inject(
+            'window.readerApi && window.readerApi.removeSavedItem(' +
+            Number(
+              message.itemId
+            ) +
+            ',' +
+            Number(
+              message.savedItemId
+            ) +
+            ')'
+          );
+        } catch (deleteError) {
+          console.log(
+            'Ошибка удаления выделения:',
+            deleteError.message
+          );
+
+          inject(
+            "window.readerApi && window.readerApi.saveFailed('Не удалось удалить')"
+          );
+        }
+
+        return;
+      }
 
       if (
         message.type !==
