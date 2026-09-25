@@ -88,6 +88,15 @@ const HTML_TEMPLATE = String.raw`
       border-bottom: 0;
     }
 
+    .rule-item.whole-saved {
+      margin-left: -8px;
+      margin-right: -8px;
+      padding: 10px 8px 14px;
+      border-radius: 12px;
+      background: rgba(138, 90, 56, 0.055);
+      box-shadow: inset 0 0 0 1px rgba(138, 90, 56, 0.16);
+    }
+
     .section-header {
       position: relative;
       display: flex;
@@ -377,6 +386,10 @@ const HTML_TEMPLATE = String.raw`
       font-weight: 800;
     }
 
+    #selection-save.delete-mode {
+      background: #8E3B35;
+    }
+
     #selection-save:disabled {
       opacity: 0.4;
     }
@@ -433,6 +446,18 @@ const HTML_TEMPLATE = String.raw`
 
     #reader-scroll-top.visible {
       display: block;
+      animation: reader-control-in 120ms ease-out;
+    }
+
+    @keyframes reader-control-in {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
   </style>
 </head>
@@ -565,6 +590,8 @@ const HTML_TEMPLATE = String.raw`
       lastDragPoint: null,
       restoring: true,
       progressTimer: null,
+      scrollUiTimer: null,
+      lastScrollY: 0,
       savePending: false,
     };
 
@@ -1292,6 +1319,31 @@ const HTML_TEMPLATE = String.raw`
           : null;
 
 
+    const removableSavedRange =
+      active => {
+        if (!active) {
+          return null;
+        }
+
+        return (
+          savedForItem(
+            active.itemId
+          ).find(
+            range =>
+              !range.actionKey &&
+              Number.isFinite(
+                Number(range.id)
+              ) &&
+              active.start >=
+                range.start &&
+              active.end <=
+                range.end
+          ) ||
+          null
+        );
+      };
+
+
     const findLeadingCueRange =
       value => {
         const source =
@@ -1458,6 +1510,102 @@ const HTML_TEMPLATE = String.raw`
             text
           );
 
+        const liturgicalRanges = [];
+
+        {
+          const normalizedChars = [];
+          const originalIndex = [];
+
+          for (
+            let textIndex = 0;
+            textIndex < text.length;
+            textIndex += 1
+          ) {
+            const decomposed =
+              text[textIndex].normalize(
+                'NFD'
+              );
+
+            for (const char of decomposed) {
+              if (
+                /[\u0300-\u036f\u0483-\u0487]/u.test(
+                  char
+                )
+              ) {
+                continue;
+              }
+
+              normalizedChars.push(
+                char
+              );
+              originalIndex.push(
+                textIndex
+              );
+            }
+          }
+
+          const normalizedText =
+            normalizedChars.join(
+              ''
+            );
+
+          const phrasePattern =
+            /Слава\s+Отцу\s*,?\s*и\s+Сыну\s*,?\s*и\s+Святому\s+Духу\s*[:;,.!?]?|И\s+ныне\s*,?\s*и\s+присно\s*,?\s*и\s+во\s+веки\s+веков\s*[.,;:]?\s*аминь\s*[.!?]?/giu;
+
+          let phraseMatch = null;
+
+          while (
+            (
+              phraseMatch =
+                phrasePattern.exec(
+                  normalizedText
+                )
+            )
+          ) {
+            const normalizedStart =
+              phraseMatch.index;
+
+            const normalizedEnd =
+              phraseMatch.index +
+              phraseMatch[0].length -
+              1;
+
+            const rangeStart =
+              originalIndex[
+                normalizedStart
+              ];
+
+            let rangeEnd =
+              (
+                originalIndex[
+                  normalizedEnd
+                ] ??
+                rangeStart
+              ) + 1;
+
+            while (
+              rangeEnd < text.length &&
+              /[\u0300-\u036f\u0483-\u0487]/u.test(
+                text[rangeEnd]
+              )
+            ) {
+              rangeEnd += 1;
+            }
+
+            if (
+              Number.isFinite(
+                rangeStart
+              ) &&
+              rangeEnd > rangeStart
+            ) {
+              liturgicalRanges.push({
+                start: rangeStart,
+                end: rangeEnd,
+              });
+            }
+          }
+        }
+
         const boundaries =
           new Set([
             0,
@@ -1473,6 +1621,17 @@ const HTML_TEMPLATE = String.raw`
             leadingCue.end
           );
         }
+
+        liturgicalRanges.forEach(
+          range => {
+            boundaries.add(
+              range.start
+            );
+            boundaries.add(
+              range.end
+            );
+          }
+        );
 
         saved.forEach(
           range => {
@@ -1561,6 +1720,15 @@ const HTML_TEMPLATE = String.raw`
             midpoint <
               active.end;
 
+          const isLiturgical =
+            liturgicalRanges.some(
+              range =>
+                midpoint >=
+                  range.start &&
+                midpoint <
+                  range.end
+            );
+
           const span =
             document.createElement(
               'span'
@@ -1575,6 +1743,12 @@ const HTML_TEMPLATE = String.raw`
           if (isActive) {
             span.classList.add(
               'active-highlight'
+            );
+          }
+
+          if (isLiturgical) {
+            span.classList.add(
+              'liturgical-phrase'
             );
           }
 
@@ -1843,6 +2017,35 @@ const HTML_TEMPLATE = String.raw`
               range.end <=
               range.start
             ) {
+              return;
+            }
+
+            const whole =
+              normalizeRange(
+                text,
+                0,
+                text.length
+              );
+
+            if (
+              item.save_type ===
+                'prayer' &&
+              range.start ===
+                whole.start &&
+              range.end ===
+                whole.end
+            ) {
+              document
+                .querySelector(
+                  '.rule-item[data-item-id="' +
+                  itemId +
+                  '"]'
+                )
+                ?.classList
+                .add(
+                  'whole-saved'
+                );
+
               return;
             }
 
@@ -2270,6 +2473,21 @@ const HTML_TEMPLATE = String.raw`
             'Выделенный фрагмент';
         }
 
+        const savedRange =
+          removableSavedRange(
+            state.active
+          );
+
+        saveButton.textContent =
+          savedRange
+            ? 'Удалить'
+            : 'Сохранить';
+
+        saveButton.classList.toggle(
+          'delete-mode',
+          !!savedRange
+        );
+
         saveButton.disabled =
           count <= 0 ||
           state.savePending;
@@ -2465,20 +2683,44 @@ const HTML_TEMPLATE = String.raw`
         state.drag.mode ===
         'start'
       ) {
-        start =
-          Math.min(
-            point.offset,
-            end - 1
-          );
+        if (
+          point.offset <
+          end
+        ) {
+          start =
+            point.offset;
+        } else {
+          start =
+            end;
+          end =
+            Math.max(
+              point.offset,
+              start + 1
+            );
+          state.drag.mode =
+            'end';
+        }
       } else if (
         state.drag.mode ===
         'end'
       ) {
-        end =
-          Math.max(
-            point.offset,
-            start + 1
-          );
+        if (
+          point.offset >
+          start
+        ) {
+          end =
+            point.offset;
+        } else {
+          end =
+            start;
+          start =
+            Math.min(
+              point.offset,
+              end - 1
+            );
+          state.drag.mode =
+            'start';
+        }
       } else if (
         point.offset <
         state.active.anchorStart
@@ -3210,6 +3452,34 @@ const HTML_TEMPLATE = String.raw`
           return;
         }
 
+        const savedRange =
+          removableSavedRange(
+            state.active
+          );
+
+        if (savedRange) {
+          state.savePending =
+            true;
+
+          selectionHint.textContent =
+            'Удаляем...';
+
+          updateBar();
+
+          post({
+            type:
+              'remove-selection',
+            anchorId:
+              state.active.itemId,
+            savedItemId:
+              Number(
+                savedRange.id
+              ),
+          });
+
+          return;
+        }
+
         const text =
           itemTextMap.get(
             state.active.itemId
@@ -3369,22 +3639,13 @@ const HTML_TEMPLATE = String.raw`
             window.innerHeight
           );
 
-        const hasOverflow =
-          maxScroll > 16;
-
-        scrollTrack.classList.toggle(
-          'visible',
-          hasOverflow
-        );
-
-        scrollTopButton.classList.toggle(
-          'visible',
-          hasOverflow &&
-          window.scrollY >
-            window.innerHeight * 0.65
-        );
-
-        if (!hasOverflow) {
+        if (
+          maxScroll <= 16
+        ) {
+          scrollTrack.classList
+            .remove('visible');
+          scrollTopButton.classList
+            .remove('visible');
           return;
         }
 
@@ -3434,6 +3695,47 @@ const HTML_TEMPLATE = String.raw`
       };
 
 
+    const showScrollControls =
+      direction => {
+        updateScrollControls();
+
+        scrollTrack.classList
+          .add('visible');
+
+        scrollTopButton.classList.toggle(
+          'visible',
+          direction === 'up' &&
+          window.scrollY >
+            window.innerHeight *
+            0.65
+        );
+
+        if (
+          state.scrollUiTimer
+        ) {
+          clearTimeout(
+            state.scrollUiTimer
+          );
+        }
+
+        state.scrollUiTimer =
+          setTimeout(
+            () => {
+              if (scrollDrag) {
+                return;
+              }
+
+              scrollTrack.classList
+                .remove('visible');
+
+              scrollTopButton.classList
+                .remove('visible');
+            },
+            950
+          );
+      };
+
+
     let scrollDrag = null;
 
 
@@ -3470,6 +3772,10 @@ const HTML_TEMPLATE = String.raw`
 
     const beginScrollDrag =
       event => {
+        showScrollControls(
+          'none'
+        );
+
         const metrics =
           getScrollMetrics();
 
@@ -3553,6 +3859,10 @@ const HTML_TEMPLATE = String.raw`
         }
 
         scrollDrag = null;
+
+        showScrollControls(
+          'none'
+        );
       };
 
 
@@ -3667,7 +3977,22 @@ const HTML_TEMPLATE = String.raw`
       'scroll',
       () => {
         updateHandles();
-        updateScrollControls();
+
+        const currentY =
+          window.scrollY;
+
+        const direction =
+          currentY <
+          state.lastScrollY
+            ? 'up'
+            : 'down';
+
+        state.lastScrollY =
+          currentY;
+
+        showScrollControls(
+          direction
+        );
 
         if (
           state.progressTimer
@@ -4160,6 +4485,18 @@ const HTML_TEMPLATE = String.raw`
             'active',
             !!active
           );
+
+          document
+            .querySelector(
+              '.rule-item[data-item-id="' +
+              itemId +
+              '"]'
+            )
+            ?.classList
+            .toggle(
+              'whole-saved',
+              !!active
+            );
         },
 
       saveFailed:
@@ -4480,6 +4817,42 @@ export default function PrayerRuleReader({
         return;
       }
 
+
+      if (
+        message.type ===
+        'remove-selection'
+      ) {
+        try {
+          await deleteSavedItem(
+            Number(
+              message.savedItemId
+            )
+          );
+
+          inject(
+            'window.readerApi && window.readerApi.removeSavedItem(' +
+            Number(
+              message.anchorId
+            ) +
+            ',' +
+            Number(
+              message.savedItemId
+            ) +
+            ')'
+          );
+        } catch (deleteError) {
+          console.log(
+            'Ошибка удаления выделения:',
+            deleteError.message
+          );
+
+          inject(
+            "window.readerApi && window.readerApi.saveFailed('Не удалось удалить')"
+          );
+        }
+
+        return;
+      }
 
       if (
         message.type !==
