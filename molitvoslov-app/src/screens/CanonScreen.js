@@ -7,7 +7,6 @@ import React, {
 
 import {
   ActivityIndicator,
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -32,8 +31,13 @@ import SelectableDocumentReader
 
 import {
   colors,
-  spacing,
 } from '../theme';
+
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {StatusBar} from 'expo-status-bar';
+
+import {FixedSectionHeader}
+  from '../components/navigation/FixedSectionHeader';
 
 
 const MODE_CHURCH =
@@ -240,53 +244,9 @@ const getCanonInlineLabel =
 
 
 
-const SwitchButton = ({
-  title,
-  active,
-  disabled,
-  onPress,
-}) => (
-  <Pressable
-    disabled={
-      disabled
-    }
-    onPress={
-      onPress
-    }
-    style={({pressed}) => [
-      styles.switchButton,
-
-      active &&
-        styles
-          .switchButtonActive,
-
-      disabled &&
-        styles
-          .switchButtonDisabled,
-
-      pressed &&
-        !disabled &&
-        styles.pressed,
-    ]}
-  >
-    <Text
-      style={[
-        styles.switchButtonText,
-
-        active &&
-          styles
-            .switchButtonTextActive,
-      ]}
-      numberOfLines={1}
-    >
-      {title}
-    </Text>
-  </Pressable>
-);
-
-
 export const CanonScreen = ({
   route,
+  navigation,
 }) => {
   const {
     canonId,
@@ -294,6 +254,12 @@ export const CanonScreen = ({
     title,
     focusTarget = null,
   } = route.params;
+
+  const insets =
+    useSafeAreaInsets();
+
+  const headerHeight =
+    insets.top + 62;
 
   const [
     canon,
@@ -1143,6 +1109,36 @@ export const CanonScreen = ({
               true,
           },
 
+          viewSwitcher: {
+            activeKey:
+              viewMode,
+
+            options: [
+              {
+                key:
+                  MODE_CHURCH,
+                label:
+                  'ЦС',
+              },
+              {
+                key:
+                  MODE_BOTH,
+                label:
+                  'ЦС + Рус.',
+                disabled:
+                  !hasRussianTranslation,
+              },
+              {
+                key:
+                  MODE_RUSSIAN,
+                label:
+                  'Рус.',
+                disabled:
+                  !hasRussianTranslation,
+              },
+            ],
+          },
+
           progressAnchorType:
             'canon_section',
 
@@ -1255,60 +1251,13 @@ export const CanonScreen = ({
 
   return (
     <View
-      style={
-        styles.container
-      }
+      style={styles.container}
     >
-      <View
-        style={
-          styles.languageSwitcher
-        }
-      >
-        <SwitchButton
-          title="ЦС"
-          active={
-            viewMode ===
-            MODE_CHURCH
-          }
-          onPress={() =>
-            setViewMode(
-              MODE_CHURCH
-            )
-          }
-        />
-
-        <SwitchButton
-          title="ЦС + Рус."
-          active={
-            viewMode ===
-            MODE_BOTH
-          }
-          disabled={
-            !hasRussianTranslation
-          }
-          onPress={() =>
-            setViewMode(
-              MODE_BOTH
-            )
-          }
-        />
-
-        <SwitchButton
-          title="Рус."
-          active={
-            viewMode ===
-            MODE_RUSSIAN
-          }
-          disabled={
-            !hasRussianTranslation
-          }
-          onPress={() =>
-            setViewMode(
-              MODE_RUSSIAN
-            )
-          }
-        />
-      </View>
+      <StatusBar
+        style="light"
+        translucent
+        backgroundColor="transparent"
+      />
 
       <SelectableDocumentReader
         documentData={
@@ -1320,17 +1269,36 @@ export const CanonScreen = ({
         focusTarget={
           focusTarget
         }
+        topContentInset={
+          headerHeight
+        }
         onProgress={
           scheduleSave
         }
         onAction={
           handleAction
         }
+        onViewModeChange={
+          setViewMode
+        }
+      />
+
+      <FixedSectionHeader
+        title={
+          canon.title ||
+          title ||
+          'Канон'
+        }
+        navigation={
+          navigation
+        }
+        topInset={
+          insets.top
+        }
       />
     </View>
   );
 };
-
 
 const styles =
   StyleSheet.create({
@@ -1338,63 +1306,6 @@ const styles =
       flex: 1,
       backgroundColor:
         '#FFF4DE',
-    },
-
-    languageSwitcher: {
-      flexDirection:
-        'row',
-      marginHorizontal:
-        spacing.md,
-      marginTop:
-        spacing.sm,
-      marginBottom: 6,
-      padding: 4,
-      borderRadius: 14,
-      borderWidth: 1,
-      borderColor:
-        'rgba(123, 79, 36, 0.18)',
-      backgroundColor:
-        'rgba(161, 110, 53, 0.10)',
-    },
-
-    switchButton: {
-      flex: 1,
-      minHeight: 38,
-      alignItems:
-        'center',
-      justifyContent:
-        'center',
-      borderRadius: 10,
-    },
-
-    switchButtonActive: {
-      backgroundColor:
-        '#7A4F2D',
-      shadowColor:
-        '#5A3822',
-      shadowOffset: {
-        width: 0,
-        height: 1,
-      },
-      shadowOpacity: 0.12,
-      shadowRadius: 2,
-      elevation: 2,
-    },
-
-    switchButtonDisabled: {
-      opacity: 0.32,
-    },
-
-    switchButtonText: {
-      fontSize: 12,
-      fontWeight: '700',
-      color:
-        '#765238',
-    },
-
-    switchButtonTextActive: {
-      color:
-        '#FFF8EA',
     },
 
     pressed: {
