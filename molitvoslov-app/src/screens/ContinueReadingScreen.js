@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
@@ -7,17 +7,18 @@ import {StatusBar} from 'expo-status-bar';
 import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
+import {CategoryIcon} from '../components/icons/CategoryIcon';
 
 import {contentApi as api} from '../services/contentApi';
 import {deleteReadingProgress, getReadingProgress} from '../services/readingProgress';
 
 const CATEGORY_ICONS = {
-  morning: require('../../assets/icons/morning.png'),
-  evening: require('../../assets/icons/evening.png'),
-  akathists: require('../../assets/icons/akathists.png'),
-  canons: require('../../assets/icons/canons.png'),
-  communion: require('../../assets/icons/communion.png'),
-  psalter: require('../../assets/icons/psalter-v2.png'),
+  morning: 'morning',
+  evening: 'evening',
+  akathists: 'akathists',
+  canons: 'canons',
+  communion: 'communion',
+  psalter: 'psalter',
 };
 
 const resolveCategoryIcon = (...values) => {
@@ -306,11 +307,7 @@ export const ContinueReadingScreen = ({navigation}) => {
                 >
                   <View style={styles.icon}>
                     {item.iconSource ? (
-                      <Image
-                        source={item.iconSource}
-                        resizeMode="cover"
-                        style={styles.iconImage}
-                      />
+                      <CategoryIcon type={item.iconSource} />
                     ) : (
                       <Text style={styles.iconText}>{item.glyph}</Text>
                     )}
@@ -417,10 +414,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: '#F5E2C4',
     overflow: 'hidden',
-  },
-  iconImage: {
-    width: 64,
-    height: 64,
   },
   iconText: {
     color: '#6D4326',
