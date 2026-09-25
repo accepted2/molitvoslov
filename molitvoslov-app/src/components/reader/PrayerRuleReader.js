@@ -4442,9 +4442,21 @@ const HTML_TEMPLATE = String.raw`
             )
           );
 
-          renderTextItem(
-            itemId
-          );
+          state.savePending =
+            false;
+
+          if (
+            state.active &&
+            Number(
+              state.active.itemId
+            ) === itemId
+          ) {
+            clearSelection();
+          } else {
+            renderTextItem(
+              itemId
+            );
+          }
         },
 
       updatePrayerAction:

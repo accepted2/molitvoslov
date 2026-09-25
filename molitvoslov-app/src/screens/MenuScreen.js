@@ -113,21 +113,27 @@ const HomeCard = ({
       styles.pressed,
     ]}
   >
-    <Text
-      style={styles.cardTitle}
-      numberOfLines={2}
-    >
-      {title}
-    </Text>
-
-    {!!subtitle && (
+    <View style={styles.homeCardText}>
       <Text
-        style={styles.cardSubtitle}
+        style={styles.cardTitle}
         numberOfLines={2}
       >
-        {subtitle}
+        {title}
       </Text>
-    )}
+
+      {!!subtitle && (
+        <Text
+          style={styles.cardSubtitle}
+          numberOfLines={2}
+        >
+          {subtitle}
+        </Text>
+      )}
+    </View>
+
+    <Text style={styles.homeCardArrow}>
+      ›
+    </Text>
   </Pressable>
 );
 
@@ -963,7 +969,7 @@ export const MenuScreen = ({
                               styles.finishText
                             }
                           >
-                            ✓
+                            ×
                           </Text>
                         </Pressable>
                       </View>
@@ -1006,7 +1012,7 @@ export const MenuScreen = ({
                   styles.finishHint
                 }
               >
-                ✓ — отметить чтение завершённым
+                × — убрать из списка «Продолжить чтение»
               </Text>
             )}
           </View>
@@ -1432,11 +1438,11 @@ const styles =
       textAlign: 'center',
       textAlignVertical:
         'center',
-      fontSize: 14,
-      lineHeight: 25,
-      fontWeight: '800',
+      fontSize: 19,
+      lineHeight: 24,
+      fontWeight: '500',
       color:
-        colors.accentDark,
+        colors.textMuted,
       backgroundColor:
         colors.surface,
       overflow: 'hidden',
@@ -1494,19 +1500,19 @@ const styles =
     },
 
     grid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent:
-        'space-between',
-      rowGap:
-        spacing.md,
+      gap:
+        spacing.sm,
     },
 
     homeCard: {
-      width: '48.5%',
-      minHeight: 84,
-      padding:
+      width: '100%',
+      minHeight: 68,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical:
         spacing.sm,
+      paddingHorizontal:
+        spacing.md,
       borderRadius:
         radius.lg,
       backgroundColor:
@@ -1518,11 +1524,26 @@ const styles =
         colors.shadow,
       shadowOffset: {
         width: 0,
-        height: 3,
+        height: 2,
       },
-      shadowOpacity: 0.05,
-      shadowRadius: 7,
+      shadowOpacity: 0.04,
+      shadowRadius: 5,
       elevation: 1,
+    },
+
+    homeCardText: {
+      flex: 1,
+      paddingRight:
+        spacing.sm,
+    },
+
+    homeCardArrow: {
+      marginLeft:
+        spacing.sm,
+      fontSize: 28,
+      lineHeight: 30,
+      color:
+        colors.accent,
     },
 
     homeCardFeatured: {
