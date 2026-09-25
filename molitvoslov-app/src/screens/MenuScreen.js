@@ -3,6 +3,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   ImageBackground,
   Pressable,
   ScrollView,
@@ -23,6 +24,15 @@ import {homeArtwork} from '../data/homeArtwork';
 import {contentApi as api} from '../services/contentApi';
 import {deleteReadingProgress, getReadingProgress} from '../services/readingProgress';
 import {colors, spacing} from '../theme';
+
+const CATEGORY_ICONS = {
+  morning: require('../../assets/icons/morning.png'),
+  evening: require('../../assets/icons/evening.png'),
+  akathists: require('../../assets/icons/akathists.png'),
+  canons: require('../../assets/icons/canons.png'),
+  communion: require('../../assets/icons/communion.png'),
+  psalter: require('../../assets/icons/psalter.png'),
+};
 
 const PRAYER_RULES = [
   {
@@ -68,7 +78,7 @@ const formatToday = () => {
   return `${weekdays[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()} года`;
 };
 
-const DecorativeCard = ({title, subtitle, symbol, artwork, onPress}) => (
+const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress}) => (
   <Pressable
     onPress={onPress}
     style={({pressed}) => [styles.libraryCard, pressed && styles.pressed]}
@@ -110,7 +120,15 @@ const DecorativeCard = ({title, subtitle, symbol, artwork, onPress}) => (
     />
 
     <View style={styles.libraryIcon}>
-      <Text style={styles.libraryIconText}>{symbol}</Text>
+      {iconSource ? (
+        <Image
+          source={iconSource}
+          resizeMode="cover"
+          style={styles.libraryIconImage}
+        />
+      ) : (
+        <Text style={styles.libraryIconText}>{symbol}</Text>
+      )}
     </View>
 
     <View style={styles.libraryText}>
@@ -281,6 +299,7 @@ export const MenuScreen = ({navigation}) => {
         id: progress.id,
         type: 'Псалтирь',
         symbol: '¶',
+        iconSource: CATEGORY_ICONS.psalter,
         title: 'Псалтирь',
         position: info
           ? info.verse_number
@@ -311,6 +330,7 @@ export const MenuScreen = ({navigation}) => {
         id: progress.id,
         type: 'Акафист',
         symbol: '☦',
+        iconSource: CATEGORY_ICONS.akathists,
         title: akathist.title,
         position,
         onPress: () =>
@@ -368,6 +388,15 @@ export const MenuScreen = ({navigation}) => {
         id: progress.id,
         type: 'Молитвенное правило',
         symbol: '✦',
+        iconSource:
+          rule.slug?.includes('utren')
+            ? CATEGORY_ICONS.morning
+            : (
+                rule.slug?.includes('son') ||
+                rule.slug?.includes('vechern')
+              )
+              ? CATEGORY_ICONS.evening
+              : CATEGORY_ICONS.canons,
         title: rule.name,
         position,
         onPress: () => navigation.navigate('PrayerRule', {slug: rule.slug}),
@@ -382,6 +411,7 @@ export const MenuScreen = ({navigation}) => {
         id: progress.id,
         type: 'Молитвы',
         symbol: '†',
+        iconSource: CATEGORY_ICONS.canons,
         title: category.name,
         position: 'Продолжить с сохранённого места',
         onPress: () =>
@@ -608,15 +638,17 @@ export const MenuScreen = ({navigation}) => {
                     ]}
                   >
                     <View style={styles.readingCategoryIcon}>
-                      <Text style={styles.readingCategoryGlyph}>
-                        {latestReading.type === 'Псалтирь'
-                          ? '¶'
-                          : latestReading.type === 'Канон'
-                            ? '▤'
-                            : latestReading.type === 'Акафист'
-                              ? '☦'
-                              : '✦'}
-                      </Text>
+                      {latestReading.iconSource ? (
+                        <Image
+                          source={latestReading.iconSource}
+                          resizeMode="cover"
+                          style={styles.readingCategoryImage}
+                        />
+                      ) : (
+                        <Text style={styles.readingCategoryGlyph}>
+                          {latestReading.symbol || '✦'}
+                        </Text>
+                      )}
                     </View>
 
                     <View style={styles.latestReadingText}>
@@ -670,6 +702,7 @@ export const MenuScreen = ({navigation}) => {
                 title="Утренние молитвы"
                 subtitle="Начните день с Богом"
                 symbol="☀"
+                iconSource={CATEGORY_ICONS.morning}
                 artwork={homeArtwork.morning}
                 onPress={() => navigation.navigate('PrayerRule', {slug: 'molitvy-utrennie'})}
               />
@@ -677,6 +710,7 @@ export const MenuScreen = ({navigation}) => {
                 title="Вечерние молитвы"
                 subtitle="Завершите день в молитве"
                 symbol="☾"
+                iconSource={CATEGORY_ICONS.evening}
                 artwork={homeArtwork.evening}
                 onPress={() =>
                   navigation.navigate('PrayerRule', {slug: 'molitvy-na-son-griadushchim'})
@@ -686,6 +720,7 @@ export const MenuScreen = ({navigation}) => {
                 title="Акафисты"
                 subtitle="Молитвенные хвалебные песнопения"
                 symbol="☦"
+                iconSource={CATEGORY_ICONS.akathists}
                 artwork={homeArtwork.akathists}
                 onPress={() => navigation.navigate('AkathistList')}
               />
@@ -693,6 +728,7 @@ export const MenuScreen = ({navigation}) => {
                 title="Каноны"
                 subtitle="Покаянные и просительные каноны"
                 symbol="▤"
+                iconSource={CATEGORY_ICONS.canons}
                 artwork={homeArtwork.canons}
                 onPress={() => navigation.navigate('CanonList')}
               />
@@ -700,6 +736,7 @@ export const MenuScreen = ({navigation}) => {
                 title="Ко Святому Причащению"
                 subtitle="Подготовительные молитвы"
                 symbol="♱"
+                iconSource={CATEGORY_ICONS.communion}
                 artwork={homeArtwork.communion}
                 onPress={() => navigation.navigate('CommunionPreparation')}
               />
@@ -707,6 +744,7 @@ export const MenuScreen = ({navigation}) => {
                 title="Псалтирь"
                 subtitle="Книга молитвы и духовного утешения"
                 symbol="¶"
+                iconSource={CATEGORY_ICONS.psalter}
                 artwork={homeArtwork.psalter}
                 onPress={() => navigation.navigate('Psalter')}
               />
@@ -1058,6 +1096,11 @@ const styles = StyleSheet.create({
     fontSize: 27,
     fontWeight: '700',
   },
+  readingCategoryImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+  },
   latestReadingText: {
     flex: 1,
     marginLeft: 11,
@@ -1201,6 +1244,11 @@ const styles = StyleSheet.create({
     zIndex: 2,
     borderTopRightRadius: 16,
     borderBottomRightRadius: 16,
+  },
+  libraryIconImage: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
   },
   libraryIconText: {
     color: '#94602E',
