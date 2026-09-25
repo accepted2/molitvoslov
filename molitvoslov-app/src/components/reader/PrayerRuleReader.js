@@ -26,17 +26,17 @@ const HTML_TEMPLATE = String.raw`
   <style>
     :root {
       --background: #FFF4DE;
-      --surface: #FFFDF8;
-      --text: #302C27;
-      --secondary: #756E65;
-      --muted: #978E83;
-      --accent: #8A5A38;
-      --accent-dark: #684229;
-      --liturgical: #A33A32;
-      --border: rgba(112, 86, 55, 0.18);
-      --saved: rgba(206, 162, 72, 0.24);
-      --active: rgba(126, 175, 223, 0.36);
-      --handle: #4A8CCB;
+      --surface: #FFF8EA;
+      --text: #3E2A1D;
+      --secondary: #765238;
+      --muted: #9B806A;
+      --accent: #A16E35;
+      --accent-dark: #7A4F2D;
+      --liturgical: #9B3B32;
+      --border: rgba(123, 79, 36, 0.20);
+      --saved: rgba(194, 145, 73, 0.24);
+      --active: rgba(161, 110, 53, 0.22);
+      --handle: #9A693A;
     }
 
     * {
@@ -64,6 +64,7 @@ const HTML_TEMPLATE = String.raw`
     .rule-title {
       margin: 0 0 18px;
       text-align: center;
+      color: var(--accent-dark);
       font-size: 26px;
       line-height: 32px;
       font-weight: 700;
@@ -93,8 +94,8 @@ const HTML_TEMPLATE = String.raw`
       margin-right: -8px;
       padding: 10px 8px 14px;
       border-radius: 12px;
-      background: rgba(138, 90, 56, 0.055);
-      box-shadow: inset 0 0 0 1px rgba(138, 90, 56, 0.16);
+      background: rgba(161, 110, 53, 0.075);
+      box-shadow: inset 0 0 0 1px rgba(123, 79, 36, 0.18);
     }
 
     .section-header {
@@ -138,22 +139,22 @@ const HTML_TEMPLATE = String.raw`
 
     .favorite-action.active {
       color: var(--accent-dark);
-      background: #F3EBDD;
-      border-color: rgba(138, 90, 56, 0.30);
+      background: #F1DFC2;
+      border-color: rgba(123, 79, 36, 0.28);
     }
 
     .prayer-title,
     .section-title {
       margin: 0 0 10px;
       text-align: center;
-      color: var(--secondary);
+      color: var(--accent-dark);
       font-size: 19px;
       line-height: 25px;
       font-weight: 700;
     }
 
     .section-title {
-      color: var(--text);
+      color: #5A3822;
       font-size: 20px;
     }
 
@@ -263,11 +264,11 @@ const HTML_TEMPLATE = String.raw`
     }
 
     .saved-highlight.active-highlight {
-      background: rgba(126, 175, 223, 0.44);
+      background: rgba(161, 110, 53, 0.30);
     }
 
     .reader-text.focus-target {
-      outline: 2px solid rgba(138, 90, 56, 0.42);
+      outline: 2px solid rgba(161, 110, 53, 0.45);
       outline-offset: 5px;
       border-radius: 5px;
     }
