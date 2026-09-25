@@ -2,30 +2,41 @@
   "expo": {
     "name": "Молитвослов",
     "slug": "molitvoslov",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/branding/app-icon.png",
     "userInterfaceStyle": "light",
+
     "ios": {
       "supportsTablet": true
     },
+
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#F7ECD8",
+        "foregroundImage": "./assets/branding/app-icon.png"
       },
       "package": "com.accepted2.molitvoslov",
-      "versionCode": 5
+      "versionCode": 6
     },
+
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/branding/app-icon.png"
     },
+
     "plugins": [
       "expo-status-bar",
       "expo-sqlite",
       "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F7ECD8",
+          "image": "./assets/branding/splash-logo.png",
+          "imageWidth": 280,
+          "resizeMode": "contain"
+        }
+      ],
       [
         "react-native-android-widget",
         {
@@ -46,11 +57,14 @@
         }
       ]
     ],
+
     "androidNavigationBar": {
-      "backgroundColor": "#F7F4EE",
+      "backgroundColor": "#FFF4DE",
       "barStyle": "dark-content"
     },
+
     "owner": "anatoliy1",
+
     "extra": {
       "eas": {
         "projectId": "327409b7-2571-426f-96e7-58350b2e689c"
