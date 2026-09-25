@@ -15,6 +15,8 @@ import {
   WebView,
 } from 'react-native-webview';
 
+import {LinearGradient} from 'expo-linear-gradient';
+
 import {
   deleteSavedItem,
   saveItem,
@@ -886,16 +888,6 @@ const HTML_TEMPLATE = String.raw`
 
         reader.appendChild(
           switcher
-        );
-      }
-
-      if (DATA.document.title) {
-        reader.appendChild(
-          el(
-            'h1',
-            'rule-title',
-            DATA.document.title
-          )
         );
       }
 
@@ -5193,6 +5185,30 @@ export default function SelectableDocumentReader({
           styles.webView
         }
       />
+
+      <LinearGradient
+        pointerEvents="none"
+        colors={[
+          'rgba(255, 244, 222, 0)',
+          'rgba(255, 244, 222, 0.72)',
+          '#FFF4DE',
+        ]}
+        locations={[
+          0,
+          0.58,
+          1,
+        ]}
+        style={[
+          styles.bottomFade,
+          {
+            bottom:
+              Math.max(
+                insets.bottom,
+                8
+              ),
+          },
+        ]}
+      />
     </View>
   );
 }
@@ -5210,5 +5226,12 @@ const styles =
       flex: 1,
       backgroundColor:
         '#FFF4DE',
+    },
+
+    bottomFade: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      height: 28,
     },
   });
