@@ -10,19 +10,6 @@ export const FixedSectionHeader = ({
                                    }) => {
   const headerHeight = topInset + 62;
 
-  {showBack && (
-    <Pressable
-      hitSlop={12}
-      onPress={() => navigation.goBack()}
-      style={({pressed}) => [
-        styles.backButton,
-        pressed && styles.pressed,
-      ]}
-    >
-      <Text style={styles.backArrow}>‹</Text>
-    </Pressable>
-  )}
-
   return (
     <View
       pointerEvents="box-none"
@@ -55,22 +42,30 @@ export const FixedSectionHeader = ({
           },
         ]}
       >
-        <Pressable
-          hitSlop={12}
-          onPress={() => navigation.goBack()}
-          style={({pressed}) => [
-            styles.backButton,
-            pressed && styles.pressed,
-          ]}
-        >
-          <Text style={styles.backArrow}>‹</Text>
-        </Pressable>
+        {showBack && (
+          <Pressable
+            hitSlop={12}
+            onPress={() => navigation.goBack()}
+            style={({pressed}) => [
+              styles.backButton,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={styles.backArrow}>‹</Text>
+          </Pressable>
+        )}
 
         <View style={[
           styles.titleWrap,
           !showBack && styles.titleWrapRoot,
         ]}>
-          <Text style={styles.title}>{title}</Text>
+          <Text
+            style={styles.title}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {title}
+          </Text>
 
           <View style={styles.ornament}>
             <View style={styles.line} />
@@ -116,8 +111,11 @@ const styles = StyleSheet.create({
   },
 
   titleWrap: {
+    flex: 1,
+    minWidth: 0,
     marginLeft: 2,
     paddingTop: 1,
+    paddingRight: 10,
   },
 
   title: {
