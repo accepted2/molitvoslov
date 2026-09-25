@@ -8,9 +8,14 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import {contentApi as api} from '../services/contentApi';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {StatusBar} from 'expo-status-bar';
+import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 
 export const TextsListScreen = ({ route, navigation }) => {
     const { categorySlug, categoryName } = route.params;
+    const insets = useSafeAreaInsets();
+    const headerHeight = insets.top + 62;
     const [texts, setTexts] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -47,10 +52,19 @@ export const TextsListScreen = ({ route, navigation }) => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.headerTitle}>{categoryName}</Text>
+            <StatusBar
+                style="light"
+                translucent
+                backgroundColor="transparent"
+            />
+
             <FlatList
                 data={texts}
                 keyExtractor={(item) => item.id.toString()}
+                contentContainerStyle={{
+                    paddingTop: headerHeight + 18,
+                    paddingBottom: 24 + insets.bottom,
+                }}
                 renderItem={({ item, index }) => (
                     <TouchableOpacity
                         style={styles.item}
@@ -69,6 +83,12 @@ export const TextsListScreen = ({ route, navigation }) => {
                     </TouchableOpacity>
                 )}
             />
+
+            <FixedSectionHeader
+                title={categoryName || 'Молитвы'}
+                navigation={navigation}
+                topInset={insets.top}
+            />
         </View>
     );
 };
@@ -76,27 +96,21 @@ export const TextsListScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: '#FFF4DE',
     },
     center: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    headerTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: '#2c3e50',
-        padding: 16,
-        textAlign: 'center',
+        backgroundColor: '#FFF4DE',
     },
     item: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 16,
-        backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        backgroundColor: '#FFF8EA',
+        borderWidth: 1,
+        borderColor: 'rgba(123, 79, 36, 0.16)',
         marginHorizontal: 10,
         marginVertical: 4,
         borderRadius: 10,
@@ -114,15 +128,15 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#2c3e50',
+        color: '#3E2A1D',
     },
     preview: {
         fontSize: 13,
-        color: '#7f8c8d',
+        color: '#765238',
         marginTop: 3,
     },
     arrow: {
         fontSize: 20,
-        color: '#bdc3c7',
+        color: '#A16E35',
     },
 });
