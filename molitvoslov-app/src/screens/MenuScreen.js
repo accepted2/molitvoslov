@@ -1210,19 +1210,19 @@ const styles =
     safeArea: {
       flex: 1,
       backgroundColor:
-        '#F1DFC0',
+        '#B78A58',
     },
 
     screen: {
       flex: 1,
       backgroundColor:
-        '#F1DFC0',
+        '#B78A58',
     },
 
     content: {
       paddingBottom: 16,
       backgroundColor:
-        '#F1DFC0',
+        '#B78A58',
     },
 
     center: {
@@ -1243,24 +1243,24 @@ const styles =
     },
 
     hero: {
-      height: 232,
+      height: 248,
       alignItems: 'center',
       justifyContent:
         'center',
       paddingHorizontal: 22,
       overflow: 'hidden',
       backgroundColor:
-        '#E7C58B',
+        '#D7A767',
     },
 
     heroImage: {
-      opacity: 0.78,
+      opacity: 0.98,
     },
 
     heroWash: {
       ...StyleSheet.absoluteFillObject,
       backgroundColor:
-        'rgba(255, 239, 205, 0.32)',
+        'rgba(255, 232, 188, 0.08)',
     },
 
     heroOrnament: {
@@ -1319,31 +1319,82 @@ const styles =
     },
 
     pageBody: {
-      marginTop: -4,
+      marginTop: -5,
       paddingHorizontal: 12,
       paddingBottom: 14,
       backgroundColor:
-        '#F1DFC0',
+        '#B78A58',
     },
 
     quoteCard: {
-      minHeight: 166,
+      position: 'relative',
+      minHeight: 174,
       padding: 17,
       borderRadius: 18,
+      overflow: 'hidden',
       backgroundColor:
         '#FFF4DE',
       borderWidth: 1,
       borderColor:
-        'rgba(123, 79, 36, 0.18)',
+        'rgba(123, 79, 36, 0.24)',
       shadowColor:
-        '#5A321B',
+        '#4A2817',
       shadowOffset: {
         width: 0,
-        height: 3,
+        height: 4,
       },
-      shadowOpacity: 0.11,
-      shadowRadius: 8,
+      shadowOpacity: 0.14,
+      shadowRadius: 9,
       elevation: 3,
+    },
+
+    quoteArtwork: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: '49%',
+    },
+
+    quoteArtworkImage: {
+      opacity: 0.62,
+      borderTopRightRadius: 17,
+      borderBottomRightRadius: 17,
+    },
+
+    quoteFade1: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: '49%',
+      width: '10%',
+      backgroundColor:
+        'rgba(255, 244, 222, 0.96)',
+    },
+
+    quoteFade2: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: '58%',
+      width: '10%',
+      backgroundColor:
+        'rgba(255, 244, 222, 0.65)',
+    },
+
+    quoteFade3: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: '67%',
+      width: '10%',
+      backgroundColor:
+        'rgba(255, 244, 222, 0.28)',
+    },
+
+    quoteContent: {
+      position: 'relative',
+      zIndex: 2,
     },
 
     quoteHeader: {
@@ -1421,6 +1472,7 @@ const styles =
     },
 
     quoteText: {
+      maxWidth: '78%',
       color: '#3E2A1D',
       fontFamily: 'serif',
       fontSize: 20,
@@ -1638,142 +1690,177 @@ const styles =
 
     libraryCard: {
       position: 'relative',
-      minHeight: 72,
+      minHeight: 80,
       flexDirection: 'row',
       alignItems: 'center',
       paddingLeft: 11,
       paddingRight: 10,
-      borderRadius: 16,
+      borderRadius: 17,
       overflow: 'hidden',
       backgroundColor:
         '#FFF2DB',
       borderWidth: 1,
       borderColor:
-        'rgba(126, 82, 38, 0.17)',
+        'rgba(112, 67, 30, 0.25)',
       shadowColor:
-        '#5A321B',
+        '#4A2817',
       shadowOffset: {
         width: 0,
-        height: 2,
+        height: 3,
       },
-      shadowOpacity: 0.07,
-      shadowRadius: 5,
-      elevation: 1,
+      shadowOpacity: 0.12,
+      shadowRadius: 7,
+      elevation: 2,
     },
 
-    libraryCardDark: {
+    libraryArtwork: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: '57%',
+    },
+
+    libraryArtworkImage: {
+      opacity: 1,
+      borderTopRightRadius: 16,
+      borderBottomRightRadius: 16,
+    },
+
+    libraryFade1: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: '41%',
+      width: '8%',
       backgroundColor:
         '#FFF2DB',
     },
 
-    libraryArtwork: {
-      ...StyleSheet.absoluteFillObject,
-    },
-
-    libraryArtworkImage: {
-      borderRadius: 15,
-      opacity: 0.30,
-    },
-
-    libraryArtworkWash: {
-      ...StyleSheet.absoluteFillObject,
+    libraryFade2: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: '48%',
+      width: '8%',
       backgroundColor:
-        'rgba(255, 244, 221, 0.66)',
+        'rgba(255, 242, 219, 0.84)',
     },
 
-    libraryArtworkWashDark: {
+    libraryFade3: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: '55%',
+      width: '8%',
       backgroundColor:
-        'rgba(255, 244, 221, 0.66)',
+        'rgba(255, 242, 219, 0.60)',
+    },
+
+    libraryFade4: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: '62%',
+      width: '8%',
+      backgroundColor:
+        'rgba(255, 242, 219, 0.34)',
+    },
+
+    libraryFade5: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: '69%',
+      width: '8%',
+      backgroundColor:
+        'rgba(255, 242, 219, 0.14)',
     },
 
     libraryIcon: {
-      zIndex: 2,
-      width: 47,
-      height: 47,
+      zIndex: 3,
+      width: 50,
+      height: 50,
       alignItems: 'center',
       justifyContent:
         'center',
-      borderRadius: 24,
+      borderRadius: 25,
       backgroundColor:
-        'rgba(255, 249, 237, 0.94)',
+        'rgba(255, 249, 237, 0.96)',
       borderWidth: 1,
       borderColor:
-        'rgba(169, 113, 53, 0.30)',
-    },
-
-    libraryIconDark: {
-      backgroundColor:
-        'rgba(255, 249, 237, 0.94)',
+        'rgba(169, 113, 53, 0.34)',
+      shadowColor:
+        '#7A4B28',
+      shadowOffset: {
+        width: 0,
+        height: 1,
+      },
+      shadowOpacity: 0.06,
+      shadowRadius: 2,
     },
 
     libraryIconText: {
       color: '#94602E',
       fontFamily: 'serif',
-      fontSize: 23,
+      fontSize: 24,
       fontWeight: '600',
     },
 
-    libraryIconTextDark: {
-      color: '#94602E',
-    },
-
     libraryText: {
-      zIndex: 2,
+      zIndex: 3,
       flex: 1,
+      maxWidth: '61%',
       marginLeft: 11,
-      paddingRight: 44,
+      paddingRight: 4,
     },
 
     libraryTitle: {
-      color: '#3B271A',
+      color: '#332116',
       fontFamily: 'serif',
       fontSize: 17,
       lineHeight: 20,
       fontWeight: '700',
-    },
-
-    libraryTitleDark: {
-      color: '#3B271A',
+      textShadowColor:
+        'rgba(255,248,232,0.9)',
+      textShadowRadius: 2,
     },
 
     librarySubtitle: {
-      marginTop: 2,
-      color: '#80664F',
+      marginTop: 3,
+      color: '#745A45',
       fontFamily: 'serif',
       fontSize: 11,
       lineHeight: 14,
     },
 
-    librarySubtitleDark: {
-      color: '#80664F',
-    },
-
     libraryChevron: {
-      zIndex: 3,
-      width: 29,
-      height: 29,
+      position: 'absolute',
+      right: 9,
+      zIndex: 4,
+      width: 30,
+      height: 30,
       alignItems: 'center',
       justifyContent:
         'center',
       borderRadius: 15,
       backgroundColor:
-        'rgba(255, 250, 240, 0.88)',
-    },
-
-    libraryChevronDark: {
-      backgroundColor:
-        'rgba(255, 250, 240, 0.88)',
+        'rgba(255, 249, 236, 0.90)',
+      shadowColor:
+        '#5A321B',
+      shadowOffset: {
+        width: 0,
+        height: 1,
+      },
+      shadowOpacity: 0.08,
+      shadowRadius: 2,
     },
 
     libraryChevronText: {
       marginTop: -2,
-      color: '#91602F',
-      fontSize: 25,
-      lineHeight: 25,
-    },
-
-    libraryChevronTextDark: {
-      color: '#91602F',
+      color: '#875627',
+      fontSize: 27,
+      lineHeight: 27,
     },
 
     extraSection: {
