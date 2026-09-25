@@ -20,6 +20,56 @@ const CATEGORY_ICONS = {
   psalter: require('../../assets/icons/psalter.png'),
 };
 
+const resolveCategoryIcon = (...values) => {
+  const value = values
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  if (value.includes('utren') || value.includes('утрен')) {
+    return CATEGORY_ICONS.morning;
+  }
+
+  if (
+    value.includes('vechern') ||
+    value.includes('son-griad') ||
+    value.includes('вечер') ||
+    value.includes('сон грядущ')
+  ) {
+    return CATEGORY_ICONS.evening;
+  }
+
+  if (
+    value.includes('akath') ||
+    value.includes('akaf') ||
+    value.includes('акаф')
+  ) {
+    return CATEGORY_ICONS.akathists;
+  }
+
+  if (
+    value.includes('canon') ||
+    value.includes('kanon') ||
+    value.includes('канон')
+  ) {
+    return CATEGORY_ICONS.canons;
+  }
+
+  if (
+    value.includes('communion') ||
+    value.includes('prichast') ||
+    value.includes('причащ')
+  ) {
+    return CATEGORY_ICONS.communion;
+  }
+
+  if (value.includes('psalt') || value.includes('псалт')) {
+    return CATEGORY_ICONS.psalter;
+  }
+
+  return null;
+};
+
 export const ContinueReadingScreen = ({navigation}) => {
   const [categories, setCategories] = useState([]);
   const [akathists, setAkathists] = useState([]);
@@ -161,14 +211,10 @@ export const ContinueReadingScreen = ({navigation}) => {
         type: 'Молитвенное правило',
         glyph: '✦',
         iconSource:
-          rule.slug?.includes('utren')
-            ? CATEGORY_ICONS.morning
-            : (
-                rule.slug?.includes('son') ||
-                rule.slug?.includes('vechern')
-              )
-              ? CATEGORY_ICONS.evening
-              : CATEGORY_ICONS.canons,
+          resolveCategoryIcon(
+            rule.slug,
+            rule.name
+          ) || CATEGORY_ICONS.canons,
         title: rule.name,
         position: ruleItem?.text?.title || ruleItem?.title || 'Продолжить правило',
         percent,
@@ -186,7 +232,11 @@ export const ContinueReadingScreen = ({navigation}) => {
         id: progressItem.id,
         type: 'Молитвы',
         glyph: '†',
-        iconSource: CATEGORY_ICONS.canons,
+        iconSource:
+          resolveCategoryIcon(
+            category.slug,
+            category.name
+          ) || CATEGORY_ICONS.canons,
         title: category.name,
         position: 'Продолжить с сохранённого места',
         percent,
@@ -258,7 +308,7 @@ export const ContinueReadingScreen = ({navigation}) => {
                     {item.iconSource ? (
                       <Image
                         source={item.iconSource}
-                        resizeMode="cover"
+                        resizeMode="contain"
                         style={styles.iconImage}
                       />
                     ) : (
@@ -360,19 +410,18 @@ const styles = StyleSheet.create({
     paddingRight: 26,
   },
   icon: {
-    width: 54,
-    height: 62,
+    width: 56,
+    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 13,
-    backgroundColor: '#EAD0A0',
-    borderWidth: 1,
-    borderColor: '#C69255',
+    borderRadius: 14,
+    backgroundColor: '#F8E9CF',
+    overflow: 'hidden',
   },
   iconImage: {
-    width: 46,
-    height: 46,
-    borderRadius: 12,
+    width: 56,
+    height: 56,
+    borderRadius: 14,
   },
   iconText: {
     color: '#6D4326',
