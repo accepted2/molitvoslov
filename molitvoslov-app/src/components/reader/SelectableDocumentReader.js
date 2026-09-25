@@ -43,7 +43,7 @@ const HTML_TEMPLATE = String.raw`
 
   <style>
     :root {
-      --background: #F7F4EE;
+      --background: #FFF4DE;
       --surface: #FFFDF8;
       --text: #302C27;
       --secondary: #756E65;
@@ -5079,12 +5079,12 @@ const styles =
     container: {
       flex: 1,
       backgroundColor:
-        colors.background,
+        '#FFF4DE',
     },
 
     webView: {
       flex: 1,
       backgroundColor:
-        colors.background,
+        '#FFF4DE',
     },
   });
