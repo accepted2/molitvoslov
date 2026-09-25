@@ -2,28 +2,24 @@
   "expo": {
     "name": "Молитвослов",
     "slug": "molitvoslov",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/branding/app-icon.png",
     "userInterfaceStyle": "light",
-
     "ios": {
       "supportsTablet": true
     },
-
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#F7ECD8",
         "foregroundImage": "./assets/branding/app-icon.png"
       },
       "package": "com.accepted2.molitvoslov",
-      "versionCode": 6
+      "versionCode": 7
     },
-
     "web": {
       "favicon": "./assets/branding/app-icon.png"
     },
-
     "plugins": [
       "expo-status-bar",
       "expo-sqlite",
@@ -31,10 +27,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#F7ECD8",
-          "image": "./assets/branding/splash-logo.png",
-          "imageWidth": 280,
-          "resizeMode": "contain"
+          "backgroundColor": "#F7ECD8"
         }
       ],
       [
@@ -57,14 +50,11 @@
         }
       ]
     ],
-
     "androidNavigationBar": {
       "backgroundColor": "#FFF4DE",
       "barStyle": "dark-content"
     },
-
     "owner": "anatoliy1",
-
     "extra": {
       "eas": {
         "projectId": "327409b7-2571-426f-96e7-58350b2e689c"

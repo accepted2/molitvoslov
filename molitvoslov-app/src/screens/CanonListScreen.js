@@ -519,7 +519,7 @@ const styles =
       borderRadius: 17,
       borderWidth: 1,
       borderColor: 'rgba(126, 82, 38, 0.22)',
-      backgroundColor: 'rgba(255, 246, 227, 0.94)',
+      backgroundColor: 'rgba(248, 233, 207, 0.96)',
       shadowColor: '#51301B',
       shadowOffset: {width: 0, height: 2},
       shadowOpacity: 0.09,
