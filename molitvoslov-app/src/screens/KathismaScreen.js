@@ -34,6 +34,12 @@ import {
   colors,
 } from '../theme';
 
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {StatusBar} from 'expo-status-bar';
+
+import {FixedSectionHeader}
+  from '../components/navigation/FixedSectionHeader';
+
 
 const GLORY_TEXT = `Слава Отцу и Сыну и Святому Духу.
 И ныне и присно и во веки веков. Аминь.
@@ -113,6 +119,12 @@ export default function KathismaScreen({
     kathismaTitle,
     focusTarget = null,
   } = route.params;
+
+  const insets =
+    useSafeAreaInsets();
+
+  const headerHeight =
+    insets.top + 62;
 
   const [
     kathisma,
@@ -861,7 +873,10 @@ export default function KathismaScreen({
           kathisma.psalms ||
           []
         ).forEach(
-          psalm => {
+          (
+            psalm,
+            psalmIndex
+          ) => {
             const verses =
               psalm.verses ||
               [];
@@ -1048,6 +1063,8 @@ export default function KathismaScreen({
                       className:
                         'psalter',
                       label:
+                        psalmIndex ===
+                          0 &&
                         verseChunkIndex ===
                           0
                           ? 'Церковнославянский'
@@ -1075,6 +1092,8 @@ export default function KathismaScreen({
                       className:
                         'psalter secondary',
                       label:
+                        psalmIndex ===
+                          0 &&
                         verseChunkIndex ===
                           0
                           ? 'Русский'
@@ -1359,29 +1378,59 @@ export default function KathismaScreen({
 
 
   return (
-    <SelectableDocumentReader
-      documentData={
-        documentData
-      }
-      savedProgress={
-        readerProgress
-      }
-      focusTarget={
-        focusTarget
-      }
-      onProgress={
-        handleProgress
-      }
-      onAction={
-        handleAction
-      }
-    />
+    <View
+      style={styles.screen}
+    >
+      <StatusBar
+        style="light"
+        translucent
+        backgroundColor="transparent"
+      />
+
+      <SelectableDocumentReader
+        documentData={
+          documentData
+        }
+        savedProgress={
+          readerProgress
+        }
+        focusTarget={
+          focusTarget
+        }
+        topContentInset={
+          headerHeight
+        }
+        onProgress={
+          handleProgress
+        }
+        onAction={
+          handleAction
+        }
+      />
+
+      <FixedSectionHeader
+        title={
+          `Кафизма ${kathisma.number}`
+        }
+        navigation={
+          navigation
+        }
+        topInset={
+          insets.top
+        }
+      />
+    </View>
   );
 }
 
-
 const styles =
   StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor:
+        '#FFF4DE',
+    },
+
     center: {
       flex: 1,
       justifyContent:
