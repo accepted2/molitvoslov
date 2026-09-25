@@ -3,7 +3,6 @@ import {LinearGradient} from 'expo-linear-gradient';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   ImageBackground,
   Pressable,
   ScrollView,
@@ -20,18 +19,19 @@ import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {BottomNav} from '../components/navigation/BottomNav';
+import {CategoryIcon} from '../components/icons/CategoryIcon';
 import {homeArtwork} from '../data/homeArtwork';
 import {contentApi as api} from '../services/contentApi';
 import {deleteReadingProgress, getReadingProgress} from '../services/readingProgress';
 import {colors, spacing} from '../theme';
 
 const CATEGORY_ICONS = {
-  morning: require('../../assets/icons/morning.png'),
-  evening: require('../../assets/icons/evening.png'),
-  akathists: require('../../assets/icons/akathists.png'),
-  canons: require('../../assets/icons/canons.png'),
-  communion: require('../../assets/icons/communion.png'),
-  psalter: require('../../assets/icons/psalter-v2.png'),
+  morning: 'morning',
+  evening: 'evening',
+  akathists: 'akathists',
+  canons: 'canons',
+  communion: 'communion',
+  psalter: 'psalter',
 };
 
 const resolveCategoryIcon = (...values) => {
@@ -171,11 +171,7 @@ const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress})
 
     <View style={styles.libraryIcon}>
       {iconSource ? (
-        <Image
-          source={iconSource}
-          resizeMode="cover"
-          style={styles.libraryIconImage}
-        />
+        <CategoryIcon type={iconSource} />
       ) : (
         <Text style={styles.libraryIconText}>{symbol}</Text>
       )}
@@ -690,11 +686,7 @@ export const MenuScreen = ({navigation}) => {
                   >
                     <View style={styles.readingCategoryIcon}>
                       {latestReading.iconSource ? (
-                        <Image
-                          source={latestReading.iconSource}
-                          resizeMode="cover"
-                          style={styles.readingCategoryImage}
-                        />
+                        <CategoryIcon type={latestReading.iconSource} />
                       ) : (
                         <Text style={styles.readingCategoryGlyph}>
                           {latestReading.symbol || '✦'}
@@ -1146,10 +1138,6 @@ const styles = StyleSheet.create({
     fontSize: 27,
     fontWeight: '700',
   },
-  readingCategoryImage: {
-    width: 64,
-    height: 64,
-  },
   latestReadingText: {
     flex: 1,
     marginLeft: 11,
@@ -1288,10 +1276,6 @@ const styles = StyleSheet.create({
     zIndex: 2,
     borderTopRightRadius: 16,
     borderBottomRightRadius: 16,
-  },
-  libraryIconImage: {
-    width: 64,
-    height: 64,
   },
   libraryIconText: {
     color: '#94602E',
