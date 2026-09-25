@@ -34,6 +34,56 @@ const CATEGORY_ICONS = {
   psalter: require('../../assets/icons/psalter.png'),
 };
 
+const resolveCategoryIcon = (...values) => {
+  const value = values
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  if (value.includes('utren') || value.includes('утрен')) {
+    return CATEGORY_ICONS.morning;
+  }
+
+  if (
+    value.includes('vechern') ||
+    value.includes('son-griad') ||
+    value.includes('вечер') ||
+    value.includes('сон грядущ')
+  ) {
+    return CATEGORY_ICONS.evening;
+  }
+
+  if (
+    value.includes('akath') ||
+    value.includes('akaf') ||
+    value.includes('акаф')
+  ) {
+    return CATEGORY_ICONS.akathists;
+  }
+
+  if (
+    value.includes('canon') ||
+    value.includes('kanon') ||
+    value.includes('канон')
+  ) {
+    return CATEGORY_ICONS.canons;
+  }
+
+  if (
+    value.includes('communion') ||
+    value.includes('prichast') ||
+    value.includes('причащ')
+  ) {
+    return CATEGORY_ICONS.communion;
+  }
+
+  if (value.includes('psalt') || value.includes('псалт')) {
+    return CATEGORY_ICONS.psalter;
+  }
+
+  return null;
+};
+
 const PRAYER_RULES = [
   {
     key: 'morning',
@@ -123,7 +173,7 @@ const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress})
       {iconSource ? (
         <Image
           source={iconSource}
-          resizeMode="cover"
+          resizeMode="contain"
           style={styles.libraryIconImage}
         />
       ) : (
@@ -390,14 +440,10 @@ export const MenuScreen = ({navigation}) => {
         type: 'Молитвенное правило',
         symbol: '✦',
         iconSource:
-          rule.slug?.includes('utren')
-            ? CATEGORY_ICONS.morning
-            : (
-                rule.slug?.includes('son') ||
-                rule.slug?.includes('vechern')
-              )
-              ? CATEGORY_ICONS.evening
-              : CATEGORY_ICONS.canons,
+          resolveCategoryIcon(
+            rule.slug,
+            rule.name
+          ) || CATEGORY_ICONS.canons,
         title: rule.name,
         position,
         onPress: () => navigation.navigate('PrayerRule', {slug: rule.slug}),
@@ -412,7 +458,11 @@ export const MenuScreen = ({navigation}) => {
         id: progress.id,
         type: 'Молитвы',
         symbol: '†',
-        iconSource: CATEGORY_ICONS.canons,
+        iconSource:
+          resolveCategoryIcon(
+            category.slug,
+            category.name
+          ) || CATEGORY_ICONS.canons,
         title: category.name,
         position: 'Продолжить с сохранённого места',
         onPress: () =>
@@ -566,7 +616,7 @@ export const MenuScreen = ({navigation}) => {
             <View style={styles.quoteCard}>
               <ImageBackground
                 source={homeArtwork.quote}
-                resizeMode="ccover"
+                resizeMode="cover"
                 style={styles.quoteArtwork}
                 imageStyle={styles.quoteArtworkImage}
               />
@@ -577,7 +627,7 @@ export const MenuScreen = ({navigation}) => {
               <View style={styles.quoteContent}>
                 <View style={styles.quoteHeader}>
                   <View style={styles.quoteHeadingWrap}>
-                    <Text style={styles.quoteLeaf}>❧</Text>
+                    <Text style={styles.quoteFeather}>🪶</Text>
                     <Text style={styles.quoteLabel}>Цитата дня</Text>
                   </View>
 
@@ -586,7 +636,7 @@ export const MenuScreen = ({navigation}) => {
                     onPress={showWidgetInfo}
                     style={({pressed}) => [styles.widgetButton, pressed && styles.pressed]}
                   >
-                    <Text style={styles.widgetIcon}>▣</Text>
+                    <Text style={styles.widgetPhone}>📱</Text>
                     <Text style={styles.widgetText}>На экран</Text>
                   </Pressable>
                 </View>
@@ -642,7 +692,7 @@ export const MenuScreen = ({navigation}) => {
                       {latestReading.iconSource ? (
                         <Image
                           source={latestReading.iconSource}
-                          resizeMode="cover"
+                          resizeMode="contain"
                           style={styles.readingCategoryImage}
                         />
                       ) : (
@@ -954,10 +1004,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  quoteLeaf: {
+  quoteFeather: {
     marginRight: 7,
-    color: '#A16E35',
-    fontSize: 20,
+    fontSize: 17,
+    lineHeight: 21,
   },
   quoteLabel: {
     color: '#7A4F2D',
@@ -973,12 +1023,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(126, 78, 34, 0.32)',
     borderRadius: 17,
-    backgroundColor: 'rgba(255, 255, 255, 0.52)',
+    backgroundColor: 'rgba(248, 233, 207, 0.88)',
   },
-  widgetIcon: {
+  widgetPhone: {
     marginRight: 5,
-    color: '#85572F',
-    fontSize: 11,
+    fontSize: 13,
+    lineHeight: 16,
   },
   widgetText: {
     color: '#6F4930',
@@ -1082,14 +1132,13 @@ const styles = StyleSheet.create({
     paddingRight: 32,
   },
   readingCategoryIcon: {
-    width: 54,
-    height: 64,
+    width: 56,
+    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
-    backgroundColor: '#F1D99F',
-    borderWidth: 1,
-    borderColor: '#C89C5E',
+    borderRadius: 14,
+    backgroundColor: '#F8E9CF',
+    overflow: 'hidden',
   },
   readingCategoryGlyph: {
     color: '#6D4223',
@@ -1098,9 +1147,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   readingCategoryImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: 56,
+    height: 56,
+    borderRadius: 14,
   },
   latestReadingText: {
     flex: 1,
@@ -1223,18 +1272,13 @@ const styles = StyleSheet.create({
   },
   libraryIcon: {
     zIndex: 3,
-    width: 50,
-    height: 50,
+    width: 54,
+    height: 54,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 25,
-    backgroundColor: 'rgba(255, 249, 237, 0.96)',
-    borderWidth: 1,
-    borderColor: 'rgba(169, 113, 53, 0.34)',
-    shadowColor: '#7A4B28',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.06,
-    shadowRadius: 2,
+    borderRadius: 14,
+    backgroundColor: '#F8E9CF',
+    overflow: 'hidden',
   },
   libraryRightFade: {
     position: 'absolute',
@@ -1247,9 +1291,9 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 16,
   },
   libraryIconImage: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 54,
+    height: 54,
+    borderRadius: 14,
   },
   libraryIconText: {
     color: '#94602E',
