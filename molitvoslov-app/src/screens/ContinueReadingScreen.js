@@ -1,8 +1,13 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
+
+import {LinearGradient} from 'expo-linear-gradient';
+import {AppBackground} from '../components/layout/AppBackground';
+import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {BottomNav} from '../components/navigation/BottomNav';
 
 import {contentApi as api} from '../services/contentApi';
 import {deleteReadingProgress, getReadingProgress} from '../services/readingProgress';
@@ -185,10 +190,16 @@ export const ContinueReadingScreen = ({navigation}) => {
     await deleteReadingProgress(id);
     setProgress(current => current.filter(item => item.id !== id));
   };
+  const insets = useSafeAreaInsets();
+  const headerHeight = insets.top + 62;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <StatusBar style="dark" />
+    <AppBackground imageOpacity={0.72}>
+      <StatusBar
+        style="light"
+        translucent
+        backgroundColor="transparent"
+      />
 
       <View style={styles.header}>
         <Pressable hitSlop={10} onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -265,7 +276,13 @@ export const ContinueReadingScreen = ({navigation}) => {
           )}
         </ScrollView>
       )}
-    </SafeAreaView>
+
+      <BottomNav
+        navigation={navigation}
+        active={null}
+      />
+
+</AppBackground>
   );
 };
 
