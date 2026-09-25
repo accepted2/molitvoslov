@@ -7,6 +7,8 @@ import React, {
 
 import {
   ActivityIndicator,
+  Alert,
+  ImageBackground,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -38,6 +40,10 @@ import {
 import {
   BottomNav,
 } from '../components/navigation/BottomNav';
+
+import {
+  homeArtwork,
+} from '../data/homeArtwork';
 
 import {
   colors,
@@ -93,29 +99,72 @@ const formatToday = () => {
 
   const date = new Date();
 
-  return `${weekdays[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]}`;
+  return `${weekdays[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()} года`;
 };
 
 
-const HomeCard = ({
+const DecorativeCard = ({
   title,
   subtitle,
+  symbol,
+  artwork,
   onPress,
-  featured = false,
+  dark = false,
 }) => (
   <Pressable
     onPress={onPress}
     style={({pressed}) => [
-      styles.homeCard,
-      featured &&
-      styles.homeCardFeatured,
+      styles.libraryCard,
+      dark &&
+      styles.libraryCardDark,
       pressed &&
       styles.pressed,
     ]}
   >
-    <View style={styles.homeCardText}>
+    <ImageBackground
+      source={{
+        uri: artwork,
+      }}
+      resizeMode="cover"
+      style={styles.libraryArtwork}
+      imageStyle={
+        styles.libraryArtworkImage
+      }
+    >
+      <View
+        style={[
+          styles.libraryArtworkWash,
+          dark &&
+          styles.libraryArtworkWashDark,
+        ]}
+      />
+    </ImageBackground>
+
+    <View
+      style={[
+        styles.libraryIcon,
+        dark &&
+        styles.libraryIconDark,
+      ]}
+    >
       <Text
-        style={styles.cardTitle}
+        style={[
+          styles.libraryIconText,
+          dark &&
+          styles.libraryIconTextDark,
+        ]}
+      >
+        {symbol}
+      </Text>
+    </View>
+
+    <View style={styles.libraryText}>
+      <Text
+        style={[
+          styles.libraryTitle,
+          dark &&
+          styles.libraryTitleDark,
+        ]}
         numberOfLines={2}
       >
         {title}
@@ -123,7 +172,11 @@ const HomeCard = ({
 
       {!!subtitle && (
         <Text
-          style={styles.cardSubtitle}
+          style={[
+            styles.librarySubtitle,
+            dark &&
+            styles.librarySubtitleDark,
+          ]}
           numberOfLines={2}
         >
           {subtitle}
@@ -131,9 +184,23 @@ const HomeCard = ({
       )}
     </View>
 
-    <Text style={styles.homeCardArrow}>
-      ›
-    </Text>
+    <View
+      style={[
+        styles.libraryChevron,
+        dark &&
+        styles.libraryChevronDark,
+      ]}
+    >
+      <Text
+        style={[
+          styles.libraryChevronText,
+          dark &&
+          styles.libraryChevronTextDark,
+        ]}
+      >
+        ›
+      </Text>
+    </View>
   </Pressable>
 );
 
@@ -710,31 +777,35 @@ export const MenuScreen = ({
     };
 
 
+  const latestReading =
+    activeReadings[0] ||
+    null;
+
+
+  const showWidgetInfo =
+    () => {
+      Alert.alert(
+        'Цитата дня на главном экране',
+        'Место под виджет уже предусмотрено. Сам Android-виджет подключим отдельным нативным этапом, чтобы цитата обновлялась на главном экране телефона без запуска приложения.'
+      );
+    };
+
+
   if (loading) {
     return (
       <SafeAreaView
         style={styles.safeArea}
         edges={['top']}
       >
-        <StatusBar
-          style="dark"
-        />
+        <StatusBar style="dark" />
 
-        <View
-          style={styles.center}
-        >
+        <View style={styles.center}>
           <ActivityIndicator
             size="large"
-            color={
-              colors.accent
-            }
+            color={colors.accent}
           />
 
-          <Text
-            style={
-              styles.loadingText
-            }
-          >
+          <Text style={styles.loadingText}>
             Загрузка молитвослова...
           </Text>
         </View>
@@ -748,338 +819,286 @@ export const MenuScreen = ({
       style={styles.safeArea}
       edges={['top']}
     >
-      <StatusBar
-        style="dark"
-      />
+      <StatusBar style="dark" />
 
-      <View
-        style={styles.screen}
-      >
+      <View style={styles.screen}>
         <ScrollView
-          showsVerticalScrollIndicator={
-            false
-          }
-          contentContainerStyle={
-            styles.content
-          }
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
         >
-          <View
-            style={styles.brandRow}
+          <ImageBackground
+            source={{
+              uri: homeArtwork.hero_biblical,
+            }}
+            resizeMode="cover"
+            style={styles.hero}
+            imageStyle={styles.heroImage}
           >
-            <View
-              style={styles.brandMark}
-            >
-              <Text
-                style={
-                  styles.brandCross
-                }
-              >
+            <View style={styles.heroWash} />
+
+            <View style={styles.heroOrnament}>
+              <Text style={styles.heroCross}>
                 ☦
               </Text>
-            </View>
-
-            <View
-              style={styles.brandText}
-            >
-              <Text
-                style={
-                  styles.brandTitle
-                }
-              >
-                Молитвослов
-              </Text>
-
-              <Text
-                style={styles.today}
-              >
-                {formatToday()}
+              <Text style={styles.heroFlourish}>
+                ─── ✦ ───
               </Text>
             </View>
-          </View>
 
-
-          <View
-            style={styles.quoteBlock}
-          >
-            <Text
-              style={styles.quoteLabel}
-            >
-              ЦИТАТА ДНЯ
+            <Text style={styles.brandTitle}>
+              Молитвослов
             </Text>
 
-            <Text
-              style={styles.quoteText}
-            >
-              {
-                dailyQuote?.text ||
-                'Молитва и духовное чтение помогают хранить внимание сердца.'
-              }
+            <Text style={styles.today}>
+              {formatToday()}
             </Text>
 
-            {!!(
-              dailyQuote?.reference ||
-              dailyQuote?.source
-            ) && (
-              <Text
-                style={styles.quoteSource}
-              >
-                {
-                  dailyQuote?.reference ||
-                  dailyQuote?.source
-                }
-              </Text>
-            )}
-          </View>
-
-
-          <View
-            style={
-              styles.readingSection
-            }
-          >
-            <Text
-              style={
-                styles.readingSectionTitle
-              }
-            >
-              Продолжить чтение
+            <Text style={styles.heroDivider}>
+              ─────  ✥  ─────
             </Text>
+          </ImageBackground>
 
-            {activeReadings.length ? (
-              <View
-                style={
-                  styles.readingCard
-                }
-              >
-                {activeReadings.map(
-                  (
-                    item,
-                    index
-                  ) => (
-                    <View
-                      key={item.id}
-                    >
-                      <View
-                        style={
-                          styles.readingRow
-                        }
-                      >
-                        <Pressable
-                          style={({pressed}) => [
-                            styles.readingMain,
-                            pressed &&
-                            styles.pressed,
-                          ]}
-                          onPress={
-                            item.onPress
-                          }
-                        >
-                          <View
-                            style={
-                              styles.readingText
-                            }
-                          >
-                            <Text
-                              style={
-                                styles.readingType
-                              }
-                            >
-                              {item.type}
-                            </Text>
 
-                            <Text
-                              style={
-                                styles.readingTitle
-                              }
-                              numberOfLines={1}
-                            >
-                              {item.title}
-                            </Text>
+          <View style={styles.pageBody}>
+            <View style={styles.quoteCard}>
+              <View style={styles.quoteHeader}>
+                <View style={styles.quoteHeadingWrap}>
+                  <Text style={styles.quoteLeaf}>
+                    ❧
+                  </Text>
 
-                            <Text
-                              style={
-                                styles.readingPosition
-                              }
-                              numberOfLines={2}
-                            >
-                              {item.position}
-                            </Text>
+                  <Text style={styles.quoteLabel}>
+                    Цитата дня
+                  </Text>
+                </View>
 
-                            <View
-                              style={
-                                styles.progressRow
-                              }
-                            >
-                              <View
-                                style={
-                                  styles.progressTrack
-                                }
-                              >
-                                <View
-                                  style={[
-                                    styles.progressFill,
-                                    {
-                                      width:
-                                        `${Math.max(
-                                          0,
-                                          Math.min(
-                                            item.progress,
-                                            100
-                                          )
-                                        )}%`,
-                                    },
-                                  ]}
-                                />
-                              </View>
-
-                              <Text
-                                style={
-                                  styles.progressPercent
-                                }
-                              >
-                                {item.progress}%
-                              </Text>
-                            </View>
-                          </View>
-
-                          <Text
-                            style={
-                              styles.readingArrow
-                            }
-                          >
-                            ›
-                          </Text>
-                        </Pressable>
-
-                        <Pressable
-                          hitSlop={8}
-                          onPress={() =>
-                            finishReading(
-                              item.id
-                            )
-                          }
-                          style={({pressed}) => [
-                            styles.finishButton,
-                            pressed &&
-                            styles.pressed,
-                          ]}
-                        >
-                          <Text
-                            style={
-                              styles.finishText
-                            }
-                          >
-                            ×
-                          </Text>
-                        </Pressable>
-                      </View>
-
-                      {index <
-                        activeReadings.length -
-                          1 && (
-                        <View
-                          style={
-                            styles.readingDivider
-                          }
-                        />
-                      )}
-                    </View>
-                  )
-                )}
-              </View>
-            ) : (
-              <View
-                style={
-                  styles.noReadingCard
-                }
-              >
-                <Text
-                  style={
-                    styles.noReadingText
-                  }
+                <Pressable
+                  hitSlop={8}
+                  onPress={showWidgetInfo}
+                  style={({pressed}) => [
+                    styles.widgetButton,
+                    pressed &&
+                    styles.pressed,
+                  ]}
                 >
-                  Начатых чтений пока нет.
-                  Откройте молитву, акафист
-                  или Псалтирь — место
-                  сохранится автоматически.
-                </Text>
+                  <Text style={styles.widgetIcon}>
+                    ▣
+                  </Text>
+                  <Text style={styles.widgetText}>
+                    На экран
+                  </Text>
+                </Pressable>
               </View>
-            )}
 
-            {!!activeReadings.length && (
-              <Text
-                style={
-                  styles.finishHint
+              <View style={styles.quoteRule}>
+                <View style={styles.quoteRuleLine} />
+                <Text style={styles.quoteRuleMark}>
+                  ✦
+                </Text>
+                <View style={styles.quoteRuleLine} />
+              </View>
+
+              <Text style={styles.quoteText}>
+                {
+                  dailyQuote?.text ||
+                  'Молитва и духовное чтение помогают хранить внимание сердца.'
                 }
-              >
-                × — убрать из списка «Продолжить чтение»
               </Text>
-            )}
-          </View>
+
+              {!!(
+                dailyQuote?.reference ||
+                dailyQuote?.source
+              ) && (
+                <Text style={styles.quoteSource}>
+                  {
+                    dailyQuote?.reference ||
+                    dailyQuote?.source
+                  }
+                </Text>
+              )}
+
+              <Text style={styles.quoteGhost}>
+                ИЕРУСАЛИМ  ·  СИНАЙ  ·  ПИСАНИЕ
+              </Text>
+            </View>
 
 
-          <View
-            style={styles.section}
-          >
-            <Text
-              style={
-                styles.sectionTitle
-              }
-            >
-              Молитвенное правило
-            </Text>
+            <View style={styles.readingCard}>
+              <View style={styles.readingHeader}>
+                <View style={styles.readingHeadingWrap}>
+                  <Text style={styles.readingBook}>
+                    ▤
+                  </Text>
 
-            <View
-              style={styles.grid}
-            >
-              {PRAYER_RULES.map(
-                item => (
-                  <HomeCard
-                    key={item.key}
-                    title={
-                      item.title
-                    }
-                    subtitle={
-                      item.subtitle
-                    }
-                    featured
+                  <Text style={styles.readingSectionTitle}>
+                    Продолжить чтение
+                  </Text>
+                </View>
+
+                {!!activeReadings.length && (
+                  <Pressable
+                    hitSlop={8}
                     onPress={() =>
                       navigation.navigate(
-                        'PrayerRule',
-                        {
-                          slug:
-                            item.slug,
-                        }
+                        'ContinueReading'
                       )
                     }
-                  />
-                )
+                    style={({pressed}) => [
+                      styles.openReadings,
+                      pressed &&
+                      styles.pressed,
+                    ]}
+                  >
+                    <Text style={styles.openReadingsText}>
+                      Открыть
+                    </Text>
+                    <Text style={styles.openReadingsArrow}>
+                      ›
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+
+              {latestReading ? (
+                <View style={styles.latestReading}>
+                  <Pressable
+                    onPress={latestReading.onPress}
+                    style={({pressed}) => [
+                      styles.latestReadingMain,
+                      pressed &&
+                      styles.pressed,
+                    ]}
+                  >
+                    <View style={styles.readingCategoryIcon}>
+                      <Text style={styles.readingCategoryGlyph}>
+                        {
+                          latestReading.type === 'Псалтирь'
+                            ? '¶'
+                            : latestReading.type === 'Канон'
+                              ? '▤'
+                              : latestReading.type === 'Акафист'
+                                ? '☦'
+                                : '✦'
+                        }
+                      </Text>
+                    </View>
+
+                    <View style={styles.latestReadingText}>
+                      <Text
+                        style={styles.latestReadingTitle}
+                        numberOfLines={2}
+                      >
+                        {latestReading.title}
+                      </Text>
+
+                      <View style={styles.latestProgressRow}>
+                        <View style={styles.latestProgressTrack}>
+                          <View
+                            style={[
+                              styles.latestProgressFill,
+                              {
+                                width:
+                                  `${Math.max(
+                                    0,
+                                    Math.min(
+                                      latestReading.progress,
+                                      100
+                                    )
+                                  )}%`,
+                              },
+                            ]}
+                          />
+                        </View>
+
+                        <Text style={styles.latestProgressPercent}>
+                          {latestReading.progress}%
+                        </Text>
+                      </View>
+
+                      <Text
+                        style={styles.latestReadingPosition}
+                        numberOfLines={2}
+                      >
+                        {latestReading.position}
+                      </Text>
+                    </View>
+
+                    <Text style={styles.latestReadingArrow}>
+                      ›
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    hitSlop={8}
+                    onPress={() =>
+                      finishReading(
+                        latestReading.id
+                      )
+                    }
+                    style={({pressed}) => [
+                      styles.latestRemove,
+                      pressed &&
+                      styles.pressed,
+                    ]}
+                  >
+                    <Text style={styles.latestRemoveText}>
+                      ×
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View style={styles.emptyReading}>
+                  <Text style={styles.emptyReadingTitle}>
+                    Здесь появится последнее чтение
+                  </Text>
+
+                  <Text style={styles.emptyReadingText}>
+                    Откройте молитву, акафист, канон или Псалтирь — место сохранится автоматически.
+                  </Text>
+                </View>
               )}
             </View>
-          </View>
 
 
-          <View
-            style={styles.section}
-          >
-            <Text
-              style={
-                styles.sectionTitle
-              }
-            >
-              Библиотека
-            </Text>
-
-            <View
-              style={styles.grid}
-            >
-              <HomeCard
-                title="Акафисты"
-                subtitle={
-                  akathists.length
-                    ? `${akathists.length} текстов`
-                    : 'Господу, Богородице и святым'
+            <View style={styles.libraryList}>
+              <DecorativeCard
+                title="Утренние молитвы"
+                subtitle="Начните день с Богом"
+                symbol="☀"
+                artwork={homeArtwork.morning}
+                onPress={() =>
+                  navigation.navigate(
+                    'PrayerRule',
+                    {
+                      slug:
+                        'molitvy-utrennie',
+                    }
+                  )
                 }
+              />
+
+              <DecorativeCard
+                title="Вечерние молитвы"
+                subtitle="Завершите день в молитве"
+                symbol="☾"
+                artwork={homeArtwork.evening}
+                dark
+                onPress={() =>
+                  navigation.navigate(
+                    'PrayerRule',
+                    {
+                      slug:
+                        'molitvy-na-son-griadushchim',
+                    }
+                  )
+                }
+              />
+
+              <DecorativeCard
+                title="Акафисты"
+                subtitle="Молитвенные хвалебные песнопения"
+                symbol="☦"
+                artwork={homeArtwork.akathists}
                 onPress={() =>
                   navigation.navigate(
                     'AkathistList'
@@ -1087,13 +1106,12 @@ export const MenuScreen = ({
                 }
               />
 
-              <HomeCard
+              <DecorativeCard
                 title="Каноны"
-                subtitle={
-                  canons.length
-                    ? `${canons.length} текстов`
-                    : 'Покаянные и святым'
-                }
+                subtitle="Покаянные и просительные каноны"
+                symbol="▤"
+                artwork={homeArtwork.canons}
+                dark
                 onPress={() =>
                   navigation.navigate(
                     'CanonList'
@@ -1101,9 +1119,11 @@ export const MenuScreen = ({
                 }
               />
 
-              <HomeCard
+              <DecorativeCard
                 title="Ко Святому Причащению"
-                subtitle="3 канона, последование и благодарственные молитвы"
+                subtitle="Подготовительные молитвы"
+                symbol="♱"
+                artwork={homeArtwork.communion}
                 onPress={() =>
                   navigation.navigate(
                     'CommunionPreparation'
@@ -1111,64 +1131,81 @@ export const MenuScreen = ({
                 }
               />
 
-              <HomeCard
+              <DecorativeCard
                 title="Псалтирь"
-                subtitle="20 кафизм"
+                subtitle="Книга молитвы и духовного утешения"
+                symbol="¶"
+                artwork={homeArtwork.psalter}
                 onPress={() =>
                   navigation.navigate(
                     'Psalter'
                   )
                 }
               />
+            </View>
 
-              {libraryCategories.map(
-                category => {
-                  const count =
-                    getSubcategories(
-                      category
-                    ).length;
 
-                  return (
-                    <HomeCard
-                      key={
-                        category.id
-                      }
-                      title={
-                        category.name
-                      }
-                      subtitle={
-                        count > 0
-                          ? `${count} разделов`
-                          : 'Открыть'
-                      }
+            {!!libraryCategories.length && (
+              <View style={styles.extraSection}>
+                <View style={styles.extraHeader}>
+                  <Text style={styles.extraTitle}>
+                    Другие разделы
+                  </Text>
+
+                  <Text style={styles.extraOrnament}>
+                    ✦
+                  </Text>
+                </View>
+
+                {libraryCategories.map(
+                  category => (
+                    <Pressable
+                      key={category.id}
                       onPress={() =>
                         openCategory(
                           category
                         )
                       }
-                    />
-                  );
-                }
-              )}
-            </View>
+                      style={({pressed}) => [
+                        styles.extraCard,
+                        pressed &&
+                        styles.pressed,
+                      ]}
+                    >
+                      <View>
+                        <Text style={styles.extraCardTitle}>
+                          {category.name}
+                        </Text>
+
+                        <Text style={styles.extraCardSubtitle}>
+                          {
+                            getSubcategories(
+                              category
+                            ).length > 0
+                              ? `${getSubcategories(category).length} разделов`
+                              : 'Открыть'
+                          }
+                        </Text>
+                      </View>
+
+                      <Text style={styles.extraArrow}>
+                        ›
+                      </Text>
+                    </Pressable>
+                  )
+                )}
+              </View>
+            )}
+
+
+            {!!error && (
+              <View style={styles.errorCard}>
+                <Text style={styles.errorText}>
+                  {error}
+                </Text>
+              </View>
+            )}
           </View>
-
-
-          {!!error && (
-            <View
-              style={
-                styles.errorCard
-              }
-            >
-              <Text
-                style={
-                  styles.errorText
-                }
-              >
-                {error}
-              </Text>
-            </View>
-          )}
         </ScrollView>
 
         <BottomNav
@@ -1186,20 +1223,19 @@ const styles =
     safeArea: {
       flex: 1,
       backgroundColor:
-        colors.background,
+        '#D2A96F',
     },
 
     screen: {
       flex: 1,
+      backgroundColor:
+        '#D2A96F',
     },
 
     content: {
-      paddingHorizontal:
-        spacing.md,
-      paddingTop:
-        spacing.sm,
-      paddingBottom:
-        spacing.xl,
+      paddingBottom: 18,
+      backgroundColor:
+        '#D2A96F',
     },
 
     center: {
@@ -1208,387 +1244,645 @@ const styles =
       justifyContent:
         'center',
       backgroundColor:
-        colors.background,
+        '#F4E7CC',
     },
 
     loadingText: {
       marginTop:
         spacing.md,
       color:
-        colors.textSecondary,
+        '#6B5038',
       fontSize: 15,
     },
 
-    brandRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginTop:
-        spacing.xs,
-    },
-
-    brandMark: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+    hero: {
+      height: 270,
       alignItems: 'center',
       justifyContent:
         'center',
+      paddingHorizontal: 22,
+      overflow: 'hidden',
+    },
+
+    heroImage: {
+      opacity: 0.96,
+    },
+
+    heroWash: {
+      ...StyleSheet.absoluteFillObject,
       backgroundColor:
-        colors.surfaceMuted,
-      borderWidth: 1,
-      borderColor:
-        colors.border,
+        'rgba(255, 239, 204, 0.18)',
     },
 
-    brandCross: {
-      fontSize: 23,
-      color:
-        colors.liturgical,
+    heroOrnament: {
+      alignItems: 'center',
+      marginBottom: 2,
     },
 
-    brandText: {
-      flex: 1,
-      marginLeft:
-        spacing.md,
+    heroCross: {
+      color: '#7D4D22',
+      fontSize: 27,
+      lineHeight: 30,
+      textShadowColor:
+        'rgba(255,255,255,0.55)',
+      textShadowRadius: 5,
+    },
+
+    heroFlourish: {
+      marginTop: -3,
+      color: '#8A5A2D',
+      fontSize: 12,
+      letterSpacing: 1,
     },
 
     brandTitle: {
-      fontSize: 27,
-      lineHeight: 32,
-      fontWeight: '700',
-      color:
-        colors.text,
+      color: '#4B2817',
       fontFamily: 'serif',
+      fontSize: 43,
+      lineHeight: 50,
+      fontWeight: '700',
+      textAlign: 'center',
+      textShadowColor:
+        'rgba(255,244,218,0.78)',
+      textShadowOffset: {
+        width: 0,
+        height: 1,
+      },
+      textShadowRadius: 5,
     },
 
     today: {
       marginTop: 1,
-      fontSize: 13,
-      color:
-        colors.textSecondary,
+      color: '#4F3524',
+      fontFamily: 'serif',
+      fontSize: 16,
+      lineHeight: 22,
+      textAlign: 'center',
       textTransform:
         'capitalize',
     },
 
-    quoteBlock: {
-      marginTop:
-        spacing.sm,
-      marginBottom:
-        spacing.md,
-      paddingVertical: 2,
+    heroDivider: {
+      marginTop: 8,
+      color: '#8D5D2E',
+      fontSize: 12,
+      letterSpacing: 1,
+    },
+
+    pageBody: {
+      marginTop: -8,
+      paddingHorizontal: 14,
+      paddingBottom: 16,
+    },
+
+    quoteCard: {
+      minHeight: 176,
+      padding: 18,
+      borderRadius: 20,
+      backgroundColor:
+        '#F8EED8',
+      borderWidth: 1,
+      borderColor:
+        'rgba(122, 78, 36, 0.24)',
+      shadowColor:
+        '#3C2418',
+      shadowOffset: {
+        width: 0,
+        height: 5,
+      },
+      shadowOpacity: 0.14,
+      shadowRadius: 12,
+      elevation: 4,
+      overflow: 'hidden',
+    },
+
+    quoteHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent:
+        'space-between',
+      gap: 10,
+    },
+
+    quoteHeadingWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
+
+    quoteLeaf: {
+      marginRight: 8,
+      color: '#8A5B2E',
+      fontSize: 22,
     },
 
     quoteLabel: {
-      marginBottom: 7,
+      color: '#83552E',
+      fontFamily: 'serif',
+      fontSize: 22,
+      fontWeight: '700',
+    },
+
+    widgetButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      height: 34,
+      paddingHorizontal: 11,
+      borderWidth: 1,
+      borderColor:
+        'rgba(126, 78, 34, 0.48)',
+      borderRadius: 17,
+      backgroundColor:
+        'rgba(255,250,238,0.52)',
+    },
+
+    widgetIcon: {
+      marginRight: 6,
+      color: '#7E502A',
+      fontSize: 13,
+    },
+
+    widgetText: {
+      color: '#684229',
+      fontFamily: 'serif',
+      fontSize: 13,
+      fontWeight: '600',
+    },
+
+    quoteRule: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      width: 190,
+      marginTop: 10,
+      marginBottom: 12,
+    },
+
+    quoteRuleLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor:
+        'rgba(146, 98, 47, 0.42)',
+    },
+
+    quoteRuleMark: {
+      marginHorizontal: 8,
+      color: '#A87943',
       fontSize: 10,
-      lineHeight: 14,
-      fontWeight: '800',
-      letterSpacing: 1,
-      color:
-        colors.accent,
     },
 
     quoteText: {
-      maxWidth: 330,
-      fontSize: 16,
-      lineHeight: 23,
-      color:
-        colors.textSecondary,
+      color: '#3D271A',
       fontFamily: 'serif',
+      fontSize: 21,
+      lineHeight: 29,
+      fontWeight: '500',
     },
 
     quoteSource: {
-      marginTop: 7,
-      fontSize: 12,
-      lineHeight: 17,
-      fontWeight: '600',
-      color:
-        colors.textMuted,
-    },
-
-    readingSection: {
-      marginBottom:
-        spacing.xl,
-    },
-
-    readingSectionTitle: {
-      ...typography.sectionTitle,
-      marginBottom:
-        spacing.sm,
-      color:
-        colors.text,
+      marginTop: 12,
+      color: '#876A50',
       fontFamily: 'serif',
+      fontSize: 12,
+      lineHeight: 18,
+      letterSpacing: 1.2,
+      textTransform:
+        'uppercase',
+    },
+
+    quoteGhost: {
+      marginTop: 12,
+      color: 'rgba(133, 93, 52, 0.25)',
+      fontSize: 9,
+      letterSpacing: 2,
+      textAlign: 'right',
     },
 
     readingCard: {
-      borderRadius:
-        radius.lg,
+      marginTop: 12,
+      padding: 14,
+      borderRadius: 18,
       backgroundColor:
-        colors.surfaceMuted,
+        '#4B2E1D',
       borderWidth: 1,
       borderColor:
-        colors.borderStrong,
-      overflow: 'hidden',
+        '#B8874A',
+      shadowColor:
+        '#2D160B',
+      shadowOffset: {
+        width: 0,
+        height: 5,
+      },
+      shadowOpacity: 0.22,
+      shadowRadius: 10,
+      elevation: 4,
     },
 
-    readingRow: {
+    readingHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      minHeight: 78,
+      justifyContent:
+        'space-between',
+      marginBottom: 12,
     },
 
-    readingMain: {
-      flex: 1,
+    readingHeadingWrap: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical:
-        10,
-      paddingLeft:
-        spacing.md,
-      paddingRight:
-        spacing.xs,
-    },
-
-
-
-    readingText: {
       flex: 1,
     },
 
-    readingType: {
-      fontSize: 10,
-      lineHeight: 14,
-      fontWeight: '800',
-      letterSpacing: 0.7,
-      textTransform:
-        'uppercase',
-      color:
-        colors.accent,
+    readingBook: {
+      marginRight: 8,
+      color: '#F2D79E',
+      fontSize: 24,
     },
 
-    readingTitle: {
-      marginTop: 2,
-      fontSize: 16,
-      lineHeight: 21,
-      fontWeight: '700',
-      color:
-        colors.text,
+    readingSectionTitle: {
+      color: '#F4DCA8',
       fontFamily: 'serif',
+      fontSize: 21,
+      fontWeight: '700',
     },
 
-    readingPosition: {
-      marginTop: 3,
-      fontSize: 12,
-      lineHeight: 17,
-      color:
-        colors.textSecondary,
-    },
-
-    progressRow: {
+    openReadings: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginTop: 8,
+      paddingVertical: 5,
+      paddingLeft: 8,
     },
 
-    progressTrack: {
-      flex: 1,
-      height: 5,
-      borderRadius: 3,
-      overflow: 'hidden',
-      backgroundColor:
-        'rgba(138, 90, 56, 0.14)',
+    openReadingsText: {
+      color: '#F7E7C0',
+      fontFamily: 'serif',
+      fontSize: 14,
     },
 
-    progressFill: {
-      height: '100%',
-      borderRadius: 3,
-      backgroundColor:
-        colors.accent,
+    openReadingsArrow: {
+      marginLeft: 5,
+      color: '#F7E7C0',
+      fontSize: 22,
+      lineHeight: 22,
     },
 
-    progressPercent: {
-      width: 34,
-      marginLeft: 8,
-      fontSize: 11,
-      textAlign: 'right',
-      color:
-        colors.textSecondary,
+    latestReading: {
+      position: 'relative',
     },
 
-    readingArrow: {
-      marginLeft:
-        spacing.xs,
-      fontSize: 26,
-      color:
-        colors.accent,
+    latestReadingMain: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingRight: 32,
     },
 
-    finishButton: {
-      width: 38,
-      alignSelf: 'stretch',
+    readingCategoryIcon: {
+      width: 62,
+      height: 72,
       alignItems: 'center',
       justifyContent:
         'center',
-    },
-
-    finishText: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
-      textAlign: 'center',
-      textAlignVertical:
-        'center',
-      fontSize: 19,
-      lineHeight: 24,
-      fontWeight: '500',
-      color:
-        colors.textMuted,
+      borderRadius: 12,
       backgroundColor:
-        colors.surface,
-      overflow: 'hidden',
-    },
-
-    readingDivider: {
-      height: 1,
-      marginLeft:
-        spacing.md,
-      backgroundColor:
-        colors.borderStrong,
-    },
-
-    noReadingCard: {
-      paddingVertical: 11,
-      paddingHorizontal: 12,
-      borderRadius:
-        radius.md,
-      backgroundColor:
-        colors.surfaceMuted,
+        '#F0D39B',
       borderWidth: 1,
       borderColor:
-        colors.border,
+        '#C29355',
     },
 
-    noReadingText: {
-      fontSize: 14,
-      lineHeight: 21,
-      color:
-        colors.textSecondary,
-    },
-
-    finishHint: {
-      marginTop:
-        spacing.xs,
-      paddingHorizontal:
-        spacing.xs,
-      fontSize: 11,
-      color:
-        colors.textMuted,
-    },
-
-    section: {
-      marginBottom:
-        spacing.xl,
-    },
-
-    sectionTitle: {
-      ...typography.sectionTitle,
-      marginBottom:
-        spacing.md,
-      color:
-        colors.text,
+    readingCategoryGlyph: {
+      color: '#6B3F20',
       fontFamily: 'serif',
+      fontSize: 31,
+      fontWeight: '700',
     },
 
-    grid: {
-      gap:
-        spacing.sm,
+    latestReadingText: {
+      flex: 1,
+      marginLeft: 12,
     },
 
-    homeCard: {
-      width: '100%',
-      minHeight: 68,
+    latestReadingTitle: {
+      color: '#FFF7E7',
+      fontFamily: 'serif',
+      fontSize: 18,
+      lineHeight: 23,
+      fontWeight: '700',
+    },
+
+    latestProgressRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical:
-        spacing.sm,
-      paddingHorizontal:
-        spacing.md,
-      borderRadius:
-        radius.lg,
+      marginTop: 9,
+    },
+
+    latestProgressTrack: {
+      flex: 1,
+      height: 6,
+      borderRadius: 3,
+      overflow: 'hidden',
       backgroundColor:
-        colors.surface,
+        'rgba(244, 222, 177, 0.22)',
       borderWidth: 1,
       borderColor:
-        colors.border,
+        'rgba(244, 222, 177, 0.22)',
+    },
+
+    latestProgressFill: {
+      height: '100%',
+      borderRadius: 3,
+      backgroundColor:
+        '#E8C98B',
+    },
+
+    latestProgressPercent: {
+      width: 39,
+      marginLeft: 9,
+      color: '#F2DFC0',
+      fontSize: 12,
+      textAlign: 'right',
+    },
+
+    latestReadingPosition: {
+      marginTop: 7,
+      color: '#E8D8C0',
+      fontFamily: 'serif',
+      fontSize: 12,
+      lineHeight: 17,
+    },
+
+    latestReadingArrow: {
+      marginLeft: 8,
+      color: '#F1D08D',
+      fontSize: 32,
+      lineHeight: 32,
+    },
+
+    latestRemove: {
+      position: 'absolute',
+      top: -2,
+      right: 0,
+      width: 28,
+      height: 28,
+      alignItems: 'center',
+      justifyContent:
+        'center',
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor:
+        'rgba(242, 217, 164, 0.4)',
+      backgroundColor:
+        'rgba(255,255,255,0.06)',
+    },
+
+    latestRemoveText: {
+      color: '#F2D9A4',
+      fontSize: 19,
+      lineHeight: 21,
+    },
+
+    emptyReading: {
+      paddingVertical: 8,
+      paddingHorizontal: 4,
+    },
+
+    emptyReadingTitle: {
+      color: '#FFF0CF',
+      fontFamily: 'serif',
+      fontSize: 17,
+      fontWeight: '700',
+    },
+
+    emptyReadingText: {
+      marginTop: 6,
+      color: '#DFCDB2',
+      fontSize: 13,
+      lineHeight: 19,
+    },
+
+    libraryList: {
+      marginTop: 12,
+      gap: 9,
+    },
+
+    libraryCard: {
+      position: 'relative',
+      minHeight: 78,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingLeft: 12,
+      paddingRight: 9,
+      borderRadius: 17,
+      overflow: 'hidden',
+      backgroundColor:
+        '#F9EED7',
+      borderWidth: 1,
+      borderColor:
+        'rgba(126, 82, 38, 0.22)',
       shadowColor:
-        colors.shadow,
+        '#5A321B',
       shadowOffset: {
         width: 0,
-        height: 2,
+        height: 3,
       },
-      shadowOpacity: 0.04,
-      shadowRadius: 5,
-      elevation: 1,
+      shadowOpacity: 0.09,
+      shadowRadius: 7,
+      elevation: 2,
     },
 
-    homeCardText: {
-      flex: 1,
-      paddingRight:
-        spacing.sm,
-    },
-
-    homeCardArrow: {
-      marginLeft:
-        spacing.sm,
-      fontSize: 28,
-      lineHeight: 30,
-      color:
-        colors.accent,
-    },
-
-    homeCardFeatured: {
+    libraryCardDark: {
       backgroundColor:
-        colors.surfaceWarm,
+        '#332A26',
+      borderColor:
+        'rgba(232, 199, 141, 0.32)',
     },
 
-    pressed: {
-      opacity: 0.68,
+    libraryArtwork: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: '45%',
     },
 
+    libraryArtworkImage: {
+      borderTopRightRadius: 16,
+      borderBottomRightRadius: 16,
+    },
 
+    libraryArtworkWash: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor:
+        'rgba(248, 232, 200, 0.16)',
+    },
 
+    libraryArtworkWashDark: {
+      backgroundColor:
+        'rgba(37, 28, 24, 0.18)',
+    },
 
+    libraryIcon: {
+      zIndex: 2,
+      width: 52,
+      height: 52,
+      alignItems: 'center',
+      justifyContent:
+        'center',
+      borderRadius: 26,
+      backgroundColor:
+        'rgba(255, 247, 230, 0.88)',
+      borderWidth: 1,
+      borderColor:
+        'rgba(169, 113, 53, 0.34)',
+    },
 
-    cardTitle: {
-      ...typography.cardTitle,
-      color:
-        colors.text,
+    libraryIconDark: {
+      backgroundColor:
+        'rgba(255, 238, 204, 0.12)',
+      borderColor:
+        'rgba(238, 204, 150, 0.34)',
+    },
+
+    libraryIconText: {
+      color: '#93602F',
       fontFamily: 'serif',
+      fontSize: 25,
+      fontWeight: '600',
     },
 
-    cardSubtitle: {
-      ...typography.caption,
-      marginTop:
-        spacing.xs,
-      color:
-        colors.textSecondary,
+    libraryIconTextDark: {
+      color: '#F1D49B',
+    },
+
+    libraryText: {
+      zIndex: 2,
+      flex: 1,
+      marginLeft: 12,
+      paddingRight: 60,
+    },
+
+    libraryTitle: {
+      color: '#392317',
+      fontFamily: 'serif',
+      fontSize: 18,
+      lineHeight: 22,
+      fontWeight: '700',
+    },
+
+    libraryTitleDark: {
+      color: '#FFF3D8',
+    },
+
+    librarySubtitle: {
+      marginTop: 3,
+      color: '#785E48',
+      fontFamily: 'serif',
+      fontSize: 12,
+      lineHeight: 16,
+    },
+
+    librarySubtitleDark: {
+      color: '#DCC8AA',
+    },
+
+    libraryChevron: {
+      zIndex: 3,
+      width: 31,
+      height: 31,
+      alignItems: 'center',
+      justifyContent:
+        'center',
+      borderRadius: 16,
+      backgroundColor:
+        'rgba(255, 248, 231, 0.72)',
+    },
+
+    libraryChevronDark: {
+      backgroundColor:
+        'rgba(255, 240, 207, 0.12)',
+    },
+
+    libraryChevronText: {
+      marginTop: -2,
+      color: '#8B5C2E',
+      fontSize: 28,
+      lineHeight: 28,
+    },
+
+    libraryChevronTextDark: {
+      color: '#F2D59D',
+    },
+
+    extraSection: {
+      marginTop: 18,
+    },
+
+    extraHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+
+    extraTitle: {
+      flex: 1,
+      color: '#52351F',
+      fontFamily: 'serif',
+      fontSize: 21,
+      fontWeight: '700',
+    },
+
+    extraOrnament: {
+      color: '#9D6D39',
+    },
+
+    extraCard: {
+      minHeight: 62,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent:
+        'space-between',
+      marginBottom: 8,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+      borderRadius: 15,
+      backgroundColor:
+        '#F6E7CA',
+      borderWidth: 1,
+      borderColor:
+        'rgba(126, 82, 38, 0.2)',
+    },
+
+    extraCardTitle: {
+      color: '#422B1D',
+      fontFamily: 'serif',
+      fontSize: 16,
+      fontWeight: '700',
+    },
+
+    extraCardSubtitle: {
+      marginTop: 3,
+      color: '#846B55',
+      fontSize: 11,
+    },
+
+    extraArrow: {
+      color: '#966535',
+      fontSize: 27,
     },
 
     errorCard: {
-      padding:
-        spacing.md,
-      marginBottom:
-        spacing.xl,
-      borderRadius:
-        radius.md,
+      marginTop: 14,
+      padding: 12,
+      borderRadius: 14,
       backgroundColor:
-        '#F6E9E7',
+        '#F5D9CF',
     },
 
     errorText: {
-      color:
-        colors.liturgical,
-      fontSize: 14,
-      lineHeight: 20,
+      color: '#8E3B35',
+      fontSize: 13,
+      lineHeight: 19,
+    },
+
+    pressed: {
+      opacity: 0.7,
     },
   });
