@@ -191,7 +191,7 @@ export const ContinueReadingScreen = ({navigation}) => {
     setProgress(current => current.filter(item => item.id !== id));
   };
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 62;
+  const headerHeight = insets.top + 56;
 
   return (
     <AppBackground imageOpacity={0.72}>
