@@ -4,9 +4,6 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {WebView} from 'react-native-webview';
 
 import {deleteSavedItem, saveItem} from '../../services/savedItems';
-import {colors} from '../../theme';
-
-
 const scriptSafeJson = value =>
   JSON.stringify(value)
     .replace(/</g, '\\u003c')
