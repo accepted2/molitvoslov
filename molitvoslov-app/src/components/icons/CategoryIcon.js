@@ -4,25 +4,16 @@ import {StyleSheet, View} from 'react-native';
 const INK = '#95602E';
 const SLOT = '#F5E2C4';
 
-const Ray = ({rotate}) => (
-  <View
-    style={[
-      styles.ray,
-      {
-        transform: [{rotate: `${rotate}deg`}],
-      },
-    ]}
-  />
-);
-
 const Sun = () => (
   <View style={styles.canvas}>
-    {[0, 45, 90, 135].map(angle => (
-      <React.Fragment key={angle}>
-        <Ray rotate={angle} />
-        <Ray rotate={angle + 180} />
-      </React.Fragment>
-    ))}
+    <View style={styles.sunRayTop} />
+    <View style={styles.sunRayBottom} />
+    <View style={styles.sunRayLeft} />
+    <View style={styles.sunRayRight} />
+    <View style={styles.sunRayTopLeft} />
+    <View style={styles.sunRayTopRight} />
+    <View style={styles.sunRayBottomLeft} />
+    <View style={styles.sunRayBottomRight} />
     <View style={styles.sunCore} />
   </View>
 );
@@ -106,15 +97,81 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
 
-  ray: {
+  sunRayTop: {
     position: 'absolute',
     left: 22,
-    top: 3,
+    top: 1,
     width: 2,
-    height: 10,
+    height: 9,
     borderRadius: 2,
     backgroundColor: INK,
-    transformOrigin: '1px 20px',
+  },
+  sunRayBottom: {
+    position: 'absolute',
+    left: 22,
+    bottom: 1,
+    width: 2,
+    height: 9,
+    borderRadius: 2,
+    backgroundColor: INK,
+  },
+  sunRayLeft: {
+    position: 'absolute',
+    left: 1,
+    top: 22,
+    width: 9,
+    height: 2,
+    borderRadius: 2,
+    backgroundColor: INK,
+  },
+  sunRayRight: {
+    position: 'absolute',
+    right: 1,
+    top: 22,
+    width: 9,
+    height: 2,
+    borderRadius: 2,
+    backgroundColor: INK,
+  },
+  sunRayTopLeft: {
+    position: 'absolute',
+    left: 7,
+    top: 7,
+    width: 2,
+    height: 9,
+    borderRadius: 2,
+    backgroundColor: INK,
+    transform: [{rotate: '-45deg'}],
+  },
+  sunRayTopRight: {
+    position: 'absolute',
+    right: 7,
+    top: 7,
+    width: 2,
+    height: 9,
+    borderRadius: 2,
+    backgroundColor: INK,
+    transform: [{rotate: '45deg'}],
+  },
+  sunRayBottomLeft: {
+    position: 'absolute',
+    left: 7,
+    bottom: 7,
+    width: 2,
+    height: 9,
+    borderRadius: 2,
+    backgroundColor: INK,
+    transform: [{rotate: '45deg'}],
+  },
+  sunRayBottomRight: {
+    position: 'absolute',
+    right: 7,
+    bottom: 7,
+    width: 2,
+    height: 9,
+    borderRadius: 2,
+    backgroundColor: INK,
+    transform: [{rotate: '-45deg'}],
   },
   sunCore: {
     position: 'absolute',
