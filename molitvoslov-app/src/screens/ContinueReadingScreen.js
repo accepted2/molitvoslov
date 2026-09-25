@@ -1,10 +1,9 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
-import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
-import {LinearGradient} from 'expo-linear-gradient';
 import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
@@ -201,25 +200,31 @@ export const ContinueReadingScreen = ({navigation}) => {
         backgroundColor="transparent"
       />
 
-      <View style={styles.header}>
-        <Pressable hitSlop={10} onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backText}>‹</Text>
-        </Pressable>
-
-        <View style={styles.headerText}>
-          <Text style={styles.title}>Продолжить чтение</Text>
-          <Text style={styles.subtitle}>Все начатые тексты и сохранённый прогресс</Text>
-        </View>
-
-        <Text style={styles.headerCross}>☦</Text>
-      </View>
-
       {loading ? (
-        <View style={styles.center}>
+        <View
+          style={[
+            styles.center,
+            {
+              paddingTop:
+                headerHeight,
+            },
+          ]}
+        >
           <ActivityIndicator size="large" color="#8A5A38" />
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.content,
+            {
+              paddingTop:
+                headerHeight + 18,
+              paddingBottom:
+                96 + insets.bottom,
+            },
+          ]}
+        >
           {items.length ? (
             items.map(item => (
               <View key={item.id} style={styles.card}>
@@ -277,6 +282,12 @@ export const ContinueReadingScreen = ({navigation}) => {
         </ScrollView>
       )}
 
+      <FixedSectionHeader
+        title="Продолжить чтение"
+        navigation={navigation}
+        topInset={insets.top}
+      />
+
       <BottomNav
         navigation={navigation}
         active={null}
@@ -291,60 +302,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F3E4C6',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 88,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    backgroundColor: '#F7ECD7',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(126, 82, 38, 0.18)',
-  },
-  backButton: {
-    width: 42,
-    height: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 21,
-    backgroundColor: 'rgba(255,255,255,0.42)',
-  },
-  backText: {
-    marginTop: -3,
-    color: '#7D502B',
-    fontSize: 36,
-    lineHeight: 38,
-  },
-  headerText: {
-    flex: 1,
-    marginLeft: 10,
-  },
-  title: {
-    color: '#422A1B',
-    fontFamily: 'serif',
-    fontSize: 24,
-    lineHeight: 29,
-    fontWeight: '700',
-  },
-  subtitle: {
-    marginTop: 3,
-    color: '#836B55',
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  headerCross: {
-    marginLeft: 8,
-    color: '#9A6A37',
-    fontSize: 24,
-  },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   content: {
-    padding: 14,
-    paddingBottom: 30,
+    paddingHorizontal: 14,
   },
   card: {
     position: 'relative',
