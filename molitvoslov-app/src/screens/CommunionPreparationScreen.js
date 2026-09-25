@@ -23,6 +23,11 @@ import {
   radius,
   spacing,
 } from '../theme';
+import {BottomNav} from "../components/navigation/BottomNav";
+import {FixedSectionHeader} from "../components/navigation/FixedSectionHeader";
+import {StatusBar} from "expo-status-bar";
+import {AppBackground} from "../components/layout/AppBackground";
+import {useSafeAreaInsets} from "react-native-safe-area-context";
 
 
 const CANON_ORDER = [
@@ -107,7 +112,8 @@ export const CommunionPreparationScreen = ({
     setError,
   ] = useState(null);
 
-
+  const insets = useSafeAreaInsets();
+  const headerHeight = insets.top + 62;
   const loadCanons =
     useCallback(async () => {
       try {
@@ -163,7 +169,6 @@ export const CommunionPreparationScreen = ({
       ]
     );
 
-
   const openCanon =
     canon => {
       navigation.navigate(
@@ -181,7 +186,6 @@ export const CommunionPreparationScreen = ({
       );
     };
 
-
   const openPrayerRule =
     slug => {
       navigation.navigate(
@@ -191,8 +195,6 @@ export const CommunionPreparationScreen = ({
         }
       );
     };
-
-
   if (loading) {
     return (
       <View
@@ -216,206 +218,142 @@ export const CommunionPreparationScreen = ({
     );
   }
 
-
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={
-        styles.content
-      }
-      showsVerticalScrollIndicator={
-        false
-      }
-    >
-      <View
-        style={styles.intro}
-      >
-        <Text
-          style={styles.introTitle}
+    <AppBackground imageOpacity={0.72}>
+      <StatusBar
+        style="light"
+        translucent
+        backgroundColor="transparent"
+      />
+
+      <View style={styles.screen}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[
+            styles.content,
+            {
+              paddingTop: headerHeight + 20,
+              paddingBottom: 24,
+            },
+          ]}
+          showsVerticalScrollIndicator={false}
         >
-          Ко Святому Причащению
-        </Text>
+          <Text style={styles.sectionTitle}>
+            Каноны
+          </Text>
 
-        <Text
-          style={styles.introText}
-        >
-          Каноны, последование и благодарственные молитвы собраны в одном месте.
-        </Text>
-      </View>
+          {communionCanons.map(canon => (
+            <TouchableOpacity
+              key={canon.slug}
+              style={styles.item}
+              activeOpacity={0.7}
+              onPress={() => openCanon(canon)}
+            >
+              <View style={styles.textContainer}>
+                <Text
+                  style={styles.title}
+                  numberOfLines={2}
+                >
+                  {canon.title}
+                </Text>
 
+                {!!canon.tone && (
+                  <Text style={styles.description}>
+                    {canon.tone}
+                  </Text>
+                )}
+              </View>
 
-      <Text
-        style={styles.sectionTitle}
-      >
-        Каноны
-      </Text>
+              <Text style={styles.arrow}>
+                ›
+              </Text>
+            </TouchableOpacity>
+          ))}
 
-      {communionCanons.map(
-        canon => (
+          {communionCanons.length !== CANON_ORDER.length && (
+            <View style={styles.warning}>
+              <Text style={styles.warningText}>
+                Не все три канона найдены в базе. Проверьте импорт канонов.
+              </Text>
+            </View>
+          )}
+
+          <Text
+            style={[
+              styles.sectionTitle,
+              styles.afterSectionTitle,
+            ]}
+          >
+            Последование и молитвы
+          </Text>
+
           <TouchableOpacity
-            key={canon.slug}
             style={styles.item}
             activeOpacity={0.7}
             onPress={() =>
-              openCanon(
-                canon
+              openPrayerRule(
+                'posledovanie-ko-svyatomu-prichashcheniyu'
               )
             }
           >
-            <View
-              style={
-                styles.iconContainer
-              }
-            >
-              <Text
-                style={styles.icon}
-              >
-                ☦
-              </Text>
-            </View>
-
-            <View
-              style={
-                styles.textContainer
-              }
-            >
+            <View style={styles.textContainer}>
               <Text
                 style={styles.title}
                 numberOfLines={2}
               >
-                {canon.title}
+                Последование ко Святому Причащению
               </Text>
-
-              {!!canon.tone && (
-                <Text
-                  style={
-                    styles.description
-                  }
-                >
-                  {canon.tone}
-                </Text>
-              )}
             </View>
 
-            <Text
-              style={styles.arrow}
-            >
+            <Text style={styles.arrow}>
               ›
             </Text>
           </TouchableOpacity>
-        )
-      )}
 
-      {communionCanons.length !==
-        CANON_ORDER.length && (
-        <View
-          style={styles.warning}
-        >
-          <Text
-            style={styles.warningText}
+          <TouchableOpacity
+            style={styles.item}
+            activeOpacity={0.7}
+            onPress={() =>
+              openPrayerRule(
+                'blagodarstvennye-molitvy-po-svyatom-prichashchenii'
+              )
+            }
           >
-            Не все три канона найдены в базе. Проверьте импорт канонов.
-          </Text>
-        </View>
-      )}
+            <View style={styles.textContainer}>
+              <Text
+                style={styles.title}
+                numberOfLines={2}
+              >
+                Благодарственные молитвы по Святом Причащении
+              </Text>
+            </View>
 
+            <Text style={styles.arrow}>
+              ›
+            </Text>
+          </TouchableOpacity>
 
-      <Text
-        style={[
-          styles.sectionTitle,
-          styles.afterSectionTitle,
-        ]}
-      >
-        Последование и молитвы
-      </Text>
+          {!!error && (
+            <View style={styles.warning}>
+              <Text style={styles.warningText}>
+                {error}
+              </Text>
+            </View>
+          )}
+        </ScrollView>
 
-      <TouchableOpacity
-        style={styles.item}
-        activeOpacity={0.7}
-        onPress={() =>
-          openPrayerRule(
-            'posledovanie-ko-svyatomu-prichashcheniyu'
-          )
-        }
-      >
-        <View
-          style={styles.iconContainer}
-        >
-          <Text
-            style={styles.icon}
-          >
-            ☦
-          </Text>
-        </View>
+        <FixedSectionHeader
+          title="Ко Святому Причащению"
+          navigation={navigation}
+          topInset={insets.top}
+        />
 
-        <View
-          style={styles.textContainer}
-        >
-          <Text
-            style={styles.title}
-            numberOfLines={2}
-          >
-            Последование ко Святому Причащению
-          </Text>
-        </View>
-
-        <Text
-          style={styles.arrow}
-        >
-          ›
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.item}
-        activeOpacity={0.7}
-        onPress={() =>
-          openPrayerRule(
-            'blagodarstvennye-molitvy-po-svyatom-prichashchenii'
-          )
-        }
-      >
-        <View
-          style={styles.iconContainer}
-        >
-          <Text
-            style={styles.icon}
-          >
-            ☦
-          </Text>
-        </View>
-
-        <View
-          style={styles.textContainer}
-        >
-          <Text
-            style={styles.title}
-            numberOfLines={2}
-          >
-            Благодарственные молитвы по Святом Причащении
-          </Text>
-        </View>
-
-        <Text
-          style={styles.arrow}
-        >
-          ›
-        </Text>
-      </TouchableOpacity>
-
-
-      {!!error && (
-        <View
-          style={styles.warning}
-        >
-          <Text
-            style={styles.warningText}
-          >
-            {error}
-          </Text>
-        </View>
-      )}
-    </ScrollView>
+        <BottomNav
+          navigation={navigation}
+          active={null}
+        />
+      </View>
+    </AppBackground>
   );
 };
 
@@ -427,16 +365,16 @@ const styles =
       backgroundColor:
         colors.background,
     },
-
-    content: {
-      paddingHorizontal:
-        spacing.sm,
-      paddingTop:
-        spacing.sm,
-      paddingBottom:
-        spacing.xl,
+    screen: {
+      flex: 1,
+      backgroundColor: 'transparent',
     },
-
+    scroll: {
+      flex: 1,
+      backgroundColor: 'transparent',
+    },
+    content: {paddingHorizontal: 10,
+    },
     center: {
       flex: 1,
       alignItems: 'center',
@@ -445,14 +383,12 @@ const styles =
       backgroundColor:
         colors.background,
     },
-
     loadingText: {
       marginTop:
         spacing.sm,
       color:
         colors.textSecondary,
     },
-
     intro: {
       marginHorizontal: 2,
       marginBottom:
@@ -467,7 +403,6 @@ const styles =
       backgroundColor:
         colors.surfaceWarm,
     },
-
     introTitle: {
       fontSize: 20,
       lineHeight: 25,
@@ -476,7 +411,6 @@ const styles =
         colors.text,
       fontFamily: 'serif',
     },
-
     introText: {
       marginTop: 5,
       fontSize: 13,
@@ -484,39 +418,45 @@ const styles =
       color:
         colors.textSecondary,
     },
-
     sectionTitle: {
-      marginHorizontal:
-        spacing.xs,
-      marginBottom:
-        spacing.xs,
-      fontSize: 16,
-      lineHeight: 21,
-      fontWeight: '700',
-      color:
-        colors.text,
+      marginHorizontal: 5,
+      marginBottom: 6,
+      color: '#4A301D',
       fontFamily: 'serif',
+      fontSize: 17,
+      lineHeight: 22,
+      fontWeight: '700',
     },
 
     afterSectionTitle: {
-      marginTop:
-        spacing.lg,
+      marginTop: 18,
     },
 
     item: {
-      minHeight: 68,
+      minHeight: 55,
       flexDirection: 'row',
       alignItems: 'center',
-      marginVertical: 3,
-      borderRadius:
-        radius.md,
+
+      marginVertical: 2,
+
+      borderRadius: 13,
       borderWidth: 1,
-      borderColor:
-        colors.border,
-      backgroundColor:
-        colors.surface,
-      paddingVertical: 10,
-      paddingHorizontal: 10,
+      borderColor: 'rgba(126, 82, 38, 0.18)',
+
+      backgroundColor: 'rgba(255, 247, 232, 0.94)',
+
+      paddingVertical: 9,
+      paddingLeft: 14,
+      paddingRight: 12,
+
+      shadowColor: '#4A2817',
+      shadowOffset: {
+        width: 0,
+        height: 1,
+      },
+      shadowOpacity: 0.06,
+      shadowRadius: 3,
+      elevation: 1,
     },
 
     itemPending: {
@@ -548,33 +488,29 @@ const styles =
 
     title: {
       fontSize: 16,
-      lineHeight: 21,
+      lineHeight: 20,
       fontWeight: '700',
-      color:
-        colors.text,
+      color: '#3B281B',
       fontFamily: 'serif',
-    },
-
-    titlePending: {
-      color:
-        colors.textSecondary,
     },
 
     description: {
       marginTop: 3,
       fontSize: 12,
-      lineHeight: 17,
-      color:
-        colors.textSecondary,
+      lineHeight: 16,
+      color: '#806852',
     },
 
     arrow: {
-      marginLeft: 6,
+      marginLeft: 8,
+      color: '#9A714C',
       fontSize: 23,
-      color:
-        colors.textMuted,
+      lineHeight: 25,
     },
-
+    titlePending: {
+      color:
+        colors.textSecondary,
+    },
     soonBadge: {
       marginLeft: 8,
       paddingHorizontal: 8,

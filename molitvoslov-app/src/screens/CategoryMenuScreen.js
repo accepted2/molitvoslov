@@ -6,8 +6,15 @@ import {
     StyleSheet,
     TouchableOpacity,
 } from 'react-native';
+import {AppBackground} from '../components/layout/AppBackground';
+import {BottomNav} from "../components/navigation/BottomNav";
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {StatusBar} from 'expo-status-bar';
+import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+
 
 export const CategoryMenuScreen = ({ route, navigation }) => {
+
     const { parentCategory, subcategories } = route.params;
 
     const handlePress = (category) => {
@@ -17,8 +24,16 @@ export const CategoryMenuScreen = ({ route, navigation }) => {
             categoryName: category.name
         });
     };
+    const insets = useSafeAreaInsets();
+    const headerHeight = insets.top + 62;
 
     return (
+      <AppBackground imageOpacity={0.72}>
+          <StatusBar
+            style="light"
+            translucent
+            backgroundColor="transparent"
+          />
         <View style={styles.container}>
             <Text style={styles.headerTitle}>{parentCategory.name}</Text>
             <FlatList
@@ -37,46 +52,87 @@ export const CategoryMenuScreen = ({ route, navigation }) => {
                     </TouchableOpacity>
                 )}
             />
+            <FixedSectionHeader
+              title={parentCategory.name}
+              navigation={navigation}
+              topInset={insets.top}
+            />
+            <BottomNav
+              navigation={navigation}
+              active={null}
+            />
         </View>
+          </AppBackground>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: 'transparent',
+    },
+    list: {
+        paddingHorizontal: 12,
+        paddingBottom: 24,
     },
     headerTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: '#2c3e50',
-        padding: 16,
+        paddingHorizontal: 16,
+        paddingTop: 20,
+        paddingBottom: 14,
+        color: '#4A2D1A',
+        fontFamily: 'serif',
+        fontSize: 25,
+        lineHeight: 31,
+        fontWeight: '700',
         textAlign: 'center',
     },
     menuItem: {
+        minHeight: 66,
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 16,
-        backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-        marginHorizontal: 10,
-        marginVertical: 4,
-        borderRadius: 10,
+        marginBottom: 9,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderRadius: 17,
+        borderWidth: 1,
+        borderColor: 'rgba(122, 77, 36, 0.24)',
+        backgroundColor: 'rgba(255, 244, 222, 0.92)',
+        shadowColor: '#4A2817',
+        shadowOffset: {width: 0, height: 3},
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
+        elevation: 2,
     },
     menuIcon: {
-        fontSize: 24,
-        marginRight: 15,
+        width: 38,
+        color: '#996332',
+        fontFamily: 'serif',
+        fontSize: 23,
+        textAlign: 'center',
     },
     menuTextContainer: {
         flex: 1,
+        marginLeft: 10,
     },
     menuTitle: {
-        fontSize: 16,
-        color: '#2c3e50',
+        color: '#382417',
+        fontFamily: 'serif',
+        fontSize: 17,
+        lineHeight: 22,
+        fontWeight: '700',
+    },
+    arrowCircle: {
+        width: 32,
+        height: 32,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 16,
+        backgroundColor: 'rgba(255, 249, 236, 0.92)',
     },
     arrow: {
-        fontSize: 20,
-        color: '#bdc3c7',
+        marginTop: -2,
+        color: '#8B592B',
+        fontSize: 27,
+        lineHeight: 27,
     },
 });

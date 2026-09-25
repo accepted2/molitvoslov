@@ -3,7 +3,13 @@ import React, {
   useEffect,
   useState,
 } from 'react';
+import {AppBackground} from '../components/layout/AppBackground';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {StatusBar} from 'expo-status-bar';
 
+
+import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {BottomNav} from '../components/navigation/BottomNav';
 import {
   ActivityIndicator,
   FlatList,
@@ -33,28 +39,16 @@ import {
 } from '../theme';
 
 
-export const CanonListScreen = ({
-  navigation,
-}) => {
-  const [
-    canons,
-    setCanons,
-  ] = useState([]);
 
-  const [
-    savedCanons,
-    setSavedCanons,
-  ] = useState([]);
+export const CanonListScreen = ({navigation,}) =>
+{
+  const [canons, setCanons,] = useState([]);
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
+  const [savedCanons, setSavedCanons,] = useState([]);
 
-  const [
-    error,
-    setError,
-  ] = useState(null);
+  const [loading, setLoading,] = useState(true);
+
+  const [error, setError,] = useState(null);
 
 
   const loadSavedCanons =
@@ -84,7 +78,8 @@ export const CanonListScreen = ({
         );
       }
     }, []);
-
+  const insets = useSafeAreaInsets();
+  const headerHeight = insets.top + 62;
 
   const loadCanons =
     useCallback(async () => {
@@ -129,13 +124,11 @@ export const CanonListScreen = ({
       loadSavedCanons,
     ]);
 
-
   useEffect(() => {
     loadCanons();
   }, [
     loadCanons,
   ]);
-
 
   useFocusEffect(
     useCallback(() => {
@@ -144,7 +137,6 @@ export const CanonListScreen = ({
       loadSavedCanons,
     ])
   );
-
 
   const getSavedCanon =
     canonId =>
@@ -157,7 +149,6 @@ export const CanonListScreen = ({
               canonId
             )
       );
-
 
   const toggleFavorite =
     async canon => {
@@ -231,7 +222,6 @@ export const CanonListScreen = ({
       }
     };
 
-
   const openCanon =
     canon => {
       navigation.navigate(
@@ -248,7 +238,6 @@ export const CanonListScreen = ({
         }
       );
     };
-
 
   if (loading) {
     return (
@@ -274,8 +263,6 @@ export const CanonListScreen = ({
       </View>
     );
   }
-
-
   if (error) {
     return (
       <View
@@ -296,26 +283,33 @@ export const CanonListScreen = ({
 
 
   return (
+    <AppBackground imageOpacity={0.72}>
+      <StatusBar
+        style="light"
+        translucent
+        backgroundColor="transparent"
+      />
     <View
       style={
         styles.container
       }
     >
       <FlatList
-        data={
-          canons
-        }
+        data={canons}
         keyExtractor={
           item =>
             String(
               item.id
             )
         }
-        contentContainerStyle={
-          styles.listContent
-        }
-        renderItem={({
-          item,
+        contentContainerStyle={[
+          styles.listContent,
+          {
+            paddingTop: headerHeight + 20,
+            paddingBottom: 80 + insets.bottom,
+          }
+        ]}
+        renderItem={({item,
         }) => {
           const saved =
             !!getSavedCanon(
@@ -469,8 +463,20 @@ export const CanonListScreen = ({
           </View>
         }
       />
+      <FixedSectionHeader
+        title="Каноны"
+        navigation={navigation}
+        topInset={insets.top}
+      />
+
+      <BottomNav
+        navigation={navigation}
+        active={null}
+      />
     </View>
+    </AppBackground>
   );
+
 };
 
 
@@ -478,14 +484,12 @@ const styles =
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor:
-        colors.background,
+      backgroundColor: 'transparent',
     },
-
     listContent: {
-      paddingVertical: 5,
+      paddingTop: 100,
+      paddingBottom: 18,
     },
-
     center: {
       flex: 1,
       justifyContent:
@@ -495,41 +499,40 @@ const styles =
       backgroundColor:
         colors.background,
     },
-
     loadingText: {
       marginTop: 8,
       color:
         colors.textSecondary,
     },
-
     error: {
       paddingHorizontal: 24,
       textAlign: 'center',
       color:
         colors.liturgical,
     },
-
     item: {
       flexDirection: 'row',
-      alignItems: 'stretch',
-      marginHorizontal: 8,
-      marginVertical: 3,
-      borderRadius: 10,
+      alignItems: 'center',
+      marginHorizontal: 12,
+      marginVertical: 5,
+      minHeight: 66,
+      borderRadius: 17,
       borderWidth: 1,
-      borderColor:
-        colors.border,
-      backgroundColor:
-        colors.surface,
+      borderColor: 'rgba(126, 82, 38, 0.22)',
+      backgroundColor: 'rgba(255, 246, 227, 0.94)',
+      shadowColor: '#51301B',
+      shadowOffset: {width: 0, height: 2},
+      shadowOpacity: 0.09,
+      shadowRadius: 5,
+      elevation: 2,
       overflow: 'hidden',
     },
-
     itemSaved: {
       borderColor:
         colors.borderStrong,
       backgroundColor:
         colors.surfaceWarm,
     },
-
     itemMain: {
       flex: 1,
       flexDirection: 'row',
@@ -538,23 +541,19 @@ const styles =
       paddingLeft: 10,
       paddingRight: 5,
     },
-
     iconContainer: {
       width: 30,
       alignItems: 'center',
       marginRight: 7,
     },
-
     icon: {
       fontSize: 22,
       color:
         colors.accent,
     },
-
     textContainer: {
       flex: 1,
     },
-
     title: {
       fontSize: 16,
       fontWeight: '700',
@@ -563,7 +562,6 @@ const styles =
       lineHeight: 21,
       fontFamily: 'serif',
     },
-
     tone: {
       marginTop: 3,
       fontSize: 11,
@@ -571,7 +569,6 @@ const styles =
       color:
         colors.accent,
     },
-
     description: {
       marginTop: 3,
       fontSize: 12,
@@ -579,14 +576,12 @@ const styles =
       color:
         colors.textSecondary,
     },
-
     arrow: {
       marginLeft: 5,
       fontSize: 22,
       color:
         colors.textMuted,
     },
-
     favoriteButton: {
       width: 42,
       alignItems: 'center',
@@ -598,32 +593,26 @@ const styles =
       backgroundColor:
         'rgba(255,255,255,0.25)',
     },
-
     favoriteButtonActive: {
       backgroundColor:
         colors.surfaceMuted,
     },
-
     favoriteText: {
       fontSize: 23,
       color:
         colors.textMuted,
     },
-
     favoriteTextActive: {
       color:
         colors.accent,
     },
-
     pressed: {
       opacity: 0.6,
     },
-
     emptyContainer: {
       padding: 24,
       alignItems: 'center',
     },
-
     emptyText: {
       color:
         colors.textSecondary,
