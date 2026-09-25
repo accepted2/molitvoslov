@@ -2,38 +2,19 @@ import React, {
   useCallback,
   useState,
 } from 'react';
+import {AppBackground} from '../components/layout/AppBackground';
+import {ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View,} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {StatusBar} from 'expo-status-bar';
 
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {useFocusEffect,} from '@react-navigation/native';
 
-import {
-  useFocusEffect,
-} from '@react-navigation/native';
+import {BottomNav,} from '../components/navigation/BottomNav';
 
-import {
-  SafeAreaView,
-} from 'react-native-safe-area-context';
+import {deleteSavedItem, getSavedItems,} from '../services/savedItems';
 
-import {
-  BottomNav,
-} from '../components/navigation/BottomNav';
-
-import {
-  deleteSavedItem,
-  getSavedItems,
-} from '../services/savedItems';
-
-import {
-  colors,
-  radius,
-  spacing,
-} from '../theme';
+import {colors, radius, spacing, }from '../theme';
 
 
 export const FavoritesScreen = ({
@@ -54,7 +35,8 @@ export const FavoritesScreen = ({
     setError,
   ] = useState(null);
 
-
+  const insets = useSafeAreaInsets();
+  const headerHeight = insets.top + 62;
   const loadData =
     useCallback(async () => {
       try {
@@ -81,8 +63,6 @@ export const FavoritesScreen = ({
         setLoading(false);
       }
     }, []);
-
-
   useFocusEffect(
     useCallback(() => {
       loadData();
@@ -90,8 +70,6 @@ export const FavoritesScreen = ({
       loadData,
     ])
   );
-
-
   const removeItem =
     async itemId => {
       try {
@@ -114,8 +92,6 @@ export const FavoritesScreen = ({
         );
       }
     };
-
-
   const makeFocusTarget =
     item => ({
       id:
@@ -140,8 +116,6 @@ export const FavoritesScreen = ({
         item.metadata ||
         {},
     });
-
-
   const openItem =
     item => {
       const metadata =
@@ -313,8 +287,6 @@ export const FavoritesScreen = ({
         );
       }
     };
-
-
   const getItemTitle =
     item =>
       item.item_title ||
@@ -324,40 +296,21 @@ export const FavoritesScreen = ({
 
 
   return (
-    <SafeAreaView
-      style={styles.safeArea}
-      edges={['top']}
-    >
+
+      <AppBackground imageOpacity={0.72}>
+        <StatusBar
+          style="light"
+          translucent
+          backgroundColor="transparent"
+        />
       <View
         style={styles.screen}
       >
-        <View
-          style={styles.header}
-        >
-          <Text
-            style={styles.title}
-          >
-            Избранное
-          </Text>
-
-          <Text
-            style={styles.subtitle}
-          >
-            Молитвы, псалмы,
-            акафисты, каноны и
-            сохранённые фрагменты
-          </Text>
-        </View>
-
-
         {loading ? (
-          <View
-            style={styles.center}
+          <View style={styles.center}
           >
             <ActivityIndicator
-              color={
-                colors.accent
-              }
+              color={colors.accent}
             />
           </View>
         ) : error ? (
@@ -373,20 +326,17 @@ export const FavoritesScreen = ({
         ) : (
           <FlatList
             data={items}
-            keyExtractor={
-              item =>
-                String(
-                  item.id
-                )
-            }
-            showsVerticalScrollIndicator={
-              false
-            }
-            contentContainerStyle={
+            keyExtractor={item => String(item.id)}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[
               items.length
                 ? styles.list
-                : styles.emptyList
-            }
+                : styles.emptyList,
+              {
+                paddingTop: headerHeight + 20,
+                paddingBottom: 115 + insets.bottom,
+              },
+            ]}
             ListEmptyComponent={
               <View
                 style={
@@ -527,13 +477,20 @@ export const FavoritesScreen = ({
             )}
           />
         )}
+        <FixedSectionHeader
+          title="Избранное"
+          navigation={navigation}
+          topInset={insets.top}
+          showBack={false}
+        />
+        <BottomNav
+          navigation={navigation}
+          active="favorites"
+        />
       </View>
 
-      <BottomNav
-        navigation={navigation}
-        active="favorites"
-      />
-    </SafeAreaView>
+      </AppBackground>
+
   );
 };
 
@@ -548,6 +505,7 @@ const styles =
 
     screen: {
       flex: 1,
+      backgroundColor: 'transparent',
     },
 
     header: {
@@ -588,8 +546,6 @@ const styles =
         spacing.md,
       paddingTop:
         spacing.sm,
-      paddingBottom:
-        spacing.xl,
       gap:
         spacing.sm,
     },
@@ -643,13 +599,10 @@ const styles =
     },
 
     card: {
-      borderRadius:
-        radius.lg,
-      backgroundColor:
-        colors.surface,
+      borderRadius: 17,
+      backgroundColor: 'rgba(255, 244, 222, 0.94)',
       borderWidth: 1,
-      borderColor:
-        colors.border,
+      borderColor: 'rgba(126, 82, 38, 0.22)',
       overflow: 'hidden',
     },
 

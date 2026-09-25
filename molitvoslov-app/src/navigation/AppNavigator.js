@@ -1,6 +1,7 @@
 import React from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
+import {StyleSheet, Text, View} from 'react-native';
 
 import {MenuScreen} from '../screens/MenuScreen';
 import {CategoryMenuScreen} from '../screens/CategoryMenuScreen';
@@ -20,8 +21,20 @@ import {FavoritesScreen} from '../screens/FavoritesScreen';
 import {ContinueReadingScreen} from '../screens/ContinueReadingScreen';
 import {AccountScreen} from '../screens/AccountScreen';
 import {colors} from '../theme';
-
+import {LinearGradient} from 'expo-linear-gradient';
 const Stack = createStackNavigator();
+
+const SectionHeaderTitle = ({title}) => (
+  <View style={styles.sectionHeaderTitle}>
+    <Text style={styles.sectionHeaderText}>{title}</Text>
+
+    <View style={styles.sectionHeaderOrnament}>
+      <View style={styles.sectionHeaderLine} />
+      <Text style={styles.sectionHeaderMark}>✦</Text>
+      <View style={styles.sectionHeaderLine} />
+    </View>
+  </View>
+);
 
 export const AppNavigator = () => (
   <NavigationContainer>
@@ -51,7 +64,11 @@ export const AppNavigator = () => (
         component={ContinueReadingScreen}
         options={{headerShown: false}}
       />
-      <Stack.Screen name="CategoryMenu" component={CategoryMenuScreen} options={{title: 'Категории'}} />
+      <Stack.Screen
+        name="CategoryMenu"
+        component={CategoryMenuScreen}
+        options={{headerShown: false}}
+      />
       <Stack.Screen name="TextsList" component={TextsListScreen} options={{title: 'Молитвы'}} />
       <Stack.Screen name="Book" component={BookScreen} options={{title: 'Чтение'}} />
       <Stack.Screen name="Reader" component={ReaderScreen} options={{title: 'Чтение'}} />
@@ -60,19 +77,27 @@ export const AppNavigator = () => (
         component={PrayerRuleScreen}
         options={{title: 'Молитвенное правило'}}
       />
-      <Stack.Screen name="Psalter" component={PsalterScreen} options={{title: 'Псалтирь'}} />
+      <Stack.Screen
+        name="Psalter"
+        component={PsalterScreen}
+        options={{headerShown: false}}
+      />
       <Stack.Screen name="Kathisma" component={KathismaScreen} options={{title: 'Кафизма'}} />
       <Stack.Screen
         name="AkathistList"
         component={AkathistListScreen}
-        options={{title: 'Акафисты'}}
+        options={{headerShown: false}}
       />
       <Stack.Screen
         name="Akathist"
         component={AkathistScreen}
         options={({route}) => ({title: route.params?.title || 'Акафист'})}
       />
-      <Stack.Screen name="CanonList" component={CanonListScreen} options={{title: 'Каноны'}} />
+      <Stack.Screen
+        name="CanonList"
+        component={CanonListScreen}
+        options={{headerShown: false}}
+      />
       <Stack.Screen
         name="Canon"
         component={CanonScreen}
@@ -81,9 +106,43 @@ export const AppNavigator = () => (
       <Stack.Screen
         name="CommunionPreparation"
         component={CommunionPreparationScreen}
-        options={{title: 'Ко Святому Причащению'}}
+        options={{headerShown: false}}
       />
       <Stack.Screen name="Account" component={AccountScreen} options={{headerShown: false}} />
     </Stack.Navigator>
   </NavigationContainer>
 );
+const styles = StyleSheet.create({
+  sectionHeaderTitle: {
+    minWidth: 150,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+
+  sectionHeaderText: {
+    color: '#3D281A',
+    fontFamily: 'serif',
+    fontSize: 20,
+    lineHeight: 24,
+    fontWeight: '700',
+  },
+
+  sectionHeaderOrnament: {
+    width: 125,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 3,
+  },
+
+  sectionHeaderLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(145, 94, 43, 0.42)',
+  },
+
+  sectionHeaderMark: {
+    marginHorizontal: 5,
+    color: '#A16B34',
+    fontSize: 7,
+  },
+});

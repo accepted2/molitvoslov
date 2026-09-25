@@ -4,7 +4,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-
+import {AppBackground} from '../components/layout/AppBackground';
 import {
   ActivityIndicator,
   FlatList,
@@ -25,6 +25,11 @@ import {
 import {
   useReadingProgress,
 } from '../hooks/useReadingProgress';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {StatusBar} from 'expo-status-bar';
+
+
+import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 
 
 import {
@@ -41,6 +46,7 @@ import {
   radius,
   spacing,
 } from '../theme';
+import {BottomNav} from "../components/navigation/BottomNav";
 
 
 export default function PsalterScreen({
@@ -104,7 +110,8 @@ export default function PsalterScreen({
     ])
   );
 
-
+  const insets = useSafeAreaInsets();
+  const headerHeight = insets.top + 62;
   const loadSavedKathismas =
     async psalterId => {
       try {
@@ -347,6 +354,12 @@ export default function PsalterScreen({
 
 
   return (
+    <AppBackground imageOpacity={0.72}>
+      <StatusBar
+        style="light"
+        translucent
+        backgroundColor="transparent"
+      />
     <View
       style={styles.container}
     >
@@ -363,9 +376,13 @@ export default function PsalterScreen({
               item.id
             )
         }
-        contentContainerStyle={
-          styles.listContent
-        }
+        contentContainerStyle={[
+          styles.listContent,
+          {
+            paddingTop: headerHeight + 20,
+            paddingBottom: 80 + insets.bottom,
+          }
+        ]}
         ListHeaderComponent={
           <View
             style={styles.header}
@@ -609,7 +626,17 @@ export default function PsalterScreen({
           );
         }}
       />
+      <FixedSectionHeader
+        title="Псалтирь"
+        navigation={navigation}
+        topInset={insets.top}
+      />
+      <BottomNav
+        navigation={navigation}
+        active={null}
+      />
     </View>
+    </AppBackground>
   );
 }
 
@@ -618,13 +645,12 @@ const styles =
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor:
-        colors.background,
+      backgroundColor: 'transparent',
     },
 
     listContent: {
-      padding:
-        spacing.sm,
+      paddingTop: 100,
+      paddingHorizontal: 8,
       paddingBottom: 32,
       gap: 9,
     },

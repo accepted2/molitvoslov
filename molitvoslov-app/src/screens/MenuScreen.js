@@ -1,4 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {LinearGradient} from 'expo-linear-gradient';
 import {
   ActivityIndicator,
   Alert,
@@ -10,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {BottomNav} from '../components/navigation/BottomNav';
@@ -77,11 +78,34 @@ const DecorativeCard = ({title, subtitle, symbol, artwork, onPress}) => (
       imageStyle={styles.libraryArtworkImage}
     />
 
-    <View pointerEvents="none" style={styles.libraryFade1} />
-    <View pointerEvents="none" style={styles.libraryFade2} />
-    <View pointerEvents="none" style={styles.libraryFade3} />
-    <View pointerEvents="none" style={styles.libraryFade4} />
-    <View pointerEvents="none" style={styles.libraryFade5} />
+    <LinearGradient
+      pointerEvents="none"
+      colors={[
+        '#FFF2DB',
+        'rgba(255, 242, 219, 0.98)',
+        'rgba(255, 242, 219, 0.82)',
+        'rgba(255, 242, 219, 0.48)',
+        'rgba(255, 242, 219, 0.16)',
+        'rgba(255, 242, 219, 0)',
+      ]}
+      locations={[0, 0.18, 0.4, 0.62, 0.82, 1]}
+      start={{x: 0, y: 0.5}}
+      end={{x: 1, y: 0.5}}
+      style={styles.libraryImageFade}
+    />
+    <LinearGradient
+      pointerEvents="none"
+      colors={[
+        'rgba(255, 242, 219, 0)',
+        'rgba(255, 242, 219, 0.45)',
+        'rgba(255, 242, 219, 0.82)',
+        '#FFF2DB',
+      ]}
+      locations={[0, 0.35, 0.7, 1]}
+      start={{x: 0, y: 0.5}}
+      end={{x: 1, y: 0.5}}
+      style={styles.libraryRightFade}
+    />
 
     <View style={styles.libraryIcon}>
       <Text style={styles.libraryIconText}>{symbol}</Text>
@@ -91,6 +115,7 @@ const DecorativeCard = ({title, subtitle, symbol, artwork, onPress}) => (
       <Text style={styles.libraryTitle} numberOfLines={2}>
         {title}
       </Text>
+
       {!!subtitle && (
         <Text style={styles.librarySubtitle} numberOfLines={2}>
           {subtitle}
@@ -114,6 +139,8 @@ export const MenuScreen = ({navigation}) => {
   const [dailyQuote, setDailyQuote] = useState(null);
   const [error, setError] = useState(null);
 
+  const insets = useSafeAreaInsets();
+  const headerHeight = insets.top + 62;
   const loadLibrary = useCallback(async () => {
     try {
       const [
@@ -372,8 +399,12 @@ export const MenuScreen = ({navigation}) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <StatusBar style="dark" />
+      <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
+        <StatusBar
+          style="light"
+          translucent
+          backgroundColor="transparent"
+        />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.accent} />
           <Text style={styles.loadingText}>Загрузка молитвослова...</Text>
@@ -383,13 +414,27 @@ export const MenuScreen = ({navigation}) => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
+      <StatusBar  style="light"
+                  translucent
+                  backgroundColor="transparent"/>
 
       <View style={styles.screen}>
+        <ImageBackground
+          source={homeArtwork.page_bg}
+          style={styles.pageBackground}
+          imageStyle={styles.pageBackgroundImage}
+          resizeMode="cover"
+        >
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[
+            styles.content,
+            {
+              // paddingTop: headerHeight + 20,
+              paddingBottom: 80 + insets.bottom,
+            }
+          ]}
         >
           <ImageBackground
             source={homeArtwork.hero_biblical}
@@ -397,7 +442,31 @@ export const MenuScreen = ({navigation}) => {
             style={styles.hero}
             imageStyle={styles.heroImage}
           >
-            <View style={styles.heroWash} />
+            {/*<View style={styles.heroWash} />*/}
+
+            <LinearGradient
+              pointerEvents="none"
+              colors={[
+                'rgba(45, 27, 16, 0.42)',
+                'rgba(45, 27, 16, 0.16)',
+                'rgba(45, 27, 16, 0)',
+              ]}
+              locations={[0, 0.55, 1]}
+              style={styles.heroTopGradient}
+            />
+            <LinearGradient
+              pointerEvents="none"
+              colors={[
+                'rgba(183, 138, 88, 0)',
+                'rgba(183, 138, 88, 0.08)',
+                'rgba(183, 138, 88, 0.22)',
+                'rgba(183, 138, 88, 0.5)',
+                'rgba(183, 138, 88, 0.82)',
+              ]}
+              locations={[0, 0.32, 0.56, 0.78, 1]}
+              style={styles.heroBottomGradient}
+            />
+
             <View style={styles.heroOrnament}>
               <Text style={styles.heroCross}>☦</Text>
               <Text style={styles.heroFlourish}>─── ✦ ───</Text>
@@ -411,13 +480,13 @@ export const MenuScreen = ({navigation}) => {
             <View style={styles.quoteCard}>
               <ImageBackground
                 source={homeArtwork.quote}
-                resizeMode="cover"
+                resizeMode="ccover"
                 style={styles.quoteArtwork}
                 imageStyle={styles.quoteArtworkImage}
               />
-              <View pointerEvents="none" style={styles.quoteFade1} />
-              <View pointerEvents="none" style={styles.quoteFade2} />
-              <View pointerEvents="none" style={styles.quoteFade3} />
+              {/*<View pointerEvents="none" style={styles.quoteFade1} />*/}
+              {/*<View pointerEvents="none" style={styles.quoteFade2} />*/}
+              {/*<View pointerEvents="none" style={styles.quoteFade3} />*/}
 
               <View style={styles.quoteContent}>
                 <View style={styles.quoteHeader}>
@@ -622,8 +691,9 @@ export const MenuScreen = ({navigation}) => {
             )}
           </View>
         </ScrollView>
+          <BottomNav navigation={navigation} active="home" />
+        </ImageBackground>
 
-        <BottomNav navigation={navigation} active="home" />
       </View>
     </SafeAreaView>
   );
@@ -640,7 +710,8 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 16,
-    backgroundColor: '#B78A58',
+
+    backgroundColor: 'transparent',
   },
   center: {
     flex: 1,
@@ -648,25 +719,47 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#F7ECD8',
   },
+  pageBackground: {
+    flex: 1,
+  },
+  pageBackgroundImage: {
+    opacity: 0.32,
+  },
   loadingText: {
     marginTop: spacing.md,
     color: '#6B5038',
     fontSize: 15,
   },
   hero: {
-    height: 248,
+    height: 270,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 38,
     paddingHorizontal: 22,
     overflow: 'hidden',
-    backgroundColor: '#D7A767',
+    backgroundColor: '#B78A58',
   },
   heroImage: {
-    opacity: 0.98,
+    opacity: 1,
   },
-  heroWash: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 232, 188, 0.08)',
+  // heroWash: {
+  //   ...StyleSheet.absoluteFillObject,
+  //   backgroundColor: 'rgba(255, 235, 205, 0.02)',
+  // },
+
+  heroTopGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 72,
+  },
+  heroBottomGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 140,
   },
   heroOrnament: {
     alignItems: 'center',
@@ -686,24 +779,31 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   brandTitle: {
-    color: '#452718',
+    marginTop: 1,
+    color: '#432515',
     fontFamily: 'serif',
-    fontSize: 39,
-    lineHeight: 45,
+    fontSize: 38,
+    lineHeight: 43,
     fontWeight: '700',
     textAlign: 'center',
-    textShadowColor: 'rgba(255,245,224,0.9)',
+    textShadowColor: 'rgba(255, 245, 220, 0.85)',
     textShadowOffset: {width: 0, height: 1},
-    textShadowRadius: 5,
+    textShadowRadius: 3,
+    zIndex: 3,
   },
   today: {
-    marginTop: 0,
-    color: '#513824',
+    marginTop: -1,
+    color: '#3F2A1E',
     fontFamily: 'serif',
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 14,
+    lineHeight: 19,
+    fontWeight: '600',
     textAlign: 'center',
     textTransform: 'capitalize',
+    textShadowColor: 'rgba(255, 245, 220, 0.85)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 2,
+    zIndex: 3,
   },
   heroDivider: {
     marginTop: 7,
@@ -712,62 +812,39 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   pageBody: {
-    marginTop: -5,
-    paddingHorizontal: 12,
-    paddingBottom: 14,
-    backgroundColor: '#B78A58',
+    marginTop: -82,
+    paddingHorizontal: 10,
+    paddingBottom: 4,
+    backgroundColor: 'transparent',
   },
-  quoteCard: {
-    position: 'relative',
-    minHeight: 174,
-    padding: 17,
-    borderRadius: 18,
-    overflow: 'hidden',
-    backgroundColor: '#FFF4DE',
-    borderWidth: 1,
-    borderColor: 'rgba(123, 79, 36, 0.24)',
-    shadowColor: '#4A2817',
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.14,
-    shadowRadius: 9,
-    elevation: 3,
-  },
+    quoteCard: {
+      position: 'relative',
+      minHeight: 148,
+      padding: 10,
+      borderRadius: 18,
+      overflow: 'hidden',
+      backgroundColor: '#FFF4DE',
+      borderWidth: 1,
+      borderColor: 'rgba(123, 79, 36, 0.22)',
+      shadowColor: '#4A2817',
+      shadowOffset: {width: 0, height: 4},
+      shadowOpacity: 0.14,
+      shadowRadius: 9,
+      elevation: 3,
+    },
   quoteArtwork: {
     position: 'absolute',
     top: 0,
-    right: 0,
+    right:10,
     bottom: 0,
-    width: '49%',
+    width: '120%',
   },
   quoteArtworkImage: {
-    opacity: 0.62,
+    opacity: 0.45,
     borderTopRightRadius: 17,
     borderBottomRightRadius: 17,
   },
-  quoteFade1: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: '49%',
-    width: '10%',
-    backgroundColor: 'rgba(255, 244, 222, 0.96)',
-  },
-  quoteFade2: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: '58%',
-    width: '10%',
-    backgroundColor: 'rgba(255, 244, 222, 0.65)',
-  },
-  quoteFade3: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: '67%',
-    width: '10%',
-    backgroundColor: 'rgba(255, 244, 222, 0.28)',
-  },
+
   quoteContent: {
     position: 'relative',
     zIndex: 2,
@@ -776,7 +853,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: 5,
   },
   quoteHeadingWrap: {
     flexDirection: 'row',
@@ -791,18 +868,18 @@ const styles = StyleSheet.create({
   quoteLabel: {
     color: '#7A4F2D',
     fontFamily: 'serif',
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '700',
   },
   widgetButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 31,
-    paddingHorizontal: 10,
+    height: 34,
+    paddingHorizontal: 11,
     borderWidth: 1,
     borderColor: 'rgba(126, 78, 34, 0.32)',
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.42)',
+    borderRadius: 17,
+    backgroundColor: 'rgba(255, 255, 255, 0.52)',
   },
   widgetIcon: {
     marginRight: 5,
@@ -818,9 +895,9 @@ const styles = StyleSheet.create({
   quoteRule: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: 160,
-    marginTop: 9,
-    marginBottom: 11,
+    width: 170,
+    marginTop: 5,
+    marginBottom: 8,
   },
   quoteRuleLine: {
     flex: 1,
@@ -833,16 +910,16 @@ const styles = StyleSheet.create({
     fontSize: 9,
   },
   quoteText: {
-    maxWidth: '78%',
+    maxWidth: '82%',
     color: '#3E2A1D',
     fontFamily: 'serif',
-    fontSize: 20,
+    fontSize: 19,
     lineHeight: 27,
     fontWeight: '500',
   },
   quoteSource: {
-    marginTop: 10,
-    color: '#8A6C51',
+    marginTop: 11,
+    color: '#1f0f0f',
     fontFamily: 'serif',
     fontSize: 11,
     lineHeight: 16,
@@ -1027,54 +1104,23 @@ const styles = StyleSheet.create({
   libraryArtwork: {
     position: 'absolute',
     top: 0,
-    right: 0,
+    right: -30,
     bottom: 0,
-    width: '57%',
+    width: '90%',
+
   },
   libraryArtworkImage: {
-    opacity: 1,
-    borderTopRightRadius: 16,
-    borderBottomRightRadius: 16,
+    opacity: 0.98,
+    // borderTopRightRadius: 16,
+    // borderBottomRightRadius: 16,
+
   },
-  libraryFade1: {
+  libraryImageFade: {
     position: 'absolute',
     top: 0,
+    right: '10%',
     bottom: 0,
-    left: '41%',
-    width: '8%',
-    backgroundColor: '#FFF2DB',
-  },
-  libraryFade2: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: '48%',
-    width: '8%',
-    backgroundColor: 'rgba(255, 242, 219, 0.84)',
-  },
-  libraryFade3: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: '55%',
-    width: '8%',
-    backgroundColor: 'rgba(255, 242, 219, 0.60)',
-  },
-  libraryFade4: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: '62%',
-    width: '8%',
-    backgroundColor: 'rgba(255, 242, 219, 0.34)',
-  },
-  libraryFade5: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: '69%',
-    width: '8%',
-    backgroundColor: 'rgba(255, 242, 219, 0.14)',
+    left: '10%',
   },
   libraryIcon: {
     zIndex: 3,
@@ -1091,6 +1137,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 2,
   },
+  libraryRightFade: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: '24%',
+    zIndex: 2,
+    borderTopRightRadius: 16,
+    borderBottomRightRadius: 16,
+  },
   libraryIconText: {
     color: '#94602E',
     fontFamily: 'serif',
@@ -1100,7 +1156,7 @@ const styles = StyleSheet.create({
   libraryText: {
     zIndex: 3,
     flex: 1,
-    maxWidth: '61%',
+    maxWidth: '60%',
     marginLeft: 11,
     paddingRight: 4,
   },
@@ -1110,11 +1166,12 @@ const styles = StyleSheet.create({
     fontSize: 17,
     lineHeight: 20,
     fontWeight: '700',
-    textShadowColor: 'rgba(255,248,232,0.9)',
+    textShadowColor: 'rgba(255, 248, 232, 0.95)',
+    textShadowOffset: {width: 0, height: 1},
     textShadowRadius: 2,
   },
   librarySubtitle: {
-    marginTop: 3,
+    marginTop: 2,
     color: '#745A45',
     fontFamily: 'serif',
     fontSize: 11,
@@ -1129,7 +1186,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 15,
-    backgroundColor: 'rgba(255, 249, 236, 0.90)',
+    backgroundColor: 'rgba(255, 250, 242, 0.92)',
     shadowColor: '#5A321B',
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.08,
