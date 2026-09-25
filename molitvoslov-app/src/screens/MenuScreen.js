@@ -109,54 +109,54 @@ const DecorativeCard = ({
   symbol,
   artwork,
   onPress,
-  dark = false,
 }) => (
   <Pressable
     onPress={onPress}
     style={({pressed}) => [
       styles.libraryCard,
-      dark &&
-      styles.libraryCardDark,
       pressed &&
       styles.pressed,
     ]}
   >
     <ImageBackground
-      source={{
-        uri: artwork,
-      }}
+      source={artwork}
       resizeMode="cover"
       style={styles.libraryArtwork}
       imageStyle={
         styles.libraryArtworkImage
       }
-    >
-      <View
-        style={[
-          styles.libraryArtworkWash,
-        ]}
-      />
-    </ImageBackground>
+    />
 
     <View
-      style={[
-        styles.libraryIcon,
-      ]}
-    >
-      <Text
-        style={[
-          styles.libraryIconText,
-        ]}
-      >
+      pointerEvents="none"
+      style={styles.libraryFade1}
+    />
+    <View
+      pointerEvents="none"
+      style={styles.libraryFade2}
+    />
+    <View
+      pointerEvents="none"
+      style={styles.libraryFade3}
+    />
+    <View
+      pointerEvents="none"
+      style={styles.libraryFade4}
+    />
+    <View
+      pointerEvents="none"
+      style={styles.libraryFade5}
+    />
+
+    <View style={styles.libraryIcon}>
+      <Text style={styles.libraryIconText}>
         {symbol}
       </Text>
     </View>
 
     <View style={styles.libraryText}>
       <Text
-        style={[
-          styles.libraryTitle,
-        ]}
+        style={styles.libraryTitle}
         numberOfLines={2}
       >
         {title}
@@ -164,9 +164,7 @@ const DecorativeCard = ({
 
       {!!subtitle && (
         <Text
-          style={[
-            styles.librarySubtitle,
-          ]}
+          style={styles.librarySubtitle}
           numberOfLines={2}
         >
           {subtitle}
@@ -174,16 +172,8 @@ const DecorativeCard = ({
       )}
     </View>
 
-    <View
-      style={[
-        styles.libraryChevron,
-      ]}
-    >
-      <Text
-        style={[
-          styles.libraryChevronText,
-        ]}
-      >
+    <View style={styles.libraryChevron}>
+      <Text style={styles.libraryChevronText}>
         ›
       </Text>
     </View>
@@ -813,9 +803,7 @@ export const MenuScreen = ({
           contentContainerStyle={styles.content}
         >
           <ImageBackground
-            source={{
-              uri: homeArtwork.hero_biblical,
-            }}
+            source={homeArtwork.hero_biblical}
             resizeMode="cover"
             style={styles.hero}
             imageStyle={styles.heroImage}
@@ -847,6 +835,27 @@ export const MenuScreen = ({
 
           <View style={styles.pageBody}>
             <View style={styles.quoteCard}>
+              <ImageBackground
+                source={homeArtwork.quote}
+                resizeMode="cover"
+                style={styles.quoteArtwork}
+                imageStyle={styles.quoteArtworkImage}
+              />
+
+              <View
+                pointerEvents="none"
+                style={styles.quoteFade1}
+              />
+              <View
+                pointerEvents="none"
+                style={styles.quoteFade2}
+              />
+              <View
+                pointerEvents="none"
+                style={styles.quoteFade3}
+              />
+
+              <View style={styles.quoteContent}>
               <View style={styles.quoteHeader}>
                 <View style={styles.quoteHeadingWrap}>
                   <Text style={styles.quoteLeaf}>
@@ -902,7 +911,7 @@ export const MenuScreen = ({
                   }
                 </Text>
               )}
-
+              </View>
             </View>
 
 
