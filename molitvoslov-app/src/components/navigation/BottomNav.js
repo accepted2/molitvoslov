@@ -24,12 +24,6 @@ const ITEMS = [
     symbol: '⌂',
   },
   {
-    key: 'bookmarks',
-    route: 'Bookmarks',
-    label: 'Закладки',
-    symbol: '⌑',
-  },
-  {
     key: 'favorites',
     route: 'Favorites',
     label: 'Избранное',
