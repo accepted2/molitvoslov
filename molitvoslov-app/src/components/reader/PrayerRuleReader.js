@@ -254,6 +254,31 @@ const HTML_TEMPLATE = String.raw`
       white-space: inherit;
     }
 
+    .reader-text.evening-minor-liturgical-text {
+      font-weight: 600;
+      text-align: left !important;
+      text-align-last: left !important;
+      text-justify: auto !important;
+      word-spacing: normal;
+    }
+
+    .reader-text.evening-minor-liturgical-text span {
+      color: var(--text) !important;
+      font-weight: inherit !important;
+    }
+
+    /* Вечернее правило имеет несколько собственных
+       типографических правил. Они намеренно не применяются
+       к утренним молитвам, канонам, акафистам и т. д. */
+    .evening-number-break {
+      display: block;
+      width: 100%;
+      height: 0;
+      margin: 0;
+      padding: 0;
+      line-height: 0;
+    }
+
     .paragraph-gap {
       display: block;
       width: 100%;
@@ -656,6 +681,9 @@ const HTML_TEMPLATE = String.raw`
       new Map();
 
     const savedRanges =
+      new Map();
+
+    const eveningItemKindMap =
       new Map();
 
     const state = {
@@ -1062,13 +1090,34 @@ const HTML_TEMPLATE = String.raw`
         return;
       }
 
+      const visibleFootnotes =
+        footnotes.filter(
+          footnote =>
+            !(
+              isMorningRule &&
+              Number(
+                footnote?.number
+              ) === 2 &&
+              /при желании читается по окончании утренних молитв/i.test(
+                String(
+                  footnote?.content ||
+                  ''
+                )
+              )
+            )
+        );
+
+      if (!visibleFootnotes.length) {
+        return;
+      }
+
       const wrapper =
         el(
           'div',
           'footnotes'
         );
 
-      footnotes.forEach(
+      visibleFootnotes.forEach(
         footnote => {
           wrapper.appendChild(
             el(
@@ -1112,6 +1161,696 @@ const HTML_TEMPLATE = String.raw`
             ' '
           )
           .trim();
+
+    const ruleIdentity =
+      normalizeLiturgicalValue(
+        [
+          DATA.rule?.name,
+          DATA.rule?.slug,
+        ]
+          .filter(Boolean)
+          .join(' ')
+      );
+
+    const isEveningRule =
+      /(?:^| )вечер/u.test(
+        ruleIdentity
+      ) ||
+      /молитвы на сон грядущим/u.test(
+        ruleIdentity
+      ) ||
+      [
+        'molitvy-na-son-griadushchim',
+        'molitvy-na-son-gryadushchim',
+      ].includes(
+        String(
+          DATA.rule?.slug ||
+          ''
+        )
+          .trim()
+          .toLowerCase()
+      ) ||
+      /vechern|evening/i.test(
+        String(
+          DATA.rule?.slug ||
+          ''
+        )
+      );
+
+
+    const isMorningRule =
+      /(?:^| )утрен/u.test(
+        ruleIdentity
+      ) ||
+      [
+        'molitvy-utrennie',
+      ].includes(
+        String(
+          DATA.rule?.slug ||
+          ''
+        )
+          .trim()
+          .toLowerCase()
+      ) ||
+      /utrenn|morning/i.test(
+        String(
+          DATA.rule?.slug ||
+          ''
+        )
+      );
+
+
+    const isDailyPrayerRule =
+      isEveningRule ||
+      isMorningRule;
+
+
+    const normalizeEveningUtilityValue =
+      value =>
+        String(
+          value ||
+          ''
+        )
+          .normalize(
+            'NFC'
+          )
+          .replace(
+            /[\u0300-\u036f\u0483-\u0487]/g,
+            ''
+          )
+          .toLowerCase()
+          .replace(
+            /ё/g,
+            'е'
+          )
+          .replace(
+            /[^а-я0-9]+/g,
+            ' '
+          )
+          .trim();
+
+
+    const normalizedEveningUtilityWithIndex =
+      value => {
+        const source =
+          String(
+            value ||
+            ''
+          );
+
+        const chars = [];
+        const originalIndex = [];
+
+        for (
+          let index = 0;
+          index < source.length;
+          index += 1
+        ) {
+          const originalChar =
+            source[index];
+
+          /* Не разлагаем й/Й: иначе breve потеряется вместе
+             с ударениями и «помилуй» превратится в «помилуи». */
+          if (
+            originalChar === 'й' ||
+            originalChar === 'Й'
+          ) {
+            chars.push(
+              originalChar
+            );
+            originalIndex.push(
+              index
+            );
+            continue;
+          }
+
+          const decomposed =
+            originalChar.normalize(
+              'NFD'
+            );
+
+          for (const char of decomposed) {
+            if (
+              /[\u0300-\u036f\u0483-\u0487]/u.test(
+                char
+              )
+            ) {
+              continue;
+            }
+
+            chars.push(
+              char
+            );
+            originalIndex.push(
+              index
+            );
+          }
+        }
+
+        return {
+          normalized:
+            chars.join(''),
+          originalIndex,
+        };
+      };
+
+
+    const findEveningUtilityBreakOffset =
+      value => {
+        if (!isDailyPrayerRule) {
+          return null;
+        }
+
+        const {
+          normalized,
+          originalIndex,
+        } =
+          normalizedEveningUtilityWithIndex(
+            value
+          );
+
+        const compact =
+          normalizeEveningUtilityValue(
+            value
+          );
+
+        let match = null;
+
+        if (
+          compact.startsWith(
+            'господи помилуй трижды слава и ныне'
+          )
+        ) {
+          match =
+            /Слава\s*,?\s*и\s+ныне\s*:/iu.exec(
+              normalized
+            );
+        } else if (
+          compact.startsWith(
+            'слава и ныне господи помилуй трижды'
+          )
+        ) {
+          match =
+            /Господи\s*,?\s*помилуй/iu.exec(
+              normalized
+            );
+        }
+
+        if (!match) {
+          return null;
+        }
+
+        const offset =
+          originalIndex[
+            match.index
+          ];
+
+        return Number.isFinite(
+          offset
+        )
+          ? offset
+          : null;
+      };
+
+
+    const isEveningCompactLiturgicalValue =
+      value => {
+        if (!isDailyPrayerRule) {
+          return false;
+        }
+
+        const content =
+          normalizeEveningUtilityValue(
+            value
+          );
+
+        if (!content) {
+          return false;
+        }
+
+        const lordHaveMercy =
+          /^господи помилуй(?: |$)/u.test(
+            content
+          ) &&
+          (
+            /(?:^| )трижды(?: |$)/u.test(
+              content
+            ) ||
+            /(?:^| )12 раз(?: |$)/u.test(
+              content
+            )
+          );
+
+        const gloryAndNow =
+          /^слава и ныне(?: |$)/u.test(
+            content
+          ) &&
+          /(?:^| )господи помилуй(?: |$)/u.test(
+            content
+          );
+
+        return (
+          lordHaveMercy ||
+          gloryAndNow
+        );
+      };
+
+
+    const isEveningCompactLiturgicalItem =
+      text => {
+        if (!isDailyPrayerRule) {
+          return false;
+        }
+
+        const utilitySlugs =
+          new Set([
+            'go-spodi-pomi-lui-trizhdy-sla-va',
+            'go-spodi-pomi-lui-raz',
+            'sla-va-i-ny-ne-go-spodi',
+          ]);
+
+        if (
+          utilitySlugs.has(
+            String(
+              text?.slug ||
+              ''
+            )
+          )
+        ) {
+          return true;
+        }
+
+        return (
+          isEveningCompactLiturgicalValue(
+            text?.content
+          )
+        );
+      };
+
+
+    const getEveningItemKind =
+      text => {
+        if (!isDailyPrayerRule) {
+          return '';
+        }
+
+        const title =
+          normalizeLiturgicalValue(
+            text?.title
+          );
+
+        if (
+          isEveningCompactLiturgicalItem(
+            text
+          )
+        ) {
+          return 'minor-liturgical';
+        }
+
+        if (
+          isEveningRule &&
+          /молитва 7(?: я| ая)?/u.test(
+            title
+          ) &&
+          /иоанна златоуста/u.test(
+            title
+          )
+        ) {
+          return 'chrysostom';
+        }
+
+        if (
+          isEveningRule &&
+          (
+            /исповедание грехов повседневное/u.test(
+              title
+            ) ||
+            (
+              /исповедание грехов/u.test(
+                title
+              ) &&
+              /повседнев/u.test(
+                title
+              )
+            )
+          )
+        ) {
+          return 'confession';
+        }
+
+        return 'prayer';
+      };
+
+
+    const normalizedTextWithIndex =
+      value => {
+        const source =
+          String(
+            value ||
+            ''
+          );
+
+        const chars = [];
+        const originalIndex = [];
+
+        for (
+          let index = 0;
+          index < source.length;
+          index += 1
+        ) {
+          const decomposed =
+            source[index].normalize(
+              'NFD'
+            );
+
+          for (const char of decomposed) {
+            if (
+              /[\u0300-\u036f\u0483-\u0487]/u.test(
+                char
+              )
+            ) {
+              continue;
+            }
+
+            chars.push(
+              char
+            );
+            originalIndex.push(
+              index
+            );
+          }
+        }
+
+        return {
+          source,
+          normalized:
+            chars.join(''),
+          originalIndex,
+        };
+      };
+
+
+    const appendOriginalRange =
+      (
+        ranges,
+        source,
+        originalIndex,
+        normalizedStart,
+        normalizedEnd
+      ) => {
+        if (
+          normalizedEnd <=
+            normalizedStart
+        ) {
+          return;
+        }
+
+        const start =
+          originalIndex[
+            normalizedStart
+          ];
+
+        const last =
+          originalIndex[
+            normalizedEnd - 1
+          ];
+
+        if (
+          !Number.isFinite(
+            start
+          ) ||
+          !Number.isFinite(
+            last
+          )
+        ) {
+          return;
+        }
+
+        let end =
+          last + 1;
+
+        while (
+          end < source.length &&
+          /[\u0300-\u036f\u0483-\u0487]/u.test(
+            source[end]
+          )
+        ) {
+          end += 1;
+        }
+
+        ranges.push({
+          start,
+          end,
+        });
+      };
+
+
+    const collectEveningAccentRanges =
+      (
+        text,
+        leadingCue,
+        itemKind
+      ) => {
+        if (
+          !isDailyPrayerRule ||
+          itemKind ===
+            'minor-liturgical'
+        ) {
+          return [];
+        }
+
+        const {
+          source,
+          normalized,
+          originalIndex,
+        } =
+          normalizedTextWithIndex(
+            text
+          );
+
+        const ranges = [];
+
+        /* «Слава:» и «И ныне:» — литургические метки,
+           поэтому выделяем именно метку, а не весь абзац. */
+        const cuePattern =
+          /(?:^|\s)((?:Слава|И\s+ныне)\s*:)/giu;
+
+        let cueMatch = null;
+
+        while (
+          (
+            cueMatch =
+              cuePattern.exec(
+                normalized
+              )
+          )
+        ) {
+          const cue =
+            cueMatch[1];
+
+          const relativeStart =
+            cueMatch[0]
+              .lastIndexOf(
+                cue
+              );
+
+          const normalizedStart =
+            cueMatch.index +
+            relativeStart;
+
+          appendOriginalRange(
+            ranges,
+            source,
+            originalIndex,
+            normalizedStart,
+            normalizedStart +
+              cue.length
+          );
+        }
+
+        const bowPattern =
+          /\((?:Поклон|Поклоны)\)/giu;
+
+        let bowMatch = null;
+
+        while (
+          (
+            bowMatch =
+              bowPattern.exec(
+                normalized
+              )
+          )
+        ) {
+          appendOriginalRange(
+            ranges,
+            source,
+            originalIndex,
+            bowMatch.index,
+            bowMatch.index +
+              bowMatch[0].length
+          );
+        }
+
+        /* Первая буква каждого настоящего абзаца утреннего
+           и вечернего правила получает акцентный цвет. */
+        const paragraphStarts = [
+          0,
+        ];
+
+        const paragraphPattern =
+          /\n[ \t]*\n(?:[ \t]*\n)*/g;
+
+        let paragraphMatch = null;
+
+        while (
+          (
+            paragraphMatch =
+              paragraphPattern.exec(
+                source
+              )
+          )
+        ) {
+          paragraphStarts.push(
+            paragraphMatch.index +
+            paragraphMatch[0].length
+          );
+        }
+
+        if (
+          leadingCue?.prayerTitle
+        ) {
+          paragraphStarts[0] =
+            leadingCue.end;
+        }
+
+        paragraphStarts.forEach(
+          rawStart => {
+            let start =
+              Math.max(
+                0,
+                rawStart
+              );
+
+            while (
+              start < source.length &&
+              /\s/u.test(
+                source[start]
+              )
+            ) {
+              start += 1;
+            }
+
+            const tail =
+              source.slice(
+                start
+              );
+
+            const letterMatch =
+              tail.match(
+                /[А-Яа-яЁёІіЇїЄєҐґ\u0400-\u052F]/u
+              );
+
+            if (!letterMatch) {
+              return;
+            }
+
+            const letterStart =
+              start +
+              letterMatch.index;
+
+            /* Если абзац начинается с «Слава:» или «И ныне:»,
+               эта метка уже целиком входит в акцентный диапазон. */
+            if (
+              ranges.some(
+                range =>
+                  letterStart >=
+                    range.start &&
+                  letterStart <
+                    range.end
+              )
+            ) {
+              return;
+            }
+
+            let letterEnd =
+              letterStart + 1;
+
+            while (
+              letterEnd <
+                source.length &&
+              /[\u0300-\u036f\u0483-\u0487]/u.test(
+                source[
+                  letterEnd
+                ]
+              )
+            ) {
+              letterEnd += 1;
+            }
+
+            ranges.push({
+              start:
+                letterStart,
+              end:
+                letterEnd,
+            });
+          }
+        );
+
+        return ranges;
+      };
+
+
+    const collectEveningNumberBreaks =
+      (
+        text,
+        itemKind
+      ) => {
+        if (
+          !isEveningRule ||
+          itemKind !==
+            'chrysostom'
+        ) {
+          return new Set();
+        }
+
+        const offsets =
+          new Set();
+
+        const pattern =
+          /(?:^|\s)(\d{1,2})\.\s*/gu;
+
+        let match = null;
+        let found = 0;
+
+        while (
+          (
+            match =
+              pattern.exec(
+                text
+              )
+          )
+        ) {
+          found += 1;
+
+          if (found === 1) {
+            continue;
+          }
+
+          const numberStart =
+            match.index +
+            match[0]
+              .indexOf(
+                match[1]
+              );
+
+          offsets.add(
+            numberStart
+          );
+        }
+
+        return offsets;
+      };
+
 
 
     const isLiturgicalBlock =
@@ -1252,6 +1991,18 @@ const HTML_TEMPLATE = String.raw`
 
 
     const renderRule = () => {
+      if (isEveningRule) {
+        document.body.classList.add(
+          'evening-rule'
+        );
+      }
+
+      if (isMorningRule) {
+        document.body.classList.add(
+          'morning-rule'
+        );
+      }
+
       if (
         DATA.rule.name
       ) {
@@ -1364,6 +2115,26 @@ const HTML_TEMPLATE = String.raw`
           ) {
             const text =
               item.text;
+
+            const eveningItemKind =
+              getEveningItemKind(
+                text
+              );
+
+            eveningItemKindMap.set(
+              Number(
+                item.id
+              ),
+              eveningItemKind
+            );
+
+            if (eveningItemKind) {
+              wrapper.classList.add(
+                'evening-rule-item',
+                'evening-' +
+                  eveningItemKind
+              );
+            }
 
             const normalizedTitle =
               normalizeLiturgicalValue(
@@ -1549,7 +2320,10 @@ const HTML_TEMPLATE = String.raw`
             const textElement =
               el(
                 'div',
-                'reader-text'
+                eveningItemKind ===
+                  'minor-liturgical'
+                  ? 'reader-text evening-minor-liturgical-text'
+                  : 'reader-text'
               );
 
             textElement.dataset.itemId =
@@ -1952,14 +2726,53 @@ const HTML_TEMPLATE = String.raw`
             itemId
           );
 
-        const leadingCue =
-          findLeadingCueRange(
+        const mappedEveningItemKind =
+          eveningItemKindMap.get(
+            Number(
+              itemId
+            )
+          ) || '';
+
+        const isEveningMinorLiturgical =
+          mappedEveningItemKind ===
+            'minor-liturgical' ||
+          isEveningCompactLiturgicalValue(
             text
           );
 
+        const leadingCue =
+          isEveningMinorLiturgical
+            ? null
+            : findLeadingCueRange(
+                text
+              );
+
+        const eveningItemKind =
+          isEveningMinorLiturgical
+            ? 'minor-liturgical'
+            : mappedEveningItemKind;
+
+        root.classList.toggle(
+          'evening-minor-liturgical-text',
+          isEveningMinorLiturgical
+        );
+
+        const eveningNumberBreaks =
+          collectEveningNumberBreaks(
+            text,
+            eveningItemKind
+          );
+
+        const eveningUtilityBreakOffset =
+          isEveningMinorLiturgical
+            ? findEveningUtilityBreakOffset(
+                text
+              )
+            : null;
+
         const liturgicalRanges = [];
 
-        {
+        if (!isEveningMinorLiturgical) {
           const normalizedChars = [];
           const originalIndex = [];
 
@@ -2053,6 +2866,18 @@ const HTML_TEMPLATE = String.raw`
           }
         }
 
+        collectEveningAccentRanges(
+          text,
+          leadingCue,
+          eveningItemKind
+        ).forEach(
+          range => {
+            liturgicalRanges.push(
+              range
+            );
+          }
+        );
+
         const boundaries =
           new Set([
             0,
@@ -2079,6 +2904,24 @@ const HTML_TEMPLATE = String.raw`
             );
           }
         );
+
+        eveningNumberBreaks.forEach(
+          offset => {
+            boundaries.add(
+              offset
+            );
+          }
+        );
+
+        if (
+          Number.isFinite(
+            eveningUtilityBreakOffset
+          )
+        ) {
+          boundaries.add(
+            eveningUtilityBreakOffset
+          );
+        }
 
         saved.forEach(
           range => {
@@ -2168,6 +3011,7 @@ const HTML_TEMPLATE = String.raw`
               active.end;
 
           const isLiturgical =
+            !isEveningMinorLiturgical &&
             liturgicalRanges.some(
               range =>
                 midpoint >=
@@ -2200,6 +3044,7 @@ const HTML_TEMPLATE = String.raw`
           }
 
           if (
+            !isEveningMinorLiturgical &&
             leadingCue &&
             start >=
               leadingCue.start &&
@@ -2388,6 +3233,38 @@ const HTML_TEMPLATE = String.raw`
           fragment.appendChild(
             span
           );
+
+          if (
+            Number.isFinite(
+              eveningUtilityBreakOffset
+            ) &&
+            end ===
+              eveningUtilityBreakOffset
+          ) {
+            fragment.appendChild(
+              document.createElement(
+                'br'
+              )
+            );
+          }
+
+          if (
+            eveningNumberBreaks.has(
+              end
+            )
+          ) {
+            const numberBreak =
+              document.createElement(
+                'br'
+              );
+
+            numberBreak.className =
+              'evening-number-break';
+
+            fragment.appendChild(
+              numberBreak
+            );
+          }
 
           if (
             span.classList.contains(
