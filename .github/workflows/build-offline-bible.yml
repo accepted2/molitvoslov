@@ -21,6 +21,14 @@ on:
       - molitvoslov-app/src/screens/MenuScreen.js
       - molitvoslov-app/src/screens/ContinueReadingScreen.js
       - molitvoslov-app/src/screens/FavoritesScreen.js
+      - molitvoslov-backend/api/akathist_curated.py
+      - molitvoslov-backend/api/migrations/0023_prune_unlisted_akathists.py
+      - molitvoslov-backend/api/management/commands/prune_akathists.py
+      - molitvoslov-backend/api/management/commands/export_mobile_content.py
+      - molitvoslov-backend/api/management/commands/import_all_akathists.py
+      - molitvoslov-backend/api/management/commands/import_all_akathist_epubs.py
+      - molitvoslov-app/src/data/curatedAkathists.js
+      - molitvoslov-app/src/services/contentApi.js
 
 permissions:
   contents: write
