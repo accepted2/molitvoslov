@@ -583,28 +583,30 @@ const styles =
         colors.textMuted,
     },
     favoriteButton: {
-      width: 42,
+      width: 44,
       alignItems: 'center',
       justifyContent:
         'center',
+      paddingHorizontal: 8,
       borderLeftWidth: 1,
       borderLeftColor:
         colors.border,
       backgroundColor:
-        'rgba(255,255,255,0.25)',
+        'rgba(238, 220, 192, 0.72)',
     },
     favoriteButtonActive: {
       backgroundColor:
-        colors.surfaceMuted,
+        colors.surfaceWarm,
     },
     favoriteText: {
-      fontSize: 23,
+      fontSize: 22,
+      fontWeight: '400',
       color:
         colors.textMuted,
     },
     favoriteTextActive: {
       color:
-        colors.accent,
+        colors.accentDark,
     },
     pressed: {
       opacity: 0.6,
