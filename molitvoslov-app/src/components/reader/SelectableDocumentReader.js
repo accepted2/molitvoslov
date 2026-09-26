@@ -5900,6 +5900,10 @@ appendStyledSegment(
             () => {
               state.restoring =
                 false;
+
+              if (bookMode) {
+                reportProgress();
+              }
             },
             350
           );
@@ -5969,6 +5973,10 @@ appendStyledSegment(
           () => {
             state.restoring =
               false;
+
+            if (bookMode) {
+              reportProgress();
+            }
           },
           350
         );
