@@ -400,6 +400,104 @@ const HTML_TEMPLATE = String.raw`
       touch-action: pan-y;
     }
 
+    body.book-mode {
+      overflow-x: hidden;
+      background:
+        linear-gradient(
+          90deg,
+          rgba(115, 74, 38, 0.035),
+          transparent 9%,
+          transparent 91%,
+          rgba(115, 74, 38, 0.035)
+        ),
+        #FFF4DE;
+    }
+
+    body.book-mode #reader {
+      max-width: 760px;
+      min-height: calc(100vh - 110px);
+      margin: 0 auto;
+      padding: 4px 8px 38px;
+      transform-origin: center center;
+      will-change: transform, opacity;
+    }
+
+    body.book-mode .rule-title {
+      margin: 0 0 3px;
+      color: #3E2A1D;
+      font-size: 24px;
+      line-height: 31px;
+      letter-spacing: 0.15px;
+    }
+
+    body.book-mode .rule-description {
+      margin: 0 0 24px;
+      text-align: center;
+      color: #8B694D;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 13px;
+      line-height: 19px;
+      font-style: normal;
+      letter-spacing: 0.55px;
+    }
+
+    body.book-mode .rule-item,
+    body.book-mode .rule-item:last-child {
+      margin: 0 0 7px;
+      padding: 0;
+      border-bottom: 0;
+    }
+
+    body.book-mode .reader-row,
+    body.book-mode .reader-row:last-child {
+      margin-bottom: 0;
+    }
+
+    body.book-mode .reader-column {
+      padding: 0;
+    }
+
+    body.book-mode .reader-inline-label {
+      margin-right: 5px;
+      color: #9B3B32;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 700;
+      font-style: normal;
+      vertical-align: super;
+    }
+
+    body.book-mode .reader-text.bible-verse {
+      color: #38271D;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 19px;
+      line-height: 31px;
+      letter-spacing: 0.04px;
+      text-align: justify;
+      text-justify: inter-word;
+    }
+
+    body.book-mode .reader-text.focus-target {
+      outline-color: rgba(155, 59, 50, 0.32);
+      outline-offset: 4px;
+    }
+
+    body.book-mode #reader-scroll-track,
+    body.book-mode #reader-scroll-top {
+      display: none !important;
+    }
+
+    body.book-mode .book-page-number {
+      margin-top: 28px;
+      text-align: center;
+      color: rgba(92, 61, 39, 0.55);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 12px;
+      line-height: 18px;
+      letter-spacing: 0.8px;
+    }
+
     .reader-text span {
       white-space: pre-wrap;
     }
@@ -691,6 +789,16 @@ const HTML_TEMPLATE = String.raw`
     const DATA =
       __READER_PAYLOAD__;
 
+    const bookMode =
+      DATA.document
+        ?.readerMode ===
+      'book';
+
+    document.body.classList.toggle(
+      'book-mode',
+      bookMode
+    );
+
     const reader =
       document.getElementById(
         'reader'
@@ -770,6 +878,8 @@ const HTML_TEMPLATE = String.raw`
       scrollUiTimer: null,
       lastScrollY: 0,
       savePending: false,
+      bookGesture: null,
+      pageTurning: false,
     };
 
 
@@ -1540,6 +1650,19 @@ const HTML_TEMPLATE = String.raw`
           );
         }
       );
+
+      if (
+        bookMode &&
+        DATA.document.pageLabel
+      ) {
+        reader.appendChild(
+          el(
+            'div',
+            'book-page-number',
+            DATA.document.pageLabel
+          )
+        );
+      }
     };
 
     const normalizeRange = (
@@ -3566,6 +3689,258 @@ appendStyledSegment(
     );
 
 
+    const resetBookGestureVisual =
+      () => {
+        reader.style.transition =
+          'transform 160ms ease-out, opacity 160ms ease-out';
+
+        reader.style.transform =
+          'translateX(0)';
+
+        reader.style.opacity =
+          '1';
+
+        setTimeout(
+          () => {
+            if (
+              !state.pageTurning
+            ) {
+              reader.style.transition =
+                '';
+            }
+          },
+          180
+        );
+      };
+
+
+    const canTurnBookPage =
+      direction => {
+        const pageTurn =
+          DATA.document
+            ?.pageTurn ||
+          {};
+
+        return direction ===
+          'next'
+          ? !!pageTurn.hasNext
+          : !!pageTurn.hasPrevious;
+      };
+
+
+    document.addEventListener(
+      'pointerdown',
+      event => {
+        if (
+          !bookMode ||
+          state.active ||
+          state.pageTurning ||
+          event.target.closest(
+            '#selection-bar, .selection-handle, button'
+          )
+        ) {
+          return;
+        }
+
+        state.bookGesture = {
+          pointerId:
+            event.pointerId,
+          startX:
+            event.clientX,
+          startY:
+            event.clientY,
+          lastX:
+            event.clientX,
+          lastY:
+            event.clientY,
+        };
+
+        reader.style.transition =
+          '';
+      },
+      {
+        passive: true,
+      }
+    );
+
+
+    document.addEventListener(
+      'pointermove',
+      event => {
+        const gesture =
+          state.bookGesture;
+
+        if (
+          !gesture ||
+          gesture.pointerId !==
+            event.pointerId ||
+          state.active ||
+          state.pageTurning
+        ) {
+          return;
+        }
+
+        gesture.lastX =
+          event.clientX;
+
+        gesture.lastY =
+          event.clientY;
+
+        const dx =
+          gesture.lastX -
+          gesture.startX;
+
+        const dy =
+          gesture.lastY -
+          gesture.startY;
+
+        if (
+          Math.abs(dx) < 10 ||
+          Math.abs(dx) <=
+            Math.abs(dy) *
+              1.15
+        ) {
+          return;
+        }
+
+        const direction =
+          dx < 0
+            ? 'next'
+            : 'previous';
+
+        const resistance =
+          canTurnBookPage(
+            direction
+          )
+            ? 0.18
+            : 0.07;
+
+        const shift =
+          Math.max(
+            -34,
+            Math.min(
+              34,
+              dx * resistance
+            )
+          );
+
+        reader.style.transform =
+          'translateX(' +
+          shift +
+          'px)';
+      },
+      {
+        passive: true,
+      }
+    );
+
+
+    const finishBookGesture =
+      event => {
+        const gesture =
+          state.bookGesture;
+
+        if (
+          !gesture ||
+          gesture.pointerId !==
+            event.pointerId
+        ) {
+          return;
+        }
+
+        state.bookGesture =
+          null;
+
+        if (
+          state.active ||
+          state.pageTurning
+        ) {
+          resetBookGestureVisual();
+          return;
+        }
+
+        const dx =
+          event.clientX -
+          gesture.startX;
+
+        const dy =
+          event.clientY -
+          gesture.startY;
+
+        const horizontalSwipe =
+          Math.abs(dx) >= 72 &&
+          Math.abs(dx) >
+            Math.abs(dy) *
+              1.35;
+
+        if (!horizontalSwipe) {
+          resetBookGestureVisual();
+          return;
+        }
+
+        const direction =
+          dx < 0
+            ? 'next'
+            : 'previous';
+
+        if (
+          !canTurnBookPage(
+            direction
+          )
+        ) {
+          resetBookGestureVisual();
+          return;
+        }
+
+        state.pageTurning =
+          true;
+
+        reader.style.transition =
+          'transform 145ms ease-out, opacity 145ms ease-out';
+
+        reader.style.transform =
+          direction ===
+            'next'
+            ? 'translateX(-18%)'
+            : 'translateX(18%)';
+
+        reader.style.opacity =
+          '0.38';
+
+        setTimeout(
+          () => {
+            post({
+              type:
+                'page-turn',
+              direction,
+            });
+          },
+          105
+        );
+      };
+
+
+    document.addEventListener(
+      'pointerup',
+      finishBookGesture
+    );
+
+    document.addEventListener(
+      'pointercancel',
+      event => {
+        if (
+          state.bookGesture?.pointerId ===
+            event.pointerId
+        ) {
+          state.bookGesture =
+            null;
+
+          resetBookGestureVisual();
+        }
+      }
+    );
+
+
     document.addEventListener(
       'pointerdown',
       event => {
@@ -5178,6 +5553,7 @@ export default function SelectableDocumentReader({
   onProgress,
   onAction,
   onViewModeChange,
+  onPageTurn,
 }) {
   const insets =
     useSafeAreaInsets();
@@ -5274,6 +5650,17 @@ export default function SelectableDocumentReader({
       ) {
         onViewModeChange?.(
           message.value
+        );
+
+        return;
+      }
+
+      if (
+        message.type ===
+        'page-turn'
+      ) {
+        onPageTurn?.(
+          message.direction
         );
 
         return;

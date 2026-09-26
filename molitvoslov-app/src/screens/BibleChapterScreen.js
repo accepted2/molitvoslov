@@ -59,6 +59,37 @@ export const BibleChapterScreen = ({
       chapterNumber
     );
 
+  const chapters =
+    book?.chapters ||
+    [];
+
+  const chapterIndex =
+    chapters.findIndex(
+      item =>
+        Number(
+          item.number
+        ) ===
+        Number(
+          chapterNumber
+        )
+    );
+
+  const previousChapter =
+    chapterIndex > 0
+      ? chapters[
+          chapterIndex - 1
+        ]
+      : null;
+
+  const nextChapter =
+    chapterIndex >= 0 &&
+    chapterIndex <
+      chapters.length - 1
+      ? chapters[
+          chapterIndex + 1
+        ]
+      : null;
+
   const [
     savedItems,
     setSavedItems,
@@ -186,6 +217,24 @@ export const BibleChapterScreen = ({
           description:
             'Глава ' +
             chapter.number,
+
+          readerMode:
+            'book',
+
+          pageLabel:
+            (
+              chapterIndex +
+              1
+            ) +
+            ' / ' +
+            chapters.length,
+
+          pageTurn: {
+            hasPrevious:
+              !!previousChapter,
+            hasNext:
+              !!nextChapter,
+          },
 
           progressAnchorType:
             'bible_verse',
@@ -315,6 +364,10 @@ export const BibleChapterScreen = ({
         chapter,
         savedItems,
         verseIds,
+        chapterIndex,
+        chapters.length,
+        previousChapter,
+        nextChapter,
       ]
     );
 
@@ -340,6 +393,44 @@ export const BibleChapterScreen = ({
         verseIds,
       ]
     );
+
+  const handlePageTurn =
+    React.useCallback(
+      direction => {
+        if (
+          !book
+        ) {
+          return;
+        }
+
+        const target =
+          direction ===
+            'next'
+            ? nextChapter
+            : previousChapter;
+
+        if (!target) {
+          return;
+        }
+
+        navigation.replace(
+          'BibleChapter',
+          {
+            bookId:
+              book.id,
+            chapterNumber:
+              target.number,
+          }
+        );
+      },
+      [
+        navigation,
+        book?.id,
+        previousChapter?.number,
+        nextChapter?.number,
+      ]
+    );
+
 
   const handleProgress =
     progress => {
@@ -494,6 +585,9 @@ export const BibleChapterScreen = ({
         }
         onProgress={
           handleProgress
+        }
+        onPageTurn={
+          handlePageTurn
         }
       />
 
