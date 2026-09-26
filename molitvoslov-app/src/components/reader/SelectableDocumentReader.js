@@ -4193,14 +4193,32 @@ appendStyledSegment(
           ) ||
           element;
 
+        const rect =
+          wrapper
+            .getClientRects()[0];
+
+        const viewportRect =
+          bookViewport
+            ?.getBoundingClientRect();
+
+        const absoluteLeft =
+          rect &&
+          viewportRect
+            ? (
+                bookViewport.scrollLeft +
+                rect.left -
+                viewportRect.left
+              )
+            : Number(
+                wrapper.offsetLeft ||
+                0
+              );
+
         return clampBookPage(
           Math.floor(
             Math.max(
               0,
-              Number(
-                wrapper.offsetLeft ||
-                0
-              )
+              absoluteLeft
             ) /
             Math.max(
               1,
