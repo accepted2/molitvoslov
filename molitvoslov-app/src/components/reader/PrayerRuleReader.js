@@ -145,9 +145,15 @@ const HTML_TEMPLATE = String.raw`
       text-align: center;
       font-size: 18px;
       line-height: 24px;
-      white-space: pre-line;
+      white-space: normal;
       overflow-wrap: normal;
       word-break: normal;
+    }
+
+    .title-tail {
+      display: inline-block;
+      max-width: 100%;
+      white-space: normal;
     }
 
     .favorite-action {
@@ -229,11 +235,31 @@ const HTML_TEMPLATE = String.raw`
       line-height: 29px;
       white-space: pre-wrap;
       overflow-wrap: break-word;
+      text-align: justify;
+      text-justify: inter-word;
       touch-action: pan-y;
     }
 
     .reader-text span {
       white-space: pre-wrap;
+    }
+
+    .paragraph-gap {
+      display: block;
+      width: 100%;
+      height: 8px;
+      overflow: hidden;
+      font-size: 0;
+      line-height: 0;
+      white-space: pre;
+    }
+
+    .paragraph-gap-continuation {
+      display: none;
+    }
+
+    .editorial-marker-hidden {
+      display: none;
     }
 
     .reader-inline {
@@ -272,6 +298,8 @@ const HTML_TEMPLATE = String.raw`
       line-height: 26px;
       white-space: pre-wrap;
       overflow-wrap: break-word;
+      text-align: justify;
+      text-justify: inter-word;
     }
 
     .liturgical-phrase {
@@ -665,6 +693,345 @@ const HTML_TEMPLATE = String.raw`
     };
 
 
+    const titleEl = (
+      tag,
+      className,
+      value
+    ) => {
+      const node =
+        el(
+          tag,
+          className
+        );
+
+      const text =
+        String(
+          value ||
+          ''
+        );
+
+      const commaIndex =
+        text.indexOf(
+          ','
+        );
+
+      if (
+        commaIndex <= 0 ||
+        commaIndex >=
+          text.length - 1
+      ) {
+        node.textContent =
+          text;
+
+        return node;
+      }
+
+      const before =
+        text
+          .slice(
+            0,
+            commaIndex + 1
+          )
+          .trimEnd();
+
+      const after =
+        text
+          .slice(
+            commaIndex + 1
+          )
+          .trim();
+
+      node.appendChild(
+        document.createTextNode(
+          before + ' '
+        )
+      );
+
+      const tail =
+        el(
+          'span',
+          'title-tail',
+          after
+        );
+
+      node.appendChild(
+        tail
+      );
+
+      return node;
+    };
+
+
+    const compactParagraphGaps =
+      root => {
+        if (!root) {
+          return;
+        }
+
+        const walker =
+          document.createTreeWalker(
+            root,
+            NodeFilter.SHOW_TEXT
+          );
+
+        const nodes = [];
+        let current = null;
+        let fullText = '';
+
+        while (
+          (
+            current =
+              walker.nextNode()
+          )
+        ) {
+          nodes.push({
+            node:
+              current,
+            start:
+              fullText.length,
+            end:
+              fullText.length +
+              current.textContent.length,
+          });
+
+          fullText +=
+            current.textContent;
+        }
+
+        const ranges = [];
+        const pattern =
+          /\n[ \t]*\n(?:[ \t]*\n)*/g;
+
+        let match = null;
+
+        while (
+          (
+            match =
+              pattern.exec(
+                fullText
+              )
+          )
+        ) {
+          const secondNewline =
+            match[0]
+              .indexOf(
+                '\n',
+                1
+              );
+
+          if (
+            secondNewline >= 0
+          ) {
+            ranges.push({
+              start:
+                match.index +
+                secondNewline,
+              end:
+                match.index +
+                match[0].length,
+            });
+          }
+        }
+
+        if (!ranges.length) {
+          return;
+        }
+
+        nodes
+          .slice()
+          .reverse()
+          .forEach(
+            entry => {
+              const intersections =
+                ranges
+                  .map(
+                    range => ({
+                      start:
+                        Math.max(
+                          range.start,
+                          entry.start
+                        ),
+                      end:
+                        Math.min(
+                          range.end,
+                          entry.end
+                        ),
+                      rangeStart:
+                        range.start,
+                    })
+                  )
+                  .filter(
+                    part =>
+                      part.end >
+                      part.start
+                  );
+
+              if (
+                !intersections.length
+              ) {
+                return;
+              }
+
+              const fragment =
+                document.createDocumentFragment();
+
+              let cursor = 0;
+
+              intersections.forEach(
+                part => {
+                  const localStart =
+                    part.start -
+                    entry.start;
+
+                  const localEnd =
+                    part.end -
+                    entry.start;
+
+                  if (
+                    localStart >
+                    cursor
+                  ) {
+                    fragment.appendChild(
+                      document.createTextNode(
+                        entry.node.textContent.slice(
+                          cursor,
+                          localStart
+                        )
+                      )
+                    );
+                  }
+
+                  const gap =
+                    el(
+                      'span',
+                      part.start ===
+                        part.rangeStart
+                        ? 'paragraph-gap'
+                        : 'paragraph-gap-continuation',
+                      entry.node.textContent.slice(
+                        localStart,
+                        localEnd
+                      )
+                    );
+
+                  fragment.appendChild(
+                    gap
+                  );
+
+                  cursor =
+                    localEnd;
+                }
+              );
+
+              if (
+                cursor <
+                entry.node
+                  .textContent
+                  .length
+              ) {
+                fragment.appendChild(
+                  document.createTextNode(
+                    entry.node.textContent.slice(
+                      cursor
+                    )
+                  )
+                );
+              }
+
+              entry.node.replaceWith(
+                fragment
+              );
+            }
+          );
+      };
+
+
+    const hideKnownEditorialMarkers =
+      root => {
+        if (!root) {
+          return;
+        }
+
+        const walker =
+          document.createTreeWalker(
+            root,
+            NodeFilter.SHOW_TEXT
+          );
+
+        const nodes = [];
+        let node = null;
+
+        while (
+          (
+            node =
+              walker.nextNode()
+          )
+        ) {
+          nodes.push(
+            node
+          );
+        }
+
+        nodes.forEach(
+          textNode => {
+            const value =
+              textNode.textContent ||
+              '';
+
+            const marker =
+              value.search(
+                /1(?=Испове)/u
+              );
+
+            if (
+              marker < 0
+            ) {
+              return;
+            }
+
+            const fragment =
+              document.createDocumentFragment();
+
+            if (marker > 0) {
+              fragment.appendChild(
+                document.createTextNode(
+                  value.slice(
+                    0,
+                    marker
+                  )
+                )
+              );
+            }
+
+            fragment.appendChild(
+              el(
+                'span',
+                'editorial-marker-hidden',
+                '1'
+              )
+            );
+
+            if (
+              marker + 1 <
+              value.length
+            ) {
+              fragment.appendChild(
+                document.createTextNode(
+                  value.slice(
+                    marker + 1
+                  )
+                )
+              );
+            }
+
+            textNode.replaceWith(
+              fragment
+            );
+          }
+        );
+      };
+
+
     const appendFootnotes = (
       container,
       footnotes
@@ -872,7 +1239,7 @@ const HTML_TEMPLATE = String.raw`
         DATA.rule.name
       ) {
         reader.appendChild(
-          el(
+          titleEl(
             'h1',
             'rule-title',
             DATA.rule.name
@@ -1003,49 +1370,11 @@ const HTML_TEMPLATE = String.raw`
                     ''
                   );
 
-            let displayTitleText =
+            const displayTitleText =
               displayTitle.replace(
                 /(\d+)-([яй])/giu,
                 '$1‑$2'
               );
-
-            if (
-              displayTitleText.length >
-                32 &&
-              displayTitleText.includes(
-                ','
-              )
-            ) {
-              const commaIndex =
-                displayTitleText.indexOf(
-                  ','
-                );
-
-              const beforeComma =
-                displayTitleText
-                  .slice(
-                    0,
-                    commaIndex + 1
-                  )
-                  .trim();
-
-              const afterComma =
-                displayTitleText
-                  .slice(
-                    commaIndex + 1
-                  )
-                  .trim();
-
-              if (
-                beforeComma &&
-                afterComma
-              ) {
-                displayTitleText =
-                  beforeComma +
-                  '\n' +
-                  afterComma;
-              }
-            }
 
             const churchText =
               text.content ||
@@ -1134,7 +1463,7 @@ const HTML_TEMPLATE = String.raw`
 
               if (displayTitle) {
                 header.appendChild(
-                  el(
+                  titleEl(
                     'h2',
                     'prayer-title',
                     displayTitleText
@@ -2060,6 +2389,14 @@ const HTML_TEMPLATE = String.raw`
 
         root.replaceChildren(
           fragment
+        );
+
+        hideKnownEditorialMarkers(
+          root
+        );
+
+        compactParagraphGaps(
+          root
         );
       };
 
