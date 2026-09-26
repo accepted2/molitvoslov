@@ -73,7 +73,8 @@ const HTML_TEMPLATE = String.raw`
     }
 
     body {
-      padding: __READER_TOP_PADDING__px 14px 88px;
+      --reader-top-padding: __READER_TOP_PADDING__px;
+      padding: var(--reader-top-padding) 14px 88px;
     }
 
     .view-switcher {
@@ -400,6 +401,223 @@ const HTML_TEMPLATE = String.raw`
       touch-action: pan-y;
     }
 
+    body.book-mode {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      padding:
+        var(--reader-top-padding)
+        18px
+        50px;
+      touch-action: none;
+      background:
+        linear-gradient(
+          90deg,
+          rgba(115, 74, 38, 0.045),
+          transparent 9%,
+          transparent 91%,
+          rgba(115, 74, 38, 0.045)
+        ),
+        #FFF4DE;
+    }
+
+    #book-viewport {
+      display: contents;
+    }
+
+    body.book-mode
+      #book-viewport {
+      display: block;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+
+    body.book-mode #reader {
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      max-width: none;
+      margin: 0;
+      padding: 0;
+      overflow: visible;
+      column-width:
+        calc(
+          100vw - 36px
+        );
+      column-gap: 0;
+      column-fill: auto;
+    }
+
+    body.book-mode .rule-title {
+      margin: 2px 0 4px;
+      color: #3E2A1D;
+      font-size: 24px;
+      line-height: 31px;
+      letter-spacing: 0.15px;
+      break-after:
+        avoid-column;
+    }
+
+    body.book-mode .rule-description {
+      margin: 0 0 20px;
+      text-align: center;
+      color: #8B694D;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 12px;
+      line-height: 18px;
+      font-style: normal;
+      letter-spacing: 0.45px;
+      break-after:
+        avoid-column;
+    }
+
+    body.book-mode .rule-item,
+    body.book-mode .rule-item:last-child {
+      margin: 0 0 7px;
+      padding: 0;
+      border-bottom: 0;
+    }
+
+    body.book-mode
+      .bible-chapter-start
+      .section-header {
+      margin: 15px 0 8px;
+      break-after:
+        avoid-column;
+    }
+
+    body.book-mode
+      .bible-chapter-start
+      .prayer-title {
+      margin: 0;
+      text-align: left;
+      color: #71472C;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 17px;
+      line-height: 22px;
+      font-weight: 700;
+      letter-spacing: 0.25px;
+    }
+
+    body.book-mode
+      .bible-chapter-start
+      .section-action {
+      min-width: 34px;
+      width: 34px;
+      height: 34px;
+      min-height: 34px;
+      padding: 0;
+      border-radius: 17px;
+      color: #8D6139;
+      background: rgba(248, 233, 207, 0.82);
+      font-size: 21px;
+      line-height: 32px;
+    }
+
+    body.book-mode
+      .bible-chapter-start
+      .section-action.active {
+      color: #7A4F2D;
+      background: #EED9B8;
+    }
+
+    body.book-mode .reader-row,
+    body.book-mode .reader-row:last-child {
+      margin-bottom: 0;
+    }
+
+    body.book-mode .reader-column {
+      padding: 0;
+    }
+
+    body.book-mode .reader-inline-label {
+      margin-right: 5px;
+      color: #9B3B32;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 700;
+      font-style: normal;
+      vertical-align: super;
+    }
+
+    body.book-mode .reader-text {
+      touch-action: none;
+    }
+
+    body.book-mode .reader-text.bible-verse {
+      color: #38271D;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 18px;
+      line-height: 29px;
+      letter-spacing: 0.02px;
+      text-align: justify;
+      text-justify: inter-word;
+    }
+
+    body.book-mode .reader-text.focus-target {
+      outline-color:
+        rgba(
+          155,
+          59,
+          50,
+          0.32
+        );
+      outline-offset: 4px;
+    }
+
+    body.book-mode #reader-scroll-track,
+    body.book-mode #reader-scroll-top {
+      display: none !important;
+    }
+
+    #book-page-indicator {
+      display: none;
+    }
+
+    body.book-mode
+      #book-page-indicator {
+      display: block;
+      position: fixed;
+      left: 50%;
+      bottom: 12px;
+      z-index: 997;
+      min-width: 68px;
+      padding: 3px 10px;
+      transform:
+        translateX(-50%);
+      border-radius: 999px;
+      background:
+        rgba(
+          255,
+          244,
+          222,
+          0.92
+        );
+      color:
+        rgba(
+          92,
+          61,
+          39,
+          0.72
+        );
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 12px;
+      line-height: 18px;
+      letter-spacing: 0.65px;
+      text-align: center;
+      box-shadow:
+        0 1px 5px
+        rgba(
+          74,
+          45,
+          28,
+          0.10
+        );
+    }
+
     .reader-text span {
       white-space: pre-wrap;
     }
@@ -640,7 +858,9 @@ const HTML_TEMPLATE = String.raw`
 </head>
 
 <body>
-  <main id="reader"></main>
+  <div id="book-viewport">
+    <main id="reader"></main>
+  </div>
 
   <div
     id="start-handle"
@@ -663,6 +883,11 @@ const HTML_TEMPLATE = String.raw`
   >
     ↑
   </button>
+
+  <div
+    id="book-page-indicator"
+    aria-hidden="true"
+  ></div>
 
   <div id="selection-bar">
     <div class="selection-info">
@@ -691,9 +916,24 @@ const HTML_TEMPLATE = String.raw`
     const DATA =
       __READER_PAYLOAD__;
 
+    const bookMode =
+      DATA.document
+        ?.readerMode ===
+      'book';
+
+    document.body.classList.toggle(
+      'book-mode',
+      bookMode
+    );
+
     const reader =
       document.getElementById(
         'reader'
+      );
+
+    const bookViewport =
+      document.getElementById(
+        'book-viewport'
       );
 
     const selectionBar =
@@ -746,6 +986,11 @@ const HTML_TEMPLATE = String.raw`
         'reader-scroll-top'
       );
 
+    const bookPageIndicator =
+      document.getElementById(
+        'book-page-indicator'
+      );
+
     const itemTextMap =
       new Map();
 
@@ -770,6 +1015,11 @@ const HTML_TEMPLATE = String.raw`
       scrollUiTimer: null,
       lastScrollY: 0,
       savePending: false,
+      bookGesture: null,
+      pageTurning: false,
+      bookPage: 0,
+      bookPageCount: 1,
+      bookPageWidth: 1,
     };
 
 
@@ -1540,6 +1790,7 @@ const HTML_TEMPLATE = String.raw`
           );
         }
       );
+
     };
 
     const normalizeRange = (
@@ -3566,6 +3817,444 @@ appendStyledSegment(
     );
 
 
+    const clampBookPage =
+      page =>
+        Math.max(
+          0,
+          Math.min(
+            Math.max(
+              0,
+              state.bookPageCount -
+              1
+            ),
+            Number(
+              page ||
+              0
+            )
+          )
+        );
+
+
+    const updateBookPageIndicator =
+      () => {
+        if (
+          !bookMode ||
+          !bookPageIndicator
+        ) {
+          return;
+        }
+
+        bookPageIndicator
+          .textContent =
+          (
+            state.bookPage +
+            1
+          ) +
+          ' / ' +
+          state.bookPageCount;
+      };
+
+
+    const applyBookPage =
+      (
+        page,
+        animated = false,
+        dragOffset = 0
+      ) => {
+        if (
+          !bookMode ||
+          !bookViewport
+        ) {
+          return;
+        }
+
+        state.bookPage =
+          clampBookPage(
+            page
+          );
+
+        const baseOffset =
+          state.bookPage *
+          state.bookPageWidth;
+
+        const targetLeft =
+          Math.max(
+            0,
+            Math.min(
+              Math.max(
+                0,
+                reader.scrollWidth -
+                state.bookPageWidth
+              ),
+              baseOffset -
+              dragOffset
+            )
+          );
+
+        if (
+          animated &&
+          typeof bookViewport
+            .scrollTo ===
+            'function'
+        ) {
+          bookViewport.scrollTo({
+            left: targetLeft,
+            top: 0,
+            behavior: 'smooth',
+          });
+        } else {
+          bookViewport.scrollLeft =
+            targetLeft;
+        }
+
+        updateBookPageIndicator();
+      };
+
+
+    const refreshBookPagination =
+      () => {
+        if (
+          !bookMode ||
+          !bookViewport
+        ) {
+          return;
+        }
+
+        const previousWidth =
+          Math.max(
+            1,
+            state.bookPageWidth
+          );
+
+        const previousOffset =
+          state.bookPage *
+          previousWidth;
+
+        state.bookPageWidth =
+          Math.max(
+            1,
+            bookViewport
+              .clientWidth ||
+            (
+              window.innerWidth -
+              36
+            )
+          );
+
+        state.bookPageCount =
+          Math.max(
+            1,
+            Math.ceil(
+              Math.max(
+                reader.scrollWidth,
+                state.bookPageWidth
+              ) /
+              state.bookPageWidth
+            )
+          );
+
+        const proportionalPage =
+          Math.round(
+            previousOffset /
+            state.bookPageWidth
+          );
+
+        applyBookPage(
+          proportionalPage,
+          false
+        );
+      };
+
+
+    const canTurnBookPage =
+      direction =>
+        direction ===
+          'next'
+          ? state.bookPage <
+            state.bookPageCount -
+              1
+          : state.bookPage >
+            0;
+
+
+    const pageForElement =
+      element => {
+        if (
+          !bookMode ||
+          !element
+        ) {
+          return 0;
+        }
+
+        const wrapper =
+          element.closest(
+            '.rule-item'
+          ) ||
+          element;
+
+        return clampBookPage(
+          Math.floor(
+            Math.max(
+              0,
+              Number(
+                wrapper.offsetLeft ||
+                0
+              )
+            ) /
+            Math.max(
+              1,
+              state.bookPageWidth
+            )
+          )
+        );
+      };
+
+
+    const resetBookGestureVisual =
+      () => {
+        if (!bookMode) {
+          return;
+        }
+
+        applyBookPage(
+          state.bookPage,
+          true
+        );
+      };
+
+
+    const settleBookPage =
+      page => {
+        if (!bookMode) {
+          return;
+        }
+
+        state.pageTurning =
+          true;
+
+        applyBookPage(
+          page,
+          true
+        );
+
+        setTimeout(
+          () => {
+            state.pageTurning =
+              false;
+
+            reportProgress();
+          },
+          210
+        );
+      };
+
+
+    document.addEventListener(
+      'pointerdown',
+      event => {
+        if (
+          !bookMode ||
+          state.active ||
+          state.pageTurning ||
+          event.target.closest(
+            '#selection-bar, .selection-handle, button'
+          )
+        ) {
+          return;
+        }
+
+        state.bookGesture = {
+          pointerId:
+            event.pointerId,
+          startX:
+            event.clientX,
+          startY:
+            event.clientY,
+          lastX:
+            event.clientX,
+          lastY:
+            event.clientY,
+        };
+      },
+      {
+        passive: true,
+      }
+    );
+
+
+    document.addEventListener(
+      'pointermove',
+      event => {
+        const gesture =
+          state.bookGesture;
+
+        if (
+          !gesture ||
+          gesture.pointerId !==
+            event.pointerId ||
+          state.active ||
+          state.pageTurning
+        ) {
+          return;
+        }
+
+        gesture.lastX =
+          event.clientX;
+
+        gesture.lastY =
+          event.clientY;
+
+        const dx =
+          gesture.lastX -
+          gesture.startX;
+
+        const dy =
+          gesture.lastY -
+          gesture.startY;
+
+        if (
+          Math.abs(dx) < 10 ||
+          Math.abs(dx) <=
+            Math.abs(dy) *
+              1.15
+        ) {
+          return;
+        }
+
+        event.preventDefault();
+
+        const direction =
+          dx < 0
+            ? 'next'
+            : 'previous';
+
+        const resistance =
+          canTurnBookPage(
+            direction
+          )
+            ? 0.82
+            : 0.16;
+
+        const limitedOffset =
+          Math.max(
+            -(
+              state.bookPageWidth *
+              0.92
+            ),
+            Math.min(
+              state.bookPageWidth *
+                0.92,
+              dx * resistance
+            )
+          );
+
+        applyBookPage(
+          state.bookPage,
+          false,
+          limitedOffset
+        );
+      },
+      {
+        passive: false,
+      }
+    );
+
+
+    const finishBookGesture =
+      event => {
+        const gesture =
+          state.bookGesture;
+
+        if (
+          !gesture ||
+          gesture.pointerId !==
+            event.pointerId
+        ) {
+          return;
+        }
+
+        state.bookGesture =
+          null;
+
+        if (
+          state.active ||
+          state.pageTurning
+        ) {
+          resetBookGestureVisual();
+          return;
+        }
+
+        const dx =
+          event.clientX -
+          gesture.startX;
+
+        const dy =
+          event.clientY -
+          gesture.startY;
+
+        const horizontalSwipe =
+          Math.abs(dx) >=
+            Math.max(
+              58,
+              state.bookPageWidth *
+                0.16
+            ) &&
+          Math.abs(dx) >
+            Math.abs(dy) *
+              1.25;
+
+        if (!horizontalSwipe) {
+          resetBookGestureVisual();
+          return;
+        }
+
+        const direction =
+          dx < 0
+            ? 'next'
+            : 'previous';
+
+        if (
+          !canTurnBookPage(
+            direction
+          )
+        ) {
+          resetBookGestureVisual();
+          return;
+        }
+
+        settleBookPage(
+          state.bookPage +
+          (
+            direction ===
+              'next'
+              ? 1
+              : -1
+          )
+        );
+      };
+
+
+    document.addEventListener(
+      'pointerup',
+      finishBookGesture
+    );
+
+    document.addEventListener(
+      'pointercancel',
+      event => {
+        if (
+          state.bookGesture
+            ?.pointerId ===
+            event.pointerId
+        ) {
+          state.bookGesture =
+            null;
+
+          resetBookGestureVisual();
+        }
+      }
+    );
+
     document.addEventListener(
       'pointerdown',
       event => {
@@ -3936,6 +4625,141 @@ appendStyledSegment(
           );
 
         if (!items.length) {
+          return;
+        }
+
+        if (bookMode) {
+          const viewportTop =
+            Number(
+              getComputedStyle(
+                document.body
+              )
+                .getPropertyValue(
+                  '--reader-top-padding'
+                )
+                .replace(
+                  'px',
+                  ''
+                )
+            ) ||
+            0;
+
+          const viewportBottom =
+            window.innerHeight -
+            48;
+
+          let current =
+            null;
+
+          let bestDistance =
+            Infinity;
+
+          items.forEach(
+            item => {
+              Array.from(
+                item.getClientRects()
+              ).forEach(
+                rect => {
+                  const visible =
+                    rect.right > 0 &&
+                    rect.left <
+                      window.innerWidth &&
+                    rect.bottom >
+                      viewportTop &&
+                    rect.top <
+                      viewportBottom;
+
+                  if (!visible) {
+                    return;
+                  }
+
+                  const distance =
+                    Math.abs(
+                      rect.top -
+                      (
+                        viewportTop +
+                        12
+                      )
+                    ) +
+                    Math.max(
+                      0,
+                      rect.left
+                    ) *
+                      0.03;
+
+                  if (
+                    distance <
+                    bestDistance
+                  ) {
+                    bestDistance =
+                      distance;
+
+                    current =
+                      item;
+                  }
+                }
+              );
+            }
+          );
+
+          if (!current) {
+            current =
+              items.reduce(
+                (
+                  candidate,
+                  item
+                ) =>
+                  pageForElement(
+                    item
+                  ) <=
+                  state.bookPage
+                    ? item
+                    : candidate,
+                items[0]
+              );
+          }
+
+          const denominator =
+            Math.max(
+              1,
+              state.bookPageCount -
+              1
+            );
+
+          const progressPercent =
+            state.bookPageCount <=
+              1
+              ? 100
+              : Math.round(
+                  (
+                    state.bookPage /
+                    denominator
+                  ) *
+                  100
+                );
+
+          post({
+            type:
+              'progress',
+
+            anchorId:
+              Number(
+                current.dataset
+                  .itemId
+              ),
+
+            offset:
+              state.bookPage,
+
+            pageIndex:
+              state.bookPage,
+
+            pageCount:
+              state.bookPageCount,
+
+            progressPercent,
+          });
+
           return;
         }
 
@@ -4385,7 +5209,20 @@ appendStyledSegment(
 
     window.addEventListener(
       'resize',
-      updateScrollControls
+      () => {
+        if (bookMode) {
+          refreshBookPagination();
+
+          setTimeout(
+            reportProgress,
+            80
+          );
+
+          return;
+        }
+
+        updateScrollControls();
+      }
     );
 
 
@@ -4752,7 +5589,17 @@ appendStyledSegment(
                 )
               );
 
-            if (rect) {
+            if (bookMode) {
+              const targetPage =
+                pageForElement(
+                  root
+                );
+
+              applyBookPage(
+                targetPage,
+                false
+              );
+            } else if (rect) {
               const targetY =
                 Math.max(
                   0,
@@ -4778,6 +5625,13 @@ appendStyledSegment(
                   'center',
               });
             }
+          } else if (bookMode) {
+            applyBookPage(
+              pageForElement(
+                root
+              ),
+              false
+            );
           } else {
             const rootRect =
               root.getBoundingClientRect();
@@ -4829,6 +5683,17 @@ appendStyledSegment(
             );
 
           if (section) {
+            if (bookMode) {
+              applyBookPage(
+                pageForElement(
+                  section
+                ),
+                false
+              );
+
+              return true;
+            }
+
             const targetY =
               Math.max(
                 0,
@@ -4876,6 +5741,10 @@ appendStyledSegment(
             () => {
               state.restoring =
                 false;
+
+              if (bookMode) {
+                reportProgress();
+              }
             },
             350
           );
@@ -4906,26 +5775,49 @@ appendStyledSegment(
           return;
         }
 
-        const target =
-          Math.max(
-            0,
-            item.offsetTop +
-            progress.offset -
-            (
-              window.innerHeight /
-              2
-            )
-          );
+        if (bookMode) {
+          const savedPage =
+            DATA.document
+              .progressOffsetMode ===
+              'page'
+              ? Number(
+                  progress.offset ||
+                  0
+                )
+              : pageForElement(
+                  item
+                );
 
-        window.scrollTo(
-          0,
-          target
-        );
+          applyBookPage(
+            savedPage,
+            false
+          );
+        } else {
+          const target =
+            Math.max(
+              0,
+              item.offsetTop +
+              progress.offset -
+              (
+                window.innerHeight /
+                2
+              )
+            );
+
+          window.scrollTo(
+            0,
+            target
+          );
+        }
 
         setTimeout(
           () => {
             state.restoring =
               false;
+
+            if (bookMode) {
+              reportProgress();
+            }
           },
           350
         );
@@ -5092,11 +5984,30 @@ appendStyledSegment(
 
     requestAnimationFrame(
       () => {
-        updateScrollControls();
+        if (bookMode) {
+          refreshBookPagination();
+        } else {
+          updateScrollControls();
+        }
+
         restoreProgress();
 
         setTimeout(
-          updateScrollControls,
+          () => {
+            if (bookMode) {
+              refreshBookPagination();
+
+              if (
+                !state.restoring
+              ) {
+                reportProgress();
+              }
+
+              return;
+            }
+
+            updateScrollControls();
+          },
           180
         );
       }
@@ -5178,6 +6089,7 @@ export default function SelectableDocumentReader({
   onProgress,
   onAction,
   onViewModeChange,
+  onPageTurn,
 }) {
   const insets =
     useSafeAreaInsets();
@@ -5281,6 +6193,17 @@ export default function SelectableDocumentReader({
 
       if (
         message.type ===
+        'page-turn'
+      ) {
+        onPageTurn?.(
+          message.direction
+        );
+
+        return;
+      }
+
+      if (
+        message.type ===
         'progress'
       ) {
         onProgress?.({
@@ -5312,6 +6235,28 @@ export default function SelectableDocumentReader({
                 100
               )
             ),
+
+          pageIndex:
+            Number.isFinite(
+              Number(
+                message.pageIndex
+              )
+            )
+              ? Number(
+                  message.pageIndex
+                )
+              : null,
+
+          pageCount:
+            Number.isFinite(
+              Number(
+                message.pageCount
+              )
+            )
+              ? Number(
+                  message.pageCount
+                )
+              : null,
         });
 
         return;
@@ -5556,7 +6501,16 @@ export default function SelectableDocumentReader({
           '*',
         ]}
         javaScriptEnabled
-        nestedScrollEnabled
+        scrollEnabled={
+          documentData
+            .readerMode !==
+          'book'
+        }
+        nestedScrollEnabled={
+          documentData
+            .readerMode !==
+          'book'
+        }
         showsVerticalScrollIndicator={
           false
         }
@@ -5576,29 +6530,32 @@ export default function SelectableDocumentReader({
         }
       />
 
-      <LinearGradient
-        pointerEvents="none"
-        colors={[
-          'rgba(255, 244, 222, 0)',
-          'rgba(255, 244, 222, 0.72)',
-          '#FFF4DE',
-        ]}
-        locations={[
-          0,
-          0.58,
-          1,
-        ]}
-        style={[
-          styles.bottomFade,
-          {
-            bottom:
-              Math.max(
-                insets.bottom,
-                8
-              ),
-          },
-        ]}
-      />
+      {documentData.readerMode !==
+        'book' && (
+        <LinearGradient
+          pointerEvents="none"
+          colors={[
+            'rgba(255, 244, 222, 0)',
+            'rgba(255, 244, 222, 0.72)',
+            '#FFF4DE',
+          ]}
+          locations={[
+            0,
+            0.58,
+            1,
+          ]}
+          style={[
+            styles.bottomFade,
+            {
+              bottom:
+                Math.max(
+                  insets.bottom,
+                  8
+                ),
+            },
+          ]}
+        />
+      )}
     </View>
   );
 }
