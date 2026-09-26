@@ -778,9 +778,13 @@ const styles =
 
     saveButtonText: {
       fontSize: 22,
+      lineHeight: 24,
       fontWeight: '400',
       color:
         colors.textMuted,
+      textAlign: 'center',
+      textAlignVertical: 'center',
+      includeFontPadding: false,
     },
 
     saveButtonTextActive: {
