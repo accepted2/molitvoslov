@@ -8,8 +8,11 @@ export const FixedSectionHeader = ({
                                      topInset = 0,
                                      showBack = true,
                                      showTitle = true,
+                                     minimal = false,
                                    }) => {
-  const headerHeight = topInset + 56;
+  const headerHeight =
+    topInset +
+    (minimal ? 46 : 56);
 
   return (
     <View
@@ -17,22 +20,27 @@ export const FixedSectionHeader = ({
       style={[
         styles.fixedHeader,
         {
-          height: headerHeight + 26,
+          height:
+            minimal
+              ? headerHeight
+              : headerHeight + 26,
         },
       ]}
     >
-      <LinearGradient
-        pointerEvents="none"
-        colors={[
-          'rgba(239, 211, 160, 0.94)',
-          'rgba(239, 211, 160, 0.90)',
-          'rgba(239, 211, 160, 0.72)',
-          'rgba(239, 211, 160, 0.34)',
-          'rgba(239, 211, 160, 0)',
-        ]}
-        locations={[0, 0.50, 0.68, 0.86, 1]}
-        style={StyleSheet.absoluteFill}
-      />
+      {!minimal && (
+        <LinearGradient
+          pointerEvents="none"
+          colors={[
+            'rgba(239, 211, 160, 0.94)',
+            'rgba(239, 211, 160, 0.90)',
+            'rgba(239, 211, 160, 0.72)',
+            'rgba(239, 211, 160, 0.34)',
+            'rgba(239, 211, 160, 0)',
+          ]}
+          locations={[0, 0.50, 0.68, 0.86, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
 
       <View
         style={[

@@ -489,15 +489,35 @@ export const FavoritesScreen = ({
                     }
                   </Text>
 
-                  {!!item.text && (
+                  {item.source_type ===
+                    'bible' &&
+                  item.save_type ===
+                    'chapter' ? (
                     <Text
                       style={
                         styles.quote
                       }
-                      numberOfLines={8}
                     >
-                      «{item.text}»
+                      Глава сохранена целиком
+                      {item.metadata
+                        ?.verse_count
+                        ? ' · ' +
+                          item.metadata
+                            .verse_count +
+                          ' стихов'
+                        : ''}
                     </Text>
+                  ) : (
+                    !!item.text && (
+                      <Text
+                        style={
+                          styles.quote
+                        }
+                        numberOfLines={8}
+                      >
+                        «{item.text}»
+                      </Text>
+                    )
                   )}
 
                   {!!item.source_title && (

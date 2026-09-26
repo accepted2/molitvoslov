@@ -90,8 +90,8 @@ export const BibleChapterScreen = ({
   const insets =
     useSafeAreaInsets();
 
-  const headerHeight =
-    insets.top + 56;
+  const readerTopInset =
+    insets.top + 2;
 
   const {
     savedProgress,
@@ -457,6 +457,12 @@ export const BibleChapterScreen = ({
                 Number(
                   chapter.number
                 ),
+
+              verse_count:
+                (
+                  chapter.verses ||
+                  []
+                ).length,
             },
           });
 
@@ -497,8 +503,7 @@ export const BibleChapterScreen = ({
           title:
             displayName,
 
-          description:
-            'Синодальный перевод',
+          description: '',
 
           readerMode:
             'book',
@@ -556,6 +561,10 @@ export const BibleChapterScreen = ({
                         ? 'bible-verse-section bible-chapter-start'
                         : 'bible-verse-section',
 
+                    highlightGroupKey:
+                      'bible-chapter:' +
+                      chapter.id,
+
                     title:
                       verseIndex === 0
                         ? 'Глава ' +
@@ -581,6 +590,9 @@ export const BibleChapterScreen = ({
                               chapterSaved
                                 ?.id ||
                               null,
+
+                            highlightContent:
+                              true,
                           }
                         : null,
 
@@ -795,7 +807,7 @@ export const BibleChapterScreen = ({
       style={styles.screen}
     >
       <StatusBar
-        style="light"
+        style="dark"
         translucent
         backgroundColor="transparent"
       />
@@ -811,7 +823,7 @@ export const BibleChapterScreen = ({
           effectiveFocusTarget
         }
         topContentInset={
-          headerHeight
+          readerTopInset
         }
         onProgress={
           handleProgress
@@ -827,6 +839,8 @@ export const BibleChapterScreen = ({
         }
         navigation={navigation}
         topInset={insets.top}
+        showTitle={false}
+        minimal
       />
     </View>
   );

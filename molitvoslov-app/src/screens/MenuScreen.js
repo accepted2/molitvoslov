@@ -878,10 +878,22 @@ export const MenuScreen = ({navigation}) => {
 
             <View style={styles.readingCard}>
               <View style={styles.readingHeader}>
-                <View style={styles.readingHeadingWrap}>
+                <Pressable
+                  hitSlop={8}
+                  onPress={() =>
+                    navigation.navigate(
+                      'ContinueReading'
+                    )
+                  }
+                  style={({pressed}) => [
+                    styles.readingHeadingWrap,
+                    pressed &&
+                      styles.pressed,
+                  ]}
+                >
                   <Text style={styles.readingBook}>▤</Text>
                   <Text style={styles.readingSectionTitle}>Продолжить чтение</Text>
-                </View>
+                </Pressable>
 
                 {!!activeReadings.length && (
                   <Pressable

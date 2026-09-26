@@ -31,7 +31,7 @@ const scriptSafeJson = value =>
 
 const HTML_TEMPLATE = String.raw`
 <!doctype html>
-<html>
+<html lang="ru">
 <head>
   <meta
     name="viewport"
@@ -407,8 +407,8 @@ const HTML_TEMPLATE = String.raw`
       overflow: hidden;
       padding:
         var(--reader-top-padding)
-        18px
-        50px;
+        16px
+        40px;
       touch-action: none;
       background:
         linear-gradient(
@@ -432,6 +432,8 @@ const HTML_TEMPLATE = String.raw`
       height: 100%;
       overflow: hidden;
       overscroll-behavior: none;
+      contain: paint;
+      clip-path: inset(0);
     }
 
     body.book-mode #reader {
@@ -444,24 +446,25 @@ const HTML_TEMPLATE = String.raw`
       overflow: visible;
       column-width:
         calc(
-          100vw - 36px
+          100vw - 32px
         );
-      column-gap: 0;
+      column-gap: 30px;
       column-fill: auto;
     }
 
     body.book-mode .rule-title {
-      margin: 2px 0 4px;
+      margin: 0 0 3px;
+      padding: 0 34px;
       color: #3E2A1D;
-      font-size: 24px;
-      line-height: 31px;
-      letter-spacing: 0.15px;
+      font-size: 23px;
+      line-height: 29px;
+      letter-spacing: 0.12px;
       break-after:
         avoid-column;
     }
 
     body.book-mode .rule-description {
-      margin: 0 0 20px;
+      margin: 0 0 10px;
       text-align: center;
       color: #8B694D;
       font-family: Georgia, "Times New Roman", serif;
@@ -475,15 +478,27 @@ const HTML_TEMPLATE = String.raw`
 
     body.book-mode .rule-item,
     body.book-mode .rule-item:last-child {
-      margin: 0 0 7px;
+      margin: 0;
       padding: 0;
       border-bottom: 0;
     }
 
     body.book-mode
+      .bible-chapter-start {
+      padding-top: 6px;
+    }
+
+    body.book-mode
+      .bible-chapter-start.force-new-page {
+      break-before: column;
+      -webkit-column-break-before: always;
+    }
+
+    body.book-mode
       .bible-chapter-start
       .section-header {
-      margin: 15px 0 8px;
+      margin: 5px 0 4px;
+      padding: 3px 7px 3px 5px;
       break-after:
         avoid-column;
     }
@@ -504,15 +519,16 @@ const HTML_TEMPLATE = String.raw`
     body.book-mode
       .bible-chapter-start
       .section-action {
-      min-width: 34px;
-      width: 34px;
-      height: 34px;
-      min-height: 34px;
-      padding: 0;
-      border-radius: 17px;
+      min-width: 38px;
+      width: 38px;
+      height: 38px;
+      min-height: 38px;
+      margin-right: 2px;
+      padding: 2px;
+      border-radius: 19px;
       color: #8D6139;
       background: rgba(248, 233, 207, 0.82);
-      font-size: 21px;
+      font-size: 19px;
       line-height: 32px;
     }
 
@@ -551,8 +567,13 @@ const HTML_TEMPLATE = String.raw`
       color: #38271D;
       font-family: Georgia, "Times New Roman", serif;
       font-size: 18px;
-      line-height: 29px;
-      letter-spacing: 0.02px;
+      line-height: 28px;
+      letter-spacing: 0;
+      white-space: normal;
+      overflow-wrap: normal;
+      word-break: normal;
+      -webkit-hyphens: auto;
+      hyphens: auto;
       text-align: justify;
       text-justify: inter-word;
     }
@@ -582,7 +603,7 @@ const HTML_TEMPLATE = String.raw`
       display: block;
       position: fixed;
       left: 50%;
-      bottom: 12px;
+      bottom: 8px;
       z-index: 997;
       min-width: 68px;
       padding: 3px 10px;
@@ -1020,6 +1041,8 @@ const HTML_TEMPLATE = String.raw`
       bookPage: 0,
       bookPageCount: 1,
       bookPageWidth: 1,
+      bookPageGap: 0,
+      bookPageStride: 1,
     };
 
 
@@ -1585,6 +1608,10 @@ const HTML_TEMPLATE = String.raw`
 
           wrapper.dataset.actionKey =
             section.action?.key ||
+            '';
+
+          wrapper.dataset.highlightGroupKey =
+            section.highlightGroupKey ||
             '';
 
           if (
@@ -2590,6 +2617,27 @@ appendStyledSegment(
                 !!active
               )
           );
+
+        return;
+      }
+
+      const groupedWrappers =
+        document.querySelectorAll(
+          '.rule-item[data-highlight-group-key="' +
+          actionKey +
+          '"]'
+        );
+
+      if (
+        groupedWrappers.length
+      ) {
+        groupedWrappers.forEach(
+          wrapper =>
+            wrapper.classList.toggle(
+              'whole-saved',
+              !!active
+            )
+        );
 
         return;
       }
@@ -3875,7 +3923,7 @@ appendStyledSegment(
 
         const baseOffset =
           state.bookPage *
-          state.bookPageWidth;
+          state.bookPageStride;
 
         const targetLeft =
           Math.max(
@@ -3911,6 +3959,89 @@ appendStyledSegment(
       };
 
 
+    const applySmartChapterBreaks =
+      () => {
+        if (
+          !bookMode ||
+          !bookViewport
+        ) {
+          return;
+        }
+
+        const chapterStarts =
+          Array.from(
+            document.querySelectorAll(
+              '.bible-chapter-start'
+            )
+          );
+
+        chapterStarts.forEach(
+          chapter =>
+            chapter.classList.remove(
+              'force-new-page'
+            )
+        );
+
+        if (
+          chapterStarts.length <
+          2
+        ) {
+          return;
+        }
+
+        const viewportRect =
+          bookViewport
+            .getBoundingClientRect();
+
+        const halfPage =
+          Math.max(
+            1,
+            bookViewport
+              .clientHeight
+          ) *
+          0.5;
+
+        for (
+          let index = 1;
+          index <
+            chapterStarts.length;
+          index += 1
+        ) {
+          const chapter =
+            chapterStarts[index];
+
+          const header =
+            chapter.querySelector(
+              '.section-header'
+            ) ||
+            chapter;
+
+          const rect =
+            header
+              .getClientRects()[0];
+
+          if (!rect) {
+            continue;
+          }
+
+          const relativeTop =
+            rect.top -
+            viewportRect.top;
+
+          if (
+            relativeTop >
+            halfPage
+          ) {
+            chapter.classList.add(
+              'force-new-page'
+            );
+
+            void reader.offsetWidth;
+          }
+        }
+      };
+
+
     const refreshBookPagination =
       () => {
         if (
@@ -3920,15 +4051,15 @@ appendStyledSegment(
           return;
         }
 
-        const previousWidth =
+        const previousStride =
           Math.max(
             1,
-            state.bookPageWidth
+            state.bookPageStride
           );
 
         const previousOffset =
           state.bookPage *
-          previousWidth;
+          previousStride;
 
         state.bookPageWidth =
           Math.max(
@@ -3937,26 +4068,53 @@ appendStyledSegment(
               .clientWidth ||
             (
               window.innerWidth -
-              36
+              32
             )
           );
+
+        const readerStyle =
+          window.getComputedStyle(
+            reader
+          );
+
+        state.bookPageGap =
+          Math.max(
+            0,
+            parseFloat(
+              readerStyle
+                .columnGap
+            ) ||
+            0
+          );
+
+        state.bookPageStride =
+          Math.max(
+            1,
+            state.bookPageWidth +
+            state.bookPageGap
+          );
+
+        applySmartChapterBreaks();
 
         state.bookPageCount =
           Math.max(
             1,
-            Math.ceil(
-              Math.max(
-                reader.scrollWidth,
-                state.bookPageWidth
+            Math.round(
+              (
+                Math.max(
+                  reader.scrollWidth,
+                  state.bookPageWidth
+                ) +
+                state.bookPageGap
               ) /
-              state.bookPageWidth
+              state.bookPageStride
             )
           );
 
         const proportionalPage =
           Math.round(
             previousOffset /
-            state.bookPageWidth
+            state.bookPageStride
           );
 
         applyBookPage(
@@ -4003,7 +4161,7 @@ appendStyledSegment(
             ) /
             Math.max(
               1,
-              state.bookPageWidth
+              state.bookPageStride
             )
           )
         );
