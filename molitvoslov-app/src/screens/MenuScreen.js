@@ -428,6 +428,7 @@ export const MenuScreen = ({navigation}) => {
           navigation.navigate('BibleChapter', {
             bookId: book.id,
             chapterNumber,
+            resume: true,
           }),
       };
     }

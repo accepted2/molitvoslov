@@ -145,6 +145,7 @@ export const ContinueReadingScreen = ({navigation}) => {
           navigation.navigate('BibleChapter', {
             bookId: book.id,
             chapterNumber,
+            resume: true,
           }),
       };
     }

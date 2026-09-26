@@ -46,6 +46,7 @@ export const BibleChapterScreen = ({
     bookId,
     chapterNumber,
     focusTarget = null,
+    resume = false,
   } = route.params || {};
 
   const book =
@@ -53,42 +54,17 @@ export const BibleChapterScreen = ({
       bookId
     );
 
-  const chapter =
-    bibleContent.getChapter(
-      bookId,
-      chapterNumber
-    );
-
   const chapters =
     book?.chapters ||
     [];
 
-  const chapterIndex =
-    chapters.findIndex(
-      item =>
-        Number(
-          item.number
-        ) ===
-        Number(
-          chapterNumber
-        )
-    );
-
-  const previousChapter =
-    chapterIndex > 0
-      ? chapters[
-          chapterIndex - 1
-        ]
-      : null;
-
-  const nextChapter =
-    chapterIndex >= 0 &&
-    chapterIndex <
-      chapters.length - 1
-      ? chapters[
-          chapterIndex + 1
-        ]
-      : null;
+  const requestedChapter =
+    bibleContent.getChapter(
+      bookId,
+      chapterNumber
+    ) ||
+    chapters[0] ||
+    null;
 
   const [
     savedItems,
@@ -125,6 +101,7 @@ export const BibleChapterScreen = ({
           setSavedLoading(
             false
           );
+
           return;
         }
 
@@ -159,7 +136,6 @@ export const BibleChapterScreen = ({
     loadSavedItems();
   }, [
     loadSavedItems,
-    chapter?.id,
   ]);
 
   useFocusEffect(
@@ -173,32 +149,115 @@ export const BibleChapterScreen = ({
     )
   );
 
-  const verseIds =
+  const verseInfo =
     useMemo(
-      () =>
-        new Set(
-          (
-            chapter?.verses ||
-            []
-          ).map(
-            verse =>
-              Number(
-                verse.id
-              )
-          )
-        ),
+      () => {
+        const byId =
+          new Map();
+
+        const ids =
+          new Set();
+
+        chapters.forEach(
+          chapter => {
+            (
+              chapter.verses ||
+              []
+            ).forEach(
+              verse => {
+                const verseId =
+                  Number(
+                    verse.id
+                  );
+
+                ids.add(
+                  verseId
+                );
+
+                byId.set(
+                  verseId,
+                  {
+                    chapterNumber:
+                      Number(
+                        chapter.number
+                      ),
+
+                    verseNumber:
+                      Number(
+                        verse.number
+                      ),
+                  }
+                );
+              }
+            );
+          }
+        );
+
+        return {
+          byId,
+          ids,
+        };
+      },
       [
-        chapter,
+        chapters,
       ]
     );
+
+  const chapterStartTarget =
+    useMemo(
+      () => {
+        if (
+          focusTarget ||
+          resume ||
+          !requestedChapter
+        ) {
+          return null;
+        }
+
+        const firstVerse =
+          requestedChapter
+            .verses?.[0];
+
+        if (!firstVerse) {
+          return null;
+        }
+
+        return {
+          save_type:
+            'chapter',
+
+          anchor_type:
+            'bible_verse',
+
+          anchor_id:
+            Number(
+              firstVerse.id
+            ),
+
+          metadata: {
+            chapter_number:
+              Number(
+                requestedChapter
+                  .number
+              ),
+          },
+        };
+      },
+      [
+        focusTarget,
+        resume,
+        requestedChapter,
+      ]
+    );
+
+  const effectiveFocusTarget =
+    focusTarget ||
+    chapterStartTarget;
 
   const documentData =
     useMemo(
       () => {
-        if (
-          !book ||
-          !chapter
-        ) {
+        if (!book) {
           return {
             title: 'Библия',
             description: '',
@@ -211,30 +270,17 @@ export const BibleChapterScreen = ({
 
         return {
           title:
-            book.short_name ||
-            book.name,
+            book.name ||
+            book.short_name,
 
           description:
-            'Глава ' +
-            chapter.number,
+            'Синодальный перевод',
 
           readerMode:
             'book',
 
-          pageLabel:
-            (
-              chapterIndex +
-              1
-            ) +
-            ' / ' +
-            chapters.length,
-
-          pageTurn: {
-            hasPrevious:
-              !!previousChapter,
-            hasNext:
-              !!nextChapter,
-          },
+          progressOffsetMode:
+            'page',
 
           progressAnchorType:
             'bible_verse',
@@ -242,7 +288,7 @@ export const BibleChapterScreen = ({
           savedItems:
             savedItems.filter(
               item =>
-                verseIds.has(
+                verseInfo.ids.has(
                   Number(
                     item.anchor_id
                   )
@@ -254,280 +300,205 @@ export const BibleChapterScreen = ({
             ),
 
           sections:
-            (
-              chapter.verses ||
-              []
-            ).map(
-              verse => ({
-                className:
-                  'bible-verse-section',
+            chapters.flatMap(
+              chapter =>
+                (
+                  chapter.verses ||
+                  []
+                ).map(
+                  (
+                    verse,
+                    verseIndex
+                  ) => ({
+                    className:
+                      verseIndex === 0
+                        ? 'bible-verse-section bible-chapter-start'
+                        : 'bible-verse-section',
 
-                progressAnchorId:
-                  Number(
-                    verse.id
-                  ),
+                    title:
+                      verseIndex === 0
+                        ? 'Глава ' +
+                          chapter.number
+                        : '',
 
-                trackProgress:
-                  true,
+                    progressAnchorId:
+                      Number(
+                        verse.id
+                      ),
 
-                rows: [
-                  {
-                    layout:
-                      'stack',
+                    trackProgress:
+                      true,
 
-                    blocks: [
+                    rows: [
                       {
-                        id:
-                          Number(
-                            verse.id
-                          ),
+                        layout:
+                          'stack',
 
-                        text:
-                          verse.text ||
-                          '',
+                        blocks: [
+                          {
+                            id:
+                              Number(
+                                verse.id
+                              ),
 
-                        label: '',
+                            text:
+                              verse.text ||
+                              '',
 
-                        inlineLabel:
-                          String(
-                            verse.number
-                          ),
+                            label: '',
 
-                        className:
-                          'bible-verse',
+                            inlineLabel:
+                              String(
+                                verse.number
+                              ),
 
-                        sourceType:
-                          'bible',
+                            className:
+                              'bible-verse',
 
-                        sourceId:
-                          book.id,
+                            sourceType:
+                              'bible',
 
-                        anchorType:
-                          'bible_verse',
+                            sourceId:
+                              book.id,
 
-                        anchorId:
-                          verse.id,
+                            anchorType:
+                              'bible_verse',
 
-                        sourceTitle:
-                          'Библия · ' +
-                          (
-                            book.short_name ||
-                            book.name
-                          ),
+                            anchorId:
+                              verse.id,
 
-                        itemTitle:
-                          (
-                            book.short_name ||
-                            book.name
-                          ) +
-                          ' ' +
-                          chapter.number +
-                          ':' +
-                          verse.number,
+                            sourceTitle:
+                              'Библия · ' +
+                              (
+                                book.short_name ||
+                                book.name
+                              ),
 
-                        fullSaveType:
-                          'verse',
+                            itemTitle:
+                              (
+                                book.short_name ||
+                                book.name
+                              ) +
+                              ' ' +
+                              chapter.number +
+                              ':' +
+                              verse.number,
 
-                        metadata: {
-                          book_id:
-                            book.id,
+                            fullSaveType:
+                              'verse',
 
-                          book_slug:
-                            book.slug,
+                            metadata: {
+                              book_id:
+                                book.id,
 
-                          book_name:
-                            book.name,
+                              book_slug:
+                                book.slug,
 
-                          book_short_name:
-                            book.short_name,
+                              book_name:
+                                book.name,
 
-                          chapter_number:
-                            Number(
-                              chapter.number
-                            ),
+                              book_short_name:
+                                book.short_name,
 
-                          verse_number:
-                            Number(
-                              verse.number
-                            ),
-                        },
+                              chapter_number:
+                                Number(
+                                  chapter.number
+                                ),
+
+                              verse_number:
+                                Number(
+                                  verse.number
+                                ),
+                            },
+                          },
+                        ],
                       },
                     ],
-                  },
-                ],
-              })
+                  })
+                )
             ),
         };
       },
       [
         book,
-        chapter,
+        chapters,
         savedItems,
-        verseIds,
-        chapterIndex,
-        chapters.length,
-        previousChapter,
-        nextChapter,
+        verseInfo.ids,
       ]
     );
 
   const readerProgress =
-    useMemo(
-      () => {
-        if (
-          !savedProgress ||
-          !verseIds.has(
-            Number(
-              savedProgress
-                .anchor_id
-            )
-          )
-        ) {
-          return null;
-        }
-
-        return savedProgress;
-      },
-      [
-        savedProgress,
-        verseIds,
-      ]
-    );
-
-  const handlePageTurn =
-    React.useCallback(
-      direction => {
-        if (
-          !book
-        ) {
-          return;
-        }
-
-        const target =
-          direction ===
-            'next'
-            ? nextChapter
-            : previousChapter;
-
-        if (!target) {
-          return;
-        }
-
-        navigation.replace(
-          'BibleChapter',
-          {
-            bookId:
-              book.id,
-            chapterNumber:
-              target.number,
-          }
-        );
-      },
-      [
-        navigation,
-        book?.id,
-        previousChapter?.number,
-        nextChapter?.number,
-      ]
-    );
-
+    resume &&
+    !effectiveFocusTarget
+      ? savedProgress
+      : null;
 
   const handleProgress =
     progress => {
-      if (
-        !book ||
-        !chapter
-      ) {
+      if (!book) {
         return;
       }
 
-      const verse =
-        (
-          chapter.verses ||
-          []
-        ).find(
-          item =>
-            Number(
-              item.id
-            ) ===
-            Number(
-              progress.anchorId
-            )
-        );
-
-      const chapters =
-        book.chapters || [];
-
-      const chapterIndex =
-        Math.max(
-          0,
-          chapters.findIndex(
-            item =>
-              Number(
-                item.number
-              ) ===
-              Number(
-                chapter.number
-              )
+      const current =
+        verseInfo.byId.get(
+          Number(
+            progress.anchorId
           )
         );
 
-      const chapterProgress =
-        Math.max(
-          0,
-          Math.min(
-            Number(
-              progress
-                .progressPercent ||
-              0
-            ),
-            100
-          )
-        );
-
-      const overallProgress =
-        chapters.length
-          ? Math.round(
-              (
-                chapterIndex +
-                chapterProgress /
-                  100
-              ) /
-              chapters.length *
-              100
-            )
-          : chapterProgress;
+      if (!current) {
+        return;
+      }
 
       scheduleSave({
         ...progress,
-        progressPercent:
-          overallProgress,
+
         metadata: {
           book_id:
             book.id,
+
           book_slug:
             book.slug,
+
           book_name:
             book.name,
+
           book_short_name:
             book.short_name,
+
           chapter_number:
-            Number(
-              chapter.number
-            ),
+            current.chapterNumber,
+
           verse_number:
-            verse
-              ? Number(
-                  verse.number
-                )
-              : null,
+            current.verseNumber,
+
+          page_number:
+            progress.pageIndex ===
+              null ||
+            progress.pageIndex ===
+              undefined
+              ? null
+              : Number(
+                  progress.pageIndex
+                ) +
+                1,
+
+          page_count:
+            progress.pageCount ===
+              null ||
+            progress.pageCount ===
+              undefined
+              ? null
+              : Number(
+                  progress.pageCount
+                ),
         },
       });
     };
 
   if (
     !book ||
-    !chapter
+    !requestedChapter
   ) {
     return (
       <View
@@ -536,7 +507,7 @@ export const BibleChapterScreen = ({
         <Text
           style={styles.error}
         >
-          Глава не найдена
+          Книга не найдена
         </Text>
       </View>
     );
@@ -578,7 +549,7 @@ export const BibleChapterScreen = ({
           readerProgress
         }
         focusTarget={
-          focusTarget
+          effectiveFocusTarget
         }
         topContentInset={
           headerHeight
@@ -586,23 +557,15 @@ export const BibleChapterScreen = ({
         onProgress={
           handleProgress
         }
-        onPageTurn={
-          handlePageTurn
-        }
       />
 
       <FixedSectionHeader
         title={
-          (
-            book.short_name ||
-            book.name
-          ) +
-          ' ' +
-          chapter.number
+          book.short_name ||
+          book.name
         }
         navigation={navigation}
         topInset={insets.top}
-        showTitle={false}
       />
     </View>
   );

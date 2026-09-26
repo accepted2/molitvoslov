@@ -1,5 +1,7 @@
 import React, {
+  useCallback,
   useMemo,
+  useState,
 } from 'react';
 import {
   Pressable,
@@ -8,6 +10,9 @@ import {
   Text,
   View,
 } from 'react-native';
+import {
+  useFocusEffect,
+} from '@react-navigation/native';
 import {
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
@@ -28,6 +33,9 @@ import {
   BIBLE_SECTION_TITLES,
   bibleContent,
 } from '../services/bibleContent';
+import {
+  getReadingProgress,
+} from '../services/readingProgress';
 import {
   colors,
 } from '../theme';
@@ -51,11 +59,59 @@ export const BibleBooksScreen = ({
       ? 'new'
       : 'old';
 
+  const [
+    readingProgress,
+    setReadingProgress,
+  ] = useState([]);
+
   const insets =
     useSafeAreaInsets();
 
   const headerHeight =
     insets.top + 56;
+
+  useFocusEffect(
+    useCallback(
+      () => {
+        getReadingProgress()
+          .then(
+            progress =>
+              setReadingProgress(
+                progress.filter(
+                  item =>
+                    item.source_type ===
+                    'bible'
+                )
+              )
+          )
+          .catch(
+            () =>
+              setReadingProgress(
+                []
+              )
+          );
+      },
+      []
+    )
+  );
+
+  const progressByBook =
+    useMemo(
+      () =>
+        new Map(
+          readingProgress.map(
+            item => [
+              Number(
+                item.source_id
+              ),
+              item,
+            ]
+          )
+        ),
+      [
+        readingProgress,
+      ]
+    );
 
   const books =
     useMemo(
@@ -163,60 +219,104 @@ export const BibleBooksScreen = ({
             </Text>
           </View>
         )}
-        renderItem={({item}) => (
-          <Pressable
-            onPress={() =>
-              navigation.navigate(
-                'BibleBook',
-                {
-                  bookId:
-                    item.id,
-                }
+        renderItem={({item}) => {
+          const progress =
+            progressByBook.get(
+              Number(
+                item.id
               )
-            }
-            style={({pressed}) => [
-              styles.item,
-              pressed &&
-                styles.pressed,
-            ]}
-          >
-            <View
-              style={
-                styles.itemText
+            );
+
+          const info =
+            progress
+              ?.anchor_info ||
+            {};
+
+          const chapterNumber =
+            Number(
+              info.chapter_number ||
+              0
+            );
+
+          return (
+            <Pressable
+              onPress={() =>
+                navigation.navigate(
+                  'BibleBook',
+                  {
+                    bookId:
+                      item.id,
+                  }
+                )
               }
+              style={({pressed}) => [
+                styles.item,
+
+                !!progress &&
+                  styles.itemStarted,
+
+                pressed &&
+                  styles.pressed,
+              ]}
             >
-              <Text
+              <View
                 style={
-                  styles.bookName
+                  styles.itemText
                 }
               >
-                {
-                  item.short_name ||
-                  item.name
-                }
-              </Text>
+                <Text
+                  style={
+                    styles.bookName
+                  }
+                >
+                  {
+                    item.short_name ||
+                    item.name
+                  }
+                </Text>
+
+                <Text
+                  style={
+                    styles.chapterCount
+                  }
+                >
+                  {
+                    item.chapters
+                      ?.length ||
+                    0
+                  }{' '}
+                  глав
+                  {chapterNumber
+                    ? ' · остановились: глава ' +
+                      chapterNumber
+                    : ''}
+                </Text>
+              </View>
+
+              {!!progress && (
+                <Text
+                  style={
+                    styles.progressPercent
+                  }
+                >
+                  {
+                    Number(
+                      progress
+                        .progress_percent ||
+                      0
+                    )
+                  }%
+                </Text>
+              )}
 
               <Text
-                style={
-                  styles.chapterCount
-                }
+                style={styles.arrow}
               >
-                {
-                  item.chapters
-                    ?.length ||
-                  0
-                }{' '}
-                глав
+                ›
               </Text>
-            </View>
-
-            <Text
-              style={styles.arrow}
-            >
-              ›
-            </Text>
-          </Pressable>
-        )}
+            </Pressable>
+          );
+        }}
       />
 
       <FixedSectionHeader
@@ -266,6 +366,11 @@ const styles =
         'rgba(248, 233, 207, 0.96)',
     },
 
+    itemStarted: {
+      borderColor:
+        'rgba(126, 82, 38, 0.30)',
+    },
+
     itemText: {
       flex: 1,
     },
@@ -286,8 +391,16 @@ const styles =
         colors.textSecondary,
     },
 
+    progressPercent: {
+      marginLeft: 8,
+      color:
+        colors.accentDark,
+      fontSize: 11,
+      fontWeight: '700',
+    },
+
     arrow: {
-      marginLeft: 10,
+      marginLeft: 8,
       fontSize: 24,
       color:
         '#9A714C',
