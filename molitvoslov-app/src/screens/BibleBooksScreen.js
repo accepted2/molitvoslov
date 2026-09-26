@@ -270,8 +270,10 @@ export const BibleBooksScreen = ({
                   }
                 >
                   {
-                    item.short_name ||
-                    item.name
+                    bibleContent
+                      .getDisplayName(
+                        item
+                      )
                   }
                 </Text>
 

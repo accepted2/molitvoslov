@@ -420,7 +420,10 @@ export const MenuScreen = ({navigation}) => {
         id: progress.id,
         type: 'Библия',
         symbol: '☷',
-        title: book.short_name || book.name,
+        title:
+          bibleContent.getDisplayName(
+            book
+          ),
         position: verseNumber
           ? 'Глава ' + chapterNumber + ' · стих ' + verseNumber
           : 'Глава ' + chapterNumber,

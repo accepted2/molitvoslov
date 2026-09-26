@@ -136,7 +136,10 @@ export const ContinueReadingScreen = ({navigation}) => {
         id: progressItem.id,
         type: 'Библия',
         glyph: '☷',
-        title: book.short_name || book.name,
+        title:
+          bibleContent.getDisplayName(
+            book
+          ),
         position: verseNumber
           ? 'Глава ' + chapterNumber + ' · стих ' + verseNumber
           : 'Глава ' + chapterNumber,

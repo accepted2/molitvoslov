@@ -53,6 +53,11 @@ export const BibleBookScreen = ({
     setBookProgress,
   ] = useState(null);
 
+  const displayName =
+    bibleContent.getDisplayName(
+      book
+    );
+
   const insets =
     useSafeAreaInsets();
 
@@ -236,7 +241,7 @@ export const BibleBookScreen = ({
             <Text
               style={styles.fullName}
             >
-              {book.name}
+              {displayName}
             </Text>
 
             {!!bookProgress &&
@@ -351,8 +356,7 @@ export const BibleBookScreen = ({
 
       <FixedSectionHeader
         title={
-          book.short_name ||
-          book.name
+          displayName
         }
         navigation={navigation}
         topInset={insets.top}
