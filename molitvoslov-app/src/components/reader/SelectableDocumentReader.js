@@ -411,7 +411,7 @@ const HTML_TEMPLATE = String.raw`
       overflow: hidden;
       padding:
         var(--reader-top-padding)
-        12px
+        0
         var(--reader-bottom-padding);
       touch-action: none;
       background:
@@ -451,24 +451,33 @@ const HTML_TEMPLATE = String.raw`
 
     body.book-mode
       #reader.book-track {
-      display: flex;
-      flex-direction: row;
-      align-items: stretch;
-      overflow: visible;
-      will-change: scroll-position;
+      position: relative;
+      display: block;
+      overflow: hidden;
     }
 
     body.book-mode
       .book-page {
-      position: relative;
-      flex: 0 0 100%;
+      position: absolute;
+      inset: 0;
       width: 100%;
       height: 100%;
       min-width: 0;
       min-height: 0;
-      padding: 0 8px;
+      padding: 0 18px;
       overflow: hidden;
       box-sizing: border-box;
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateZ(0);
+    }
+
+    body.book-mode
+      .book-page.active {
+      visibility: visible;
+      opacity: 1;
+      pointer-events: auto;
     }
 
     body.book-mode .rule-title {
@@ -556,6 +565,17 @@ const HTML_TEMPLATE = String.raw`
       .bible-verse-section.whole-saved {
       position: relative;
       z-index: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    body.book-mode
+      .bible-chapter-start.whole-saved {
+      padding-top: 5px;
     }
 
     body.book-mode
@@ -565,8 +585,8 @@ const HTML_TEMPLATE = String.raw`
       z-index: -1;
       top: 0;
       bottom: 0;
-      left: -7px;
-      right: -7px;
+      left: -9px;
+      right: -9px;
       background:
         rgba(
           161,
@@ -574,29 +594,21 @@ const HTML_TEMPLATE = String.raw`
           53,
           0.085
         );
-      box-shadow:
-        inset 0 0 0 1px
-        rgba(
-          126,
-          82,
-          38,
-          0.06
-        );
       pointer-events: none;
     }
 
     body.book-mode
       .bible-verse-section.whole-saved.saved-run-start::before {
-      top: -5px;
-      border-top-left-radius: 15px;
-      border-top-right-radius: 15px;
+      top: -6px;
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
     }
 
     body.book-mode
       .bible-verse-section.whole-saved.saved-run-end::before {
-      bottom: -6px;
-      border-bottom-left-radius: 15px;
-      border-bottom-right-radius: 15px;
+      bottom: -7px;
+      border-bottom-left-radius: 16px;
+      border-bottom-right-radius: 16px;
     }
 
     body.book-mode
@@ -4092,50 +4104,53 @@ appendStyledSegment(
             page
           );
 
-        const pageWidth =
-          Math.max(
-            1,
-            state.bookPageWidth
-          );
-
-        const targetLeft =
-          Math.max(
-            0,
-            Math.min(
-              Math.max(
-                0,
-                bookViewport.scrollWidth -
-                pageWidth
-              ),
-              (
-                state.bookPage *
-                pageWidth
-              ) -
-              dragOffset
+        const pages =
+          Array.from(
+            reader.querySelectorAll(
+              ':scope > .book-page'
             )
           );
 
-        if (
-          animated &&
-          typeof bookViewport
-            .scrollTo ===
-            'function'
-        ) {
-          bookViewport.scrollTo({
-            left:
-              targetLeft,
-            top: 0,
-            behavior:
-              'smooth',
-          });
-        } else {
-          bookViewport.scrollLeft =
-            targetLeft;
-        }
+        pages.forEach(
+          (
+            pageNode,
+            index
+          ) => {
+            const active =
+              index ===
+              state.bookPage;
+
+            pageNode.classList
+              .toggle(
+                'active',
+                active
+              );
+
+            pageNode.style
+              .transform =
+              active &&
+              dragOffset
+                ? 'translate3d(' +
+                  (
+                    dragOffset *
+                    0.08
+                  ) +
+                  'px,0,0)'
+                : 'translateZ(0)';
+
+            pageNode.style
+              .transition =
+              animated
+                ? 'transform 140ms ease-out, opacity 120ms ease-out'
+                : 'none';
+          }
+        );
+
+        bookViewport.scrollLeft =
+          0;
 
         updateBookPageIndicator();
       };
-
 
     const bookSourceNodes =
       () => {
@@ -4202,12 +4217,7 @@ appendStyledSegment(
 
         const currentAnchor =
           reader.querySelector(
-            '.book-page:nth-child(' +
-            (
-              state.bookPage +
-              1
-            ) +
-            ') .rule-item[data-track-progress="true"]'
+            '.book-page.active .rule-item[data-track-progress="true"]'
           )
             ?.dataset
             ?.itemId ||
@@ -4220,6 +4230,8 @@ appendStyledSegment(
         reader.classList.add(
           'book-track'
         );
+        bookViewport.scrollLeft =
+          0;
 
         state.bookPageWidth =
           Math.max(
