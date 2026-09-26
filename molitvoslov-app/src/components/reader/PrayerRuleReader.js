@@ -1154,6 +1154,20 @@ const HTML_TEMPLATE = String.raw`
       /(?:^| )вечер/u.test(
         ruleIdentity
       ) ||
+      /молитвы на сон грядущим/u.test(
+        ruleIdentity
+      ) ||
+      [
+        'molitvy-na-son-griadushchim',
+        'molitvy-na-son-gryadushchim',
+      ].includes(
+        String(
+          DATA.rule?.slug ||
+          ''
+        )
+          .trim()
+          .toLowerCase()
+      ) ||
       /vechern|evening/i.test(
         String(
           DATA.rule?.slug ||
