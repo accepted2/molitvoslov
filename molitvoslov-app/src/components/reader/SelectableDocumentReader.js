@@ -398,9 +398,16 @@ const HTML_TEMPLATE = String.raw`
       color: var(--text);
       font-size: 17px;
       line-height: 29px;
-      white-space: pre-wrap;
-      overflow-wrap: break-word;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: normal;
+      -webkit-hyphens: auto;
+      hyphens: auto;
+      -webkit-hyphenate-character: "‐";
+      hyphenate-character: "‐";
+      hyphenate-limit-chars: 6 3 3;
       text-align: justify;
+      text-align-last: auto;
       text-justify: inter-word;
       touch-action: pan-y;
     }
@@ -647,11 +654,15 @@ const HTML_TEMPLATE = String.raw`
       line-height: 28px;
       letter-spacing: 0;
       white-space: normal;
-      overflow-wrap: normal;
+      overflow-wrap: anywhere;
       word-break: normal;
       -webkit-hyphens: auto;
       hyphens: auto;
+      -webkit-hyphenate-character: "‐";
+      hyphenate-character: "‐";
+      hyphenate-limit-chars: 6 3 3;
       text-align: justify;
+      text-align-last: auto;
       text-justify: inter-word;
     }
 
@@ -718,7 +729,7 @@ const HTML_TEMPLATE = String.raw`
     }
 
     .reader-text span {
-      white-space: pre-wrap;
+      white-space: inherit;
     }
 
     .paragraph-gap {
