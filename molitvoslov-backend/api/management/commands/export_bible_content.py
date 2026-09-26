@@ -149,7 +149,7 @@ class Command(BaseCommand):
             json.dumps(
                 data,
                 ensure_ascii=False,
-                indent=2,
+                separators=(',', ':'),
             ) + '\n',
             encoding='utf-8',
         )
