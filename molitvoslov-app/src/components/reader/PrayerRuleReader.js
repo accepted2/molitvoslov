@@ -257,18 +257,6 @@ const HTML_TEMPLATE = String.raw`
     /* Вечернее правило имеет несколько собственных
        типографических правил. Они намеренно не применяются
        к утренним молитвам, канонам, акафистам и т. д. */
-    .reader-text.evening-confession-text {
-      font-size: 16.5px;
-      line-height: 28.5px;
-      letter-spacing: -0.006em;
-      word-spacing: -0.015em;
-      text-align: justify;
-      text-align-last: auto;
-      text-justify: inter-character;
-      -webkit-hyphens: auto;
-      hyphens: auto;
-    }
-
     .evening-number-break {
       display: block;
       width: 100%;
@@ -2002,10 +1990,7 @@ const HTML_TEMPLATE = String.raw`
             const textElement =
               el(
                 'div',
-                eveningItemKind ===
-                  'confession'
-                  ? 'reader-text evening-confession-text'
-                  : 'reader-text'
+                'reader-text'
               );
 
             textElement.dataset.itemId =
