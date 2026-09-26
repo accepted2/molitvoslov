@@ -25,6 +25,8 @@ on:
       - molitvoslov-app/src/screens/FavoritesScreen.js
       - molitvoslov-backend/api/akathist_curated.py
       - molitvoslov-backend/api/migrations/0023_prune_unlisted_akathists.py
+      - molitvoslov-backend/api/migrations/0024_remove_morning_optina_footnote.py
+      - molitvoslov-backend/files/utrennie_structured.json
       - molitvoslov-backend/api/management/commands/prune_akathists.py
       - molitvoslov-backend/api/management/commands/export_mobile_content.py
       - molitvoslov-backend/api/management/commands/import_all_akathists.py
