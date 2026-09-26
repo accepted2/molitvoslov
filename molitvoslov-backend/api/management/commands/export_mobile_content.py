@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from api.akathist_curated import is_curated_akathist
 from api.models import (
     Akathist,
     Canon,
@@ -136,9 +137,25 @@ class Command(BaseCommand):
             },
         }
 
-        akathists_qs = (
+        visible_akathists = list(
             Akathist.objects
             .filter(is_visible=True)
+            .order_by('id')
+        )
+
+        curated_akathist_ids = [
+            item.id
+            for item in visible_akathists
+            if is_curated_akathist(
+                item
+            )
+        ]
+
+        akathists_qs = (
+            Akathist.objects
+            .filter(
+                id__in=curated_akathist_ids
+            )
             .order_by('id')
         )
         akathist_list = AkathistSummarySerializer(

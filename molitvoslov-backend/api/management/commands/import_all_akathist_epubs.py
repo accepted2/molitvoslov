@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandError
 
+from api.akathist_curated import is_curated_akathist
 from api.models import Akathist
 
 
@@ -81,12 +82,22 @@ class Command(BaseCommand):
             ),
         )
 
+        parser.add_argument(
+            "--include-unlisted",
+            action="store_true",
+            help=(
+                "Разрешить импорт акафистов вне текущего "
+                "утверждённого списка. По умолчанию они пропускаются."
+            ),
+        )
+
     def handle(self, *args, **options):
         manifest_path = Path(options["manifest"])
         offset = options["offset"]
         count = options["count"]
         check_only = options["check_only"]
         include_legacy = options["include_legacy_church"]
+        include_unlisted = options["include_unlisted"]
 
         if offset < 0:
             raise CommandError(
@@ -186,6 +197,7 @@ class Command(BaseCommand):
         failed = 0
         skipped = 0
         skipped_legacy = 0
+        skipped_unlisted = 0
         reused_existing_slug = 0
 
         failures = []
@@ -281,6 +293,27 @@ class Command(BaseCommand):
 
             if slug != url_slug:
                 reused_existing_slug += 1
+
+            if (
+                    not include_unlisted
+                    and not is_curated_akathist(
+                        slug=slug,
+                        title=title,
+                    )
+            ):
+                skipped += 1
+                skipped_unlisted += 1
+
+                self.stdout.write(
+                    ""
+                )
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"[{batch_index}] Пропуск вне "
+                        f"утверждённого списка: {title}"
+                    )
+                )
+                continue
 
             processed += 1
 
@@ -410,6 +443,11 @@ class Command(BaseCommand):
         self.stdout.write(
             f"Пропущено legacy ЦС-версий: "
             f"{skipped_legacy}"
+        )
+
+        self.stdout.write(
+            f"Пропущено вне утверждённого списка: "
+            f"{skipped_unlisted}"
         )
 
         self.stdout.write(
