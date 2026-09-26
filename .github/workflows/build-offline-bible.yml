@@ -1,0 +1,91 @@
+name: Build offline Bible
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/build-offline-bible.yml
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: molitvoslov-backend/requirements.txt
+
+      - name: Install backend dependencies
+        working-directory: molitvoslov-backend
+        run: python -m pip install -r requirements.txt
+
+      - name: Migrate clean database
+        working-directory: molitvoslov-backend
+        run: python manage.py migrate --noinput
+
+      - name: Import pinned Synodal USFM
+        working-directory: molitvoslov-backend
+        run: python manage.py import_bible_synodal --download
+
+      - name: Export bundled Bible
+        working-directory: molitvoslov-backend
+        run: python manage.py export_bible_content
+
+      - name: Verify bundled Bible
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('molitvoslov-app/src/data/offlineBible.json')
+          data = json.loads(path.read_text(encoding='utf-8'))
+
+          books = data['books']
+          chapters = sum(len(book['chapters']) for book in books)
+          verses = sum(
+              len(chapter['verses'])
+              for book in books
+              for chapter in book['chapters']
+          )
+
+          assert len(books) == 78, len(books)
+          assert sum(book['testament'] == 'old' for book in books) == 51
+          assert sum(book['testament'] == 'new' for book in books) == 27
+          assert books[0]['code'] == 'GEN'
+          assert books[-1]['code'] == 'REV'
+          assert data['translation']['source_revision'] == (
+              '2de3062388a2c067bc602399bda7149eec918ceb'
+          )
+          assert chapters > 0
+          assert verses > 0
+
+          print(
+              f'Verified: {len(books)} books/units, '
+              f'{chapters} chapters, {verses} verses'
+          )
+          PY
+
+      - name: Commit generated bundle
+        run: |
+          if git diff --quiet -- molitvoslov-app/src/data/offlineBible.json; then
+            echo "offlineBible.json is already up to date"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add molitvoslov-app/src/data/offlineBible.json
+          git commit -m "Generate offline Synodal Bible bundle"
+          git push
