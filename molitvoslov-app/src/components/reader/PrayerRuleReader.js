@@ -254,6 +254,30 @@ const HTML_TEMPLATE = String.raw`
       white-space: inherit;
     }
 
+    /* Вечернее правило имеет несколько собственных
+       типографических правил. Они намеренно не применяются
+       к утренним молитвам, канонам, акафистам и т. д. */
+    .reader-text.evening-confession-text {
+      font-size: 16.5px;
+      line-height: 28.5px;
+      letter-spacing: -0.006em;
+      word-spacing: -0.015em;
+      text-align: justify;
+      text-align-last: auto;
+      text-justify: inter-character;
+      -webkit-hyphens: auto;
+      hyphens: auto;
+    }
+
+    .evening-number-break {
+      display: block;
+      width: 100%;
+      height: 0;
+      margin: 0;
+      padding: 0;
+      line-height: 0;
+    }
+
     .paragraph-gap {
       display: block;
       width: 100%;
@@ -656,6 +680,9 @@ const HTML_TEMPLATE = String.raw`
       new Map();
 
     const savedRanges =
+      new Map();
+
+    const eveningItemKindMap =
       new Map();
 
     const state = {
@@ -1113,6 +1140,392 @@ const HTML_TEMPLATE = String.raw`
           )
           .trim();
 
+    const ruleIdentity =
+      normalizeLiturgicalValue(
+        [
+          DATA.rule?.name,
+          DATA.rule?.slug,
+        ]
+          .filter(Boolean)
+          .join(' ')
+      );
+
+    const isEveningRule =
+      /(?:^| )вечер/u.test(
+        ruleIdentity
+      ) ||
+      /vechern|evening/i.test(
+        String(
+          DATA.rule?.slug ||
+          ''
+        )
+      );
+
+
+    const getEveningItemKind =
+      text => {
+        if (!isEveningRule) {
+          return '';
+        }
+
+        const title =
+          normalizeLiturgicalValue(
+            text?.title
+          );
+
+        if (
+          /молитва 7(?: я| ая)?/u.test(
+            title
+          ) &&
+          /иоанна златоуста/u.test(
+            title
+          )
+        ) {
+          return 'chrysostom';
+        }
+
+        if (
+          /исповедание грехов повседневное/u.test(
+            title
+          ) ||
+          (
+            /исповедание грехов/u.test(
+              title
+            ) &&
+            /повседнев/u.test(
+              title
+            )
+          )
+        ) {
+          return 'confession';
+        }
+
+        return 'prayer';
+      };
+
+
+    const normalizedTextWithIndex =
+      value => {
+        const source =
+          String(
+            value ||
+            ''
+          );
+
+        const chars = [];
+        const originalIndex = [];
+
+        for (
+          let index = 0;
+          index < source.length;
+          index += 1
+        ) {
+          const decomposed =
+            source[index].normalize(
+              'NFD'
+            );
+
+          for (const char of decomposed) {
+            if (
+              /[\u0300-\u036f\u0483-\u0487]/u.test(
+                char
+              )
+            ) {
+              continue;
+            }
+
+            chars.push(
+              char
+            );
+            originalIndex.push(
+              index
+            );
+          }
+        }
+
+        return {
+          source,
+          normalized:
+            chars.join(''),
+          originalIndex,
+        };
+      };
+
+
+    const appendOriginalRange =
+      (
+        ranges,
+        source,
+        originalIndex,
+        normalizedStart,
+        normalizedEnd
+      ) => {
+        if (
+          normalizedEnd <=
+            normalizedStart
+        ) {
+          return;
+        }
+
+        const start =
+          originalIndex[
+            normalizedStart
+          ];
+
+        const last =
+          originalIndex[
+            normalizedEnd - 1
+          ];
+
+        if (
+          !Number.isFinite(
+            start
+          ) ||
+          !Number.isFinite(
+            last
+          )
+        ) {
+          return;
+        }
+
+        let end =
+          last + 1;
+
+        while (
+          end < source.length &&
+          /[\u0300-\u036f\u0483-\u0487]/u.test(
+            source[end]
+          )
+        ) {
+          end += 1;
+        }
+
+        ranges.push({
+          start,
+          end,
+        });
+      };
+
+
+    const collectEveningAccentRanges =
+      (
+        text,
+        leadingCue
+      ) => {
+        if (!isEveningRule) {
+          return [];
+        }
+
+        const {
+          source,
+          normalized,
+          originalIndex,
+        } =
+          normalizedTextWithIndex(
+            text
+          );
+
+        const ranges = [];
+
+        /* «Слава:» и «И ныне:» — литургические метки,
+           поэтому выделяем именно метку, а не весь абзац. */
+        const cuePattern =
+          /(?:^|\s)((?:Слава|И\s+ныне)\s*:)/giu;
+
+        let cueMatch = null;
+
+        while (
+          (
+            cueMatch =
+              cuePattern.exec(
+                normalized
+              )
+          )
+        ) {
+          const cue =
+            cueMatch[1];
+
+          const relativeStart =
+            cueMatch[0]
+              .lastIndexOf(
+                cue
+              );
+
+          const normalizedStart =
+            cueMatch.index +
+            relativeStart;
+
+          appendOriginalRange(
+            ranges,
+            source,
+            originalIndex,
+            normalizedStart,
+            normalizedStart +
+              cue.length
+          );
+        }
+
+        /* Первая буква каждого настоящего абзаца вечернего
+           правила получает тот же акцентный цвет. */
+        const paragraphStarts = [
+          0,
+        ];
+
+        const paragraphPattern =
+          /\n[ \t]*\n(?:[ \t]*\n)*/g;
+
+        let paragraphMatch = null;
+
+        while (
+          (
+            paragraphMatch =
+              paragraphPattern.exec(
+                source
+              )
+          )
+        ) {
+          paragraphStarts.push(
+            paragraphMatch.index +
+            paragraphMatch[0].length
+          );
+        }
+
+        if (
+          leadingCue?.prayerTitle
+        ) {
+          paragraphStarts[0] =
+            leadingCue.end;
+        }
+
+        paragraphStarts.forEach(
+          rawStart => {
+            let start =
+              Math.max(
+                0,
+                rawStart
+              );
+
+            while (
+              start < source.length &&
+              /\s/u.test(
+                source[start]
+              )
+            ) {
+              start += 1;
+            }
+
+            const tail =
+              source.slice(
+                start
+              );
+
+            const letterMatch =
+              tail.match(
+                /[А-Яа-яЁёІіЇїЄєҐґ\u0400-\u052F]/u
+              );
+
+            if (!letterMatch) {
+              return;
+            }
+
+            const letterStart =
+              start +
+              letterMatch.index;
+
+            /* Если абзац начинается с «Слава:» или «И ныне:»,
+               эта метка уже целиком входит в акцентный диапазон. */
+            if (
+              ranges.some(
+                range =>
+                  letterStart >=
+                    range.start &&
+                  letterStart <
+                    range.end
+              )
+            ) {
+              return;
+            }
+
+            let letterEnd =
+              letterStart + 1;
+
+            while (
+              letterEnd <
+                source.length &&
+              /[\u0300-\u036f\u0483-\u0487]/u.test(
+                source[
+                  letterEnd
+                ]
+              )
+            ) {
+              letterEnd += 1;
+            }
+
+            ranges.push({
+              start:
+                letterStart,
+              end:
+                letterEnd,
+            });
+          }
+        );
+
+        return ranges;
+      };
+
+
+    const collectEveningNumberBreaks =
+      (
+        text,
+        itemKind
+      ) => {
+        if (
+          !isEveningRule ||
+          itemKind !==
+            'chrysostom'
+        ) {
+          return new Set();
+        }
+
+        const offsets =
+          new Set();
+
+        const pattern =
+          /(?:^|\s)(\d{1,2})\.\s*/gu;
+
+        let match = null;
+        let found = 0;
+
+        while (
+          (
+            match =
+              pattern.exec(
+                text
+              )
+          )
+        ) {
+          found += 1;
+
+          if (found === 1) {
+            continue;
+          }
+
+          const numberStart =
+            match.index +
+            match[0]
+              .indexOf(
+                match[1]
+              );
+
+          offsets.add(
+            numberStart
+          );
+        }
+
+        return offsets;
+      };
+
+
 
     const isLiturgicalBlock =
       value => {
@@ -1252,6 +1665,12 @@ const HTML_TEMPLATE = String.raw`
 
 
     const renderRule = () => {
+      if (isEveningRule) {
+        document.body.classList.add(
+          'evening-rule'
+        );
+      }
+
       if (
         DATA.rule.name
       ) {
@@ -1364,6 +1783,26 @@ const HTML_TEMPLATE = String.raw`
           ) {
             const text =
               item.text;
+
+            const eveningItemKind =
+              getEveningItemKind(
+                text
+              );
+
+            eveningItemKindMap.set(
+              Number(
+                item.id
+              ),
+              eveningItemKind
+            );
+
+            if (eveningItemKind) {
+              wrapper.classList.add(
+                'evening-rule-item',
+                'evening-' +
+                  eveningItemKind
+              );
+            }
 
             const normalizedTitle =
               normalizeLiturgicalValue(
@@ -1549,7 +1988,10 @@ const HTML_TEMPLATE = String.raw`
             const textElement =
               el(
                 'div',
-                'reader-text'
+                eveningItemKind ===
+                  'confession'
+                  ? 'reader-text evening-confession-text'
+                  : 'reader-text'
               );
 
             textElement.dataset.itemId =
@@ -1957,6 +2399,19 @@ const HTML_TEMPLATE = String.raw`
             text
           );
 
+        const eveningItemKind =
+          eveningItemKindMap.get(
+            Number(
+              itemId
+            )
+          ) || '';
+
+        const eveningNumberBreaks =
+          collectEveningNumberBreaks(
+            text,
+            eveningItemKind
+          );
+
         const liturgicalRanges = [];
 
         {
@@ -2053,6 +2508,17 @@ const HTML_TEMPLATE = String.raw`
           }
         }
 
+        collectEveningAccentRanges(
+          text,
+          leadingCue
+        ).forEach(
+          range => {
+            liturgicalRanges.push(
+              range
+            );
+          }
+        );
+
         const boundaries =
           new Set([
             0,
@@ -2076,6 +2542,14 @@ const HTML_TEMPLATE = String.raw`
             );
             boundaries.add(
               range.end
+            );
+          }
+        );
+
+        eveningNumberBreaks.forEach(
+          offset => {
+            boundaries.add(
+              offset
             );
           }
         );
@@ -2388,6 +2862,24 @@ const HTML_TEMPLATE = String.raw`
           fragment.appendChild(
             span
           );
+
+          if (
+            eveningNumberBreaks.has(
+              end
+            )
+          ) {
+            const numberBreak =
+              document.createElement(
+                'br'
+              );
+
+            numberBreak.className =
+              'evening-number-break';
+
+            fragment.appendChild(
+              numberBreak
+            );
+          }
 
           if (
             span.classList.contains(
