@@ -254,6 +254,13 @@ const HTML_TEMPLATE = String.raw`
       white-space: inherit;
     }
 
+    .reader-text.evening-minor-liturgical-text {
+      font-weight: 600;
+      text-align: left;
+      text-align-last: left;
+      text-justify: auto;
+    }
+
     /* Вечернее правило имеет несколько собственных
        типографических правил. Они намеренно не применяются
        к утренним молитвам, канонам, акафистам и т. д. */
@@ -1164,6 +1171,49 @@ const HTML_TEMPLATE = String.raw`
       );
 
 
+    const isEveningCompactLiturgicalItem =
+      text => {
+        if (!isEveningRule) {
+          return false;
+        }
+
+        const content =
+          normalizeLiturgicalValue(
+            text?.content
+          );
+
+        if (!content) {
+          return false;
+        }
+
+        const lordHaveMercy =
+          /^господи помилуй\b/u.test(
+            content
+          ) &&
+          (
+            /\bтрижды\b/u.test(
+              content
+            ) ||
+            /\b12 раз\b/u.test(
+              content
+            )
+          );
+
+        const gloryAndNow =
+          /^слава и ныне\b/u.test(
+            content
+          ) &&
+          /\bгосподи помилуй\b/u.test(
+            content
+          );
+
+        return (
+          lordHaveMercy ||
+          gloryAndNow
+        );
+      };
+
+
     const getEveningItemKind =
       text => {
         if (!isEveningRule) {
@@ -1174,6 +1224,14 @@ const HTML_TEMPLATE = String.raw`
           normalizeLiturgicalValue(
             text?.title
           );
+
+        if (
+          isEveningCompactLiturgicalItem(
+            text
+          )
+        ) {
+          return 'minor-liturgical';
+        }
 
         if (
           /молитва 7(?: я| ая)?/u.test(
@@ -1312,9 +1370,14 @@ const HTML_TEMPLATE = String.raw`
     const collectEveningAccentRanges =
       (
         text,
-        leadingCue
+        leadingCue,
+        itemKind
       ) => {
-        if (!isEveningRule) {
+        if (
+          !isEveningRule ||
+          itemKind ===
+            'minor-liturgical'
+        ) {
           return [];
         }
 
@@ -1990,7 +2053,10 @@ const HTML_TEMPLATE = String.raw`
             const textElement =
               el(
                 'div',
-                'reader-text'
+                eveningItemKind ===
+                  'minor-liturgical'
+                  ? 'reader-text evening-minor-liturgical-text'
+                  : 'reader-text'
               );
 
             textElement.dataset.itemId =
@@ -2509,7 +2575,8 @@ const HTML_TEMPLATE = String.raw`
 
         collectEveningAccentRanges(
           text,
-          leadingCue
+          leadingCue,
+          eveningItemKind
         ).forEach(
           range => {
             liturgicalRanges.push(
