@@ -21,6 +21,7 @@ const SAVE_TYPE_NAMES = {
   akathist: 'Акафист',
   canon: 'Канон',
   text: 'Текст',
+  quote: 'Цитата',
 };
 
 
