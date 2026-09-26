@@ -1193,23 +1193,23 @@ const HTML_TEMPLATE = String.raw`
         }
 
         const lordHaveMercy =
-          /^господи помилуй\b/u.test(
+          /^господи помилуй(?: |$)/u.test(
             content
           ) &&
           (
-            /\bтрижды\b/u.test(
+            /(?:^| )трижды(?: |$)/u.test(
               content
             ) ||
-            /\b12 раз\b/u.test(
+            /(?:^| )12 раз(?: |$)/u.test(
               content
             )
           );
 
         const gloryAndNow =
-          /^слава и ныне\b/u.test(
+          /^слава и ныне(?: |$)/u.test(
             content
           ) &&
-          /\bгосподи помилуй\b/u.test(
+          /(?:^| )господи помилуй(?: |$)/u.test(
             content
           );
 
