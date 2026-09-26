@@ -23,6 +23,7 @@ import {CategoryIcon} from '../components/icons/CategoryIcon';
 import {homeArtwork} from '../data/homeArtwork';
 import {contentApi as api} from '../services/contentApi';
 import {deleteReadingProgress, getReadingProgress} from '../services/readingProgress';
+import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {colors, spacing} from '../theme';
 
 const CATEGORY_ICONS = {
@@ -203,6 +204,7 @@ export const MenuScreen = ({navigation}) => {
   const [readingProgress, setReadingProgress] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dailyQuote, setDailyQuote] = useState(null);
+  const [savedDailyQuote, setSavedDailyQuote] = useState(null);
   const [error, setError] = useState(null);
 
   const insets = useSafeAreaInsets();
@@ -231,7 +233,39 @@ export const MenuScreen = ({navigation}) => {
       setAkathists(akathistsResponse.data);
       setCanons(canonsResponse.data);
       setPrayerRules(prayerRulesResponse.data);
-      setDailyQuote(quoteResponse.data);
+
+      const quote =
+        quoteResponse.data;
+
+      setDailyQuote(
+        quote
+      );
+
+      if (quote?.id) {
+        const savedQuotes =
+          await getSavedItems({
+            source_type:
+              'daily_quote',
+            source_id:
+              quote.id,
+            anchor_type:
+              'daily_quote',
+            anchor_id:
+              quote.id,
+            save_type:
+              'quote',
+          });
+
+        setSavedDailyQuote(
+          savedQuotes[0] ||
+          null
+        );
+      } else {
+        setSavedDailyQuote(
+          null
+        );
+      }
+
       setError(null);
     } catch (err) {
       console.log('Ошибка загрузки библиотеки:', err);
@@ -294,7 +328,39 @@ export const MenuScreen = ({navigation}) => {
   useFocusEffect(
     useCallback(() => {
       loadProgress();
-    }, [loadProgress])
+
+      if (dailyQuote?.id) {
+        getSavedItems({
+          source_type:
+            'daily_quote',
+          source_id:
+            dailyQuote.id,
+          anchor_type:
+            'daily_quote',
+          anchor_id:
+            dailyQuote.id,
+          save_type:
+            'quote',
+        })
+          .then(
+            saved =>
+              setSavedDailyQuote(
+                saved[0] ||
+                null
+              )
+          )
+          .catch(
+            err =>
+              console.log(
+                'Ошибка загрузки сохранённой цитаты:',
+                err
+              )
+          );
+      }
+    }, [
+      loadProgress,
+      dailyQuote?.id,
+    ])
   );
 
   const rootCategories = useMemo(
@@ -496,6 +562,88 @@ export const MenuScreen = ({navigation}) => {
   };
 
   const latestReading = activeReadings[0] || null;
+
+  const toggleDailyQuoteSaved =
+    async () => {
+      if (
+        !dailyQuote?.id ||
+        !dailyQuote?.text
+      ) {
+        return;
+      }
+
+      try {
+        if (savedDailyQuote) {
+          await deleteSavedItem(
+            savedDailyQuote.id
+          );
+
+          setSavedDailyQuote(
+            null
+          );
+
+          return;
+        }
+
+        const saved =
+          await saveItem({
+            save_type:
+              'quote',
+            source_type:
+              'daily_quote',
+            source_id:
+              Number(
+                dailyQuote.id
+              ),
+            anchor_type:
+              'daily_quote',
+            anchor_id:
+              Number(
+                dailyQuote.id
+              ),
+            source_title:
+              'Цитата дня',
+            item_title:
+              dailyQuote.reference ||
+              dailyQuote.source ||
+              'Цитата дня',
+            text:
+              dailyQuote.text,
+            start_offset:
+              0,
+            end_offset:
+              dailyQuote.text.length,
+            metadata: {
+              source:
+                dailyQuote.source ||
+                '',
+              reference:
+                dailyQuote.reference ||
+                '',
+              quote_date:
+                dailyQuote.quote_date ||
+                dailyQuote.date ||
+                '',
+            },
+          });
+
+        setSavedDailyQuote(
+          saved
+        );
+      } catch (err) {
+        console.log(
+          'Ошибка сохранения цитаты:',
+          err
+        );
+
+        Alert.alert(
+          'Не удалось сохранить цитату',
+          err.message ||
+          'Попробуйте ещё раз.'
+        );
+      }
+    };
+
   const showWidgetInfo = async () => {
     try {
       const widgets = await getWidgetInfo('QuoteOfDay');
@@ -627,14 +775,54 @@ export const MenuScreen = ({navigation}) => {
                     <Text style={styles.quoteLabel}>Цитата дня</Text>
                   </View>
 
-                  <Pressable
-                    hitSlop={8}
-                    onPress={showWidgetInfo}
-                    style={({pressed}) => [styles.widgetButton, pressed && styles.pressed]}
+                  <View
+                    style={
+                      styles.quoteActions
+                    }
                   >
-                    <Text style={styles.widgetPhone}>📱</Text>
-                    <Text style={styles.widgetText}>На экран</Text>
-                  </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        savedDailyQuote
+                          ? 'Убрать цитату из избранного'
+                          : 'Добавить цитату в избранное'
+                      }
+                      hitSlop={8}
+                      onPress={
+                        toggleDailyQuoteSaved
+                      }
+                      style={({pressed}) => [
+                        styles.quoteSaveButton,
+                        savedDailyQuote &&
+                          styles.quoteSaveButtonActive,
+                        pressed &&
+                          styles.pressed,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.quoteSaveIcon,
+                          savedDailyQuote &&
+                            styles.quoteSaveIconActive,
+                        ]}
+                      >
+                        {
+                          savedDailyQuote
+                            ? '★'
+                            : '☆'
+                        }
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      hitSlop={8}
+                      onPress={showWidgetInfo}
+                      style={({pressed}) => [styles.widgetButton, pressed && styles.pressed]}
+                    >
+                      <Text style={styles.widgetPhone}>📱</Text>
+                      <Text style={styles.widgetText}>На экран</Text>
+                    </Pressable>
+                  </View>
                 </View>
 
                 <View style={styles.quoteRule}>
@@ -1006,6 +1194,33 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
     fontSize: 19,
     fontWeight: '700',
+  },
+  quoteActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  quoteSaveButton: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(126, 78, 34, 0.32)',
+    borderRadius: 17,
+    backgroundColor: 'rgba(248, 233, 207, 0.88)',
+  },
+  quoteSaveButtonActive: {
+    backgroundColor: '#EED9B8',
+    borderColor: 'rgba(126, 78, 34, 0.46)',
+  },
+  quoteSaveIcon: {
+    color: '#9A8068',
+    fontSize: 21,
+    lineHeight: 24,
+  },
+  quoteSaveIconActive: {
+    color: '#7A4F2D',
   },
   widgetButton: {
     flexDirection: 'row',
