@@ -256,9 +256,15 @@ const HTML_TEMPLATE = String.raw`
 
     .reader-text.evening-minor-liturgical-text {
       font-weight: 600;
-      text-align: left;
-      text-align-last: left;
-      text-justify: auto;
+      text-align: left !important;
+      text-align-last: left !important;
+      text-justify: auto !important;
+      word-spacing: normal;
+    }
+
+    .reader-text.evening-minor-liturgical-text span {
+      color: var(--text) !important;
+      font-weight: inherit !important;
     }
 
     /* Вечернее правило имеет несколько собственных
@@ -1171,15 +1177,15 @@ const HTML_TEMPLATE = String.raw`
       );
 
 
-    const isEveningCompactLiturgicalItem =
-      text => {
+    const isEveningCompactLiturgicalValue =
+      value => {
         if (!isEveningRule) {
           return false;
         }
 
         const content =
           normalizeLiturgicalValue(
-            text?.content
+            value
           );
 
         if (!content) {
@@ -1210,6 +1216,20 @@ const HTML_TEMPLATE = String.raw`
         return (
           lordHaveMercy ||
           gloryAndNow
+        );
+      };
+
+
+    const isEveningCompactLiturgicalItem =
+      text => {
+        if (!isEveningRule) {
+          return false;
+        }
+
+        return (
+          isEveningCompactLiturgicalValue(
+            text?.content
+          )
         );
       };
 
@@ -2459,17 +2479,33 @@ const HTML_TEMPLATE = String.raw`
             itemId
           );
 
-        const leadingCue =
-          findLeadingCueRange(
+        const isEveningMinorLiturgical =
+          isEveningCompactLiturgicalValue(
             text
           );
 
+        const leadingCue =
+          isEveningMinorLiturgical
+            ? null
+            : findLeadingCueRange(
+                text
+              );
+
         const eveningItemKind =
-          eveningItemKindMap.get(
-            Number(
-              itemId
-            )
-          ) || '';
+          isEveningMinorLiturgical
+            ? 'minor-liturgical'
+            : (
+                eveningItemKindMap.get(
+                  Number(
+                    itemId
+                  )
+                ) || ''
+              );
+
+        root.classList.toggle(
+          'evening-minor-liturgical-text',
+          isEveningMinorLiturgical
+        );
 
         const eveningNumberBreaks =
           collectEveningNumberBreaks(
@@ -2479,7 +2515,7 @@ const HTML_TEMPLATE = String.raw`
 
         const liturgicalRanges = [];
 
-        {
+        if (!isEveningMinorLiturgical) {
           const normalizedChars = [];
           const originalIndex = [];
 
@@ -2708,6 +2744,7 @@ const HTML_TEMPLATE = String.raw`
               active.end;
 
           const isLiturgical =
+            !isEveningMinorLiturgical &&
             liturgicalRanges.some(
               range =>
                 midpoint >=
@@ -2740,6 +2777,7 @@ const HTML_TEMPLATE = String.raw`
           }
 
           if (
+            !isEveningMinorLiturgical &&
             leadingCue &&
             start >=
               leadingCue.start &&
