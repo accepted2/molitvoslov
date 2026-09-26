@@ -90,8 +90,11 @@ export const BibleChapterScreen = ({
   const insets =
     useSafeAreaInsets();
 
-  const headerHeight =
-    insets.top + 56;
+  const readerTopInset =
+    insets.top + 43;
+
+  const readerBottomInset =
+    38;
 
   const {
     savedProgress,
@@ -457,6 +460,12 @@ export const BibleChapterScreen = ({
                 Number(
                   chapter.number
                 ),
+
+              verse_count:
+                (
+                  chapter.verses ||
+                  []
+                ).length,
             },
           });
 
@@ -497,8 +506,7 @@ export const BibleChapterScreen = ({
           title:
             displayName,
 
-          description:
-            'Синодальный перевод',
+          description: '',
 
           readerMode:
             'book',
@@ -552,9 +560,38 @@ export const BibleChapterScreen = ({
                     verseIndex
                   ) => ({
                     className:
+                      [
+                        'bible-verse-section',
+
+                        verseIndex === 0
+                          ? 'bible-chapter-start'
+                          : '',
+
+                        verseIndex ===
+                          (
+                            chapter.verses
+                              ?.length ||
+                            1
+                          ) -
+                          1
+                          ? 'bible-chapter-end'
+                          : '',
+                      ]
+                        .filter(
+                          Boolean
+                        )
+                        .join(' '),
+
+                    highlightGroupKey:
+                      'bible-chapter:' +
+                      chapter.id,
+
+                    chapterNumber:
                       verseIndex === 0
-                        ? 'bible-verse-section bible-chapter-start'
-                        : 'bible-verse-section',
+                        ? Number(
+                            chapter.number
+                          )
+                        : null,
 
                     title:
                       verseIndex === 0
@@ -581,6 +618,9 @@ export const BibleChapterScreen = ({
                               chapterSaved
                                 ?.id ||
                               null,
+
+                            highlightContent:
+                              true,
                           }
                         : null,
 
@@ -795,7 +835,7 @@ export const BibleChapterScreen = ({
       style={styles.screen}
     >
       <StatusBar
-        style="light"
+        style="dark"
         translucent
         backgroundColor="transparent"
       />
@@ -811,7 +851,10 @@ export const BibleChapterScreen = ({
           effectiveFocusTarget
         }
         topContentInset={
-          headerHeight
+          readerTopInset
+        }
+        bottomContentInset={
+          readerBottomInset
         }
         onProgress={
           handleProgress
@@ -827,6 +870,8 @@ export const BibleChapterScreen = ({
         }
         navigation={navigation}
         topInset={insets.top}
+        showTitle={false}
+        minimal
       />
     </View>
   );
