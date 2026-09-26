@@ -1,4 +1,5 @@
 import {getDailyQuote} from './dailyQuote';
+import {isCuratedAkathist} from '../data/curatedAkathists';
 
 const bundledContent = require('../data/offlineContent.json');
 
@@ -89,13 +90,29 @@ const getLocal = rawPath => {
   }
 
   if (path === 'akathists/') {
-    return bundledContent.akathists?.list || [];
+    return (
+      bundledContent.akathists?.list ||
+      []
+    ).filter(
+      isCuratedAkathist
+    );
   }
 
   match = path.match(/^akathists\/([^/]+)\/$/);
   if (match) {
-    const item = bundledContent.akathists?.by_slug?.[match[1]];
-    if (!item) throw notFound(path);
+    const item =
+      bundledContent.akathists
+        ?.by_slug?.[match[1]];
+
+    if (
+      !item ||
+      !isCuratedAkathist(
+        item
+      )
+    ) {
+      throw notFound(path);
+    }
+
     return item;
   }
 
