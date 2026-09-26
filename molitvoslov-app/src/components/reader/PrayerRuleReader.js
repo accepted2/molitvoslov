@@ -14,7 +14,7 @@ const scriptSafeJson = value =>
 
 const HTML_TEMPLATE = String.raw`
 <!doctype html>
-<html>
+<html lang="ru">
 <head>
   <meta
     name="viewport"
@@ -236,15 +236,22 @@ const HTML_TEMPLATE = String.raw`
       color: var(--text);
       font-size: 17px;
       line-height: 29px;
-      white-space: pre-wrap;
-      overflow-wrap: break-word;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: normal;
+      -webkit-hyphens: auto;
+      hyphens: auto;
+      -webkit-hyphenate-character: "‐";
+      hyphenate-character: "‐";
+      hyphenate-limit-chars: 6 3 3;
       text-align: justify;
+      text-align-last: auto;
       text-justify: inter-word;
       touch-action: pan-y;
     }
 
     .reader-text span {
-      white-space: pre-wrap;
+      white-space: inherit;
     }
 
     .paragraph-gap {
@@ -299,9 +306,16 @@ const HTML_TEMPLATE = String.raw`
       color: var(--secondary);
       font-size: 16px;
       line-height: 26px;
-      white-space: pre-wrap;
-      overflow-wrap: break-word;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: normal;
+      -webkit-hyphens: auto;
+      hyphens: auto;
+      -webkit-hyphenate-character: "‐";
+      hyphenate-character: "‐";
+      hyphenate-limit-chars: 6 3 3;
       text-align: justify;
+      text-align-last: auto;
       text-justify: inter-word;
     }
 
