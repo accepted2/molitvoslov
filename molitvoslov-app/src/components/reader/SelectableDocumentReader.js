@@ -421,17 +421,22 @@ const HTML_TEMPLATE = String.raw`
         #FFF4DE;
     }
 
+    #book-viewport {
+      display: contents;
+    }
+
+    body.book-mode
+      #book-viewport {
+      display: block;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+
     body.book-mode #reader {
-      width:
-        calc(
-          100vw - 36px
-        );
-      height:
-        calc(
-          100vh -
-          var(--reader-top-padding) -
-          50px
-        );
+      width: 100%;
+      height: 100%;
       min-height: 0;
       max-width: none;
       margin: 0;
@@ -441,13 +446,8 @@ const HTML_TEMPLATE = String.raw`
         calc(
           100vw - 36px
         );
-      column-gap: 36px;
+      column-gap: 0;
       column-fill: auto;
-      transform-origin:
-        left center;
-      will-change: transform;
-      backface-visibility:
-        hidden;
     }
 
     body.book-mode .rule-title {
@@ -499,6 +499,28 @@ const HTML_TEMPLATE = String.raw`
       line-height: 22px;
       font-weight: 700;
       letter-spacing: 0.25px;
+    }
+
+    body.book-mode
+      .bible-chapter-start
+      .section-action {
+      min-width: 34px;
+      width: 34px;
+      height: 34px;
+      min-height: 34px;
+      padding: 0;
+      border-radius: 17px;
+      color: #8D6139;
+      background: rgba(248, 233, 207, 0.82);
+      font-size: 21px;
+      line-height: 32px;
+    }
+
+    body.book-mode
+      .bible-chapter-start
+      .section-action.active {
+      color: #7A4F2D;
+      background: #EED9B8;
     }
 
     body.book-mode .reader-row,
@@ -836,7 +858,9 @@ const HTML_TEMPLATE = String.raw`
 </head>
 
 <body>
-  <main id="reader"></main>
+  <div id="book-viewport">
+    <main id="reader"></main>
+  </div>
 
   <div
     id="start-handle"
@@ -905,6 +929,11 @@ const HTML_TEMPLATE = String.raw`
     const reader =
       document.getElementById(
         'reader'
+      );
+
+    const bookViewport =
+      document.getElementById(
+        'book-viewport'
       );
 
     const selectionBar =
@@ -3832,7 +3861,10 @@ appendStyledSegment(
         animated = false,
         dragOffset = 0
       ) => {
-        if (!bookMode) {
+        if (
+          !bookMode ||
+          !bookViewport
+        ) {
           return;
         }
 
@@ -3842,23 +3874,38 @@ appendStyledSegment(
           );
 
         const baseOffset =
-          -(
-            state.bookPage *
-            state.bookPageWidth
+          state.bookPage *
+          state.bookPageWidth;
+
+        const targetLeft =
+          Math.max(
+            0,
+            Math.min(
+              Math.max(
+                0,
+                reader.scrollWidth -
+                state.bookPageWidth
+              ),
+              baseOffset -
+              dragOffset
+            )
           );
 
-        reader.style.transition =
-          animated
-            ? 'transform 180ms ease-out'
-            : 'none';
-
-        reader.style.transform =
-          'translate3d(' +
-          (
-            baseOffset +
-            dragOffset
-          ) +
-          'px, 0, 0)';
+        if (
+          animated &&
+          typeof bookViewport
+            .scrollTo ===
+            'function'
+        ) {
+          bookViewport.scrollTo({
+            left: targetLeft,
+            top: 0,
+            behavior: 'smooth',
+          });
+        } else {
+          bookViewport.scrollLeft =
+            targetLeft;
+        }
 
         updateBookPageIndicator();
       };
@@ -3866,7 +3913,10 @@ appendStyledSegment(
 
     const refreshBookPagination =
       () => {
-        if (!bookMode) {
+        if (
+          !bookMode ||
+          !bookViewport
+        ) {
           return;
         }
 
@@ -3883,7 +3933,12 @@ appendStyledSegment(
         state.bookPageWidth =
           Math.max(
             1,
-            window.innerWidth
+            bookViewport
+              .clientWidth ||
+            (
+              window.innerWidth -
+              36
+            )
           );
 
         state.bookPageCount =
@@ -3892,8 +3947,7 @@ appendStyledSegment(
             Math.ceil(
               Math.max(
                 reader.scrollWidth,
-                reader.getBoundingClientRect()
-                  .width
+                state.bookPageWidth
               ) /
               state.bookPageWidth
             )
@@ -4200,219 +4254,6 @@ appendStyledSegment(
         }
       }
     );
-
-    document.addEventListener(
-      'pointerdown',
-      event => {
-        if (
-          !bookMode ||
-          state.active ||
-          state.pageTurning ||
-          event.target.closest(
-            '#selection-bar, .selection-handle, button'
-          )
-        ) {
-          return;
-        }
-
-        state.bookGesture = {
-          pointerId:
-            event.pointerId,
-          startX:
-            event.clientX,
-          startY:
-            event.clientY,
-          lastX:
-            event.clientX,
-          lastY:
-            event.clientY,
-        };
-
-        reader.style.transition =
-          '';
-      },
-      {
-        passive: true,
-      }
-    );
-
-
-    document.addEventListener(
-      'pointermove',
-      event => {
-        const gesture =
-          state.bookGesture;
-
-        if (
-          !gesture ||
-          gesture.pointerId !==
-            event.pointerId ||
-          state.active ||
-          state.pageTurning
-        ) {
-          return;
-        }
-
-        gesture.lastX =
-          event.clientX;
-
-        gesture.lastY =
-          event.clientY;
-
-        const dx =
-          gesture.lastX -
-          gesture.startX;
-
-        const dy =
-          gesture.lastY -
-          gesture.startY;
-
-        if (
-          Math.abs(dx) < 10 ||
-          Math.abs(dx) <=
-            Math.abs(dy) *
-              1.15
-        ) {
-          return;
-        }
-
-        const direction =
-          dx < 0
-            ? 'next'
-            : 'previous';
-
-        const resistance =
-          canTurnBookPage(
-            direction
-          )
-            ? 0.18
-            : 0.07;
-
-        const shift =
-          Math.max(
-            -34,
-            Math.min(
-              34,
-              dx * resistance
-            )
-          );
-
-        reader.style.transform =
-          'translateX(' +
-          shift +
-          'px)';
-      },
-      {
-        passive: true,
-      }
-    );
-
-
-    const finishBookGesture =
-      event => {
-        const gesture =
-          state.bookGesture;
-
-        if (
-          !gesture ||
-          gesture.pointerId !==
-            event.pointerId
-        ) {
-          return;
-        }
-
-        state.bookGesture =
-          null;
-
-        if (
-          state.active ||
-          state.pageTurning
-        ) {
-          resetBookGestureVisual();
-          return;
-        }
-
-        const dx =
-          event.clientX -
-          gesture.startX;
-
-        const dy =
-          event.clientY -
-          gesture.startY;
-
-        const horizontalSwipe =
-          Math.abs(dx) >= 72 &&
-          Math.abs(dx) >
-            Math.abs(dy) *
-              1.35;
-
-        if (!horizontalSwipe) {
-          resetBookGestureVisual();
-          return;
-        }
-
-        const direction =
-          dx < 0
-            ? 'next'
-            : 'previous';
-
-        if (
-          !canTurnBookPage(
-            direction
-          )
-        ) {
-          resetBookGestureVisual();
-          return;
-        }
-
-        state.pageTurning =
-          true;
-
-        reader.style.transition =
-          'transform 145ms ease-out, opacity 145ms ease-out';
-
-        reader.style.transform =
-          direction ===
-            'next'
-            ? 'translateX(-18%)'
-            : 'translateX(18%)';
-
-        reader.style.opacity =
-          '0.38';
-
-        setTimeout(
-          () => {
-            post({
-              type:
-                'page-turn',
-              direction,
-            });
-          },
-          105
-        );
-      };
-
-
-    document.addEventListener(
-      'pointerup',
-      finishBookGesture
-    );
-
-    document.addEventListener(
-      'pointercancel',
-      event => {
-        if (
-          state.bookGesture?.pointerId ===
-            event.pointerId
-        ) {
-          state.bookGesture =
-            null;
-
-          resetBookGestureVisual();
-        }
-      }
-    );
-
 
     document.addEventListener(
       'pointerdown',
