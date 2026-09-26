@@ -340,20 +340,6 @@ export const CanonListScreen = ({navigation,}) =>
               >
                 <View
                   style={
-                    styles.iconContainer
-                  }
-                >
-                  <Text
-                    style={
-                      styles.icon
-                    }
-                  >
-                    ☦
-                  </Text>
-                </View>
-
-                <View
-                  style={
                     styles.textContainer
                   }
                 >
@@ -512,19 +498,19 @@ const styles =
     },
     item: {
       flexDirection: 'row',
-      alignItems: 'center',
-      marginHorizontal: 12,
-      marginVertical: 5,
-      minHeight: 66,
-      borderRadius: 17,
+      alignItems: 'stretch',
+      marginHorizontal: 10,
+      marginVertical: 2,
+      minHeight: 55,
+      borderRadius: 13,
       borderWidth: 1,
-      borderColor: 'rgba(126, 82, 38, 0.22)',
+      borderColor: 'rgba(126, 82, 38, 0.18)',
       backgroundColor: 'rgba(248, 233, 207, 0.96)',
-      shadowColor: '#51301B',
-      shadowOffset: {width: 0, height: 2},
-      shadowOpacity: 0.09,
-      shadowRadius: 5,
-      elevation: 2,
+      shadowColor: '#4A2817',
+      shadowOffset: {width: 0, height: 1},
+      shadowOpacity: 0.06,
+      shadowRadius: 3,
+      elevation: 1,
       overflow: 'hidden',
     },
     itemSaved: {
@@ -537,19 +523,9 @@ const styles =
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 10,
-      paddingLeft: 10,
-      paddingRight: 5,
-    },
-    iconContainer: {
-      width: 30,
-      alignItems: 'center',
-      marginRight: 7,
-    },
-    icon: {
-      fontSize: 22,
-      color:
-        colors.accent,
+      paddingVertical: 9,
+      paddingLeft: 14,
+      paddingRight: 8,
     },
     textContainer: {
       flex: 1,
@@ -577,22 +553,19 @@ const styles =
         colors.textSecondary,
     },
     arrow: {
-      marginLeft: 5,
-      fontSize: 22,
-      color:
-        colors.textMuted,
+      marginLeft: 8,
+      color: '#9A714C',
+      fontSize: 23,
+      lineHeight: 25,
     },
     favoriteButton: {
       width: 44,
+      alignSelf: 'stretch',
       alignItems: 'center',
-      justifyContent:
-        'center',
-      paddingHorizontal: 8,
+      justifyContent: 'center',
       borderLeftWidth: 1,
-      borderLeftColor:
-        colors.border,
-      backgroundColor:
-        'rgba(238, 220, 192, 0.72)',
+      borderLeftColor: colors.border,
+      backgroundColor: 'rgba(238, 220, 192, 0.72)',
     },
     favoriteButtonActive: {
       backgroundColor:
@@ -600,9 +573,12 @@ const styles =
     },
     favoriteText: {
       fontSize: 22,
+      lineHeight: 24,
       fontWeight: '400',
-      color:
-        colors.textMuted,
+      color: colors.textMuted,
+      textAlign: 'center',
+      textAlignVertical: 'center',
+      includeFontPadding: false,
     },
     favoriteTextActive: {
       color:
