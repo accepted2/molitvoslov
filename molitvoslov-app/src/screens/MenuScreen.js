@@ -1217,7 +1217,10 @@ const styles = StyleSheet.create({
   quoteSaveIcon: {
     color: '#9A8068',
     fontSize: 21,
-    lineHeight: 24,
+    lineHeight: 22,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
   quoteSaveIconActive: {
     color: '#7A4F2D',
