@@ -16,6 +16,10 @@ import {AkathistScreen} from '../screens/AkathistScreen';
 import {CanonListScreen} from '../screens/CanonListScreen';
 import {CanonScreen} from '../screens/CanonScreen';
 import {CommunionPreparationScreen} from '../screens/CommunionPreparationScreen';
+import {BibleScreen} from '../screens/BibleScreen';
+import {BibleBooksScreen} from '../screens/BibleBooksScreen';
+import {BibleBookScreen} from '../screens/BibleBookScreen';
+import {BibleChapterScreen} from '../screens/BibleChapterScreen';
 import {BookmarksScreen} from '../screens/BookmarksScreen';
 import {FavoritesScreen} from '../screens/FavoritesScreen';
 import {ContinueReadingScreen} from '../screens/ContinueReadingScreen';
@@ -108,6 +112,10 @@ export const AppNavigator = () => (
         component={CommunionPreparationScreen}
         options={{headerShown: false}}
       />
+      <Stack.Screen name="Bible" component={BibleScreen} options={{headerShown: false}} />
+      <Stack.Screen name="BibleBooks" component={BibleBooksScreen} options={{headerShown: false}} />
+      <Stack.Screen name="BibleBook" component={BibleBookScreen} options={{headerShown: false}} />
+      <Stack.Screen name="BibleChapter" component={BibleChapterScreen} options={{headerShown: false}} />
       <Stack.Screen name="Account" component={AccountScreen} options={{headerShown: false}} />
     </Stack.Navigator>
   </NavigationContainer>

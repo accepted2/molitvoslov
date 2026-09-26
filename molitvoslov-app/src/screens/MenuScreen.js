@@ -22,6 +22,7 @@ import {BottomNav} from '../components/navigation/BottomNav';
 import {CategoryIcon} from '../components/icons/CategoryIcon';
 import {homeArtwork} from '../data/homeArtwork';
 import {contentApi as api} from '../services/contentApi';
+import {bibleContent} from '../services/bibleContent';
 import {deleteReadingProgress, getReadingProgress} from '../services/readingProgress';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {colors, spacing} from '../theme';
@@ -404,6 +405,37 @@ export const MenuScreen = ({navigation}) => {
   };
 
   const makeReadingItem = progress => {
+    if (progress.source_type === 'bible') {
+      const info = progress.anchor_info || {};
+      const book = bibleContent.getBook(progress.source_id);
+
+      if (!book) return null;
+
+      const chapterNumber = Number(info.chapter_number || 1);
+      const verseNumber = info.verse_number
+        ? Number(info.verse_number)
+        : null;
+
+      return {
+        id: progress.id,
+        type: 'Библия',
+        symbol: '☷',
+        title:
+          bibleContent.getDisplayName(
+            book
+          ),
+        position: verseNumber
+          ? 'Глава ' + chapterNumber + ' · стих ' + verseNumber
+          : 'Глава ' + chapterNumber,
+        onPress: () =>
+          navigation.navigate('BibleChapter', {
+            bookId: book.id,
+            chapterNumber,
+            resume: true,
+          }),
+      };
+    }
+
     if (progress.source_type === 'psalter') {
       const info = progress.anchor_info;
 
@@ -922,7 +954,7 @@ export const MenuScreen = ({navigation}) => {
                 <View style={styles.emptyReading}>
                   <Text style={styles.emptyReadingTitle}>Здесь появится последнее чтение</Text>
                   <Text style={styles.emptyReadingText}>
-                    Откройте молитву, акафист, канон или Псалтирь — место сохранится автоматически.
+                    Откройте молитву, акафист, канон, Псалтирь или Библию — место сохранится автоматически.
                   </Text>
                 </View>
               )}
@@ -978,6 +1010,13 @@ export const MenuScreen = ({navigation}) => {
                 iconSource={CATEGORY_ICONS.psalter}
                 artwork={homeArtwork.psalter}
                 onPress={() => navigation.navigate('Psalter')}
+              />
+              <DecorativeCard
+                title="Библия"
+                subtitle="Ветхий и Новый Завет"
+                symbol="☷"
+                artwork={homeArtwork.hero_biblical}
+                onPress={() => navigation.navigate('Bible')}
               />
             </View>
 

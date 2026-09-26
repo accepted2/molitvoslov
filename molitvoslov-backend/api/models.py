@@ -1137,3 +1137,196 @@ class ReadingProgress(models.Model):
 
         def __str__(self):
             return (f'{self.user} -' f'{self.source_type}:{self.source_id}')
+
+# =========================================================
+# БИБЛИЯ
+# =========================================================
+
+class BibleTranslation(models.Model):
+    code = models.SlugField(
+        unique=True,
+        verbose_name='Код перевода',
+    )
+    name = models.CharField(
+        max_length=255,
+        verbose_name='Название',
+    )
+    language = models.CharField(
+        max_length=10,
+        default='ru',
+        verbose_name='Язык',
+    )
+    source_url = models.URLField(
+        blank=True,
+        verbose_name='Источник',
+    )
+    source_revision = models.CharField(
+        max_length=64,
+        blank=True,
+        verbose_name='Ревизия источника',
+    )
+    license_name = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='Лицензия',
+    )
+    is_visible = models.BooleanField(
+        default=True,
+        verbose_name='Отображать',
+    )
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = 'Перевод Библии'
+        verbose_name_plural = 'Переводы Библии'
+
+
+class BibleBook(models.Model):
+    TESTAMENT_OLD = 'old'
+    TESTAMENT_NEW = 'new'
+
+    TESTAMENT_CHOICES = [
+        (TESTAMENT_OLD, 'Ветхий Завет'),
+        (TESTAMENT_NEW, 'Новый Завет'),
+    ]
+
+    SECTION_OLD = 'old'
+    SECTION_GOSPELS = 'gospels'
+    SECTION_ACTS = 'acts'
+    SECTION_EPISTLES = 'epistles'
+    SECTION_REVELATION = 'revelation'
+
+    SECTION_CHOICES = [
+        (SECTION_OLD, 'Ветхий Завет'),
+        (SECTION_GOSPELS, 'Евангелия'),
+        (SECTION_ACTS, 'Деяния'),
+        (SECTION_EPISTLES, 'Послания'),
+        (SECTION_REVELATION, 'Апокалипсис'),
+    ]
+
+    translation = models.ForeignKey(
+        BibleTranslation,
+        on_delete=models.CASCADE,
+        related_name='books',
+        verbose_name='Перевод',
+    )
+    testament = models.CharField(
+        max_length=10,
+        choices=TESTAMENT_CHOICES,
+        verbose_name='Завет',
+    )
+    section = models.CharField(
+        max_length=20,
+        choices=SECTION_CHOICES,
+        verbose_name='Раздел',
+    )
+    code = models.CharField(
+        max_length=8,
+        verbose_name='USFM-код',
+    )
+    name = models.CharField(
+        max_length=255,
+        verbose_name='Полное название',
+    )
+    short_name = models.CharField(
+        max_length=100,
+        verbose_name='Краткое название',
+    )
+    slug = models.SlugField(
+        max_length=100,
+        verbose_name='URL-идентификатор',
+    )
+    canonical_order = models.PositiveSmallIntegerField(
+        verbose_name='Канонический порядок',
+    )
+    is_appendix = models.BooleanField(
+        default=False,
+        verbose_name='Отдельная дополнительная единица источника',
+        help_text=(
+            'Используется для машинной структуры источника, '
+            'например для отдельно вынесенной Молитвы Манассии.'
+        ),
+    )
+
+    def __str__(self):
+        return self.short_name or self.name
+
+    class Meta:
+        ordering = ['canonical_order']
+        verbose_name = 'Книга Библии'
+        verbose_name_plural = 'Книги Библии'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['translation', 'code'],
+                name='unique_bible_book_code_per_translation',
+            ),
+            models.UniqueConstraint(
+                fields=['translation', 'slug'],
+                name='unique_bible_book_slug_per_translation',
+            ),
+            models.UniqueConstraint(
+                fields=['translation', 'canonical_order'],
+                name='unique_bible_book_order_per_translation',
+            ),
+        ]
+
+
+class BibleChapter(models.Model):
+    book = models.ForeignKey(
+        BibleBook,
+        on_delete=models.CASCADE,
+        related_name='chapters',
+        verbose_name='Книга',
+    )
+    number = models.PositiveSmallIntegerField(
+        verbose_name='Номер главы',
+    )
+
+    def __str__(self):
+        return f'{self.book.short_name}, глава {self.number}'
+
+    class Meta:
+        ordering = ['number']
+        verbose_name = 'Глава Библии'
+        verbose_name_plural = 'Главы Библии'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['book', 'number'],
+                name='unique_bible_chapter_per_book',
+            ),
+        ]
+
+
+class BibleVerse(models.Model):
+    chapter = models.ForeignKey(
+        BibleChapter,
+        on_delete=models.CASCADE,
+        related_name='verses',
+        verbose_name='Глава',
+    )
+    number = models.PositiveSmallIntegerField(
+        verbose_name='Номер стиха',
+    )
+    text = models.TextField(
+        verbose_name='Текст',
+    )
+
+    def __str__(self):
+        return (
+            f'{self.chapter.book.short_name} '
+            f'{self.chapter.number}:{self.number}'
+        )
+
+    class Meta:
+        ordering = ['number']
+        verbose_name = 'Стих Библии'
+        verbose_name_plural = 'Стихи Библии'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['chapter', 'number'],
+                name='unique_bible_verse_per_chapter',
+            ),
+        ]
+
