@@ -160,17 +160,20 @@ const HTML_TEMPLATE = String.raw`
       position: absolute;
       top: 50%;
       right: 0;
+      display: flex;
       width: 34px;
       height: 32px;
       padding: 0;
       transform: translateY(-50%);
+      align-items: center;
+      justify-content: center;
       border: 1px solid var(--border);
       border-radius: 16px;
       background: rgba(241, 223, 194, 0.94);
       color: var(--secondary);
       font-family: system-ui, -apple-system, sans-serif;
       font-size: 21px;
-      line-height: 30px;
+      line-height: 21px;
       font-weight: 500;
     }
 
