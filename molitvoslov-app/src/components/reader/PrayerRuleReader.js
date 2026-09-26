@@ -1090,13 +1090,34 @@ const HTML_TEMPLATE = String.raw`
         return;
       }
 
+      const visibleFootnotes =
+        footnotes.filter(
+          footnote =>
+            !(
+              isMorningRule &&
+              Number(
+                footnote?.number
+              ) === 2 &&
+              /при желании читается по окончании утренних молитв/i.test(
+                String(
+                  footnote?.content ||
+                  ''
+                )
+              )
+            )
+        );
+
+      if (!visibleFootnotes.length) {
+        return;
+      }
+
       const wrapper =
         el(
           'div',
           'footnotes'
         );
 
-      footnotes.forEach(
+      visibleFootnotes.forEach(
         footnote => {
           wrapper.appendChild(
             el(
@@ -1175,6 +1196,33 @@ const HTML_TEMPLATE = String.raw`
           ''
         )
       );
+
+
+    const isMorningRule =
+      /(?:^| )утрен/u.test(
+        ruleIdentity
+      ) ||
+      [
+        'molitvy-utrennie',
+      ].includes(
+        String(
+          DATA.rule?.slug ||
+          ''
+        )
+          .trim()
+          .toLowerCase()
+      ) ||
+      /utrenn|morning/i.test(
+        String(
+          DATA.rule?.slug ||
+          ''
+        )
+      );
+
+
+    const isDailyPrayerRule =
+      isEveningRule ||
+      isMorningRule;
 
 
     const normalizeEveningUtilityValue =
@@ -1269,7 +1317,7 @@ const HTML_TEMPLATE = String.raw`
 
     const findEveningUtilityBreakOffset =
       value => {
-        if (!isEveningRule) {
+        if (!isDailyPrayerRule) {
           return null;
         }
 
@@ -1327,7 +1375,7 @@ const HTML_TEMPLATE = String.raw`
 
     const isEveningCompactLiturgicalValue =
       value => {
-        if (!isEveningRule) {
+        if (!isDailyPrayerRule) {
           return false;
         }
 
@@ -1370,7 +1418,7 @@ const HTML_TEMPLATE = String.raw`
 
     const isEveningCompactLiturgicalItem =
       text => {
-        if (!isEveningRule) {
+        if (!isDailyPrayerRule) {
           return false;
         }
 
@@ -1402,7 +1450,7 @@ const HTML_TEMPLATE = String.raw`
 
     const getEveningItemKind =
       text => {
-        if (!isEveningRule) {
+        if (!isDailyPrayerRule) {
           return '';
         }
 
@@ -1420,6 +1468,7 @@ const HTML_TEMPLATE = String.raw`
         }
 
         if (
+          isEveningRule &&
           /молитва 7(?: я| ая)?/u.test(
             title
           ) &&
@@ -1431,15 +1480,18 @@ const HTML_TEMPLATE = String.raw`
         }
 
         if (
-          /исповедание грехов повседневное/u.test(
-            title
-          ) ||
+          isEveningRule &&
           (
-            /исповедание грехов/u.test(
+            /исповедание грехов повседневное/u.test(
               title
-            ) &&
-            /повседнев/u.test(
-              title
+            ) ||
+            (
+              /исповедание грехов/u.test(
+                title
+              ) &&
+              /повседнев/u.test(
+                title
+              )
             )
           )
         ) {
@@ -1560,7 +1612,7 @@ const HTML_TEMPLATE = String.raw`
         itemKind
       ) => {
         if (
-          !isEveningRule ||
+          !isDailyPrayerRule ||
           itemKind ===
             'minor-liturgical'
         ) {
@@ -1616,8 +1668,31 @@ const HTML_TEMPLATE = String.raw`
           );
         }
 
-        /* Первая буква каждого настоящего абзаца вечернего
-           правила получает тот же акцентный цвет. */
+        const bowPattern =
+          /\((?:Поклон|Поклоны)\)/giu;
+
+        let bowMatch = null;
+
+        while (
+          (
+            bowMatch =
+              bowPattern.exec(
+                normalized
+              )
+          )
+        ) {
+          appendOriginalRange(
+            ranges,
+            source,
+            originalIndex,
+            bowMatch.index,
+            bowMatch.index +
+              bowMatch[0].length
+          );
+        }
+
+        /* Первая буква каждого настоящего абзаца утреннего
+           и вечернего правила получает акцентный цвет. */
         const paragraphStarts = [
           0,
         ];
@@ -1919,6 +1994,12 @@ const HTML_TEMPLATE = String.raw`
       if (isEveningRule) {
         document.body.classList.add(
           'evening-rule'
+        );
+      }
+
+      if (isMorningRule) {
+        document.body.classList.add(
+          'morning-rule'
         );
       }
 
