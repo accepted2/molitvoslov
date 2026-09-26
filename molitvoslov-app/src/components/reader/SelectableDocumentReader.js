@@ -448,8 +448,12 @@ const HTML_TEMPLATE = String.raw`
       margin: 0;
       padding: 0;
       overflow: visible;
-      column-count: 1;
-      column-width: auto;
+      column-count: auto;
+      column-width:
+        var(
+          --book-page-width,
+          320px
+        );
       column-gap: 26px;
       column-fill: auto;
     }
@@ -543,11 +547,11 @@ const HTML_TEMPLATE = String.raw`
 
     body.book-mode
       .bible-verse-section.whole-saved {
-      margin-left: -6px;
-      margin-right: -6px;
-      padding-left: 6px;
-      padding-right: 6px;
-      border-radius: 0;
+      margin-left: -10px;
+      margin-right: -10px;
+      padding-left: 10px;
+      padding-right: 10px;
+      border-radius: 8px;
       background:
         rgba(
           161,
@@ -555,28 +559,35 @@ const HTML_TEMPLATE = String.raw`
           53,
           0.075
         );
-      box-shadow: none;
+      box-shadow:
+        inset 0 0 0 1px
+        rgba(
+          126,
+          82,
+          38,
+          0.055
+        );
     }
 
     body.book-mode
       .bible-chapter-start.whole-saved {
-      margin-top: -4px;
-      padding-top: 10px;
-      border-top-left-radius: 13px;
-      border-top-right-radius: 13px;
+      margin-top: -5px;
+      padding-top: 11px;
+      border-top-left-radius: 15px;
+      border-top-right-radius: 15px;
     }
 
     body.book-mode
       .bible-chapter-end.whole-saved {
-      margin-bottom: 5px;
-      padding-bottom: 6px;
-      border-bottom-left-radius: 13px;
-      border-bottom-right-radius: 13px;
+      margin-bottom: 7px;
+      padding-bottom: 8px;
+      border-bottom-left-radius: 15px;
+      border-bottom-right-radius: 15px;
     }
 
     body.book-mode
       .bible-chapter-start.bible-chapter-end.whole-saved {
-      border-radius: 13px;
+      border-radius: 15px;
     }
 
     body.book-mode .reader-row,
@@ -590,7 +601,7 @@ const HTML_TEMPLATE = String.raw`
 
     body.book-mode .reader-inline-label {
       margin-right: 5px;
-      color: #9B3B32;
+      color: #98622E;
       font-family: Georgia, "Times New Roman", serif;
       font-size: 10px;
       line-height: 1;
@@ -1083,6 +1094,7 @@ const HTML_TEMPLATE = String.raw`
       bookPageWidth: 1,
       bookPageGap: 0,
       bookPageStride: 1,
+      bookPageOffsets: [0],
     };
 
 
@@ -1653,6 +1665,13 @@ const HTML_TEMPLATE = String.raw`
           wrapper.dataset.highlightGroupKey =
             section.highlightGroupKey ||
             '';
+
+          wrapper.dataset.chapterNumber =
+            section.chapterNumber
+              ? String(
+                  section.chapterNumber
+                )
+              : '';
 
           if (
             section.title ||
@@ -3962,8 +3981,15 @@ appendStyledSegment(
           );
 
         const baseOffset =
-          state.bookPage *
-          state.bookPageStride;
+          Number(
+            state.bookPageOffsets[
+              state.bookPage
+            ]
+          ) ||
+          (
+            state.bookPage *
+            state.bookPageStride
+          );
 
         const targetLeft =
           Math.max(
@@ -4105,6 +4131,13 @@ appendStyledSegment(
             )
           );
 
+        reader.style
+          .setProperty(
+            '--book-page-width',
+            state.bookPageWidth +
+              'px'
+          );
+
         const readerStyle =
           window.getComputedStyle(
             reader
@@ -4120,6 +4153,13 @@ appendStyledSegment(
             0
           );
 
+        state.bookPageStride =
+          Math.max(
+            1,
+            state.bookPageWidth +
+            state.bookPageGap
+          );
+
         applySmartChapterBreaks();
 
         const totalWidth =
@@ -4128,14 +4168,7 @@ appendStyledSegment(
             state.bookPageWidth
           );
 
-        const estimatedStride =
-          Math.max(
-            1,
-            state.bookPageWidth +
-            state.bookPageGap
-          );
-
-        state.bookPageCount =
+        const pageCount =
           Math.max(
             1,
             Math.round(
@@ -4143,29 +4176,44 @@ appendStyledSegment(
                 totalWidth +
                 state.bookPageGap
               ) /
-              estimatedStride
+              state.bookPageStride
             )
           );
 
-        state.bookPageStride =
-          state.bookPageCount >
-            1
-            ? Math.max(
-                1,
-                (
-                  totalWidth +
-                  state.bookPageGap
-                ) /
-                state.bookPageCount
+        state.bookPageOffsets =
+          Array.from(
+            {
+              length:
+                pageCount,
+            },
+            (
+              _value,
+              index
+            ) =>
+              Math.min(
+                Math.max(
+                  0,
+                  totalWidth -
+                  state.bookPageWidth
+                ),
+                index *
+                state.bookPageStride
               )
-            : estimatedStride;
+          );
+
+        state.bookPageCount =
+          state.bookPageOffsets
+            .length;
 
         applyBookPage(
-          previousPage,
+          Math.min(
+            previousPage,
+            state.bookPageCount -
+              1
+          ),
           false
         );
       };
-
 
     const canTurnBookPage =
       direction =>
@@ -4202,29 +4250,57 @@ appendStyledSegment(
             ?.getBoundingClientRect();
 
         const absoluteLeft =
-          rect &&
-          viewportRect
-            ? (
-                bookViewport.scrollLeft +
-                rect.left -
-                viewportRect.left
-              )
-            : Number(
-                wrapper.offsetLeft ||
-                0
+          Math.max(
+            0,
+            rect &&
+            viewportRect
+              ? (
+                  bookViewport.scrollLeft +
+                  rect.left -
+                  viewportRect.left
+                )
+              : Number(
+                  wrapper.offsetLeft ||
+                  0
+                )
+          );
+
+        let nearestPage = 0;
+        let nearestDistance =
+          Infinity;
+
+        (
+          state.bookPageOffsets ||
+          [0]
+        ).forEach(
+          (
+            offset,
+            index
+          ) => {
+            const distance =
+              Math.abs(
+                absoluteLeft -
+                Number(
+                  offset ||
+                  0
+                )
               );
 
+            if (
+              distance <
+              nearestDistance
+            ) {
+              nearestDistance =
+                distance;
+
+              nearestPage =
+                index;
+            }
+          }
+        );
+
         return clampBookPage(
-          Math.floor(
-            Math.max(
-              0,
-              absoluteLeft
-            ) /
-            Math.max(
-              1,
-              state.bookPageStride
-            )
-          )
+          nearestPage
         );
       };
 
@@ -5749,6 +5825,60 @@ appendStyledSegment(
 
         if (!target) {
           return false;
+        }
+
+        const targetMetadata =
+          target.metadata ||
+          {};
+
+        const targetChapterNumber =
+          Number(
+            targetMetadata
+              .chapter_number ||
+            0
+          );
+
+        if (
+          bookMode &&
+          targetChapterNumber
+        ) {
+          const chapterStart =
+            document.querySelector(
+              '.bible-chapter-start[data-chapter-number="' +
+              targetChapterNumber +
+              '"]'
+            );
+
+          if (chapterStart) {
+            applyBookPage(
+              pageForElement(
+                chapterStart
+              ),
+              false
+            );
+
+            const chapterTitle =
+              chapterStart
+                .querySelector(
+                  '.prayer-title'
+                );
+
+            chapterTitle
+              ?.classList.add(
+                'focus-target'
+              );
+
+            setTimeout(
+              () =>
+                chapterTitle
+                  ?.classList.remove(
+                    'focus-target'
+                  ),
+              1200
+            );
+
+            return true;
+          }
         }
 
         const itemId =

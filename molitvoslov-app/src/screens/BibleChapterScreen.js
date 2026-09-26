@@ -586,6 +586,13 @@ export const BibleChapterScreen = ({
                       'bible-chapter:' +
                       chapter.id,
 
+                    chapterNumber:
+                      verseIndex === 0
+                        ? Number(
+                            chapter.number
+                          )
+                        : null,
+
                     title:
                       verseIndex === 0
                         ? 'Глава ' +
