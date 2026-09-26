@@ -1202,6 +1202,129 @@ const HTML_TEMPLATE = String.raw`
           .trim();
 
 
+    const normalizedEveningUtilityWithIndex =
+      value => {
+        const source =
+          String(
+            value ||
+            ''
+          );
+
+        const chars = [];
+        const originalIndex = [];
+
+        for (
+          let index = 0;
+          index < source.length;
+          index += 1
+        ) {
+          const originalChar =
+            source[index];
+
+          /* Не разлагаем й/Й: иначе breve потеряется вместе
+             с ударениями и «помилуй» превратится в «помилуи». */
+          if (
+            originalChar === 'й' ||
+            originalChar === 'Й'
+          ) {
+            chars.push(
+              originalChar
+            );
+            originalIndex.push(
+              index
+            );
+            continue;
+          }
+
+          const decomposed =
+            originalChar.normalize(
+              'NFD'
+            );
+
+          for (const char of decomposed) {
+            if (
+              /[\u0300-\u036f\u0483-\u0487]/u.test(
+                char
+              )
+            ) {
+              continue;
+            }
+
+            chars.push(
+              char
+            );
+            originalIndex.push(
+              index
+            );
+          }
+        }
+
+        return {
+          normalized:
+            chars.join(''),
+          originalIndex,
+        };
+      };
+
+
+    const findEveningUtilityBreakOffset =
+      value => {
+        if (!isEveningRule) {
+          return null;
+        }
+
+        const {
+          normalized,
+          originalIndex,
+        } =
+          normalizedEveningUtilityWithIndex(
+            value
+          );
+
+        const compact =
+          normalizeEveningUtilityValue(
+            value
+          );
+
+        let match = null;
+
+        if (
+          compact.startsWith(
+            'господи помилуй трижды слава и ныне'
+          )
+        ) {
+          match =
+            /Слава\s*,?\s*и\s+ныне\s*:/iu.exec(
+              normalized
+            );
+        } else if (
+          compact.startsWith(
+            'слава и ныне господи помилуй трижды'
+          )
+        ) {
+          match =
+            /Господи\s*,?\s*помилуй/iu.exec(
+              normalized
+            );
+        }
+
+        if (!match) {
+          return null;
+        }
+
+        const offset =
+          originalIndex[
+            match.index
+          ];
+
+        return Number.isFinite(
+          offset
+        )
+          ? offset
+          : null;
+      };
+
+
     const isEveningCompactLiturgicalValue =
       value => {
         if (!isEveningRule) {
@@ -2559,6 +2682,13 @@ const HTML_TEMPLATE = String.raw`
             eveningItemKind
           );
 
+        const eveningUtilityBreakOffset =
+          isEveningMinorLiturgical
+            ? findEveningUtilityBreakOffset(
+                text
+              )
+            : null;
+
         const liturgicalRanges = [];
 
         if (!isEveningMinorLiturgical) {
@@ -2701,6 +2831,16 @@ const HTML_TEMPLATE = String.raw`
             );
           }
         );
+
+        if (
+          Number.isFinite(
+            eveningUtilityBreakOffset
+          )
+        ) {
+          boundaries.add(
+            eveningUtilityBreakOffset
+          );
+        }
 
         saved.forEach(
           range => {
@@ -3012,6 +3152,20 @@ const HTML_TEMPLATE = String.raw`
           fragment.appendChild(
             span
           );
+
+          if (
+            Number.isFinite(
+              eveningUtilityBreakOffset
+            ) &&
+            end ===
+              eveningUtilityBreakOffset
+          ) {
+            fragment.appendChild(
+              document.createElement(
+                'br'
+              )
+            );
+          }
 
           if (
             eveningNumberBreaks.has(
