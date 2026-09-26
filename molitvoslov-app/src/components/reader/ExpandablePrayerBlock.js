@@ -48,7 +48,15 @@ export default function ExpandablePrayerBlock({
           )
           .replace(
             /\n[ \t]*\n+/g,
-            '\n'
+            '\uE000'
+          )
+          .replace(
+            /\n/g,
+            ' '
+          )
+          .replace(
+            /\uE000/g,
+            '\n\n'
           )
           .trim(),
       [
@@ -429,6 +437,7 @@ const styles =
       lineHeight: 28,
       color: '#3E2A1D',
       fontFamily: 'serif',
+      textAlign: 'justify',
     },
 
     collapseButton: {
