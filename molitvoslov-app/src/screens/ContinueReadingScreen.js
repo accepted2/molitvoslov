@@ -10,6 +10,7 @@ import {BottomNav} from '../components/navigation/BottomNav';
 import {CategoryIcon} from '../components/icons/CategoryIcon';
 
 import {contentApi as api} from '../services/contentApi';
+import {bibleContent} from '../services/bibleContent';
 import {deleteReadingProgress, getReadingProgress} from '../services/readingProgress';
 
 const CATEGORY_ICONS = {
@@ -119,6 +120,34 @@ export const ContinueReadingScreen = ({navigation}) => {
 
   const makeItem = progressItem => {
     const percent = Number(progressItem.progress_percent || 0);
+
+    if (progressItem.source_type === 'bible') {
+      const info = progressItem.anchor_info || {};
+      const book = bibleContent.getBook(progressItem.source_id);
+
+      if (!book) return null;
+
+      const chapterNumber = Number(info.chapter_number || 1);
+      const verseNumber = info.verse_number
+        ? Number(info.verse_number)
+        : null;
+
+      return {
+        id: progressItem.id,
+        type: 'Библия',
+        glyph: '☷',
+        title: book.short_name || book.name,
+        position: verseNumber
+          ? 'Глава ' + chapterNumber + ' · стих ' + verseNumber
+          : 'Глава ' + chapterNumber,
+        percent,
+        onPress: () =>
+          navigation.navigate('BibleChapter', {
+            bookId: book.id,
+            chapterNumber,
+          }),
+      };
+    }
 
     if (progressItem.source_type === 'psalter') {
       const info = progressItem.anchor_info;
@@ -352,7 +381,7 @@ export const ContinueReadingScreen = ({navigation}) => {
               <Text style={styles.emptyCross}>☦</Text>
               <Text style={styles.emptyTitle}>Начатых чтений пока нет</Text>
               <Text style={styles.emptyText}>
-                Когда вы начнёте читать молитву, акафист, канон или Псалтирь, прогресс появится здесь.
+                Когда вы начнёте читать молитву, акафист, канон, Псалтирь или Библию, прогресс появится здесь.
               </Text>
             </View>
           )}

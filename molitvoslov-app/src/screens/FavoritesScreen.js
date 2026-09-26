@@ -254,6 +254,33 @@ export const FavoritesScreen = ({
 
       if (
         item.source_type ===
+          'bible' &&
+        metadata.chapter_number
+      ) {
+        navigation.navigate(
+          'BibleChapter',
+          {
+            bookId:
+              item.source_id,
+
+            chapterNumber:
+              Number(
+                metadata.chapter_number
+              ),
+
+            focusTarget:
+              makeFocusTarget(
+                item
+              ),
+          }
+        );
+
+        return;
+      }
+
+
+      if (
+        item.source_type ===
           'daily_quote'
       ) {
         navigation.navigate(
