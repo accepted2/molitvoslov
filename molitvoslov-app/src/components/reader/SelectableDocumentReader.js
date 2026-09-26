@@ -539,6 +539,26 @@ const HTML_TEMPLATE = String.raw`
       background: #EED9B8;
     }
 
+    body.book-mode
+      .bible-verse-section.whole-saved {
+      margin: 0;
+      padding: 0;
+      border-radius: 0;
+      background:
+        rgba(
+          161,
+          110,
+          53,
+          0.055
+        );
+      box-shadow: none;
+    }
+
+    body.book-mode
+      .bible-chapter-start.whole-saved {
+      padding-top: 6px;
+    }
+
     body.book-mode .reader-row,
     body.book-mode .reader-row:last-child {
       margin-bottom: 0;
