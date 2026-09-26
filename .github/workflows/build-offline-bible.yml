@@ -16,6 +16,7 @@ on:
       - molitvoslov-app/src/screens/BibleBooksScreen.js
       - molitvoslov-app/src/screens/BibleBookScreen.js
       - molitvoslov-app/src/screens/BibleChapterScreen.js
+      - molitvoslov-app/src/components/reader/SelectableDocumentReader.js
       - molitvoslov-app/src/navigation/AppNavigator.js
       - molitvoslov-app/src/screens/MenuScreen.js
       - molitvoslov-app/src/screens/ContinueReadingScreen.js
