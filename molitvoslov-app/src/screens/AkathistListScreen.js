@@ -457,6 +457,10 @@ const styles = StyleSheet.create({
   favoriteText: {
     color: '#A9947C',
     fontSize: 22,
+    lineHeight: 24,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
 
   favoriteTextActive: {
