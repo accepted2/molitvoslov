@@ -57,6 +57,8 @@ export const FixedSectionHeader = ({
             onPress={() => navigation.goBack()}
             style={({pressed}) => [
               styles.backButton,
+              minimal &&
+                styles.backButtonMinimal,
               pressed && styles.pressed,
             ]}
           >
@@ -111,6 +113,10 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  backButtonMinimal: {
+    marginTop: -5,
   },
 
   backArrow: {

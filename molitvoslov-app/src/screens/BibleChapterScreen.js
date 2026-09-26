@@ -91,7 +91,10 @@ export const BibleChapterScreen = ({
     useSafeAreaInsets();
 
   const readerTopInset =
-    insets.top + 2;
+    insets.top + 43;
+
+  const readerBottomInset =
+    38;
 
   const {
     savedProgress,
@@ -557,9 +560,27 @@ export const BibleChapterScreen = ({
                     verseIndex
                   ) => ({
                     className:
-                      verseIndex === 0
-                        ? 'bible-verse-section bible-chapter-start'
-                        : 'bible-verse-section',
+                      [
+                        'bible-verse-section',
+
+                        verseIndex === 0
+                          ? 'bible-chapter-start'
+                          : '',
+
+                        verseIndex ===
+                          (
+                            chapter.verses
+                              ?.length ||
+                            1
+                          ) -
+                          1
+                          ? 'bible-chapter-end'
+                          : '',
+                      ]
+                        .filter(
+                          Boolean
+                        )
+                        .join(' '),
 
                     highlightGroupKey:
                       'bible-chapter:' +
@@ -824,6 +845,9 @@ export const BibleChapterScreen = ({
         }
         topContentInset={
           readerTopInset
+        }
+        bottomContentInset={
+          readerBottomInset
         }
         onProgress={
           handleProgress

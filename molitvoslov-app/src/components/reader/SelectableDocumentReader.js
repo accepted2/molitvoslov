@@ -74,7 +74,11 @@ const HTML_TEMPLATE = String.raw`
 
     body {
       --reader-top-padding: __READER_TOP_PADDING__px;
-      padding: var(--reader-top-padding) 14px 88px;
+      --reader-bottom-padding: __READER_BOTTOM_PADDING__px;
+      padding:
+        var(--reader-top-padding)
+        14px
+        var(--reader-bottom-padding);
     }
 
     .view-switcher {
@@ -444,11 +448,9 @@ const HTML_TEMPLATE = String.raw`
       margin: 0;
       padding: 0;
       overflow: visible;
-      column-width:
-        calc(
-          100vw - 32px
-        );
-      column-gap: 30px;
+      column-count: 1;
+      column-width: auto;
+      column-gap: 26px;
       column-fill: auto;
     }
 
@@ -497,8 +499,8 @@ const HTML_TEMPLATE = String.raw`
     body.book-mode
       .bible-chapter-start
       .section-header {
-      margin: 5px 0 4px;
-      padding: 3px 7px 3px 5px;
+      margin: 5px 0 5px;
+      padding: 4px 10px 4px 7px;
       break-after:
         avoid-column;
     }
@@ -541,22 +543,40 @@ const HTML_TEMPLATE = String.raw`
 
     body.book-mode
       .bible-verse-section.whole-saved {
-      margin: 0;
-      padding: 0;
+      margin-left: -6px;
+      margin-right: -6px;
+      padding-left: 6px;
+      padding-right: 6px;
       border-radius: 0;
       background:
         rgba(
           161,
           110,
           53,
-          0.055
+          0.075
         );
       box-shadow: none;
     }
 
     body.book-mode
       .bible-chapter-start.whole-saved {
-      padding-top: 6px;
+      margin-top: -4px;
+      padding-top: 10px;
+      border-top-left-radius: 13px;
+      border-top-right-radius: 13px;
+    }
+
+    body.book-mode
+      .bible-chapter-end.whole-saved {
+      margin-bottom: 5px;
+      padding-bottom: 6px;
+      border-bottom-left-radius: 13px;
+      border-bottom-right-radius: 13px;
+    }
+
+    body.book-mode
+      .bible-chapter-start.bible-chapter-end.whole-saved {
+      border-radius: 13px;
     }
 
     body.book-mode .reader-row,
@@ -4071,15 +4091,8 @@ appendStyledSegment(
           return;
         }
 
-        const previousStride =
-          Math.max(
-            1,
-            state.bookPageStride
-          );
-
-        const previousOffset =
-          state.bookPage *
-          previousStride;
+        const previousPage =
+          state.bookPage;
 
         state.bookPageWidth =
           Math.max(
@@ -4107,38 +4120,48 @@ appendStyledSegment(
             0
           );
 
-        state.bookPageStride =
+        applySmartChapterBreaks();
+
+        const totalWidth =
+          Math.max(
+            reader.scrollWidth,
+            state.bookPageWidth
+          );
+
+        const estimatedStride =
           Math.max(
             1,
             state.bookPageWidth +
             state.bookPageGap
           );
 
-        applySmartChapterBreaks();
-
         state.bookPageCount =
           Math.max(
             1,
             Math.round(
               (
-                Math.max(
-                  reader.scrollWidth,
-                  state.bookPageWidth
-                ) +
+                totalWidth +
                 state.bookPageGap
               ) /
-              state.bookPageStride
+              estimatedStride
             )
           );
 
-        const proportionalPage =
-          Math.round(
-            previousOffset /
-            state.bookPageStride
-          );
+        state.bookPageStride =
+          state.bookPageCount >
+            1
+            ? Math.max(
+                1,
+                (
+                  totalWidth +
+                  state.bookPageGap
+                ) /
+                state.bookPageCount
+              )
+            : estimatedStride;
 
         applyBookPage(
-          proportionalPage,
+          previousPage,
           false
         );
       };
@@ -6201,6 +6224,7 @@ const buildHtml = ({
   savedProgress,
   focusTarget,
   topContentInset,
+  bottomContentInset,
 }) => {
   const payload = {
     document:
@@ -6237,17 +6261,49 @@ const buildHtml = ({
           : null,
   };
 
-  return HTML_TEMPLATE
-    .replace(
-      '__READER_TOP_PADDING__',
-      String(
-        Math.max(
+  const bookMode =
+    documentData.readerMode ===
+      'book';
+
+  const resolvedTopPadding =
+    bookMode
+      ? Math.max(
+          0,
+          Number(
+            topContentInset ||
+            0
+          )
+        )
+      : Math.max(
           14,
           Number(
             topContentInset ||
             0
           ) + 14
+        );
+
+  const resolvedBottomPadding =
+    bookMode
+      ? Math.max(
+          34,
+          Number(
+            bottomContentInset ||
+            0
+          )
         )
+      : 88;
+
+  return HTML_TEMPLATE
+    .replace(
+      '__READER_TOP_PADDING__',
+      String(
+        resolvedTopPadding
+      )
+    )
+    .replace(
+      '__READER_BOTTOM_PADDING__',
+      String(
+        resolvedBottomPadding
       )
     )
     .replace(
@@ -6263,6 +6319,7 @@ export default function SelectableDocumentReader({
   savedProgress,
   focusTarget,
   topContentInset = 0,
+  bottomContentInset = 0,
   onSaved,
   onProgress,
   onAction,
@@ -6324,12 +6381,14 @@ export default function SelectableDocumentReader({
           savedProgress,
           focusTarget,
           topContentInset,
+          bottomContentInset,
         }),
       [
         documentData,
         savedProgress,
         focusTarget,
         topContentInset,
+        bottomContentInset,
       ]
     );
 
