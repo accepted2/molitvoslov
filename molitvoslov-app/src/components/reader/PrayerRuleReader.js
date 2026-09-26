@@ -1177,6 +1177,31 @@ const HTML_TEMPLATE = String.raw`
       );
 
 
+    const normalizeEveningUtilityValue =
+      value =>
+        String(
+          value ||
+          ''
+        )
+          .normalize(
+            'NFC'
+          )
+          .replace(
+            /[\u0300-\u036f\u0483-\u0487]/g,
+            ''
+          )
+          .toLowerCase()
+          .replace(
+            /ё/g,
+            'е'
+          )
+          .replace(
+            /[^а-я0-9]+/g,
+            ' '
+          )
+          .trim();
+
+
     const isEveningCompactLiturgicalValue =
       value => {
         if (!isEveningRule) {
@@ -1184,7 +1209,7 @@ const HTML_TEMPLATE = String.raw`
         }
 
         const content =
-          normalizeLiturgicalValue(
+          normalizeEveningUtilityValue(
             value
           );
 
@@ -1224,6 +1249,24 @@ const HTML_TEMPLATE = String.raw`
       text => {
         if (!isEveningRule) {
           return false;
+        }
+
+        const utilitySlugs =
+          new Set([
+            'go-spodi-pomi-lui-trizhdy-sla-va',
+            'go-spodi-pomi-lui-raz',
+            'sla-va-i-ny-ne-go-spodi',
+          ]);
+
+        if (
+          utilitySlugs.has(
+            String(
+              text?.slug ||
+              ''
+            )
+          )
+        ) {
+          return true;
         }
 
         return (
@@ -2479,7 +2522,16 @@ const HTML_TEMPLATE = String.raw`
             itemId
           );
 
+        const mappedEveningItemKind =
+          eveningItemKindMap.get(
+            Number(
+              itemId
+            )
+          ) || '';
+
         const isEveningMinorLiturgical =
+          mappedEveningItemKind ===
+            'minor-liturgical' ||
           isEveningCompactLiturgicalValue(
             text
           );
@@ -2494,13 +2546,7 @@ const HTML_TEMPLATE = String.raw`
         const eveningItemKind =
           isEveningMinorLiturgical
             ? 'minor-liturgical'
-            : (
-                eveningItemKindMap.get(
-                  Number(
-                    itemId
-                  )
-                ) || ''
-              );
+            : mappedEveningItemKind;
 
         root.classList.toggle(
           'evening-minor-liturgical-text',
