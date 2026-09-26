@@ -1,6 +1,8 @@
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
+from api.akathist_curated import is_curated_akathist
+
 
 AKATHISTS = [
     {
@@ -112,6 +114,15 @@ AKATHISTS = [
             '(Великий акафист)'
         ),
     },
+]
+
+AKATHISTS = [
+    item
+    for item in AKATHISTS
+    if is_curated_akathist(
+        slug=item['slug'],
+        title=item['title'],
+    )
 ]
 
 
