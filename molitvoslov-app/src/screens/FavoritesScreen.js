@@ -254,6 +254,18 @@ export const FavoritesScreen = ({
 
       if (
         item.source_type ===
+          'daily_quote'
+      ) {
+        navigation.navigate(
+          'Menu'
+        );
+
+        return;
+      }
+
+
+      if (
+        item.source_type ===
         'psalter'
       ) {
         if (
@@ -369,8 +381,8 @@ export const FavoritesScreen = ({
                   во время чтения,
                   либо сохраните целую
                   молитву, псалом,
-                  кафизму, акафист
-                  или канон.
+                  кафизму, акафист,
+                  канон или цитату дня.
                 </Text>
               </View>
             }
