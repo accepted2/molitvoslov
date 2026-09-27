@@ -1516,7 +1516,17 @@ class Command(BaseCommand):
         )
 
         match = re.match(
-            r'^песнь\s+([0-9]+)
+            r'^песнь\\s+([0-9]+)(?:\\s|$)',
+            normalized,
+        )
+
+        if not match:
+            return None
+
+        return int(
+            match.group(1)
+        )
+
         sections = []
 
         variant = 1
