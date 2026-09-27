@@ -5,6 +5,7 @@ import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
+import {SaveHeartIcon} from '../components/icons/SaveHeartIcon';
 import {
   ActivityIndicator,
   FlatList,
@@ -195,17 +196,9 @@ export const CanonListScreen = ({navigation}) => {
                   }
                   hitSlop={6}
                   onPress={() => toggleFavorite(item)}
-                  style={({pressed}) => [
-                    styles.favoriteButton,
-
-                    saved && styles.favoriteButtonActive,
-
-                    pressed && styles.pressed,
-                  ]}
+                  style={({pressed}) => [styles.favoriteButton, pressed && styles.pressed]}
                 >
-                  <Text style={[styles.favoriteText, saved && styles.favoriteTextActive]}>
-                    {saved ? '★' : '☆'}
-                  </Text>
+                  <SaveHeartIcon active={saved} size={20} />
                 </Pressable>
               </View>
             );
@@ -313,9 +306,6 @@ const styles = StyleSheet.create({
     borderLeftWidth: 1,
     borderLeftColor: colors.border,
     backgroundColor: 'rgba(238, 220, 192, 0.72)',
-  },
-  favoriteButtonActive: {
-    backgroundColor: colors.surfaceWarm,
   },
   favoriteText: {
     fontSize: 22,

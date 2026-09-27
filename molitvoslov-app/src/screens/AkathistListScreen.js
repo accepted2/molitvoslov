@@ -15,6 +15,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
+import {SaveHeartIcon} from '../components/icons/SaveHeartIcon';
 import {contentApi as api} from '../services/contentApi';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {colors} from '../theme';
@@ -155,15 +156,9 @@ export const AkathistListScreen = ({navigation}) => {
                 <Pressable
                   hitSlop={8}
                   onPress={() => toggleFavorite(item)}
-                  style={({pressed}) => [
-                    styles.favoriteButton,
-                    saved && styles.favoriteButtonActive,
-                    pressed && styles.pressed,
-                  ]}
+                  style={({pressed}) => [styles.favoriteButton, pressed && styles.pressed]}
                 >
-                  <Text style={[styles.favoriteText, saved && styles.favoriteTextActive]}>
-                    {saved ? '★' : '☆'}
-                  </Text>
+                  <SaveHeartIcon active={saved} size={20} />
                 </Pressable>
               </View>
             );
@@ -382,10 +377,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
 
     backgroundColor: 'transparent',
-  },
-
-  favoriteButtonActive: {
-    backgroundColor: 'rgba(190, 139, 72, 0.08)',
   },
 
   favoriteText: {

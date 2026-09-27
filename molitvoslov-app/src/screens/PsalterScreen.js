@@ -18,6 +18,7 @@ import ExpandablePrayerBlock from '../components/reader/ExpandablePrayerBlock';
 
 import {colors, radius, spacing} from '../theme';
 import {BottomNav} from '../components/navigation/BottomNav';
+import {SaveHeartIcon} from '../components/icons/SaveHeartIcon';
 
 export default function PsalterScreen({navigation}) {
   const [psalter, setPsalter] = useState(null);
@@ -279,17 +280,9 @@ export default function PsalterScreen({navigation}) {
                     saved ? 'Убрать кафизму из избранного' : 'Добавить кафизму в избранное'
                   }
                   onPress={() => toggleKathismaSaved(item)}
-                  style={({pressed}) => [
-                    styles.saveButton,
-
-                    saved && styles.saveButtonActive,
-
-                    pressed && styles.pressed,
-                  ]}
+                  style={({pressed}) => [styles.saveButton, pressed && styles.pressed]}
                 >
-                  <Text style={[styles.saveButtonText, saved && styles.saveButtonTextActive]}>
-                    {saved ? '★' : '☆'}
-                  </Text>
+                  <SaveHeartIcon active={saved} size={20} />
                 </Pressable>
               </View>
             );
@@ -409,10 +402,6 @@ const styles = StyleSheet.create({
     borderLeftWidth: 1,
     borderLeftColor: colors.border,
     backgroundColor: 'rgba(238, 220, 192, 0.72)',
-  },
-
-  saveButtonActive: {
-    backgroundColor: colors.surfaceWarm,
   },
 
   saveButtonText: {
