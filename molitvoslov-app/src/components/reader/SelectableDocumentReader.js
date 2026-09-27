@@ -158,16 +158,18 @@ const HTML_TEMPLATE = String.raw`
     }
 
     .document-action {
-      min-height: 34px;
-      padding: 0 12px;
+      display: flex;
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      min-height: 36px;
+      padding: 0;
+      align-items: center;
+      justify-content: center;
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 18px;
       background: var(--surface);
       color: var(--secondary);
-      font-family: system-ui, -apple-system, sans-serif;
-      font-size: 11px;
-      line-height: 14px;
-      font-weight: 700;
     }
 
     .document-action.active {
@@ -195,23 +197,33 @@ const HTML_TEMPLATE = String.raw`
     }
 
     .section-action {
-      min-width: 82px;
-      min-height: 32px;
-      padding: 0 9px;
+      display: flex;
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      min-height: 36px;
+      padding: 0;
+      align-items: center;
+      justify-content: center;
       border: 1px solid var(--border);
-      border-radius: 9px;
+      border-radius: 18px;
       background: var(--surface);
       color: var(--secondary);
-      font-family: system-ui, -apple-system, sans-serif;
-      font-size: 11px;
-      line-height: 14px;
-      font-weight: 700;
     }
 
     .section-action.active {
       color: var(--accent-dark);
       background: #F1DFC2;
       border-color: rgba(123, 79, 36, 0.28);
+    }
+
+    .save-heart-icon {
+      display: block;
+      width: 19px;
+      height: 19px;
+      flex: 0 0 19px;
+      overflow: visible;
+      pointer-events: none;
     }
 
     .prayer-title,
@@ -1175,6 +1187,88 @@ const HTML_TEMPLATE = String.raw`
     };
 
 
+    const setSaveHeartIcon = (
+      button,
+      active
+    ) => {
+      const svg =
+        document.createElementNS(
+          'http://www.w3.org/2000/svg',
+          'svg'
+        );
+
+      svg.setAttribute(
+        'viewBox',
+        '0 0 24 24'
+      );
+
+      svg.setAttribute(
+        'aria-hidden',
+        'true'
+      );
+
+      svg.classList.add(
+        'save-heart-icon'
+      );
+
+      const path =
+        document.createElementNS(
+          'http://www.w3.org/2000/svg',
+          'path'
+        );
+
+      path.setAttribute(
+        'd',
+        'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z'
+      );
+
+      path.setAttribute(
+        'fill',
+        active
+          ? 'currentColor'
+          : 'none'
+      );
+
+      path.setAttribute(
+        'stroke',
+        'currentColor'
+      );
+
+      path.setAttribute(
+        'stroke-width',
+        '1.8'
+      );
+
+      path.setAttribute(
+        'stroke-linecap',
+        'round'
+      );
+
+      path.setAttribute(
+        'stroke-linejoin',
+        'round'
+      );
+
+      svg.appendChild(
+        path
+      );
+
+      button.replaceChildren(
+        svg
+      );
+
+      button.title =
+        active
+          ? 'Убрать из избранного'
+          : 'Добавить в избранное';
+
+      button.setAttribute(
+        'aria-label',
+        button.title
+      );
+    };
+
+
     const titleEl = (
       tag,
       className,
@@ -1653,12 +1747,16 @@ const HTML_TEMPLATE = String.raw`
             'button',
             DATA.document.action.active
               ? 'document-action active'
-              : 'document-action',
-            DATA.document.action.label
+              : 'document-action'
           );
 
         action.type =
           'button';
+
+        setSaveHeartIcon(
+          action,
+          !!DATA.document.action.active
+        );
 
         action.dataset.actionKey =
           DATA.document.action.key;
@@ -1743,12 +1841,16 @@ const HTML_TEMPLATE = String.raw`
                   'button',
                   section.action.active
                     ? 'section-action active'
-                    : 'section-action',
-                  section.action.label
+                    : 'section-action'
                 );
 
               action.type =
                 'button';
+
+              setSaveHeartIcon(
+                action,
+                !!section.action.active
+              );
 
               action.dataset.actionKey =
                 section.action.key;
@@ -6618,14 +6720,16 @@ appendStyledSegment(
             );
 
           if (action) {
-            action.textContent =
-              label;
-
             action.classList
               .toggle(
                 'active',
                 !!active
               );
+
+            setSaveHeartIcon(
+              action,
+              !!active
+            );
           }
 
           setSectionWholeHighlight(

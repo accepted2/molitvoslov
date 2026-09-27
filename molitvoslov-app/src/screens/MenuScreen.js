@@ -840,8 +840,8 @@ export const MenuScreen = ({navigation}) => {
                       >
                         {
                           savedDailyQuote
-                            ? '★'
-                            : '☆'
+                            ? '♥'
+                            : '♡'
                         }
                       </Text>
                     </Pressable>
@@ -1266,8 +1266,10 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(126, 78, 34, 0.46)',
   },
   quoteSaveIcon: {
+    width: 22,
+    height: 22,
     color: '#9A8068',
-    fontSize: 21,
+    fontSize: 19,
     lineHeight: 22,
     textAlign: 'center',
     textAlignVertical: 'center',
