@@ -161,26 +161,31 @@ const HTML_TEMPLATE = String.raw`
       top: 50%;
       right: 0;
       display: flex;
-      width: 34px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       padding: 0;
       transform: translateY(-50%);
       align-items: center;
       justify-content: center;
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: 18px;
       background: rgba(241, 223, 194, 0.94);
       color: var(--secondary);
-      font-family: system-ui, -apple-system, sans-serif;
-      font-size: 21px;
-      line-height: 21px;
-      font-weight: 500;
     }
 
     .favorite-action.active {
       color: var(--accent-dark);
       background: #F1DFC2;
       border-color: rgba(123, 79, 36, 0.28);
+    }
+
+    .save-heart-icon {
+      display: block;
+      width: 19px;
+      height: 19px;
+      flex: 0 0 19px;
+      overflow: visible;
+      pointer-events: none;
     }
 
     .prayer-title,
@@ -735,6 +740,88 @@ const HTML_TEMPLATE = String.raw`
       }
 
       return node;
+    };
+
+
+    const setSaveHeartIcon = (
+      button,
+      active
+    ) => {
+      const svg =
+        document.createElementNS(
+          'http://www.w3.org/2000/svg',
+          'svg'
+        );
+
+      svg.setAttribute(
+        'viewBox',
+        '0 0 24 24'
+      );
+
+      svg.setAttribute(
+        'aria-hidden',
+        'true'
+      );
+
+      svg.classList.add(
+        'save-heart-icon'
+      );
+
+      const path =
+        document.createElementNS(
+          'http://www.w3.org/2000/svg',
+          'path'
+        );
+
+      path.setAttribute(
+        'd',
+        'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z'
+      );
+
+      path.setAttribute(
+        'fill',
+        active
+          ? 'currentColor'
+          : 'none'
+      );
+
+      path.setAttribute(
+        'stroke',
+        'currentColor'
+      );
+
+      path.setAttribute(
+        'stroke-width',
+        '1.8'
+      );
+
+      path.setAttribute(
+        'stroke-linecap',
+        'round'
+      );
+
+      path.setAttribute(
+        'stroke-linejoin',
+        'round'
+      );
+
+      svg.appendChild(
+        path
+      );
+
+      button.replaceChildren(
+        svg
+      );
+
+      button.title =
+        active
+          ? 'Убрать из избранного'
+          : 'Добавить в избранное';
+
+      button.setAttribute(
+        'aria-label',
+        button.title
+      );
     };
 
 
@@ -2267,19 +2354,16 @@ const HTML_TEMPLATE = String.raw`
                     'button',
                     wholeSaved
                       ? 'favorite-action active'
-                      : 'favorite-action',
-                    wholeSaved
-                      ? '★'
-                      : '☆'
+                      : 'favorite-action'
                   );
 
                 favorite.type =
                   'button';
 
-                favorite.title =
-                  wholeSaved
-                    ? 'Убрать из избранного'
-                    : 'Добавить в избранное';
+                setSaveHeartIcon(
+                  favorite,
+                  !!wholeSaved
+                );
 
                 favorite.dataset.itemId =
                   String(
@@ -5826,18 +5910,13 @@ const HTML_TEMPLATE = String.raw`
                 )
               : '';
 
-          button.textContent =
-            active
-              ? '★'
-              : '☆';
-
-          button.title =
-            active
-              ? 'Убрать из избранного'
-              : 'Добавить в избранное';
-
           button.classList.toggle(
             'active',
+            !!active
+          );
+
+          setSaveHeartIcon(
+            button,
             !!active
           );
 
