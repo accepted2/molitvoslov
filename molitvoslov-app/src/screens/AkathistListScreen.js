@@ -156,10 +156,7 @@ export const AkathistListScreen = ({navigation}) => {
                 <Pressable
                   hitSlop={8}
                   onPress={() => toggleFavorite(item)}
-                  style={({pressed}) => [
-                    styles.favoriteButton,
-                    pressed && styles.pressed,
-                  ]}
+                  style={({pressed}) => [styles.favoriteButton, pressed && styles.pressed]}
                 >
                   <SaveHeartIcon active={saved} size={20} />
                 </Pressable>

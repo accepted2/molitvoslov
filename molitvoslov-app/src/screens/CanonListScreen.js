@@ -196,11 +196,7 @@ export const CanonListScreen = ({navigation}) => {
                   }
                   hitSlop={6}
                   onPress={() => toggleFavorite(item)}
-                  style={({pressed}) => [
-                    styles.favoriteButton,
-
-                    pressed && styles.pressed,
-                  ]}
+                  style={({pressed}) => [styles.favoriteButton, pressed && styles.pressed]}
                 >
                   <SaveHeartIcon active={saved} size={20} />
                 </Pressable>

@@ -280,11 +280,7 @@ export default function PsalterScreen({navigation}) {
                     saved ? 'Убрать кафизму из избранного' : 'Добавить кафизму в избранное'
                   }
                   onPress={() => toggleKathismaSaved(item)}
-                  style={({pressed}) => [
-                    styles.saveButton,
-
-                    pressed && styles.pressed,
-                  ]}
+                  style={({pressed}) => [styles.saveButton, pressed && styles.pressed]}
                 >
                   <SaveHeartIcon active={saved} size={20} />
                 </Pressable>

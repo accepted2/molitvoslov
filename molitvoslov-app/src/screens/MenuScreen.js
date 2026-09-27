@@ -689,10 +689,7 @@ export const MenuScreen = ({navigation}) => {
                         }
                         hitSlop={8}
                         onPress={toggleDailyQuoteSaved}
-                        style={({pressed}) => [
-                          styles.quoteSaveButton,
-                          pressed && styles.pressed,
-                        ]}
+                        style={({pressed}) => [styles.quoteSaveButton, pressed && styles.pressed]}
                       >
                         <SaveHeartIcon active={!!savedDailyQuote} size={19} />
                       </Pressable>
