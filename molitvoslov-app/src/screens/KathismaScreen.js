@@ -474,6 +474,7 @@ export default function KathismaScreen({route, navigation}) {
       fullSaveType,
       metadata,
       sectionName,
+      className = '',
     }) => {
       const syntheticId = nextBlockId++;
 
@@ -502,6 +503,8 @@ export default function KathismaScreen({route, navigation}) {
         itemTitle,
 
         fullSaveType,
+
+        className,
 
         metadata,
       };
@@ -687,6 +690,8 @@ export default function KathismaScreen({route, navigation}) {
         itemTitle: `Молитвы после кафизмы ${kathisma.number}`,
 
         fullSaveType: 'prayer',
+
+        className: 'psalter-prayer',
 
         metadata: {
           kathisma_number: kathisma.number,
