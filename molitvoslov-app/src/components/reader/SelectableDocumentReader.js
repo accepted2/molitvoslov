@@ -143,20 +143,95 @@ const HTML_TEMPLATE = String.raw`
 
     .document-action {
       display: flex;
-      width: 36px;
-      height: 36px;
-      min-width: 36px;
       min-height: 36px;
-      padding: 0;
+      padding: 0 14px;
       align-items: center;
       justify-content: center;
       border: 1px solid var(--border);
       border-radius: 18px;
       background: var(--surface);
       color: var(--secondary);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 13px;
+      line-height: 18px;
+      font-weight: 700;
+      white-space: nowrap;
     }
 
     .document-action.active {
+      color: var(--accent-dark);
+      background: #F1DFC2;
+      border-color: rgba(123, 79, 36, 0.28);
+    }
+
+    .document-header {
+      position: relative;
+      display: flex;
+      min-height: 40px;
+      margin-bottom: 12px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .document-header .rule-title {
+      width: 100%;
+      margin: 0;
+      padding: 0 44px;
+    }
+
+    .document-header .document-action {
+      position: absolute;
+      top: 50%;
+      right: 0;
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      min-height: 36px;
+      padding: 0;
+      transform: translateY(-50%);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: rgba(241, 223, 194, 0.94);
+      color: var(--secondary);
+    }
+
+    .document-header .document-action.active {
+      color: var(--accent-dark);
+      background: #F1DFC2;
+      border-color: rgba(123, 79, 36, 0.28);
+    }
+
+    body:not(.book-mode) .section-header {
+      position: relative;
+      min-height: 34px;
+      margin-bottom: 8px;
+      justify-content: center;
+    }
+
+    body:not(.book-mode) .section-header .prayer-title {
+      width: 100%;
+      margin-bottom: 0;
+      padding: 0 40px;
+      text-align: center;
+    }
+
+    body:not(.book-mode) .section-action {
+      position: absolute;
+      top: 50%;
+      right: 0;
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      min-height: 36px;
+      padding: 0;
+      transform: translateY(-50%);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: rgba(241, 223, 194, 0.94);
+      color: var(--secondary);
+    }
+
+    body:not(.book-mode) .section-action.active {
       color: var(--accent-dark);
       background: #F1DFC2;
       border-color: rgba(123, 79, 36, 0.28);
@@ -197,8 +272,6 @@ const HTML_TEMPLATE = String.raw`
 
     .section-action.active {
       color: var(--accent-dark);
-      background: #F1DFC2;
-      border-color: rgba(123, 79, 36, 0.28);
     }
 
     .save-heart-icon {
@@ -1209,13 +1282,13 @@ const HTML_TEMPLATE = String.raw`
       path.setAttribute(
         'fill',
         active
-          ? 'currentColor'
+          ? '#B98545'
           : 'none'
       );
 
       path.setAttribute(
         'stroke',
-        'currentColor'
+        '#765238'
       );
 
       path.setAttribute(
@@ -1629,14 +1702,56 @@ const HTML_TEMPLATE = String.raw`
 
     const renderDocument = () => {
       if (
-        DATA.document.title
+        DATA.document.title ||
+        DATA.document.action
       ) {
+        const documentHeader =
+          el(
+            'div',
+            'document-header'
+          );
+
+        if (
+          DATA.document.title
+        ) {
+          documentHeader.appendChild(
+            titleEl(
+              'h1',
+              'rule-title',
+              DATA.document.title
+            )
+          );
+        }
+
+        if (
+          DATA.document.action
+        ) {
+          const action =
+            el(
+              'button',
+              DATA.document.action.active
+                ? 'document-action active'
+                : 'document-action'
+            );
+
+          action.type =
+            'button';
+
+          setSaveHeartIcon(
+            action,
+            !!DATA.document.action.active
+          );
+
+          action.dataset.actionKey =
+            DATA.document.action.key;
+
+          documentHeader.appendChild(
+            action
+          );
+        }
+
         reader.appendChild(
-          titleEl(
-            'h1',
-            'rule-title',
-            DATA.document.title
-          )
+          documentHeader
         );
       }
 
@@ -1714,43 +1829,6 @@ const HTML_TEMPLATE = String.raw`
             'rule-description',
             DATA.document.description
           )
-        );
-      }
-
-      if (
-        DATA.document.action
-      ) {
-        const actionRow =
-          el(
-            'div',
-            'document-action-row'
-          );
-
-        const action =
-          el(
-            'button',
-            DATA.document.action.active
-              ? 'document-action active'
-              : 'document-action'
-          );
-
-        action.type =
-          'button';
-
-        setSaveHeartIcon(
-          action,
-          !!DATA.document.action.active
-        );
-
-        action.dataset.actionKey =
-          DATA.document.action.key;
-
-        actionRow.appendChild(
-          action
-        );
-
-        reader.appendChild(
-          actionRow
         );
       }
 

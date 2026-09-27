@@ -20,6 +20,7 @@ import {StatusBar} from 'expo-status-bar';
 
 import {BottomNav} from '../components/navigation/BottomNav';
 import {CategoryIcon} from '../components/icons/CategoryIcon';
+import {SaveHeartIcon} from '../components/icons/SaveHeartIcon';
 import {homeArtwork} from '../data/homeArtwork';
 import {contentApi as api} from '../services/contentApi';
 import {bibleContent} from '../services/bibleContent';
@@ -694,14 +695,7 @@ export const MenuScreen = ({navigation}) => {
                           pressed && styles.pressed,
                         ]}
                       >
-                        <Text
-                          style={[
-                            styles.quoteSaveIcon,
-                            savedDailyQuote && styles.quoteSaveIconActive,
-                          ]}
-                        >
-                          {savedDailyQuote ? '♥' : '♡'}
-                        </Text>
+                        <SaveHeartIcon active={!!savedDailyQuote} size={19} />
                       </Pressable>
 
                       <Pressable
@@ -1093,31 +1087,18 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   quoteSaveButton: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(126, 78, 34, 0.32)',
-    borderRadius: 17,
-    backgroundColor: 'rgba(248, 233, 207, 0.88)',
+    borderColor: 'rgba(112, 86, 55, 0.24)',
+    borderRadius: 18,
+    backgroundColor: 'rgba(241, 223, 194, 0.94)',
   },
   quoteSaveButtonActive: {
-    backgroundColor: '#EED9B8',
-    borderColor: 'rgba(126, 78, 34, 0.46)',
-  },
-  quoteSaveIcon: {
-    width: 22,
-    height: 22,
-    color: '#9A8068',
-    fontSize: 19,
-    lineHeight: 22,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    includeFontPadding: false,
-  },
-  quoteSaveIconActive: {
-    color: '#7A4F2D',
+    borderColor: 'rgba(123, 79, 36, 0.28)',
+    backgroundColor: '#F1DFC2',
   },
   widgetButton: {
     flexDirection: 'row',
