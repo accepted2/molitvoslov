@@ -16,11 +16,7 @@ import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {contentApi as api} from '../services/contentApi';
-import {
-  deleteSavedItem,
-  getSavedItems,
-  saveItem,
-} from '../services/savedItems';
+import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {colors} from '../theme';
 
 export const AkathistListScreen = ({navigation}) => {
@@ -31,7 +27,6 @@ export const AkathistListScreen = ({navigation}) => {
   const [savedAkathists, setSavedAkathists] = useState([]);
   const [loading, setLoading] = useState(true);
 
-
   const loadSavedAkathists = useCallback(async () => {
     try {
       const saved = await getSavedItems({
@@ -39,14 +34,9 @@ export const AkathistListScreen = ({navigation}) => {
         save_type: 'akathist',
       });
 
-      setSavedAkathists(
-        saved.filter(item => item.anchor_type === 'akathist')
-      );
+      setSavedAkathists(saved.filter((item) => item.anchor_type === 'akathist'));
     } catch (error) {
-      console.log(
-        'Ошибка загрузки избранных акафистов:',
-        error.response?.data || error.message
-      );
+      console.log('Ошибка загрузки избранных акафистов:', error.response?.data || error.message);
     }
   }, []);
 
@@ -54,19 +44,11 @@ export const AkathistListScreen = ({navigation}) => {
     try {
       setLoading(true);
 
-      const [response] = await Promise.all([
-        api.get('akathists/'),
-        loadSavedAkathists(),
-      ]);
+      const [response] = await Promise.all([api.get('akathists/'), loadSavedAkathists()]);
 
-      setAkathists(
-        response.data.filter(item => item.is_visible)
-      );
+      setAkathists(response.data.filter((item) => item.is_visible));
     } catch (error) {
-      console.log(
-        'Ошибка загрузки акафистов:',
-        error.response?.data || error.message
-      );
+      console.log('Ошибка загрузки акафистов:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
@@ -82,21 +64,17 @@ export const AkathistListScreen = ({navigation}) => {
     }, [loadSavedAkathists])
   );
 
-  const getSavedAkathist = akathistId =>
-    savedAkathists.find(
-      item => Number(item.anchor_id) === Number(akathistId)
-    );
+  const getSavedAkathist = (akathistId) =>
+    savedAkathists.find((item) => Number(item.anchor_id) === Number(akathistId));
 
-  const toggleFavorite = async akathist => {
+  const toggleFavorite = async (akathist) => {
     const existing = getSavedAkathist(akathist.id);
 
     try {
       if (existing) {
         await deleteSavedItem(existing.id);
 
-        setSavedAkathists(current =>
-          current.filter(item => item.id !== existing.id)
-        );
+        setSavedAkathists((current) => current.filter((item) => item.id !== existing.id));
 
         return;
       }
@@ -115,16 +93,13 @@ export const AkathistListScreen = ({navigation}) => {
         },
       });
 
-      setSavedAkathists(current => [saved, ...current]);
+      setSavedAkathists((current) => [saved, ...current]);
     } catch (error) {
-      console.log(
-        'Ошибка сохранения акафиста:',
-        error.response?.data || error.message
-      );
+      console.log('Ошибка сохранения акафиста:', error.response?.data || error.message);
     }
   };
 
-  const handlePress = akathist => {
+  const handlePress = (akathist) => {
     navigation.navigate('Akathist', {
       akathistId: akathist.id,
       slug: akathist.slug,
@@ -135,21 +110,12 @@ export const AkathistListScreen = ({navigation}) => {
   if (loading) {
     return (
       <AppBackground imageOpacity={0.72}>
-        <StatusBar
-          style="light"
-          translucent
-          backgroundColor="transparent"
-        />
+        <StatusBar style="light" translucent backgroundColor="transparent" />
 
         <View style={styles.center}>
-          <ActivityIndicator
-            size="large"
-            color={colors.accent}
-          />
+          <ActivityIndicator size="large" color={colors.accent} />
 
-          <Text style={styles.loadingText}>
-            Загрузка...
-          </Text>
+          <Text style={styles.loadingText}>Загрузка...</Text>
         </View>
       </AppBackground>
     );
@@ -157,46 +123,33 @@ export const AkathistListScreen = ({navigation}) => {
 
   return (
     <AppBackground imageOpacity={0.72}>
-      <StatusBar
-        style="light"
-        translucent
-        backgroundColor="transparent"
-      />
+      <StatusBar style="light" translucent backgroundColor="transparent" />
 
       <View style={styles.screen}>
         <FlatList
           data={akathists}
-          keyExtractor={item => String(item.id)}
+          keyExtractor={(item) => String(item.id)}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.content,
             {
               paddingTop: headerHeight + 20,
               paddingBottom: 80 + insets.bottom,
-            }
+            },
           ]}
           renderItem={({item}) => {
             const saved = !!getSavedAkathist(item.id);
 
             return (
-              <View
-                style={[
-                  styles.item,
-                  saved && styles.itemSaved,
-                ]}
-              >
+              <View style={[styles.item, saved && styles.itemSaved]}>
                 <TouchableOpacity
                   style={styles.itemMain}
                   activeOpacity={0.7}
                   onPress={() => handlePress(item)}
                 >
-                  <Text style={styles.title}>
-                    {item.title}
-                  </Text>
+                  <Text style={styles.title}>{item.title}</Text>
 
-                  <Text style={styles.arrow}>
-                    ›
-                  </Text>
+                  <Text style={styles.arrow}>›</Text>
                 </TouchableOpacity>
 
                 <Pressable
@@ -208,12 +161,7 @@ export const AkathistListScreen = ({navigation}) => {
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.favoriteText,
-                      saved && styles.favoriteTextActive,
-                    ]}
-                  >
+                  <Text style={[styles.favoriteText, saved && styles.favoriteTextActive]}>
                     {saved ? '★' : '☆'}
                   </Text>
                 </Pressable>
@@ -222,9 +170,7 @@ export const AkathistListScreen = ({navigation}) => {
           }}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
-                Акафисты пока не добавлены
-              </Text>
+              <Text style={styles.emptyText}>Акафисты пока не добавлены</Text>
             </View>
           }
         />
@@ -263,27 +209,18 @@ export const AkathistListScreen = ({navigation}) => {
             <Pressable
               hitSlop={12}
               onPress={() => navigation.goBack()}
-              style={({pressed}) => [
-                styles.backButton,
-                pressed && styles.pressed,
-              ]}
+              style={({pressed}) => [styles.backButton, pressed && styles.pressed]}
             >
-              <Text style={styles.backArrow}>
-                ‹
-              </Text>
+              <Text style={styles.backArrow}>‹</Text>
             </Pressable>
 
             <View style={styles.headerTitleWrap}>
-              <Text style={styles.headerTitle}>
-                Акафисты
-              </Text>
+              <Text style={styles.headerTitle}>Акафисты</Text>
 
               <View style={styles.headerOrnament}>
                 <View style={styles.headerLine} />
 
-                <Text style={styles.headerMark}>
-                  ✦
-                </Text>
+                <Text style={styles.headerMark}>✦</Text>
 
                 <View style={styles.headerLine} />
               </View>
@@ -291,10 +228,7 @@ export const AkathistListScreen = ({navigation}) => {
           </View>
         </View>
 
-        <BottomNav
-          navigation={navigation}
-          active={null}
-        />
+        <BottomNav navigation={navigation} active={null} />
       </View>
     </AppBackground>
   );

@@ -7,19 +7,35 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Text',
+            name="Text",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=255)),
-                ('category', models.CharField(choices=[('psalter', 'Псалтырь'), ('gospel', 'Евангелие'), ('akathist', 'Акакфист'), ('prayer', 'Молитва'), ('bible', 'Библия')], max_length=20)),
-                ('content', models.TextField()),
-                ('slug', models.SlugField(unique=True)),
-                ('order', models.IntegerField(default=0)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("title", models.CharField(max_length=255)),
+                (
+                    "category",
+                    models.CharField(
+                        choices=[
+                            ("psalter", "Псалтырь"),
+                            ("gospel", "Евангелие"),
+                            ("akathist", "Акакфист"),
+                            ("prayer", "Молитва"),
+                            ("bible", "Библия"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                ("content", models.TextField()),
+                ("slug", models.SlugField(unique=True)),
+                ("order", models.IntegerField(default=0)),
             ],
         ),
     ]

@@ -64,6 +64,7 @@ DROP_LINE_PREFIXES = (
     "Сла́ва:",
 )
 
+
 def normalize(s: str) -> str:
     s = s.replace("\xa0", " ")
     for bad, good in BAD_CHARS.items():
@@ -71,6 +72,7 @@ def normalize(s: str) -> str:
     s = re.sub(r"[ \t]+", " ", s)
     s = re.sub(r"\s+([,.;:!?])", r"\1", s)
     return s.strip()
+
 
 def get_html(k: int, cache_dir: Path, offline: bool = False) -> str:
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -105,6 +107,7 @@ def get_html(k: int, cache_dir: Path, offline: bool = False) -> str:
 
     raise RuntimeError(f"Не удалось скачать кафизму {k}: {last}")
 
+
 def select_civil_section(html: str, k: int) -> str:
     soup = BeautifulSoup(html, "html.parser")
 
@@ -129,7 +132,7 @@ def select_civil_section(html: str, k: int) -> str:
     if start is None:
         # запасной вариант: после блока переключателей
         for i, line in enumerate(lines):
-            if "Граждан" in line and "Церков" in " ".join(lines[i:i+5]):
+            if "Граждан" in line and "Церков" in " ".join(lines[i : i + 5]):
                 start = i + 1
                 break
 
@@ -147,6 +150,7 @@ def select_civil_section(html: str, k: int) -> str:
             break
 
     return "\n".join(lines[start:end])
+
 
 def split_psalms(section: str, expected_numbers: list[int]) -> list[dict]:
     # Заголовки на Благовіст обычно заканчиваются ", 119." либо содержат "118."
@@ -171,15 +175,13 @@ def split_psalms(section: str, expected_numbers: list[int]) -> list[dict]:
 
     got = [n for _, n in dedup]
     if got != expected_numbers:
-        raise ValueError(
-            f"Не удалось выделить псалмы. Ожидалось {expected_numbers}, найдено {got}"
-        )
+        raise ValueError(f"Не удалось выделить псалмы. Ожидалось {expected_numbers}, найдено {got}")
 
     result = []
     for idx, (start_i, psalm_num) in enumerate(dedup):
         end_i = dedup[idx + 1][0] if idx + 1 < len(dedup) else len(lines)
         heading = lines[start_i]
-        body = " ".join(lines[start_i + 1:end_i])
+        body = " ".join(lines[start_i + 1 : end_i])
 
         # Слава на конце блока не должна попадать в стих.
         body = re.sub(r"\s*Сла́ва:\s*$", "", body).strip()
@@ -200,11 +202,13 @@ def split_psalms(section: str, expected_numbers: list[int]) -> list[dict]:
             text = re.sub(r"\s*Сла́ва:\s*$", "", text).strip()
             if not text:
                 continue
-            verses.append({
-                "number": vnum,
-                "church_slavonic": text,
-                "russian": "",
-            })
+            verses.append(
+                {
+                    "number": vnum,
+                    "church_slavonic": text,
+                    "russian": "",
+                }
+            )
 
         # Если верстка склеила первый номер со строкой, пробуем HTML-подобный маркер.
         if not verses:
@@ -216,10 +220,42 @@ def split_psalms(section: str, expected_numbers: list[int]) -> list[dict]:
             t = verses[0]["church_slavonic"]
             # Для обычных псалмов стих 1 оставляем. Для надписаний характерны слова:
             if (
-                psalm_num not in (118, 119, 120, 121, 122, 123, 124, 125, 126, 127,
-                                  128, 129, 130, 131, 132, 133, 134, 135, 136, 137,
-                                  138, 139, 140, 141, 142, 143, 144, 145, 146, 147,
-                                  148, 149, 150)
+                psalm_num
+                not in (
+                    118,
+                    119,
+                    120,
+                    121,
+                    122,
+                    123,
+                    124,
+                    125,
+                    126,
+                    127,
+                    128,
+                    129,
+                    130,
+                    131,
+                    132,
+                    133,
+                    134,
+                    135,
+                    136,
+                    137,
+                    138,
+                    139,
+                    140,
+                    141,
+                    142,
+                    143,
+                    144,
+                    145,
+                    146,
+                    147,
+                    148,
+                    149,
+                    150,
+                )
                 and len(t) < 180
                 and any(w in t for w in ("Псало́м", "Пе́снь", "Моли́тва", "Аллилу́ия"))
             ):
@@ -231,15 +267,18 @@ def split_psalms(section: str, expected_numbers: list[int]) -> list[dict]:
         if len(nums) != len(set(nums)):
             raise ValueError(f"Псалом {psalm_num}: дубли номеров стихов: {nums}")
 
-        result.append({
-            "number": psalm_num,
-            "title_church_slavonic": title,
-            "title_russian": "",
-            "description": "",
-            "verses": verses,
-        })
+        result.append(
+            {
+                "number": psalm_num,
+                "title_church_slavonic": title,
+                "title_russian": "",
+                "description": "",
+                "verses": verses,
+            }
+        )
 
     return result
+
 
 def validate(k: int, psalms: list[dict]):
     expected = list(KATHISMA_RANGES[k])
@@ -268,9 +307,8 @@ def validate(k: int, psalms: list[dict]):
         p118 = psalms[0]
         verse_nums = {v["number"] for v in p118["verses"]}
         if 72 not in verse_nums or 131 not in verse_nums:
-            raise ValueError(
-                "Кафизма 17: не найдены стихи 72/131 для внутренних Слав"
-            )
+            raise ValueError("Кафизма 17: не найдены стихи 72/131 для внутренних Слав")
+
 
 def build_one(k: int, cache_dir: Path, out_dir: Path, offline: bool):
     html = get_html(k, cache_dir, offline)
@@ -285,12 +323,14 @@ def build_one(k: int, cache_dir: Path, out_dir: Path, offline: bool):
             "description": "Псалтирь на церковнославянском языке гражданским шрифтом с ударениями.",
             "is_visible": True,
         },
-        "kathismas": [{
-            "number": k,
-            "title": f"Кафизма {k}",
-            "psalms": psalms,
-            "glories": GLORIES[k],
-        }]
+        "kathismas": [
+            {
+                "number": k,
+                "title": f"Кафизма {k}",
+                "psalms": psalms,
+                "glories": GLORIES[k],
+            }
+        ],
     }
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -301,6 +341,7 @@ def build_one(k: int, cache_dir: Path, out_dir: Path, offline: bool):
         f"Кафизма {k}: OK | псалмов {len(psalms)} | "
         f"стихов {sum(len(p['verses']) for p in psalms)} | {path}"
     )
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -324,6 +365,7 @@ def main():
         build_one(k, Path(args.cache_dir), Path(args.out_dir), args.offline)
         if i + 1 < len(args.kathismas):
             time.sleep(0.7)
+
 
 if __name__ == "__main__":
     main()

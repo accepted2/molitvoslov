@@ -28,10 +28,7 @@ def is_centered(paragraph):
 
 
 def is_bold(paragraph):
-    real_runs = [
-        run for run in paragraph.runs
-        if run.text.strip()
-    ]
+    real_runs = [run for run in paragraph.runs if run.text.strip()]
 
     if not real_runs:
         return False
@@ -40,28 +37,18 @@ def is_bold(paragraph):
 
 
 def is_italic(paragraph):
-    real_runs = [
-        run for run in paragraph.runs
-        if run.text.strip()
-    ]
+    real_runs = [run for run in paragraph.runs if run.text.strip()]
 
     if not real_runs:
         return False
 
-    italic_count = sum(
-        1 for run in real_runs
-        if run.italic is True
-    )
+    italic_count = sum(1 for run in real_runs if run.italic is True)
 
     return italic_count >= len(real_runs) / 2
 
 
 def is_text_title(paragraph):
-    return (
-            paragraph.style.name == "Normal"
-            and is_centered(paragraph)
-            and is_bold(paragraph)
-    )
+    return paragraph.style.name == "Normal" and is_centered(paragraph) and is_bold(paragraph)
 
 
 def is_separator(text):
@@ -129,10 +116,10 @@ for paragraph in document.paragraphs:
     # ----------------------------------------
 
     if (
-            rule_name
-            and is_centered(paragraph)
-            and is_bold(paragraph)
-            and text.lower() == rule_name.lower()
+        rule_name
+        and is_centered(paragraph)
+        and is_bold(paragraph)
+        and text.lower() == rule_name.lower()
     ):
         continue
 
@@ -182,22 +169,19 @@ for paragraph in document.paragraphs:
             continue
 
         # Note к предыдущему тексту
-        if (
-                items
-                and items[-1]["type"] == "text"
-                and text.startswith("(")
-                and text.endswith(")")
-        ):
+        if items and items[-1]["type"] == "text" and text.startswith("(") and text.endswith(")"):
             items[-1]["note"] = text
             continue
 
         merge_mode = False
         merge_item = None
 
-        add_item({
-            "type": "instruction",
-            "content": text,
-        })
+        add_item(
+            {
+                "type": "instruction",
+                "content": text,
+            }
+        )
 
         continue
 
@@ -210,10 +194,12 @@ for paragraph in document.paragraphs:
         merge_mode = False
         merge_item = None
 
-        add_item({
-            "type": "instruction",
-            "content": text,
-        })
+        add_item(
+            {
+                "type": "instruction",
+                "content": text,
+            }
+        )
 
         continue
 
@@ -229,14 +215,16 @@ for paragraph in document.paragraphs:
     # Новый Text
     # ----------------------------------------
 
-    new_item = add_item({
-        "type": "text",
-        "title": pending_title,
-        "description": pending_description,
-        "description_position": "before",
-        "content": text,
-        "note": "",
-    })
+    new_item = add_item(
+        {
+            "type": "text",
+            "title": pending_title,
+            "description": pending_description,
+            "description_position": "before",
+            "content": text,
+            "note": "",
+        }
+    )
 
     # Если этот заголовок находится в списке исключений,
     # следующие обычные абзацы будут приклеиваться
@@ -253,21 +241,14 @@ for paragraph in document.paragraphs:
 
 
 result = {
-    "rule": {
-        "name": rule_name
-    },
+    "rule": {"name": rule_name},
     "items": items,
     "footnotes": footnotes,
 }
 
 
 with open(JSON_PATH, "w", encoding="utf-8") as file:
-    json.dump(
-        result,
-        file,
-        ensure_ascii=False,
-        indent=2
-    )
+    json.dump(result, file, ensure_ascii=False, indent=2)
 
 
 print(f"Готово: {JSON_PATH}")

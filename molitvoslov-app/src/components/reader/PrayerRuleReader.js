@@ -5,12 +5,8 @@ import {WebView} from 'react-native-webview';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import {deleteSavedItem, saveItem} from '../../services/savedItems';
-const scriptSafeJson = value =>
-  JSON.stringify(value)
-    .replace(/</g, '\\u003c')
-    .replace(/>/g, '\\u003e')
-    .replace(/&/g, '\\u0026');
-
+const scriptSafeJson = (value) =>
+  JSON.stringify(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
 
 const HTML_TEMPLATE = String.raw`
 <!doctype html>
@@ -5981,7 +5977,6 @@ const HTML_TEMPLATE = String.raw`
 </html>
 `;
 
-
 const buildHtml = ({
   rule,
   savedItems,
@@ -5994,69 +5989,33 @@ const buildHtml = ({
   const payload = {
     rule,
 
-    viewMode:
-      viewMode ||
-      'both',
+    viewMode: viewMode || 'both',
 
-    viewSwitcher:
-      viewSwitcher ||
-      null,
+    viewSwitcher: viewSwitcher || null,
 
-    savedItems:
-      savedItems.filter(
-        item =>
-          item.anchor_type ===
-            'prayer_rule_item' &&
-          item.start_offset !==
-            null &&
-          item.end_offset !==
-            null
-      ),
+    savedItems: savedItems.filter(
+      (item) =>
+        item.anchor_type === 'prayer_rule_item' &&
+        item.start_offset !== null &&
+        item.end_offset !== null
+    ),
 
-    focusTarget:
-      focusTarget ||
-      null,
+    focusTarget: focusTarget || null,
 
     progress:
-      savedProgress
-        ?.anchor_type ===
-        'prayer_rule_item'
-          ? {
-              anchorId:
-                Number(
-                  savedProgress
-                    .anchor_id
-                ),
-              offset:
-                Number(
-                  savedProgress
-                    .offset || 0
-                ),
-            }
-          : null,
+      savedProgress?.anchor_type === 'prayer_rule_item'
+        ? {
+            anchorId: Number(savedProgress.anchor_id),
+            offset: Number(savedProgress.offset || 0),
+          }
+        : null,
   };
 
-  return HTML_TEMPLATE
-    .replace(
-      '__READER_TOP_PADDING__',
-      String(
-        Math.max(
-          16,
-          Number(
-            topContentInset ||
-            0
-          ) + 16
-        )
-      )
-    )
-    .replace(
-      '__READER_PAYLOAD__',
-      scriptSafeJson(
-        payload
-      )
-    );
+  return HTML_TEMPLATE.replace(
+    '__READER_TOP_PADDING__',
+    String(Math.max(16, Number(topContentInset || 0) + 16))
+  ).replace('__READER_PAYLOAD__', scriptSafeJson(payload));
 };
-
 
 export default function PrayerRuleReader({
   rule,
@@ -6070,25 +6029,13 @@ export default function PrayerRuleReader({
   onProgress,
   onViewModeChange,
 }) {
-  const insets =
-    useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
 
-  const webViewRef =
-    useRef(null);
+  const webViewRef = useRef(null);
 
-  const html =
-    useMemo(
-      () =>
-        buildHtml({
-          rule,
-          savedItems,
-          savedProgress,
-          focusTarget,
-          viewMode,
-          viewSwitcher,
-          topContentInset,
-        }),
-      [
+  const html = useMemo(
+    () =>
+      buildHtml({
         rule,
         savedItems,
         savedProgress,
@@ -6096,371 +6043,208 @@ export default function PrayerRuleReader({
         viewMode,
         viewSwitcher,
         topContentInset,
-      ]
-    );
+      }),
+    [rule, savedItems, savedProgress, focusTarget, viewMode, viewSwitcher, topContentInset]
+  );
 
+  const inject = (script) => {
+    webViewRef.current?.injectJavaScript(script + '; true;');
+  };
 
-  const inject =
-    script => {
-      webViewRef.current
-        ?.injectJavaScript(
-          script +
-          '; true;'
-        );
-    };
+  const handleMessage = async (event) => {
+    let message;
 
+    try {
+      message = JSON.parse(event.nativeEvent.data);
+    } catch {
+      return;
+    }
 
-  const handleMessage =
-    async event => {
-      let message;
+    if (message.type === 'view-mode') {
+      onViewModeChange?.(message.value);
 
-      try {
-        message =
-          JSON.parse(
-            event.nativeEvent
-              .data
-          );
-      } catch {
+      return;
+    }
+
+    if (message.type === 'progress') {
+      onProgress?.({
+        anchorType: 'prayer_rule_item',
+        anchorId: Number(message.anchorId),
+        offset: Math.max(0, Number(message.offset || 0)),
+        progressPercent: Math.max(0, Math.min(Number(message.progressPercent || 0), 100)),
+      });
+
+      return;
+    }
+
+    if (message.type === 'whole-prayer-action') {
+      const itemId = Number(message.itemId);
+
+      const item = (rule.items || []).find((entry) => Number(entry.id) === itemId);
+
+      if (!item?.text) {
         return;
       }
 
-      if (
-        message.type ===
-        'view-mode'
-      ) {
-        onViewModeChange?.(
-          message.value
-        );
-
-        return;
-      }
-
-      if (
-        message.type ===
-        'progress'
-      ) {
-        onProgress?.({
-          anchorType: 'prayer_rule_item',
-          anchorId: Number(message.anchorId),
-          offset: Math.max(0, Number(message.offset || 0)),
-          progressPercent: Math.max(
-            0,
-            Math.min(Number(message.progressPercent || 0), 100)
-          ),
-        });
-
-        return;
-      }
-
-      if (
-        message.type ===
-        'whole-prayer-action'
-      ) {
-        const itemId =
-          Number(
-            message.itemId
-          );
-
-        const item =
-          (
-            rule.items ||
-            []
-          ).find(
-            entry =>
-              Number(
-                entry.id
-              ) ===
-                itemId
-          );
-
-        if (
-          !item?.text
-        ) {
-          return;
-        }
-
-        if (
-          message.savedItemId
-        ) {
-          try {
-            await deleteSavedItem(
-              Number(
-                message.savedItemId
-              )
-            );
-
-            inject(
-              'window.readerApi && window.readerApi.removeSavedItem(' +
-              itemId +
-              ',' +
-              Number(
-                message.savedItemId
-              ) +
-              ')'
-            );
-
-            inject(
-              'window.readerApi && window.readerApi.updatePrayerAction(' +
-              itemId +
-              ',null,false)'
-            );
-          } catch (deleteError) {
-            console.log(
-              'Ошибка удаления молитвы из избранного:',
-              deleteError.response?.data ||
-              deleteError.message
-            );
-          }
-
-          return;
-        }
-
-        const content =
-          item.text.content ||
-          '';
-
+      if (message.savedItemId) {
         try {
-          const saved =
-            await saveItem({
-              save_type:
-                'prayer',
-
-              source_type:
-                'prayer_rule',
-
-              source_id:
-                rule.id,
-
-              anchor_type:
-                'prayer_rule_item',
-
-              anchor_id:
-                itemId,
-
-              source_title:
-                rule.name,
-
-              item_title:
-                item.text.title ||
-                item.text.description ||
-                'Молитва',
-
-              text:
-                content,
-
-              start_offset:
-                0,
-
-              end_offset:
-                content.length,
-
-              metadata: {
-                slug:
-                  rule.slug,
-              },
-            });
-
-          inject(
-            'window.readerApi && window.readerApi.saveSucceeded(' +
-            scriptSafeJson(
-              saved
-            ) +
-            ')'
-          );
-
-          inject(
-            'window.readerApi && window.readerApi.updatePrayerAction(' +
-            itemId +
-            ',' +
-            Number(
-              saved.id
-            ) +
-            ',true)'
-          );
-        } catch (saveError) {
-          console.log(
-            'Ошибка добавления молитвы в избранное:',
-            saveError.response?.data ||
-            saveError.message
-          );
-        }
-
-        return;
-      }
-
-
-      if (
-        message.type ===
-        'remove-selection'
-      ) {
-        try {
-          await deleteSavedItem(
-            Number(
-              message.savedItemId
-            )
-          );
+          await deleteSavedItem(Number(message.savedItemId));
 
           inject(
             'window.readerApi && window.readerApi.removeSavedItem(' +
-            Number(
-              message.anchorId
-            ) +
-            ',' +
-            Number(
-              message.savedItemId
-            ) +
-            ')'
-          );
-        } catch (deleteError) {
-          console.log(
-            'Ошибка удаления выделения:',
-            deleteError.message
+              itemId +
+              ',' +
+              Number(message.savedItemId) +
+              ')'
           );
 
           inject(
-            "window.readerApi && window.readerApi.saveFailed('Не удалось удалить')"
+            'window.readerApi && window.readerApi.updatePrayerAction(' + itemId + ',null,false)'
+          );
+        } catch (deleteError) {
+          console.log(
+            'Ошибка удаления молитвы из избранного:',
+            deleteError.response?.data || deleteError.message
           );
         }
 
         return;
       }
 
-      if (
-        message.type !==
-        'save-selection'
-      ) {
-        return;
-      }
+      const content = item.text.content || '';
 
       try {
-        const saved =
-          await saveItem({
-            save_type:
-              message.saveType ||
-              'fragment',
-            source_type:
-              'prayer_rule',
-            source_id:
-              rule.id,
-            anchor_type:
-              'prayer_rule_item',
-            anchor_id:
-              Number(
-                message.anchorId
-              ),
-            source_title:
-              rule.name,
-            item_title:
-              message.itemTitle ||
-              'Молитва',
-            text:
-              message.text,
-            start_offset:
-              Number(
-                message.start
-              ),
-            end_offset:
-              Number(
-                message.end
-              ),
-            metadata: {
-              slug:
-                rule.slug,
-              language:
-                message.language ||
-                'church',
-            },
-          });
+        const saved = await saveItem({
+          save_type: 'prayer',
 
-        onSaved?.(
-          saved
-        );
+          source_type: 'prayer_rule',
+
+          source_id: rule.id,
+
+          anchor_type: 'prayer_rule_item',
+
+          anchor_id: itemId,
+
+          source_title: rule.name,
+
+          item_title: item.text.title || item.text.description || 'Молитва',
+
+          text: content,
+
+          start_offset: 0,
+
+          end_offset: content.length,
+
+          metadata: {
+            slug: rule.slug,
+          },
+        });
+
+        inject('window.readerApi && window.readerApi.saveSucceeded(' + scriptSafeJson(saved) + ')');
 
         inject(
-          'window.readerApi && window.readerApi.saveSucceeded(' +
-          scriptSafeJson(
-            saved
-          ) +
-          ')'
+          'window.readerApi && window.readerApi.updatePrayerAction(' +
+            itemId +
+            ',' +
+            Number(saved.id) +
+            ',true)'
         );
-      } catch (error) {
+      } catch (saveError) {
         console.log(
-          'Ошибка сохранения выделения молитвы:',
-          error.response?.data ||
-          error.message
-        );
-
-        inject(
-          "window.readerApi && window.readerApi.saveFailed('Не удалось сохранить')"
+          'Ошибка добавления молитвы в избранное:',
+          saveError.response?.data || saveError.message
         );
       }
-    };
 
+      return;
+    }
+
+    if (message.type === 'remove-selection') {
+      try {
+        await deleteSavedItem(Number(message.savedItemId));
+
+        inject(
+          'window.readerApi && window.readerApi.removeSavedItem(' +
+            Number(message.anchorId) +
+            ',' +
+            Number(message.savedItemId) +
+            ')'
+        );
+      } catch (deleteError) {
+        console.log('Ошибка удаления выделения:', deleteError.message);
+
+        inject("window.readerApi && window.readerApi.saveFailed('Не удалось удалить')");
+      }
+
+      return;
+    }
+
+    if (message.type !== 'save-selection') {
+      return;
+    }
+
+    try {
+      const saved = await saveItem({
+        save_type: message.saveType || 'fragment',
+        source_type: 'prayer_rule',
+        source_id: rule.id,
+        anchor_type: 'prayer_rule_item',
+        anchor_id: Number(message.anchorId),
+        source_title: rule.name,
+        item_title: message.itemTitle || 'Молитва',
+        text: message.text,
+        start_offset: Number(message.start),
+        end_offset: Number(message.end),
+        metadata: {
+          slug: rule.slug,
+          language: message.language || 'church',
+        },
+      });
+
+      onSaved?.(saved);
+
+      inject('window.readerApi && window.readerApi.saveSucceeded(' + scriptSafeJson(saved) + ')');
+    } catch (error) {
+      console.log('Ошибка сохранения выделения молитвы:', error.response?.data || error.message);
+
+      inject("window.readerApi && window.readerApi.saveFailed('Не удалось сохранить')");
+    }
+  };
 
   return (
     <View
       style={[
         styles.container,
         {
-          paddingBottom:
-            Math.max(
-              insets.bottom,
-              8
-            ),
+          paddingBottom: Math.max(insets.bottom, 8),
         },
       ]}
     >
       <WebView
-        ref={
-          webViewRef
-        }
+        ref={webViewRef}
         source={{
           html,
         }}
-        originWhitelist={[
-          '*',
-        ]}
+        originWhitelist={['*']}
         javaScriptEnabled
         nestedScrollEnabled
-        showsVerticalScrollIndicator={
-          false
-        }
-        domStorageEnabled={
-          false
-        }
-        setSupportMultipleWindows={
-          false
-        }
+        showsVerticalScrollIndicator={false}
+        domStorageEnabled={false}
+        setSupportMultipleWindows={false}
         overScrollMode="never"
         textZoom={100}
-        onMessage={
-          handleMessage
-        }
-        style={
-          styles.webView
-        }
+        onMessage={handleMessage}
+        style={styles.webView}
       />
 
       <LinearGradient
         pointerEvents="none"
-        colors={[
-          'rgba(255, 244, 222, 0)',
-          'rgba(255, 244, 222, 0.72)',
-          '#FFF4DE',
-        ]}
-        locations={[
-          0,
-          0.58,
-          1,
-        ]}
+        colors={['rgba(255, 244, 222, 0)', 'rgba(255, 244, 222, 0.72)', '#FFF4DE']}
+        locations={[0, 0.58, 1]}
         style={[
           styles.bottomFade,
           {
-            bottom:
-              Math.max(
-                insets.bottom,
-                8
-              ),
+            bottom: Math.max(insets.bottom, 8),
           },
         ]}
       />
@@ -6468,25 +6252,21 @@ export default function PrayerRuleReader({
   );
 }
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFF4DE',
+  },
 
-const styles =
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor:
-        '#FFF4DE',
-    },
+  webView: {
+    flex: 1,
+    backgroundColor: '#FFF4DE',
+  },
 
-    webView: {
-      flex: 1,
-      backgroundColor:
-        '#FFF4DE',
-    },
-
-    bottomFade: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      height: 28,
-    },
-  });
+  bottomFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 28,
+  },
+});

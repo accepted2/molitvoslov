@@ -57,11 +57,7 @@ def extract_psalm(number):
         strip=True,
     )
 
-    lines = [
-        normalize(line)
-        for line in text.splitlines()
-        if normalize(line)
-    ]
+    lines = [normalize(line) for line in text.splitlines() if normalize(line)]
 
     #
     # Ищем начало нужного Псалма.
@@ -108,26 +104,20 @@ def extract_psalm(number):
         if not match:
             continue
 
-        verse_number = int(
-            match.group(1)
-        )
+        verse_number = int(match.group(1))
 
         #
         # 0 используется для надписания псалма.
         #
         if verse_number == 0:
             if index + 1 < len(lines):
-                title_russian = normalize(
-                    lines[index + 1]
-                )
+                title_russian = normalize(lines[index + 1])
             continue
 
         #
         # Нас интересуют только реальные стихи.
         #
-        if not (
-                1 <= verse_number <= 176
-        ):
+        if not (1 <= verse_number <= 176):
             continue
 
         #
@@ -137,9 +127,7 @@ def extract_psalm(number):
         if index + 1 >= len(lines):
             continue
 
-        russian = normalize(
-            lines[index + 1]
-        )
+        russian = normalize(lines[index + 1])
 
         #
         # Фильтруем очевидные элементы интерфейса.
@@ -152,10 +140,12 @@ def extract_psalm(number):
         }:
             continue
 
-        verses.append({
-            "number": verse_number,
-            "russian": russian,
-        })
+        verses.append(
+            {
+                "number": verse_number,
+                "russian": russian,
+            }
+        )
 
     #
     # Удаляем возможные дубли.
@@ -168,16 +158,10 @@ def extract_psalm(number):
         if number not in unique:
             unique[number] = verse
 
-    verses = [
-        unique[number]
-        for number in sorted(unique)
-    ]
+    verses = [unique[number] for number in sorted(unique)]
 
     if not verses:
-        raise ValueError(
-            f"Псалом {number}: "
-            "не удалось извлечь русский текст."
-        )
+        raise ValueError(f"Псалом {number}: " "не удалось извлечь русский текст.")
 
     return {
         "number": number,
@@ -187,19 +171,13 @@ def extract_psalm(number):
 
 
 def validate_test_psalm(
-        psalm,
-        expected_count=None,
+    psalm,
+    expected_count=None,
 ):
-    numbers = [
-        verse["number"]
-        for verse in psalm["verses"]
-    ]
+    numbers = [verse["number"] for verse in psalm["verses"]]
 
     if len(numbers) != len(set(numbers)):
-        raise ValueError(
-            f"Псалом {psalm['number']}: "
-            "дубли стихов."
-        )
+        raise ValueError(f"Псалом {psalm['number']}: " "дубли стихов.")
 
     if expected_count is not None:
         if len(numbers) != expected_count:
@@ -217,27 +195,19 @@ def main():
         118: 176,
     }
 
-    result = {
-        "psalms": []
-    }
+    result = {"psalms": []}
 
     for number, expected_count in tests.items():
-        print(
-            f"Загружаю Псалом {number}..."
-        )
+        print(f"Загружаю Псалом {number}...")
 
-        psalm = extract_psalm(
-            number
-        )
+        psalm = extract_psalm(number)
 
         validate_test_psalm(
             psalm,
             expected_count,
         )
 
-        result["psalms"].append(
-            psalm
-        )
+        result["psalms"].append(psalm)
 
         print(
             f"Псалом {number}: OK | "
@@ -245,9 +215,7 @@ def main():
             f"title: {psalm['title_russian']!r}"
         )
 
-    output = Path(
-        "files/psalter_russian_test.json"
-    )
+    output = Path("files/psalter_russian_test.json")
 
     output.write_text(
         json.dumps(
@@ -259,9 +227,7 @@ def main():
     )
 
     print()
-    print(
-        f"Создан тестовый файл: {output}"
-    )
+    print(f"Создан тестовый файл: {output}")
 
 
 if __name__ == "__main__":

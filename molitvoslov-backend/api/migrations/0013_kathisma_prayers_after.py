@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0012_psalter_prayers_after_psalter_prayers_before'),
+        ("api", "0012_psalter_prayers_after_psalter_prayers_before"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='kathisma',
-            name='prayers_after',
-            field=models.TextField(blank=True, verbose_name='Молитвы после кафизмы'),
+            model_name="kathisma",
+            name="prayers_after",
+            field=models.TextField(blank=True, verbose_name="Молитвы после кафизмы"),
         ),
     ]

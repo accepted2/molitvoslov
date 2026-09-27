@@ -1,11 +1,6 @@
-import {
-  getDatabase,
-} from '../db/database';
+import {getDatabase} from '../db/database';
 
-import {
-  getCurrentUser,
-} from './localAuth';
-
+import {getCurrentUser} from './localAuth';
 
 const SAVE_TYPE_NAMES = {
   word: 'Слово',
@@ -24,138 +19,81 @@ const SAVE_TYPE_NAMES = {
   quote: 'Цитата',
 };
 
+const parseMetadata = (value) => {
+  if (!value) {
+    return {};
+  }
 
-const parseMetadata =
-  value => {
-    if (!value) {
-      return {};
+  if (typeof value === 'object') {
+    return value;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return {};
+  }
+};
+
+const prepareItem = (item) => ({
+  ...item,
+
+  metadata: parseMetadata(item.metadata),
+
+  save_type_display: SAVE_TYPE_NAMES[item.save_type] || item.save_type,
+});
+
+export const getSavedItems = async (params = {}) => {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return [];
+  }
+
+  const db = await getDatabase();
+
+  const conditions = ['user_id = ?'];
+
+  const values = [user.id];
+
+  const allowedFilters = ['source_type', 'source_id', 'anchor_type', 'anchor_id', 'save_type'];
+
+  allowedFilters.forEach((field) => {
+    const value = params[field];
+
+    if (value !== undefined && value !== null && value !== '') {
+      conditions.push(`${field} = ?`);
+
+      values.push(value);
     }
-
-    if (
-      typeof value ===
-      'object'
-    ) {
-      return value;
-    }
-
-    try {
-      return JSON.parse(
-        value
-      );
-    } catch {
-      return {};
-    }
-  };
-
-
-const prepareItem =
-  item => ({
-    ...item,
-
-    metadata:
-      parseMetadata(
-        item.metadata
-      ),
-
-    save_type_display:
-      SAVE_TYPE_NAMES[
-        item.save_type
-      ] ||
-      item.save_type,
   });
 
-
-export const getSavedItems =
-  async (params = {}) => {
-    const user =
-      await getCurrentUser();
-
-    if (!user) {
-      return [];
-    }
-
-    const db =
-      await getDatabase();
-
-    const conditions = [
-      'user_id = ?',
-    ];
-
-    const values = [
-      user.id,
-    ];
-
-    const allowedFilters = [
-      'source_type',
-      'source_id',
-      'anchor_type',
-      'anchor_id',
-      'save_type',
-    ];
-
-    allowedFilters.forEach(
-      field => {
-        const value =
-          params[field];
-
-        if (
-          value !== undefined &&
-          value !== null &&
-          value !== ''
-        ) {
-          conditions.push(
-            `${field} = ?`
-          );
-
-          values.push(
-            value
-          );
-        }
-      }
-    );
-
-    const items =
-      await db.getAllAsync(
-        `
+  const items = await db.getAllAsync(
+    `
           SELECT *
           FROM saved_items
-          WHERE ${conditions.join(
-            ' AND '
-          )}
+          WHERE ${conditions.join(' AND ')}
           ORDER BY created_at DESC
         `,
-        values
-      );
+    values
+  );
 
-    return items.map(
-      prepareItem
-    );
-  };
+  return items.map(prepareItem);
+};
 
+export const saveItem = async (payload) => {
+  const user = await getCurrentUser();
 
-export const saveItem =
-  async payload => {
-    const user =
-      await getCurrentUser();
+  if (!user) {
+    throw new Error('Для сохранения необходимо войти в аккаунт');
+  }
 
-    if (!user) {
-      throw new Error(
-        'Для сохранения необходимо войти в аккаунт'
-      );
-    }
+  const db = await getDatabase();
 
-    const db =
-      await getDatabase();
+  const metadata = JSON.stringify(payload.metadata || {});
 
-    const metadata =
-      JSON.stringify(
-        payload.metadata ||
-        {}
-      );
-
-    const result =
-      await db.runAsync(
-        `
+  const result = await db.runAsync(
+    `
           INSERT INTO saved_items (
             user_id,
             save_type,
@@ -176,69 +114,51 @@ export const saveItem =
             ?, ?, ?, ?, ?, ?
           )
         `,
-        [
-          user.id,
-          payload.save_type,
-          payload.source_type,
-          payload.source_id,
-          payload.anchor_type,
-          payload.anchor_id,
-          payload.source_title ||
-            '',
-          payload.item_title ||
-            '',
-          payload.text ||
-            '',
-          payload.start_offset ??
-            null,
-          payload.end_offset ??
-            null,
-          metadata,
-          new Date().toISOString(),
-        ]
-      );
+    [
+      user.id,
+      payload.save_type,
+      payload.source_type,
+      payload.source_id,
+      payload.anchor_type,
+      payload.anchor_id,
+      payload.source_title || '',
+      payload.item_title || '',
+      payload.text || '',
+      payload.start_offset ?? null,
+      payload.end_offset ?? null,
+      metadata,
+      new Date().toISOString(),
+    ]
+  );
 
-    const item =
-      await db.getFirstAsync(
-        `
+  const item = await db.getFirstAsync(
+    `
           SELECT *
           FROM saved_items
           WHERE id = ?
           AND user_id = ?
         `,
-        [
-          result.lastInsertRowId,
-          user.id,
-        ]
-      );
+    [result.lastInsertRowId, user.id]
+  );
 
-    return prepareItem(
-      item
-    );
-  };
+  return prepareItem(item);
+};
 
+export const deleteSavedItem = async (itemId) => {
+  const user = await getCurrentUser();
 
-export const deleteSavedItem =
-  async itemId => {
-    const user =
-      await getCurrentUser();
+  if (!user) {
+    return;
+  }
 
-    if (!user) {
-      return;
-    }
+  const db = await getDatabase();
 
-    const db =
-      await getDatabase();
-
-    await db.runAsync(
-      `
+  await db.runAsync(
+    `
         DELETE FROM saved_items
         WHERE id = ?
         AND user_id = ?
       `,
-      [
-        itemId,
-        user.id,
-      ]
-    );
-  };
+    [itemId, user.id]
+  );
+};

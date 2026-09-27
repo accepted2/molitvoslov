@@ -23,10 +23,7 @@ const CATEGORY_ICONS = {
 };
 
 const resolveCategoryIcon = (...values) => {
-  const value = values
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
+  const value = values.filter(Boolean).join(' ').toLowerCase();
 
   if (value.includes('utren') || value.includes('утрен')) {
     return CATEGORY_ICONS.morning;
@@ -41,27 +38,15 @@ const resolveCategoryIcon = (...values) => {
     return CATEGORY_ICONS.evening;
   }
 
-  if (
-    value.includes('akath') ||
-    value.includes('akaf') ||
-    value.includes('акаф')
-  ) {
+  if (value.includes('akath') || value.includes('akaf') || value.includes('акаф')) {
     return CATEGORY_ICONS.akathists;
   }
 
-  if (
-    value.includes('canon') ||
-    value.includes('kanon') ||
-    value.includes('канон')
-  ) {
+  if (value.includes('canon') || value.includes('kanon') || value.includes('канон')) {
     return CATEGORY_ICONS.canons;
   }
 
-  if (
-    value.includes('communion') ||
-    value.includes('prichast') ||
-    value.includes('причащ')
-  ) {
+  if (value.includes('communion') || value.includes('prichast') || value.includes('причащ')) {
     return CATEGORY_ICONS.communion;
   }
 
@@ -118,7 +103,7 @@ export const ContinueReadingScreen = ({navigation}) => {
     }, [load])
   );
 
-  const makeItem = progressItem => {
+  const makeItem = (progressItem) => {
     const percent = Number(progressItem.progress_percent || 0);
 
     if (progressItem.source_type === 'bible') {
@@ -128,18 +113,13 @@ export const ContinueReadingScreen = ({navigation}) => {
       if (!book) return null;
 
       const chapterNumber = Number(info.chapter_number || 1);
-      const verseNumber = info.verse_number
-        ? Number(info.verse_number)
-        : null;
+      const verseNumber = info.verse_number ? Number(info.verse_number) : null;
 
       return {
         id: progressItem.id,
         type: 'Библия',
         glyph: '☷',
-        title:
-          bibleContent.getDisplayName(
-            book
-          ),
+        title: bibleContent.getDisplayName(book),
         position: verseNumber
           ? 'Глава ' + chapterNumber + ' · стих ' + verseNumber
           : 'Глава ' + chapterNumber,
@@ -183,9 +163,7 @@ export const ContinueReadingScreen = ({navigation}) => {
     }
 
     if (progressItem.source_type === 'akathist') {
-      const akathist = akathists.find(
-        item => Number(item.id) === Number(progressItem.source_id)
-      );
+      const akathist = akathists.find((item) => Number(item.id) === Number(progressItem.source_id));
 
       if (!akathist) return null;
 
@@ -207,7 +185,7 @@ export const ContinueReadingScreen = ({navigation}) => {
     }
 
     if (progressItem.source_type === 'canon') {
-      const canon = canons.find(item => Number(item.id) === Number(progressItem.source_id));
+      const canon = canons.find((item) => Number(item.id) === Number(progressItem.source_id));
       if (!canon) return null;
 
       const info = progressItem.anchor_info;
@@ -233,22 +211,18 @@ export const ContinueReadingScreen = ({navigation}) => {
     }
 
     if (progressItem.source_type === 'prayer_rule') {
-      const rule = prayerRules.find(item => Number(item.id) === Number(progressItem.source_id));
+      const rule = prayerRules.find((item) => Number(item.id) === Number(progressItem.source_id));
       if (!rule) return null;
 
       const ruleItem = rule.items?.find(
-        item => Number(item.id) === Number(progressItem.anchor_id)
+        (item) => Number(item.id) === Number(progressItem.anchor_id)
       );
 
       return {
         id: progressItem.id,
         type: 'Молитвенное правило',
         glyph: '✦',
-        iconSource:
-          resolveCategoryIcon(
-            rule.slug,
-            rule.name
-          ) || CATEGORY_ICONS.canons,
+        iconSource: resolveCategoryIcon(rule.slug, rule.name) || CATEGORY_ICONS.canons,
         title: rule.name,
         position: ruleItem?.text?.title || ruleItem?.title || 'Продолжить правило',
         percent,
@@ -258,7 +232,7 @@ export const ContinueReadingScreen = ({navigation}) => {
 
     if (progressItem.source_type === 'category') {
       const category = categories.find(
-        item => Number(item.id) === Number(progressItem.source_id)
+        (item) => Number(item.id) === Number(progressItem.source_id)
       );
       if (!category) return null;
 
@@ -266,11 +240,7 @@ export const ContinueReadingScreen = ({navigation}) => {
         id: progressItem.id,
         type: 'Молитвы',
         glyph: '†',
-        iconSource:
-          resolveCategoryIcon(
-            category.slug,
-            category.name
-          ) || CATEGORY_ICONS.canons,
+        iconSource: resolveCategoryIcon(category.slug, category.name) || CATEGORY_ICONS.canons,
         title: category.name,
         position: 'Продолжить с сохранённого места',
         percent,
@@ -291,28 +261,23 @@ export const ContinueReadingScreen = ({navigation}) => {
     [progress, categories, akathists, canons, prayerRules]
   );
 
-  const removeItem = async id => {
+  const removeItem = async (id) => {
     await deleteReadingProgress(id);
-    setProgress(current => current.filter(item => item.id !== id));
+    setProgress((current) => current.filter((item) => item.id !== id));
   };
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + 56;
 
   return (
     <AppBackground imageOpacity={0.72}>
-      <StatusBar
-        style="light"
-        translucent
-        backgroundColor="transparent"
-      />
+      <StatusBar style="light" translucent backgroundColor="transparent" />
 
       {loading ? (
         <View
           style={[
             styles.center,
             {
-              paddingTop:
-                headerHeight,
+              paddingTop: headerHeight,
             },
           ]}
         >
@@ -324,15 +289,13 @@ export const ContinueReadingScreen = ({navigation}) => {
           contentContainerStyle={[
             styles.content,
             {
-              paddingTop:
-                headerHeight + 18,
-              paddingBottom:
-                96 + insets.bottom,
+              paddingTop: headerHeight + 18,
+              paddingBottom: 96 + insets.bottom,
             },
           ]}
         >
           {items.length ? (
-            items.map(item => (
+            items.map((item) => (
               <View key={item.id} style={styles.card}>
                 <Pressable
                   onPress={item.onPress}
@@ -385,25 +348,18 @@ export const ContinueReadingScreen = ({navigation}) => {
               <Text style={styles.emptyCross}>☦</Text>
               <Text style={styles.emptyTitle}>Начатых чтений пока нет</Text>
               <Text style={styles.emptyText}>
-                Когда вы начнёте читать молитву, акафист, канон, Псалтирь или Библию, прогресс появится здесь.
+                Когда вы начнёте читать молитву, акафист, канон, Псалтирь или Библию, прогресс
+                появится здесь.
               </Text>
             </View>
           )}
         </ScrollView>
       )}
 
-      <FixedSectionHeader
-        title="Продолжить чтение"
-        navigation={navigation}
-        topInset={insets.top}
-      />
+      <FixedSectionHeader title="Продолжить чтение" navigation={navigation} topInset={insets.top} />
 
-      <BottomNav
-        navigation={navigation}
-        active={null}
-      />
-
-</AppBackground>
+      <BottomNav navigation={navigation} active={null} />
+    </AppBackground>
   );
 };
 

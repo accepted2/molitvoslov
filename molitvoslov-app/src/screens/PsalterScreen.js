@@ -1,813 +1,447 @@
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {AppBackground} from '../components/layout/AppBackground';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import {ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View} from 'react-native';
 
-import {
-  useFocusEffect,
-} from '@react-navigation/native';
+import {useFocusEffect} from '@react-navigation/native';
 
-import {
-  contentApi as api,
-} from '../services/contentApi';
+import {contentApi as api} from '../services/contentApi';
 
-import {
-  useReadingProgress,
-} from '../hooks/useReadingProgress';
+import {useReadingProgress} from '../hooks/useReadingProgress';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
-
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 
+import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
-import {
-  deleteSavedItem,
-  getSavedItems,
-  saveItem,
-} from '../services/savedItems';
+import ExpandablePrayerBlock from '../components/reader/ExpandablePrayerBlock';
 
-import ExpandablePrayerBlock
-  from '../components/reader/ExpandablePrayerBlock';
+import {colors, radius, spacing} from '../theme';
+import {BottomNav} from '../components/navigation/BottomNav';
 
-import {
-  colors,
-  radius,
-  spacing,
-} from '../theme';
-import {BottomNav} from "../components/navigation/BottomNav";
+export default function PsalterScreen({navigation}) {
+  const [psalter, setPsalter] = useState(null);
 
+  const [savedItems, setSavedItems] = useState([]);
 
-export default function PsalterScreen({
-  navigation,
-}) {
+  const [loading, setLoading] = useState(true);
 
-  const [
-    psalter,
-    setPsalter,
-  ] = useState(null);
+  const [error, setError] = useState(null);
 
-  const [
-    savedItems,
-    setSavedItems,
-  ] = useState([]);
+  const {savedProgress, reloadProgress} = useReadingProgress({
+    sourceType: 'psalter',
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
-
-  const [
-    error,
-    setError,
-  ] = useState(null);
-
-  const {
-    savedProgress,
-    reloadProgress,
-  } = useReadingProgress({
-    sourceType:
-      'psalter',
-
-    sourceId:
-      psalter?.id,
+    sourceId: psalter?.id,
   });
 
-  const listRef =
-    useRef(null);
-
+  const listRef = useRef(null);
 
   useEffect(() => {
     loadPsalter();
   }, []);
 
-
   useFocusEffect(
     useCallback(() => {
-      if (
-        psalter?.id
-      ) {
+      if (psalter?.id) {
         reloadProgress();
 
-        loadSavedKathismas(
-          psalter.id
-        );
+        loadSavedKathismas(psalter.id);
       }
-    }, [
-      psalter?.id,
-      reloadProgress,
-    ])
+    }, [psalter?.id, reloadProgress])
   );
 
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + 56;
-  const loadSavedKathismas =
-    async psalterId => {
-      try {
-        const saved =
-          await getSavedItems({
-            source_type:
-              'psalter',
+  const loadSavedKathismas = async (psalterId) => {
+    try {
+      const saved = await getSavedItems({
+        source_type: 'psalter',
 
-            source_id:
-              psalterId,
+        source_id: psalterId,
 
-            anchor_type:
-              'kathisma',
-          });
+        anchor_type: 'kathisma',
+      });
 
-        setSavedItems(
-          saved
-        );
-      } catch (err) {
-        console.log(
-          'Ошибка загрузки сохранённых кафизм:',
-          err
-        );
+      setSavedItems(saved);
+    } catch (err) {
+      console.log('Ошибка загрузки сохранённых кафизм:', err);
+    }
+  };
+
+  const loadPsalter = async () => {
+    try {
+      setLoading(true);
+
+      setError(null);
+
+      const response = await api.get('psalters/psaltir/');
+
+      const data = response.data;
+
+      setPsalter(data);
+
+      await loadSavedKathismas(data.id);
+    } catch (err) {
+      console.log('Ошибка загрузки Псалтири:', err);
+
+      setError('Не удалось загрузить Псалтирь');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openKathisma = (kathisma) => {
+    navigation.navigate('Kathisma', {
+      kathismaNumber: kathisma.number,
+
+      kathismaTitle: kathisma.title || `Кафизма ${kathisma.number}`,
+    });
+  };
+
+  const getSavedKathisma = (kathismaId) =>
+    savedItems.find(
+      (item) => item.anchor_type === 'kathisma' && Number(item.anchor_id) === Number(kathismaId)
+    );
+
+  const toggleKathismaSaved = async (kathisma) => {
+    const existing = getSavedKathisma(kathisma.id);
+
+    try {
+      if (existing) {
+        await deleteSavedItem(existing.id);
+
+        setSavedItems((current) => current.filter((item) => item.id !== existing.id));
+
+        return;
       }
-    };
 
+      const saved = await saveItem({
+        save_type: 'kathisma',
 
-  const loadPsalter =
-    async () => {
-      try {
-        setLoading(true);
+        source_type: 'psalter',
 
-        setError(null);
+        source_id: psalter.id,
 
-        const response =
-          await api.get(
-            'psalters/psaltir/'
-          );
+        anchor_type: 'kathisma',
 
-        const data =
-          response.data;
+        anchor_id: kathisma.id,
 
-        setPsalter(
-          data
-        );
+        source_title: psalter.name || 'Псалтирь',
 
-        await loadSavedKathismas(
-          data.id
-        );
-      } catch (err) {
-        console.log(
-          'Ошибка загрузки Псалтири:',
-          err
-        );
+        item_title: `Кафизма ${kathisma.number}`,
 
-        setError(
-          'Не удалось загрузить Псалтирь'
-        );
-      } finally {
-        setLoading(
-          false
-        );
-      }
-    };
+        text: '',
 
+        metadata: {
+          kathisma_number: kathisma.number,
 
-  const openKathisma =
-    kathisma => {
-      navigation.navigate(
-        'Kathisma',
-        {
-          kathismaNumber:
-            kathisma.number,
+          kathisma_title: kathisma.title || '',
+        },
+      });
 
-          kathismaTitle:
-            kathisma.title ||
-            `Кафизма ${kathisma.number}`,
-        }
-      );
-    };
+      setSavedItems((current) => [saved, ...current]);
+    } catch (err) {
+      console.log('Ошибка сохранения кафизмы:', err.response?.data || err.message);
+    }
+  };
 
+  const progressInfo = savedProgress?.anchor_info;
 
-  const getSavedKathisma =
-    kathismaId =>
-      savedItems.find(
-        item =>
-          item.anchor_type ===
-            'kathisma' &&
-          Number(
-            item.anchor_id
-          ) ===
-            Number(
-              kathismaId
-            )
-      );
+  const currentKathismaNumber = progressInfo?.kathisma_number;
 
-
-  const toggleKathismaSaved =
-    async kathisma => {
-      const existing =
-        getSavedKathisma(
-          kathisma.id
-        );
-
-      try {
-        if (existing) {
-          await deleteSavedItem(
-            existing.id
-          );
-
-          setSavedItems(
-            current =>
-              current.filter(
-                item =>
-                  item.id !==
-                  existing.id
-              )
-          );
-
-          return;
-        }
-
-        const saved =
-          await saveItem({
-            save_type:
-              'kathisma',
-
-            source_type:
-              'psalter',
-
-            source_id:
-              psalter.id,
-
-            anchor_type:
-              'kathisma',
-
-            anchor_id:
-              kathisma.id,
-
-            source_title:
-              psalter.name ||
-              'Псалтирь',
-
-            item_title:
-              `Кафизма ${kathisma.number}`,
-
-            text: '',
-
-            metadata: {
-              kathisma_number:
-                kathisma.number,
-
-              kathisma_title:
-                kathisma.title ||
-                '',
-            },
-          });
-
-        setSavedItems(
-          current => [
-            saved,
-            ...current,
-          ]
-        );
-      } catch (err) {
-        console.log(
-          'Ошибка сохранения кафизмы:',
-          err.response?.data ||
-          err.message
-        );
-      }
-    };
-
-
-  const progressInfo =
-    savedProgress
-      ?.anchor_info;
-
-  const currentKathismaNumber =
-    progressInfo
-      ?.kathisma_number;
-
-  const currentKathisma =
-    psalter
-      ?.kathismas
-      ?.find(
-        kathisma =>
-          Number(
-            kathisma.number
-          ) ===
-            Number(
-              currentKathismaNumber
-            )
-      );
-
+  const currentKathisma = psalter?.kathismas?.find(
+    (kathisma) => Number(kathisma.number) === Number(currentKathismaNumber)
+  );
 
   if (loading) {
     return (
-      <View
-        style={styles.center}
-      >
-        <ActivityIndicator
-          size="large"
-          color={
-            colors.accent
-          }
-        />
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
-
 
   if (error) {
     return (
-      <View
-        style={styles.center}
-      >
-        <Text
-          style={styles.error}
-        >
-          {error}
-        </Text>
+      <View style={styles.center}>
+        <Text style={styles.error}>{error}</Text>
       </View>
     );
   }
 
-
-  const handlePrayersCollapse =
-    () => {
-      requestAnimationFrame(
-        () => {
-          listRef.current
-            ?.scrollToOffset({
-              offset: 0,
-              animated: true,
-            });
-        }
-      );
-    };
-
+  const handlePrayersCollapse = () => {
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToOffset({
+        offset: 0,
+        animated: true,
+      });
+    });
+  };
 
   return (
     <AppBackground imageOpacity={0.72}>
-      <StatusBar
-        style="light"
-        translucent
-        backgroundColor="transparent"
-      />
-    <View
-      style={styles.container}
-    >
-      <FlatList
-        ref={listRef}
-        nestedScrollEnabled
-        data={
-          psalter?.kathismas ||
-          []
-        }
-        keyExtractor={
-          item =>
-            String(
-              item.id
-            )
-        }
-        contentContainerStyle={[
-          styles.listContent,
-          {
-            paddingTop: headerHeight + 20,
-            paddingBottom: 80 + insets.bottom,
-          }
-        ]}
-        ListHeaderComponent={
-          <View
-            style={styles.header}
-          >
-            <ExpandablePrayerBlock
-              title="Молитвы перед чтением Псалтири"
-              text={
-                psalter
-                  ?.prayers_before
-              }
-              onCollapse={
-                handlePrayersCollapse
-              }
-              saveProps={{
-                sourceType:
-                  'psalter',
+      <StatusBar style="light" translucent backgroundColor="transparent" />
+      <View style={styles.container}>
+        <FlatList
+          ref={listRef}
+          nestedScrollEnabled
+          data={psalter?.kathismas || []}
+          keyExtractor={(item) => String(item.id)}
+          contentContainerStyle={[
+            styles.listContent,
+            {
+              paddingTop: headerHeight + 20,
+              paddingBottom: 80 + insets.bottom,
+            },
+          ]}
+          ListHeaderComponent={
+            <View style={styles.header}>
+              <ExpandablePrayerBlock
+                title="Молитвы перед чтением Псалтири"
+                text={psalter?.prayers_before}
+                onCollapse={handlePrayersCollapse}
+                saveProps={{
+                  sourceType: 'psalter',
 
-                sourceId:
-                  psalter?.id,
+                  sourceId: psalter?.id,
 
-                anchorType:
-                  'psalter_prayers_before',
+                  anchorType: 'psalter_prayers_before',
 
-                anchorId:
-                  psalter?.id,
+                  anchorId: psalter?.id,
 
-                sourceTitle:
-                  psalter?.name ||
-                  'Псалтирь',
+                  sourceTitle: psalter?.name || 'Псалтирь',
 
-                itemTitle:
-                  'Молитвы перед чтением Псалтири',
+                  itemTitle: 'Молитвы перед чтением Псалтири',
 
-                metadata: {
-                  section:
-                    'prayers_before',
-                },
-              }}
-            />
+                  metadata: {
+                    section: 'prayers_before',
+                  },
+                }}
+              />
 
-            {currentKathisma &&
-              progressInfo && (
+              {currentKathisma && progressInfo && (
                 <Pressable
-                  style={({pressed}) => [
-                    styles.continueCard,
-
-                    pressed &&
-                      styles.pressed,
-                  ]}
-                  onPress={() =>
-                    openKathisma(
-                      currentKathisma
-                    )
-                  }
+                  style={({pressed}) => [styles.continueCard, pressed && styles.pressed]}
+                  onPress={() => openKathisma(currentKathisma)}
                 >
-                  <Text
-                    style={
-                      styles
-                        .continueLabel
-                    }
-                  >
-                    Продолжить чтение
-                  </Text>
+                  <Text style={styles.continueLabel}>Продолжить чтение</Text>
 
-                  <Text
-                    style={
-                      styles
-                        .continueTitle
-                    }
-                  >
-                    Кафизма{' '}
-                    {
-                      progressInfo
-                        .kathisma_number
-                    }
-                  </Text>
+                  <Text style={styles.continueTitle}>Кафизма {progressInfo.kathisma_number}</Text>
 
-                  <Text
-                    style={
-                      styles
-                        .continuePosition
-                    }
-                  >
-                    Псалом{' '}
-                    {
-                      progressInfo
-                        .psalm_number
-                    }
-                    {
-                      progressInfo
-                        .verse_number
-                        ? ` · стих ${progressInfo.verse_number}`
-                        : ''
-                    }
+                  <Text style={styles.continuePosition}>
+                    Псалом {progressInfo.psalm_number}
+                    {progressInfo.verse_number ? ` · стих ${progressInfo.verse_number}` : ''}
                   </Text>
                 </Pressable>
               )}
-          </View>
-        }
-        renderItem={({
-          item,
-        }) => {
-          const isCurrent =
-            Number(
-              item.number
-            ) ===
-              Number(
-                currentKathismaNumber
-              );
+            </View>
+          }
+          renderItem={({item}) => {
+            const isCurrent = Number(item.number) === Number(currentKathismaNumber);
 
-          const saved =
-            !!getSavedKathisma(
-              item.id
-            );
+            const saved = !!getSavedKathisma(item.id);
 
-          return (
-            <View
-              style={[
-                styles.kathisma,
+            return (
+              <View
+                style={[
+                  styles.kathisma,
 
-                isCurrent &&
-                  styles
-                    .kathismaCurrent,
+                  isCurrent && styles.kathismaCurrent,
 
-                saved &&
-                  styles
-                    .kathismaSaved,
-              ]}
-            >
-              <Pressable
-                onPress={() =>
-                  openKathisma(
-                    item
-                  )
-                }
-                style={({pressed}) => [
-                  styles.kathismaMain,
-
-                  pressed &&
-                    styles.pressed,
+                  saved && styles.kathismaSaved,
                 ]}
               >
-                <Text
-                  style={
-                    styles
-                      .kathismaNumber
-                  }
+                <Pressable
+                  onPress={() => openKathisma(item)}
+                  style={({pressed}) => [styles.kathismaMain, pressed && styles.pressed]}
                 >
-                  Кафизма{' '}
-                  {item.number}
-                </Text>
+                  <Text style={styles.kathismaNumber}>Кафизма {item.number}</Text>
 
-                <Text
-                  style={
-                    styles.psalmRange
-                  }
-                >
-                  {
-                    item.first_psalm ===
-                    item.last_psalm
+                  <Text style={styles.psalmRange}>
+                    {item.first_psalm === item.last_psalm
                       ? `Псалом ${item.first_psalm}`
-                      : `Псалмы ${item.first_psalm}–${item.last_psalm}`
-                  }
-                </Text>
+                      : `Псалмы ${item.first_psalm}–${item.last_psalm}`}
+                  </Text>
 
-                {isCurrent &&
-                  progressInfo && (
-                    <Text
-                      style={
-                        styles
-                          .currentPosition
-                      }
-                    >
-                      Здесь остановились ·
-                      Псалом{' '}
-                      {
-                        progressInfo
-                          .psalm_number
-                      }
-                      {
-                        progressInfo
-                          .verse_number
-                          ? `, стих ${progressInfo.verse_number}`
-                          : ''
-                      }
+                  {isCurrent && progressInfo && (
+                    <Text style={styles.currentPosition}>
+                      Здесь остановились · Псалом {progressInfo.psalm_number}
+                      {progressInfo.verse_number ? `, стих ${progressInfo.verse_number}` : ''}
                     </Text>
                   )}
 
-                {!!item.title && (
-                  <Text
-                    style={
-                      styles
-                        .kathismaTitle
-                    }
-                  >
-                    {item.title}
-                  </Text>
-                )}
-              </Pressable>
+                  {!!item.title && <Text style={styles.kathismaTitle}>{item.title}</Text>}
+                </Pressable>
 
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={
-                  saved
-                    ? 'Убрать кафизму из избранного'
-                    : 'Добавить кафизму в избранное'
-                }
-                onPress={() =>
-                  toggleKathismaSaved(
-                    item
-                  )
-                }
-                style={({pressed}) => [
-                  styles.saveButton,
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    saved ? 'Убрать кафизму из избранного' : 'Добавить кафизму в избранное'
+                  }
+                  onPress={() => toggleKathismaSaved(item)}
+                  style={({pressed}) => [
+                    styles.saveButton,
 
-                  saved &&
-                    styles
-                      .saveButtonActive,
+                    saved && styles.saveButtonActive,
 
-                  pressed &&
-                    styles.pressed,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.saveButtonText,
-
-                    saved &&
-                      styles
-                        .saveButtonTextActive,
+                    pressed && styles.pressed,
                   ]}
                 >
-                  {
-                    saved
-                      ? '★'
-                      : '☆'
-                  }
-                </Text>
-              </Pressable>
-            </View>
-          );
-        }}
-      />
-      <FixedSectionHeader
-        title="Псалтирь"
-        navigation={navigation}
-        topInset={insets.top}
-      />
-      <BottomNav
-        navigation={navigation}
-        active={null}
-      />
-    </View>
+                  <Text style={[styles.saveButtonText, saved && styles.saveButtonTextActive]}>
+                    {saved ? '★' : '☆'}
+                  </Text>
+                </Pressable>
+              </View>
+            );
+          }}
+        />
+        <FixedSectionHeader title="Псалтирь" navigation={navigation} topInset={insets.top} />
+        <BottomNav navigation={navigation} active={null} />
+      </View>
     </AppBackground>
   );
 }
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
 
-const styles =
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: 'transparent',
-    },
+  listContent: {
+    paddingTop: 100,
+    paddingHorizontal: 8,
+    paddingBottom: 32,
+    gap: 9,
+  },
 
-    listContent: {
-      paddingTop: 100,
-      paddingHorizontal: 8,
-      paddingBottom: 32,
-      gap: 9,
-    },
+  header: {
+    gap: 10,
+    marginBottom: 2,
+  },
 
-    header: {
-      gap: 10,
-      marginBottom: 2,
-    },
+  continueCard: {
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+  },
 
-    continueCard: {
-      paddingVertical: 13,
-      paddingHorizontal: 14,
-      borderRadius:
-        radius.md,
-      backgroundColor:
-        colors.surfaceMuted,
-      borderWidth: 1,
-      borderColor:
-        colors.borderStrong,
-    },
+  continueLabel: {
+    marginBottom: 7,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    color: colors.accent,
+  },
 
-    continueLabel: {
-      marginBottom: 7,
-      fontSize: 12,
-      fontWeight: '700',
-      textTransform:
-        'uppercase',
-      letterSpacing: 0.8,
-      color:
-        colors.accent,
-    },
+  continueTitle: {
+    fontSize: 21,
+    fontWeight: '700',
+    color: colors.text,
+  },
 
-    continueTitle: {
-      fontSize: 21,
-      fontWeight: '700',
-      color:
-        colors.text,
-    },
+  continuePosition: {
+    marginTop: 5,
+    fontSize: 15,
+    color: colors.textSecondary,
+  },
 
-    continuePosition: {
-      marginTop: 5,
-      fontSize: 15,
-      color:
-        colors.textSecondary,
-    },
+  kathisma: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    overflow: 'hidden',
+  },
 
-    kathisma: {
-      flexDirection: 'row',
-      alignItems: 'stretch',
-      backgroundColor:
-        colors.surface,
-      borderRadius:
-        radius.md,
-      borderWidth: 1,
-      borderColor:
-        'transparent',
-      overflow: 'hidden',
-    },
+  kathismaCurrent: {
+    backgroundColor: '#F5DFC0',
+    borderColor: colors.borderStrong,
+  },
 
-    kathismaCurrent: {
-      backgroundColor:
-        '#F5DFC0',
-      borderColor:
-        colors.borderStrong,
-    },
+  kathismaSaved: {
+    borderColor: 'rgba(138, 90, 56, 0.30)',
+  },
 
-    kathismaSaved: {
-      borderColor:
-        'rgba(138, 90, 56, 0.30)',
-    },
+  kathismaMain: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingLeft: 13,
+    paddingRight: 8,
+  },
 
-    kathismaMain: {
-      flex: 1,
-      paddingVertical: 12,
-      paddingLeft: 13,
-      paddingRight: 8,
-    },
+  kathismaNumber: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+  },
 
-    kathismaNumber: {
-      fontSize: 18,
-      fontWeight: '600',
-      color:
-        colors.text,
-    },
+  psalmRange: {
+    marginTop: 4,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
 
-    psalmRange: {
-      marginTop: 4,
-      fontSize: 14,
-      color:
-        colors.textSecondary,
-    },
+  kathismaTitle: {
+    marginTop: 6,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
 
-    kathismaTitle: {
-      marginTop: 6,
-      fontSize: 14,
-      color:
-        colors.textSecondary,
-    },
+  currentPosition: {
+    marginTop: 7,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.accent,
+  },
 
-    currentPosition: {
-      marginTop: 7,
-      fontSize: 13,
-      fontWeight: '600',
-      color:
-        colors.accent,
-    },
+  saveButton: {
+    width: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.border,
+    backgroundColor: 'rgba(238, 220, 192, 0.72)',
+  },
 
-    saveButton: {
-      width: 44,
-      alignItems: 'center',
-      justifyContent:
-        'center',
-      paddingHorizontal: 8,
-      borderLeftWidth: 1,
-      borderLeftColor:
-        colors.border,
-      backgroundColor:
-        'rgba(238, 220, 192, 0.72)',
-    },
+  saveButtonActive: {
+    backgroundColor: colors.surfaceWarm,
+  },
 
-    saveButtonActive: {
-      backgroundColor:
-        colors.surfaceWarm,
-    },
+  saveButtonText: {
+    fontSize: 22,
+    lineHeight: 24,
+    fontWeight: '400',
+    color: colors.textMuted,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+  },
 
-    saveButtonText: {
-      fontSize: 22,
-      lineHeight: 24,
-      fontWeight: '400',
-      color:
-        colors.textMuted,
-      textAlign: 'center',
-      textAlignVertical: 'center',
-      includeFontPadding: false,
-    },
+  saveButtonTextActive: {
+    color: colors.accentDark,
+  },
 
-    saveButtonTextActive: {
-      color:
-        colors.accentDark,
-    },
+  pressed: {
+    opacity: 0.62,
+  },
 
-    pressed: {
-      opacity: 0.62,
-    },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+  },
 
-    center: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent:
-        'center',
-      backgroundColor:
-        colors.background,
-    },
-
-    error: {
-      fontSize: 16,
-      color:
-        colors.liturgical,
-    },
-  });
+  error: {
+    fontSize: 16,
+    color: colors.liturgical,
+  },
+});

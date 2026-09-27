@@ -30,26 +30,27 @@ KATHISMA_RANGES = {
 }
 
 
-LATIN_TO_CYRILLIC = str.maketrans({
-    "A": "А",
-    "B": "В",
-    "C": "С",
-    "E": "Е",
-    "H": "Н",
-    "K": "К",
-    "M": "М",
-    "O": "О",
-    "P": "Р",
-    "T": "Т",
-    "X": "Х",
-
-    "a": "а",
-    "c": "с",
-    "e": "е",
-    "o": "о",
-    "p": "р",
-    "x": "х",
-})
+LATIN_TO_CYRILLIC = str.maketrans(
+    {
+        "A": "А",
+        "B": "В",
+        "C": "С",
+        "E": "Е",
+        "H": "Н",
+        "K": "К",
+        "M": "М",
+        "O": "О",
+        "P": "Р",
+        "T": "Т",
+        "X": "Х",
+        "a": "а",
+        "c": "с",
+        "e": "е",
+        "o": "о",
+        "p": "р",
+        "x": "х",
+    }
+)
 
 
 def normalize(text):
@@ -74,9 +75,7 @@ def normalize(text):
 
 def without_accents(text):
     return "".join(
-        char
-        for char in unicodedata.normalize("NFD", text)
-        if unicodedata.category(char) != "Mn"
+        char for char in unicodedata.normalize("NFD", text) if unicodedata.category(char) != "Mn"
     )
 
 
@@ -96,19 +95,11 @@ def find_source():
 
         name = path.name.lower()
 
-        if (
-                "2420" in name
-                or "psalt" in name
-                or "псалт" in name
-                or "library_ebook" in name
-        ):
+        if "2420" in name or "psalt" in name or "псалт" in name or "library_ebook" in name:
             candidates.append(path)
 
     if not candidates:
-        raise FileNotFoundError(
-            "Не найден pravmir_psalter.html "
-            "в папке files."
-        )
+        raise FileNotFoundError("Не найден pravmir_psalter.html " "в папке files.")
 
     candidates.sort(
         key=lambda item: item.stat().st_size,
@@ -125,16 +116,14 @@ def get_part(soup, part_id):
     )
 
     if part is None:
-        raise ValueError(
-            f"Не найден HTML-блок part_{part_id}"
-        )
+        raise ValueError(f"Не найден HTML-блок part_{part_id}")
 
     return part
 
 
 def extract_section_text(
-        part,
-        exclude_last_heading=False,
+    part,
+    exclude_last_heading=False,
 ):
     result = []
 
@@ -150,10 +139,10 @@ def extract_section_text(
             continue
 
         if (
-                exclude_last_heading
-                and "ДАВИ" in without_accents(text).upper()
-                and "ПРОРОКА" in without_accents(text).upper()
-                and "ПЕСН" in without_accents(text).upper()
+            exclude_last_heading
+            and "ДАВИ" in without_accents(text).upper()
+            and "ПРОРОКА" in without_accents(text).upper()
+            and "ПЕСН" in without_accents(text).upper()
         ):
             continue
 
@@ -177,10 +166,7 @@ def parse_verses(text, psalm_number):
     matches = find_verse_matches(text)
 
     if not matches:
-        raise ValueError(
-            f"Псалом {psalm_number}: "
-            "не найдены номера стихов."
-        )
+        raise ValueError(f"Псалом {psalm_number}: " "не найдены номера стихов.")
 
     verses = []
 
@@ -189,10 +175,7 @@ def parse_verses(text, psalm_number):
 
         start = match.end()
 
-        while (
-                start < len(text)
-                and text[start].isspace()
-        ):
+        while start < len(text) and text[start].isspace():
             start += 1
 
         if index + 1 < len(matches):
@@ -200,26 +183,20 @@ def parse_verses(text, psalm_number):
         else:
             end = len(text)
 
-        verse_text = normalize(
-            text[start:end]
-        )
+        verse_text = normalize(text[start:end])
 
         if not verse_text:
-            raise ValueError(
-                f"Псалом {psalm_number}, "
-                f"стих {number}: пуст."
-            )
+            raise ValueError(f"Псалом {psalm_number}, " f"стих {number}: пуст.")
 
-        verses.append({
-            "number": number,
-            "church_slavonic": verse_text,
-            "russian": "",
-        })
+        verses.append(
+            {
+                "number": number,
+                "church_slavonic": verse_text,
+                "russian": "",
+            }
+        )
 
-    numbers = [
-        verse["number"]
-        for verse in verses
-    ]
+    numbers = [verse["number"] for verse in verses]
 
     # Ошибка в исходном HTML Правмира.
     #
@@ -230,28 +207,17 @@ def parse_verses(text, psalm_number):
     #
     # Первый "15" на самом деле является стихом 14.
     if psalm_number == 77:
-        if (
-                len(numbers) >= 15
-                and numbers[12] == 13
-                and numbers[13] == 15
-                and numbers[14] == 15
-        ):
+        if len(numbers) >= 15 and numbers[12] == 13 and numbers[13] == 15 and numbers[14] == 15:
             verses[13]["number"] = 14
 
-            numbers = [
-                verse["number"]
-                for verse in verses
-            ]
+            numbers = [verse["number"] for verse in verses]
 
     if len(numbers) != len(set(numbers)):
-        raise ValueError(
-            f"Псалом {psalm_number}: "
-            "повторяются номера стихов."
-        )
+        raise ValueError(f"Псалом {psalm_number}: " "повторяются номера стихов.")
 
     for previous, current in zip(
-            numbers,
-            numbers[1:],
+        numbers,
+        numbers[1:],
     ):
         if current <= previous:
             raise ValueError(
@@ -264,30 +230,20 @@ def parse_verses(text, psalm_number):
 
 
 def get_last_verse_number(body):
-    text = normalize(
-        " ".join(body)
-    )
+    text = normalize(" ".join(body))
 
     matches = find_verse_matches(text)
 
     if not matches:
         return None
 
-    return int(
-        matches[-1].group(1)
-    )
+    return int(matches[-1].group(1))
 
 
 def is_glory(text):
-    plain = without_accents(
-        text
-    ).lower()
+    plain = without_accents(text).lower()
 
-    return (
-            plain.startswith("слава:")
-            or plain.startswith("слава, и ныне:")
-            or plain == "слава"
-    )
+    return plain.startswith("слава:") or plain.startswith("слава, и ныне:") or plain == "слава"
 
 
 def parse_kathisma(part, number):
@@ -318,24 +274,22 @@ def parse_kathisma(part, number):
             body = []
             return
 
-        body_text = normalize(
-            " ".join(body)
-        )
+        body_text = normalize(" ".join(body))
 
         verses = parse_verses(
             body_text,
             current_number,
         )
 
-        psalms.append({
-            "number": current_number,
-            "title_church_slavonic": normalize(
-                current_title or ""
-            ),
-            "title_russian": "",
-            "description": "",
-            "verses": verses,
-        })
+        psalms.append(
+            {
+                "number": current_number,
+                "title_church_slavonic": normalize(current_title or ""),
+                "title_russian": "",
+                "description": "",
+                "verses": verses,
+            }
+        )
 
         current_number = None
         current_title = None
@@ -352,14 +306,9 @@ def parse_kathisma(part, number):
         if not text:
             continue
 
-        plain = without_accents(
-            text
-        ).lower()
+        plain = without_accents(text).lower()
 
-        if (
-                plain.startswith("по ")
-                and "кафисм" in plain
-        ):
+        if plain.startswith("по ") and "кафисм" in plain:
             finish_psalm()
 
             reading_prayers_after = True
@@ -380,9 +329,7 @@ def parse_kathisma(part, number):
         if match:
             finish_psalm()
 
-            psalm_number = int(
-                match.group(1)
-            )
+            psalm_number = int(match.group(1))
 
             if psalm_number not in expected_psalms:
                 current_number = None
@@ -400,14 +347,14 @@ def parse_kathisma(part, number):
             continue
 
         if is_glory(text):
-            last_verse = get_last_verse_number(
-                body
-            )
+            last_verse = get_last_verse_number(body)
 
-            glory_positions.append({
-                "psalm": current_number,
-                "verse": last_verse,
-            })
+            glory_positions.append(
+                {
+                    "psalm": current_number,
+                    "verse": last_verse,
+                }
+            )
 
             continue
 
@@ -419,14 +366,9 @@ def parse_kathisma(part, number):
 
     finish_psalm()
 
-    psalms.sort(
-        key=lambda item: item["number"]
-    )
+    psalms.sort(key=lambda item: item["number"])
 
-    actual_numbers = [
-        psalm["number"]
-        for psalm in psalms
-    ]
+    actual_numbers = [psalm["number"] for psalm in psalms]
 
     if actual_numbers != expected_psalms:
         raise ValueError(
@@ -435,60 +377,50 @@ def parse_kathisma(part, number):
             f"получены {actual_numbers}"
         )
 
-    psalm_last_verse = {
-        psalm["number"]: psalm["verses"][-1]["number"]
-        for psalm in psalms
-    }
+    psalm_last_verse = {psalm["number"]: psalm["verses"][-1]["number"] for psalm in psalms}
 
     glories = []
 
     for index, position in enumerate(
-            glory_positions,
-            start=1,
+        glory_positions,
+        start=1,
     ):
         psalm_number = position["psalm"]
         verse_number = position["verse"]
 
         if verse_number is None:
-            raise ValueError(
-                f"Кафизма {number}, Слава {index}: "
-                "не удалось определить позицию."
-            )
+            raise ValueError(f"Кафизма {number}, Слава {index}: " "не удалось определить позицию.")
 
-        last_number = psalm_last_verse[
-            psalm_number
-        ]
+        last_number = psalm_last_verse[psalm_number]
 
         if verse_number < last_number:
-            glories.append({
-                "number": index,
-                "after_psalm": None,
-                "after_verse": {
-                    "psalm": psalm_number,
-                    "verse": verse_number,
-                },
-            })
+            glories.append(
+                {
+                    "number": index,
+                    "after_psalm": None,
+                    "after_verse": {
+                        "psalm": psalm_number,
+                        "verse": verse_number,
+                    },
+                }
+            )
 
         else:
-            glories.append({
-                "number": index,
-                "after_psalm": psalm_number,
-                "after_verse": None,
-            })
+            glories.append(
+                {
+                    "number": index,
+                    "after_psalm": psalm_number,
+                    "after_verse": None,
+                }
+            )
 
     if len(glories) != 3:
-        raise ValueError(
-            f"Кафизма {number}: "
-            f"должно быть 3 Славы, "
-            f"найдено {len(glories)}."
-        )
+        raise ValueError(f"Кафизма {number}: " f"должно быть 3 Славы, " f"найдено {len(glories)}.")
 
     return {
         "number": number,
         "title": f"Кафизма {number}",
-        "prayers_after": "\n\n".join(
-            prayers_after
-        ),
+        "prayers_after": "\n\n".join(prayers_after),
         "psalms": psalms,
         "glories": glories,
     }
@@ -498,33 +430,22 @@ def validate_kathisma(kathisma):
     number = kathisma["number"]
 
     for psalm in kathisma["psalms"]:
-        title = psalm[
-            "title_church_slavonic"
-        ]
+        title = psalm["title_church_slavonic"]
 
         if re.search(
-                r"[A-Za-zќ]",
-                title,
+            r"[A-Za-zќ]",
+            title,
         ):
-            raise ValueError(
-                f"Псалом {psalm['number']}: "
-                "латинский символ в заголовке."
-            )
+            raise ValueError(f"Псалом {psalm['number']}: " "латинский символ в заголовке.")
 
-        numbers = [
-            verse["number"]
-            for verse in psalm["verses"]
-        ]
+        numbers = [verse["number"] for verse in psalm["verses"]]
 
         if len(numbers) != len(set(numbers)):
-            raise ValueError(
-                f"Псалом {psalm['number']}: "
-                "дубли номеров стихов."
-            )
+            raise ValueError(f"Псалом {psalm['number']}: " "дубли номеров стихов.")
 
         for previous, current in zip(
-                numbers,
-                numbers[1:],
+            numbers,
+            numbers[1:],
         ):
             if current <= previous:
                 raise ValueError(
@@ -534,13 +455,11 @@ def validate_kathisma(kathisma):
                 )
 
         for verse in psalm["verses"]:
-            text = verse[
-                "church_slavonic"
-            ]
+            text = verse["church_slavonic"]
 
             if re.search(
-                    r"[A-Za-zќ]",
-                    text,
+                r"[A-Za-zќ]",
+                text,
             ):
                 raise ValueError(
                     f"Псалом {psalm['number']}:"
@@ -548,10 +467,7 @@ def validate_kathisma(kathisma):
                     "обнаружен латинский символ."
                 )
 
-            if (
-                    "Слава:" in text
-                    or "Сла́ва:" in text
-            ):
+            if "Слава:" in text or "Сла́ва:" in text:
                 raise ValueError(
                     f"Псалом {psalm['number']}:"
                     f"{verse['number']}: "
@@ -559,33 +475,19 @@ def validate_kathisma(kathisma):
                 )
 
     if number == 17:
-        psalm = kathisma[
-            "psalms"
-        ][0]
+        psalm = kathisma["psalms"][0]
 
         if psalm["number"] != 118:
-            raise ValueError(
-                "17-я кафизма должна содержать "
-                "только Псалом 118."
-            )
+            raise ValueError("17-я кафизма должна содержать " "только Псалом 118.")
 
-        verses = {
-            verse["number"]
-            for verse in psalm["verses"]
-        }
+        verses = {verse["number"] for verse in psalm["verses"]}
 
-        expected = set(
-            range(1, 177)
-        )
+        expected = set(range(1, 177))
 
         if verses != expected:
-            missing = sorted(
-                expected - verses
-            )
+            missing = sorted(expected - verses)
 
-            extra = sorted(
-                verses - expected
-            )
+            extra = sorted(verses - expected)
 
             raise ValueError(
                 "Псалом 118 должен содержать "
@@ -620,18 +522,14 @@ def validate_kathisma(kathisma):
 
         if kathisma["glories"] != expected_glories:
             raise ValueError(
-                "Неверное расположение Слав "
-                "в 17-й кафизме.\n"
-                f"Получено: {kathisma['glories']}"
+                "Неверное расположение Слав " "в 17-й кафизме.\n" f"Получено: {kathisma['glories']}"
             )
 
 
 def main():
     source = find_source()
 
-    print(
-        f"Источник: {source}"
-    )
+    print(f"Источник: {source}")
 
     html = source.read_text(
         encoding="utf-8",
@@ -671,14 +569,10 @@ def main():
     )
 
     if not prayers_before:
-        raise ValueError(
-            "Молитвы перед чтением не найдены."
-        )
+        raise ValueError("Молитвы перед чтением не найдены.")
 
     if not prayers_after:
-        raise ValueError(
-            "Молитвы после чтения не найдены."
-        )
+        raise ValueError("Молитвы после чтения не найдены.")
 
     output_dir = Path("files")
 
@@ -693,9 +587,7 @@ def main():
     print()
 
     for number in range(1, 21):
-        part_id = (
-                43841 + number
-        )
+        part_id = 43841 + number
 
         part = get_part(
             soup,
@@ -707,18 +599,11 @@ def main():
             number,
         )
 
-        validate_kathisma(
-            kathisma
-        )
+        validate_kathisma(kathisma)
 
-        psalm_count = len(
-            kathisma["psalms"]
-        )
+        psalm_count = len(kathisma["psalms"])
 
-        verse_count = sum(
-            len(psalm["verses"])
-            for psalm in kathisma["psalms"]
-        )
+        verse_count = sum(len(psalm["verses"]) for psalm in kathisma["psalms"])
 
         total_psalms += psalm_count
         total_verses += verse_count
@@ -737,16 +622,10 @@ def main():
                 "prayers_after": prayers_after,
                 "is_visible": True,
             },
-
-            "kathismas": [
-                kathisma
-            ],
+            "kathismas": [kathisma],
         }
 
-        output = (
-                output_dir
-                / f"psalter_kathisma_{number}_final.json"
-        )
+        output = output_dir / f"psalter_kathisma_{number}_final.json"
 
         output.write_text(
             json.dumps(
@@ -759,28 +638,14 @@ def main():
 
         glory_description = []
 
-        for glory in kathisma[
-            "glories"
-        ]:
-            if glory[
-                "after_verse"
-            ]:
-                ref = glory[
-                    "after_verse"
-                ]
+        for glory in kathisma["glories"]:
+            if glory["after_verse"]:
+                ref = glory["after_verse"]
 
-                glory_description.append(
-                    f"{ref['psalm']}:{ref['verse']}"
-                )
+                glory_description.append(f"{ref['psalm']}:{ref['verse']}")
 
             else:
-                glory_description.append(
-                    str(
-                        glory[
-                            "after_psalm"
-                        ]
-                    )
-                )
+                glory_description.append(str(glory["after_psalm"]))
 
         print(
             f"Кафизма {number:2}: OK | "
@@ -793,36 +658,22 @@ def main():
         )
 
     if total_psalms != 150:
-        raise ValueError(
-            f"Вместо 150 псалмов "
-            f"получено {total_psalms}."
-        )
+        raise ValueError(f"Вместо 150 псалмов " f"получено {total_psalms}.")
+
+    print()
+
+    print(f"ИТОГО ПСАЛМОВ: {total_psalms}")
+
+    print(f"ИТОГО СТИХОВ: {total_verses}")
+
+    print("Молитвы перед Псалтирью: ДА")
+
+    print("Молитвы после Псалтири: ДА")
 
     print()
 
     print(
-        f"ИТОГО ПСАЛМОВ: {total_psalms}"
-    )
-
-    print(
-        f"ИТОГО СТИХОВ: {total_verses}"
-    )
-
-    print(
-        "Молитвы перед Псалтирью: ДА"
-    )
-
-    print(
-        "Молитвы после Псалтири: ДА"
-    )
-
-    print()
-
-    print(
-        "ГОТОВО: созданы "
-        "psalter_kathisma_1_final.json "
-        "... "
-        "psalter_kathisma_20_final.json"
+        "ГОТОВО: созданы " "psalter_kathisma_1_final.json " "... " "psalter_kathisma_20_final.json"
     )
 
 

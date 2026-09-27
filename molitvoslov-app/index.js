@@ -12,6 +12,4 @@ registerRootComponent(App);
 
 registerWidgetTaskHandler(widgetTaskHandler);
 
-registerWidgetConfigurationScreen(
-  QuoteWidgetConfigurationScreen
-);
+registerWidgetConfigurationScreen(QuoteWidgetConfigurationScreen);

@@ -1,67 +1,47 @@
-import React, {
-  useEffect,
-  useState,
-} from 'react';
+import React, {useEffect, useState} from 'react';
 
-import {ActivityIndicator, View,} from 'react-native';
+import {ActivityIndicator, View} from 'react-native';
 
-import {SafeAreaProvider,} from 'react-native-safe-area-context';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
 
-import {AppNavigator,} from './src/navigation/AppNavigator';
+import {AppNavigator} from './src/navigation/AppNavigator';
 
-import {TextSelectionProvider,} from './src/context/TextSelectionContext';
+import {TextSelectionProvider} from './src/context/TextSelectionContext';
 
-import {initDatabase,} from './src/db/database';
-
+import {initDatabase} from './src/db/database';
 
 export default function App() {
-  const [
-    databaseReady,
-    setDatabaseReady,
-  ] = useState(false);
-
+  const [databaseReady, setDatabaseReady] = useState(false);
 
   useEffect(() => {
-    const prepareDatabase =
-      async () => {
-        try {
-          await initDatabase();
+    const prepareDatabase = async () => {
+      try {
+        await initDatabase();
 
-          setDatabaseReady(true);
+        setDatabaseReady(true);
 
-          console.log(
-            'Локальная база данных готова'
-          );
-        } catch (error) {
-          console.log(
-            'Ошибка SQLite:',
-            error
-          );
-        }
-      };
+        console.log('Локальная база данных готова');
+      } catch (error) {
+        console.log('Ошибка SQLite:', error);
+      }
+    };
 
     prepareDatabase();
   }, []);
-
 
   if (!databaseReady) {
     return (
       <View
         style={{
           flex: 1,
-          alignItems:
-            'center',
-          justifyContent:
-            'center',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        <ActivityIndicator
-          size="large"
-        />
+        <ActivityIndicator size="large" />
       </View>
     );
   }
-
 
   return (
     <SafeAreaProvider>

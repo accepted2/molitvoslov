@@ -1,13 +1,6 @@
 import React, {useCallback, useState} from 'react';
 
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import {ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View} from 'react-native';
 
 import {useFocusEffect} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -16,7 +9,6 @@ import {BottomNav} from '../components/navigation/BottomNav';
 import {getSavedItems} from '../services/savedItems';
 
 import {colors, radius, spacing} from '../theme';
-
 
 const WHOLE_SAVE_TYPES = new Set([
   'prayer',
@@ -27,7 +19,6 @@ const WHOLE_SAVE_TYPES = new Set([
   'canon',
   'text',
 ]);
-
 
 export const BookmarksScreen = ({navigation}) => {
   const [bookmarks, setBookmarks] = useState([]);
@@ -42,11 +33,12 @@ export const BookmarksScreen = ({navigation}) => {
       const saved = await getSavedItems();
 
       setBookmarks(
-        saved.filter(item => (
-          !WHOLE_SAVE_TYPES.has(item.save_type) &&
-          item.start_offset !== null &&
-          item.end_offset !== null
-        ))
+        saved.filter(
+          (item) =>
+            !WHOLE_SAVE_TYPES.has(item.save_type) &&
+            item.start_offset !== null &&
+            item.end_offset !== null
+        )
       );
     } catch (err) {
       console.log('Ошибка загрузки закладок:', err);
@@ -62,7 +54,7 @@ export const BookmarksScreen = ({navigation}) => {
     }, [loadData])
   );
 
-  const makeFocusTarget = item => ({
+  const makeFocusTarget = (item) => ({
     id: item.id,
     save_type: item.save_type,
     anchor_type: item.anchor_type,
@@ -72,7 +64,7 @@ export const BookmarksScreen = ({navigation}) => {
     metadata: item.metadata || {},
   });
 
-  const openBookmark = item => {
+  const openBookmark = (item) => {
     const metadata = item.metadata || {};
     const focusTarget = makeFocusTarget(item);
 
@@ -126,9 +118,7 @@ export const BookmarksScreen = ({navigation}) => {
       if (metadata.kathisma_number) {
         navigation.navigate('Kathisma', {
           kathismaNumber: metadata.kathisma_number,
-          kathismaTitle:
-            metadata.kathisma_title ||
-            `Кафизма ${metadata.kathisma_number}`,
+          kathismaTitle: metadata.kathisma_title || `Кафизма ${metadata.kathisma_number}`,
           focusTarget,
         });
         return;
@@ -143,9 +133,7 @@ export const BookmarksScreen = ({navigation}) => {
       <View style={styles.screen}>
         <View style={styles.header}>
           <Text style={styles.title}>Закладки</Text>
-          <Text style={styles.subtitle}>
-            Сохранённые фрагменты для быстрого возврата
-          </Text>
+          <Text style={styles.subtitle}>Сохранённые фрагменты для быстрого возврата</Text>
         </View>
 
         {loading ? (
@@ -159,26 +147,21 @@ export const BookmarksScreen = ({navigation}) => {
         ) : (
           <FlatList
             data={bookmarks}
-            keyExtractor={item => String(item.id)}
-            contentContainerStyle={
-              bookmarks.length ? styles.list : styles.emptyList
-            }
+            keyExtractor={(item) => String(item.id)}
+            contentContainerStyle={bookmarks.length ? styles.list : styles.emptyList}
             ListEmptyComponent={
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyTitle}>Закладок пока нет</Text>
                 <Text style={styles.emptyText}>
-                  Выделите слово, предложение или фрагмент во время чтения —
-                  сохранённое место появится здесь.
+                  Выделите слово, предложение или фрагмент во время чтения — сохранённое место
+                  появится здесь.
                 </Text>
               </View>
             }
             renderItem={({item}) => (
               <Pressable
                 onPress={() => openBookmark(item)}
-                style={({pressed}) => [
-                  styles.card,
-                  pressed && styles.pressed,
-                ]}
+                style={({pressed}) => [styles.card, pressed && styles.pressed]}
               >
                 <View style={styles.cardMark}>
                   <Text style={styles.cardSymbol}>⌑</Text>
@@ -211,7 +194,6 @@ export const BookmarksScreen = ({navigation}) => {
     </SafeAreaView>
   );
 };
-
 
 const styles = StyleSheet.create({
   safeArea: {

@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0011_remove_psalmverse_unique_verbose_per_psalm_and_more'),
+        ("api", "0011_remove_psalmverse_unique_verbose_per_psalm_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='psalter',
-            name='prayers_after',
-            field=models.TextField(blank=True, verbose_name='Молитвы после чтения Псалтири'),
+            model_name="psalter",
+            name="prayers_after",
+            field=models.TextField(blank=True, verbose_name="Молитвы после чтения Псалтири"),
         ),
         migrations.AddField(
-            model_name='psalter',
-            name='prayers_before',
-            field=models.TextField(blank=True, verbose_name='Молитвы перед чтением Псалтири'),
+            model_name="psalter",
+            name="prayers_before",
+            field=models.TextField(blank=True, verbose_name="Молитвы перед чтением Псалтири"),
         ),
     ]

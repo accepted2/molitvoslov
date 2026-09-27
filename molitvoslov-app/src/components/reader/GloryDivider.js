@@ -1,46 +1,27 @@
 import React from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-
+import {StyleSheet, Text, View} from 'react-native';
 
 export default function GloryDivider() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>
         Слава Отцу и Сыну и Святому Духу.
-        {'\n'}
-        И ныне и присно и во веки веков. Аминь.
+        {'\n'}И ныне и присно и во веки веков. Аминь.
         {'\n\n'}
-
-        Аллилуиа, аллилуиа, аллилуиа, слава Тебе, Боже.{' '}
-        <Text style={styles.hint}>×3</Text>
-
+        Аллилуиа, аллилуиа, аллилуиа, слава Тебе, Боже. <Text style={styles.hint}>×3</Text>
         {'\n'}
-
-        Господи, помилуй.{' '}
-        <Text style={styles.hint}>×3</Text>
-
+        Господи, помилуй. <Text style={styles.hint}>×3</Text>
         {'\n\n'}
-
         Слава Отцу и Сыну и Святому Духу.
-
         {'\n\n'}
-
         <Text style={styles.hint}>
           [Здесь можно прочитать прошение о здравии / об упокоении и помянуть имена.]
         </Text>
-
-        {'\n\n'}
-
-        И ныне и присно и во веки веков. Аминь.
+        {'\n\n'}И ныне и присно и во веки веков. Аминь.
       </Text>
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {

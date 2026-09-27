@@ -48,19 +48,13 @@ class Command(BaseCommand):
             "--title",
             required=False,
             default="",
-            help=(
-                "Название акафиста. Если не указано, "
-                "попытаемся взять его из EPUB."
-            ),
+            help=("Название акафиста. Если не указано, " "попытаемся взять его из EPUB."),
         )
 
         parser.add_argument(
             "--check-only",
             action="store_true",
-            help=(
-                "Только разобрать и проверить EPUB. "
-                "Ничего не записывать в БД."
-            ),
+            help=("Только разобрать и проверить EPUB. " "Ничего не записывать в БД."),
         )
 
     def handle(self, *args, **options):
@@ -70,16 +64,10 @@ class Command(BaseCommand):
         check_only = options["check_only"]
 
         if not epub_path.exists():
-            raise CommandError(
-                f"EPUB-файл не найден: {epub_path}"
-            )
+            raise CommandError(f"EPUB-файл не найден: {epub_path}")
 
         if epub_path.suffix.lower() != ".epub":
-            self.stdout.write(
-                self.style.WARNING(
-                    "Предупреждение: файл не имеет расширения .epub."
-                )
-            )
+            self.stdout.write(self.style.WARNING("Предупреждение: файл не имеет расширения .epub."))
 
         self.stdout.write("")
         self.stdout.write("=" * 72)
@@ -90,9 +78,7 @@ class Command(BaseCommand):
 
         html, html_name = self.read_book_html(epub_path)
 
-        self.stdout.write(
-            f"HTML внутри EPUB: {html_name}"
-        )
+        self.stdout.write(f"HTML внутри EPUB: {html_name}")
 
         soup = BeautifulSoup(
             html,
@@ -105,14 +91,9 @@ class Command(BaseCommand):
             title = epub_title
 
         if not title:
-            raise CommandError(
-                "Не удалось определить название акафиста. "
-                "Передай --title."
-            )
+            raise CommandError("Не удалось определить название акафиста. " "Передай --title.")
 
-        self.stdout.write(
-            f"Название: {title}"
-        )
+        self.stdout.write(f"Название: {title}")
 
         parsed = self.parse_akathist(soup)
 
@@ -122,10 +103,7 @@ class Command(BaseCommand):
         if check_only:
             self.stdout.write("")
             self.stdout.write(
-                self.style.SUCCESS(
-                    "CHECK-ONLY: структура корректна. "
-                    "База данных не изменялась."
-                )
+                self.style.SUCCESS("CHECK-ONLY: структура корректна. " "База данных не изменялась.")
             )
             return
 
@@ -136,11 +114,7 @@ class Command(BaseCommand):
         )
 
         self.stdout.write("")
-        self.stdout.write(
-            self.style.SUCCESS(
-                "Импорт EPUB завершён успешно."
-            )
-        )
+        self.stdout.write(self.style.SUCCESS("Импорт EPUB завершён успешно."))
 
     # ============================================================
     # ЧТЕНИЕ EPUB
@@ -153,9 +127,7 @@ class Command(BaseCommand):
                 "r",
             )
         except zipfile.BadZipFile as exc:
-            raise CommandError(
-                "Файл не является корректным EPUB/ZIP."
-            ) from exc
+            raise CommandError("Файл не является корректным EPUB/ZIP.") from exc
 
         with archive:
             names = archive.namelist()
@@ -166,10 +138,7 @@ class Command(BaseCommand):
             )
 
             if not html_name:
-                raise CommandError(
-                    "Не удалось найти HTML-файл "
-                    "с текстом акафиста внутри EPUB."
-                )
+                raise CommandError("Не удалось найти HTML-файл " "с текстом акафиста внутри EPUB.")
 
             raw = archive.read(html_name)
 
@@ -195,9 +164,7 @@ class Command(BaseCommand):
         for name in names:
             lower = name.lower()
 
-            if not lower.endswith(
-                    (".html", ".xhtml", ".htm")
-            ):
+            if not lower.endswith((".html", ".xhtml", ".htm")):
                 continue
 
             basename = Path(name).name.lower()
@@ -294,27 +261,15 @@ class Command(BaseCommand):
     # ============================================================
 
     def parse_akathist(self, soup):
-        headings = [
-            tag
-            for tag in soup.find_all(
-                list(HEADING_TAGS)
-            )
-            if isinstance(tag, Tag)
-        ]
+        headings = [tag for tag in soup.find_all(list(HEADING_TAGS)) if isinstance(tag, Tag)]
 
         if not headings:
-            raise CommandError(
-                "В EPUB не найдено заголовков."
-            )
+            raise CommandError("В EPUB не найдено заголовков.")
 
-        first_kontakion_index = self.find_first_kontakion(
-            headings
-        )
+        first_kontakion_index = self.find_first_kontakion(headings)
 
         if first_kontakion_index is None:
-            raise CommandError(
-                "Не найден «Кондак 1»."
-            )
+            raise CommandError("Не найден «Кондак 1».")
 
         preface = self.parse_preface(
             headings,
@@ -332,8 +287,8 @@ class Command(BaseCommand):
         main_end_heading = None
 
         for index in range(
-                first_kontakion_index,
-                len(headings),
+            first_kontakion_index,
+            len(headings),
         ):
             heading = headings[index]
 
@@ -344,13 +299,9 @@ class Command(BaseCommand):
                 )
             )
 
-            normalized = self.normalize_heading(
-                raw_heading
-            )
+            normalized = self.normalize_heading(raw_heading)
 
-            parsed_heading = self.parse_section_heading(
-                normalized
-            )
+            parsed_heading = self.parse_section_heading(normalized)
 
             if not parsed_heading:
                 continue
@@ -371,20 +322,14 @@ class Command(BaseCommand):
 
                 language_nodes = self.collect_language_nodes(
                     heading,
-                    stop_at_paragraph_prayer=(
-                            section_type == "kontakion"
-                            and number == 13
-                    ),
+                    stop_at_paragraph_prayer=(section_type == "kontakion" and number == 13),
                 )
 
-                content, translation = self.build_aligned_text(
-                    language_nodes
-                )
+                content, translation = self.build_aligned_text(language_nodes)
 
                 if not content:
                     raise CommandError(
-                        "Не найден церковнославянский "
-                        f"текст раздела: {raw_heading}"
+                        "Не найден церковнославянский " f"текст раздела: {raw_heading}"
                     )
 
                 section = {
@@ -396,18 +341,12 @@ class Command(BaseCommand):
                     "note": "",
                 }
 
-                if (
-                        section_type == "kontakion"
-                        and number == 13
-                ):
+                if section_type == "kontakion" and number == 13:
                     section["note"] = "Читается трижды"
 
                 main_sections.append(section)
 
-                if (
-                        section_type == "kontakion"
-                        and number == 13
-                ):
+                if section_type == "kontakion" and number == 13:
                     main_complete = True
                     main_end_heading = heading
 
@@ -443,18 +382,10 @@ class Command(BaseCommand):
             # ЯВНЫЙ ПОВТОР ИКОСА 1
             # ----------------------------------------------------
 
-            if (
-                    section_type == "ikos"
-                    and number == 1
-                    and not repeat_ikos_found
-            ):
-                language_nodes = self.collect_language_nodes(
-                    heading
-                )
+            if section_type == "ikos" and number == 1 and not repeat_ikos_found:
+                language_nodes = self.collect_language_nodes(heading)
 
-                content, translation = self.build_aligned_text(
-                    language_nodes
-                )
+                content, translation = self.build_aligned_text(language_nodes)
 
                 explicit_repeats.append(
                     {
@@ -475,18 +406,14 @@ class Command(BaseCommand):
             # ----------------------------------------------------
 
             if (
-                    section_type == "kontakion"
-                    and number == 1
-                    and repeat_ikos_found
-                    and not repeat_kontakion_found
+                section_type == "kontakion"
+                and number == 1
+                and repeat_ikos_found
+                and not repeat_kontakion_found
             ):
-                language_nodes = self.collect_language_nodes(
-                    heading
-                )
+                language_nodes = self.collect_language_nodes(heading)
 
-                content, translation = self.build_aligned_text(
-                    language_nodes
-                )
+                content, translation = self.build_aligned_text(language_nodes)
 
                 explicit_repeats.append(
                     {
@@ -515,9 +442,7 @@ class Command(BaseCommand):
             explicit_repeats,
         )
 
-        prayers = self.parse_prayers_after_kontakion13(
-            main_end_heading
-        )
+        prayers = self.parse_prayers_after_kontakion13(main_end_heading)
 
         return {
             "preface": preface,
@@ -531,9 +456,9 @@ class Command(BaseCommand):
     # ============================================================
 
     def parse_preface(
-            self,
-            headings,
-            first_kontakion_index,
+        self,
+        headings,
+        first_kontakion_index,
     ):
         result = {
             "troparion": None,
@@ -553,13 +478,9 @@ class Command(BaseCommand):
             normalized = self.normalize_heading(text)
 
             if self.is_troparion_heading(normalized):
-                nodes = self.collect_language_nodes(
-                    heading
-                )
+                nodes = self.collect_language_nodes(heading)
 
-                content, translation = self.build_whole_text(
-                    nodes
-                )
+                content, translation = self.build_whole_text(nodes)
 
                 if content:
                     result["troparion"] = {
@@ -569,13 +490,9 @@ class Command(BaseCommand):
                     }
 
             elif self.is_unnumbered_kontakion(normalized):
-                nodes = self.collect_language_nodes(
-                    heading
-                )
+                nodes = self.collect_language_nodes(heading)
 
-                content, translation = self.build_whole_text(
-                    nodes
-                )
+                content, translation = self.build_whole_text(nodes)
 
                 if content:
                     result["kontakion_before"] = {
@@ -599,17 +516,12 @@ class Command(BaseCommand):
                 )
             )
 
-            parsed = self.parse_section_heading(
-                normalized
-            )
+            parsed = self.parse_section_heading(normalized)
 
             if not parsed:
                 continue
 
-            if (
-                    parsed["section_type"] == "kontakion"
-                    and parsed["number"] == 1
-            ):
+            if parsed["section_type"] == "kontakion" and parsed["number"] == 1:
                 return index
 
         return None
@@ -623,9 +535,7 @@ class Command(BaseCommand):
         if kontakion_match:
             return {
                 "section_type": "kontakion",
-                "number": int(
-                    kontakion_match.group(1)
-                ),
+                "number": int(kontakion_match.group(1)),
             }
 
         ikos_match = re.match(
@@ -636,14 +546,12 @@ class Command(BaseCommand):
         if ikos_match:
             return {
                 "section_type": "ikos",
-                "number": int(
-                    ikos_match.group(1)
-                ),
+                "number": int(ikos_match.group(1)),
             }
 
         if re.match(
-                r"^молитва(?:\s+\d+)?",
-                normalized,
+            r"^молитва(?:\s+\d+)?",
+            normalized,
         ):
             return {
                 "section_type": "prayer",
@@ -656,8 +564,8 @@ class Command(BaseCommand):
         return normalized.startswith("тропарь")
 
     def is_prayer_paragraph_heading(
-            self,
-            element,
+        self,
+        element,
     ):
         """
         Определяет заголовок молитвы, который в EPUB
@@ -698,31 +606,26 @@ class Command(BaseCommand):
             )
         )
 
-        if classes & (
-                CHURCH_CLASSES
-                | TRANSLATION_CLASSES
-        ):
+        if classes & (CHURCH_CLASSES | TRANSLATION_CLASSES):
             return False
 
         # Дополнительная защита от длинного обычного предложения.
         if len(text.split()) > 24:
             return False
 
-        normalized = self.normalize_heading(
-            text
-        )
+        normalized = self.normalize_heading(text)
 
         return (
-                re.match(
-                    r"^молитва(?:\s|$|[:.])",
-                    normalized,
-                )
-                is not None
+            re.match(
+                r"^молитва(?:\s|$|[:.])",
+                normalized,
+            )
+            is not None
         )
 
     def parse_prayers_after_kontakion13(
-            self,
-            kontakion13_heading,
+        self,
+        kontakion13_heading,
     ):
         """
         Собирает молитвы после Кондака 13 в порядке документа.
@@ -751,15 +654,11 @@ class Command(BaseCommand):
 
         interesting_tags = list(HEADING_TAGS) + ["p"]
 
-        for element in kontakion13_heading.find_all_next(
-                interesting_tags
-        ):
+        for element in kontakion13_heading.find_all_next(interesting_tags):
             if not isinstance(element, Tag):
                 continue
 
-            if self.is_notes_heading(
-                    element
-            ):
+            if self.is_notes_heading(element):
                 break
 
             if element.name in HEADING_TAGS:
@@ -770,13 +669,9 @@ class Command(BaseCommand):
                     )
                 )
 
-                normalized = self.normalize_heading(
-                    raw_heading
-                )
+                normalized = self.normalize_heading(raw_heading)
 
-                parsed_heading = self.parse_section_heading(
-                    normalized
-                )
+                parsed_heading = self.parse_section_heading(normalized)
 
                 if not parsed_heading:
                     continue
@@ -785,20 +680,16 @@ class Command(BaseCommand):
                 number = parsed_heading["number"]
 
                 # Явный повтор Икоса 1 после Кондака 13.
-                if (
-                        section_type == "ikos"
-                        and number == 1
-                        and not repeat_ikos_found
-                ):
+                if section_type == "ikos" and number == 1 and not repeat_ikos_found:
                     repeat_ikos_found = True
                     continue
 
                 # Явный повтор Кондака 1 после Икоса 1.
                 if (
-                        section_type == "kontakion"
-                        and number == 1
-                        and repeat_ikos_found
-                        and not repeat_kontakion_found
+                    section_type == "kontakion"
+                    and number == 1
+                    and repeat_ikos_found
+                    and not repeat_kontakion_found
                 ):
                     repeat_kontakion_found = True
                     continue
@@ -817,9 +708,7 @@ class Command(BaseCommand):
                         stop_at_paragraph_prayer=True,
                     )
 
-                    content, translation = self.build_whole_text(
-                        language_nodes
-                    )
+                    content, translation = self.build_whole_text(language_nodes)
 
                     if content:
                         prayers.append(
@@ -835,20 +724,12 @@ class Command(BaseCommand):
 
                 continue
 
-            if not self.is_prayer_paragraph_heading(
-                    element
-            ):
+            if not self.is_prayer_paragraph_heading(element):
                 continue
 
-            language_nodes = (
-                self.collect_language_nodes_from_paragraph_heading(
-                    element
-                )
-            )
+            language_nodes = self.collect_language_nodes_from_paragraph_heading(element)
 
-            content, translation = self.build_whole_text(
-                language_nodes
-            )
+            content, translation = self.build_whole_text(language_nodes)
 
             if not content:
                 continue
@@ -872,19 +753,16 @@ class Command(BaseCommand):
         return prayers
 
     def is_notes_heading(
-            self,
-            element,
+        self,
+        element,
     ):
         if not isinstance(
-                element,
-                Tag,
+            element,
+            Tag,
         ):
             return False
 
-        if element.name not in (
-                set(HEADING_TAGS)
-                | {"p", "div"}
-        ):
+        if element.name not in (set(HEADING_TAGS) | {"p", "div"}):
             return False
 
         text = self.clean_text(
@@ -897,9 +775,7 @@ class Command(BaseCommand):
         if not text:
             return False
 
-        normalized = self.normalize_heading(
-            text
-        )
+        normalized = self.normalize_heading(text)
 
         return normalized in {
             "примечание",
@@ -910,10 +786,9 @@ class Command(BaseCommand):
             "комментарии",
         }
 
-
     def collect_language_nodes_from_paragraph_heading(
-            self,
-            heading,
+        self,
+        heading,
     ):
         """
         Собирает текст молитвы, если её заголовок является <p>.
@@ -934,17 +809,10 @@ class Command(BaseCommand):
             if element.name in HEADING_TAGS:
                 break
 
-            if self.is_notes_heading(
-                    element
-            ):
+            if self.is_notes_heading(element):
                 break
 
-            if (
-                    element is not heading
-                    and self.is_prayer_paragraph_heading(
-                element
-            )
-            ):
+            if element is not heading and self.is_prayer_paragraph_heading(element):
                 break
 
             if element.name != "p":
@@ -957,9 +825,7 @@ class Command(BaseCommand):
                 )
             )
 
-            text = self.extract_element_text(
-                element
-            )
+            text = self.extract_element_text(element)
 
             if not text:
                 continue
@@ -980,9 +846,7 @@ class Command(BaseCommand):
                     )
                 )
             else:
-                fallback_paragraphs.append(
-                    text
-                )
+                fallback_paragraphs.append(text)
 
         if not result and fallback_paragraphs:
             return [
@@ -1000,11 +864,11 @@ class Command(BaseCommand):
             return False
 
         return (
-                re.match(
-                    r"^кондак\s+\d+\b",
-                    normalized,
-                )
-                is None
+            re.match(
+                r"^кондак\s+\d+\b",
+                normalized,
+            )
+            is None
         )
 
     # ============================================================
@@ -1012,9 +876,9 @@ class Command(BaseCommand):
     # ============================================================
 
     def collect_language_nodes(
-            self,
-            heading,
-            stop_at_paragraph_prayer=False,
+        self,
+        heading,
+        stop_at_paragraph_prayer=False,
     ):
         result = []
         fallback_paragraphs = []
@@ -1029,21 +893,14 @@ class Command(BaseCommand):
             if element.name in HEADING_TAGS:
                 break
 
-            if self.is_notes_heading(
-                    element
-            ):
+            if self.is_notes_heading(element):
                 break
 
             # В некоторых EPUB Азбуки после Кондака 13
             # заголовок молитвы размечен обычным <p>.
             # Останавливаемся на нём только там, где это
             # явно разрешено вызывающим кодом.
-            if (
-                    stop_at_paragraph_prayer
-                    and self.is_prayer_paragraph_heading(
-                element
-            )
-            ):
+            if stop_at_paragraph_prayer and self.is_prayer_paragraph_heading(element):
                 break
 
             if element.name != "p":
@@ -1056,9 +913,7 @@ class Command(BaseCommand):
                 )
             )
 
-            text = self.extract_element_text(
-                element
-            )
+            text = self.extract_element_text(element)
 
             if not text:
                 continue
@@ -1079,9 +934,7 @@ class Command(BaseCommand):
                     )
                 )
             else:
-                fallback_paragraphs.append(
-                    text
-                )
+                fallback_paragraphs.append(text)
 
         # Если в секции вообще нет размеченных языковых блоков,
         # считаем обычные <p> церковнославянским текстом.
@@ -1105,8 +958,8 @@ class Command(BaseCommand):
         return result
 
     def extract_element_text(
-            self,
-            element,
+        self,
+        element,
     ):
         """
         Извлекает текст из <p> с сохранением настоящих <br>.
@@ -1173,20 +1026,16 @@ class Command(BaseCommand):
         while index < len(lines):
             current = lines[index]
 
-            plain_letters = (
-                unicodedata.normalize(
-                    "NFD",
-                    current,
-                )
+            plain_letters = unicodedata.normalize(
+                "NFD",
+                current,
             )
 
             plain_letters = "".join(
                 char
                 for char in plain_letters
                 if (
-                    unicodedata.category(
-                        char
-                    ) != "Mn"
+                    unicodedata.category(char) != "Mn"
                     and re.match(
                         r"[А-Яа-яЁё]",
                         char,
@@ -1195,38 +1044,31 @@ class Command(BaseCommand):
             )
 
             if (
-                    0 < len(plain_letters) <= 2
-                    and index + 1 < len(lines)
-                    and re.match(
-                        r"^[А-Яа-яЁё\u0300-\u036f]",
-                        lines[index + 1],
-                    )
-            ):
-                normalized_lines.append(
-                    current
-                    + lines[index + 1]
+                0 < len(plain_letters) <= 2
+                and index + 1 < len(lines)
+                and re.match(
+                    r"^[А-Яа-яЁё\u0300-\u036f]",
+                    lines[index + 1],
                 )
+            ):
+                normalized_lines.append(current + lines[index + 1])
 
                 index += 2
                 continue
 
-            normalized_lines.append(
-                current
-            )
+            normalized_lines.append(current)
 
             index += 1
 
-        return "\n".join(
-            normalized_lines
-        )
+        return "\n".join(normalized_lines)
 
     # ============================================================
     # ЦС + RU ДЛЯ КОНДАКОВ И ИКОСОВ
     # ============================================================
 
     def build_aligned_text(
-            self,
-            language_nodes,
+        self,
+        language_nodes,
     ):
         """
         Формирует соответствующие друг другу блоки ЦС и RU.
@@ -1261,12 +1103,8 @@ class Command(BaseCommand):
 
             groups.append(
                 {
-                    "cu": "\n".join(
-                        pending_cu
-                    ).strip(),
-                    "ru": "\n".join(
-                        pending_ru
-                    ).strip(),
+                    "cu": "\n".join(pending_cu).strip(),
+                    "ru": "\n".join(pending_ru).strip(),
                 }
             )
 
@@ -1300,13 +1138,9 @@ class Command(BaseCommand):
             church_parts.append(church)
             russian_parts.append(russian)
 
-        content = "\n\n".join(
-            church_parts
-        ).strip()
+        content = "\n\n".join(church_parts).strip()
 
-        translation = "\n\n".join(
-            russian_parts
-        ).strip()
+        translation = "\n\n".join(russian_parts).strip()
 
         return content, translation
 
@@ -1315,8 +1149,8 @@ class Command(BaseCommand):
     # ============================================================
 
     def build_whole_text(
-            self,
-            language_nodes,
+        self,
+        language_nodes,
     ):
         """
         Молитвы сохраняются иначе, чем Кондаки/Икосы:
@@ -1338,13 +1172,9 @@ class Command(BaseCommand):
             elif language == "ru":
                 russian_parts.append(text)
 
-        content = "\n\n".join(
-            church_parts
-        ).strip()
+        content = "\n\n".join(church_parts).strip()
 
-        translation = "\n\n".join(
-            russian_parts
-        ).strip()
+        translation = "\n\n".join(russian_parts).strip()
 
         return content, translation
 
@@ -1353,18 +1183,15 @@ class Command(BaseCommand):
     # ============================================================
 
     def prepare_repeats(
-            self,
-            main_sections,
-            explicit_repeats,
+        self,
+        main_sections,
+        explicit_repeats,
     ):
         explicit_ikos = next(
             (
                 section
                 for section in explicit_repeats
-                if (
-                    section["section_type"] == "ikos"
-                    and section["number"] == 1
-            )
+                if (section["section_type"] == "ikos" and section["number"] == 1)
             ),
             None,
         )
@@ -1373,10 +1200,7 @@ class Command(BaseCommand):
             (
                 section
                 for section in explicit_repeats
-                if (
-                    section["section_type"] == "kontakion"
-                    and section["number"] == 1
-            )
+                if (section["section_type"] == "kontakion" and section["number"] == 1)
             ),
             None,
         )
@@ -1394,14 +1218,10 @@ class Command(BaseCommand):
         )
 
         if not original_ikos:
-            raise CommandError(
-                "Не найден основной Икос 1."
-            )
+            raise CommandError("Не найден основной Икос 1.")
 
         if not original_kontakion:
-            raise CommandError(
-                "Не найден основной Кондак 1."
-            )
+            raise CommandError("Не найден основной Кондак 1.")
 
         return [
             explicit_ikos
@@ -1414,19 +1234,16 @@ class Command(BaseCommand):
                 **original_kontakion,
                 "note": "Повтор после Кондака 13",
             },
-            ]
+        ]
 
     def find_main_section(
-            self,
-            sections,
-            section_type,
-            number,
+        self,
+        sections,
+        section_type,
+        number,
     ):
         for section in sections:
-            if (
-                    section["section_type"] == section_type
-                    and section["number"] == number
-            ):
+            if section["section_type"] == section_type and section["number"] == number:
                 return section
 
         return None
@@ -1439,34 +1256,18 @@ class Command(BaseCommand):
         main_sections = parsed["main_sections"]
 
         kontakions = [
-            section
-            for section in main_sections
-            if section["section_type"] == "kontakion"
+            section for section in main_sections if section["section_type"] == "kontakion"
         ]
 
-        ikoses = [
-            section
-            for section in main_sections
-            if section["section_type"] == "ikos"
-        ]
+        ikoses = [section for section in main_sections if section["section_type"] == "ikos"]
 
-        kontakion_numbers = [
-            section["number"]
-            for section in kontakions
-        ]
+        kontakion_numbers = [section["number"] for section in kontakions]
 
-        ikos_numbers = [
-            section["number"]
-            for section in ikoses
-        ]
+        ikos_numbers = [section["number"] for section in ikoses]
 
-        expected_kontakions = list(
-            range(1, 14)
-        )
+        expected_kontakions = list(range(1, 14))
 
-        expected_ikoses = list(
-            range(1, 13)
-        )
+        expected_ikoses = list(range(1, 13))
 
         if kontakion_numbers != expected_kontakions:
             raise CommandError(
@@ -1485,17 +1286,11 @@ class Command(BaseCommand):
         expected_order = []
 
         for number in range(1, 13):
-            expected_order.append(
-                ("kontakion", number)
-            )
+            expected_order.append(("kontakion", number))
 
-            expected_order.append(
-                ("ikos", number)
-            )
+            expected_order.append(("ikos", number))
 
-        expected_order.append(
-            ("kontakion", 13)
-        )
+        expected_order.append(("kontakion", 13))
 
         actual_order = [
             (
@@ -1507,30 +1302,21 @@ class Command(BaseCommand):
 
         if actual_order != expected_order:
             raise CommandError(
-                "Нарушено чередование Кондаков и Икосов.\n"
-                f"Получено: {actual_order}"
+                "Нарушено чередование Кондаков и Икосов.\n" f"Получено: {actual_order}"
             )
 
         if len(parsed["repeats"]) != 2:
-            raise CommandError(
-                "После Кондака 13 должны повторяться "
-                "Икос 1 и Кондак 1."
-            )
+            raise CommandError("После Кондака 13 должны повторяться " "Икос 1 и Кондак 1.")
 
         for section in main_sections:
             if not section["content"]:
-                raise CommandError(
-                    "Пустой церковнославянский текст: "
-                    f"{section['heading']}"
-                )
+                raise CommandError("Пустой церковнославянский текст: " f"{section['heading']}")
 
-        self.validate_alignment(
-            main_sections
-        )
+        self.validate_alignment(main_sections)
 
     def validate_alignment(
-            self,
-            sections,
+        self,
+        sections,
     ):
         for section in sections:
             translation = section["translation"]
@@ -1538,13 +1324,9 @@ class Command(BaseCommand):
             if not translation:
                 continue
 
-            content_parts = self.split_paragraphs(
-                section["content"]
-            )
+            content_parts = self.split_paragraphs(section["content"])
 
-            translation_parts = self.split_paragraphs(
-                translation
-            )
+            translation_parts = self.split_paragraphs(translation)
 
             if len(content_parts) != len(translation_parts):
                 raise CommandError(
@@ -1562,79 +1344,38 @@ class Command(BaseCommand):
         main_sections = parsed["main_sections"]
 
         kontakion_count = sum(
-            1
-            for section in main_sections
-            if section["section_type"] == "kontakion"
+            1 for section in main_sections if section["section_type"] == "kontakion"
         )
 
-        ikos_count = sum(
-            1
-            for section in main_sections
-            if section["section_type"] == "ikos"
-        )
+        ikos_count = sum(1 for section in main_sections if section["section_type"] == "ikos")
 
         prayers = parsed["prayers"]
         preface = parsed["preface"]
 
         self.stdout.write("")
-        self.stdout.write(
-            self.style.SUCCESS(
-                "Проверка структуры пройдена."
-            )
-        )
+        self.stdout.write(self.style.SUCCESS("Проверка структуры пройдена."))
+
+        self.stdout.write(f"Кондаков: {kontakion_count}")
+
+        self.stdout.write(f"Икосов: {ikos_count}")
+
+        self.stdout.write(f"Молитв после акафиста: {len(prayers)}")
+
+        self.stdout.write("Тропарь перед акафистом: " + ("ДА" if preface["troparion"] else "НЕТ"))
 
         self.stdout.write(
-            f"Кондаков: {kontakion_count}"
+            "Кондак перед акафистом: " + ("ДА" if preface["kontakion_before"] else "НЕТ")
         )
 
-        self.stdout.write(
-            f"Икосов: {ikos_count}"
-        )
-
-        self.stdout.write(
-            f"Молитв после акафиста: {len(prayers)}"
-        )
-
-        self.stdout.write(
-            "Тропарь перед акафистом: "
-            + (
-                "ДА"
-                if preface["troparion"]
-                else "НЕТ"
-            )
-        )
-
-        self.stdout.write(
-            "Кондак перед акафистом: "
-            + (
-                "ДА"
-                if preface["kontakion_before"]
-                else "НЕТ"
-            )
-        )
-
-        self.stdout.write(
-            "Повтор после Кондака 13: "
-            "Икос 1 → Кондак 1"
-        )
+        self.stdout.write("Повтор после Кондака 13: " "Икос 1 → Кондак 1")
 
         self.stdout.write("")
-        self.stdout.write(
-            "Основная структура:"
-        )
+        self.stdout.write("Основная структура:")
 
         for section in main_sections:
-            translation_status = (
-                "RU"
-                if section["translation"]
-                else "--"
-            )
+            translation_status = "RU" if section["translation"] else "--"
 
-            paragraph_count = len(
-                self.split_paragraphs(
-                    section["content"]
-                )
-            )
+            paragraph_count = len(self.split_paragraphs(section["content"]))
 
             self.stdout.write(
                 f"{section['section_type']:10} "
@@ -1646,16 +1387,10 @@ class Command(BaseCommand):
 
         if prayers:
             self.stdout.write("")
-            self.stdout.write(
-                "Молитвы:"
-            )
+            self.stdout.write("Молитвы:")
 
             for prayer in prayers:
-                translation_status = (
-                    "RU"
-                    if prayer["translation"]
-                    else "--"
-                )
+                translation_status = "RU" if prayer["translation"] else "--"
 
                 self.stdout.write(
                     f"prayer {prayer['number']:>2} | "
@@ -1670,10 +1405,10 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def save_akathist(
-            self,
-            slug,
-            title,
-            parsed,
+        self,
+        slug,
+        title,
+        parsed,
     ):
         akathist, created = Akathist.objects.update_or_create(
             slug=slug,
@@ -1684,13 +1419,9 @@ class Command(BaseCommand):
         )
 
         if created:
-            self.stdout.write(
-                "Создан новый Akathist."
-            )
+            self.stdout.write("Создан новый Akathist.")
         else:
-            self.stdout.write(
-                "Обновлён существующий Akathist."
-            )
+            self.stdout.write("Обновлён существующий Akathist.")
 
         self.save_preface(
             akathist,
@@ -1745,10 +1476,7 @@ class Command(BaseCommand):
             text_object = main_text_map.get(key)
 
             if not text_object:
-                raise CommandError(
-                    "Не удалось найти Text "
-                    "для повторного раздела."
-                )
+                raise CommandError("Не удалось найти Text " "для повторного раздела.")
 
             self.save_section(
                 akathist=akathist,
@@ -1786,33 +1514,21 @@ class Command(BaseCommand):
 
         # Удаляем старые секции предыдущего импорта,
         # которых уже нет в актуальной структуре.
-        AkathistSection.objects.filter(
-            akathist=akathist
-        ).exclude(
-            order__in=desired_orders
-        ).delete()
+        AkathistSection.objects.filter(akathist=akathist).exclude(order__in=desired_orders).delete()
 
-        count = AkathistSection.objects.filter(
-            akathist=akathist
-        ).count()
+        count = AkathistSection.objects.filter(akathist=akathist).count()
 
-        self.stdout.write(
-            f"Разделов в БД: {count}"
-        )
+        self.stdout.write(f"Разделов в БД: {count}")
 
     def save_main_text(
-            self,
-            akathist_slug,
-            section,
+        self,
+        akathist_slug,
+        section,
     ):
         section_type = section["section_type"]
         number = section["number"]
 
-        text_slug = (
-            f"{akathist_slug}-"
-            f"{section_type}-"
-            f"{number}"
-        )
+        text_slug = f"{akathist_slug}-" f"{section_type}-" f"{number}"
 
         title = self.make_title(
             section_type,
@@ -1833,15 +1549,13 @@ class Command(BaseCommand):
         return text_object
 
     def save_prayer_text(
-            self,
-            akathist_slug,
-            prayer,
+        self,
+        akathist_slug,
+        prayer,
     ):
         number = prayer["number"]
 
-        text_slug = (
-            f"{akathist_slug}-prayer-{number}"
-        )
+        text_slug = f"{akathist_slug}-prayer-{number}"
 
         text_object, _ = Text.objects.update_or_create(
             slug=text_slug,
@@ -1857,13 +1571,13 @@ class Command(BaseCommand):
         return text_object
 
     def save_section(
-            self,
-            akathist,
-            order,
-            section_type,
-            number,
-            text_object,
-            note,
+        self,
+        akathist,
+        order,
+        section_type,
+        number,
+        text_object,
+        note,
     ):
         AkathistSection.objects.update_or_create(
             akathist=akathist,
@@ -1881,30 +1595,24 @@ class Command(BaseCommand):
     # ============================================================
 
     def save_preface(
-            self,
-            akathist,
-            akathist_slug,
-            preface,
+        self,
+        akathist,
+        akathist_slug,
+        preface,
     ):
-        troparion = preface.get(
-            "troparion"
-        )
+        troparion = preface.get("troparion")
 
-        kontakion_before = preface.get(
-            "kontakion_before"
-        )
+        kontakion_before = preface.get("kontakion_before")
 
         # Поля поддерживаются только если они
         # действительно присутствуют в модели Akathist.
         if hasattr(
-                akathist,
-                "troparion_id",
+            akathist,
+            "troparion_id",
         ):
             if troparion:
                 text_object = self.save_preface_text(
-                    slug=(
-                        f"{akathist_slug}-troparion"
-                    ),
+                    slug=(f"{akathist_slug}-troparion"),
                     title="Тропарь",
                     data=troparion,
                 )
@@ -1915,15 +1623,12 @@ class Command(BaseCommand):
                 akathist.troparion = None
 
         if hasattr(
-                akathist,
-                "kontakion_before_id",
+            akathist,
+            "kontakion_before_id",
         ):
             if kontakion_before:
                 text_object = self.save_preface_text(
-                    slug=(
-                        f"{akathist_slug}-"
-                        "kontakion-before"
-                    ),
+                    slug=(f"{akathist_slug}-" "kontakion-before"),
                     title="Кондак перед акафистом",
                     data=kontakion_before,
                 )
@@ -1936,31 +1641,25 @@ class Command(BaseCommand):
         update_fields = []
 
         if hasattr(
-                akathist,
-                "troparion_id",
+            akathist,
+            "troparion_id",
         ):
-            update_fields.append(
-                "troparion"
-            )
+            update_fields.append("troparion")
 
         if hasattr(
-                akathist,
-                "kontakion_before_id",
+            akathist,
+            "kontakion_before_id",
         ):
-            update_fields.append(
-                "kontakion_before"
-            )
+            update_fields.append("kontakion_before")
 
         if update_fields:
-            akathist.save(
-                update_fields=update_fields
-            )
+            akathist.save(update_fields=update_fields)
 
     def save_preface_text(
-            self,
-            slug,
-            title,
-            data,
+        self,
+        slug,
+        title,
+        data,
     ):
         text_object, _ = Text.objects.update_or_create(
             slug=slug,
@@ -1980,9 +1679,9 @@ class Command(BaseCommand):
     # ============================================================
 
     def make_title(
-            self,
-            section_type,
-            number,
+        self,
+        section_type,
+        number,
     ):
         if section_type == "kontakion":
             return f"Кондак {number}"
@@ -1996,8 +1695,8 @@ class Command(BaseCommand):
         return f"{section_type} {number}"
 
     def normalize_heading(
-            self,
-            value,
+        self,
+        value,
     ):
         value = self.clean_text(value)
 
@@ -2006,11 +1705,7 @@ class Command(BaseCommand):
             value,
         )
 
-        value = "".join(
-            char
-            for char in value
-            if unicodedata.category(char) != "Mn"
-        )
+        value = "".join(char for char in value if unicodedata.category(char) != "Mn")
 
         value = value.lower()
 
@@ -2028,9 +1723,9 @@ class Command(BaseCommand):
         return value.strip()
 
     def clean_text(
-            self,
-            value,
-            preserve_newlines=False,
+        self,
+        value,
+        preserve_newlines=False,
     ):
         if value is None:
             return ""
@@ -2069,8 +1764,8 @@ class Command(BaseCommand):
         return value.strip()
 
     def split_paragraphs(
-            self,
-            value,
+        self,
+        value,
     ):
         if not value:
             return []
