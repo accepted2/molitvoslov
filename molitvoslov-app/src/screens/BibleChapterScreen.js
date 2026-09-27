@@ -179,7 +179,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
         savedItemsRef.current = savedItemsRef.current.filter((item) => item.id !== existing.id);
 
         return {
-          label: '☆',
+          label: 'В избранное',
           active: false,
         };
       }
@@ -229,7 +229,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
       savedItemsRef.current = [saved, ...savedItemsRef.current];
 
       return {
-        label: '★',
+        label: 'В избранном',
         active: true,
         savedItemId: saved.id,
       };
@@ -297,7 +297,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
               ? {
                   key: 'bible-chapter:' + chapter.id,
 
-                  label: chapterSaved ? '★' : '☆',
+                  label: chapterSaved ? 'В избранном' : 'В избранное',
 
                   active: !!chapterSaved,
 

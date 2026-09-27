@@ -183,12 +183,15 @@ const HTML_TEMPLATE = String.raw`
       position: absolute;
       top: 50%;
       right: 0;
+      display: flex;
       width: 36px;
       height: 36px;
       min-width: 36px;
       min-height: 36px;
       padding: 0;
       transform: translateY(-50%);
+      align-items: center;
+      justify-content: center;
       border: 1px solid var(--border);
       border-radius: 18px;
       background: rgba(241, 223, 194, 0.94);
@@ -219,12 +222,15 @@ const HTML_TEMPLATE = String.raw`
       position: absolute;
       top: 50%;
       right: 0;
+      display: flex;
       width: 36px;
       height: 36px;
       min-width: 36px;
       min-height: 36px;
       padding: 0;
       transform: translateY(-50%);
+      align-items: center;
+      justify-content: center;
       border: 1px solid var(--border);
       border-radius: 18px;
       background: rgba(241, 223, 194, 0.94);
@@ -616,30 +622,29 @@ const HTML_TEMPLATE = String.raw`
     body.book-mode
       .bible-chapter-start
       .section-action {
-      min-width: 38px;
-      width: 38px;
-      height: 38px;
-      min-height: 38px;
-      margin-right: 1px;
-      padding: 2px;
-      border-radius: 19px;
-      color: #8D6139;
-      background:
-        rgba(
-          248,
-          233,
-          207,
-          0.88
-        );
-      font-size: 19px;
-      line-height: 32px;
+      display: flex;
+      min-width: 36px;
+      width: 36px;
+      height: 36px;
+      min-height: 36px;
+      margin-right: 0;
+      padding: 0;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      color: var(--secondary);
+      background: rgba(241, 223, 194, 0.94);
+      font-size: inherit;
+      line-height: normal;
     }
 
     body.book-mode
       .bible-chapter-start
       .section-action.active {
-      color: #7A4F2D;
-      background: #EED9B8;
+      color: var(--accent-dark);
+      background: #F1DFC2;
+      border-color: rgba(123, 79, 36, 0.28);
     }
 
     body.book-mode
