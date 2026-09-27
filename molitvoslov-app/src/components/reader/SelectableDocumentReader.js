@@ -1302,13 +1302,13 @@ const HTML_TEMPLATE = String.raw`
       path.setAttribute(
         'fill',
         active
-          ? '#B98545'
+          ? '#765238'
           : 'none'
       );
 
       path.setAttribute(
-        'stroke',
-        '#765238'
+       'stroke',
+      '#765238'
       );
 
       path.setAttribute(
