@@ -1,13 +1,8 @@
-import {
-  getDatabase,
-} from '../db/database';
+import {getDatabase} from '../db/database';
 
-import {
-  getCurrentUser,
-} from './localAuth';
+import {getCurrentUser} from './localAuth';
 
-
-const parseMetadata = value => {
+const parseMetadata = (value) => {
   if (!value) {
     return {};
   }
@@ -23,22 +18,17 @@ const parseMetadata = value => {
   }
 };
 
+export const getReadingProgress = async () => {
+  const user = await getCurrentUser();
 
-export const getReadingProgress =
-  async () => {
-    const user =
-      await getCurrentUser();
+  if (!user) {
+    return [];
+  }
 
-    if (!user) {
-      return [];
-    }
+  const db = await getDatabase();
 
-    const db =
-      await getDatabase();
-
-    const rows =
-      await db.getAllAsync(
-        `
+  const rows = await db.getAllAsync(
+    `
           SELECT
             id,
             source_type,
@@ -53,80 +43,51 @@ export const getReadingProgress =
           WHERE user_id = ?
           ORDER BY updated_at DESC
         `,
-        [
-          user.id,
-        ]
-      );
+    [user.id]
+  );
 
-    return rows.map(item => {
-      const metadata =
-        parseMetadata(
-          item.metadata
-        );
+  return rows.map((item) => {
+    const metadata = parseMetadata(item.metadata);
 
-      return {
-        ...item,
-        metadata,
-        anchor_info:
-          Object.keys(metadata).length
-            ? metadata
-            : null,
-        progress_percent:
-          Number(
-            item.progress_percent ||
-            0
-          ),
-      };
-    });
-  };
+    return {
+      ...item,
+      metadata,
+      anchor_info: Object.keys(metadata).length ? metadata : null,
+      progress_percent: Number(item.progress_percent || 0),
+    };
+  });
+};
 
+export const saveReadingProgress = async ({
+  sourceType,
+  sourceId,
+  anchorType,
+  anchorId,
+  offset = 0,
+  progressPercent = 0,
+  metadata = null,
+}) => {
+  const user = await getCurrentUser();
 
-export const saveReadingProgress =
-  async ({
-    sourceType,
-    sourceId,
-    anchorType,
-    anchorId,
-    offset = 0,
-    progressPercent = 0,
-    metadata = null,
-  }) => {
-    const user =
-      await getCurrentUser();
+  // Без аккаунта прогресс
+  // не сохраняем.
+  if (!user) {
+    return null;
+  }
 
-    // Без аккаунта прогресс
-    // не сохраняем.
-    if (!user) {
-      return null;
-    }
+  const db = await getDatabase();
 
-    const db =
-      await getDatabase();
+  const updatedAt = new Date().toISOString();
 
-    const updatedAt =
-      new Date().toISOString();
+  const normalizedProgressPercent = Math.max(
+    0,
+    Math.min(Math.round(Number(progressPercent || 0)), 100)
+  );
 
-    const normalizedProgressPercent =
-      Math.max(
-        0,
-        Math.min(
-          Math.round(
-            Number(
-              progressPercent ||
-              0
-            )
-          ),
-          100
-        )
-      );
+  const normalizedMetadata = metadata ? JSON.stringify(metadata) : null;
 
-    const normalizedMetadata =
-      metadata
-        ? JSON.stringify(metadata)
-        : null;
-
-    await db.runAsync(
-      `
+  await db.runAsync(
+    `
         INSERT INTO reading_progress (
           user_id,
           source_type,
@@ -159,21 +120,21 @@ export const saveReadingProgress =
           updated_at =
             excluded.updated_at
       `,
-      [
-        user.id,
-        sourceType,
-        sourceId,
-        anchorType,
-        anchorId,
-        offset,
-        normalizedProgressPercent,
-        normalizedMetadata,
-        updatedAt,
-      ]
-    );
+    [
+      user.id,
+      sourceType,
+      sourceId,
+      anchorType,
+      anchorId,
+      offset,
+      normalizedProgressPercent,
+      normalizedMetadata,
+      updatedAt,
+    ]
+  );
 
-    return db.getFirstAsync(
-      `
+  return db.getFirstAsync(
+    `
         SELECT
           id,
           source_type,
@@ -189,40 +150,29 @@ export const saveReadingProgress =
         AND source_type = ?
         AND source_id = ?
       `,
-      [
-        user.id,
-        sourceType,
-        sourceId,
-      ]
-    );
-  };
+    [user.id, sourceType, sourceId]
+  );
+};
 
+export const deleteReadingProgress = async (progressId) => {
+  if (!progressId) {
+    return;
+  }
 
-export const deleteReadingProgress =
-  async progressId => {
-    if (!progressId) {
-      return;
-    }
+  const user = await getCurrentUser();
 
-    const user =
-      await getCurrentUser();
+  if (!user) {
+    return;
+  }
 
-    if (!user) {
-      return;
-    }
+  const db = await getDatabase();
 
-    const db =
-      await getDatabase();
-
-    await db.runAsync(
-      `
+  await db.runAsync(
+    `
         DELETE FROM reading_progress
         WHERE id = ?
         AND user_id = ?
       `,
-      [
-        progressId,
-        user.id,
-      ]
-    );
-  };
+    [progressId, user.id]
+  );
+};

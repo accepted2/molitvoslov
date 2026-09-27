@@ -36,12 +36,28 @@ GLORIES_AFTER = {
 }
 
 NUMERAL_VALUES = {
-    "а": 1, "в": 2, "г": 3, "д": 4,
-    "є": 5, "е": 5, "ѕ": 6, "з": 7,
-    "и": 8, "ѳ": 9, "і": 10, "ї": 10,
-    "к": 20, "л": 30, "м": 40, "н": 50,
-    "ѯ": 60, "о": 70, "ѻ": 70, "п": 80,
-    "ч": 90, "р": 100,
+    "а": 1,
+    "в": 2,
+    "г": 3,
+    "д": 4,
+    "є": 5,
+    "е": 5,
+    "ѕ": 6,
+    "з": 7,
+    "и": 8,
+    "ѳ": 9,
+    "і": 10,
+    "ї": 10,
+    "к": 20,
+    "л": 30,
+    "м": 40,
+    "н": 50,
+    "ѯ": 60,
+    "о": 70,
+    "ѻ": 70,
+    "п": 80,
+    "ч": 90,
+    "р": 100,
 }
 
 MARKER_RE = re.compile(r"(?<!\S)([^\s.]{1,12})\.\s*")
@@ -49,20 +65,12 @@ MARKER_RE = re.compile(r"(?<!\S)([^\s.]{1,12})\.\s*")
 
 def strip_combining(text):
     text = unicodedata.normalize("NFD", text)
-    return "".join(
-        c for c in text
-        if unicodedata.category(c) != "Mn"
-    )
+    return "".join(c for c in text if unicodedata.category(c) != "Mn")
 
 
 def parse_csl_number(token):
     token = strip_combining(token.lower())
-    token = (
-        token.replace("҃", "")
-             .replace("҂", "")
-             .replace("’", "")
-             .replace("'", "")
-    )
+    token = token.replace("҃", "").replace("҂", "").replace("’", "").replace("'", "")
 
     total = 0
     found = False
@@ -104,21 +112,15 @@ def extract_verses(segment, first_expected):
             expected += 1
 
     if not accepted:
-        raise RuntimeError(
-            f"Не найден первый ожидаемый стих {first_expected}"
-        )
+        raise RuntimeError(f"Не найден первый ожидаемый стих {first_expected}")
 
-    title = clean(segment[:accepted[0].start()])
+    title = clean(segment[: accepted[0].start()])
 
     verses = []
 
     for i, match in enumerate(accepted):
         start = match.end()
-        end = (
-            accepted[i + 1].start()
-            if i + 1 < len(accepted)
-            else len(segment)
-        )
+        end = accepted[i + 1].start() if i + 1 < len(accepted) else len(segment)
 
         text = clean(segment[start:end])
 
@@ -137,11 +139,13 @@ def extract_verses(segment, first_expected):
             maxsplit=1,
         )[0].strip()
 
-        verses.append({
-            "number": parse_csl_number(match.group(1)),
-            "church_slavonic": text,
-            "russian": "",
-        })
+        verses.append(
+            {
+                "number": parse_csl_number(match.group(1)),
+                "church_slavonic": text,
+                "russian": "",
+            }
+        )
 
     return title, verses
 
@@ -152,9 +156,7 @@ def main():
     response = requests.get(
         URL,
         timeout=60,
-        headers={
-            "User-Agent": "Molitvoslov-Kathisma2/1.0"
-        },
+        headers={"User-Agent": "Molitvoslov-Kathisma2/1.0"},
     )
     response.raise_for_status()
 
@@ -163,18 +165,12 @@ def main():
     # Один ### = начало одного псалма в этой конкретной кафизме.
     chunks = re.split(r"###\s*", markdown)
 
-    psalm_chunks = [
-        clean(chunk)
-        for chunk in chunks[1:]
-        if clean(chunk)
-    ]
+    psalm_chunks = [clean(chunk) for chunk in chunks[1:] if clean(chunk)]
 
     # Последний chunk содержит после Псалма 16 ещё молитвы после кафизмы.
     # Это нормально; extract_verses отрежет их.
     if len(psalm_chunks) != 8:
-        raise RuntimeError(
-            f"Ожидалось 8 псалмов, найдено {len(psalm_chunks)}"
-        )
+        raise RuntimeError(f"Ожидалось 8 псалмов, найдено {len(psalm_chunks)}")
 
     psalms = []
 
@@ -188,43 +184,32 @@ def main():
         )
 
         if not verses:
-            raise RuntimeError(
-                f"Псалом {psalm_number}: нет стихов"
-            )
+            raise RuntimeError(f"Псалом {psalm_number}: нет стихов")
 
         numbers = [v["number"] for v in verses]
 
-        expected_numbers = list(
-            range(numbers[0], numbers[-1] + 1)
-        )
+        expected_numbers = list(range(numbers[0], numbers[-1] + 1))
 
         if numbers != expected_numbers:
-            raise RuntimeError(
-                f"Псалом {psalm_number}: "
-                f"пропуск/дубль стихов: {numbers}"
-            )
+            raise RuntimeError(f"Псалом {psalm_number}: " f"пропуск/дубль стихов: {numbers}")
 
-        psalms.append({
-            "number": psalm_number,
-            "title_church_slavonic": title,
-            "title_russian": "",
-            "description": "",
-            "verses": verses,
-        })
-
-        print(
-            f"Псалом {psalm_number}: "
-            f"{len(verses)} стихов, "
-            f"{numbers[0]}–{numbers[-1]}"
+        psalms.append(
+            {
+                "number": psalm_number,
+                "title_church_slavonic": title,
+                "title_russian": "",
+                "description": "",
+                "verses": verses,
+            }
         )
+
+        print(f"Псалом {psalm_number}: " f"{len(verses)} стихов, " f"{numbers[0]}–{numbers[-1]}")
 
     data = {
         "psalter": {
             "name": "Псалтирь",
             "slug": "psaltir",
-            "description": (
-                "Церковнославянская Псалтирь в Unicode."
-            ),
+            "description": ("Церковнославянская Псалтирь в Unicode."),
             "is_visible": True,
         },
         "kathismas": [
@@ -238,8 +223,7 @@ def main():
                         "after_psalm": psalm,
                         "after_verse": None,
                     }
-                    for glory, psalm
-                    in GLORIES_AFTER.items()
+                    for glory, psalm in GLORIES_AFTER.items()
                 ],
             }
         ],

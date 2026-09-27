@@ -6,18 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0002_alter_text_options_remove_text_category_and_more'),
+        ("api", "0002_alter_text_options_remove_text_category_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='text',
-            name='description',
-            field=models.CharField(blank=True, help_text='Используется для формирования URL, если заголовок пустой', max_length=255, verbose_name='Краткое описание'),
+            model_name="text",
+            name="description",
+            field=models.CharField(
+                blank=True,
+                help_text="Используется для формирования URL, если заголовок пустой",
+                max_length=255,
+                verbose_name="Краткое описание",
+            ),
         ),
         migrations.AlterField(
-            model_name='text',
-            name='slug',
-            field=models.SlugField(blank=True, unique=True, verbose_name='URL-индетификатор'),
+            model_name="text",
+            name="slug",
+            field=models.SlugField(blank=True, unique=True, verbose_name="URL-индетификатор"),
         ),
     ]

@@ -8,123 +8,209 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0001_initial'),
+        ("api", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='text',
-            options={'verbose_name': 'Текст', 'verbose_name_plural': 'Тексты'},
+            name="text",
+            options={"verbose_name": "Текст", "verbose_name_plural": "Тексты"},
         ),
         migrations.RemoveField(
-            model_name='text',
-            name='category',
+            model_name="text",
+            name="category",
         ),
         migrations.RemoveField(
-            model_name='text',
-            name='order',
+            model_name="text",
+            name="order",
         ),
         migrations.AddField(
-            model_name='text',
-            name='is_visible',
-            field=models.BooleanField(default=True, verbose_name='Отображать'),
+            model_name="text",
+            name="is_visible",
+            field=models.BooleanField(default=True, verbose_name="Отображать"),
         ),
         migrations.AddField(
-            model_name='text',
-            name='language',
-            field=models.CharField(choices=[('ru', 'Русский'), ('cu', 'Церковнославянский')], default='cu', max_length=10, verbose_name='Язык'),
+            model_name="text",
+            name="language",
+            field=models.CharField(
+                choices=[("ru", "Русский"), ("cu", "Церковнославянский")],
+                default="cu",
+                max_length=10,
+                verbose_name="Язык",
+            ),
         ),
         migrations.AlterField(
-            model_name='text',
-            name='content',
-            field=models.TextField(verbose_name='Содержание'),
+            model_name="text",
+            name="content",
+            field=models.TextField(verbose_name="Содержание"),
         ),
         migrations.AlterField(
-            model_name='text',
-            name='slug',
-            field=models.SlugField(unique=True, verbose_name='URL-индетификатор'),
+            model_name="text",
+            name="slug",
+            field=models.SlugField(unique=True, verbose_name="URL-индетификатор"),
         ),
         migrations.AlterField(
-            model_name='text',
-            name='title',
-            field=models.CharField(blank=True, max_length=255, verbose_name='Заголовок'),
+            model_name="text",
+            name="title",
+            field=models.CharField(blank=True, max_length=255, verbose_name="Заголовок"),
         ),
         migrations.CreateModel(
-            name='Category',
+            name="Category",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=100, verbose_name='Название')),
-                ('slug', models.SlugField(unique=True, verbose_name='URL-индетификатор')),
-                ('order', models.IntegerField(default=0, verbose_name='Порядок')),
-                ('icon', models.CharField(blank=True, max_length=50, verbose_name='Иконка')),
-                ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='api.category', verbose_name='Родительская категория')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("name", models.CharField(max_length=100, verbose_name="Название")),
+                ("slug", models.SlugField(unique=True, verbose_name="URL-индетификатор")),
+                ("order", models.IntegerField(default=0, verbose_name="Порядок")),
+                ("icon", models.CharField(blank=True, max_length=50, verbose_name="Иконка")),
+                (
+                    "parent",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="api.category",
+                        verbose_name="Родительская категория",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Категория',
-                'verbose_name_plural': 'Категории',
-                'ordering': ['order'],
+                "verbose_name": "Категория",
+                "verbose_name_plural": "Категории",
+                "ordering": ["order"],
             },
         ),
         migrations.CreateModel(
-            name='CategoryText',
+            name="CategoryText",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('order', models.IntegerField(default=0, verbose_name='Порядок в категории')),
-                ('category', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='api.category')),
-                ('text', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='api.text')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("order", models.IntegerField(default=0, verbose_name="Порядок в категории")),
+                (
+                    "category",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="api.category"
+                    ),
+                ),
+                (
+                    "text",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="api.text"),
+                ),
             ],
             options={
-                'ordering': ['order'],
+                "ordering": ["order"],
             },
         ),
         migrations.AddField(
-            model_name='text',
-            name='categories',
-            field=models.ManyToManyField(through='api.CategoryText', to='api.category', verbose_name='Категории'),
+            model_name="text",
+            name="categories",
+            field=models.ManyToManyField(
+                through="api.CategoryText", to="api.category", verbose_name="Категории"
+            ),
         ),
         migrations.CreateModel(
-            name='UserCollection',
+            name="UserCollection",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=255, verbose_name='Название')),
-                ('description', models.TextField(blank=True, verbose_name='Описание')),
-                ('is_default', models.BooleanField(default=False, verbose_name='Сборник по умолчанию')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("name", models.CharField(max_length=255, verbose_name="Название")),
+                ("description", models.TextField(blank=True, verbose_name="Описание")),
+                (
+                    "is_default",
+                    models.BooleanField(default=False, verbose_name="Сборник по умолчанию"),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Сборник пользователя',
-                'verbose_name_plural': 'Сборник пользователей',
+                "verbose_name": "Сборник пользователя",
+                "verbose_name_plural": "Сборник пользователей",
             },
         ),
         migrations.CreateModel(
-            name='Bookmark',
+            name="Bookmark",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('position', models.IntegerField(default=0, verbose_name='Позиция в тексте')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('text', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='api.text')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
-                ('collection', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='api.usercollection')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("position", models.IntegerField(default=0, verbose_name="Позиция в тексте")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "text",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="api.text",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL
+                    ),
+                ),
+                (
+                    "collection",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="api.usercollection",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Закладки',
-                'verbose_name_plural': 'Закладки',
+                "verbose_name": "Закладки",
+                "verbose_name_plural": "Закладки",
             },
         ),
         migrations.CreateModel(
-            name='CollectionItem',
+            name="CollectionItem",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('order', models.IntegerField(default=0, verbose_name='Порядок в сборнике')),
-                ('added_at', models.DateTimeField(auto_now_add=True)),
-                ('text', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='api.text')),
-                ('collection', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='api.usercollection')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("order", models.IntegerField(default=0, verbose_name="Порядок в сборнике")),
+                ("added_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "text",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="api.text"),
+                ),
+                (
+                    "collection",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="api.usercollection"
+                    ),
+                ),
             ],
             options={
-                'ordering': ['order'],
-                'unique_together': {('collection', 'text')},
+                "ordering": ["order"],
+                "unique_together": {("collection", "text")},
             },
         ),
     ]

@@ -1,10 +1,7 @@
 const CURATED_AKATHISTS = [
   {
     title: 'Акафист святителю Николаю Чудотворцу',
-    slugs: [
-      'akafist-svyatitelyu-nikolayu',
-      'akafist-svjatitelju-nikolaju-chudotvorcu',
-    ],
+    slugs: ['akafist-svyatitelyu-nikolayu', 'akafist-svjatitelju-nikolaju-chudotvorcu'],
   },
   {
     title: 'Акафист Пресвятой Богородице пред иконой «Всецарица»',
@@ -36,23 +33,15 @@ const CURATED_AKATHISTS = [
   },
   {
     title: 'Акафист Иисусу Сладчайшему',
-    slugs: [
-      'akafist-iisusu-sladchajshemu',
-    ],
+    slugs: ['akafist-iisusu-sladchajshemu'],
   },
   {
     title: 'Акафист Рождеству Пресвятой Богородицы',
-    slugs: [
-      'akafist-rozhdestvu-presvjatoj-bogorodicy',
-      'akafist-rozhdestvu-presvyatoy-bogorodicy',
-    ],
+    slugs: ['akafist-rozhdestvu-presvjatoj-bogorodicy', 'akafist-rozhdestvu-presvyatoy-bogorodicy'],
   },
   {
     title: 'Акафист архангелу Божию Михаилу',
-    slugs: [
-      'akafist-arhangelu-bozhiju-mihailu',
-      'akafist-arhangelu-bozhiyu-mihailu',
-    ],
+    slugs: ['akafist-arhangelu-bozhiju-mihailu', 'akafist-arhangelu-bozhiyu-mihailu'],
   },
   {
     title: 'Акафист Благовещению Пресвятой Богородицы',
@@ -63,45 +52,31 @@ const CURATED_AKATHISTS = [
   },
   {
     title: 'Акафист Богоявлению Господню',
-    slugs: [
-      'akafist-bogojavleniju-gospodnju',
-      'akafist-bogoyavleniyu-gospodnyu',
-    ],
+    slugs: ['akafist-bogojavleniju-gospodnju', 'akafist-bogoyavleniyu-gospodnyu'],
   },
   {
     title: 'Акафист Божественным Страстям Христовым',
-    slugs: [
-      'akafist-bozhestvennym-strastjam-hristovym',
-    ],
+    slugs: ['akafist-bozhestvennym-strastjam-hristovym'],
   },
   {
     title: 'Акафист Честному и Животворящему Кресту Господню',
-    slugs: [
-      'akafist-chestnomu-i-zhivotvorjashhemu-krestu-gospodnju',
-    ],
+    slugs: ['akafist-chestnomu-i-zhivotvorjashhemu-krestu-gospodnju'],
   },
   {
     title: 'Акафист Честному и Животворящему Кресту Господню (2-й)',
-    slugs: [
-      'akafist-chestnomu-i-zhivotvorjashhemu-krestu-gospodnju-2-j',
-    ],
+    slugs: ['akafist-chestnomu-i-zhivotvorjashhemu-krestu-gospodnju-2-j'],
   },
   {
     title: 'Акафист Честному и Животворящему Кресту Господню (3-й)',
-    slugs: [
-      'akafist-chestnomu-i-zhivotvorjashhemu-krestu-gospodnju-3-j',
-    ],
+    slugs: ['akafist-chestnomu-i-zhivotvorjashhemu-krestu-gospodnju-3-j'],
   },
   {
     title: 'Акафист мученицам Вере, Надежде, Любови и матери их Софии',
-    slugs: [
-      'akafist-muchenicam-vere-nadezhde-ljubovi-i-materi-ih-sofii',
-    ],
+    slugs: ['akafist-muchenicam-vere-nadezhde-ljubovi-i-materi-ih-sofii'],
   },
 ];
 
-
-const normalizeTitle = value =>
+const normalizeTitle = (value) =>
   String(value || '')
     .trim()
     .toLocaleLowerCase('ru-RU')
@@ -110,47 +85,18 @@ const normalizeTitle = value =>
     .replace(/\s+/g, ' ')
     .trim();
 
+const curatedTitles = new Set(CURATED_AKATHISTS.map((item) => normalizeTitle(item.title)));
 
-const curatedTitles =
-  new Set(
-    CURATED_AKATHISTS.map(
-      item =>
-        normalizeTitle(
-          item.title
-        )
-    )
-  );
+const curatedSlugs = new Set(CURATED_AKATHISTS.flatMap((item) => item.slugs));
 
+export const isCuratedAkathist = (item) => {
+  if (!item) {
+    return false;
+  }
 
-const curatedSlugs =
-  new Set(
-    CURATED_AKATHISTS.flatMap(
-      item =>
-        item.slugs
-    )
-  );
+  if (curatedSlugs.has(String(item.slug || ''))) {
+    return true;
+  }
 
-
-export const isCuratedAkathist =
-  item => {
-    if (!item) {
-      return false;
-    }
-
-    if (
-      curatedSlugs.has(
-        String(
-          item.slug ||
-          ''
-        )
-      )
-    ) {
-      return true;
-    }
-
-    return curatedTitles.has(
-      normalizeTitle(
-        item.title
-      )
-    );
-  };
+  return curatedTitles.has(normalizeTitle(item.title));
+};

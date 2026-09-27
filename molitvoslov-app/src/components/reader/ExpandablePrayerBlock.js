@@ -1,76 +1,29 @@
-import React, {
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import {Pressable, StyleSheet, Text, View} from 'react-native';
 
-import {
-  getSavedItems,
-} from '../../services/savedItems';
+import {getSavedItems} from '../../services/savedItems';
 
-import SelectableDocumentReader
-  from './SelectableDocumentReader';
+import SelectableDocumentReader from './SelectableDocumentReader';
 
+export default function ExpandablePrayerBlock({title, text, onCollapse, saveProps = null}) {
+  const [isOpen, setIsOpen] = useState(false);
 
-export default function ExpandablePrayerBlock({
-  title,
-  text,
-  onCollapse,
-  saveProps = null,
-}) {
-  const [
-    isOpen,
-    setIsOpen,
-  ] = useState(false);
+  const [savedItems, setSavedItems] = useState([]);
 
-  const [
-    savedItems,
-    setSavedItems,
-  ] = useState([]);
-
-  const normalizedText =
-    useMemo(
-      () =>
-        String(
-          text ||
-          ''
-        )
-          .replace(
-            /\r\n/g,
-            '\n'
-          )
-          .replace(
-            /\n[ \t]*\n+/g,
-            '\uE000'
-          )
-          .replace(
-            /\n/g,
-            ' '
-          )
-          .replace(
-            /\uE000/g,
-            '\n\n'
-          )
-          .trim(),
-      [
-        text,
-      ]
-    );
-
+  const normalizedText = useMemo(
+    () =>
+      String(text || '')
+        .replace(/\r\n/g, '\n')
+        .replace(/\n[ \t]*\n+/g, '\uE000')
+        .replace(/\n/g, ' ')
+        .replace(/\uE000/g, '\n\n')
+        .trim(),
+    [text]
+  );
 
   useEffect(() => {
-    if (
-      !isOpen ||
-      !saveProps?.sourceType ||
-      !saveProps?.sourceId
-    ) {
+    if (!isOpen || !saveProps?.sourceType || !saveProps?.sourceId) {
       return;
     }
 
@@ -83,273 +36,144 @@ export default function ExpandablePrayerBlock({
     saveProps?.anchorId,
   ]);
 
+  const loadSaved = async () => {
+    try {
+      const saved = await getSavedItems({
+        source_type: saveProps.sourceType,
 
-  const loadSaved =
-    async () => {
-      try {
-        const saved =
-          await getSavedItems({
-            source_type:
-              saveProps.sourceType,
+        source_id: saveProps.sourceId,
 
-            source_id:
-              saveProps.sourceId,
+        anchor_type: saveProps.anchorType,
 
-            anchor_type:
-              saveProps.anchorType,
+        anchor_id: saveProps.anchorId,
+      });
 
-            anchor_id:
-              saveProps.anchorId,
-          });
+      setSavedItems(saved);
+    } catch (error) {
+      console.log(
+        'Ошибка загрузки сохранений молитвенного блока:',
+        error.response?.data || error.message
+      );
+    }
+  };
 
-        setSavedItems(
-          saved
-        );
-      } catch (error) {
-        console.log(
-          'Ошибка загрузки сохранений молитвенного блока:',
-          error.response?.data ||
-          error.message
-        );
-      }
-    };
+  const documentData = useMemo(() => {
+    if (!saveProps || !normalizedText) {
+      return null;
+    }
 
+    const normalizedSaved = savedItems
+      .filter((item) => item.start_offset !== null && item.end_offset !== null)
+      .map((item) => ({
+        ...item,
 
-  const documentData =
-    useMemo(
-      () => {
-        if (
-          !saveProps ||
-          !normalizedText
-        ) {
-          return null;
-        }
+        anchor_id: 1,
+      }));
 
-        const normalizedSaved =
-          savedItems
-            .filter(
-              item =>
-                item.start_offset !==
-                  null &&
-                item.end_offset !==
-                  null
-            )
-            .map(
-              item => ({
-                ...item,
+    return {
+      title: '',
 
-                anchor_id:
-                  1,
-              })
-            );
+      description: '',
 
-        return {
+      progressAnchorType: saveProps.anchorType,
+
+      savedItems: normalizedSaved,
+
+      sections: [
+        {
+          progressAnchorId: Number(saveProps.anchorId),
+
+          trackProgress: false,
+
           title: '',
 
-          description: '',
-
-          progressAnchorType:
-            saveProps.anchorType,
-
-          savedItems:
-            normalizedSaved,
-
-          sections: [
+          rows: [
             {
-              progressAnchorId:
-                Number(
-                  saveProps.anchorId
-                ),
+              layout: 'stack',
 
-              trackProgress:
-                false,
-
-              title:
-                '',
-
-              rows: [
+              blocks: [
                 {
-                  layout:
-                    'stack',
+                  id: 1,
 
-                  blocks: [
-                    {
-                      id:
-                        1,
+                  text: normalizedText,
 
-                      text:
-                        normalizedText,
+                  sourceType: saveProps.sourceType,
 
-                      sourceType:
-                        saveProps.sourceType,
+                  sourceId: saveProps.sourceId,
 
-                      sourceId:
-                        saveProps.sourceId,
+                  anchorType: saveProps.anchorType,
 
-                      anchorType:
-                        saveProps.anchorType,
+                  anchorId: saveProps.anchorId,
 
-                      anchorId:
-                        saveProps.anchorId,
+                  sourceTitle: saveProps.sourceTitle || title,
 
-                      sourceTitle:
-                        saveProps.sourceTitle ||
-                        title,
+                  itemTitle: saveProps.itemTitle || title,
 
-                      itemTitle:
-                        saveProps.itemTitle ||
-                        title,
+                  fullSaveType: 'prayer',
 
-                      fullSaveType:
-                        'prayer',
-
-                      metadata:
-                        saveProps.metadata ||
-                        {},
-                    },
-                  ],
+                  metadata: saveProps.metadata || {},
                 },
               ],
             },
           ],
-        };
-      },
-      [
-        saveProps,
-        savedItems,
-        normalizedText,
-        title,
-      ]
-    );
-
+        },
+      ],
+    };
+  }, [saveProps, savedItems, normalizedText, title]);
 
   if (!normalizedText) {
     return null;
   }
 
-
-  const toggle =
-    () => {
-      if (isOpen) {
-        setIsOpen(false);
-
-        onCollapse?.();
-
-        return;
-      }
-
-      setIsOpen(true);
-    };
-
-
-  const collapse =
-    () => {
+  const toggle = () => {
+    if (isOpen) {
       setIsOpen(false);
 
       onCollapse?.();
-    };
 
+      return;
+    }
+
+    setIsOpen(true);
+  };
+
+  const collapse = () => {
+    setIsOpen(false);
+
+    onCollapse?.();
+  };
 
   return (
-    <View
-      style={styles.container}
-    >
-      <Pressable
-        style={({pressed}) => [
-          styles.header,
-
-          pressed &&
-            styles.pressed,
-        ]}
-        onPress={
-          toggle
-        }
-      >
-        <View
-          style={
-            styles
-              .headerContent
-          }
-        >
-          <Text
-            style={styles.title}
-          >
-            {title}
-          </Text>
+    <View style={styles.container}>
+      <Pressable style={({pressed}) => [styles.header, pressed && styles.pressed]} onPress={toggle}>
+        <View style={styles.headerContent}>
+          <Text style={styles.title}>{title}</Text>
 
           {!isOpen && (
-            <Text
-              style={
-                styles.preview
-              }
-              numberOfLines={2}
-            >
+            <Text style={styles.preview} numberOfLines={2}>
               {normalizedText}
             </Text>
           )}
         </View>
 
-        <Text
-          style={styles.arrow}
-        >
-          {
-            isOpen
-              ? '−'
-              : '+'
-          }
-        </Text>
+        <Text style={styles.arrow}>{isOpen ? '−' : '+'}</Text>
       </Pressable>
 
-
       {isOpen && (
-        <View
-          style={styles.content}
-        >
+        <View style={styles.content}>
           {documentData ? (
-            <View
-              style={
-                styles.reader
-              }
-            >
-              <SelectableDocumentReader
-                documentData={
-                  documentData
-                }
-                savedProgress={
-                  null
-                }
-              />
+            <View style={styles.reader}>
+              <SelectableDocumentReader documentData={documentData} savedProgress={null} />
             </View>
           ) : (
-            <Text
-              style={
-                styles.prayerText
-              }
-            >
-              {normalizedText}
-            </Text>
+            <Text style={styles.prayerText}>{normalizedText}</Text>
           )}
 
           <Pressable
-            style={({pressed}) => [
-              styles.collapseButton,
-
-              pressed &&
-                styles
-                  .collapsePressed,
-            ]}
-            onPress={
-              collapse
-            }
+            style={({pressed}) => [styles.collapseButton, pressed && styles.collapsePressed]}
+            onPress={collapse}
           >
-            <Text
-              style={
-                styles
-                  .collapseText
-              }
-            >
-              Свернуть
-            </Text>
+            <Text style={styles.collapseText}>Свернуть</Text>
           </Pressable>
         </View>
       )}
@@ -357,106 +181,98 @@ export default function ExpandablePrayerBlock({
   );
 }
 
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: '#F8E9CF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(123, 79, 36, 0.18)',
+    overflow: 'hidden',
+  },
 
-const styles =
-  StyleSheet.create({
-    container: {
-      backgroundColor:
-        '#F8E9CF',
-      borderRadius: 14,
-      borderWidth: 1,
-      borderColor:
-        'rgba(123, 79, 36, 0.18)',
-      overflow: 'hidden',
-    },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+  },
 
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 16,
-      paddingHorizontal: 16,
-    },
+  pressed: {
+    opacity: 0.7,
+  },
 
-    pressed: {
-      opacity: 0.7,
-    },
+  headerContent: {
+    flex: 1,
+    paddingRight: 12,
+  },
 
-    headerContent: {
-      flex: 1,
-      paddingRight: 12,
-    },
+  title: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#5A3822',
+  },
 
-    title: {
-      fontSize: 17,
-      fontWeight: '600',
-      color: '#5A3822',
-    },
+  preview: {
+    marginTop: 7,
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#765238',
+    fontFamily: 'serif',
+  },
 
-    preview: {
-      marginTop: 7,
-      fontSize: 14,
-      lineHeight: 20,
-      color: '#765238',
-      fontFamily: 'serif',
-    },
+  arrow: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(123, 79, 36, 0.20)',
+    backgroundColor: '#EEDCC0',
+    color: '#7A4F2D',
+    fontSize: 20,
+    lineHeight: 27,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
 
-    arrow: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
-      borderWidth: 1,
-      borderColor: 'rgba(123, 79, 36, 0.20)',
-      backgroundColor: '#EEDCC0',
-      color: '#7A4F2D',
-      fontSize: 20,
-      lineHeight: 27,
-      textAlign: 'center',
-      fontWeight: '600',
-    },
+  content: {
+    paddingHorizontal: 10,
+    paddingBottom: 18,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(123, 79, 36, 0.16)',
+  },
 
-    content: {
-      paddingHorizontal: 10,
-      paddingBottom: 18,
-      borderTopWidth:
-        StyleSheet
-          .hairlineWidth,
-      borderTopColor:
-        'rgba(123, 79, 36, 0.16)',
-    },
+  reader: {
+    height: 440,
+    marginTop: 10,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
 
-    reader: {
-      height: 440,
-      marginTop: 10,
-      borderRadius: 10,
-      overflow: 'hidden',
-    },
+  prayerText: {
+    paddingTop: 16,
+    fontSize: 17,
+    lineHeight: 28,
+    color: '#3E2A1D',
+    fontFamily: 'serif',
+    textAlign: 'justify',
+  },
 
-    prayerText: {
-      paddingTop: 16,
-      fontSize: 17,
-      lineHeight: 28,
-      color: '#3E2A1D',
-      fontFamily: 'serif',
-      textAlign: 'justify',
-    },
+  collapseButton: {
+    alignSelf: 'center',
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 22,
+    borderRadius: 20,
+    backgroundColor: '#EEDCC0',
+  },
 
-    collapseButton: {
-      alignSelf: 'center',
-      marginTop: 16,
-      paddingVertical: 10,
-      paddingHorizontal: 22,
-      borderRadius: 20,
-      backgroundColor:
-        '#EEDCC0',
-    },
+  collapsePressed: {
+    opacity: 0.7,
+  },
 
-    collapsePressed: {
-      opacity: 0.7,
-    },
-
-    collapseText: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: '#7A4F2D',
-    },
-  });
+  collapseText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#7A4F2D',
+  },
+});

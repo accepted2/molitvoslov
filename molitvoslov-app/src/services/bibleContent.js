@@ -1,36 +1,10 @@
-import offlineBible
-  from '../data/offlineBible.json';
+import offlineBible from '../data/offlineBible.json';
 
+const books = Array.isArray(offlineBible?.books) ? offlineBible.books : [];
 
-const books =
-  Array.isArray(
-    offlineBible?.books
-  )
-    ? offlineBible.books
-    : [];
+const byId = new Map(books.map((book) => [Number(book.id), book]));
 
-
-const byId =
-  new Map(
-    books.map(
-      book => [
-        Number(book.id),
-        book,
-      ]
-    )
-  );
-
-
-const bySlug =
-  new Map(
-    books.map(
-      book => [
-        book.slug,
-        book,
-      ]
-    )
-  );
-
+const bySlug = new Map(books.map((book) => [book.slug, book]));
 
 const BIBLE_BOOK_DISPLAY_TITLES = {
   MAT: 'Евангелие от Матфея',
@@ -62,7 +36,6 @@ const BIBLE_BOOK_DISPLAY_TITLES = {
   REV: 'Откровение Иоанна Богослова (Апокалипсис)',
 };
 
-
 export const BIBLE_SECTION_TITLES = {
   old: 'Ветхий Завет',
   gospels: 'Евангелия',
@@ -71,92 +44,44 @@ export const BIBLE_SECTION_TITLES = {
   revelation: 'Апокалипсис',
 };
 
-
 export const bibleContent = {
-  translation:
-    offlineBible?.translation ||
-    null,
+  translation: offlineBible?.translation || null,
 
   getBooks(testament = null) {
     if (!testament) {
       return books;
     }
 
-    return books.filter(
-      book =>
-        book.testament ===
-        testament
-    );
+    return books.filter((book) => book.testament === testament);
   },
 
   getBook(bookIdOrSlug) {
-    if (
-      typeof bookIdOrSlug ===
-        'string' &&
-      bySlug.has(bookIdOrSlug)
-    ) {
-      return bySlug.get(
-        bookIdOrSlug
-      );
+    if (typeof bookIdOrSlug === 'string' && bySlug.has(bookIdOrSlug)) {
+      return bySlug.get(bookIdOrSlug);
     }
 
-    return (
-      byId.get(
-        Number(bookIdOrSlug)
-      ) ||
-      null
-    );
+    return byId.get(Number(bookIdOrSlug)) || null;
   },
 
-  getDisplayName(
-    bookIdOrObject
-  ) {
-    const book =
-      typeof bookIdOrObject ===
-        'object'
-        ? bookIdOrObject
-        : this.getBook(
-            bookIdOrObject
-          );
+  getDisplayName(bookIdOrObject) {
+    const book = typeof bookIdOrObject === 'object' ? bookIdOrObject : this.getBook(bookIdOrObject);
 
     if (!book) {
       return 'Библия';
     }
 
-    return (
-      BIBLE_BOOK_DISPLAY_TITLES[
-        book.code
-      ] ||
-      book.name ||
-      book.short_name ||
-      'Библия'
-    );
+    return BIBLE_BOOK_DISPLAY_TITLES[book.code] || book.name || book.short_name || 'Библия';
   },
 
-  getChapter(
-    bookIdOrSlug,
-    chapterNumber
-  ) {
-    const book =
-      this.getBook(
-        bookIdOrSlug
-      );
+  getChapter(bookIdOrSlug, chapterNumber) {
+    const book = this.getBook(bookIdOrSlug);
 
     if (!book) {
       return null;
     }
 
     return (
-      book.chapters?.find(
-        chapter =>
-          Number(
-            chapter.number
-          ) ===
-          Number(
-            chapterNumber
-          )
-      ) ||
-      null
+      book.chapters?.find((chapter) => Number(chapter.number) === Number(chapterNumber)) || null
     );
   },
 };

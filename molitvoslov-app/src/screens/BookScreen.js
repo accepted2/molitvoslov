@@ -1,600 +1,319 @@
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
 
-import {
-  contentApi as api,
-} from '../services/contentApi';
+import {contentApi as api} from '../services/contentApi';
 
-import {
-  useReadingProgress,
-} from '../hooks/useReadingProgress';
+import {useReadingProgress} from '../hooks/useReadingProgress';
 
-import {
-  deleteSavedItem,
-  getSavedItems,
-  saveItem,
-} from '../services/savedItems';
+import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
-import SelectableDocumentReader
-  from '../components/reader/SelectableDocumentReader';
+import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 
-import {
-  colors,
-} from '../theme';
+import {colors} from '../theme';
 
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
-import {FixedSectionHeader}
-  from '../components/navigation/FixedSectionHeader';
+import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 
+export const BookScreen = ({route, navigation}) => {
+  const {categoryId, categorySlug, categoryName, focusTarget = null} = route.params;
 
-export const BookScreen = ({
-  route,
-  navigation,
-}) => {
-  const {
-    categoryId,
-    categorySlug,
-    categoryName,
-    focusTarget = null,
-  } = route.params;
+  const insets = useSafeAreaInsets();
 
-  const insets =
-    useSafeAreaInsets();
+  const headerHeight = insets.top + 56;
 
-  const headerHeight =
-    insets.top + 56;
+  const [texts, setTexts] = useState([]);
 
-  const [
-    texts,
-    setTexts,
-  ] = useState([]);
+  const [savedItems, setSavedItems] = useState([]);
 
-  const [
-    savedItems,
-    setSavedItems,
-  ] = useState([]);
+  const savedItemsRef = useRef([]);
 
-  const savedItemsRef =
-    useRef([]);
+  const [loading, setLoading] = useState(true);
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
+  const [error, setError] = useState(null);
 
-  const [
-    error,
-    setError,
-  ] = useState(null);
+  const {savedProgress, progressReady, scheduleSave} = useReadingProgress({
+    sourceType: 'category',
 
-
-  const {
-    savedProgress,
-    progressReady,
-    scheduleSave,
-  } = useReadingProgress({
-    sourceType:
-      'category',
-
-    sourceId:
-      categoryId,
+    sourceId: categoryId,
   });
-
 
   useEffect(() => {
     loadScreen();
-  }, [
-    categoryId,
-    categorySlug,
-  ]);
+  }, [categoryId, categorySlug]);
 
+  const loadScreen = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setTexts([]);
+      setSavedItems([]);
+      savedItemsRef.current = [];
 
-  const loadScreen =
-    async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        setTexts([]);
-        setSavedItems([]);
-        savedItemsRef.current =
-          [];
+      const [textsResponse, saved] = await Promise.all([
+        api.get(`categories/${categorySlug}/texts/`),
 
-        const [
-          textsResponse,
-          saved,
-        ] = await Promise.all([
-          api.get(
-            `categories/${categorySlug}/texts/`
-          ),
+        getSavedItems({
+          source_type: 'category',
 
-          getSavedItems({
-            source_type:
-              'category',
+          source_id: categoryId,
+        }),
+      ]);
 
-            source_id:
-              categoryId,
-          }),
-        ]);
+      const sorted = [...textsResponse.data].sort(
+        (a, b) => Number(a.order || 0) - Number(b.order || 0)
+      );
 
-        const sorted =
-          [
-            ...textsResponse.data,
-          ]
-            .sort(
-              (a, b) =>
-                Number(
-                  a.order || 0
-                ) -
-                Number(
-                  b.order || 0
-                )
-            );
+      setTexts(sorted);
 
-        setTexts(
-          sorted
-        );
+      savedItemsRef.current = saved;
 
-        savedItemsRef.current =
-          saved;
+      setSavedItems(saved);
+    } catch (loadError) {
+      console.log('Ошибка загрузки категории:', loadError.response?.data || loadError.message);
 
-        setSavedItems(
-          saved
-        );
-      } catch (loadError) {
-        console.log(
-          'Ошибка загрузки категории:',
-          loadError.response?.data ||
-          loadError.message
-        );
+      setError('Не удалось загрузить тексты');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        setError(
-          'Не удалось загрузить тексты'
-        );
-      } finally {
-        setLoading(
-          false
-        );
-      }
-    };
+  const handleAction = async (actionKey) => {
+    if (!actionKey?.startsWith('category-text:')) {
+      return null;
+    }
 
+    const itemId = Number(actionKey.split(':')[1]);
 
-  const handleAction =
-    async actionKey => {
-      if (
-        !actionKey?.startsWith(
-          'category-text:'
-        )
-      ) {
-        return null;
-      }
+    const item = texts.find((entry) => Number(entry.id) === itemId);
 
-      const itemId =
-        Number(
-          actionKey.split(
-            ':'
-          )[1]
-        );
+    if (!item?.text) {
+      return null;
+    }
 
-      const item =
-        texts.find(
-          entry =>
-            Number(
-              entry.id
-            ) ===
-              itemId
-        );
+    const existing = savedItemsRef.current.find(
+      (saved) =>
+        saved.anchor_type === 'category_text' &&
+        Number(saved.anchor_id) === itemId &&
+        saved.save_type === 'prayer'
+    );
 
-      if (
-        !item?.text
-      ) {
-        return null;
-      }
+    if (existing) {
+      await deleteSavedItem(existing.id);
 
-      const existing =
-        savedItemsRef.current
-          .find(
-            saved =>
-              saved.anchor_type ===
-                'category_text' &&
-              Number(
-                saved.anchor_id
-              ) ===
-                itemId &&
-              saved.save_type ===
-                'prayer'
-          );
-
-      if (existing) {
-        await deleteSavedItem(
-          existing.id
-        );
-
-        savedItemsRef.current =
-          savedItemsRef.current
-            .filter(
-              saved =>
-                saved.id !==
-                existing.id
-            );
-
-        return {
-          label:
-            'В избранное',
-
-          active:
-            false,
-
-          itemId,
-
-          removedSavedItemId:
-            existing.id,
-        };
-      }
-
-      const content =
-        item.text.content ||
-        '';
-
-      const saved =
-        await saveItem({
-          save_type:
-            'prayer',
-
-          source_type:
-            'category',
-
-          source_id:
-            categoryId,
-
-          anchor_type:
-            'category_text',
-
-          anchor_id:
-            itemId,
-
-          source_title:
-            categoryName,
-
-          item_title:
-            item.text.title ||
-            item.text.description ||
-            'Молитва',
-
-          text:
-            content,
-
-          start_offset:
-            0,
-
-          end_offset:
-            content.length,
-
-          metadata: {
-            category_slug:
-              categorySlug,
-
-            category_name:
-              categoryName,
-          },
-        });
-
-      savedItemsRef.current = [
-        saved,
-        ...savedItemsRef.current,
-      ];
+      savedItemsRef.current = savedItemsRef.current.filter((saved) => saved.id !== existing.id);
 
       return {
-        label:
-          'В избранном',
+        label: 'В избранное',
 
-        active:
-          true,
+        active: false,
 
         itemId,
 
-        savedItem:
-          saved,
+        removedSavedItemId: existing.id,
       };
+    }
+
+    const content = item.text.content || '';
+
+    const saved = await saveItem({
+      save_type: 'prayer',
+
+      source_type: 'category',
+
+      source_id: categoryId,
+
+      anchor_type: 'category_text',
+
+      anchor_id: itemId,
+
+      source_title: categoryName,
+
+      item_title: item.text.title || item.text.description || 'Молитва',
+
+      text: content,
+
+      start_offset: 0,
+
+      end_offset: content.length,
+
+      metadata: {
+        category_slug: categorySlug,
+
+        category_name: categoryName,
+      },
+    });
+
+    savedItemsRef.current = [saved, ...savedItemsRef.current];
+
+    return {
+      label: 'В избранном',
+
+      active: true,
+
+      itemId,
+
+      savedItem: saved,
     };
+  };
 
+  const documentData = useMemo(() => {
+    const savedForReader = savedItems
+      .filter(
+        (item) =>
+          item.anchor_type === 'category_text' &&
+          item.start_offset !== null &&
+          item.end_offset !== null
+      )
+      .map((item) => ({
+        ...item,
+        anchor_id: Number(item.anchor_id),
+      }));
 
-  const documentData =
-    useMemo(
-      () => {
-        const savedForReader =
-          savedItems
-            .filter(
-              item =>
-                item.anchor_type ===
-                  'category_text' &&
-                item.start_offset !==
-                  null &&
-                item.end_offset !==
-                  null
-            )
-            .map(
-              item => ({
-                ...item,
-                anchor_id:
-                  Number(
-                    item.anchor_id
-                  ),
-              })
-            );
+    const sections = texts
+      .filter((item) => !!item.text)
+      .map((item) => {
+        const text = item.text;
 
-        const sections =
-          texts
-            .filter(
-              item =>
-                !!item.text
-            )
-            .map(
-              item => {
-                const text =
-                  item.text;
-
-                const wholeSaved =
-                  savedItems.some(
-                    saved =>
-                      saved.anchor_type ===
-                        'category_text' &&
-                      Number(
-                        saved.anchor_id
-                      ) ===
-                        Number(
-                          item.id
-                        ) &&
-                      saved.save_type ===
-                        'prayer'
-                  );
-
-                return {
-                  progressAnchorId:
-                    Number(
-                      item.id
-                    ),
-
-                  trackProgress:
-                    true,
-
-                  title:
-                    text.title ||
-                    'Молитва',
-
-                  action: {
-                    key:
-                      `category-text:${item.id}`,
-
-                    label:
-                      wholeSaved
-                        ? 'В избранном'
-                        : 'В избранное',
-
-                    active:
-                      wholeSaved,
-                  },
-
-                  rows: [
-                    {
-                      layout:
-                        'stack',
-
-                      blocks: [
-                        {
-                          id:
-                            Number(
-                              item.id
-                            ),
-
-                          text:
-                            text.content ||
-                            '',
-
-                          className:
-                            '',
-
-                          sourceType:
-                            'category',
-
-                          sourceId:
-                            categoryId,
-
-                          anchorType:
-                            'category_text',
-
-                          anchorId:
-                            Number(
-                              item.id
-                            ),
-
-                          sourceTitle:
-                            categoryName,
-
-                          itemTitle:
-                            text.title ||
-                            text.description ||
-                            'Текст',
-
-                          fullSaveType:
-                            'prayer',
-
-                          metadata: {
-                            category_slug:
-                              categorySlug,
-
-                            category_name:
-                              categoryName,
-                          },
-                        },
-                      ],
-                    },
-                  ],
-                };
-              }
-            );
+        const wholeSaved = savedItems.some(
+          (saved) =>
+            saved.anchor_type === 'category_text' &&
+            Number(saved.anchor_id) === Number(item.id) &&
+            saved.save_type === 'prayer'
+        );
 
         return {
-          title:
-            categoryName,
+          progressAnchorId: Number(item.id),
 
-          description:
-            '',
+          trackProgress: true,
 
-          progressAnchorType:
-            'category_text',
+          title: text.title || 'Молитва',
 
-          savedItems:
-            savedForReader,
+          action: {
+            key: `category-text:${item.id}`,
 
-          sections,
+            label: wholeSaved ? 'В избранном' : 'В избранное',
+
+            active: wholeSaved,
+          },
+
+          rows: [
+            {
+              layout: 'stack',
+
+              blocks: [
+                {
+                  id: Number(item.id),
+
+                  text: text.content || '',
+
+                  className: '',
+
+                  sourceType: 'category',
+
+                  sourceId: categoryId,
+
+                  anchorType: 'category_text',
+
+                  anchorId: Number(item.id),
+
+                  sourceTitle: categoryName,
+
+                  itemTitle: text.title || text.description || 'Текст',
+
+                  fullSaveType: 'prayer',
+
+                  metadata: {
+                    category_slug: categorySlug,
+
+                    category_name: categoryName,
+                  },
+                },
+              ],
+            },
+          ],
         };
-      },
-      [
-        categoryId,
-        categorySlug,
-        categoryName,
-        texts,
-        savedItems,
-      ]
-    );
+      });
 
+    return {
+      title: categoryName,
 
-  if (
-    loading ||
-    (
-      categoryId &&
-      !progressReady
-    )
-  ) {
+      description: '',
+
+      progressAnchorType: 'category_text',
+
+      savedItems: savedForReader,
+
+      sections,
+    };
+  }, [categoryId, categorySlug, categoryName, texts, savedItems]);
+
+  if (loading || (categoryId && !progressReady)) {
     return (
-      <View
-        style={styles.center}
-      >
-        <ActivityIndicator
-          size="large"
-          color={
-            colors.accent
-          }
-        />
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={colors.accent} />
 
-        <Text
-          style={
-            styles.loadingText
-          }
-        >
-          Загрузка...
-        </Text>
+        <Text style={styles.loadingText}>Загрузка...</Text>
       </View>
     );
   }
-
 
   if (error) {
     return (
-      <View
-        style={styles.center}
-      >
-        <Text
-          style={styles.error}
-        >
-          {error}
-        </Text>
+      <View style={styles.center}>
+        <Text style={styles.error}>{error}</Text>
       </View>
     );
   }
 
-
   return (
-    <View
-      style={styles.screen}
-    >
-      <StatusBar
-        style="light"
-        translucent
-        backgroundColor="transparent"
-      />
+    <View style={styles.screen}>
+      <StatusBar style="light" translucent backgroundColor="transparent" />
 
       <SelectableDocumentReader
-        documentData={
-          documentData
-        }
-        savedProgress={
-          savedProgress
-        }
-        focusTarget={
-          focusTarget
-        }
-        topContentInset={
-          headerHeight
-        }
-        onProgress={
-          scheduleSave
-        }
-        onAction={
-          handleAction
-        }
+        documentData={documentData}
+        savedProgress={savedProgress}
+        focusTarget={focusTarget}
+        topContentInset={headerHeight}
+        onProgress={scheduleSave}
+        onAction={handleAction}
       />
 
       <FixedSectionHeader
-        title={
-          categoryName ||
-          'Чтение'
-        }
-        navigation={
-          navigation
-        }
-        topInset={
-          insets.top
-        }
+        title={categoryName || 'Чтение'}
+        navigation={navigation}
+        topInset={insets.top}
         showTitle={false}
       />
     </View>
   );
 };
 
-const styles =
-  StyleSheet.create({
-    screen: {
-      flex: 1,
-      backgroundColor:
-        '#FFF4DE',
-    },
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: '#FFF4DE',
+  },
 
-    center: {
-      flex: 1,
-      justifyContent:
-        'center',
-      alignItems:
-        'center',
-      backgroundColor:
-        colors.background,
-    },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
 
-    loadingText: {
-      marginTop: 10,
-      color:
-        colors.textSecondary,
-    },
+  loadingText: {
+    marginTop: 10,
+    color: colors.textSecondary,
+  },
 
-    error: {
-      paddingHorizontal: 24,
-      textAlign: 'center',
-      color:
-        colors.liturgical,
-      fontSize: 15,
-      lineHeight: 22,
-    },
-  });
+  error: {
+    paddingHorizontal: 24,
+    textAlign: 'center',
+    color: colors.liturgical,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+});

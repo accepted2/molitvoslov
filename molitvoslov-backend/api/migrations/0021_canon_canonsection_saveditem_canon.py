@@ -6,272 +6,265 @@ class Migration(migrations.Migration):
 
     dependencies = [
         (
-            'api',
-            '0020_alter_saveditem_add_fragment',
+            "api",
+            "0020_alter_saveditem_add_fragment",
         ),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Canon',
+            name="Canon",
             fields=[
                 (
-                    'id',
+                    "id",
                     models.BigAutoField(
                         auto_created=True,
                         primary_key=True,
                         serialize=False,
-                        verbose_name='ID',
+                        verbose_name="ID",
                     ),
                 ),
                 (
-                    'title',
+                    "title",
                     models.CharField(
                         max_length=255,
-                        verbose_name='Название',
+                        verbose_name="Название",
                     ),
                 ),
                 (
-                    'slug',
+                    "slug",
                     models.SlugField(
                         unique=True,
-                        verbose_name='URL-идентификатор',
+                        verbose_name="URL-идентификатор",
                     ),
                 ),
                 (
-                    'description',
+                    "description",
                     models.TextField(
                         blank=True,
-                        verbose_name='Описание',
+                        verbose_name="Описание",
                     ),
                 ),
                 (
-                    'tone',
+                    "tone",
                     models.CharField(
                         blank=True,
                         max_length=50,
-                        verbose_name='Глас',
+                        verbose_name="Глас",
                     ),
                 ),
                 (
-                    'is_visible',
+                    "is_visible",
                     models.BooleanField(
                         default=True,
-                        verbose_name='Отображать',
+                        verbose_name="Отображать",
                     ),
                 ),
             ],
             options={
-                'verbose_name':
-                    'Канон',
-                'verbose_name_plural':
-                    'Каноны',
+                "verbose_name": "Канон",
+                "verbose_name_plural": "Каноны",
             },
         ),
-
         migrations.CreateModel(
-            name='CanonSection',
+            name="CanonSection",
             fields=[
                 (
-                    'id',
+                    "id",
                     models.BigAutoField(
                         auto_created=True,
                         primary_key=True,
                         serialize=False,
-                        verbose_name='ID',
+                        verbose_name="ID",
                     ),
                 ),
                 (
-                    'section_type',
+                    "section_type",
                     models.CharField(
                         choices=[
                             (
-                                'irmos',
-                                'Ирмос',
+                                "irmos",
+                                "Ирмос",
                             ),
                             (
-                                'refrain',
-                                'Припев',
+                                "refrain",
+                                "Припев",
                             ),
                             (
-                                'troparion',
-                                'Тропарь',
+                                "troparion",
+                                "Тропарь",
                             ),
                             (
-                                'theotokion',
-                                'Богородичен',
+                                "theotokion",
+                                "Богородичен",
                             ),
                             (
-                                'glory',
-                                'Слава',
+                                "glory",
+                                "Слава",
                             ),
                             (
-                                'now',
-                                'И ныне',
+                                "now",
+                                "И ныне",
                             ),
                             (
-                                'sedalen',
-                                'Седален',
+                                "sedalen",
+                                "Седален",
                             ),
                             (
-                                'kontakion',
-                                'Кондак',
+                                "kontakion",
+                                "Кондак",
                             ),
                             (
-                                'ikos',
-                                'Икос',
+                                "ikos",
+                                "Икос",
                             ),
                             (
-                                'svetilen',
-                                'Светилен',
+                                "svetilen",
+                                "Светилен",
                             ),
                             (
-                                'prayer',
-                                'Молитва',
+                                "prayer",
+                                "Молитва",
                             ),
                             (
-                                'other',
-                                'Прочее',
+                                "other",
+                                "Прочее",
                             ),
                         ],
-                        default='other',
+                        default="other",
                         max_length=20,
-                        verbose_name='Тип элемента',
+                        verbose_name="Тип элемента",
                     ),
                 ),
                 (
-                    'variant',
+                    "variant",
                     models.PositiveSmallIntegerField(
                         default=1,
-                        verbose_name='Вариант',
+                        verbose_name="Вариант",
                     ),
                 ),
                 (
-                    'ode_number',
+                    "ode_number",
                     models.PositiveSmallIntegerField(
                         blank=True,
                         null=True,
-                        verbose_name='Номер песни',
+                        verbose_name="Номер песни",
                     ),
                 ),
                 (
-                    'heading',
+                    "heading",
                     models.CharField(
                         blank=True,
                         max_length=255,
-                        verbose_name='Заголовок / метка',
+                        verbose_name="Заголовок / метка",
                     ),
                 ),
                 (
-                    'order',
+                    "order",
                     models.PositiveIntegerField(
                         default=0,
-                        verbose_name='Порядок',
+                        verbose_name="Порядок",
                     ),
                 ),
                 (
-                    'canon',
+                    "canon",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name='sections',
-                        to='api.canon',
-                        verbose_name='Канон',
+                        related_name="sections",
+                        to="api.canon",
+                        verbose_name="Канон",
                     ),
                 ),
                 (
-                    'text',
+                    "text",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.PROTECT,
-                        related_name='canon_sections',
-                        to='api.text',
-                        verbose_name='Текст',
+                        related_name="canon_sections",
+                        to="api.text",
+                        verbose_name="Текст",
                     ),
                 ),
             ],
             options={
-                'verbose_name':
-                    'Элемент канона',
-                'verbose_name_plural':
-                    'Элементы канона',
-                'ordering': [
-                    'variant',
-                    'order',
+                "verbose_name": "Элемент канона",
+                "verbose_name_plural": "Элементы канона",
+                "ordering": [
+                    "variant",
+                    "order",
                 ],
             },
         ),
-
         migrations.AddConstraint(
-            model_name='canonsection',
+            model_name="canonsection",
             constraint=models.UniqueConstraint(
                 fields=(
-                    'canon',
-                    'variant',
-                    'order',
+                    "canon",
+                    "variant",
+                    "order",
                 ),
-                name='unique_order_per_canon_variant',
+                name="unique_order_per_canon_variant",
             ),
         ),
-
         migrations.AlterField(
-            model_name='saveditem',
-            name='save_type',
+            model_name="saveditem",
+            name="save_type",
             field=models.CharField(
                 choices=[
                     (
-                        'word',
-                        'Слово',
+                        "word",
+                        "Слово",
                     ),
                     (
-                        'sentence',
-                        'Предложение',
+                        "sentence",
+                        "Предложение",
                     ),
                     (
-                        'paragraph',
-                        'Абзац',
+                        "paragraph",
+                        "Абзац",
                     ),
                     (
-                        'fragment',
-                        'Фрагмент',
+                        "fragment",
+                        "Фрагмент",
                     ),
                     (
-                        'verse',
-                        'Стих',
+                        "verse",
+                        "Стих",
                     ),
                     (
-                        'section',
-                        'Раздел',
+                        "section",
+                        "Раздел",
                     ),
                     (
-                        'prayer',
-                        'Молитва',
+                        "prayer",
+                        "Молитва",
                     ),
                     (
-                        'psalm',
-                        'Псалом',
+                        "psalm",
+                        "Псалом",
                     ),
                     (
-                        'kathisma',
-                        'Кафизма',
+                        "kathisma",
+                        "Кафизма",
                     ),
                     (
-                        'chapter',
-                        'Глава',
+                        "chapter",
+                        "Глава",
                     ),
                     (
-                        'akathist',
-                        'Акафист',
+                        "akathist",
+                        "Акафист",
                     ),
                     (
-                        'canon',
-                        'Канон',
+                        "canon",
+                        "Канон",
                     ),
                     (
-                        'text',
-                        'Текст',
+                        "text",
+                        "Текст",
                     ),
                 ],
                 max_length=30,
-                verbose_name='Тип сохранения',
+                verbose_name="Тип сохранения",
             ),
         ),
     ]

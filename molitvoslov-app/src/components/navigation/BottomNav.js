@@ -13,10 +13,7 @@ export const BottomNav = ({navigation, active}) => {
   const insets = useSafeAreaInsets();
 
   return (
-    <View
-      pointerEvents="box-none"
-      style={styles.wrapper}
-    >
+    <View pointerEvents="box-none" style={styles.wrapper}>
       <LinearGradient
         pointerEvents="box-none"
         colors={[
@@ -41,42 +38,20 @@ export const BottomNav = ({navigation, active}) => {
         </View>
 
         <View style={styles.itemsRow}>
-          {ITEMS.map(item => {
+          {ITEMS.map((item) => {
             const isActive = item.key === active;
 
             return (
               <Pressable
                 key={item.key}
                 onPress={() => navigation.navigate(item.route)}
-                style={({pressed}) => [
-                  styles.item,
-                  pressed && styles.pressed,
-                ]}
+                style={({pressed}) => [styles.item, pressed && styles.pressed]}
               >
-                <Text
-                  style={[
-                    styles.symbol,
-                    isActive && styles.symbolActive,
-                  ]}
-                >
-                  {item.symbol}
-                </Text>
+                <Text style={[styles.symbol, isActive && styles.symbolActive]}>{item.symbol}</Text>
 
-                <Text
-                  style={[
-                    styles.label,
-                    isActive && styles.labelActive,
-                  ]}
-                >
-                  {item.label}
-                </Text>
+                <Text style={[styles.label, isActive && styles.labelActive]}>{item.label}</Text>
 
-                <View
-                  style={[
-                    styles.activeDot,
-                    !isActive && styles.activeDotHidden,
-                  ]}
-                />
+                <View style={[styles.activeDot, !isActive && styles.activeDotHidden]} />
               </Pressable>
             );
           })}

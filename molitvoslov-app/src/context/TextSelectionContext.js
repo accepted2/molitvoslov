@@ -1,197 +1,91 @@
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useRef,
-  useState,
-} from 'react';
+import React, {createContext, useCallback, useContext, useRef, useState} from 'react';
 
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import {ActivityIndicator, Pressable, StyleSheet, Text, View} from 'react-native';
 
-import {
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
-import {
-  colors,
-  radius,
-  spacing,
-} from '../theme';
+import {colors, radius, spacing} from '../theme';
 
+const TextSelectionContext = createContext(null);
 
-const TextSelectionContext =
-  createContext(null);
+export const TextSelectionProvider = ({children}) => {
+  const insets = useSafeAreaInsets();
 
+  const [activeSelection, setActiveSelection] = useState(null);
 
-export const TextSelectionProvider = ({
-  children,
-}) => {
-  const insets =
-    useSafeAreaInsets();
+  const [saving, setSaving] = useState(false);
 
-  const [
-    activeSelection,
-    setActiveSelection,
-  ] = useState(null);
+  const [error, setError] = useState('');
 
-  const [
-    saving,
-    setSaving,
-  ] = useState(false);
+  const activeRef = useRef(null);
 
-  const [
-    error,
-    setError,
-  ] = useState('');
+  const activateSelection = useCallback((next) => {
+    const previous = activeRef.current;
 
-  const activeRef =
-    useRef(null);
+    if (previous && previous.id !== next.id) {
+      previous.onClear?.();
+    }
 
+    activeRef.current = next;
 
-  const activateSelection =
-    useCallback(
-      next => {
-        const previous =
-          activeRef.current;
+    setActiveSelection(next);
 
-        if (
-          previous &&
-          previous.id !==
-            next.id
-        ) {
-          previous.onClear?.();
-        }
+    setError('');
+  }, []);
 
-        activeRef.current =
-          next;
+  const clearSelection = useCallback((id) => {
+    const current = activeRef.current;
 
-        setActiveSelection(
-          next
-        );
+    if (!current || (id && current.id !== id)) {
+      return;
+    }
 
-        setError('');
-      },
-      []
-    );
+    activeRef.current = null;
 
+    setActiveSelection(null);
 
-  const clearSelection =
-    useCallback(
-      id => {
-        const current =
-          activeRef.current;
+    setSaving(false);
 
-        if (
-          !current ||
-          (
-            id &&
-            current.id !== id
-          )
-        ) {
-          return;
-        }
+    setError('');
+  }, []);
 
-        activeRef.current =
-          null;
+  const closeSelection = useCallback(() => {
+    const current = activeRef.current;
 
-        setActiveSelection(
-          null
-        );
+    current?.onClear?.();
 
-        setSaving(
-          false
-        );
+    clearSelection(current?.id);
+  }, [clearSelection]);
 
-        setError('');
-      },
-      []
-    );
+  const saveSelection = useCallback(async () => {
+    const current = activeRef.current;
 
+    if (!current || !current.canSave || saving) {
+      return;
+    }
 
-  const closeSelection =
-    useCallback(
-      () => {
-        const current =
-          activeRef.current;
+    try {
+      setSaving(true);
 
-        current?.onClear?.();
+      setError('');
 
-        clearSelection(
-          current?.id
-        );
-      },
-      [
-        clearSelection,
-      ]
-    );
+      const result = await current.onSave();
 
+      if (result?.ok === false) {
+        setError(result.message || 'Не удалось сохранить');
 
-  const saveSelection =
-    useCallback(
-      async () => {
-        const current =
-          activeRef.current;
+        return;
+      }
 
-        if (
-          !current ||
-          !current.canSave ||
-          saving
-        ) {
-          return;
-        }
+      clearSelection(current.id);
+    } catch (saveError) {
+      console.log('Ошибка сохранения выделения:', saveError);
 
-        try {
-          setSaving(
-            true
-          );
-
-          setError('');
-
-          const result =
-            await current.onSave();
-
-          if (
-            result?.ok ===
-            false
-          ) {
-            setError(
-              result.message ||
-              'Не удалось сохранить'
-            );
-
-            return;
-          }
-
-          clearSelection(
-            current.id
-          );
-        } catch (saveError) {
-          console.log(
-            'Ошибка сохранения выделения:',
-            saveError
-          );
-
-          setError(
-            'Не удалось сохранить'
-          );
-        } finally {
-          setSaving(
-            false
-          );
-        }
-      },
-      [
-        clearSelection,
-        saving,
-      ]
-    );
-
+      setError('Не удалось сохранить');
+    } finally {
+      setSaving(false);
+    }
+  }, [clearSelection, saving]);
 
   return (
     <TextSelectionContext.Provider
@@ -201,9 +95,7 @@ export const TextSelectionProvider = ({
         clearSelection,
       }}
     >
-      <View
-        style={styles.root}
-      >
+      <View style={styles.root}>
         {children}
 
         {!!activeSelection && (
@@ -211,129 +103,47 @@ export const TextSelectionProvider = ({
             style={[
               styles.bar,
               {
-                bottom:
-                  Math.max(
-                    insets.bottom,
-                    10
-                  ) + 10,
+                bottom: Math.max(insets.bottom, 10) + 10,
               },
             ]}
           >
-            <View
-              style={
-                styles.info
-              }
-            >
-              <Text
-                style={[
-                  styles.counter,
-
-                  activeSelection
-                    .tooLong &&
-                    styles
-                      .counterError,
-                ]}
-              >
-                {
-                  activeSelection
-                    .count
-                }
-                {' '}симв.
+            <View style={styles.info}>
+              <Text style={[styles.counter, activeSelection.tooLong && styles.counterError]}>
+                {activeSelection.count} симв.
               </Text>
 
-              {activeSelection
-                .tooLong ? (
-                <Text
-                  style={
-                    styles.hintError
-                  }
-                >
-                  Сократите выделение
-                </Text>
+              {activeSelection.tooLong ? (
+                <Text style={styles.hintError}>Сократите выделение</Text>
               ) : (
-                <Text
-                  style={
-                    styles.hint
-                  }
-                >
-                  Выделенный фрагмент
-                </Text>
+                <Text style={styles.hint}>Выделенный фрагмент</Text>
               )}
 
-              {!!error && (
-                <Text
-                  style={
-                    styles.hintError
-                  }
-                >
-                  {error}
-                </Text>
-              )}
+              {!!error && <Text style={styles.hintError}>{error}</Text>}
             </View>
 
             <Pressable
               hitSlop={8}
-              onPress={
-                closeSelection
-              }
-              style={({pressed}) => [
-                styles.closeButton,
-
-                pressed &&
-                  styles.pressed,
-              ]}
+              onPress={closeSelection}
+              style={({pressed}) => [styles.closeButton, pressed && styles.pressed]}
             >
-              <Text
-                style={
-                  styles.closeText
-                }
-              >
-                ×
-              </Text>
+              <Text style={styles.closeText}>×</Text>
             </Pressable>
 
             <Pressable
-              disabled={
-                !activeSelection
-                  .canSave ||
-                saving
-              }
-              onPress={
-                saveSelection
-              }
+              disabled={!activeSelection.canSave || saving}
+              onPress={saveSelection}
               style={({pressed}) => [
                 styles.saveButton,
 
-                (
-                  !activeSelection
-                    .canSave ||
-                  saving
-                ) &&
-                  styles
-                    .saveButtonDisabled,
+                (!activeSelection.canSave || saving) && styles.saveButtonDisabled,
 
-                pressed &&
-                  activeSelection
-                    .canSave &&
-                  !saving &&
-                  styles.pressed,
+                pressed && activeSelection.canSave && !saving && styles.pressed,
               ]}
             >
               {saving ? (
-                <ActivityIndicator
-                  size="small"
-                  color={
-                    colors.white
-                  }
-                />
+                <ActivityIndicator size="small" color={colors.white} />
               ) : (
-                <Text
-                  style={
-                    styles.saveText
-                  }
-                >
-                  Сохранить
-                </Text>
+                <Text style={styles.saveText}>Сохранить</Text>
               )}
             </Pressable>
           </View>
@@ -343,132 +153,107 @@ export const TextSelectionProvider = ({
   );
 };
 
+export const useTextSelection = () => {
+  const context = useContext(TextSelectionContext);
 
-export const useTextSelection =
-  () => {
-    const context =
-      useContext(
-        TextSelectionContext
-      );
+  if (!context) {
+    throw new Error('useTextSelection должен использоваться внутри TextSelectionProvider');
+  }
 
-    if (!context) {
-      throw new Error(
-        'useTextSelection должен использоваться внутри TextSelectionProvider'
-      );
-    }
+  return context;
+};
 
-    return context;
-  };
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
 
-
-const styles =
-  StyleSheet.create({
-    root: {
-      flex: 1,
+  bar: {
+    position: 'absolute',
+    left: spacing.md,
+    right: spacing.md,
+    minHeight: 58,
+    paddingVertical: 9,
+    paddingLeft: 14,
+    paddingRight: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    shadowColor: colors.shadow,
+    shadowOffset: {
+      width: 0,
+      height: 4,
     },
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
+    elevation: 12,
+    zIndex: 1000,
+  },
 
-    bar: {
-      position: 'absolute',
-      left:
-        spacing.md,
-      right:
-        spacing.md,
-      minHeight: 58,
-      paddingVertical: 9,
-      paddingLeft: 14,
-      paddingRight: 9,
-      flexDirection: 'row',
-      alignItems: 'center',
-      borderRadius:
-        radius.lg,
-      backgroundColor:
-        colors.surface,
-      borderWidth: 1,
-      borderColor:
-        colors.borderStrong,
-      shadowColor:
-        colors.shadow,
-      shadowOffset: {
-        width: 0,
-        height: 4,
-      },
-      shadowOpacity: 0.16,
-      shadowRadius: 12,
-      elevation: 12,
-      zIndex: 1000,
-    },
+  info: {
+    flex: 1,
+  },
 
-    info: {
-      flex: 1,
-    },
+  counter: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.accentDark,
+  },
 
-    counter: {
-      fontSize: 12,
-      fontWeight: '800',
-      color:
-        colors.accentDark,
-    },
+  counterError: {
+    color: colors.liturgical,
+  },
 
-    counterError: {
-      color:
-        colors.liturgical,
-    },
+  hint: {
+    marginTop: 2,
+    fontSize: 11,
+    color: colors.textMuted,
+  },
 
-    hint: {
-      marginTop: 2,
-      fontSize: 11,
-      color:
-        colors.textMuted,
-    },
+  hintError: {
+    marginTop: 2,
+    fontSize: 11,
+    color: colors.liturgical,
+  },
 
-    hintError: {
-      marginTop: 2,
-      fontSize: 11,
-      color:
-        colors.liturgical,
-    },
+  closeButton: {
+    width: 34,
+    height: 34,
+    marginHorizontal: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
-    closeButton: {
-      width: 34,
-      height: 34,
-      marginHorizontal: 5,
-      alignItems: 'center',
-      justifyContent:
-        'center',
-    },
+  closeText: {
+    fontSize: 24,
+    lineHeight: 26,
+    color: colors.textMuted,
+  },
 
-    closeText: {
-      fontSize: 24,
-      lineHeight: 26,
-      color:
-        colors.textMuted,
-    },
+  saveButton: {
+    minWidth: 104,
+    height: 38,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    backgroundColor: colors.accent,
+  },
 
-    saveButton: {
-      minWidth: 104,
-      height: 38,
-      paddingHorizontal: 14,
-      alignItems: 'center',
-      justifyContent:
-        'center',
-      borderRadius:
-        radius.md,
-      backgroundColor:
-        colors.accent,
-    },
+  saveButtonDisabled: {
+    opacity: 0.38,
+  },
 
-    saveButtonDisabled: {
-      opacity: 0.38,
-    },
+  saveText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.white,
+  },
 
-    saveText: {
-      fontSize: 13,
-      fontWeight: '800',
-      color:
-        colors.white,
-    },
-
-    pressed: {
-      opacity: 0.68,
-    },
-  });
+  pressed: {
+    opacity: 0.68,
+  },
+});

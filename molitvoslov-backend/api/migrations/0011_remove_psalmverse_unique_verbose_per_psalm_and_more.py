@@ -7,21 +7,28 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0010_kathisma_psalter_psalm_psalmverse_kathismaglory_and_more'),
+        ("api", "0010_kathisma_psalter_psalm_psalmverse_kathismaglory_and_more"),
     ]
 
     operations = [
         migrations.RemoveConstraint(
-            model_name='psalmverse',
-            name='unique_verbose_per_psalm',
+            model_name="psalmverse",
+            name="unique_verbose_per_psalm",
         ),
         migrations.AlterField(
-            model_name='kathisma',
-            name='psalter',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='kathismas', to='api.psalter', verbose_name='Псалтирь'),
+            model_name="kathisma",
+            name="psalter",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="kathismas",
+                to="api.psalter",
+                verbose_name="Псалтирь",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='psalmverse',
-            constraint=models.UniqueConstraint(fields=('psalm', 'number'), name='unique_verse_per_psalm'),
+            model_name="psalmverse",
+            constraint=models.UniqueConstraint(
+                fields=("psalm", "number"), name="unique_verse_per_psalm"
+            ),
         ),
     ]

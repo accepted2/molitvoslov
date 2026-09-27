@@ -57,26 +57,27 @@ GLORIES = {
 
 # На Правмире местами встречаются латинские буквы,
 # визуально неотличимые от кириллицы.
-LATIN_TO_CYRILLIC = str.maketrans({
-    "A": "А",
-    "B": "В",
-    "C": "С",
-    "E": "Е",
-    "H": "Н",
-    "K": "К",
-    "M": "М",
-    "O": "О",
-    "P": "Р",
-    "T": "Т",
-    "X": "Х",
-
-    "a": "а",
-    "c": "с",
-    "e": "е",
-    "o": "о",
-    "p": "р",
-    "x": "х",
-})
+LATIN_TO_CYRILLIC = str.maketrans(
+    {
+        "A": "А",
+        "B": "В",
+        "C": "С",
+        "E": "Е",
+        "H": "Н",
+        "K": "К",
+        "M": "М",
+        "O": "О",
+        "P": "Р",
+        "T": "Т",
+        "X": "Х",
+        "a": "а",
+        "c": "с",
+        "e": "е",
+        "o": "о",
+        "p": "р",
+        "x": "х",
+    }
+)
 
 
 def normalize(text):
@@ -91,8 +92,7 @@ def normalize(text):
 
 def without_accents(text):
     return "".join(
-        ch for ch in unicodedata.normalize("NFD", text)
-        if unicodedata.category(ch) != "Mn"
+        ch for ch in unicodedata.normalize("NFD", text) if unicodedata.category(ch) != "Mn"
     )
 
 
@@ -103,7 +103,7 @@ def find_source_file():
         files_dir / "pravmir_psalter.html",
         files_dir / "pravmir_psalter.html",
         files_dir / "pravmir_psalter.html.html",
-        ]
+    ]
 
     for path in preferred:
         if path.exists():
@@ -117,19 +117,11 @@ def find_source_file():
 
         name = path.name.lower()
 
-        if (
-                "2420" in name
-                or "psalt" in name
-                or "псалт" in name
-                or "library_ebook" in name
-        ):
+        if "2420" in name or "psalt" in name or "псалт" in name or "library_ebook" in name:
             candidates.append(path)
 
     if not candidates:
-        raise FileNotFoundError(
-            "Не найден HTML Правмира.\n"
-            "Положи скачанный файл в папку files."
-        )
+        raise FileNotFoundError("Не найден HTML Правмира.\n" "Положи скачанный файл в папку files.")
 
     # Полный HTML заметно больше карточки книги.
     candidates.sort(
@@ -148,11 +140,7 @@ def is_kathisma_heading(text):
 def is_glory(text):
     plain = without_accents(text).lower().strip()
 
-    return (
-            plain.startswith("слава:")
-            or plain.startswith("слава, и ныне:")
-            or plain == "слава"
-    )
+    return plain.startswith("слава:") or plain.startswith("слава, и ныне:") or plain == "слава"
 
 
 def parse_verses(text, psalm_number):
@@ -168,10 +156,7 @@ def parse_verses(text, psalm_number):
     )
 
     if not matches:
-        raise ValueError(
-            f"Псалом {psalm_number}: "
-            f"не удалось найти номера стихов."
-        )
+        raise ValueError(f"Псалом {psalm_number}: " f"не удалось найти номера стихов.")
 
     verses = []
 
@@ -188,28 +173,25 @@ def parse_verses(text, psalm_number):
         verse_text = normalize(text[start:end])
 
         if not verse_text:
-            raise ValueError(
-                f"Псалом {psalm_number}, стих {number}: пустой текст."
-            )
+            raise ValueError(f"Псалом {psalm_number}, стих {number}: пустой текст.")
 
-        verses.append({
-            "number": number,
-            "church_slavonic": verse_text,
-            "russian": "",
-        })
+        verses.append(
+            {
+                "number": number,
+                "church_slavonic": verse_text,
+                "russian": "",
+            }
+        )
 
     numbers = [v["number"] for v in verses]
 
     if len(numbers) != len(set(numbers)):
-        raise ValueError(
-            f"Псалом {psalm_number}: найдены повторяющиеся номера стихов."
-        )
+        raise ValueError(f"Псалом {psalm_number}: найдены повторяющиеся номера стихов.")
 
     for previous, current in zip(numbers, numbers[1:]):
         if current <= previous:
             raise ValueError(
-                f"Псалом {psalm_number}: "
-                f"нарушена нумерация стихов: {previous} -> {current}"
+                f"Псалом {psalm_number}: " f"нарушена нумерация стихов: {previous} -> {current}"
             )
 
     return verses
@@ -230,9 +212,7 @@ def find_kathisma_divs(soup):
             result.append(parent)
 
     if len(result) < 20:
-        raise ValueError(
-            f"Нашлось только {len(result)} кафизм вместо 20."
-        )
+        raise ValueError(f"Нашлось только {len(result)} кафизм вместо 20.")
 
     return result[:20]
 
@@ -266,9 +246,7 @@ def parse_kathisma(div, kathisma_number):
             return
 
         if current_title is None:
-            raise ValueError(
-                f"Псалом {current_number}: отсутствует надписание."
-            )
+            raise ValueError(f"Псалом {current_number}: отсутствует надписание.")
 
         body = normalize(" ".join(body_parts))
 
@@ -277,22 +255,22 @@ def parse_kathisma(div, kathisma_number):
             current_number,
         )
 
-        psalms.append({
-            "number": current_number,
-            "title_church_slavonic": normalize(current_title),
-            "title_russian": "",
-            "description": "",
-            "verses": verses,
-        })
+        psalms.append(
+            {
+                "number": current_number,
+                "title_church_slavonic": normalize(current_title),
+                "title_russian": "",
+                "description": "",
+                "verses": verses,
+            }
+        )
 
         current_number = None
         current_title = None
         body_parts = []
 
     for p in paragraphs:
-        text = normalize(
-            p.get_text(" ", strip=True)
-        )
+        text = normalize(p.get_text(" ", strip=True))
 
         if not text:
             continue
@@ -359,9 +337,7 @@ def parse_kathisma(div, kathisma_number):
 
     finish_current()
 
-    psalms.sort(
-        key=lambda p: p["number"]
-    )
+    psalms.sort(key=lambda p: p["number"])
 
     got = [p["number"] for p in psalms]
 
@@ -376,36 +352,23 @@ def parse_kathisma(div, kathisma_number):
 
 
 def validate(kathisma_number, psalms):
-    expected = KATHISMA_RANGES[
-        kathisma_number
-    ]
+    expected = KATHISMA_RANGES[kathisma_number]
 
-    numbers = [
-        psalm["number"]
-        for psalm in psalms
-    ]
+    numbers = [psalm["number"] for psalm in psalms]
 
     if numbers != expected:
-        raise ValueError(
-            f"Кафизма {kathisma_number}: "
-            "неверный диапазон псалмов."
-        )
+        raise ValueError(f"Кафизма {kathisma_number}: " "неверный диапазон псалмов.")
 
     for psalm in psalms:
         if not psalm["verses"]:
-            raise ValueError(
-                f"Псалом {psalm['number']} пуст."
-            )
+            raise ValueError(f"Псалом {psalm['number']} пуст.")
 
         for verse in psalm["verses"]:
-            text = verse[
-                "church_slavonic"
-            ]
+            text = verse["church_slavonic"]
 
             if "Слава:" in text:
                 raise ValueError(
-                    f"Псалом {psalm['number']}:"
-                    f"{verse['number']} содержит 'Слава:'."
+                    f"Псалом {psalm['number']}:" f"{verse['number']} содержит 'Слава:'."
                 )
 
             latin = re.findall(
@@ -423,34 +386,23 @@ def validate(kathisma_number, psalms):
     if kathisma_number == 17:
         psalm118 = psalms[0]
 
-        verse_numbers = {
-            verse["number"]
-            for verse in psalm118["verses"]
-        }
+        verse_numbers = {verse["number"] for verse in psalm118["verses"]}
 
         if 72 not in verse_numbers:
-            raise ValueError(
-                "Псалом 118: нет стиха 72."
-            )
+            raise ValueError("Псалом 118: нет стиха 72.")
 
         if 131 not in verse_numbers:
-            raise ValueError(
-                "Псалом 118: нет стиха 131."
-            )
+            raise ValueError("Псалом 118: нет стиха 131.")
 
         # В полном 118-м псалме должно быть 176 стихов.
         if 176 not in verse_numbers:
-            raise ValueError(
-                "Псалом 118: не найден последний, 176-й стих."
-            )
+            raise ValueError("Псалом 118: не найден последний, 176-й стих.")
 
 
 def main():
     source = find_source_file()
 
-    print(
-        f"Источник: {source}"
-    )
+    print(f"Источник: {source}")
 
     html = source.read_text(
         encoding="utf-8",
@@ -462,9 +414,7 @@ def main():
         "html.parser",
     )
 
-    kathisma_divs = find_kathisma_divs(
-        soup
-    )
+    kathisma_divs = find_kathisma_divs(soup)
 
     out_dir = Path("files")
     out_dir.mkdir(
@@ -473,12 +423,10 @@ def main():
     )
 
     for kathisma_number in range(
-            16,
-            21,
+        16,
+        21,
     ):
-        div = kathisma_divs[
-            kathisma_number - 1
-            ]
+        div = kathisma_divs[kathisma_number - 1]
 
         psalms, source_glories = parse_kathisma(
             div,
@@ -495,8 +443,7 @@ def main():
                 "name": "Псалтирь",
                 "slug": "psaltir",
                 "description": (
-                    "Псалтирь на церковнославянском языке "
-                    "гражданским шрифтом с ударениями."
+                    "Псалтирь на церковнославянском языке " "гражданским шрифтом с ударениями."
                 ),
                 "is_visible": True,
             },
@@ -505,17 +452,12 @@ def main():
                     "number": kathisma_number,
                     "title": f"Кафизма {kathisma_number}",
                     "psalms": psalms,
-                    "glories": GLORIES[
-                        kathisma_number
-                    ],
+                    "glories": GLORIES[kathisma_number],
                 }
             ],
         }
 
-        output = (
-                out_dir
-                / f"psalter_kathisma_{kathisma_number}.json"
-        )
+        output = out_dir / f"psalter_kathisma_{kathisma_number}.json"
 
         output.write_text(
             json.dumps(
@@ -526,10 +468,7 @@ def main():
             encoding="utf-8",
         )
 
-        verse_count = sum(
-            len(psalm["verses"])
-            for psalm in psalms
-        )
+        verse_count = sum(len(psalm["verses"]) for psalm in psalms)
 
         print(
             f"Кафизма {kathisma_number}: OK | "
@@ -543,14 +482,10 @@ def main():
                 source_glories,
             )
 
-        print(
-            f"  -> {output}"
-        )
+        print(f"  -> {output}")
 
     print()
-    print(
-        "ГОТОВО: кафизмы 16–20 созданы."
-    )
+    print("ГОТОВО: кафизмы 16–20 созданы.")
 
 
 if __name__ == "__main__":

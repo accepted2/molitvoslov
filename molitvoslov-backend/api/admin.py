@@ -23,86 +23,88 @@ from .models import (
     SavedItem,
 )
 
+
 class CategoryTextInline(admin.TabularInline):
     """Inline для добавления категорий с порядком прямо в тексте"""
 
     model = CategoryText
     extra = 1
-    autocomplete_fields = ['category']
-    fields = ['category', 'order']
-    ordering = ['order']
+    autocomplete_fields = ["category"]
+    fields = ["category", "order"]
+    ordering = ["order"]
 
-    verbose_name = 'Категория'
-    verbose_name_plural = 'Категории (с порядком)'
+    verbose_name = "Категория"
+    verbose_name_plural = "Категории (с порядком)"
+
 
 class CollectionItemInline(admin.TabularInline):
     """Inline для добавления текста в сборник прямо из админки"""
 
     model = CollectionItem
     extra = 1
-    autocomplete_fields = ['collection']
-    fields = ['collection', 'order']
-    ordering = ['order']
+    autocomplete_fields = ["collection"]
+    fields = ["collection", "order"]
+    ordering = ["order"]
 
-    verbose_name = 'Сборник'
-    verbose_name_plural = 'Сборники (с порядком)'
+    verbose_name = "Сборник"
+    verbose_name_plural = "Сборники (с порядком)"
+
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = [
-        'name',
-        'slug',
-        'parent',
-        'order',
-        'icon',
+        "name",
+        "slug",
+        "parent",
+        "order",
+        "icon",
     ]
 
     search_fields = [
-        'name',
+        "name",
     ]
 
-    prepopulated_fields = {
-        'slug': ('name',)
-    }
+    prepopulated_fields = {"slug": ("name",)}
 
     list_filter = [
-        'parent',
+        "parent",
     ]
 
     ordering = [
-        'order',
+        "order",
     ]
+
 
 @admin.register(Text)
 class TextAdmin(admin.ModelAdmin):
     list_display = [
-        'title_or_description',
-        'categories_list',
-        'content_preview',
-        'language',
-        'is_visible',
-        'slug',
+        "title_or_description",
+        "categories_list",
+        "content_preview",
+        "language",
+        "is_visible",
+        "slug",
     ]
 
     list_display_links = [
-        'title_or_description',
+        "title_or_description",
     ]
 
     search_fields = [
-        'title',
-        'description',
-        'content',
-        'translation',
-        'slug',
+        "title",
+        "description",
+        "content",
+        "translation",
+        "slug",
     ]
 
     list_filter = [
-        'language',
-        'is_visible',
+        "language",
+        "is_visible",
     ]
 
     list_editable = [
-        'is_visible',
+        "is_visible",
     ]
 
     save_on_top = True
@@ -113,174 +115,162 @@ class TextAdmin(admin.ModelAdmin):
     ]
 
     prepopulated_fields = {
-        'slug': (
-            'title',
-            'description',
+        "slug": (
+            "title",
+            "description",
         )
     }
 
     fieldsets = (
         (
-            '📖 Молитва',
+            "📖 Молитва",
             {
-                'fields': (
-                    'title',
-                    'description',
-                    'description_position',
-                    'content',
-                    'translation',
-                    'slug',
+                "fields": (
+                    "title",
+                    "description",
+                    "description_position",
+                    "content",
+                    "translation",
+                    "slug",
                 ),
-                'classes': (
-                    'wide',
-                    'extrapretty',
+                "classes": (
+                    "wide",
+                    "extrapretty",
                 ),
-                'description':
-                    'Заголовок и описание не обязательны. '
-                    'Slug сгенерируется автоматически.',
-            }
+                "description": "Заголовок и описание не обязательны. "
+                "Slug сгенерируется автоматически.",
+            },
         ),
         (
-            '🌍 Язык и видимость',
+            "🌍 Язык и видимость",
             {
-                'fields': (
-                    'language',
-                    'is_visible',
+                "fields": (
+                    "language",
+                    "is_visible",
                 ),
-                'classes': (
-                    'wide',
-                ),
-            }
+                "classes": ("wide",),
+            },
         ),
     )
 
     def title_or_description(self, obj):
         if obj.title:
-            return (
-                obj.title[:60] + '…'
-                if len(obj.title) > 60
-                else obj.title
-            )
+            return obj.title[:60] + "…" if len(obj.title) > 60 else obj.title
 
         if obj.description:
-            return (
-                obj.description[:60] + '…'
-                if len(obj.description) > 60
-                else obj.description
-            )
+            return obj.description[:60] + "…" if len(obj.description) > 60 else obj.description
 
-        return obj.content[:40] + '…'
+        return obj.content[:40] + "…"
 
-    title_or_description.short_description = (
-        'Заголовок / Описание'
-    )
+    title_or_description.short_description = "Заголовок / Описание"
 
     def categories_list(self, obj):
-        return ', '.join(
-            cat.name
-            for cat in obj.categories.all()
-        )
+        return ", ".join(cat.name for cat in obj.categories.all())
 
-    categories_list.short_description = 'Категории'
+    categories_list.short_description = "Категории"
 
     def content_preview(self, obj):
         if len(obj.content) > 50:
-            return obj.content[:50] + '…'
+            return obj.content[:50] + "…"
 
         return obj.content
 
-    content_preview.short_description = 'Содержание'
+    content_preview.short_description = "Содержание"
+
 
 @admin.register(CategoryText)
 class CategoryTextAdmin(admin.ModelAdmin):
     list_display = [
-        'category',
-        'text',
-        'order',
+        "category",
+        "text",
+        "order",
     ]
 
     list_filter = [
-        'category',
+        "category",
     ]
 
     autocomplete_fields = [
-        'category',
-        'text',
+        "category",
+        "text",
     ]
 
     ordering = [
-        'category',
-        'order',
+        "category",
+        "order",
     ]
+
 
 @admin.register(UserCollection)
 class UserCollectionAdmin(admin.ModelAdmin):
     list_display = [
-        'user',
-        'name',
-        'is_default',
-        'created_at',
+        "user",
+        "name",
+        "is_default",
+        "created_at",
     ]
 
     list_filter = [
-        'user',
-        'is_default',
+        "user",
+        "is_default",
     ]
 
     search_fields = [
-        'name',
-        'user__username',
+        "name",
+        "user__username",
     ]
 
     readonly_fields = [
-        'created_at',
+        "created_at",
     ]
+
 
 @admin.register(CollectionItem)
 class CollectionItemAdmin(admin.ModelAdmin):
     list_display = [
-        'collection',
-        'text',
-        'order',
-        'added_at',
+        "collection",
+        "text",
+        "order",
+        "added_at",
     ]
 
     list_filter = [
-        'collection',
+        "collection",
     ]
 
     autocomplete_fields = [
-        'collection',
-        'text',
+        "collection",
+        "text",
     ]
 
     ordering = [
-        'collection',
-        'order',
+        "collection",
+        "order",
     ]
+
 
 @admin.register(Bookmark)
 class BookmarkAdmin(admin.ModelAdmin):
     list_display = [
-        'user',
-        'text',
-        'collection',
-        'position',
-        'created_at',
+        "user",
+        "text",
+        "collection",
+        "position",
+        "created_at",
     ]
 
     list_filter = [
-        'user',
+        "user",
     ]
 
     autocomplete_fields = [
-        'user',
-        'text',
-        'collection',
+        "user",
+        "text",
+        "collection",
     ]
 
     readonly_fields = [
-        'created_at',
+        "created_at",
     ]
 
 
@@ -288,305 +278,327 @@ class BookmarkAdmin(admin.ModelAdmin):
 # МОЛИТВЕННЫЕ ПРАВИЛА
 # =========================================================
 
+
 class PrayerRuleItemsInline(admin.TabularInline):
     model = PrayerRuleItem
     extra = 0
 
     autocomplete_fields = [
-        'text',
+        "text",
     ]
 
     fields = [
-        'order',
-        'item_type',
-        'text',
-        'title',
-        'content',
-        'note',
+        "order",
+        "item_type",
+        "text",
+        "title",
+        "content",
+        "note",
     ]
 
     ordering = [
-        'order',
+        "order",
     ]
 
-    verbose_name = 'Элемент правила'
-    verbose_name_plural = 'Элементы правила'
+    verbose_name = "Элемент правила"
+    verbose_name_plural = "Элементы правила"
+
 
 class PrayerRuleFootnoteInline(admin.TabularInline):
     model = PrayerRuleFootnote
     extra = 0
 
     fields = [
-        'number',
-        'content',
+        "number",
+        "content",
     ]
 
     ordering = [
-        'number',
+        "number",
     ]
 
-    verbose_name = 'Сноска'
-    verbose_name_plural = 'Сноски'
+    verbose_name = "Сноска"
+    verbose_name_plural = "Сноски"
+
 
 @admin.register(PrayerRule)
 class PrayerRuleAdmin(admin.ModelAdmin):
     list_display = [
-        'name',
-        'slug',
-        'is_visible',
+        "name",
+        "slug",
+        "is_visible",
     ]
 
     search_fields = [
-        'name',
-        'description',
+        "name",
+        "description",
     ]
 
     list_filter = [
-        'is_visible',
+        "is_visible",
     ]
 
-    prepopulated_fields = {
-        'slug': ('name',)
-    }
+    prepopulated_fields = {"slug": ("name",)}
 
     inlines = [
         PrayerRuleItemsInline,
         PrayerRuleFootnoteInline,
     ]
 
+
 @admin.register(PrayerRuleItem)
 class PrayerRuleItemAdmin(admin.ModelAdmin):
     list_display = [
-        'rule',
-        'order',
-        'item_type',
-        'text',
-        'title',
-        'content_preview',
-        'note',
+        "rule",
+        "order",
+        "item_type",
+        "text",
+        "title",
+        "content_preview",
+        "note",
     ]
 
     list_filter = [
-        'rule',
-        'item_type',
+        "rule",
+        "item_type",
     ]
 
     search_fields = [
-        'rule__name',
-        'text__title',
-        'text__description',
-        'text__content',
-        'title',
-        'content',
-        'note',
+        "rule__name",
+        "text__title",
+        "text__description",
+        "text__content",
+        "title",
+        "content",
+        "note",
     ]
 
     autocomplete_fields = [
-        'rule',
-        'text',
+        "rule",
+        "text",
     ]
 
     ordering = [
-        'rule',
-        'order',
+        "rule",
+        "order",
     ]
 
     def content_preview(self, obj):
         if not obj.content:
-            return ''
+            return ""
 
         if len(obj.content) > 50:
-            return obj.content[:50] + '…'
+            return obj.content[:50] + "…"
 
         return obj.content
 
-    content_preview.short_description = 'Содержимое'
+    content_preview.short_description = "Содержимое"
+
 
 @admin.register(PrayerRuleFootnote)
 class PrayerRuleFootnoteAdmin(admin.ModelAdmin):
     list_display = [
-        'rule',
-        'number',
-        'content_preview',
+        "rule",
+        "number",
+        "content_preview",
     ]
 
     list_filter = [
-        'rule',
+        "rule",
     ]
 
     search_fields = [
-        'rule__name',
-        'content',
+        "rule__name",
+        "content",
     ]
 
     autocomplete_fields = [
-        'rule',
+        "rule",
     ]
 
     ordering = [
-        'rule',
-        'number',
+        "rule",
+        "number",
     ]
 
     def content_preview(self, obj):
         if len(obj.content) > 80:
-            return obj.content[:80] + '…'
+            return obj.content[:80] + "…"
 
         return obj.content
 
-    content_preview.short_description = 'Текст сноски'
+    content_preview.short_description = "Текст сноски"
+
 
 @admin.register(Psalter)
 class PslaterAdmin(admin.ModelAdmin):
-    list_display= ['name','slug','is_visible']
-    search_fields = ['name','description',]
-    list_filter=['is_visible']
-    prepopulated_fields ={
-        'slug':('name',)
-    }
+    list_display = ["name", "slug", "is_visible"]
+    search_fields = [
+        "name",
+        "description",
+    ]
+    list_filter = ["is_visible"]
+    prepopulated_fields = {"slug": ("name",)}
+
 
 @admin.register(Kathisma)
 class KathismaAdmin(admin.ModelAdmin):
-    list_display = ['number','psalter','title',]
-    list_filter = ['psalter']
-    search_fields = ['title']
-    ordering = [
-        'psalter','number',
+    list_display = [
+        "number",
+        "psalter",
+        "title",
     ]
-    autocomplete_fields = ['psalter']
+    list_filter = ["psalter"]
+    search_fields = ["title"]
+    ordering = [
+        "psalter",
+        "number",
+    ]
+    autocomplete_fields = ["psalter"]
+
 
 class PsalmVerseInline(admin.TabularInline):
     model = PsalmVerse
     extra = 0
-    fields = ['number','church_slavonic','russian']
-    ordering = ['number']
+    fields = ["number", "church_slavonic", "russian"]
+    ordering = ["number"]
+
 
 @admin.register(Psalm)
 class PsalmAdmin(admin.ModelAdmin):
-    list_display = ['number','kathisma','title_church_slavonic','title_russian']
-    list_filter = ['kathisma',]
-    search_fields = ['number','title_church_slavonic','title_russian','description','verses__church_slavonic','verses__russian']
-    ordering=['number']
-    autocomplete_fields = ['kathisma',]
+    list_display = ["number", "kathisma", "title_church_slavonic", "title_russian"]
+    list_filter = [
+        "kathisma",
+    ]
+    search_fields = [
+        "number",
+        "title_church_slavonic",
+        "title_russian",
+        "description",
+        "verses__church_slavonic",
+        "verses__russian",
+    ]
+    ordering = ["number"]
+    autocomplete_fields = [
+        "kathisma",
+    ]
     inlines = [PsalmVerseInline]
+
 
 @admin.register(PsalmVerse)
 class PsalmVerseAdmin(admin.ModelAdmin):
     list_display = [
-        'psalm',
-        'number',
-        'church_slavonic_preview',
-        'russian_preview',
+        "psalm",
+        "number",
+        "church_slavonic_preview",
+        "russian_preview",
     ]
 
     list_filter = [
-        'psalm__kathisma',
+        "psalm__kathisma",
     ]
 
     search_fields = [
-        'church_slavonic',
-        'russian',
+        "church_slavonic",
+        "russian",
     ]
 
     ordering = [
-        'psalm__number',
-        'number',
+        "psalm__number",
+        "number",
     ]
 
     autocomplete_fields = [
-        'psalm',
+        "psalm",
     ]
 
-    @admin.display(
-        description='Церковнославянский'
-    )
+    @admin.display(description="Церковнославянский")
     def church_slavonic_preview(self, obj):
         if len(obj.church_slavonic) > 80:
-            return obj.church_slavonic[:80] + '...'
+            return obj.church_slavonic[:80] + "..."
 
         return obj.church_slavonic
 
-    @admin.display(
-        description='Русский'
-    )
+    @admin.display(description="Русский")
     def russian_preview(self, obj):
         if len(obj.russian) > 80:
-            return obj.russian[:80] + '...'
+            return obj.russian[:80] + "..."
 
         return obj.russian
+
 
 @admin.register(KathismaGlory)
 class KathismaGloryAdmin(admin.ModelAdmin):
     list_display = [
-        'kathisma',
-        'number',
-        'after_psalm',
-        'after_verse',
+        "kathisma",
+        "number",
+        "after_psalm",
+        "after_verse",
     ]
 
     list_filter = [
-        'kathisma',
+        "kathisma",
     ]
 
     ordering = [
-        'kathisma__number',
-        'number',
+        "kathisma__number",
+        "number",
     ]
 
     autocomplete_fields = [
-        'kathisma',
-        'after_psalm',
-        'after_verse',
+        "kathisma",
+        "after_psalm",
+        "after_verse",
     ]
+
 
 # =========================================================
 # АКАФИСТЫ
 # =========================================================
+
 
 class AkathistSectionInline(admin.TabularInline):
     model = AkathistSection
     extra = 0
 
     autocomplete_fields = [
-        'text',
+        "text",
     ]
 
     fields = [
-        'order',
-        'section_type',
-        'number',
-        'text',
-        'note',
+        "order",
+        "section_type",
+        "number",
+        "text",
+        "note",
     ]
 
     ordering = [
-        'order',
+        "order",
     ]
 
-    verbose_name = 'Раздел акафиста'
-    verbose_name_plural = 'Разделы акафиста'
+    verbose_name = "Раздел акафиста"
+    verbose_name_plural = "Разделы акафиста"
 
 
 @admin.register(Akathist)
 class AkathistAdmin(admin.ModelAdmin):
     list_display = [
-        'title',
-        'slug',
-        'is_visible',
+        "title",
+        "slug",
+        "is_visible",
     ]
 
     search_fields = [
-        'title',
-        'description',
+        "title",
+        "description",
     ]
 
     list_filter = [
-        'is_visible',
+        "is_visible",
     ]
 
-    prepopulated_fields = {
-        'slug': ('title',)
-    }
+    prepopulated_fields = {"slug": ("title",)}
 
     inlines = [
         AkathistSectionInline,
@@ -596,92 +608,90 @@ class AkathistAdmin(admin.ModelAdmin):
 @admin.register(AkathistSection)
 class AkathistSectionAdmin(admin.ModelAdmin):
     list_display = [
-        'akathist',
-        'order',
-        'section_type',
-        'number',
-        'text',
-        'note',
+        "akathist",
+        "order",
+        "section_type",
+        "number",
+        "text",
+        "note",
     ]
 
     list_filter = [
-        'akathist',
-        'section_type',
+        "akathist",
+        "section_type",
     ]
 
     search_fields = [
-        'akathist__title',
-        'text__title',
-        'text__description',
-        'text__content',
-        'text__translation',
-        'note',
+        "akathist__title",
+        "text__title",
+        "text__description",
+        "text__content",
+        "text__translation",
+        "note",
     ]
 
     autocomplete_fields = [
-        'akathist',
-        'text',
+        "akathist",
+        "text",
     ]
 
     ordering = [
-        'akathist',
-        'order',
+        "akathist",
+        "order",
     ]
+
 
 # =========================================================
 # КАНОНЫ
 # =========================================================
+
 
 class CanonSectionInline(admin.TabularInline):
     model = CanonSection
     extra = 0
 
     autocomplete_fields = [
-        'text',
+        "text",
     ]
 
     fields = [
-        'order',
-        'variant',
-        'ode_number',
-        'section_type',
-        'heading',
-        'text',
+        "order",
+        "variant",
+        "ode_number",
+        "section_type",
+        "heading",
+        "text",
     ]
 
     ordering = [
-        'order',
+        "order",
     ]
 
-    verbose_name = 'Элемент канона'
-    verbose_name_plural = 'Элементы канона'
+    verbose_name = "Элемент канона"
+    verbose_name_plural = "Элементы канона"
 
 
 @admin.register(Canon)
 class CanonAdmin(admin.ModelAdmin):
     list_display = [
-        'title',
-        'slug',
-        'tone',
-        'is_visible',
+        "title",
+        "slug",
+        "tone",
+        "is_visible",
     ]
 
     search_fields = [
-        'title',
-        'description',
-        'slug',
+        "title",
+        "description",
+        "slug",
     ]
 
     list_filter = [
-        'is_visible',
-        'tone',
+        "is_visible",
+        "tone",
     ]
 
-    prepopulated_fields = {
-        'slug': (
-            'title',
-        )
-    }
+    prepopulated_fields = {"slug": ("title",)}
 
     inlines = [
         CanonSectionInline,
@@ -691,38 +701,38 @@ class CanonAdmin(admin.ModelAdmin):
 @admin.register(CanonSection)
 class CanonSectionAdmin(admin.ModelAdmin):
     list_display = [
-        'canon',
-        'variant',
-        'order',
-        'ode_number',
-        'section_type',
-        'heading',
-        'text',
+        "canon",
+        "variant",
+        "order",
+        "ode_number",
+        "section_type",
+        "heading",
+        "text",
     ]
 
     list_filter = [
-        'canon',
-        'variant',
-        'ode_number',
-        'section_type',
+        "canon",
+        "variant",
+        "ode_number",
+        "section_type",
     ]
 
     search_fields = [
-        'canon__title',
-        'heading',
-        'text__title',
-        'text__content',
-        'text__translation',
+        "canon__title",
+        "heading",
+        "text__title",
+        "text__content",
+        "text__translation",
     ]
 
     autocomplete_fields = [
-        'canon',
-        'text',
+        "canon",
+        "text",
     ]
 
     ordering = [
-        'canon',
-        'order',
+        "canon",
+        "order",
     ]
 
 
@@ -730,44 +740,45 @@ class CanonSectionAdmin(admin.ModelAdmin):
 # ЦИТАТЫ ДНЯ
 # =========================================================
 
+
 @admin.register(DailyQuote)
 class DailyQuoteAdmin(admin.ModelAdmin):
     list_display = [
-        'reference',
-        'text_preview',
-        'quote_date',
-        'is_active',
-        'order',
+        "reference",
+        "text_preview",
+        "quote_date",
+        "is_active",
+        "order",
     ]
 
     list_filter = [
-        'is_active',
-        'quote_date',
+        "is_active",
+        "quote_date",
     ]
 
     search_fields = [
-        'text',
-        'source',
-        'reference',
+        "text",
+        "source",
+        "reference",
     ]
 
     list_editable = [
-        'is_active',
-        'order',
+        "is_active",
+        "order",
     ]
 
     ordering = [
-        'quote_date',
-        'order',
-        'id',
+        "quote_date",
+        "order",
+        "id",
     ]
 
     @admin.display(
-        description='Цитата',
+        description="Цитата",
     )
     def text_preview(self, obj):
         if len(obj.text) > 90:
-            return obj.text[:90] + '…'
+            return obj.text[:90] + "…"
 
         return obj.text
 
@@ -775,43 +786,43 @@ class DailyQuoteAdmin(admin.ModelAdmin):
 @admin.register(SavedItem)
 class SavedItemAdmin(admin.ModelAdmin):
     list_display = [
-        'user',
-        'save_type',
-        'source_title',
-        'item_title',
-        'text_preview',
-        'created_at',
+        "user",
+        "save_type",
+        "source_title",
+        "item_title",
+        "text_preview",
+        "created_at",
     ]
 
     list_filter = [
-        'save_type',
-        'source_type',
-        'anchor_type',
+        "save_type",
+        "source_type",
+        "anchor_type",
     ]
 
     search_fields = [
-        'source_title',
-        'item_title',
-        'text',
-        'user__username',
+        "source_title",
+        "item_title",
+        "text",
+        "user__username",
     ]
 
     readonly_fields = [
-        'created_at',
+        "created_at",
     ]
 
     ordering = [
-        '-created_at',
+        "-created_at",
     ]
 
     @admin.display(
-        description='Текст',
+        description="Текст",
     )
     def text_preview(self, obj):
         if not obj.text:
-            return ''
+            return ""
 
         if len(obj.text) > 80:
-            return obj.text[:80] + '…'
+            return obj.text[:80] + "…"
 
         return obj.text

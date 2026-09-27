@@ -40,14 +40,10 @@ def load_manifest():
         }
 
     try:
-        return json.loads(
-            MANIFEST_PATH.read_text(
-                encoding="utf-8"
-            )
-        )
+        return json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
     except (
-            json.JSONDecodeError,
-            OSError,
+        json.JSONDecodeError,
+        OSError,
     ):
         return {
             "pages": {},
@@ -75,11 +71,7 @@ def normalize_page_url(url):
 
     clean_path = parsed.path.rstrip("/")
 
-    return (
-        f"{parsed.scheme}://"
-        f"{parsed.netloc}"
-        f"{clean_path}"
-    )
+    return f"{parsed.scheme}://" f"{parsed.netloc}" f"{clean_path}"
 
 
 def is_canon_page(url):
@@ -93,17 +85,12 @@ def is_canon_page(url):
 
     path = parsed.path.lower()
 
-    if not path.startswith(
-            "/molitvoslov/"
-    ):
+    if not path.startswith("/molitvoslov/"):
         return False
 
     filename = Path(path).name
 
-    return (
-            filename.startswith("kanon-")
-            and filename.endswith(".html")
-    )
+    return filename.startswith("kanon-") and filename.endswith(".html")
 
 
 def get_html(session, url):
@@ -119,7 +106,7 @@ def get_html(session, url):
 
 
 def discover_canon_pages(
-        session,
+    session,
 ):
     """
     Находим страницы канонов на странице
@@ -136,14 +123,9 @@ def discover_canon_pages(
         if index_url in visited_indexes:
             continue
 
-        visited_indexes.add(
-            index_url
-        )
+        visited_indexes.add(index_url)
 
-        print(
-            f"Просматриваю каталог: "
-            f"{index_url}"
-        )
+        print(f"Просматриваю каталог: " f"{index_url}")
 
         try:
             html = get_html(
@@ -151,9 +133,7 @@ def discover_canon_pages(
                 index_url,
             )
         except requests.RequestException as exc:
-            print(
-                f"  Ошибка каталога: {exc}"
-            )
+            print(f"  Ошибка каталога: {exc}")
             continue
 
         soup = BeautifulSoup(
@@ -162,40 +142,32 @@ def discover_canon_pages(
         )
 
         for anchor in soup.find_all(
-                "a",
-                href=True,
+            "a",
+            href=True,
         ):
             absolute = urljoin(
                 index_url,
                 anchor["href"],
             )
 
-            absolute = normalize_page_url(
-                absolute
-            )
+            absolute = normalize_page_url(absolute)
 
-            if is_canon_page(
-                    absolute
-            ):
-                found.add(
-                    absolute
-                )
+            if is_canon_page(absolute):
+                found.add(absolute)
                 continue
 
             # Страница сборника уже содержит прямые
             # ссылки на отдельные каноны. В соседние
             # разделы Молитвослова не переходим.
 
-        time.sleep(
-            REQUEST_DELAY
-        )
+        time.sleep(REQUEST_DELAY)
 
     return sorted(found)
 
 
 def find_epub_candidates(
-        page_url,
-        html,
+    page_url,
+    html,
 ):
     """
     Ищем потенциальные ссылки EPUB.
@@ -214,13 +186,10 @@ def find_epub_candidates(
     candidates = []
 
     for anchor in soup.find_all(
-            "a",
-            href=True,
+        "a",
+        href=True,
     ):
-        href = anchor.get(
-            "href",
-            ""
-        ).strip()
+        href = anchor.get("href", "").strip()
 
         label = anchor.get_text(
             " ",
@@ -229,12 +198,7 @@ def find_epub_candidates(
 
         href_lower = href.lower()
 
-        if (
-                ".epub" in href_lower
-                or label == "epub"
-                or " epub" in label
-                or label.startswith("epub")
-        ):
+        if ".epub" in href_lower or label == "epub" or " epub" in label or label.startswith("epub"):
             candidates.append(
                 urljoin(
                     page_url,
@@ -250,13 +214,13 @@ def find_epub_candidates(
 
     for pattern in patterns:
         for match in re.findall(
-                pattern,
-                html,
-                flags=re.IGNORECASE,
+            pattern,
+            html,
+            flags=re.IGNORECASE,
         ):
             if isinstance(
-                    match,
-                    tuple,
+                match,
+                tuple,
             ):
                 match = match[0]
 
@@ -283,7 +247,7 @@ def find_epub_candidates(
 
 
 def looks_like_epub(
-        content,
+    content,
 ):
     """
     EPUB является ZIP-архивом.
@@ -292,40 +256,27 @@ def looks_like_epub(
     есть типичные EPUB-файлы.
     """
 
-    if not content.startswith(
-            b"PK"
-    ):
+    if not content.startswith(b"PK"):
         return False
 
     try:
-        with zipfile.ZipFile(
-                BytesIO(content)
-        ) as archive:
-            names = {
-                name.lower()
-                for name
-                in archive.namelist()
-            }
+        with zipfile.ZipFile(BytesIO(content)) as archive:
+            names = {name.lower() for name in archive.namelist()}
 
             if "mimetype" in names:
                 return True
 
-            if any(
-                    name.endswith(
-                        ".opf"
-                    )
-                    for name in names
-            ):
+            if any(name.endswith(".opf") for name in names):
                 return True
 
             if any(
-                    name.endswith(
-                        (
-                                ".xhtml",
-                                ".html",
-                        )
+                name.endswith(
+                    (
+                        ".xhtml",
+                        ".html",
                     )
-                    for name in names
+                )
+                for name in names
             ):
                 return True
 
@@ -336,8 +287,8 @@ def looks_like_epub(
 
 
 def download_epub(
-        session,
-        epub_url,
+    session,
+    epub_url,
 ):
     response = session.get(
         epub_url,
@@ -348,22 +299,16 @@ def download_epub(
 
     response.raise_for_status()
 
-    if not looks_like_epub(
-            response.content
-    ):
+    if not looks_like_epub(response.content):
         return None
 
     return response
 
 
 def slug_from_page_url(
-        page_url,
+    page_url,
 ):
-    name = Path(
-        urlparse(
-            page_url
-        ).path
-    ).stem
+    name = Path(urlparse(page_url).path).stem
 
     name = re.sub(
         r"[^a-zA-Z0-9_-]+",
@@ -375,15 +320,10 @@ def slug_from_page_url(
 
 
 def filename_from_response(
-        page_url,
-        response,
+    page_url,
+    response,
 ):
-    content_disposition = (
-        response.headers.get(
-            "Content-Disposition",
-            ""
-        )
-    )
+    content_disposition = response.headers.get("Content-Disposition", "")
 
     match = re.search(
         r'filename\*?=(?:UTF-8\'\')?["\']?([^"\';]+)',
@@ -392,34 +332,23 @@ def filename_from_response(
     )
 
     if match:
-        filename = (
-            match.group(1)
-            .strip()
-        )
+        filename = match.group(1).strip()
 
-        if filename.lower().endswith(
-                ".epub"
-        ):
+        if filename.lower().endswith(".epub"):
             return filename
 
-    final_path = Path(
-        urlparse(
-            response.url
-        ).path
-    )
+    final_path = Path(urlparse(response.url).path)
 
     if final_path.suffix.lower() == ".epub":
         return final_path.name
 
-    slug = slug_from_page_url(
-        page_url
-    )
+    slug = slug_from_page_url(page_url)
 
     return f"{slug}.epub"
 
 
 def get_page_title(
-        html,
+    html,
 ):
     soup = BeautifulSoup(
         html,
@@ -437,9 +366,7 @@ def get_page_title(
         if title:
             return title
 
-    title_tag = soup.find(
-        "title"
-    )
+    title_tag = soup.find("title")
 
     if title_tag:
         return title_tag.get_text(
@@ -451,14 +378,12 @@ def get_page_title(
 
 
 def process_page(
-        session,
-        page_url,
-        manifest,
+    session,
+    page_url,
+    manifest,
 ):
     print()
-    print(
-        f"Страница: {page_url}"
-    )
+    print(f"Страница: {page_url}")
 
     try:
         html = get_html(
@@ -466,19 +391,13 @@ def process_page(
             page_url,
         )
     except requests.RequestException as exc:
-        print(
-            f"  Ошибка страницы: {exc}"
-        )
+        print(f"  Ошибка страницы: {exc}")
 
         return "failed"
 
-    title = get_page_title(
-        html
-    )
+    title = get_page_title(html)
 
-    print(
-        f"  Название: {title}"
-    )
+    print(f"  Название: {title}")
 
     candidates = find_epub_candidates(
         page_url,
@@ -486,28 +405,20 @@ def process_page(
     )
 
     if not candidates:
-        print(
-            "  EPUB-ссылка не найдена."
-        )
+        print("  EPUB-ссылка не найдена.")
 
-        manifest["pages"][
-            page_url
-        ] = {
+        manifest["pages"][page_url] = {
             "title": title,
             "status": "no_epub",
             "page_url": page_url,
         }
 
-        save_manifest(
-            manifest
-        )
+        save_manifest(manifest)
 
         return "failed"
 
     for epub_url in candidates:
-        print(
-            f"  Пробую: {epub_url}"
-        )
+        print(f"  Пробую: {epub_url}")
 
         try:
             response = download_epub(
@@ -515,15 +426,11 @@ def process_page(
                 epub_url,
             )
         except requests.RequestException as exc:
-            print(
-                f"    Ошибка: {exc}"
-            )
+            print(f"    Ошибка: {exc}")
             continue
 
         if response is None:
-            print(
-                "    Это не EPUB."
-            )
+            print("    Это не EPUB.")
             continue
 
         filename = filename_from_response(
@@ -531,79 +438,51 @@ def process_page(
             response,
         )
 
-        destination = (
-                OUTPUT_DIR /
-                filename
-        )
+        destination = OUTPUT_DIR / filename
 
-        already_exists = (
-            destination.exists()
-        )
+        already_exists = destination.exists()
 
         if already_exists:
-            print(
-                f"  Уже существует: "
-                f"{destination.name}"
-            )
+            print(f"  Уже существует: " f"{destination.name}")
         else:
-            destination.write_bytes(
-                response.content
-            )
+            destination.write_bytes(response.content)
 
-            print(
-                f"  Скачан: "
-                f"{destination.name}"
-            )
+            print(f"  Скачан: " f"{destination.name}")
 
-        manifest["pages"][
-            page_url
-        ] = {
+        manifest["pages"][page_url] = {
             "title": title,
             "status": "downloaded",
             "page_url": page_url,
             "epub_url": response.url,
-            "file": str(
-                destination
-            ).replace(
+            "file": str(destination).replace(
                 "\\",
                 "/",
             ),
-            "size": len(
-                response.content
-            ),
+            "size": len(response.content),
         }
 
-        save_manifest(
-            manifest
-        )
+        save_manifest(manifest)
 
         if already_exists:
             return "exists"
 
         return "downloaded"
 
-    print(
-        "  Подходящий EPUB скачать "
-        "не удалось."
-    )
+    print("  Подходящий EPUB скачать " "не удалось.")
 
-    manifest["pages"][
-        page_url
-    ] = {
+    manifest["pages"][page_url] = {
         "title": title,
         "status": "download_failed",
         "page_url": page_url,
     }
 
-    save_manifest(
-        manifest
-    )
+    save_manifest(manifest)
 
     return "failed"
 
 
 def manifest_file_exists(
-        page_data,
+    page_data,
 ):
     """
     Проверяем, что файл из manifest
@@ -613,59 +492,42 @@ def manifest_file_exists(
     if not page_data:
         return False
 
-    if page_data.get(
-            "status"
-    ) != "downloaded":
+    if page_data.get("status") != "downloaded":
         return False
 
-    file_path = page_data.get(
-        "file"
-    )
+    file_path = page_data.get("file")
 
     if not file_path:
         return False
 
-    return Path(
-        file_path
-    ).exists()
+    return Path(file_path).exists()
 
 
 def main():
     global REQUEST_DELAY
 
     parser = argparse.ArgumentParser(
-        description=(
-            "Скачивает EPUB-каноны "
-            "из сборника канонов Азбуки веры партиями."
-        )
+        description=("Скачивает EPUB-каноны " "из сборника канонов Азбуки веры партиями.")
     )
 
     parser.add_argument(
         "--count",
         type=int,
         default=10,
-        help=(
-            "Сколько новых EPUB скачать "
-            "за один запуск."
-        ),
+        help=("Сколько новых EPUB скачать " "за один запуск."),
     )
 
     parser.add_argument(
         "--delay",
         type=float,
         default=REQUEST_DELAY,
-        help=(
-            "Пауза между запросами "
-            "в секундах."
-        ),
+        help=("Пауза между запросами " "в секундах."),
     )
 
     args = parser.parse_args()
 
     if args.count < 1:
-        parser.error(
-            "--count должен быть больше 0"
-        )
+        parser.error("--count должен быть больше 0")
 
     REQUEST_DELAY = max(
         args.delay,
@@ -684,30 +546,18 @@ def main():
 
     session = requests.Session()
 
-    session.headers.update(
-        HEADERS
-    )
+    session.headers.update(HEADERS)
 
-    print(
-        "Ищу страницы канонов..."
-    )
+    print("Ищу страницы канонов...")
 
-    pages = discover_canon_pages(
-        session
-    )
+    pages = discover_canon_pages(session)
 
     print()
 
-    print(
-        f"Найдено страниц: "
-        f"{len(pages)}"
-    )
+    print(f"Найдено страниц: " f"{len(pages)}")
 
     if not pages:
-        print(
-            "Страницы канонов "
-            "не найдены."
-        )
+        print("Страницы канонов " "не найдены.")
         return
 
     downloaded = 0
@@ -721,16 +571,11 @@ def main():
         if downloaded >= args.count:
             break
 
-        old = (
-            manifest["pages"]
-            .get(page_url)
-        )
+        old = manifest["pages"].get(page_url)
 
         # Если manifest говорит, что файл скачан,
         # проверяем, существует ли он физически.
-        if manifest_file_exists(
-                old
-        ):
+        if manifest_file_exists(old):
             skipped += 1
             continue
 
@@ -749,35 +594,20 @@ def main():
         else:
             failed += 1
 
-        time.sleep(
-            REQUEST_DELAY
-        )
+        time.sleep(REQUEST_DELAY)
 
     print()
     print("=" * 60)
 
-    print(
-        f"Скачано новых EPUB: "
-        f"{downloaded}"
-    )
+    print(f"Скачано новых EPUB: " f"{downloaded}")
 
-    print(
-        f"Уже были скачаны ранее: "
-        f"{skipped}"
-    )
+    print(f"Уже были скачаны ранее: " f"{skipped}")
 
-    print(
-        f"Не удалось скачать: "
-        f"{failed}"
-    )
+    print(f"Не удалось скачать: " f"{failed}")
 
-    print(
-        f"Папка: {OUTPUT_DIR}"
-    )
+    print(f"Папка: {OUTPUT_DIR}")
 
-    print(
-        f"Manifest: {MANIFEST_PATH}"
-    )
+    print(f"Manifest: {MANIFEST_PATH}")
 
     print("=" * 60)
 

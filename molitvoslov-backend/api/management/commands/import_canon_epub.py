@@ -19,266 +19,151 @@ from api.models import (
 
 
 HEADING_TAGS = {
-    'h1',
-    'h2',
-    'h3',
-    'h4',
-    'h5',
-    'h6',
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
 }
 
 # Те же языковые классы уже встречались
 # в EPUB акафистов Азбуки веры.
 CHURCH_CLASSES = {
-    'paint',
-    'gprayer',
+    "paint",
+    "gprayer",
 }
 
 TRANSLATION_CLASSES = {
-    'translate',
+    "translate",
 }
 
 
 SECTION_LABELS = {
-    CanonSection.TYPE_IRMOS:
-        'Ирмос',
-
-    CanonSection.TYPE_REFRAIN:
-        'Припев',
-
-    CanonSection.TYPE_TROPARION:
-        'Тропарь',
-
-    CanonSection.TYPE_THEOTOKION:
-        'Богородичен',
-
-    CanonSection.TYPE_GLORY:
-        'Слава',
-
-    CanonSection.TYPE_NOW:
-        'И ныне',
-
-    CanonSection.TYPE_SEDALEN:
-        'Седален',
-
-    CanonSection.TYPE_KONTAKION:
-        'Кондак',
-
-    CanonSection.TYPE_IKOS:
-        'Икос',
-
-    CanonSection.TYPE_SVETILEN:
-        'Светилен',
-
-    CanonSection.TYPE_PRAYER:
-        'Молитва',
-
-    CanonSection.TYPE_OTHER:
-        'Текст',
+    CanonSection.TYPE_IRMOS: "Ирмос",
+    CanonSection.TYPE_REFRAIN: "Припев",
+    CanonSection.TYPE_TROPARION: "Тропарь",
+    CanonSection.TYPE_THEOTOKION: "Богородичен",
+    CanonSection.TYPE_GLORY: "Слава",
+    CanonSection.TYPE_NOW: "И ныне",
+    CanonSection.TYPE_SEDALEN: "Седален",
+    CanonSection.TYPE_KONTAKION: "Кондак",
+    CanonSection.TYPE_IKOS: "Икос",
+    CanonSection.TYPE_SVETILEN: "Светилен",
+    CanonSection.TYPE_PRAYER: "Молитва",
+    CanonSection.TYPE_OTHER: "Текст",
 }
 
 
 class Command(BaseCommand):
     help = (
-        'Импортирует канон из EPUB Азбуки веры. '
-        'Поддерживает песни, ирмосы, припевы, '
-        'тропари, Богородичны, седальны, '
-        'кондаки, икосы, светильны и молитвы.'
+        "Импортирует канон из EPUB Азбуки веры. "
+        "Поддерживает песни, ирмосы, припевы, "
+        "тропари, Богородичны, седальны, "
+        "кондаки, икосы, светильны и молитвы."
     )
 
     def add_arguments(
-            self,
-            parser,
+        self,
+        parser,
     ):
-        source_group = (
-            parser.add_mutually_exclusive_group(
-                required=True
-            )
+        source_group = parser.add_mutually_exclusive_group(required=True)
+
+        source_group.add_argument(
+            "--epub",
+            help="Путь к EPUB-файлу.",
         )
 
         source_group.add_argument(
-            '--epub',
-            help='Путь к EPUB-файлу.',
-        )
-
-        source_group.add_argument(
-            '--html',
-            help=(
-                'Путь к извлечённому '
-                'Book.html/Book.xhtml.'
-            ),
+            "--html",
+            help=("Путь к извлечённому " "Book.html/Book.xhtml."),
         )
 
         parser.add_argument(
-            '--slug',
+            "--slug",
             required=True,
-            help='Slug канона в базе.',
+            help="Slug канона в базе.",
         )
 
         parser.add_argument(
-            '--title',
-            default='',
-            help=(
-                'Название канона. Если не указано, '
-                'берётся из EPUB.'
-            ),
+            "--title",
+            default="",
+            help=("Название канона. Если не указано, " "берётся из EPUB."),
         )
 
         parser.add_argument(
-            '--check-only',
-            action='store_true',
-            help=(
-                'Только разобрать и проверить EPUB. '
-                'База данных не изменяется.'
-            ),
+            "--check-only",
+            action="store_true",
+            help=("Только разобрать и проверить EPUB. " "База данных не изменяется."),
         )
 
     def handle(
-            self,
-            *args,
-            **options,
+        self,
+        *args,
+        **options,
     ):
-        epub_value = (
-            options.get(
-                'epub'
-            )
-        )
+        epub_value = options.get("epub")
 
-        html_value = (
-            options.get(
-                'html'
-            )
-        )
+        html_value = options.get("html")
 
-        source_path = Path(
-            epub_value
-            or html_value
-        )
+        source_path = Path(epub_value or html_value)
 
-        source_kind = (
-            'epub'
-            if epub_value
-            else 'html'
-        )
+        source_kind = "epub" if epub_value else "html"
 
-        slug = (
-            options['slug']
-            .strip()
-        )
+        slug = options["slug"].strip()
 
-        title = (
-            options['title']
-            .strip()
-        )
+        title = options["title"].strip()
 
-        check_only = (
-            options['check_only']
-        )
+        check_only = options["check_only"]
 
         if not source_path.exists():
-            raise CommandError(
-                'Файл не найден: '
-                f'{source_path}'
-            )
+            raise CommandError("Файл не найден: " f"{source_path}")
 
-        self.stdout.write('')
-        self.stdout.write(
-            '=' * 72
-        )
+        self.stdout.write("")
+        self.stdout.write("=" * 72)
 
-        self.stdout.write(
-            'ИМПОРТ КАНОНА ИЗ EPUB'
-        )
+        self.stdout.write("ИМПОРТ КАНОНА ИЗ EPUB")
 
-        self.stdout.write(
-            '=' * 72
-        )
+        self.stdout.write("=" * 72)
 
-        self.stdout.write(
-            f'Файл: {source_path}'
-        )
+        self.stdout.write(f"Файл: {source_path}")
 
-        self.stdout.write(
-            'Источник: '
-            + (
-                'EPUB'
-                if source_kind ==
-                    'epub'
-                else
-                'HTML'
-            )
-        )
+        self.stdout.write("Источник: " + ("EPUB" if source_kind == "epub" else "HTML"))
 
-        self.stdout.write(
-            f'Slug: {slug}'
-        )
+        self.stdout.write(f"Slug: {slug}")
 
-        if source_kind == 'epub':
+        if source_kind == "epub":
             (
                 documents,
                 epub_title,
-            ) = (
-                self.read_epub_documents(
-                    source_path
-                )
-            )
+            ) = self.read_epub_documents(source_path)
         else:
             (
                 documents,
                 epub_title,
-            ) = (
-                self.read_html_document(
-                    source_path
-                )
-            )
+            ) = self.read_html_document(source_path)
 
-        self.stdout.write(
-            'HTML/XHTML в spine: '
-            + ', '.join(
-                name
-                for name, _soup
-                in documents
-            )
-        )
+        self.stdout.write("HTML/XHTML в spine: " + ", ".join(name for name, _soup in documents))
 
         if not title:
-            title = (
-                epub_title
-                or self.extract_title(
-                    documents
-                )
-            )
+            title = epub_title or self.extract_title(documents)
 
         if not title:
-            raise CommandError(
-                'Не удалось определить '
-                'название канона. '
-                'Передай --title.'
-            )
+            raise CommandError("Не удалось определить " "название канона. " "Передай --title.")
 
-        self.stdout.write(
-            f'Название: {title}'
-        )
+        self.stdout.write(f"Название: {title}")
 
-        parsed = self.parse_canon_strict(
-            documents
-        )
+        parsed = self.parse_canon_strict(documents)
 
-        self.validate_parsed(
-            parsed
-        )
+        self.validate_parsed(parsed)
 
-        self.print_report(
-            parsed
-        )
+        self.print_report(parsed)
 
         if check_only:
-            self.stdout.write('')
+            self.stdout.write("")
             self.stdout.write(
                 self.style.SUCCESS(
-                    'CHECK-ONLY: структура '
-                    'канона распознана. '
-                    'База данных не изменялась.'
+                    "CHECK-ONLY: структура " "канона распознана. " "База данных не изменялась."
                 )
             )
 
@@ -290,45 +175,31 @@ class Command(BaseCommand):
             parsed=parsed,
         )
 
-        self.stdout.write('')
-        self.stdout.write(
-            self.style.SUCCESS(
-                'Импорт канона '
-                'завершён успешно.'
-            )
-        )
+        self.stdout.write("")
+        self.stdout.write(self.style.SUCCESS("Импорт канона " "завершён успешно."))
 
     # =========================================================
     # EPUB
     # =========================================================
 
     def read_epub_documents(
-            self,
-            epub_path,
+        self,
+        epub_path,
     ):
         try:
-            archive = zipfile.ZipFile(
-                epub_path
-            )
+            archive = zipfile.ZipFile(epub_path)
         except zipfile.BadZipFile as exc:
-            raise CommandError(
-                'Файл не является '
-                'корректным EPUB/ZIP.'
-            ) from exc
+            raise CommandError("Файл не является " "корректным EPUB/ZIP.") from exc
 
         with archive:
-            names = set(
-                archive.namelist()
+            names = set(archive.namelist())
+
+            opf_path = self.find_opf_path(
+                archive,
+                names,
             )
 
-            opf_path = (
-                self.find_opf_path(
-                    archive,
-                    names,
-                )
-            )
-
-            epub_title = ''
+            epub_title = ""
 
             document_names = []
 
@@ -336,41 +207,31 @@ class Command(BaseCommand):
                 (
                     document_names,
                     epub_title,
-                ) = (
-                    self.read_spine(
-                        archive,
-                        opf_path,
-                        names,
-                    )
+                ) = self.read_spine(
+                    archive,
+                    opf_path,
+                    names,
                 )
 
             if not document_names:
                 document_names = [
                     name
-                    for name
-                    in archive.namelist()
+                    for name in archive.namelist()
                     if (
                         name.lower().endswith(
                             (
-                                '.html',
-                                '.xhtml',
-                                '.htm',
+                                ".html",
+                                ".xhtml",
+                                ".htm",
                             )
                         )
-                        and
-                        'toc.' not in
-                        name.lower()
-                        and
-                        'nav.' not in
-                        name.lower()
+                        and "toc." not in name.lower()
+                        and "nav." not in name.lower()
                     )
                 ]
 
             if not document_names:
-                raise CommandError(
-                    'В EPUB не найден '
-                    'HTML/XHTML с текстом.'
-                )
+                raise CommandError("В EPUB не найден " "HTML/XHTML с текстом.")
 
             documents = []
 
@@ -378,9 +239,7 @@ class Command(BaseCommand):
                 if name not in names:
                     continue
 
-                raw = archive.read(
-                    name
-                )
+                raw = archive.read(name)
 
                 html = self.decode_html(
                     raw,
@@ -389,7 +248,7 @@ class Command(BaseCommand):
 
                 soup = BeautifulSoup(
                     html,
-                    'html.parser',
+                    "html.parser",
                 )
 
                 documents.append(
@@ -400,10 +259,7 @@ class Command(BaseCommand):
                 )
 
             if not documents:
-                raise CommandError(
-                    'Не удалось прочитать '
-                    'текстовые документы EPUB.'
-                )
+                raise CommandError("Не удалось прочитать " "текстовые документы EPUB.")
 
             return (
                 documents,
@@ -411,16 +267,13 @@ class Command(BaseCommand):
             )
 
     def read_html_document(
-            self,
-            html_path,
+        self,
+        html_path,
     ):
         try:
             raw = html_path.read_bytes()
         except OSError as exc:
-            raise CommandError(
-                'Не удалось прочитать HTML: '
-                f'{exc}'
-            ) from exc
+            raise CommandError("Не удалось прочитать HTML: " f"{exc}") from exc
 
         html = self.decode_html(
             raw,
@@ -429,24 +282,17 @@ class Command(BaseCommand):
 
         soup = BeautifulSoup(
             html,
-            'html.parser',
+            "html.parser",
         )
 
-        title = ''
+        title = ""
 
-        title_tag = (
-            soup.find(
-                'title'
-            )
-            or soup.find(
-                'h1'
-            )
-        )
+        title_tag = soup.find("title") or soup.find("h1")
 
         if title_tag:
             title = self.clean_text(
                 title_tag.get_text(
-                    ' ',
+                    " ",
                     strip=True,
                 )
             )
@@ -461,41 +307,24 @@ class Command(BaseCommand):
             title,
         )
 
-
     def find_opf_path(
-            self,
-            archive,
-            names,
+        self,
+        archive,
+        names,
     ):
-        container_name = (
-            'META-INF/container.xml'
-        )
+        container_name = "META-INF/container.xml"
 
         if container_name in names:
             try:
                 soup = BeautifulSoup(
-                    archive.read(
-                        container_name
-                    ),
-                    'xml',
+                    archive.read(container_name),
+                    "xml",
                 )
 
-                rootfile = soup.find(
-                    'rootfile'
-                )
+                rootfile = soup.find("rootfile")
 
-                if (
-                    rootfile
-                    and
-                    rootfile.get(
-                        'full-path'
-                    )
-                ):
-                    candidate = (
-                        rootfile[
-                            'full-path'
-                        ]
-                    )
+                if rootfile and rootfile.get("full-path"):
+                    candidate = rootfile["full-path"]
 
                     if candidate in names:
                         return candidate
@@ -503,125 +332,79 @@ class Command(BaseCommand):
                 pass
 
         for name in names:
-            if name.lower().endswith(
-                    '.opf'
-            ):
+            if name.lower().endswith(".opf"):
                 return name
 
         return None
 
     def read_spine(
-            self,
-            archive,
-            opf_path,
-            names,
+        self,
+        archive,
+        opf_path,
+        names,
     ):
         try:
             opf = BeautifulSoup(
-                archive.read(
-                    opf_path
-                ),
-                'xml',
+                archive.read(opf_path),
+                "xml",
             )
         except Exception:
             return (
                 [],
-                '',
+                "",
             )
 
-        title = ''
+        title = ""
 
-        title_tag = (
-            opf.find(
-                'dc:title'
-            )
-            or opf.find(
-                'title'
-            )
-        )
+        title_tag = opf.find("dc:title") or opf.find("title")
 
         if title_tag:
             title = self.clean_text(
                 title_tag.get_text(
-                    ' ',
+                    " ",
                     strip=True,
                 )
             )
 
         manifest = {}
 
-        for item in opf.find_all(
-                'item'
-        ):
-            item_id = item.get(
-                'id'
-            )
+        for item in opf.find_all("item"):
+            item_id = item.get("id")
 
-            href = item.get(
-                'href'
-            )
+            href = item.get("href")
 
-            media_type = (
-                item.get(
-                    'media-type',
-                    ''
-                )
-                .lower()
-            )
+            media_type = item.get("media-type", "").lower()
 
-            if (
-                not item_id
-                or not href
-            ):
+            if not item_id or not href:
                 continue
 
-            if (
-                'html' not in
-                media_type
-                and
-                not href.lower()
-                .endswith(
-                    (
-                        '.html',
-                        '.xhtml',
-                        '.htm',
-                    )
+            if "html" not in media_type and not href.lower().endswith(
+                (
+                    ".html",
+                    ".xhtml",
+                    ".htm",
                 )
             ):
                 continue
 
-            manifest[
-                item_id
-            ] = href
+            manifest[item_id] = href
 
-        base = PurePosixPath(
-            opf_path
-        ).parent
+        base = PurePosixPath(opf_path).parent
 
         result = []
 
-        for itemref in opf.find_all(
-                'itemref'
-        ):
-            idref = itemref.get(
-                'idref'
-            )
+        for itemref in opf.find_all("itemref"):
+            idref = itemref.get("idref")
 
-            href = manifest.get(
-                idref
-            )
+            href = manifest.get(idref)
 
             if not href:
                 continue
 
-            path = str(
-                base / href
-            )
+            path = str(base / href)
 
             if path in names:
-                result.append(
-                    path
-                )
+                result.append(path)
 
         return (
             result,
@@ -629,40 +412,33 @@ class Command(BaseCommand):
         )
 
     def decode_html(
-            self,
-            raw,
-            name,
+        self,
+        raw,
+        name,
     ):
         for encoding in (
-            'utf-8-sig',
-            'utf-8',
-            'cp1251',
+            "utf-8-sig",
+            "utf-8",
+            "cp1251",
         ):
             try:
-                return raw.decode(
-                    encoding
-                )
+                return raw.decode(encoding)
             except UnicodeDecodeError:
                 continue
 
-        raise CommandError(
-            'Не удалось определить '
-            f'кодировку {name}.'
-        )
+        raise CommandError("Не удалось определить " f"кодировку {name}.")
 
     def extract_title(
-            self,
-            documents,
+        self,
+        documents,
     ):
         for _name, soup in documents:
-            heading = soup.find(
-                'h1'
-            )
+            heading = soup.find("h1")
 
             if heading:
                 value = self.clean_text(
                     heading.get_text(
-                        ' ',
+                        " ",
                         strip=True,
                     )
                 )
@@ -670,15 +446,15 @@ class Command(BaseCommand):
                 if value:
                     return value
 
-        return ''
+        return ""
 
     # =========================================================
     # РАЗБОР
     # =========================================================
 
     def parse_canon_strict(
-            self,
-            documents,
+        self,
+        documents,
     ):
         """
         Строгий парсер канонов Азбуки веры.
@@ -698,44 +474,34 @@ class Command(BaseCommand):
         class_counter = Counter()
 
         for _name, soup in documents:
-            body = (
-                soup.body
-                or soup
-            )
+            body = soup.body or soup
 
             for element in body.children:
                 if not isinstance(
-                        element,
-                        Tag,
+                    element,
+                    Tag,
                 ):
                     continue
 
                 if element.name not in {
-                    'h1',
-                    'h2',
-                    'h3',
-                    'h4',
-                    'p',
+                    "h1",
+                    "h2",
+                    "h3",
+                    "h4",
+                    "p",
                 }:
                     continue
 
-                elements.append(
-                    element
-                )
+                elements.append(element)
 
                 for class_name in element.get(
-                        'class',
-                        [],
+                    "class",
+                    [],
                 ):
-                    class_counter[
-                        class_name
-                    ] += 1
+                    class_counter[class_name] += 1
 
         if not elements:
-            raise CommandError(
-                'В HTML нет ожидаемых '
-                'h3/h4/p элементов.'
-            )
+            raise CommandError("В HTML нет ожидаемых " "h3/h4/p элементов.")
 
         sections = []
 
@@ -745,22 +511,22 @@ class Command(BaseCommand):
 
         current_ode = None
 
-        tone = ''
+        tone = ""
 
-        canonical_refrain = ''
+        canonical_refrain = ""
 
-        canonical_refrain_signature = ''
+        canonical_refrain_signature = ""
 
         order = 0
 
         stopped_on_second_variant = False
 
         def add_section(
-                section_type,
-                content,
-                translation='',
-                heading='',
-                ode_number=None,
+            section_type,
+            content,
+            translation="",
+            heading="",
+            ode_number=None,
         ):
             nonlocal order
 
@@ -774,55 +540,33 @@ class Command(BaseCommand):
                 preserve_newlines=True,
             )
 
-            heading = self.clean_text(
-                heading
-            )
+            heading = self.clean_text(heading)
 
             if not content:
-                raise CommandError(
-                    'Попытка создать пустой '
-                    f'элемент: {section_type}.'
-                )
+                raise CommandError("Попытка создать пустой " f"элемент: {section_type}.")
 
             order += 1
 
             sections.append(
                 {
-                    'variant':
-                        1,
-
-                    'order':
-                        order,
-
-                    'section_type':
-                        section_type,
-
-                    'ode_number':
-                        ode_number,
-
-                    'heading':
-                        heading,
-
-                    'content':
-                        content,
-
-                    'translation':
-                        translation,
+                    "variant": 1,
+                    "order": order,
+                    "section_type": section_type,
+                    "ode_number": ode_number,
+                    "heading": heading,
+                    "content": content,
+                    "translation": translation,
                 }
             )
 
         index = 0
 
-        while index < len(
-                elements
-        ):
-            element = elements[
-                index
-            ]
+        while index < len(elements):
+            element = elements[index]
 
             text = self.clean_text(
                 element.get_text(
-                    ' ',
+                    " ",
                     strip=True,
                 ),
                 preserve_newlines=True,
@@ -832,82 +576,47 @@ class Command(BaseCommand):
                 index += 1
                 continue
 
-            if element.name == 'h1':
+            if element.name == "h1":
                 index += 1
                 continue
 
-            if element.name == 'p':
-                extracted_tone = (
-                    self.extract_tone(
-                        text
-                    )
-                )
+            if element.name == "p":
+                extracted_tone = self.extract_tone(text)
 
-                if (
-                        extracted_tone
-                        and
-                        current_ode is None
-                ):
+                if extracted_tone and current_ode is None:
                     tone = extracted_tone
 
                     index += 1
                     continue
 
-            if element.name == 'h3':
-                ode_number = (
-                    self.strict_ode_number(
-                        text
-                    )
-                )
+            if element.name == "h3":
+                ode_number = self.strict_ode_number(text)
 
                 if ode_number:
-                    if (
-                            ode_number == 1
-                            and
-                            seen_odes
-                    ):
-                        stopped_on_second_variant = (
-                            True
-                        )
+                    if ode_number == 1 and seen_odes:
+                        stopped_on_second_variant = True
 
                         break
 
                     if ode_number in seen_odes:
                         raise CommandError(
-                            'Повтор заголовка '
-                            f'Песнь {ode_number} '
-                            'в основном тексте.'
+                            "Повтор заголовка " f"Песнь {ode_number} " "в основном тексте."
                         )
 
-                    current_ode = (
-                        ode_number
-                    )
+                    current_ode = ode_number
 
-                    seen_odes.append(
-                        ode_number
-                    )
+                    seen_odes.append(ode_number)
 
-                    heading_counter[
-                        'ode'
-                    ] += 1
+                    heading_counter["ode"] += 1
 
                     index += 1
                     continue
 
-                normalized_heading = (
-                    self.normalize_heading(
-                        text
-                    )
-                )
+                normalized_heading = self.normalize_heading(text)
 
-                if normalized_heading.startswith(
-                        'молитва'
-                ):
+                if normalized_heading.startswith("молитва"):
                     if current_ode is None:
-                        raise CommandError(
-                            'Молитва встретилась '
-                            'до начала канона.'
-                        )
+                        raise CommandError("Молитва встретилась " "до начала канона.")
 
                     (
                         church,
@@ -916,50 +625,35 @@ class Command(BaseCommand):
                     ) = self.strict_read_pair(
                         elements,
                         index + 1,
-                        context='Молитва',
+                        context="Молитва",
                     )
 
                     add_section(
-                        section_type=(
-                            CanonSection
-                            .TYPE_PRAYER
-                        ),
+                        section_type=(CanonSection.TYPE_PRAYER),
                         content=church,
                         translation=translation,
-                        heading='Молитва',
+                        heading="Молитва",
                         ode_number=current_ode,
                     )
 
-                    heading_counter[
-                        'prayer'
-                    ] += 1
+                    heading_counter["prayer"] += 1
 
                     index = consumed
                     continue
 
-                raise CommandError(
-                    'Неизвестный h3: '
-                    f'{text}'
-                )
+                raise CommandError("Неизвестный h3: " f"{text}")
 
-            if element.name == 'h4':
+            if element.name == "h4":
                 (
                     section_type,
                     heading,
-                ) = self.strict_h4_type(
-                    text
-                )
+                ) = self.strict_h4_type(text)
 
                 if not section_type:
-                    raise CommandError(
-                        'Неизвестный h4: '
-                        f'{text}'
-                    )
+                    raise CommandError("Неизвестный h4: " f"{text}")
 
                 if current_ode is None:
-                    raise CommandError(
-                        f'{text}: нет текущей песни.'
-                    )
+                    raise CommandError(f"{text}: нет текущей песни.")
 
                 (
                     church,
@@ -972,272 +666,165 @@ class Command(BaseCommand):
                 )
 
                 add_section(
-                    section_type=(
-                        section_type
-                    ),
+                    section_type=(section_type),
                     content=church,
                     translation=translation,
                     heading=heading,
                     ode_number=current_ode,
                 )
 
-                heading_counter[
-                    section_type
-                ] += 1
+                heading_counter[section_type] += 1
 
                 index = consumed
                 continue
 
-            if element.name != 'p':
+            if element.name != "p":
                 index += 1
                 continue
 
             if current_ode is None:
-                raise CommandError(
-                    'Текст встретился '
-                    'до Песни 1: '
-                    f'{text[:120]}'
-                )
+                raise CommandError("Текст встретился " "до Песни 1: " f"{text[:120]}")
 
-            strong = element.find(
-                'strong'
-            )
+            strong = element.find("strong")
 
             strong_text = (
                 self.clean_text(
                     strong.get_text(
-                        ' ',
+                        " ",
                         strip=True,
                     )
                 )
                 if strong
-                else ''
+                else ""
             )
 
-            normalized_strong = (
-                self.normalize_heading(
-                    strong_text
-                )
+            normalized_strong = self.normalize_heading(strong_text)
+
+            irmos_link = element.find(
+                "a",
+                href="/irmos",
             )
 
-            irmos_link = (
-                element.find(
-                    'a',
-                    href='/irmos',
-                )
-            )
-
-            if (
-                    irmos_link
-                    or normalized_strong
-                    .startswith(
-                        'ирмос'
-                    )
-            ):
-                emphasized = (
-                    element.find(
-                        'em'
-                    )
-                )
+            if irmos_link or normalized_strong.startswith("ирмос"):
+                emphasized = element.find("em")
 
                 if emphasized:
-                    church = (
-                        self.clean_text(
-                            emphasized.get_text(
-                                ' ',
-                                strip=True,
-                            ),
-                            preserve_newlines=True,
-                        )
+                    church = self.clean_text(
+                        emphasized.get_text(
+                            " ",
+                            strip=True,
+                        ),
+                        preserve_newlines=True,
                     )
                 else:
-                    church = (
-                        self.strict_remove_prefix(
-                            text,
-                            strong_text,
-                        )
+                    church = self.strict_remove_prefix(
+                        text,
+                        strong_text,
                     )
 
                 (
                     translation,
                     consumed,
-                ) = (
-                    self.strict_optional_translation(
-                        elements,
-                        index + 1,
-                    )
+                ) = self.strict_optional_translation(
+                    elements,
+                    index + 1,
                 )
 
-                translation = (
-                    self.strict_strip_translation_label(
-                        translation
-                    )
-                )
+                translation = self.strict_strip_translation_label(translation)
 
                 add_section(
-                    section_type=(
-                        CanonSection
-                        .TYPE_IRMOS
-                    ),
+                    section_type=(CanonSection.TYPE_IRMOS),
                     content=church,
                     translation=translation,
-                    heading='Ирмос',
+                    heading="Ирмос",
                     ode_number=current_ode,
                 )
 
-                heading_counter[
-                    'irmos'
-                ] += 1
+                heading_counter["irmos"] += 1
 
                 index = consumed
                 continue
 
-            if normalized_strong.startswith(
-                    'припев'
-            ):
-                church = (
-                    self.strict_remove_prefix(
-                        text,
-                        strong_text,
-                    )
+            if normalized_strong.startswith("припев"):
+                church = self.strict_remove_prefix(
+                    text,
+                    strong_text,
                 )
 
                 if not church:
-                    raise CommandError(
-                        'Найден пустой Припев.'
-                    )
+                    raise CommandError("Найден пустой Припев.")
 
-                canonical_refrain = (
-                    church
-                )
+                canonical_refrain = church
 
-                canonical_refrain_signature = (
-                    self.strict_signature(
-                        church
-                    )
-                )
+                canonical_refrain_signature = self.strict_signature(church)
 
                 add_section(
-                    section_type=(
-                        CanonSection
-                        .TYPE_REFRAIN
-                    ),
+                    section_type=(CanonSection.TYPE_REFRAIN),
                     content=church,
-                    heading='Припев',
+                    heading="Припев",
                     ode_number=current_ode,
                 )
 
-                heading_counter[
-                    'refrain'
-                ] += 1
+                heading_counter["refrain"] += 1
 
                 index += 1
                 continue
 
-            current_signature = (
-                self.strict_signature(
-                    text
-                )
-            )
+            current_signature = self.strict_signature(text)
 
-            if (
-                    canonical_refrain_signature
-                    and
-                    current_signature ==
-                    canonical_refrain_signature
-            ):
+            if canonical_refrain_signature and current_signature == canonical_refrain_signature:
                 add_section(
-                    section_type=(
-                        CanonSection
-                        .TYPE_REFRAIN
-                    ),
-                    content=(
-                        canonical_refrain
-                        or text
-                    ),
-                    heading='Припев',
+                    section_type=(CanonSection.TYPE_REFRAIN),
+                    content=(canonical_refrain or text),
+                    heading="Припев",
                     ode_number=current_ode,
                 )
 
-                heading_counter[
-                    'refrain'
-                ] += 1
+                heading_counter["refrain"] += 1
 
                 index += 1
                 continue
 
-            if self.strict_is_full_glory_now(
-                    text
-            ):
+            if self.strict_is_full_glory_now(text):
                 add_section(
-                    section_type=(
-                        CanonSection
-                        .TYPE_GLORY
-                    ),
+                    section_type=(CanonSection.TYPE_GLORY),
                     content=text,
-                    heading='',
+                    heading="",
                     ode_number=current_ode,
                 )
 
-                heading_counter[
-                    'glory'
-                ] += 1
+                heading_counter["glory"] += 1
 
                 index += 1
                 continue
 
-            if not self.strict_is_church_text(
-                    text
-            ):
-                raise CommandError(
-                    'Неожиданный русский абзац '
-                    'без ЦС-пары: '
-                    f'{text[:160]}'
-                )
+            if not self.strict_is_church_text(text):
+                raise CommandError("Неожиданный русский абзац " "без ЦС-пары: " f"{text[:160]}")
 
-            if self.strict_starts_glory(
-                    text
-            ):
-                section_type = (
-                    CanonSection
-                    .TYPE_GLORY
-                )
-            elif self.strict_starts_now(
-                    text
-            ):
-                section_type = (
-                    CanonSection
-                    .TYPE_NOW
-                )
+            if self.strict_starts_glory(text):
+                section_type = CanonSection.TYPE_GLORY
+            elif self.strict_starts_now(text):
+                section_type = CanonSection.TYPE_NOW
             else:
-                section_type = (
-                    CanonSection
-                    .TYPE_TROPARION
-                )
+                section_type = CanonSection.TYPE_TROPARION
 
             (
                 translation,
                 consumed,
-            ) = (
-                self.strict_optional_translation(
-                    elements,
-                    index + 1,
-                )
+            ) = self.strict_optional_translation(
+                elements,
+                index + 1,
             )
 
             add_section(
-                section_type=(
-                    section_type
-                ),
+                section_type=(section_type),
                 content=text,
                 translation=translation,
-                heading='',
+                heading="",
                 ode_number=current_ode,
             )
 
-            heading_counter[
-                section_type
-            ] += 1
+            heading_counter[section_type] += 1
 
             index = consumed
 
@@ -1254,125 +841,68 @@ class Command(BaseCommand):
 
         if seen_odes != expected_odes:
             raise CommandError(
-                'Неверная последовательность '
-                'песен. Ожидалось '
-                f'{expected_odes}, '
-                f'получено {seen_odes}.'
+                "Неверная последовательность "
+                "песен. Ожидалось "
+                f"{expected_odes}, "
+                f"получено {seen_odes}."
             )
 
         for ode_number in expected_odes:
-            ode_sections = [
-                section
-                for section in sections
-                if section[
-                    'ode_number'
-                ] == ode_number
-            ]
+            ode_sections = [section for section in sections if section["ode_number"] == ode_number]
 
             irmos_count = sum(
-                1
-                for section
-                in ode_sections
-                if section[
-                    'section_type'
-                ] ==
-                CanonSection
-                .TYPE_IRMOS
+                1 for section in ode_sections if section["section_type"] == CanonSection.TYPE_IRMOS
             )
 
             refrain_count = sum(
                 1
-                for section
-                in ode_sections
-                if section[
-                    'section_type'
-                ] ==
-                CanonSection
-                .TYPE_REFRAIN
+                for section in ode_sections
+                if section["section_type"] == CanonSection.TYPE_REFRAIN
             )
 
             if irmos_count != 1:
                 raise CommandError(
-                    f'Песнь {ode_number}: '
-                    'ожидался ровно 1 Ирмос, '
-                    f'получено {irmos_count}.'
+                    f"Песнь {ode_number}: " "ожидался ровно 1 Ирмос, " f"получено {irmos_count}."
                 )
 
             if refrain_count < 1:
-                raise CommandError(
-                    f'Песнь {ode_number}: '
-                    'не найден ни один припев.'
-                )
+                raise CommandError(f"Песнь {ode_number}: " "не найден ни один припев.")
 
         if not stopped_on_second_variant:
             self.stdout.write(
-                self.style.WARNING(
-                    'Второй вариант текста '
-                    'не обнаружен. Это допустимо.'
-                )
+                self.style.WARNING("Второй вариант текста " "не обнаружен. Это допустимо.")
             )
 
         return {
-            'tone':
-                tone,
-
-            'sections':
-                sections,
-
-            'seen_odes':
-                {
-                    1:
-                        seen_odes,
-                },
-
-            'classes':
-                class_counter,
-
-            'headings':
-                heading_counter,
-
-            'variant_count':
-                1,
+            "tone": tone,
+            "sections": sections,
+            "seen_odes": {
+                1: seen_odes,
+            },
+            "classes": class_counter,
+            "headings": heading_counter,
+            "variant_count": 1,
         }
 
     def strict_read_pair(
-            self,
-            elements,
-            start_index,
-            context,
+        self,
+        elements,
+        start_index,
+        context,
     ):
-        if (
-                start_index >=
-                len(
-                    elements
-                )
-                or
-                elements[
-                    start_index
-                ].name != 'p'
-        ):
-            raise CommandError(
-                f'{context}: после заголовка '
-                'нет ЦС-абзаца.'
-            )
+        if start_index >= len(elements) or elements[start_index].name != "p":
+            raise CommandError(f"{context}: после заголовка " "нет ЦС-абзаца.")
 
         church = self.clean_text(
-            elements[
-                start_index
-            ].get_text(
-                ' ',
+            elements[start_index].get_text(
+                " ",
                 strip=True,
             ),
             preserve_newlines=True,
         )
 
-        if not self.strict_is_church_text(
-                church
-        ):
-            raise CommandError(
-                f'{context}: первый абзац '
-                'не похож на ЦС-текст.'
-            )
+        if not self.strict_is_church_text(church):
+            raise CommandError(f"{context}: первый абзац " "не похож на ЦС-текст.")
 
         (
             translation,
@@ -1389,31 +919,27 @@ class Command(BaseCommand):
         )
 
     def strict_optional_translation(
-            self,
-            elements,
-            start_index,
+        self,
+        elements,
+        start_index,
     ):
-        if start_index >= len(
-                elements
-        ):
+        if start_index >= len(elements):
             return (
-                '',
+                "",
                 start_index,
             )
 
-        candidate = elements[
-            start_index
-        ]
+        candidate = elements[start_index]
 
-        if candidate.name != 'p':
+        if candidate.name != "p":
             return (
-                '',
+                "",
                 start_index,
             )
 
         text = self.clean_text(
             candidate.get_text(
-                ' ',
+                " ",
                 strip=True,
             ),
             preserve_newlines=True,
@@ -1421,15 +947,13 @@ class Command(BaseCommand):
 
         if not text:
             return (
-                '',
+                "",
                 start_index + 1,
             )
 
-        if self.strict_is_church_text(
-                text
-        ):
+        if self.strict_is_church_text(text):
             return (
-                '',
+                "",
                 start_index,
             )
 
@@ -1439,51 +963,41 @@ class Command(BaseCommand):
         )
 
     def strict_h4_type(
-            self,
-            value,
+        self,
+        value,
     ):
-        normalized = (
-            self.normalize_heading(
-                value
-            )
-        )
+        normalized = self.normalize_heading(value)
 
         mapping = [
             (
-                'седален',
-                CanonSection
-                .TYPE_SEDALEN,
-                'Седален',
+                "седален",
+                CanonSection.TYPE_SEDALEN,
+                "Седален",
             ),
             (
-                'богородичен',
-                CanonSection
-                .TYPE_THEOTOKION,
-                'Богородичен',
+                "богородичен",
+                CanonSection.TYPE_THEOTOKION,
+                "Богородичен",
             ),
             (
-                'кондак',
-                CanonSection
-                .TYPE_KONTAKION,
-                'Кондак',
+                "кондак",
+                CanonSection.TYPE_KONTAKION,
+                "Кондак",
             ),
             (
-                'икос',
-                CanonSection
-                .TYPE_IKOS,
-                'Икос',
+                "икос",
+                CanonSection.TYPE_IKOS,
+                "Икос",
             ),
             (
-                'светилен',
-                CanonSection
-                .TYPE_SVETILEN,
-                'Светилен',
+                "светилен",
+                CanonSection.TYPE_SVETILEN,
+                "Светилен",
             ),
             (
-                'эксапостилар',
-                CanonSection
-                .TYPE_SVETILEN,
-                'Эксапостилар',
+                "эксапостилар",
+                CanonSection.TYPE_SVETILEN,
+                "Эксапостилар",
             ),
         ]
 
@@ -1492,9 +1006,7 @@ class Command(BaseCommand):
             section_type,
             heading,
         ) in mapping:
-            if normalized.startswith(
-                    prefix
-            ):
+            if normalized.startswith(prefix):
                 return (
                     section_type,
                     heading,
@@ -1502,2262 +1014,25 @@ class Command(BaseCommand):
 
         return (
             None,
-            '',
+            "",
         )
 
     def strict_ode_number(
-            self,
-            value,
+        self,
+        value,
     ):
-        normalized = (
-            self.normalize_heading(
-                value
-            )
-        )
+        normalized = self.normalize_heading(value)
 
         match = re.match(
-            r'^песнь\s+([0-9]+)
-        sections = []
-
-        variant = 1
-
-        orders = {
-            1: 0,
-        }
-
-        current_ode = None
-
-        seen_odes = {
-            1: [],
-        }
-
-        pending_heading = None
-
-        open_standalone = None
-
-        last_section = None
-
-        tone = ''
-
-        tone_from_canon = ''
-
-        class_counter = Counter()
-
-        heading_counter = Counter()
-
-        def start_variant():
-            nonlocal variant
-            nonlocal current_ode
-            nonlocal pending_heading
-            nonlocal open_standalone
-            nonlocal last_section
-
-            variant += 1
-
-            orders.setdefault(
-                variant,
-                0,
-            )
-
-            seen_odes.setdefault(
-                variant,
-                [],
-            )
-
-            current_ode = None
-
-            pending_heading = None
-
-            open_standalone = None
-
-            last_section = None
-
-        def add_section(
-                section_type,
-                content,
-                heading='',
-                ode_number=None,
-        ):
-            nonlocal last_section
-            nonlocal open_standalone
-
-            content = self.clean_text(
-                content,
-                preserve_newlines=True,
-            )
-
-            if not content:
-                return None
-
-            orders[
-                variant
-            ] += 1
-
-            item = {
-                'variant':
-                    variant,
-
-                'order':
-                    orders[
-                        variant
-                    ],
-
-                'section_type':
-                    section_type,
-
-                'ode_number':
-                    ode_number,
-
-                'heading':
-                    self.clean_text(
-                        heading
-                    ),
-
-                'content':
-                    content,
-
-                'translation':
-                    '',
-            }
-
-            sections.append(
-                item
-            )
-
-            last_section = item
-
-            return item
-
-        for _name, soup in documents:
-            body = (
-                soup.body
-                or soup
-            )
-
-            elements = (
-                body.find_all(
-                    list(
-                        HEADING_TAGS
-                    ) + [
-                        'p',
-                    ]
-                )
-            )
-
-            for element in elements:
-                if not isinstance(
-                        element,
-                        Tag,
-                ):
-                    continue
-
-                text = self.clean_text(
-                    element.get_text(
-                        ' ',
-                        strip=True,
-                    )
-                )
-
-                if not text:
-                    continue
-
-                classes = {
-                    value.lower()
-                    for value
-                    in element.get(
-                        'class',
-                        [],
-                    )
-                }
-
-                for value in classes:
-                    class_counter[
-                        value
-                    ] += 1
-
-                if element.name in HEADING_TAGS:
-                    heading = (
-                        self.parse_heading(
-                            text
-                        )
-                    )
-
-                    if not heading:
-                        # Главный H1 с названием
-                        # канона не превращаем
-                        # в элемент текста.
-                        normalized = (
-                            self.normalize_heading(
-                                text
-                            )
-                        )
-
-                        if (
-                            element.name == 'h1'
-                            and
-                            normalized.startswith(
-                                'канон '
-                            )
-                        ):
-                            continue
-
-                        pending_heading = {
-                            'section_type':
-                                CanonSection
-                                .TYPE_OTHER,
-
-                            'heading':
-                                text,
-
-                            'ode_number':
-                                None,
-                        }
-
-                        open_standalone = None
-
-                        continue
-
-                    heading_counter[
-                        heading[
-                            'kind'
-                        ]
-                    ] += 1
-
-                    if (
-                        heading[
-                            'kind'
-                        ] ==
-                        'canon'
-                    ):
-                        extracted_tone = (
-                            self.extract_tone(
-                                text
-                            )
-                        )
-
-                        if extracted_tone:
-                            tone_from_canon = (
-                                extracted_tone
-                            )
-
-                        # Повтор полного канона
-                        # после уже законченного
-                        # варианта (например,
-                        # мужская/женская форма).
-                        if (
-                            9 in
-                            seen_odes[
-                                variant
-                            ]
-                            and
-                            orders[
-                                variant
-                            ] > 0
-                            and
-                            pending_heading
-                            is None
-                        ):
-                            # Если новый вариант
-                            # уже был начат повторным
-                            # тропарём перед заголовком,
-                            # здесь второй раз не
-                            # переключаем.
-                            if not (
-                                orders[
-                                    variant
-                                ] == 0
-                            ):
-                                pass
-
-                        pending_heading = None
-
-                        open_standalone = None
-
-                        current_ode = None
-
-                        continue
-
-                    if (
-                        heading[
-                            'kind'
-                        ] ==
-                        'ode'
-                    ):
-                        ode_number = (
-                            heading[
-                                'number'
-                            ]
-                        )
-
-                        if (
-                            ode_number == 1
-                            and
-                            1 in
-                            seen_odes[
-                                variant
-                            ]
-                        ):
-                            start_variant()
-
-                        if (
-                            ode_number in
-                            seen_odes[
-                                variant
-                            ]
-                        ):
-                            raise CommandError(
-                                'Повтор Песни '
-                                f'{ode_number} '
-                                f'в варианте '
-                                f'{variant}.'
-                            )
-
-                        current_ode = (
-                            ode_number
-                        )
-
-                        seen_odes[
-                            variant
-                        ].append(
-                            ode_number
-                        )
-
-                        pending_heading = None
-
-                        open_standalone = None
-
-                        continue
-
-                    section_type = (
-                        heading[
-                            'section_type'
-                        ]
-                    )
-
-                    # После полной девятой песни
-                    # повторный Тропарь часто
-                    # означает начало второго
-                    # грамматического варианта.
-                    if (
-                        section_type ==
-                        CanonSection
-                        .TYPE_TROPARION
-                        and
-                        9 in
-                        seen_odes[
-                            variant
-                        ]
-                    ):
-                        start_variant()
-
-                    belongs_to_ode = (
-                        current_ode
-                        if section_type
-                        in {
-                            CanonSection
-                            .TYPE_TROPARION,
-                            CanonSection
-                            .TYPE_THEOTOKION,
-                        }
-                        else None
-                    )
-
-                    pending_heading = {
-                        'section_type':
-                            section_type,
-
-                        'heading':
-                            text,
-
-                        'ode_number':
-                            belongs_to_ode,
-                    }
-
-                    open_standalone = None
-
-                    continue
-
-                # ---------------------------------------------
-                # Обычный <p>
-                # ---------------------------------------------
-
-                if (
-                    classes &
-                    TRANSLATION_CLASSES
-                ):
-                    if last_section:
-                        translation = (
-                            self.clean_translation(
-                                text
-                            )
-                        )
-
-                        if translation:
-                            if (
-                                last_section[
-                                    'translation'
-                                ]
-                            ):
-                                last_section[
-                                    'translation'
-                                ] += (
-                                    '\n\n'
-                                    + translation
-                                )
-                            else:
-                                last_section[
-                                    'translation'
-                                ] = (
-                                    translation
-                                )
-
-                    continue
-
-                # Иногда заголовки в EPUB
-                # размечены обычным <p>.
-                paragraph_heading = None
-
-                if len(
-                    text
-                ) <= 180:
-                    paragraph_heading = (
-                        self.parse_heading(
-                            text
-                        )
-                    )
-
-                if paragraph_heading:
-                    heading_counter[
-                        paragraph_heading[
-                            'kind'
-                        ]
-                    ] += 1
-
-                    if (
-                        paragraph_heading[
-                            'kind'
-                        ] ==
-                        'ode'
-                    ):
-                        ode_number = (
-                            paragraph_heading[
-                                'number'
-                            ]
-                        )
-
-                        if (
-                            ode_number == 1
-                            and
-                            1 in
-                            seen_odes[
-                                variant
-                            ]
-                        ):
-                            start_variant()
-
-                        current_ode = (
-                            ode_number
-                        )
-
-                        if (
-                            ode_number not in
-                            seen_odes[
-                                variant
-                            ]
-                        ):
-                            seen_odes[
-                                variant
-                            ].append(
-                                ode_number
-                            )
-
-                        pending_heading = None
-
-                        open_standalone = None
-
-                        continue
-
-                    if (
-                        paragraph_heading[
-                            'kind'
-                        ] ==
-                        'canon'
-                    ):
-                        extracted_tone = (
-                            self.extract_tone(
-                                text
-                            )
-                        )
-
-                        if extracted_tone:
-                            tone_from_canon = (
-                                extracted_tone
-                            )
-
-                        current_ode = None
-
-                        pending_heading = None
-
-                        open_standalone = None
-
-                        continue
-
-                    pending_heading = {
-                        'section_type':
-                            paragraph_heading[
-                                'section_type'
-                            ],
-
-                        'heading':
-                            text,
-
-                        'ode_number':
-                            (
-                                current_ode
-                                if paragraph_heading[
-                                    'section_type'
-                                ]
-                                in {
-                                    CanonSection
-                                    .TYPE_TROPARION,
-                                    CanonSection
-                                    .TYPE_THEOTOKION,
-                                }
-                                else None
-                            ),
-                    }
-
-                    open_standalone = None
-
-                    continue
-
-                extracted_tone = (
-                    self.extract_tone(
-                        text
-                    )
-                )
-
-                if (
-                    extracted_tone
-                    and
-                    len(
-                        text.split()
-                    ) <= 8
-                ):
-                    if not tone:
-                        tone = (
-                            extracted_tone
-                        )
-
-                    # Строка "Глас 2"
-                    # является метаданными,
-                    # а не текстом канона.
-                    if (
-                        self.normalize_heading(
-                            text
-                        )
-                        .startswith(
-                            'глас '
-                        )
-                    ):
-                        continue
-
-                # Если перед абзацем был
-                # явный заголовок.
-                if pending_heading:
-                    item = add_section(
-                        section_type=(
-                            pending_heading[
-                                'section_type'
-                            ]
-                        ),
-
-                        content=text,
-
-                        heading=(
-                            pending_heading[
-                                'heading'
-                            ]
-                        ),
-
-                        ode_number=(
-                            pending_heading[
-                                'ode_number'
-                            ]
-                        ),
-                    )
-
-                    open_standalone = (
-                        item
-                        if item
-                        and
-                        item[
-                            'section_type'
-                        ]
-                        in {
-                            CanonSection
-                            .TYPE_SEDALEN,
-                            CanonSection
-                            .TYPE_KONTAKION,
-                            CanonSection
-                            .TYPE_IKOS,
-                            CanonSection
-                            .TYPE_SVETILEN,
-                            CanonSection
-                            .TYPE_PRAYER,
-                            CanonSection
-                            .TYPE_OTHER,
-                        }
-                        else None
-                    )
-
-                    pending_heading = None
-
-                    continue
-
-                (
-                    paragraph_type,
-                    paragraph_label,
-                ) = (
-                    self.classify_paragraph(
-                        text
-                    )
-                )
-
-                if paragraph_type:
-                    open_standalone = None
-
-                    (
-                        cue_text,
-                        paragraph_content,
-                    ) = (
-                        self.split_paragraph_cue(
-                            text
-                        )
-                    )
-
-                    effective_heading = (
-                        cue_text
-                        or paragraph_label
-                    )
-
-                    # В некоторых EPUB "Припев:" /
-                    # "Иисусу:" / "Слава:" / "И ныне:"
-                    # идут отдельным абзацем. В этом случае
-                    # следующий абзац и есть содержимое этого
-                    # элемента, а не новый тропарь.
-                    if (
-                            cue_text
-                            and
-                            not paragraph_content
-                    ):
-                        pending_heading = {
-                            'section_type':
-                                paragraph_type,
-
-                            'heading':
-                                effective_heading,
-
-                            'ode_number':
-                                current_ode,
-                        }
-
-                        continue
-
-                    add_section(
-                        section_type=(
-                            paragraph_type
-                        ),
-
-                        content=(
-                            paragraph_content
-                            if cue_text
-                            else text
-                        ),
-
-                        heading=(
-                            effective_heading
-                        ),
-
-                        ode_number=(
-                            current_ode
-                        ),
-                    )
-
-                    continue
-
-                # Несколько абзацев одной
-                # молитвы/седальна и т.п.
-                if open_standalone:
-                    open_standalone[
-                        'content'
-                    ] += (
-                        '\n\n'
-                        + self.clean_text(
-                            text,
-                            preserve_newlines=True,
-                        )
-                    )
-
-                    last_section = (
-                        open_standalone
-                    )
-
-                    continue
-
-                if current_ode:
-                    add_section(
-                        section_type=(
-                            CanonSection
-                            .TYPE_TROPARION
-                        ),
-
-                        content=text,
-
-                        heading='',
-
-                        ode_number=(
-                            current_ode
-                        ),
-                    )
-
-                    continue
-
-                # Текст до начала первой
-                # песни (например тропарь,
-                # если EPUB потерял heading)
-                # сохраняем, но не выдаём
-                # за тропарь автоматически.
-                add_section(
-                    section_type=(
-                        CanonSection
-                        .TYPE_OTHER
-                    ),
-
-                    content=text,
-
-                    heading='',
-
-                    ode_number=None,
-                )
-
-        sections = self.normalize_refrains(
-            sections
-        )
-
-        return {
-            'tone':
-                (
-                    tone_from_canon
-                    or tone
-                ),
-
-            'sections':
-                sections,
-
-            'seen_odes':
-                seen_odes,
-
-            'classes':
-                class_counter,
-
-            'headings':
-                heading_counter,
-
-            'variant_count':
-                max(
-                    (
-                        section[
-                            'variant'
-                        ]
-                        for section
-                        in sections
-                    ),
-                    default=1,
-                ),
-        }
-
-    def normalize_refrains(
-            self,
-            sections,
-    ):
-        """
-        Нормализует припевы канона.
-
-        В EPUB Азбуки встречаются три варианта:
-        1) "Припев: <текст>" одним абзацем;
-        2) отдельное "Припев:", после которого сразу идёт тропарь;
-        3) повтор самого припева без слова "Припев:".
-
-        В БД приводим это к одной схеме:
-        отдельная CanonSection(TYPE_REFRAIN) с настоящим текстом припева.
-        """
-        if not sections:
-            return sections
-
-        by_variant = {}
-
-        for section in sections:
-            by_variant.setdefault(
-                section[
-                    'variant'
-                ],
-                [],
-            ).append(
-                section
-            )
-
-        normalized_all = []
-
-        for variant in sorted(
-                by_variant
-        ):
-            items = sorted(
-                by_variant[
-                    variant
-                ],
-                key=lambda item: item[
-                    'order'
-                ],
-            )
-
-            candidates = []
-
-            for item in items:
-                if (
-                        item[
-                            'section_type'
-                        ] !=
-                        CanonSection
-                        .TYPE_REFRAIN
-                ):
-                    continue
-
-                heading = (
-                    self.normalize_heading(
-                        item.get(
-                            'heading',
-                            ''
-                        )
-                    )
-                )
-
-                if heading != 'припев':
-                    continue
-
-                content = (
-                    self.strip_refrain_prefix(
-                        item[
-                            'content'
-                        ]
-                    )
-                )
-
-                if not self.looks_like_refrain(
-                        content
-                ):
-                    continue
-
-                candidates.append(
-                    {
-                        'content':
-                            content,
-
-                        'translation':
-                            item.get(
-                                'translation',
-                                ''
-                            ),
-
-                        'signature':
-                            self.refrain_signature(
-                                content
-                            ),
-                    }
-                )
-
-            canonical = None
-
-            if candidates:
-                counts = Counter(
-                    item[
-                        'signature'
-                    ]
-                    for item in candidates
-                    if item[
-                        'signature'
-                    ]
-                )
-
-                if counts:
-                    best_signature = (
-                        counts.most_common(
-                            1
-                        )[0][0]
-                    )
-
-                    matching = [
-                        item
-                        for item in candidates
-                        if item[
-                            'signature'
-                        ] ==
-                        best_signature
-                    ]
-
-                    canonical = min(
-                        matching,
-                        key=lambda item:
-                            len(
-                                item[
-                                    'content'
-                                ]
-                            ),
-                    )
-
-            rebuilt = []
-
-            for item in items:
-                current = dict(
-                    item
-                )
-
-                content = (
-                    self.strip_refrain_prefix(
-                        current[
-                            'content'
-                        ]
-                    )
-                )
-
-                signature = (
-                    self.refrain_signature(
-                        content
-                    )
-                )
-
-                heading = (
-                    self.normalize_heading(
-                        current.get(
-                            'heading',
-                            ''
-                        )
-                    )
-                )
-
-                is_plain_refrain = (
-                    current[
-                        'section_type'
-                    ] ==
-                    CanonSection
-                    .TYPE_REFRAIN
-                    and
-                    heading ==
-                    'припев'
-                )
-
-                if (
-                        canonical
-                        and
-                        is_plain_refrain
-                ):
-                    if (
-                            signature ==
-                            canonical[
-                                'signature'
-                            ]
-                    ):
-                        current[
-                            'content'
-                        ] = (
-                            canonical[
-                                'content'
-                            ]
-                        )
-
-                        current[
-                            'heading'
-                        ] = 'Припев'
-
-                        if (
-                                not current.get(
-                                    'translation'
-                                )
-                                and
-                                canonical.get(
-                                    'translation'
-                                )
-                        ):
-                            current[
-                                'translation'
-                            ] = (
-                                canonical[
-                                    'translation'
-                                ]
-                            )
-
-                        rebuilt.append(
-                            current
-                        )
-
-                        continue
-
-                    # Cue-only "Припев:" из EPUB был ошибочно
-                    # приклеен к следующему тропарю. Восстанавливаем
-                    # настоящий припев, а текущий текст возвращаем
-                    # в тип обычного тропаря.
-                    if not self.looks_like_refrain(
-                            content
-                    ):
-                        rebuilt.append(
-                            {
-                                **current,
-
-                                'section_type':
-                                    CanonSection
-                                    .TYPE_REFRAIN,
-
-                                'heading':
-                                    'Припев',
-
-                                'content':
-                                    canonical[
-                                        'content'
-                                    ],
-
-                                'translation':
-                                    canonical.get(
-                                        'translation',
-                                        ''
-                                    ),
-                            }
-                        )
-
-                        current[
-                            'section_type'
-                        ] = (
-                            CanonSection
-                            .TYPE_TROPARION
-                        )
-
-                        current[
-                            'heading'
-                        ] = ''
-
-                        current[
-                            'content'
-                        ] = content
-
-                        rebuilt.append(
-                            current
-                        )
-
-                        continue
-
-                if (
-                        canonical
-                        and
-                        current[
-                            'section_type'
-                        ] ==
-                        CanonSection
-                        .TYPE_TROPARION
-                        and
-                        signature ==
-                        canonical[
-                            'signature'
-                        ]
-                ):
-                    # В ряде EPUB со 2/3 песни повторяется только
-                    # сам текст припева без слова "Припев:".
-                    current[
-                        'section_type'
-                    ] = (
-                        CanonSection
-                        .TYPE_REFRAIN
-                    )
-
-                    current[
-                        'heading'
-                    ] = 'Припев'
-
-                    current[
-                        'content'
-                    ] = (
-                        canonical[
-                            'content'
-                        ]
-                    )
-
-                    if (
-                            not current.get(
-                                'translation'
-                            )
-                            and
-                            canonical.get(
-                                'translation'
-                            )
-                    ):
-                        current[
-                            'translation'
-                        ] = (
-                            canonical[
-                                'translation'
-                            ]
-                        )
-
-                rebuilt.append(
-                    current
-                )
-
-            for order, item in enumerate(
-                    rebuilt,
-                    start=1,
-            ):
-                item[
-                    'order'
-                ] = order
-
-                normalized_all.append(
-                    item
-                )
-
-        return normalized_all
-
-    def strip_refrain_prefix(
-            self,
-            value,
-    ):
-        cleaned = self.clean_text(
-            value,
-            preserve_newlines=True,
-        )
-
-        return re.sub(
-            r'^\s*припев\s*:\s*',
-            '',
-            cleaned,
-            count=1,
-            flags=re.IGNORECASE,
-        ).strip()
-
-    def refrain_signature(
-            self,
-            value,
-    ):
-        normalized = (
-            self.normalize_heading(
-                self.strip_refrain_prefix(
-                    value
-                )
-            )
-        )
-
-        return re.sub(
-            r'[^а-я0-9]+',
-            ' ',
-            normalized,
-            flags=re.IGNORECASE,
-        ).strip()
-
-    def looks_like_refrain(
-            self,
-            value,
-    ):
-        normalized = (
-            self.refrain_signature(
-                value
-            )
-        )
-
-        if not normalized:
-            return False
-
-        if len(
-            normalized
-        ) > 220:
-            return False
-
-        markers = (
-            'моли бога',
-            'помилуй',
-            'спаси нас',
-            'спаси мя',
-            'слава тебе',
-            'радуйся',
-        )
-
-        return any(
-            marker in normalized
-            for marker in markers
-        )
-
-
-    def parse_heading(
-            self,
-            value,
-    ):
-        normalized = (
-            self.normalize_heading(
-                value
-            )
-        )
-
-        ode_match = re.match(
-            r'^песнь\s+'
-            r'([0-9]+|[ivx]+)'
-            r'(?:\s|$)',
-            normalized,
-        )
-
-        if ode_match:
-            number = (
-                self.parse_number(
-                    ode_match.group(
-                        1
-                    )
-                )
-            )
-
-            if (
-                number
-                and
-                1 <= number <= 9
-            ):
-                return {
-                    'kind':
-                        'ode',
-
-                    'number':
-                        number,
-                }
-
-        if normalized.startswith(
-                'канон'
-        ):
-            return {
-                'kind':
-                    'canon',
-            }
-
-        patterns = [
-            (
-                r'^седален(?:\s|,|:|$)',
-                CanonSection
-                .TYPE_SEDALEN,
-                'sedalen',
-            ),
-            (
-                r'^кондак(?:\s|,|:|$)',
-                CanonSection
-                .TYPE_KONTAKION,
-                'kontakion',
-            ),
-            (
-                r'^икос(?:\s|,|:|$)',
-                CanonSection
-                .TYPE_IKOS,
-                'ikos',
-            ),
-            (
-                r'^светилен(?:\s|,|:|$)',
-                CanonSection
-                .TYPE_SVETILEN,
-                'svetilen',
-            ),
-            (
-                r'^эксапостилар(?:\s|,|:|$)',
-                CanonSection
-                .TYPE_SVETILEN,
-                'svetilen',
-            ),
-            (
-                r'^тропар(?:ь|и|я)?(?:\s|,|:|$)',
-                CanonSection
-                .TYPE_TROPARION,
-                'troparion',
-            ),
-            (
-                r'^(?:кресто)?богородичен(?:\s|,|:|$)',
-                CanonSection
-                .TYPE_THEOTOKION,
-                'theotokion',
-            ),
-            (
-                r'^молитва(?:\s|,|:|$)',
-                CanonSection
-                .TYPE_PRAYER,
-                'prayer',
-            ),
-        ]
-
-        for (
-            pattern,
-            section_type,
-            kind,
-        ) in patterns:
-            if re.match(
-                    pattern,
-                    normalized,
-            ):
-                return {
-                    'kind':
-                        kind,
-
-                    'section_type':
-                        section_type,
-                }
-
-        return None
-
-    def split_paragraph_cue(
-            self,
-            value,
-    ):
-        """
-        Разделяет служебную метку в начале абзаца
-        ("Припев:", "Иисусу:", "Слава:", "И ныне:" и т.п.)
-        и сам текст. Это важно для EPUB, где метка может
-        находиться отдельным абзацем, а текст — следующим.
-        """
-        cleaned = self.clean_text(
-            value,
-            preserve_newlines=True,
-        )
-
-        if ':' not in cleaned:
-            return (
-                '',
-                cleaned,
-            )
-
-        cue, remainder = cleaned.split(
-            ':',
-            1,
-        )
-
-        normalized_cue = (
-            self.normalize_heading(
-                cue
-            )
-        )
-
-        allowed = (
-            normalized_cue == 'ирмос'
-            or normalized_cue == 'припев'
-            or normalized_cue == 'иисусу'
-            or normalized_cue == 'слава'
-            or normalized_cue == 'и ныне'
-            or normalized_cue == 'ныне'
-            or normalized_cue == 'богородичен'
-            or normalized_cue == 'крестобогородичен'
-        )
-
-        if not allowed:
-            return (
-                '',
-                cleaned,
-            )
-
-        return (
-            cue.strip(),
-            remainder.strip(),
-        )
-
-
-    def classify_paragraph(
-            self,
-            value,
-    ):
-        normalized = (
-            self.normalize_heading(
-                value
-            )
-        )
-
-        tests = [
-            (
-                r'^ирмос\s*:',
-                CanonSection
-                .TYPE_IRMOS,
-                'Ирмос',
-            ),
-            (
-                r'^припев(?:\s+[^:]*)?\s*:',
-                CanonSection
-                .TYPE_REFRAIN,
-                'Припев',
-            ),
-            (
-                r'^иисусу\s*:',
-                CanonSection
-                .TYPE_REFRAIN,
-                'Иисусу',
-            ),
-            (
-                r'^слава(?:\s+отцу|\s*:)',
-                CanonSection
-                .TYPE_GLORY,
-                'Слава',
-            ),
-            (
-                r'^и\s+ныне(?:\s|,|:)',
-                CanonSection
-                .TYPE_NOW,
-                'И ныне',
-            ),
-            (
-                r'^(?:кресто)?богородичен\s*:',
-                CanonSection
-                .TYPE_THEOTOKION,
-                'Богородичен',
-            ),
-        ]
-
-        for (
-            pattern,
-            section_type,
-            label,
-        ) in tests:
-            if re.match(
-                    pattern,
-                    normalized,
-            ):
-                return (
-                    section_type,
-                    label,
-                )
-
-        return (
-            None,
-            '',
-        )
-
-    # =========================================================
-    # ПРОВЕРКА
-    # =========================================================
-
-    def validate_parsed(
-            self,
-            parsed,
-    ):
-        sections = (
-            parsed[
-                'sections'
-            ]
-        )
-
-        if not sections:
-            raise CommandError(
-                'В EPUB не найдено '
-                'элементов канона.'
-            )
-
-        variants = {}
-
-        for section in sections:
-            variants.setdefault(
-                section[
-                    'variant'
-                ],
-                [],
-            ).append(
-                section
-            )
-
-        for (
-            variant,
-            items,
-        ) in variants.items():
-            ode_numbers = []
-
-            for item in items:
-                ode = (
-                    item[
-                        'ode_number'
-                    ]
-                )
-
-                if (
-                    ode
-                    and
-                    ode not in
-                    ode_numbers
-                ):
-                    ode_numbers.append(
-                        ode
-                    )
-
-                if not item[
-                    'content'
-                ]:
-                    raise CommandError(
-                        'Пустой элемент: '
-                        f'вариант {variant}, '
-                        f'order={item["order"]}.'
-                    )
-
-            if not ode_numbers:
-                raise CommandError(
-                    'Не найдены песни '
-                    f'в варианте {variant}.'
-                )
-
-            if ode_numbers[0] != 1:
-                raise CommandError(
-                    'Канон должен начинаться '
-                    'с Песни 1. '
-                    f'Вариант {variant}: '
-                    f'{ode_numbers}'
-                )
-
-            if ode_numbers != sorted(
-                    ode_numbers
-            ):
-                raise CommandError(
-                    'Нарушен порядок песен. '
-                    f'Вариант {variant}: '
-                    f'{ode_numbers}'
-                )
-
-            if len(
-                ode_numbers
-            ) != len(
-                set(
-                    ode_numbers
-                )
-            ):
-                raise CommandError(
-                    'Повторяются номера песен. '
-                    f'Вариант {variant}: '
-                    f'{ode_numbers}'
-                )
-
-            invalid = [
-                number
-                for number
-                in ode_numbers
-                if not (
-                    1 <= number <= 9
-                )
-            ]
-
-            if invalid:
-                raise CommandError(
-                    'Недопустимые номера песен: '
-                    f'{invalid}'
-                )
-
-            if 9 not in ode_numbers:
-                raise CommandError(
-                    'Не найдена Песнь 9. '
-                    f'Вариант {variant}: '
-                    f'{ode_numbers}'
-                )
-
-    def print_report(
-            self,
-            parsed,
-    ):
-        self.stdout.write('')
-        self.stdout.write(
-            self.style.SUCCESS(
-                'Структура канона '
-                'распознана.'
-            )
-        )
-
-        self.stdout.write(
-            'Глас: '
-            + (
-                parsed[
-                    'tone'
-                ]
-                or 'не указан'
-            )
-        )
-
-        self.stdout.write(
-            'Вариантов текста: '
-            f'{parsed["variant_count"]}'
-        )
-
-        for variant in range(
-                1,
-                parsed[
-                    'variant_count'
-                ] + 1,
-        ):
-            items = [
-                section
-                for section
-                in parsed[
-                    'sections'
-                ]
-                if section[
-                    'variant'
-                ] == variant
-            ]
-
-            ode_numbers = []
-
-            for section in items:
-                ode = (
-                    section[
-                        'ode_number'
-                    ]
-                )
-
-                if (
-                    ode
-                    and
-                    ode not in
-                    ode_numbers
-                ):
-                    ode_numbers.append(
-                        ode
-                    )
-
-            counts = Counter(
-                section[
-                    'section_type'
-                ]
-                for section
-                in items
-            )
-
-            translated = sum(
-                1
-                for section
-                in items
-                if section[
-                    'translation'
-                ]
-            )
-
-            self.stdout.write('')
-            self.stdout.write(
-                f'Вариант {variant}:'
-            )
-
-            self.stdout.write(
-                '  Песни: '
-                + ', '.join(
-                    str(
-                        number
-                    )
-                    for number
-                    in ode_numbers
-                )
-            )
-
-            self.stdout.write(
-                f'  Элементов: '
-                f'{len(items)}'
-            )
-
-            self.stdout.write(
-                f'  С переводом: '
-                f'{translated}'
-            )
-
-            for (
-                section_type,
-                count,
-            ) in sorted(
-                counts.items()
-            ):
-                self.stdout.write(
-                    '  '
-                    f'{section_type:12} '
-                    f'{count}'
-                )
-
-        if parsed[
-            'classes'
-        ]:
-            self.stdout.write('')
-            self.stdout.write(
-                'HTML-классы EPUB:'
-            )
-
-            for (
-                class_name,
-                count,
-            ) in (
-                parsed[
-                    'classes'
-                ]
-                .most_common()
-            ):
-                self.stdout.write(
-                    f'  {class_name}: '
-                    f'{count}'
-                )
-
-        if parsed[
-            'headings'
-        ]:
-            self.stdout.write('')
-            self.stdout.write(
-                'Распознанные заголовки:'
-            )
-
-            for (
-                name,
-                count,
-            ) in sorted(
-                parsed[
-                    'headings'
-                ].items()
-            ):
-                self.stdout.write(
-                    f'  {name}: '
-                    f'{count}'
-                )
-
-    # =========================================================
-    # СОХРАНЕНИЕ
-    # =========================================================
-
-    @transaction.atomic
-    def save_canon(
-            self,
-            slug,
-            title,
-            parsed,
-    ):
-        canon, created = (
-            Canon.objects
-            .update_or_create(
-                slug=slug,
-                defaults={
-                    'title':
-                        title,
-
-                    'tone':
-                        parsed[
-                            'tone'
-                        ],
-
-                    'is_visible':
-                        True,
-                },
-            )
-        )
-
-        self.stdout.write(
-            (
-                'Создан новый Canon.'
-                if created
-                else
-                'Обновлён существующий Canon.'
-            )
-        )
-
-        desired = set()
-
-        variants = [
-            int(
-                section[
-                    'variant'
-                ]
-            )
-            for section in parsed[
-                'sections'
-            ]
-        ]
-
-        primary_variant = (
-            min(
-                variants
-            )
-            if variants
-            else 1
-        )
-
-        for section in parsed[
-            'sections'
-        ]:
-            if (
-                int(
-                    section[
-                        'variant'
-                    ]
-                ) !=
-                primary_variant
-            ):
-                continue
-            variant = (
-                section[
-                    'variant'
-                ]
-            )
-
-            order = (
-                section[
-                    'order'
-                ]
-            )
-
-            desired.add(
-                (
-                    variant,
-                    order,
-                )
-            )
-
-            text_slug = (
-                f'{slug}-'
-                f'v{variant}-'
-                f'section-{order}'
-            )
-
-            text_title = (
-                section[
-                    'heading'
-                ]
-                or self.make_text_title(
-                    section
-                )
-            )
-
-            text_object, _created = (
-                Text.objects
-                .update_or_create(
-                    slug=text_slug,
-                    defaults={
-                        'title':
-                            text_title[
-                                :255
-                            ],
-
-                        'content':
-                            section[
-                                'content'
-                            ],
-
-                        'translation':
-                            section[
-                                'translation'
-                            ],
-
-                        'language':
-                            'cu',
-
-                        'is_visible':
-                            True,
-                    },
-                )
-            )
-
-            CanonSection.objects.update_or_create(
-                canon=canon,
-                variant=variant,
-                order=order,
-                defaults={
-                    'section_type':
-                        section[
-                            'section_type'
-                        ],
-
-                    'ode_number':
-                        section[
-                            'ode_number'
-                        ],
-
-                    'heading':
-                        section[
-                            'heading'
-                        ][
-                            :255
-                        ],
-
-                    'text':
-                        text_object,
-                },
-            )
-
-        for existing in (
-            CanonSection.objects
-            .filter(
-                canon=canon
-            )
-        ):
-            key = (
-                existing.variant,
-                existing.order,
-            )
-
-            if key not in desired:
-                existing.delete()
-
-        self.stdout.write(
-            'Элементов канона в БД: '
-            f'{CanonSection.objects.filter(canon=canon).count()}'
-        )
-
-    def make_text_title(
-            self,
-            section,
-    ):
-        label = (
-            SECTION_LABELS.get(
-                section[
-                    'section_type'
-                ],
-                'Текст',
-            )
-        )
-
-        if section[
-            'ode_number'
-        ]:
-            return (
-                f'Песнь '
-                f'{section["ode_number"]} — '
-                f'{label}'
-            )
-
-        return label
-
-    # =========================================================
-    # ВСПОМОГАТЕЛЬНОЕ
-    # =========================================================
-
-    def extract_tone(
-            self,
-            value,
-    ):
-        normalized = (
-            self.normalize_heading(
-                value
-            )
-        )
-
-        match = re.search(
-            r'глас\s+'
-            r'([0-9]+|[ivx]+)',
-            normalized,
-        )
-
-        if not match:
-            return ''
-
-        number = (
-            self.parse_number(
-                match.group(
-                    1
-                )
-            )
-        )
-
-        if not number:
-            return ''
-
-        return f'Глас {number}'
-
-    def parse_number(
-            self,
-            value,
-    ):
-        value = (
-            value
-            .strip()
-            .lower()
-        )
-
-        if value.isdigit():
-            return int(
-                value
-            )
-
-        roman = {
-            'i': 1,
-            'ii': 2,
-            'iii': 3,
-            'iv': 4,
-            'v': 5,
-            'vi': 6,
-            'vii': 7,
-            'viii': 8,
-            'ix': 9,
-        }
-
-        return roman.get(
-            value
-        )
-
-    def clean_translation(
-            self,
-            value,
-    ):
-        value = self.clean_text(
-            value,
-            preserve_newlines=True,
-        )
-
-        value = re.sub(
-            r'^перевод\s*:\s*',
-            '',
-            value,
-            flags=re.IGNORECASE,
-        )
-
-        return value.strip()
-
-    def normalize_heading(
-            self,
-            value,
-    ):
-        value = self.clean_text(
-            value
-        )
-
-        value = (
-            unicodedata.normalize(
-                'NFD',
-                value,
-            )
-        )
-
-        value = ''.join(
-            char
-            for char
-            in value
-            if unicodedata.category(
-                char
-            ) != 'Mn'
-        )
-
-        value = (
-            value
-            .lower()
-            .replace(
-                'ё',
-                'е',
-            )
-        )
-
-        value = re.sub(
-            r'\s+',
-            ' ',
-            value,
-        )
-
-        return value.strip()
-
-    def clean_text(
-            self,
-            value,
-            preserve_newlines=False,
-    ):
-        if value is None:
-            return ''
-
-        value = (
-            value
-            .replace(
-                '\xa0',
-                ' ',
-            )
-            .replace(
-                '\u200b',
-                '',
-            )
-        )
-
-        if preserve_newlines:
-            lines = []
-
-            for line in value.splitlines():
-                line = re.sub(
-                    r'[ \t]+',
-                    ' ',
-                    line,
-                ).strip()
-
-                if line:
-                    lines.append(
-                        line
-                    )
-
-            return '\n'.join(
-                lines
-            ).strip()
-
-        value = re.sub(
-            r'\s+',
-            ' ',
-            value,
-        )
-
-        return value.strip()
-,
+            r"^песнь\\s+([0-9]+)(?:\\s|$)",
             normalized,
         )
 
         if not match:
             return None
 
-        return int(
-            match.group(
-                1
-            )
-        )
+        return int(match.group(1))
 
-    def strict_signature(
-            self,
-            value,
-    ):
-        normalized = (
-            self.normalize_heading(
-                value
-            )
-        )
-
-        return re.sub(
-            r'[^а-я0-9]+',
-            ' ',
-            normalized,
-            flags=re.IGNORECASE,
-        ).strip()
-
-    def strict_remove_prefix(
-            self,
-            value,
-            prefix,
-    ):
-        value = (
-            value
-            or ''
-        )
-
-        prefix = (
-            prefix
-            or ''
-        )
-
-        if (
-                prefix
-                and
-                value.startswith(
-                    prefix
-                )
-        ):
-            return value[
-                len(
-                    prefix
-                ):
-            ].strip()
-
-        return value.strip()
-
-    def strict_strip_translation_label(
-            self,
-            value,
-    ):
-        return re.sub(
-            r'^\s*перевод\s*:\s*',
-            '',
-            value
-            or '',
-            count=1,
-            flags=re.IGNORECASE,
-        ).strip()
-
-    def strict_is_church_text(
-            self,
-            value,
-    ):
-        if not value:
-            return False
-
-        decomposed = (
-            unicodedata.normalize(
-                'NFD',
-                value,
-            )
-        )
-
-        accent_count = sum(
-            1
-            for char in decomposed
-            if unicodedata.category(
-                char
-            ) == 'Mn'
-        )
-
-        letter_count = sum(
-            1
-            for char in value
-            if char.isalpha()
-        )
-
-        if not letter_count:
-            return False
-
-        return (
-            accent_count /
-            letter_count
-        ) >= 0.07
-
-    def strict_starts_glory(
-            self,
-            value,
-    ):
-        normalized = (
-            self.normalize_heading(
-                value
-            )
-        )
-
-        return bool(
-            re.match(
-                r'^слава\s+отцу\b',
-                normalized,
-            )
-        )
-
-    def strict_starts_now(
-            self,
-            value,
-    ):
-        normalized = (
-            self.normalize_heading(
-                value
-            )
-        )
-
-        return bool(
-            re.match(
-                r'^и\s+ныне\s*,?\s*'
-                r'и\s+присно\b',
-                normalized,
-            )
-        )
-
-    def strict_is_full_glory_now(
-            self,
-            value,
-    ):
-        normalized = (
-            self.strict_signature(
-                value
-            )
-        )
-
-        return normalized == (
-            'слава отцу и сыну и святому '
-            'духу и ныне и присно и во '
-            'веки веков аминь'
-        )
-
-
-    def parse_canon(
-            self,
-            documents,
-    ):
         sections = []
 
         variant = 1
@@ -3778,9 +1053,9 @@ class Command(BaseCommand):
 
         last_section = None
 
-        tone = ''
+        tone = ""
 
-        tone_from_canon = ''
+        tone_from_canon = ""
 
         class_counter = Counter()
 
@@ -3814,10 +1089,10 @@ class Command(BaseCommand):
             last_section = None
 
         def add_section(
-                section_type,
-                content,
-                heading='',
-                ode_number=None,
+            section_type,
+            content,
+            heading="",
+            ode_number=None,
         ):
             nonlocal last_section
             nonlocal open_standalone
@@ -3830,71 +1105,44 @@ class Command(BaseCommand):
             if not content:
                 return None
 
-            orders[
-                variant
-            ] += 1
+            orders[variant] += 1
 
             item = {
-                'variant':
-                    variant,
-
-                'order':
-                    orders[
-                        variant
-                    ],
-
-                'section_type':
-                    section_type,
-
-                'ode_number':
-                    ode_number,
-
-                'heading':
-                    self.clean_text(
-                        heading
-                    ),
-
-                'content':
-                    content,
-
-                'translation':
-                    '',
+                "variant": variant,
+                "order": orders[variant],
+                "section_type": section_type,
+                "ode_number": ode_number,
+                "heading": self.clean_text(heading),
+                "content": content,
+                "translation": "",
             }
 
-            sections.append(
-                item
-            )
+            sections.append(item)
 
             last_section = item
 
             return item
 
         for _name, soup in documents:
-            body = (
-                soup.body
-                or soup
-            )
+            body = soup.body or soup
 
-            elements = (
-                body.find_all(
-                    list(
-                        HEADING_TAGS
-                    ) + [
-                        'p',
-                    ]
-                )
+            elements = body.find_all(
+                list(HEADING_TAGS)
+                + [
+                    "p",
+                ]
             )
 
             for element in elements:
                 if not isinstance(
-                        element,
-                        Tag,
+                    element,
+                    Tag,
                 ):
                     continue
 
                 text = self.clean_text(
                     element.get_text(
-                        ' ',
+                        " ",
                         strip=True,
                     )
                 )
@@ -3904,110 +1152,60 @@ class Command(BaseCommand):
 
                 classes = {
                     value.lower()
-                    for value
-                    in element.get(
-                        'class',
+                    for value in element.get(
+                        "class",
                         [],
                     )
                 }
 
                 for value in classes:
-                    class_counter[
-                        value
-                    ] += 1
+                    class_counter[value] += 1
 
                 if element.name in HEADING_TAGS:
-                    heading = (
-                        self.parse_heading(
-                            text
-                        )
-                    )
+                    heading = self.parse_heading(text)
 
                     if not heading:
                         # Главный H1 с названием
                         # канона не превращаем
                         # в элемент текста.
-                        normalized = (
-                            self.normalize_heading(
-                                text
-                            )
-                        )
+                        normalized = self.normalize_heading(text)
 
-                        if (
-                            element.name == 'h1'
-                            and
-                            normalized.startswith(
-                                'канон '
-                            )
-                        ):
+                        if element.name == "h1" and normalized.startswith("канон "):
                             continue
 
                         pending_heading = {
-                            'section_type':
-                                CanonSection
-                                .TYPE_OTHER,
-
-                            'heading':
-                                text,
-
-                            'ode_number':
-                                None,
+                            "section_type": CanonSection.TYPE_OTHER,
+                            "heading": text,
+                            "ode_number": None,
                         }
 
                         open_standalone = None
 
                         continue
 
-                    heading_counter[
-                        heading[
-                            'kind'
-                        ]
-                    ] += 1
+                    heading_counter[heading["kind"]] += 1
 
-                    if (
-                        heading[
-                            'kind'
-                        ] ==
-                        'canon'
-                    ):
-                        extracted_tone = (
-                            self.extract_tone(
-                                text
-                            )
-                        )
+                    if heading["kind"] == "canon":
+                        extracted_tone = self.extract_tone(text)
 
                         if extracted_tone:
-                            tone_from_canon = (
-                                extracted_tone
-                            )
+                            tone_from_canon = extracted_tone
 
                         # Повтор полного канона
                         # после уже законченного
                         # варианта (например,
                         # мужская/женская форма).
                         if (
-                            9 in
-                            seen_odes[
-                                variant
-                            ]
-                            and
-                            orders[
-                                variant
-                            ] > 0
-                            and
-                            pending_heading
-                            is None
+                            9 in seen_odes[variant]
+                            and orders[variant] > 0
+                            and pending_heading is None
                         ):
                             # Если новый вариант
                             # уже был начат повторным
                             # тропарём перед заголовком,
                             # здесь второй раз не
                             # переключаем.
-                            if not (
-                                orders[
-                                    variant
-                                ] == 0
-                            ):
+                            if not (orders[variant] == 0):
                                 pass
 
                         pending_heading = None
@@ -4018,50 +1216,20 @@ class Command(BaseCommand):
 
                         continue
 
-                    if (
-                        heading[
-                            'kind'
-                        ] ==
-                        'ode'
-                    ):
-                        ode_number = (
-                            heading[
-                                'number'
-                            ]
-                        )
+                    if heading["kind"] == "ode":
+                        ode_number = heading["number"]
 
-                        if (
-                            ode_number == 1
-                            and
-                            1 in
-                            seen_odes[
-                                variant
-                            ]
-                        ):
+                        if ode_number == 1 and 1 in seen_odes[variant]:
                             start_variant()
 
-                        if (
-                            ode_number in
-                            seen_odes[
-                                variant
-                            ]
-                        ):
+                        if ode_number in seen_odes[variant]:
                             raise CommandError(
-                                'Повтор Песни '
-                                f'{ode_number} '
-                                f'в варианте '
-                                f'{variant}.'
+                                "Повтор Песни " f"{ode_number} " f"в варианте " f"{variant}."
                             )
 
-                        current_ode = (
-                            ode_number
-                        )
+                        current_ode = ode_number
 
-                        seen_odes[
-                            variant
-                        ].append(
-                            ode_number
-                        )
+                        seen_odes[variant].append(ode_number)
 
                         pending_heading = None
 
@@ -4069,49 +1237,29 @@ class Command(BaseCommand):
 
                         continue
 
-                    section_type = (
-                        heading[
-                            'section_type'
-                        ]
-                    )
+                    section_type = heading["section_type"]
 
                     # После полной девятой песни
                     # повторный Тропарь часто
                     # означает начало второго
                     # грамматического варианта.
-                    if (
-                        section_type ==
-                        CanonSection
-                        .TYPE_TROPARION
-                        and
-                        9 in
-                        seen_odes[
-                            variant
-                        ]
-                    ):
+                    if section_type == CanonSection.TYPE_TROPARION and 9 in seen_odes[variant]:
                         start_variant()
 
                     belongs_to_ode = (
                         current_ode
                         if section_type
                         in {
-                            CanonSection
-                            .TYPE_TROPARION,
-                            CanonSection
-                            .TYPE_THEOTOKION,
+                            CanonSection.TYPE_TROPARION,
+                            CanonSection.TYPE_THEOTOKION,
                         }
                         else None
                     )
 
                     pending_heading = {
-                        'section_type':
-                            section_type,
-
-                        'heading':
-                            text,
-
-                        'ode_number':
-                            belongs_to_ode,
+                        "section_type": section_type,
+                        "heading": text,
+                        "ode_number": belongs_to_ode,
                     }
 
                     open_standalone = None
@@ -4122,35 +1270,15 @@ class Command(BaseCommand):
                 # Обычный <p>
                 # ---------------------------------------------
 
-                if (
-                    classes &
-                    TRANSLATION_CLASSES
-                ):
+                if classes & TRANSLATION_CLASSES:
                     if last_section:
-                        translation = (
-                            self.clean_translation(
-                                text
-                            )
-                        )
+                        translation = self.clean_translation(text)
 
                         if translation:
-                            if (
-                                last_section[
-                                    'translation'
-                                ]
-                            ):
-                                last_section[
-                                    'translation'
-                                ] += (
-                                    '\n\n'
-                                    + translation
-                                )
+                            if last_section["translation"]:
+                                last_section["translation"] += "\n\n" + translation
                             else:
-                                last_section[
-                                    'translation'
-                                ] = (
-                                    translation
-                                )
+                                last_section["translation"] = translation
 
                     continue
 
@@ -4158,59 +1286,22 @@ class Command(BaseCommand):
                 # размечены обычным <p>.
                 paragraph_heading = None
 
-                if len(
-                    text
-                ) <= 180:
-                    paragraph_heading = (
-                        self.parse_heading(
-                            text
-                        )
-                    )
+                if len(text) <= 180:
+                    paragraph_heading = self.parse_heading(text)
 
                 if paragraph_heading:
-                    heading_counter[
-                        paragraph_heading[
-                            'kind'
-                        ]
-                    ] += 1
+                    heading_counter[paragraph_heading["kind"]] += 1
 
-                    if (
-                        paragraph_heading[
-                            'kind'
-                        ] ==
-                        'ode'
-                    ):
-                        ode_number = (
-                            paragraph_heading[
-                                'number'
-                            ]
-                        )
+                    if paragraph_heading["kind"] == "ode":
+                        ode_number = paragraph_heading["number"]
 
-                        if (
-                            ode_number == 1
-                            and
-                            1 in
-                            seen_odes[
-                                variant
-                            ]
-                        ):
+                        if ode_number == 1 and 1 in seen_odes[variant]:
                             start_variant()
 
-                        current_ode = (
-                            ode_number
-                        )
+                        current_ode = ode_number
 
-                        if (
-                            ode_number not in
-                            seen_odes[
-                                variant
-                            ]
-                        ):
-                            seen_odes[
-                                variant
-                            ].append(
-                                ode_number
-                            )
+                        if ode_number not in seen_odes[variant]:
+                            seen_odes[variant].append(ode_number)
 
                         pending_heading = None
 
@@ -4218,22 +1309,11 @@ class Command(BaseCommand):
 
                         continue
 
-                    if (
-                        paragraph_heading[
-                            'kind'
-                        ] ==
-                        'canon'
-                    ):
-                        extracted_tone = (
-                            self.extract_tone(
-                                text
-                            )
-                        )
+                    if paragraph_heading["kind"] == "canon":
+                        extracted_tone = self.extract_tone(text)
 
                         if extracted_tone:
-                            tone_from_canon = (
-                                extracted_tone
-                            )
+                            tone_from_canon = extracted_tone
 
                         current_ode = None
 
@@ -4244,110 +1324,56 @@ class Command(BaseCommand):
                         continue
 
                     pending_heading = {
-                        'section_type':
-                            paragraph_heading[
-                                'section_type'
-                            ],
-
-                        'heading':
-                            text,
-
-                        'ode_number':
-                            (
-                                current_ode
-                                if paragraph_heading[
-                                    'section_type'
-                                ]
-                                in {
-                                    CanonSection
-                                    .TYPE_TROPARION,
-                                    CanonSection
-                                    .TYPE_THEOTOKION,
-                                }
-                                else None
-                            ),
+                        "section_type": paragraph_heading["section_type"],
+                        "heading": text,
+                        "ode_number": (
+                            current_ode
+                            if paragraph_heading["section_type"]
+                            in {
+                                CanonSection.TYPE_TROPARION,
+                                CanonSection.TYPE_THEOTOKION,
+                            }
+                            else None
+                        ),
                     }
 
                     open_standalone = None
 
                     continue
 
-                extracted_tone = (
-                    self.extract_tone(
-                        text
-                    )
-                )
+                extracted_tone = self.extract_tone(text)
 
-                if (
-                    extracted_tone
-                    and
-                    len(
-                        text.split()
-                    ) <= 8
-                ):
+                if extracted_tone and len(text.split()) <= 8:
                     if not tone:
-                        tone = (
-                            extracted_tone
-                        )
+                        tone = extracted_tone
 
                     # Строка "Глас 2"
                     # является метаданными,
                     # а не текстом канона.
-                    if (
-                        self.normalize_heading(
-                            text
-                        )
-                        .startswith(
-                            'глас '
-                        )
-                    ):
+                    if self.normalize_heading(text).startswith("глас "):
                         continue
 
                 # Если перед абзацем был
                 # явный заголовок.
                 if pending_heading:
                     item = add_section(
-                        section_type=(
-                            pending_heading[
-                                'section_type'
-                            ]
-                        ),
-
+                        section_type=(pending_heading["section_type"]),
                         content=text,
-
-                        heading=(
-                            pending_heading[
-                                'heading'
-                            ]
-                        ),
-
-                        ode_number=(
-                            pending_heading[
-                                'ode_number'
-                            ]
-                        ),
+                        heading=(pending_heading["heading"]),
+                        ode_number=(pending_heading["ode_number"]),
                     )
 
                     open_standalone = (
                         item
                         if item
-                        and
-                        item[
-                            'section_type'
-                        ]
+                        and item["section_type"]
                         in {
-                            CanonSection
-                            .TYPE_SEDALEN,
-                            CanonSection
-                            .TYPE_KONTAKION,
-                            CanonSection
-                            .TYPE_IKOS,
-                            CanonSection
-                            .TYPE_SVETILEN,
-                            CanonSection
-                            .TYPE_PRAYER,
-                            CanonSection
-                            .TYPE_OTHER,
+                            CanonSection.TYPE_SEDALEN,
+                            CanonSection.TYPE_KONTAKION,
+                            CanonSection.TYPE_IKOS,
+                            CanonSection.TYPE_SVETILEN,
+                            CanonSection.TYPE_PRAYER,
+                            CanonSection.TYPE_OTHER,
                         }
                         else None
                     )
@@ -4359,11 +1385,7 @@ class Command(BaseCommand):
                 (
                     paragraph_type,
                     paragraph_label,
-                ) = (
-                    self.classify_paragraph(
-                        text
-                    )
-                )
+                ) = self.classify_paragraph(text)
 
                 if paragraph_type:
                     open_standalone = None
@@ -4371,58 +1393,29 @@ class Command(BaseCommand):
                     (
                         cue_text,
                         paragraph_content,
-                    ) = (
-                        self.split_paragraph_cue(
-                            text
-                        )
-                    )
+                    ) = self.split_paragraph_cue(text)
 
-                    effective_heading = (
-                        cue_text
-                        or paragraph_label
-                    )
+                    effective_heading = cue_text or paragraph_label
 
                     # В некоторых EPUB "Припев:" /
                     # "Иисусу:" / "Слава:" / "И ныне:"
                     # идут отдельным абзацем. В этом случае
                     # следующий абзац и есть содержимое этого
                     # элемента, а не новый тропарь.
-                    if (
-                            cue_text
-                            and
-                            not paragraph_content
-                    ):
+                    if cue_text and not paragraph_content:
                         pending_heading = {
-                            'section_type':
-                                paragraph_type,
-
-                            'heading':
-                                effective_heading,
-
-                            'ode_number':
-                                current_ode,
+                            "section_type": paragraph_type,
+                            "heading": effective_heading,
+                            "ode_number": current_ode,
                         }
 
                         continue
 
                     add_section(
-                        section_type=(
-                            paragraph_type
-                        ),
-
-                        content=(
-                            paragraph_content
-                            if cue_text
-                            else text
-                        ),
-
-                        heading=(
-                            effective_heading
-                        ),
-
-                        ode_number=(
-                            current_ode
-                        ),
+                        section_type=(paragraph_type),
+                        content=(paragraph_content if cue_text else text),
+                        heading=(effective_heading),
+                        ode_number=(current_ode),
                     )
 
                     continue
@@ -4430,36 +1423,21 @@ class Command(BaseCommand):
                 # Несколько абзацев одной
                 # молитвы/седальна и т.п.
                 if open_standalone:
-                    open_standalone[
-                        'content'
-                    ] += (
-                        '\n\n'
-                        + self.clean_text(
-                            text,
-                            preserve_newlines=True,
-                        )
+                    open_standalone["content"] += "\n\n" + self.clean_text(
+                        text,
+                        preserve_newlines=True,
                     )
 
-                    last_section = (
-                        open_standalone
-                    )
+                    last_section = open_standalone
 
                     continue
 
                 if current_ode:
                     add_section(
-                        section_type=(
-                            CanonSection
-                            .TYPE_TROPARION
-                        ),
-
+                        section_type=(CanonSection.TYPE_TROPARION),
                         content=text,
-
-                        heading='',
-
-                        ode_number=(
-                            current_ode
-                        ),
+                        heading="",
+                        ode_number=(current_ode),
                     )
 
                     continue
@@ -4470,57 +1448,29 @@ class Command(BaseCommand):
                 # сохраняем, но не выдаём
                 # за тропарь автоматически.
                 add_section(
-                    section_type=(
-                        CanonSection
-                        .TYPE_OTHER
-                    ),
-
+                    section_type=(CanonSection.TYPE_OTHER),
                     content=text,
-
-                    heading='',
-
+                    heading="",
                     ode_number=None,
                 )
 
-        sections = self.normalize_refrains(
-            sections
-        )
+        sections = self.normalize_refrains(sections)
 
         return {
-            'tone':
-                (
-                    tone_from_canon
-                    or tone
-                ),
-
-            'sections':
-                sections,
-
-            'seen_odes':
-                seen_odes,
-
-            'classes':
-                class_counter,
-
-            'headings':
-                heading_counter,
-
-            'variant_count':
-                max(
-                    (
-                        section[
-                            'variant'
-                        ]
-                        for section
-                        in sections
-                    ),
-                    default=1,
-                ),
+            "tone": (tone_from_canon or tone),
+            "sections": sections,
+            "seen_odes": seen_odes,
+            "classes": class_counter,
+            "headings": heading_counter,
+            "variant_count": max(
+                (section["variant"] for section in sections),
+                default=1,
+            ),
         }
 
     def normalize_refrains(
-            self,
-            sections,
+        self,
+        sections,
     ):
         """
         Нормализует припевы канона.
@@ -4540,206 +1490,82 @@ class Command(BaseCommand):
 
         for section in sections:
             by_variant.setdefault(
-                section[
-                    'variant'
-                ],
+                section["variant"],
                 [],
-            ).append(
-                section
-            )
+            ).append(section)
 
         normalized_all = []
 
-        for variant in sorted(
-                by_variant
-        ):
+        for variant in sorted(by_variant):
             items = sorted(
-                by_variant[
-                    variant
-                ],
-                key=lambda item: item[
-                    'order'
-                ],
+                by_variant[variant],
+                key=lambda item: item["order"],
             )
 
             candidates = []
 
             for item in items:
-                if (
-                        item[
-                            'section_type'
-                        ] !=
-                        CanonSection
-                        .TYPE_REFRAIN
-                ):
+                if item["section_type"] != CanonSection.TYPE_REFRAIN:
                     continue
 
-                heading = (
-                    self.normalize_heading(
-                        item.get(
-                            'heading',
-                            ''
-                        )
-                    )
-                )
+                heading = self.normalize_heading(item.get("heading", ""))
 
-                if heading != 'припев':
+                if heading != "припев":
                     continue
 
-                content = (
-                    self.strip_refrain_prefix(
-                        item[
-                            'content'
-                        ]
-                    )
-                )
+                content = self.strip_refrain_prefix(item["content"])
 
-                if not self.looks_like_refrain(
-                        content
-                ):
+                if not self.looks_like_refrain(content):
                     continue
 
                 candidates.append(
                     {
-                        'content':
-                            content,
-
-                        'translation':
-                            item.get(
-                                'translation',
-                                ''
-                            ),
-
-                        'signature':
-                            self.refrain_signature(
-                                content
-                            ),
+                        "content": content,
+                        "translation": item.get("translation", ""),
+                        "signature": self.refrain_signature(content),
                     }
                 )
 
             canonical = None
 
             if candidates:
-                counts = Counter(
-                    item[
-                        'signature'
-                    ]
-                    for item in candidates
-                    if item[
-                        'signature'
-                    ]
-                )
+                counts = Counter(item["signature"] for item in candidates if item["signature"])
 
                 if counts:
-                    best_signature = (
-                        counts.most_common(
-                            1
-                        )[0][0]
-                    )
+                    best_signature = counts.most_common(1)[0][0]
 
-                    matching = [
-                        item
-                        for item in candidates
-                        if item[
-                            'signature'
-                        ] ==
-                        best_signature
-                    ]
+                    matching = [item for item in candidates if item["signature"] == best_signature]
 
                     canonical = min(
                         matching,
-                        key=lambda item:
-                            len(
-                                item[
-                                    'content'
-                                ]
-                            ),
+                        key=lambda item: len(item["content"]),
                     )
 
             rebuilt = []
 
             for item in items:
-                current = dict(
-                    item
-                )
+                current = dict(item)
 
-                content = (
-                    self.strip_refrain_prefix(
-                        current[
-                            'content'
-                        ]
-                    )
-                )
+                content = self.strip_refrain_prefix(current["content"])
 
-                signature = (
-                    self.refrain_signature(
-                        content
-                    )
-                )
+                signature = self.refrain_signature(content)
 
-                heading = (
-                    self.normalize_heading(
-                        current.get(
-                            'heading',
-                            ''
-                        )
-                    )
-                )
+                heading = self.normalize_heading(current.get("heading", ""))
 
                 is_plain_refrain = (
-                    current[
-                        'section_type'
-                    ] ==
-                    CanonSection
-                    .TYPE_REFRAIN
-                    and
-                    heading ==
-                    'припев'
+                    current["section_type"] == CanonSection.TYPE_REFRAIN and heading == "припев"
                 )
 
-                if (
-                        canonical
-                        and
-                        is_plain_refrain
-                ):
-                    if (
-                            signature ==
-                            canonical[
-                                'signature'
-                            ]
-                    ):
-                        current[
-                            'content'
-                        ] = (
-                            canonical[
-                                'content'
-                            ]
-                        )
+                if canonical and is_plain_refrain:
+                    if signature == canonical["signature"]:
+                        current["content"] = canonical["content"]
 
-                        current[
-                            'heading'
-                        ] = 'Припев'
+                        current["heading"] = "Припев"
 
-                        if (
-                                not current.get(
-                                    'translation'
-                                )
-                                and
-                                canonical.get(
-                                    'translation'
-                                )
-                        ):
-                            current[
-                                'translation'
-                            ] = (
-                                canonical[
-                                    'translation'
-                                ]
-                            )
+                        if not current.get("translation") and canonical.get("translation"):
+                            current["translation"] = canonical["translation"]
 
-                        rebuilt.append(
-                            current
-                        )
+                        rebuilt.append(current)
 
                         continue
 
@@ -4747,127 +1573,58 @@ class Command(BaseCommand):
                     # приклеен к следующему тропарю. Восстанавливаем
                     # настоящий припев, а текущий текст возвращаем
                     # в тип обычного тропаря.
-                    if not self.looks_like_refrain(
-                            content
-                    ):
+                    if not self.looks_like_refrain(content):
                         rebuilt.append(
                             {
                                 **current,
-
-                                'section_type':
-                                    CanonSection
-                                    .TYPE_REFRAIN,
-
-                                'heading':
-                                    'Припев',
-
-                                'content':
-                                    canonical[
-                                        'content'
-                                    ],
-
-                                'translation':
-                                    canonical.get(
-                                        'translation',
-                                        ''
-                                    ),
+                                "section_type": CanonSection.TYPE_REFRAIN,
+                                "heading": "Припев",
+                                "content": canonical["content"],
+                                "translation": canonical.get("translation", ""),
                             }
                         )
 
-                        current[
-                            'section_type'
-                        ] = (
-                            CanonSection
-                            .TYPE_TROPARION
-                        )
+                        current["section_type"] = CanonSection.TYPE_TROPARION
 
-                        current[
-                            'heading'
-                        ] = ''
+                        current["heading"] = ""
 
-                        current[
-                            'content'
-                        ] = content
+                        current["content"] = content
 
-                        rebuilt.append(
-                            current
-                        )
+                        rebuilt.append(current)
 
                         continue
 
                 if (
-                        canonical
-                        and
-                        current[
-                            'section_type'
-                        ] ==
-                        CanonSection
-                        .TYPE_TROPARION
-                        and
-                        signature ==
-                        canonical[
-                            'signature'
-                        ]
+                    canonical
+                    and current["section_type"] == CanonSection.TYPE_TROPARION
+                    and signature == canonical["signature"]
                 ):
                     # В ряде EPUB со 2/3 песни повторяется только
                     # сам текст припева без слова "Припев:".
-                    current[
-                        'section_type'
-                    ] = (
-                        CanonSection
-                        .TYPE_REFRAIN
-                    )
+                    current["section_type"] = CanonSection.TYPE_REFRAIN
 
-                    current[
-                        'heading'
-                    ] = 'Припев'
+                    current["heading"] = "Припев"
 
-                    current[
-                        'content'
-                    ] = (
-                        canonical[
-                            'content'
-                        ]
-                    )
+                    current["content"] = canonical["content"]
 
-                    if (
-                            not current.get(
-                                'translation'
-                            )
-                            and
-                            canonical.get(
-                                'translation'
-                            )
-                    ):
-                        current[
-                            'translation'
-                        ] = (
-                            canonical[
-                                'translation'
-                            ]
-                        )
+                    if not current.get("translation") and canonical.get("translation"):
+                        current["translation"] = canonical["translation"]
 
-                rebuilt.append(
-                    current
-                )
+                rebuilt.append(current)
 
             for order, item in enumerate(
-                    rebuilt,
-                    start=1,
+                rebuilt,
+                start=1,
             ):
-                item[
-                    'order'
-                ] = order
+                item["order"] = order
 
-                normalized_all.append(
-                    item
-                )
+                normalized_all.append(item)
 
         return normalized_all
 
     def strip_refrain_prefix(
-            self,
-            value,
+        self,
+        value,
     ):
         cleaned = self.clean_text(
             value,
@@ -4875,160 +1632,114 @@ class Command(BaseCommand):
         )
 
         return re.sub(
-            r'^\s*припев\s*:\s*',
-            '',
+            r"^\s*припев\s*:\s*",
+            "",
             cleaned,
             count=1,
             flags=re.IGNORECASE,
         ).strip()
 
     def refrain_signature(
-            self,
-            value,
+        self,
+        value,
     ):
-        normalized = (
-            self.normalize_heading(
-                self.strip_refrain_prefix(
-                    value
-                )
-            )
-        )
+        normalized = self.normalize_heading(self.strip_refrain_prefix(value))
 
         return re.sub(
-            r'[^а-я0-9]+',
-            ' ',
+            r"[^а-я0-9]+",
+            " ",
             normalized,
             flags=re.IGNORECASE,
         ).strip()
 
     def looks_like_refrain(
-            self,
-            value,
+        self,
+        value,
     ):
-        normalized = (
-            self.refrain_signature(
-                value
-            )
-        )
+        normalized = self.refrain_signature(value)
 
         if not normalized:
             return False
 
-        if len(
-            normalized
-        ) > 220:
+        if len(normalized) > 220:
             return False
 
         markers = (
-            'моли бога',
-            'помилуй',
-            'спаси нас',
-            'спаси мя',
-            'слава тебе',
-            'радуйся',
+            "моли бога",
+            "помилуй",
+            "спаси нас",
+            "спаси мя",
+            "слава тебе",
+            "радуйся",
         )
 
-        return any(
-            marker in normalized
-            for marker in markers
-        )
-
+        return any(marker in normalized for marker in markers)
 
     def parse_heading(
-            self,
-            value,
+        self,
+        value,
     ):
-        normalized = (
-            self.normalize_heading(
-                value
-            )
-        )
+        normalized = self.normalize_heading(value)
 
         ode_match = re.match(
-            r'^песнь\s+'
-            r'([0-9]+|[ivx]+)'
-            r'(?:\s|$)',
+            r"^песнь\s+" r"([0-9]+|[ivx]+)" r"(?:\s|$)",
             normalized,
         )
 
         if ode_match:
-            number = (
-                self.parse_number(
-                    ode_match.group(
-                        1
-                    )
-                )
-            )
+            number = self.parse_number(ode_match.group(1))
 
-            if (
-                number
-                and
-                1 <= number <= 9
-            ):
+            if number and 1 <= number <= 9:
                 return {
-                    'kind':
-                        'ode',
-
-                    'number':
-                        number,
+                    "kind": "ode",
+                    "number": number,
                 }
 
-        if normalized.startswith(
-                'канон'
-        ):
+        if normalized.startswith("канон"):
             return {
-                'kind':
-                    'canon',
+                "kind": "canon",
             }
 
         patterns = [
             (
-                r'^седален(?:\s|,|:|$)',
-                CanonSection
-                .TYPE_SEDALEN,
-                'sedalen',
+                r"^седален(?:\s|,|:|$)",
+                CanonSection.TYPE_SEDALEN,
+                "sedalen",
             ),
             (
-                r'^кондак(?:\s|,|:|$)',
-                CanonSection
-                .TYPE_KONTAKION,
-                'kontakion',
+                r"^кондак(?:\s|,|:|$)",
+                CanonSection.TYPE_KONTAKION,
+                "kontakion",
             ),
             (
-                r'^икос(?:\s|,|:|$)',
-                CanonSection
-                .TYPE_IKOS,
-                'ikos',
+                r"^икос(?:\s|,|:|$)",
+                CanonSection.TYPE_IKOS,
+                "ikos",
             ),
             (
-                r'^светилен(?:\s|,|:|$)',
-                CanonSection
-                .TYPE_SVETILEN,
-                'svetilen',
+                r"^светилен(?:\s|,|:|$)",
+                CanonSection.TYPE_SVETILEN,
+                "svetilen",
             ),
             (
-                r'^эксапостилар(?:\s|,|:|$)',
-                CanonSection
-                .TYPE_SVETILEN,
-                'svetilen',
+                r"^эксапостилар(?:\s|,|:|$)",
+                CanonSection.TYPE_SVETILEN,
+                "svetilen",
             ),
             (
-                r'^тропар(?:ь|и|я)?(?:\s|,|:|$)',
-                CanonSection
-                .TYPE_TROPARION,
-                'troparion',
+                r"^тропар(?:ь|и|я)?(?:\s|,|:|$)",
+                CanonSection.TYPE_TROPARION,
+                "troparion",
             ),
             (
-                r'^(?:кресто)?богородичен(?:\s|,|:|$)',
-                CanonSection
-                .TYPE_THEOTOKION,
-                'theotokion',
+                r"^(?:кресто)?богородичен(?:\s|,|:|$)",
+                CanonSection.TYPE_THEOTOKION,
+                "theotokion",
             ),
             (
-                r'^молитва(?:\s|,|:|$)',
-                CanonSection
-                .TYPE_PRAYER,
-                'prayer',
+                r"^молитва(?:\s|,|:|$)",
+                CanonSection.TYPE_PRAYER,
+                "prayer",
             ),
         ]
 
@@ -5038,22 +1749,19 @@ class Command(BaseCommand):
             kind,
         ) in patterns:
             if re.match(
-                    pattern,
-                    normalized,
+                pattern,
+                normalized,
             ):
                 return {
-                    'kind':
-                        kind,
-
-                    'section_type':
-                        section_type,
+                    "kind": kind,
+                    "section_type": section_type,
                 }
 
         return None
 
     def split_paragraph_cue(
-            self,
-            value,
+        self,
+        value,
     ):
         """
         Разделяет служебную метку в начале абзаца
@@ -5066,37 +1774,33 @@ class Command(BaseCommand):
             preserve_newlines=True,
         )
 
-        if ':' not in cleaned:
+        if ":" not in cleaned:
             return (
-                '',
+                "",
                 cleaned,
             )
 
         cue, remainder = cleaned.split(
-            ':',
+            ":",
             1,
         )
 
-        normalized_cue = (
-            self.normalize_heading(
-                cue
-            )
-        )
+        normalized_cue = self.normalize_heading(cue)
 
         allowed = (
-            normalized_cue == 'ирмос'
-            or normalized_cue == 'припев'
-            or normalized_cue == 'иисусу'
-            or normalized_cue == 'слава'
-            or normalized_cue == 'и ныне'
-            or normalized_cue == 'ныне'
-            or normalized_cue == 'богородичен'
-            or normalized_cue == 'крестобогородичен'
+            normalized_cue == "ирмос"
+            or normalized_cue == "припев"
+            or normalized_cue == "иисусу"
+            or normalized_cue == "слава"
+            or normalized_cue == "и ныне"
+            or normalized_cue == "ныне"
+            or normalized_cue == "богородичен"
+            or normalized_cue == "крестобогородичен"
         )
 
         if not allowed:
             return (
-                '',
+                "",
                 cleaned,
             )
 
@@ -5105,53 +1809,42 @@ class Command(BaseCommand):
             remainder.strip(),
         )
 
-
     def classify_paragraph(
-            self,
-            value,
+        self,
+        value,
     ):
-        normalized = (
-            self.normalize_heading(
-                value
-            )
-        )
+        normalized = self.normalize_heading(value)
 
         tests = [
             (
-                r'^ирмос\s*:',
-                CanonSection
-                .TYPE_IRMOS,
-                'Ирмос',
+                r"^ирмос\s*:",
+                CanonSection.TYPE_IRMOS,
+                "Ирмос",
             ),
             (
-                r'^припев(?:\s+[^:]*)?\s*:',
-                CanonSection
-                .TYPE_REFRAIN,
-                'Припев',
+                r"^припев(?:\s+[^:]*)?\s*:",
+                CanonSection.TYPE_REFRAIN,
+                "Припев",
             ),
             (
-                r'^иисусу\s*:',
-                CanonSection
-                .TYPE_REFRAIN,
-                'Иисусу',
+                r"^иисусу\s*:",
+                CanonSection.TYPE_REFRAIN,
+                "Иисусу",
             ),
             (
-                r'^слава(?:\s+отцу|\s*:)',
-                CanonSection
-                .TYPE_GLORY,
-                'Слава',
+                r"^слава(?:\s+отцу|\s*:)",
+                CanonSection.TYPE_GLORY,
+                "Слава",
             ),
             (
-                r'^и\s+ныне(?:\s|,|:)',
-                CanonSection
-                .TYPE_NOW,
-                'И ныне',
+                r"^и\s+ныне(?:\s|,|:)",
+                CanonSection.TYPE_NOW,
+                "И ныне",
             ),
             (
-                r'^(?:кресто)?богородичен\s*:',
-                CanonSection
-                .TYPE_THEOTOKION,
-                'Богородичен',
+                r"^(?:кресто)?богородичен\s*:",
+                CanonSection.TYPE_THEOTOKION,
+                "Богородичен",
             ),
         ]
 
@@ -5161,8 +1854,8 @@ class Command(BaseCommand):
             label,
         ) in tests:
             if re.match(
-                    pattern,
-                    normalized,
+                pattern,
+                normalized,
             ):
                 return (
                     section_type,
@@ -5171,7 +1864,7 @@ class Command(BaseCommand):
 
         return (
             None,
-            '',
+            "",
         )
 
     # =========================================================
@@ -5179,32 +1872,21 @@ class Command(BaseCommand):
     # =========================================================
 
     def validate_parsed(
-            self,
-            parsed,
+        self,
+        parsed,
     ):
-        sections = (
-            parsed[
-                'sections'
-            ]
-        )
+        sections = parsed["sections"]
 
         if not sections:
-            raise CommandError(
-                'В EPUB не найдено '
-                'элементов канона.'
-            )
+            raise CommandError("В EPUB не найдено " "элементов канона.")
 
         variants = {}
 
         for section in sections:
             variants.setdefault(
-                section[
-                    'variant'
-                ],
+                section["variant"],
                 [],
-            ).append(
-                section
-            )
+            ).append(section)
 
         for (
             variant,
@@ -5213,249 +1895,105 @@ class Command(BaseCommand):
             ode_numbers = []
 
             for item in items:
-                ode = (
-                    item[
-                        'ode_number'
-                    ]
-                )
+                ode = item["ode_number"]
 
-                if (
-                    ode
-                    and
-                    ode not in
-                    ode_numbers
-                ):
-                    ode_numbers.append(
-                        ode
-                    )
+                if ode and ode not in ode_numbers:
+                    ode_numbers.append(ode)
 
-                if not item[
-                    'content'
-                ]:
+                if not item["content"]:
                     raise CommandError(
-                        'Пустой элемент: '
-                        f'вариант {variant}, '
-                        f'order={item["order"]}.'
+                        "Пустой элемент: " f"вариант {variant}, " f'order={item["order"]}.'
                     )
 
             if not ode_numbers:
-                raise CommandError(
-                    'Не найдены песни '
-                    f'в варианте {variant}.'
-                )
+                raise CommandError("Не найдены песни " f"в варианте {variant}.")
 
             if ode_numbers[0] != 1:
                 raise CommandError(
-                    'Канон должен начинаться '
-                    'с Песни 1. '
-                    f'Вариант {variant}: '
-                    f'{ode_numbers}'
+                    "Канон должен начинаться " "с Песни 1. " f"Вариант {variant}: " f"{ode_numbers}"
                 )
 
-            if ode_numbers != sorted(
-                    ode_numbers
-            ):
+            if ode_numbers != sorted(ode_numbers):
                 raise CommandError(
-                    'Нарушен порядок песен. '
-                    f'Вариант {variant}: '
-                    f'{ode_numbers}'
+                    "Нарушен порядок песен. " f"Вариант {variant}: " f"{ode_numbers}"
                 )
 
-            if len(
-                ode_numbers
-            ) != len(
-                set(
-                    ode_numbers
-                )
-            ):
+            if len(ode_numbers) != len(set(ode_numbers)):
                 raise CommandError(
-                    'Повторяются номера песен. '
-                    f'Вариант {variant}: '
-                    f'{ode_numbers}'
+                    "Повторяются номера песен. " f"Вариант {variant}: " f"{ode_numbers}"
                 )
 
-            invalid = [
-                number
-                for number
-                in ode_numbers
-                if not (
-                    1 <= number <= 9
-                )
-            ]
+            invalid = [number for number in ode_numbers if not (1 <= number <= 9)]
 
             if invalid:
-                raise CommandError(
-                    'Недопустимые номера песен: '
-                    f'{invalid}'
-                )
+                raise CommandError("Недопустимые номера песен: " f"{invalid}")
 
             if 9 not in ode_numbers:
-                raise CommandError(
-                    'Не найдена Песнь 9. '
-                    f'Вариант {variant}: '
-                    f'{ode_numbers}'
-                )
+                raise CommandError("Не найдена Песнь 9. " f"Вариант {variant}: " f"{ode_numbers}")
 
     def print_report(
-            self,
-            parsed,
+        self,
+        parsed,
     ):
-        self.stdout.write('')
-        self.stdout.write(
-            self.style.SUCCESS(
-                'Структура канона '
-                'распознана.'
-            )
-        )
+        self.stdout.write("")
+        self.stdout.write(self.style.SUCCESS("Структура канона " "распознана."))
 
-        self.stdout.write(
-            'Глас: '
-            + (
-                parsed[
-                    'tone'
-                ]
-                or 'не указан'
-            )
-        )
+        self.stdout.write("Глас: " + (parsed["tone"] or "не указан"))
 
-        self.stdout.write(
-            'Вариантов текста: '
-            f'{parsed["variant_count"]}'
-        )
+        self.stdout.write("Вариантов текста: " f'{parsed["variant_count"]}')
 
         for variant in range(
-                1,
-                parsed[
-                    'variant_count'
-                ] + 1,
+            1,
+            parsed["variant_count"] + 1,
         ):
-            items = [
-                section
-                for section
-                in parsed[
-                    'sections'
-                ]
-                if section[
-                    'variant'
-                ] == variant
-            ]
+            items = [section for section in parsed["sections"] if section["variant"] == variant]
 
             ode_numbers = []
 
             for section in items:
-                ode = (
-                    section[
-                        'ode_number'
-                    ]
-                )
+                ode = section["ode_number"]
 
-                if (
-                    ode
-                    and
-                    ode not in
-                    ode_numbers
-                ):
-                    ode_numbers.append(
-                        ode
-                    )
+                if ode and ode not in ode_numbers:
+                    ode_numbers.append(ode)
 
-            counts = Counter(
-                section[
-                    'section_type'
-                ]
-                for section
-                in items
-            )
+            counts = Counter(section["section_type"] for section in items)
 
-            translated = sum(
-                1
-                for section
-                in items
-                if section[
-                    'translation'
-                ]
-            )
+            translated = sum(1 for section in items if section["translation"])
 
-            self.stdout.write('')
-            self.stdout.write(
-                f'Вариант {variant}:'
-            )
+            self.stdout.write("")
+            self.stdout.write(f"Вариант {variant}:")
 
-            self.stdout.write(
-                '  Песни: '
-                + ', '.join(
-                    str(
-                        number
-                    )
-                    for number
-                    in ode_numbers
-                )
-            )
+            self.stdout.write("  Песни: " + ", ".join(str(number) for number in ode_numbers))
 
-            self.stdout.write(
-                f'  Элементов: '
-                f'{len(items)}'
-            )
+            self.stdout.write(f"  Элементов: " f"{len(items)}")
 
-            self.stdout.write(
-                f'  С переводом: '
-                f'{translated}'
-            )
+            self.stdout.write(f"  С переводом: " f"{translated}")
 
             for (
                 section_type,
                 count,
-            ) in sorted(
-                counts.items()
-            ):
-                self.stdout.write(
-                    '  '
-                    f'{section_type:12} '
-                    f'{count}'
-                )
+            ) in sorted(counts.items()):
+                self.stdout.write("  " f"{section_type:12} " f"{count}")
 
-        if parsed[
-            'classes'
-        ]:
-            self.stdout.write('')
-            self.stdout.write(
-                'HTML-классы EPUB:'
-            )
+        if parsed["classes"]:
+            self.stdout.write("")
+            self.stdout.write("HTML-классы EPUB:")
 
             for (
                 class_name,
                 count,
-            ) in (
-                parsed[
-                    'classes'
-                ]
-                .most_common()
-            ):
-                self.stdout.write(
-                    f'  {class_name}: '
-                    f'{count}'
-                )
+            ) in parsed["classes"].most_common():
+                self.stdout.write(f"  {class_name}: " f"{count}")
 
-        if parsed[
-            'headings'
-        ]:
-            self.stdout.write('')
-            self.stdout.write(
-                'Распознанные заголовки:'
-            )
+        if parsed["headings"]:
+            self.stdout.write("")
+            self.stdout.write("Распознанные заголовки:")
 
             for (
                 name,
                 count,
-            ) in sorted(
-                parsed[
-                    'headings'
-                ].items()
-            ):
-                self.stdout.write(
-                    f'  {name}: '
-                    f'{count}'
-                )
+            ) in sorted(parsed["headings"].items()):
+                self.stdout.write(f"  {name}: " f"{count}")
 
     # =========================================================
     # СОХРАНЕНИЕ
@@ -5463,83 +2001,34 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def save_canon(
-            self,
-            slug,
-            title,
-            parsed,
+        self,
+        slug,
+        title,
+        parsed,
     ):
-        canon, created = (
-            Canon.objects
-            .update_or_create(
-                slug=slug,
-                defaults={
-                    'title':
-                        title,
-
-                    'tone':
-                        parsed[
-                            'tone'
-                        ],
-
-                    'is_visible':
-                        True,
-                },
-            )
+        canon, created = Canon.objects.update_or_create(
+            slug=slug,
+            defaults={
+                "title": title,
+                "tone": parsed["tone"],
+                "is_visible": True,
+            },
         )
 
-        self.stdout.write(
-            (
-                'Создан новый Canon.'
-                if created
-                else
-                'Обновлён существующий Canon.'
-            )
-        )
+        self.stdout.write(("Создан новый Canon." if created else "Обновлён существующий Canon."))
 
         desired = set()
 
-        variants = [
-            int(
-                section[
-                    'variant'
-                ]
-            )
-            for section in parsed[
-                'sections'
-            ]
-        ]
+        variants = [int(section["variant"]) for section in parsed["sections"]]
 
-        primary_variant = (
-            min(
-                variants
-            )
-            if variants
-            else 1
-        )
+        primary_variant = min(variants) if variants else 1
 
-        for section in parsed[
-            'sections'
-        ]:
-            if (
-                int(
-                    section[
-                        'variant'
-                    ]
-                ) !=
-                primary_variant
-            ):
+        for section in parsed["sections"]:
+            if int(section["variant"]) != primary_variant:
                 continue
-            variant = (
-                section[
-                    'variant'
-                ]
-            )
+            variant = section["variant"]
 
-            order = (
-                section[
-                    'order'
-                ]
-            )
+            order = section["order"]
 
             desired.add(
                 (
@@ -5548,48 +2037,19 @@ class Command(BaseCommand):
                 )
             )
 
-            text_slug = (
-                f'{slug}-'
-                f'v{variant}-'
-                f'section-{order}'
-            )
+            text_slug = f"{slug}-" f"v{variant}-" f"section-{order}"
 
-            text_title = (
-                section[
-                    'heading'
-                ]
-                or self.make_text_title(
-                    section
-                )
-            )
+            text_title = section["heading"] or self.make_text_title(section)
 
-            text_object, _created = (
-                Text.objects
-                .update_or_create(
-                    slug=text_slug,
-                    defaults={
-                        'title':
-                            text_title[
-                                :255
-                            ],
-
-                        'content':
-                            section[
-                                'content'
-                            ],
-
-                        'translation':
-                            section[
-                                'translation'
-                            ],
-
-                        'language':
-                            'cu',
-
-                        'is_visible':
-                            True,
-                    },
-                )
+            text_object, _created = Text.objects.update_or_create(
+                slug=text_slug,
+                defaults={
+                    "title": text_title[:255],
+                    "content": section["content"],
+                    "translation": section["translation"],
+                    "language": "cu",
+                    "is_visible": True,
+                },
             )
 
             CanonSection.objects.update_or_create(
@@ -5597,34 +2057,14 @@ class Command(BaseCommand):
                 variant=variant,
                 order=order,
                 defaults={
-                    'section_type':
-                        section[
-                            'section_type'
-                        ],
-
-                    'ode_number':
-                        section[
-                            'ode_number'
-                        ],
-
-                    'heading':
-                        section[
-                            'heading'
-                        ][
-                            :255
-                        ],
-
-                    'text':
-                        text_object,
+                    "section_type": section["section_type"],
+                    "ode_number": section["ode_number"],
+                    "heading": section["heading"][:255],
+                    "text": text_object,
                 },
             )
 
-        for existing in (
-            CanonSection.objects
-            .filter(
-                canon=canon
-            )
-        ):
+        for existing in CanonSection.objects.filter(canon=canon):
             key = (
                 existing.variant,
                 existing.order,
@@ -5634,31 +2074,20 @@ class Command(BaseCommand):
                 existing.delete()
 
         self.stdout.write(
-            'Элементов канона в БД: '
-            f'{CanonSection.objects.filter(canon=canon).count()}'
+            "Элементов канона в БД: " f"{CanonSection.objects.filter(canon=canon).count()}"
         )
 
     def make_text_title(
-            self,
-            section,
+        self,
+        section,
     ):
-        label = (
-            SECTION_LABELS.get(
-                section[
-                    'section_type'
-                ],
-                'Текст',
-            )
+        label = SECTION_LABELS.get(
+            section["section_type"],
+            "Текст",
         )
 
-        if section[
-            'ode_number'
-        ]:
-            return (
-                f'Песнь '
-                f'{section["ode_number"]} — '
-                f'{label}'
-            )
+        if section["ode_number"]:
+            return f"Песнь " f'{section["ode_number"]} — ' f"{label}"
 
         return label
 
@@ -5667,71 +2096,52 @@ class Command(BaseCommand):
     # =========================================================
 
     def extract_tone(
-            self,
-            value,
+        self,
+        value,
     ):
-        normalized = (
-            self.normalize_heading(
-                value
-            )
-        )
+        normalized = self.normalize_heading(value)
 
         match = re.search(
-            r'глас\s+'
-            r'([0-9]+|[ivx]+)',
+            r"глас\s+" r"([0-9]+|[ivx]+)",
             normalized,
         )
 
         if not match:
-            return ''
+            return ""
 
-        number = (
-            self.parse_number(
-                match.group(
-                    1
-                )
-            )
-        )
+        number = self.parse_number(match.group(1))
 
         if not number:
-            return ''
+            return ""
 
-        return f'Глас {number}'
+        return f"Глас {number}"
 
     def parse_number(
-            self,
-            value,
+        self,
+        value,
     ):
-        value = (
-            value
-            .strip()
-            .lower()
-        )
+        value = value.strip().lower()
 
         if value.isdigit():
-            return int(
-                value
-            )
+            return int(value)
 
         roman = {
-            'i': 1,
-            'ii': 2,
-            'iii': 3,
-            'iv': 4,
-            'v': 5,
-            'vi': 6,
-            'vii': 7,
-            'viii': 8,
-            'ix': 9,
+            "i": 1,
+            "ii": 2,
+            "iii": 3,
+            "iv": 4,
+            "v": 5,
+            "vi": 6,
+            "vii": 7,
+            "viii": 8,
+            "ix": 9,
         }
 
-        return roman.get(
-            value
-        )
+        return roman.get(value)
 
     def clean_translation(
-            self,
-            value,
+        self,
+        value,
     ):
         value = self.clean_text(
             value,
@@ -5739,8 +2149,8 @@ class Command(BaseCommand):
         )
 
         value = re.sub(
-            r'^перевод\s*:\s*',
-            '',
+            r"^перевод\s*:\s*",
+            "",
             value,
             flags=re.IGNORECASE,
         )
@@ -5748,64 +2158,45 @@ class Command(BaseCommand):
         return value.strip()
 
     def normalize_heading(
-            self,
-            value,
+        self,
+        value,
     ):
-        value = self.clean_text(
-            value
+        value = self.clean_text(value)
+
+        value = unicodedata.normalize(
+            "NFD",
+            value,
         )
 
-        value = (
-            unicodedata.normalize(
-                'NFD',
-                value,
-            )
-        )
+        value = "".join(char for char in value if unicodedata.category(char) != "Mn")
 
-        value = ''.join(
-            char
-            for char
-            in value
-            if unicodedata.category(
-                char
-            ) != 'Mn'
-        )
-
-        value = (
-            value
-            .lower()
-            .replace(
-                'ё',
-                'е',
-            )
+        value = value.lower().replace(
+            "ё",
+            "е",
         )
 
         value = re.sub(
-            r'\s+',
-            ' ',
+            r"\s+",
+            " ",
             value,
         )
 
         return value.strip()
 
     def clean_text(
-            self,
-            value,
-            preserve_newlines=False,
+        self,
+        value,
+        preserve_newlines=False,
     ):
         if value is None:
-            return ''
+            return ""
 
-        value = (
-            value
-            .replace(
-                '\xa0',
-                ' ',
-            )
-            .replace(
-                '\u200b',
-                '',
-            )
+        value = value.replace(
+            "\xa0",
+            " ",
+        ).replace(
+            "\u200b",
+            "",
         )
 
         if preserve_newlines:
@@ -5813,23 +2204,1308 @@ class Command(BaseCommand):
 
             for line in value.splitlines():
                 line = re.sub(
-                    r'[ \t]+',
-                    ' ',
+                    r"[ \t]+",
+                    " ",
                     line,
                 ).strip()
 
                 if line:
-                    lines.append(
-                        line
-                    )
+                    lines.append(line)
 
-            return '\n'.join(
-                lines
-            ).strip()
+            return "\n".join(lines).strip()
 
         value = re.sub(
-            r'\s+',
-            ' ',
+            r"\s+",
+            " ",
+            value,
+        )
+
+        return value.strip()
+
+    def strict_signature(
+        self,
+        value,
+    ):
+        normalized = self.normalize_heading(value)
+
+        return re.sub(
+            r"[^а-я0-9]+",
+            " ",
+            normalized,
+            flags=re.IGNORECASE,
+        ).strip()
+
+    def strict_remove_prefix(
+        self,
+        value,
+        prefix,
+    ):
+        value = value or ""
+
+        prefix = prefix or ""
+
+        if prefix and value.startswith(prefix):
+            return value[len(prefix) :].strip()
+
+        return value.strip()
+
+    def strict_strip_translation_label(
+        self,
+        value,
+    ):
+        return re.sub(
+            r"^\s*перевод\s*:\s*",
+            "",
+            value or "",
+            count=1,
+            flags=re.IGNORECASE,
+        ).strip()
+
+    def strict_is_church_text(
+        self,
+        value,
+    ):
+        if not value:
+            return False
+
+        decomposed = unicodedata.normalize(
+            "NFD",
+            value,
+        )
+
+        accent_count = sum(1 for char in decomposed if unicodedata.category(char) == "Mn")
+
+        letter_count = sum(1 for char in value if char.isalpha())
+
+        if not letter_count:
+            return False
+
+        return (accent_count / letter_count) >= 0.07
+
+    def strict_starts_glory(
+        self,
+        value,
+    ):
+        normalized = self.normalize_heading(value)
+
+        return bool(
+            re.match(
+                r"^слава\s+отцу\b",
+                normalized,
+            )
+        )
+
+    def strict_starts_now(
+        self,
+        value,
+    ):
+        normalized = self.normalize_heading(value)
+
+        return bool(
+            re.match(
+                r"^и\s+ныне\s*,?\s*" r"и\s+присно\b",
+                normalized,
+            )
+        )
+
+    def strict_is_full_glory_now(
+        self,
+        value,
+    ):
+        normalized = self.strict_signature(value)
+
+        return normalized == (
+            "слава отцу и сыну и святому " "духу и ныне и присно и во " "веки веков аминь"
+        )
+
+    def parse_canon(
+        self,
+        documents,
+    ):
+        sections = []
+
+        variant = 1
+
+        orders = {
+            1: 0,
+        }
+
+        current_ode = None
+
+        seen_odes = {
+            1: [],
+        }
+
+        pending_heading = None
+
+        open_standalone = None
+
+        last_section = None
+
+        tone = ""
+
+        tone_from_canon = ""
+
+        class_counter = Counter()
+
+        heading_counter = Counter()
+
+        def start_variant():
+            nonlocal variant
+            nonlocal current_ode
+            nonlocal pending_heading
+            nonlocal open_standalone
+            nonlocal last_section
+
+            variant += 1
+
+            orders.setdefault(
+                variant,
+                0,
+            )
+
+            seen_odes.setdefault(
+                variant,
+                [],
+            )
+
+            current_ode = None
+
+            pending_heading = None
+
+            open_standalone = None
+
+            last_section = None
+
+        def add_section(
+            section_type,
+            content,
+            heading="",
+            ode_number=None,
+        ):
+            nonlocal last_section
+            nonlocal open_standalone
+
+            content = self.clean_text(
+                content,
+                preserve_newlines=True,
+            )
+
+            if not content:
+                return None
+
+            orders[variant] += 1
+
+            item = {
+                "variant": variant,
+                "order": orders[variant],
+                "section_type": section_type,
+                "ode_number": ode_number,
+                "heading": self.clean_text(heading),
+                "content": content,
+                "translation": "",
+            }
+
+            sections.append(item)
+
+            last_section = item
+
+            return item
+
+        for _name, soup in documents:
+            body = soup.body or soup
+
+            elements = body.find_all(
+                list(HEADING_TAGS)
+                + [
+                    "p",
+                ]
+            )
+
+            for element in elements:
+                if not isinstance(
+                    element,
+                    Tag,
+                ):
+                    continue
+
+                text = self.clean_text(
+                    element.get_text(
+                        " ",
+                        strip=True,
+                    )
+                )
+
+                if not text:
+                    continue
+
+                classes = {
+                    value.lower()
+                    for value in element.get(
+                        "class",
+                        [],
+                    )
+                }
+
+                for value in classes:
+                    class_counter[value] += 1
+
+                if element.name in HEADING_TAGS:
+                    heading = self.parse_heading(text)
+
+                    if not heading:
+                        # Главный H1 с названием
+                        # канона не превращаем
+                        # в элемент текста.
+                        normalized = self.normalize_heading(text)
+
+                        if element.name == "h1" and normalized.startswith("канон "):
+                            continue
+
+                        pending_heading = {
+                            "section_type": CanonSection.TYPE_OTHER,
+                            "heading": text,
+                            "ode_number": None,
+                        }
+
+                        open_standalone = None
+
+                        continue
+
+                    heading_counter[heading["kind"]] += 1
+
+                    if heading["kind"] == "canon":
+                        extracted_tone = self.extract_tone(text)
+
+                        if extracted_tone:
+                            tone_from_canon = extracted_tone
+
+                        # Повтор полного канона
+                        # после уже законченного
+                        # варианта (например,
+                        # мужская/женская форма).
+                        if (
+                            9 in seen_odes[variant]
+                            and orders[variant] > 0
+                            and pending_heading is None
+                        ):
+                            # Если новый вариант
+                            # уже был начат повторным
+                            # тропарём перед заголовком,
+                            # здесь второй раз не
+                            # переключаем.
+                            if not (orders[variant] == 0):
+                                pass
+
+                        pending_heading = None
+
+                        open_standalone = None
+
+                        current_ode = None
+
+                        continue
+
+                    if heading["kind"] == "ode":
+                        ode_number = heading["number"]
+
+                        if ode_number == 1 and 1 in seen_odes[variant]:
+                            start_variant()
+
+                        if ode_number in seen_odes[variant]:
+                            raise CommandError(
+                                "Повтор Песни " f"{ode_number} " f"в варианте " f"{variant}."
+                            )
+
+                        current_ode = ode_number
+
+                        seen_odes[variant].append(ode_number)
+
+                        pending_heading = None
+
+                        open_standalone = None
+
+                        continue
+
+                    section_type = heading["section_type"]
+
+                    # После полной девятой песни
+                    # повторный Тропарь часто
+                    # означает начало второго
+                    # грамматического варианта.
+                    if section_type == CanonSection.TYPE_TROPARION and 9 in seen_odes[variant]:
+                        start_variant()
+
+                    belongs_to_ode = (
+                        current_ode
+                        if section_type
+                        in {
+                            CanonSection.TYPE_TROPARION,
+                            CanonSection.TYPE_THEOTOKION,
+                        }
+                        else None
+                    )
+
+                    pending_heading = {
+                        "section_type": section_type,
+                        "heading": text,
+                        "ode_number": belongs_to_ode,
+                    }
+
+                    open_standalone = None
+
+                    continue
+
+                # ---------------------------------------------
+                # Обычный <p>
+                # ---------------------------------------------
+
+                if classes & TRANSLATION_CLASSES:
+                    if last_section:
+                        translation = self.clean_translation(text)
+
+                        if translation:
+                            if last_section["translation"]:
+                                last_section["translation"] += "\n\n" + translation
+                            else:
+                                last_section["translation"] = translation
+
+                    continue
+
+                # Иногда заголовки в EPUB
+                # размечены обычным <p>.
+                paragraph_heading = None
+
+                if len(text) <= 180:
+                    paragraph_heading = self.parse_heading(text)
+
+                if paragraph_heading:
+                    heading_counter[paragraph_heading["kind"]] += 1
+
+                    if paragraph_heading["kind"] == "ode":
+                        ode_number = paragraph_heading["number"]
+
+                        if ode_number == 1 and 1 in seen_odes[variant]:
+                            start_variant()
+
+                        current_ode = ode_number
+
+                        if ode_number not in seen_odes[variant]:
+                            seen_odes[variant].append(ode_number)
+
+                        pending_heading = None
+
+                        open_standalone = None
+
+                        continue
+
+                    if paragraph_heading["kind"] == "canon":
+                        extracted_tone = self.extract_tone(text)
+
+                        if extracted_tone:
+                            tone_from_canon = extracted_tone
+
+                        current_ode = None
+
+                        pending_heading = None
+
+                        open_standalone = None
+
+                        continue
+
+                    pending_heading = {
+                        "section_type": paragraph_heading["section_type"],
+                        "heading": text,
+                        "ode_number": (
+                            current_ode
+                            if paragraph_heading["section_type"]
+                            in {
+                                CanonSection.TYPE_TROPARION,
+                                CanonSection.TYPE_THEOTOKION,
+                            }
+                            else None
+                        ),
+                    }
+
+                    open_standalone = None
+
+                    continue
+
+                extracted_tone = self.extract_tone(text)
+
+                if extracted_tone and len(text.split()) <= 8:
+                    if not tone:
+                        tone = extracted_tone
+
+                    # Строка "Глас 2"
+                    # является метаданными,
+                    # а не текстом канона.
+                    if self.normalize_heading(text).startswith("глас "):
+                        continue
+
+                # Если перед абзацем был
+                # явный заголовок.
+                if pending_heading:
+                    item = add_section(
+                        section_type=(pending_heading["section_type"]),
+                        content=text,
+                        heading=(pending_heading["heading"]),
+                        ode_number=(pending_heading["ode_number"]),
+                    )
+
+                    open_standalone = (
+                        item
+                        if item
+                        and item["section_type"]
+                        in {
+                            CanonSection.TYPE_SEDALEN,
+                            CanonSection.TYPE_KONTAKION,
+                            CanonSection.TYPE_IKOS,
+                            CanonSection.TYPE_SVETILEN,
+                            CanonSection.TYPE_PRAYER,
+                            CanonSection.TYPE_OTHER,
+                        }
+                        else None
+                    )
+
+                    pending_heading = None
+
+                    continue
+
+                (
+                    paragraph_type,
+                    paragraph_label,
+                ) = self.classify_paragraph(text)
+
+                if paragraph_type:
+                    open_standalone = None
+
+                    (
+                        cue_text,
+                        paragraph_content,
+                    ) = self.split_paragraph_cue(text)
+
+                    effective_heading = cue_text or paragraph_label
+
+                    # В некоторых EPUB "Припев:" /
+                    # "Иисусу:" / "Слава:" / "И ныне:"
+                    # идут отдельным абзацем. В этом случае
+                    # следующий абзац и есть содержимое этого
+                    # элемента, а не новый тропарь.
+                    if cue_text and not paragraph_content:
+                        pending_heading = {
+                            "section_type": paragraph_type,
+                            "heading": effective_heading,
+                            "ode_number": current_ode,
+                        }
+
+                        continue
+
+                    add_section(
+                        section_type=(paragraph_type),
+                        content=(paragraph_content if cue_text else text),
+                        heading=(effective_heading),
+                        ode_number=(current_ode),
+                    )
+
+                    continue
+
+                # Несколько абзацев одной
+                # молитвы/седальна и т.п.
+                if open_standalone:
+                    open_standalone["content"] += "\n\n" + self.clean_text(
+                        text,
+                        preserve_newlines=True,
+                    )
+
+                    last_section = open_standalone
+
+                    continue
+
+                if current_ode:
+                    add_section(
+                        section_type=(CanonSection.TYPE_TROPARION),
+                        content=text,
+                        heading="",
+                        ode_number=(current_ode),
+                    )
+
+                    continue
+
+                # Текст до начала первой
+                # песни (например тропарь,
+                # если EPUB потерял heading)
+                # сохраняем, но не выдаём
+                # за тропарь автоматически.
+                add_section(
+                    section_type=(CanonSection.TYPE_OTHER),
+                    content=text,
+                    heading="",
+                    ode_number=None,
+                )
+
+        sections = self.normalize_refrains(sections)
+
+        return {
+            "tone": (tone_from_canon or tone),
+            "sections": sections,
+            "seen_odes": seen_odes,
+            "classes": class_counter,
+            "headings": heading_counter,
+            "variant_count": max(
+                (section["variant"] for section in sections),
+                default=1,
+            ),
+        }
+
+    def normalize_refrains(
+        self,
+        sections,
+    ):
+        """
+        Нормализует припевы канона.
+
+        В EPUB Азбуки встречаются три варианта:
+        1) "Припев: <текст>" одним абзацем;
+        2) отдельное "Припев:", после которого сразу идёт тропарь;
+        3) повтор самого припева без слова "Припев:".
+
+        В БД приводим это к одной схеме:
+        отдельная CanonSection(TYPE_REFRAIN) с настоящим текстом припева.
+        """
+        if not sections:
+            return sections
+
+        by_variant = {}
+
+        for section in sections:
+            by_variant.setdefault(
+                section["variant"],
+                [],
+            ).append(section)
+
+        normalized_all = []
+
+        for variant in sorted(by_variant):
+            items = sorted(
+                by_variant[variant],
+                key=lambda item: item["order"],
+            )
+
+            candidates = []
+
+            for item in items:
+                if item["section_type"] != CanonSection.TYPE_REFRAIN:
+                    continue
+
+                heading = self.normalize_heading(item.get("heading", ""))
+
+                if heading != "припев":
+                    continue
+
+                content = self.strip_refrain_prefix(item["content"])
+
+                if not self.looks_like_refrain(content):
+                    continue
+
+                candidates.append(
+                    {
+                        "content": content,
+                        "translation": item.get("translation", ""),
+                        "signature": self.refrain_signature(content),
+                    }
+                )
+
+            canonical = None
+
+            if candidates:
+                counts = Counter(item["signature"] for item in candidates if item["signature"])
+
+                if counts:
+                    best_signature = counts.most_common(1)[0][0]
+
+                    matching = [item for item in candidates if item["signature"] == best_signature]
+
+                    canonical = min(
+                        matching,
+                        key=lambda item: len(item["content"]),
+                    )
+
+            rebuilt = []
+
+            for item in items:
+                current = dict(item)
+
+                content = self.strip_refrain_prefix(current["content"])
+
+                signature = self.refrain_signature(content)
+
+                heading = self.normalize_heading(current.get("heading", ""))
+
+                is_plain_refrain = (
+                    current["section_type"] == CanonSection.TYPE_REFRAIN and heading == "припев"
+                )
+
+                if canonical and is_plain_refrain:
+                    if signature == canonical["signature"]:
+                        current["content"] = canonical["content"]
+
+                        current["heading"] = "Припев"
+
+                        if not current.get("translation") and canonical.get("translation"):
+                            current["translation"] = canonical["translation"]
+
+                        rebuilt.append(current)
+
+                        continue
+
+                    # Cue-only "Припев:" из EPUB был ошибочно
+                    # приклеен к следующему тропарю. Восстанавливаем
+                    # настоящий припев, а текущий текст возвращаем
+                    # в тип обычного тропаря.
+                    if not self.looks_like_refrain(content):
+                        rebuilt.append(
+                            {
+                                **current,
+                                "section_type": CanonSection.TYPE_REFRAIN,
+                                "heading": "Припев",
+                                "content": canonical["content"],
+                                "translation": canonical.get("translation", ""),
+                            }
+                        )
+
+                        current["section_type"] = CanonSection.TYPE_TROPARION
+
+                        current["heading"] = ""
+
+                        current["content"] = content
+
+                        rebuilt.append(current)
+
+                        continue
+
+                if (
+                    canonical
+                    and current["section_type"] == CanonSection.TYPE_TROPARION
+                    and signature == canonical["signature"]
+                ):
+                    # В ряде EPUB со 2/3 песни повторяется только
+                    # сам текст припева без слова "Припев:".
+                    current["section_type"] = CanonSection.TYPE_REFRAIN
+
+                    current["heading"] = "Припев"
+
+                    current["content"] = canonical["content"]
+
+                    if not current.get("translation") and canonical.get("translation"):
+                        current["translation"] = canonical["translation"]
+
+                rebuilt.append(current)
+
+            for order, item in enumerate(
+                rebuilt,
+                start=1,
+            ):
+                item["order"] = order
+
+                normalized_all.append(item)
+
+        return normalized_all
+
+    def strip_refrain_prefix(
+        self,
+        value,
+    ):
+        cleaned = self.clean_text(
+            value,
+            preserve_newlines=True,
+        )
+
+        return re.sub(
+            r"^\s*припев\s*:\s*",
+            "",
+            cleaned,
+            count=1,
+            flags=re.IGNORECASE,
+        ).strip()
+
+    def refrain_signature(
+        self,
+        value,
+    ):
+        normalized = self.normalize_heading(self.strip_refrain_prefix(value))
+
+        return re.sub(
+            r"[^а-я0-9]+",
+            " ",
+            normalized,
+            flags=re.IGNORECASE,
+        ).strip()
+
+    def looks_like_refrain(
+        self,
+        value,
+    ):
+        normalized = self.refrain_signature(value)
+
+        if not normalized:
+            return False
+
+        if len(normalized) > 220:
+            return False
+
+        markers = (
+            "моли бога",
+            "помилуй",
+            "спаси нас",
+            "спаси мя",
+            "слава тебе",
+            "радуйся",
+        )
+
+        return any(marker in normalized for marker in markers)
+
+    def parse_heading(
+        self,
+        value,
+    ):
+        normalized = self.normalize_heading(value)
+
+        ode_match = re.match(
+            r"^песнь\s+" r"([0-9]+|[ivx]+)" r"(?:\s|$)",
+            normalized,
+        )
+
+        if ode_match:
+            number = self.parse_number(ode_match.group(1))
+
+            if number and 1 <= number <= 9:
+                return {
+                    "kind": "ode",
+                    "number": number,
+                }
+
+        if normalized.startswith("канон"):
+            return {
+                "kind": "canon",
+            }
+
+        patterns = [
+            (
+                r"^седален(?:\s|,|:|$)",
+                CanonSection.TYPE_SEDALEN,
+                "sedalen",
+            ),
+            (
+                r"^кондак(?:\s|,|:|$)",
+                CanonSection.TYPE_KONTAKION,
+                "kontakion",
+            ),
+            (
+                r"^икос(?:\s|,|:|$)",
+                CanonSection.TYPE_IKOS,
+                "ikos",
+            ),
+            (
+                r"^светилен(?:\s|,|:|$)",
+                CanonSection.TYPE_SVETILEN,
+                "svetilen",
+            ),
+            (
+                r"^эксапостилар(?:\s|,|:|$)",
+                CanonSection.TYPE_SVETILEN,
+                "svetilen",
+            ),
+            (
+                r"^тропар(?:ь|и|я)?(?:\s|,|:|$)",
+                CanonSection.TYPE_TROPARION,
+                "troparion",
+            ),
+            (
+                r"^(?:кресто)?богородичен(?:\s|,|:|$)",
+                CanonSection.TYPE_THEOTOKION,
+                "theotokion",
+            ),
+            (
+                r"^молитва(?:\s|,|:|$)",
+                CanonSection.TYPE_PRAYER,
+                "prayer",
+            ),
+        ]
+
+        for (
+            pattern,
+            section_type,
+            kind,
+        ) in patterns:
+            if re.match(
+                pattern,
+                normalized,
+            ):
+                return {
+                    "kind": kind,
+                    "section_type": section_type,
+                }
+
+        return None
+
+    def split_paragraph_cue(
+        self,
+        value,
+    ):
+        """
+        Разделяет служебную метку в начале абзаца
+        ("Припев:", "Иисусу:", "Слава:", "И ныне:" и т.п.)
+        и сам текст. Это важно для EPUB, где метка может
+        находиться отдельным абзацем, а текст — следующим.
+        """
+        cleaned = self.clean_text(
+            value,
+            preserve_newlines=True,
+        )
+
+        if ":" not in cleaned:
+            return (
+                "",
+                cleaned,
+            )
+
+        cue, remainder = cleaned.split(
+            ":",
+            1,
+        )
+
+        normalized_cue = self.normalize_heading(cue)
+
+        allowed = (
+            normalized_cue == "ирмос"
+            or normalized_cue == "припев"
+            or normalized_cue == "иисусу"
+            or normalized_cue == "слава"
+            or normalized_cue == "и ныне"
+            or normalized_cue == "ныне"
+            or normalized_cue == "богородичен"
+            or normalized_cue == "крестобогородичен"
+        )
+
+        if not allowed:
+            return (
+                "",
+                cleaned,
+            )
+
+        return (
+            cue.strip(),
+            remainder.strip(),
+        )
+
+    def classify_paragraph(
+        self,
+        value,
+    ):
+        normalized = self.normalize_heading(value)
+
+        tests = [
+            (
+                r"^ирмос\s*:",
+                CanonSection.TYPE_IRMOS,
+                "Ирмос",
+            ),
+            (
+                r"^припев(?:\s+[^:]*)?\s*:",
+                CanonSection.TYPE_REFRAIN,
+                "Припев",
+            ),
+            (
+                r"^иисусу\s*:",
+                CanonSection.TYPE_REFRAIN,
+                "Иисусу",
+            ),
+            (
+                r"^слава(?:\s+отцу|\s*:)",
+                CanonSection.TYPE_GLORY,
+                "Слава",
+            ),
+            (
+                r"^и\s+ныне(?:\s|,|:)",
+                CanonSection.TYPE_NOW,
+                "И ныне",
+            ),
+            (
+                r"^(?:кресто)?богородичен\s*:",
+                CanonSection.TYPE_THEOTOKION,
+                "Богородичен",
+            ),
+        ]
+
+        for (
+            pattern,
+            section_type,
+            label,
+        ) in tests:
+            if re.match(
+                pattern,
+                normalized,
+            ):
+                return (
+                    section_type,
+                    label,
+                )
+
+        return (
+            None,
+            "",
+        )
+
+    # =========================================================
+    # ПРОВЕРКА
+    # =========================================================
+
+    def validate_parsed(
+        self,
+        parsed,
+    ):
+        sections = parsed["sections"]
+
+        if not sections:
+            raise CommandError("В EPUB не найдено " "элементов канона.")
+
+        variants = {}
+
+        for section in sections:
+            variants.setdefault(
+                section["variant"],
+                [],
+            ).append(section)
+
+        for (
+            variant,
+            items,
+        ) in variants.items():
+            ode_numbers = []
+
+            for item in items:
+                ode = item["ode_number"]
+
+                if ode and ode not in ode_numbers:
+                    ode_numbers.append(ode)
+
+                if not item["content"]:
+                    raise CommandError(
+                        "Пустой элемент: " f"вариант {variant}, " f'order={item["order"]}.'
+                    )
+
+            if not ode_numbers:
+                raise CommandError("Не найдены песни " f"в варианте {variant}.")
+
+            if ode_numbers[0] != 1:
+                raise CommandError(
+                    "Канон должен начинаться " "с Песни 1. " f"Вариант {variant}: " f"{ode_numbers}"
+                )
+
+            if ode_numbers != sorted(ode_numbers):
+                raise CommandError(
+                    "Нарушен порядок песен. " f"Вариант {variant}: " f"{ode_numbers}"
+                )
+
+            if len(ode_numbers) != len(set(ode_numbers)):
+                raise CommandError(
+                    "Повторяются номера песен. " f"Вариант {variant}: " f"{ode_numbers}"
+                )
+
+            invalid = [number for number in ode_numbers if not (1 <= number <= 9)]
+
+            if invalid:
+                raise CommandError("Недопустимые номера песен: " f"{invalid}")
+
+            if 9 not in ode_numbers:
+                raise CommandError("Не найдена Песнь 9. " f"Вариант {variant}: " f"{ode_numbers}")
+
+    def print_report(
+        self,
+        parsed,
+    ):
+        self.stdout.write("")
+        self.stdout.write(self.style.SUCCESS("Структура канона " "распознана."))
+
+        self.stdout.write("Глас: " + (parsed["tone"] or "не указан"))
+
+        self.stdout.write("Вариантов текста: " f'{parsed["variant_count"]}')
+
+        for variant in range(
+            1,
+            parsed["variant_count"] + 1,
+        ):
+            items = [section for section in parsed["sections"] if section["variant"] == variant]
+
+            ode_numbers = []
+
+            for section in items:
+                ode = section["ode_number"]
+
+                if ode and ode not in ode_numbers:
+                    ode_numbers.append(ode)
+
+            counts = Counter(section["section_type"] for section in items)
+
+            translated = sum(1 for section in items if section["translation"])
+
+            self.stdout.write("")
+            self.stdout.write(f"Вариант {variant}:")
+
+            self.stdout.write("  Песни: " + ", ".join(str(number) for number in ode_numbers))
+
+            self.stdout.write(f"  Элементов: " f"{len(items)}")
+
+            self.stdout.write(f"  С переводом: " f"{translated}")
+
+            for (
+                section_type,
+                count,
+            ) in sorted(counts.items()):
+                self.stdout.write("  " f"{section_type:12} " f"{count}")
+
+        if parsed["classes"]:
+            self.stdout.write("")
+            self.stdout.write("HTML-классы EPUB:")
+
+            for (
+                class_name,
+                count,
+            ) in parsed["classes"].most_common():
+                self.stdout.write(f"  {class_name}: " f"{count}")
+
+        if parsed["headings"]:
+            self.stdout.write("")
+            self.stdout.write("Распознанные заголовки:")
+
+            for (
+                name,
+                count,
+            ) in sorted(parsed["headings"].items()):
+                self.stdout.write(f"  {name}: " f"{count}")
+
+    # =========================================================
+    # СОХРАНЕНИЕ
+    # =========================================================
+
+    @transaction.atomic
+    def save_canon(
+        self,
+        slug,
+        title,
+        parsed,
+    ):
+        canon, created = Canon.objects.update_or_create(
+            slug=slug,
+            defaults={
+                "title": title,
+                "tone": parsed["tone"],
+                "is_visible": True,
+            },
+        )
+
+        self.stdout.write(("Создан новый Canon." if created else "Обновлён существующий Canon."))
+
+        desired = set()
+
+        variants = [int(section["variant"]) for section in parsed["sections"]]
+
+        primary_variant = min(variants) if variants else 1
+
+        for section in parsed["sections"]:
+            if int(section["variant"]) != primary_variant:
+                continue
+            variant = section["variant"]
+
+            order = section["order"]
+
+            desired.add(
+                (
+                    variant,
+                    order,
+                )
+            )
+
+            text_slug = f"{slug}-" f"v{variant}-" f"section-{order}"
+
+            text_title = section["heading"] or self.make_text_title(section)
+
+            text_object, _created = Text.objects.update_or_create(
+                slug=text_slug,
+                defaults={
+                    "title": text_title[:255],
+                    "content": section["content"],
+                    "translation": section["translation"],
+                    "language": "cu",
+                    "is_visible": True,
+                },
+            )
+
+            CanonSection.objects.update_or_create(
+                canon=canon,
+                variant=variant,
+                order=order,
+                defaults={
+                    "section_type": section["section_type"],
+                    "ode_number": section["ode_number"],
+                    "heading": section["heading"][:255],
+                    "text": text_object,
+                },
+            )
+
+        for existing in CanonSection.objects.filter(canon=canon):
+            key = (
+                existing.variant,
+                existing.order,
+            )
+
+            if key not in desired:
+                existing.delete()
+
+        self.stdout.write(
+            "Элементов канона в БД: " f"{CanonSection.objects.filter(canon=canon).count()}"
+        )
+
+    def make_text_title(
+        self,
+        section,
+    ):
+        label = SECTION_LABELS.get(
+            section["section_type"],
+            "Текст",
+        )
+
+        if section["ode_number"]:
+            return f"Песнь " f'{section["ode_number"]} — ' f"{label}"
+
+        return label
+
+    # =========================================================
+    # ВСПОМОГАТЕЛЬНОЕ
+    # =========================================================
+
+    def extract_tone(
+        self,
+        value,
+    ):
+        normalized = self.normalize_heading(value)
+
+        match = re.search(
+            r"глас\s+" r"([0-9]+|[ivx]+)",
+            normalized,
+        )
+
+        if not match:
+            return ""
+
+        number = self.parse_number(match.group(1))
+
+        if not number:
+            return ""
+
+        return f"Глас {number}"
+
+    def parse_number(
+        self,
+        value,
+    ):
+        value = value.strip().lower()
+
+        if value.isdigit():
+            return int(value)
+
+        roman = {
+            "i": 1,
+            "ii": 2,
+            "iii": 3,
+            "iv": 4,
+            "v": 5,
+            "vi": 6,
+            "vii": 7,
+            "viii": 8,
+            "ix": 9,
+        }
+
+        return roman.get(value)
+
+    def clean_translation(
+        self,
+        value,
+    ):
+        value = self.clean_text(
+            value,
+            preserve_newlines=True,
+        )
+
+        value = re.sub(
+            r"^перевод\s*:\s*",
+            "",
+            value,
+            flags=re.IGNORECASE,
+        )
+
+        return value.strip()
+
+    def normalize_heading(
+        self,
+        value,
+    ):
+        value = self.clean_text(value)
+
+        value = unicodedata.normalize(
+            "NFD",
+            value,
+        )
+
+        value = "".join(char for char in value if unicodedata.category(char) != "Mn")
+
+        value = value.lower().replace(
+            "ё",
+            "е",
+        )
+
+        value = re.sub(
+            r"\s+",
+            " ",
+            value,
+        )
+
+        return value.strip()
+
+    def clean_text(
+        self,
+        value,
+        preserve_newlines=False,
+    ):
+        if value is None:
+            return ""
+
+        value = value.replace(
+            "\xa0",
+            " ",
+        ).replace(
+            "\u200b",
+            "",
+        )
+
+        if preserve_newlines:
+            lines = []
+
+            for line in value.splitlines():
+                line = re.sub(
+                    r"[ \t]+",
+                    " ",
+                    line,
+                ).strip()
+
+                if line:
+                    lines.append(line)
+
+            return "\n".join(lines).strip()
+
+        value = re.sub(
+            r"\s+",
+            " ",
             value,
         )
 

@@ -3,16 +3,14 @@ import {Pressable, StyleSheet, Text, View} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 
 export const FixedSectionHeader = ({
-                                     title,
-                                     navigation,
-                                     topInset = 0,
-                                     showBack = true,
-                                     showTitle = true,
-                                     minimal = false,
-                                   }) => {
-  const headerHeight =
-    topInset +
-    (minimal ? 46 : 56);
+  title,
+  navigation,
+  topInset = 0,
+  showBack = true,
+  showTitle = true,
+  minimal = false,
+}) => {
+  const headerHeight = topInset + (minimal ? 46 : 56);
 
   return (
     <View
@@ -20,10 +18,7 @@ export const FixedSectionHeader = ({
       style={[
         styles.fixedHeader,
         {
-          height:
-            minimal
-              ? headerHeight
-              : headerHeight + 26,
+          height: minimal ? headerHeight : headerHeight + 26,
         },
       ]}
     >
@@ -37,7 +32,7 @@ export const FixedSectionHeader = ({
             'rgba(239, 211, 160, 0.34)',
             'rgba(239, 211, 160, 0)',
           ]}
-          locations={[0, 0.50, 0.68, 0.86, 1]}
+          locations={[0, 0.5, 0.68, 0.86, 1]}
           style={StyleSheet.absoluteFill}
         />
       )}
@@ -57,8 +52,7 @@ export const FixedSectionHeader = ({
             onPress={() => navigation.goBack()}
             style={({pressed}) => [
               styles.backButton,
-              minimal &&
-                styles.backButtonMinimal,
+              minimal && styles.backButtonMinimal,
               pressed && styles.pressed,
             ]}
           >
@@ -67,15 +61,8 @@ export const FixedSectionHeader = ({
         )}
 
         {showTitle && (
-          <View style={[
-            styles.titleWrap,
-            !showBack && styles.titleWrapRoot,
-          ]}>
-            <Text
-              style={styles.title}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
+          <View style={[styles.titleWrap, !showBack && styles.titleWrapRoot]}>
+            <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
               {title}
             </Text>
 

@@ -10,9 +10,7 @@ from api.akathist_curated import is_curated_akathist
 from api.models import Akathist
 
 
-DEFAULT_MANIFEST = Path(
-    "files/akathists/download_manifest.json"
-)
+DEFAULT_MANIFEST = Path("files/akathists/download_manifest.json")
 
 # На Азбуке есть отдельные старые версии, подготовленные именно
 # под церковнославянский шрифт/старую кодировку. Их заголовки и
@@ -26,10 +24,7 @@ LEGACY_CHURCH_MARKERS = (
 
 
 class Command(BaseCommand):
-    help = (
-        "Массово импортирует скачанные EPUB-акафисты "
-        "из download_manifest.json."
-    )
+    help = "Массово импортирует скачанные EPUB-акафисты " "из download_manifest.json."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -66,10 +61,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--check-only",
             action="store_true",
-            help=(
-                "Только проверить EPUB. "
-                "Ничего не записывать в БД."
-            ),
+            help=("Только проверить EPUB. " "Ничего не записывать в БД."),
         )
 
         parser.add_argument(
@@ -100,33 +92,21 @@ class Command(BaseCommand):
         include_unlisted = options["include_unlisted"]
 
         if offset < 0:
-            raise CommandError(
-                "--offset не может быть меньше 0."
-            )
+            raise CommandError("--offset не может быть меньше 0.")
 
         if count is not None and count < 1:
-            raise CommandError(
-                "--count должен быть больше 0."
-            )
+            raise CommandError("--count должен быть больше 0.")
 
         if not manifest_path.exists():
-            raise CommandError(
-                f"Manifest не найден: {manifest_path}"
-            )
+            raise CommandError(f"Manifest не найден: {manifest_path}")
 
         try:
-            manifest = json.loads(
-                manifest_path.read_text(
-                    encoding="utf-8"
-                )
-            )
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         except (
-                json.JSONDecodeError,
-                OSError,
+            json.JSONDecodeError,
+            OSError,
         ) as exc:
-            raise CommandError(
-                f"Не удалось прочитать manifest: {exc}"
-            ) from exc
+            raise CommandError(f"Не удалось прочитать manifest: {exc}") from exc
 
         pages = manifest.get(
             "pages",
@@ -134,9 +114,7 @@ class Command(BaseCommand):
         )
 
         if not pages:
-            raise CommandError(
-                "В manifest отсутствуют страницы."
-            )
+            raise CommandError("В manifest отсутствуют страницы.")
 
         downloaded_items = [
             (page_url, data)
@@ -153,44 +131,25 @@ class Command(BaseCommand):
         if count is None:
             batch_items = downloaded_items[offset:]
         else:
-            batch_items = downloaded_items[
-                offset:offset + count
-            ]
+            batch_items = downloaded_items[offset : offset + count]
 
         self.stdout.write("")
         self.stdout.write("=" * 72)
-        self.stdout.write(
-            "МАССОВЫЙ ИМПОРТ АКАФИСТОВ"
-        )
+        self.stdout.write("МАССОВЫЙ ИМПОРТ АКАФИСТОВ")
         self.stdout.write("=" * 72)
 
-        self.stdout.write(
-            f"Manifest: {manifest_path}"
-        )
+        self.stdout.write(f"Manifest: {manifest_path}")
 
-        self.stdout.write(
-            f"Записей в manifest: {len(pages)}"
-        )
+        self.stdout.write(f"Записей в manifest: {len(pages)}")
 
-        self.stdout.write(
-            f"Скачанных EPUB в manifest: {len(downloaded_items)}"
-        )
+        self.stdout.write(f"Скачанных EPUB в manifest: {len(downloaded_items)}")
 
-        self.stdout.write(
-            f"Offset: {offset}"
-        )
+        self.stdout.write(f"Offset: {offset}")
 
-        self.stdout.write(
-            f"EPUB в выбранной партии: {len(batch_items)}"
-        )
+        self.stdout.write(f"EPUB в выбранной партии: {len(batch_items)}")
 
         if check_only:
-            self.stdout.write(
-                self.style.WARNING(
-                    "Режим CHECK-ONLY: "
-                    "БД изменяться не будет."
-                )
-            )
+            self.stdout.write(self.style.WARNING("Режим CHECK-ONLY: " "БД изменяться не будет."))
 
         processed = 0
         success = 0
@@ -204,20 +163,12 @@ class Command(BaseCommand):
         legacy_items = []
 
         for batch_index, (page_url, data) in enumerate(
-                batch_items,
-                start=1,
+            batch_items,
+            start=1,
         ):
-            title = (
-                    data.get("title")
-                    or ""
-            ).strip()
+            title = (data.get("title") or "").strip()
 
-            if (
-                    not include_legacy
-                    and self.is_legacy_church_variant(
-                title
-            )
-            ):
+            if not include_legacy and self.is_legacy_church_variant(title):
                 skipped_legacy += 1
                 legacy_items.append(
                     {
@@ -229,10 +180,7 @@ class Command(BaseCommand):
 
                 self.stdout.write("")
                 self.stdout.write(
-                    self.style.WARNING(
-                        f"[{batch_index}] Пропуск legacy ЦС-версии: "
-                        f"{title}"
-                    )
+                    self.style.WARNING(f"[{batch_index}] Пропуск legacy ЦС-версии: " f"{title}")
                 )
                 self.stdout.write(
                     "  Причина: старая шрифтовая "
@@ -248,8 +196,7 @@ class Command(BaseCommand):
 
                 self.stdout.write(
                     self.style.WARNING(
-                        f"\n[{batch_index}] Пропуск: {page_url}\n"
-                        "  В manifest нет пути к файлу."
+                        f"\n[{batch_index}] Пропуск: {page_url}\n" "  В manifest нет пути к файлу."
                     )
                 )
 
@@ -270,17 +217,14 @@ class Command(BaseCommand):
 
                 continue
 
-            url_slug = self.make_slug(
-                page_url
-            )
+            url_slug = self.make_slug(page_url)
 
             if not url_slug:
                 skipped += 1
 
                 self.stdout.write(
                     self.style.WARNING(
-                        f"\n[{batch_index}] Пропуск: {page_url}\n"
-                        "  Не удалось получить slug."
+                        f"\n[{batch_index}] Пропуск: {page_url}\n" "  Не удалось получить slug."
                     )
                 )
 
@@ -294,23 +238,17 @@ class Command(BaseCommand):
             if slug != url_slug:
                 reused_existing_slug += 1
 
-            if (
-                    not include_unlisted
-                    and not is_curated_akathist(
-                        slug=slug,
-                        title=title,
-                    )
+            if not include_unlisted and not is_curated_akathist(
+                slug=slug,
+                title=title,
             ):
                 skipped += 1
                 skipped_unlisted += 1
 
-                self.stdout.write(
-                    ""
-                )
+                self.stdout.write("")
                 self.stdout.write(
                     self.style.WARNING(
-                        f"[{batch_index}] Пропуск вне "
-                        f"утверждённого списка: {title}"
+                        f"[{batch_index}] Пропуск вне " f"утверждённого списка: {title}"
                     )
                 )
                 continue
@@ -320,21 +258,13 @@ class Command(BaseCommand):
             self.stdout.write("")
             self.stdout.write("-" * 72)
 
-            self.stdout.write(
-                f"[{batch_index}] {title}"
-            )
+            self.stdout.write(f"[{batch_index}] {title}")
 
-            self.stdout.write(
-                f"URL: {page_url}"
-            )
+            self.stdout.write(f"URL: {page_url}")
 
-            self.stdout.write(
-                f"EPUB: {epub_path}"
-            )
+            self.stdout.write(f"EPUB: {epub_path}")
 
-            self.stdout.write(
-                f"Slug: {slug}"
-            )
+            self.stdout.write(f"Slug: {slug}")
 
             if slug != url_slug:
                 self.stdout.write(
@@ -353,9 +283,7 @@ class Command(BaseCommand):
                 }
 
                 if check_only:
-                    command_options[
-                        "check_only"
-                    ] = True
+                    command_options["check_only"] = True
 
                 call_command(
                     "import_akathist_epub",
@@ -378,17 +306,9 @@ class Command(BaseCommand):
                 )
 
                 self.stdout.write("")
-                self.stdout.write(
-                    self.style.ERROR(
-                        "ОШИБКА ИМПОРТА"
-                    )
-                )
+                self.stdout.write(self.style.ERROR("ОШИБКА ИМПОРТА"))
 
-                self.stdout.write(
-                    self.style.ERROR(
-                        error_text
-                    )
-                )
+                self.stdout.write(self.style.ERROR(error_text))
 
                 # Ошибка одного EPUB не должна
                 # останавливать импорт остальных.
@@ -400,135 +320,77 @@ class Command(BaseCommand):
         self.stdout.write("=" * 72)
 
         if check_only:
-            self.stdout.write(
-                "ПРОВЕРКА ЗАВЕРШЕНА"
-            )
+            self.stdout.write("ПРОВЕРКА ЗАВЕРШЕНА")
         else:
-            self.stdout.write(
-                "ИМПОРТ ЗАВЕРШЁН"
-            )
+            self.stdout.write("ИМПОРТ ЗАВЕРШЁН")
 
         self.stdout.write("=" * 72)
 
-        self.stdout.write(
-            f"EPUB в выбранной партии: {len(batch_items)}"
-        )
+        self.stdout.write(f"EPUB в выбранной партии: {len(batch_items)}")
 
-        self.stdout.write(
-            f"Обработано обычных EPUB: {processed}"
-        )
+        self.stdout.write(f"Обработано обычных EPUB: {processed}")
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Успешно: {success}"
-            )
-        )
+        self.stdout.write(self.style.SUCCESS(f"Успешно: {success}"))
 
         if failed:
-            self.stdout.write(
-                self.style.ERROR(
-                    f"С ошибками: {failed}"
-                )
-            )
+            self.stdout.write(self.style.ERROR(f"С ошибками: {failed}"))
         else:
-            self.stdout.write(
-                f"С ошибками: {failed}"
-            )
+            self.stdout.write(f"С ошибками: {failed}")
 
-        self.stdout.write(
-            f"Пропущено некорректных записей: "
-            f"{skipped}"
-        )
+        self.stdout.write(f"Пропущено некорректных записей: " f"{skipped}")
 
-        self.stdout.write(
-            f"Пропущено legacy ЦС-версий: "
-            f"{skipped_legacy}"
-        )
+        self.stdout.write(f"Пропущено legacy ЦС-версий: " f"{skipped_legacy}")
 
-        self.stdout.write(
-            f"Пропущено вне утверждённого списка: "
-            f"{skipped_unlisted}"
-        )
+        self.stdout.write(f"Пропущено вне утверждённого списка: " f"{skipped_unlisted}")
 
-        self.stdout.write(
-            f"Переиспользовано существующих slug: "
-            f"{reused_existing_slug}"
-        )
+        self.stdout.write(f"Переиспользовано существующих slug: " f"{reused_existing_slug}")
 
         if legacy_items:
             self.stdout.write("")
             self.stdout.write("=" * 72)
-            self.stdout.write(
-                "LEGACY ЦЕРКОВНОСЛАВЯНСКИЕ ВЕРСИИ"
-            )
+            self.stdout.write("LEGACY ЦЕРКОВНОСЛАВЯНСКИЕ ВЕРСИИ")
             self.stdout.write("=" * 72)
 
             for index, item in enumerate(
-                    legacy_items,
-                    start=1,
+                legacy_items,
+                start=1,
             ):
                 self.stdout.write("")
-                self.stdout.write(
-                    f"{index}. {item['title']}"
-                )
-                self.stdout.write(
-                    f"   EPUB: {item['file']}"
-                )
-                self.stdout.write(
-                    "   Статус: пропущен до отдельной "
-                    "Unicode-конвертации."
-                )
+                self.stdout.write(f"{index}. {item['title']}")
+                self.stdout.write(f"   EPUB: {item['file']}")
+                self.stdout.write("   Статус: пропущен до отдельной " "Unicode-конвертации.")
 
         if failures:
             self.stdout.write("")
             self.stdout.write("=" * 72)
-            self.stdout.write(
-                "СПИСОК ОШИБОК"
-            )
+            self.stdout.write("СПИСОК ОШИБОК")
             self.stdout.write("=" * 72)
 
             for index, item in enumerate(
-                    failures,
-                    start=1,
+                failures,
+                start=1,
             ):
                 self.stdout.write("")
-                self.stdout.write(
-                    f"{index}. "
-                    f"{item['title']}"
-                )
+                self.stdout.write(f"{index}. " f"{item['title']}")
 
-                self.stdout.write(
-                    f"   Slug: "
-                    f"{item['slug']}"
-                )
+                self.stdout.write(f"   Slug: " f"{item['slug']}")
 
-                self.stdout.write(
-                    f"   EPUB: "
-                    f"{item['file']}"
-                )
+                self.stdout.write(f"   EPUB: " f"{item['file']}")
 
-                self.stdout.write(
-                    f"   Ошибка: "
-                    f"{item['error']}"
-                )
+                self.stdout.write(f"   Ошибка: " f"{item['error']}")
 
     def is_legacy_church_variant(
-            self,
-            title,
+        self,
+        title,
     ):
-        normalized = self.normalize_title(
-            title
-        )
+        normalized = self.normalize_title(title)
 
-        return any(
-            marker in normalized
-            for marker in LEGACY_CHURCH_MARKERS
-        )
+        return any(marker in normalized for marker in LEGACY_CHURCH_MARKERS)
 
     def resolve_slug(
-            self,
-            title,
-            url_slug,
+        self,
+        title,
+        url_slug,
     ):
         """
         Если акафист уже есть в БД под другим slug,
@@ -540,25 +402,18 @@ class Command(BaseCommand):
         для кириллицы при __iexact.
         """
 
-        normalized_title = self.normalize_title(
-            title
-        )
+        normalized_title = self.normalize_title(title)
 
         if not normalized_title:
             return url_slug
 
         matches = []
 
-        for existing_title, existing_slug in (
-                Akathist.objects.values_list(
-                    "title",
-                    "slug",
-                )
+        for existing_title, existing_slug in Akathist.objects.values_list(
+            "title",
+            "slug",
         ):
-            if (
-                    self.normalize_title(existing_title)
-                    == normalized_title
-            ):
+            if self.normalize_title(existing_title) == normalized_title:
                 matches.append(existing_slug)
 
                 if len(matches) > 1:
@@ -570,8 +425,8 @@ class Command(BaseCommand):
         return url_slug
 
     def normalize_title(
-            self,
-            value,
+        self,
+        value,
     ):
         """
         Нормализует название для безопасного сравнения:
@@ -580,9 +435,7 @@ class Command(BaseCommand):
         - ё/е считаются одинаковыми.
         """
 
-        normalized = " ".join(
-            (value or "").strip().casefold().split()
-        )
+        normalized = " ".join((value or "").strip().casefold().split())
 
         return normalized.replace(
             "ё",
@@ -590,21 +443,17 @@ class Command(BaseCommand):
         )
 
     def make_slug(
-            self,
-            page_url,
+        self,
+        page_url,
     ):
         """
         Получаем slug непосредственно
         из URL страницы Азбуки.
         """
 
-        parsed = urlparse(
-            page_url
-        )
+        parsed = urlparse(page_url)
 
-        filename = Path(
-            parsed.path
-        ).stem
+        filename = Path(parsed.path).stem
 
         slug = filename.lower()
 

@@ -5,19 +5,13 @@ import {getWidgetInfo} from 'react-native-android-widget';
 import {getDailyQuote} from '../services/dailyQuote';
 import {QuoteOfDayWidget} from './QuoteOfDayWidget';
 
-export const QuoteWidgetConfigurationScreen = ({
-                                                 widgetInfo,
-                                                 renderWidget,
-                                                 setResult,
-                                               }) => {
+export const QuoteWidgetConfigurationScreen = ({widgetInfo, renderWidget, setResult}) => {
   useEffect(() => {
     const configure = async () => {
       try {
         const widgets = await getWidgetInfo('QuoteOfDay');
 
-        const anotherWidgetExists = widgets.some(
-          item => item.widgetId !== widgetInfo.widgetId
-        );
+        const anotherWidgetExists = widgets.some((item) => item.widgetId !== widgetInfo.widgetId);
 
         if (anotherWidgetExists) {
           setResult('cancel');
@@ -27,11 +21,7 @@ export const QuoteWidgetConfigurationScreen = ({
         const quote = getDailyQuote();
 
         renderWidget(
-          <QuoteOfDayWidget
-            quote={quote}
-            width={widgetInfo.width}
-            height={widgetInfo.height}
-          />
+          <QuoteOfDayWidget quote={quote} width={widgetInfo.width} height={widgetInfo.height} />
         );
 
         setResult('ok');
@@ -42,13 +32,7 @@ export const QuoteWidgetConfigurationScreen = ({
     };
 
     configure();
-  }, [
-    renderWidget,
-    setResult,
-    widgetInfo.height,
-    widgetInfo.widgetId,
-    widgetInfo.width,
-  ]);
+  }, [renderWidget, setResult, widgetInfo.height, widgetInfo.widgetId, widgetInfo.width]);
 
   return <View style={{flex: 1}} />;
 };

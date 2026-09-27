@@ -4,12 +4,11 @@ import {isCuratedAkathist} from '../data/curatedAkathists';
 const bundledContent = require('../data/offlineContent.json');
 
 const bundleReady =
-  Number(bundledContent?.schema_version || 0) >= 1 &&
-  !!bundledContent?.generated_at;
+  Number(bundledContent?.schema_version || 0) >= 1 && !!bundledContent?.generated_at;
 
-const response = data => ({data});
+const response = (data) => ({data});
 
-const notFound = path => {
+const notFound = (path) => {
   const error = new Error(`Офлайн-контент не найден: ${path}`);
   error.response = {
     status: 404,
@@ -18,7 +17,7 @@ const notFound = path => {
   return error;
 };
 
-const normalizePath = path =>
+const normalizePath = (path) =>
   String(path || '')
     .replace(/^\/+/, '')
     .replace(/\?.*$/, '');
@@ -31,21 +30,16 @@ const getTodayString = () => {
   return `${year}-${month}-${day}`;
 };
 
-const getDateOrdinal = date => {
+const getDateOrdinal = (date) => {
   const utcDays = Math.floor(
-    Date.UTC(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate()
-    ) / 86400000
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000
   );
 
   // Python date(1970, 1, 1).toordinal() === 719163.
   return utcDays + 719163;
 };
 
-
-const getLocal = rawPath => {
+const getLocal = (rawPath) => {
   const path = normalizePath(rawPath);
 
   if (path === 'categories/') {
@@ -90,26 +84,14 @@ const getLocal = rawPath => {
   }
 
   if (path === 'akathists/') {
-    return (
-      bundledContent.akathists?.list ||
-      []
-    ).filter(
-      isCuratedAkathist
-    );
+    return (bundledContent.akathists?.list || []).filter(isCuratedAkathist);
   }
 
   match = path.match(/^akathists\/([^/]+)\/$/);
   if (match) {
-    const item =
-      bundledContent.akathists
-        ?.by_slug?.[match[1]];
+    const item = bundledContent.akathists?.by_slug?.[match[1]];
 
-    if (
-      !item ||
-      !isCuratedAkathist(
-        item
-      )
-    ) {
+    if (!item || !isCuratedAkathist(item)) {
       throw notFound(path);
     }
 
@@ -135,11 +117,9 @@ const getLocal = rawPath => {
 };
 
 export const contentApi = {
-  get: async path => {
+  get: async (path) => {
     if (!bundleReady) {
-      throw new Error(
-        'Офлайн-контент не собран. Запустите export_mobile_content.'
-      );
+      throw new Error('Офлайн-контент не собран. Запустите export_mobile_content.');
     }
 
     return response(getLocal(path));

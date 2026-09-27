@@ -19,6 +19,7 @@ except ImportError:
 # ОБЩИЕ ФУНКЦИИ
 # =========================================================
 
+
 def normalize(text):
     text = text.replace("\xa0", " ")
     text = text.replace("\r\n", "\n")
@@ -61,8 +62,8 @@ def accent_count(text):
     count = 0
 
     for char in unicodedata.normalize(
-            "NFD",
-            text,
+        "NFD",
+        text,
     ):
         if unicodedata.category(char) == "Mn":
             count += 1
@@ -83,6 +84,7 @@ def contains_cyrillic(text):
 # ПОИСК ПСАЛМОВ
 # =========================================================
 
+
 def find_psalm_blocks(full_text):
     """
     Разбивает PDF на блоки:
@@ -96,20 +98,14 @@ def find_psalm_blocks(full_text):
     но ниже мы работаем только с 1–150.
     """
 
-    pattern = re.compile(
-        r"(?m)^[ \t]*Псалом\s+(\d{1,3})[ \t]*$"
-    )
+    pattern = re.compile(r"(?m)^[ \t]*Псалом\s+(\d{1,3})[ \t]*$")
 
-    matches = list(
-        pattern.finditer(full_text)
-    )
+    matches = list(pattern.finditer(full_text))
 
     blocks = {}
 
     for index, match in enumerate(matches):
-        psalm_number = int(
-            match.group(1)
-        )
+        psalm_number = int(match.group(1))
 
         start = match.end()
 
@@ -118,9 +114,7 @@ def find_psalm_blocks(full_text):
         else:
             end = len(full_text)
 
-        blocks[psalm_number] = (
-            full_text[start:end].strip()
-        )
+        blocks[psalm_number] = full_text[start:end].strip()
 
     return blocks
 
@@ -128,6 +122,7 @@ def find_psalm_blocks(full_text):
 # =========================================================
 # РАЗБИЕНИЕ БЛОКА ПО НОМЕРАМ СТИХОВ
 # =========================================================
+
 
 def find_number_markers(text):
     """
@@ -143,9 +138,7 @@ def find_number_markers(text):
 
     return list(
         re.finditer(
-            r"(?<!\d)"
-            r"(\d{1,3})"
-            r"(?=\s|[А-ЯЁA-Z])",
+            r"(?<!\d)" r"(\d{1,3})" r"(?=\s|[А-ЯЁA-Z])",
             text,
         )
     )
@@ -177,22 +170,18 @@ def clean_piece(text):
         )
 
         if match:
-            text = text[:match.start()]
+            text = text[: match.start()]
 
     return text.strip()
 
 
 def build_candidates(block):
-    markers = find_number_markers(
-        block
-    )
+    markers = find_number_markers(block)
 
     candidates = []
 
     for index, marker in enumerate(markers):
-        number = int(
-            marker.group(1)
-        )
+        number = int(marker.group(1))
 
         start = marker.end()
 
@@ -201,16 +190,16 @@ def build_candidates(block):
         else:
             end = len(block)
 
-        text = clean_piece(
-            block[start:end]
-        )
+        text = clean_piece(block[start:end])
 
-        candidates.append({
-            "number": number,
-            "text": text,
-            "position": marker.start(),
-            "accents": accent_count(text),
-        })
+        candidates.append(
+            {
+                "number": number,
+                "text": text,
+                "position": marker.start(),
+                "accents": accent_count(text),
+            }
+        )
 
     return candidates
 
@@ -219,9 +208,10 @@ def build_candidates(block):
 # ПОИСК ПОСЛЕДОВАТЕЛЬНОСТЕЙ СТИХОВ
 # =========================================================
 
+
 def find_sequence_runs(
-        candidates,
-        expected_numbers,
+    candidates,
+    expected_numbers,
 ):
     """
     В обычном случае PDF содержит:
@@ -233,52 +223,41 @@ def find_sequence_runs(
     нужных номеров.
     """
 
-    expected_length = len(
-        expected_numbers
-    )
+    expected_length = len(expected_numbers)
 
     runs = []
 
     for start in range(
-            0,
-            len(candidates) - expected_length + 1,
+        0,
+        len(candidates) - expected_length + 1,
     ):
-        fragment = candidates[
-            start:start + expected_length
-        ]
+        fragment = candidates[start : start + expected_length]
 
-        numbers = [
-            item["number"]
-            for item in fragment
-        ]
+        numbers = [item["number"] for item in fragment]
 
         if numbers != expected_numbers:
             continue
 
-        if not all(
-                item["text"]
-                for item in fragment
-        ):
+        if not all(item["text"] for item in fragment):
             continue
 
-        accents = sum(
-            item["accents"]
-            for item in fragment
-        )
+        accents = sum(item["accents"] for item in fragment)
 
-        runs.append({
-            "start": start,
-            "items": fragment,
-            "accents": accents,
-        })
+        runs.append(
+            {
+                "start": start,
+                "items": fragment,
+                "accents": accents,
+            }
+        )
 
     return runs
 
 
 def choose_russian_run(
-        candidates,
-        expected_numbers,
-        psalm_number=None,
+    candidates,
+    expected_numbers,
+    psalm_number=None,
 ):
     """
     Выбирает русский блок стихов.
@@ -307,10 +286,10 @@ def choose_russian_run(
                 item
                 for item in candidates
                 if (
-                        item["number"] == expected_number
-                        and item["position"] > previous_position
-                        and item["text"]
-                        and contains_cyrillic(item["text"])
+                    item["number"] == expected_number
+                    and item["position"] > previous_position
+                    and item["text"]
+                    and contains_cyrillic(item["text"])
                 )
             ]
 
@@ -326,22 +305,13 @@ def choose_russian_run(
 
             selected = possible[0]
 
-            selected_items.append(
-                selected
-            )
+            selected_items.append(selected)
 
-            total_accents += (
-                selected["accents"]
-            )
+            total_accents += selected["accents"]
 
-            previous_position = (
-                selected["position"]
-            )
+            previous_position = selected["position"]
 
-        selected_numbers = [
-            item["number"]
-            for item in selected_items
-        ]
+        selected_numbers = [item["number"] for item in selected_items]
 
         if selected_numbers != expected_numbers:
             return None
@@ -378,20 +348,17 @@ def choose_russian_run(
 # РУССКИЙ ЗАГОЛОВОК
 # =========================================================
 
+
 def clean_title(
-        title,
-        psalm_number,
+    title,
+    psalm_number,
 ):
-    title = normalize_inline(
-        title
-    )
+    title = normalize_inline(title)
 
     #
     # Убираем мусор в начале.
     #
-    title = title.lstrip(
-        " .,:;-"
-    )
+    title = title.lstrip(" .,:;-")
 
     #
     # В PDF встречается:
@@ -463,9 +430,7 @@ def extract_russian_tail(text):
     русский текст — нет.
     """
 
-    text = normalize_inline(
-        text
-    )
+    text = normalize_inline(text)
 
     if not text:
         return ""
@@ -478,11 +443,7 @@ def extract_russian_tail(text):
         text,
     )
 
-    parts = [
-        part.strip()
-        for part in parts
-        if part.strip()
-    ]
+    parts = [part.strip() for part in parts if part.strip()]
 
     if not parts:
         return ""
@@ -494,14 +455,10 @@ def extract_russian_tail(text):
     russian_parts = []
 
     for part in reversed(parts):
-        accents = accent_count(
-            part
-        )
+        accents = accent_count(part)
 
         if accents == 0:
-            russian_parts.append(
-                part
-            )
+            russian_parts.append(part)
             continue
 
         if russian_parts:
@@ -510,9 +467,7 @@ def extract_russian_tail(text):
     if russian_parts:
         russian_parts.reverse()
 
-        return " ".join(
-            russian_parts
-        ).strip()
+        return " ".join(russian_parts).strip()
 
     #
     # Запасной случай:
@@ -531,9 +486,9 @@ def extract_russian_tail(text):
 
 
 def extract_title_russian(
-        block,
-        psalm,
-        candidates,
+    block,
+    psalm,
+    candidates,
 ):
     """
     Получает ТОЛЬКО русский заголовок.
@@ -544,25 +499,14 @@ def extract_title_russian(
     попадал весь церковнославянский псалом.
     """
 
-    verses = list(
-        psalm.verses
-        .all()
-        .order_by(
-            "number"
-        )
-    )
+    verses = list(psalm.verses.all().order_by("number"))
 
-    expected_numbers = [
-        verse.number
-        for verse in verses
-    ]
+    expected_numbers = [verse.number for verse in verses]
 
     if not expected_numbers:
         return ""
 
-    first_body_number = (
-        expected_numbers[0]
-    )
+    first_body_number = expected_numbers[0]
 
     # =====================================================
     # СЛУЧАЙ:
@@ -588,11 +532,9 @@ def extract_title_russian(
             )
         )
 
-        title_runs = (
-            find_sequence_runs(
-                candidates,
-                title_numbers,
-            )
+        title_runs = find_sequence_runs(
+            candidates,
+            title_numbers,
         )
 
         if title_runs:
@@ -607,33 +549,19 @@ def extract_title_russian(
                 )
             )
 
-            selected = (
-                title_runs[0]
-            )
+            selected = title_runs[0]
 
             title_parts = []
 
-            for item in selected[
-                "items"
-            ]:
-                part = (
-                    extract_russian_tail(
-                        item["text"]
-                    )
-                )
+            for item in selected["items"]:
+                part = extract_russian_tail(item["text"])
 
                 if not part:
-                    part = item[
-                        "text"
-                    ]
+                    part = item["text"]
 
-                title_parts.append(
-                    part
-                )
+                title_parts.append(part)
 
-            title = " ".join(
-                title_parts
-            )
+            title = " ".join(title_parts)
 
             title = clean_title(
                 title,
@@ -654,11 +582,7 @@ def extract_title_russian(
     if not candidates:
         return ""
 
-    first_marker_position = (
-        candidates[0][
-            "position"
-        ]
-    )
+    first_marker_position = candidates[0]["position"]
 
     #
     # ВАЖНО:
@@ -669,13 +593,9 @@ def extract_title_russian(
     # Таким образом в заголовок физически
     # не может попасть тело псалма.
     #
-    header = block[
-        :first_marker_position
-    ]
+    header = block[:first_marker_position]
 
-    title = extract_russian_tail(
-        header
-    )
+    title = extract_russian_tail(header)
 
     title = clean_title(
         title,
@@ -686,8 +606,8 @@ def extract_title_russian(
 
 
 def validate_title(
-        psalm_number,
-        title,
+    psalm_number,
+    title,
 ):
     """
     Защита от повторения старой ошибки.
@@ -697,10 +617,7 @@ def validate_title(
     """
 
     if not title:
-        return (
-            f"Псалом {psalm_number}: "
-            f"русский заголовок пуст."
-        )
+        return f"Псалом {psalm_number}: " f"русский заголовок пуст."
 
     if len(title) > 500:
         return (
@@ -727,14 +644,10 @@ def validate_title(
     # "2 Блажени..."
     #
     if re.search(
-            r"(?:^|\s)\d{1,3}\s+[А-Яа-яЁё]",
-            title,
+        r"(?:^|\s)\d{1,3}\s+[А-Яа-яЁё]",
+        title,
     ):
-        return (
-            f"Псалом {psalm_number}: "
-            f"в заголовок, вероятно, попали стихи: "
-            f"{title!r}"
-        )
+        return f"Псалом {psalm_number}: " f"в заголовок, вероятно, попали стихи: " f"{title!r}"
 
     return None
 
@@ -743,15 +656,13 @@ def validate_title(
 # КОМАНДА
 # =========================================================
 
+
 class Command(BaseCommand):
-    help = (
-        "Импортирует русский перевод Псалтири "
-        "из PDF Азбуки веры."
-    )
+    help = "Импортирует русский перевод Псалтири " "из PDF Азбуки веры."
 
     def add_arguments(
-            self,
-            parser,
+        self,
+        parser,
     ):
         parser.add_argument(
             "pdf_file",
@@ -760,152 +671,88 @@ class Command(BaseCommand):
 
         parser.add_argument(
             "--json-output",
-            default=(
-                "files/"
-                "psalter_russian.json"
-            ),
+            default=("files/" "psalter_russian.json"),
         )
 
         parser.add_argument(
             "--check-only",
             action="store_true",
-            help=(
-                "Проверить PDF и создать JSON, "
-                "но не изменять БД."
-            ),
+            help=("Проверить PDF и создать JSON, " "но не изменять БД."),
         )
 
         parser.add_argument(
             "--titles-only",
             action="store_true",
-            help=(
-                "Обновить только title_russian. "
-                "Русские тексты стихов не изменяются."
-            ),
+            help=("Обновить только title_russian. " "Русские тексты стихов не изменяются."),
         )
 
         parser.add_argument(
             "--show-titles",
             action="store_true",
-            help=(
-                "Вывести найденные русские "
-                "заголовки в консоль."
-            ),
+            help=("Вывести найденные русские " "заголовки в консоль."),
         )
 
     def handle(
-            self,
-            *args,
-            **options,
+        self,
+        *args,
+        **options,
     ):
         if PdfReader is None:
-            raise CommandError(
-                "Не установлен pypdf.\n"
-                "Установи:\n"
-                "python -m pip install pypdf"
-            )
+            raise CommandError("Не установлен pypdf.\n" "Установи:\n" "python -m pip install pypdf")
 
-        pdf_path = Path(
-            options["pdf_file"]
-        )
+        pdf_path = Path(options["pdf_file"])
 
-        json_output = Path(
-            options["json_output"]
-        )
+        json_output = Path(options["json_output"])
 
-        check_only = options[
-            "check_only"
-        ]
+        check_only = options["check_only"]
 
-        titles_only = options[
-            "titles_only"
-        ]
+        titles_only = options["titles_only"]
 
-        show_titles = options[
-            "show_titles"
-        ]
+        show_titles = options["show_titles"]
 
         if not pdf_path.exists():
-            raise CommandError(
-                f"PDF не найден: "
-                f"{pdf_path}"
-            )
+            raise CommandError(f"PDF не найден: " f"{pdf_path}")
 
         # =================================================
         # ЧИТАЕМ PDF
         # =================================================
 
-        self.stdout.write(
-            f"Читаю PDF: {pdf_path}"
-        )
+        self.stdout.write(f"Читаю PDF: {pdf_path}")
 
-        reader = PdfReader(
-            str(pdf_path)
-        )
+        reader = PdfReader(str(pdf_path))
 
         pages = []
 
-        page_count = len(
-            reader.pages
-        )
+        page_count = len(reader.pages)
 
         for index, page in enumerate(
-                reader.pages,
-                start=1,
+            reader.pages,
+            start=1,
         ):
-            text = (
-                    page.extract_text()
-                    or ""
-            )
+            text = page.extract_text() or ""
 
-            pages.append(
-                text
-            )
+            pages.append(text)
 
-            self.stdout.write(
-                f"Страница "
-                f"{index}/{page_count}"
-            )
+            self.stdout.write(f"Страница " f"{index}/{page_count}")
 
-        full_text = normalize(
-            "\n".join(pages)
-        )
+        full_text = normalize("\n".join(pages))
 
-        blocks = find_psalm_blocks(
-            full_text
-        )
+        blocks = find_psalm_blocks(full_text)
 
-        self.stdout.write(
-            f"Найдено блоков Псалмов: "
-            f"{len(blocks)}"
-        )
+        self.stdout.write(f"Найдено блоков Псалмов: " f"{len(blocks)}")
 
         # =================================================
         # БД
         # =================================================
 
         psalms = list(
-            Psalm.objects
-            .filter(
-                number__lte=150
-            )
-            .prefetch_related(
-                "verses"
-            )
-            .order_by(
-                "number"
-            )
+            Psalm.objects.filter(number__lte=150).prefetch_related("verses").order_by("number")
         )
 
         if len(psalms) != 150:
-            raise CommandError(
-                "В БД должно быть 150 псалмов. "
-                f"Сейчас: {len(psalms)}."
-            )
+            raise CommandError("В БД должно быть 150 псалмов. " f"Сейчас: {len(psalms)}.")
 
-        result = {
-            "psalms": []
-        }
+        result = {"psalms": []}
 
         errors = []
 
@@ -916,52 +763,28 @@ class Command(BaseCommand):
         # =================================================
 
         for psalm in psalms:
-            block = blocks.get(
-                psalm.number
-            )
+            block = blocks.get(psalm.number)
 
             if block is None:
-                errors.append(
-                    f"Псалом "
-                    f"{psalm.number}: "
-                    f"отсутствует в PDF."
-                )
+                errors.append(f"Псалом " f"{psalm.number}: " f"отсутствует в PDF.")
 
                 continue
 
-            verses = list(
-                psalm.verses
-                .all()
-                .order_by(
-                    "number"
-                )
-            )
+            verses = list(psalm.verses.all().order_by("number"))
 
-            expected_numbers = [
-                verse.number
-                for verse in verses
-            ]
+            expected_numbers = [verse.number for verse in verses]
 
-            candidates = (
-                build_candidates(
-                    block
-                )
-            )
+            candidates = build_candidates(block)
 
-            russian_run = (
-                choose_russian_run(
-                    candidates,
-                    expected_numbers,
-                    psalm.number,
-                )
+            russian_run = choose_russian_run(
+                candidates,
+                expected_numbers,
+                psalm.number,
             )
 
             if russian_run is None:
                 errors.append(
-                    f"Псалом "
-                    f"{psalm.number}: "
-                    f"не удалось определить "
-                    f"русский блок стихов."
+                    f"Псалом " f"{psalm.number}: " f"не удалось определить " f"русский блок стихов."
                 )
 
                 continue
@@ -970,35 +793,24 @@ class Command(BaseCommand):
             # ЗАГОЛОВОК
             # =============================================
 
-            title_russian = (
-                extract_title_russian(
-                    block,
-                    psalm,
-                    candidates,
-                )
+            title_russian = extract_title_russian(
+                block,
+                psalm,
+                candidates,
             )
 
-            title_error = (
-                validate_title(
-                    psalm.number,
-                    title_russian,
-                )
+            title_error = validate_title(
+                psalm.number,
+                title_russian,
             )
 
             if title_error:
-                errors.append(
-                    title_error
-                )
+                errors.append(title_error)
 
                 continue
 
             if show_titles:
-                self.stdout.write(
-                    self.style.WARNING(
-                        f"{psalm.number}: "
-                        f"{title_russian}"
-                    )
-                )
+                self.stdout.write(self.style.WARNING(f"{psalm.number}: " f"{title_russian}"))
 
             # =============================================
             # СТИХИ
@@ -1009,8 +821,8 @@ class Command(BaseCommand):
             valid = True
 
             for expected, item in zip(
-                    expected_numbers,
-                    russian_run["items"],
+                expected_numbers,
+                russian_run["items"],
             ):
                 if item["number"] != expected:
                     errors.append(
@@ -1025,9 +837,7 @@ class Command(BaseCommand):
                     valid = False
                     break
 
-                russian_text = clean_piece(
-                    item["text"]
-                )
+                russian_text = clean_piece(item["text"])
 
                 if not russian_text:
                     errors.append(
@@ -1041,9 +851,7 @@ class Command(BaseCommand):
                     valid = False
                     break
 
-                if not contains_cyrillic(
-                        russian_text
-                ):
+                if not contains_cyrillic(russian_text):
                     errors.append(
                         f"Псалом "
                         f"{psalm.number}, "
@@ -1055,36 +863,29 @@ class Command(BaseCommand):
                     valid = False
                     break
 
-                russian_verses.append({
-                    "number": expected,
-                    "russian": russian_text,
-                })
+                russian_verses.append(
+                    {
+                        "number": expected,
+                        "russian": russian_text,
+                    }
+                )
 
             if not valid:
                 continue
 
-            result[
-                "psalms"
-            ].append({
-                "number":
-                    psalm.number,
-                "title_russian":
-                    title_russian,
-                "verses":
-                    russian_verses,
-            })
-
-            total_verses += len(
-                russian_verses
+            result["psalms"].append(
+                {
+                    "number": psalm.number,
+                    "title_russian": title_russian,
+                    "verses": russian_verses,
+                }
             )
+
+            total_verses += len(russian_verses)
 
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"Псалом "
-                    f"{psalm.number}: "
-                    f"OK | "
-                    f"стихов "
-                    f"{len(russian_verses)}"
+                    f"Псалом " f"{psalm.number}: " f"OK | " f"стихов " f"{len(russian_verses)}"
                 )
             )
 
@@ -1095,44 +896,21 @@ class Command(BaseCommand):
         if errors:
             self.stdout.write("")
 
-            self.stdout.write(
-                self.style.ERROR(
-                    "Найдены ошибки:"
-                )
-            )
+            self.stdout.write(self.style.ERROR("Найдены ошибки:"))
 
             for error in errors:
-                self.stdout.write(
-                    self.style.ERROR(
-                        error
-                    )
-                )
+                self.stdout.write(self.style.ERROR(error))
 
             self.stdout.write("")
 
-            raise CommandError(
-                "Импорт отменён. "
-                "База данных не изменена."
-            )
+            raise CommandError("Импорт отменён. " "База данных не изменена.")
 
-        if len(
-                result["psalms"]
-        ) != 150:
-            raise CommandError(
-                f"Получено псалмов: "
-                f"{len(result['psalms'])}, "
-                f"ожидалось 150."
-            )
+        if len(result["psalms"]) != 150:
+            raise CommandError(f"Получено псалмов: " f"{len(result['psalms'])}, " f"ожидалось 150.")
 
-        expected_db_verses = sum(
-            psalm.verses.count()
-            for psalm in psalms
-        )
+        expected_db_verses = sum(psalm.verses.count() for psalm in psalms)
 
-        if (
-                total_verses
-                != expected_db_verses
-        ):
+        if total_verses != expected_db_verses:
             raise CommandError(
                 f"Количество стихов "
                 f"не совпало. "
@@ -1162,39 +940,16 @@ class Command(BaseCommand):
 
         self.stdout.write("")
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                "ПРОВЕРКА ПРОЙДЕНА."
-            )
-        )
+        self.stdout.write(self.style.SUCCESS("ПРОВЕРКА ПРОЙДЕНА."))
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                "Псалмов: 150"
-            )
-        )
+        self.stdout.write(self.style.SUCCESS("Псалмов: 150"))
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Стихов: "
-                f"{total_verses}"
-            )
-        )
+        self.stdout.write(self.style.SUCCESS(f"Стихов: " f"{total_verses}"))
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"JSON: "
-                f"{json_output}"
-            )
-        )
+        self.stdout.write(self.style.SUCCESS(f"JSON: " f"{json_output}"))
 
         if check_only:
-            self.stdout.write(
-                self.style.WARNING(
-                    "Режим --check-only: "
-                    "БД не изменена."
-                )
-            )
+            self.stdout.write(self.style.WARNING("Режим --check-only: " "БД не изменена."))
 
             return
 
@@ -1205,43 +960,24 @@ class Command(BaseCommand):
         self.stdout.write("")
 
         if titles_only:
-            self.stdout.write(
-                "Исправляю только "
-                "русские заголовки..."
-            )
+            self.stdout.write("Исправляю только " "русские заголовки...")
         else:
-            self.stdout.write(
-                "Записываю русский "
-                "перевод в БД..."
-            )
+            self.stdout.write("Записываю русский " "перевод в БД...")
 
-        psalm_by_number = {
-            psalm.number: psalm
-            for psalm in psalms
-        }
+        psalm_by_number = {psalm.number: psalm for psalm in psalms}
 
         with transaction.atomic():
             updated_psalms = 0
             updated_verses = 0
 
-            for psalm_data in result[
-                "psalms"
-            ]:
-                psalm = psalm_by_number[
-                    psalm_data[
-                        "number"
-                    ]
-                ]
+            for psalm_data in result["psalms"]:
+                psalm = psalm_by_number[psalm_data["number"]]
 
                 # -----------------------------------------
                 # Заголовок
                 # -----------------------------------------
 
-                psalm.title_russian = (
-                    psalm_data[
-                        "title_russian"
-                    ]
-                )
+                psalm.title_russian = psalm_data["title_russian"]
 
                 psalm.save(
                     update_fields=[
@@ -1259,30 +995,12 @@ class Command(BaseCommand):
                 if titles_only:
                     continue
 
-                verse_by_number = {
-                    verse.number: verse
-                    for verse
-                    in psalm.verses.all()
-                }
+                verse_by_number = {verse.number: verse for verse in psalm.verses.all()}
 
-                for verse_data in (
-                        psalm_data[
-                            "verses"
-                        ]
-                ):
-                    verse = (
-                        verse_by_number[
-                            verse_data[
-                                "number"
-                            ]
-                        ]
-                    )
+                for verse_data in psalm_data["verses"]:
+                    verse = verse_by_number[verse_data["number"]]
 
-                    verse.russian = (
-                        verse_data[
-                            "russian"
-                        ]
-                    )
+                    verse.russian = verse_data["russian"]
 
                     verse.save(
                         update_fields=[
@@ -1295,38 +1013,13 @@ class Command(BaseCommand):
         self.stdout.write("")
 
         if titles_only:
-            self.stdout.write(
-                self.style.SUCCESS(
-                    "РУССКИЕ ЗАГОЛОВКИ "
-                    "УСПЕШНО ИСПРАВЛЕНЫ."
-                )
-            )
+            self.stdout.write(self.style.SUCCESS("РУССКИЕ ЗАГОЛОВКИ " "УСПЕШНО ИСПРАВЛЕНЫ."))
 
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"Заголовков: "
-                    f"{updated_psalms}"
-                )
-            )
+            self.stdout.write(self.style.SUCCESS(f"Заголовков: " f"{updated_psalms}"))
 
         else:
-            self.stdout.write(
-                self.style.SUCCESS(
-                    "РУССКИЙ ПЕРЕВОД "
-                    "УСПЕШНО ИМПОРТИРОВАН."
-                )
-            )
+            self.stdout.write(self.style.SUCCESS("РУССКИЙ ПЕРЕВОД " "УСПЕШНО ИМПОРТИРОВАН."))
 
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"Псалмов: "
-                    f"{updated_psalms}"
-                )
-            )
+            self.stdout.write(self.style.SUCCESS(f"Псалмов: " f"{updated_psalms}"))
 
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"Стихов: "
-                    f"{updated_verses}"
-                )
-            )
+            self.stdout.write(self.style.SUCCESS(f"Стихов: " f"{updated_verses}"))

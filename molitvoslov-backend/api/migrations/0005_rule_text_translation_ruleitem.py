@@ -7,42 +7,68 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0004_text_description_position'),
+        ("api", "0004_text_description_position"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Rule',
+            name="Rule",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=255, verbose_name='Название')),
-                ('slug', models.SlugField(unique=True, verbose_name='URL-идентификатор')),
-                ('description', models.TextField(blank=True, verbose_name='Описание')),
-                ('is_visible', models.BooleanField(default=True, verbose_name='Отображать')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("name", models.CharField(max_length=255, verbose_name="Название")),
+                ("slug", models.SlugField(unique=True, verbose_name="URL-идентификатор")),
+                ("description", models.TextField(blank=True, verbose_name="Описание")),
+                ("is_visible", models.BooleanField(default=True, verbose_name="Отображать")),
             ],
             options={
-                'verbose_name': 'Правило',
-                'verbose_name_plural': 'Правила',
+                "verbose_name": "Правило",
+                "verbose_name_plural": "Правила",
             },
         ),
         migrations.AddField(
-            model_name='text',
-            name='translation',
-            field=models.TextField(blank=True, verbose_name='Русский перевод'),
+            model_name="text",
+            name="translation",
+            field=models.TextField(blank=True, verbose_name="Русский перевод"),
         ),
         migrations.CreateModel(
-            name='RuleItem',
+            name="RuleItem",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('order', models.PositiveIntegerField(default=0, verbose_name='Порядок')),
-                ('note', models.TextField(blank=True, verbose_name='Примечание')),
-                ('rule', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='items', to='api.rule', verbose_name='Правило')),
-                ('text', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='rule_items', to='api.text', verbose_name='Текст')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("order", models.PositiveIntegerField(default=0, verbose_name="Порядок")),
+                ("note", models.TextField(blank=True, verbose_name="Примечание")),
+                (
+                    "rule",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="items",
+                        to="api.rule",
+                        verbose_name="Правило",
+                    ),
+                ),
+                (
+                    "text",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="rule_items",
+                        to="api.text",
+                        verbose_name="Текст",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Элемент правила',
-                'verbose_name_plural': 'Элементы правила',
-                'ordering': ['order'],
+                "verbose_name": "Элемент правила",
+                "verbose_name_plural": "Элементы правила",
+                "ordering": ["order"],
             },
         ),
     ]
