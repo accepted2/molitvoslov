@@ -6,12 +6,14 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0005_rule_text_translation_ruleitem'),
+        ("api", "0005_rule_text_translation_ruleitem"),
     ]
 
     operations = [
         migrations.AddConstraint(
-            model_name='ruleitem',
-            constraint=models.UniqueConstraint(fields=('rule', 'order'), name='unique_order_per_rule'),
+            model_name="ruleitem",
+            constraint=models.UniqueConstraint(
+                fields=("rule", "order"), name="unique_order_per_rule"
+            ),
         ),
     ]

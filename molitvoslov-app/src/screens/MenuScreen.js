@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import {getWidgetInfo, requestPinWidget, requestWidgetUpdate,} from 'react-native-android-widget';
+import {getWidgetInfo, requestPinWidget, requestWidgetUpdate} from 'react-native-android-widget';
 
 import {getDailyQuote} from '../services/dailyQuote';
 import {QuoteOfDayWidget} from '../widgets/QuoteOfDayWidget';
@@ -34,14 +34,11 @@ const CATEGORY_ICONS = {
   canons: 'canons',
   communion: 'communion',
   psalter: 'psalter',
-  bible:'bible',
+  bible: 'bible',
 };
 
 const resolveCategoryIcon = (...values) => {
-  const value = values
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
+  const value = values.filter(Boolean).join(' ').toLowerCase();
 
   if (value.includes('utren') || value.includes('утрен')) {
     return CATEGORY_ICONS.morning;
@@ -56,38 +53,22 @@ const resolveCategoryIcon = (...values) => {
     return CATEGORY_ICONS.evening;
   }
 
-  if (
-    value.includes('akath') ||
-    value.includes('akaf') ||
-    value.includes('акаф')
-  ) {
+  if (value.includes('akath') || value.includes('akaf') || value.includes('акаф')) {
     return CATEGORY_ICONS.akathists;
   }
 
-  if (
-    value.includes('canon') ||
-    value.includes('kanon') ||
-    value.includes('канон')
-  ) {
+  if (value.includes('canon') || value.includes('kanon') || value.includes('канон')) {
     return CATEGORY_ICONS.canons;
   }
 
-  if (
-    value.includes('communion') ||
-    value.includes('prichast') ||
-    value.includes('причащ')
-  ) {
+  if (value.includes('communion') || value.includes('prichast') || value.includes('причащ')) {
     return CATEGORY_ICONS.communion;
   }
 
   if (value.includes('psalt') || value.includes('псалт')) {
     return CATEGORY_ICONS.psalter;
   }
-  if (
-    value.includes('bible') ||
-    value.includes('bibli') ||
-    value.includes('библи')
-  ) {
+  if (value.includes('bible') || value.includes('bibli') || value.includes('библи')) {
     return CATEGORY_ICONS.bible;
   }
 
@@ -243,36 +224,22 @@ export const MenuScreen = ({navigation}) => {
       setCanons(canonsResponse.data);
       setPrayerRules(prayerRulesResponse.data);
 
-      const quote =
-        quoteResponse.data;
+      const quote = quoteResponse.data;
 
-      setDailyQuote(
-        quote
-      );
+      setDailyQuote(quote);
 
       if (quote?.id) {
-        const savedQuotes =
-          await getSavedItems({
-            source_type:
-              'daily_quote',
-            source_id:
-              quote.id,
-            anchor_type:
-              'daily_quote',
-            anchor_id:
-              quote.id,
-            save_type:
-              'quote',
-          });
+        const savedQuotes = await getSavedItems({
+          source_type: 'daily_quote',
+          source_id: quote.id,
+          anchor_type: 'daily_quote',
+          anchor_id: quote.id,
+          save_type: 'quote',
+        });
 
-        setSavedDailyQuote(
-          savedQuotes[0] ||
-          null
-        );
+        setSavedDailyQuote(savedQuotes[0] || null);
       } else {
-        setSavedDailyQuote(
-          null
-        );
+        setSavedDailyQuote(null);
       }
 
       setError(null);
@@ -298,12 +265,8 @@ export const MenuScreen = ({navigation}) => {
       await requestWidgetUpdate({
         widgetName: 'QuoteOfDay',
 
-        renderWidget: widgetInfo => (
-          <QuoteOfDayWidget
-            quote={quote}
-            width={widgetInfo.width}
-            height={widgetInfo.height}
-          />
+        renderWidget: (widgetInfo) => (
+          <QuoteOfDayWidget quote={quote} width={widgetInfo.width} height={widgetInfo.height} />
         ),
       });
     } catch (err) {
@@ -316,10 +279,7 @@ export const MenuScreen = ({navigation}) => {
       try {
         setLoading(true);
 
-        await Promise.all([
-          loadLibrary(),
-          loadProgress(),
-        ]);
+        await Promise.all([loadLibrary(), loadProgress()]);
 
         await updateQuoteWidget();
       } finally {
@@ -328,11 +288,7 @@ export const MenuScreen = ({navigation}) => {
     };
 
     load();
-  }, [
-    loadLibrary,
-    loadProgress,
-    updateQuoteWidget,
-  ]);
+  }, [loadLibrary, loadProgress, updateQuoteWidget]);
 
   useFocusEffect(
     useCallback(() => {
@@ -340,61 +296,37 @@ export const MenuScreen = ({navigation}) => {
 
       if (dailyQuote?.id) {
         getSavedItems({
-          source_type:
-            'daily_quote',
-          source_id:
-            dailyQuote.id,
-          anchor_type:
-            'daily_quote',
-          anchor_id:
-            dailyQuote.id,
-          save_type:
-            'quote',
+          source_type: 'daily_quote',
+          source_id: dailyQuote.id,
+          anchor_type: 'daily_quote',
+          anchor_id: dailyQuote.id,
+          save_type: 'quote',
         })
-          .then(
-            saved =>
-              setSavedDailyQuote(
-                saved[0] ||
-                null
-              )
-          )
-          .catch(
-            err =>
-              console.log(
-                'Ошибка загрузки сохранённой цитаты:',
-                err
-              )
-          );
+          .then((saved) => setSavedDailyQuote(saved[0] || null))
+          .catch((err) => console.log('Ошибка загрузки сохранённой цитаты:', err));
       }
-    }, [
-      loadProgress,
-      dailyQuote?.id,
-    ])
+    }, [loadProgress, dailyQuote?.id])
   );
 
   const rootCategories = useMemo(
-    () => categories.filter(category => !category.parent),
+    () => categories.filter((category) => !category.parent),
     [categories]
   );
 
   const libraryCategories = useMemo(
     () =>
       rootCategories.filter(
-        category =>
-          ![
-            'utrennie-molitvy',
-            'molitvy-na-son-griadushchim',
-            'psaltir',
-            'akafisty',
-          ].includes(category.slug)
+        (category) =>
+          !['utrennie-molitvy', 'molitvy-na-son-griadushchim', 'psaltir', 'akafisty'].includes(
+            category.slug
+          )
       ),
     [rootCategories]
   );
 
-  const getSubcategories = category =>
-    categories.filter(item => item.parent === category.id);
+  const getSubcategories = (category) => categories.filter((item) => item.parent === category.id);
 
-  const openCategory = category => {
+  const openCategory = (category) => {
     if (category.slug === 'psaltir') {
       navigation.navigate('Psalter');
       return;
@@ -412,7 +344,7 @@ export const MenuScreen = ({navigation}) => {
     });
   };
 
-  const makeReadingItem = progress => {
+  const makeReadingItem = (progress) => {
     if (progress.source_type === 'bible') {
       const info = progress.anchor_info || {};
       const book = bibleContent.getBook(progress.source_id);
@@ -420,18 +352,13 @@ export const MenuScreen = ({navigation}) => {
       if (!book) return null;
 
       const chapterNumber = Number(info.chapter_number || 1);
-      const verseNumber = info.verse_number
-        ? Number(info.verse_number)
-        : null;
+      const verseNumber = info.verse_number ? Number(info.verse_number) : null;
 
       return {
         id: progress.id,
         type: 'Библия',
         symbol: '☷',
-        title:
-          bibleContent.getDisplayName(
-            book
-          ),
+        title: bibleContent.getDisplayName(book),
         position: verseNumber
           ? 'Глава ' + chapterNumber + ' · стих ' + verseNumber
           : 'Глава ' + chapterNumber,
@@ -463,11 +390,11 @@ export const MenuScreen = ({navigation}) => {
     }
 
     if (progress.source_type === 'akathist') {
-      const akathist = akathists.find(item => Number(item.id) === Number(progress.source_id));
+      const akathist = akathists.find((item) => Number(item.id) === Number(progress.source_id));
       if (!akathist) return null;
 
       const section = akathist.sections?.find(
-        item => Number(item.id) === Number(progress.anchor_id)
+        (item) => Number(item.id) === Number(progress.anchor_id)
       );
       let position = 'Продолжить акафист';
 
@@ -495,7 +422,7 @@ export const MenuScreen = ({navigation}) => {
     }
 
     if (progress.source_type === 'canon') {
-      const canon = canons.find(item => Number(item.id) === Number(progress.source_id));
+      const canon = canons.find((item) => Number(item.id) === Number(progress.source_id));
       if (!canon) return null;
 
       const info = progress.anchor_info;
@@ -529,23 +456,17 @@ export const MenuScreen = ({navigation}) => {
     }
 
     if (progress.source_type === 'prayer_rule') {
-      const rule = prayerRules.find(item => Number(item.id) === Number(progress.source_id));
+      const rule = prayerRules.find((item) => Number(item.id) === Number(progress.source_id));
       if (!rule) return null;
 
-      const ruleItem = rule.items?.find(
-        item => Number(item.id) === Number(progress.anchor_id)
-      );
+      const ruleItem = rule.items?.find((item) => Number(item.id) === Number(progress.anchor_id));
       const position = ruleItem?.text?.title || ruleItem?.title || 'Продолжить правило';
 
       return {
         id: progress.id,
         type: 'Молитвенное правило',
         symbol: '✦',
-        iconSource:
-          resolveCategoryIcon(
-            rule.slug,
-            rule.name
-          ) || CATEGORY_ICONS.canons,
+        iconSource: resolveCategoryIcon(rule.slug, rule.name) || CATEGORY_ICONS.canons,
         title: rule.name,
         position,
         onPress: () => navigation.navigate('PrayerRule', {slug: rule.slug}),
@@ -553,18 +474,14 @@ export const MenuScreen = ({navigation}) => {
     }
 
     if (progress.source_type === 'category') {
-      const category = categories.find(item => Number(item.id) === Number(progress.source_id));
+      const category = categories.find((item) => Number(item.id) === Number(progress.source_id));
       if (!category) return null;
 
       return {
         id: progress.id,
         type: 'Молитвы',
         symbol: '†',
-        iconSource:
-          resolveCategoryIcon(
-            category.slug,
-            category.name
-          ) || CATEGORY_ICONS.canons,
+        iconSource: resolveCategoryIcon(category.slug, category.name) || CATEGORY_ICONS.canons,
         title: category.name,
         position: 'Продолжить с сохранённого места',
         onPress: () =>
@@ -582,7 +499,7 @@ export const MenuScreen = ({navigation}) => {
   const activeReadings = useMemo(
     () =>
       readingProgress
-        .map(progress => {
+        .map((progress) => {
           const item = makeReadingItem(progress);
           if (!item) return null;
 
@@ -592,10 +509,10 @@ export const MenuScreen = ({navigation}) => {
     [readingProgress, categories, akathists, canons, prayerRules]
   );
 
-  const finishReading = async progressId => {
+  const finishReading = async (progressId) => {
     try {
       await deleteReadingProgress(progressId);
-      setReadingProgress(current => current.filter(item => item.id !== progressId));
+      setReadingProgress((current) => current.filter((item) => item.id !== progressId));
     } catch (err) {
       console.log('Ошибка завершения чтения:', err);
     }
@@ -603,96 +520,52 @@ export const MenuScreen = ({navigation}) => {
 
   const latestReading = activeReadings[0] || null;
 
-  const toggleDailyQuoteSaved =
-    async () => {
-      if (
-        !dailyQuote?.id ||
-        !dailyQuote?.text
-      ) {
+  const toggleDailyQuoteSaved = async () => {
+    if (!dailyQuote?.id || !dailyQuote?.text) {
+      return;
+    }
+
+    try {
+      if (savedDailyQuote) {
+        await deleteSavedItem(savedDailyQuote.id);
+
+        setSavedDailyQuote(null);
+
         return;
       }
 
-      try {
-        if (savedDailyQuote) {
-          await deleteSavedItem(
-            savedDailyQuote.id
-          );
+      const saved = await saveItem({
+        save_type: 'quote',
+        source_type: 'daily_quote',
+        source_id: Number(dailyQuote.id),
+        anchor_type: 'daily_quote',
+        anchor_id: Number(dailyQuote.id),
+        source_title: 'Цитата дня',
+        item_title: dailyQuote.reference || dailyQuote.source || 'Цитата дня',
+        text: dailyQuote.text,
+        start_offset: 0,
+        end_offset: dailyQuote.text.length,
+        metadata: {
+          source: dailyQuote.source || '',
+          reference: dailyQuote.reference || '',
+          quote_date: dailyQuote.quote_date || dailyQuote.date || '',
+        },
+      });
 
-          setSavedDailyQuote(
-            null
-          );
+      setSavedDailyQuote(saved);
+    } catch (err) {
+      console.log('Ошибка сохранения цитаты:', err);
 
-          return;
-        }
-
-        const saved =
-          await saveItem({
-            save_type:
-              'quote',
-            source_type:
-              'daily_quote',
-            source_id:
-              Number(
-                dailyQuote.id
-              ),
-            anchor_type:
-              'daily_quote',
-            anchor_id:
-              Number(
-                dailyQuote.id
-              ),
-            source_title:
-              'Цитата дня',
-            item_title:
-              dailyQuote.reference ||
-              dailyQuote.source ||
-              'Цитата дня',
-            text:
-              dailyQuote.text,
-            start_offset:
-              0,
-            end_offset:
-              dailyQuote.text.length,
-            metadata: {
-              source:
-                dailyQuote.source ||
-                '',
-              reference:
-                dailyQuote.reference ||
-                '',
-              quote_date:
-                dailyQuote.quote_date ||
-                dailyQuote.date ||
-                '',
-            },
-          });
-
-        setSavedDailyQuote(
-          saved
-        );
-      } catch (err) {
-        console.log(
-          'Ошибка сохранения цитаты:',
-          err
-        );
-
-        Alert.alert(
-          'Не удалось сохранить цитату',
-          err.message ||
-          'Попробуйте ещё раз.'
-        );
-      }
-    };
+      Alert.alert('Не удалось сохранить цитату', err.message || 'Попробуйте ещё раз.');
+    }
+  };
 
   const showWidgetInfo = async () => {
     try {
       const widgets = await getWidgetInfo('QuoteOfDay');
 
       if (widgets.length > 0) {
-        Alert.alert(
-          'Виджет уже добавлен',
-          'На главном экране уже установлен виджет «Цитата дня».'
-        );
+        Alert.alert('Виджет уже добавлен', 'На главном экране уже установлен виджет «Цитата дня».');
         return;
       }
 
@@ -704,7 +577,7 @@ export const MenuScreen = ({navigation}) => {
         Alert.alert(
           'Добавление виджета',
           'Зажмите свободное место на главном экране телефона, ' +
-          'откройте «Виджеты» → «Молитвослов» → «Цитата дня».'
+            'откройте «Виджеты» → «Молитвослов» → «Цитата дня».'
         );
       }
     } catch (err) {
@@ -720,11 +593,7 @@ export const MenuScreen = ({navigation}) => {
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
-        <StatusBar
-          style="light"
-          translucent
-          backgroundColor="transparent"
-        />
+        <StatusBar style="light" translucent backgroundColor="transparent" />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.accent} />
           <Text style={styles.loadingText}>Загрузка молитвослова...</Text>
@@ -735,9 +604,7 @@ export const MenuScreen = ({navigation}) => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
-      <StatusBar  style="light"
-                  translucent
-                  backgroundColor="transparent"/>
+      <StatusBar style="light" translucent backgroundColor="transparent" />
 
       <View style={styles.screen}>
         <ImageBackground
@@ -746,337 +613,308 @@ export const MenuScreen = ({navigation}) => {
           imageStyle={styles.pageBackgroundImage}
           resizeMode="cover"
         >
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={[
-            styles.content,
-            {
-              // paddingTop: headerHeight + 20,
-              paddingBottom: 80 + insets.bottom,
-            }
-          ]}
-        >
-          <ImageBackground
-            source={homeArtwork.hero_biblical}
-            resizeMode="cover"
-            style={styles.hero}
-            imageStyle={styles.heroImage}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.content,
+              {
+                // paddingTop: headerHeight + 20,
+                paddingBottom: 80 + insets.bottom,
+              },
+            ]}
           >
-            {/*<View style={styles.heroWash} />*/}
+            <ImageBackground
+              source={homeArtwork.hero_biblical}
+              resizeMode="cover"
+              style={styles.hero}
+              imageStyle={styles.heroImage}
+            >
+              {/*<View style={styles.heroWash} />*/}
 
-            <LinearGradient
-              pointerEvents="none"
-              colors={[
-                'rgba(45, 27, 16, 0.42)',
-                'rgba(45, 27, 16, 0.16)',
-                'rgba(45, 27, 16, 0)',
-              ]}
-              locations={[0, 0.55, 1]}
-              style={styles.heroTopGradient}
-            />
-            <LinearGradient
-              pointerEvents="none"
-              colors={[
-                'rgba(183, 138, 88, 0)',
-                'rgba(183, 138, 88, 0.08)',
-                'rgba(183, 138, 88, 0.22)',
-                'rgba(183, 138, 88, 0.5)',
-                'rgba(183, 138, 88, 0.82)',
-              ]}
-              locations={[0, 0.32, 0.56, 0.78, 1]}
-              style={styles.heroBottomGradient}
-            />
-
-            <View style={styles.heroOrnament}>
-              <Text style={styles.heroCross}>☦</Text>
-              <Text style={styles.heroFlourish}>─── ✦ ───</Text>
-            </View>
-            <Text style={styles.brandTitle}>Молитвослов</Text>
-            <Text style={styles.today}>{formatToday()}</Text>
-            <Text style={styles.heroDivider}>─────  ✥  ─────</Text>
-          </ImageBackground>
-
-          <View style={styles.pageBody}>
-            <View style={styles.quoteCard}>
-              <ImageBackground
-                source={homeArtwork.quote}
-                resizeMode="cover"
-                style={styles.quoteArtwork}
-                imageStyle={styles.quoteArtworkImage}
+              <LinearGradient
+                pointerEvents="none"
+                colors={['rgba(45, 27, 16, 0.42)', 'rgba(45, 27, 16, 0.16)', 'rgba(45, 27, 16, 0)']}
+                locations={[0, 0.55, 1]}
+                style={styles.heroTopGradient}
               />
-              {/*<View pointerEvents="none" style={styles.quoteFade1} />*/}
-              {/*<View pointerEvents="none" style={styles.quoteFade2} />*/}
-              {/*<View pointerEvents="none" style={styles.quoteFade3} />*/}
+              <LinearGradient
+                pointerEvents="none"
+                colors={[
+                  'rgba(183, 138, 88, 0)',
+                  'rgba(183, 138, 88, 0.08)',
+                  'rgba(183, 138, 88, 0.22)',
+                  'rgba(183, 138, 88, 0.5)',
+                  'rgba(183, 138, 88, 0.82)',
+                ]}
+                locations={[0, 0.32, 0.56, 0.78, 1]}
+                style={styles.heroBottomGradient}
+              />
 
-              <View style={styles.quoteContent}>
-                <View style={styles.quoteHeader}>
-                  <View style={styles.quoteHeadingWrap}>
-                    <Text style={styles.quoteFeather}>🪶</Text>
-                    <Text style={styles.quoteLabel}>Цитата дня</Text>
-                  </View>
+              <View style={styles.heroOrnament}>
+                <Text style={styles.heroCross}>☦</Text>
+                <Text style={styles.heroFlourish}>─── ✦ ───</Text>
+              </View>
+              <Text style={styles.brandTitle}>Молитвослов</Text>
+              <Text style={styles.today}>{formatToday()}</Text>
+              <Text style={styles.heroDivider}>───── ✥ ─────</Text>
+            </ImageBackground>
 
-                  <View
-                    style={
-                      styles.quoteActions
-                    }
-                  >
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={
-                        savedDailyQuote
-                          ? 'Убрать цитату из избранного'
-                          : 'Добавить цитату в избранное'
-                      }
-                      hitSlop={8}
-                      onPress={
-                        toggleDailyQuoteSaved
-                      }
-                      style={({pressed}) => [
-                        styles.quoteSaveButton,
-                        savedDailyQuote &&
-                          styles.quoteSaveButtonActive,
-                        pressed &&
-                          styles.pressed,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.quoteSaveIcon,
-                          savedDailyQuote &&
-                            styles.quoteSaveIconActive,
+            <View style={styles.pageBody}>
+              <View style={styles.quoteCard}>
+                <ImageBackground
+                  source={homeArtwork.quote}
+                  resizeMode="cover"
+                  style={styles.quoteArtwork}
+                  imageStyle={styles.quoteArtworkImage}
+                />
+                {/*<View pointerEvents="none" style={styles.quoteFade1} />*/}
+                {/*<View pointerEvents="none" style={styles.quoteFade2} />*/}
+                {/*<View pointerEvents="none" style={styles.quoteFade3} />*/}
+
+                <View style={styles.quoteContent}>
+                  <View style={styles.quoteHeader}>
+                    <View style={styles.quoteHeadingWrap}>
+                      <Text style={styles.quoteFeather}>🪶</Text>
+                      <Text style={styles.quoteLabel}>Цитата дня</Text>
+                    </View>
+
+                    <View style={styles.quoteActions}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={
+                          savedDailyQuote
+                            ? 'Убрать цитату из избранного'
+                            : 'Добавить цитату в избранное'
+                        }
+                        hitSlop={8}
+                        onPress={toggleDailyQuoteSaved}
+                        style={({pressed}) => [
+                          styles.quoteSaveButton,
+                          savedDailyQuote && styles.quoteSaveButtonActive,
+                          pressed && styles.pressed,
                         ]}
                       >
-                        {
-                          savedDailyQuote
-                            ? '♥'
-                            : '♡'
-                        }
-                      </Text>
-                    </Pressable>
+                        <Text
+                          style={[
+                            styles.quoteSaveIcon,
+                            savedDailyQuote && styles.quoteSaveIconActive,
+                          ]}
+                        >
+                          {savedDailyQuote ? '♥' : '♡'}
+                        </Text>
+                      </Pressable>
 
-                    <Pressable
-                      hitSlop={8}
-                      onPress={showWidgetInfo}
-                      style={({pressed}) => [styles.widgetButton, pressed && styles.pressed]}
-                    >
-                      <Text style={styles.widgetPhone}>📱</Text>
-                      <Text style={styles.widgetText}>На экран</Text>
-                    </Pressable>
+                      <Pressable
+                        hitSlop={8}
+                        onPress={showWidgetInfo}
+                        style={({pressed}) => [styles.widgetButton, pressed && styles.pressed]}
+                      >
+                        <Text style={styles.widgetPhone}>📱</Text>
+                        <Text style={styles.widgetText}>На экран</Text>
+                      </Pressable>
+                    </View>
                   </View>
-                </View>
 
-                <View style={styles.quoteRule}>
-                  <View style={styles.quoteRuleLine} />
-                  <Text style={styles.quoteRuleMark}>✦</Text>
-                  <View style={styles.quoteRuleLine} />
-                </View>
+                  <View style={styles.quoteRule}>
+                    <View style={styles.quoteRuleLine} />
+                    <Text style={styles.quoteRuleMark}>✦</Text>
+                    <View style={styles.quoteRuleLine} />
+                  </View>
 
-                <Text style={styles.quoteText}>
-                  {dailyQuote?.text ||
-                    'Молитва и духовное чтение помогают хранить внимание сердца.'}
-                </Text>
-
-                {!!(dailyQuote?.reference || dailyQuote?.source) && (
-                  <Text style={styles.quoteSource}>
-                    {dailyQuote?.reference || dailyQuote?.source}
+                  <Text style={styles.quoteText}>
+                    {dailyQuote?.text ||
+                      'Молитва и духовное чтение помогают хранить внимание сердца.'}
                   </Text>
-                )}
+
+                  {!!(dailyQuote?.reference || dailyQuote?.source) && (
+                    <Text style={styles.quoteSource}>
+                      {dailyQuote?.reference || dailyQuote?.source}
+                    </Text>
+                  )}
+                </View>
               </View>
-            </View>
 
-            <View style={styles.readingCard}>
-              <View style={styles.readingHeader}>
-                <Pressable
-                  hitSlop={8}
-                  onPress={() =>
-                    navigation.navigate(
-                      'ContinueReading'
-                    )
-                  }
-                  style={({pressed}) => [
-                    styles.readingHeadingWrap,
-                    pressed &&
-                      styles.pressed,
-                  ]}
-                >
-                  <Text style={styles.readingBook}>▤</Text>
-                  <Text style={styles.readingSectionTitle}>Продолжить чтение</Text>
-                </Pressable>
-
-                {!!activeReadings.length && (
+              <View style={styles.readingCard}>
+                <View style={styles.readingHeader}>
                   <Pressable
                     hitSlop={8}
                     onPress={() => navigation.navigate('ContinueReading')}
-                    style={({pressed}) => [styles.openReadings, pressed && styles.pressed]}
+                    style={({pressed}) => [styles.readingHeadingWrap, pressed && styles.pressed]}
                   >
-                    <Text style={styles.openReadingsText}>Открыть</Text>
-                    <Text style={styles.openReadingsArrow}>›</Text>
+                    <Text style={styles.readingBook}>▤</Text>
+                    <Text style={styles.readingSectionTitle}>Продолжить чтение</Text>
                   </Pressable>
+
+                  {!!activeReadings.length && (
+                    <Pressable
+                      hitSlop={8}
+                      onPress={() => navigation.navigate('ContinueReading')}
+                      style={({pressed}) => [styles.openReadings, pressed && styles.pressed]}
+                    >
+                      <Text style={styles.openReadingsText}>Открыть</Text>
+                      <Text style={styles.openReadingsArrow}>›</Text>
+                    </Pressable>
+                  )}
+                </View>
+
+                {latestReading ? (
+                  <View style={styles.latestReading}>
+                    <Pressable
+                      onPress={latestReading.onPress}
+                      style={({pressed}) => [styles.latestReadingMain, pressed && styles.pressed]}
+                    >
+                      <View style={styles.readingCategoryIcon}>
+                        {latestReading.iconSource ? (
+                          <CategoryIcon type={latestReading.iconSource} />
+                        ) : (
+                          <Text style={styles.readingCategoryGlyph}>
+                            {latestReading.symbol || '✦'}
+                          </Text>
+                        )}
+                      </View>
+
+                      <View style={styles.latestReadingText}>
+                        <Text style={styles.latestReadingTitle} numberOfLines={2}>
+                          {latestReading.title}
+                        </Text>
+
+                        <View style={styles.latestProgressRow}>
+                          <View style={styles.latestProgressTrack}>
+                            <View
+                              style={[
+                                styles.latestProgressFill,
+                                {
+                                  width: `${Math.max(0, Math.min(latestReading.progress, 100))}%`,
+                                },
+                              ]}
+                            />
+                          </View>
+                          <Text style={styles.latestProgressPercent}>
+                            {latestReading.progress}%
+                          </Text>
+                        </View>
+
+                        <Text style={styles.latestReadingPosition} numberOfLines={2}>
+                          {latestReading.position}
+                        </Text>
+                      </View>
+                    </Pressable>
+
+                    <Pressable
+                      hitSlop={8}
+                      onPress={() => finishReading(latestReading.id)}
+                      style={({pressed}) => [styles.latestRemove, pressed && styles.pressed]}
+                    >
+                      <Text style={styles.latestRemoveText}>×</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <View style={styles.emptyReading}>
+                    <Text style={styles.emptyReadingTitle}>Здесь появится последнее чтение</Text>
+                    <Text style={styles.emptyReadingText}>
+                      Откройте молитву, акафист, канон, Псалтирь или Библию — место сохранится
+                      автоматически.
+                    </Text>
+                  </View>
                 )}
               </View>
 
-              {latestReading ? (
-                <View style={styles.latestReading}>
-                  <Pressable
-                    onPress={latestReading.onPress}
-                    style={({pressed}) => [
-                      styles.latestReadingMain,
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <View style={styles.readingCategoryIcon}>
-                      {latestReading.iconSource ? (
-                        <CategoryIcon type={latestReading.iconSource} />
-                      ) : (
-                        <Text style={styles.readingCategoryGlyph}>
-                          {latestReading.symbol || '✦'}
+              <View style={styles.libraryList}>
+                <DecorativeCard
+                  title="Утренние молитвы"
+                  subtitle="Начните день с Богом"
+                  symbol="☀"
+                  iconSource={CATEGORY_ICONS.morning}
+                  artwork={homeArtwork.morning}
+                  onPress={() => navigation.navigate('PrayerRule', {slug: 'molitvy-utrennie'})}
+                />
+                <DecorativeCard
+                  title="Вечерние молитвы"
+                  subtitle="Завершите день в молитве"
+                  symbol="☾"
+                  iconSource={CATEGORY_ICONS.evening}
+                  artwork={homeArtwork.evening}
+                  onPress={() =>
+                    navigation.navigate('PrayerRule', {slug: 'molitvy-na-son-griadushchim'})
+                  }
+                />
+                <DecorativeCard
+                  title="Акафисты"
+                  subtitle="Молитвенные хвалебные песнопения"
+                  symbol="☦"
+                  iconSource={CATEGORY_ICONS.akathists}
+                  artwork={homeArtwork.akathists}
+                  onPress={() => navigation.navigate('AkathistList')}
+                />
+                <DecorativeCard
+                  title="Каноны"
+                  subtitle="Покаянные и просительные каноны"
+                  symbol="▤"
+                  iconSource={CATEGORY_ICONS.canons}
+                  artwork={homeArtwork.canons}
+                  onPress={() => navigation.navigate('CanonList')}
+                />
+                <DecorativeCard
+                  title="Ко Святому Причащению"
+                  subtitle="Подготовительные молитвы"
+                  symbol="♱"
+                  iconSource={CATEGORY_ICONS.communion}
+                  artwork={homeArtwork.communion}
+                  onPress={() => navigation.navigate('CommunionPreparation')}
+                />
+                <DecorativeCard
+                  title="Псалтирь"
+                  subtitle="Книга молитвы и духовного утешения"
+                  symbol="¶"
+                  iconSource={CATEGORY_ICONS.psalter}
+                  artwork={homeArtwork.psalter}
+                  onPress={() => navigation.navigate('Psalter')}
+                />
+                <DecorativeCard
+                  title="Библия"
+                  subtitle="Ветхий и Новый Завет"
+                  iconSource={CATEGORY_ICONS.bible}
+                  artwork={homeArtwork.hero_biblical}
+                  onPress={() => navigation.navigate('Bible')}
+                />
+              </View>
+
+              {!!libraryCategories.length && (
+                <View style={styles.extraSection}>
+                  <View style={styles.extraHeader}>
+                    <Text style={styles.extraTitle}>Другие разделы</Text>
+                    <Text style={styles.extraOrnament}>✦</Text>
+                  </View>
+
+                  {libraryCategories.map((category) => (
+                    <Pressable
+                      key={category.id}
+                      onPress={() => openCategory(category)}
+                      style={({pressed}) => [styles.extraCard, pressed && styles.pressed]}
+                    >
+                      <View>
+                        <Text style={styles.extraCardTitle}>{category.name}</Text>
+                        <Text style={styles.extraCardSubtitle}>
+                          {getSubcategories(category).length > 0
+                            ? `${getSubcategories(category).length} разделов`
+                            : 'Открыть'}
                         </Text>
-                      )}
-                    </View>
-
-                    <View style={styles.latestReadingText}>
-                      <Text style={styles.latestReadingTitle} numberOfLines={2}>
-                        {latestReading.title}
-                      </Text>
-
-                      <View style={styles.latestProgressRow}>
-                        <View style={styles.latestProgressTrack}>
-                          <View
-                            style={[
-                              styles.latestProgressFill,
-                              {
-                                width: `${Math.max(
-                                  0,
-                                  Math.min(latestReading.progress, 100)
-                                )}%`,
-                              },
-                            ]}
-                          />
-                        </View>
-                        <Text style={styles.latestProgressPercent}>{latestReading.progress}%</Text>
                       </View>
-
-                      <Text style={styles.latestReadingPosition} numberOfLines={2}>
-                        {latestReading.position}
-                      </Text>
-                    </View>
-                  </Pressable>
-
-                  <Pressable
-                    hitSlop={8}
-                    onPress={() => finishReading(latestReading.id)}
-                    style={({pressed}) => [styles.latestRemove, pressed && styles.pressed]}
-                  >
-                    <Text style={styles.latestRemoveText}>×</Text>
-                  </Pressable>
+                      <Text style={styles.extraArrow}>›</Text>
+                    </Pressable>
+                  ))}
                 </View>
-              ) : (
-                <View style={styles.emptyReading}>
-                  <Text style={styles.emptyReadingTitle}>Здесь появится последнее чтение</Text>
-                  <Text style={styles.emptyReadingText}>
-                    Откройте молитву, акафист, канон, Псалтирь или Библию — место сохранится автоматически.
-                  </Text>
+              )}
+
+              {!!error && (
+                <View style={styles.errorCard}>
+                  <Text style={styles.errorText}>{error}</Text>
                 </View>
               )}
             </View>
-
-            <View style={styles.libraryList}>
-              <DecorativeCard
-                title="Утренние молитвы"
-                subtitle="Начните день с Богом"
-                symbol="☀"
-                iconSource={CATEGORY_ICONS.morning}
-                artwork={homeArtwork.morning}
-                onPress={() => navigation.navigate('PrayerRule', {slug: 'molitvy-utrennie'})}
-              />
-              <DecorativeCard
-                title="Вечерние молитвы"
-                subtitle="Завершите день в молитве"
-                symbol="☾"
-                iconSource={CATEGORY_ICONS.evening}
-                artwork={homeArtwork.evening}
-                onPress={() =>
-                  navigation.navigate('PrayerRule', {slug: 'molitvy-na-son-griadushchim'})
-                }
-              />
-              <DecorativeCard
-                title="Акафисты"
-                subtitle="Молитвенные хвалебные песнопения"
-                symbol="☦"
-                iconSource={CATEGORY_ICONS.akathists}
-                artwork={homeArtwork.akathists}
-                onPress={() => navigation.navigate('AkathistList')}
-              />
-              <DecorativeCard
-                title="Каноны"
-                subtitle="Покаянные и просительные каноны"
-                symbol="▤"
-                iconSource={CATEGORY_ICONS.canons}
-                artwork={homeArtwork.canons}
-                onPress={() => navigation.navigate('CanonList')}
-              />
-              <DecorativeCard
-                title="Ко Святому Причащению"
-                subtitle="Подготовительные молитвы"
-                symbol="♱"
-                iconSource={CATEGORY_ICONS.communion}
-                artwork={homeArtwork.communion}
-                onPress={() => navigation.navigate('CommunionPreparation')}
-              />
-              <DecorativeCard
-                title="Псалтирь"
-                subtitle="Книга молитвы и духовного утешения"
-                symbol="¶"
-                iconSource={CATEGORY_ICONS.psalter}
-                artwork={homeArtwork.psalter}
-                onPress={() => navigation.navigate('Psalter')}
-              />
-              <DecorativeCard
-                title="Библия"
-                subtitle="Ветхий и Новый Завет"
-                iconSource={CATEGORY_ICONS.bible}
-                artwork={homeArtwork.hero_biblical}
-                onPress={() => navigation.navigate('Bible')}
-              />
-            </View>
-
-            {!!libraryCategories.length && (
-              <View style={styles.extraSection}>
-                <View style={styles.extraHeader}>
-                  <Text style={styles.extraTitle}>Другие разделы</Text>
-                  <Text style={styles.extraOrnament}>✦</Text>
-                </View>
-
-                {libraryCategories.map(category => (
-                  <Pressable
-                    key={category.id}
-                    onPress={() => openCategory(category)}
-                    style={({pressed}) => [styles.extraCard, pressed && styles.pressed]}
-                  >
-                    <View>
-                      <Text style={styles.extraCardTitle}>{category.name}</Text>
-                      <Text style={styles.extraCardSubtitle}>
-                        {getSubcategories(category).length > 0
-                          ? `${getSubcategories(category).length} разделов`
-                          : 'Открыть'}
-                      </Text>
-                    </View>
-                    <Text style={styles.extraArrow}>›</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-
-            {!!error && (
-              <View style={styles.errorCard}>
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            )}
-          </View>
-        </ScrollView>
+          </ScrollView>
           <BottomNav navigation={navigation} active="home" />
         </ImageBackground>
-
       </View>
     </SafeAreaView>
   );
@@ -1195,25 +1033,25 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     backgroundColor: 'transparent',
   },
-    quoteCard: {
-      position: 'relative',
-      minHeight: 148,
-      padding: 10,
-      borderRadius: 18,
-      overflow: 'hidden',
-      backgroundColor: '#FFF4DE',
-      borderWidth: 1,
-      borderColor: 'rgba(123, 79, 36, 0.22)',
-      shadowColor: '#4A2817',
-      shadowOffset: {width: 0, height: 4},
-      shadowOpacity: 0.14,
-      shadowRadius: 9,
-      elevation: 3,
-    },
+  quoteCard: {
+    position: 'relative',
+    minHeight: 148,
+    padding: 10,
+    borderRadius: 18,
+    overflow: 'hidden',
+    backgroundColor: '#FFF4DE',
+    borderWidth: 1,
+    borderColor: 'rgba(123, 79, 36, 0.22)',
+    shadowColor: '#4A2817',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.14,
+    shadowRadius: 9,
+    elevation: 3,
+  },
   quoteArtwork: {
     position: 'absolute',
     top: 0,
-    right:10,
+    right: 10,
     bottom: 0,
     width: '120%',
   },
@@ -1517,13 +1355,11 @@ const styles = StyleSheet.create({
     right: -30,
     bottom: 0,
     width: '90%',
-
   },
   libraryArtworkImage: {
     opacity: 0.98,
     // borderTopRightRadius: 16,
     // borderBottomRightRadius: 16,
-
   },
   libraryImageFade: {
     position: 'absolute',

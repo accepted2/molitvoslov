@@ -6,17 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0008_prayerrulefootnote_prayerruleitem_and_more'),
+        ("api", "0008_prayerrulefootnote_prayerruleitem_and_more"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='prayerruleitem',
-            options={'ordering': ['order'], 'verbose_name': 'Элемент молитвенного правила', 'verbose_name_plural': 'Элементы молитвенных правил'},
+            name="prayerruleitem",
+            options={
+                "ordering": ["order"],
+                "verbose_name": "Элемент молитвенного правила",
+                "verbose_name_plural": "Элементы молитвенных правил",
+            },
         ),
         migrations.AddField(
-            model_name='prayerruleitem',
-            name='footnotes',
-            field=models.ManyToManyField(blank=True, related_name='items', to='api.prayerrulefootnote', verbose_name='Сноски'),
+            model_name="prayerruleitem",
+            name="footnotes",
+            field=models.ManyToManyField(
+                blank=True, related_name="items", to="api.prayerrulefootnote", verbose_name="Сноски"
+            ),
         ),
     ]

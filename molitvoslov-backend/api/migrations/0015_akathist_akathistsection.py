@@ -7,40 +7,80 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0014_readingprogress'),
+        ("api", "0014_readingprogress"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Akathist',
+            name="Akathist",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=255, verbose_name='Название')),
-                ('slug', models.SlugField(unique=True, verbose_name='URL-идентификатор')),
-                ('description', models.TextField(blank=True, verbose_name='Описание')),
-                ('is_visible', models.BooleanField(default=True, verbose_name='Отображать')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("title", models.CharField(max_length=255, verbose_name="Название")),
+                ("slug", models.SlugField(unique=True, verbose_name="URL-идентификатор")),
+                ("description", models.TextField(blank=True, verbose_name="Описание")),
+                ("is_visible", models.BooleanField(default=True, verbose_name="Отображать")),
             ],
             options={
-                'verbose_name': 'Акафист',
-                'verbose_name_plural': 'Акафисты',
+                "verbose_name": "Акафист",
+                "verbose_name_plural": "Акафисты",
             },
         ),
         migrations.CreateModel(
-            name='AkathistSection',
+            name="AkathistSection",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('section_type', models.CharField(choices=[('kontakion', 'Кондак'), ('ikos', 'Икос'), ('prayer', 'Молитва')], max_length=20, verbose_name='Тип раздела')),
-                ('number', models.PositiveIntegerField(blank=True, null=True, verbose_name='Номер')),
-                ('note', models.TextField(blank=True, verbose_name='Примечание')),
-                ('order', models.PositiveIntegerField(default=0, verbose_name='Порядок')),
-                ('akathist', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='sections', to='api.akathist', verbose_name='Акафист')),
-                ('text', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='akathist_sections', to='api.text', verbose_name='Текст')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "section_type",
+                    models.CharField(
+                        choices=[("kontakion", "Кондак"), ("ikos", "Икос"), ("prayer", "Молитва")],
+                        max_length=20,
+                        verbose_name="Тип раздела",
+                    ),
+                ),
+                (
+                    "number",
+                    models.PositiveIntegerField(blank=True, null=True, verbose_name="Номер"),
+                ),
+                ("note", models.TextField(blank=True, verbose_name="Примечание")),
+                ("order", models.PositiveIntegerField(default=0, verbose_name="Порядок")),
+                (
+                    "akathist",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="sections",
+                        to="api.akathist",
+                        verbose_name="Акафист",
+                    ),
+                ),
+                (
+                    "text",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="akathist_sections",
+                        to="api.text",
+                        verbose_name="Текст",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Раздел акафиста',
-                'verbose_name_plural': 'Разделы акафиста',
-                'ordering': ['order'],
-                'constraints': [models.UniqueConstraint(fields=('akathist', 'order'), name='unique_order_per_akathist')],
+                "verbose_name": "Раздел акафиста",
+                "verbose_name_plural": "Разделы акафиста",
+                "ordering": ["order"],
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("akathist", "order"), name="unique_order_per_akathist"
+                    )
+                ],
             },
         ),
     ]

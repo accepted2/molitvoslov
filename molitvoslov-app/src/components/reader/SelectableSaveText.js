@@ -1,78 +1,27 @@
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 
-import {
-  StyleSheet,
-  TextInput,
-} from 'react-native';
+import {StyleSheet, TextInput} from 'react-native';
 
-import {
-  saveItem,
-} from '../../services/savedItems';
+import {saveItem} from '../../services/savedItems';
 
-import {
-  useTextSelection,
-} from '../../context/TextSelectionContext';
+import {useTextSelection} from '../../context/TextSelectionContext';
 
-
-const WORD_PATTERN =
-  /^[0-9A-Za-zА-Яа-яЁёІіЇїЄєҐґ\u0400-\u052F\u0300-\u036F\u0483-\u0489'’\-]+$/;
+const WORD_PATTERN = /^[0-9A-Za-zА-Яа-яЁёІіЇїЄєҐґ\u0400-\u052F\u0300-\u036F\u0483-\u0489'’\-]+$/;
 
 let instanceCounter = 0;
 
+const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
 
-const clamp = (
-  value,
-  min,
-  max
-) =>
-  Math.max(
-    min,
-    Math.min(
-      value,
-      max
-    )
-  );
+const trimRange = (text, start, end) => {
+  let nextStart = clamp(start, 0, text.length);
 
+  let nextEnd = clamp(end, nextStart, text.length);
 
-const trimRange = (
-  text,
-  start,
-  end
-) => {
-  let nextStart =
-    clamp(
-      start,
-      0,
-      text.length
-    );
-
-  let nextEnd =
-    clamp(
-      end,
-      nextStart,
-      text.length
-    );
-
-  while (
-    nextStart < nextEnd &&
-    /\s/.test(
-      text[nextStart]
-    )
-  ) {
+  while (nextStart < nextEnd && /\s/.test(text[nextStart])) {
     nextStart += 1;
   }
 
-  while (
-    nextEnd > nextStart &&
-    /\s/.test(
-      text[nextEnd - 1]
-    )
-  ) {
+  while (nextEnd > nextStart && /\s/.test(text[nextEnd - 1])) {
     nextEnd -= 1;
   }
 
@@ -82,222 +31,83 @@ const trimRange = (
   };
 };
 
+const sameRange = (first, second) => first.start === second.start && first.end === second.end;
 
-const sameRange = (
-  first,
-  second
-) =>
-  first.start ===
-    second.start &&
-  first.end ===
-    second.end;
+const getSentenceRange = (text, anchor) => {
+  let start = clamp(anchor, 0, text.length);
 
+  let end = start;
 
-const getSentenceRange = (
-  text,
-  anchor
-) => {
-  let start =
-    clamp(
-      anchor,
-      0,
-      text.length
-    );
-
-  let end =
-    start;
-
-  while (
-    start > 0 &&
-    !/[.!?…]/.test(
-      text[start - 1]
-    )
-  ) {
+  while (start > 0 && !/[.!?…]/.test(text[start - 1])) {
     start -= 1;
   }
 
-  while (
-    start < text.length &&
-    /\s/.test(
-      text[start]
-    )
-  ) {
+  while (start < text.length && /\s/.test(text[start])) {
     start += 1;
   }
 
-  while (
-    end < text.length &&
-    !/[.!?…]/.test(
-      text[end]
-    )
-  ) {
+  while (end < text.length && !/[.!?…]/.test(text[end])) {
     end += 1;
   }
 
-  if (
-    end < text.length
-  ) {
+  if (end < text.length) {
     end += 1;
   }
 
-  return trimRange(
-    text,
-    start,
-    end
-  );
+  return trimRange(text, start, end);
 };
 
+const getParagraphRange = (text, anchor) => {
+  const position = clamp(anchor, 0, text.length);
 
-const getParagraphRange = (
-  text,
-  anchor
-) => {
-  const position =
-    clamp(
-      anchor,
-      0,
-      text.length
-    );
+  const before = text.slice(0, position);
 
-  const before =
-    text.slice(
-      0,
-      position
-    );
+  const after = text.slice(position);
 
-  const after =
-    text.slice(
-      position
-    );
+  const leftBreak = Math.max(before.lastIndexOf('\n\n'), before.lastIndexOf('\r\n\r\n'));
 
-  const leftBreak =
-    Math.max(
-      before.lastIndexOf(
-        '\n\n'
-      ),
-      before.lastIndexOf(
-        '\r\n\r\n'
-      )
-    );
+  const start = leftBreak === -1 ? 0 : leftBreak + 2;
 
-  const start =
-    leftBreak === -1
-      ? 0
-      : leftBreak + 2;
-
-  const candidates =
-    [
-      after.indexOf(
-        '\n\n'
-      ),
-      after.indexOf(
-        '\r\n\r\n'
-      ),
-    ].filter(
-      value =>
-        value >= 0
-    );
-
-  const rightBreak =
-    candidates.length
-      ? Math.min(
-          ...candidates
-        )
-      : -1;
-
-  const end =
-    rightBreak === -1
-      ? text.length
-      : position +
-        rightBreak;
-
-  return trimRange(
-    text,
-    start,
-    end
+  const candidates = [after.indexOf('\n\n'), after.indexOf('\r\n\r\n')].filter(
+    (value) => value >= 0
   );
+
+  const rightBreak = candidates.length ? Math.min(...candidates) : -1;
+
+  const end = rightBreak === -1 ? text.length : position + rightBreak;
+
+  return trimRange(text, start, end);
 };
 
+const classifySelection = ({text, range, fullSaveType}) => {
+  const normalized = trimRange(text, range.start, range.end);
 
-const classifySelection = ({
-  text,
-  range,
-  fullSaveType,
-}) => {
-  const normalized =
-    trimRange(
-      text,
-      range.start,
-      range.end
-    );
+  const wholeText = trimRange(text, 0, text.length);
 
-  const wholeText =
-    trimRange(
-      text,
-      0,
-      text.length
-    );
+  const selected = text.slice(normalized.start, normalized.end).trim();
 
-  const selected =
-    text
-      .slice(
-        normalized.start,
-        normalized.end
-      )
-      .trim();
-
-  if (
-    fullSaveType &&
-    sameRange(
-      normalized,
-      wholeText
-    )
-  ) {
+  if (fullSaveType && sameRange(normalized, wholeText)) {
     return fullSaveType;
   }
 
-  if (
-    selected &&
-    WORD_PATTERN.test(
-      selected
-    )
-  ) {
+  if (selected && WORD_PATTERN.test(selected)) {
     return 'word';
   }
 
-  const sentence =
-    getSentenceRange(
-      text,
-      normalized.start
-    );
+  const sentence = getSentenceRange(text, normalized.start);
 
-  if (
-    sameRange(
-      normalized,
-      sentence
-    )
-  ) {
+  if (sameRange(normalized, sentence)) {
     return 'sentence';
   }
 
-  const paragraph =
-    getParagraphRange(
-      text,
-      normalized.start
-    );
+  const paragraph = getParagraphRange(text, normalized.start);
 
-  if (
-    sameRange(
-      normalized,
-      paragraph
-    )
-  ) {
+  if (sameRange(normalized, paragraph)) {
     return 'paragraph';
   }
 
   return 'fragment';
 };
-
 
 export default function SelectableSaveText({
   text,
@@ -313,378 +123,210 @@ export default function SelectableSaveText({
   prefix = '',
   onSaved,
 }) {
-  const inputRef =
-    useRef(null);
+  const inputRef = useRef(null);
 
-  const instanceIdRef =
-    useRef(null);
+  const instanceIdRef = useRef(null);
 
-  if (
-    instanceIdRef.current ===
-    null
-  ) {
+  if (instanceIdRef.current === null) {
     instanceCounter += 1;
 
-    instanceIdRef.current =
-      `selectable-${instanceCounter}`;
+    instanceIdRef.current = `selectable-${instanceCounter}`;
   }
 
-  const {
-    activateSelection,
-    clearSelection,
-  } = useTextSelection();
+  const {activateSelection, clearSelection} = useTextSelection();
 
-  const [
-    selection,
-    setSelection,
-  ] = useState({
+  const [selection, setSelection] = useState({
     start: 0,
     end: 0,
   });
 
-  const lastValidRangeRef =
-    useRef(null);
+  const lastValidRangeRef = useRef(null);
 
-  const flattenedStyle =
-    StyleSheet.flatten(
-      textStyle
-    ) || {};
+  const flattenedStyle = StyleSheet.flatten(textStyle) || {};
 
-  const initialHeight =
-    Number(
-      flattenedStyle.lineHeight ||
-      26
-    );
+  const initialHeight = Number(flattenedStyle.lineHeight || 26);
 
-  const [
-    contentHeight,
-    setContentHeight,
-  ] = useState(
-    initialHeight
-  );
+  const [contentHeight, setContentHeight] = useState(initialHeight);
 
+  const displayText = `${prefix || ''}${text || ''}`;
 
-  const displayText =
-    `${prefix || ''}${text || ''}`;
+  const prefixLength = (prefix || '').length;
 
-  const prefixLength =
-    (prefix || '').length;
+  const normalizedSelection = useMemo(() => {
+    const start = clamp(selection.start - prefixLength, 0, text.length);
 
+    const end = clamp(selection.end - prefixLength, 0, text.length);
 
-  const normalizedSelection =
-    useMemo(
-      () => {
-        const start =
-          clamp(
-            selection.start -
-              prefixLength,
-            0,
-            text.length
-          );
+    return trimRange(text, start, end);
+  }, [selection, prefixLength, text]);
 
-        const end =
-          clamp(
-            selection.end -
-              prefixLength,
-            0,
-            text.length
-          );
+  const clearLocalSelection = () => {
+    lastValidRangeRef.current = null;
 
-        return trimRange(
-          text,
-          start,
-          end
-        );
-      },
-      [
-        selection,
-        prefixLength,
-        text,
-      ]
-    );
+    setSelection({
+      start: 0,
+      end: 0,
+    });
 
-
-  const clearLocalSelection =
-    () => {
-      lastValidRangeRef.current =
-        null;
-
-      setSelection({
-        start: 0,
-        end: 0,
-      });
-
-      inputRef.current
-        ?.blur();
-    };
-
+    inputRef.current?.blur();
+  };
 
   useEffect(() => {
     return () => {
-      clearSelection(
-        instanceIdRef.current
-      );
+      clearSelection(instanceIdRef.current);
     };
-  }, [
-    clearSelection,
-  ]);
+  }, [clearSelection]);
 
+  const saveRange = async (range) => {
+    const selectedText = text.slice(range.start, range.end).trim();
 
-  const saveRange =
-    async range => {
-      const selectedText =
-        text
-          .slice(
-            range.start,
-            range.end
-          )
-          .trim();
+    if (!selectedText) {
+      return {
+        ok: false,
+        message: 'Пустое выделение',
+      };
+    }
 
-      if (!selectedText) {
-        return {
-          ok: false,
-          message:
-            'Пустое выделение',
-        };
-      }
+    const saveType = classifySelection({
+      text,
+      range,
+      fullSaveType,
+    });
 
-      const saveType =
-        classifySelection({
-          text,
-          range,
-          fullSaveType,
-        });
+    try {
+      const saved = await saveItem({
+        save_type: saveType,
 
-      try {
-        const saved =
-          await saveItem({
-            save_type:
-              saveType,
+        source_type: sourceType,
 
-            source_type:
-              sourceType,
+        source_id: sourceId,
 
-            source_id:
-              sourceId,
+        anchor_type: anchorType,
 
-            anchor_type:
-              anchorType,
+        anchor_id: anchorId,
 
-            anchor_id:
-              anchorId,
+        source_title: sourceTitle,
 
-            source_title:
-              sourceTitle,
+        item_title: itemTitle,
 
-            item_title:
-              itemTitle,
+        text: selectedText,
 
-            text:
-              selectedText,
+        start_offset: range.start,
 
-            start_offset:
-              range.start,
+        end_offset: range.end,
 
-            end_offset:
-              range.end,
-
-            metadata,
-          });
-
-        onSaved?.(
-          saved
-        );
-
-        clearLocalSelection();
-
-        clearSelection(
-          instanceIdRef.current
-        );
-
-        return {
-          ok: true,
-        };
-      } catch (error) {
-        console.log(
-          'Ошибка сохранения:',
-          error.response?.data ||
-          error.message
-        );
-
-        return {
-          ok: false,
-          message:
-            'Не удалось сохранить',
-        };
-      }
-    };
-
-
-  const handleSelectionChange =
-    event => {
-      const next =
-        event.nativeEvent
-          .selection;
-
-      setSelection(
-        next
-      );
-
-      const start =
-        clamp(
-          next.start -
-            prefixLength,
-          0,
-          text.length
-        );
-
-      const end =
-        clamp(
-          next.end -
-            prefixLength,
-          0,
-          text.length
-        );
-
-      const range =
-        trimRange(
-          text,
-          start,
-          end
-        );
-
-      const selectedText =
-        text
-          .slice(
-            range.start,
-            range.end
-          )
-          .trim();
-
-      const count =
-        selectedText.length;
-
-      const hasText =
-        /[0-9A-Za-zА-Яа-яЁёІіЇїЄєҐґ\u0400-\u052F]/.test(
-          selectedText
-        );
-
-      if (
-        count <= 0 ||
-        !hasText
-      ) {
-        /*
-         * Android часто схлопывает выделение до курсора
-         * сразу после отпускания мыши/пальца.
-         * Это НЕ считаем отменой: последнее валидное
-         * выделение остаётся активным до "Сохранить" или "×".
-         */
-        return;
-      }
-
-      lastValidRangeRef.current =
-        range;
-
-      activateSelection({
-        id:
-          instanceIdRef.current,
-
-        count,
-
-        tooLong:
-          false,
-
-        canSave:
-          true,
-
-        onSave:
-          () => {
-            const savedRange =
-              lastValidRangeRef.current;
-
-            if (!savedRange) {
-              return {
-                ok: false,
-                message:
-                  'Нет активного выделения',
-              };
-            }
-
-            return saveRange(
-              savedRange
-            );
-          },
-
-        onClear:
-          clearLocalSelection,
+        metadata,
       });
-    };
 
+      onSaved?.(saved);
+
+      clearLocalSelection();
+
+      clearSelection(instanceIdRef.current);
+
+      return {
+        ok: true,
+      };
+    } catch (error) {
+      console.log('Ошибка сохранения:', error.response?.data || error.message);
+
+      return {
+        ok: false,
+        message: 'Не удалось сохранить',
+      };
+    }
+  };
+
+  const handleSelectionChange = (event) => {
+    const next = event.nativeEvent.selection;
+
+    setSelection(next);
+
+    const start = clamp(next.start - prefixLength, 0, text.length);
+
+    const end = clamp(next.end - prefixLength, 0, text.length);
+
+    const range = trimRange(text, start, end);
+
+    const selectedText = text.slice(range.start, range.end).trim();
+
+    const count = selectedText.length;
+
+    const hasText = /[0-9A-Za-zА-Яа-яЁёІіЇїЄєҐґ\u0400-\u052F]/.test(selectedText);
+
+    if (count <= 0 || !hasText) {
+      /*
+       * Android часто схлопывает выделение до курсора
+       * сразу после отпускания мыши/пальца.
+       * Это НЕ считаем отменой: последнее валидное
+       * выделение остаётся активным до "Сохранить" или "×".
+       */
+      return;
+    }
+
+    lastValidRangeRef.current = range;
+
+    activateSelection({
+      id: instanceIdRef.current,
+
+      count,
+
+      tooLong: false,
+
+      canSave: true,
+
+      onSave: () => {
+        const savedRange = lastValidRangeRef.current;
+
+        if (!savedRange) {
+          return {
+            ok: false,
+            message: 'Нет активного выделения',
+          };
+        }
+
+        return saveRange(savedRange);
+      },
+
+      onClear: clearLocalSelection,
+    });
+  };
 
   return (
     <TextInput
-      ref={
-        inputRef
-      }
-      value={
-        displayText
-      }
+      ref={inputRef}
+      value={displayText}
       multiline
-      scrollEnabled={
-        false
-      }
-      showSoftInputOnFocus={
-        false
-      }
+      scrollEnabled={false}
+      showSoftInputOnFocus={false}
       contextMenuHidden
-      selectTextOnFocus={
-        false
-      }
-      selectionColor={
-        'rgba(206, 162, 72, 0.48)'
-      }
+      selectTextOnFocus={false}
+      selectionColor={'rgba(206, 162, 72, 0.48)'}
       underlineColorAndroid="transparent"
       onChangeText={() => {}}
-      onSelectionChange={
-        handleSelectionChange
-      }
-      onContentSizeChange={
-        event => {
-          setContentHeight(
-            Math.max(
-              initialHeight,
-              Math.ceil(
-                event
-                  .nativeEvent
-                  .contentSize
-                  .height
-              ) + 2
-            )
-          );
-        }
-      }
+      onSelectionChange={handleSelectionChange}
+      onContentSizeChange={(event) => {
+        setContentHeight(
+          Math.max(initialHeight, Math.ceil(event.nativeEvent.contentSize.height) + 2)
+        );
+      }}
       style={[
         textStyle,
         styles.input,
         {
-          height:
-            contentHeight,
+          height: contentHeight,
         },
       ]}
     />
   );
 }
 
-
-const styles =
-  StyleSheet.create({
-    input: {
-      padding: 0,
-      margin: 0,
-      borderWidth: 0,
-      backgroundColor:
-        'transparent',
-      textAlignVertical:
-        'top',
-    },
-  });
+const styles = StyleSheet.create({
+  input: {
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    textAlignVertical: 'top',
+  },
+});

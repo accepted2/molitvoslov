@@ -1,16 +1,11 @@
 'use no memo';
 
 import React from 'react';
-import {
-  FlexWidget,
-  ImageWidget,
-  OverlapWidget,
-  TextWidget,
-} from 'react-native-android-widget';
+import {FlexWidget, ImageWidget, OverlapWidget, TextWidget} from 'react-native-android-widget';
 
 const QUOTE_BACKGROUND = require('../../assets/home/page_bg2.png');
 
-export const QuoteOfDayWidget = ({quote, width = 240, height = 100,}) => {
+export const QuoteOfDayWidget = ({quote, width = 240, height = 100}) => {
   const text = quote?.text || '';
   const source = quote?.reference || quote?.source || '';
 
@@ -23,10 +18,7 @@ export const QuoteOfDayWidget = ({quote, width = 240, height = 100,}) => {
   const horizontalPadding = compact ? 10 : 13;
   const verticalPadding = compact ? 5 : 8;
 
-  const headerFontSize =
-    veryCompact ? 10 :
-      compact ? 12 :
-        15;
+  const headerFontSize = veryCompact ? 10 : compact ? 12 : 15;
   // const sourceFontSize = compact ? 8 : 10;
 
   /*
@@ -75,64 +67,28 @@ export const QuoteOfDayWidget = ({quote, width = 240, height = 100,}) => {
 
   const quoteLineHeight = quoteFontSize + 4;
 
-  const sourceFontSize =
-    veryCompact ? 9 :
-      compact ? 10 :
-        11;
+  const sourceFontSize = veryCompact ? 9 : compact ? 10 : 11;
   const sourceLineHeight = sourceFontSize + 3;
 
-  const usableSourceWidth = Math.max(
-    widgetWidth -
-    horizontalPadding * 2,
-    44
-  );
+  const usableSourceWidth = Math.max(widgetWidth - horizontalPadding * 2, 44);
 
   const sourceCharsPerLine = Math.max(
-    Math.floor(
-      usableSourceWidth /
-      Math.max(
-        sourceFontSize * 0.58,
-        1
-      )
-    ),
+    Math.floor(usableSourceWidth / Math.max(sourceFontSize * 0.58, 1)),
     12
   );
 
   const sourceLines = source
-    ? Math.min(
-        3,
-        Math.max(
-          1,
-          Math.ceil(
-            source.length /
-            sourceCharsPerLine
-          )
-        )
-      )
+    ? Math.min(3, Math.max(1, Math.ceil(source.length / sourceCharsPerLine)))
     : 0;
 
-  const sourceHeight = sourceLines
-    ? sourceLines *
-        sourceLineHeight +
-      3
-    : 0;
+  const sourceHeight = sourceLines ? sourceLines * sourceLineHeight + 3 : 0;
 
-  const headerHeight =
-    veryCompact ? 0 :
-      compact ? 20 :
-        26;
+  const headerHeight = veryCompact ? 0 : compact ? 20 : 26;
 
-  const decorationHeight =
-    veryCompact ? 0 :
-      compact ? 6 :
-        10;
+  const decorationHeight = veryCompact ? 0 : compact ? 6 : 10;
 
   const availableQuoteHeight = Math.max(
-    widgetHeight -
-    verticalPadding * 2 -
-    headerHeight -
-    decorationHeight -
-    sourceHeight,
+    widgetHeight - verticalPadding * 2 - headerHeight - decorationHeight - sourceHeight,
     18
   );
 
@@ -198,40 +154,40 @@ export const QuoteOfDayWidget = ({quote, width = 240, height = 100,}) => {
         )}
 
         {!veryCompact && (
-        <FlexWidget
-          style={{
-            width: compact ? 90 : 120,
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginTop: 1,
-            marginBottom: compact ? 2 : 4,
-          }}
-        >
           <FlexWidget
             style={{
-              flex: 1,
-              height: 1,
-              backgroundColor: '#92622F52',
+              width: compact ? 90 : 120,
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginTop: 1,
+              marginBottom: compact ? 2 : 4,
             }}
-          />
+          >
+            <FlexWidget
+              style={{
+                flex: 1,
+                height: 1,
+                backgroundColor: '#92622F52',
+              }}
+            />
 
-          <TextWidget
-            text="✦"
-            style={{
-              marginHorizontal: 5,
-              color: '#A87943',
-              fontSize: 7,
-            }}
-          />
+            <TextWidget
+              text="✦"
+              style={{
+                marginHorizontal: 5,
+                color: '#A87943',
+                fontSize: 7,
+              }}
+            />
 
-          <FlexWidget
-            style={{
-              flex: 1,
-              height: 1,
-              backgroundColor: '#92622F52',
-            }}
-          />
-        </FlexWidget>
+            <FlexWidget
+              style={{
+                flex: 1,
+                height: 1,
+                backgroundColor: '#92622F52',
+              }}
+            />
+          </FlexWidget>
         )}
         <TextWidget
           text={text}

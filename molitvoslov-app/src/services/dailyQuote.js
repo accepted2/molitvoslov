@@ -9,13 +9,9 @@ const getTodayString = () => {
   return `${year}-${month}-${day}`;
 };
 
-const getDateOrdinal = date => {
+const getDateOrdinal = (date) => {
   const utcDays = Math.floor(
-    Date.UTC(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate()
-    ) / 86400000
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000
   );
 
   return utcDays + 719163;
@@ -25,7 +21,7 @@ export const getDailyQuote = () => {
   const quotes = bundledContent.daily_quotes || [];
   const today = getTodayString();
 
-  const exact = quotes.find(item => item.quote_date === today);
+  const exact = quotes.find((item) => item.quote_date === today);
 
   if (exact) {
     return {
@@ -34,7 +30,7 @@ export const getDailyQuote = () => {
     };
   }
 
-  const rotation = quotes.filter(item => !item.quote_date);
+  const rotation = quotes.filter((item) => !item.quote_date);
 
   if (!rotation.length) {
     return {

@@ -1,30 +1,19 @@
-import * as SQLite
-  from 'expo-sqlite';
-
+import * as SQLite from 'expo-sqlite';
 
 let database = null;
 
+export const getDatabase = async () => {
+  if (!database) {
+    database = await SQLite.openDatabaseAsync('molitvoslov.db');
+  }
 
-export const getDatabase =
-  async () => {
-    if (!database) {
-      database =
-        await SQLite
-          .openDatabaseAsync(
-            'molitvoslov.db'
-          );
-    }
+  return database;
+};
 
-    return database;
-  };
+export const initDatabase = async () => {
+  const db = await getDatabase();
 
-
-export const initDatabase =
-  async () => {
-    const db =
-      await getDatabase();
-
-    await db.execAsync(`
+  await db.execAsync(`
       PRAGMA journal_mode = WAL;
 
       CREATE TABLE IF NOT EXISTS local_users (
@@ -84,116 +73,73 @@ export const initDatabase =
       );
     `);
 
+  /*
+   * Простые локальные миграции.
+   *
+   * CREATE TABLE IF NOT EXISTS не добавляет
+   * новые колонки в таблицу, которая уже была
+   * создана раньше, поэтому проверяем их отдельно.
+   */
 
-    /*
-     * Простые локальные миграции.
-     *
-     * CREATE TABLE IF NOT EXISTS не добавляет
-     * новые колонки в таблицу, которая уже была
-     * создана раньше, поэтому проверяем их отдельно.
-     */
-
-    const savedItemColumns =
-      await db.getAllAsync(
-        `
+  const savedItemColumns = await db.getAllAsync(
+    `
           PRAGMA table_info(saved_items)
         `
-      );
+  );
 
-    const savedItemColumnNames =
-      savedItemColumns.map(
-        column =>
-          column.name
-      );
+  const savedItemColumnNames = savedItemColumns.map((column) => column.name);
 
-
-    if (
-      !savedItemColumnNames.includes(
-        'source_title'
-      )
-    ) {
-      await db.execAsync(`
+  if (!savedItemColumnNames.includes('source_title')) {
+    await db.execAsync(`
         ALTER TABLE saved_items
         ADD COLUMN source_title TEXT;
       `);
-    }
+  }
 
-
-    if (
-      !savedItemColumnNames.includes(
-        'item_title'
-      )
-    ) {
-      await db.execAsync(`
+  if (!savedItemColumnNames.includes('item_title')) {
+    await db.execAsync(`
         ALTER TABLE saved_items
         ADD COLUMN item_title TEXT;
       `);
-    }
+  }
 
-
-    if (
-      !savedItemColumnNames.includes(
-        'text'
-      )
-    ) {
-      await db.execAsync(`
+  if (!savedItemColumnNames.includes('text')) {
+    await db.execAsync(`
         ALTER TABLE saved_items
         ADD COLUMN text TEXT;
       `);
-    }
+  }
 
-
-    const progressColumns =
-      await db.getAllAsync(
-        `
+  const progressColumns = await db.getAllAsync(
+    `
           PRAGMA table_info(reading_progress)
         `
-      );
+  );
 
-    const progressColumnNames =
-      progressColumns.map(
-        column =>
-          column.name
-      );
+  const progressColumnNames = progressColumns.map((column) => column.name);
 
-
-    if (
-      !progressColumnNames.includes(
-        'progress_percent'
-      )
-    ) {
-      await db.execAsync(`
+  if (!progressColumnNames.includes('progress_percent')) {
+    await db.execAsync(`
         ALTER TABLE reading_progress
         ADD COLUMN progress_percent INTEGER DEFAULT 0;
       `);
-    }
+  }
 
-    if (
-      !progressColumnNames.includes(
-        'metadata'
-      )
-    ) {
-      await db.execAsync(`
+  if (!progressColumnNames.includes('metadata')) {
+    await db.execAsync(`
         ALTER TABLE reading_progress
         ADD COLUMN metadata TEXT;
       `);
-    }
+  }
 
+  return db;
+};
 
-    return db;
-  };
+export const setSetting = async (key, value) => {
+  const db = await getDatabase();
 
-
-export const setSetting =
-  async (
-    key,
-    value
-  ) => {
-    const db =
-      await getDatabase();
-
-    await db.runAsync(
-      `
+  await db.runAsync(
+    `
         INSERT INTO app_settings (
           key,
           value
@@ -203,31 +149,21 @@ export const setSetting =
         DO UPDATE SET
           value = excluded.value
       `,
-      [
-        key,
-        value,
-      ]
-    );
-  };
+    [key, value]
+  );
+};
 
+export const getSetting = async (key) => {
+  const db = await getDatabase();
 
-export const getSetting =
-  async key => {
-    const db =
-      await getDatabase();
-
-    const result =
-      await db.getFirstAsync(
-        `
+  const result = await db.getFirstAsync(
+    `
           SELECT value
           FROM app_settings
           WHERE key = ?
         `,
-        [
-          key,
-        ]
-      );
+    [key]
+  );
 
-    return result?.value ??
-      null;
-  };
+  return result?.value ?? null;
+};

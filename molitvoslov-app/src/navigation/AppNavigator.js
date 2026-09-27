@@ -76,37 +76,17 @@ export const AppNavigator = () => (
       <Stack.Screen name="TextsList" component={TextsListScreen} options={{headerShown: false}} />
       <Stack.Screen name="Book" component={BookScreen} options={{headerShown: false}} />
       <Stack.Screen name="Reader" component={ReaderScreen} options={{headerShown: false}} />
-      <Stack.Screen
-        name="PrayerRule"
-        component={PrayerRuleScreen}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name="Psalter"
-        component={PsalterScreen}
-        options={{headerShown: false}}
-      />
+      <Stack.Screen name="PrayerRule" component={PrayerRuleScreen} options={{headerShown: false}} />
+      <Stack.Screen name="Psalter" component={PsalterScreen} options={{headerShown: false}} />
       <Stack.Screen name="Kathisma" component={KathismaScreen} options={{headerShown: false}} />
       <Stack.Screen
         name="AkathistList"
         component={AkathistListScreen}
         options={{headerShown: false}}
       />
-      <Stack.Screen
-        name="Akathist"
-        component={AkathistScreen}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name="CanonList"
-        component={CanonListScreen}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name="Canon"
-        component={CanonScreen}
-        options={{headerShown: false}}
-      />
+      <Stack.Screen name="Akathist" component={AkathistScreen} options={{headerShown: false}} />
+      <Stack.Screen name="CanonList" component={CanonListScreen} options={{headerShown: false}} />
+      <Stack.Screen name="Canon" component={CanonScreen} options={{headerShown: false}} />
       <Stack.Screen
         name="CommunionPreparation"
         component={CommunionPreparationScreen}
@@ -115,7 +95,11 @@ export const AppNavigator = () => (
       <Stack.Screen name="Bible" component={BibleScreen} options={{headerShown: false}} />
       <Stack.Screen name="BibleBooks" component={BibleBooksScreen} options={{headerShown: false}} />
       <Stack.Screen name="BibleBook" component={BibleBookScreen} options={{headerShown: false}} />
-      <Stack.Screen name="BibleChapter" component={BibleChapterScreen} options={{headerShown: false}} />
+      <Stack.Screen
+        name="BibleChapter"
+        component={BibleChapterScreen}
+        options={{headerShown: false}}
+      />
       <Stack.Screen name="Account" component={AccountScreen} options={{headerShown: false}} />
     </Stack.Navigator>
   </NavigationContainer>

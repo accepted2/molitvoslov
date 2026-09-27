@@ -1,79 +1,45 @@
-import * as Crypto
-  from 'expo-crypto';
+import * as Crypto from 'expo-crypto';
 
-import * as SecureStore
-  from 'expo-secure-store';
+import * as SecureStore from 'expo-secure-store';
 
-import {
-  getDatabase,
-} from '../db/database';
+import {getDatabase} from '../db/database';
 
+const SESSION_KEY = 'molitvoslov_user_id';
 
-const SESSION_KEY =
-  'molitvoslov_user_id';
+const hashPassword = async (password) => {
+  return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, password);
+};
 
+export const registerUser = async (username, password) => {
+  const db = await getDatabase();
 
-const hashPassword =
-  async password => {
-    return Crypto.digestStringAsync(
-      Crypto.CryptoDigestAlgorithm.SHA256,
-      password
-    );
-  };
+  const normalizedUsername = username.trim();
 
+  if (!normalizedUsername) {
+    throw new Error('Введите имя пользователя');
+  }
 
-export const registerUser =
-  async (
-    username,
-    password
-  ) => {
-    const db =
-      await getDatabase();
+  if (!password || password.length < 4) {
+    throw new Error('Пароль должен содержать минимум 4 символа');
+  }
 
-    const normalizedUsername =
-      username.trim();
-
-    if (!normalizedUsername) {
-      throw new Error(
-        'Введите имя пользователя'
-      );
-    }
-
-    if (
-      !password ||
-      password.length < 4
-    ) {
-      throw new Error(
-        'Пароль должен содержать минимум 4 символа'
-      );
-    }
-
-    const existing =
-      await db.getFirstAsync(
-        `
+  const existing = await db.getFirstAsync(
+    `
           SELECT id
           FROM local_users
           WHERE username = ?
         `,
-        [
-          normalizedUsername,
-        ]
-      );
+    [normalizedUsername]
+  );
 
-    if (existing) {
-      throw new Error(
-        'Такой пользователь уже существует'
-      );
-    }
+  if (existing) {
+    throw new Error('Такой пользователь уже существует');
+  }
 
-    const passwordHash =
-      await hashPassword(
-        password
-      );
+  const passwordHash = await hashPassword(password);
 
-    const result =
-      await db.runAsync(
-        `
+  const result = await db.runAsync(
+    `
           INSERT INTO local_users (
             username,
             password_hash,
@@ -81,110 +47,65 @@ export const registerUser =
           )
           VALUES (?, ?, ?)
         `,
-        [
-          normalizedUsername,
-          passwordHash,
-          new Date().toISOString(),
-        ]
-      );
+    [normalizedUsername, passwordHash, new Date().toISOString()]
+  );
 
-    const userId =
-      String(
-        result.lastInsertRowId
-      );
+  const userId = String(result.lastInsertRowId);
 
-    await SecureStore.setItemAsync(
-      SESSION_KEY,
-      userId
-    );
+  await SecureStore.setItemAsync(SESSION_KEY, userId);
 
-    return {
-      id:
-        Number(userId),
+  return {
+    id: Number(userId),
 
-      username:
-        normalizedUsername,
-    };
+    username: normalizedUsername,
   };
+};
 
+export const loginUser = async (username, password) => {
+  const db = await getDatabase();
 
-export const loginUser =
-  async (
-    username,
-    password
-  ) => {
-    const db =
-      await getDatabase();
+  const passwordHash = await hashPassword(password);
 
-    const passwordHash =
-      await hashPassword(
-        password
-      );
-
-    const user =
-      await db.getFirstAsync(
-        `
+  const user = await db.getFirstAsync(
+    `
           SELECT id, username
           FROM local_users
           WHERE username = ?
           AND password_hash = ?
         `,
-        [
-          username.trim(),
-          passwordHash,
-        ]
-      );
+    [username.trim(), passwordHash]
+  );
 
-    if (!user) {
-      throw new Error(
-        'Неверное имя пользователя или пароль'
-      );
-    }
+  if (!user) {
+    throw new Error('Неверное имя пользователя или пароль');
+  }
 
-    await SecureStore.setItemAsync(
-      SESSION_KEY,
-      String(
-        user.id
-      )
-    );
+  await SecureStore.setItemAsync(SESSION_KEY, String(user.id));
 
-    return user;
-  };
+  return user;
+};
 
+export const logoutUser = async () => {
+  await SecureStore.deleteItemAsync(SESSION_KEY);
+};
 
-export const logoutUser =
-  async () => {
-    await SecureStore.deleteItemAsync(
-      SESSION_KEY
-    );
-  };
+export const getCurrentUser = async () => {
+  const userId = await SecureStore.getItemAsync(SESSION_KEY);
 
+  if (!userId) {
+    return null;
+  }
 
-export const getCurrentUser =
-  async () => {
-    const userId =
-      await SecureStore.getItemAsync(
-        SESSION_KEY
-      );
+  const db = await getDatabase();
 
-    if (!userId) {
-      return null;
-    }
-
-    const db =
-      await getDatabase();
-
-    const user =
-      await db.getFirstAsync(
-        `
+  const user = await db.getFirstAsync(
+    `
           SELECT id, username
           FROM local_users
           WHERE id = ?
         `,
-        [
-          Number(userId),
-        ]
-      );
+    [Number(userId)]
+  );
 
-    return user || null;
-  };
+  return user || null;
+};

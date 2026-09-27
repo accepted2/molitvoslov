@@ -6,13 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0003_text_description_alter_text_slug'),
+        ("api", "0003_text_description_alter_text_slug"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='text',
-            name='description_position',
-            field=models.CharField(choices=[('before', 'Перед молитвой'), ('after', 'После молитвы')], default='before', max_length=10, verbose_name='Позиция описания'),
+            model_name="text",
+            name="description_position",
+            field=models.CharField(
+                choices=[("before", "Перед молитвой"), ("after", "После молитвы")],
+                default="before",
+                max_length=10,
+                verbose_name="Позиция описания",
+            ),
         ),
     ]

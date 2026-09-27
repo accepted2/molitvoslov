@@ -18,30 +18,32 @@ from .models import (
     DailyQuote,
     SavedItem,
     AkathistReadingRule,
-
-Psalter,Kathisma,Psalm,PsalmVerse,KathismaGlory
+    Psalter,
+    Kathisma,
+    Psalm,
+    PsalmVerse,
+    KathismaGlory,
 )
+
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = [
-            'id',
-            'name',
-            'slug',
-            'parent',
-            'order',
-            'icon',
+            "id",
+            "name",
+            "slug",
+            "parent",
+            "order",
+            "icon",
         ]
 
+
 class TextSerializer(serializers.ModelSerializer):
-    categories = CategorySerializer(
-        many=True,
-        read_only=True
-    )
+    categories = CategorySerializer(many=True, read_only=True)
 
     category_ids = serializers.PrimaryKeyRelatedField(
-        source='categories',
+        source="categories",
         queryset=Category.objects.all(),
         many=True,
         write_only=True,
@@ -52,36 +54,34 @@ class TextSerializer(serializers.ModelSerializer):
         model = Text
 
         fields = [
-            'id',
-            'title',
-            'description',
-            'content',
-            'translation',
-            'categories',
-            'description_position',
-            'category_ids',
-            'language',
-            'slug',
+            "id",
+            "title",
+            "description",
+            "content",
+            "translation",
+            "categories",
+            "description_position",
+            "category_ids",
+            "language",
+            "slug",
         ]
 
-class CategoryTextSerializer(serializers.ModelSerializer):
-    text = TextSerializer(
-        read_only=True
-    )
 
-    category = CategorySerializer(
-        read_only=True
-    )
+class CategoryTextSerializer(serializers.ModelSerializer):
+    text = TextSerializer(read_only=True)
+
+    category = CategorySerializer(read_only=True)
 
     class Meta:
         model = CategoryText
 
         fields = [
-            'id',
-            'category',
-            'text',
-            'order',
+            "id",
+            "category",
+            "text",
+            "order",
         ]
+
 
 # =========================================================
 # МОЛИТВЕННЫЕ ПРАВИЛА
@@ -90,23 +90,19 @@ class PrayerRuleFootnoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = PrayerRuleFootnote
         fields = [
-            'id',
-            'number',
-            'content',
+            "id",
+            "number",
+            "content",
         ]
 
-class PrayerRuleItemSerializer(serializers.ModelSerializer):
-    text = TextSerializer(
-        read_only=True
-    )
 
-    footnotes = PrayerRuleFootnoteSerializer(
-        many=True,
-        read_only=True
-    )
+class PrayerRuleItemSerializer(serializers.ModelSerializer):
+    text = TextSerializer(read_only=True)
+
+    footnotes = PrayerRuleFootnoteSerializer(many=True, read_only=True)
 
     text_id = serializers.PrimaryKeyRelatedField(
-        source='text',
+        source="text",
         queryset=Text.objects.all(),
         write_only=True,
         required=False,
@@ -114,7 +110,7 @@ class PrayerRuleItemSerializer(serializers.ModelSerializer):
     )
 
     rule_id = serializers.PrimaryKeyRelatedField(
-        source='rule',
+        source="rule",
         queryset=PrayerRule.objects.all(),
         write_only=True,
         required=False,
@@ -124,83 +120,63 @@ class PrayerRuleItemSerializer(serializers.ModelSerializer):
         model = PrayerRuleItem
 
         fields = [
-            'id',
-            'rule_id',
-            'item_type',
-            'text',
-            'text_id',
-            'title',
-            'content',
-            'note',
-            'footnotes',
-            'order',
+            "id",
+            "rule_id",
+            "item_type",
+            "text",
+            "text_id",
+            "title",
+            "content",
+            "note",
+            "footnotes",
+            "order",
         ]
 
     def validate(self, attrs):
         item_type = attrs.get(
-            'item_type',
-            getattr(
-                self.instance,
-                'item_type',
-                PrayerRuleItem.TYPE_TEXT
-            )
+            "item_type", getattr(self.instance, "item_type", PrayerRuleItem.TYPE_TEXT)
         )
 
-        text = attrs.get(
-            'text',
-            getattr(
-                self.instance,
-                'text',
-                None
+        text = attrs.get("text", getattr(self.instance, "text", None))
+
+        if item_type == PrayerRuleItem.TYPE_TEXT and text is None:
+            raise serializers.ValidationError(
+                {"text_id": "Для элемента типа text необходимо указать текст."}
             )
-        )
 
         if (
-                item_type == PrayerRuleItem.TYPE_TEXT
-                and text is None
+            item_type
+            in [
+                PrayerRuleItem.TYPE_INSTRUCTION,
+                PrayerRuleItem.TYPE_SECTION,
+            ]
+            and text is not None
         ):
-            raise serializers.ValidationError({
-                'text_id':
-                    'Для элемента типа text необходимо указать текст.'
-            })
-
-        if (
-                item_type in [
-            PrayerRuleItem.TYPE_INSTRUCTION,
-            PrayerRuleItem.TYPE_SECTION,
-        ]
-                and text is not None
-        ):
-            raise serializers.ValidationError({
-                'text_id':
-                    'Для инструкции или раздела Text указывать не нужно.'
-            })
+            raise serializers.ValidationError(
+                {"text_id": "Для инструкции или раздела Text указывать не нужно."}
+            )
 
         return attrs
 
-class PrayerRuleSerializer(serializers.ModelSerializer):
-    items = PrayerRuleItemSerializer(
-        many=True,
-        read_only=True
-    )
 
-    footnotes = PrayerRuleFootnoteSerializer(
-        many=True,
-        read_only=True
-    )
+class PrayerRuleSerializer(serializers.ModelSerializer):
+    items = PrayerRuleItemSerializer(many=True, read_only=True)
+
+    footnotes = PrayerRuleFootnoteSerializer(many=True, read_only=True)
 
     class Meta:
         model = PrayerRule
 
         fields = [
-            'id',
-            'name',
-            'slug',
-            'description',
-            'is_visible',
-            'items',
-            'footnotes',
+            "id",
+            "name",
+            "slug",
+            "description",
+            "is_visible",
+            "items",
+            "footnotes",
         ]
+
 
 # =========================================================
 # ПСАЛТИРь
@@ -208,34 +184,57 @@ class PrayerRuleSerializer(serializers.ModelSerializer):
 class PsalmVerseSerializer(serializers.ModelSerializer):
     class Meta:
         model = PsalmVerse
-        fields = ['id','number','church_slavonic','russian']
+        fields = ["id", "number", "church_slavonic", "russian"]
+
 
 class PsalmSerializer(serializers.ModelSerializer):
-    verses = PsalmVerseSerializer(many=True,read_only=True)
+    verses = PsalmVerseSerializer(many=True, read_only=True)
 
     class Meta:
         model = Psalm
-        fields = ['id','number','title_church_slavonic','title_russian','description','verses',]
+        fields = [
+            "id",
+            "number",
+            "title_church_slavonic",
+            "title_russian",
+            "description",
+            "verses",
+        ]
+
 
 class KathismaGlorySerializer(serializers.ModelSerializer):
-    after_psalm_number = serializers.IntegerField(source='after_psalm.number',read_only=True)
-    after_verse_number = serializers.IntegerField(source='after_verse.number',read_only=True)
+    after_psalm_number = serializers.IntegerField(source="after_psalm.number", read_only=True)
+    after_verse_number = serializers.IntegerField(source="after_verse.number", read_only=True)
 
     class Meta:
         model = KathismaGlory
 
-        fields =['id','number','after_psalm','after_psalm_number','after_verse','after_verse_number',]
+        fields = [
+            "id",
+            "number",
+            "after_psalm",
+            "after_psalm_number",
+            "after_verse",
+            "after_verse_number",
+        ]
+
 
 class KathismaSerializer(serializers.ModelSerializer):
-    psalms = PsalmSerializer(
-        many=True,
-        read_only=True
-    )
-    glories = KathismaGlorySerializer(many=True,read_only=True)
+    psalms = PsalmSerializer(many=True, read_only=True)
+    glories = KathismaGlorySerializer(many=True, read_only=True)
 
     class Meta:
         model = Kathisma
-        fields = ['id','psalter','number','title','prayers_after','psalms','glories',]
+        fields = [
+            "id",
+            "psalter",
+            "number",
+            "title",
+            "prayers_after",
+            "psalms",
+            "glories",
+        ]
+
 
 class KathismaSummarySerializer(serializers.ModelSerializer):
     first_psalm = serializers.SerializerMethodField()
@@ -244,15 +243,15 @@ class KathismaSummarySerializer(serializers.ModelSerializer):
     class Meta:
         model = Kathisma
         fields = [
-            'id',
-            'number',
-            'title',
-            'first_psalm',
-            'last_psalm',
+            "id",
+            "number",
+            "title",
+            "first_psalm",
+            "last_psalm",
         ]
 
     def get_first_psalm(self, obj):
-        psalm = obj.psalms.order_by('number').first()
+        psalm = obj.psalms.order_by("number").first()
 
         if psalm:
             return psalm.number
@@ -260,31 +259,41 @@ class KathismaSummarySerializer(serializers.ModelSerializer):
         return None
 
     def get_last_psalm(self, obj):
-        psalm = obj.psalms.order_by('-number').first()
+        psalm = obj.psalms.order_by("-number").first()
 
         if psalm:
             return psalm.number
 
         return None
 
+
 class PsalterSerializer(serializers.ModelSerializer):
-    kathismas = KathismaSummarySerializer(many=True,read_only=True)
+    kathismas = KathismaSummarySerializer(many=True, read_only=True)
 
     class Meta:
         model = Psalter
-        fields = ['id','name','slug','description','prayers_before', 'prayers_after','is_visible','kathismas']
+        fields = [
+            "id",
+            "name",
+            "slug",
+            "description",
+            "prayers_before",
+            "prayers_after",
+            "is_visible",
+            "kathismas",
+        ]
+
 
 # =========================================================
 # АКАФИСТЫ
 # =========================================================
 
+
 class AkathistSectionSerializer(serializers.ModelSerializer):
-    text = TextSerializer(
-        read_only=True
-    )
+    text = TextSerializer(read_only=True)
 
     text_id = serializers.PrimaryKeyRelatedField(
-        source='text',
+        source="text",
         queryset=Text.objects.all(),
         write_only=True,
         required=True,
@@ -294,25 +303,26 @@ class AkathistSectionSerializer(serializers.ModelSerializer):
         model = AkathistSection
 
         fields = [
-            'id',
-            'section_type',
-            'number',
-            'text',
-            'text_id',
-            'note',
-            'order',
+            "id",
+            "section_type",
+            "number",
+            "text",
+            "text_id",
+            "note",
+            "order",
         ]
+
 
 class AkathistSummarySerializer(serializers.ModelSerializer):
     class Meta:
         model = Akathist
 
         fields = [
-            'id',
-            'title',
-            'slug',
-            'description',
-            'is_visible',
+            "id",
+            "title",
+            "slug",
+            "description",
+            "is_visible",
         ]
 
 
@@ -335,28 +345,25 @@ class AkathistSerializer(serializers.ModelSerializer):
     class Meta:
         model = Akathist
         fields = [
-            'id',
-            'title',
-            'slug',
-            'description',
-            'is_visible',
-            'troparion',
-            'kontakion_before',
-            'common_rule',
-            'sections',
+            "id",
+            "title",
+            "slug",
+            "description",
+            "is_visible",
+            "troparion",
+            "kontakion_before",
+            "common_rule",
+            "sections",
         ]
 
     def get_common_rule(self, obj):
-        rule = AkathistReadingRule.objects.filter(
-            key='default'
-        ).first()
+        rule = AkathistReadingRule.objects.filter(key="default").first()
 
         if not rule:
             return None
 
-        return AkathistReadingRuleSerializer(
-            rule
-        ).data
+        return AkathistReadingRuleSerializer(rule).data
+
 
 class AkathistReadingRuleSerializer(serializers.ModelSerializer):
     opening = TextSerializer(read_only=True)
@@ -365,15 +372,17 @@ class AkathistReadingRuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = AkathistReadingRule
         fields = [
-            'id',
-            'key',
-            'opening',
-            'ending',
+            "id",
+            "key",
+            "opening",
+            "ending",
         ]
+
 
 # =========================================================
 # КАНОНЫ
 # =========================================================
+
 
 class CanonSectionSerializer(serializers.ModelSerializer):
     text = TextSerializer(
@@ -384,13 +393,13 @@ class CanonSectionSerializer(serializers.ModelSerializer):
         model = CanonSection
 
         fields = [
-            'id',
-            'section_type',
-            'variant',
-            'ode_number',
-            'heading',
-            'text',
-            'order',
+            "id",
+            "section_type",
+            "variant",
+            "ode_number",
+            "heading",
+            "text",
+            "order",
         ]
 
 
@@ -399,12 +408,12 @@ class CanonSummarySerializer(serializers.ModelSerializer):
         model = Canon
 
         fields = [
-            'id',
-            'title',
-            'slug',
-            'description',
-            'tone',
-            'is_visible',
+            "id",
+            "title",
+            "slug",
+            "description",
+            "tone",
+            "is_visible",
         ]
 
 
@@ -418,13 +427,13 @@ class CanonSerializer(serializers.ModelSerializer):
         model = Canon
 
         fields = [
-            'id',
-            'title',
-            'slug',
-            'description',
-            'tone',
-            'is_visible',
-            'sections',
+            "id",
+            "title",
+            "slug",
+            "description",
+            "tone",
+            "is_visible",
+            "sections",
         ]
 
 
@@ -432,31 +441,31 @@ class CanonSerializer(serializers.ModelSerializer):
 # ПОЛЬЗОВАТЕЛЬСКИЕ СБОРНИКИ
 # =========================================================
 
+
 class UserCollectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserCollection
 
         fields = [
-            'id',
-            'user',
-            'name',
-            'description',
-            'is_default',
-            'created_at',
+            "id",
+            "user",
+            "name",
+            "description",
+            "is_default",
+            "created_at",
         ]
 
         read_only_fields = [
-            'user',
-            'created_at',
+            "user",
+            "created_at",
         ]
 
+
 class CollectionItemSerializer(serializers.ModelSerializer):
-    text = TextSerializer(
-        read_only=True
-    )
+    text = TextSerializer(read_only=True)
 
     text_id = serializers.PrimaryKeyRelatedField(
-        source='text',
+        source="text",
         queryset=Text.objects.all(),
         write_only=True,
     )
@@ -465,33 +474,34 @@ class CollectionItemSerializer(serializers.ModelSerializer):
         model = CollectionItem
 
         fields = [
-            'id',
-            'collection',
-            'text',
-            'text_id',
-            'order',
+            "id",
+            "collection",
+            "text",
+            "text_id",
+            "order",
         ]
 
         read_only_fields = [
-            'collection',
+            "collection",
         ]
+
 
 class BookmarkSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bookmark
 
         fields = [
-            'id',
-            'user',
-            'text',
-            'collection',
-            'position',
-            'created_at',
+            "id",
+            "user",
+            "text",
+            "collection",
+            "position",
+            "created_at",
         ]
 
         read_only_fields = [
-            'user',
-            'created_at',
+            "user",
+            "created_at",
         ]
 
 
@@ -499,22 +509,23 @@ class BookmarkSerializer(serializers.ModelSerializer):
 # ЦИТАТА ДНЯ
 # =========================================================
 
+
 class DailyQuoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = DailyQuote
 
         fields = [
-            'id',
-            'text',
-            'source',
-            'reference',
-            'quote_date',
+            "id",
+            "text",
+            "source",
+            "reference",
+            "quote_date",
         ]
 
 
 class SavedItemSerializer(serializers.ModelSerializer):
     save_type_display = serializers.CharField(
-        source='get_save_type_display',
+        source="get_save_type_display",
         read_only=True,
     )
 
@@ -522,50 +533,40 @@ class SavedItemSerializer(serializers.ModelSerializer):
         model = SavedItem
 
         fields = [
-            'id',
-            'save_type',
-            'save_type_display',
-            'source_type',
-            'source_id',
-            'anchor_type',
-            'anchor_id',
-            'source_title',
-            'item_title',
-            'text',
-            'start_offset',
-            'end_offset',
-            'metadata',
-            'created_at',
+            "id",
+            "save_type",
+            "save_type_display",
+            "source_type",
+            "source_id",
+            "anchor_type",
+            "anchor_id",
+            "source_title",
+            "item_title",
+            "text",
+            "start_offset",
+            "end_offset",
+            "metadata",
+            "created_at",
         ]
 
         read_only_fields = [
-            'id',
-            'save_type_display',
-            'created_at',
+            "id",
+            "save_type_display",
+            "created_at",
         ]
 
     def validate(self, attrs):
-        start = attrs.get(
-            'start_offset'
-        )
+        start = attrs.get("start_offset")
 
-        end = attrs.get(
-            'end_offset'
-        )
+        end = attrs.get("end_offset")
 
-        if (
-                start is not None
-                and end is not None
-                and end < start
-        ):
+        if start is not None and end is not None and end < start:
             raise serializers.ValidationError(
-                {
-                    'end_offset':
-                        'Конец выделения не может быть раньше начала.'
-                }
+                {"end_offset": "Конец выделения не может быть раньше начала."}
             )
 
         return attrs
+
 
 class ReadingProgressSerializer(serializers.ModelSerializer):
     anchor_info = serializers.SerializerMethodField()
@@ -575,21 +576,21 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
         model = ReadingProgress
 
         fields = [
-            'id',
-            'source_type',
-            'source_id',
-            'anchor_type',
-            'anchor_id',
-            'offset',
-            'anchor_info',
-            'progress_percent',
-            'updated_at',
+            "id",
+            "source_type",
+            "source_id",
+            "anchor_type",
+            "anchor_id",
+            "offset",
+            "anchor_info",
+            "progress_percent",
+            "updated_at",
         ]
 
         read_only_fields = [
-            'id',
-            'anchor_info',
-            'updated_at',
+            "id",
+            "anchor_info",
+            "updated_at",
         ]
 
     def get_progress_percent(self, obj):
@@ -598,66 +599,37 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
 
         queryset = None
 
-        if (
-                obj.source_type == 'psalter'
-                and obj.anchor_type == 'psalm'
-        ):
-            queryset = (
-                Psalm.objects
-                .filter(
-                    kathisma__psalter_id=obj.source_id
-                )
-                .order_by(
-                    'kathisma__number',
-                    'number',
-                    'id',
-                )
+        if obj.source_type == "psalter" and obj.anchor_type == "psalm":
+            queryset = Psalm.objects.filter(kathisma__psalter_id=obj.source_id).order_by(
+                "kathisma__number",
+                "number",
+                "id",
             )
 
-        elif (
-                obj.source_type == 'psalter'
-                and obj.anchor_type == 'psalm_verse'
-        ):
-            queryset = (
-                PsalmVerse.objects
-                .filter(
-                    psalm__kathisma__psalter_id=obj.source_id
-                )
-                .order_by(
-                    'psalm__kathisma__number',
-                    'psalm__number',
-                    'number',
-                    'id',
-                )
+        elif obj.source_type == "psalter" and obj.anchor_type == "psalm_verse":
+            queryset = PsalmVerse.objects.filter(
+                psalm__kathisma__psalter_id=obj.source_id
+            ).order_by(
+                "psalm__kathisma__number",
+                "psalm__number",
+                "number",
+                "id",
             )
 
-        elif (
-                obj.source_type == 'akathist'
-                and obj.anchor_type == 'akathist_section'
-        ):
-            queryset = (
-                AkathistSection.objects
-                .filter(
-                    akathist_id=obj.source_id
-                )
-                .order_by(
-                    'order',
-                    'id',
-                )
+        elif obj.source_type == "akathist" and obj.anchor_type == "akathist_section":
+            queryset = AkathistSection.objects.filter(akathist_id=obj.source_id).order_by(
+                "order",
+                "id",
             )
 
-        elif (
-                obj.source_type == 'canon'
-                and obj.anchor_type == 'canon_section'
-        ):
+        elif obj.source_type == "canon" and obj.anchor_type == "canon_section":
             current_section = (
-                CanonSection.objects
-                .filter(
+                CanonSection.objects.filter(
                     id=obj.anchor_id,
                     canon_id=obj.source_id,
                 )
                 .only(
-                    'variant',
+                    "variant",
                 )
                 .first()
             )
@@ -665,46 +637,24 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
             if not current_section:
                 return 0
 
-            queryset = (
-                CanonSection.objects
-                .filter(
-                    canon_id=obj.source_id,
-                    variant=current_section.variant,
-                )
-                .order_by(
-                    'order',
-                    'id',
-                )
+            queryset = CanonSection.objects.filter(
+                canon_id=obj.source_id,
+                variant=current_section.variant,
+            ).order_by(
+                "order",
+                "id",
             )
 
-        elif (
-                obj.source_type == 'prayer_rule'
-                and obj.anchor_type == 'prayer_rule_item'
-        ):
-            queryset = (
-                PrayerRuleItem.objects
-                .filter(
-                    rule_id=obj.source_id
-                )
-                .order_by(
-                    'order',
-                    'id',
-                )
+        elif obj.source_type == "prayer_rule" and obj.anchor_type == "prayer_rule_item":
+            queryset = PrayerRuleItem.objects.filter(rule_id=obj.source_id).order_by(
+                "order",
+                "id",
             )
 
-        elif (
-                obj.source_type == 'category'
-                and obj.anchor_type == 'category_text'
-        ):
-            queryset = (
-                CategoryText.objects
-                .filter(
-                    category_id=obj.source_id
-                )
-                .order_by(
-                    'order',
-                    'id',
-                )
+        elif obj.source_type == "category" and obj.anchor_type == "category_text":
+            queryset = CategoryText.objects.filter(category_id=obj.source_id).order_by(
+                "order",
+                "id",
             )
 
         if queryset is None:
@@ -712,7 +662,7 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
 
         ids = list(
             queryset.values_list(
-                'id',
+                "id",
                 flat=True,
             )
         )
@@ -721,18 +671,11 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
             return 0
 
         try:
-            position = (
-                ids.index(obj.anchor_id)
-                + 1
-            )
+            position = ids.index(obj.anchor_id) + 1
         except ValueError:
             return 0
 
-        percent = round(
-            position
-            * 100
-            / len(ids)
-        )
+        percent = round(position * 100 / len(ids))
 
         return max(
             1,
@@ -743,19 +686,12 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
         )
 
     def get_anchor_info(self, obj):
-        if (
-                obj.source_type == 'canon'
-                and obj.anchor_type == 'canon_section'
-                and obj.anchor_id
-        ):
+        if obj.source_type == "canon" and obj.anchor_type == "canon_section" and obj.anchor_id:
             section = (
-                CanonSection.objects
-                .select_related(
-                    'canon',
+                CanonSection.objects.select_related(
+                    "canon",
                 )
-                .filter(
-                    id=obj.anchor_id
-                )
+                .filter(id=obj.anchor_id)
                 .first()
             )
 
@@ -763,81 +699,35 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
                 return None
 
             return {
-                'canon_id':
-                    section.canon_id,
-
-                'canon_slug':
-                    section.canon.slug,
-
-                'canon_title':
-                    section.canon.title,
-
-                'section_id':
-                    section.id,
-
-                'variant':
-                    section.variant,
-
-                'section_type':
-                    section.section_type,
-
-                'section_type_display':
-                    section.get_section_type_display(),
-
-                'ode_number':
-                    section.ode_number,
-
-                'heading':
-                    section.heading,
+                "canon_id": section.canon_id,
+                "canon_slug": section.canon.slug,
+                "canon_title": section.canon.title,
+                "section_id": section.id,
+                "variant": section.variant,
+                "section_type": section.section_type,
+                "section_type_display": section.get_section_type_display(),
+                "ode_number": section.ode_number,
+                "heading": section.heading,
             }
 
-        if (
-                obj.source_type == 'psalter'
-                and obj.anchor_type == 'psalm'
-                and obj.anchor_id
-        ):
-            psalm = (
-                Psalm.objects
-                .select_related(
-                    'kathisma'
-                )
-                .filter(id=obj.anchor_id)
-                .first()
-            )
+        if obj.source_type == "psalter" and obj.anchor_type == "psalm" and obj.anchor_id:
+            psalm = Psalm.objects.select_related("kathisma").filter(id=obj.anchor_id).first()
 
             if not psalm:
                 return None
 
             return {
-                'kathisma_id':
-                    psalm.kathisma.id,
-
-                'kathisma_number':
-                    psalm.kathisma.number,
-
-                'psalm_id':
-                    psalm.id,
-
-                'psalm_number':
-                    psalm.number,
-
-                'verse_id':
-                    None,
-
-                'verse_number':
-                    None,
+                "kathisma_id": psalm.kathisma.id,
+                "kathisma_number": psalm.kathisma.number,
+                "psalm_id": psalm.id,
+                "psalm_number": psalm.number,
+                "verse_id": None,
+                "verse_number": None,
             }
 
-        if (
-                obj.source_type == 'psalter'
-                and obj.anchor_type == 'psalm_verse'
-                and obj.anchor_id
-        ):
+        if obj.source_type == "psalter" and obj.anchor_type == "psalm_verse" and obj.anchor_id:
             verse = (
-                PsalmVerse.objects
-                .select_related(
-                    'psalm__kathisma'
-                )
+                PsalmVerse.objects.select_related("psalm__kathisma")
                 .filter(id=obj.anchor_id)
                 .first()
             )
@@ -846,23 +736,12 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
                 return None
 
             return {
-                'kathisma_id':
-                    verse.psalm.kathisma.id,
-
-                'kathisma_number':
-                    verse.psalm.kathisma.number,
-
-                'psalm_id':
-                    verse.psalm.id,
-
-                'psalm_number':
-                    verse.psalm.number,
-
-                'verse_id':
-                    verse.id,
-
-                'verse_number':
-                    verse.number,
+                "kathisma_id": verse.psalm.kathisma.id,
+                "kathisma_number": verse.psalm.kathisma.number,
+                "psalm_id": verse.psalm.id,
+                "psalm_number": verse.psalm.number,
+                "verse_id": verse.id,
+                "verse_number": verse.number,
             }
 
         return None

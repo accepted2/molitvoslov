@@ -1,18 +1,10 @@
 import React from 'react';
 
-import {
-  StyleSheet,
-  View,
-} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 
-import SelectableSaveText
-  from './SelectableSaveText';
+import SelectableSaveText from './SelectableSaveText';
 
-import {
-  colors,
-  radius,
-} from '../../theme';
-
+import {colors, radius} from '../../theme';
 
 export default function VerseRow({
   verse,
@@ -29,185 +21,108 @@ export default function VerseRow({
     return null;
   }
 
-
   const commonMetadata = {
-    kathisma_number:
-      kathismaNumber,
+    kathisma_number: kathismaNumber,
 
-    kathisma_title:
-      kathismaTitle ||
-      '',
+    kathisma_title: kathismaTitle || '',
 
-    psalm_id:
-      psalmId,
+    psalm_id: psalmId,
 
-    psalm_number:
-      psalmNumber,
+    psalm_number: psalmNumber,
 
-    verse_number:
-      verse.number,
+    verse_number: verse.number,
   };
-
 
   return (
     <View
-      style={[
-        styles.row,
-
-        hasSavedFragment &&
-          styles.rowSaved,
-      ]}
-      nativeID={
-        `verse-${verse.id}`
-      }
-      onLayout={
-        onLayout
-      }
+      style={[styles.row, hasSavedFragment && styles.rowSaved]}
+      nativeID={`verse-${verse.id}`}
+      onLayout={onLayout}
     >
-      <View
-        style={
-          styles.column
-        }
-      >
+      <View style={styles.column}>
         <SelectableSaveText
-          text={
-            verse
-              .church_slavonic ||
-            ''
-          }
-          textStyle={
-            styles.text
-          }
-          prefix={
-            `${verse.number} `
-          }
-          prefixStyle={
-            styles.number
-          }
+          text={verse.church_slavonic || ''}
+          textStyle={styles.text}
+          prefix={`${verse.number} `}
+          prefixStyle={styles.number}
           sourceType="psalter"
-          sourceId={
-            psalterId
-          }
+          sourceId={psalterId}
           anchorType="psalm_verse"
-          anchorId={
-            verse.id
-          }
+          anchorId={verse.id}
           sourceTitle="Псалтирь"
-          itemTitle={
-            `Псалом ${psalmNumber}, стих ${verse.number}`
-          }
+          itemTitle={`Псалом ${psalmNumber}, стих ${verse.number}`}
           metadata={{
             ...commonMetadata,
-            language:
-              'church',
+            language: 'church',
           }}
           fullSaveType="verse"
           fullSaveLabel="Стих"
-          onSaved={
-            onFragmentSaved
-          }
+          onSaved={onFragmentSaved}
         />
       </View>
 
-      <View
-        style={
-          styles.separator
-        }
-      />
+      <View style={styles.separator} />
 
-      <View
-        style={
-          styles.column
-        }
-      >
+      <View style={styles.column}>
         <SelectableSaveText
-          text={
-            verse.russian ||
-            ''
-          }
-          textStyle={
-            styles.text
-          }
-          prefix={
-            `${verse.number} `
-          }
-          prefixStyle={
-            styles.number
-          }
+          text={verse.russian || ''}
+          textStyle={styles.text}
+          prefix={`${verse.number} `}
+          prefixStyle={styles.number}
           sourceType="psalter"
-          sourceId={
-            psalterId
-          }
+          sourceId={psalterId}
           anchorType="psalm_verse"
-          anchorId={
-            verse.id
-          }
+          anchorId={verse.id}
           sourceTitle="Псалтирь"
-          itemTitle={
-            `Псалом ${psalmNumber}, стих ${verse.number}`
-          }
+          itemTitle={`Псалом ${psalmNumber}, стих ${verse.number}`}
           metadata={{
             ...commonMetadata,
-            language:
-              'russian',
+            language: 'russian',
           }}
           fullSaveType="verse"
           fullSaveLabel="Стих"
-          onSaved={
-            onFragmentSaved
-          }
+          onSaved={onFragmentSaved}
         />
       </View>
     </View>
   );
 }
 
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    paddingVertical: 8,
+    borderRadius: radius.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: 'transparent',
+  },
 
-const styles =
-  StyleSheet.create({
-    row: {
-      flexDirection: 'row',
-      alignItems: 'stretch',
-      paddingVertical: 8,
-      borderRadius:
-        radius.sm,
-      borderLeftWidth: 3,
-      borderLeftColor:
-        'transparent',
-    },
+  rowSaved: {
+    backgroundColor: 'rgba(138, 90, 56, 0.045)',
+    borderLeftColor: 'rgba(138, 90, 56, 0.24)',
+  },
 
-    rowSaved: {
-      backgroundColor:
-        'rgba(138, 90, 56, 0.045)',
-      borderLeftColor:
-        'rgba(138, 90, 56, 0.24)',
-    },
+  column: {
+    flex: 1,
+    paddingHorizontal: 10,
+  },
 
-    column: {
-      flex: 1,
-      paddingHorizontal: 10,
-    },
+  separator: {
+    width: StyleSheet.hairlineWidth,
 
-    separator: {
-      width:
-        StyleSheet
-          .hairlineWidth,
+    backgroundColor: colors.borderStrong,
+  },
 
-      backgroundColor:
-        colors.borderStrong,
-    },
+  text: {
+    fontSize: 17,
+    lineHeight: 26,
+    color: colors.text,
+  },
 
-    text: {
-      fontSize: 17,
-      lineHeight: 26,
-      color:
-        colors.text,
-    },
-
-    number: {
-      fontSize: 12,
-      fontWeight: '700',
-      color:
-        colors.textMuted,
-    },
-  });
+  number: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.textMuted,
+  },
+});
