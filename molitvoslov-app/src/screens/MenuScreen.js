@@ -691,10 +691,8 @@ export const MenuScreen = ({navigation}) => {
                         onPress={toggleDailyQuoteSaved}
                         style={({pressed}) => [
                           styles.quoteSaveButton,
-                          savedDailyQuote &&
-                            styles.quoteSaveButtonActive,
-                          pressed &&
-                            styles.pressed,
+                          savedDailyQuote && styles.quoteSaveButtonActive,
+                          pressed && styles.pressed,
                         ]}
                       >
                         <SaveHeartIcon active={!!savedDailyQuote} size={19} />
