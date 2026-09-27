@@ -3603,18 +3603,6 @@ class Command(BaseCommand):
         )
 
         return value.strip()
-,
-            normalized,
-        )
-
-        if not match:
-            return None
-
-        return int(
-            match.group(
-                1
-            )
-        )
 
     def strict_signature(
             self,
