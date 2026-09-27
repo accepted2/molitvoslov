@@ -158,7 +158,6 @@ export const AkathistListScreen = ({navigation}) => {
                   onPress={() => toggleFavorite(item)}
                   style={({pressed}) => [
                     styles.favoriteButton,
-                    saved && styles.favoriteButtonActive,
                     pressed && styles.pressed,
                   ]}
                 >
@@ -381,10 +380,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
 
     backgroundColor: 'transparent',
-  },
-
-  favoriteButtonActive: {
-    backgroundColor: 'rgba(190, 139, 72, 0.08)',
   },
 
   favoriteText: {

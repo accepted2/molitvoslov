@@ -199,8 +199,6 @@ const HTML_TEMPLATE = String.raw`
 
     .section-action.active {
       color: var(--accent-dark);
-      background: #F1DFC2;
-      border-color: rgba(123, 79, 36, 0.28);
     }
 
     .save-heart-icon {

@@ -199,8 +199,6 @@ export const CanonListScreen = ({navigation}) => {
                   style={({pressed}) => [
                     styles.favoriteButton,
 
-                    saved && styles.favoriteButtonActive,
-
                     pressed && styles.pressed,
                   ]}
                 >
@@ -312,9 +310,6 @@ const styles = StyleSheet.create({
     borderLeftWidth: 1,
     borderLeftColor: colors.border,
     backgroundColor: 'rgba(238, 220, 192, 0.72)',
-  },
-  favoriteButtonActive: {
-    backgroundColor: colors.surfaceWarm,
   },
   favoriteText: {
     fontSize: 22,

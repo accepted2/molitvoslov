@@ -16,7 +16,7 @@ export const SaveHeartIcon = ({active = false, size = 20}) => (
       active && styles.active,
     ]}
   >
-    ♡
+    {active ? '♥' : '♡'}
   </Text>
 );
 

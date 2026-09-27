@@ -691,7 +691,6 @@ export const MenuScreen = ({navigation}) => {
                         onPress={toggleDailyQuoteSaved}
                         style={({pressed}) => [
                           styles.quoteSaveButton,
-                          savedDailyQuote && styles.quoteSaveButtonActive,
                           pressed && styles.pressed,
                         ]}
                       >
@@ -1095,10 +1094,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(126, 78, 34, 0.32)',
     borderRadius: 17,
     backgroundColor: 'rgba(248, 233, 207, 0.88)',
-  },
-  quoteSaveButtonActive: {
-    backgroundColor: '#EED9B8',
-    borderColor: 'rgba(126, 78, 34, 0.46)',
   },
   widgetButton: {
     flexDirection: 'row',

@@ -283,8 +283,6 @@ export default function PsalterScreen({navigation}) {
                   style={({pressed}) => [
                     styles.saveButton,
 
-                    saved && styles.saveButtonActive,
-
                     pressed && styles.pressed,
                   ]}
                 >
@@ -408,10 +406,6 @@ const styles = StyleSheet.create({
     borderLeftWidth: 1,
     borderLeftColor: colors.border,
     backgroundColor: 'rgba(238, 220, 192, 0.72)',
-  },
-
-  saveButtonActive: {
-    backgroundColor: colors.surfaceWarm,
   },
 
   saveButtonText: {
