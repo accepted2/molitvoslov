@@ -34,6 +34,7 @@ const CATEGORY_ICONS = {
   canons: 'canons',
   communion: 'communion',
   psalter: 'psalter',
+  bible:'bible',
 };
 
 const resolveCategoryIcon = (...values) => {
@@ -81,6 +82,13 @@ const resolveCategoryIcon = (...values) => {
 
   if (value.includes('psalt') || value.includes('псалт')) {
     return CATEGORY_ICONS.psalter;
+  }
+  if (
+    value.includes('bible') ||
+    value.includes('bibli') ||
+    value.includes('библи')
+  ) {
+    return CATEGORY_ICONS.bible;
   }
 
   return null;
@@ -840,8 +848,8 @@ export const MenuScreen = ({navigation}) => {
                       >
                         {
                           savedDailyQuote
-                            ? '★'
-                            : '☆'
+                            ? '♥'
+                            : '♡'
                         }
                       </Text>
                     </Pressable>
@@ -1026,7 +1034,7 @@ export const MenuScreen = ({navigation}) => {
               <DecorativeCard
                 title="Библия"
                 subtitle="Ветхий и Новый Завет"
-                symbol="☷"
+                iconSource={CATEGORY_ICONS.bible}
                 artwork={homeArtwork.hero_biblical}
                 onPress={() => navigation.navigate('Bible')}
               />
@@ -1117,11 +1125,6 @@ const styles = StyleSheet.create({
   heroImage: {
     opacity: 1,
   },
-  // heroWash: {
-  //   ...StyleSheet.absoluteFillObject,
-  //   backgroundColor: 'rgba(255, 235, 205, 0.02)',
-  // },
-
   heroTopGradient: {
     position: 'absolute',
     top: 0,
@@ -1266,8 +1269,10 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(126, 78, 34, 0.46)',
   },
   quoteSaveIcon: {
+    width: 22,
+    height: 22,
     color: '#9A8068',
-    fontSize: 21,
+    fontSize: 19,
     lineHeight: 22,
     textAlign: 'center',
     textAlignVertical: 'center',
@@ -1505,6 +1510,7 @@ const styles = StyleSheet.create({
     shadowRadius: 7,
     elevation: 2,
   },
+
   libraryArtwork: {
     position: 'absolute',
     top: 0,
