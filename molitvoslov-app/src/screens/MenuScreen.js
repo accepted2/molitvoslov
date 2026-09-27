@@ -689,7 +689,13 @@ export const MenuScreen = ({navigation}) => {
                         }
                         hitSlop={8}
                         onPress={toggleDailyQuoteSaved}
-                        style={({pressed}) => [styles.quoteSaveButton, pressed && styles.pressed]}
+                        style={({pressed}) => [
+                          styles.quoteSaveButton,
+                          savedDailyQuote &&
+                            styles.quoteSaveButtonActive,
+                          pressed &&
+                            styles.pressed,
+                        ]}
                       >
                         <SaveHeartIcon active={!!savedDailyQuote} size={19} />
                       </Pressable>
@@ -1083,14 +1089,18 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   quoteSaveButton: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(126, 78, 34, 0.32)',
-    borderRadius: 17,
-    backgroundColor: 'rgba(248, 233, 207, 0.88)',
+    borderColor: 'rgba(112, 86, 55, 0.24)',
+    borderRadius: 18,
+    backgroundColor: 'rgba(241, 223, 194, 0.94)',
+  },
+  quoteSaveButtonActive: {
+    borderColor: 'rgba(123, 79, 36, 0.28)',
+    backgroundColor: '#F1DFC2',
   },
   widgetButton: {
     flexDirection: 'row',
