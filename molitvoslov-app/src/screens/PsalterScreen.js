@@ -18,6 +18,7 @@ import ExpandablePrayerBlock from '../components/reader/ExpandablePrayerBlock';
 
 import {colors, radius, spacing} from '../theme';
 import {BottomNav} from '../components/navigation/BottomNav';
+import {SaveHeartIcon} from '../components/icons/SaveHeartIcon';
 
 export default function PsalterScreen({navigation}) {
   const [psalter, setPsalter] = useState(null);
@@ -287,9 +288,7 @@ export default function PsalterScreen({navigation}) {
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={[styles.saveButtonText, saved && styles.saveButtonTextActive]}>
-                    {saved ? '★' : '☆'}
-                  </Text>
+                  <SaveHeartIcon active={saved} size={20} />
                 </Pressable>
               </View>
             );

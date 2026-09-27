@@ -20,6 +20,7 @@ import {StatusBar} from 'expo-status-bar';
 
 import {BottomNav} from '../components/navigation/BottomNav';
 import {CategoryIcon} from '../components/icons/CategoryIcon';
+import {SaveHeartIcon} from '../components/icons/SaveHeartIcon';
 import {homeArtwork} from '../data/homeArtwork';
 import {contentApi as api} from '../services/contentApi';
 import {bibleContent} from '../services/bibleContent';
@@ -694,14 +695,7 @@ export const MenuScreen = ({navigation}) => {
                           pressed && styles.pressed,
                         ]}
                       >
-                        <Text
-                          style={[
-                            styles.quoteSaveIcon,
-                            savedDailyQuote && styles.quoteSaveIconActive,
-                          ]}
-                        >
-                          {savedDailyQuote ? '♥' : '♡'}
-                        </Text>
+                        <SaveHeartIcon active={!!savedDailyQuote} size={19} />
                       </Pressable>
 
                       <Pressable
@@ -1105,19 +1099,6 @@ const styles = StyleSheet.create({
   quoteSaveButtonActive: {
     backgroundColor: '#EED9B8',
     borderColor: 'rgba(126, 78, 34, 0.46)',
-  },
-  quoteSaveIcon: {
-    width: 22,
-    height: 22,
-    color: '#9A8068',
-    fontSize: 19,
-    lineHeight: 22,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    includeFontPadding: false,
-  },
-  quoteSaveIconActive: {
-    color: '#7A4F2D',
   },
   widgetButton: {
     flexDirection: 'row',

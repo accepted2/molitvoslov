@@ -143,17 +143,19 @@ const HTML_TEMPLATE = String.raw`
 
     .document-action {
       display: flex;
-      width: 36px;
-      height: 36px;
-      min-width: 36px;
       min-height: 36px;
-      padding: 0;
+      padding: 0 14px;
       align-items: center;
       justify-content: center;
       border: 1px solid var(--border);
       border-radius: 18px;
       background: var(--surface);
       color: var(--secondary);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 13px;
+      line-height: 18px;
+      font-weight: 700;
+      white-space: nowrap;
     }
 
     .document-action.active {
@@ -1731,16 +1733,22 @@ const HTML_TEMPLATE = String.raw`
             'button',
             DATA.document.action.active
               ? 'document-action active'
-              : 'document-action'
+              : 'document-action',
+            DATA.document.action.label ||
+              (
+                DATA.document.action.active
+                  ? 'В избранном'
+                  : 'В избранное'
+              )
           );
 
         action.type =
           'button';
 
-        setSaveHeartIcon(
-          action,
-          !!DATA.document.action.active
-        );
+        action.title =
+          DATA.document.action.active
+            ? 'Убрать из избранного'
+            : 'Добавить в избранное';
 
         action.dataset.actionKey =
           DATA.document.action.key;
@@ -6710,10 +6718,29 @@ appendStyledSegment(
                 !!active
               );
 
-            setSaveHeartIcon(
-              action,
-              !!active
-            );
+            if (
+              action.classList.contains(
+                'document-action'
+              )
+            ) {
+              action.textContent =
+                label ||
+                (
+                  active
+                    ? 'В избранном'
+                    : 'В избранное'
+                );
+
+              action.title =
+                active
+                  ? 'Убрать из избранного'
+                  : 'Добавить в избранное';
+            } else {
+              setSaveHeartIcon(
+                action,
+                !!active
+              );
+            }
           }
 
           setSectionWholeHighlight(
