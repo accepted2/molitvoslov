@@ -1209,13 +1209,13 @@ const HTML_TEMPLATE = String.raw`
       path.setAttribute(
         'fill',
         active
-          ? 'currentColor'
+          ? '#B98545'
           : 'none'
       );
 
       path.setAttribute(
         'stroke',
-        'currentColor'
+        '#765238'
       );
 
       path.setAttribute(
