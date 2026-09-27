@@ -1,0 +1,14 @@
+# Dependencies and generated output
+**/node_modules/**
+**/.expo/**
+**/dist/**
+**/build/**
+**/coverage/**
+
+# Generated/offline content: keep generator output stable
+molitvoslov-app/src/data/offlineBible.json
+molitvoslov-app/src/data/offlineContent.json
+molitvoslov-app/package-lock.json
+
+# Source/import archives and downloaded content
+molitvoslov-backend/files/**
