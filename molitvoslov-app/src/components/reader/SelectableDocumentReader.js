@@ -398,6 +398,21 @@ const HTML_TEMPLATE = String.raw`
       line-height: 23px;
     }
 
+    .reader-text.psalter {
+      white-space: pre-line;
+    }
+
+    .reader-text.psalter-prayer {
+      white-space: normal;
+      text-align: justify;
+      text-align-last: auto;
+    }
+
+    .reader-text .psalter-prayer-accent {
+      color: var(--liturgical);
+      font-weight: 700;
+    }
+
     .reader-text .akathist-initial {
       color: var(--liturgical);
       font-weight: 700;
@@ -2381,6 +2396,176 @@ const HTML_TEMPLATE = String.raw`
       };
 
 
+    const collectPsalterPrayerAccentRanges =
+      value => {
+        const source =
+          String(
+            value ||
+            ''
+          );
+
+        const ranges = [];
+
+        const {
+          normalized,
+          originalIndex,
+        } =
+          normalizedAkathistTextWithIndex(
+            source
+          );
+
+        const cuePattern =
+          /(?:^|\s)((?:Слава|И\s+ныне)\s*:)/giu;
+
+        let cueMatch = null;
+
+        while (
+          (
+            cueMatch =
+              cuePattern.exec(
+                normalized
+              )
+          )
+        ) {
+          const cue =
+            cueMatch[1];
+
+          const cueOffset =
+            cueMatch[0]
+              .lastIndexOf(
+                cue
+              );
+
+          const normalizedStart =
+            cueMatch.index +
+            cueOffset;
+
+          const start =
+            originalIndex[
+              normalizedStart
+            ];
+
+          const last =
+            originalIndex[
+              normalizedStart +
+              cue.length -
+              1
+            ];
+
+          if (
+            Number.isFinite(
+              start
+            ) &&
+            Number.isFinite(
+              last
+            )
+          ) {
+            ranges.push({
+              start,
+              end:
+                last + 1,
+            });
+          }
+        }
+
+        const paragraphStarts = [
+          0,
+        ];
+
+        const paragraphPattern =
+          /\n[ \t]*\n(?:[ \t]*\n)*/g;
+
+        let paragraphMatch = null;
+
+        while (
+          (
+            paragraphMatch =
+              paragraphPattern.exec(
+                source
+              )
+          )
+        ) {
+          paragraphStarts.push(
+            paragraphMatch.index +
+            paragraphMatch[0].length
+          );
+        }
+
+        paragraphStarts.forEach(
+          rawStart => {
+            let start =
+              Math.max(
+                0,
+                rawStart
+              );
+
+            while (
+              start < source.length &&
+              /\s/u.test(
+                source[start]
+              )
+            ) {
+              start += 1;
+            }
+
+            const tail =
+              source.slice(
+                start
+              );
+
+            const match =
+              tail.match(
+                /[А-Яа-яЁёІіЇїЄєҐґ\u0400-\u052F]/u
+              );
+
+            if (!match) {
+              return;
+            }
+
+            const letterStart =
+              start +
+              match.index;
+
+            if (
+              ranges.some(
+                range =>
+                  letterStart >=
+                    range.start &&
+                  letterStart <
+                    range.end
+              )
+            ) {
+              return;
+            }
+
+            let letterEnd =
+              letterStart + 1;
+
+            while (
+              letterEnd <
+                source.length &&
+              /[\u0300-\u036f\u0483-\u0487]/u.test(
+                source[
+                  letterEnd
+                ]
+              )
+            ) {
+              letterEnd += 1;
+            }
+
+            ranges.push({
+              start:
+                letterStart,
+              end:
+                letterEnd,
+            });
+          }
+        );
+
+        return ranges;
+      };
+
+
     const appendAccentWords = (
       parent,
       value,
@@ -2905,6 +3090,22 @@ const HTML_TEMPLATE = String.raw`
               )
             : [];
 
+        const isPsalterPrayer =
+          String(
+            itemConfig
+              ?.className ||
+            ''
+          ).includes(
+            'psalter-prayer'
+          );
+
+        const psalterPrayerAccentRanges =
+          isPsalterPrayer
+            ? collectPsalterPrayerAccentRanges(
+                text
+              )
+            : [];
+
         const boundaries =
           new Set([
             0,
@@ -2920,6 +3121,17 @@ const HTML_TEMPLATE = String.raw`
         );
 
         akathistInitialRanges.forEach(
+          range => {
+            boundaries.add(
+              range.start
+            );
+            boundaries.add(
+              range.end
+            );
+          }
+        );
+
+        psalterPrayerAccentRanges.forEach(
           range => {
             boundaries.add(
               range.start
@@ -3049,6 +3261,24 @@ const HTML_TEMPLATE = String.raw`
           ) {
             span.classList.add(
               'akathist-initial'
+            );
+          }
+
+          const isPsalterPrayerAccent =
+            isPsalterPrayer &&
+            psalterPrayerAccentRanges.some(
+              range =>
+                midpoint >=
+                  range.start &&
+                midpoint <
+                  range.end
+            );
+
+          if (
+            isPsalterPrayerAccent
+          ) {
+            span.classList.add(
+              'psalter-prayer-accent'
             );
           }
 

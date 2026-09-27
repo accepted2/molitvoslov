@@ -111,6 +111,8 @@ export default function ExpandablePrayerBlock({title, text, onCollapse, saveProp
 
                   fullSaveType: 'prayer',
 
+                  className: saveProps.sourceType === 'psalter' ? 'psalter-prayer' : '',
+
                   metadata: saveProps.metadata || {},
                 },
               ],
