@@ -3,7 +3,8 @@ import React, {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'reac
 import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
 
 import {contentApi as api} from '../services/contentApi';
-
+import {hyphenateSync as hyphenateRussian} from 'hyphen/ru';
+import {hyphenateSync as hyphenateChurchSlavonic} from 'hyphen/cu';
 import {useReadingProgress} from '../hooks/useReadingProgress';
 
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
@@ -20,8 +21,8 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 const GLORY_TEXT = `Слава Отцу и Сыну и Святому Духу.
 И ныне и присно и во веки веков. Аминь.
 
-Аллилуиа, аллилуиа, аллилуиа, слава Тебе, Боже. ×3
-Господи, помилуй. ×3
+Аллилуиа, аллилуиа, аллилуиа, слава Тебе, Боже. (Трижды)
+Господи, помилуй.(Трижды)
 
 Слава Отцу и Сыну и Святому Духу.
 
@@ -29,23 +30,45 @@ const GLORY_TEXT = `Слава Отцу и Сыну и Святому Духу.
 
 И ныне и присно и во веки веков. Аминь.`;
 
+const hyphenatePsalterText = (text, field) => {
+  if (!text) {
+    return '';
+  }
+
+  if (field === 'russian') {
+    return hyphenateRussian(text, {
+      minWordLength: 5,
+    });
+  }
+
+  if (field === 'church_slavonic') {
+    return hyphenateChurchSlavonic(text, {
+      minWordLength: 5,
+    });
+  }
+
+  return text;
+};
+
 const buildLanguageChunk = (verses, field) => {
   let text = '';
 
   const verseRanges = [];
 
   verses.forEach((verse) => {
-    const value = verse[field] || '';
+    const rawValue = verse[field] || '';
 
-    if (!value) {
+    if (!rawValue) {
       return;
     }
+
+    const value = hyphenatePsalterText(rawValue, field);
 
     if (text) {
       text += '\n';
     }
 
-    const numberPrefix = `${verse.number} `;
+    const numberPrefix = `${verse.number}.\u202F`;
 
     text += numberPrefix;
 
@@ -55,9 +78,7 @@ const buildLanguageChunk = (verses, field) => {
 
     verseRanges.push({
       verseId: Number(verse.id),
-
       contentStart,
-
       contentEnd: text.length,
     });
   });
@@ -574,6 +595,8 @@ export default function KathismaScreen({route, navigation}) {
 
             anchorType: 'kathisma_glory',
 
+            // className: 'psalter-prayer',
+            className: 'psalter-glory',
             anchorId: chunk.glory.id,
 
             itemTitle: `Слава после Псалма ${psalm.number}`,
@@ -681,18 +704,23 @@ export default function KathismaScreen({route, navigation}) {
 
     if (kathisma.prayers_after) {
       const block = makeOtherBlock({
-        text: kathisma.prayers_after,
+        text: String(kathisma.prayers_after || '')
+          // В самом начале блока не допускаем пустой абзац
+          // между "По N-й кафизме" и следующим текстом
+          .replace(/^([^\r\n]+)(?:\r?\n[ \t]*){2,}/u, '$1\n')
+          .replace(/,\s*Трисвятое по Отче наш:/iu, ',\nТрисвятое по Отче наш:')
+          .replace(/Трисвятое по Отче наш:[ \t]*/iu, 'Трисвятое по Отче наш:\n')
+          .replace(/(Тропар(?:ь|и))\s*,?\s*глас\s*(\d+)\s*:\s*/iu, '$1, глас $2:\n')
+          .replace(
+            /(^|\r?\n)[^\r\n]*\(40\)[^\r\n]*(?:\r?\n[ \t]*)*/u,
+            '$1Господи, помилуй (40).\nМолитва\n'
+          ),
 
         anchorType: 'kathisma_prayers_after',
-
         anchorId: kathisma.id,
-
         itemTitle: `Молитвы после кафизмы ${kathisma.number}`,
-
         fullSaveType: 'prayer',
-
         className: 'psalter-prayer',
-
         metadata: {
           kathisma_number: kathisma.number,
 
@@ -700,7 +728,6 @@ export default function KathismaScreen({route, navigation}) {
 
           section: 'prayers_after',
         },
-
         sectionName: 'prayers_after',
       });
 

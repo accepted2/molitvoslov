@@ -587,7 +587,7 @@ const HTML_TEMPLATE = String.raw`
     type="button"
     aria-label="Наверх"
   >
-    ↑
+    ↑ 
   </button>
 
   <div id="selection-bar">
