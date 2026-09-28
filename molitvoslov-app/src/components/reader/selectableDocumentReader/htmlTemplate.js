@@ -1463,10 +1463,7 @@ const collectPsalterVerseNumberRanges = value => {
 const collectPsalterRepeatNoteRanges = value => {
   const source = String(value || '');
   const ranges = [];
-
-  const pattern =
-    /\((?:трижды|3)\.?\)/giu;
-
+  const pattern = /\((?:трижды|3|поклон)\.?\)/giu;
   let match = null;
 
   while ((match = pattern.exec(source))) {
