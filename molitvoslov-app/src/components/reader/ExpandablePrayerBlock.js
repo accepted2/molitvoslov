@@ -1,6 +1,6 @@
 import React, {useEffect, useMemo, useState} from 'react';
 
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-native';
 
 import {getSavedItems} from '../../services/savedItems';
 
@@ -16,6 +16,10 @@ export default function ExpandablePrayerBlock({
   const [isOpen, setIsOpen] = useState(false);
 
   const [savedItems, setSavedItems] = useState([]);
+
+  const {height: windowHeight} = useWindowDimensions();
+
+  const readerHeight = Math.max(500, Math.min(windowHeight * 0.78, 720));
 
   const normalizedText = useMemo(() => {
     let source = String(text || '');
@@ -215,7 +219,12 @@ export default function ExpandablePrayerBlock({
 
   return (
     <View style={styles.container}>
-      <Pressable style={({pressed}) => [styles.header, pressed && styles.pressed]} onPress={toggle}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={isOpen ? `Свернуть ${title}` : `Развернуть ${title}`}
+        style={({pressed}) => [styles.header, pressed && styles.pressed]}
+        onPress={toggle}
+      >
         <View style={styles.headerContent}>
           <Text style={styles.title}>{title}</Text>
 
@@ -226,13 +235,13 @@ export default function ExpandablePrayerBlock({
           )}
         </View>
 
-        <Text style={styles.arrow}>{isOpen ? '−' : '+'}</Text>
+        <Text style={styles.arrow}>{isOpen ? '▴' : '▾'}</Text>
       </Pressable>
 
       {isOpen && (
         <View style={styles.content}>
           {documentData ? (
-            <View style={styles.reader}>
+            <View style={[styles.reader, {height: readerHeight}]}>
               <SelectableDocumentReader documentData={documentData} savedProgress={null} />
             </View>
           ) : (
@@ -243,6 +252,7 @@ export default function ExpandablePrayerBlock({
             style={({pressed}) => [styles.collapseButton, pressed && styles.collapsePressed]}
             onPress={collapse}
           >
+            <Text style={styles.collapseIcon}>▴</Text>
             <Text style={styles.collapseText}>Свернуть</Text>
           </Pressable>
         </View>
@@ -263,7 +273,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 13,
     paddingHorizontal: 16,
   },
 
@@ -298,22 +308,21 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(123, 79, 36, 0.20)',
     backgroundColor: '#EEDCC0',
     color: '#7A4F2D',
-    fontSize: 20,
+    fontSize: 17,
     lineHeight: 27,
     textAlign: 'center',
-    fontWeight: '600',
+    fontWeight: '700',
   },
 
   content: {
-    paddingHorizontal: 10,
-    paddingBottom: 18,
+    paddingHorizontal: 8,
+    paddingBottom: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(123, 79, 36, 0.16)',
   },
 
   reader: {
-    height: 440,
-    marginTop: 10,
+    marginTop: 6,
     borderRadius: 10,
     overflow: 'hidden',
   },
@@ -329,19 +338,31 @@ const styles = StyleSheet.create({
 
   collapseButton: {
     alignSelf: 'center',
-    marginTop: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 22,
-    borderRadius: 20,
+    minHeight: 30,
+    marginTop: 6,
+    paddingVertical: 5,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     backgroundColor: '#EEDCC0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   },
 
   collapsePressed: {
     opacity: 0.7,
   },
 
+  collapseIcon: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '700',
+    color: '#7A4F2D',
+  },
+
   collapseText: {
-    fontSize: 14,
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: '600',
     color: '#7A4F2D',
   },
