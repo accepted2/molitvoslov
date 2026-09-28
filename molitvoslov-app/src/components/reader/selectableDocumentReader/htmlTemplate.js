@@ -1818,7 +1818,7 @@ const collectPsalterRubricRanges = value => {
         }
         const normalized = normalizedChars.join( '' );
         const pattern =
-  /Слава\s+Отцу\s*,?\s*и\s+Сыну\s*,?\s*и\s+Святому\s+Духу\s*[:;,.!?]?|И\s+ныне\s*,?\s*и\s+(?:присно|всегда)\s*,?\s*и\s+во\s+веки\s+веков\s*[.,;:]?\s*аминь\s*[.!?]?/giu;
+  /Слава\s+Отцу\s*,?\s*и\s+Сыну\s*,?\s*и\s+Святому\s+Духу\s*[:;,.!?]?|И\s+ныне\s*,?\s*и\s+(?:присно|всегда)\s*,?\s*и\s+во\s+веки\s+веков\s*[.,;:]?\s*аминь\s*[.!?]?|Слава,\s*и\s*ныне:/giu;
         const ranges = [];
         let match = null;
         while ( ( match = pattern.exec( normalized ) ) ) {
