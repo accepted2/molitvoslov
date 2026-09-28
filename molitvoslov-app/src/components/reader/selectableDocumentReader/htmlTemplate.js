@@ -1606,7 +1606,6 @@ const collectPsalterPrayerInitialRanges = value => {
       )
       .toLowerCase();
 
-    // Здесь буквица НЕ нужна
     const skipPrefixes = [
       'слава:',
       'слава отцу',
@@ -1619,10 +1618,19 @@ const collectPsalterPrayerInitialRanges = value => {
       'таже тропари',
       'также тропари',
       'молитва',
+      'аще иерей',
+      'аще ли ни',
+      'если священник',
+      'если мирянин',
+      'таже постой',
+      'затем постой',
+      'посем глаголи',
+      'затем произноси',
       'и поклонись',
+      'и поклонися',
       'и поклонов',
-      'священник',
-      'мирянин',
+      'священник произносит',
+      'или:',
     ];
 
     if (
@@ -1650,11 +1658,10 @@ const collectPsalterPrayerInitialRanges = value => {
     });
   };
 
-  // Самое начало блока
   addInitial(0);
 
-  // Начало новой самостоятельной молитвы
-  const paragraphPattern = /\n[ \t]*\n/g;
+  const paragraphPattern =
+    /\n[ \t]*\n/g;
 
   let match = null;
 
@@ -1666,7 +1673,6 @@ const collectPsalterPrayerInitialRanges = value => {
     );
   }
 
-  // Текст после отдельного заголовка "Молитва"
   const prayerTitlePattern =
     /(?:^|\n)Молитва\s*\n\s*/giu;
 
