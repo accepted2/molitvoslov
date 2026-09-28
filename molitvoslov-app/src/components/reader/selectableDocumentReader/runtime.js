@@ -557,13 +557,10 @@ const collectPsalterPrayerInitialRanges = value => {
 
     const tail = source.slice(start);
 
-    const plainTail = tail
-      .normalize('NFD')
-      .replace(
-        /[\u0300-\u036f\u0483-\u0487]/g,
-        ''
-      )
-      .toLowerCase();
+    const plainTail =
+      normalizedAkathistTextWithIndex(tail)
+        .normalized
+        .toLowerCase();
 
     const skipPrefixes = [
       'слава:',
@@ -1200,12 +1197,10 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
               : '';
 
           const normalizedPsalterRubricText =
-            psalterRubricText
-              .normalize('NFD')
-              .replace(
-                /[\u0300-\u036f\u0483-\u0487]/g,
-                ''
-              )
+            normalizedAkathistTextWithIndex(
+              psalterRubricText
+            )
+              .normalized
               .trim()
               .toLowerCase();
 
@@ -1337,12 +1332,10 @@ const psalterPrayerAccentText =
     : '';
 
 const normalizedPsalterPrayerAccentText =
-  psalterPrayerAccentText
-    .normalize('NFD')
-    .replace(
-      /[\u0300-\u036f\u0483-\u0487]/g,
-      ''
-    )
+  normalizedAkathistTextWithIndex(
+    psalterPrayerAccentText
+  )
+    .normalized
     .trim();
 
 const isPsalterMetaAccent =
