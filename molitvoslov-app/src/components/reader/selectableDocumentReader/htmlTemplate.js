@@ -2408,8 +2408,8 @@ if (
         }
         root.replaceChildren( fragment );
         hideKnownEditorialMarkers( root );
-        collapsePsalterRubricTrailingWhitespace( root );
         compactParagraphGaps( root );
+        collapsePsalterRubricTrailingWhitespace( root );
       };
     const refreshSavedBookRunClasses = () => {
         if (!bookMode) {
