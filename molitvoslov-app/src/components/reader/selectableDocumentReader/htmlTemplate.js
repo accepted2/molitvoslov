@@ -356,9 +356,6 @@ export const HTML_TEMPLATE = String.raw`
   color: var(--liturgical);
   font-weight: 700;
 }
-.reader-text .psalter-prayer-nowrap {
-  white-space: nowrap;
-}
 
 .reader-text .psalter-prayer-rubric {
   color: var(--secondary);
@@ -368,17 +365,26 @@ export const HTML_TEMPLATE = String.raw`
 
 .reader-text .psalter-prayer-rubric-block {
   display: block;
-  margin: 0;
-}
-.reader-text .psalter-prayer-rubric-separator-before {
-  border-top: 1px solid rgba(123, 79, 36, 0.22);
-  padding-top: 4px;
-  margin-top: 3px;
+  margin: 1px 0;
 }
 
 .reader-text .psalter-prayer-rubric-inline {
   display: inline;
   margin: 0;
+}
+
+.reader-text .psalter-prayer-rubric-separator-before {
+  display: block;
+  border-top: 1px solid rgba(123, 79, 36, 0.22);
+  padding-top: 4px;
+  margin-top: 4px;
+}
+
+.reader-text .psalter-prayer-rubric-separator-after {
+  display: block;
+  border-bottom: 1px solid rgba(123, 79, 36, 0.22);
+  padding-bottom: 4px;
+  margin-bottom: 4px;
 }
 
 .reader-text.psalter-prayer {
@@ -410,8 +416,6 @@ export const HTML_TEMPLATE = String.raw`
   text-align-last: left;
 }
 
-/* В молитвах Псалтири пустая строка не должна превращаться
-   в дополнительный большой вертикальный отступ. */
 .reader-text.psalter-reading-prayers .paragraph-gap {
   height: 0;
 }
@@ -424,7 +428,7 @@ export const HTML_TEMPLATE = String.raw`
   display: block;
   width: 90%;
   height: 1px;
-  margin: 3px auto;
+  margin: 4px auto;
   background: rgba(123, 79, 36, 0.22);
 }
 
@@ -439,7 +443,6 @@ export const HTML_TEMPLATE = String.raw`
   font-weight: 700;
 }
 
-/* Служебные формулы: тропарные заголовки и "Господи, помилуй (3/40)". */
 .reader-text .psalter-prayer-meta {
   color: var(--secondary);
   font-style: italic;
@@ -448,10 +451,11 @@ export const HTML_TEMPLATE = String.raw`
 
 .reader-text .psalter-prayer-title {
   display: block;
-  text-align: left;
-  color: var(--liturgical);
+  margin: 0;
+  color: var(--secondary);
   font-weight: 700;
-  margin: 1px 0;
+  font-style: normal;
+  text-align: left;
 }
 
 .reader-text .psalter-repeat-note {
@@ -461,8 +465,6 @@ export const HTML_TEMPLATE = String.raw`
   white-space: nowrap;
 }
 
-/* "Слава Отцу... И ныне... Аминь." в молитвах Псалтири
-   оформляется так же, как служебная пометка, а не красным. */
 .reader-text.psalter-reading-prayers .liturgical-word {
   color: var(--secondary);
   font-style: italic;
