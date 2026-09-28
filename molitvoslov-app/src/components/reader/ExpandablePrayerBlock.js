@@ -6,20 +6,37 @@ import {getSavedItems} from '../../services/savedItems';
 
 import SelectableDocumentReader from './SelectableDocumentReader';
 
-export default function ExpandablePrayerBlock({title, text, onCollapse, saveProps = null}) {
+export default function ExpandablePrayerBlock({title, text, secondaryText= '', onCollapse, saveProps = null}) {
   const [isOpen, setIsOpen] = useState(false);
 
   const [savedItems, setSavedItems] = useState([]);
 
-  const normalizedText = useMemo(
+  const normalizedText = useMemo(() => {
+    let source = String(text || '');
+
+    if (saveProps?.metadata?.section === 'prayers_before') {
+      source = source.replace(
+        /^\s*Разумно да будет, како подобает особь пети Псалтирь\s*/iu,
+        ''
+      );
+    }
+
+    return source
+      .replace(/\r\n/g, '\n')
+      .replace(/\n[ \t]*\n+/g, '\uE000')
+      .replace(/\n/g, ' ')
+      .replace(/\uE000/g, '\n\n')
+      .trim();
+  }, [text, saveProps?.metadata?.section]);
+  const normalizedSecondaryText = useMemo(
     () =>
-      String(text || '')
+      String(secondaryText || '')
         .replace(/\r\n/g, '\n')
         .replace(/\n[ \t]*\n+/g, '\uE000')
         .replace(/\n/g, ' ')
         .replace(/\uE000/g, '\n\n')
         .trim(),
-    [text]
+    [secondaryText]
   );
 
   useEffect(() => {
@@ -89,13 +106,23 @@ export default function ExpandablePrayerBlock({title, text, onCollapse, saveProp
 
           rows: [
             {
-              layout: 'stack',
+              layout: normalizedSecondaryText
+                ? 'parallel'
+                : 'stack',
+              sharedTitle:
+                saveProps?.metadata?.section === 'prayers_before'
+                  ? 'Разумно да будет, како подобает особь пети Псалтирь'
+                  : '',
 
               blocks: [
                 {
                   id: 1,
 
                   text: normalizedText,
+
+                  label: normalizedSecondaryText
+                    ? 'Церковнославянский'
+                    : '',
 
                   sourceType: saveProps.sourceType,
 
@@ -111,17 +138,63 @@ export default function ExpandablePrayerBlock({title, text, onCollapse, saveProp
 
                   fullSaveType: 'prayer',
 
-                  className: saveProps.sourceType === 'psalter' ? 'psalter-prayer' : '',
+                  className:
+                    saveProps.sourceType === 'psalter'
+                      ? 'psalter-prayer psalter-reading-prayers'
+                      : '',
 
-                  metadata: saveProps.metadata || {},
+
+                  metadata: {
+                    ...(saveProps.metadata || {}),
+                    language: 'church',
+                  },
                 },
+
+                ...(normalizedSecondaryText
+                  ? [
+                    {
+                      id: 2,
+
+                      text: normalizedSecondaryText,
+
+                      label: 'Русский',
+
+                      sourceType: saveProps.sourceType,
+
+                      sourceId: saveProps.sourceId,
+
+                      anchorType: saveProps.anchorType,
+
+                      anchorId: saveProps.anchorId,
+
+                      sourceTitle:
+                        saveProps.sourceTitle || title,
+
+                      itemTitle:
+                        saveProps.itemTitle || title,
+
+                      fullSaveType: 'prayer',
+
+                      className:
+                        saveProps.sourceType === 'psalter'
+                          ? 'psalter-prayer psalter-reading-prayers secondary'
+                          : 'secondary',
+
+
+                      metadata: {
+                        ...(saveProps.metadata || {}),
+                        language: 'russian',
+                      },
+                    },
+                  ]
+                  : []),
               ],
             },
           ],
         },
       ],
     };
-  }, [saveProps, savedItems, normalizedText, title]);
+  }, [saveProps, savedItems, normalizedText, normalizedSecondaryText, title]);
 
   if (!normalizedText) {
     return null;

@@ -200,6 +200,7 @@ export default function PsalterScreen({navigation}) {
               <ExpandablePrayerBlock
                 title="Молитвы перед чтением Псалтири"
                 text={psalter?.prayers_before}
+                secondaryText={psalter?.prayers_before_russian}
                 onCollapse={handlePrayersCollapse}
                 saveProps={{
                   sourceType: 'psalter',
@@ -287,6 +288,28 @@ export default function PsalterScreen({navigation}) {
               </View>
             );
           }}
+          ListFooterComponent={
+            psalter?.prayers_after ? (
+              <View style={styles.footer}>
+                <ExpandablePrayerBlock
+                  title="Молитвы после чтения Псалтири"
+                  text={psalter?.prayers_after}
+                  secondaryText={psalter?.prayers_after_russian}
+                  saveProps={{
+                    sourceType: 'psalter',
+                    sourceId: psalter?.id,
+                    anchorType: 'psalter_prayers_after',
+                    anchorId: psalter?.id,
+                    sourceTitle: psalter?.name || 'Псалтирь',
+                    itemTitle: 'Молитвы после чтения Псалтири',
+                    metadata: {
+                      section: 'prayers_after',
+                    },
+                  }}
+                />
+              </View>
+            ) : null
+          }
         />
         <FixedSectionHeader title="Псалтирь" navigation={navigation} topInset={insets.top} />
         <BottomNav navigation={navigation} active={null} />
@@ -386,7 +409,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
   },
-
+  footer: {
+    marginTop: 10,
+  },
   currentPosition: {
     marginTop: 7,
     fontSize: 13,

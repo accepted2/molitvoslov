@@ -278,7 +278,9 @@ class PsalterSerializer(serializers.ModelSerializer):
             "slug",
             "description",
             "prayers_before",
+            "prayers_before_russian",
             "prayers_after",
+            "prayers_after_russian",
             "is_visible",
             "kathismas",
         ]

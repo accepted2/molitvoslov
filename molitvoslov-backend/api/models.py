@@ -7,9 +7,7 @@ from django.conf import settings
 
 class Category(models.Model):
     name = models.CharField(max_length=100, verbose_name="Название")
-
     slug = models.SlugField(unique=True, verbose_name="URL-идентификатор")
-
     parent = models.ForeignKey(
         "self",
         on_delete=models.CASCADE,
@@ -599,7 +597,15 @@ class Psalter(models.Model):
     is_visible = models.BooleanField(default=True, verbose_name="Отображать")
 
     prayers_before = models.TextField(blank=True, verbose_name="Молитвы перед чтением Псалтири")
+    prayers_before_russian = models.TextField(
+        blank=True,
+        verbose_name="Молитвы перед чтением Псалтири — русский"
+    )
     prayers_after = models.TextField(blank=True, verbose_name="Молитвы после чтения Псалтири")
+    prayers_after_russian = models.TextField(
+        blank=True,
+        verbose_name="Молитвы после чтения Псалтири — русский"
+    )
 
     def __str__(self):
         return self.name
