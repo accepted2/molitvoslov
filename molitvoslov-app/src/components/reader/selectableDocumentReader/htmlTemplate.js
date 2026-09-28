@@ -2194,18 +2194,27 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
               .toLowerCase();
 
           if (isPsalterRubric) {
-            const isInlineRubric =
-              normalizedPsalterRubricText.startsWith(
-                'и поклонись'
-              ) ||
-              normalizedPsalterRubricText.startsWith(
-                'и поклонися'
-              ) ||
-              normalizedPsalterRubricText.startsWith(
-                'и поклонов'
+            const isShortBowRubric =
+              (
+                normalizedPsalterRubricText.startsWith(
+                  'и поклонись'
+                ) ||
+                normalizedPsalterRubricText.startsWith(
+                  'и поклонися'
+                )
+              ) &&
+              !normalizedPsalterRubricText.includes(
+                'с молитвою:'
               );
 
-            const needsSeparatorBeforeTransitionRubric =
+            const isInlineRubric =
+              isShortBowRubric ||
+              normalizedPsalterRubricText ===
+                'или' ||
+              normalizedPsalterRubricText ===
+                'или:';
+
+            const needsSeparatorBeforeRubric =
               normalizedPsalterRubricText.startsWith(
                 'аще ли ни'
               ) ||
@@ -2213,20 +2222,28 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
                 'если мирянин'
               ) ||
               normalizedPsalterRubricText.startsWith(
-                'Также постой мало,'
+                'таже постой мало'
               ) ||
               normalizedPsalterRubricText.startsWith(
-                'Затем постой немного,'
+                'затем постой немного'
+              ) ||
+              normalizedPsalterRubricText.startsWith(
+                'посем глаголи молитву сию со вниманием'
+              ) ||
+              normalizedPsalterRubricText.startsWith(
+                'затем произноси следующую молитву со вниманием'
               );
 
-            if (
-              needsSeparatorBeforeTransitionRubric &&
-              start > 0
-            ) {
-              span.classList.add(
-    'psalter-prayer-rubric-separator-before'
-  );
-            }
+            const needsSeparatorAfterRubric =
+              normalizedPsalterRubricText.startsWith(
+                'посем глаголи молитву сию со вниманием'
+              ) ||
+              normalizedPsalterRubricText.startsWith(
+                'затем произноси следующую молитву со вниманием'
+              ) ||
+              normalizedPsalterRubricText.startsWith(
+                'слава, и ныне:'
+              );
 
             span.classList.add(
               'psalter-prayer-rubric'
@@ -2237,9 +2254,27 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
                 ? 'psalter-prayer-rubric-inline'
                 : 'psalter-prayer-rubric-block'
             );
+
+            if (
+              needsSeparatorBeforeRubric &&
+              start > 0
+            ) {
+              span.classList.add(
+                'psalter-prayer-rubric-separator-before'
+              );
+            }
+
+            if (needsSeparatorAfterRubric) {
+              span.classList.add(
+                'psalter-prayer-rubric-separator-after'
+              );
+            }
           }
 
-          if (isPsalterPrayerAccent) {
+          if (
+            isPsalterPrayerAccent &&
+            !isPsalterRubric
+          ) {
             span.classList.add(
               'psalter-prayer-accent'
             );
