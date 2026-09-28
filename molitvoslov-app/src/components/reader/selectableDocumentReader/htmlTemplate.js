@@ -1954,40 +1954,53 @@ const collectPsalterRubricRanges = value => {
         return;
       }
 
-      root
-        .querySelectorAll(
-          '.psalter-prayer-rubric-block'
-        )
-        .forEach(rubric => {
-          let node = rubric.nextSibling;
+      const isWhitespaceNode = node =>
+        !!node &&
+        !String(node.textContent || '').trim();
 
-          while (node) {
-            const value =
-                    String(node.textContent || '');
-                  if (
+      const isSeparatorNode = node =>
+        !!node &&
         node.nodeType === Node.ELEMENT_NODE &&
         node.classList.contains(
           'psalter-prayer-separator'
+        );
+
+      const hideWhitespaceNode = node => {
+        if (
+          node &&
+          node.nodeType === Node.ELEMENT_NODE
+        ) {
+          node.classList.add(
+            'psalter-prayer-gap-hidden'
+          );
+        }
+      };
+
+      root
+        .querySelectorAll(
+          '.psalter-prayer-rubric-block, .psalter-prayer-title'
         )
-      ) {
-        break;
-      }
+        .forEach(block => {
+          let previous = block.previousSibling;
 
-            if (!value.trim()) {
-              if (
-                node.nodeType ===
-                  Node.ELEMENT_NODE
-              ) {
-                node.classList.add(
-                  'psalter-prayer-gap-hidden'
-                );
-              }
+          while (
+            previous &&
+            isWhitespaceNode(previous) &&
+            !isSeparatorNode(previous)
+          ) {
+            hideWhitespaceNode(previous);
+            previous = previous.previousSibling;
+          }
 
-              node = node.nextSibling;
-              continue;
-            }
+          let next = block.nextSibling;
 
-            break;
+          while (
+            next &&
+            isWhitespaceNode(next) &&
+            !isSeparatorNode(next)
+          ) {
+            hideWhitespaceNode(next);
+            next = next.nextSibling;
           }
         });
     };
