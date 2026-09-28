@@ -2022,7 +2022,7 @@ const collectPsalterRubricRanges = value => {
   String(itemConfig?.className || '')
     .includes('psalter-prayer');
 
-const psalterPrayerAccentRanges =
+const rawPsalterPrayerAccentRanges =
   isPsalterPrayer
     ? collectPsalterPrayerAccentRanges(text)
     : [];
@@ -2031,6 +2031,16 @@ const psalterRubricRanges =
   isPsalterPrayer
     ? collectPsalterRubricRanges(text)
     : [];
+
+const psalterPrayerAccentRanges =
+  rawPsalterPrayerAccentRanges.filter(
+    accentRange =>
+      !psalterRubricRanges.some(
+        rubricRange =>
+          accentRange.start >= rubricRange.start &&
+          accentRange.end <= rubricRange.end
+      )
+  );
 
 const psalterPrayerInitialRanges =
   isPsalterPrayer
@@ -2043,11 +2053,31 @@ const psalterPrayerInitialRanges =
           )
         )
     : [];
-        const isPsalterGlory =  String(itemConfig?.className || '') .includes('psalter-glory');
-       const psalterRepeatNoteRanges =
+
+        const isPsalterGlory =
+          String(itemConfig?.className || '')
+            .includes('psalter-glory');
+
+const rawPsalterRepeatNoteRanges =
   isPsalterGlory || isPsalterPrayer
     ? collectPsalterRepeatNoteRanges(text)
     : [];
+
+const psalterRepeatNoteRanges =
+  rawPsalterRepeatNoteRanges.filter(
+    repeatRange =>
+      !psalterRubricRanges.some(
+        rubricRange =>
+          repeatRange.start >= rubricRange.start &&
+          repeatRange.end <= rubricRange.end
+      ) &&
+      !psalterPrayerAccentRanges.some(
+        accentRange =>
+          repeatRange.start >= accentRange.start &&
+          repeatRange.end <= accentRange.end
+      )
+  );
+
         const isPsalterText = String( itemConfig ?.className || '' ) .split(' ') .includes('psalter');
 const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges( text ) : [];
         const boundaries = new Set([ 0, text.length, ]);
