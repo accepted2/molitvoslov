@@ -1776,7 +1776,34 @@ const collectPsalterRubricRanges = value => {
     }
   });
 
-  return ranges;
+  const merged = [];
+
+  ranges
+    .sort(
+      (left, right) =>
+        left.start - right.start ||
+        right.end - left.end
+    )
+    .forEach(range => {
+      const previous =
+        merged[merged.length - 1];
+
+      if (
+        previous &&
+        range.start <= previous.end
+      ) {
+        previous.end =
+          Math.max(previous.end, range.end);
+        return;
+      }
+
+      merged.push({
+        start: range.start,
+        end: range.end,
+      });
+    });
+
+  return merged;
 };
 
     const appendAccentWords = ( parent, value, accentWords ) => {
