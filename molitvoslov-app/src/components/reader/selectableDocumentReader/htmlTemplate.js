@@ -373,18 +373,38 @@ export const HTML_TEMPLATE = String.raw`
   margin: 0;
 }
 
-.reader-text .psalter-prayer-rubric-separator-before {
+.reader-text .psalter-prayer-rubric-separator-before,
+.reader-text .psalter-prayer-rubric-separator-after {
+  position: relative;
   display: block;
-  border-top: 1px solid rgba(123, 79, 36, 0.22);
-  padding-top: 4px;
-  margin-top: 4px;
+}
+
+.reader-text .psalter-prayer-rubric-separator-before {
+  padding-top: 6px;
+  margin-top: 2px;
 }
 
 .reader-text .psalter-prayer-rubric-separator-after {
-  display: block;
-  border-bottom: 1px solid rgba(123, 79, 36, 0.22);
-  padding-bottom: 4px;
-  margin-bottom: 4px;
+  padding-bottom: 6px;
+  margin-bottom: 2px;
+}
+
+.reader-text .psalter-prayer-rubric-separator-before::before,
+.reader-text .psalter-prayer-rubric-separator-after::after {
+  content: "";
+  position: absolute;
+  left: 5%;
+  width: 90%;
+  height: 1px;
+  background: rgba(123, 79, 36, 0.22);
+}
+
+.reader-text .psalter-prayer-rubric-separator-before::before {
+  top: 0;
+}
+
+.reader-text .psalter-prayer-rubric-separator-after::after {
+  bottom: 0;
 }
 
 .reader-text.psalter-prayer {
