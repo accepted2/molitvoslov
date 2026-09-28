@@ -6,18 +6,22 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0024_remove_morning_optina_footnote'),
+        ("api", "0024_remove_morning_optina_footnote"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='psalter',
-            name='prayers_after_russian',
-            field=models.TextField(blank=True, verbose_name='Молитвы после чтения Псалтири — русский'),
+            model_name="psalter",
+            name="prayers_after_russian",
+            field=models.TextField(
+                blank=True, verbose_name="Молитвы после чтения Псалтири — русский"
+            ),
         ),
         migrations.AddField(
-            model_name='psalter',
-            name='prayers_before_russian',
-            field=models.TextField(blank=True, verbose_name='Молитвы перед чтением Псалтири — русский'),
+            model_name="psalter",
+            name="prayers_before_russian",
+            field=models.TextField(
+                blank=True, verbose_name="Молитвы перед чтением Псалтири — русский"
+            ),
         ),
     ]

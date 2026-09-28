@@ -3533,12 +3533,12 @@ if (
 `;
 
 const buildHtml = ({
-                     documentData,
-                     savedProgress,
-                     focusTarget,
-                     topContentInset,
-                     bottomContentInset,
-                   }) => {
+  documentData,
+  savedProgress,
+  focusTarget,
+  topContentInset,
+  bottomContentInset,
+}) => {
   const payload = {
     document: documentData,
 
@@ -3551,10 +3551,10 @@ const buildHtml = ({
     progress:
       savedProgress && savedProgress.anchor_type === documentData.progressAnchorType
         ? {
-          anchorId: Number(savedProgress.anchor_id),
+            anchorId: Number(savedProgress.anchor_id),
 
-          offset: Number(savedProgress.offset || 0),
-        }
+            offset: Number(savedProgress.offset || 0),
+          }
         : null,
   };
 
@@ -3572,17 +3572,17 @@ const buildHtml = ({
 };
 
 export default function SelectableDocumentReader({
-                                                   documentData,
-                                                   savedProgress,
-                                                   focusTarget,
-                                                   topContentInset = 0,
-                                                   bottomContentInset = 0,
-                                                   onSaved,
-                                                   onProgress,
-                                                   onAction,
-                                                   onViewModeChange,
-                                                   onPageTurn,
-                                                 }) {
+  documentData,
+  savedProgress,
+  focusTarget,
+  topContentInset = 0,
+  bottomContentInset = 0,
+  onSaved,
+  onProgress,
+  onAction,
+  onViewModeChange,
+  onPageTurn,
+}) {
   const insets = useSafeAreaInsets();
 
   const webViewRef = useRef(null);
@@ -3667,33 +3667,33 @@ export default function SelectableDocumentReader({
         if (result) {
           inject(
             'window.readerApi && window.readerApi.updateAction(' +
-            scriptSafeJson(message.actionKey) +
-            ',' +
-            scriptSafeJson(result.label || '') +
-            ',' +
-            (result.active ? 'true' : 'false') +
-            ',' +
-            (result.savedItem?.id || result.savedItemId || 'null') +
-            ')'
+              scriptSafeJson(message.actionKey) +
+              ',' +
+              scriptSafeJson(result.label || '') +
+              ',' +
+              (result.active ? 'true' : 'false') +
+              ',' +
+              (result.savedItem?.id || result.savedItemId || 'null') +
+              ')'
           );
 
           if (result.savedItem && result.itemId) {
             inject(
               'window.readerApi && window.readerApi.saveSucceeded(' +
-              Number(result.itemId) +
-              ',' +
-              scriptSafeJson(result.savedItem) +
-              ')'
+                Number(result.itemId) +
+                ',' +
+                scriptSafeJson(result.savedItem) +
+                ')'
             );
           }
 
           if (result.removedSavedItemId && result.itemId) {
             inject(
               'window.readerApi && window.readerApi.removeSavedItem(' +
-              Number(result.itemId) +
-              ',' +
-              Number(result.removedSavedItemId) +
-              ')'
+                Number(result.itemId) +
+                ',' +
+                Number(result.removedSavedItemId) +
+                ')'
             );
           }
         }
@@ -3710,10 +3710,10 @@ export default function SelectableDocumentReader({
 
         inject(
           'window.readerApi && window.readerApi.removeSavedItem(' +
-          Number(message.itemId) +
-          ',' +
-          Number(message.savedItemId) +
-          ')'
+            Number(message.itemId) +
+            ',' +
+            Number(message.savedItemId) +
+            ')'
         );
       } catch (deleteError) {
         console.log('Ошибка удаления выделения:', deleteError.message);
@@ -3763,10 +3763,10 @@ export default function SelectableDocumentReader({
 
       inject(
         'window.readerApi && window.readerApi.saveSucceeded(' +
-        Number(message.itemId) +
-        ',' +
-        scriptSafeJson(saved) +
-        ')'
+          Number(message.itemId) +
+          ',' +
+          scriptSafeJson(saved) +
+          ')'
       );
     } catch (error) {
       console.log('Ошибка сохранения выделения:', error.response?.data || error.message);

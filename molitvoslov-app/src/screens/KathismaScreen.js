@@ -47,7 +47,6 @@ const hyphenatePsalterText = (text, field) => {
     });
   }
 
-
   return text;
 };
 
@@ -708,22 +707,10 @@ export default function KathismaScreen({route, navigation}) {
         text: String(kathisma.prayers_after || '')
           // В самом начале блока не допускаем пустой абзац
           // между "По N-й кафизме" и следующим текстом
-          .replace(
-            /^([^\r\n]+)(?:\r?\n[ \t]*){2,}/u,
-            '$1\n'
-          )
-          .replace(
-            /,\s*Трисвятое по Отче наш:/iu,
-            ',\nТрисвятое по Отче наш:'
-          )
-          .replace(
-            /Трисвятое по Отче наш:[ \t]*/iu,
-            'Трисвятое по Отче наш:\n'
-          )
-          .replace(
-            /(Тропар(?:ь|и))\s*,?\s*глас\s*(\d+)\s*:\s*/iu,
-            '$1, глас $2:\n'
-          )
+          .replace(/^([^\r\n]+)(?:\r?\n[ \t]*){2,}/u, '$1\n')
+          .replace(/,\s*Трисвятое по Отче наш:/iu, ',\nТрисвятое по Отче наш:')
+          .replace(/Трисвятое по Отче наш:[ \t]*/iu, 'Трисвятое по Отче наш:\n')
+          .replace(/(Тропар(?:ь|и))\s*,?\s*глас\s*(\d+)\s*:\s*/iu, '$1, глас $2:\n')
           .replace(
             /(^|\r?\n)[^\r\n]*\(40\)[^\r\n]*(?:\r?\n[ \t]*)*/u,
             '$1Господи, помилуй (40).\nМолитва\n'
@@ -847,8 +834,6 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: '#FFF4DE',
-
-
   },
 
   center: {

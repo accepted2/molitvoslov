@@ -598,13 +598,11 @@ class Psalter(models.Model):
 
     prayers_before = models.TextField(blank=True, verbose_name="Молитвы перед чтением Псалтири")
     prayers_before_russian = models.TextField(
-        blank=True,
-        verbose_name="Молитвы перед чтением Псалтири — русский"
+        blank=True, verbose_name="Молитвы перед чтением Псалтири — русский"
     )
     prayers_after = models.TextField(blank=True, verbose_name="Молитвы после чтения Псалтири")
     prayers_after_russian = models.TextField(
-        blank=True,
-        verbose_name="Молитвы после чтения Псалтири — русский"
+        blank=True, verbose_name="Молитвы после чтения Псалтири — русский"
     )
 
     def __str__(self):

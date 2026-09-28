@@ -6,7 +6,13 @@ import {getSavedItems} from '../../services/savedItems';
 
 import SelectableDocumentReader from './SelectableDocumentReader';
 
-export default function ExpandablePrayerBlock({title, text, secondaryText= '', onCollapse, saveProps = null}) {
+export default function ExpandablePrayerBlock({
+  title,
+  text,
+  secondaryText = '',
+  onCollapse,
+  saveProps = null,
+}) {
   const [isOpen, setIsOpen] = useState(false);
 
   const [savedItems, setSavedItems] = useState([]);
@@ -15,10 +21,7 @@ export default function ExpandablePrayerBlock({title, text, secondaryText= '', o
     let source = String(text || '');
 
     if (saveProps?.metadata?.section === 'prayers_before') {
-      source = source.replace(
-        /^\s*Разумно да будет, како подобает особь пети Псалтирь\s*/iu,
-        ''
-      );
+      source = source.replace(/^\s*Разумно да будет, како подобает особь пети Псалтирь\s*/iu, '');
     }
 
     return source
@@ -106,9 +109,7 @@ export default function ExpandablePrayerBlock({title, text, secondaryText= '', o
 
           rows: [
             {
-              layout: normalizedSecondaryText
-                ? 'parallel'
-                : 'stack',
+              layout: normalizedSecondaryText ? 'parallel' : 'stack',
               sharedTitle:
                 saveProps?.metadata?.section === 'prayers_before'
                   ? 'Разумно да будет, како подобает особь пети Псалтирь'
@@ -120,9 +121,7 @@ export default function ExpandablePrayerBlock({title, text, secondaryText= '', o
 
                   text: normalizedText,
 
-                  label: normalizedSecondaryText
-                    ? 'Церковнославянский'
-                    : '',
+                  label: normalizedSecondaryText ? 'Церковнославянский' : '',
 
                   sourceType: saveProps.sourceType,
 
@@ -143,7 +142,6 @@ export default function ExpandablePrayerBlock({title, text, secondaryText= '', o
                       ? 'psalter-prayer psalter-reading-prayers'
                       : '',
 
-
                   metadata: {
                     ...(saveProps.metadata || {}),
                     language: 'church',
@@ -152,41 +150,38 @@ export default function ExpandablePrayerBlock({title, text, secondaryText= '', o
 
                 ...(normalizedSecondaryText
                   ? [
-                    {
-                      id: 2,
+                      {
+                        id: 2,
 
-                      text: normalizedSecondaryText,
+                        text: normalizedSecondaryText,
 
-                      label: 'Русский',
+                        label: 'Русский',
 
-                      sourceType: saveProps.sourceType,
+                        sourceType: saveProps.sourceType,
 
-                      sourceId: saveProps.sourceId,
+                        sourceId: saveProps.sourceId,
 
-                      anchorType: saveProps.anchorType,
+                        anchorType: saveProps.anchorType,
 
-                      anchorId: saveProps.anchorId,
+                        anchorId: saveProps.anchorId,
 
-                      sourceTitle:
-                        saveProps.sourceTitle || title,
+                        sourceTitle: saveProps.sourceTitle || title,
 
-                      itemTitle:
-                        saveProps.itemTitle || title,
+                        itemTitle: saveProps.itemTitle || title,
 
-                      fullSaveType: 'prayer',
+                        fullSaveType: 'prayer',
 
-                      className:
-                        saveProps.sourceType === 'psalter'
-                          ? 'psalter-prayer psalter-reading-prayers secondary'
-                          : 'secondary',
+                        className:
+                          saveProps.sourceType === 'psalter'
+                            ? 'psalter-prayer psalter-reading-prayers secondary'
+                            : 'secondary',
 
-
-                      metadata: {
-                        ...(saveProps.metadata || {}),
-                        language: 'russian',
+                        metadata: {
+                          ...(saveProps.metadata || {}),
+                          language: 'russian',
+                        },
                       },
-                    },
-                  ]
+                    ]
                   : []),
               ],
             },
