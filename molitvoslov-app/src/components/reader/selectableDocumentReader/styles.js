@@ -450,16 +450,22 @@ export const READER_STYLES = String.raw`
 }
 
 
+.reader-text .memorial-rubric-text {
+  color: var(--secondary);
+  font-size: 14px;
+  line-height: 21px;
+  font-style: italic;
+}
+
 .reader-text .memorial-open-marker {
   display: block;
-  width: min(100%, 280px);
-  min-height: 44px;
-  margin: 12px auto;
+  width: min(100%, 260px);
+  min-height: 40px;
+  margin: 8px auto 12px;
   padding: 0;
   border: 1px solid rgba(123, 79, 36, 0.24);
   border-radius: 12px;
   background: rgba(138, 90, 56, 0.08);
-  color: transparent;
   font-size: 0;
   line-height: 0;
   text-align: center;
@@ -472,8 +478,8 @@ export const READER_STYLES = String.raw`
 .reader-text .memorial-open-marker::after {
   content: attr(data-label);
   display: flex;
-  min-height: 42px;
-  padding: 0 16px;
+  min-height: 38px;
+  padding: 0 14px;
   align-items: center;
   justify-content: center;
   color: var(--accent-dark);
