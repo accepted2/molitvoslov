@@ -1,0 +1,58 @@
+name: Memorial feature checks
+
+on:
+  push:
+    branches:
+      - feature/memorial-book
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.19.4"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install mobile dependencies
+        working-directory: molitvoslov-app
+        run: npm ci
+
+      - name: Check Expo dependencies
+        working-directory: molitvoslov-app
+        run: npx expo install --check
+
+      - name: Check React Native formatting
+        run: |
+          npx --yes prettier@3.6.2 --check             "molitvoslov-app/**/*.{js,jsx,ts,tsx,json,md}"             --ignore-path .prettierignore
+
+      - name: Install backend dependencies
+        run: python -m pip install -r molitvoslov-backend/requirements.txt
+
+      - name: Check Django formatting
+        run: |
+          python -m pip install black==25.9.0
+          black --check molitvoslov-backend
+
+      - name: Check whitespace
+        run: git diff --check
+
+      - name: Verify Python syntax
+        run: python -m compileall -q molitvoslov-backend
+
+      - name: Run Django API tests
+        working-directory: molitvoslov-backend
+        run: python manage.py test api
