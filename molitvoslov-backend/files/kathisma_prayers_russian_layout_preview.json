@@ -1,0 +1,359 @@
+{
+  "source_pdf": "C:\\Users\\Admin\\WebstormProjects\\molitvoslov\\molitvoslov-backend\\files\\psaltir_azbyka.pdf",
+  "mode": "kathisma_3",
+  "summary": {
+    "total": 1,
+    "ok": 0,
+    "check": 1,
+    "error": 0
+  },
+  "page_meta": [
+    {
+      "page": 1,
+      "split_col": null,
+      "line_count": 0
+    },
+    {
+      "page": 2,
+      "split_col": 40,
+      "line_count": 53
+    },
+    {
+      "page": 3,
+      "split_col": 80,
+      "line_count": 76
+    },
+    {
+      "page": 4,
+      "split_col": 80,
+      "line_count": 87
+    },
+    {
+      "page": 5,
+      "split_col": 76,
+      "line_count": 65
+    },
+    {
+      "page": 6,
+      "split_col": 80,
+      "line_count": 78
+    },
+    {
+      "page": 7,
+      "split_col": 80,
+      "line_count": 89
+    },
+    {
+      "page": 8,
+      "split_col": 80,
+      "line_count": 23
+    },
+    {
+      "page": 9,
+      "split_col": 80,
+      "line_count": 80
+    },
+    {
+      "page": 10,
+      "split_col": 80,
+      "line_count": 75
+    },
+    {
+      "page": 11,
+      "split_col": 76,
+      "line_count": 66
+    },
+    {
+      "page": 12,
+      "split_col": 80,
+      "line_count": 83
+    },
+    {
+      "page": 13,
+      "split_col": 80,
+      "line_count": 55
+    },
+    {
+      "page": 14,
+      "split_col": 76,
+      "line_count": 87
+    },
+    {
+      "page": 15,
+      "split_col": 80,
+      "line_count": 100
+    },
+    {
+      "page": 16,
+      "split_col": 80,
+      "line_count": 65
+    },
+    {
+      "page": 17,
+      "split_col": 76,
+      "line_count": 81
+    },
+    {
+      "page": 18,
+      "split_col": 80,
+      "line_count": 97
+    },
+    {
+      "page": 19,
+      "split_col": 80,
+      "line_count": 60
+    },
+    {
+      "page": 20,
+      "split_col": 76,
+      "line_count": 104
+    },
+    {
+      "page": 21,
+      "split_col": 80,
+      "line_count": 85
+    },
+    {
+      "page": 22,
+      "split_col": 80,
+      "line_count": 88
+    },
+    {
+      "page": 23,
+      "split_col": 80,
+      "line_count": 74
+    },
+    {
+      "page": 24,
+      "split_col": 80,
+      "line_count": 91
+    },
+    {
+      "page": 25,
+      "split_col": 80,
+      "line_count": 81
+    },
+    {
+      "page": 26,
+      "split_col": 80,
+      "line_count": 82
+    },
+    {
+      "page": 27,
+      "split_col": 80,
+      "line_count": 46
+    },
+    {
+      "page": 28,
+      "split_col": 80,
+      "line_count": 51
+    },
+    {
+      "page": 29,
+      "split_col": 80,
+      "line_count": 83
+    },
+    {
+      "page": 30,
+      "split_col": 80,
+      "line_count": 76
+    },
+    {
+      "page": 31,
+      "split_col": 80,
+      "line_count": 80
+    },
+    {
+      "page": 32,
+      "split_col": 80,
+      "line_count": 63
+    },
+    {
+      "page": 33,
+      "split_col": 76,
+      "line_count": 43
+    },
+    {
+      "page": 34,
+      "split_col": 80,
+      "line_count": 91
+    },
+    {
+      "page": 35,
+      "split_col": 76,
+      "line_count": 74
+    },
+    {
+      "page": 36,
+      "split_col": 80,
+      "line_count": 93
+    },
+    {
+      "page": 37,
+      "split_col": 80,
+      "line_count": 82
+    },
+    {
+      "page": 38,
+      "split_col": 80,
+      "line_count": 84
+    },
+    {
+      "page": 39,
+      "split_col": 80,
+      "line_count": 88
+    },
+    {
+      "page": 40,
+      "split_col": 80,
+      "line_count": 92
+    },
+    {
+      "page": 41,
+      "split_col": 80,
+      "line_count": 79
+    },
+    {
+      "page": 42,
+      "split_col": 76,
+      "line_count": 92
+    },
+    {
+      "page": 43,
+      "split_col": 80,
+      "line_count": 99
+    },
+    {
+      "page": 44,
+      "split_col": 80,
+      "line_count": 84
+    },
+    {
+      "page": 45,
+      "split_col": 80,
+      "line_count": 84
+    },
+    {
+      "page": 46,
+      "split_col": 80,
+      "line_count": 80
+    },
+    {
+      "page": 47,
+      "split_col": 80,
+      "line_count": 97
+    },
+    {
+      "page": 48,
+      "split_col": 80,
+      "line_count": 82
+    },
+    {
+      "page": 49,
+      "split_col": 80,
+      "line_count": 94
+    },
+    {
+      "page": 50,
+      "split_col": 80,
+      "line_count": 88
+    },
+    {
+      "page": 51,
+      "split_col": 80,
+      "line_count": 67
+    },
+    {
+      "page": 52,
+      "split_col": 80,
+      "line_count": 79
+    },
+    {
+      "page": 53,
+      "split_col": 76,
+      "line_count": 77
+    },
+    {
+      "page": 54,
+      "split_col": 80,
+      "line_count": 74
+    },
+    {
+      "page": 55,
+      "split_col": 80,
+      "line_count": 75
+    },
+    {
+      "page": 56,
+      "split_col": 80,
+      "line_count": 89
+    },
+    {
+      "page": 57,
+      "split_col": 80,
+      "line_count": 95
+    },
+    {
+      "page": 58,
+      "split_col": 76,
+      "line_count": 81
+    },
+    {
+      "page": 59,
+      "split_col": 80,
+      "line_count": 84
+    },
+    {
+      "page": 60,
+      "split_col": 80,
+      "line_count": 63
+    },
+    {
+      "page": 61,
+      "split_col": 76,
+      "line_count": 67
+    },
+    {
+      "page": 62,
+      "split_col": 76,
+      "line_count": 37
+    }
+  ],
+  "kathismas": [
+    {
+      "number": 3,
+      "status": "CHECK",
+      "source_structure_file": "C:\\Users\\Admin\\WebstormProjects\\molitvoslov\\molitvoslov-backend\\files\\psalter_kathisma_3_final.json",
+      "pdf_start_page": 11,
+      "pdf_end_page": 11,
+      "selected_russian_side": "right",
+      "russian_accent_density": 0.021666,
+      "other_column_accent_density": 0.142956,
+      "layout_rows": {
+        "after_kathisma_row": {
+          "page": 11,
+          "line": 31,
+          "text": "глас 3:                                                                                После кафизмы 3. Трисвятое по Отче наш: Тропари, глас 3:"
+        },
+        "tropar_row": {
+          "page": 11,
+          "line": 31,
+          "text": "глас 3:                                                                                После кафизмы 3. Трисвятое по Отче наш: Тропари, глас 3:"
+        },
+        "prayer_row": null,
+        "end_row": {
+          "page": 11,
+          "line": 64,
+          "text": "Кафи́сма 4-я"
+        }
+      },
+      "prayers_after_russian": "По 3–и кафисме, Трисвятое по Отче наш:\n\nТаже тропари, глас 3: Живущи на земли, душе моя, покаися: персть во гробе не поет, прегрешении не избавляет. Возопии Христу Богу: Сердцеведче, согреших, прежде даже не осудиши мя, помилуи мя.\n\nЖивя на земле, душа моя, покайся: / прах во гробе петь не может, / и не\nизбавиться тебе тогда от согрешений. / Воззови Христу Богу: /\n«Сердцеведец, согрешил я, / прежде осуждения моего помилуй меня!»\nДоколе, душа моя, пребываешь в согрешениях? / Доколе откладываешь\nвремя покаяния? / Представь в уме Суд грядущий и воззови Господу: /\n«Сердцеведец, согрешил я, / прежде осуждения моего помилуй меня!»\nСлава: На Страшном Суде без обвинителей я обличаюсь, / без\nсвидетелей осуждаюсь, / ибо книги совести раскрываются / и дела\nсокровенные открываются. / Прежде, чем на том всенародном зрелище /\nбудешь испытывать мною соделанное, / Боже, очисти меня и спаси меня.\nИ ныне: Непонятно и непостижимо, / облагода́тствованная Богом\nВладычица, / совершившееся в Тебе страшное таинство: / ибо зачав\nНеобъятного, Ты родила Его, / облеченного плотью от чистой крови\nТвоей. / Моли Его, Чистая, как Сына Твоего, / спасти всех воспевающих\nТебя.\nГосподи, помилуй (40) и молитва:\nГосподи Вседержитель, Слово Пребезначального Отца, Сам\nсовершенный Бог, Иисусе Христе, по милосердию безпримерной\nмилости Твоей никогда не покидающий Твоих рабов, но всегда в них\nпребывающий! Не оставь меня, раба Твоего, Всесвятой Царь, но да́руй\nмне, недостойному, радость о спасении Твоём и просвети мой ум светом\nпознания Евангелия Твоего, душу мою любовью ко Кресту Твоему\nсвяжи, тело же моё безстрастием Твоим укрась, мыслям да́руй мир, и\nноги мои сохрани от преткновения. И не погуби меня с беззакониями\nмоими, благой Господи, но испытай меня, Боже, и вразуми сердце моё,\nисследуй меня и познай стези́ мои, и посмотри, есть ли путь беззакония\nво мне, и отврати от него, и направь меня на путь вечный. Ибо Ты – путь,\nи истина, и жизнь, и Тебе славу возсылаем со Безначальным Твоим\nОтцом, и Пресвятым, и Благим, и Животворящим Духом ныне, и всегда,\nи во веки веков. Аминь.",
+      "validation_errors": [
+        "В русском тексте не найдено «Слава:».",
+        "В русском тексте не найдено «И ныне:».",
+        "Не найдена отдельная строка «Господи, помилуй (40) и молитва:»."
+      ],
+      "debug_file": "C:\\Users\\Admin\\WebstormProjects\\molitvoslov\\molitvoslov-backend\\files\\kathisma_3_layout_debug.txt"
+    }
+  ]
+}
