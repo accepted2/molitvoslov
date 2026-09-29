@@ -67,12 +67,29 @@ const cleanDraftNames = (
     )
     .filter(Boolean);
 
+const MIN_VISIBLE_ROWS = 4;
+
 const ensureInputRows = (
-  names
-) =>
-  names?.length
-    ? names
-    : [''];
+  names,
+  minimumRows = MIN_VISIBLE_ROWS
+) => {
+  const next = Array.isArray(names)
+    ? [...names]
+    : [];
+
+  while (next.length < minimumRows) {
+    next.push('');
+  }
+
+  if (
+    next.length &&
+    String(next[next.length - 1] || '').trim()
+  ) {
+    next.push('');
+  }
+
+  return next;
+};
 
 const NameEditor = ({
   title,
@@ -80,6 +97,14 @@ const NameEditor = ({
   names,
   onChange,
 }) => {
+  const inputRefs = useRef([]);
+
+  const filledCount =
+    names.filter(
+      (name) =>
+        String(name || '').trim()
+    ).length;
+
   const update = (
     index,
     value
@@ -89,14 +114,40 @@ const NameEditor = ({
     ];
 
     next[index] = value;
-    onChange(next);
+
+    if (
+      index === next.length - 1 &&
+      String(value || '').trim()
+    ) {
+      next.push('');
+    }
+
+    onChange(
+      ensureInputRows(next)
+    );
   };
 
-  const add = () => {
-    onChange([
+  const addRows = (
+    count = 4
+  ) => {
+    const next = [
       ...names,
-      '',
-    ]);
+      ...Array.from(
+        {length: count},
+        () => ''
+      ),
+    ];
+
+    onChange(next);
+
+    requestAnimationFrame(() => {
+      const firstNewIndex =
+        names.length;
+
+      inputRefs.current[
+        firstNewIndex
+      ]?.focus?.();
+    });
   };
 
   const remove = (
@@ -141,6 +192,33 @@ const NameEditor = ({
       current;
 
     onChange(next);
+
+    requestAnimationFrame(() => {
+      inputRefs.current[
+        target
+      ]?.focus?.();
+    });
+  };
+
+  const focusNext = (
+    index
+  ) => {
+    const nextIndex =
+      index + 1;
+
+    if (
+      nextIndex >=
+      names.length
+    ) {
+      addRows(1);
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      inputRefs.current[
+        nextIndex
+      ]?.focus?.();
+    });
   };
 
   return (
@@ -149,13 +227,29 @@ const NameEditor = ({
         styles.namesCard
       }
     >
-      <Text
+      <View
         style={
-          styles.namesTitle
+          styles.namesHeader
         }
       >
-        {title}
-      </Text>
+        <Text
+          style={
+            styles.namesTitle
+          }
+        >
+          {title}
+        </Text>
+
+        <Text
+          style={
+            styles.namesCount
+          }
+        >
+          {filledCount
+            ? `${filledCount} ${filledCount === 1 ? 'имя' : filledCount < 5 ? 'имени' : 'имён'}`
+            : 'пусто'}
+        </Text>
+      </View>
 
       <Text
         style={
@@ -165,128 +259,159 @@ const NameEditor = ({
         {subtitle}
       </Text>
 
-      {names.map(
-        (name, index) => (
-          <View
-            key={`${title}-${index}`}
-            style={
-              styles.nameRow
-            }
-          >
-            <Text
-              style={
-                styles.nameNumber
-              }
-            >
-              {index + 1}.
-            </Text>
+      <View
+        style={
+          styles.paperSheet
+        }
+      >
+        <View
+          pointerEvents="none"
+          style={
+            styles.paperMarginLine
+          }
+        />
 
-            <TextInput
-              value={name}
-              onChangeText={(
-                value
-              ) =>
-                update(
-                  index,
-                  value
-                )
-              }
-              placeholder="Имя"
-              placeholderTextColor={
-                '#A89A8B'
-              }
-              autoCapitalize="words"
-              autoCorrect={false}
-              maxLength={100}
-              returnKeyType="next"
-              style={
-                styles.nameInput
-              }
-            />
-
+        {names.map(
+          (name, index) => (
             <View
+              key={`${title}-${index}`}
               style={
-                styles.rowActions
+                styles.nameRow
               }
             >
-              <Pressable
-                hitSlop={5}
-                disabled={
+              <Text
+                style={
+                  styles.nameNumber
+                }
+              >
+                {index + 1}
+              </Text>
+
+              <TextInput
+                ref={(node) => {
+                  inputRefs.current[
+                    index
+                  ] = node;
+                }}
+                value={name}
+                onChangeText={(
+                  value
+                ) =>
+                  update(
+                    index,
+                    value
+                  )
+                }
+                onSubmitEditing={() =>
+                  focusNext(index)
+                }
+                placeholder={
                   index === 0
+                    ? 'Введите имя'
+                    : ''
                 }
-                onPress={() =>
-                  move(index, -1)
+                placeholderTextColor={
+                  '#B4A693'
                 }
-                style={({pressed}) => [
-                  styles.miniButton,
-                  index === 0 &&
-                    styles.miniButtonDisabled,
-                  pressed &&
-                    styles.pressed,
-                ]}
-              >
-                <Text
-                  style={
-                    styles.miniButtonText
-                  }
-                >
-                  ↑
-                </Text>
-              </Pressable>
+                autoCapitalize="words"
+                autoCorrect={false}
+                spellCheck={false}
+                keyboardType="default"
+                inputMode="text"
+                maxLength={100}
+                returnKeyType="next"
+                blurOnSubmit={false}
+                style={
+                  styles.nameInput
+                }
+              />
 
-              <Pressable
-                hitSlop={5}
-                disabled={
-                  index ===
-                  names.length - 1
+              <View
+                style={
+                  styles.rowActions
                 }
-                onPress={() =>
-                  move(index, 1)
-                }
-                style={({pressed}) => [
-                  styles.miniButton,
-                  index ===
-                    names.length - 1 &&
-                    styles.miniButtonDisabled,
-                  pressed &&
-                    styles.pressed,
-                ]}
               >
-                <Text
-                  style={
-                    styles.miniButtonText
+                <Pressable
+                  hitSlop={5}
+                  disabled={
+                    index === 0
                   }
+                  onPress={() =>
+                    move(index, -1)
+                  }
+                  style={({pressed}) => [
+                    styles.miniButton,
+                    index === 0 &&
+                      styles.miniButtonDisabled,
+                    pressed &&
+                      styles.pressed,
+                  ]}
                 >
-                  ↓
-                </Text>
-              </Pressable>
+                  <Text
+                    style={
+                      styles.miniButtonText
+                    }
+                  >
+                    ↑
+                  </Text>
+                </Pressable>
 
-              <Pressable
-                hitSlop={5}
-                onPress={() =>
-                  remove(index)
-                }
-                style={({pressed}) => [
-                  styles.removeButton,
-                  pressed &&
-                    styles.pressed,
-                ]}
-              >
-                <Text
-                  style={
-                    styles.removeButtonText
+                <Pressable
+                  hitSlop={5}
+                  disabled={
+                    index ===
+                    names.length - 1
                   }
+                  onPress={() =>
+                    move(index, 1)
+                  }
+                  style={({pressed}) => [
+                    styles.miniButton,
+                    index ===
+                      names.length - 1 &&
+                      styles.miniButtonDisabled,
+                    pressed &&
+                      styles.pressed,
+                  ]}
                 >
-                  ×
-                </Text>
-              </Pressable>
+                  <Text
+                    style={
+                      styles.miniButtonText
+                    }
+                  >
+                    ↓
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  hitSlop={5}
+                  onPress={() =>
+                    remove(index)
+                  }
+                  style={({pressed}) => [
+                    styles.removeButton,
+                    pressed &&
+                      styles.pressed,
+                  ]}
+                >
+                  <Text
+                    style={
+                      styles.removeButtonText
+                    }
+                  >
+                    ×
+                  </Text>
+                </Pressable>
+              </View>
             </View>
-          </View>
-        )
-      )}
+          )
+        )}
+      </View>
 
       <Pressable
-        onPress={add}
+        onPress={() =>
+          addRows(4)
+        }
         style={({pressed}) => [
           styles.addNameButton,
           pressed &&
@@ -298,7 +423,7 @@ const NameEditor = ({
             styles.addNameText
           }
         >
-          + Добавить имя
+          + Ещё 4 строки
         </Text>
       </Pressable>
     </View>
@@ -899,6 +1024,10 @@ export const MemorialBookScreen = ({
                 changeTitle
               }
               maxLength={120}
+              keyboardType="default"
+              inputMode="text"
+              autoCorrect={false}
+              spellCheck={false}
               placeholder="Мой помянник"
               placeholderTextColor={
                 colors.textMuted
@@ -951,7 +1080,7 @@ export const MemorialBookScreen = ({
                 styles.namesTitle
               }
             >
-              Фотографии записок
+              Записки на фото
             </Text>
 
             <Text
@@ -959,11 +1088,9 @@ export const MemorialBookScreen = ({
                 styles.namesSubtitle
               }
             >
-              Сфотографируйте бумажную
-              записку или выберите
-              готовое фото. Во время
-              чтения его можно открыть
-              на весь экран и листать.
+              Добавьте бумажные записки отдельно от списка имён.
+              Каждая записка открывается на весь экран, а несколько
+              фотографий можно листать свайпом.
             </Text>
 
             <View
@@ -996,7 +1123,7 @@ export const MemorialBookScreen = ({
                     styles.photoActionText
                   }
                 >
-                  Сфотографировать
+                  Камера
                 </Text>
               </Pressable>
 
@@ -1025,7 +1152,7 @@ export const MemorialBookScreen = ({
                     styles.photoActionText
                   }
                 >
-                  Из галереи
+                  Добавить фото
                 </Text>
               </Pressable>
             </View>
@@ -1260,7 +1387,7 @@ const styles =
 
     namesCard: {
       marginBottom: 14,
-      padding: 16,
+      padding: 14,
       borderWidth: 1,
       borderColor:
         colors.border,
@@ -1270,7 +1397,16 @@ const styles =
         'rgba(255, 244, 222, 0.90)',
     },
 
+    namesHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent:
+        'space-between',
+      gap: 10,
+    },
+
     namesTitle: {
+      flexShrink: 1,
       color:
         colors.liturgical,
       fontFamily: 'serif',
@@ -1278,112 +1414,145 @@ const styles =
       fontWeight: '700',
     },
 
+    namesCount: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 10,
+      color:
+        colors.accentDark,
+      backgroundColor:
+        'rgba(138, 90, 56, 0.09)',
+      fontSize: 11,
+      fontWeight: '700',
+    },
+
     namesSubtitle: {
-      marginTop: 4,
-      marginBottom: 13,
+      marginTop: 3,
+      marginBottom: 10,
       color:
         colors.textSecondary,
       fontFamily: 'serif',
-      fontSize: 13,
-      lineHeight: 19,
+      fontSize: 12,
+      lineHeight: 17,
+    },
+
+    paperSheet: {
+      position: 'relative',
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor:
+        'rgba(139, 101, 63, 0.20)',
+      borderRadius: 10,
+      backgroundColor:
+        'rgba(255, 250, 238, 0.96)',
+    },
+
+    paperMarginLine: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: 34,
+      width: 1,
+      backgroundColor:
+        'rgba(163, 58, 50, 0.16)',
     },
 
     nameRow: {
-      minHeight: 48,
-      marginBottom: 8,
+      minHeight: 39,
       flexDirection: 'row',
       alignItems: 'center',
+      borderBottomWidth:
+        StyleSheet.hairlineWidth,
+      borderBottomColor:
+        'rgba(92, 119, 145, 0.16)',
     },
 
     nameNumber: {
-      width: 27,
+      width: 33,
+      paddingRight: 6,
       color:
-        colors.accent,
+        'rgba(138, 90, 56, 0.65)',
       fontFamily: 'serif',
-      fontSize: 14,
+      fontSize: 11,
       textAlign: 'right',
-      marginRight: 7,
     },
 
     nameInput: {
       flex: 1,
-      height: 46,
-      paddingHorizontal: 11,
-      borderWidth: 1,
-      borderColor:
-        colors.borderStrong,
-      borderRadius:
-        radius.md,
+      minWidth: 40,
+      height: 38,
+      paddingHorizontal: 9,
+      paddingVertical: 5,
       color:
         colors.text,
       backgroundColor:
-        'rgba(255, 250, 240, 0.94)',
+        'transparent',
       fontFamily: 'serif',
-      fontSize: 17,
+      fontSize: 16,
     },
 
     rowActions: {
-      marginLeft: 6,
+      paddingRight: 4,
       flexDirection: 'row',
-      gap: 3,
+      gap: 1,
     },
 
     miniButton: {
-      width: 27,
-      height: 34,
+      width: 24,
+      height: 30,
       alignItems: 'center',
       justifyContent:
         'center',
-      borderRadius: 8,
+      borderRadius: 7,
       backgroundColor:
-        'rgba(138, 90, 56, 0.09)',
+        'transparent',
     },
 
     miniButtonDisabled: {
-      opacity: 0.25,
+      opacity: 0.18,
     },
 
     miniButtonText: {
       color:
         colors.accentDark,
-      fontSize: 15,
+      fontSize: 13,
       fontWeight: '700',
     },
 
     removeButton: {
-      width: 27,
-      height: 34,
+      width: 24,
+      height: 30,
       alignItems: 'center',
       justifyContent:
         'center',
-      borderRadius: 8,
+      borderRadius: 7,
       backgroundColor:
-        'rgba(163, 58, 50, 0.08)',
+        'transparent',
     },
 
     removeButtonText: {
-      marginTop: -2,
+      marginTop: -1,
       color:
         colors.liturgical,
-      fontSize: 21,
-      lineHeight: 23,
+      fontSize: 18,
+      lineHeight: 20,
     },
 
     addNameButton: {
       alignSelf:
         'flex-start',
-      marginTop: 3,
-      paddingHorizontal: 12,
-      paddingVertical: 9,
-      borderRadius: 10,
+      marginTop: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 7,
+      borderRadius: 9,
       backgroundColor:
-        'rgba(138, 90, 56, 0.10)',
+        'rgba(138, 90, 56, 0.08)',
     },
 
     addNameText: {
       color:
         colors.accentDark,
-      fontSize: 13,
+      fontSize: 12,
       fontWeight: '700',
     },
 
@@ -1406,8 +1575,10 @@ const styles =
 
     photoAction: {
       flex: 1,
-      minHeight: 66,
-      paddingHorizontal: 8,
+      minHeight: 46,
+      paddingHorizontal: 10,
+      flexDirection: 'row',
+      gap: 7,
       alignItems: 'center',
       justifyContent:
         'center',
@@ -1417,14 +1588,13 @@ const styles =
       borderRadius:
         radius.md,
       backgroundColor:
-        'rgba(138, 90, 56, 0.08)',
+        'rgba(138, 90, 56, 0.07)',
     },
 
     photoActionIcon: {
-      marginBottom: 4,
       color:
         colors.accentDark,
-      fontSize: 19,
+      fontSize: 17,
     },
 
     photoActionText: {
