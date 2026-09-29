@@ -12,10 +12,7 @@ const saveCachedBackendUser = async (user) => {
     return;
   }
 
-  await SecureStore.setItemAsync(
-    API_USER_KEY,
-    JSON.stringify(user)
-  );
+  await SecureStore.setItemAsync(API_USER_KEY, JSON.stringify(user));
 };
 
 export const getCachedBackendUser = async () => {
@@ -56,9 +53,7 @@ export const loginToBackendWithGoogle = async (idToken) => {
 
   if (!response.ok) {
     throw new Error(
-      data?.detail ||
-      data?.error ||
-      `Ошибка авторизации на сервере: ${response.status}`
+      data?.detail || data?.error || `Ошибка авторизации на сервере: ${response.status}`
     );
   }
 
@@ -66,10 +61,7 @@ export const loginToBackendWithGoogle = async (idToken) => {
     throw new Error('Сервер не вернул токен авторизации');
   }
 
-  await SecureStore.setItemAsync(
-    API_TOKEN_KEY,
-    data.token
-  );
+  await SecureStore.setItemAsync(API_TOKEN_KEY, data.token);
 
   const user = data.user ?? data;
 
@@ -100,10 +92,7 @@ export const getCurrentBackendUser = async () => {
       },
     });
 
-    if (
-      response.status === 401 ||
-      response.status === 403
-    ) {
+    if (response.status === 401 || response.status === 403) {
       await deleteApiToken();
       await SecureStore.deleteItemAsync(API_USER_KEY);
 
@@ -111,9 +100,7 @@ export const getCurrentBackendUser = async () => {
     }
 
     if (!response.ok) {
-      throw new Error(
-        `Ошибка получения аккаунта: ${response.status}`
-      );
+      throw new Error(`Ошибка получения аккаунта: ${response.status}`);
     }
 
     const data = await response.json();
@@ -139,10 +126,7 @@ export const getCurrentBackendUser = async () => {
   }
 };
 
-export const authenticatedFetch = async (
-  path,
-  options = {}
-) => {
+export const authenticatedFetch = async (path, options = {}) => {
   const token = await getApiToken();
 
   if (!token) {
@@ -152,8 +136,8 @@ export const authenticatedFetch = async (
   const headers = {
     ...(options.body
       ? {
-        'Content-Type': 'application/json',
-      }
+          'Content-Type': 'application/json',
+        }
       : {}),
 
     ...(options.headers || {}),

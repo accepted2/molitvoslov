@@ -7,13 +7,12 @@ import {getSavedItems} from '../../services/savedItems';
 import SelectableDocumentReader from './SelectableDocumentReader';
 
 export default function ExpandablePrayerBlock({
-   title,
-   text,
-   secondaryText = '',
-   onCollapse,
-   onExpand,
-   saveProps = null,
-
+  title,
+  text,
+  secondaryText = '',
+  onCollapse,
+  onExpand,
+  saveProps = null,
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -197,7 +196,6 @@ export default function ExpandablePrayerBlock({
     onCollapse?.();
   };
 
-
   return (
     <View style={styles.container}>
       <Pressable
@@ -223,20 +221,14 @@ export default function ExpandablePrayerBlock({
         <View style={styles.content}>
           {documentData ? (
             <View style={[styles.reader, {height: readerHeight}]}>
-              <SelectableDocumentReader
-                documentData={documentData}
-                savedProgress={null}
-              />
+              <SelectableDocumentReader documentData={documentData} savedProgress={null} />
             </View>
           ) : (
             <Text style={styles.prayerText}>{normalizedText}</Text>
           )}
 
           <Pressable
-            style={({pressed}) => [
-              styles.collapseButton,
-              pressed && styles.collapsePressed,
-            ]}
+            style={({pressed}) => [styles.collapseButton, pressed && styles.collapsePressed]}
             onPress={collapse}
           >
             <Text style={styles.collapseIcon}>▴</Text>
@@ -246,7 +238,6 @@ export default function ExpandablePrayerBlock({
       )}
     </View>
   );
-
 }
 
 const styles = StyleSheet.create({

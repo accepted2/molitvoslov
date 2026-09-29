@@ -4,9 +4,7 @@ let database = null;
 
 export const getDatabase = async () => {
   if (!database) {
-    database = await SQLite.openDatabaseAsync(
-      'molitvoslov.db'
-    );
+    database = await SQLite.openDatabaseAsync('molitvoslov.db');
   }
 
   return database;
@@ -107,76 +105,48 @@ export const initDatabase = async () => {
    * ============================================
    */
 
-  const savedItemColumns =
-    await db.getAllAsync(`
+  const savedItemColumns = await db.getAllAsync(`
       PRAGMA table_info(saved_items)
     `);
 
-  const savedItemColumnNames =
-    savedItemColumns.map(
-      (column) => column.name
-    );
+  const savedItemColumnNames = savedItemColumns.map((column) => column.name);
 
-  if (
-    !savedItemColumnNames.includes(
-      'source_title'
-    )
-  ) {
+  if (!savedItemColumnNames.includes('source_title')) {
     await db.execAsync(`
         ALTER TABLE saved_items
             ADD COLUMN source_title TEXT;
     `);
   }
 
-  if (
-    !savedItemColumnNames.includes(
-      'item_title'
-    )
-  ) {
+  if (!savedItemColumnNames.includes('item_title')) {
     await db.execAsync(`
         ALTER TABLE saved_items
             ADD COLUMN item_title TEXT;
     `);
   }
 
-  if (
-    !savedItemColumnNames.includes(
-      'text'
-    )
-  ) {
+  if (!savedItemColumnNames.includes('text')) {
     await db.execAsync(`
         ALTER TABLE saved_items
             ADD COLUMN text TEXT;
     `);
   }
 
-  if (
-    !savedItemColumnNames.includes(
-      'sync_id'
-    )
-  ) {
+  if (!savedItemColumnNames.includes('sync_id')) {
     await db.execAsync(`
       ALTER TABLE saved_items
       ADD COLUMN sync_id TEXT;
     `);
   }
 
-  if (
-    !savedItemColumnNames.includes(
-      'cloud_user_id'
-    )
-  ) {
+  if (!savedItemColumnNames.includes('cloud_user_id')) {
     await db.execAsync(`
         ALTER TABLE saved_items
             ADD COLUMN cloud_user_id INTEGER;
     `);
   }
 
-  if (
-    !savedItemColumnNames.includes(
-      'sync_status'
-    )
-  ) {
+  if (!savedItemColumnNames.includes('sync_status')) {
     await db.execAsync(`
         ALTER TABLE saved_items
             ADD COLUMN sync_status TEXT
@@ -184,33 +154,21 @@ export const initDatabase = async () => {
     `);
   }
 
-  if (
-    !savedItemColumnNames.includes(
-      'updated_at'
-    )
-  ) {
+  if (!savedItemColumnNames.includes('updated_at')) {
     await db.execAsync(`
         ALTER TABLE saved_items
             ADD COLUMN updated_at TEXT;
     `);
   }
 
-  if (
-    !savedItemColumnNames.includes(
-      'deleted_at'
-    )
-  ) {
+  if (!savedItemColumnNames.includes('deleted_at')) {
     await db.execAsync(`
         ALTER TABLE saved_items
             ADD COLUMN deleted_at TEXT;
     `);
   }
 
-  if (
-    !savedItemColumnNames.includes(
-      'server_id'
-    )
-  ) {
+  if (!savedItemColumnNames.includes('server_id')) {
     await db.execAsync(`
         ALTER TABLE saved_items
             ADD COLUMN server_id INTEGER;
@@ -237,21 +195,13 @@ export const initDatabase = async () => {
    * ============================================
    */
 
-  const progressColumns =
-    await db.getAllAsync(`
+  const progressColumns = await db.getAllAsync(`
       PRAGMA table_info(reading_progress)
     `);
 
-  const progressColumnNames =
-    progressColumns.map(
-      (column) => column.name
-    );
+  const progressColumnNames = progressColumns.map((column) => column.name);
 
-  if (
-    !progressColumnNames.includes(
-      'progress_percent'
-    )
-  ) {
+  if (!progressColumnNames.includes('progress_percent')) {
     await db.execAsync(`
         ALTER TABLE reading_progress
             ADD COLUMN progress_percent INTEGER
@@ -259,44 +209,28 @@ export const initDatabase = async () => {
     `);
   }
 
-  if (
-    !progressColumnNames.includes(
-      'metadata'
-    )
-  ) {
+  if (!progressColumnNames.includes('metadata')) {
     await db.execAsync(`
         ALTER TABLE reading_progress
             ADD COLUMN metadata TEXT;
     `);
   }
 
-  if (
-    !progressColumnNames.includes(
-      'cloud_user_id'
-    )
-  ) {
+  if (!progressColumnNames.includes('cloud_user_id')) {
     await db.execAsync(`
       ALTER TABLE reading_progress
       ADD COLUMN cloud_user_id INTEGER;
     `);
   }
 
-  if (
-    !progressColumnNames.includes(
-      'server_id'
-    )
-  ) {
+  if (!progressColumnNames.includes('server_id')) {
     await db.execAsync(`
       ALTER TABLE reading_progress
       ADD COLUMN server_id INTEGER;
     `);
   }
 
-  if (
-    !progressColumnNames.includes(
-      'sync_status'
-    )
-  ) {
+  if (!progressColumnNames.includes('sync_status')) {
     await db.execAsync(`
       ALTER TABLE reading_progress
       ADD COLUMN sync_status TEXT
@@ -304,11 +238,7 @@ export const initDatabase = async () => {
     `);
   }
 
-  if (
-    !progressColumnNames.includes(
-      'deleted_at'
-    )
-  ) {
+  if (!progressColumnNames.includes('deleted_at')) {
     await db.execAsync(`
       ALTER TABLE reading_progress
       ADD COLUMN deleted_at TEXT;
@@ -328,10 +258,7 @@ export const initDatabase = async () => {
   return db;
 };
 
-export const setSetting = async (
-  key,
-  value
-) => {
+export const setSetting = async (key, value) => {
   const db = await getDatabase();
 
   await db.runAsync(
@@ -346,27 +273,21 @@ export const setSetting = async (
       DO UPDATE SET
                          value = excluded.value
     `,
-    [
-      key,
-      value,
-    ]
+    [key, value]
   );
 };
 
-export const getSetting = async (
-  key
-) => {
+export const getSetting = async (key) => {
   const db = await getDatabase();
 
-  const result =
-    await db.getFirstAsync(
-      `
+  const result = await db.getFirstAsync(
+    `
           SELECT value
           FROM app_settings
           WHERE key = ?
       `,
-      [key]
-    );
+    [key]
+  );
 
   return result?.value ?? null;
 };

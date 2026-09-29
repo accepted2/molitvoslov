@@ -713,25 +713,17 @@ export default function KathismaScreen({route, navigation}) {
           .replace(/Трисвятое по Отче наш:[ \t]*/iu, 'Трисвятое по Отче наш:\n')
           .replace(
             /(?:Таже\s+|Также\s+)?Тропар(ь|и)\s*,?\s*глас\s*(\d+)\s*:\s*/iu,
-            (_match, ending, glas) =>
-              `Тропар${ending === 'ь' ? 'ь' : 'и'}, глас ${glas}:\n`
+            (_match, ending, glas) => `Тропар${ending === 'ь' ? 'ь' : 'и'}, глас ${glas}:\n`
           )
           .replace(
             /(^|\r?\n)[^\r\n]*\(40\)[^\r\n]*(?:\r?\n[ \t]*)*/u,
             '$1Господи, помилуй (40).\nМолитва '
           )
-          .replace(
-            /(^|\n)И[ \t]+ныне:[ \t]+/giu,
-            '$1И\u00A0ныне:\u00A0'
-          );
+          .replace(/(^|\n)И[ \t]+ныне:[ \t]+/giu, '$1И\u00A0ныне:\u00A0');
 
-      const churchText = normalizePrayersAfter(
-        kathisma.prayers_after
-      );
+      const churchText = normalizePrayersAfter(kathisma.prayers_after);
 
-      const russianText = normalizePrayersAfter(
-        kathisma.prayers_after_russian
-      );
+      const russianText = normalizePrayersAfter(kathisma.prayers_after_russian);
 
       const churchBlock = makeOtherBlock({
         text: churchText,
@@ -804,10 +796,7 @@ export default function KathismaScreen({route, navigation}) {
 
         rows: [
           {
-            layout:
-              blocks.length > 1
-                ? 'parallel'
-                : 'stack',
+            layout: blocks.length > 1 ? 'parallel' : 'stack',
 
             blocks,
           },

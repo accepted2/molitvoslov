@@ -131,7 +131,6 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 5,
     paddingHorizontal: 14,
-
   },
   sectionTitle: {
     fontFamily: 'serif',

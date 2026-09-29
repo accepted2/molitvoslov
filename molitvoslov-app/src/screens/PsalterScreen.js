@@ -237,8 +237,7 @@ export default function PsalterScreen({navigation}) {
               {psalter?.prayers_after ? (
                 <View
                   onLayout={(event) => {
-                    afterPrayersYRef.current =
-                      event.nativeEvent.layout.y;
+                    afterPrayersYRef.current = event.nativeEvent.layout.y;
                   }}
                 >
                   <ExpandablePrayerBlock
@@ -262,7 +261,6 @@ export default function PsalterScreen({navigation}) {
                 </View>
               ) : null}
             </View>
-
           }
           renderItem={({item}) => {
             const isCurrent = Number(item.number) === Number(currentKathismaNumber);
@@ -316,13 +314,12 @@ export default function PsalterScreen({navigation}) {
           }}
           ListFooterComponent={
             psalter?.prayers_after ? (
-              <View   style={styles.footer}
-                      onLayout={(event) => {
-                        afterPrayersYRef.current =
-                          event.nativeEvent.layout.y;
-                      }}>
-
-              </View>
+              <View
+                style={styles.footer}
+                onLayout={(event) => {
+                  afterPrayersYRef.current = event.nativeEvent.layout.y;
+                }}
+              ></View>
             ) : null
           }
         />

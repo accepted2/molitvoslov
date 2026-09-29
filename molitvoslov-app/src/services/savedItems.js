@@ -3,10 +3,7 @@ import * as Crypto from 'expo-crypto';
 import {getDatabase} from '../db/database';
 import {getCurrentUser} from './localAuth';
 
-import {
-  authenticatedFetch,
-  getCachedBackendUser,
-} from './backendAuth';
+import {authenticatedFetch, getCachedBackendUser} from './backendAuth';
 
 const ANONYMOUS_LOCAL_USERNAME = '__molitvoslov_guest__';
 
@@ -41,11 +38,7 @@ const getOrCreateLocalOwner = async (db) => {
         )
         VALUES (?, ?, ?)
       `,
-      [
-        ANONYMOUS_LOCAL_USERNAME,
-        '__anonymous__',
-        new Date().toISOString(),
-      ]
+      [ANONYMOUS_LOCAL_USERNAME, '__anonymous__', new Date().toISOString()]
     );
 
     return {
@@ -71,7 +64,6 @@ const getOrCreateLocalOwner = async (db) => {
     throw error;
   }
 };
-
 
 const SAVE_TYPE_NAMES = {
   word: 'Слово',
@@ -120,8 +112,7 @@ const prepareItem = (item) => ({
 
   metadata: parseMetadata(item.metadata),
 
-  save_type_display:
-    SAVE_TYPE_NAMES[item.save_type] || item.save_type,
+  save_type_display: SAVE_TYPE_NAMES[item.save_type] || item.save_type,
 });
 
 const readResponseData = async (response) => {
@@ -138,17 +129,10 @@ const readResponseData = async (response) => {
   }
 };
 
-const throwResponseError = async (
-  response,
-  fallbackMessage
-) => {
+const throwResponseError = async (response, fallbackMessage) => {
   const data = await readResponseData(response);
 
-  throw new Error(
-    data?.detail ||
-    data?.error ||
-    `${fallbackMessage}: ${response.status}`
-  );
+  throw new Error(data?.detail || data?.error || `${fallbackMessage}: ${response.status}`);
 };
 
 const savedItemToServerPayload = (item) => ({
@@ -172,11 +156,7 @@ const savedItemToServerPayload = (item) => ({
   metadata: parseMetadata(item.metadata),
 });
 
-const pushSavedItem = async (
-  db,
-  user,
-  localItem
-) => {
+const pushSavedItem = async (db, user, localItem) => {
   let item = localItem;
 
   /*
@@ -196,12 +176,7 @@ const pushSavedItem = async (
         WHERE id = ?
         AND cloud_user_id = ?
       `,
-      [
-        syncId,
-        now,
-        item.id,
-        user.id,
-      ]
+      [syncId, now, item.id, user.id]
     );
 
     item = {
@@ -218,26 +193,17 @@ const pushSavedItem = async (
    * но телефон не получил ответ, повторная
    * отправка не должна создать второй SavedItem.
    */
-  const createResponse = await authenticatedFetch(
-    '/api/saved-items/',
-    {
-      method: 'POST',
+  const createResponse = await authenticatedFetch('/api/saved-items/', {
+    method: 'POST',
 
-      body: JSON.stringify(
-        savedItemToServerPayload(item)
-      ),
-    }
-  );
+    body: JSON.stringify(savedItemToServerPayload(item)),
+  });
 
   if (!createResponse.ok) {
-    await throwResponseError(
-      createResponse,
-      'Ошибка синхронизации сохранения'
-    );
+    await throwResponseError(createResponse, 'Ошибка синхронизации сохранения');
   }
 
-  const serverItem =
-    await readResponseData(createResponse);
+  const serverItem = await readResponseData(createResponse);
 
   /*
    * Сервер может вернуть другой sync_id,
@@ -246,8 +212,7 @@ const pushSavedItem = async (
    *
    * В таком случае принимаем серверный UUID.
    */
-  const serverSyncId =
-    serverItem.sync_id || item.sync_id;
+  const serverSyncId = serverItem.sync_id || item.sync_id;
 
   await db.runAsync(
     `
@@ -282,27 +247,17 @@ const pushSavedItem = async (
    * теперь передаём tombstone.
    */
   if (item.deleted_at) {
-    const deleteResponse =
-      await authenticatedFetch(
-        `/api/saved-items/${serverSyncId}/`,
-        {
-          method: 'DELETE',
-        }
-      );
+    const deleteResponse = await authenticatedFetch(`/api/saved-items/${serverSyncId}/`, {
+      method: 'DELETE',
+    });
 
     /*
      * 404 здесь тоже можно считать успехом:
      * запись могла быть уже soft-deleted
      * предыдущим запросом.
      */
-    if (
-      !deleteResponse.ok &&
-      deleteResponse.status !== 404
-    ) {
-      await throwResponseError(
-        deleteResponse,
-        'Ошибка синхронизации удаления'
-      );
+    if (!deleteResponse.ok && deleteResponse.status !== 404) {
+      await throwResponseError(deleteResponse, 'Ошибка синхронизации удаления');
     }
 
     await db.runAsync(
@@ -313,18 +268,12 @@ const pushSavedItem = async (
         WHERE id = ?
         AND cloud_user_id = ?
       `,
-      [
-        item.id,
-        user.id,
-      ]
+      [item.id, user.id]
     );
   }
 };
 
-const pushPendingSavedItems = async (
-  db,
-  user
-) => {
+const pushPendingSavedItems = async (db, user) => {
   const pendingItems = await db.getAllAsync(
     `
       SELECT *
@@ -343,11 +292,7 @@ const pushPendingSavedItems = async (
 
   for (const item of pendingItems) {
     try {
-      await pushSavedItem(
-        db,
-        user,
-        item
-      );
+      await pushSavedItem(db, user, item);
     } catch (error) {
       errors.push(error);
     }
@@ -356,66 +301,42 @@ const pushPendingSavedItems = async (
   return errors;
 };
 
-const pullSavedItems = async (
-  db,
-  user
-) => {
-  const response = await authenticatedFetch(
-    '/api/saved-items/?include_deleted=1'
-  );
+const pullSavedItems = async (db, user) => {
+  const response = await authenticatedFetch('/api/saved-items/?include_deleted=1');
 
   if (!response.ok) {
-    await throwResponseError(
-      response,
-      'Ошибка загрузки сохранений'
-    );
+    await throwResponseError(response, 'Ошибка загрузки сохранений');
   }
 
   const data = await readResponseData(response);
 
-  const serverItems = Array.isArray(data)
-    ? data
-    : Array.isArray(data?.results)
-      ? data.results
-      : [];
+  const serverItems = Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : [];
 
   for (const serverItem of serverItems) {
     if (!serverItem.sync_id) {
       continue;
     }
 
-    const existing =
-      await db.getFirstAsync(
-        `
+    const existing = await db.getFirstAsync(
+      `
           SELECT *
           FROM saved_items
           WHERE sync_id = ?
           AND cloud_user_id = ?
           LIMIT 1
         `,
-        [
-          serverItem.sync_id,
-          user.id,
-        ]
-      );
+      [serverItem.sync_id, user.id]
+    );
 
     /*
      * Не перетираем локальное изменение,
      * которое ещё не удалось отправить.
      */
-    if (
-      existing &&
-      (
-        existing.sync_status === 'pending' ||
-        existing.sync_status === 'deleted'
-      )
-    ) {
+    if (existing && (existing.sync_status === 'pending' || existing.sync_status === 'deleted')) {
       continue;
     }
 
-    const metadata = stringifyMetadata(
-      serverItem.metadata
-    );
+    const metadata = stringifyMetadata(serverItem.metadata);
 
     if (existing) {
       await db.runAsync(
@@ -472,11 +393,9 @@ const pullSavedItems = async (
 
           metadata,
 
-          serverItem.created_at ||
-          existing.created_at,
+          serverItem.created_at || existing.created_at,
 
-          serverItem.updated_at ||
-          existing.updated_at,
+          serverItem.updated_at || existing.updated_at,
 
           serverItem.deleted_at ?? null,
 
@@ -552,11 +471,9 @@ const pullSavedItems = async (
 
           metadata,
 
-          serverItem.created_at ||
-          new Date().toISOString(),
+          serverItem.created_at || new Date().toISOString(),
 
-          serverItem.updated_at ||
-          new Date().toISOString(),
+          serverItem.updated_at || new Date().toISOString(),
 
           serverItem.deleted_at ?? null,
         ]
@@ -587,16 +504,9 @@ const runSavedItemsSync = async () => {
   const db = await getDatabase();
 
   try {
-    const pushErrors =
-      await pushPendingSavedItems(
-        db,
-        user
-      );
+    const pushErrors = await pushPendingSavedItems(db, user);
 
-    await pullSavedItems(
-      db,
-      user
-    );
+    await pullSavedItems(db, user);
 
     return {
       success: pushErrors.length === 0,
@@ -615,8 +525,7 @@ export const syncSavedItems = async () => {
     return savedItemsSyncPromise;
   }
 
-  savedItemsSyncPromise =
-    runSavedItemsSync();
+  savedItemsSyncPromise = runSavedItemsSync();
 
   try {
     return await savedItemsSyncPromise;
@@ -625,17 +534,12 @@ export const syncSavedItems = async () => {
   }
 };
 
-export const getSavedItems = async (
-  params = {}
-) => {
-  const cloudUser =
-    await getCachedBackendUser();
+export const getSavedItems = async (params = {}) => {
+  const cloudUser = await getCachedBackendUser();
 
   const db = await getDatabase();
 
-  const conditions = [
-    'deleted_at IS NULL',
-  ];
+  const conditions = ['deleted_at IS NULL'];
 
   const values = [];
 
@@ -644,9 +548,7 @@ export const getSavedItems = async (
      * Авторизованный Google/Django пользователь:
      * показываем только его облачные сохранения.
      */
-    conditions.push(
-      'cloud_user_id = ?'
-    );
+    conditions.push('cloud_user_id = ?');
 
     values.push(cloudUser.id);
   } else {
@@ -654,36 +556,21 @@ export const getSavedItems = async (
      * Без аккаунта:
      * работаем только с локальными сохранениями.
      */
-    const localOwner =
-      await getOrCreateLocalOwner(db);
+    const localOwner = await getOrCreateLocalOwner(db);
 
-    conditions.push(
-      'cloud_user_id IS NULL'
-    );
+    conditions.push('cloud_user_id IS NULL');
 
-    conditions.push(
-      'user_id = ?'
-    );
+    conditions.push('user_id = ?');
 
     values.push(localOwner.id);
   }
 
-  const allowedFilters = [
-    'source_type',
-    'source_id',
-    'anchor_type',
-    'anchor_id',
-    'save_type',
-  ];
+  const allowedFilters = ['source_type', 'source_id', 'anchor_type', 'anchor_id', 'save_type'];
 
   allowedFilters.forEach((field) => {
     const value = params[field];
 
-    if (
-      value !== undefined &&
-      value !== null &&
-      value !== ''
-    ) {
+    if (value !== undefined && value !== null && value !== '') {
       conditions.push(`${field} = ?`);
       values.push(value);
     }
@@ -701,19 +588,15 @@ export const getSavedItems = async (
 
   return items.map(prepareItem);
 };
-export const saveItem = async (
-  payload
-) => {
-  const cloudUser =
-    await getCachedBackendUser();
+export const saveItem = async (payload) => {
+  const cloudUser = await getCachedBackendUser();
 
   const db = await getDatabase();
 
   let localOwner = null;
 
   if (!cloudUser?.id) {
-    localOwner =
-      await getOrCreateLocalOwner(db);
+    localOwner = await getOrCreateLocalOwner(db);
   }
 
   /*
@@ -722,33 +605,22 @@ export const saveItem = async (
    * Для Google-пользователя сохраняем старое поведение.
    * Для анонимного пользователя используем локальный ID.
    */
-  const userId =
-    cloudUser?.id ??
-    localOwner.id;
+  const userId = cloudUser?.id ?? localOwner.id;
 
   /*
    * NULL означает:
    * эта запись только локальная и не принадлежит
    * никакому Django/Google аккаунту.
    */
-  const cloudUserId =
-    cloudUser?.id ?? null;
+  const cloudUserId = cloudUser?.id ?? null;
 
-  const syncStatus =
-    cloudUser?.id
-      ? 'pending'
-      : 'legacy';
+  const syncStatus = cloudUser?.id ? 'pending' : 'legacy';
 
-  const syncId =
-    Crypto.randomUUID();
+  const syncId = Crypto.randomUUID();
 
-  const now =
-    new Date().toISOString();
+  const now = new Date().toISOString();
 
-  const metadata =
-    stringifyMetadata(
-      payload.metadata
-    );
+  const metadata = stringifyMetadata(payload.metadata);
 
   const result = await db.runAsync(
     `
@@ -830,17 +702,14 @@ export const saveItem = async (
    * Для анонимной записи cloud_user_id = NULL,
    * поэтому условие "cloud_user_id = ?" не подходит.
    */
-  const item =
-    await db.getFirstAsync(
-      `
+  const item = await db.getFirstAsync(
+    `
         SELECT *
         FROM saved_items
         WHERE id = ?
       `,
-      [
-        result.lastInsertRowId,
-      ]
-    );
+    [result.lastInsertRowId]
+  );
 
   /*
    * Только записи Google/Django пользователя
@@ -853,11 +722,8 @@ export const saveItem = async (
   return prepareItem(item);
 };
 
-export const deleteSavedItem = async (
-  itemId
-) => {
-  const cloudUser =
-    await getCachedBackendUser();
+export const deleteSavedItem = async (itemId) => {
+  const cloudUser = await getCachedBackendUser();
 
   const db = await getDatabase();
 
@@ -866,8 +732,7 @@ export const deleteSavedItem = async (
    * не требуется — удаляем его локально сразу.
    */
   if (!cloudUser?.id) {
-    const localOwner =
-      await getOrCreateLocalOwner(db);
+    const localOwner = await getOrCreateLocalOwner(db);
 
     await db.runAsync(
       `
@@ -876,17 +741,13 @@ export const deleteSavedItem = async (
         AND user_id = ?
         AND cloud_user_id IS NULL
       `,
-      [
-        itemId,
-        localOwner.id,
-      ]
+      [itemId, localOwner.id]
     );
 
     return;
   }
 
-  const now =
-    new Date().toISOString();
+  const now = new Date().toISOString();
 
   /*
    * Для облачного сохранения оставляем tombstone,
@@ -902,12 +763,7 @@ export const deleteSavedItem = async (
         WHERE id = ?
           AND cloud_user_id = ?
     `,
-    [
-      now,
-      now,
-      itemId,
-      cloudUser.id,
-    ]
+    [now, now, itemId, cloudUser.id]
   );
 
   syncSavedItems().catch(() => {});

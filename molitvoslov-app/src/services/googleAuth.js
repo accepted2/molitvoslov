@@ -4,10 +4,7 @@ import {
   isSuccessResponse,
 } from 'react-native-nitro-google-signin';
 
-import {
-  loginToBackendWithGoogle,
-  logoutFromBackend,
-} from './backendAuth';
+import {loginToBackendWithGoogle, logoutFromBackend} from './backendAuth';
 
 const GOOGLE_WEB_CLIENT_ID =
   '451725030385-me2s7pa7ejshhoe7fmet5m0p0bv3eho1.apps.googleusercontent.com';
@@ -30,35 +27,25 @@ export const signInWithGoogle = async () => {
    * - добавить новый Google-аккаунт;
    * - повторно авторизовать аккаунт при необходимости.
    */
-  const response =
-    await GoogleOneTapSignIn.presentExplicitSignIn();
+  const response = await GoogleOneTapSignIn.presentExplicitSignIn();
 
   if (isCancelledResponse(response)) {
     return null;
   }
 
   if (!isSuccessResponse(response)) {
-    throw new Error(
-      'Не удалось выполнить вход через Google'
-    );
+    throw new Error('Не удалось выполнить вход через Google');
   }
 
-  const {
-    user: googleUser,
-    idToken,
-  } = response.data;
+  const {user: googleUser, idToken} = response.data;
 
   if (!idToken) {
-    throw new Error(
-      'Google не вернул ID token'
-    );
+    throw new Error('Google не вернул ID token');
   }
 
-  const backendData =
-    await loginToBackendWithGoogle(idToken);
+  const backendData = await loginToBackendWithGoogle(idToken);
 
-  const backendUser =
-    backendData.user ?? backendData;
+  const backendUser = backendData.user ?? backendData;
 
   return {
     idToken,

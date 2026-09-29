@@ -1,100 +1,48 @@
-import React, {
-  useEffect,
-  useState,
-} from 'react';
+import React, {useEffect, useState} from 'react';
 
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import {ActivityIndicator, Pressable, StyleSheet, Text, View} from 'react-native';
 
-import {
-  SafeAreaView,
-} from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
-import {
-  getCurrentBackendUser,
-} from '../services/backendAuth';
+import {getCurrentBackendUser} from '../services/backendAuth';
 
-import {
-  signInWithGoogle,
-  signOutFromGoogle,
-} from '../services/googleAuth';
+import {signInWithGoogle, signOutFromGoogle} from '../services/googleAuth';
 
-import {
-  syncSavedItems,
-} from '../services/savedItems';
+import {syncSavedItems} from '../services/savedItems';
 
-import {
-  syncReadingProgress,
-} from '../services/readingProgress';
+import {syncReadingProgress} from '../services/readingProgress';
 
-import {
-  colors,
-  radius,
-  spacing,
-} from '../theme';
+import {colors, radius, spacing} from '../theme';
 
-import {
-  BottomNav,
-} from '../components/navigation/BottomNav';
+import {BottomNav} from '../components/navigation/BottomNav';
 
-export const AccountScreen = ({
-                                navigation,
-                              }) => {
-  const [
-    googleUser,
-    setGoogleUser,
-  ] = useState(null);
+export const AccountScreen = ({navigation}) => {
+  const [googleUser, setGoogleUser] = useState(null);
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [
-    googleLoading,
-    setGoogleLoading,
-  ] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
-  const [
-    googleError,
-    setGoogleError,
-  ] = useState('');
+  const [googleError, setGoogleError] = useState('');
 
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const backendUser =
-          await getCurrentBackendUser();
+        const backendUser = await getCurrentBackendUser();
 
         if (backendUser) {
           setGoogleUser({
-            id:
-            backendUser.id,
+            id: backendUser.id,
 
-            email:
-            backendUser.email,
+            email: backendUser.email,
 
-            name:
-              backendUser.name ||
-              backendUser.first_name ||
-              backendUser.username,
+            name: backendUser.name || backendUser.first_name || backendUser.username,
 
-            photo:
-              backendUser.picture_url ||
-              backendUser.picture ||
-              null,
+            photo: backendUser.picture_url || backendUser.picture || null,
           });
         }
       } catch (err) {
-        console.error(
-          'LOAD ACCOUNT ERROR',
-          err
-        );
+        console.error('LOAD ACCOUNT ERROR', err);
       } finally {
         setLoading(false);
       }
@@ -109,79 +57,45 @@ export const AccountScreen = ({
 
       setGoogleLoading(true);
 
-      const googleResult =
-        await signInWithGoogle();
+      const googleResult = await signInWithGoogle();
 
       if (!googleResult) {
         return;
       }
 
-      setGoogleUser(
-        googleResult.user
-      );
+      setGoogleUser(googleResult.user);
 
       /*
        * После успешного Google/Django
        * входа сразу восстанавливаем
        * облачные данные пользователя.
        */
-      const [
-        savedItemsSyncResult,
-        readingProgressSyncResult,
-      ] = await Promise.all([
+      const [savedItemsSyncResult, readingProgressSyncResult] = await Promise.all([
         syncSavedItems(),
         syncReadingProgress(),
       ]);
 
-      if (
-        savedItemsSyncResult?.success &&
-        readingProgressSyncResult?.success
-      ) {
-        console.log(
-          'Cloud sync OK: google-login'
-        );
+      if (savedItemsSyncResult?.success && readingProgressSyncResult?.success) {
+        console.log('Cloud sync OK: google-login');
       } else {
-        const error =
-          savedItemsSyncResult?.error ||
-          readingProgressSyncResult?.error;
+        const error = savedItemsSyncResult?.error || readingProgressSyncResult?.error;
 
-        const reason =
-          savedItemsSyncResult?.reason ||
-          readingProgressSyncResult?.reason;
+        const reason = savedItemsSyncResult?.reason || readingProgressSyncResult?.reason;
 
-        console.log(
-          'Cloud sync после Google-входа отложен',
-          error?.message ||
-          reason ||
-          'unknown'
-        );
+        console.log('Cloud sync после Google-входа отложен', error?.message || reason || 'unknown');
       }
 
-      console.log(
-        'GOOGLE LOGIN OK',
-        {
-          email:
-          googleResult.user?.email,
+      console.log('GOOGLE LOGIN OK', {
+        email: googleResult.user?.email,
 
-          name:
-          googleResult.user?.name,
+        name: googleResult.user?.name,
 
-          hasIdToken:
-            Boolean(
-              googleResult.idToken
-            ),
-        }
-      );
+        hasIdToken: Boolean(googleResult.idToken),
+      });
     } catch (err) {
-      console.error(
-        'GOOGLE LOGIN ERROR',
-        err
-      );
+      console.error('GOOGLE LOGIN ERROR', err);
 
-      setGoogleError(
-        err?.message ||
-        'Не удалось выполнить вход через Google'
-      );
+      setGoogleError(err?.message || 'Не удалось выполнить вход через Google');
     } finally {
       setGoogleLoading(false);
     }
@@ -202,362 +116,225 @@ export const AccountScreen = ({
 
   if (loading) {
     return (
-      <SafeAreaView
-        style={styles.safeArea}
-      >
-        <View
-          style={styles.center}
-        >
-          <ActivityIndicator
-            size="large"
-            color={colors.accent}
-          />
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView
-      style={styles.safeArea}
-      edges={['top']}
-    >
-      <View
-        style={styles.screen}
-      >
-        <View
-          style={styles.content}
-        >
-          <Text
-            style={styles.title}
-          >
-            Аккаунт
-          </Text>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.screen}>
+        <View style={styles.content}>
+          <Text style={styles.title}>Аккаунт</Text>
 
           {googleUser ? (
-            <View
-              style={styles.card}
-            >
-              <Text
-                style={styles.label}
-              >
-                Вы вошли через Google
-              </Text>
+            <View style={styles.card}>
+              <Text style={styles.label}>Вы вошли через Google</Text>
 
-              {!!googleUser.name && (
-                <Text
-                  style={
-                    styles.username
-                  }
-                >
-                  {googleUser.name}
-                </Text>
-              )}
+              {!!googleUser.name && <Text style={styles.username}>{googleUser.name}</Text>}
 
-              {!!googleUser.email && (
-                <Text
-                  style={
-                    styles.googleEmail
-                  }
-                >
-                  {googleUser.email}
-                </Text>
-              )}
+              {!!googleUser.email && <Text style={styles.googleEmail}>{googleUser.email}</Text>}
 
               <Pressable
-                onPress={
-                  googleLogout
-                }
-                style={({
-                          pressed,
-                        }) => [
-                  styles.button,
-                  pressed &&
-                  styles.pressed,
-                ]}
+                onPress={googleLogout}
+                style={({pressed}) => [styles.button, pressed && styles.pressed]}
               >
-                <Text
-                  style={
-                    styles.buttonText
-                  }
-                >
-                  Выйти
-                </Text>
+                <Text style={styles.buttonText}>Выйти</Text>
               </Pressable>
             </View>
           ) : (
-            <View
-              style={styles.card}
-            >
-              <Text
-                style={
-                  styles.loginDescription
-                }
-              >
-                Войдите через Google,
-                чтобы сохранять и
-                синхронизировать
-                избранное, прогресс
-                чтения и другие данные
-                между устройствами.
+            <View style={styles.card}>
+              <Text style={styles.loginDescription}>
+                Войдите через Google, чтобы сохранять и синхронизировать избранное, прогресс чтения
+                и другие данные между устройствами.
               </Text>
 
-              <Text
-                style={
-                  styles.loginHint
-                }
-              >
-                При первом входе
-                аккаунт будет создан
-                автоматически.
+              <Text style={styles.loginHint}>
+                При первом входе аккаунт будет создан автоматически.
               </Text>
 
-              {!!googleError && (
-                <Text
-                  style={styles.error}
-                >
-                  {googleError}
-                </Text>
-              )}
+              {!!googleError && <Text style={styles.error}>{googleError}</Text>}
 
               <Pressable
-                onPress={
-                  googleLogin
-                }
-                disabled={
-                  googleLoading
-                }
-                style={({
-                          pressed,
-                        }) => [
+                onPress={googleLogin}
+                disabled={googleLoading}
+                style={({pressed}) => [
                   styles.googleButton,
 
-                  pressed &&
-                  styles.pressed,
+                  pressed && styles.pressed,
 
-                  googleLoading &&
-                  styles.disabled,
+                  googleLoading && styles.disabled,
                 ]}
               >
                 {googleLoading ? (
-                  <ActivityIndicator
-                    color={
-                      colors.text
-                    }
-                  />
+                  <ActivityIndicator color={colors.text} />
                 ) : (
-                  <Text
-                    style={
-                      styles.googleButtonText
-                    }
-                  >
-                    Продолжить с Google
-                  </Text>
+                  <Text style={styles.googleButtonText}>Продолжить с Google</Text>
                 )}
               </Pressable>
             </View>
           )}
         </View>
 
-        <BottomNav
-          navigation={
-            navigation
-          }
-          active="account"
-        />
+        <BottomNav navigation={navigation} active="account" />
       </View>
     </SafeAreaView>
   );
 };
 
-const styles =
-  StyleSheet.create({
-    safeArea: {
-      flex: 1,
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
 
-      backgroundColor:
-      colors.background,
-    },
+    backgroundColor: colors.background,
+  },
 
-    screen: {
-      flex: 1,
-    },
+  screen: {
+    flex: 1,
+  },
 
-    content: {
-      flex: 1,
+  content: {
+    flex: 1,
 
-      padding:
-      spacing.lg,
-    },
+    padding: spacing.lg,
+  },
 
-    center: {
-      flex: 1,
+  center: {
+    flex: 1,
 
-      alignItems:
-        'center',
+    alignItems: 'center',
 
-      justifyContent:
-        'center',
-    },
+    justifyContent: 'center',
+  },
 
-    title: {
-      fontSize: 28,
+  title: {
+    fontSize: 28,
 
-      fontWeight:
-        '700',
+    fontWeight: '700',
 
-      color:
-      colors.text,
+    color: colors.text,
 
-      marginBottom:
-      spacing.lg,
-    },
+    marginBottom: spacing.lg,
+  },
 
-    card: {
-      padding:
-      spacing.lg,
+  card: {
+    padding: spacing.lg,
 
-      borderRadius:
-      radius.lg,
+    borderRadius: radius.lg,
 
-      backgroundColor:
-      colors.surface,
+    backgroundColor: colors.surface,
 
-      borderWidth: 1,
+    borderWidth: 1,
 
-      borderColor:
-      colors.border,
-    },
+    borderColor: colors.border,
+  },
 
-    label: {
-      color:
-      colors.textSecondary,
+  label: {
+    color: colors.textSecondary,
 
-      fontSize: 14,
-    },
+    fontSize: 14,
+  },
 
-    username: {
-      marginTop:
-      spacing.xs,
+  username: {
+    marginTop: spacing.xs,
 
-      marginBottom:
-      spacing.md,
+    marginBottom: spacing.md,
 
-      fontSize: 22,
+    fontSize: 22,
 
-      fontWeight:
-        '700',
+    fontWeight: '700',
 
-      color:
-      colors.text,
-    },
+    color: colors.text,
+  },
 
-    googleEmail: {
-      marginBottom:
-      spacing.lg,
+  googleEmail: {
+    marginBottom: spacing.lg,
 
-      color:
-      colors.textSecondary,
+    color: colors.textSecondary,
 
-      fontSize: 15,
-    },
+    fontSize: 15,
+  },
 
-    loginDescription: {
-      marginBottom:
-      spacing.sm,
+  loginDescription: {
+    marginBottom: spacing.sm,
 
-      color:
-      colors.textSecondary,
+    color: colors.textSecondary,
 
-      fontSize: 15,
+    fontSize: 15,
 
-      lineHeight: 22,
-    },
+    lineHeight: 22,
+  },
 
-    loginHint: {
-      marginBottom:
-      spacing.lg,
+  loginHint: {
+    marginBottom: spacing.lg,
 
-      color:
-      colors.textMuted,
+    color: colors.textMuted,
 
-      fontSize: 13,
+    fontSize: 13,
 
-      lineHeight: 19,
-    },
+    lineHeight: 19,
+  },
 
-    error: {
-      marginBottom:
-      spacing.md,
+  error: {
+    marginBottom: spacing.md,
 
-      color:
-      colors.liturgical,
+    color: colors.liturgical,
 
-      fontSize: 14,
-    },
+    fontSize: 14,
+  },
 
-    button: {
-      height: 48,
+  button: {
+    height: 48,
 
-      alignItems:
-        'center',
+    alignItems: 'center',
 
-      justifyContent:
-        'center',
+    justifyContent: 'center',
 
-      borderRadius:
-      radius.md,
+    borderRadius: radius.md,
 
-      backgroundColor:
-      colors.accent,
-    },
+    backgroundColor: colors.accent,
+  },
 
-    buttonText: {
-      color:
-      colors.white,
+  buttonText: {
+    color: colors.white,
 
-      fontSize: 16,
+    fontSize: 16,
 
-      fontWeight:
-        '700',
-    },
+    fontWeight: '700',
+  },
 
-    googleButton: {
-      height: 48,
+  googleButton: {
+    height: 48,
 
-      alignItems:
-        'center',
+    alignItems: 'center',
 
-      justifyContent:
-        'center',
+    justifyContent: 'center',
 
-      borderRadius:
-      radius.md,
+    borderRadius: radius.md,
 
-      borderWidth: 1,
+    borderWidth: 1,
 
-      borderColor:
-      colors.borderStrong,
+    borderColor: colors.borderStrong,
 
-      backgroundColor:
-      colors.background,
-    },
+    backgroundColor: colors.background,
+  },
 
-    googleButtonText: {
-      color:
-      colors.text,
+  googleButtonText: {
+    color: colors.text,
 
-      fontSize: 16,
+    fontSize: 16,
 
-      fontWeight:
-        '600',
-    },
+    fontWeight: '600',
+  },
 
-    disabled: {
-      opacity: 0.6,
-    },
+  disabled: {
+    opacity: 0.6,
+  },
 
-    pressed: {
-      opacity: 0.7,
-    },
-  });
+  pressed: {
+    opacity: 0.7,
+  },
+});
