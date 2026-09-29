@@ -6,6 +6,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 const ITEMS = [
   {key: 'home', route: 'Menu', label: 'Главная', symbol: '⌂'},
   {key: 'favorites', route: 'Favorites', label: 'Избранное', symbol: '♡'},
+  {key: 'memorial', route: 'Memorial', label: 'Помянник', symbol: '†'},
   {key: 'account', route: 'Account', label: 'Аккаунт', symbol: '○'},
 ];
 
