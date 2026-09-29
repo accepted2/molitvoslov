@@ -23,6 +23,11 @@ from .views import (
     SavedItemViewSet,
 )
 
+from .auth_views import (
+    GoogleAuthView,
+    CurrentUserView,
+    LogoutView,
+)
 
 router = DefaultRouter()
 
@@ -57,7 +62,22 @@ router.register("saved-items", SavedItemViewSet, basename="saved-items")
 
 router.register("reading-progress", ReadingProgressViewSet, basename="reading-progress")
 
-
 urlpatterns = [
+    path(
+        "auth/google/",
+        GoogleAuthView.as_view(),
+        name="google-auth",
+    ),
+    path(
+        "auth/me/",
+        CurrentUserView.as_view(),
+        name="current-user",
+    ),
+    path(
+        "auth/logout/",
+        LogoutView.as_view(),
+        name="logout",
+    ),
+
     path("", include(router.urls)),
 ]

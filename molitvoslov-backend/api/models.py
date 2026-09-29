@@ -2,8 +2,9 @@ from django.db import models
 from django.contrib.auth.models import User
 from slugify import slugify
 import re
+from django.utils import timezone
 from django.conf import settings
-
+import uuid
 
 class Category(models.Model):
     name = models.CharField(max_length=100, verbose_name="Название")
@@ -57,7 +58,7 @@ class Text(models.Model):
 
     language = models.CharField(max_length=10, choices=LANGUAGES, default="cu", verbose_name="Язык")
 
-    slug = models.SlugField(unique=True, verbose_name="URL-идентификатор", blank=True)
+    slug = models.SlugField(unique=True,     max_length=200,verbose_name="URL-идентификатор", blank=True)
 
     description_position = models.CharField(
         max_length=10,
@@ -295,6 +296,7 @@ class Akathist(models.Model):
     )
     slug = models.SlugField(
         unique=True,
+        max_length=200,
         verbose_name="URL-идентификатор",
     )
     description = models.TextField(
@@ -620,6 +622,10 @@ class Kathisma(models.Model):
     number = models.PositiveIntegerField(verbose_name="Номер кафизмы")
     title = models.CharField(max_length=255, blank=True, verbose_name="Название")
     prayers_after = models.TextField(blank=True, verbose_name="Молитвы после кафизмы")
+    prayers_after_russian = models.TextField(
+        blank=True,
+        verbose_name="Молитвы после кафизмы — русский",
+    )
 
     def __str__(self):
         return f"Кафизма {self.number}"
@@ -867,6 +873,7 @@ class SavedItem(models.Model):
         ("akathist", "Акафист"),
         ("canon", "Канон"),
         ("text", "Текст"),
+        ("quote", "Цитата"),
     ]
 
     user = models.ForeignKey(
@@ -875,7 +882,12 @@ class SavedItem(models.Model):
         related_name="saved_items",
         verbose_name="Пользователь",
     )
-
+    sync_id = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+        verbose_name="ID синхронизации",
+    )
     save_type = models.CharField(
         max_length=30,
         choices=SAVE_TYPE_CHOICES,
@@ -939,6 +951,16 @@ class SavedItem(models.Model):
         auto_now_add=True,
         verbose_name="Сохранено",
     )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Изменено",
+    )
+
+    deleted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Удалено",
+    )
 
     def __str__(self):
         title = (
@@ -963,12 +985,54 @@ class ReadingProgress(models.Model):
         related_name="reading_progress",
         verbose_name="Пользователь",
     )
-    source_type = models.CharField(max_length=50, verbose_name="Тип источника")
-    source_id = models.PositiveIntegerField(verbose_name="ID источника")
-    anchor_type = models.CharField(max_length=50, blank=True, verbose_name="Тип позиции")
-    anchor_id = models.PositiveIntegerField(null=True, blank=True, verbose_name="ID позиции")
-    offset = models.PositiveIntegerField(default=0, verbose_name="Смещение внутри єлемента")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="Обновлено")
+
+    source_type = models.CharField(
+        max_length=50,
+        verbose_name="Тип источника",
+    )
+
+    source_id = models.PositiveIntegerField(
+        verbose_name="ID источника",
+    )
+
+    anchor_type = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name="Тип позиции",
+    )
+
+    anchor_id = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="ID позиции",
+    )
+
+    offset = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Смещение внутри элемента",
+    )
+
+    progress_percent = models.PositiveSmallIntegerField(
+        default=0,
+        verbose_name="Прогресс в процентах",
+    )
+
+    metadata = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Дополнительные данные",
+    )
+
+    deleted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Удалено",
+    )
+
+    updated_at = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Обновлено",
+    )
 
     class Meta:
         constraints = [
@@ -982,9 +1046,11 @@ class ReadingProgress(models.Model):
             )
         ]
 
-        def __str__(self):
-            return f"{self.user} -" f"{self.source_type}:{self.source_id}"
-
+    def __str__(self):
+        return (
+            f"{self.user} - "
+            f"{self.source_type}:{self.source_id}"
+        )
 
 # =========================================================
 # БИБЛИЯ
@@ -1175,3 +1241,47 @@ class BibleVerse(models.Model):
                 name="unique_bible_verse_per_chapter",
             ),
         ]
+
+class GoogleAccount(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="google_account",
+        verbose_name="Пользователь",
+    )
+
+    google_sub = models.CharField(
+        max_length=255,
+        unique=True,
+        verbose_name="Google user ID",
+    )
+
+    email = models.EmailField(
+        verbose_name="Google email",
+    )
+
+    name = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Имя",
+    )
+
+    picture_url = models.URLField(
+        blank=True,
+        verbose_name="Фото профиля",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    def __str__(self):
+        return self.email or self.google_sub
+
+    class Meta:
+        verbose_name = "Google-аккаунт"
+        verbose_name_plural = "Google-аккаунты"
