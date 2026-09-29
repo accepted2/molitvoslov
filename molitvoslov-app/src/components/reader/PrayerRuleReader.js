@@ -105,6 +105,30 @@ const HTML_TEMPLATE = String.raw`
       font-style: italic;
     }
 
+
+    .memorial-open-wrap {
+      margin: 0 0 18px;
+      text-align: center;
+    }
+
+    .memorial-open-button {
+      width: min(100%, 280px);
+      min-height: 44px;
+      padding: 0 16px;
+      border: 1px solid rgba(123, 79, 36, 0.24);
+      border-radius: 12px;
+      background: rgba(138, 90, 56, 0.08);
+      color: var(--accent-dark);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 14px;
+      line-height: 19px;
+      font-weight: 700;
+    }
+
+    .memorial-open-button:active {
+      background: rgba(138, 90, 56, 0.14);
+    }
+
     .rule-item {
       position: relative;
       margin-bottom: 14px;
@@ -2172,6 +2196,51 @@ const HTML_TEMPLATE = String.raw`
             'rule-description',
             DATA.rule.description
           )
+        );
+      }
+
+      if (DATA.memorialEnabled) {
+        const memorialWrap =
+          el(
+            'div',
+            'memorial-open-wrap'
+          );
+
+        const memorialButton =
+          el(
+            'button',
+            'memorial-open-button',
+            'Открыть помянник'
+          );
+
+        memorialButton.type =
+          'button';
+
+        memorialButton.addEventListener(
+          'click',
+          () => {
+            post({
+              type:
+                'memorial-open',
+
+              context: {
+                source:
+                  'prayer_rule',
+
+                slug:
+                  DATA.rule.slug ||
+                  '',
+              },
+            });
+          }
+        );
+
+        memorialWrap.appendChild(
+          memorialButton
+        );
+
+        reader.appendChild(
+          memorialWrap
         );
       }
 
@@ -5985,6 +6054,7 @@ const buildHtml = ({
   viewMode,
   viewSwitcher,
   topContentInset,
+  memorialEnabled,
 }) => {
   const payload = {
     rule,
@@ -5992,6 +6062,8 @@ const buildHtml = ({
     viewMode: viewMode || 'both',
 
     viewSwitcher: viewSwitcher || null,
+
+    memorialEnabled: !!memorialEnabled,
 
     savedItems: savedItems.filter(
       (item) =>
@@ -6025,8 +6097,10 @@ export default function PrayerRuleReader({
   viewMode = 'both',
   viewSwitcher = null,
   topContentInset = 0,
+  memorialEnabled = false,
   onSaved,
   onProgress,
+  onMemorialOpen,
   onViewModeChange,
 }) {
   const insets = useSafeAreaInsets();
@@ -6043,8 +6117,18 @@ export default function PrayerRuleReader({
         viewMode,
         viewSwitcher,
         topContentInset,
+        memorialEnabled,
       }),
-    [rule, savedItems, savedProgress, focusTarget, viewMode, viewSwitcher, topContentInset]
+    [
+      rule,
+      savedItems,
+      savedProgress,
+      focusTarget,
+      viewMode,
+      viewSwitcher,
+      topContentInset,
+      memorialEnabled,
+    ]
   );
 
   const inject = (script) => {
@@ -6073,6 +6157,12 @@ export default function PrayerRuleReader({
         offset: Math.max(0, Number(message.offset || 0)),
         progressPercent: Math.max(0, Math.min(Number(message.progressPercent || 0), 100)),
       });
+
+      return;
+    }
+
+    if (message.type === 'memorial-open') {
+      onMemorialOpen?.(message.context || null);
 
       return;
     }
