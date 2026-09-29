@@ -502,6 +502,7 @@ export default function KathismaScreen({route, navigation}) {
       className = '',
       label = '',
       language = null,
+      memorialAction = null,
     }) => {
       const syntheticId = nextBlockId++;
 
@@ -535,6 +536,8 @@ export default function KathismaScreen({route, navigation}) {
         className,
 
         metadata,
+
+        memorialAction,
       };
     };
 
