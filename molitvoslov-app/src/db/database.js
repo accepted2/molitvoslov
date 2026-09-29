@@ -14,123 +14,246 @@ export const initDatabase = async () => {
   const db = await getDatabase();
 
   await db.execAsync(`
-      PRAGMA journal_mode = WAL;
+    PRAGMA journal_mode = WAL;
 
-      CREATE TABLE IF NOT EXISTS local_users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT NOT NULL UNIQUE,
-        password_hash TEXT NOT NULL,
-        created_at TEXT NOT NULL
-      );
+    CREATE TABLE IF NOT EXISTS local_users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
 
-      CREATE TABLE IF NOT EXISTS app_settings (
-        key TEXT PRIMARY KEY NOT NULL,
-        value TEXT
-      );
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY NOT NULL,
+      value TEXT
+    );
 
-      CREATE TABLE IF NOT EXISTS saved_items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        save_type TEXT NOT NULL,
-        source_type TEXT NOT NULL,
-        source_id INTEGER NOT NULL,
-        anchor_type TEXT NOT NULL,
-        anchor_id INTEGER NOT NULL,
-        source_title TEXT,
-        item_title TEXT,
-        text TEXT,
-        start_offset INTEGER,
-        end_offset INTEGER,
-        metadata TEXT,
-        created_at TEXT NOT NULL
-      );
+    CREATE TABLE IF NOT EXISTS saved_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-      CREATE TABLE IF NOT EXISTS reading_progress (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        source_type TEXT NOT NULL,
-        source_id INTEGER NOT NULL,
-        anchor_type TEXT,
-        anchor_id INTEGER,
-        offset INTEGER DEFAULT 0,
-        progress_percent INTEGER DEFAULT 0,
-        metadata TEXT,
-        updated_at TEXT NOT NULL,
+      user_id INTEGER NOT NULL,
+      cloud_user_id INTEGER,
 
-        UNIQUE(
-          user_id,
-          source_type,
-          source_id
-        )
-      );
+      sync_id TEXT,
+      server_id INTEGER,
+      sync_status TEXT NOT NULL DEFAULT 'legacy',
 
-      CREATE TABLE IF NOT EXISTS daily_quotes (
-        id INTEGER PRIMARY KEY,
-        text TEXT NOT NULL,
-        source TEXT,
-        quote_date TEXT,
-        sort_order INTEGER DEFAULT 0
-      );
-    `);
+      save_type TEXT NOT NULL,
+
+      source_type TEXT NOT NULL,
+      source_id INTEGER NOT NULL,
+
+      anchor_type TEXT NOT NULL,
+      anchor_id INTEGER NOT NULL,
+
+      source_title TEXT,
+      item_title TEXT,
+      text TEXT,
+
+      start_offset INTEGER,
+      end_offset INTEGER,
+
+      metadata TEXT,
+
+      created_at TEXT NOT NULL,
+      updated_at TEXT,
+      deleted_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS reading_progress (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+      user_id INTEGER NOT NULL,
+      cloud_user_id INTEGER,
+
+      server_id INTEGER,
+      sync_status TEXT NOT NULL DEFAULT 'legacy',
+
+      source_type TEXT NOT NULL,
+      source_id INTEGER NOT NULL,
+
+      anchor_type TEXT,
+      anchor_id INTEGER,
+
+      offset INTEGER DEFAULT 0,
+      progress_percent INTEGER DEFAULT 0,
+
+      metadata TEXT,
+
+      updated_at TEXT NOT NULL,
+      deleted_at TEXT,
+
+      UNIQUE(
+        user_id,
+        source_type,
+        source_id
+      )
+    );
+
+    CREATE TABLE IF NOT EXISTS daily_quotes (
+      id INTEGER PRIMARY KEY,
+      text TEXT NOT NULL,
+      source TEXT,
+      quote_date TEXT,
+      sort_order INTEGER DEFAULT 0
+    );
+  `);
 
   /*
-   * Простые локальные миграции.
-   *
-   * CREATE TABLE IF NOT EXISTS не добавляет
-   * новые колонки в таблицу, которая уже была
-   * создана раньше, поэтому проверяем их отдельно.
+   * ============================================
+   * saved_items migrations
+   * ============================================
    */
 
-  const savedItemColumns = await db.getAllAsync(
-    `
-          PRAGMA table_info(saved_items)
-        `
-  );
+  const savedItemColumns = await db.getAllAsync(`
+      PRAGMA table_info(saved_items)
+    `);
 
   const savedItemColumnNames = savedItemColumns.map((column) => column.name);
 
   if (!savedItemColumnNames.includes('source_title')) {
     await db.execAsync(`
         ALTER TABLE saved_items
-        ADD COLUMN source_title TEXT;
-      `);
+            ADD COLUMN source_title TEXT;
+    `);
   }
 
   if (!savedItemColumnNames.includes('item_title')) {
     await db.execAsync(`
         ALTER TABLE saved_items
-        ADD COLUMN item_title TEXT;
-      `);
+            ADD COLUMN item_title TEXT;
+    `);
   }
 
   if (!savedItemColumnNames.includes('text')) {
     await db.execAsync(`
         ALTER TABLE saved_items
-        ADD COLUMN text TEXT;
-      `);
+            ADD COLUMN text TEXT;
+    `);
   }
 
-  const progressColumns = await db.getAllAsync(
-    `
-          PRAGMA table_info(reading_progress)
-        `
-  );
+  if (!savedItemColumnNames.includes('sync_id')) {
+    await db.execAsync(`
+      ALTER TABLE saved_items
+      ADD COLUMN sync_id TEXT;
+    `);
+  }
+
+  if (!savedItemColumnNames.includes('cloud_user_id')) {
+    await db.execAsync(`
+        ALTER TABLE saved_items
+            ADD COLUMN cloud_user_id INTEGER;
+    `);
+  }
+
+  if (!savedItemColumnNames.includes('sync_status')) {
+    await db.execAsync(`
+        ALTER TABLE saved_items
+            ADD COLUMN sync_status TEXT
+                NOT NULL DEFAULT 'legacy';
+    `);
+  }
+
+  if (!savedItemColumnNames.includes('updated_at')) {
+    await db.execAsync(`
+        ALTER TABLE saved_items
+            ADD COLUMN updated_at TEXT;
+    `);
+  }
+
+  if (!savedItemColumnNames.includes('deleted_at')) {
+    await db.execAsync(`
+        ALTER TABLE saved_items
+            ADD COLUMN deleted_at TEXT;
+    `);
+  }
+
+  if (!savedItemColumnNames.includes('server_id')) {
+    await db.execAsync(`
+        ALTER TABLE saved_items
+            ADD COLUMN server_id INTEGER;
+    `);
+  }
+
+  await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS
+    idx_saved_items_cloud_user
+    ON saved_items(cloud_user_id);
+
+    CREATE INDEX IF NOT EXISTS
+    idx_saved_items_sync_status
+    ON saved_items(sync_status);
+
+    CREATE INDEX IF NOT EXISTS
+    idx_saved_items_sync_id
+    ON saved_items(sync_id);
+  `);
+
+  /*
+   * ============================================
+   * reading_progress migrations
+   * ============================================
+   */
+
+  const progressColumns = await db.getAllAsync(`
+      PRAGMA table_info(reading_progress)
+    `);
 
   const progressColumnNames = progressColumns.map((column) => column.name);
 
   if (!progressColumnNames.includes('progress_percent')) {
     await db.execAsync(`
         ALTER TABLE reading_progress
-        ADD COLUMN progress_percent INTEGER DEFAULT 0;
-      `);
+            ADD COLUMN progress_percent INTEGER
+                DEFAULT 0;
+    `);
   }
 
   if (!progressColumnNames.includes('metadata')) {
     await db.execAsync(`
         ALTER TABLE reading_progress
-        ADD COLUMN metadata TEXT;
-      `);
+            ADD COLUMN metadata TEXT;
+    `);
   }
+
+  if (!progressColumnNames.includes('cloud_user_id')) {
+    await db.execAsync(`
+      ALTER TABLE reading_progress
+      ADD COLUMN cloud_user_id INTEGER;
+    `);
+  }
+
+  if (!progressColumnNames.includes('server_id')) {
+    await db.execAsync(`
+      ALTER TABLE reading_progress
+      ADD COLUMN server_id INTEGER;
+    `);
+  }
+
+  if (!progressColumnNames.includes('sync_status')) {
+    await db.execAsync(`
+      ALTER TABLE reading_progress
+      ADD COLUMN sync_status TEXT
+      NOT NULL DEFAULT 'legacy';
+    `);
+  }
+
+  if (!progressColumnNames.includes('deleted_at')) {
+    await db.execAsync(`
+      ALTER TABLE reading_progress
+      ADD COLUMN deleted_at TEXT;
+    `);
+  }
+
+  await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS
+    idx_reading_progress_cloud_user
+    ON reading_progress(cloud_user_id);
+
+    CREATE INDEX IF NOT EXISTS
+    idx_reading_progress_sync_status
+    ON reading_progress(sync_status);
+  `);
 
   return db;
 };
@@ -141,14 +264,15 @@ export const setSetting = async (key, value) => {
   await db.runAsync(
     `
         INSERT INTO app_settings (
-          key,
-          value
+            key,
+            value
         )
         VALUES (?, ?)
-        ON CONFLICT(key)
-        DO UPDATE SET
-          value = excluded.value
-      `,
+
+            ON CONFLICT(key)
+      DO UPDATE SET
+                         value = excluded.value
+    `,
     [key, value]
   );
 };
@@ -161,7 +285,7 @@ export const getSetting = async (key) => {
           SELECT value
           FROM app_settings
           WHERE key = ?
-        `,
+      `,
     [key]
   );
 

@@ -338,9 +338,9 @@ export const READER_STYLES = String.raw`
   font-size: 12px;
   font-weight: 700;
   color: var(--accent);
-} 
+}
 .reader-text.psalter.secondary .psalter-verse-number {
- 
+
   color: var(--color-late-gray);
 }
 .reader-text .psalter-prayer-initial {
@@ -466,7 +466,8 @@ export const READER_STYLES = String.raw`
   color: var(--secondary);
   font-weight: 700;
   font-style: normal;
-  text-align: left;
+  text-align: center;
+    text-align-last: center;
 }
 
 .reader-text .psalter-repeat-note {
@@ -477,7 +478,7 @@ export const READER_STYLES = String.raw`
 }
 
 .reader-text.psalter-reading-prayers .liturgical-word {
-  color: var(--secondary);
+  color: var(--liturgical);
   font-style: italic;
   font-weight: 600;
 }
@@ -563,10 +564,11 @@ export const READER_STYLES = String.raw`
     }
     body.book-mode {
       width: 100vw;
-      height: 100vh;
+      height: 100.5vh;
       overflow: hidden;
       padding: var(--reader-top-padding) 0 var(--reader-bottom-padding);
       touch-action: none;
+      text-align: justify;
       background:
         linear-gradient(
           90deg,
@@ -628,6 +630,7 @@ export const READER_STYLES = String.raw`
       color: #3E2A1D;
       font-size: 23px;
       line-height: 29px;
+
       letter-spacing: 0.10px;
     }
     body.book-mode .rule-description {
@@ -647,20 +650,23 @@ export const READER_STYLES = String.raw`
     }
     body.book-mode .bible-chapter-start {
       padding-top: 5px;
+
     }
     body.book-mode .bible-chapter-start .section-header {
-      margin: 4px 0 5px;
-      padding: 4px 8px 4px 5px;
+      margin: 0px 0 5px;
+      padding: 1px 8px 4px 5px;
+
     }
     body.book-mode .bible-chapter-start .prayer-title {
-      margin: 0;
-      text-align: left;
+      margin-left: 63px;
+      text-align: center;
       color: #71472C;
       font-family: Georgia, "Times New Roman", serif;
       font-size: 17px;
       line-height: 22px;
       font-weight: 700;
       letter-spacing: 0.20px;
+
     }
     body.book-mode .bible-chapter-start .section-action {
       display: flex;
@@ -668,6 +674,7 @@ export const READER_STYLES = String.raw`
       width: 36px;
       height: 36px;
       min-height: 36px;
+
       margin-right: 0;
       padding: 0;
       align-items: center;
@@ -683,12 +690,14 @@ export const READER_STYLES = String.raw`
       color: var(--accent-dark);
       background: #F1DFC2;
       border-color: rgba(123, 79, 36, 0.28);
+
     }
     body.book-mode .bible-verse-section.whole-saved {
       position: relative;
       z-index: 0;
       margin: 0;
       padding: 0;
+
       border: 0;
       border-radius: 0;
       background: transparent;
@@ -696,10 +705,12 @@ export const READER_STYLES = String.raw`
     }
     body.book-mode .bible-chapter-start.whole-saved {
       padding-top: 5px;
+
     }
     body.book-mode .bible-verse-section.whole-saved::before {
       content: "";
       position: absolute;
+
       z-index: -1;
       top: 0;
       bottom: 0;
@@ -735,10 +746,12 @@ export const READER_STYLES = String.raw`
       line-height: 1;
       font-weight: 700;
       font-style: normal;
+
       vertical-align: super;
     }
     body.book-mode .reader-text {
       touch-action: none;
+
     }
     body.book-mode .reader-text.bible-verse {
       color: #38271D;
@@ -761,6 +774,7 @@ export const READER_STYLES = String.raw`
     body.book-mode .reader-text.focus-target, body.book-mode .prayer-title.focus-target {
       outline-color: rgba( 152, 98, 46, 0.32 );
       outline-offset: 4px;
+
     }
     body.book-mode #reader-scroll-track, body.book-mode #reader-scroll-top {
       display: none !important;
