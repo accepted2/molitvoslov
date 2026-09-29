@@ -1171,18 +1171,27 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
             end === memorialMarkerRange.end;
 
           if (isMemorialMarkerSegment) {
-            span.classList.add('memorial-open-marker');
-            span.dataset.label = memorialAction?.label || 'Открыть помянник';
-            span.setAttribute('role', 'button');
-            span.setAttribute('tabindex', '0');
-            span.setAttribute('aria-label', memorialAction?.label || 'Открыть помянник');
-
             /*
-             * Сохраняем исходный marker как настоящий text node.
-             * Его длина нужна механизму selection offsets.
-             * CSS скрывает marker и показывает подпись кнопки через ::after.
+             * Саму рубрику оставляем видимой в тексте.
+             * Кнопку добавляем отдельным пустым DOM-элементом,
+             * чтобы её подпись через ::after не меняла textContent
+             * и не сдвигала offsets выделения/сохранений.
              */
+            span.classList.add('memorial-rubric-text');
             span.textContent = text.slice(start, end);
+
+            const memorialButton =
+              document.createElement('span');
+
+            memorialButton.classList.add('memorial-open-marker');
+            memorialButton.dataset.label =
+              memorialAction?.label || 'Открыть помянник';
+            memorialButton.setAttribute('role', 'button');
+            memorialButton.setAttribute('tabindex', '0');
+            memorialButton.setAttribute(
+              'aria-label',
+              memorialAction?.label || 'Открыть помянник'
+            );
 
             const openMemorial = event => {
               event.preventDefault();
@@ -1194,19 +1203,20 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
               });
             };
 
-            span.addEventListener('pointerdown', event => {
+            memorialButton.addEventListener('pointerdown', event => {
               event.stopPropagation();
             });
 
-            span.addEventListener('click', openMemorial);
+            memorialButton.addEventListener('click', openMemorial);
 
-            span.addEventListener('keydown', event => {
+            memorialButton.addEventListener('keydown', event => {
               if (event.key === 'Enter' || event.key === ' ') {
                 openMemorial(event);
               }
             });
 
             fragment.appendChild(span);
+            fragment.appendChild(memorialButton);
             continue;
           }
 
