@@ -21,6 +21,7 @@ export default function SelectableDocumentReader({
   onSaved,
   onProgress,
   onAction,
+  onMemorialOpen,
   onViewModeChange,
   onPageTurn,
 }) {
@@ -93,6 +94,12 @@ export default function SelectableDocumentReader({
 
         pageCount: Number.isFinite(Number(message.pageCount)) ? Number(message.pageCount) : null,
       });
+
+      return;
+    }
+
+    if (message.type === 'memorial-open') {
+      onMemorialOpen?.(message.context || null);
 
       return;
     }
