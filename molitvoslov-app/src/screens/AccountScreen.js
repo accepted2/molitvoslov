@@ -12,6 +12,8 @@ import {syncSavedItems} from '../services/savedItems';
 
 import {syncReadingProgress} from '../services/readingProgress';
 
+import {syncMemorials} from '../services/memorials';
+
 import {colors, radius, spacing} from '../theme';
 
 import {BottomNav} from '../components/navigation/BottomNav';
@@ -70,17 +72,29 @@ export const AccountScreen = ({navigation}) => {
        * входа сразу восстанавливаем
        * облачные данные пользователя.
        */
-      const [savedItemsSyncResult, readingProgressSyncResult] = await Promise.all([
-        syncSavedItems(),
-        syncReadingProgress(),
-      ]);
+      const [savedItemsSyncResult, readingProgressSyncResult, memorialsSyncResult] =
+        await Promise.all([
+          syncSavedItems(),
+          syncReadingProgress(),
+          syncMemorials(),
+        ]);
 
-      if (savedItemsSyncResult?.success && readingProgressSyncResult?.success) {
+      if (
+        savedItemsSyncResult?.success &&
+        readingProgressSyncResult?.success &&
+        memorialsSyncResult?.success
+      ) {
         console.log('Cloud sync OK: google-login');
       } else {
-        const error = savedItemsSyncResult?.error || readingProgressSyncResult?.error;
+        const error =
+          savedItemsSyncResult?.error ||
+          readingProgressSyncResult?.error ||
+          memorialsSyncResult?.error;
 
-        const reason = savedItemsSyncResult?.reason || readingProgressSyncResult?.reason;
+        const reason =
+          savedItemsSyncResult?.reason ||
+          readingProgressSyncResult?.reason ||
+          memorialsSyncResult?.reason;
 
         console.log('Cloud sync после Google-входа отложен', error?.message || reason || 'unknown');
       }
@@ -148,7 +162,7 @@ export const AccountScreen = ({navigation}) => {
           ) : (
             <View style={styles.card}>
               <Text style={styles.loginDescription}>
-                Войдите через Google, чтобы сохранять и синхронизировать избранное, прогресс чтения
+                Войдите через Google, чтобы синхронизировать избранное, прогресс чтения, помянник
                 и другие данные между устройствами.
               </Text>
 
