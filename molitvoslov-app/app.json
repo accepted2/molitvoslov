@@ -6,12 +6,10 @@
     "orientation": "portrait",
     "icon": "./assets/branding/app-icon.png",
     "userInterfaceStyle": "light",
-
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.accepted2.molitvoslov"
     },
-
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#F7ECD8",
@@ -20,23 +18,27 @@
       "package": "com.accepted2.molitvoslov",
       "versionCode": 7
     },
-
     "web": {
       "favicon": "./assets/branding/app-icon.png"
     },
-
     "plugins": [
       "expo-status-bar",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Разрешить Молитвослову добавлять фотографии записок в помянник.",
+          "cameraPermission": "Разрешить Молитвослову фотографировать записки для помянника.",
+          "microphonePermission": false
+        }
+      ],
       "expo-sqlite",
       "expo-secure-store",
-
       [
         "react-native-nitro-google-signin",
         {
           "iosUrlScheme": "com.googleusercontent.apps.451725030385-vb72u6k4hool18blesrbesollv7fphmk"
         }
       ],
-
       [
         "expo-splash-screen",
         {
@@ -46,7 +48,6 @@
           "resizeMode": "contain"
         }
       ],
-
       [
         "react-native-android-widget",
         {
@@ -67,14 +68,11 @@
         }
       ]
     ],
-
     "androidNavigationBar": {
       "backgroundColor": "#FFF4DE",
       "barStyle": "dark-content"
     },
-
     "owner": "anatoliy1",
-
     "extra": {
       "eas": {
         "projectId": "327409b7-2571-426f-96e7-58350b2e689c"
