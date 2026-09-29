@@ -449,6 +449,45 @@ export const READER_STYLES = String.raw`
   text-align-last: auto;
 }
 
+
+.reader-text .memorial-open-marker {
+  display: block;
+  width: min(100%, 280px);
+  min-height: 44px;
+  margin: 12px auto;
+  padding: 0;
+  border: 1px solid rgba(123, 79, 36, 0.24);
+  border-radius: 12px;
+  background: rgba(138, 90, 56, 0.08);
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+  text-align: center;
+  text-align-last: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.reader-text .memorial-open-marker::after {
+  content: attr(data-label);
+  display: flex;
+  min-height: 42px;
+  padding: 0 16px;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-dark);
+  font-family: serif;
+  font-size: 14px;
+  line-height: 19px;
+  font-weight: 700;
+  letter-spacing: 0.1px;
+}
+
+.reader-text .memorial-open-marker:active {
+  background: rgba(138, 90, 56, 0.14);
+}
+
 .reader-text .psalter-prayer-accent {
   color: var(--liturgical);
   font-weight: 700;
