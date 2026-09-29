@@ -16,6 +16,8 @@ import {syncSavedItems} from './src/services/savedItems';
 
 import {syncReadingProgress} from './src/services/readingProgress';
 
+import {syncMemorials} from './src/services/memorials';
+
 export default function App() {
   const [databaseReady, setDatabaseReady] = useState(false);
 
@@ -44,25 +46,35 @@ export default function App() {
 
     const runSync = async (reason) => {
       try {
-        const [savedItemsResult, readingProgressResult] = await Promise.all([
+        const [savedItemsResult, readingProgressResult, memorialsResult] = await Promise.all([
           syncSavedItems(),
           syncReadingProgress(),
+          syncMemorials(),
         ]);
 
         const noUser =
-          savedItemsResult?.reason === 'no-user' && readingProgressResult?.reason === 'no-user';
+          savedItemsResult?.reason === 'no-user' &&
+          readingProgressResult?.reason === 'no-user' &&
+          memorialsResult?.reason === 'no-user';
 
         if (noUser) {
           return;
         }
 
-        if (savedItemsResult?.success && readingProgressResult?.success) {
+        if (
+          savedItemsResult?.success &&
+          readingProgressResult?.success &&
+          memorialsResult?.success
+        ) {
           console.log(`Cloud sync OK: ${reason}`);
 
           return;
         }
 
-        const error = savedItemsResult?.error || readingProgressResult?.error;
+        const error =
+          savedItemsResult?.error ||
+          readingProgressResult?.error ||
+          memorialsResult?.error;
 
         if (error) {
           console.log(`Cloud sync отложен: ${reason}`, error?.message || error);
