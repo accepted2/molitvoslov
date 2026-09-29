@@ -32,8 +32,14 @@ def _request(method, path, data=None, content_type=None, extra_headers=None):
 
     headers = {
         "apikey": secret_key,
-        "Authorization": f"Bearer {secret_key}",
     }
+
+    # Новые sb_secret_* ключи — не JWT. Supabase требует
+    # передавать их как API key, а не как Bearer token.
+    # Legacy service_role остаётся JWT и использует Bearer
+    # для Storage, чтобы запрос выполнялся с elevated role.
+    if not secret_key.startswith("sb_secret_"):
+        headers["Authorization"] = f"Bearer {secret_key}"
 
     if content_type:
         headers["Content-Type"] = content_type
