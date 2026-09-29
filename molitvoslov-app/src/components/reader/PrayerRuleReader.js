@@ -107,14 +107,18 @@ const HTML_TEMPLATE = String.raw`
 
 
     .memorial-open-wrap {
-      margin: 0 0 18px;
+      margin: 10px 0 0;
       text-align: center;
     }
 
+    .memorial-open-inline {
+      padding-top: 2px;
+    }
+
     .memorial-open-button {
-      width: min(100%, 280px);
-      min-height: 44px;
-      padding: 0 16px;
+      width: min(100%, 260px);
+      min-height: 40px;
+      padding: 0 14px;
       border: 1px solid rgba(123, 79, 36, 0.24);
       border-radius: 12px;
       background: rgba(138, 90, 56, 0.08);
@@ -2199,51 +2203,6 @@ const HTML_TEMPLATE = String.raw`
         );
       }
 
-      if (DATA.memorialEnabled) {
-        const memorialWrap =
-          el(
-            'div',
-            'memorial-open-wrap'
-          );
-
-        const memorialButton =
-          el(
-            'button',
-            'memorial-open-button',
-            'Открыть помянник'
-          );
-
-        memorialButton.type =
-          'button';
-
-        memorialButton.addEventListener(
-          'click',
-          () => {
-            post({
-              type:
-                'memorial-open',
-
-              context: {
-                source:
-                  'prayer_rule',
-
-                slug:
-                  DATA.rule.slug ||
-                  '',
-              },
-            });
-          }
-        );
-
-        memorialWrap.appendChild(
-          memorialButton
-        );
-
-        reader.appendChild(
-          memorialWrap
-        );
-      }
-
       (
         DATA.rule.items ||
         []
@@ -2607,6 +2566,84 @@ const HTML_TEMPLATE = String.raw`
               wrapper,
               item.footnotes
             );
+          }
+
+          if (
+            DATA.memorialEnabled &&
+            item.item_type ===
+              'text' &&
+            item.text
+          ) {
+            const memorialTitle =
+              normalizeLiturgicalValue(
+                item.text.title
+              );
+
+            const memorialKind =
+              memorialTitle ===
+                'молитва о живых'
+                ? 'health'
+                : (
+                    memorialTitle ===
+                      'молитва о усопших' ||
+                    memorialTitle ===
+                      'молитва об усопших'
+                  )
+                  ? 'repose'
+                  : null;
+
+            if (memorialKind) {
+              const memorialWrap =
+                el(
+                  'div',
+                  'memorial-open-wrap memorial-open-inline'
+                );
+
+              const memorialButton =
+                el(
+                  'button',
+                  'memorial-open-button',
+                  'Открыть помянник'
+                );
+
+              memorialButton.type =
+                'button';
+
+              memorialButton.addEventListener(
+                'click',
+                () => {
+                  post({
+                    type:
+                      'memorial-open',
+
+                    context: {
+                      source:
+                        'prayer_rule',
+
+                      slug:
+                        DATA.rule.slug ||
+                        '',
+
+                      kind:
+                        memorialKind,
+
+                      item_id:
+                        Number(
+                          item.id
+                        ),
+                    },
+                  });
+                }
+              );
+
+              memorialWrap.appendChild(
+                memorialButton
+              );
+
+              wrapper.appendChild(
+                memorialWrap
+              );
+            }
           }
 
           reader.appendChild(
