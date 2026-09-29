@@ -10,6 +10,8 @@ import {getSavedItems} from '../services/savedItems';
 
 import PrayerRuleReader from '../components/reader/PrayerRuleReader';
 
+import {MemorialQuickSheet} from '../components/memorial/MemorialQuickSheet';
+
 import {colors} from '../theme';
 
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -39,6 +41,8 @@ export const PrayerRuleScreen = ({route, navigation}) => {
   const [loading, setLoading] = useState(true);
 
   const [error, setError] = useState(null);
+
+  const [memorialVisible, setMemorialVisible] = useState(false);
 
   const {savedProgress, progressReady, scheduleSave} = useReadingProgress({
     sourceType: 'prayer_rule',
@@ -154,8 +158,22 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         viewMode={viewMode}
         viewSwitcher={viewSwitcher}
         topContentInset={headerHeight}
+        memorialEnabled={slug === 'molitvy-utrennie'}
+        onMemorialOpen={() =>
+          setMemorialVisible(true)
+        }
         onProgress={scheduleSave}
         onViewModeChange={setViewMode}
+      />
+
+      <MemorialQuickSheet
+        visible={memorialVisible}
+        onClose={() =>
+          setMemorialVisible(false)
+        }
+        onManage={() =>
+          navigation.navigate('Memorial')
+        }
       />
 
       <FixedSectionHeader
