@@ -11,6 +11,8 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 
+import {MemorialQuickSheet} from '../components/memorial/MemorialQuickSheet';
+
 import {colors} from '../theme';
 
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -105,6 +107,8 @@ export default function KathismaScreen({route, navigation}) {
   const [loading, setLoading] = useState(true);
 
   const [error, setError] = useState(null);
+
+  const [memorialVisible, setMemorialVisible] = useState(false);
 
   const {savedProgress, progressReady, scheduleSave} = useReadingProgress({
     sourceType: 'psalter',
@@ -613,6 +617,28 @@ export default function KathismaScreen({route, navigation}) {
 
               glory_number: chunk.glory.number,
             },
+
+            memorialAction: {
+              marker:
+                '[Здесь можно прочитать прошение о здравии / об упокоении и помянуть имена.]',
+
+              label:
+                'Открыть помянник',
+
+              context: {
+                source:
+                  'psalter',
+
+                kathisma_number:
+                  Number(kathisma.number),
+
+                psalm_number:
+                  Number(psalm.number),
+
+                glory_number:
+                  Number(chunk.glory.number),
+              },
+            },
           });
 
           rows.push({
@@ -874,6 +900,19 @@ export default function KathismaScreen({route, navigation}) {
         topContentInset={headerHeight}
         onProgress={handleProgress}
         onAction={handleAction}
+        onMemorialOpen={() =>
+          setMemorialVisible(true)
+        }
+      />
+
+      <MemorialQuickSheet
+        visible={memorialVisible}
+        onClose={() =>
+          setMemorialVisible(false)
+        }
+        onManage={() =>
+          navigation.navigate('Memorial')
+        }
       />
 
       <FixedSectionHeader
