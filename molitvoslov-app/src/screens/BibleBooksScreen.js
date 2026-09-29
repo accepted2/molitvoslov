@@ -131,8 +131,8 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 5,
     paddingHorizontal: 14,
-  },
 
+  },
   sectionTitle: {
     fontFamily: 'serif',
     fontSize: 18,
@@ -157,11 +157,9 @@ const styles = StyleSheet.create({
   itemStarted: {
     borderColor: 'rgba(126, 82, 38, 0.30)',
   },
-
   itemText: {
     flex: 1,
   },
-
   bookName: {
     fontFamily: 'serif',
     fontSize: 16,
@@ -169,26 +167,22 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
   },
-
   chapterCount: {
     marginTop: 2,
     fontSize: 12,
     color: colors.textSecondary,
   },
-
   progressPercent: {
     marginLeft: 8,
     color: colors.accentDark,
     fontSize: 11,
     fontWeight: '700',
   },
-
   arrow: {
     marginLeft: 8,
     fontSize: 24,
     color: '#9A714C',
   },
-
   pressed: {
     opacity: 0.62,
   },

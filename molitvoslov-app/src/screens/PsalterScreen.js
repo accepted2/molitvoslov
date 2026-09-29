@@ -36,6 +36,7 @@ export default function PsalterScreen({navigation}) {
   });
 
   const listRef = useRef(null);
+  const afterPrayersYRef = useRef(0);
 
   useEffect(() => {
     loadPsalter();
@@ -178,6 +179,23 @@ export default function PsalterScreen({navigation}) {
       });
     });
   };
+  const handleAfterPrayersExpand = () => {
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToOffset({
+        offset: afterPrayersYRef.current,
+        animated: true,
+      });
+    });
+  };
+
+  const handleAfterPrayersCollapse = () => {
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToOffset({
+        offset: 0,
+        animated: true,
+      });
+    });
+  };
 
   return (
     <AppBackground imageOpacity={0.72}>
@@ -185,6 +203,7 @@ export default function PsalterScreen({navigation}) {
       <View style={styles.container}>
         <FlatList
           ref={listRef}
+          removeClippedSubviews={false}
           nestedScrollEnabled
           data={psalter?.kathismas || []}
           keyExtractor={(item) => String(item.id)}
@@ -204,39 +223,46 @@ export default function PsalterScreen({navigation}) {
                 onCollapse={handlePrayersCollapse}
                 saveProps={{
                   sourceType: 'psalter',
-
                   sourceId: psalter?.id,
-
                   anchorType: 'psalter_prayers_before',
-
                   anchorId: psalter?.id,
-
                   sourceTitle: psalter?.name || 'Псалтирь',
-
                   itemTitle: 'Молитвы перед чтением Псалтири',
-
                   metadata: {
                     section: 'prayers_before',
                   },
                 }}
               />
 
-              {currentKathisma && progressInfo && (
-                <Pressable
-                  style={({pressed}) => [styles.continueCard, pressed && styles.pressed]}
-                  onPress={() => openKathisma(currentKathisma)}
+              {psalter?.prayers_after ? (
+                <View
+                  onLayout={(event) => {
+                    afterPrayersYRef.current =
+                      event.nativeEvent.layout.y;
+                  }}
                 >
-                  <Text style={styles.continueLabel}>Продолжить чтение</Text>
-
-                  <Text style={styles.continueTitle}>Кафизма {progressInfo.kathisma_number}</Text>
-
-                  <Text style={styles.continuePosition}>
-                    Псалом {progressInfo.psalm_number}
-                    {progressInfo.verse_number ? ` · стих ${progressInfo.verse_number}` : ''}
-                  </Text>
-                </Pressable>
-              )}
+                  <ExpandablePrayerBlock
+                    title="Молитвы после чтения Псалтири"
+                    text={psalter?.prayers_after}
+                    secondaryText={psalter?.prayers_after_russian}
+                    onExpand={handleAfterPrayersExpand}
+                    onCollapse={handleAfterPrayersCollapse}
+                    saveProps={{
+                      sourceType: 'psalter',
+                      sourceId: psalter?.id,
+                      anchorType: 'psalter_prayers_after',
+                      anchorId: psalter?.id,
+                      sourceTitle: psalter?.name || 'Псалтирь',
+                      itemTitle: 'Молитвы после чтения Псалтири',
+                      metadata: {
+                        section: 'prayers_after',
+                      },
+                    }}
+                  />
+                </View>
+              ) : null}
             </View>
+
           }
           renderItem={({item}) => {
             const isCurrent = Number(item.number) === Number(currentKathismaNumber);
@@ -290,23 +316,12 @@ export default function PsalterScreen({navigation}) {
           }}
           ListFooterComponent={
             psalter?.prayers_after ? (
-              <View style={styles.footer}>
-                <ExpandablePrayerBlock
-                  title="Молитвы после чтения Псалтири"
-                  text={psalter?.prayers_after}
-                  secondaryText={psalter?.prayers_after_russian}
-                  saveProps={{
-                    sourceType: 'psalter',
-                    sourceId: psalter?.id,
-                    anchorType: 'psalter_prayers_after',
-                    anchorId: psalter?.id,
-                    sourceTitle: psalter?.name || 'Псалтирь',
-                    itemTitle: 'Молитвы после чтения Псалтири',
-                    metadata: {
-                      section: 'prayers_after',
-                    },
-                  }}
-                />
+              <View   style={styles.footer}
+                      onLayout={(event) => {
+                        afterPrayersYRef.current =
+                          event.nativeEvent.layout.y;
+                      }}>
+
               </View>
             ) : null
           }
@@ -409,9 +424,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
   },
-  footer: {
-    marginTop: 10,
-  },
+  // footer: {
+  //   marginTop: 150,
+  // },
   currentPosition: {
     marginTop: 7,
     fontSize: 13,

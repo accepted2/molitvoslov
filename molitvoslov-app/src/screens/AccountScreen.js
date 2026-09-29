@@ -1,243 +1,563 @@
-import React, {useEffect, useState} from 'react';
+import React, {
+  useEffect,
+  useState,
+} from 'react';
 
-import {ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+} from 'react-native-safe-area-context';
 
-import {getCurrentUser, loginUser, logoutUser, registerUser} from '../services/localAuth';
+import {
+  getCurrentBackendUser,
+} from '../services/backendAuth';
 
-import {colors, radius, spacing} from '../theme';
+import {
+  signInWithGoogle,
+  signOutFromGoogle,
+} from '../services/googleAuth';
 
-import {BottomNav} from '../components/navigation/BottomNav';
+import {
+  syncSavedItems,
+} from '../services/savedItems';
 
-export const AccountScreen = ({navigation}) => {
-  const [user, setUser] = useState(null);
+import {
+  syncReadingProgress,
+} from '../services/readingProgress';
 
-  const [loading, setLoading] = useState(true);
+import {
+  colors,
+  radius,
+  spacing,
+} from '../theme';
 
-  const [mode, setMode] = useState('login');
+import {
+  BottomNav,
+} from '../components/navigation/BottomNav';
 
-  const [username, setUsername] = useState('');
+export const AccountScreen = ({
+                                navigation,
+                              }) => {
+  const [
+    googleUser,
+    setGoogleUser,
+  ] = useState(null);
 
-  const [password, setPassword] = useState('');
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
 
-  const [error, setError] = useState('');
+  const [
+    googleLoading,
+    setGoogleLoading,
+  ] = useState(false);
+
+  const [
+    googleError,
+    setGoogleError,
+  ] = useState('');
 
   useEffect(() => {
     const loadUser = async () => {
-      const currentUser = await getCurrentUser();
+      try {
+        const backendUser =
+          await getCurrentBackendUser();
 
-      setUser(currentUser);
+        if (backendUser) {
+          setGoogleUser({
+            id:
+            backendUser.id,
 
-      setLoading(false);
+            email:
+            backendUser.email,
+
+            name:
+              backendUser.name ||
+              backendUser.first_name ||
+              backendUser.username,
+
+            photo:
+              backendUser.picture_url ||
+              backendUser.picture ||
+              null,
+          });
+        }
+      } catch (err) {
+        console.error(
+          'LOAD ACCOUNT ERROR',
+          err
+        );
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadUser();
   }, []);
 
-  const submit = async () => {
+  const googleLogin = async () => {
     try {
-      setError('');
+      setGoogleError('');
 
-      const result =
-        mode === 'register'
-          ? await registerUser(username, password)
-          : await loginUser(username, password);
+      setGoogleLoading(true);
 
-      setUser(result);
+      const googleResult =
+        await signInWithGoogle();
 
-      setUsername('');
-      setPassword('');
+      if (!googleResult) {
+        return;
+      }
+
+      setGoogleUser(
+        googleResult.user
+      );
+
+      /*
+       * После успешного Google/Django
+       * входа сразу восстанавливаем
+       * облачные данные пользователя.
+       */
+      const [
+        savedItemsSyncResult,
+        readingProgressSyncResult,
+      ] = await Promise.all([
+        syncSavedItems(),
+        syncReadingProgress(),
+      ]);
+
+      if (
+        savedItemsSyncResult?.success &&
+        readingProgressSyncResult?.success
+      ) {
+        console.log(
+          'Cloud sync OK: google-login'
+        );
+      } else {
+        const error =
+          savedItemsSyncResult?.error ||
+          readingProgressSyncResult?.error;
+
+        const reason =
+          savedItemsSyncResult?.reason ||
+          readingProgressSyncResult?.reason;
+
+        console.log(
+          'Cloud sync после Google-входа отложен',
+          error?.message ||
+          reason ||
+          'unknown'
+        );
+      }
+
+      console.log(
+        'GOOGLE LOGIN OK',
+        {
+          email:
+          googleResult.user?.email,
+
+          name:
+          googleResult.user?.name,
+
+          hasIdToken:
+            Boolean(
+              googleResult.idToken
+            ),
+        }
+      );
     } catch (err) {
-      setError(err.message);
+      console.error(
+        'GOOGLE LOGIN ERROR',
+        err
+      );
+
+      setGoogleError(
+        err?.message ||
+        'Не удалось выполнить вход через Google'
+      );
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
-  const logout = async () => {
-    await logoutUser();
-
-    setUser(null);
+  const googleLogout = async () => {
+    try {
+      /*
+       * signOutFromGoogle()
+       * уже вызывает logoutFromBackend()
+       * внутри googleAuth.js.
+       */
+      await signOutFromGoogle();
+    } finally {
+      setGoogleUser(null);
+    }
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.accent} />
+      <SafeAreaView
+        style={styles.safeArea}
+      >
+        <View
+          style={styles.center}
+        >
+          <ActivityIndicator
+            size="large"
+            color={colors.accent}
+          />
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.screen}>
-        <View style={styles.content}>
-          <Text style={styles.title}>Аккаунт</Text>
+    <SafeAreaView
+      style={styles.safeArea}
+      edges={['top']}
+    >
+      <View
+        style={styles.screen}
+      >
+        <View
+          style={styles.content}
+        >
+          <Text
+            style={styles.title}
+          >
+            Аккаунт
+          </Text>
 
-          {user ? (
-            <View style={styles.card}>
-              <Text style={styles.label}>Вы вошли как</Text>
+          {googleUser ? (
+            <View
+              style={styles.card}
+            >
+              <Text
+                style={styles.label}
+              >
+                Вы вошли через Google
+              </Text>
 
-              <Text style={styles.username}>{user.username}</Text>
+              {!!googleUser.name && (
+                <Text
+                  style={
+                    styles.username
+                  }
+                >
+                  {googleUser.name}
+                </Text>
+              )}
+
+              {!!googleUser.email && (
+                <Text
+                  style={
+                    styles.googleEmail
+                  }
+                >
+                  {googleUser.email}
+                </Text>
+              )}
 
               <Pressable
-                onPress={logout}
-                style={({pressed}) => [styles.button, pressed && styles.pressed]}
+                onPress={
+                  googleLogout
+                }
+                style={({
+                          pressed,
+                        }) => [
+                  styles.button,
+                  pressed &&
+                  styles.pressed,
+                ]}
               >
-                <Text style={styles.buttonText}>Выйти</Text>
+                <Text
+                  style={
+                    styles.buttonText
+                  }
+                >
+                  Выйти
+                </Text>
               </Pressable>
             </View>
           ) : (
-            <View style={styles.card}>
-              <View style={styles.modeRow}>
-                <Pressable onPress={() => setMode('login')}>
-                  <Text style={[styles.modeText, mode === 'login' && styles.modeActive]}>Вход</Text>
-                </Pressable>
+            <View
+              style={styles.card}
+            >
+              <Text
+                style={
+                  styles.loginDescription
+                }
+              >
+                Войдите через Google,
+                чтобы сохранять и
+                синхронизировать
+                избранное, прогресс
+                чтения и другие данные
+                между устройствами.
+              </Text>
 
-                <Pressable onPress={() => setMode('register')}>
-                  <Text style={[styles.modeText, mode === 'register' && styles.modeActive]}>
-                    Регистрация
-                  </Text>
-                </Pressable>
-              </View>
+              <Text
+                style={
+                  styles.loginHint
+                }
+              >
+                При первом входе
+                аккаунт будет создан
+                автоматически.
+              </Text>
 
-              <TextInput
-                value={username}
-                onChangeText={setUsername}
-                placeholder="Имя пользователя"
-                placeholderTextColor={colors.textMuted}
-                autoCapitalize="none"
-                style={styles.input}
-              />
-
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Пароль"
-                placeholderTextColor={colors.textMuted}
-                secureTextEntry
-                style={styles.input}
-              />
-
-              {!!error && <Text style={styles.error}>{error}</Text>}
+              {!!googleError && (
+                <Text
+                  style={styles.error}
+                >
+                  {googleError}
+                </Text>
+              )}
 
               <Pressable
-                onPress={submit}
-                style={({pressed}) => [styles.button, pressed && styles.pressed]}
+                onPress={
+                  googleLogin
+                }
+                disabled={
+                  googleLoading
+                }
+                style={({
+                          pressed,
+                        }) => [
+                  styles.googleButton,
+
+                  pressed &&
+                  styles.pressed,
+
+                  googleLoading &&
+                  styles.disabled,
+                ]}
               >
-                <Text style={styles.buttonText}>
-                  {mode === 'register' ? 'Создать аккаунт' : 'Войти'}
-                </Text>
+                {googleLoading ? (
+                  <ActivityIndicator
+                    color={
+                      colors.text
+                    }
+                  />
+                ) : (
+                  <Text
+                    style={
+                      styles.googleButtonText
+                    }
+                  >
+                    Продолжить с Google
+                  </Text>
+                )}
               </Pressable>
             </View>
           )}
         </View>
 
-        <BottomNav navigation={navigation} active="account" />
+        <BottomNav
+          navigation={
+            navigation
+          }
+          active="account"
+        />
       </View>
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
+const styles =
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
 
-  screen: {
-    flex: 1,
-  },
+      backgroundColor:
+      colors.background,
+    },
 
-  content: {
-    flex: 1,
-    padding: spacing.lg,
-  },
+    screen: {
+      flex: 1,
+    },
 
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    content: {
+      flex: 1,
 
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: spacing.lg,
-  },
+      padding:
+      spacing.lg,
+    },
 
-  card: {
-    padding: spacing.lg,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
+    center: {
+      flex: 1,
 
-  label: {
-    color: colors.textSecondary,
-    fontSize: 14,
-  },
+      alignItems:
+        'center',
 
-  username: {
-    marginTop: spacing.xs,
-    marginBottom: spacing.lg,
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.text,
-  },
+      justifyContent:
+        'center',
+    },
 
-  modeRow: {
-    flexDirection: 'row',
-    gap: 20,
-    marginBottom: spacing.lg,
-  },
+    title: {
+      fontSize: 28,
 
-  modeText: {
-    fontSize: 16,
-    color: colors.textMuted,
-  },
+      fontWeight:
+        '700',
 
-  modeActive: {
-    color: colors.accent,
-    fontWeight: '700',
-  },
+      color:
+      colors.text,
 
-  input: {
-    height: 48,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: radius.md,
-    backgroundColor: colors.background,
-    color: colors.text,
-    fontSize: 16,
-  },
+      marginBottom:
+      spacing.lg,
+    },
 
-  error: {
-    marginBottom: spacing.md,
-    color: colors.liturgical,
-    fontSize: 14,
-  },
+    card: {
+      padding:
+      spacing.lg,
 
-  button: {
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.md,
-    backgroundColor: colors.accent,
-  },
+      borderRadius:
+      radius.lg,
 
-  buttonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '700',
-  },
+      backgroundColor:
+      colors.surface,
 
-  pressed: {
-    opacity: 0.7,
-  },
-});
+      borderWidth: 1,
+
+      borderColor:
+      colors.border,
+    },
+
+    label: {
+      color:
+      colors.textSecondary,
+
+      fontSize: 14,
+    },
+
+    username: {
+      marginTop:
+      spacing.xs,
+
+      marginBottom:
+      spacing.md,
+
+      fontSize: 22,
+
+      fontWeight:
+        '700',
+
+      color:
+      colors.text,
+    },
+
+    googleEmail: {
+      marginBottom:
+      spacing.lg,
+
+      color:
+      colors.textSecondary,
+
+      fontSize: 15,
+    },
+
+    loginDescription: {
+      marginBottom:
+      spacing.sm,
+
+      color:
+      colors.textSecondary,
+
+      fontSize: 15,
+
+      lineHeight: 22,
+    },
+
+    loginHint: {
+      marginBottom:
+      spacing.lg,
+
+      color:
+      colors.textMuted,
+
+      fontSize: 13,
+
+      lineHeight: 19,
+    },
+
+    error: {
+      marginBottom:
+      spacing.md,
+
+      color:
+      colors.liturgical,
+
+      fontSize: 14,
+    },
+
+    button: {
+      height: 48,
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'center',
+
+      borderRadius:
+      radius.md,
+
+      backgroundColor:
+      colors.accent,
+    },
+
+    buttonText: {
+      color:
+      colors.white,
+
+      fontSize: 16,
+
+      fontWeight:
+        '700',
+    },
+
+    googleButton: {
+      height: 48,
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'center',
+
+      borderRadius:
+      radius.md,
+
+      borderWidth: 1,
+
+      borderColor:
+      colors.borderStrong,
+
+      backgroundColor:
+      colors.background,
+    },
+
+    googleButtonText: {
+      color:
+      colors.text,
+
+      fontSize: 16,
+
+      fontWeight:
+        '600',
+    },
+
+    disabled: {
+      opacity: 0.6,
+    },
+
+    pressed: {
+      opacity: 0.7,
+    },
+  });
