@@ -441,7 +441,7 @@ export const MemorialQuickSheet = ({
                                         availablePhotos,
                                         Math.max(0, tappedIndex)
                                       );
-                                    }
+                                    }}
                                     style={({
                                       pressed,
                                     }) => [
