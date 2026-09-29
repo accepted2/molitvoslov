@@ -1,6 +1,8 @@
 import React, {useEffect, useState} from 'react';
 
-import {ActivityIndicator, View} from 'react-native';
+import {ActivityIndicator, AppState, View} from 'react-native';
+
+import NetInfo from '@react-native-community/netinfo';
 
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 
@@ -9,6 +11,10 @@ import {AppNavigator} from './src/navigation/AppNavigator';
 import {TextSelectionProvider} from './src/context/TextSelectionContext';
 
 import {initDatabase} from './src/db/database';
+
+import {syncSavedItems} from './src/services/savedItems';
+
+import {syncReadingProgress} from './src/services/readingProgress';
 
 export default function App() {
   const [databaseReady, setDatabaseReady] = useState(false);
@@ -28,6 +34,83 @@ export default function App() {
 
     prepareDatabase();
   }, []);
+
+  useEffect(() => {
+    if (!databaseReady) {
+      return;
+    }
+
+    let previousOnline = null;
+
+    const runSync = async (reason) => {
+      try {
+        const [savedItemsResult, readingProgressResult] = await Promise.all([
+          syncSavedItems(),
+          syncReadingProgress(),
+        ]);
+
+        const noUser =
+          savedItemsResult?.reason === 'no-user' && readingProgressResult?.reason === 'no-user';
+
+        if (noUser) {
+          return;
+        }
+
+        if (savedItemsResult?.success && readingProgressResult?.success) {
+          console.log(`Cloud sync OK: ${reason}`);
+
+          return;
+        }
+
+        const error = savedItemsResult?.error || readingProgressResult?.error;
+
+        if (error) {
+          console.log(`Cloud sync отложен: ${reason}`, error?.message || error);
+        }
+      } catch (error) {
+        console.log(`Cloud sync ошибка: ${reason}`, error?.message || error);
+      }
+    };
+
+    /*
+     * После запуска.
+     */
+    runSync('startup');
+
+    /*
+     * Только при реальном переходе:
+     *
+     * offline -> online
+     *
+     * Первое событие NetInfo не запускает
+     * второй sync поверх startup.
+     */
+    const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
+      const online = Boolean(state.isConnected) && state.isInternetReachable !== false;
+
+      if (previousOnline === false && online) {
+        runSync('network');
+      }
+
+      previousOnline = online;
+    });
+
+    /*
+     * При возврате приложения
+     * из фона.
+     */
+    const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        runSync('foreground');
+      }
+    });
+
+    return () => {
+      unsubscribeNetInfo();
+
+      appStateSubscription.remove();
+    };
+  }, [databaseReady]);
 
   if (!databaseReady) {
     return (

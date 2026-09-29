@@ -496,6 +496,8 @@ export default function KathismaScreen({route, navigation}) {
       metadata,
       sectionName,
       className = '',
+      label = '',
+      language = null,
     }) => {
       const syntheticId = nextBlockId++;
 
@@ -504,6 +506,7 @@ export default function KathismaScreen({route, navigation}) {
         anchorType,
         anchorId,
         sectionName,
+        language,
       });
 
       return {
@@ -512,7 +515,7 @@ export default function KathismaScreen({route, navigation}) {
         text: text || '',
 
         sourceType: 'psalter',
-
+        label,
         sourceId: kathisma.psalter,
 
         anchorType,
@@ -703,33 +706,86 @@ export default function KathismaScreen({route, navigation}) {
     });
 
     if (kathisma.prayers_after) {
-      const block = makeOtherBlock({
-        text: String(kathisma.prayers_after || '')
-          // В самом начале блока не допускаем пустой абзац
-          // между "По N-й кафизме" и следующим текстом
+      const normalizePrayersAfter = (value) =>
+        String(value || '')
           .replace(/^([^\r\n]+)(?:\r?\n[ \t]*){2,}/u, '$1\n')
           .replace(/,\s*Трисвятое по Отче наш:/iu, ',\nТрисвятое по Отче наш:')
           .replace(/Трисвятое по Отче наш:[ \t]*/iu, 'Трисвятое по Отче наш:\n')
-          .replace(/(Тропар(?:ь|и))\s*,?\s*глас\s*(\d+)\s*:\s*/iu, '$1, глас $2:\n')
+          .replace(
+            /(?:Таже\s+|Также\s+)?Тропар(ь|и)\s*,?\s*глас\s*(\d+)\s*:\s*/iu,
+            (_match, ending, glas) => `Тропар${ending === 'ь' ? 'ь' : 'и'}, глас ${glas}:\n`
+          )
           .replace(
             /(^|\r?\n)[^\r\n]*\(40\)[^\r\n]*(?:\r?\n[ \t]*)*/u,
-            '$1Господи, помилуй (40).\nМолитва\n'
-          ),
+            '$1Господи, помилуй (40).\nМолитва '
+          )
+          .replace(/(^|\n)И[ \t]+ныне:[ \t]+/giu, '$1И\u00A0ныне:\u00A0');
+
+      const churchText = normalizePrayersAfter(kathisma.prayers_after);
+
+      const russianText = normalizePrayersAfter(kathisma.prayers_after_russian);
+
+      const churchBlock = makeOtherBlock({
+        text: churchText,
+
+        // label: russianText
+        //   ? 'Церковнославянский'
+        //   : '',
+
+        language: 'church',
 
         anchorType: 'kathisma_prayers_after',
+
         anchorId: kathisma.id,
+
         itemTitle: `Молитвы после кафизмы ${kathisma.number}`,
+
         fullSaveType: 'prayer',
+
         className: 'psalter-prayer',
+
         metadata: {
           kathisma_number: kathisma.number,
-
           kathisma_title: kathisma.title || '',
-
           section: 'prayers_after',
+          language: 'church',
         },
+
         sectionName: 'prayers_after',
       });
+
+      const blocks = [churchBlock];
+
+      if (russianText) {
+        blocks.push(
+          makeOtherBlock({
+            text: russianText,
+
+            // label: 'Русский',
+
+            language: 'russian',
+
+            anchorType: 'kathisma_prayers_after',
+
+            anchorId: kathisma.id,
+
+            itemTitle: `Молитвы после кафизмы ${kathisma.number}`,
+
+            fullSaveType: 'prayer',
+
+            className: 'psalter-prayer secondary',
+
+            metadata: {
+              kathisma_number: kathisma.number,
+              kathisma_title: kathisma.title || '',
+              section: 'prayers_after',
+              language: 'russian',
+            },
+
+            sectionName: 'prayers_after',
+          })
+        );
+      }
 
       sections.push({
         progressAnchorId: Number(kathisma.id),
@@ -740,9 +796,9 @@ export default function KathismaScreen({route, navigation}) {
 
         rows: [
           {
-            layout: 'stack',
+            layout: blocks.length > 1 ? 'parallel' : 'stack',
 
-            blocks: [block],
+            blocks,
           },
         ],
       });

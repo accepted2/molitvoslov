@@ -11,12 +11,13 @@ export default function ExpandablePrayerBlock({
   text,
   secondaryText = '',
   onCollapse,
+  onExpand,
   saveProps = null,
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const [savedItems, setSavedItems] = useState([]);
-
+  const [headerHeight, setHeaderHeight] = useState(0);
   const {height: windowHeight} = useWindowDimensions();
 
   const readerHeight = Math.max(500, Math.min(windowHeight * 0.78, 720));
@@ -122,25 +123,15 @@ export default function ExpandablePrayerBlock({
               blocks: [
                 {
                   id: 1,
-
                   text: normalizedText,
-
                   label: normalizedSecondaryText ? 'Церковнославянский' : '',
-
                   sourceType: saveProps.sourceType,
-
                   sourceId: saveProps.sourceId,
-
                   anchorType: saveProps.anchorType,
-
                   anchorId: saveProps.anchorId,
-
                   sourceTitle: saveProps.sourceTitle || title,
-
                   itemTitle: saveProps.itemTitle || title,
-
                   fullSaveType: 'prayer',
-
                   className:
                     saveProps.sourceType === 'psalter'
                       ? 'psalter-prayer psalter-reading-prayers'
@@ -158,23 +149,14 @@ export default function ExpandablePrayerBlock({
                         id: 2,
 
                         text: normalizedSecondaryText,
-
                         label: 'Русский',
-
                         sourceType: saveProps.sourceType,
-
                         sourceId: saveProps.sourceId,
-
                         anchorType: saveProps.anchorType,
-
                         anchorId: saveProps.anchorId,
-
                         sourceTitle: saveProps.sourceTitle || title,
-
                         itemTitle: saveProps.itemTitle || title,
-
                         fullSaveType: 'prayer',
-
                         className:
                           saveProps.sourceType === 'psalter'
                             ? 'psalter-prayer psalter-reading-prayers secondary'
@@ -198,22 +180,19 @@ export default function ExpandablePrayerBlock({
   if (!normalizedText) {
     return null;
   }
-
   const toggle = () => {
     if (isOpen) {
       setIsOpen(false);
-
       onCollapse?.();
-
       return;
     }
 
     setIsOpen(true);
+    onExpand?.();
   };
 
   const collapse = () => {
     setIsOpen(false);
-
     onCollapse?.();
   };
 
@@ -269,7 +248,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(123, 79, 36, 0.18)',
     overflow: 'hidden',
   },
-
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -299,7 +277,6 @@ const styles = StyleSheet.create({
     color: '#765238',
     fontFamily: 'serif',
   },
-
   arrow: {
     width: 30,
     height: 30,
@@ -313,12 +290,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '700',
   },
-
   content: {
     paddingHorizontal: 8,
     paddingBottom: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(123, 79, 36, 0.16)',
+  },
+
+  containerUpOpen: {
+    overflow: 'visible',
+    zIndex: 50,
+    elevation: 20,
   },
 
   reader: {

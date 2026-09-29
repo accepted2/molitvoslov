@@ -446,12 +446,13 @@ const collectPsalterPrayerAccentRanges = value => {
 
   const patterns = [
     /Трисвятое по Отче наш:/giu,
-
+   /(?:Таже\s+|Также\s+)?Тропар(?:ь|и)\s*,?\s*глас\s*\d+\s*:/giu,
     // "Тропари сия, глас 6", "Тропарь покаянный, глас шестой" и т. п.
     /Тропар(?:ь|и)\s+(?:сия|покаянн(?:ый|ые|ыя))\s*,?\s*глас\s*(?:6|шест(?:ой|ый))\s*:*/giu,
+     /(?:Таже\s+|Также\s+)?Тропар(?:ь|и)\s*,?\s*глас\s*\d+\s*:/giu,
 
     /(?:^|\n)(Слава:)/giu,
-    /(?:^|\n)(И ныне:)/giu,
+    /(?:^|\n)(И\s+ныне:)/giu,
 
     // Счётные "Господи, помилуй" — и (3), и (40), с поддержкой надстрочных знаков
     /Господи,\s*помилуй\s*\((?:3|40)\)\.?/giu,
@@ -1029,8 +1030,11 @@ const psalterPrayerAccentRanges =
       )
   );
 
+const isKathismaPrayersAfter =
+  itemConfig?.metadata?.section === 'prayers_after';
+
 const psalterPrayerInitialRanges =
-  isPsalterPrayer
+  isPsalterPrayer && !isKathismaPrayersAfter
     ? collectPsalterPrayerInitialRanges(text)
         .filter(initialRange =>
           !psalterRubricRanges.some(
@@ -1343,7 +1347,7 @@ const normalizedPsalterPrayerAccentText =
     .trim();
 
 const isPsalterMetaAccent =
-  /^Тропар(?:ь|и)\s+/iu.test(
+   /^Тропар(?:ь|и)(?:\\s|,)/iu.test(
     normalizedPsalterPrayerAccentText
   ) ||
   /^Господи,\s*помилуй\s*\((?:3|40)\)\.?$/iu.test(
@@ -1372,7 +1376,7 @@ const needsSeparatorBeforeHeading =
   start > 0 &&
   (
     isPrayerHeading ||
-    /^Тропар(?:ь|и)\s+/iu.test(
+   /^Тропар(?:ь|и)(?:\s|,)/iu.test(
       normalizedPsalterPrayerAccentText
     )
   );
