@@ -42,7 +42,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
 
   const [error, setError] = useState(null);
 
-  const [memorialVisible, setMemorialVisible] = useState(false);
+  const [memorialContext, setMemorialContext] = useState(null);
 
   const {savedProgress, progressReady, scheduleSave} = useReadingProgress({
     sourceType: 'prayer_rule',
@@ -159,17 +159,23 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         viewSwitcher={viewSwitcher}
         topContentInset={headerHeight}
         memorialEnabled={slug === 'molitvy-utrennie'}
-        onMemorialOpen={() =>
-          setMemorialVisible(true)
+        onMemorialOpen={(context) =>
+          setMemorialContext(
+            context || {}
+          )
         }
         onProgress={scheduleSave}
         onViewModeChange={setViewMode}
       />
 
       <MemorialQuickSheet
-        visible={memorialVisible}
+        visible={!!memorialContext}
+        preferredKind={
+          memorialContext?.kind ||
+          null
+        }
         onClose={() =>
-          setMemorialVisible(false)
+          setMemorialContext(null)
         }
         onManage={() =>
           navigation.navigate('Memorial')
