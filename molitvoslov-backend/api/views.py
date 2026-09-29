@@ -483,12 +483,9 @@ class SavedItemViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK,
             )
 
-
         try:
             with transaction.atomic():
-                saved_item = serializer.save(
-                    user=request.user
-                )
+                saved_item = serializer.save(user=request.user)
 
         except IntegrityError:
             if sync_id:
@@ -518,6 +515,8 @@ class SavedItemViewSet(viewsets.ModelViewSet):
                 "updated_at",
             ]
         )
+
+
 class ReadingProgressViewSet(viewsets.ModelViewSet):
     serializer_class = ReadingProgressSerializer
     permission_classes = [IsAuthenticated]
@@ -527,39 +526,28 @@ class ReadingProgressViewSet(viewsets.ModelViewSet):
             user=self.request.user,
         ).order_by("-updated_at")
 
-        include_deleted = self.request.query_params.get(
-            "include_deleted"
-        )
+        include_deleted = self.request.query_params.get("include_deleted")
 
         if include_deleted not in [
             "1",
             "true",
             "True",
         ]:
-            queryset = queryset.filter(
-                deleted_at__isnull=True
-            )
+            queryset = queryset.filter(deleted_at__isnull=True)
 
         return queryset
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(
-            data=request.data
-        )
+        serializer = self.get_serializer(data=request.data)
 
-        serializer.is_valid(
-            raise_exception=True
-        )
+        serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
 
         source_type = data["source_type"]
         source_id = data["source_id"]
 
-        incoming_updated_at = (
-                data.get("updated_at")
-                or timezone.now()
-        )
+        incoming_updated_at = data.get("updated_at") or timezone.now()
 
         existing = ReadingProgress.objects.filter(
             user=request.user,
@@ -568,12 +556,7 @@ class ReadingProgressViewSet(viewsets.ModelViewSet):
         ).first()
 
         # Сервер уже имеет более свежую позицию.
-        if (
-                existing
-                and existing.updated_at
-                and incoming_updated_at
-                <= existing.updated_at
-        ):
+        if existing and existing.updated_at and incoming_updated_at <= existing.updated_at:
             return Response(
                 self.get_serializer(existing).data,
                 status=status.HTTP_200_OK,
@@ -585,9 +568,7 @@ class ReadingProgressViewSet(viewsets.ModelViewSet):
                 "",
             )
 
-            existing.anchor_id = data.get(
-                "anchor_id"
-            )
+            existing.anchor_id = data.get("anchor_id")
 
             existing.offset = data.get(
                 "offset",
@@ -604,13 +585,9 @@ class ReadingProgressViewSet(viewsets.ModelViewSet):
                 {},
             )
 
-            existing.deleted_at = data.get(
-                "deleted_at"
-            )
+            existing.deleted_at = data.get("deleted_at")
 
-            existing.updated_at = (
-                incoming_updated_at
-            )
+            existing.updated_at = incoming_updated_at
 
             existing.save(
                 update_fields=[

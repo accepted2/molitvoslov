@@ -11,6 +11,7 @@ from pypdf import PdfReader
 # НОРМАЛИЗАЦИЯ / ПОИСК
 # =========================================================
 
+
 def strip_marks(text: str) -> str:
     return "".join(
         ch
@@ -95,8 +96,7 @@ def tropar_heading_pattern():
 
 def prayer_rubric_pattern():
     return re.compile(
-        r"господи\s*,?\s*помилуй\s*\(?\s*40\s*\)?"
-        r"[^:\n]{0,80}(?:молитв|моли́тв)[^:\n]{0,30}:",
+        r"господи\s*,?\s*помилуй\s*\(?\s*40\s*\)?" r"[^:\n]{0,80}(?:молитв|моли́тв)[^:\n]{0,30}:",
         re.IGNORECASE,
     )
 
@@ -104,6 +104,7 @@ def prayer_rubric_pattern():
 # =========================================================
 # КООРДИНАТЫ PDF
 # =========================================================
+
 
 def extract_raw_fragments(page):
     """
@@ -187,11 +188,7 @@ def detect_columns(page, fragments):
     """
     Определяет геометрическую границу двух колонок по X.
     """
-    x_values = [
-        item["x"]
-        for item in fragments
-        if cyrillic_count(item["text"]) >= 4
-    ]
+    x_values = [item["x"] for item in fragments if cyrillic_count(item["text"]) >= 4]
 
     result = kmeans_1d(x_values)
 
@@ -234,11 +231,7 @@ def group_lines(items, y_tolerance=2.7):
     for item in items:
         if current_y is None or abs(item["y"] - current_y) <= y_tolerance:
             current.append(item)
-            current_y = (
-                item["y"]
-                if current_y is None
-                else (current_y + item["y"]) / 2
-            )
+            current_y = item["y"] if current_y is None else (current_y + item["y"]) / 2
         else:
             flush()
             current = [item]
@@ -251,6 +244,7 @@ def group_lines(items, y_tolerance=2.7):
 # =========================================================
 # ПОЗИЦИИ В ДОКУМЕНТЕ
 # =========================================================
+
 
 def later_than(page_index, y, anchor_page, anchor_y):
     """
@@ -297,6 +291,7 @@ def find_line_anchor(lines, regexes):
 # ИСХОДНАЯ СТРУКТУРА КАФИЗМ
 # =========================================================
 
+
 def load_existing_structure(files_dir: Path, number: int):
     """
     Читает ТОЛЬКО существующий *_final.json как эталон рубрик.
@@ -336,11 +331,7 @@ def load_existing_structure(files_dir: Path, number: int):
             flags=re.IGNORECASE,
         )
 
-        tropar_heading = (
-            strip_marks(raw_match.group(0)).strip()
-            if raw_match
-            else ""
-        )
+        tropar_heading = strip_marks(raw_match.group(0)).strip() if raw_match else ""
 
     # Для русского блока ставим единообразную рубрику.
     prayer_heading = "Господи, помилуй (40) и молитва:"
@@ -356,6 +347,7 @@ def load_existing_structure(files_dir: Path, number: int):
 # =========================================================
 # СТРАНИЦЫ / ЯКОРЯ
 # =========================================================
+
 
 def build_page_cache(reader):
     cache = []
@@ -490,19 +482,14 @@ def find_end_anchor(cache, number, start_page, max_pages=5):
 # РУССКАЯ КОЛОНКА
 # =========================================================
 
+
 def split_page_lines(cache_item):
     fragments = cache_item["fragments"]
     columns = detect_columns(cache_item["page"], fragments)
     split_x = columns["split_x"]
 
-    left_items = [
-        item for item in fragments
-        if item["x"] < split_x
-    ]
-    right_items = [
-        item for item in fragments
-        if item["x"] >= split_x
-    ]
+    left_items = [item for item in fragments if item["x"] < split_x]
+    right_items = [item for item in fragments if item["x"] >= split_x]
 
     return {
         "columns": columns,
@@ -557,14 +544,8 @@ def choose_russian_side(
     В проверенном PDF русская колонка имеет существенно меньшую
     плотность церковнославянских надстрочных знаков.
     """
-    left_pages = [
-        (page_index, data["left"])
-        for page_index, data in page_splits
-    ]
-    right_pages = [
-        (page_index, data["right"])
-        for page_index, data in page_splits
-    ]
+    left_pages = [(page_index, data["left"]) for page_index, data in page_splits]
+    right_pages = [(page_index, data["right"]) for page_index, data in page_splits]
 
     left_lines = lines_between_anchors(
         left_pages,
@@ -603,12 +584,9 @@ def choose_russian_side(
 # ФОРМИРОВАНИЕ РЕЗУЛЬТАТА
 # =========================================================
 
+
 def clean_lines(lines):
-    text = "\n".join(
-        line["text"]
-        for line in lines
-        if str(line["text"]).strip()
-    )
+    text = "\n".join(line["text"] for line in lines if str(line["text"]).strip())
 
     text = text.replace("\u00ad", "")
 
@@ -694,14 +672,11 @@ def validate_result(number, result_text, russian_score, prayer_text):
     plain = normalize_search(result_text)
 
     if len(result_text) < 250:
-        errors.append(
-            f"Слишком короткий русский блок: {len(result_text)} символов."
-        )
+        errors.append(f"Слишком короткий русский блок: {len(result_text)} символов.")
 
     if russian_score > 0.075:
         errors.append(
-            f"Слишком высокая плотность ударений для русского текста: "
-            f"{russian_score:.4f}."
+            f"Слишком высокая плотность ударений для русского текста: " f"{russian_score:.4f}."
         )
 
     if not re.search(r"\bслава\s*:", plain, re.IGNORECASE):
@@ -735,9 +710,7 @@ def parse_one(cache, files_dir, number):
         return {
             "number": number,
             "status": "ERROR",
-            "validation_errors": [
-                "Не найдена страница с блоком после этой кафизмы."
-            ],
+            "validation_errors": ["Не найдена страница с блоком после этой кафизмы."],
         }
 
     tropar_anchor = find_tropar_anchor(
@@ -751,9 +724,7 @@ def parse_one(cache, files_dir, number):
             "number": number,
             "status": "ERROR",
             "start_page": start_page + 1,
-            "validation_errors": [
-                "Не найден заголовок тропарей."
-            ],
+            "validation_errors": ["Не найден заголовок тропарей."],
         }
 
     prayer_anchor = find_prayer_anchor(
@@ -775,17 +746,13 @@ def parse_one(cache, files_dir, number):
             "number": number,
             "status": "ERROR",
             "start_page": start_page + 1,
-            "validation_errors": [
-                "Не найдено начало следующей кафизмы."
-            ],
+            "validation_errors": ["Не найдено начало следующей кафизмы."],
         }
 
     # Для 20, если отдельного хвостового заголовка не нашли,
     # ограничиваемся не более чем 4 страницами после старта.
     last_page = (
-        end_anchor["page"]
-        if end_anchor is not None
-        else min(len(cache) - 1, start_page + 3)
+        end_anchor["page"] if end_anchor is not None else min(len(cache) - 1, start_page + 3)
     )
 
     page_splits = []
@@ -798,9 +765,7 @@ def parse_one(cache, files_dir, number):
                 "number": number,
                 "status": "ERROR",
                 "start_page": start_page + 1,
-                "validation_errors": [
-                    f"Страница {page_index + 1}: {exc}"
-                ],
+                "validation_errors": [f"Страница {page_index + 1}: {exc}"],
             }
 
         page_splits.append(
@@ -823,19 +788,12 @@ def parse_one(cache, files_dir, number):
         prayer_anchor,
     )
 
-    tropar_text = remove_shared_rubrics(
-        clean_lines(tropar_lines)
-    )
-    prayer_text = remove_shared_rubrics(
-        clean_lines(prayer_lines)
-    )
+    tropar_text = remove_shared_rubrics(clean_lines(tropar_lines))
+    prayer_text = remove_shared_rubrics(clean_lines(prayer_lines))
 
     parts = []
 
-    tropar_heading = (
-        structure["tropar_heading"]
-        or f"Тропари после {number}-й кафизмы:"
-    )
+    tropar_heading = structure["tropar_heading"] or f"Тропари после {number}-й кафизмы:"
 
     if tropar_text:
         parts.append(tropar_heading)
@@ -855,9 +813,7 @@ def parse_one(cache, files_dir, number):
     )
 
     if prayer_anchor is None:
-        errors.append(
-            "Не найден геометрический якорь «Господи, помилуй (40) и молитва»."
-        )
+        errors.append("Не найден геометрический якорь «Господи, помилуй (40) и молитва».")
 
     if number == 20 and end_anchor is None:
         errors.append(
@@ -870,11 +826,7 @@ def parse_one(cache, files_dir, number):
         "status": "OK" if not errors else "CHECK",
         "source_structure_file": structure["path"],
         "pdf_start_page": start_page + 1,
-        "pdf_end_page": (
-            end_anchor["page"] + 1
-            if end_anchor is not None
-            else last_page + 1
-        ),
+        "pdf_end_page": (end_anchor["page"] + 1 if end_anchor is not None else last_page + 1),
         "selected_russian_side": side["side"],
         "russian_accent_density": round(side["score"], 6),
         "other_column_accent_density": round(side["other_score"], 6),
@@ -891,6 +843,7 @@ def parse_one(cache, files_dir, number):
 # =========================================================
 # CLI
 # =========================================================
+
 
 def main():
     base_dir = Path(__file__).resolve().parent
@@ -917,11 +870,7 @@ def main():
 
     parser.add_argument(
         "--output",
-        default=str(
-            base_dir
-            / "files"
-            / "kathisma_prayers_russian_preview_all.json"
-        ),
+        default=str(base_dir / "files" / "kathisma_prayers_russian_preview_all.json"),
     )
 
     parser.add_argument(
@@ -955,11 +904,7 @@ def main():
     print("Индекс готов.")
     print()
 
-    numbers = (
-        [args.kathisma]
-        if args.kathisma is not None
-        else list(range(1, 21))
-    )
+    numbers = [args.kathisma] if args.kathisma is not None else list(range(1, 21))
 
     results = []
 
@@ -1000,11 +945,7 @@ def main():
 
     payload = {
         "source_pdf": str(pdf_path),
-        "mode": (
-            f"kathisma_{args.kathisma}"
-            if args.kathisma is not None
-            else "all_20"
-        ),
+        "mode": (f"kathisma_{args.kathisma}" if args.kathisma is not None else "all_20"),
         "summary": {
             "total": len(results),
             "ok": ok_count,

@@ -6,18 +6,20 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0027_googleaccount'),
+        ("api", "0027_googleaccount"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='akathist',
-            name='slug',
-            field=models.SlugField(max_length=200, unique=True, verbose_name='URL-идентификатор'),
+            model_name="akathist",
+            name="slug",
+            field=models.SlugField(max_length=200, unique=True, verbose_name="URL-идентификатор"),
         ),
         migrations.AlterField(
-            model_name='text',
-            name='slug',
-            field=models.SlugField(blank=True, max_length=200, unique=True, verbose_name='URL-идентификатор'),
+            model_name="text",
+            name="slug",
+            field=models.SlugField(
+                blank=True, max_length=200, unique=True, verbose_name="URL-идентификатор"
+            ),
         ),
     ]

@@ -532,6 +532,7 @@ class SavedItemSerializer(serializers.ModelSerializer):
         read_only=True,
     )
     sync_id = serializers.UUIDField(required=False)
+
     class Meta:
         model = SavedItem
 
@@ -603,9 +604,7 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "anchor_info",
-
         ]
-
 
     def get_anchor_info(self, obj):
         if obj.source_type == "canon" and obj.anchor_type == "canon_section" and obj.anchor_id:

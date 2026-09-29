@@ -171,8 +171,7 @@ def build_russian_block(rows, number):
 
     if start_index is None:
         raise CommandError(
-            f"Кафизма {number}: не найден русский маркер "
-            f"«После кафизмы {number}»."
+            f"Кафизма {number}: не найден русский маркер " f"«После кафизмы {number}»."
         )
 
     if number < KATHISMA_MAX:
@@ -188,9 +187,7 @@ def build_russian_block(rows, number):
         )
 
     if end_index is None:
-        raise CommandError(
-            f"Кафизма {number}: не найдена граница конца блока."
-        )
+        raise CommandError(f"Кафизма {number}: не найдена граница конца блока.")
 
     block_rows = rows[start_index:end_index]
 
@@ -198,8 +195,7 @@ def build_russian_block(rows, number):
 
     if troparion_relative_index is None:
         raise CommandError(
-            f"Кафизма {number}: не найдена русская рубрика "
-            f"«Тропарь/Тропари, глас ...»."
+            f"Кафизма {number}: не найдена русская рубрика " f"«Тропарь/Тропари, глас ...»."
         )
 
     # В 1-й кафизме источник полностью расписывает Трисвятое
@@ -213,7 +209,7 @@ def build_russian_block(rows, number):
         f"Тропари, глас {glas}:",
     ]
 
-    for row in block_rows[troparion_relative_index + 1:]:
+    for row in block_rows[troparion_relative_index + 1 :]:
         cells = direct_tds(row)
 
         if len(cells) < 2:
@@ -257,8 +253,7 @@ def validate_russian_block(number, text, glas):
         (
             "Тропарь/Тропари",
             re.compile(
-                rf"\bТропар(?:ь|и)\b[^0-9\n]{{0,60}}"
-                rf"\bглас\s+{glas}\b",
+                rf"\bТропар(?:ь|и)\b[^0-9\n]{{0,60}}" rf"\bглас\s+{glas}\b",
                 re.IGNORECASE,
             ),
         ),
@@ -290,9 +285,7 @@ def validate_russian_block(number, text, glas):
             errors.append(label)
 
     if len(text) < 300:
-        errors.append(
-            f"слишком короткий блок ({len(text)} символов)"
-        )
+        errors.append(f"слишком короткий блок ({len(text)} символов)")
 
     if number < KATHISMA_MAX:
         next_pattern = re.compile(
@@ -304,10 +297,7 @@ def validate_russian_block(number, text, glas):
             errors.append("в текст попало начало следующей кафизмы")
 
     if errors:
-        raise CommandError(
-            f"Кафизма {number}: проверка не пройдена: "
-            + "; ".join(errors)
-        )
+        raise CommandError(f"Кафизма {number}: проверка не пройдена: " + "; ".join(errors))
 
 
 def parse_source(source_path):
@@ -334,9 +324,7 @@ def parse_source(source_path):
         rows = soup.find_all("tr")
 
     if not rows:
-        raise CommandError(
-            "В источнике не найдено ни одной строки <tr>."
-        )
+        raise CommandError("В источнике не найдено ни одной строки <tr>.")
 
     result = []
 
@@ -349,16 +337,12 @@ def parse_source(source_path):
         )
 
     if len(result) != 20:
-        raise CommandError(
-            f"Ожидалось 20 кафизм, получено {len(result)}."
-        )
+        raise CommandError(f"Ожидалось 20 кафизм, получено {len(result)}.")
 
     numbers = [item["number"] for item in result]
 
     if numbers != list(range(1, 21)):
-        raise CommandError(
-            f"Неверный набор номеров кафизм: {numbers}"
-        )
+        raise CommandError(f"Неверный набор номеров кафизм: {numbers}")
 
     return result
 
@@ -379,13 +363,10 @@ def resolve_psalter(psalter_slug=None):
         try:
             return Psalter.objects.get(slug=psalter_slug)
         except Psalter.DoesNotExist as exc:
-            raise CommandError(
-                f"Псалтирь со slug={psalter_slug!r} не найдена."
-            ) from exc
+            raise CommandError(f"Псалтирь со slug={psalter_slug!r} не найдена.") from exc
 
     candidates = (
-        Psalter.objects
-        .annotate(kathisma_count=Count("kathismas", distinct=True))
+        Psalter.objects.annotate(kathisma_count=Count("kathismas", distinct=True))
         .filter(kathisma_count__gte=20)
         .order_by("id")
     )
@@ -397,13 +378,11 @@ def resolve_psalter(psalter_slug=None):
 
     if count == 0:
         raise CommandError(
-            "Не найдена Псалтирь с 20 кафизмами. "
-            "Укажите --psalter-slug после проверки данных."
+            "Не найдена Псалтирь с 20 кафизмами. " "Укажите --psalter-slug после проверки данных."
         )
 
     raise CommandError(
-        "Найдено несколько Псалтирей с 20+ кафизмами. "
-        "Укажите нужную через --psalter-slug."
+        "Найдено несколько Псалтирей с 20+ кафизмами. " "Укажите нужную через --psalter-slug."
     )
 
 
@@ -445,26 +424,15 @@ class Command(BaseCommand):
     )
 
     def add_arguments(self, parser):
-        default_source = (
-            Path(settings.BASE_DIR)
-            / "files"
-            / "psalter_azbyka_with_translation.html"
-        )
+        default_source = Path(settings.BASE_DIR) / "files" / "psalter_azbyka_with_translation.html"
 
-        default_json = (
-            Path(settings.BASE_DIR)
-            / "files"
-            / "psalter_kathisma_prayers_russian.json"
-        )
+        default_json = Path(settings.BASE_DIR) / "files" / "psalter_kathisma_prayers_russian.json"
 
         parser.add_argument(
             "source_file",
             nargs="?",
             default=str(default_source),
-            help=(
-                "Путь к XHTML/HTML. По умолчанию: "
-                "files/psalter_azbyka_with_translation.html"
-            ),
+            help=("Путь к XHTML/HTML. По умолчанию: " "files/psalter_azbyka_with_translation.html"),
         )
 
         parser.add_argument(
@@ -479,10 +447,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--check-only",
             action="store_true",
-            help=(
-                "Только распарсить и проверить все 20 кафизм. "
-                "БД не изменяется."
-            ),
+            help=("Только распарсить и проверить все 20 кафизм. " "БД не изменяется."),
         )
 
         parser.add_argument(
@@ -498,28 +463,18 @@ class Command(BaseCommand):
         parser.add_argument(
             "--psalter-slug",
             default=None,
-            help=(
-                "Slug нужной Псалтири, если в БД их несколько."
-            ),
+            help=("Slug нужной Псалтири, если в БД их несколько."),
         )
 
     def handle(self, *args, **options):
-        source_path = Path(
-            options["source_file"]
-        ).expanduser().resolve()
+        source_path = Path(options["source_file"]).expanduser().resolve()
 
-        output_path = Path(
-            options["json_output"]
-        ).expanduser().resolve()
+        output_path = Path(options["json_output"]).expanduser().resolve()
 
         if not source_path.exists():
-            raise CommandError(
-                f"Файл-источник не найден: {source_path}"
-            )
+            raise CommandError(f"Файл-источник не найден: {source_path}")
 
-        self.stdout.write(
-            f"Источник: {source_path}"
-        )
+        self.stdout.write(f"Источник: {source_path}")
 
         parsed = parse_source(source_path)
 
@@ -529,11 +484,7 @@ class Command(BaseCommand):
             parsed=parsed,
         )
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Парсинг: 20/20 OK"
-            )
-        )
+        self.stdout.write(self.style.SUCCESS(f"Парсинг: 20/20 OK"))
 
         for item in parsed:
             self.stdout.write(
@@ -542,23 +493,15 @@ class Command(BaseCommand):
                 f"{len(item['text'])} символов"
             )
 
-        self.stdout.write(
-            f"Проверочный JSON: {output_path}"
-        )
+        self.stdout.write(f"Проверочный JSON: {output_path}")
 
         if options["check_only"]:
-            self.stdout.write(
-                self.style.SUCCESS(
-                    "CHECK ONLY: БД не изменялась."
-                )
-            )
+            self.stdout.write(self.style.SUCCESS("CHECK ONLY: БД не изменялась."))
             return
 
         ensure_target_field_exists()
 
-        psalter = resolve_psalter(
-            options.get("psalter_slug")
-        )
+        psalter = resolve_psalter(options.get("psalter_slug"))
 
         kathismas = {
             item.number: item
@@ -571,17 +514,10 @@ class Command(BaseCommand):
             )
         }
 
-        missing = [
-            number
-            for number in range(1, 21)
-            if number not in kathismas
-        ]
+        missing = [number for number in range(1, 21) if number not in kathismas]
 
         if missing:
-            raise CommandError(
-                "В БД отсутствуют кафизмы: "
-                + ", ".join(map(str, missing))
-            )
+            raise CommandError("В БД отсутствуют кафизмы: " + ", ".join(map(str, missing)))
 
         updated = 0
         skipped = 0
@@ -590,17 +526,14 @@ class Command(BaseCommand):
             for item in parsed:
                 kathisma = kathismas[item["number"]]
 
-                current = (
-                    kathisma.prayers_after_russian or ""
-                ).strip()
+                current = (kathisma.prayers_after_russian or "").strip()
 
                 if current and not options["overwrite"]:
                     skipped += 1
 
                     self.stdout.write(
                         self.style.WARNING(
-                            f"Кафизма {item['number']}: "
-                            "пропущена — русский текст уже заполнен."
+                            f"Кафизма {item['number']}: " "пропущена — русский текст уже заполнен."
                         )
                     )
                     continue
@@ -610,23 +543,13 @@ class Command(BaseCommand):
                 # КРИТИЧНО: обновляется только новое русское поле.
                 # prayers_after, псалмы, стихи и другие данные
                 # этот импортёр не сохраняет.
-                kathisma.save(
-                    update_fields=[
-                        "prayers_after_russian"
-                    ]
-                )
+                kathisma.save(update_fields=["prayers_after_russian"])
 
                 updated += 1
 
         self.stdout.write("")
         self.stdout.write(
-            self.style.SUCCESS(
-                f"Готово. Обновлено: {updated}; "
-                f"пропущено: {skipped}."
-            )
+            self.style.SUCCESS(f"Готово. Обновлено: {updated}; " f"пропущено: {skipped}.")
         )
 
-        self.stdout.write(
-            "Изменялось только "
-            "Kathisma.prayers_after_russian."
-        )
+        self.stdout.write("Изменялось только " "Kathisma.prayers_after_russian.")

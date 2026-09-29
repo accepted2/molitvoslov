@@ -62,11 +62,13 @@ def extract_raw_fragments(page):
 
         parts = [part.strip() for part in value.split("\n") if part.strip()]
         for idx, part in enumerate(parts):
-            items.append({
-                "x": x,
-                "y": y - idx * 0.01,
-                "text": part,
-            })
+            items.append(
+                {
+                    "x": x,
+                    "y": y - idx * 0.01,
+                    "text": part,
+                }
+            )
 
     page.extract_text(visitor_text=visitor)
     return items
@@ -136,10 +138,12 @@ def group_lines(items, y_tolerance=2.7):
         text = re.sub(r"\s{2,}", " ", text).strip()
 
         if text:
-            lines.append({
-                "y": sum(item["y"] for item in current) / len(current),
-                "text": text,
-            })
+            lines.append(
+                {
+                    "y": sum(item["y"] for item in current) / len(current),
+                    "text": text,
+                }
+            )
 
         current = []
         current_y = None
@@ -162,8 +166,7 @@ def find_target_page(reader):
     Ищем страницу по полному тексту. Не пытаемся здесь отделять языки.
     """
     start_re = re.compile(
-        r"(?:по\s*1\s*[-–—]?\s*[йя]\s+кафи[зс]ме|"
-        r"после\s+кафи[зс]мы\s+1)",
+        r"(?:по\s*1\s*[-–—]?\s*[йя]\s+кафи[зс]ме|" r"после\s+кафи[зс]мы\s+1)",
         re.IGNORECASE,
     )
 
@@ -223,9 +226,7 @@ def parse_first_kathisma(pdf_path: Path):
     # Для определения колонок берём X только у достаточно длинных кириллических
     # фрагментов: номера стихов и мелкий мусор не должны влиять на кластеризацию.
     x_values = [
-        item["x"]
-        for item in fragments
-        if len(re.findall(r"[А-Яа-яЁё]", item["text"])) >= 4
+        item["x"] for item in fragments if len(re.findall(r"[А-Яа-яЁё]", item["text"])) >= 4
     ]
 
     clusters = kmeans_1d(x_values)
@@ -307,14 +308,8 @@ def parse_first_kathisma(pdf_path: Path):
     # Рубрики берём из уже существующей ЦС-структуры, а НЕ "переводим":
     # "Тропарь, глас 1:" и "Господи, помилуй (40) и молитва:".
     if prayer_y is not None:
-        tropar_lines = [
-            line for line in russian_lines
-            if line["y"] > prayer_y + 0.5
-        ]
-        prayer_lines = [
-            line for line in russian_lines
-            if line["y"] < prayer_y - 0.5
-        ]
+        tropar_lines = [line for line in russian_lines if line["y"] > prayer_y + 0.5]
+        prayer_lines = [line for line in russian_lines if line["y"] < prayer_y - 0.5]
     else:
         tropar_lines = russian_lines
         prayer_lines = []
@@ -399,9 +394,7 @@ def main():
 
     parser.add_argument(
         "--output",
-        default=str(
-            base_dir / "files" / "kathisma_1_prayers_russian_preview_v4.json"
-        ),
+        default=str(base_dir / "files" / "kathisma_1_prayers_russian_preview_v4.json"),
     )
 
     args = parser.parse_args()

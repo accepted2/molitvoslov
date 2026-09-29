@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.conf import settings
 import uuid
 
+
 class Category(models.Model):
     name = models.CharField(max_length=100, verbose_name="Название")
     slug = models.SlugField(unique=True, verbose_name="URL-идентификатор")
@@ -58,7 +59,9 @@ class Text(models.Model):
 
     language = models.CharField(max_length=10, choices=LANGUAGES, default="cu", verbose_name="Язык")
 
-    slug = models.SlugField(unique=True,     max_length=200,verbose_name="URL-идентификатор", blank=True)
+    slug = models.SlugField(
+        unique=True, max_length=200, verbose_name="URL-идентификатор", blank=True
+    )
 
     description_position = models.CharField(
         max_length=10,
@@ -1047,10 +1050,8 @@ class ReadingProgress(models.Model):
         ]
 
     def __str__(self):
-        return (
-            f"{self.user} - "
-            f"{self.source_type}:{self.source_id}"
-        )
+        return f"{self.user} - " f"{self.source_type}:{self.source_id}"
+
 
 # =========================================================
 # БИБЛИЯ
@@ -1241,6 +1242,7 @@ class BibleVerse(models.Model):
                 name="unique_bible_verse_per_chapter",
             ),
         ]
+
 
 class GoogleAccount(models.Model):
     user = models.OneToOneField(

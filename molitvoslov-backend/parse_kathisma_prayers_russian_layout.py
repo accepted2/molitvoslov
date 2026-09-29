@@ -12,6 +12,7 @@ from pypdf import PdfReader
 # НОРМАЛИЗАЦИЯ
 # =========================================================
 
+
 def strip_marks(text: str) -> str:
     return "".join(
         ch
@@ -49,6 +50,7 @@ def accent_density(text: str) -> float:
 # РЕГУЛЯРКИ РАЗДЕЛОВ
 # =========================================================
 
+
 def after_kathisma_re(number: int):
     n = re.escape(str(number))
     return re.compile(
@@ -81,10 +83,7 @@ TROPAR_RE = re.compile(
 )
 
 PRAYER_RE = re.compile(
-    r"господи\s*,?\s*помилуй\s*"
-    r"\(?\s*40\s*\)?"
-    r"[^:\n]{0,100}"
-    r"молитв[^:\n]{0,40}:",
+    r"господи\s*,?\s*помилуй\s*" r"\(?\s*40\s*\)?" r"[^:\n]{0,100}" r"молитв[^:\n]{0,40}:",
     re.IGNORECASE,
 )
 
@@ -98,6 +97,7 @@ TAIL_20_RES = [
 # =========================================================
 # LAYOUT-ИЗВЛЕЧЕНИЕ
 # =========================================================
+
 
 def extract_layout(page) -> str:
     """
@@ -138,8 +138,8 @@ def detect_split_column(lines):
     for line in useful:
         # Нужен именно большой межколоночный пробел.
         for match in re.finditer(r" {6,}", line):
-            left = line[:match.start()].strip()
-            right = line[match.end():].strip()
+            left = line[: match.start()].strip()
+            right = line[match.end() :].strip()
 
             if cyrillic_count(left) < 4 or cyrillic_count(right) < 4:
                 continue
@@ -181,11 +181,7 @@ def detect_split_column(lines):
         return max_width // 2
 
     min_occ = min(occupancy[lo:hi])
-    candidates = [
-        index
-        for index in range(lo, hi)
-        if occupancy[index] == min_occ
-    ]
+    candidates = [index for index in range(lo, hi) if occupancy[index] == min_occ]
 
     return int(sum(candidates) / len(candidates)) if candidates else max_width // 2
 
@@ -238,6 +234,7 @@ def build_rows(reader):
 # ПОИСК РЯДОВ
 # =========================================================
 
+
 def find_row_index(rows, regex, start=0):
     for index in range(start, len(rows)):
         if regex.search(rows[index]["plain_full"]):
@@ -277,12 +274,9 @@ def find_marker_index(rows, regex, start, end):
 # ЯЗЫКОВАЯ КОЛОНКА
 # =========================================================
 
+
 def column_text(rows, side, start, end):
-    return "\n".join(
-        rows[index][side]
-        for index in range(start, end)
-        if rows[index][side].strip()
-    )
+    return "\n".join(rows[index][side] for index in range(start, end) if rows[index][side].strip())
 
 
 def choose_russian_side(rows, start, end):
@@ -328,6 +322,7 @@ def choose_russian_side(rows, start, end):
 # =========================================================
 # ИЗВЛЕЧЕНИЕ ТЕКСТА ИЗ РЯДОВ
 # =========================================================
+
 
 def clean_extracted_lines(values):
     cleaned = []
@@ -376,7 +371,7 @@ def remove_heading_from_value(value, regex):
     colon = value.find(":")
 
     if colon >= 0 and colon + 1 < len(value):
-        return value[colon + 1:].strip()
+        return value[colon + 1 :].strip()
 
     return ""
 
@@ -402,6 +397,7 @@ def extract_side_segment(rows, side, start, end, heading_regex=None):
 # =========================================================
 # ЭТАЛОННАЯ СТРУКТУРА ИЗ СУЩЕСТВУЮЩЕГО JSON
 # =========================================================
+
 
 def load_structure(files_dir: Path, number: int):
     path = files_dir / f"psalter_kathisma_{number}_final.json"
@@ -447,6 +443,7 @@ def load_structure(files_dir: Path, number: int):
 # =========================================================
 # ОДНА КАФИЗМА
 # =========================================================
+
 
 def parse_one(rows, files_dir, number):
     structure = load_structure(files_dir, number)
@@ -496,7 +493,11 @@ def parse_one(rows, files_dir, number):
             "number": number,
             "status": "ERROR",
             "pdf_start_page": rows[start_index]["page"],
-            "pdf_end_page": rows[end_index - 1]["page"] if end_index > start_index else rows[start_index]["page"],
+            "pdf_end_page": (
+                rows[end_index - 1]["page"]
+                if end_index > start_index
+                else rows[start_index]["page"]
+            ),
             "validation_errors": ["Не найдена строка «Тропари..., глас ...»."],
         }
 
@@ -516,7 +517,11 @@ def parse_one(rows, files_dir, number):
             "number": number,
             "status": "ERROR",
             "pdf_start_page": rows[start_index]["page"],
-            "pdf_end_page": rows[end_index - 1]["page"] if end_index > start_index else rows[start_index]["page"],
+            "pdf_end_page": (
+                rows[end_index - 1]["page"]
+                if end_index > start_index
+                else rows[start_index]["page"]
+            ),
             "language": language,
             "validation_errors": ["Не удалось определить русскую колонку."],
         }
@@ -587,16 +592,8 @@ def parse_one(rows, files_dir, number):
     if prayer_index is not None and cyrillic_count(prayer_text) < 60:
         errors.append("Русская заключительная молитва получилась слишком короткой.")
 
-    selected_score = (
-        language["left_score"]
-        if side == "left"
-        else language["right_score"]
-    )
-    other_score = (
-        language["right_score"]
-        if side == "left"
-        else language["left_score"]
-    )
+    selected_score = language["left_score"] if side == "left" else language["right_score"]
+    other_score = language["right_score"] if side == "left" else language["left_score"]
 
     if selected_score > 0.075:
         errors.append(
@@ -617,9 +614,7 @@ def parse_one(rows, files_dir, number):
         "source_structure_file": structure["path"],
         "pdf_start_page": rows[start_index]["page"],
         "pdf_end_page": (
-            rows[end_index - 1]["page"]
-            if end_index > start_index
-            else rows[start_index]["page"]
+            rows[end_index - 1]["page"] if end_index > start_index else rows[start_index]["page"]
         ),
         "selected_russian_side": side,
         "russian_accent_density": round(selected_score, 6),
@@ -663,6 +658,7 @@ def parse_one(rows, files_dir, number):
 # DEBUG
 # =========================================================
 
+
 def write_debug_layout(rows, output_dir, number, result):
     pages = set()
 
@@ -700,6 +696,7 @@ def write_debug_layout(rows, output_dir, number, result):
 # CLI
 # =========================================================
 
+
 def main():
     base_dir = Path(__file__).resolve().parent
 
@@ -724,9 +721,7 @@ def main():
 
     parser.add_argument(
         "--output",
-        default=str(
-            base_dir / "files" / "kathisma_prayers_russian_layout_preview.json"
-        ),
+        default=str(base_dir / "files" / "kathisma_prayers_russian_layout_preview.json"),
     )
 
     parser.add_argument(
@@ -762,11 +757,7 @@ def main():
     print(f"Layout-строк: {len(rows)}")
     print()
 
-    numbers = (
-        [args.kathisma]
-        if args.kathisma is not None
-        else list(range(1, 21))
-    )
+    numbers = [args.kathisma] if args.kathisma is not None else list(range(1, 21))
 
     results = []
 
@@ -817,11 +808,7 @@ def main():
 
     payload = {
         "source_pdf": str(pdf_path),
-        "mode": (
-            f"kathisma_{args.kathisma}"
-            if args.kathisma is not None
-            else "all_20"
-        ),
+        "mode": (f"kathisma_{args.kathisma}" if args.kathisma is not None else "all_20"),
         "summary": {
             "total": len(results),
             "ok": ok,

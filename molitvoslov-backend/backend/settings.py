@@ -9,10 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ENVIRONMENT
 # =========================================================
 
-IS_PRODUCTION = (
-        os.environ.get("RENDER") is not None
-        or os.environ.get("DJANGO_ENV") == "production"
-)
+IS_PRODUCTION = os.environ.get("RENDER") is not None or os.environ.get("DJANGO_ENV") == "production"
 
 DEBUG = not IS_PRODUCTION
 
@@ -25,13 +22,9 @@ if IS_PRODUCTION:
     SECRET_KEY = os.environ.get("SECRET_KEY")
 
     if not SECRET_KEY:
-        raise RuntimeError(
-            "SECRET_KEY is required in production"
-        )
+        raise RuntimeError("SECRET_KEY is required in production")
 else:
-    SECRET_KEY = (
-        "django-insecure-local-development-only"
-    )
+    SECRET_KEY = "django-insecure-local-development-only"
 
 
 ALLOWED_HOSTS = [
@@ -39,14 +32,10 @@ ALLOWED_HOSTS = [
     "localhost",
 ]
 
-RENDER_EXTERNAL_HOSTNAME = os.environ.get(
-    "RENDER_EXTERNAL_HOSTNAME"
-)
+RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
 
 if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS.append(
-        RENDER_EXTERNAL_HOSTNAME
-    )
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 EXTRA_ALLOWED_HOSTS = os.environ.get(
     "DJANGO_ALLOWED_HOSTS",
@@ -54,11 +43,7 @@ EXTRA_ALLOWED_HOSTS = os.environ.get(
 )
 
 if EXTRA_ALLOWED_HOSTS:
-    ALLOWED_HOSTS.extend(
-        host.strip()
-        for host in EXTRA_ALLOWED_HOSTS.split(",")
-        if host.strip()
-    )
+    ALLOWED_HOSTS.extend(host.strip() for host in EXTRA_ALLOWED_HOSTS.split(",") if host.strip())
 
 
 # =========================================================
@@ -72,22 +57,17 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     "rest_framework",
     "rest_framework.authtoken",
     "corsheaders",
-
     "api",
 ]
 
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-
     "whitenoise.middleware.WhiteNoiseMiddleware",
-
     "corsheaders.middleware.CorsMiddleware",
-
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -102,26 +82,14 @@ ROOT_URLCONF = "backend.urls"
 
 TEMPLATES = [
     {
-        "BACKEND": (
-            "django.template.backends."
-            "django.DjangoTemplates"
-        ),
+        "BACKEND": ("django.template.backends." "django.DjangoTemplates"),
         "DIRS": [],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
-                (
-                    "django.template.context_processors."
-                    "request"
-                ),
-                (
-                    "django.contrib.auth.context_processors."
-                    "auth"
-                ),
-                (
-                    "django.contrib.messages."
-                    "context_processors.messages"
-                ),
+                ("django.template.context_processors." "request"),
+                ("django.contrib.auth.context_processors." "auth"),
+                ("django.contrib.messages." "context_processors.messages"),
             ],
         },
     },
@@ -135,16 +103,12 @@ WSGI_APPLICATION = "backend.wsgi.application"
 # DATABASE
 # =========================================================
 
-SUPABASE_DB_PASSWORD = os.environ.get(
-    "SUPABASE_DB_PASSWORD"
-)
+SUPABASE_DB_PASSWORD = os.environ.get("SUPABASE_DB_PASSWORD")
 
 if SUPABASE_DB_PASSWORD:
     DATABASES = {
         "default": {
-            "ENGINE": (
-                "django.db.backends.postgresql"
-            ),
+            "ENGINE": ("django.db.backends.postgresql"),
             "NAME": os.environ.get(
                 "SUPABASE_DB_NAME",
                 "postgres",
@@ -156,10 +120,7 @@ if SUPABASE_DB_PASSWORD:
             "PASSWORD": SUPABASE_DB_PASSWORD,
             "HOST": os.environ.get(
                 "SUPABASE_DB_HOST",
-                (
-                    "aws-1-eu-central-1."
-                    "pooler.supabase.com"
-                ),
+                ("aws-1-eu-central-1." "pooler.supabase.com"),
             ),
             "PORT": os.environ.get(
                 "SUPABASE_DB_PORT",
@@ -174,17 +135,12 @@ if SUPABASE_DB_PASSWORD:
     }
 
 elif IS_PRODUCTION:
-    raise RuntimeError(
-        "SUPABASE_DB_PASSWORD is required "
-        "in production"
-    )
+    raise RuntimeError("SUPABASE_DB_PASSWORD is required " "in production")
 
 else:
     DATABASES = {
         "default": {
-            "ENGINE": (
-                "django.db.backends.sqlite3"
-            ),
+            "ENGINE": ("django.db.backends.sqlite3"),
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
@@ -196,28 +152,16 @@ else:
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": (
-            "django.contrib.auth.password_validation."
-            "UserAttributeSimilarityValidator"
-        ),
+        "NAME": ("django.contrib.auth.password_validation." "UserAttributeSimilarityValidator"),
     },
     {
-        "NAME": (
-            "django.contrib.auth.password_validation."
-            "MinimumLengthValidator"
-        ),
+        "NAME": ("django.contrib.auth.password_validation." "MinimumLengthValidator"),
     },
     {
-        "NAME": (
-            "django.contrib.auth.password_validation."
-            "CommonPasswordValidator"
-        ),
+        "NAME": ("django.contrib.auth.password_validation." "CommonPasswordValidator"),
     },
     {
-        "NAME": (
-            "django.contrib.auth.password_validation."
-            "NumericPasswordValidator"
-        ),
+        "NAME": ("django.contrib.auth.password_validation." "NumericPasswordValidator"),
     },
 ]
 
@@ -245,16 +189,10 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 STORAGES = {
     "default": {
-        "BACKEND": (
-            "django.core.files.storage."
-            "FileSystemStorage"
-        ),
+        "BACKEND": ("django.core.files.storage." "FileSystemStorage"),
     },
     "staticfiles": {
-        "BACKEND": (
-            "whitenoise.storage."
-            "CompressedManifestStaticFilesStorage"
-        ),
+        "BACKEND": ("whitenoise.storage." "CompressedManifestStaticFilesStorage"),
     },
 }
 
@@ -265,14 +203,8 @@ STORAGES = {
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        (
-            "rest_framework.authentication."
-            "TokenAuthentication"
-        ),
-        (
-            "rest_framework.authentication."
-            "SessionAuthentication"
-        ),
+        ("rest_framework.authentication." "TokenAuthentication"),
+        ("rest_framework.authentication." "SessionAuthentication"),
     ]
 }
 
@@ -286,14 +218,8 @@ GOOGLE_OAUTH_WEB_CLIENT_ID = os.environ.get(
     "",
 )
 
-if (
-        IS_PRODUCTION
-        and not GOOGLE_OAUTH_WEB_CLIENT_ID
-):
-    raise RuntimeError(
-        "GOOGLE_OAUTH_WEB_CLIENT_ID is required "
-        "in production"
-    )
+if IS_PRODUCTION and not GOOGLE_OAUTH_WEB_CLIENT_ID:
+    raise RuntimeError("GOOGLE_OAUTH_WEB_CLIENT_ID is required " "in production")
 
 
 # =========================================================
@@ -322,9 +248,6 @@ if IS_PRODUCTION:
 
 MAILERS = {
     "default": {
-        "BACKEND": (
-            "django.core.mail.backends."
-            "console.EmailBackend"
-        ),
+        "BACKEND": ("django.core.mail.backends." "console.EmailBackend"),
     },
 }

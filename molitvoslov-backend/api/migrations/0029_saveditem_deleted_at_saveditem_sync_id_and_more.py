@@ -6,28 +6,49 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0028_alter_akathist_slug_alter_text_slug'),
+        ("api", "0028_alter_akathist_slug_alter_text_slug"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='saveditem',
-            name='deleted_at',
-            field=models.DateTimeField(blank=True, null=True, verbose_name='Удалено'),
+            model_name="saveditem",
+            name="deleted_at",
+            field=models.DateTimeField(blank=True, null=True, verbose_name="Удалено"),
         ),
         migrations.AddField(
-            model_name='saveditem',
-            name='sync_id',
-            field=models.UUIDField(blank=True, editable=False, null=True, unique=True, verbose_name='ID синхронизации'),
+            model_name="saveditem",
+            name="sync_id",
+            field=models.UUIDField(
+                blank=True, editable=False, null=True, unique=True, verbose_name="ID синхронизации"
+            ),
         ),
         migrations.AddField(
-            model_name='saveditem',
-            name='updated_at',
-            field=models.DateTimeField(auto_now=True, verbose_name='Изменено'),
+            model_name="saveditem",
+            name="updated_at",
+            field=models.DateTimeField(auto_now=True, verbose_name="Изменено"),
         ),
         migrations.AlterField(
-            model_name='saveditem',
-            name='save_type',
-            field=models.CharField(choices=[('word', 'Слово'), ('sentence', 'Предложение'), ('paragraph', 'Абзац'), ('fragment', 'Фрагмент'), ('verse', 'Стих'), ('section', 'Раздел'), ('prayer', 'Молитва'), ('psalm', 'Псалом'), ('kathisma', 'Кафизма'), ('chapter', 'Глава'), ('akathist', 'Акафист'), ('canon', 'Канон'), ('text', 'Текст'), ('quote', 'Цитата')], max_length=30, verbose_name='Тип сохранения'),
+            model_name="saveditem",
+            name="save_type",
+            field=models.CharField(
+                choices=[
+                    ("word", "Слово"),
+                    ("sentence", "Предложение"),
+                    ("paragraph", "Абзац"),
+                    ("fragment", "Фрагмент"),
+                    ("verse", "Стих"),
+                    ("section", "Раздел"),
+                    ("prayer", "Молитва"),
+                    ("psalm", "Псалом"),
+                    ("kathisma", "Кафизма"),
+                    ("chapter", "Глава"),
+                    ("akathist", "Акафист"),
+                    ("canon", "Канон"),
+                    ("text", "Текст"),
+                    ("quote", "Цитата"),
+                ],
+                max_length=30,
+                verbose_name="Тип сохранения",
+            ),
         ),
     ]

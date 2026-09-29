@@ -428,9 +428,7 @@ def main():
 
     parser.add_argument(
         "--output",
-        default=str(
-            base_dir / "files" / "kathisma_1_prayers_russian_preview_v3.json"
-        ),
+        default=str(base_dir / "files" / "kathisma_1_prayers_russian_preview_v3.json"),
     )
 
     parser.add_argument(

@@ -23,9 +23,7 @@ def serialize_user(user, google_account=None):
         "name": (
             google_account.name
             if google_account
-            else " ".join(
-                part for part in [user.first_name, user.last_name] if part
-            ).strip()
+            else " ".join(part for part in [user.first_name, user.last_name] if part).strip()
         ),
         "picture": google_account.picture_url if google_account else "",
     }
@@ -44,9 +42,7 @@ class GoogleAuthView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        audience = str(
-            getattr(settings, "GOOGLE_OAUTH_WEB_CLIENT_ID", "") or ""
-        ).strip()
+        audience = str(getattr(settings, "GOOGLE_OAUTH_WEB_CLIENT_ID", "") or "").strip()
 
         if not audience:
             return Response(
@@ -85,10 +81,7 @@ class GoogleAuthView(APIView):
             )
 
         google_account = (
-            GoogleAccount.objects
-            .select_related("user")
-            .filter(google_sub=google_sub)
-            .first()
+            GoogleAccount.objects.select_related("user").filter(google_sub=google_sub).first()
         )
 
         if google_account:

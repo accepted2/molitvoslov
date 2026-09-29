@@ -78,6 +78,5 @@ urlpatterns = [
         LogoutView.as_view(),
         name="logout",
     ),
-
     path("", include(router.urls)),
 ]

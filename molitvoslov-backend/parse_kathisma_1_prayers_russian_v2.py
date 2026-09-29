@@ -97,11 +97,13 @@ def extract_column_lines(page, side="right", split_ratio=0.50):
 
         chunks = [chunk.strip() for chunk in value.split("\n") if chunk.strip()]
         for index, chunk in enumerate(chunks):
-            fragments.append({
-                "x": x,
-                "y": y - index * 0.01,
-                "text": chunk,
-            })
+            fragments.append(
+                {
+                    "x": x,
+                    "y": y - index * 0.01,
+                    "text": chunk,
+                }
+            )
 
     page.extract_text(visitor_text=visitor_text)
 
@@ -212,9 +214,7 @@ def validate_result(text):
 
 
 def page_side_text(page, side, split_ratio):
-    return normalize_column_text(
-        extract_column_lines(page, side=side, split_ratio=split_ratio)
-    )
+    return normalize_column_text(extract_column_lines(page, side=side, split_ratio=split_ratio))
 
 
 def full_page_text(page):
@@ -241,13 +241,15 @@ def locate_start(reader, split_ratio):
             match = find_start_match(text)
 
             if match:
-                tail = text[match.start():]
-                candidates.append({
-                    "side": side,
-                    "text": text,
-                    "match": match,
-                    "accents": accent_count(tail[:1800]),
-                })
+                tail = text[match.start() :]
+                candidates.append(
+                    {
+                        "side": side,
+                        "text": text,
+                        "match": match,
+                        "accents": accent_count(tail[:1800]),
+                    }
+                )
 
         if candidates:
             candidates.sort(key=lambda item: (item["accents"], item["side"]))
@@ -271,14 +273,17 @@ def locate_start(reader, split_ratio):
         full = full_page_text(page)
         if re.search(r"кафи[зс]м", full, flags=re.IGNORECASE):
             interesting = [
-                line for line in full.splitlines()
+                line
+                for line in full.splitlines()
                 if re.search(r"кафи[зс]м", line, flags=re.IGNORECASE)
             ]
             if interesting:
-                diagnostics.append({
-                    "page": page_index + 1,
-                    "lines": interesting[:20],
-                })
+                diagnostics.append(
+                    {
+                        "page": page_index + 1,
+                        "lines": interesting[:20],
+                    }
+                )
 
     return {
         "page_index": None,
@@ -342,11 +347,11 @@ def parse_kathisma_1_prayers_russian(pdf_path, split_ratio=0.50, max_pages=6):
     if not start_match:
         raise RuntimeError("Старт был найден на странице, но потерян после объединения.")
 
-    block = combined[start_match.start():]
+    block = combined[start_match.start() :]
 
     end_match = find_end_match(block)
     if end_match:
-        block = block[:end_match.start()]
+        block = block[: end_match.start()]
         end_found = True
     else:
         end_found = False

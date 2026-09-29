@@ -7,13 +7,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0030_backfill_saveditem_sync_id'),
+        ("api", "0030_backfill_saveditem_sync_id"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='saveditem',
-            name='sync_id',
-            field=models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name='ID синхронизации'),
+            model_name="saveditem",
+            name="sync_id",
+            field=models.UUIDField(
+                default=uuid.uuid4, editable=False, unique=True, verbose_name="ID синхронизации"
+            ),
         ),
     ]

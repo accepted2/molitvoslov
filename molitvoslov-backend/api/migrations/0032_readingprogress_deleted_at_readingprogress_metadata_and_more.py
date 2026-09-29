@@ -7,33 +7,33 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0031_alter_saveditem_sync_id'),
+        ("api", "0031_alter_saveditem_sync_id"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='readingprogress',
-            name='deleted_at',
-            field=models.DateTimeField(blank=True, null=True, verbose_name='Удалено'),
+            model_name="readingprogress",
+            name="deleted_at",
+            field=models.DateTimeField(blank=True, null=True, verbose_name="Удалено"),
         ),
         migrations.AddField(
-            model_name='readingprogress',
-            name='metadata',
-            field=models.JSONField(blank=True, default=dict, verbose_name='Дополнительные данные'),
+            model_name="readingprogress",
+            name="metadata",
+            field=models.JSONField(blank=True, default=dict, verbose_name="Дополнительные данные"),
         ),
         migrations.AddField(
-            model_name='readingprogress',
-            name='progress_percent',
-            field=models.PositiveSmallIntegerField(default=0, verbose_name='Прогресс в процентах'),
+            model_name="readingprogress",
+            name="progress_percent",
+            field=models.PositiveSmallIntegerField(default=0, verbose_name="Прогресс в процентах"),
         ),
         migrations.AlterField(
-            model_name='readingprogress',
-            name='offset',
-            field=models.PositiveIntegerField(default=0, verbose_name='Смещение внутри элемента'),
+            model_name="readingprogress",
+            name="offset",
+            field=models.PositiveIntegerField(default=0, verbose_name="Смещение внутри элемента"),
         ),
         migrations.AlterField(
-            model_name='readingprogress',
-            name='updated_at',
-            field=models.DateTimeField(default=django.utils.timezone.now, verbose_name='Обновлено'),
+            model_name="readingprogress",
+            name="updated_at",
+            field=models.DateTimeField(default=django.utils.timezone.now, verbose_name="Обновлено"),
         ),
     ]

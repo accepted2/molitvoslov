@@ -12,6 +12,7 @@ from pypdf import PdfReader
 # НОРМАЛИЗАЦИЯ
 # =========================================================
 
+
 def strip_marks(text: str) -> str:
     return "".join(
         ch
@@ -49,12 +50,16 @@ def accent_density(text: str) -> float:
 # РАЗМЕТКА PDF
 # =========================================================
 
+
 def extract_layout(page) -> str:
     try:
-        return page.extract_text(
-            extraction_mode="layout",
-            layout_mode_space_vertically=False,
-        ) or ""
+        return (
+            page.extract_text(
+                extraction_mode="layout",
+                layout_mode_space_vertically=False,
+            )
+            or ""
+        )
     except TypeError:
         return page.extract_text(extraction_mode="layout") or ""
 
@@ -77,8 +82,8 @@ def detect_split_column(lines):
 
     for line in useful:
         for match in re.finditer(r" {6,}", line):
-            left = line[:match.start()].strip()
-            right = line[match.end():].strip()
+            left = line[: match.start()].strip()
+            right = line[match.end() :].strip()
 
             if cyrillic_count(left) < 4 or cyrillic_count(right) < 4:
                 continue
@@ -145,6 +150,7 @@ def build_rows(reader):
 # ГРАНИЦЫ ПОСЛЕКАФИЗМАЛЬНОГО БЛОКА
 # =========================================================
 
+
 def after_kathisma_patterns(number: int):
     n = re.escape(str(number))
 
@@ -185,12 +191,8 @@ def find_start(rows, number):
     for index, row in enumerate(rows):
         if any(pattern.search(row["plain_left"]) for pattern in patterns):
             for probe in range(index, min(len(rows), index + 4)):
-                if (
-                    "тропар" in rows[probe]["plain_right"].lower()
-                    or any(
-                        pattern.search(rows[probe]["plain_right"])
-                        for pattern in patterns
-                    )
+                if "тропар" in rows[probe]["plain_right"].lower() or any(
+                    pattern.search(rows[probe]["plain_right"]) for pattern in patterns
                 ):
                     return probe
 
@@ -239,6 +241,7 @@ def find_end(rows, number, start_index):
 # =========================================================
 # ИЗВЛЕЧЕНИЕ ПРАВОЙ (РУССКОЙ) КОЛОНКИ
 # =========================================================
+
 
 def clean_russian_lines(values):
     cleaned = []
@@ -296,6 +299,7 @@ def extract_russian_block(rows, start_index, end_index):
 # ПРОВЕРКА
 # =========================================================
 
+
 def validate(number, text):
     plain = normalize_search(text)
     errors = []
@@ -319,9 +323,7 @@ def validate(number, text):
     density = accent_density(text)
 
     if density > 0.075:
-        errors.append(
-            f"Слишком высокая плотность ЦС-ударений: {density:.4f}."
-        )
+        errors.append(f"Слишком высокая плотность ЦС-ударений: {density:.4f}.")
 
     if number < 20 and re.search(
         rf"\bкафи[зс]ма\s+{number + 1}\b",
@@ -336,6 +338,7 @@ def validate(number, text):
 # =========================================================
 # ОДНА / ВСЕ КАФИЗМЫ
 # =========================================================
+
 
 def parse_one(rows, number):
     start = find_start(rows, number)
@@ -364,11 +367,7 @@ def parse_one(rows, number):
         "number": number,
         "status": "OK" if not errors else "CHECK",
         "pdf_start_page": rows[start]["page"],
-        "pdf_end_page": (
-            rows[end - 1]["page"]
-            if end > start
-            else rows[start]["page"]
-        ),
+        "pdf_end_page": (rows[end - 1]["page"] if end > start else rows[start]["page"]),
         "start_row": {
             "page": rows[start]["page"],
             "line": rows[start]["line"],
@@ -418,9 +417,7 @@ def main():
 
     parser.add_argument(
         "--output",
-        default=str(
-            base_dir / "files" / "kathisma_prayers_russian_rows_preview.json"
-        ),
+        default=str(base_dir / "files" / "kathisma_prayers_russian_rows_preview.json"),
     )
 
     args = parser.parse_args()
@@ -445,11 +442,7 @@ def main():
     print(f"Строк: {len(rows)}")
     print()
 
-    numbers = (
-        [args.kathisma]
-        if args.kathisma is not None
-        else list(range(1, 21))
-    )
+    numbers = [args.kathisma] if args.kathisma is not None else list(range(1, 21))
 
     results = []
 

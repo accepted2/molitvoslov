@@ -14,9 +14,7 @@ START_PATTERNS = [
     re.compile(r"После\s+1\s*[–—-]?\s*[йя]\s+кафизмы\b", re.IGNORECASE),
 ]
 
-END_PATTERN = re.compile(
-    rf"(?im)^\s*(?:Кафизма\s+2\b|Псалом\s+{NEXT_PSALM_NUMBER}\b)"
-)
+END_PATTERN = re.compile(rf"(?im)^\s*(?:Кафизма\s+2\b|Псалом\s+{NEXT_PSALM_NUMBER}\b)")
 
 REQUIRED_MARKERS = [
     ("тропарь/тропари", re.compile(r"\bтропар", re.IGNORECASE)),
@@ -295,7 +293,9 @@ def parse_kathisma_1_prayers_russian(pdf_path, split_ratio=0.50, max_pages=5):
     start_match = find_start_match(combined)
 
     if not start_match:
-        raise RuntimeError("Внутренняя ошибка: после определения страницы стартовый маркер потерян.")
+        raise RuntimeError(
+            "Внутренняя ошибка: после определения страницы стартовый маркер потерян."
+        )
 
     block = combined[start_match.start() :]
 
