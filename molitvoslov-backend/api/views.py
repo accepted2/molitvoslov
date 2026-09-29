@@ -1,10 +1,10 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
-
+from django.db import IntegrityError, transaction
 from django.db import models
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-
+from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -417,9 +417,17 @@ class DailyQuoteViewSet(viewsets.ReadOnlyModelViewSet):
 class SavedItemViewSet(viewsets.ModelViewSet):
     serializer_class = SavedItemSerializer
     permission_classes = [IsAuthenticated]
+    lookup_field = "sync_id"
 
     def get_queryset(self):
-        queryset = SavedItem.objects.filter(user=self.request.user).order_by("-created_at")
+        queryset = SavedItem.objects.filter(
+            user=self.request.user,
+        ).order_by("-updated_at")
+
+        include_deleted = self.request.query_params.get("include_deleted")
+
+        if include_deleted not in ["1", "true", "True"]:
+            queryset = queryset.filter(deleted_at__isnull=True)
 
         for field in [
             "source_type",
@@ -430,23 +438,35 @@ class SavedItemViewSet(viewsets.ModelViewSet):
         ]:
             value = self.request.query_params.get(field)
 
-            if value not in [
-                None,
-                "",
-            ]:
+            if value not in [None, ""]:
                 queryset = queryset.filter(**{field: value})
 
         return queryset
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
+        sync_id = data.get("sync_id")
 
+        if sync_id:
+            existing = SavedItem.objects.filter(
+                user=request.user,
+                sync_id=sync_id,
+            ).first()
+
+            if existing:
+                return Response(
+                    self.get_serializer(existing).data,
+                    status=status.HTTP_200_OK,
+                )
+
+        # Защита от дублей старых локальных сохранений,
+        # созданных ещё до появления sync_id.
         existing = SavedItem.objects.filter(
             user=request.user,
+            deleted_at__isnull=True,
             save_type=data["save_type"],
             source_type=data["source_type"],
             source_id=data["source_id"],
@@ -463,11 +483,37 @@ class SavedItemViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK,
             )
 
-        saved_item = serializer.save(user=request.user)
+        try:
+            with transaction.atomic():
+                saved_item = serializer.save(user=request.user)
+
+        except IntegrityError:
+            if sync_id:
+                existing = SavedItem.objects.filter(
+                    user=request.user,
+                    sync_id=sync_id,
+                ).first()
+
+                if existing:
+                    return Response(
+                        self.get_serializer(existing).data,
+                        status=status.HTTP_200_OK,
+                    )
+
+            raise
 
         return Response(
             self.get_serializer(saved_item).data,
             status=status.HTTP_201_CREATED,
+        )
+
+    def perform_destroy(self, instance):
+        instance.deleted_at = timezone.now()
+        instance.save(
+            update_fields=[
+                "deleted_at",
+                "updated_at",
+            ]
         )
 
 
@@ -476,29 +522,96 @@ class ReadingProgressViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return ReadingProgress.objects.filter(user=self.request.user).order_by("-updated_at")
+        queryset = ReadingProgress.objects.filter(
+            user=self.request.user,
+        ).order_by("-updated_at")
+
+        include_deleted = self.request.query_params.get("include_deleted")
+
+        if include_deleted not in [
+            "1",
+            "true",
+            "True",
+        ]:
+            queryset = queryset.filter(deleted_at__isnull=True)
+
+        return queryset
 
     def create(self, request, *args, **kwargs):
-        source_type = request.data.get("source_type")
-        source_id = request.data.get("source_id")
+        serializer = self.get_serializer(data=request.data)
 
-        if not source_type or not source_id:
-            return Response(
-                {"detail": "source_type и source_id обяхательны"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        progress, created = ReadingProgress.objects.update_or_create(
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        source_type = data["source_type"]
+        source_id = data["source_id"]
+
+        incoming_updated_at = data.get("updated_at") or timezone.now()
+
+        existing = ReadingProgress.objects.filter(
             user=request.user,
             source_type=source_type,
             source_id=source_id,
-            defaults={
-                "anchor_type": request.data.get("anchor_type", ""),
-                "anchor_id": request.data.get("anchor_id"),
-                "offset": request.data.get("offset", 0),
-            },
+        ).first()
+
+        # Сервер уже имеет более свежую позицию.
+        if existing and existing.updated_at and incoming_updated_at <= existing.updated_at:
+            return Response(
+                self.get_serializer(existing).data,
+                status=status.HTTP_200_OK,
+            )
+
+        if existing:
+            existing.anchor_type = data.get(
+                "anchor_type",
+                "",
+            )
+
+            existing.anchor_id = data.get("anchor_id")
+
+            existing.offset = data.get(
+                "offset",
+                0,
+            )
+
+            existing.progress_percent = data.get(
+                "progress_percent",
+                0,
+            )
+
+            existing.metadata = data.get(
+                "metadata",
+                {},
+            )
+
+            existing.deleted_at = data.get("deleted_at")
+
+            existing.updated_at = incoming_updated_at
+
+            existing.save(
+                update_fields=[
+                    "anchor_type",
+                    "anchor_id",
+                    "offset",
+                    "progress_percent",
+                    "metadata",
+                    "deleted_at",
+                    "updated_at",
+                ]
+            )
+
+            return Response(
+                self.get_serializer(existing).data,
+                status=status.HTTP_200_OK,
+            )
+
+        progress = serializer.save(
+            user=request.user,
+            updated_at=incoming_updated_at,
         )
-        serializer = self.get_serializer(progress)
 
         return Response(
-            serializer.data, status=(status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+            self.get_serializer(progress).data,
+            status=status.HTTP_201_CREATED,
         )

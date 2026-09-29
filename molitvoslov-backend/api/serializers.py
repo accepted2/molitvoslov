@@ -231,6 +231,7 @@ class KathismaSerializer(serializers.ModelSerializer):
             "number",
             "title",
             "prayers_after",
+            "prayers_after_russian",
             "psalms",
             "glories",
         ]
@@ -530,6 +531,7 @@ class SavedItemSerializer(serializers.ModelSerializer):
         source="get_save_type_display",
         read_only=True,
     )
+    sync_id = serializers.UUIDField(required=False)
 
     class Meta:
         model = SavedItem
@@ -549,12 +551,16 @@ class SavedItemSerializer(serializers.ModelSerializer):
             "end_offset",
             "metadata",
             "created_at",
+            "sync_id",
+            "updated_at",
+            "deleted_at",
         ]
 
         read_only_fields = [
             "id",
             "save_type_display",
             "created_at",
+            "updated_at",
         ]
 
     def validate(self, attrs):
@@ -572,7 +578,11 @@ class SavedItemSerializer(serializers.ModelSerializer):
 
 class ReadingProgressSerializer(serializers.ModelSerializer):
     anchor_info = serializers.SerializerMethodField()
-    progress_percent = serializers.SerializerMethodField()
+    progress_percent = serializers.IntegerField(
+        min_value=0,
+        max_value=100,
+        required=False,
+    )
 
     class Meta:
         model = ReadingProgress
@@ -586,106 +596,15 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
             "offset",
             "anchor_info",
             "progress_percent",
+            "metadata",
+            "deleted_at",
             "updated_at",
         ]
 
         read_only_fields = [
             "id",
             "anchor_info",
-            "updated_at",
         ]
-
-    def get_progress_percent(self, obj):
-        if not obj.anchor_id:
-            return 0
-
-        queryset = None
-
-        if obj.source_type == "psalter" and obj.anchor_type == "psalm":
-            queryset = Psalm.objects.filter(kathisma__psalter_id=obj.source_id).order_by(
-                "kathisma__number",
-                "number",
-                "id",
-            )
-
-        elif obj.source_type == "psalter" and obj.anchor_type == "psalm_verse":
-            queryset = PsalmVerse.objects.filter(
-                psalm__kathisma__psalter_id=obj.source_id
-            ).order_by(
-                "psalm__kathisma__number",
-                "psalm__number",
-                "number",
-                "id",
-            )
-
-        elif obj.source_type == "akathist" and obj.anchor_type == "akathist_section":
-            queryset = AkathistSection.objects.filter(akathist_id=obj.source_id).order_by(
-                "order",
-                "id",
-            )
-
-        elif obj.source_type == "canon" and obj.anchor_type == "canon_section":
-            current_section = (
-                CanonSection.objects.filter(
-                    id=obj.anchor_id,
-                    canon_id=obj.source_id,
-                )
-                .only(
-                    "variant",
-                )
-                .first()
-            )
-
-            if not current_section:
-                return 0
-
-            queryset = CanonSection.objects.filter(
-                canon_id=obj.source_id,
-                variant=current_section.variant,
-            ).order_by(
-                "order",
-                "id",
-            )
-
-        elif obj.source_type == "prayer_rule" and obj.anchor_type == "prayer_rule_item":
-            queryset = PrayerRuleItem.objects.filter(rule_id=obj.source_id).order_by(
-                "order",
-                "id",
-            )
-
-        elif obj.source_type == "category" and obj.anchor_type == "category_text":
-            queryset = CategoryText.objects.filter(category_id=obj.source_id).order_by(
-                "order",
-                "id",
-            )
-
-        if queryset is None:
-            return 0
-
-        ids = list(
-            queryset.values_list(
-                "id",
-                flat=True,
-            )
-        )
-
-        if not ids:
-            return 0
-
-        try:
-            position = ids.index(obj.anchor_id) + 1
-        except ValueError:
-            return 0
-
-        percent = round(position * 100 / len(ids))
-
-        return max(
-            1,
-            min(
-                percent,
-                100,
-            ),
-        )
 
     def get_anchor_info(self, obj):
         if obj.source_type == "canon" and obj.anchor_type == "canon_section" and obj.anchor_id:
