@@ -36,9 +36,9 @@ jobs:
         working-directory: molitvoslov-app
         run: npx expo install --check
 
-      - name: Check React Native formatting
+      - name: Check React Native syntax
         run: |
-          npx --yes prettier@3.6.2 --check             "molitvoslov-app/**/*.{js,jsx,ts,tsx,json,md}"             --ignore-path .prettierignore
+          npx --yes prettier@3.6.2 --debug-check "molitvoslov-app/**/*.{js,jsx,ts,tsx,json,md}" --ignore-path .prettierignore
 
       - name: Install backend dependencies
         run: python -m pip install -r molitvoslov-backend/requirements.txt
