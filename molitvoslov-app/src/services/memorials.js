@@ -316,6 +316,76 @@ const contentTypeFromAsset = (
   );
 };
 
+const cacheRemotePhoto = async (
+  serverPhoto
+) => {
+  const url =
+    String(
+      serverPhoto?.download_url ||
+      ''
+    ).trim();
+
+  if (
+    !url ||
+    serverPhoto?.deleted_at
+  ) {
+    return null;
+  }
+
+  try {
+    const directory =
+      new Directory(
+        Paths.document,
+        'memorials'
+      );
+
+    directory.create({
+      idempotent: true,
+      intermediates: true,
+    });
+
+    const extension =
+      extensionFromAsset({
+        fileName:
+          serverPhoto.original_name,
+
+        mimeType:
+          serverPhoto.content_type,
+
+        uri: url,
+      });
+
+    const target =
+      new File(
+        directory,
+        `${serverPhoto.sync_id}.${extension}`
+      );
+
+    const downloaded =
+      await File.downloadFileAsync(
+        url,
+        target,
+        {
+          idempotent: true,
+        }
+      );
+
+    return downloaded.uri;
+  } catch (error) {
+    /*
+     * Кэширование не должно ломать общую синхронизацию:
+     * пока есть свежий signed URL, фото всё равно можно показать онлайн.
+     */
+    console.log(
+      'Не удалось закэшировать фото помянника:',
+      error?.message || error
+    );
+
+    return null;
+  }
+};
+
+
 const persistPhotoAsset = async (
   asset,
   syncId
@@ -1562,6 +1632,14 @@ const pullPhotos = async (
         );
       }
 
+      const cachedLocalUri =
+        !serverPhoto.deleted_at &&
+        !existing?.local_uri
+          ? await cacheRemotePhoto(
+              serverPhoto
+            )
+          : null;
+
       if (existing) {
         await db.runAsync(
           `
@@ -1611,7 +1689,11 @@ const pullPhotos = async (
 
             serverPhoto.deleted_at
               ? null
-              : existing.local_uri,
+              : (
+                  existing.local_uri ||
+                  cachedLocalUri ||
+                  null
+                ),
 
             existing.id,
           ]
@@ -1655,7 +1737,7 @@ const pullPhotos = async (
               null,
             'synced',
 
-            null,
+            cachedLocalUri,
             serverPhoto.download_url ||
               null,
 
