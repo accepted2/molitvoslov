@@ -1002,6 +1002,19 @@ const collectPsalterRubricRanges = value => {
         const saved = savedForItem( itemId );
         const active = activeForItem( itemId );
         const itemConfig = itemConfigMap.get( itemId );
+        const memorialAction = itemConfig?.memorialAction || null;
+        const memorialMarkerText = String(memorialAction?.marker || '');
+        const memorialMarkerStart =
+          memorialMarkerText
+            ? text.indexOf(memorialMarkerText)
+            : -1;
+        const memorialMarkerRange =
+          memorialMarkerStart >= 0
+            ? {
+                start: memorialMarkerStart,
+                end: memorialMarkerStart + memorialMarkerText.length,
+              }
+            : null;
         const isAkathist = String( itemConfig ?.className || '' ).includes( 'akathist-' ) || itemConfig
             ?.sourceType === 'akathist';
         const akathistJoyBreaks = isAkathist ? collectAkathistJoyBreaks( text ) : new Set();
@@ -1119,6 +1132,23 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           boundaries.add( active.start );
           boundaries.add( active.end );
         }
+
+        /*
+         * Маркер помянника должен оставаться одним DOM-сегментом.
+         * Так сохраняется точное соответствие текстовых offset'ов,
+         * используемых выделением и сохранёнными фрагментами.
+         */
+        if (memorialMarkerRange) {
+          Array.from(boundaries).forEach(boundary => {
+            if (
+              boundary > memorialMarkerRange.start &&
+              boundary < memorialMarkerRange.end
+            ) {
+              boundaries.delete(boundary);
+            }
+          });
+        }
+
         const points = Array.from( boundaries ) .map(Number) .filter( value => Number.isFinite( value ) &&
                 value >= 0 && value <= text.length ) .sort( (a, b) => a - b );
         const fragment = document.createDocumentFragment();
@@ -1134,6 +1164,52 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           const isSaved = saved.some( range => midpoint >= range.start && midpoint < range.end );
           const isActive = !!active && midpoint >= active.start && midpoint < active.end;
           const span = document.createElement( 'span' );
+
+          const isMemorialMarkerSegment =
+            !!memorialMarkerRange &&
+            start === memorialMarkerRange.start &&
+            end === memorialMarkerRange.end;
+
+          if (isMemorialMarkerSegment) {
+            span.classList.add('memorial-open-marker');
+            span.dataset.label = memorialAction?.label || 'Открыть помянник';
+            span.setAttribute('role', 'button');
+            span.setAttribute('tabindex', '0');
+            span.setAttribute('aria-label', memorialAction?.label || 'Открыть помянник');
+
+            /*
+             * Сохраняем исходный marker как настоящий text node.
+             * Его длина нужна механизму selection offsets.
+             * CSS скрывает marker и показывает подпись кнопки через ::after.
+             */
+            span.textContent = text.slice(start, end);
+
+            const openMemorial = event => {
+              event.preventDefault();
+              event.stopPropagation();
+
+              post({
+                type: 'memorial-open',
+                context: memorialAction?.context || null,
+              });
+            };
+
+            span.addEventListener('pointerdown', event => {
+              event.stopPropagation();
+            });
+
+            span.addEventListener('click', openMemorial);
+
+            span.addEventListener('keydown', event => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                openMemorial(event);
+              }
+            });
+
+            fragment.appendChild(span);
+            continue;
+          }
+
           if (isSaved) {
             span.classList.add( 'saved-highlight' );
           }
