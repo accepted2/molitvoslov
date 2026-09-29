@@ -97,6 +97,46 @@ export const initDatabase = async () => {
       quote_date TEXT,
       sort_order INTEGER DEFAULT 0
     );
+
+    CREATE TABLE IF NOT EXISTS memorial_books (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+      sync_id TEXT NOT NULL UNIQUE,
+      cloud_user_id INTEGER,
+      server_id INTEGER,
+      sync_status TEXT NOT NULL DEFAULT 'local',
+
+      title TEXT NOT NULL DEFAULT 'Мой помянник',
+
+      health_names TEXT NOT NULL DEFAULT '[]',
+      repose_names TEXT NOT NULL DEFAULT '[]',
+
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS memorial_photos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+      book_sync_id TEXT NOT NULL,
+
+      sync_id TEXT NOT NULL UNIQUE,
+      cloud_user_id INTEGER,
+      server_id INTEGER,
+      sync_status TEXT NOT NULL DEFAULT 'local',
+
+      local_uri TEXT,
+      remote_url TEXT,
+
+      original_name TEXT,
+      content_type TEXT,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted_at TEXT
+    );
   `);
 
   /*
@@ -187,6 +227,28 @@ export const initDatabase = async () => {
     CREATE INDEX IF NOT EXISTS
     idx_saved_items_sync_id
     ON saved_items(sync_id);
+  `);
+
+  await db.execAsync(`
+    CREATE INDEX IF NOT EXISTS
+    idx_memorial_books_cloud_user
+    ON memorial_books(cloud_user_id);
+
+    CREATE INDEX IF NOT EXISTS
+    idx_memorial_books_sync_status
+    ON memorial_books(sync_status);
+
+    CREATE INDEX IF NOT EXISTS
+    idx_memorial_photos_book_sync_id
+    ON memorial_photos(book_sync_id);
+
+    CREATE INDEX IF NOT EXISTS
+    idx_memorial_photos_cloud_user
+    ON memorial_photos(cloud_user_id);
+
+    CREATE INDEX IF NOT EXISTS
+    idx_memorial_photos_sync_status
+    ON memorial_photos(sync_status);
   `);
 
   /*

@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from .supabase_storage import StorageConfigurationError, create_signed_download_url
+
 from .models import (
     Category,
     Text,
@@ -17,6 +19,8 @@ from .models import (
     ReadingProgress,
     DailyQuote,
     SavedItem,
+    MemorialBook,
+    MemorialPhoto,
     AkathistReadingRule,
     Psalter,
     Kathisma,
@@ -666,3 +670,119 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
             }
 
         return None
+
+
+
+# =========================================================
+# ПОМЯННИК
+# =========================================================
+
+
+class MemorialPhotoSerializer(serializers.ModelSerializer):
+    book_sync_id = serializers.UUIDField(
+        source="book.sync_id",
+        read_only=True,
+    )
+    download_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MemorialPhoto
+        fields = [
+            "id",
+            "sync_id",
+            "book_sync_id",
+            "original_name",
+            "content_type",
+            "order",
+            "download_url",
+            "created_at",
+            "updated_at",
+            "deleted_at",
+        ]
+        read_only_fields = [
+            "id",
+            "book_sync_id",
+            "download_url",
+            "created_at",
+        ]
+
+    def get_download_url(self, obj):
+        if obj.deleted_at or not obj.storage_path:
+            return ""
+
+        try:
+            return create_signed_download_url(obj.storage_path)
+        except StorageConfigurationError:
+            return ""
+        except Exception:
+            return ""
+
+
+class MemorialBookSerializer(serializers.ModelSerializer):
+    sync_id = serializers.UUIDField(required=False)
+    photos = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MemorialBook
+        fields = [
+            "id",
+            "sync_id",
+            "title",
+            "health_names",
+            "repose_names",
+            "photos",
+            "created_at",
+            "updated_at",
+            "deleted_at",
+        ]
+        read_only_fields = [
+            "id",
+            "photos",
+            "created_at",
+        ]
+
+    def _validate_names(self, value):
+        if value in [None, ""]:
+            return []
+
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Ожидается список имён.")
+
+        if len(value) > 500:
+            raise serializers.ValidationError("В одном разделе допускается до 500 имён.")
+
+        result = []
+
+        for raw_name in value:
+            name = str(raw_name or "").strip()
+
+            if not name:
+                continue
+
+            if len(name) > 100:
+                raise serializers.ValidationError(
+                    "Одно имя не должно быть длиннее 100 символов."
+                )
+
+            result.append(name)
+
+        return result
+
+    def validate_health_names(self, value):
+        return self._validate_names(value)
+
+    def validate_repose_names(self, value):
+        return self._validate_names(value)
+
+    def get_photos(self, obj):
+        photos = obj.photos.filter(deleted_at__isnull=True).order_by(
+            "order",
+            "created_at",
+            "id",
+        )
+
+        return MemorialPhotoSerializer(
+            photos,
+            many=True,
+            context=self.context,
+        ).data
