@@ -24,6 +24,8 @@ import {BookmarksScreen} from '../screens/BookmarksScreen';
 import {FavoritesScreen} from '../screens/FavoritesScreen';
 import {ContinueReadingScreen} from '../screens/ContinueReadingScreen';
 import {AccountScreen} from '../screens/AccountScreen';
+import {MemorialScreen} from '../screens/MemorialScreen';
+import {MemorialBookScreen} from '../screens/MemorialBookScreen';
 import {colors} from '../theme';
 import {LinearGradient} from 'expo-linear-gradient';
 const Stack = createStackNavigator();
@@ -98,6 +100,12 @@ export const AppNavigator = () => (
       <Stack.Screen
         name="BibleChapter"
         component={BibleChapterScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen name="Memorial" component={MemorialScreen} options={{headerShown: false}} />
+      <Stack.Screen
+        name="MemorialBook"
+        component={MemorialBookScreen}
         options={{headerShown: false}}
       />
       <Stack.Screen name="Account" component={AccountScreen} options={{headerShown: false}} />
