@@ -21,6 +21,8 @@ from .models import (
     CanonSection,
     DailyQuote,
     SavedItem,
+    MemorialBook,
+    MemorialPhoto,
 )
 
 
@@ -826,3 +828,122 @@ class SavedItemAdmin(admin.ModelAdmin):
             return obj.text[:80] + "…"
 
         return obj.text
+
+
+
+# =========================================================
+# ПОМЯННИК
+# =========================================================
+
+
+class MemorialPhotoInline(admin.TabularInline):
+    model = MemorialPhoto
+    extra = 0
+    fields = [
+        "sync_id",
+        "original_name",
+        "content_type",
+        "order",
+        "created_at",
+        "updated_at",
+        "deleted_at",
+    ]
+    readonly_fields = [
+        "sync_id",
+        "created_at",
+        "updated_at",
+    ]
+    ordering = [
+        "order",
+        "created_at",
+    ]
+
+
+@admin.register(MemorialBook)
+class MemorialBookAdmin(admin.ModelAdmin):
+    list_display = [
+        "title",
+        "user",
+        "health_count",
+        "repose_count",
+        "updated_at",
+        "deleted_at",
+    ]
+
+    list_filter = [
+        "deleted_at",
+        "updated_at",
+    ]
+
+    search_fields = [
+        "title",
+        "user__username",
+        "user__email",
+    ]
+
+    readonly_fields = [
+        "sync_id",
+        "created_at",
+        "updated_at",
+    ]
+
+    ordering = [
+        "-updated_at",
+    ]
+
+    inlines = [
+        MemorialPhotoInline,
+    ]
+
+    @admin.display(
+        description="О здравии",
+    )
+    def health_count(self, obj):
+        return len(
+            obj.health_names or []
+        )
+
+    @admin.display(
+        description="Об упокоении",
+    )
+    def repose_count(self, obj):
+        return len(
+            obj.repose_names or []
+        )
+
+
+@admin.register(MemorialPhoto)
+class MemorialPhotoAdmin(admin.ModelAdmin):
+    list_display = [
+        "book",
+        "original_name",
+        "content_type",
+        "order",
+        "created_at",
+        "deleted_at",
+    ]
+
+    list_filter = [
+        "content_type",
+        "deleted_at",
+    ]
+
+    search_fields = [
+        "book__title",
+        "book__user__username",
+        "original_name",
+        "storage_path",
+    ]
+
+    readonly_fields = [
+        "sync_id",
+        "storage_path",
+        "created_at",
+        "updated_at",
+    ]
+
+    ordering = [
+        "book",
+        "order",
+        "created_at",
+    ]

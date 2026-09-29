@@ -361,6 +361,13 @@ export const MemorialBookScreen = ({
   const dirtyRef =
     useRef(false);
 
+  /*
+   * Защищает от редкого сценария, когда пользователь успевает
+   * изменить имя во время уже запущенного сохранения.
+   */
+  const editRevisionRef =
+    useRef(0);
+
   const allowLeaveRef =
     useRef(false);
 
@@ -380,6 +387,7 @@ export const MemorialBookScreen = ({
   ]);
 
   const markDirty = () => {
+    editRevisionRef.current += 1;
     dirtyRef.current = true;
     setDirty(true);
     setSaveLabel(
@@ -481,8 +489,21 @@ export const MemorialBookScreen = ({
             'Сохраняем…'
           );
 
-          const draft =
-            draftRef.current;
+          const revisionAtStart =
+            editRevisionRef.current;
+
+          const draft = {
+            title:
+              draftRef.current.title,
+
+            healthNames: [
+              ...draftRef.current.healthNames,
+            ],
+
+            reposeNames: [
+              ...draftRef.current.reposeNames,
+            ],
+          };
 
           const updated =
             await updateMemorialBook(
@@ -505,6 +526,25 @@ export const MemorialBookScreen = ({
 
           if (updated) {
             setBook(updated);
+          }
+
+          /*
+           * Если во время await появилась новая правка,
+           * не помечаем её как сохранённую.
+           */
+          if (
+            editRevisionRef.current !==
+            revisionAtStart
+          ) {
+            dirtyRef.current =
+              true;
+
+            setDirty(true);
+            setSaveLabel(
+              'Есть изменения'
+            );
+
+            return false;
           }
 
           dirtyRef.current =
