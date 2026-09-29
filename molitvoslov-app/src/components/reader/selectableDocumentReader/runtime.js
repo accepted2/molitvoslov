@@ -1139,6 +1139,9 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
          * используемых выделением и сохранёнными фрагментами.
          */
         if (memorialMarkerRange) {
+          boundaries.add(memorialMarkerRange.start);
+          boundaries.add(memorialMarkerRange.end);
+
           Array.from(boundaries).forEach(boundary => {
             if (
               boundary > memorialMarkerRange.start &&
