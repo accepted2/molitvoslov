@@ -421,11 +421,26 @@ export const MemorialQuickSheet = ({
                                       photo.sync_id ||
                                       photo.id
                                     }
-                                    onPress={() =>
+                                    onPress={() => {
+                                      const availablePhotos =
+                                        (book.photos || []).filter(
+                                          (candidate) =>
+                                            candidate.display_uri ||
+                                            candidate.local_uri ||
+                                            candidate.remote_url
+                                        );
+
+                                      const tappedIndex =
+                                        availablePhotos.findIndex(
+                                          (candidate) =>
+                                            String(candidate.sync_id || candidate.id) ===
+                                            String(photo.sync_id || photo.id)
+                                        );
+
                                       openViewer(
-                                        book.photos,
-                                        index
-                                      )
+                                        availablePhotos,
+                                        Math.max(0, tappedIndex)
+                                      );
                                     }
                                     style={({
                                       pressed,
