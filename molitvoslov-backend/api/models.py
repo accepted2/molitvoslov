@@ -1054,6 +1054,132 @@ class ReadingProgress(models.Model):
 
 
 # =========================================================
+# ПОМЯННИК
+# =========================================================
+
+
+class MemorialBook(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="memorial_books",
+        verbose_name="Пользователь",
+    )
+
+    sync_id = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+        verbose_name="ID синхронизации",
+    )
+
+    title = models.CharField(
+        max_length=120,
+        default="Мой помянник",
+        verbose_name="Название",
+    )
+
+    health_names = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="О здравии",
+    )
+
+    repose_names = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Об упокоении",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Создано",
+    )
+
+    updated_at = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Обновлено",
+    )
+
+    deleted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Удалено",
+    )
+
+    def __str__(self):
+        return f"{self.user}: {self.title}"
+
+    class Meta:
+        ordering = ["-updated_at", "-id"]
+        verbose_name = "Помянник"
+        verbose_name_plural = "Помянники"
+
+
+class MemorialPhoto(models.Model):
+    book = models.ForeignKey(
+        MemorialBook,
+        on_delete=models.CASCADE,
+        related_name="photos",
+        verbose_name="Помянник",
+    )
+
+    sync_id = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+        verbose_name="ID синхронизации",
+    )
+
+    storage_path = models.CharField(
+        max_length=500,
+        unique=True,
+        verbose_name="Путь в хранилище",
+    )
+
+    original_name = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Имя файла",
+    )
+
+    content_type = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="MIME-тип",
+    )
+
+    order = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Порядок",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Создано",
+    )
+
+    updated_at = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Обновлено",
+    )
+
+    deleted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Удалено",
+    )
+
+    def __str__(self):
+        return f"{self.book}: {self.original_name or self.sync_id}"
+
+    class Meta:
+        ordering = ["order", "created_at", "id"]
+        verbose_name = "Фото помянника"
+        verbose_name_plural = "Фото помянника"
+
+
+# =========================================================
 # БИБЛИЯ
 # =========================================================
 
