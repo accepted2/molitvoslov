@@ -31,45 +31,88 @@ const NameList = ({
   title,
   names,
   emptyText,
-}) => (
-  <View style={styles.namesSection}>
-    <Text
-      style={
-        styles.namesTitle
-      }
-    >
-      {title}
-    </Text>
+}) => {
+  const list =
+    Array.isArray(names)
+      ? names.filter(Boolean)
+      : [];
 
-    {names?.length ? (
-      names.map(
-        (name, index) => (
-          <Text
-            key={`${title}-${index}-${name}`}
-            style={
-              styles.name
-            }
-          >
-            {name}
-          </Text>
-        )
-      )
-    ) : (
-      <Text
+  return (
+    <View style={styles.namesSection}>
+      <View
         style={
-          styles.emptyNames
+          styles.namesHeading
         }
       >
-        {emptyText}
-      </Text>
-    )}
-  </View>
-);
+        <Text
+          style={
+            styles.namesTitle
+          }
+        >
+          {title}
+        </Text>
+
+        {!!list.length && (
+          <Text
+            style={
+              styles.namesCount
+            }
+          >
+            {list.length}
+          </Text>
+        )}
+      </View>
+
+      {list.length ? (
+        <View
+          style={
+            styles.namesPaper
+          }
+        >
+          <View
+            pointerEvents="none"
+            style={
+              styles.namesPaperMargin
+            }
+          />
+
+          {list.map(
+            (name, index) => (
+              <View
+                key={`${title}-${index}-${name}`}
+                style={
+                  styles.quickNameRow
+                }
+              >
+                <Text
+                  style={
+                    styles.quickNameText
+                  }
+                >
+                  {name}
+                </Text>
+              </View>
+            )
+          )}
+        </View>
+      ) : (
+        <Text
+          style={
+            styles.emptyNames
+          }
+        >
+          {emptyText}
+        </Text>
+      )}
+    </View>
+  );
+};
 
 export const MemorialQuickSheet = ({
   visible,
   onClose,
   onManage,
+  preferredKind = null,
 }) => {
   const [books, setBooks] =
     useState([]);
@@ -360,21 +403,56 @@ export const MemorialQuickSheet = ({
                         />
                       </View>
 
-                      <NameList
-                        title="О здравии"
-                        names={
-                          book.health_names
-                        }
-                        emptyText="Имена не добавлены"
-                      />
-
-                      <NameList
-                        title="Об упокоении"
-                        names={
-                          book.repose_names
-                        }
-                        emptyText="Имена не добавлены"
-                      />
+                      {(preferredKind ===
+                      'repose'
+                        ? [
+                            {
+                              key: 'repose',
+                              title:
+                                'Об упокоении',
+                              names:
+                                book.repose_names,
+                            },
+                            {
+                              key: 'health',
+                              title:
+                                'О здравии',
+                              names:
+                                book.health_names,
+                            },
+                          ]
+                        : [
+                            {
+                              key: 'health',
+                              title:
+                                'О здравии',
+                              names:
+                                book.health_names,
+                            },
+                            {
+                              key: 'repose',
+                              title:
+                                'Об упокоении',
+                              names:
+                                book.repose_names,
+                            },
+                          ]
+                      ).map(
+                        (section) => (
+                          <NameList
+                            key={
+                              section.key
+                            }
+                            title={
+                              section.title
+                            }
+                            names={
+                              section.names
+                            }
+                            emptyText="Имена не добавлены"
+                          />
+                        )
+                      )}
 
                       {!!book.photos
                         ?.length && (
@@ -665,11 +743,18 @@ const styles =
     },
 
     namesSection: {
-      marginBottom: 16,
+      marginBottom: 14,
+    },
+
+    namesHeading: {
+      marginBottom: 6,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent:
+        'space-between',
     },
 
     namesTitle: {
-      marginBottom: 7,
       color:
         colors.liturgical,
       fontFamily: 'serif',
@@ -677,13 +762,60 @@ const styles =
       fontWeight: '700',
     },
 
-    name: {
+    namesCount: {
+      minWidth: 24,
+      paddingHorizontal: 7,
       paddingVertical: 2,
+      borderRadius: 10,
+      textAlign: 'center',
+      color:
+        colors.accentDark,
+      backgroundColor:
+        'rgba(138, 90, 56, 0.08)',
+      fontSize: 10,
+      fontWeight: '700',
+    },
+
+    namesPaper: {
+      position: 'relative',
+      overflow: 'hidden',
+      paddingVertical: 2,
+      paddingLeft: 16,
+      borderWidth: 1,
+      borderColor:
+        'rgba(139, 101, 63, 0.17)',
+      borderRadius: 10,
+      backgroundColor:
+        'rgba(255, 251, 241, 0.92)',
+    },
+
+    namesPaperMargin: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: 10,
+      width: 1,
+      backgroundColor:
+        'rgba(163, 58, 50, 0.13)',
+    },
+
+    quickNameRow: {
+      minHeight: 27,
+      justifyContent:
+        'center',
+      paddingHorizontal: 8,
+      borderBottomWidth:
+        StyleSheet.hairlineWidth,
+      borderBottomColor:
+        'rgba(92, 119, 145, 0.13)',
+    },
+
+    quickNameText: {
       color:
         '#3D2C20',
       fontFamily: 'serif',
-      fontSize: 18,
-      lineHeight: 27,
+      fontSize: 16,
+      lineHeight: 22,
     },
 
     emptyNames: {
