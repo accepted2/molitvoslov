@@ -21,6 +21,8 @@ from .views import (
     CanonSectionViewSet,
     DailyQuoteViewSet,
     SavedItemViewSet,
+    MemorialBookViewSet,
+    MemorialPhotoViewSet,
 )
 
 from .auth_views import (
@@ -61,6 +63,10 @@ router.register("daily-quotes", DailyQuoteViewSet, basename="daily-quotes")
 router.register("saved-items", SavedItemViewSet, basename="saved-items")
 
 router.register("reading-progress", ReadingProgressViewSet, basename="reading-progress")
+
+router.register("memorial-books", MemorialBookViewSet, basename="memorial-books")
+
+router.register("memorial-photos", MemorialPhotoViewSet, basename="memorial-photos")
 
 urlpatterns = [
     path(

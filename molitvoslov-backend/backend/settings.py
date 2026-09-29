@@ -223,6 +223,37 @@ if IS_PRODUCTION and not GOOGLE_OAUTH_WEB_CLIENT_ID:
     raise RuntimeError("GOOGLE_OAUTH_WEB_CLIENT_ID is required " "in production")
 
 
+
+
+# =========================================================
+# SUPABASE STORAGE / ПОМЯННИК
+# =========================================================
+
+SUPABASE_URL = os.environ.get(
+    "SUPABASE_URL",
+    "",
+).rstrip("/")
+
+# Предпочитаем новый Supabase secret key.
+# Legacy service_role оставлен как совместимый fallback.
+SUPABASE_STORAGE_SECRET_KEY = (
+    os.environ.get("SUPABASE_SECRET_KEY")
+    or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    or ""
+)
+
+MEMORIAL_STORAGE_BUCKET = os.environ.get(
+    "MEMORIAL_STORAGE_BUCKET",
+    "memorials",
+)
+
+MEMORIAL_PHOTO_MAX_BYTES = int(
+    os.environ.get(
+        "MEMORIAL_PHOTO_MAX_BYTES",
+        str(12 * 1024 * 1024),
+    )
+)
+
 # =========================================================
 # HTTPS / PRODUCTION SECURITY
 # =========================================================
