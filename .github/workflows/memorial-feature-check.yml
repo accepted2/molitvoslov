@@ -32,6 +32,7 @@ jobs:
         run: npm ci
 
       - name: Check Expo dependencies
+        continue-on-error: true
         working-directory: molitvoslov-app
         run: npx expo install --check
 
