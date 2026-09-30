@@ -39,15 +39,20 @@ export const toCalendarDate = (value) => {
   ].join('-');
 };
 
-export const getCalendarDay = async (value = new Date(), {force = false} = {}) => {
-  const key = typeof value === 'string' ? value : toCalendarDate(value);
+export const getCalendarDay = async (
+  value = new Date(),
+  {force = false, language = 'ru'} = {}
+) => {
+  const dateKey = typeof value === 'string' ? value : toCalendarDate(value);
+  const lang = language === 'uk' ? 'uk' : 'ru';
+  const key = `${lang}:${dateKey}`;
 
   if (!force && dayCache.has(key)) {
     return dayCache.get(key);
   }
 
   const data = await fetchCalendarJson(
-    `/api/calendar/day/?date=${encodeURIComponent(key)}`
+    `/api/calendar/day/?date=${encodeURIComponent(dateKey)}&lang=${lang}`
   );
 
   dayCache.set(key, data);
@@ -57,23 +62,24 @@ export const getCalendarDay = async (value = new Date(), {force = false} = {}) =
 export const getCalendarMonth = async (
   year,
   month,
-  {force = false} = {}
+  {force = false, language = 'ru'} = {}
 ) => {
-  const key = `${year}-${month}`;
+  const lang = language === 'uk' ? 'uk' : 'ru';
+  const key = `${lang}:${year}-${month}`;
 
   if (!force && monthCache.has(key)) {
     return monthCache.get(key);
   }
 
   const data = await fetchCalendarJson(
-    `/api/calendar/month/?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}`
+    `/api/calendar/month/?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}&lang=${lang}`
   );
 
   monthCache.set(key, data);
 
   (data?.days || []).forEach((day) => {
     if (day?.date_gregorian) {
-      dayCache.set(day.date_gregorian, day);
+      dayCache.set(`${lang}:${day.date_gregorian}`, day);
     }
   });
 
@@ -376,13 +382,13 @@ export const openCalendarBibleReference = (navigation, title) => {
   return true;
 };
 
-export const formatFast = (day) => {
+export const formatFast = (day, language = 'ru') => {
   if (!day) {
     return '';
   }
 
   if (day.fast_type_code === 'no-fast') {
-    return 'Поста нет';
+    return language === 'uk' ? 'Посту немає' : 'Поста нет';
   }
 
   if (day.fast_name && day.fast_type_title) {

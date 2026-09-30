@@ -11,6 +11,8 @@ class CalendarFeast(models.Model):
 
     title = models.TextField()
     short_title = models.TextField(blank=True, default="")
+    title_uk = models.TextField(blank=True, default="")
+    short_title_uk = models.TextField(blank=True, default="")
 
     julian_month = models.PositiveSmallIntegerField(null=True, blank=True)
     julian_day = models.PositiveSmallIntegerField(null=True, blank=True)
@@ -20,15 +22,22 @@ class CalendarFeast(models.Model):
 
     troparion_title = models.TextField(blank=True, default="")
     troparion_content = models.TextField(blank=True, default="")
+    troparion_title_uk = models.TextField(blank=True, default="")
+    troparion_content_uk = models.TextField(blank=True, default="")
     troparion_echo = models.PositiveSmallIntegerField(null=True, blank=True)
 
     kontakion_title = models.TextField(blank=True, default="")
     kontakion_content = models.TextField(blank=True, default="")
+    kontakion_title_uk = models.TextField(blank=True, default="")
+    kontakion_content_uk = models.TextField(blank=True, default="")
     kontakion_echo = models.PositiveSmallIntegerField(null=True, blank=True)
 
     life_title = models.TextField(blank=True, default="")
     life_content = models.TextField(blank=True, default="")
     description = models.TextField(blank=True, default="")
+    life_title_uk = models.TextField(blank=True, default="")
+    life_content_uk = models.TextField(blank=True, default="")
+    description_uk = models.TextField(blank=True, default="")
 
     all_dates = models.JSONField(default=list, blank=True)
 
@@ -67,14 +76,23 @@ class CalendarDay(models.Model):
     fast_type_title = models.TextField(blank=True, default="")
     fast_name = models.TextField(blank=True, default="")
     fast_description = models.TextField(blank=True, default="")
+    fast_type_title_uk = models.TextField(blank=True, default="")
+    fast_name_uk = models.TextField(blank=True, default="")
+    fast_description_uk = models.TextField(blank=True, default="")
 
     summary = models.TextField(blank=True, default="")
     short_summary = models.TextField(blank=True, default="")
+    summary_uk = models.TextField(blank=True, default="")
+    short_summary_uk = models.TextField(blank=True, default="")
 
     gospel_title = models.TextField(blank=True, default="")
     gospel_reading = models.TextField(blank=True, default="")
     apostolic_title = models.TextField(blank=True, default="")
     apostolic_reading = models.TextField(blank=True, default="")
+    gospel_title_uk = models.TextField(blank=True, default="")
+    gospel_reading_uk = models.TextField(blank=True, default="")
+    apostolic_title_uk = models.TextField(blank=True, default="")
+    apostolic_reading_uk = models.TextField(blank=True, default="")
 
     source_payload = models.JSONField(default=dict, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
