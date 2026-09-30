@@ -36,6 +36,10 @@ from .models import (
     SavedItem,
     MemorialBook,
     MemorialPhoto,
+    PersonalPrayerBook,
+    PersonalPrayer,
+    PersonalPrayerBookItem,
+    PersonalPrayerPhoto,
     Akathist,
     AkathistSection,
     Canon,
@@ -67,6 +71,10 @@ from .serializers import (
     SavedItemSerializer,
     MemorialBookSerializer,
     MemorialPhotoSerializer,
+    PersonalPrayerBookSerializer,
+    PersonalPrayerSerializer,
+    PersonalPrayerBookItemSerializer,
+    PersonalPrayerPhotoSerializer,
     AkathistSerializer,
     AkathistSummarySerializer,
     AkathistSectionSerializer,
@@ -939,3 +947,413 @@ class MemorialPhotoViewSet(viewsets.ModelViewSet):
                 "updated_at",
             ]
         )
+
+
+# =========================================================
+# ЛИЧНЫЙ МОЛИТВОСЛОВ
+# =========================================================
+
+
+class PersonalPrayerBookViewSet(viewsets.ModelViewSet):
+    serializer_class = PersonalPrayerBookSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = "sync_id"
+
+    def get_queryset(self):
+        queryset = (
+            PersonalPrayerBook.objects
+            .filter(user=self.request.user)
+            .prefetch_related("items__prayer__photos")
+            .order_by("-updated_at", "-id")
+        )
+        include_deleted = self.request.query_params.get("include_deleted")
+        if include_deleted not in ["1", "true", "True"]:
+            queryset = queryset.filter(deleted_at__isnull=True)
+        return queryset
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = dict(serializer.validated_data)
+        sync_id = data.get("sync_id")
+        incoming_updated_at = data.get("updated_at") or timezone.now()
+
+        existing = None
+        if sync_id:
+            existing = PersonalPrayerBook.objects.filter(
+                user=request.user,
+                sync_id=sync_id,
+            ).first()
+
+        if existing:
+            if existing.updated_at and incoming_updated_at <= existing.updated_at:
+                return Response(self.get_serializer(existing).data)
+
+            existing.title = data.get("title", existing.title)
+            existing.description = data.get("description", existing.description)
+            existing.deleted_at = data.get("deleted_at", existing.deleted_at)
+            existing.updated_at = incoming_updated_at
+            existing.save(
+                update_fields=[
+                    "title",
+                    "description",
+                    "deleted_at",
+                    "updated_at",
+                ]
+            )
+            return Response(self.get_serializer(existing).data)
+
+        book = serializer.save(
+            user=request.user,
+            updated_at=incoming_updated_at,
+        )
+        return Response(
+            self.get_serializer(book).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    def perform_destroy(self, instance):
+        now = timezone.now()
+        instance.deleted_at = now
+        instance.updated_at = now
+        instance.save(update_fields=["deleted_at", "updated_at"])
+        instance.items.filter(deleted_at__isnull=True).update(
+            deleted_at=now,
+            updated_at=now,
+        )
+
+
+class PersonalPrayerViewSet(viewsets.ModelViewSet):
+    serializer_class = PersonalPrayerSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = "sync_id"
+
+    def get_queryset(self):
+        queryset = (
+            PersonalPrayer.objects
+            .filter(user=self.request.user)
+            .prefetch_related("photos")
+            .order_by("-updated_at", "-id")
+        )
+        include_deleted = self.request.query_params.get("include_deleted")
+        if include_deleted not in ["1", "true", "True"]:
+            queryset = queryset.filter(deleted_at__isnull=True)
+        return queryset
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = dict(serializer.validated_data)
+        sync_id = data.get("sync_id")
+        incoming_updated_at = data.get("updated_at") or timezone.now()
+
+        existing = None
+        if sync_id:
+            existing = PersonalPrayer.objects.filter(
+                user=request.user,
+                sync_id=sync_id,
+            ).first()
+
+        if existing:
+            if existing.updated_at and incoming_updated_at <= existing.updated_at:
+                return Response(self.get_serializer(existing).data)
+
+            for field in [
+                "title",
+                "text",
+                "origin_type",
+                "origin_data",
+                "deleted_at",
+            ]:
+                if field in data:
+                    setattr(existing, field, data[field])
+            existing.updated_at = incoming_updated_at
+            existing.save(
+                update_fields=[
+                    "title",
+                    "text",
+                    "origin_type",
+                    "origin_data",
+                    "deleted_at",
+                    "updated_at",
+                ]
+            )
+            return Response(self.get_serializer(existing).data)
+
+        prayer = serializer.save(
+            user=request.user,
+            updated_at=incoming_updated_at,
+        )
+        return Response(
+            self.get_serializer(prayer).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    def perform_destroy(self, instance):
+        now = timezone.now()
+        for photo in instance.photos.filter(deleted_at__isnull=True):
+            try:
+                delete_object(photo.storage_path)
+            except Exception:
+                pass
+            photo.deleted_at = now
+            photo.updated_at = now
+            photo.save(update_fields=["deleted_at", "updated_at"])
+
+        instance.book_items.filter(deleted_at__isnull=True).update(
+            deleted_at=now,
+            updated_at=now,
+        )
+        instance.deleted_at = now
+        instance.updated_at = now
+        instance.save(update_fields=["deleted_at", "updated_at"])
+
+
+class PersonalPrayerBookItemViewSet(viewsets.ModelViewSet):
+    serializer_class = PersonalPrayerBookItemSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = "sync_id"
+
+    def get_queryset(self):
+        queryset = (
+            PersonalPrayerBookItem.objects
+            .filter(book__user=self.request.user)
+            .select_related("book", "prayer")
+            .prefetch_related("prayer__photos")
+            .order_by("order", "created_at", "id")
+        )
+        book_sync_id = self.request.query_params.get("book_sync_id")
+        if book_sync_id:
+            queryset = queryset.filter(book__sync_id=book_sync_id)
+        include_deleted = self.request.query_params.get("include_deleted")
+        if include_deleted not in ["1", "true", "True"]:
+            queryset = queryset.filter(deleted_at__isnull=True)
+        return queryset
+
+    def create(self, request, *args, **kwargs):
+        raw_book_sync_id = request.data.get("book_sync_id")
+        raw_prayer_sync_id = request.data.get("prayer_sync_id")
+        raw_sync_id = request.data.get("sync_id")
+
+        try:
+            book_sync_id = uuid.UUID(str(raw_book_sync_id))
+            prayer_sync_id = uuid.UUID(str(raw_prayer_sync_id))
+            item_sync_id = uuid.UUID(str(raw_sync_id)) if raw_sync_id else uuid.uuid4()
+        except (TypeError, ValueError, AttributeError):
+            return Response(
+                {"detail": "Некорректный sync_id."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        book = get_object_or_404(
+            PersonalPrayerBook,
+            user=request.user,
+            sync_id=book_sync_id,
+            deleted_at__isnull=True,
+        )
+        prayer = get_object_or_404(
+            PersonalPrayer,
+            user=request.user,
+            sync_id=prayer_sync_id,
+            deleted_at__isnull=True,
+        )
+
+        try:
+            order = max(0, int(request.data.get("order", 0)))
+        except (TypeError, ValueError):
+            order = 0
+
+        incoming_updated_at = request.data.get("updated_at")
+        if incoming_updated_at:
+            from django.utils.dateparse import parse_datetime
+            incoming_updated_at = parse_datetime(str(incoming_updated_at))
+        incoming_updated_at = incoming_updated_at or timezone.now()
+
+        existing = PersonalPrayerBookItem.objects.filter(
+            book__user=request.user,
+            sync_id=item_sync_id,
+        ).first()
+
+        if existing is None:
+            existing = PersonalPrayerBookItem.objects.filter(
+                book=book,
+                prayer=prayer,
+                deleted_at__isnull=True,
+            ).first()
+
+        if existing:
+            if existing.updated_at and incoming_updated_at <= existing.updated_at:
+                return Response(self.get_serializer(existing).data)
+
+            existing.book = book
+            existing.prayer = prayer
+            existing.order = order
+            existing.deleted_at = request.data.get("deleted_at") or None
+            existing.updated_at = incoming_updated_at
+            existing.save()
+            return Response(self.get_serializer(existing).data)
+
+        item = PersonalPrayerBookItem.objects.create(
+            book=book,
+            prayer=prayer,
+            sync_id=item_sync_id,
+            order=order,
+            updated_at=incoming_updated_at,
+        )
+        return Response(
+            self.get_serializer(item).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    def perform_destroy(self, instance):
+        now = timezone.now()
+        instance.deleted_at = now
+        instance.updated_at = now
+        instance.save(update_fields=["deleted_at", "updated_at"])
+
+
+class PersonalPrayerPhotoViewSet(viewsets.ModelViewSet):
+    serializer_class = PersonalPrayerPhotoSerializer
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    lookup_field = "sync_id"
+
+    def get_queryset(self):
+        queryset = PersonalPrayerPhoto.objects.filter(
+            prayer__user=self.request.user,
+        ).select_related("prayer")
+        prayer_sync_id = self.request.query_params.get("prayer_sync_id")
+        if prayer_sync_id:
+            queryset = queryset.filter(prayer__sync_id=prayer_sync_id)
+        include_deleted = self.request.query_params.get("include_deleted")
+        if include_deleted not in ["1", "true", "True"]:
+            queryset = queryset.filter(deleted_at__isnull=True)
+        return queryset.order_by("order", "created_at", "id")
+
+    def create(self, request, *args, **kwargs):
+        upload = request.FILES.get("file")
+        if upload is None:
+            return Response(
+                {"detail": "Не передан файл изображения."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if upload.size > getattr(settings, "MEMORIAL_PHOTO_MAX_BYTES", 12 * 1024 * 1024):
+            return Response(
+                {"detail": "Файл слишком большой."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        content_type = str(
+            getattr(upload, "content_type", "") or "application/octet-stream"
+        ).lower()
+        allowed_types = {
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "image/heic",
+            "image/heif",
+        }
+        if content_type not in allowed_types:
+            return Response(
+                {"detail": "Допускаются только JPG, PNG, WEBP, HEIC и HEIF."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            prayer_sync_id = uuid.UUID(str(request.data.get("prayer_sync_id")))
+            photo_sync_id = (
+                uuid.UUID(str(request.data.get("sync_id")))
+                if request.data.get("sync_id")
+                else uuid.uuid4()
+            )
+        except (TypeError, ValueError, AttributeError):
+            return Response(
+                {"detail": "Некорректный sync_id."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        prayer = get_object_or_404(
+            PersonalPrayer,
+            user=request.user,
+            sync_id=prayer_sync_id,
+            deleted_at__isnull=True,
+        )
+
+        existing = PersonalPrayerPhoto.objects.filter(
+            prayer__user=request.user,
+            sync_id=photo_sync_id,
+        ).first()
+        if existing and not existing.deleted_at:
+            return Response(self.get_serializer(existing).data)
+
+        extension = os.path.splitext(upload.name or "")[1].lower()
+        extension_by_type = {
+            "image/jpeg": ".jpg",
+            "image/png": ".png",
+            "image/webp": ".webp",
+            "image/heic": ".heic",
+            "image/heif": ".heif",
+        }
+        if extension not in {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"}:
+            extension = extension_by_type.get(content_type, ".jpg")
+
+        storage_path = (
+            f"user-{request.user.id}/personal-prayers/"
+            f"{prayer.sync_id}/{photo_sync_id}{extension}"
+        )
+
+        try:
+            upload_bytes(storage_path, upload.read(), content_type)
+        except StorageConfigurationError as error:
+            return Response(
+                {"detail": str(error)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except Exception as error:
+            return Response(
+                {"detail": f"Не удалось загрузить фото: {error}"},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        try:
+            order = max(0, int(request.data.get("order", 0)))
+        except (TypeError, ValueError):
+            order = 0
+
+        now = timezone.now()
+        if existing:
+            existing.prayer = prayer
+            existing.storage_path = storage_path
+            existing.original_name = upload.name or ""
+            existing.content_type = content_type
+            existing.order = order
+            existing.deleted_at = None
+            existing.updated_at = now
+            existing.save()
+            photo = existing
+        else:
+            photo = PersonalPrayerPhoto.objects.create(
+                prayer=prayer,
+                sync_id=photo_sync_id,
+                storage_path=storage_path,
+                original_name=upload.name or "",
+                content_type=content_type,
+                order=order,
+                updated_at=now,
+            )
+
+        return Response(
+            self.get_serializer(photo).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    def perform_destroy(self, instance):
+        try:
+            delete_object(instance.storage_path)
+        except Exception:
+            pass
+        now = timezone.now()
+        instance.deleted_at = now
+        instance.updated_at = now
+        instance.save(update_fields=["deleted_at", "updated_at"])

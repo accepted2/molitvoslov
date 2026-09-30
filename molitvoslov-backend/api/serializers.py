@@ -21,6 +21,10 @@ from .models import (
     SavedItem,
     MemorialBook,
     MemorialPhoto,
+    PersonalPrayerBook,
+    PersonalPrayer,
+    PersonalPrayerBookItem,
+    PersonalPrayerPhoto,
     AkathistReadingRule,
     Psalter,
     Kathisma,
@@ -783,6 +787,143 @@ class MemorialBookSerializer(serializers.ModelSerializer):
 
         return MemorialPhotoSerializer(
             photos,
+            many=True,
+            context=self.context,
+        ).data
+
+
+# =========================================================
+# ЛИЧНЫЙ МОЛИТВОСЛОВ
+# =========================================================
+
+
+class PersonalPrayerPhotoSerializer(serializers.ModelSerializer):
+    prayer_sync_id = serializers.UUIDField(source="prayer.sync_id", read_only=True)
+    download_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PersonalPrayerPhoto
+        fields = [
+            "id",
+            "sync_id",
+            "prayer_sync_id",
+            "original_name",
+            "content_type",
+            "order",
+            "download_url",
+            "created_at",
+            "updated_at",
+            "deleted_at",
+        ]
+        read_only_fields = ["id", "prayer_sync_id", "download_url", "created_at"]
+
+    def get_download_url(self, obj):
+        if obj.deleted_at or not obj.storage_path:
+            return ""
+        try:
+            return create_signed_download_url(obj.storage_path)
+        except Exception:
+            return ""
+
+
+class PersonalPrayerSerializer(serializers.ModelSerializer):
+    sync_id = serializers.UUIDField(required=False)
+    photos = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PersonalPrayer
+        fields = [
+            "id",
+            "sync_id",
+            "title",
+            "text",
+            "origin_type",
+            "origin_data",
+            "photos",
+            "created_at",
+            "updated_at",
+            "deleted_at",
+        ]
+        read_only_fields = ["id", "photos", "created_at"]
+
+    def validate_title(self, value):
+        value = str(value or "").strip()
+        if not value:
+            raise serializers.ValidationError("Укажите название молитвы.")
+        return value
+
+    def get_photos(self, obj):
+        photos = obj.photos.filter(deleted_at__isnull=True).order_by(
+            "order", "created_at", "id"
+        )
+        return PersonalPrayerPhotoSerializer(
+            photos,
+            many=True,
+            context=self.context,
+        ).data
+
+
+class PersonalPrayerBookItemSerializer(serializers.ModelSerializer):
+    sync_id = serializers.UUIDField(required=False)
+    book_sync_id = serializers.UUIDField(source="book.sync_id", read_only=True)
+    prayer_sync_id = serializers.UUIDField(source="prayer.sync_id", read_only=True)
+    prayer = PersonalPrayerSerializer(read_only=True)
+
+    class Meta:
+        model = PersonalPrayerBookItem
+        fields = [
+            "id",
+            "sync_id",
+            "book_sync_id",
+            "prayer_sync_id",
+            "prayer",
+            "order",
+            "created_at",
+            "updated_at",
+            "deleted_at",
+        ]
+        read_only_fields = [
+            "id",
+            "book_sync_id",
+            "prayer_sync_id",
+            "prayer",
+            "created_at",
+        ]
+
+
+class PersonalPrayerBookSerializer(serializers.ModelSerializer):
+    sync_id = serializers.UUIDField(required=False)
+    items = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PersonalPrayerBook
+        fields = [
+            "id",
+            "sync_id",
+            "title",
+            "description",
+            "items",
+            "created_at",
+            "updated_at",
+            "deleted_at",
+        ]
+        read_only_fields = ["id", "items", "created_at"]
+
+    def validate_title(self, value):
+        value = str(value or "").strip()
+        if not value:
+            return "Мой молитвослов"
+        return value
+
+    def get_items(self, obj):
+        items = (
+            obj.items.filter(deleted_at__isnull=True)
+            .select_related("prayer")
+            .prefetch_related("prayer__photos")
+            .order_by("order", "created_at", "id")
+        )
+        return PersonalPrayerBookItemSerializer(
+            items,
             many=True,
             context=self.context,
         ).data
