@@ -65,6 +65,7 @@ const buildTextEntries = () =>
       return {
         key: 'library:' + String(item.id ?? item.slug ?? title),
         kind: 'library',
+        group: 'prayer',
         id: item.id ?? null,
         slug: item.slug || '',
         title,
@@ -138,6 +139,7 @@ const buildPsalmEntries = () => {
       entries.push({
         key: 'psalm:' + psalmId,
         kind: 'library',
+        group: 'psalter',
         id: psalmId,
         slug: '',
         title,
@@ -224,6 +226,27 @@ const scoreResult = (entry, tokens, normalizedQuery) => {
   return score;
 };
 
+const dedupeEntries = (entries) => {
+  const seen = new Set();
+
+  return entries.filter((entry) => {
+    const normalizedBody = normalizeSearchText(entry.text || entry.preview || '');
+    const normalizedTitle = normalizeSearchText(entry.title || '');
+
+    const fingerprint =
+      normalizedBody.length >= 60
+        ? normalizedBody.slice(0, 900)
+        : normalizedTitle + '|' + normalizedBody;
+
+    if (!fingerprint || seen.has(fingerprint)) {
+      return false;
+    }
+
+    seen.add(fingerprint);
+    return true;
+  });
+};
+
 export const searchBuiltInPrayers = (query, {limit = 40} = {}) => {
   const normalizedQuery = normalizeSearchText(query);
 
@@ -233,7 +256,7 @@ export const searchBuiltInPrayers = (query, {limit = 40} = {}) => {
 
   const tokens = normalizedQuery.split(' ').filter(Boolean);
 
-  return getIndex()
+  const ranked = getIndex()
     .map((entry) => ({
       entry,
       score: scoreResult(entry, tokens, normalizedQuery),
@@ -245,8 +268,9 @@ export const searchBuiltInPrayers = (query, {limit = 40} = {}) => {
       }
       return left.entry.title.localeCompare(right.entry.title, 'ru');
     })
-    .slice(0, limit)
     .map((item) => item.entry);
+
+  return dedupeEntries(ranked).slice(0, limit);
 };
 
 export const searchPersonalPrayerRows = (prayers, query, {limit = 20} = {}) => {
@@ -286,6 +310,7 @@ export const searchPersonalPrayerRows = (prayers, query, {limit = 20} = {}) => {
         entry: {
           key: 'personal:' + prayer.sync_id,
           kind: 'personal',
+          group: 'personal',
           prayer,
           title,
           subtitle: 'Моя молитва',
@@ -300,7 +325,8 @@ export const searchPersonalPrayerRows = (prayers, query, {limit = 20} = {}) => {
     .map((item) => item.entry);
 };
 
-export const searchAllPrayers = (prayers, query) => [
-  ...searchPersonalPrayerRows(prayers, query),
-  ...searchBuiltInPrayers(query),
-];
+export const searchAllPrayers = (prayers, query) =>
+  dedupeEntries([
+    ...searchPersonalPrayerRows(prayers, query),
+    ...searchBuiltInPrayers(query),
+  ]);
