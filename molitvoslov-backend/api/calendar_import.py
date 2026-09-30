@@ -1,6 +1,7 @@
 from calendar import monthrange
 import json
 import os
+import time
 from datetime import date
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -36,7 +37,7 @@ def source_url():
     )
 
 
-def fetch_source_json(endpoint, params=None, timeout=25):
+def fetch_source_json(endpoint, params=None, timeout=None):
     query = urlencode(params or {})
     url = f"{source_url()}/{endpoint.lstrip('/')}"
     if query:
@@ -51,8 +52,30 @@ def fetch_source_json(endpoint, params=None, timeout=25):
         },
     )
 
-    with urlopen(request, timeout=timeout) as response:
-        return json.loads(response.read().decode("utf-8"))
+    effective_timeout = float(
+        timeout
+        or os.environ.get("CHURCH_CALENDAR_TIMEOUT", "90")
+    )
+    retries = max(
+        1,
+        int(os.environ.get("CHURCH_CALENDAR_RETRIES", "3")),
+    )
+
+    last_error = None
+
+    for attempt in range(1, retries + 1):
+        try:
+            with urlopen(request, timeout=effective_timeout) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except Exception as error:
+            last_error = error
+
+            if attempt >= retries:
+                break
+
+            time.sleep(min(2 * attempt, 5))
+
+    raise last_error
 
 
 def _icon_url(data):
