@@ -1,0 +1,871 @@
+import React, {useEffect, useMemo, useState} from 'react';
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import {StatusBar} from 'expo-status-bar';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+
+import {AppBackground} from '../components/layout/AppBackground';
+import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {
+  formatFast,
+  getCalendarDay,
+  getCalendarMonth,
+  openCalendarBibleReference,
+  resolveBibleReference,
+  toCalendarDate,
+} from '../services/churchCalendar';
+import {colors} from '../theme';
+
+const MONTHS = [
+  'Январь',
+  'Февраль',
+  'Март',
+  'Апрель',
+  'Май',
+  'Июнь',
+  'Июль',
+  'Август',
+  'Сентябрь',
+  'Октябрь',
+  'Ноябрь',
+  'Декабрь',
+];
+
+const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+const buildCells = (year, month) => {
+  const first = new Date(year, month - 1, 1);
+  const firstWeekday = (first.getDay() + 6) % 7;
+  const count = new Date(year, month, 0).getDate();
+  const previousCount = new Date(year, month - 1, 0).getDate();
+  const total = Math.ceil((firstWeekday + count) / 7) * 7;
+
+  return Array.from({length: total}, (_item, index) => {
+    const raw = index - firstWeekday + 1;
+    let value = raw;
+    let cellMonth = month;
+    let cellYear = year;
+    let outside = false;
+
+    if (raw < 1) {
+      value = previousCount + raw;
+      cellMonth = month - 1;
+      outside = true;
+    } else if (raw > count) {
+      value = raw - count;
+      cellMonth = month + 1;
+      outside = true;
+    }
+
+    if (cellMonth < 1) {
+      cellMonth = 12;
+      cellYear -= 1;
+    } else if (cellMonth > 12) {
+      cellMonth = 1;
+      cellYear += 1;
+    }
+
+    return {
+      day: value,
+      month: cellMonth,
+      year: cellYear,
+      outside,
+      date: `${cellYear}-${String(cellMonth).padStart(2, '0')}-${String(value).padStart(2, '0')}`,
+    };
+  });
+};
+
+const displayTitle = (feast) =>
+  feast?.short_title || feast?.title || 'Память святых дня';
+
+const ExpandableTextBlock = ({title, subtitle, text}) => {
+  const [expanded, setExpanded] = useState(false);
+
+  if (!text) return null;
+
+  return (
+    <View style={styles.textBlock}>
+      <Pressable
+        onPress={() => setExpanded((value) => !value)}
+        style={({pressed}) => [styles.textBlockHeader, pressed && styles.pressed]}
+      >
+        <View style={styles.textBlockHeaderText}>
+          <Text style={styles.textBlockTitle}>{title}</Text>
+          {!!subtitle && <Text style={styles.textBlockSubtitle}>{subtitle}</Text>}
+        </View>
+        <Text style={styles.textBlockArrow}>{expanded ? '⌃' : '⌄'}</Text>
+      </Pressable>
+
+      {expanded && <Text style={styles.textBlockContent}>{text}</Text>}
+    </View>
+  );
+};
+
+const ReadingLink = ({kind, title, navigation}) => {
+  if (!title) return null;
+
+  const target = resolveBibleReference(title);
+
+  return (
+    <Pressable
+      disabled={!target}
+      onPress={() => openCalendarBibleReference(navigation, title)}
+      style={({pressed}) => [
+        styles.readingLink,
+        !target && styles.readingLinkDisabled,
+        pressed && styles.pressed,
+      ]}
+    >
+      <View style={styles.readingIcon}>
+        <Text style={styles.readingIconText}>{kind === 'gospel' ? '✠' : '✦'}</Text>
+      </View>
+
+      <View style={styles.readingTextWrap}>
+        <Text style={styles.readingKind}>
+          {kind === 'gospel' ? 'ЕВАНГЕЛИЕ ДНЯ' : 'АПОСТОЛ ДНЯ'}
+        </Text>
+        <Text style={styles.readingTitle}>{title}</Text>
+        {target ? (
+          <Text style={styles.readingHint}>Открыть в Библии</Text>
+        ) : (
+          <Text style={styles.readingHintMuted}>Ссылка пока не распознана</Text>
+        )}
+      </View>
+
+      {!!target && <Text style={styles.readingArrow}>›</Text>}
+    </Pressable>
+  );
+};
+
+export const ChurchCalendarScreen = ({route, navigation}) => {
+  const insets = useSafeAreaInsets();
+  const {width} = useWindowDimensions();
+
+  const initial = useMemo(() => {
+    const raw = route.params?.date;
+    const parsed = raw ? new Date(raw + 'T12:00:00') : new Date();
+    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  }, [route.params?.date]);
+
+  const [visibleYear, setVisibleYear] = useState(initial.getFullYear());
+  const [visibleMonth, setVisibleMonth] = useState(initial.getMonth() + 1);
+  const [selectedDate, setSelectedDate] = useState(toCalendarDate(initial));
+  const [monthData, setMonthData] = useState(null);
+  const [dayData, setDayData] = useState(null);
+  const [loadingMonth, setLoadingMonth] = useState(true);
+  const [loadingDay, setLoadingDay] = useState(true);
+  const [error, setError] = useState('');
+
+  const wide = width >= 760;
+  const headerHeight = insets.top + 56;
+
+  useEffect(() => {
+    let active = true;
+
+    setLoadingMonth(true);
+    getCalendarMonth(visibleYear, visibleMonth)
+      .then((data) => {
+        if (!active) return;
+        setMonthData(data);
+        setError('');
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(err?.response?.data?.detail || 'Не удалось загрузить календарь');
+      })
+      .finally(() => active && setLoadingMonth(false));
+
+    return () => {
+      active = false;
+    };
+  }, [visibleMonth, visibleYear]);
+
+  useEffect(() => {
+    let active = true;
+
+    setLoadingDay(true);
+    getCalendarDay(selectedDate)
+      .then((data) => {
+        if (!active) return;
+        setDayData(data);
+        setError('');
+      })
+      .catch((err) => {
+        if (!active) return;
+        setDayData(null);
+        setError(err?.response?.data?.detail || 'Не удалось загрузить день');
+      })
+      .finally(() => active && setLoadingDay(false));
+
+    return () => {
+      active = false;
+    };
+  }, [selectedDate]);
+
+  const daysMap = useMemo(
+    () =>
+      new Map(
+        (monthData?.days || []).map((day) => [
+          day.date_gregorian,
+          day,
+        ])
+      ),
+    [monthData]
+  );
+
+  const cells = useMemo(
+    () => buildCells(visibleYear, visibleMonth),
+    [visibleMonth, visibleYear]
+  );
+
+  const today = toCalendarDate(new Date());
+  const mainFeast = dayData?.main_feast || dayData?.all_feasts?.[0] || null;
+  const otherFeasts = (dayData?.all_feasts || []).filter(
+    (feast) => feast.source_id !== mainFeast?.source_id
+  );
+
+  const moveMonth = (delta) => {
+    const next = new Date(visibleYear, visibleMonth - 1 + delta, 1);
+    setVisibleYear(next.getFullYear());
+    setVisibleMonth(next.getMonth() + 1);
+  };
+
+  const selectCell = (cell) => {
+    setSelectedDate(cell.date);
+
+    if (cell.month !== visibleMonth || cell.year !== visibleYear) {
+      setVisibleMonth(cell.month);
+      setVisibleYear(cell.year);
+    }
+  };
+
+  const calendar = (
+    <View style={styles.calendarCard}>
+      <View style={styles.calendarHeader}>
+        <Pressable
+          hitSlop={8}
+          onPress={() => moveMonth(-1)}
+          style={({pressed}) => [styles.monthArrowButton, pressed && styles.pressed]}
+        >
+          <Text style={styles.monthArrow}>‹</Text>
+        </Pressable>
+
+        <Text style={styles.monthTitle}>
+          {MONTHS[visibleMonth - 1]} {visibleYear}
+        </Text>
+
+        <Pressable
+          hitSlop={8}
+          onPress={() => moveMonth(1)}
+          style={({pressed}) => [styles.monthArrowButton, pressed && styles.pressed]}
+        >
+          <Text style={styles.monthArrow}>›</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.weekRow}>
+        {WEEKDAYS.map((weekday, index) => (
+          <Text
+            key={weekday}
+            style={[
+              styles.weekday,
+              index >= 5 && styles.weekendText,
+            ]}
+          >
+            {weekday}
+          </Text>
+        ))}
+      </View>
+
+      {loadingMonth ? (
+        <View style={styles.calendarLoading}>
+          <ActivityIndicator color="#8E5D32" />
+        </View>
+      ) : (
+        <View style={styles.grid}>
+          {cells.map((cell, index) => {
+            const apiDay = daysMap.get(cell.date);
+            const selected = selectedDate === cell.date;
+            const isToday = today === cell.date;
+            const weekend = index % 7 >= 5;
+            const hasGreatFeast =
+              apiDay?.main_feast?.celebration_type === 'great' ||
+              apiDay?.main_feast?.celebration_rank === 'vigil';
+
+            return (
+              <Pressable
+                key={cell.date}
+                onPress={() => selectCell(cell)}
+                style={({pressed}) => [
+                  styles.dayCell,
+                  selected && styles.dayCellSelected,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.dayBubble,
+                    isToday && styles.dayBubbleToday,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.dayNumber,
+                      cell.outside && styles.dayOutside,
+                      weekend && !cell.outside && styles.weekendText,
+                      isToday && styles.dayNumberToday,
+                    ]}
+                  >
+                    {cell.day}
+                  </Text>
+                </View>
+
+                {!!apiDay && !cell.outside && (
+                  <View
+                    style={[
+                      styles.dayDot,
+                      hasGreatFeast && styles.dayDotGreat,
+                    ]}
+                  />
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+
+  const feastList = (
+    <View style={styles.otherSaintsCard}>
+      <Text style={styles.sectionEyebrow}>ТАКЖЕ В ЭТОТ ДЕНЬ</Text>
+
+      {otherFeasts.length ? (
+        otherFeasts.map((feast) => (
+          <View key={feast.source_id} style={styles.otherSaintRow}>
+            <View style={styles.otherSaintDot} />
+            <Text style={styles.otherSaintText}>
+              {displayTitle(feast)}
+            </Text>
+          </View>
+        ))
+      ) : (
+        <Text style={styles.otherSaintEmpty}>Другие памяти не указаны</Text>
+      )}
+    </View>
+  );
+
+  const dayContent = (
+    <View style={styles.dayCard}>
+      {loadingDay ? (
+        <View style={styles.dayLoading}>
+          <ActivityIndicator size="large" color="#8E5D32" />
+        </View>
+      ) : dayData ? (
+        <>
+          <Text style={styles.dayDate}>
+            {new Date(dayData.date_gregorian + 'T12:00:00').toLocaleDateString(
+              'ru-RU',
+              {day: 'numeric', month: 'long', year: 'numeric'}
+            )}
+          </Text>
+
+          <View style={styles.feastHero}>
+            <View style={styles.feastImageWrap}>
+              {mainFeast?.icon_url ? (
+                <Image
+                  source={{uri: mainFeast.icon_url}}
+                  style={styles.feastImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.feastImageFallback}>
+                  <Text style={styles.feastImageCross}>☦</Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.feastHeroText}>
+              <Text style={styles.feastMemory}>ПАМЯТЬ СВЯТОГО / ПРАЗДНИК</Text>
+              <Text style={styles.feastTitle}>{displayTitle(mainFeast)}</Text>
+
+              {!!formatFast(dayData) && (
+                <View style={styles.fastBadge}>
+                  <Text style={styles.fastBadgeText}>{formatFast(dayData)}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {!!mainFeast?.life_content && (
+            <ExpandableTextBlock
+              title="Житие"
+              subtitle={mainFeast.life_title}
+              text={mainFeast.life_content}
+            />
+          )}
+
+          {!!mainFeast?.troparion_content && (
+            <ExpandableTextBlock
+              title="Тропарь"
+              subtitle={
+                mainFeast.troparion_echo
+                  ? `Глас ${mainFeast.troparion_echo}`
+                  : mainFeast.troparion_title
+              }
+              text={mainFeast.troparion_content}
+            />
+          )}
+
+          {!!mainFeast?.kontakion_content && (
+            <ExpandableTextBlock
+              title="Кондак"
+              subtitle={
+                mainFeast.kontakion_echo
+                  ? `Глас ${mainFeast.kontakion_echo}`
+                  : mainFeast.kontakion_title
+              }
+              text={mainFeast.kontakion_content}
+            />
+          )}
+
+          <View style={styles.readingsSection}>
+            <Text style={styles.sectionEyebrow}>ЧТЕНИЯ ДНЯ</Text>
+
+            <ReadingLink
+              kind="gospel"
+              title={dayData.gospel_title}
+              navigation={navigation}
+            />
+
+            <ReadingLink
+              kind="apostle"
+              title={dayData.apostolic_title}
+              navigation={navigation}
+            />
+
+            {!dayData.gospel_title && !dayData.apostolic_title && (
+              <Text style={styles.noReadings}>Чтения для этого дня пока не указаны</Text>
+            )}
+          </View>
+        </>
+      ) : (
+        <Text style={styles.errorText}>{error || 'Нет данных для выбранного дня'}</Text>
+      )}
+    </View>
+  );
+
+  return (
+    <AppBackground imageOpacity={0.42}>
+      <StatusBar style="light" translucent backgroundColor="transparent" />
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingTop: headerHeight + 14,
+            paddingBottom: 34 + insets.bottom,
+          },
+        ]}
+      >
+        {!!error && !dayData && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerText}>{error}</Text>
+          </View>
+        )}
+
+        {wide ? (
+          <View style={styles.wideLayout}>
+            <View style={styles.sidebar}>
+              {calendar}
+              {feastList}
+            </View>
+            <View style={styles.mainColumn}>{dayContent}</View>
+          </View>
+        ) : (
+          <>
+            {calendar}
+            {feastList}
+            {dayContent}
+          </>
+        )}
+      </ScrollView>
+
+      <FixedSectionHeader
+        title="Церковный календарь"
+        navigation={navigation}
+        topInset={insets.top}
+      />
+    </AppBackground>
+  );
+};
+
+const styles = StyleSheet.create({
+  content: {
+    paddingHorizontal: 10,
+  },
+  wideLayout: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
+  },
+  sidebar: {
+    width: 320,
+    gap: 10,
+  },
+  mainColumn: {
+    flex: 1,
+  },
+  calendarCard: {
+    padding: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(123,79,36,0.18)',
+    backgroundColor: 'rgba(255,245,224,0.98)',
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 7,
+  },
+  monthArrowButton: {
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monthArrow: {
+    color: '#6F4727',
+    fontSize: 28,
+    lineHeight: 30,
+  },
+  monthTitle: {
+    flex: 1,
+    textAlign: 'center',
+    color: '#4B3020',
+    fontFamily: 'serif',
+    fontSize: 19,
+    fontWeight: '700',
+  },
+  weekRow: {
+    flexDirection: 'row',
+    paddingVertical: 4,
+  },
+  weekday: {
+    width: '14.2857%',
+    textAlign: 'center',
+    color: '#7E6B5B',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  weekendText: {
+    color: '#A54A3A',
+  },
+  calendarLoading: {
+    height: 230,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  dayCell: {
+    width: '14.2857%',
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+  },
+  dayCellSelected: {
+    backgroundColor: 'rgba(184,123,56,0.11)',
+  },
+  dayBubble: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+  },
+  dayBubbleToday: {
+    backgroundColor: '#9A642E',
+  },
+  dayNumber: {
+    color: '#493225',
+    fontSize: 13,
+  },
+  dayNumberToday: {
+    color: '#FFF7E7',
+    fontWeight: '800',
+  },
+  dayOutside: {
+    color: '#B7ADA4',
+  },
+  dayDot: {
+    width: 3,
+    height: 3,
+    marginTop: -2,
+    borderRadius: 2,
+    backgroundColor: '#B9864B',
+  },
+  dayDotGreat: {
+    width: 5,
+    height: 5,
+    backgroundColor: '#A54A3A',
+  },
+  otherSaintsCard: {
+    marginTop: 10,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(123,79,36,0.15)',
+    backgroundColor: 'rgba(255,245,224,0.95)',
+  },
+  sectionEyebrow: {
+    color: '#89623F',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  otherSaintRow: {
+    marginTop: 9,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  otherSaintDot: {
+    width: 5,
+    height: 5,
+    marginTop: 7,
+    marginRight: 8,
+    borderRadius: 3,
+    backgroundColor: '#A66B32',
+  },
+  otherSaintText: {
+    flex: 1,
+    color: '#503524',
+    fontFamily: 'serif',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  otherSaintEmpty: {
+    marginTop: 8,
+    color: '#8A7563',
+    fontSize: 12,
+  },
+  dayCard: {
+    marginTop: 10,
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(123,79,36,0.17)',
+    backgroundColor: '#FFF4DE',
+  },
+  dayLoading: {
+    minHeight: 340,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayDate: {
+    marginBottom: 12,
+    color: '#765238',
+    fontFamily: 'serif',
+    fontSize: 15,
+  },
+  feastHero: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingBottom: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(123,79,36,0.19)',
+  },
+  feastImageWrap: {
+    width: 88,
+    height: 104,
+    borderRadius: 13,
+    overflow: 'hidden',
+    backgroundColor: '#EED7B3',
+  },
+  feastImage: {
+    width: '100%',
+    height: '100%',
+  },
+  feastImageFallback: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  feastImageCross: {
+    color: '#8E5D32',
+    fontSize: 38,
+  },
+  feastHeroText: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: 13,
+  },
+  feastMemory: {
+    color: '#A16E35',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.7,
+  },
+  feastTitle: {
+    marginTop: 4,
+    color: '#3F291B',
+    fontFamily: 'serif',
+    fontSize: 20,
+    lineHeight: 25,
+    fontWeight: '700',
+  },
+  fastBadge: {
+    alignSelf: 'flex-start',
+    marginTop: 9,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 9,
+    backgroundColor: '#EAD7B8',
+  },
+  fastBadgeText: {
+    color: '#6C4A31',
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '700',
+  },
+  textBlock: {
+    marginTop: 12,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: 'rgba(126,82,38,0.16)',
+    backgroundColor: 'rgba(255,250,240,0.76)',
+    overflow: 'hidden',
+  },
+  textBlockHeader: {
+    minHeight: 52,
+    paddingHorizontal: 13,
+    paddingVertical: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  textBlockHeaderText: {
+    flex: 1,
+  },
+  textBlockTitle: {
+    color: '#4A3020',
+    fontFamily: 'serif',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  textBlockSubtitle: {
+    marginTop: 2,
+    color: '#8D6B50',
+    fontSize: 11,
+  },
+  textBlockArrow: {
+    marginLeft: 10,
+    color: '#986332',
+    fontSize: 21,
+  },
+  textBlockContent: {
+    paddingHorizontal: 13,
+    paddingBottom: 14,
+    color: '#4A3426',
+    fontFamily: 'serif',
+    fontSize: 15,
+    lineHeight: 24,
+  },
+  readingsSection: {
+    marginTop: 16,
+  },
+  readingLink: {
+    marginTop: 9,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: 'rgba(126,82,38,0.18)',
+    backgroundColor: '#F7E8CF',
+  },
+  readingLinkDisabled: {
+    opacity: 0.72,
+  },
+  readingIcon: {
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 11,
+    backgroundColor: '#E6CBA0',
+  },
+  readingIconText: {
+    color: '#7C4F28',
+    fontSize: 19,
+  },
+  readingTextWrap: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: 10,
+  },
+  readingKind: {
+    color: '#9A6839',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  readingTitle: {
+    marginTop: 2,
+    color: '#412C1E',
+    fontFamily: 'serif',
+    fontSize: 14,
+    lineHeight: 19,
+    fontWeight: '700',
+  },
+  readingHint: {
+    marginTop: 3,
+    color: '#92602F',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  readingHintMuted: {
+    marginTop: 3,
+    color: '#938373',
+    fontSize: 10,
+  },
+  readingArrow: {
+    marginLeft: 7,
+    color: '#92602F',
+    fontSize: 24,
+  },
+  noReadings: {
+    marginTop: 10,
+    color: '#8A7563',
+    fontSize: 12,
+  },
+  errorBanner: {
+    marginBottom: 10,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#F5E0C9',
+  },
+  errorBannerText: {
+    color: '#7B4D2D',
+    fontSize: 12,
+  },
+  errorText: {
+    paddingVertical: 40,
+    textAlign: 'center',
+    color: colors.textSecondary,
+  },
+  pressed: {
+    opacity: 0.64,
+  },
+});
