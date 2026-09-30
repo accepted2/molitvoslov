@@ -103,8 +103,8 @@ const ParallelText = ({church, russian, churchStyle, russianStyle}) => {
   );
 };
 
-const PsalmParallel = ({psalm, showLabels = false}) => {
-  const verses = psalm?.verses || [];
+const PsalmParallel = ({psalm, verses: verseItems = null, showLabels = false}) => {
+  const verses = verseItems || psalm?.verses || [];
   const hasRussian = verses.some((verse) => String(verse?.russian || '').trim());
 
   return (
@@ -148,6 +148,49 @@ const PsalmParallel = ({psalm, showLabels = false}) => {
   );
 };
 
+const psalmChunks = (psalm, glories) => {
+  const chunks = [];
+  let verses = [];
+
+  const flush = (gloryAfter = false) => {
+    if (!verses.length) {
+      return;
+    }
+
+    chunks.push({
+      verses,
+      gloryAfter,
+    });
+
+    verses = [];
+  };
+
+  (psalm?.verses || []).forEach((verse) => {
+    verses.push(verse);
+
+    const gloryAfterVerse = (glories || []).some(
+      (item) => Number(item?.after_verse) === Number(verse?.id)
+    );
+
+    if (gloryAfterVerse) {
+      flush(true);
+    }
+  });
+
+  flush(false);
+
+  if (
+    chunks.length &&
+    (glories || []).some(
+      (item) => Number(item?.after_psalm) === Number(psalm?.id)
+    )
+  ) {
+    chunks[chunks.length - 1].gloryAfter = true;
+  }
+
+  return chunks;
+};
+
 const PsalterPrayer = ({prayer}) => {
   const mode = psalterMode(prayer);
   const kathisma = getKathisma(prayer);
@@ -181,31 +224,21 @@ const PsalterPrayer = ({prayer}) => {
         <View key={psalm.id || psalm.number} style={styles.psalmSection}>
           <Text style={styles.psalmTitle}>Псалом {psalm.number}</Text>
 
-          <PsalmParallel psalm={psalm} showLabels={psalmIndex === 0} />
+          {psalmChunks(psalm, glories).map((chunk, chunkIndex) => (
+            <View key={`${psalm.id || psalm.number}-${chunkIndex}`}>
+              <PsalmParallel
+                psalm={psalm}
+                verses={chunk.verses}
+                showLabels={psalmIndex === 0 && chunkIndex === 0}
+              />
 
-          {(psalm.verses || []).map((verse) => {
-            const glory = glories.find(
-              (item) => Number(item?.after_verse) === Number(verse?.id)
-            );
-
-            if (!glory) {
-              return null;
-            }
-
-            return (
-              <View key={`glory-verse-${verse.id}`} style={styles.gloryBlock}>
-                <Text style={styles.gloryText}>{GLORY_TEXT}</Text>
-              </View>
-            );
-          })}
-
-          {glories.some(
-            (item) => Number(item?.after_psalm) === Number(psalm?.id)
-          ) && (
-            <View style={styles.gloryBlock}>
-              <Text style={styles.gloryText}>{GLORY_TEXT}</Text>
+              {chunk.gloryAfter && (
+                <View style={styles.gloryBlock}>
+                  <Text style={styles.gloryText}>{GLORY_TEXT}</Text>
+                </View>
+              )}
             </View>
-          )}
+          ))}
         </View>
       ))}
 
