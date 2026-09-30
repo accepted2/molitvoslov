@@ -425,6 +425,14 @@ export const MenuScreen = ({navigation}) => {
     useCallback(() => {
       loadProgress();
 
+      getCalendarLanguage()
+        .then((language) => {
+          if (language !== calendarLanguage) {
+            setCalendarLanguageState(language);
+          }
+        })
+        .catch(() => {});
+
       if (dailyQuote?.id) {
         getSavedItems({
           source_type: 'daily_quote',
@@ -436,7 +444,12 @@ export const MenuScreen = ({navigation}) => {
           .then((saved) => setSavedDailyQuote(saved[0] || null))
           .catch((err) => console.log('Ошибка загрузки сохранённой цитаты:', err));
       }
-    }, [loadProgress, dailyQuote?.id, updateQuoteWidget])
+    }, [
+      loadProgress,
+      dailyQuote?.id,
+      updateQuoteWidget,
+      calendarLanguage,
+    ])
   );
 
   const updateCalendarWidget = useCallback(async (day = calendarToday, language = calendarLanguage) => {
