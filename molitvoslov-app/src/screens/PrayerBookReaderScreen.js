@@ -1,4 +1,4 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 import {
   Image,
   ScrollView,
@@ -12,7 +12,218 @@ import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getPrayerBook} from '../services/prayerBooks';
-import {colors} from '../theme';
+
+const bundledContent = require('../data/offlineContent.json');
+
+const GLORY_TEXT = `Слава Отцу и Сыну и Святому Духу.
+И ныне и присно и во веки веков. Аминь.
+
+Аллилуиа, аллилуиа, аллилуиа, слава Тебе, Боже. (Трижды)
+Господи, помилуй. (Трижды)
+
+Слава Отцу и Сыну и Святому Духу.
+
+[Здесь можно прочитать прошение о здравии / об упокоении и помянуть имена.]
+
+И ныне и присно и во веки веков. Аминь.`;
+
+const prayerOrigin = (prayer) => {
+  const origin = prayer?.origin_data || {};
+
+  return {
+    ...(origin.metadata || {}),
+    ...origin,
+  };
+};
+
+const psalterMode = (prayer) => {
+  const origin = prayerOrigin(prayer);
+
+  if (origin.source_type !== 'psalter') {
+    return null;
+  }
+
+  if (origin.save_type === 'kathisma' || origin.anchor_type === 'kathisma') {
+    return 'kathisma';
+  }
+
+  if (
+    origin.save_type === 'psalm' ||
+    origin.anchor_type === 'psalm' ||
+    (origin.search_source === 'global_prayer_search' && origin.psalm_id)
+  ) {
+    return 'psalm';
+  }
+
+  return null;
+};
+
+const getKathisma = (prayer) => {
+  const origin = prayerOrigin(prayer);
+  const number = Number(origin.kathisma_number || 0);
+
+  if (!number) {
+    return null;
+  }
+
+  return bundledContent?.kathismas?.by_number?.[String(number)] || null;
+};
+
+const getPsalm = (kathisma, prayer) => {
+  const origin = prayerOrigin(prayer);
+  const psalmId = Number(origin.psalm_id || origin.anchor_id || 0);
+  const psalmNumber = Number(origin.psalm_number || 0);
+
+  return (
+    (kathisma?.psalms || []).find(
+      (item) =>
+        (psalmId && Number(item.id) === psalmId) ||
+        (psalmNumber && Number(item.number) === psalmNumber)
+    ) || null
+  );
+};
+
+const ParallelText = ({church, russian, churchStyle, russianStyle}) => {
+  if (!russian) {
+    return <Text style={[styles.psalterText, churchStyle]}>{church}</Text>;
+  }
+
+  return (
+    <View style={styles.parallelRow}>
+      <View style={styles.parallelColumnLeft}>
+        <Text style={[styles.psalterText, churchStyle]}>{church}</Text>
+      </View>
+
+      <View style={styles.parallelColumnRight}>
+        <Text style={[styles.psalterText, styles.psalterRussian, russianStyle]}>
+          {russian}
+        </Text>
+      </View>
+    </View>
+  );
+};
+
+const PsalmParallel = ({psalm, showLabels = false}) => {
+  const verses = psalm?.verses || [];
+  const hasRussian = verses.some((verse) => String(verse?.russian || '').trim());
+
+  return (
+    <View>
+      {showLabels && hasRussian && (
+        <View style={styles.languageRow}>
+          <Text style={styles.languageLabel}>ЦЕРКОВНОСЛАВЯНСКИЙ</Text>
+          <Text style={[styles.languageLabel, styles.languageLabelRussian]}>РУССКИЙ</Text>
+        </View>
+      )}
+
+      {verses.map((verse) => {
+        const church = String(verse?.church_slavonic || '').trim();
+        const russian = String(verse?.russian || '').trim();
+
+        if (!church && !russian) {
+          return null;
+        }
+
+        return (
+          <View key={verse.id || verse.number} style={styles.verseRow}>
+            <View style={styles.parallelColumnLeft}>
+              <Text style={styles.psalterText}>
+                <Text style={styles.verseNumber}>{verse.number} </Text>
+                {church || russian}
+              </Text>
+            </View>
+
+            {hasRussian && (
+              <View style={styles.parallelColumnRight}>
+                <Text style={[styles.psalterText, styles.psalterRussian]}>
+                  <Text style={styles.verseNumberRussian}>{verse.number} </Text>
+                  {russian || church}
+                </Text>
+              </View>
+            )}
+          </View>
+        );
+      })}
+    </View>
+  );
+};
+
+const PsalterPrayer = ({prayer}) => {
+  const mode = psalterMode(prayer);
+  const kathisma = getKathisma(prayer);
+
+  if (!mode || !kathisma) {
+    return null;
+  }
+
+  if (mode === 'psalm') {
+    const psalm = getPsalm(kathisma, prayer);
+
+    if (!psalm) {
+      return null;
+    }
+
+    return (
+      <View>
+        <Text style={styles.title}>{prayer.title || `Псалом ${psalm.number}`}</Text>
+        <PsalmParallel psalm={psalm} showLabels />
+      </View>
+    );
+  }
+
+  const glories = kathisma.glories || [];
+
+  return (
+    <View>
+      <Text style={styles.title}>{prayer.title || `Кафизма ${kathisma.number}`}</Text>
+
+      {(kathisma.psalms || []).map((psalm, psalmIndex) => (
+        <View key={psalm.id || psalm.number} style={styles.psalmSection}>
+          <Text style={styles.psalmTitle}>Псалом {psalm.number}</Text>
+
+          <PsalmParallel psalm={psalm} showLabels={psalmIndex === 0} />
+
+          {(psalm.verses || []).map((verse) => {
+            const glory = glories.find(
+              (item) => Number(item?.after_verse) === Number(verse?.id)
+            );
+
+            if (!glory) {
+              return null;
+            }
+
+            return (
+              <View key={`glory-verse-${verse.id}`} style={styles.gloryBlock}>
+                <Text style={styles.gloryText}>{GLORY_TEXT}</Text>
+              </View>
+            );
+          })}
+
+          {glories.some(
+            (item) => Number(item?.after_psalm) === Number(psalm?.id)
+          ) && (
+            <View style={styles.gloryBlock}>
+              <Text style={styles.gloryText}>{GLORY_TEXT}</Text>
+            </View>
+          )}
+        </View>
+      ))}
+
+      {!!kathisma.prayers_after && (
+        <View style={styles.afterPrayers}>
+          <Text style={styles.psalmTitle}>Молитвы после кафизмы</Text>
+
+          <ParallelText
+            church={String(kathisma.prayers_after || '').trim()}
+            russian={String(kathisma.prayers_after_russian || '').trim()}
+            churchStyle={styles.afterPrayerText}
+            russianStyle={styles.afterPrayerText}
+          />
+        </View>
+      )}
+    </View>
+  );
+};
 
 export const PrayerBookReaderScreen = ({route, navigation}) => {
   const {bookSyncId} = route.params;
@@ -31,70 +242,81 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
     }, [load])
   );
 
+  const items = useMemo(() => book?.items || [], [book]);
+
   return (
     <View style={styles.screen}>
       <StatusBar style="light" translucent backgroundColor="transparent" />
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingTop: headerHeight + 14,
-            paddingHorizontal: 14,
-            paddingBottom: 36 + insets.bottom,
-          }}
-        >
-          {!!book?.description && (
-            <Text style={styles.description}>{book.description}</Text>
-          )}
 
-          {(book?.items || []).map((item, index) => {
-            const prayer = item.prayer;
-            return (
-              <View key={item.sync_id} style={styles.section}>
-                <Text style={styles.title}>{prayer.title}</Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingTop: headerHeight + 14,
+          paddingHorizontal: 14,
+          paddingBottom: 36 + insets.bottom,
+        }}
+      >
+        {!!book?.description && (
+          <Text style={styles.description}>{book.description}</Text>
+        )}
 
-                {!!prayer.text && (
-                  <Text style={styles.text} selectable>
-                    {prayer.text}
-                  </Text>
-                )}
+        {items.map((item, index) => {
+          const prayer = item.prayer;
+          const mode = psalterMode(prayer);
 
-                {!!prayer.photos?.length && (
-                  <View style={styles.photos}>
-                    {prayer.photos.map((photo) => (
-                      <Image
-                        key={photo.sync_id}
-                        source={{uri: photo.uri}}
-                        style={styles.photo}
-                        resizeMode="contain"
-                      />
-                    ))}
-                  </View>
-                )}
+          return (
+            <View key={item.sync_id} style={styles.section}>
+              {mode ? (
+                <PsalterPrayer prayer={prayer} />
+              ) : (
+                <>
+                  <Text style={styles.title}>{prayer.title}</Text>
 
-                {index < (book?.items?.length || 0) - 1 && (
-                  <View style={styles.separator}>
-                    <View style={styles.line} />
-                    <Text style={styles.mark}>✦</Text>
-                    <View style={styles.line} />
-                  </View>
-                )}
-              </View>
-            );
-          })}
+                  {!!prayer.text && (
+                    <Text style={styles.text} selectable>
+                      {prayer.text}
+                    </Text>
+                  )}
+                </>
+              )}
 
-          {!book?.items?.length && (
-            <View style={styles.empty}>
-              <Text style={styles.emptyText}>В этом молитвослове пока нет молитв.</Text>
+              {!!prayer.photos?.length && (
+                <View style={styles.photos}>
+                  {prayer.photos.map((photo) => (
+                    <Image
+                      key={photo.sync_id}
+                      source={{uri: photo.uri}}
+                      style={styles.photo}
+                      resizeMode="contain"
+                    />
+                  ))}
+                </View>
+              )}
+
+              {index < items.length - 1 && (
+                <View style={styles.separator}>
+                  <View style={styles.line} />
+                  <Text style={styles.mark}>✦</Text>
+                  <View style={styles.line} />
+                </View>
+              )}
             </View>
-          )}
-        </ScrollView>
+          );
+        })}
 
-        <FixedSectionHeader
-          title={book?.title || 'Мой молитвослов'}
-          navigation={navigation}
-          topInset={insets.top}
-          showTitle={false}
-        />
+        {!items.length && (
+          <View style={styles.empty}>
+            <Text style={styles.emptyText}>В этом молитвослове пока нет молитв.</Text>
+          </View>
+        )}
+      </ScrollView>
+
+      <FixedSectionHeader
+        title={book?.title || 'Мой молитвослов'}
+        navigation={navigation}
+        topInset={insets.top}
+        showTitle={false}
+      />
     </View>
   );
 };
@@ -115,7 +337,7 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
   },
   title: {
-    marginBottom: 10,
+    marginBottom: 12,
     textAlign: 'center',
     color: '#7A4F2D',
     fontFamily: 'serif',
@@ -128,6 +350,100 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
     fontSize: 16,
     lineHeight: 26,
+    textAlign: 'justify',
+  },
+  languageRow: {
+    marginBottom: 7,
+    flexDirection: 'row',
+  },
+  languageLabel: {
+    flex: 1,
+    paddingRight: 9,
+    color: '#A16E35',
+    fontSize: 10,
+    lineHeight: 14,
+    fontWeight: '800',
+    letterSpacing: 0.35,
+  },
+  languageLabelRussian: {
+    paddingLeft: 9,
+    paddingRight: 0,
+    color: '#877666',
+  },
+  parallelRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  verseRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    marginBottom: 7,
+  },
+  parallelColumnLeft: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: 9,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: 'rgba(123,79,36,0.20)',
+  },
+  parallelColumnRight: {
+    flex: 1,
+    minWidth: 0,
+    paddingLeft: 9,
+  },
+  psalterText: {
+    color: '#3E2A1D',
+    fontFamily: 'serif',
+    fontSize: 16,
+    lineHeight: 25,
+    textAlign: 'left',
+  },
+  psalterRussian: {
+    color: '#765238',
+  },
+  verseNumber: {
+    color: '#A16E35',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  verseNumberRussian: {
+    color: '#978E83',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  psalmSection: {
+    marginBottom: 18,
+  },
+  psalmTitle: {
+    marginBottom: 10,
+    textAlign: 'center',
+    color: '#7A4F2D',
+    fontFamily: 'serif',
+    fontSize: 17,
+    lineHeight: 23,
+    fontWeight: '700',
+  },
+  gloryBlock: {
+    marginVertical: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(123,79,36,0.20)',
+  },
+  gloryText: {
+    color: '#765238',
+    fontFamily: 'serif',
+    fontSize: 14,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  afterPrayers: {
+    marginTop: 4,
+  },
+  afterPrayerText: {
+    fontSize: 15,
+    lineHeight: 23,
     textAlign: 'justify',
   },
   photos: {marginTop: 14, gap: 10},
