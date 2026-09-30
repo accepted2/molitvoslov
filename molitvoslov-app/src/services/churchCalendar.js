@@ -265,22 +265,26 @@ export const resolveBibleReference = (title) => {
   };
 };
 
-export const getBibleReadingText = (title) => {
+export const getBibleReadingVerses = (title) => {
   const target = resolveBibleReference(title);
 
   if (!target) {
-    return '';
+    return [];
   }
 
-  const parts = [];
+  const result = [];
   const startChapter = Number(target.startChapter);
   const endChapter = Number(target.endChapter || startChapter);
 
   if (endChapter < startChapter || endChapter - startChapter > 3) {
-    return '';
+    return [];
   }
 
-  for (let chapterNumber = startChapter; chapterNumber <= endChapter; chapterNumber += 1) {
+  for (
+    let chapterNumber = startChapter;
+    chapterNumber <= endChapter;
+    chapterNumber += 1
+  ) {
     const chapter = bibleContent.getChapter(target.book.id, chapterNumber);
 
     if (!chapter) {
@@ -288,9 +292,7 @@ export const getBibleReadingText = (title) => {
     }
 
     const startVerse =
-      chapterNumber === startChapter
-        ? Number(target.startVerse)
-        : 1;
+      chapterNumber === startChapter ? Number(target.startVerse) : 1;
 
     const lastVerseInChapter = Number(
       chapter.verses?.[chapter.verses.length - 1]?.number || 0
@@ -301,28 +303,49 @@ export const getBibleReadingText = (title) => {
         ? Number(target.endVerse)
         : lastVerseInChapter;
 
-    const verses = (chapter.verses || []).filter(
-      (verse) =>
-        Number(verse.number) >= startVerse &&
-        Number(verse.number) <= endVerse
-    );
-
-    if (!verses.length) {
-      continue;
-    }
-
-    if (startChapter !== endChapter) {
-      parts.push(`Глава ${chapterNumber}`);
-    }
-
-    parts.push(
-      verses
-        .map((verse) => `${verse.number} ${String(verse.text || '').trim()}`)
-        .join('\n')
-    );
+    (chapter.verses || [])
+      .filter(
+        (verse) =>
+          Number(verse.number) >= startVerse &&
+          Number(verse.number) <= endVerse
+      )
+      .forEach((verse) => {
+        result.push({
+          chapterNumber,
+          verseNumber: Number(verse.number),
+          text: String(verse.text || '').trim(),
+        });
+      });
   }
 
-  return parts.join('\n\n').trim();
+  return result;
+};
+
+export const getBibleReadingText = (title) => {
+  const verses = getBibleReadingVerses(title);
+
+  if (!verses.length) {
+    return '';
+  }
+
+  const parts = [];
+  let previousChapter = null;
+  const multipleChapters =
+    new Set(verses.map((verse) => verse.chapterNumber)).size > 1;
+
+  verses.forEach((verse) => {
+    if (multipleChapters && verse.chapterNumber !== previousChapter) {
+      if (parts.length) {
+        parts.push('');
+      }
+      parts.push(`Глава ${verse.chapterNumber}`);
+      previousChapter = verse.chapterNumber;
+    }
+
+    parts.push(`${verse.verseNumber} ${verse.text}`);
+  });
+
+  return parts.join('\n').trim();
 };
 
 export const openCalendarBibleReference = (navigation, title) => {
