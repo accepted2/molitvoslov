@@ -193,6 +193,23 @@ export const FavoritesScreen = ({navigation}) => {
                 paddingBottom: 115 + insets.bottom,
               },
             ]}
+            ListHeaderComponent={
+              <Pressable
+                onPress={() => navigation.navigate('PrayerBooks')}
+                style={({pressed}) => [styles.prayerBooksCard, pressed && styles.pressed]}
+              >
+                <View style={styles.prayerBooksIcon}>
+                  <Text style={styles.prayerBooksIconText}>✚</Text>
+                </View>
+                <View style={styles.prayerBooksText}>
+                  <Text style={styles.prayerBooksTitle}>Мой молитвослов</Text>
+                  <Text style={styles.prayerBooksSubtitle}>
+                    Соберите свои молитвы в отдельные сборники
+                  </Text>
+                </View>
+                <Text style={styles.prayerBooksChevron}>›</Text>
+              </Pressable>
+            }
             ListEmptyComponent={
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyHeart}>♡</Text>
@@ -308,6 +325,57 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     padding: spacing.md,
+  },
+
+  prayerBooksCard: {
+    minHeight: 72,
+    marginBottom: 14,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: 'rgba(126, 82, 38, 0.22)',
+    backgroundColor: 'rgba(250, 236, 209, 0.97)',
+  },
+
+  prayerBooksIcon: {
+    width: 42,
+    height: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: '#EFD8AE',
+  },
+
+  prayerBooksIconText: {
+    color: '#7A4F2D',
+    fontSize: 20,
+  },
+
+  prayerBooksText: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: 12,
+  },
+
+  prayerBooksTitle: {
+    color: '#3E2A1D',
+    fontFamily: 'serif',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+
+  prayerBooksSubtitle: {
+    marginTop: 4,
+    color: '#81634D',
+    fontSize: 12,
+    lineHeight: 17,
+  },
+
+  prayerBooksChevron: {
+    color: '#9A714C',
+    fontSize: 26,
   },
 
   emptyCard: {
