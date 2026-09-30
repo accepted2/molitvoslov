@@ -16,15 +16,9 @@ export const BottomNav = ({navigation, active}) => {
   return (
     <View pointerEvents="box-none" style={styles.wrapper}>
       <LinearGradient
-        pointerEvents="box-none"
-        colors={[
-          'rgba(239, 211, 160, 0)',
-          'rgba(239, 211, 160, 0.18)',
-          'rgba(239, 211, 160, 0.48)',
-          'rgba(239, 211, 160, 0.78)',
-          'rgba(239, 211, 160, 0.94)',
-        ]}
-        locations={[0, 0.22, 0.45, 0.7, 1]}
+        colors={['#3D2416', '#5A341D']}
+        start={{x: 0, y: 0}}
+        end={{x: 1, y: 1}}
         style={[
           styles.container,
           {
@@ -32,12 +26,6 @@ export const BottomNav = ({navigation, active}) => {
           },
         ]}
       >
-        <View style={styles.ornamentRow}>
-          <View style={styles.ornamentLine} />
-          <Text style={styles.ornamentCross}>✥</Text>
-          <View style={styles.ornamentLine} />
-        </View>
-
         <View style={styles.itemsRow}>
           {ITEMS.map((item) => {
             const isActive = item.key === active;
@@ -45,14 +33,17 @@ export const BottomNav = ({navigation, active}) => {
             return (
               <Pressable
                 key={item.key}
+                accessibilityRole="button"
+                accessibilityState={{selected: isActive}}
                 onPress={() => navigation.navigate(item.route)}
-                style={({pressed}) => [styles.item, pressed && styles.pressed]}
+                style={({pressed}) => [
+                  styles.item,
+                  isActive && styles.itemActive,
+                  pressed && styles.pressed,
+                ]}
               >
                 <Text style={[styles.symbol, isActive && styles.symbolActive]}>{item.symbol}</Text>
-
                 <Text style={[styles.label, isActive && styles.labelActive]}>{item.label}</Text>
-
-                <View style={[styles.activeDot, !isActive && styles.activeDotHidden]} />
               </Pressable>
             );
           })}
@@ -65,38 +56,29 @@ export const BottomNav = ({navigation, active}) => {
 const styles = StyleSheet.create({
   wrapper: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
+    left: 10,
+    right: 10,
+    bottom: 6,
     zIndex: 30,
   },
 
   container: {
-    paddingTop: 20,
-    paddingHorizontal: 18,
-  },
-
-  ornamentRow: {
-    height: 13,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 18,
-  },
-
-  ornamentLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(83, 48, 23, 0.26)',
-  },
-
-  ornamentCross: {
-    marginHorizontal: 8,
-    color: 'rgba(83, 48, 23, 0.55)',
-    fontSize: 10,
+    overflow: 'hidden',
+    paddingTop: 6,
+    paddingHorizontal: 6,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(246, 216, 162, 0.16)',
+    shadowColor: '#2C170B',
+    shadowOffset: {width: 0, height: 5},
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    elevation: 8,
   },
 
   itemsRow: {
     flexDirection: 'row',
+    gap: 4,
   },
 
   item: {
@@ -104,45 +86,41 @@ const styles = StyleSheet.create({
     minHeight: 58,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 18,
+  },
+
+  itemActive: {
+    backgroundColor: 'rgba(173, 108, 49, 0.28)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 199, 127, 0.14)',
   },
 
   pressed: {
-    opacity: 0.58,
+    opacity: 0.66,
   },
 
   symbol: {
-    color: '#4B2E1B',
+    color: '#E3C692',
     fontFamily: 'serif',
-    fontSize: 23,
+    fontSize: 24,
     lineHeight: 26,
   },
 
   symbolActive: {
-    color: '#341A09',
+    color: '#FFF5DF',
   },
 
   label: {
     marginTop: 2,
-    color: '#5A3922',
+    color: '#E7D2AB',
     fontFamily: 'serif',
     fontSize: 11,
-    fontWeight: '700',
+    lineHeight: 15,
+    fontWeight: '600',
   },
 
   labelActive: {
-    color: '#341A09',
+    color: '#FFF2D2',
     fontWeight: '800',
-  },
-
-  activeDot: {
-    width: 4,
-    height: 4,
-    marginTop: 4,
-    borderRadius: 2,
-    backgroundColor: '#7C421E',
-  },
-
-  activeDotHidden: {
-    opacity: 0,
   },
 });
