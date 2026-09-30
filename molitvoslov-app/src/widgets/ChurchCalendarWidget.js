@@ -10,6 +10,8 @@ import {
 import {CALENDAR_MONTHS, calendarText} from '../services/calendarPreferences';
 import {formatFast} from '../services/churchCalendar';
 
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
 const buildMonthCells = (date) => {
   const year = date.getFullYear();
   const month = date.getMonth();
@@ -53,17 +55,48 @@ export const ChurchCalendarWidget = ({
   const today = new Date();
   const cells = buildMonthCells(today);
   const weeks = chunk(cells, 7);
-  const compact = Number(height) < 125;
+
+  const widgetWidth = Number(width) || 320;
+  const widgetHeight = Number(height) || 150;
+  const compact = widgetHeight < 145;
+  const narrow = widgetWidth < 285;
+
   const feast =
     day?.main_feast?.short_title ||
     day?.main_feast?.title ||
     copy.saintMemory;
   const fast = formatFast(day, lang) || copy.noFastData;
 
-  const horizontalPadding = compact ? 10 : 13;
-  const titleSize = compact ? 11 : 12;
-  const feastSize = compact ? 11 : 12;
-  const calendarNumberSize = compact ? 8 : 9;
+  const horizontalPadding = compact ? 9 : 12;
+  const verticalPadding = compact ? 8 : 10;
+  const titleSize = compact ? 10 : 11;
+  const feastSize = compact ? 10 : 11;
+  const dateSize = compact ? 17 : 19;
+
+  /*
+   * Android home-screen widgets are rendered through RemoteViews/image output.
+   * flex: 1 on seven tiny TextWidgets is not reliable on every launcher:
+   * some launchers squeeze all weekday labels and dates into the left edge.
+   *
+   * Use explicit cell widths so the seven calendar columns always keep
+   * their geometry regardless of the launcher-reported widget size.
+   */
+  const desiredCalendarWidth = clamp(
+    Math.round(widgetWidth * (narrow ? 0.40 : 0.36)),
+    narrow ? 102 : 108,
+    compact ? 124 : 136
+  );
+  const panelInset = 8;
+  const cellWidth = Math.max(
+    14,
+    Math.floor((desiredCalendarWidth - panelInset) / 7)
+  );
+  const gridWidth = cellWidth * 7;
+  const calendarPanelWidth = gridWidth + panelInset;
+  const weekdayHeight = compact ? 9 : 10;
+  const rowHeight = compact ? 13 : 15;
+  const calendarNumberSize = compact ? 7 : 8;
+  const todayBubbleSize = compact ? 12 : 14;
 
   return (
     <OverlapWidget
@@ -83,7 +116,7 @@ export const ChurchCalendarWidget = ({
           height: 'match_parent',
           flexDirection: 'row',
           paddingHorizontal: horizontalPadding,
-          paddingVertical: compact ? 9 : 11,
+          paddingVertical: verticalPadding,
           backgroundColor: '#F4E1C2',
           borderRadius: 18,
           borderWidth: 1,
@@ -93,7 +126,8 @@ export const ChurchCalendarWidget = ({
         <FlexWidget
           style={{
             flex: 1,
-            paddingRight: 10,
+            minWidth: 0,
+            paddingRight: compact ? 7 : 9,
             justifyContent: 'space-between',
           }}
         >
@@ -101,6 +135,7 @@ export const ChurchCalendarWidget = ({
             <TextWidget
               text={copy.calendarTitle}
               allowFontScaling={false}
+              maxLines={1}
               style={{
                 color: '#6A4328',
                 fontFamily: 'Ponomar',
@@ -113,12 +148,13 @@ export const ChurchCalendarWidget = ({
             <TextWidget
               text={`${today.getDate()} ${locale.genitive[today.getMonth()]}`}
               allowFontScaling={false}
+              maxLines={1}
               style={{
                 marginTop: 3,
                 color: '#2F1E13',
                 fontFamily: 'Ponomar',
-                fontSize: compact ? 17 : 20,
-                lineHeight: compact ? 20 : 23,
+                fontSize: dateSize,
+                lineHeight: dateSize + 3,
                 fontWeight: '700',
               }}
             />
@@ -126,12 +162,13 @@ export const ChurchCalendarWidget = ({
             <TextWidget
               text={locale.weekdays[today.getDay()]}
               allowFontScaling={false}
+              maxLines={1}
               style={{
                 marginTop: 1,
                 color: '#8A6547',
                 fontFamily: 'Ponomar',
                 fontSize: 9,
-                lineHeight: 12,
+                lineHeight: 11,
               }}
             />
           </FlexWidget>
@@ -158,8 +195,8 @@ export const ChurchCalendarWidget = ({
                 marginTop: 3,
                 color: '#7B593F',
                 fontFamily: 'Ponomar',
-                fontSize: 9,
-                lineHeight: 12,
+                fontSize: 8,
+                lineHeight: 11,
               }}
             />
           </FlexWidget>
@@ -167,21 +204,23 @@ export const ChurchCalendarWidget = ({
 
         <FlexWidget
           style={{
-            width: compact ? 138 : 152,
-            paddingLeft: 9,
+            width: calendarPanelWidth,
+            paddingLeft: panelInset,
             borderLeftWidth: 1,
             borderLeftColor: '#D6B88E',
+            alignItems: 'center',
           }}
         >
           <TextWidget
             text={`${locale.nominative[today.getMonth()]} ${today.getFullYear()}`}
             allowFontScaling={false}
+            maxLines={1}
             style={{
-              width: 'match_parent',
+              width: gridWidth,
               color: '#5B3A25',
               fontFamily: 'Ponomar',
-              fontSize: 10,
-              lineHeight: 13,
+              fontSize: compact ? 8 : 9,
+              lineHeight: compact ? 11 : 12,
               fontWeight: '700',
               textAlign: 'center',
             }}
@@ -189,22 +228,24 @@ export const ChurchCalendarWidget = ({
 
           <FlexWidget
             style={{
-              width: 'match_parent',
+              width: gridWidth,
               flexDirection: 'row',
-              marginTop: 4,
+              marginTop: compact ? 2 : 3,
             }}
           >
             {locale.miniWeekdays.map((weekday, index) => (
               <TextWidget
-                key={weekday}
+                key={`weekday-${index}`}
                 text={weekday}
                 allowFontScaling={false}
+                maxLines={1}
                 style={{
-                  flex: 1,
+                  width: cellWidth,
+                  height: weekdayHeight,
                   color: index >= 5 ? '#A05243' : '#8B725E',
                   fontFamily: 'Ponomar',
-                  fontSize: 7,
-                  lineHeight: 10,
+                  fontSize: compact ? 5 : 6,
+                  lineHeight: weekdayHeight,
                   textAlign: 'center',
                   fontWeight: '700',
                 }}
@@ -216,33 +257,43 @@ export const ChurchCalendarWidget = ({
             <FlexWidget
               key={`week-${weekIndex}`}
               style={{
-                width: 'match_parent',
+                width: gridWidth,
+                height: rowHeight,
                 flexDirection: 'row',
-                marginTop: 1,
               }}
             >
               {week.map((cell, index) => (
-                <TextWidget
+                <FlexWidget
                   key={`${weekIndex}-${index}`}
-                  text={cell.day}
-                  allowFontScaling={false}
                   style={{
-                    flex: 1,
-                    height: compact ? 14 : 16,
-                    color: cell.today
-                      ? '#FFF7E7'
-                      : index >= 5
-                        ? '#A05243'
-                        : '#493225',
-                    backgroundColor: cell.today ? '#A96F35' : '#00000000',
-                    borderRadius: cell.today ? 8 : 0,
-                    fontFamily: 'Ponomar',
-                    fontSize: calendarNumberSize,
-                    lineHeight: compact ? 13 : 15,
-                    textAlign: 'center',
-                    fontWeight: cell.today ? '800' : '500',
+                    width: cellWidth,
+                    height: rowHeight,
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
-                />
+                >
+                  <TextWidget
+                    text={cell.day}
+                    allowFontScaling={false}
+                    maxLines={1}
+                    style={{
+                      width: cell.today ? todayBubbleSize : cellWidth,
+                      height: rowHeight,
+                      color: cell.today
+                        ? '#FFF7E7'
+                        : index >= 5
+                          ? '#A05243'
+                          : '#493225',
+                      backgroundColor: cell.today ? '#A96F35' : '#00000000',
+                      borderRadius: cell.today ? todayBubbleSize / 2 : 0,
+                      fontFamily: 'Ponomar',
+                      fontSize: calendarNumberSize,
+                      lineHeight: rowHeight,
+                      textAlign: 'center',
+                      fontWeight: cell.today ? '800' : '500',
+                    }}
+                  />
+                </FlexWidget>
               ))}
             </FlexWidget>
           ))}
