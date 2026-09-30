@@ -67,3 +67,41 @@ class CalendarApiTests(APITestCase):
 
         self.assertIsNotNone(day.main_feast)
         self.assertEqual(day.main_feast.source_id, 602)
+
+
+    def test_day_endpoint_can_return_ukrainian_calendar_text(self):
+        feast = CalendarFeast.objects.create(
+            source_id=701,
+            title="Святитель",
+            short_title="Святитель",
+            title_uk="Святитель українською",
+            short_title_uk="Святитель українською",
+            troparion_content="Тропарь",
+            troparion_content_uk="Тропар українською",
+        )
+
+        day = CalendarDay.objects.create(
+            date_gregorian=date(2026, 10, 2),
+            main_feast=feast,
+            fast_type_code="fast",
+            fast_type_title="Постный день",
+            fast_type_title_uk="Пісний день",
+            gospel_title="Мф. 10:17-22",
+            gospel_title_uk="Мт. 10:17-22",
+            source_payload={"imported_languages": ["ru", "uk"]},
+        )
+        day.feasts.add(feast)
+
+        response = self.client.get(
+            "/api/calendar/day/",
+            {"date": "2026-10-02", "lang": "uk"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data["main_feast"]["title"],
+            "Святитель українською",
+        )
+        self.assertEqual(response.data["fast_type_title"], "Пісний день")
+        self.assertEqual(response.data["gospel_title"], "Мт. 10:17-22")
+        self.assertEqual(response.data["weekday_name"], "П’ятниця")
