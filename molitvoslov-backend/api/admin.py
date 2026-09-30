@@ -23,6 +23,10 @@ from .models import (
     SavedItem,
     MemorialBook,
     MemorialPhoto,
+    PersonalPrayerBook,
+    PersonalPrayer,
+    PersonalPrayerBookItem,
+    PersonalPrayerPhoto,
 )
 
 
@@ -947,3 +951,40 @@ class MemorialPhotoAdmin(admin.ModelAdmin):
         "order",
         "created_at",
     ]
+
+
+# =========================================================
+# ЛИЧНЫЙ МОЛИТВОСЛОВ
+# =========================================================
+
+
+@admin.register(PersonalPrayerBook)
+class PersonalPrayerBookAdmin(admin.ModelAdmin):
+    list_display = ["title", "user", "updated_at", "deleted_at"]
+    search_fields = ["title", "description", "user__username", "user__email"]
+    list_filter = ["deleted_at", "updated_at"]
+    readonly_fields = ["sync_id", "created_at", "updated_at"]
+
+
+@admin.register(PersonalPrayer)
+class PersonalPrayerAdmin(admin.ModelAdmin):
+    list_display = ["title", "user", "origin_type", "updated_at", "deleted_at"]
+    search_fields = ["title", "text", "user__username", "user__email"]
+    list_filter = ["origin_type", "deleted_at"]
+    readonly_fields = ["sync_id", "created_at", "updated_at"]
+
+
+@admin.register(PersonalPrayerBookItem)
+class PersonalPrayerBookItemAdmin(admin.ModelAdmin):
+    list_display = ["book", "prayer", "order", "deleted_at"]
+    search_fields = ["book__title", "prayer__title"]
+    list_filter = ["deleted_at"]
+    readonly_fields = ["sync_id", "created_at", "updated_at"]
+
+
+@admin.register(PersonalPrayerPhoto)
+class PersonalPrayerPhotoAdmin(admin.ModelAdmin):
+    list_display = ["prayer", "original_name", "content_type", "order", "deleted_at"]
+    search_fields = ["prayer__title", "original_name", "storage_path"]
+    list_filter = ["content_type", "deleted_at"]
+    readonly_fields = ["sync_id", "storage_path", "created_at", "updated_at"]
