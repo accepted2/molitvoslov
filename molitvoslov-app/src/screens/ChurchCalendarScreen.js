@@ -16,6 +16,7 @@ import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {
   formatFast,
+  getBibleReadingText,
   getCalendarDay,
   getCalendarMonth,
   openCalendarBibleReference,
@@ -110,40 +111,75 @@ const ExpandableTextBlock = ({title, subtitle, text}) => {
 };
 
 const ReadingLink = ({kind, title, navigation}) => {
+  const [expanded, setExpanded] = useState(false);
+
   if (!title) return null;
 
   const target = resolveBibleReference(title);
+  const readingText = getBibleReadingText(title);
 
   return (
-    <Pressable
-      disabled={!target}
-      onPress={() => openCalendarBibleReference(navigation, title)}
-      style={({pressed}) => [
-        styles.readingLink,
-        !target && styles.readingLinkDisabled,
-        pressed && styles.pressed,
-      ]}
-    >
-      <View style={styles.readingIcon}>
-        <Text style={styles.readingIconText}>{kind === 'gospel' ? '✠' : '✦'}</Text>
-      </View>
+    <View style={styles.readingCard}>
+      <Pressable
+        disabled={!target}
+        onPress={() => openCalendarBibleReference(navigation, title)}
+        style={({pressed}) => [
+          styles.readingLink,
+          !target && styles.readingLinkDisabled,
+          pressed && styles.pressed,
+        ]}
+      >
+        <View style={styles.readingIcon}>
+          <Text style={styles.readingIconText}>
+            {kind === 'gospel' ? '✠' : '✦'}
+          </Text>
+        </View>
 
-      <View style={styles.readingTextWrap}>
-        <Text style={styles.readingKind}>
-          {kind === 'gospel' ? 'ЕВАНГЕЛИЕ ДНЯ' : 'АПОСТОЛ ДНЯ'}
-        </Text>
-        <Text style={styles.readingTitle}>{title}</Text>
-        {target ? (
-          <Text style={styles.readingHint}>Открыть в Библии</Text>
-        ) : (
-          <Text style={styles.readingHintMuted}>Ссылка пока не распознана</Text>
-        )}
-      </View>
+        <View style={styles.readingTextWrap}>
+          <Text style={styles.readingKind}>
+            {kind === 'gospel' ? 'ЕВАНГЕЛИЕ ДНЯ' : 'АПОСТОЛ ДНЯ'}
+          </Text>
+          <Text style={styles.readingTitle}>{title}</Text>
+          {target ? (
+            <Text style={styles.readingHint}>Открыть в Библии</Text>
+          ) : (
+            <Text style={styles.readingHintMuted}>
+              Ссылка пока не распознана
+            </Text>
+          )}
+        </View>
 
-      {!!target && <Text style={styles.readingArrow}>›</Text>}
-    </Pressable>
+        {!!target && <Text style={styles.readingArrow}>›</Text>}
+      </Pressable>
+
+      {!!readingText && (
+        <>
+          <Pressable
+            onPress={() => setExpanded((value) => !value)}
+            style={({pressed}) => [
+              styles.readingExpand,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={styles.readingExpandText}>
+              {expanded ? 'Скрыть текст' : 'Читать текст'}
+            </Text>
+            <Text style={styles.readingExpandArrow}>
+              {expanded ? '⌃' : '⌄'}
+            </Text>
+          </Pressable>
+
+          {expanded && (
+            <Text style={styles.readingContent} selectable>
+              {readingText}
+            </Text>
+          )}
+        </>
+      )}
+    </View>
   );
 };
+
 
 export const ChurchCalendarScreen = ({route, navigation}) => {
   const insets = useSafeAreaInsets();
@@ -785,15 +821,18 @@ const styles = StyleSheet.create({
   readingsSection: {
     marginTop: 16,
   },
-  readingLink: {
+  readingCard: {
     marginTop: 9,
-    padding: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
     borderRadius: 13,
     borderWidth: 1,
     borderColor: 'rgba(126,82,38,0.18)',
     backgroundColor: '#F7E8CF',
+    overflow: 'hidden',
+  },
+  readingLink: {
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   readingLinkDisabled: {
     opacity: 0.72,
@@ -844,6 +883,32 @@ const styles = StyleSheet.create({
     marginLeft: 7,
     color: '#92602F',
     fontSize: 24,
+  },
+  readingExpand: {
+    minHeight: 38,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(126,82,38,0.16)',
+  },
+  readingExpandText: {
+    color: '#8B5B30',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  readingExpandArrow: {
+    color: '#8B5B30',
+    fontSize: 18,
+  },
+  readingContent: {
+    paddingHorizontal: 13,
+    paddingBottom: 14,
+    color: '#493226',
+    fontFamily: 'serif',
+    fontSize: 15,
+    lineHeight: 24,
   },
   noReadings: {
     marginTop: 10,
