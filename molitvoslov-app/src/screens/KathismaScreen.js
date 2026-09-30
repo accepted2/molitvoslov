@@ -393,6 +393,81 @@ export default function KathismaScreen({route, navigation}) {
       };
     }
 
+    if (anchorType === 'psalm_verse') {
+      const verseId = Number(focusTarget.anchor_id || focusTarget.anchorId);
+      const language = metadata.language === 'russian' ? 'russian' : 'church';
+      const field = language === 'russian' ? 'russian' : 'church_slavonic';
+
+      for (const psalm of kathisma.psalms || []) {
+        const chunks = [];
+        let currentChunk = [];
+
+        const flush = () => {
+          if (currentChunk.length) {
+            chunks.push(currentChunk);
+            currentChunk = [];
+          }
+        };
+
+        for (const verse of psalm.verses || []) {
+          currentChunk.push(verse);
+
+          const hasGloryAfterVerse = (kathisma.glories || []).some(
+            (item) => Number(item.after_verse) === Number(verse.id)
+          );
+
+          if (hasGloryAfterVerse) {
+            flush();
+          }
+        }
+
+        flush();
+
+        const chunkIndex = chunks.findIndex((chunk) =>
+          chunk.some((verse) => Number(verse.id) === verseId)
+        );
+
+        if (chunkIndex < 0) {
+          continue;
+        }
+
+        const built = buildLanguageChunk(chunks[chunkIndex], field);
+        const range = built.verseRanges.find(
+          (item) => Number(item.verseId) === verseId
+        );
+
+        if (!range) {
+          return focusTarget;
+        }
+
+        const legacyStart =
+          focusTarget.start_offset === null || focusTarget.start_offset === undefined
+            ? null
+            : Number(focusTarget.start_offset);
+        const legacyEnd =
+          focusTarget.end_offset === null || focusTarget.end_offset === undefined
+            ? null
+            : Number(focusTarget.end_offset);
+
+        return {
+          ...focusTarget,
+          anchor_type: 'psalm_text',
+          anchor_id: Number(psalm.id),
+          start_offset:
+            legacyStart === null ? null : range.contentStart + legacyStart,
+          end_offset:
+            legacyEnd === null ? null : range.contentStart + legacyEnd,
+          metadata: {
+            ...metadata,
+            psalm_id: Number(psalm.id),
+            psalm_number: Number(psalm.number),
+            chunk_index: chunkIndex,
+            language,
+          },
+        };
+      }
+    }
+
     return focusTarget;
   }, [focusTarget, kathisma]);
 
