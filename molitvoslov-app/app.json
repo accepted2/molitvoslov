@@ -2,7 +2,7 @@
   "expo": {
     "name": "Молитвослов",
     "slug": "molitvoslov",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/branding/app-icon.png",
     "userInterfaceStyle": "light",
@@ -16,7 +16,7 @@
         "foregroundImage": "./assets/branding/app-icon.png"
       },
       "package": "com.accepted2.molitvoslov",
-      "versionCode": 7
+      "versionCode": 8
     },
     "web": {
       "favicon": "./assets/branding/app-icon.png"
@@ -43,14 +43,17 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#F7ECD8",
-          "image": "./assets/splash-icon.png",
-          "imageWidth": 180,
+          "image": "./assets/branding/app-icon.png",
+          "imageWidth": 150,
           "resizeMode": "contain"
         }
       ],
       [
         "react-native-android-widget",
         {
+          "fonts": [
+            "./assets/fonts/Ponomar-Regular.ttf"
+          ],
           "widgets": [
             {
               "name": "QuoteOfDay",
@@ -63,15 +66,24 @@
               "resizeMode": "horizontal|vertical",
               "updatePeriodMillis": 3600000,
               "widgetFeatures": "reconfigurable"
+            },
+            {
+              "name": "ChurchCalendar",
+              "label": "Церковный календарь",
+              "description": "Дата, память дня, пост и календарь месяца",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 3600000
             }
           ]
         }
-      ]
+      ],
+      "expo-font"
     ],
-    "androidNavigationBar": {
-      "backgroundColor": "#FFF4DE",
-      "barStyle": "dark-content"
-    },
+
     "owner": "anatoliy1",
     "extra": {
       "eas": {

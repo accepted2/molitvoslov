@@ -7,7 +7,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import MemorialBook
+from .models import MemorialBook, PersonalPrayer, PersonalPrayerBook, PersonalPrayerBookItem
 
 
 class MemorialBookApiTests(APITestCase):
@@ -274,3 +274,110 @@ class MemorialBookApiTests(APITestCase):
             len(all_response.data),
             1,
         )
+
+
+
+class PersonalPrayerBookApiTests(APITestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.user = user_model.objects.create_user(
+            username="prayer-book-owner",
+            email="prayer@example.com",
+            password="test-password",
+        )
+        self.other_user = user_model.objects.create_user(
+            username="prayer-book-other",
+            email="other-prayer@example.com",
+            password="test-password",
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_create_prayer_book_prayer_and_item(self):
+        book_sync_id = uuid.uuid4()
+        prayer_sync_id = uuid.uuid4()
+        item_sync_id = uuid.uuid4()
+        now = timezone.now().isoformat()
+
+        book_response = self.client.post(
+            reverse("personal-prayer-books-list"),
+            {
+                "sync_id": str(book_sync_id),
+                "title": "Перед дорогой",
+                "description": "Личный сборник",
+                "updated_at": now,
+            },
+            format="json",
+        )
+        self.assertEqual(book_response.status_code, status.HTTP_201_CREATED)
+
+        prayer_response = self.client.post(
+            reverse("personal-prayers-list"),
+            {
+                "sync_id": str(prayer_sync_id),
+                "title": "Молитва путешествующего",
+                "text": "Господи, благослови путь.",
+                "origin_type": "custom",
+                "origin_data": {"created_in_app": True},
+                "updated_at": now,
+            },
+            format="json",
+        )
+        self.assertEqual(prayer_response.status_code, status.HTTP_201_CREATED)
+
+        item_response = self.client.post(
+            reverse("personal-prayer-book-items-list"),
+            {
+                "sync_id": str(item_sync_id),
+                "book_sync_id": str(book_sync_id),
+                "prayer_sync_id": str(prayer_sync_id),
+                "order": 0,
+                "updated_at": now,
+            },
+            format="json",
+        )
+        self.assertEqual(item_response.status_code, status.HTTP_201_CREATED)
+
+        book = PersonalPrayerBook.objects.get(sync_id=book_sync_id)
+        prayer = PersonalPrayer.objects.get(sync_id=prayer_sync_id)
+        item = PersonalPrayerBookItem.objects.get(sync_id=item_sync_id)
+
+        self.assertEqual(book.user, self.user)
+        self.assertEqual(prayer.user, self.user)
+        self.assertEqual(item.book, book)
+        self.assertEqual(item.prayer, prayer)
+
+        detail = self.client.get(
+            reverse(
+                "personal-prayer-books-detail",
+                kwargs={"sync_id": str(book_sync_id)},
+            )
+        )
+        self.assertEqual(detail.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(detail.data["items"]), 1)
+        self.assertEqual(
+            detail.data["items"][0]["prayer"]["text"],
+            "Господи, благослови путь.",
+        )
+
+    def test_cannot_add_another_users_prayer(self):
+        foreign_book = PersonalPrayerBook.objects.create(
+            user=self.other_user,
+            title="Чужой сборник",
+        )
+        foreign_prayer = PersonalPrayer.objects.create(
+            user=self.other_user,
+            title="Чужая молитва",
+            text="Текст",
+        )
+
+        response = self.client.post(
+            reverse("personal-prayer-book-items-list"),
+            {
+                "book_sync_id": str(foreign_book.sync_id),
+                "prayer_sync_id": str(foreign_prayer.sync_id),
+                "order": 0,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

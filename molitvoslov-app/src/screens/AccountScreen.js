@@ -13,6 +13,7 @@ import {syncSavedItems} from '../services/savedItems';
 import {syncReadingProgress} from '../services/readingProgress';
 
 import {syncMemorials} from '../services/memorials';
+import {syncPrayerBooks} from '../services/prayerBooks';
 
 import {colors, radius, spacing} from '../theme';
 
@@ -72,29 +73,33 @@ export const AccountScreen = ({navigation}) => {
        * входа сразу восстанавливаем
        * облачные данные пользователя.
        */
-      const [savedItemsSyncResult, readingProgressSyncResult, memorialsSyncResult] =
+      const [savedItemsSyncResult, readingProgressSyncResult, memorialsSyncResult, prayerBooksSyncResult] =
         await Promise.all([
           syncSavedItems(),
           syncReadingProgress(),
           syncMemorials(),
+          syncPrayerBooks(),
         ]);
 
       if (
         savedItemsSyncResult?.success &&
         readingProgressSyncResult?.success &&
-        memorialsSyncResult?.success
+        memorialsSyncResult?.success &&
+        prayerBooksSyncResult?.success
       ) {
         console.log('Cloud sync OK: google-login');
       } else {
         const error =
           savedItemsSyncResult?.error ||
           readingProgressSyncResult?.error ||
-          memorialsSyncResult?.error;
+          memorialsSyncResult?.error ||
+          prayerBooksSyncResult?.error;
 
         const reason =
           savedItemsSyncResult?.reason ||
           readingProgressSyncResult?.reason ||
-          memorialsSyncResult?.reason;
+          memorialsSyncResult?.reason ||
+          prayerBooksSyncResult?.reason;
 
         console.log('Cloud sync после Google-входа отложен', error?.message || reason || 'unknown');
       }
@@ -162,8 +167,8 @@ export const AccountScreen = ({navigation}) => {
           ) : (
             <View style={styles.card}>
               <Text style={styles.loginDescription}>
-                Войдите через Google, чтобы синхронизировать избранное, прогресс чтения, помянник
-                и другие данные между устройствами.
+                Войдите через Google, чтобы синхронизировать избранное, прогресс чтения, помянник,
+                личные молитвословы и другие данные между устройствами.
               </Text>
 
               <Text style={styles.loginHint}>

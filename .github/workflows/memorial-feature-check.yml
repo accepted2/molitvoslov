@@ -1,9 +1,10 @@
-name: Memorial feature checks
+name: Feature checks
 
 on:
   push:
     branches:
       - feature/memorial-book
+      - feature/custom-prayer-books
   workflow_dispatch:
 
 permissions:
@@ -67,4 +68,4 @@ jobs:
 
       - name: Run Django API tests
         working-directory: molitvoslov-backend
-        run: python manage.py test api.tests
+        run: python manage.py test api.tests api.test_calendar

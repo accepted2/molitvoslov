@@ -26,6 +26,11 @@ import {ContinueReadingScreen} from '../screens/ContinueReadingScreen';
 import {AccountScreen} from '../screens/AccountScreen';
 import {MemorialScreen} from '../screens/MemorialScreen';
 import {MemorialBookScreen} from '../screens/MemorialBookScreen';
+import {PrayerBooksScreen} from '../screens/PrayerBooksScreen';
+import {PrayerBookScreen} from '../screens/PrayerBookScreen';
+import {PersonalPrayerEditorScreen} from '../screens/PersonalPrayerEditorScreen';
+import {PrayerBookReaderScreen} from '../screens/PrayerBookReaderScreen';
+import {ChurchCalendarScreen} from '../screens/ChurchCalendarScreen';
 import {colors} from '../theme';
 import {LinearGradient} from 'expo-linear-gradient';
 const Stack = createStackNavigator();
@@ -95,6 +100,11 @@ export const AppNavigator = () => (
         options={{headerShown: false}}
       />
       <Stack.Screen name="Bible" component={BibleScreen} options={{headerShown: false}} />
+      <Stack.Screen
+        name="ChurchCalendar"
+        component={ChurchCalendarScreen}
+        options={{headerShown: false}}
+      />
       <Stack.Screen name="BibleBooks" component={BibleBooksScreen} options={{headerShown: false}} />
       <Stack.Screen name="BibleBook" component={BibleBookScreen} options={{headerShown: false}} />
       <Stack.Screen
@@ -106,6 +116,18 @@ export const AppNavigator = () => (
       <Stack.Screen
         name="MemorialBook"
         component={MemorialBookScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen name="PrayerBooks" component={PrayerBooksScreen} options={{headerShown: false}} />
+      <Stack.Screen name="PrayerBook" component={PrayerBookScreen} options={{headerShown: false}} />
+      <Stack.Screen
+        name="PersonalPrayerEditor"
+        component={PersonalPrayerEditorScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name="PrayerBookReader"
+        component={PrayerBookReaderScreen}
         options={{headerShown: false}}
       />
       <Stack.Screen name="Account" component={AccountScreen} options={{headerShown: false}} />

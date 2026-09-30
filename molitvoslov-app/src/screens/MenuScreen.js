@@ -3,6 +3,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   ImageBackground,
   Pressable,
   ScrollView,
@@ -26,6 +27,20 @@ import {contentApi as api} from '../services/contentApi';
 import {bibleContent} from '../services/bibleContent';
 import {deleteReadingProgress, getReadingProgress} from '../services/readingProgress';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
+import {
+  formatFast,
+  getCalendarDay,
+  openCalendarBibleReference,
+  resolveBibleReference,
+  toCalendarDate,
+} from '../services/churchCalendar';
+import {
+  CALENDAR_MONTHS,
+  calendarText,
+  getCalendarLanguage,
+  setCalendarLanguage,
+} from '../services/calendarPreferences';
+import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
 import {colors, spacing} from '../theme';
 
 const CATEGORY_ICONS = {
@@ -92,92 +107,89 @@ const PRAYER_RULES = [
     slug: 'molitvy-na-son-griadushchim',
   },
 ];
-const MONTHS_GENITIVE = [
-  'января',
-  'февраля',
-  'марта',
-  'апреля',
-  'мая',
-  'июня',
-  'июля',
-  'августа',
-  'сентября',
-  'октября',
-  'ноября',
-  'декабря',
-];
-
-const MONTHS_NOMINATIVE = [
-  'Январь',
-  'Февраль',
-  'Март',
-  'Апрель',
-  'Май',
-  'Июнь',
-  'Июль',
-  'Август',
-  'Сентябрь',
-  'Октябрь',
-  'Ноябрь',
-  'Декабрь',
-];
-
-const WEEKDAYS = [
-  'воскресенье',
-  'понедельник',
-  'вторник',
-  'среда',
-  'четверг',
-  'пятница',
-  'суббота',
-];
-
-const MINI_WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-
-const createCalendarSnapshot = (date = new Date()) => {
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  const day = date.getDate();
+const createCalendarSnapshot = (
+  visibleDate = new Date(),
+  selectedDate = visibleDate,
+  language = 'ru'
+) => {
+  const locale = CALENDAR_MONTHS[language === 'uk' ? 'uk' : 'ru'];
+  const year = visibleDate.getFullYear();
+  const month = visibleDate.getMonth();
   const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const daysInPreviousMonth = new Date(year, month, 0).getDate();
-
   const visibleCellCount = firstWeekday + daysInMonth <= 35 ? 35 : 42;
+  const selectedKey = toCalendarDate(selectedDate);
+  const todayKey = toCalendarDate(new Date());
 
   const cells = Array.from({length: visibleCellCount}, (_item, index) => {
     const rawDay = index - firstWeekday + 1;
+    let cellYear = year;
+    let cellMonth = month;
+    let cellDay = rawDay;
+    let outside = false;
 
     if (rawDay < 1) {
-      return {
-        day: daysInPreviousMonth + rawDay,
-        outside: true,
-      };
+      cellMonth -= 1;
+      cellDay = daysInPreviousMonth + rawDay;
+      outside = true;
+    } else if (rawDay > daysInMonth) {
+      cellMonth += 1;
+      cellDay = rawDay - daysInMonth;
+      outside = true;
     }
 
-    if (rawDay > daysInMonth) {
-      return {
-        day: rawDay - daysInMonth,
-        outside: true,
-      };
+    if (cellMonth < 0) {
+      cellMonth = 11;
+      cellYear -= 1;
+    } else if (cellMonth > 11) {
+      cellMonth = 0;
+      cellYear += 1;
     }
+
+    const cellDate = new Date(cellYear, cellMonth, cellDay);
+    const dateKey = toCalendarDate(cellDate);
 
     return {
-      day: rawDay,
-      outside: false,
-      today: rawDay === day,
+      day: cellDay,
+      month: cellMonth + 1,
+      year: cellYear,
+      date: dateKey,
+      outside,
+      today: dateKey === todayKey,
+      selected: dateKey === selectedKey,
     };
   });
 
   return {
     year,
     month,
-    day,
-    monthTitle: `${MONTHS_NOMINATIVE[month]} ${year}`,
-    dayTitle: `${day} ${MONTHS_GENITIVE[month]} ${year}`,
-    weekday: WEEKDAYS[date.getDay()],
+    monthTitle: `${locale.nominative[month]} ${year}`,
+    dayTitle: `${selectedDate.getDate()} ${locale.genitive[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`,
+    weekday: locale.weekdays[selectedDate.getDay()],
+    miniWeekdays: locale.miniWeekdays,
+    isSelectedToday: selectedKey === todayKey,
     cells,
   };
 };
+
+const CalendarGlyph = () => (
+  <View style={styles.calendarGlyph}>
+    <View style={styles.calendarGlyphRingLeft} />
+    <View style={styles.calendarGlyphRingRight} />
+    <View style={styles.calendarGlyphTopLine} />
+    <View style={styles.calendarGlyphRow}>
+      <View style={styles.calendarGlyphCell} />
+      <View style={styles.calendarGlyphCell} />
+      <View style={styles.calendarGlyphCell} />
+    </View>
+    <View style={styles.calendarGlyphRow}>
+      <View style={styles.calendarGlyphCell} />
+      <View style={styles.calendarGlyphCell} />
+      <View style={styles.calendarGlyphCell} />
+    </View>
+  </View>
+);
 
 const SearchGlyph = () => (
   <View style={styles.searchGlyph}>
@@ -270,10 +282,29 @@ export const MenuScreen = ({navigation}) => {
   const [loading, setLoading] = useState(true);
   const [dailyQuote, setDailyQuote] = useState(null);
   const [savedDailyQuote, setSavedDailyQuote] = useState(null);
+  const [calendarToday, setCalendarToday] = useState(null);
+  const [calendarLoading, setCalendarLoading] = useState(true);
+  const [calendarLanguage, setCalendarLanguageState] = useState('ru');
+  const [calendarSelectedDate, setCalendarSelectedDate] = useState(() => new Date());
+  const [calendarVisibleMonth, setCalendarVisibleMonth] = useState(
+    () => new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+  );
   const [error, setError] = useState(null);
 
   const insets = useSafeAreaInsets();
-  const calendarSnapshot = useMemo(() => createCalendarSnapshot(new Date()), []);
+  const calendarSnapshot = useMemo(
+    () =>
+      createCalendarSnapshot(
+        calendarVisibleMonth,
+        calendarSelectedDate,
+        calendarLanguage
+      ),
+    [calendarVisibleMonth, calendarSelectedDate, calendarLanguage]
+  );
+  const calendarCopy = useMemo(
+    () => calendarText(calendarLanguage),
+    [calendarLanguage]
+  );
   const loadLibrary = useCallback(async () => {
     try {
       const [
@@ -324,6 +355,21 @@ export const MenuScreen = ({navigation}) => {
     }
   }, []);
 
+  const loadCalendarDay = useCallback(async (targetDate) => {
+    try {
+      setCalendarLoading(true);
+      const day = await getCalendarDay(targetDate, {
+        language: calendarLanguage,
+        force: true,
+      });
+      setCalendarToday(day);
+    } catch (err) {
+      console.log('Ошибка загрузки церковного календаря:', err?.message || err);
+    } finally {
+      setCalendarLoading(false);
+    }
+  }, [calendarLanguage]);
+
   const loadProgress = useCallback(async () => {
     try {
       const progressList = await getReadingProgress();
@@ -365,9 +411,27 @@ export const MenuScreen = ({navigation}) => {
     load();
   }, [loadLibrary, loadProgress, updateQuoteWidget]);
 
+  useEffect(() => {
+    getCalendarLanguage()
+      .then((language) => setCalendarLanguageState(language))
+      .catch(() => setCalendarLanguageState('ru'));
+  }, []);
+
+  useEffect(() => {
+    loadCalendarDay(calendarSelectedDate);
+  }, [calendarSelectedDate, loadCalendarDay]);
+
   useFocusEffect(
     useCallback(() => {
       loadProgress();
+
+      getCalendarLanguage()
+        .then((language) => {
+          if (language !== calendarLanguage) {
+            setCalendarLanguageState(language);
+          }
+        })
+        .catch(() => {});
 
       if (dailyQuote?.id) {
         getSavedItems({
@@ -380,8 +444,116 @@ export const MenuScreen = ({navigation}) => {
           .then((saved) => setSavedDailyQuote(saved[0] || null))
           .catch((err) => console.log('Ошибка загрузки сохранённой цитаты:', err));
       }
-    }, [loadProgress, dailyQuote?.id])
+    }, [
+      loadProgress,
+      dailyQuote?.id,
+      updateQuoteWidget,
+      calendarLanguage,
+    ])
   );
+
+  const updateCalendarWidget = useCallback(async (day = calendarToday, language = calendarLanguage) => {
+    try {
+      await requestWidgetUpdate({
+        widgetName: 'ChurchCalendar',
+        renderWidget: (widgetInfo) => (
+          <ChurchCalendarWidget
+            day={day}
+            language={language}
+            width={widgetInfo.width}
+            height={widgetInfo.height}
+          />
+        ),
+      });
+    } catch (error) {
+      console.log('Ошибка обновления виджета календаря:', error?.message || error);
+    }
+  }, [calendarToday, calendarLanguage]);
+
+  const changeCalendarLanguage = async (language) => {
+    const next = await setCalendarLanguage(language);
+    setCalendarLanguageState(next);
+
+    try {
+      const day = await getCalendarDay(calendarSelectedDate, {
+        language: next,
+        force: true,
+      });
+      setCalendarToday(day);
+
+      const todayKey = toCalendarDate(new Date());
+      const selectedKey = toCalendarDate(calendarSelectedDate);
+      const widgetDay =
+        selectedKey === todayKey
+          ? day
+          : await getCalendarDay(new Date(), {
+              language: next,
+              force: true,
+            });
+
+      await updateCalendarWidget(widgetDay, next);
+    } catch (error) {
+      console.log('Ошибка смены языка календаря:', error?.message || error);
+    }
+  };
+
+  const showCalendarWidgetInfo = async () => {
+    try {
+      const widgets = await getWidgetInfo('ChurchCalendar');
+
+      if (widgets.length > 0) {
+        Alert.alert(
+          calendarCopy.widgetAlready,
+          calendarLanguage === 'uk'
+            ? 'На головному екрані вже встановлено віджет «Церковний календар».'
+            : 'На главном экране уже установлен виджет «Церковный календарь».'
+        );
+        return;
+      }
+
+      const requested = await requestPinWidget({
+        widgetName: 'ChurchCalendar',
+      });
+
+      if (!requested) {
+        Alert.alert(
+          calendarLanguage === 'uk' ? 'Додавання віджета' : 'Добавление виджета',
+          calendarLanguage === 'uk'
+            ? 'Затисніть вільне місце на головному екрані → «Віджети» → «Молитвослов» → «Церковний календар».'
+            : 'Зажмите свободное место на главном экране → «Виджеты» → «Молитвослов» → «Церковный календарь».'
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        calendarLanguage === 'uk' ? 'Не вдалося додати віджет' : 'Не удалось добавить виджет',
+        calendarLanguage === 'uk'
+          ? 'Спробуйте додати його через меню віджетів Android.'
+          : 'Попробуйте добавить его через меню виджетов Android.'
+      );
+    }
+  };
+
+  const moveMiniCalendarMonth = (delta) => {
+    setCalendarVisibleMonth(
+      (current) => new Date(current.getFullYear(), current.getMonth() + delta, 1)
+    );
+  };
+
+  const selectMiniCalendarDate = (cell) => {
+    const next = new Date(cell.year, cell.month - 1, cell.day);
+
+    setCalendarSelectedDate(next);
+
+    if (cell.outside) {
+      setCalendarVisibleMonth(new Date(cell.year, cell.month - 1, 1));
+    }
+  };
+
+  const openFullCalendar = () => {
+    navigation.navigate('ChurchCalendar', {
+      date: toCalendarDate(calendarSelectedDate),
+    });
+  };
 
   const rootCategories = useMemo(
     () => categories.filter((category) => !category.parent),
@@ -714,18 +886,6 @@ export const MenuScreen = ({navigation}) => {
               ]}
               imageStyle={styles.heroImage}
             >
-              <LinearGradient
-                pointerEvents="none"
-                colors={[
-                  'rgba(35, 20, 12, 0.70)',
-                  'rgba(35, 20, 12, 0.38)',
-                  'rgba(35, 20, 12, 0.10)',
-                ]}
-                locations={[0, 0.58, 1]}
-                start={{x: 0, y: 0.45}}
-                end={{x: 0.78, y: 0.45}}
-                style={styles.heroQuoteShade}
-              />
 
               <LinearGradient
                 pointerEvents="none"
@@ -767,15 +927,57 @@ export const MenuScreen = ({navigation}) => {
               </View>
 
               <View style={styles.heroQuoteContent}>
+                <LinearGradient
+                  pointerEvents="none"
+                  colors={[
+                    'rgba(52, 30, 17, 0)',
+                    'rgba(52, 30, 17, 0.48)',
+                    'rgba(52, 30, 17, 0.66)',
+                    'rgba(52, 30, 17, 0.48)',
+                    'rgba(52, 30, 17, 0)',
+                  ]}
+                  locations={[0, 0.14, 0.5, 0.86, 1]}
+                  start={{x: 0, y: 0.5}}
+                  end={{x: 1, y: 0.5}}
+                  style={styles.heroQuoteScrollShade}
+                />
+
+                <LinearGradient
+                  pointerEvents="none"
+                  colors={[
+                    'rgba(52, 30, 17, 0)',
+                    'rgba(52, 30, 17, 0.18)',
+                    'rgba(52, 30, 17, 0.28)',
+                    'rgba(52, 30, 17, 0.18)',
+                    'rgba(52, 30, 17, 0)',
+                  ]}
+                  locations={[0, 0.18, 0.5, 0.82, 1]}
+                  start={{x: 0.5, y: 0}}
+                  end={{x: 0.5, y: 1}}
+                  style={styles.heroQuoteScrollShade}
+                />
                 <View style={styles.heroQuoteHeading}>
-                  <Text style={styles.heroQuoteMark}>❧</Text>
-                  <Text style={styles.heroQuoteLabel}>Цитата дня</Text>
+                  {/*<Text style={styles.heroQuoteMark}>❧</Text>*/}
+                  {/*<Text style={styles.heroQuoteLabel}>Цитата дня</Text>*/}
                 </View>
 
-                <Text style={styles.heroQuoteText} numberOfLines={5}>
-                  {dailyQuote?.text ||
-                    'Молитва и духовное чтение помогают хранить внимание сердца.'}
-                </Text>
+                <View style={styles.quoteStaircase}>
+                  <Text style={[styles.heroQuoteText, styles.quoteLine1]}>
+                    Мир оставляю вам,
+                  </Text>
+
+                  <Text style={[styles.heroQuoteText, styles.quoteLine2]}>
+                    Мир Мой даю вам; не так,
+                  </Text>
+
+                  <Text style={[styles.heroQuoteText, styles.quoteLine3]}>
+                    как мир дает. Я даю вам. Да не
+                  </Text>
+
+                  <Text style={[styles.heroQuoteText, styles.quoteLine4]}>
+                    смущается сердце ваше и да не устрашается.
+                  </Text>
+                </View>
 
                 {!!(dailyQuote?.reference || dailyQuote?.source) && (
                   <Text style={styles.heroQuoteSource}>
@@ -785,29 +987,22 @@ export const MenuScreen = ({navigation}) => {
 
                 <View style={styles.heroQuoteActions}>
                   <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      savedDailyQuote
-                        ? 'Убрать цитату из избранного'
-                        : 'Добавить цитату в избранное'
-                    }
-                    hitSlop={6}
                     onPress={toggleDailyQuoteSaved}
                     style={({pressed}) => [
-                      styles.heroQuoteActionButton,
-                      savedDailyQuote && styles.heroQuoteActionButtonActive,
+                      styles.heroHeartButton,
                       pressed && styles.pressed,
                     ]}
                   >
                     <SaveHeartIcon
                       active={!!savedDailyQuote}
-                      size={18}
-                      color="#F8E5BC"
+                      size={20}
+                      tintColor="#F5DCA5"
                     />
-                    <Text style={styles.heroQuoteActionText}>
-                      {savedDailyQuote ? 'Сохранено' : 'Сохранить'}
-                    </Text>
                   </Pressable>
+                  {/*  <Text style={styles.heroQuoteActionText}>*/}
+                  {/*    {savedDailyQuote ? '' : ''}*/}
+                  {/*  </Text>*/}
+                  {/*</Pressable>*/}
 
                   <Pressable
                     accessibilityRole="button"
@@ -819,9 +1014,9 @@ export const MenuScreen = ({navigation}) => {
                       pressed && styles.pressed,
                     ]}
                   >
-                    <View style={styles.widgetGlyph}>
-                      <View style={styles.widgetGlyphSpeaker} />
-                    </View>
+                    {/*<View style={styles.widgetGlyph}>*/}
+                    {/*  <View style={styles.widgetGlyphSpeaker} />*/}
+                    {/*</View>*/}
                     <Text style={styles.heroQuoteActionText}>На экран</Text>
                   </Pressable>
                 </View>
@@ -830,136 +1025,341 @@ export const MenuScreen = ({navigation}) => {
 
             <View style={styles.pageBody}>
               <View style={styles.calendarCard}>
-                <View style={styles.calendarHeader}>
-                  <View style={styles.calendarTitleWrap}>
-                    <Text style={styles.calendarHeaderIcon}>▦</Text>
-                    <Text style={styles.calendarTitle}>Церковный календарь</Text>
-                  </View>
+              <View style={styles.calendarHeader}>
+                <Pressable
+                  hitSlop={8}
+                  onPress={openFullCalendar}
+                  style={({pressed}) => [
+                    styles.calendarTitleButton,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <CalendarGlyph />
 
+                  <View style={styles.calendarTitleTextWrap}>
+                    <View style={styles.calendarTitleLine}>
+                      <Text style={styles.calendarTitle}>
+                        {calendarCopy.calendarTitle}
+                      </Text>
+
+                      <Text style={styles.calendarTitleArrow}>›</Text>
+                    </View>
+
+                    <Text style={styles.calendarOpenHint}>
+                      {calendarLanguage === 'uk'
+                        ? 'Відкрити календар'
+                        : 'Открыть календарь'}
+                    </Text>
+                  </View>
+                </Pressable>
+
+                <View style={styles.calendarHeaderControls}>
                   <Pressable
-                    hitSlop={8}
-                    onPress={() => showPlaceholder('Церковный календарь')}
+                    hitSlop={6}
+                    onPress={showCalendarWidgetInfo}
                     style={({pressed}) => [
-                      styles.calendarOpenButton,
+                      styles.calendarWidgetButton,
                       pressed && styles.pressed,
                     ]}
                   >
-                    <Text style={styles.calendarOpenText}>Весь календарь</Text>
-                    <Text style={styles.calendarOpenArrow}>›</Text>
+                    <Text style={styles.calendarWidgetButtonIcon}>▣</Text>
+                    <Text style={styles.calendarWidgetButtonText}>
+                      {calendarCopy.onScreen}
+                    </Text>
                   </Pressable>
-                </View>
 
-                <View style={styles.calendarBody}>
-                  <View style={styles.calendarTodayColumn}>
-                    <Text style={styles.calendarTodayLabel}>Сегодня</Text>
-                    <Text style={styles.calendarTodayDate}>{calendarSnapshot.dayTitle}</Text>
-                    <Text style={styles.calendarTodayWeekday}>{calendarSnapshot.weekday}</Text>
+                  <View style={styles.calendarLanguageSwitch}>
+                    {['ru', 'uk'].map((language) => {
+                      const active = calendarLanguage === language;
 
-                    <View style={styles.calendarDivider} />
-
-                    <View style={styles.calendarFeastRow}>
-                      <View style={styles.calendarSaintPlaceholder}>
-                        <Text style={styles.calendarSaintCross}>☦</Text>
-                      </View>
-
-                      <View style={styles.calendarFeastTextWrap}>
-                        <Text style={styles.calendarFeastTitle}>Память святых дня</Text>
-                        <Text style={styles.calendarFeastSubtitle}>
-                          Праздники и чтения
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.calendarMetaRow}>
-                      <Text style={styles.calendarMetaIcon}>◇</Text>
-                      <Text style={styles.calendarMetaText}>Пост: по календарю</Text>
-                    </View>
-
-                    <View style={styles.calendarMetaRow}>
-                      <Text style={styles.calendarMetaIcon}>❧</Text>
-                      <Text style={styles.calendarMetaText}>Ближайший праздник</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.miniCalendar}>
-                    <View style={styles.miniCalendarHeader}>
-                      <Pressable
-                        hitSlop={6}
-                        onPress={() => showPlaceholder('Календарь')}
-                        style={({pressed}) => [
-                          styles.miniCalendarArrowButton,
-                          pressed && styles.pressed,
-                        ]}
-                      >
-                        <Text style={styles.miniCalendarArrow}>‹</Text>
-                      </Pressable>
-
-                      <Text style={styles.miniCalendarMonth} numberOfLines={1}>
-                        {calendarSnapshot.monthTitle}
-                      </Text>
-
-                      <Pressable
-                        hitSlop={6}
-                        onPress={() => showPlaceholder('Календарь')}
-                        style={({pressed}) => [
-                          styles.miniCalendarArrowButton,
-                          pressed && styles.pressed,
-                        ]}
-                      >
-                        <Text style={styles.miniCalendarArrow}>›</Text>
-                      </Pressable>
-                    </View>
-
-                    <View style={styles.miniCalendarWeekdays}>
-                      {MINI_WEEKDAYS.map((weekday, index) => (
-                        <Text
-                          key={weekday}
+                      return (
+                        <Pressable
+                          key={language}
+                          onPress={() => changeCalendarLanguage(language)}
                           style={[
-                            styles.miniCalendarWeekday,
-                            index >= 5 && styles.miniCalendarWeekend,
+                            styles.calendarLanguageButton,
+                            active && styles.calendarLanguageButtonActive,
                           ]}
                         >
-                          {weekday}
-                        </Text>
-                      ))}
-                    </View>
-
-                    <View style={styles.miniCalendarGrid}>
-                      {calendarSnapshot.cells.map((cell, index) => {
-                        const weekend = index % 7 >= 5;
-
-                        return (
-                          <View
-                            key={`${index}-${cell.day}`}
-                            style={styles.miniCalendarCell}
+                          <Text
+                            style={[
+                              styles.calendarLanguageText,
+                              active && styles.calendarLanguageTextActive,
+                            ]}
                           >
-                            <View
-                              style={[
-                                styles.miniCalendarDayBubble,
-                                cell.today && styles.miniCalendarDayBubbleToday,
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  styles.miniCalendarDayText,
-                                  cell.outside && styles.miniCalendarDayOutside,
-                                  weekend &&
-                                    !cell.outside &&
-                                    styles.miniCalendarDayWeekend,
-                                  cell.today && styles.miniCalendarDayToday,
-                                ]}
-                              >
-                                {cell.day}
-                              </Text>
-                            </View>
-                          </View>
-                        );
-                      })}
-                    </View>
+                            {language === 'ru' ? 'РУ' : 'УК'}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
                   </View>
                 </View>
               </View>
 
+              <View style={styles.calendarMainRow}>
+                <View style={styles.calendarTodayColumn}>
+                  <Text
+                    style={styles.calendarTodayDate}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
+                  >
+                    <Text style={styles.calendarTodayDateLabel}>
+                      {calendarSnapshot.isSelectedToday
+                        ? `${calendarCopy.today}: `
+                        : `${calendarCopy.selectedDay}: `}
+                    </Text>
+
+                    {calendarSnapshot.dayTitle}
+                  </Text>
+
+                  <Text style={styles.calendarTodayWeekday}>
+                    {calendarSnapshot.weekday}
+                  </Text>
+
+                  <Pressable
+                    onPress={openFullCalendar}
+                    style={({pressed}) => [
+                      styles.calendarFeastCard,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    {calendarToday?.main_feast?.icon_url ? (
+                      <Image
+                        source={{uri: calendarToday.main_feast.icon_url}}
+                        style={styles.calendarSaintImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={styles.calendarSaintPlaceholder}>
+                        <Text style={styles.calendarSaintCross}>☦</Text>
+                      </View>
+                    )}
+
+                    <View style={styles.calendarFeastTextWrap}>
+                      <Text style={styles.calendarFeastLabel}>
+                        {calendarLanguage === 'uk'
+                          ? 'ПАМ’ЯТЬ ДНЯ'
+                          : 'ПАМЯТЬ ДНЯ'}
+                      </Text>
+
+                      <Text
+                        style={styles.calendarFeastTitle}
+                        numberOfLines={4}
+                      >
+                        {calendarToday?.main_feast?.short_title ||
+                          calendarToday?.main_feast?.title ||
+                          (calendarLoading
+                            ? calendarCopy.loadingMemory
+                            : calendarCopy.saintMemory)}
+                      </Text>
+
+                      {/*{!!calendarToday?.main_feast && (*/}
+                      {/*  <Text*/}
+                      {/*    style={styles.calendarFeastSubtitle}*/}
+                      {/*    numberOfLines={1}*/}
+                      {/*  >*/}
+                      {/*    {calendarToday.main_feast.celebration_type === 'great'*/}
+                      {/*      ? calendarCopy.greatFeast*/}
+                      {/*      : calendarCopy.saintMemory}*/}
+                      {/*  </Text>*/}
+                      {/*)}*/}
+                    </View>
+                  </Pressable>
+                </View>
+
+                <View style={styles.miniCalendar}>
+                  <View style={styles.miniCalendarHeader}>
+                    <Pressable
+                      hitSlop={8}
+                      onPress={() => moveMiniCalendarMonth(-1)}
+                      style={({pressed}) => [
+                        styles.miniCalendarArrowButton,
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <Text style={styles.miniCalendarArrow}>‹</Text>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={openFullCalendar}
+                      style={({pressed}) => [
+                        styles.miniCalendarMonthButton,
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <Text
+                        style={styles.miniCalendarMonth}
+                        numberOfLines={1}
+                      >
+                        {calendarSnapshot.monthTitle}
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      hitSlop={8}
+                      onPress={() => moveMiniCalendarMonth(1)}
+                      style={({pressed}) => [
+                        styles.miniCalendarArrowButton,
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <Text style={styles.miniCalendarArrow}>›</Text>
+                    </Pressable>
+                  </View>
+
+                  <View style={styles.miniCalendarWeekdays}>
+                    {calendarSnapshot.miniWeekdays.map((weekday, index) => (
+                      <Text
+                        key={weekday}
+                        style={[
+                          styles.miniCalendarWeekday,
+                          index >= 5 && styles.miniCalendarWeekend,
+                        ]}
+                      >
+                        {weekday}
+                      </Text>
+                    ))}
+                  </View>
+
+                  <View style={styles.miniCalendarGrid}>
+                    {calendarSnapshot.cells.map((cell, index) => {
+                      const weekend = index % 7 >= 5;
+
+                      return (
+                        <Pressable
+                          key={cell.date}
+                          hitSlop={1}
+                          onPress={() => selectMiniCalendarDate(cell)}
+                          style={({pressed}) => [
+                            styles.miniCalendarCell,
+                            pressed && styles.miniCalendarCellPressed,
+                          ]}
+                        >
+                          <View
+                            style={[
+                              styles.miniCalendarDayBubble,
+                              cell.today &&
+                              styles.miniCalendarDayBubbleToday,
+                              cell.selected &&
+                              !cell.today &&
+                              styles.miniCalendarDayBubbleSelected,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.miniCalendarDayText,
+                                cell.outside &&
+                                styles.miniCalendarDayOutside,
+                                weekend &&
+                                !cell.outside &&
+                                styles.miniCalendarDayWeekend,
+                                cell.today &&
+                                styles.miniCalendarDayToday,
+                                cell.selected &&
+                                !cell.today &&
+                                styles.miniCalendarDaySelected,
+                              ]}
+                            >
+                              {cell.day}
+                            </Text>
+                          </View>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.calendarQuickRow}>
+                <Pressable
+                  onPress={openFullCalendar}
+                  style={({pressed}) => [
+                    styles.calendarQuickItem,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.calendarQuickLabel}>
+                    {calendarLanguage === 'uk' ? 'ПІСТ' : 'ПОСТ'}
+                  </Text>
+
+                  <Text
+                    style={styles.calendarQuickText}
+                    numberOfLines={2}
+                  >
+                    {formatFast(calendarToday, calendarLanguage) ||
+                      calendarCopy.noFastData}
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  disabled={
+                    !resolveBibleReference(calendarToday?.gospel_title)
+                  }
+                  onPress={() =>
+                    openCalendarBibleReference(
+                      navigation,
+                      calendarToday?.gospel_title
+                    )
+                  }
+                  style={({pressed}) => [
+                    styles.calendarQuickItem,
+                    styles.calendarQuickItemBorder,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.calendarQuickLabel}>
+                    {calendarLanguage === 'uk'
+                      ? 'ЄВАНГЕЛІЄ'
+                      : 'ЕВАНГЕЛИЕ'}
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.calendarQuickText,
+                      !!resolveBibleReference(calendarToday?.gospel_title) &&
+                      styles.calendarBibleLink,
+                    ]}
+                    numberOfLines={2}
+                  >
+                    {calendarToday?.gospel_title || '—'}
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  disabled={
+                    !resolveBibleReference(calendarToday?.apostolic_title)
+                  }
+                  onPress={() =>
+                    openCalendarBibleReference(
+                      navigation,
+                      calendarToday?.apostolic_title
+                    )
+                  }
+                  style={({pressed}) => [
+                    styles.calendarQuickItem,
+                    styles.calendarQuickItemBorder,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.calendarQuickLabel}>
+                    {calendarLanguage === 'uk' ? 'АПОСТОЛ' : 'АПОСТОЛ'}
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.calendarQuickText,
+                      !!resolveBibleReference(
+                        calendarToday?.apostolic_title
+                      ) && styles.calendarBibleLink,
+                    ]}
+                    numberOfLines={2}
+                  >
+                    {calendarToday?.apostolic_title || '—'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
               <View style={styles.readingCard}>
                 <View style={styles.readingHeader}>
                   <Pressable
@@ -1178,7 +1578,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   hero: {
-    minHeight: 330,
+    minHeight: 305,
     justifyContent: 'flex-start',
     paddingHorizontal: 18,
     paddingBottom: 22,
@@ -1188,6 +1588,8 @@ const styles = StyleSheet.create({
 
   heroImage: {
     opacity: 1,
+    maxHeight: 320,
+
   },
 
   heroQuoteShade: {
@@ -1195,7 +1597,15 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     bottom: 0,
-    width: '82%',
+    width: '30%',
+  },
+  heroQuoteLocalShade: {
+    position: 'absolute',
+    top: -8,
+    left: -18,
+    bottom: -8,
+    width: '95%',
+    borderRadius: 0,
   },
 
   heroBottomGradient: {
@@ -1217,8 +1627,8 @@ const styles = StyleSheet.create({
 
   heroRoundAction: {
     position: 'relative',
-    width: 46,
-    height: 46,
+    width: 38,
+    height: 38,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 23,
@@ -1232,9 +1642,31 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 
+  quoteStaircase: {
+    width: '100%',
+    alignItems: 'flex-start',
+  },
+
+  quoteLine1: {
+    width: '68%',
+  },
+
+  quoteLine2: {
+    width: '88%',
+  },
+
+  quoteLine3: {
+    width: '96%',
+  },
+
+  quoteLine4: {
+    width: '100%',
+  },
   searchGlyph: {
-    width: 18,
-    height: 18,
+    width: 15,
+    height: 15,
+    left:-1,
+    top: -1,
     borderWidth: 2,
     borderColor: '#4E2F1C',
     borderRadius: 9,
@@ -1244,7 +1676,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: -5,
     bottom: -2,
-    width: 8,
+    width: 6,
     height: 2,
     borderRadius: 1,
     backgroundColor: '#4E2F1C',
@@ -1296,11 +1728,17 @@ const styles = StyleSheet.create({
     borderColor: '#FFF1D5',
   },
 
-  heroQuoteContent: {
-    width: '74%',
-    marginTop: 74,
-    zIndex: 3,
-  },
+  // heroQuoteContent: {
+  //   width: '100%',
+  //   marginTop: 24,
+  //   zIndex: 3,
+  //   textAlign: 'justify',
+  //   position: 'relative',
+  //   alignSelf: 'flex-start',
+  //   paddingVertical: 2,
+  //   paddingHorizontal: 3,
+  //
+  // },
 
   heroQuoteHeading: {
     flexDirection: 'row',
@@ -1330,59 +1768,86 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
 
-  heroQuoteText: {
-    color: '#FFF9EC',
-    fontFamily: 'serif',
-    fontSize: 23,
-    lineHeight: 31,
-    fontWeight: '600',
-    textShadowColor: 'rgba(26, 13, 6, 0.92)',
-    textShadowOffset: {width: 0, height: 2},
-    textShadowRadius: 5,
-  },
-
-  heroQuoteSource: {
-    marginTop: 7,
-    color: '#F7DFB4',
-    fontFamily: 'serif',
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '600',
-    letterSpacing: 0.4,
-    textShadowColor: 'rgba(26, 13, 6, 0.85)',
-    textShadowOffset: {width: 0, height: 1},
-    textShadowRadius: 3,
-  },
+  // heroQuoteText: {
+  //   color: '#684229',
+  //   fontFamily: 'Ponomar',
+  //   fontSize: 22,
+  //   lineHeight: 24,
+  //   fontWeight: '600',
+  //   textShadowColor: 'rgb(104 66 41)',
+  //   textShadowOffset: {
+  //     width: 0,
+  //     height: 1,
+  //   },
+  //   textShadowRadius: 3,
+  // },
+  // heroQuoteScrollShade: {
+  //   position: 'absolute',
+  //   top: 10,
+  //   bottom: -10,
+  //   left: -22,
+  //   right: 85,
+  //   borderRadius: 28,
+  // },
+  //
+  // heroQuoteSource: {
+  //   marginTop: 7,
+  //   color: '#4A2D1C',
+  //   fontFamily: 'Ponomar',
+  //   fontSize: 15,
+  //   lineHeight: 18,
+  //   fontWeight: '600',
+  //   letterSpacing: 0.4,
+  //   textShadowColor: 'rgba(20, 10, 5, 0.8)',
+  //   textShadowOffset: {width: 0, height: 1},
+  //   textShadowRadius: 3,
+  // },
 
   heroQuoteActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
-    marginTop: 14,
+    marginTop: 10,
   },
 
   heroQuoteActionButton: {
     minHeight: 38,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 13,
-    borderRadius: 19,
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255, 225, 167, 0.72)',
-    backgroundColor: 'rgba(52, 29, 16, 0.34)',
+    borderColor: '#F7DFB4',
+
+    backgroundColor: 'rgba(45, 25, 14, 0.28)',
   },
 
   heroQuoteActionButtonActive: {
-    backgroundColor: 'rgba(122, 76, 35, 0.62)',
+    // backgroundColor: 'rgba(122, 76, 35, 0.62)',
   },
 
   heroQuoteActionText: {
-    marginLeft: 7,
-    color: '#FFF0CB',
+    marginLeft: 0,
+    padding: 5,
+    color: '#F7DFB4',
     fontFamily: 'serif',
     fontSize: 13,
     lineHeight: 17,
-    fontWeight: '700',
+    fontWeight: '800',
+  },
+  heroHeartButton: {
+    width: 42,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    borderRadius: '50%',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 232, 190, 0.65)',
+
+    backgroundColor: 'rgba(45, 25, 14, 0.28)',
   },
 
   widgetGlyph: {
@@ -1390,7 +1855,7 @@ const styles = StyleSheet.create({
     height: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#F7DFAF',
     borderRadius: 2,
   },
@@ -1410,7 +1875,7 @@ const styles = StyleSheet.create({
   },
 
   calendarCard: {
-    padding: 12,
+    padding: 11,
     borderRadius: 18,
     borderWidth: 1,
     borderColor: 'rgba(123, 79, 36, 0.18)',
@@ -1425,63 +1890,176 @@ const styles = StyleSheet.create({
   calendarHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-    marginBottom: 9,
+    gap: 6,
   },
 
-  calendarTitleWrap: {
+  calendarTitleButton: {
     minWidth: 0,
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
   },
 
-  calendarHeaderIcon: {
-    marginRight: 7,
-    color: '#9B642C',
-    fontFamily: 'serif',
-    fontSize: 22,
-    lineHeight: 25,
+  calendarGlyph: {
+    position: 'relative',
+    width: 18,
+    height: 17,
+    marginRight: 6,
+    paddingTop: 6,
+    paddingHorizontal: 3,
+    borderWidth: 1.4,
+    borderColor: '#9B642C',
+    borderRadius: 4,
+  },
+
+  calendarGlyphTopLine: {
+    position: 'absolute',
+    top: 4,
+    left: 0,
+    right: 0,
+    height: 1.4,
+    backgroundColor: '#9B642C',
+  },
+
+  calendarGlyphRingLeft: {
+    position: 'absolute',
+    top: -3,
+    left: 4,
+    width: 2,
+    height: 5,
+    borderRadius: 1,
+    backgroundColor: '#9B642C',
+  },
+
+  calendarGlyphRingRight: {
+    position: 'absolute',
+    top: -3,
+    right: 4,
+    width: 2,
+    height: 5,
+    borderRadius: 1,
+    backgroundColor: '#9B642C',
+  },
+
+  calendarGlyphRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 2,
+  },
+
+  calendarGlyphCell: {
+    width: 3,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#B77A3E',
+  },
+
+  calendarTitleTextWrap: {
+    minWidth: 0,
+    flex: 1,
+  },
+
+  calendarTitleLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
   calendarTitle: {
     flexShrink: 1,
     color: '#4B2C18',
     fontFamily: 'serif',
-    fontSize: 18,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 18,
     fontWeight: '700',
   },
 
-  calendarOpenButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 5,
-    paddingLeft: 4,
-  },
-
-  calendarOpenText: {
-    color: '#9A642E',
-    fontFamily: 'serif',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-
-  calendarOpenArrow: {
-    marginLeft: 4,
+  calendarTitleArrow: {
+    marginLeft: 3,
     marginTop: -1,
     color: '#9A642E',
-    fontSize: 19,
-    lineHeight: 19,
+    fontSize: 18,
+    lineHeight: 18,
+    fontWeight: '700',
   },
 
-  calendarBody: {
+  calendarOpenHint: {
+    marginTop: 1,
+    color: '#9A785B',
+    fontFamily: 'serif',
+    fontSize: 9,
+    lineHeight: 10,
+  },
+
+  calendarHeaderControls: {
     flexDirection: 'row',
-    gap: 10,
-    paddingTop: 9,
+    alignItems: 'center',
+    gap: 4,
+  },
+
+  calendarWidgetButton: {
+    height: 27,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(142, 93, 50, 0.22)',
+    backgroundColor: '#F5E2C4',
+  },
+
+  calendarWidgetButtonIcon: {
+    marginRight: 4,
+    color: '#98612D',
+    fontSize: 10,
+    lineHeight: 11,
+  },
+
+  calendarWidgetButtonText: {
+    color: '#7B4F2A',
+    fontFamily: 'serif',
+    fontSize: 8,
+    lineHeight: 10,
+    fontWeight: '700',
+  },
+
+  calendarLanguageSwitch: {
+    flexDirection: 'row',
+    padding: 2,
+    borderRadius: 8,
+    backgroundColor: '#E7D2B0',
+  },
+
+  calendarLanguageButton: {
+    width: 23,
+    height: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 6,
+  },
+
+  calendarLanguageButtonActive: {
+    backgroundColor: '#8E5D32',
+  },
+
+  calendarLanguageText: {
+    color: '#7B5D45',
+    fontSize: 7,
+    fontWeight: '800',
+  },
+
+  calendarLanguageTextActive: {
+    color: '#FFF5E4',
+  },
+
+  calendarMainRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 8,
+    marginTop: 8,
+    paddingTop: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(139, 94, 49, 0.20)',
+    borderTopColor: 'rgba(139, 94, 49, 0.18)',
   },
 
   calendarTodayColumn: {
@@ -1489,47 +2067,56 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
 
-  calendarTodayLabel: {
-    color: '#4E3524',
+  calendarTodayDate: {
+    color: '#2F1E13',
     fontFamily: 'serif',
     fontSize: 12,
     lineHeight: 16,
-  },
-
-  calendarTodayDate: {
-    marginTop: 1,
-    color: '#2F1E13',
-    fontFamily: 'serif',
-    fontSize: 22,
-    lineHeight: 27,
     fontWeight: '700',
   },
 
+  calendarTodayDateLabel: {
+    color: '#795D46',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
   calendarTodayWeekday: {
-    color: '#5F4736',
+    marginTop: 1,
+    color: '#6F5541',
     fontFamily: 'serif',
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 10,
+    lineHeight: 12,
     textTransform: 'lowercase',
   },
 
-  calendarDivider: {
-    height: StyleSheet.hairlineWidth,
-    marginVertical: 8,
-    backgroundColor: 'rgba(139, 94, 49, 0.18)',
+  calendarFeastCard: {
+    minWidth: 0,
+    marginTop: 7,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'left',
+    padding: 6,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 94, 49, 0.13)',
+    backgroundColor: 'rgba(255, 251, 242, 0.72)',
   },
 
-  calendarFeastRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  calendarSaintImage: {
+    width: 42,
+    height: 49,
+    // marginTop: 5,
+    borderRadius: 8,
+    backgroundColor: '#F0D6A5',
   },
 
   calendarSaintPlaceholder: {
-    width: 48,
-    height: 52,
+    width: 42,
+    height: 49,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: 'rgba(157, 104, 46, 0.24)',
     backgroundColor: '#F0D6A5',
@@ -1538,92 +2125,85 @@ const styles = StyleSheet.create({
   calendarSaintCross: {
     color: '#8B5526',
     fontFamily: 'serif',
-    fontSize: 25,
-    lineHeight: 29,
+    fontSize: 19,
+    lineHeight: 22,
   },
 
   calendarFeastTextWrap: {
     minWidth: 0,
     flex: 1,
-    marginLeft: 8,
+    marginLeft: 6,
+  },
+
+  calendarFeastLabel: {
+    color: '#A16E35',
+    fontSize: 9,
+    lineHeight: 8,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
 
   calendarFeastTitle: {
+    marginTop: 4,
     color: '#3F291B',
     fontFamily: 'serif',
     fontSize: 12,
-    lineHeight: 15,
+    lineHeight: 12,
     fontWeight: '700',
   },
 
-  calendarFeastSubtitle: {
-    marginTop: 2,
-    color: '#7B6551',
-    fontFamily: 'serif',
-    fontSize: 10,
-    lineHeight: 13,
-  },
-
-  calendarMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 7,
-  },
-
-  calendarMetaIcon: {
-    width: 19,
-    color: '#A56C31',
-    fontFamily: 'serif',
-    fontSize: 15,
-    textAlign: 'center',
-  },
-
-  calendarMetaText: {
-    flex: 1,
-    marginLeft: 5,
-    color: '#735943',
-    fontFamily: 'serif',
-    fontSize: 10,
-    lineHeight: 13,
-  },
+  // calendarFeastSubtitle: {
+  //   marginTop: 2,
+  //   color: '#7B6551',
+  //   fontFamily: 'serif',
+  //   fontSize: 7.5,
+  //   lineHeight: 10,
+  // },
 
   miniCalendar: {
-    width: '46%',
-    minWidth: 136,
-    padding: 8,
-    borderRadius: 13,
+    width: '49%',
+    minWidth: 0,
+    padding: 5,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(139, 94, 49, 0.12)',
     backgroundColor: 'rgba(255, 251, 242, 0.74)',
   },
 
   miniCalendarHeader: {
+    height: 21,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 5,
+    marginBottom: 2,
   },
 
   miniCalendarArrowButton: {
-    width: 22,
-    height: 22,
+    width: 20,
+    height: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 8,
   },
 
   miniCalendarArrow: {
     color: '#6F4727',
     fontFamily: 'serif',
-    fontSize: 20,
-    lineHeight: 20,
+    fontSize: 16,
+    lineHeight: 17,
+  },
+
+  miniCalendarMonthButton: {
+    minWidth: 0,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   miniCalendarMonth: {
-    flex: 1,
     color: '#4B3020',
     fontFamily: 'serif',
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: 8.5,
+    lineHeight: 11,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -1636,8 +2216,8 @@ const styles = StyleSheet.create({
     width: '14.2857%',
     color: '#807064',
     fontFamily: 'serif',
-    fontSize: 8,
-    lineHeight: 12,
+    fontSize: 6,
+    lineHeight: 9,
     textAlign: 'center',
   },
 
@@ -1648,33 +2228,44 @@ const styles = StyleSheet.create({
   miniCalendarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 2,
+    marginTop: 1,
   },
 
   miniCalendarCell: {
     width: '14.2857%',
-    height: 22,
+    height: 18,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 9,
+  },
+
+  miniCalendarCellPressed: {
+    backgroundColor: 'rgba(155,100,44,0.08)',
   },
 
   miniCalendarDayBubble: {
-    width: 20,
-    height: 20,
+    width: 16,
+    height: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 10,
+    borderRadius: 8,
   },
 
   miniCalendarDayBubbleToday: {
     backgroundColor: '#B97A32',
   },
 
+  miniCalendarDayBubbleSelected: {
+    borderWidth: 1,
+    borderColor: '#B97A32',
+    backgroundColor: 'rgba(185,122,50,0.10)',
+  },
+
   miniCalendarDayText: {
     color: '#473226',
     fontFamily: 'serif',
-    fontSize: 9,
-    lineHeight: 12,
+    fontSize: 7,
+    lineHeight: 9,
   },
 
   miniCalendarDayOutside: {
@@ -1688,6 +2279,60 @@ const styles = StyleSheet.create({
   miniCalendarDayToday: {
     color: '#FFF7E7',
     fontWeight: '700',
+  },
+
+  miniCalendarDaySelected: {
+    color: '#7B4D25',
+    fontWeight: '800',
+  },
+
+  calendarQuickRow: {
+    flexDirection: 'row',
+    marginTop: 8,
+    paddingVertical: 2,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(139, 94, 49, 0.18)',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(139, 94, 49, 0.12)',
+    borderRadius: 10,
+    backgroundColor: 'rgba(248, 232, 203, 0.40)',
+    overflow: 'hidden',
+  },
+
+  calendarQuickItem: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 42,
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 5,
+  },
+
+  calendarQuickItemBorder: {
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderLeftColor: 'rgba(139, 94, 49, 0.18)',
+  },
+
+  calendarQuickLabel: {
+    color: '#A16E35',
+    fontSize: 6.5,
+    lineHeight: 8,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+
+  calendarQuickText: {
+    marginTop: 2,
+    color: '#624936',
+    fontFamily: 'serif',
+    fontSize: 8,
+    lineHeight: 10,
+  },
+
+  calendarBibleLink: {
+    color: '#7B4D2A',
+    textDecorationLine: 'underline',
+    textDecorationColor: 'rgba(123,77,42,0.30)',
   },
 
   readingCard: {
@@ -2014,5 +2659,61 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.68,
+  },
+  heroQuoteContent: {
+    position: 'relative',
+    alignSelf: 'flex-start',
+    maxWidth: '89%',
+    paddingVertical: 7,
+    top: 25,
+    paddingHorizontal: 5,
+    zIndex: 3,
+  },
+
+  heroQuoteScrollShade: {
+    position: 'absolute',
+    top: -10,
+    bottom: -8,
+    left: -26,
+    right: -18,
+    borderRadius: 28,
+  },
+
+  heroQuoteText: {
+    color: '#F8E7C5',
+
+    fontFamily: 'Ponomar',
+    fontSize: 19,
+    lineHeight: 24,
+
+    textShadowColor: 'rgba(28, 15, 8, 0.80)',
+    textShadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    textShadowRadius: 2,
+  },
+
+  heroQuoteInitial: {
+    color: '#D7A45E',
+    fontSize: 25,
+    lineHeight: 24,
+  },
+
+  heroQuoteSource: {
+    marginTop: 5,
+
+    color: '#E5C58F',
+    fontFamily: 'serif',
+    fontSize: 12,
+    lineHeight: 15,
+    fontWeight: '600',
+
+    textShadowColor: 'rgba(28, 15, 8, 0.65)',
+    textShadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    textShadowRadius: 2,
   },
 });

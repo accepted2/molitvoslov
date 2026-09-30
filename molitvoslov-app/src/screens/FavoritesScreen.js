@@ -72,7 +72,7 @@ export const FavoritesScreen = ({navigation}) => {
     const metadata = item.metadata || {};
 
     if (item.source_type === 'prayer_rule' && metadata.slug) {
-      navigation.navigate('PrayerRule', {
+      navigation.push('PrayerRule', {
         slug: metadata.slug,
 
         focusTarget: makeFocusTarget(item),
@@ -82,7 +82,7 @@ export const FavoritesScreen = ({navigation}) => {
     }
 
     if (item.source_type === 'category' && metadata.category_slug) {
-      navigation.navigate('Book', {
+      navigation.push('Book', {
         categoryId: item.source_id,
 
         categorySlug: metadata.category_slug,
@@ -96,7 +96,7 @@ export const FavoritesScreen = ({navigation}) => {
     }
 
     if (item.source_type === 'text' && metadata.slug) {
-      navigation.navigate('Reader', {
+      navigation.push('Reader', {
         slug: metadata.slug,
 
         focusTarget: makeFocusTarget(item),
@@ -106,7 +106,7 @@ export const FavoritesScreen = ({navigation}) => {
     }
 
     if (item.source_type === 'akathist' && metadata.slug) {
-      navigation.navigate('Akathist', {
+      navigation.push('Akathist', {
         akathistId: item.source_id,
 
         slug: metadata.slug,
@@ -119,7 +119,7 @@ export const FavoritesScreen = ({navigation}) => {
       return;
     }
     if (item.source_type === 'canon' && metadata.slug) {
-      navigation.navigate('Canon', {
+      navigation.push('Canon', {
         canonId: item.source_id,
 
         slug: metadata.slug,
@@ -133,7 +133,7 @@ export const FavoritesScreen = ({navigation}) => {
     }
 
     if (item.source_type === 'bible' && metadata.chapter_number) {
-      navigation.navigate('BibleChapter', {
+      navigation.push('BibleChapter', {
         bookId: item.source_id,
 
         chapterNumber: Number(metadata.chapter_number),
@@ -152,7 +152,7 @@ export const FavoritesScreen = ({navigation}) => {
 
     if (item.source_type === 'psalter') {
       if (metadata.kathisma_number) {
-        navigation.navigate('Kathisma', {
+        navigation.push('Kathisma', {
           kathismaNumber: metadata.kathisma_number,
 
           kathismaTitle: metadata.kathisma_title || `Кафизма ${metadata.kathisma_number}`,
