@@ -78,6 +78,7 @@ router.register("personal-prayer-book-items", PersonalPrayerBookItemViewSet, bas
 router.register("personal-prayer-photos", PersonalPrayerPhotoViewSet, basename="personal-prayer-photos")
 
 urlpatterns = [
+    path("calendar/", include("api.calendar_urls")),
     path(
         "auth/google/",
         GoogleAuthView.as_view(),
