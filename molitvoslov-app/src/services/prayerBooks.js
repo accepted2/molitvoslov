@@ -691,6 +691,18 @@ const textFromObject = (object, language) => {
 };
 
 
+const PSALTER_GLORY_TEXT = `Слава Отцу и Сыну и Святому Духу.
+И ныне и присно и во веки веков. Аминь.
+
+Аллилуиа, аллилуиа, аллилуиа, слава Тебе, Боже. (Трижды)
+Господи, помилуй. (Трижды)
+
+Слава Отцу и Сыну и Святому Духу.
+
+[Здесь можно прочитать прошение о здравии / об упокоении и помянуть имена.]
+
+И ныне и присно и во веки веков. Аминь.`;
+
 const psalmLanguageText = (psalm, language) => {
   const field = language === 'russian' ? 'russian' : 'church_slavonic';
 
@@ -746,6 +758,72 @@ const combineChurchAndRussian = (church, russian, language) => {
   return churchText || russianText;
 };
 
+const fullKathismaPsalmsText = (kathisma, language) =>
+  (kathisma?.psalms || [])
+    .map((psalm) => {
+      const chunks = [];
+      let currentVerses = [];
+
+      const flushVerses = () => {
+        if (!currentVerses.length) {
+          return;
+        }
+
+        const church = psalmLanguageText(
+          {verses: currentVerses},
+          'church'
+        );
+        const russian = psalmLanguageText(
+          {verses: currentVerses},
+          'russian'
+        );
+
+        const body = combineChurchAndRussian(
+          church,
+          russian,
+          language
+        );
+
+        if (body) {
+          chunks.push(body);
+        }
+
+        currentVerses = [];
+      };
+
+      (psalm.verses || []).forEach((verse) => {
+        currentVerses.push(verse);
+
+        const gloryAfterVerse = (kathisma?.glories || []).find(
+          (glory) => Number(glory?.after_verse) === Number(verse?.id)
+        );
+
+        if (gloryAfterVerse) {
+          flushVerses();
+          chunks.push(PSALTER_GLORY_TEXT);
+        }
+      });
+
+      flushVerses();
+
+      const gloryAfterPsalm = (kathisma?.glories || []).find(
+        (glory) => Number(glory?.after_psalm) === Number(psalm?.id)
+      );
+
+      if (gloryAfterPsalm) {
+        chunks.push(PSALTER_GLORY_TEXT);
+      }
+
+      if (!chunks.length) {
+        return '';
+      }
+
+      return `Псалом ${psalm.number}\n${chunks.join('\n\n')}`;
+    })
+    .filter(Boolean)
+    .join('\n\n');
+
+
 const fullTextFromSavedItem = async (item) => {
   const metadata = item?.metadata || {};
   const language = metadata.language;
@@ -791,14 +869,10 @@ const fullTextFromSavedItem = async (item) => {
       const kathisma = response.data;
 
       if (item.save_type === 'kathisma' || item.anchor_type === 'kathisma') {
-        const psalmsText = (kathisma?.psalms || [])
-          .map((psalm) => {
-            const body = fullPsalmText(psalm, language);
-
-            return body ? `Псалом ${psalm.number}\n${body}` : '';
-          })
-          .filter(Boolean)
-          .join('\n\n');
+        const psalmsText = fullKathismaPsalmsText(
+          kathisma,
+          language
+        );
 
         const prayersAfter = combineChurchAndRussian(
           kathisma?.prayers_after,
