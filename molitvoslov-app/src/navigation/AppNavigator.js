@@ -30,6 +30,7 @@ import {PrayerBooksScreen} from '../screens/PrayerBooksScreen';
 import {PrayerBookScreen} from '../screens/PrayerBookScreen';
 import {PersonalPrayerEditorScreen} from '../screens/PersonalPrayerEditorScreen';
 import {PrayerBookReaderScreen} from '../screens/PrayerBookReaderScreen';
+import {ChurchCalendarScreen} from '../screens/ChurchCalendarScreen';
 import {colors} from '../theme';
 import {LinearGradient} from 'expo-linear-gradient';
 const Stack = createStackNavigator();
@@ -99,6 +100,11 @@ export const AppNavigator = () => (
         options={{headerShown: false}}
       />
       <Stack.Screen name="Bible" component={BibleScreen} options={{headerShown: false}} />
+      <Stack.Screen
+        name="ChurchCalendar"
+        component={ChurchCalendarScreen}
+        options={{headerShown: false}}
+      />
       <Stack.Screen name="BibleBooks" component={BibleBooksScreen} options={{headerShown: false}} />
       <Stack.Screen name="BibleBook" component={BibleBookScreen} options={{headerShown: false}} />
       <Stack.Screen

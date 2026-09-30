@@ -1,3 +1,4 @@
+from calendar import monthrange
 import json
 import os
 from datetime import date
@@ -198,8 +199,9 @@ def ensure_month(year, month):
         date_gregorian__year=year,
         date_gregorian__month=month,
     ).count()
+    expected = monthrange(year, month)[1]
 
-    if existing >= 28:
+    if existing >= expected:
         return existing
 
     payload = fetch_source_json("month/", {"year": year, "month": month})
