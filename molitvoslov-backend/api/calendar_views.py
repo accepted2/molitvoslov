@@ -12,8 +12,25 @@ from .calendar_models import CalendarDay
 from .calendar_serializers import CalendarDaySerializer
 
 
+def request_language(request):
+    value = (request.query_params.get("lang") or "").lower()
+
+    if value in {"ru", "uk"}:
+        return value
+
+    header = (request.headers.get("Accept-Language") or "").lower()
+    return "uk" if header.startswith("uk") else "ru"
+
+
 def calendar_queryset():
     return CalendarDay.objects.select_related("main_feast").prefetch_related("feasts")
+
+
+def serialize_day(day, request):
+    return CalendarDaySerializer(
+        day,
+        context={"request": request},
+    ).data
 
 
 class CalendarDayView(APIView):
@@ -33,19 +50,24 @@ class CalendarDayView(APIView):
         else:
             target_date = timezone.localdate()
 
+        language = request_language(request)
         day = calendar_queryset().filter(date_gregorian=target_date).first()
+        imported_languages = set(
+            (day.source_payload or {}).get("imported_languages") or []
+        ) if day else set()
 
-        if day is None:
+        if day is None or language not in imported_languages:
             try:
-                ensure_day(target_date)
+                ensure_day(target_date, language=language)
             except Exception as error:
-                return Response(
-                    {
-                        "detail": "Данные церковного календаря пока недоступны.",
-                        "source_error": str(error),
-                    },
-                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
-                )
+                if day is None:
+                    return Response(
+                        {
+                            "detail": "Данные церковного календаря пока недоступны.",
+                            "source_error": str(error),
+                        },
+                        status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    )
 
             day = calendar_queryset().filter(date_gregorian=target_date).first()
 
@@ -55,7 +77,7 @@ class CalendarDayView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        return Response(CalendarDaySerializer(day).data)
+        return Response(serialize_day(day, request))
 
 
 class CalendarMonthView(APIView):
@@ -85,11 +107,17 @@ class CalendarMonthView(APIView):
             date_gregorian__month=month,
         ).count()
 
+        language = request_language(request)
         source_error = ""
 
         if local_count < expected_days:
             try:
-                ensure_month(year, month)
+                ensure_month(year, month, language=language)
+            except Exception as error:
+                source_error = str(error)
+        else:
+            try:
+                ensure_month(year, month, language=language)
             except Exception as error:
                 source_error = str(error)
 
@@ -98,7 +126,11 @@ class CalendarMonthView(APIView):
             date_gregorian__month=month,
         )
 
-        serialized = CalendarDaySerializer(days, many=True).data
+        serialized = CalendarDaySerializer(
+            days,
+            many=True,
+            context={"request": request},
+        ).data
 
         if not serialized and source_error:
             return Response(
@@ -113,6 +145,7 @@ class CalendarMonthView(APIView):
             {
                 "year": year,
                 "month": month,
+                "language": language,
                 "days": serialized,
                 "total_days": len(serialized),
                 "start_date": date(year, month, 1).isoformat(),
@@ -141,13 +174,14 @@ class CalendarWeekView(APIView):
 
         monday = target_date.fromordinal(target_date.toordinal() - target_date.weekday())
         sunday = monday.fromordinal(monday.toordinal() + 6)
+        language = request_language(request)
 
         for year, month in {
             (monday.year, monday.month),
             (sunday.year, sunday.month),
         }:
             try:
-                ensure_month(year, month)
+                ensure_month(year, month, language=language)
             except Exception:
                 pass
 
@@ -161,6 +195,11 @@ class CalendarWeekView(APIView):
                 "week_number": target_date.isocalendar()[1],
                 "start_date": monday.isoformat(),
                 "end_date": sunday.isoformat(),
-                "days": CalendarDaySerializer(days, many=True).data,
+                "language": language,
+                "days": CalendarDaySerializer(
+                    days,
+                    many=True,
+                    context={"request": request},
+                ).data,
             }
         )

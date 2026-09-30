@@ -1,34 +1,57 @@
 import React from 'react';
 
 import {getDailyQuote} from '../services/dailyQuote';
+import {getCalendarDay} from '../services/churchCalendar';
+import {getCalendarLanguage} from '../services/calendarPreferences';
 import {QuoteOfDayWidget} from './QuoteOfDayWidget';
+import {ChurchCalendarWidget} from './ChurchCalendarWidget';
 
 export const widgetTaskHandler = async (props) => {
   const {widgetAction, widgetInfo, renderWidget} = props;
 
-  if (widgetInfo.widgetName !== 'QuoteOfDay') {
+  const shouldRender = [
+    'WIDGET_ADDED',
+    'WIDGET_UPDATE',
+    'WIDGET_RESIZED',
+  ].includes(widgetAction);
+
+  if (!shouldRender) {
     return;
   }
 
-  const renderQuote = () => {
+  if (widgetInfo.widgetName === 'QuoteOfDay') {
     const quote = getDailyQuote();
 
     renderWidget(
-      <QuoteOfDayWidget quote={quote} width={widgetInfo.width} height={widgetInfo.height} />
+      <QuoteOfDayWidget
+        quote={quote}
+        width={widgetInfo.width}
+        height={widgetInfo.height}
+      />
     );
-  };
+    return;
+  }
 
-  switch (widgetAction) {
-    case 'WIDGET_ADDED':
-    case 'WIDGET_UPDATE':
-    case 'WIDGET_RESIZED':
-      renderQuote();
-      break;
+  if (widgetInfo.widgetName === 'ChurchCalendar') {
+    const language = await getCalendarLanguage();
+    let day = null;
 
-    case 'WIDGET_DELETED':
-      break;
+    try {
+      day = await getCalendarDay(new Date(), {
+        language,
+        force: true,
+      });
+    } catch (error) {
+      console.log('Ошибка обновления виджета календаря:', error?.message || error);
+    }
 
-    default:
-      break;
+    renderWidget(
+      <ChurchCalendarWidget
+        day={day}
+        language={language}
+        width={widgetInfo.width}
+        height={widgetInfo.height}
+      />
+    );
   }
 };
