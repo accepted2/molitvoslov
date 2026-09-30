@@ -66,6 +66,17 @@
               "resizeMode": "horizontal|vertical",
               "updatePeriodMillis": 3600000,
               "widgetFeatures": "reconfigurable"
+            },
+            {
+              "name": "ChurchCalendar",
+              "label": "Церковный календарь",
+              "description": "Дата, память дня, пост и календарь месяца",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 3600000
             }
           ]
         }
