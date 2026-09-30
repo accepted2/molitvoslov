@@ -9,8 +9,8 @@ class CalendarFeast(models.Model):
     celebration_type = models.CharField(max_length=20, blank=True, default="")
     celebration_rank = models.CharField(max_length=30, blank=True, default="")
 
-    title = models.CharField(max_length=500)
-    short_title = models.CharField(max_length=160, blank=True, default="")
+    title = models.TextField()
+    short_title = models.TextField(blank=True, default="")
 
     julian_month = models.PositiveSmallIntegerField(null=True, blank=True)
     julian_day = models.PositiveSmallIntegerField(null=True, blank=True)
@@ -18,15 +18,15 @@ class CalendarFeast(models.Model):
 
     icon_url = models.URLField(max_length=1000, blank=True, default="")
 
-    troparion_title = models.CharField(max_length=500, blank=True, default="")
+    troparion_title = models.TextField(blank=True, default="")
     troparion_content = models.TextField(blank=True, default="")
     troparion_echo = models.PositiveSmallIntegerField(null=True, blank=True)
 
-    kontakion_title = models.CharField(max_length=500, blank=True, default="")
+    kontakion_title = models.TextField(blank=True, default="")
     kontakion_content = models.TextField(blank=True, default="")
     kontakion_echo = models.PositiveSmallIntegerField(null=True, blank=True)
 
-    life_title = models.CharField(max_length=500, blank=True, default="")
+    life_title = models.TextField(blank=True, default="")
     life_content = models.TextField(blank=True, default="")
     description = models.TextField(blank=True, default="")
 
@@ -64,16 +64,16 @@ class CalendarDay(models.Model):
     )
 
     fast_type_code = models.CharField(max_length=50, blank=True, default="")
-    fast_type_title = models.CharField(max_length=200, blank=True, default="")
-    fast_name = models.CharField(max_length=200, blank=True, default="")
-    fast_description = models.CharField(max_length=250, blank=True, default="")
+    fast_type_title = models.TextField(blank=True, default="")
+    fast_name = models.TextField(blank=True, default="")
+    fast_description = models.TextField(blank=True, default="")
 
-    summary = models.CharField(max_length=700, blank=True, default="")
-    short_summary = models.CharField(max_length=350, blank=True, default="")
+    summary = models.TextField(blank=True, default="")
+    short_summary = models.TextField(blank=True, default="")
 
-    gospel_title = models.CharField(max_length=500, blank=True, default="")
+    gospel_title = models.TextField(blank=True, default="")
     gospel_reading = models.TextField(blank=True, default="")
-    apostolic_title = models.CharField(max_length=500, blank=True, default="")
+    apostolic_title = models.TextField(blank=True, default="")
     apostolic_reading = models.TextField(blank=True, default="")
 
     source_payload = models.JSONField(default=dict, blank=True)
