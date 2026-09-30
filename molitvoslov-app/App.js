@@ -17,9 +17,12 @@ import {syncSavedItems} from './src/services/savedItems';
 import {syncReadingProgress} from './src/services/readingProgress';
 
 import {syncMemorials} from './src/services/memorials';
-
+import {useFonts} from 'expo-font';
 export default function App() {
   const [databaseReady, setDatabaseReady] = useState(false);
+  const [fontsLoaded] = useFonts({
+    Ponomar: require('./assets/fonts/Ponomar-Regular.ttf')
+  })
 
   useEffect(() => {
     const prepareDatabase = async () => {
@@ -136,6 +139,9 @@ export default function App() {
         <ActivityIndicator size="large" />
       </View>
     );
+  }
+  if (!fontsLoaded) {
+    return null;
   }
 
   return (

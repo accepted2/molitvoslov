@@ -380,7 +380,7 @@ export const MenuScreen = ({navigation}) => {
           .then((saved) => setSavedDailyQuote(saved[0] || null))
           .catch((err) => console.log('Ошибка загрузки сохранённой цитаты:', err));
       }
-    }, [loadProgress, dailyQuote?.id])
+    }, [loadProgress, dailyQuote?.id,updateQuoteWidget])
   );
 
   const rootCategories = useMemo(
@@ -714,18 +714,6 @@ export const MenuScreen = ({navigation}) => {
               ]}
               imageStyle={styles.heroImage}
             >
-              <LinearGradient
-                pointerEvents="none"
-                colors={[
-                  'rgba(35, 20, 12, 0.70)',
-                  'rgba(35, 20, 12, 0.38)',
-                  'rgba(35, 20, 12, 0.10)',
-                ]}
-                locations={[0, 0.58, 1]}
-                start={{x: 0, y: 0.45}}
-                end={{x: 0.78, y: 0.45}}
-                style={styles.heroQuoteShade}
-              />
 
               <LinearGradient
                 pointerEvents="none"
@@ -767,15 +755,57 @@ export const MenuScreen = ({navigation}) => {
               </View>
 
               <View style={styles.heroQuoteContent}>
+                <LinearGradient
+                  pointerEvents="none"
+                  colors={[
+                    'rgba(52, 30, 17, 0)',
+                    'rgba(52, 30, 17, 0.48)',
+                    'rgba(52, 30, 17, 0.66)',
+                    'rgba(52, 30, 17, 0.48)',
+                    'rgba(52, 30, 17, 0)',
+                  ]}
+                  locations={[0, 0.14, 0.5, 0.86, 1]}
+                  start={{x: 0, y: 0.5}}
+                  end={{x: 1, y: 0.5}}
+                  style={styles.heroQuoteScrollShade}
+                />
+
+                <LinearGradient
+                  pointerEvents="none"
+                  colors={[
+                    'rgba(52, 30, 17, 0)',
+                    'rgba(52, 30, 17, 0.18)',
+                    'rgba(52, 30, 17, 0.28)',
+                    'rgba(52, 30, 17, 0.18)',
+                    'rgba(52, 30, 17, 0)',
+                  ]}
+                  locations={[0, 0.18, 0.5, 0.82, 1]}
+                  start={{x: 0.5, y: 0}}
+                  end={{x: 0.5, y: 1}}
+                  style={styles.heroQuoteScrollShade}
+                />
                 <View style={styles.heroQuoteHeading}>
-                  <Text style={styles.heroQuoteMark}>❧</Text>
-                  <Text style={styles.heroQuoteLabel}>Цитата дня</Text>
+                  {/*<Text style={styles.heroQuoteMark}>❧</Text>*/}
+                  {/*<Text style={styles.heroQuoteLabel}>Цитата дня</Text>*/}
                 </View>
 
-                <Text style={styles.heroQuoteText} numberOfLines={5}>
-                  {dailyQuote?.text ||
-                    'Молитва и духовное чтение помогают хранить внимание сердца.'}
-                </Text>
+                <View style={styles.quoteStaircase}>
+                  <Text style={[styles.heroQuoteText, styles.quoteLine1]}>
+                    Мир оставляю вам,
+                  </Text>
+
+                  <Text style={[styles.heroQuoteText, styles.quoteLine2]}>
+                    Мир Мой даю вам; не так,
+                  </Text>
+
+                  <Text style={[styles.heroQuoteText, styles.quoteLine3]}>
+                    как мир дает. Я даю вам. Да не
+                  </Text>
+
+                  <Text style={[styles.heroQuoteText, styles.quoteLine4]}>
+                    смущается сердце ваше и да не устрашается.
+                  </Text>
+                </View>
 
                 {!!(dailyQuote?.reference || dailyQuote?.source) && (
                   <Text style={styles.heroQuoteSource}>
@@ -785,29 +815,22 @@ export const MenuScreen = ({navigation}) => {
 
                 <View style={styles.heroQuoteActions}>
                   <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      savedDailyQuote
-                        ? 'Убрать цитату из избранного'
-                        : 'Добавить цитату в избранное'
-                    }
-                    hitSlop={6}
                     onPress={toggleDailyQuoteSaved}
                     style={({pressed}) => [
-                      styles.heroQuoteActionButton,
-                      savedDailyQuote && styles.heroQuoteActionButtonActive,
+                      styles.heroHeartButton,
                       pressed && styles.pressed,
                     ]}
                   >
                     <SaveHeartIcon
                       active={!!savedDailyQuote}
-                      size={18}
-                      color="#F8E5BC"
+                      size={20}
+                      tintColor="#F5DCA5"
                     />
-                    <Text style={styles.heroQuoteActionText}>
-                      {savedDailyQuote ? 'Сохранено' : 'Сохранить'}
-                    </Text>
                   </Pressable>
+                  {/*  <Text style={styles.heroQuoteActionText}>*/}
+                  {/*    {savedDailyQuote ? '' : ''}*/}
+                  {/*  </Text>*/}
+                  {/*</Pressable>*/}
 
                   <Pressable
                     accessibilityRole="button"
@@ -819,9 +842,9 @@ export const MenuScreen = ({navigation}) => {
                       pressed && styles.pressed,
                     ]}
                   >
-                    <View style={styles.widgetGlyph}>
-                      <View style={styles.widgetGlyphSpeaker} />
-                    </View>
+                    {/*<View style={styles.widgetGlyph}>*/}
+                    {/*  <View style={styles.widgetGlyphSpeaker} />*/}
+                    {/*</View>*/}
                     <Text style={styles.heroQuoteActionText}>На экран</Text>
                   </Pressable>
                 </View>
@@ -1178,7 +1201,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   hero: {
-    minHeight: 330,
+    minHeight: 305,
     justifyContent: 'flex-start',
     paddingHorizontal: 18,
     paddingBottom: 22,
@@ -1188,6 +1211,8 @@ const styles = StyleSheet.create({
 
   heroImage: {
     opacity: 1,
+    maxHeight: 320,
+
   },
 
   heroQuoteShade: {
@@ -1195,7 +1220,15 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     bottom: 0,
-    width: '82%',
+    width: '30%',
+  },
+  heroQuoteLocalShade: {
+    position: 'absolute',
+    top: -8,
+    left: -18,
+    bottom: -8,
+    width: '95%',
+    borderRadius: 0,
   },
 
   heroBottomGradient: {
@@ -1217,8 +1250,8 @@ const styles = StyleSheet.create({
 
   heroRoundAction: {
     position: 'relative',
-    width: 46,
-    height: 46,
+    width: 38,
+    height: 38,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 23,
@@ -1232,9 +1265,31 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 
+  quoteStaircase: {
+    width: '100%',
+    alignItems: 'flex-start',
+  },
+
+  quoteLine1: {
+    width: '68%',
+  },
+
+  quoteLine2: {
+    width: '88%',
+  },
+
+  quoteLine3: {
+    width: '96%',
+  },
+
+  quoteLine4: {
+    width: '100%',
+  },
   searchGlyph: {
-    width: 18,
-    height: 18,
+    width: 15,
+    height: 15,
+    left:-1,
+    top: -1,
     borderWidth: 2,
     borderColor: '#4E2F1C',
     borderRadius: 9,
@@ -1244,7 +1299,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: -5,
     bottom: -2,
-    width: 8,
+    width: 6,
     height: 2,
     borderRadius: 1,
     backgroundColor: '#4E2F1C',
@@ -1297,9 +1352,15 @@ const styles = StyleSheet.create({
   },
 
   heroQuoteContent: {
-    width: '74%',
-    marginTop: 74,
+    width: '100%',
+    marginTop: 24,
     zIndex: 3,
+    textAlign: 'justify',
+    position: 'relative',
+    alignSelf: 'flex-start',
+    paddingVertical: 2,
+    paddingHorizontal: 3,
+
   },
 
   heroQuoteHeading: {
@@ -1331,25 +1392,36 @@ const styles = StyleSheet.create({
   },
 
   heroQuoteText: {
-    color: '#FFF9EC',
-    fontFamily: 'serif',
-    fontSize: 23,
-    lineHeight: 31,
+    color: '#684229',
+    fontFamily: 'Ponomar',
+    fontSize: 22,
+    lineHeight: 24,
     fontWeight: '600',
-    textShadowColor: 'rgba(26, 13, 6, 0.92)',
-    textShadowOffset: {width: 0, height: 2},
-    textShadowRadius: 5,
+    textShadowColor: 'rgb(104 66 41)',
+    textShadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    textShadowRadius: 3,
+  },
+  heroQuoteScrollShade: {
+    position: 'absolute',
+    top: 10,
+    bottom: -10,
+    left: -22,
+    right: 85,
+    borderRadius: 28,
   },
 
   heroQuoteSource: {
     marginTop: 7,
-    color: '#F7DFB4',
-    fontFamily: 'serif',
-    fontSize: 13,
+    color: '#4A2D1C',
+    fontFamily: 'Ponomar',
+    fontSize: 15,
     lineHeight: 18,
     fontWeight: '600',
     letterSpacing: 0.4,
-    textShadowColor: 'rgba(26, 13, 6, 0.85)',
+    textShadowColor: 'rgba(20, 10, 5, 0.8)',
     textShadowOffset: {width: 0, height: 1},
     textShadowRadius: 3,
   },
@@ -1358,31 +1430,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
-    marginTop: 14,
+    marginTop: 10,
   },
 
   heroQuoteActionButton: {
     minHeight: 38,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 13,
-    borderRadius: 19,
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255, 225, 167, 0.72)',
-    backgroundColor: 'rgba(52, 29, 16, 0.34)',
+    borderColor: '#F7DFB4',
+
+    backgroundColor: 'rgba(45, 25, 14, 0.28)',
   },
 
   heroQuoteActionButtonActive: {
-    backgroundColor: 'rgba(122, 76, 35, 0.62)',
+    // backgroundColor: 'rgba(122, 76, 35, 0.62)',
   },
 
   heroQuoteActionText: {
-    marginLeft: 7,
-    color: '#FFF0CB',
+    marginLeft: 0,
+    padding: 5,
+    color: '#F7DFB4',
     fontFamily: 'serif',
     fontSize: 13,
     lineHeight: 17,
-    fontWeight: '700',
+    fontWeight: '800',
+  },
+  heroHeartButton: {
+    width: 42,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    borderRadius: '50%',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 232, 190, 0.65)',
+
+    backgroundColor: 'rgba(45, 25, 14, 0.28)',
   },
 
   widgetGlyph: {
@@ -1390,7 +1478,7 @@ const styles = StyleSheet.create({
     height: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#F7DFAF',
     borderRadius: 2,
   },
@@ -2014,5 +2102,61 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.68,
+  },
+  heroQuoteContent: {
+    position: 'relative',
+    alignSelf: 'flex-start',
+    maxWidth: '89%',
+    paddingVertical: 7,
+    top: 25,
+    paddingHorizontal: 5,
+    zIndex: 3,
+  },
+
+  heroQuoteScrollShade: {
+    position: 'absolute',
+    top: -10,
+    bottom: -8,
+    left: -26,
+    right: -18,
+    borderRadius: 28,
+  },
+
+  heroQuoteText: {
+    color: '#F8E7C5',
+
+    fontFamily: 'Ponomar',
+    fontSize: 19,
+    lineHeight: 24,
+
+    textShadowColor: 'rgba(28, 15, 8, 0.80)',
+    textShadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    textShadowRadius: 2,
+  },
+
+  heroQuoteInitial: {
+    color: '#D7A45E',
+    fontSize: 25,
+    lineHeight: 24,
+  },
+
+  heroQuoteSource: {
+    marginTop: 5,
+
+    color: '#E5C58F',
+    fontFamily: 'serif',
+    fontSize: 12,
+    lineHeight: 15,
+    fontWeight: '600',
+
+    textShadowColor: 'rgba(28, 15, 8, 0.65)',
+    textShadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    textShadowRadius: 2,
   },
 });

@@ -1,96 +1,83 @@
 'use no memo';
 
 import React from 'react';
-import {FlexWidget, ImageWidget, OverlapWidget, TextWidget} from 'react-native-android-widget';
+import {
+  FlexWidget,
+  ImageWidget,
+  OverlapWidget,
+  TextWidget,
+} from 'react-native-android-widget';
 
-const QUOTE_BACKGROUND = require('../../assets/home/page_bg2.png');
+const QUOTE_BACKGROUND = require('../../assets/home/hero.png');
 
-export const QuoteOfDayWidget = ({quote, width = 240, height = 100}) => {
+export const QuoteOfDayWidget = ({
+                                   quote,
+                                   width = 240,
+                                   height = 100,
+                                 }) => {
   const text = quote?.text || '';
   const source = quote?.reference || quote?.source || '';
 
   const widgetWidth = Math.max(Number(width) || 240, 1);
   const widgetHeight = Math.max(Number(height) || 100, 1);
 
-  const compact = widgetHeight < 105;
-  const veryCompact = widgetHeight < 82;
+  // Отступы тоже немного растут вместе с виджетом.
+  const horizontalPadding = Math.max(
+    10,
+    Math.min(20, Math.round(widgetWidth * 0.045))
+  );
 
-  const horizontalPadding = compact ? 10 : 13;
-  const verticalPadding = compact ? 5 : 8;
-
-  const headerFontSize = veryCompact ? 10 : compact ? 12 : 15;
-  // const sourceFontSize = compact ? 8 : 10;
+  const verticalPadding = Math.max(
+    7,
+    Math.min(16, Math.round(widgetHeight * 0.05))
+  );
 
   /*
-   * Оставляем фиксированное пространство для:
-   * - padding
-   * - заголовка
-   * - декоративной линии
-   * - источника
-   *
-   * Всё остальное получает сама цитата.
+   * Базовый размер — 240 × 100.
+   * При увеличении площади виджета увеличивается и шрифт.
    */
-  // const reservedHeight =
-  //   verticalPadding * 2 +
-  //   (veryCompact ? 14 : compact ? 18 : 22) +
-  //   (veryCompact ? 0 : compact ? 6 : 9) +
-  //   (source ? (veryCompact ? 10 : compact ? 14 : 17) : 0);
-  //
-  // const quoteAreaHeight = Math.max(
-  //   widgetHeight - reservedHeight,
-  //   24
-  // );
-  const quoteFontSize =
-    text.length > 180
-      ? veryCompact
-        ? 9
-        : compact
-          ? 11
-          : 13
-      : text.length > 120
-        ? veryCompact
-          ? 10
-          : compact
-            ? 12
-            : 14
-        : text.length > 80
-          ? veryCompact
-            ? 11
-            : compact
-              ? 13
-              : 15
-          : veryCompact
-            ? 12
-            : compact
-              ? 15
-              : 17;
+  const areaScale = Math.sqrt(
+    (widgetWidth * widgetHeight) / (240 * 100)
+  );
 
-  const quoteLineHeight = quoteFontSize + 4;
+  // Ограничиваем масштаб, чтобы огромный виджет
+  // не получил гигантский текст.
+  const scale = Math.max(
+    0.85,
+    Math.min(1.85, areaScale)
+  );
 
-  const sourceFontSize = veryCompact ? 9 : compact ? 10 : 11;
+  // Чем длиннее цитата, тем осторожнее увеличиваем шрифт.
+  const textFactor =
+    text.length > 190
+      ? 0.66
+      : text.length > 150
+        ? 0.74
+        : text.length > 110
+          ? 0.84
+          : text.length > 75
+            ? 0.94
+            : 1.08;
+
+  const quoteFontSize = Math.round(
+    Math.max(
+      12,
+      Math.min(28, 15 * scale * textFactor)
+    )
+  );
+
+  const quoteLineHeight = Math.round(
+    quoteFontSize * 1.22
+  );
+
+  const sourceFontSize = Math.round(
+    Math.max(
+      9,
+      Math.min(14, quoteFontSize * 0.58)
+    )
+  );
+
   const sourceLineHeight = sourceFontSize + 3;
-
-  const usableSourceWidth = Math.max(widgetWidth - horizontalPadding * 2, 44);
-
-  const sourceCharsPerLine = Math.max(
-    Math.floor(usableSourceWidth / Math.max(sourceFontSize * 0.58, 1)),
-    12
-  );
-
-  const sourceLines = source
-    ? Math.min(3, Math.max(1, Math.ceil(source.length / sourceCharsPerLine)))
-    : 0;
-
-  const sourceHeight = sourceLines ? sourceLines * sourceLineHeight + 3 : 0;
-
-  const headerHeight = veryCompact ? 0 : compact ? 20 : 26;
-
-  const decorationHeight = veryCompact ? 0 : compact ? 6 : 10;
-
-  const availableQuoteHeight = Math.max(
-    widgetHeight - verticalPadding * 2 - headerHeight - decorationHeight - sourceHeight,
-    18
-  );
 
   return (
     <OverlapWidget
@@ -99,16 +86,18 @@ export const QuoteOfDayWidget = ({quote, width = 240, height = 100}) => {
       style={{
         width: 'match_parent',
         height: 'match_parent',
+
         borderRadius: 18,
         overflow: 'hidden',
-        backgroundColor: '#FFF4DE',
+
+        backgroundColor: '#3D2416',
       }}
     >
       <ImageWidget
         image={QUOTE_BACKGROUND}
         imageWidth={widgetWidth}
         imageHeight={widgetHeight}
-        resizeMode="stretch"
+        resizeMode="cover"
         radius={18}
       />
 
@@ -116,101 +105,58 @@ export const QuoteOfDayWidget = ({quote, width = 240, height = 100}) => {
         style={{
           width: 'match_parent',
           height: 'match_parent',
+
           paddingHorizontal: horizontalPadding,
           paddingTop: verticalPadding,
           paddingBottom: verticalPadding,
-          backgroundColor: 'rgba(255, 244, 222, 0.62)',
+
+          backgroundColor: 'rgba(52, 30, 17, 0.42)',
+
           borderRadius: 18,
           borderWidth: 1,
-          borderColor: '#7B4F2438',
+          borderColor: '#D7A45E40',
         }}
       >
-        {!veryCompact && (
-          <FlexWidget
+        <FlexWidget
+          style={{
+            flex: 1,
+            width: 'match_parent',
+
+            justifyContent: 'center',
+          }}
+        >
+          <TextWidget
+            text={text}
+            allowFontScaling={false}
             style={{
               width: 'match_parent',
-              flexDirection: 'row',
-              alignItems: 'center',
+
+              color: '#F8E7C5',
+
+              fontFamily: 'Ponomar',
+
+              fontSize: quoteFontSize,
+              lineHeight: quoteLineHeight,
+
+              fontWeight: '500',
             }}
-          >
-            <TextWidget
-              text="🪶"
-              style={{
-                marginRight: 6,
-                color: '#A16E35',
-                fontSize: headerFontSize,
-              }}
-            />
-
-            <TextWidget
-              text="Цитата дня"
-              style={{
-                color: '#7A4F2D',
-                fontSize: headerFontSize,
-                fontWeight: '700',
-              }}
-            />
-          </FlexWidget>
-        )}
-
-        {!veryCompact && (
-          <FlexWidget
-            style={{
-              width: compact ? 90 : 120,
-              flexDirection: 'row',
-              alignItems: 'center',
-              marginTop: 1,
-              marginBottom: compact ? 2 : 4,
-            }}
-          >
-            <FlexWidget
-              style={{
-                flex: 1,
-                height: 1,
-                backgroundColor: '#92622F52',
-              }}
-            />
-
-            <TextWidget
-              text="✦"
-              style={{
-                marginHorizontal: 5,
-                color: '#A87943',
-                fontSize: 7,
-              }}
-            />
-
-            <FlexWidget
-              style={{
-                flex: 1,
-                height: 1,
-                backgroundColor: '#92622F52',
-              }}
-            />
-          </FlexWidget>
-        )}
-        <TextWidget
-          text={text}
-          allowFontScaling={false}
-          style={{
-            width: 'match_parent',
-            height: availableQuoteHeight,
-            color: '#3E2A1D',
-            fontSize: quoteFontSize,
-            // lineHeight: quoteLineHeight,
-            fontWeight: '500',
-          }}
-        />
+          />
+        </FlexWidget>
 
         {!!source && (
           <TextWidget
             text={source}
             allowFontScaling={false}
             style={{
-              marginTop: 2,
-              color: '#765238',
+              marginTop: 4,
+
+              color: '#E5C58F',
+
+              fontFamily: 'Ponomar',
+
               fontSize: sourceFontSize,
               lineHeight: sourceLineHeight,
+
               fontWeight: '500',
             }}
           />
