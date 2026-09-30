@@ -467,7 +467,18 @@ export const MenuScreen = ({navigation}) => {
         force: true,
       });
       setCalendarToday(day);
-      await updateCalendarWidget(day, next);
+
+      const todayKey = toCalendarDate(new Date());
+      const selectedKey = toCalendarDate(calendarSelectedDate);
+      const widgetDay =
+        selectedKey === todayKey
+          ? day
+          : await getCalendarDay(new Date(), {
+              language: next,
+              force: true,
+            });
+
+      await updateCalendarWidget(widgetDay, next);
     } catch (error) {
       console.log('Ошибка смены языка календаря:', error?.message || error);
     }
