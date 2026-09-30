@@ -326,6 +326,76 @@ export default function KathismaScreen({route, navigation}) {
     };
   }, [kathisma, savedProgress]);
 
+
+  const normalizedFocusTarget = useMemo(() => {
+    if (!focusTarget || !kathisma) {
+      return focusTarget;
+    }
+
+    const anchorType = focusTarget.anchor_type || focusTarget.anchorType;
+    const metadata = focusTarget.metadata || {};
+
+    if (anchorType === 'kathisma') {
+      const firstPsalm = (kathisma.psalms || [])[0];
+
+      if (!firstPsalm) {
+        return focusTarget;
+      }
+
+      return {
+        ...focusTarget,
+        save_type: 'psalm',
+        anchor_type: 'psalm_text',
+        anchor_id: Number(firstPsalm.id),
+        start_offset: null,
+        end_offset: null,
+        metadata: {
+          ...metadata,
+          psalm_id: Number(firstPsalm.id),
+          psalm_number: Number(firstPsalm.number),
+          chunk_index: 0,
+          language: metadata.language || 'church',
+        },
+      };
+    }
+
+    if (
+      anchorType === 'psalm' ||
+      (anchorType === 'psalm_text' && focusTarget.save_type === 'psalm')
+    ) {
+      const psalmId = Number(
+        metadata.psalm_id ||
+          focusTarget.anchor_id ||
+          focusTarget.anchorId
+      );
+
+      const psalm = (kathisma.psalms || []).find(
+        (item) => Number(item.id) === psalmId
+      );
+
+      if (!psalm) {
+        return focusTarget;
+      }
+
+      return {
+        ...focusTarget,
+        anchor_type: 'psalm_text',
+        anchor_id: Number(psalm.id),
+        start_offset: null,
+        end_offset: null,
+        metadata: {
+          ...metadata,
+          psalm_id: Number(psalm.id),
+          psalm_number: Number(psalm.number),
+          chunk_index: 0,
+          language: metadata.language || 'church',
+        },
+      };
+    }
+
+    return focusTarget;
+  }, [focusTarget, kathisma]);
+
   const documentData = useMemo(() => {
     if (!kathisma) {
       return {
@@ -899,7 +969,7 @@ export default function KathismaScreen({route, navigation}) {
       <SelectableDocumentReader
         documentData={documentData}
         savedProgress={readerProgress}
-        focusTarget={focusTarget}
+        focusTarget={normalizedFocusTarget}
         topContentInset={headerHeight}
         onProgress={handleProgress}
         onAction={handleAction}
