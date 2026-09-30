@@ -14,9 +14,10 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {CategoryIcon} from '../components/icons/CategoryIcon';
 import {
   formatFast,
-  getBibleReadingText,
+  getBibleReadingVerses,
   getCalendarDay,
   getCalendarMonth,
   openCalendarBibleReference,
@@ -116,7 +117,9 @@ const ReadingLink = ({kind, title, navigation}) => {
   if (!title) return null;
 
   const target = resolveBibleReference(title);
-  const readingText = getBibleReadingText(title);
+  const verses = getBibleReadingVerses(title);
+  const chapters = new Set(verses.map((verse) => verse.chapterNumber));
+  let previousChapter = null;
 
   return (
     <View style={styles.readingCard}>
@@ -130,9 +133,7 @@ const ReadingLink = ({kind, title, navigation}) => {
         ]}
       >
         <View style={styles.readingIcon}>
-          <Text style={styles.readingIconText}>
-            {kind === 'gospel' ? '✠' : '✦'}
-          </Text>
+          <CategoryIcon type={kind === 'gospel' ? 'bible' : 'canons'} size={32} />
         </View>
 
         <View style={styles.readingTextWrap}>
@@ -152,7 +153,7 @@ const ReadingLink = ({kind, title, navigation}) => {
         {!!target && <Text style={styles.readingArrow}>›</Text>}
       </Pressable>
 
-      {!!readingText && (
+      {!!verses.length && (
         <>
           <Pressable
             onPress={() => setExpanded((value) => !value)}
@@ -170,9 +171,33 @@ const ReadingLink = ({kind, title, navigation}) => {
           </Pressable>
 
           {expanded && (
-            <Text style={styles.readingContent} selectable>
-              {readingText}
-            </Text>
+            <View style={styles.readingContent}>
+              {verses.map((verse, index) => {
+                const showChapter =
+                  chapters.size > 1 && verse.chapterNumber !== previousChapter;
+
+                previousChapter = verse.chapterNumber;
+
+                return (
+                  <View
+                    key={`${verse.chapterNumber}-${verse.verseNumber}-${index}`}
+                  >
+                    {showChapter && (
+                      <Text style={styles.readingChapter}>
+                        Глава {verse.chapterNumber}
+                      </Text>
+                    )}
+
+                    <Text style={styles.readingVerseText} selectable>
+                      <Text style={styles.readingVerseNumber}>
+                        {verse.verseNumber}{' '}
+                      </Text>
+                      {verse.text}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
           )}
         </>
       )}
@@ -332,10 +357,6 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             const selected = selectedDate === cell.date;
             const isToday = today === cell.date;
             const weekend = index % 7 >= 5;
-            const hasGreatFeast =
-              apiDay?.main_feast?.celebration_type === 'great' ||
-              apiDay?.main_feast?.celebration_rank === 'vigil';
-
             return (
               <Pressable
                 key={cell.date}
@@ -364,14 +385,6 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
                   </Text>
                 </View>
 
-                {!!apiDay && !cell.outside && (
-                  <View
-                    style={[
-                      styles.dayDot,
-                      hasGreatFeast && styles.dayDotGreat,
-                    ]}
-                  />
-                )}
               </Pressable>
             );
           })}
@@ -646,18 +659,6 @@ const styles = StyleSheet.create({
   dayOutside: {
     color: '#B7ADA4',
   },
-  dayDot: {
-    width: 3,
-    height: 3,
-    marginTop: -2,
-    borderRadius: 2,
-    backgroundColor: '#B9864B',
-  },
-  dayDotGreat: {
-    width: 5,
-    height: 5,
-    backgroundColor: '#A54A3A',
-  },
   otherSaintsCard: {
     marginTop: 10,
     padding: 14,
@@ -780,8 +781,8 @@ const styles = StyleSheet.create({
     marginTop: 12,
     borderRadius: 13,
     borderWidth: 1,
-    borderColor: 'rgba(126,82,38,0.16)',
-    backgroundColor: 'rgba(255,250,240,0.76)',
+    borderColor: '#B98545',
+    backgroundColor: '#5A341D',
     overflow: 'hidden',
   },
   textBlockHeader: {
@@ -795,25 +796,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   textBlockTitle: {
-    color: '#4A3020',
+    color: '#F5E2B8',
     fontFamily: 'serif',
     fontSize: 16,
     fontWeight: '700',
   },
   textBlockSubtitle: {
     marginTop: 2,
-    color: '#8D6B50',
+    color: '#DCC7A4',
     fontSize: 11,
   },
   textBlockArrow: {
     marginLeft: 10,
-    color: '#986332',
+    color: '#F2D79E',
     fontSize: 21,
   },
   textBlockContent: {
     paddingHorizontal: 13,
+    paddingTop: 12,
     paddingBottom: 14,
-    color: '#4A3426',
+    color: '#3E2A1D',
+    backgroundColor: '#FFF4DE',
     fontFamily: 'serif',
     fontSize: 15,
     lineHeight: 24,
@@ -825,8 +828,8 @@ const styles = StyleSheet.create({
     marginTop: 9,
     borderRadius: 13,
     borderWidth: 1,
-    borderColor: 'rgba(126,82,38,0.18)',
-    backgroundColor: '#F7E8CF',
+    borderColor: '#B98545',
+    backgroundColor: '#5A341D',
     overflow: 'hidden',
   },
   readingLink: {
@@ -838,16 +841,13 @@ const styles = StyleSheet.create({
     opacity: 0.72,
   },
   readingIcon: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 11,
-    backgroundColor: '#E6CBA0',
-  },
-  readingIconText: {
-    color: '#7C4F28',
-    fontSize: 19,
+    backgroundColor: '#F5E2C4',
+    overflow: 'hidden',
   },
   readingTextWrap: {
     flex: 1,
@@ -855,14 +855,14 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   readingKind: {
-    color: '#9A6839',
+    color: '#E3C692',
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.6,
   },
   readingTitle: {
     marginTop: 2,
-    color: '#412C1E',
+    color: '#FFF4DE',
     fontFamily: 'serif',
     fontSize: 14,
     lineHeight: 19,
@@ -870,18 +870,18 @@ const styles = StyleSheet.create({
   },
   readingHint: {
     marginTop: 3,
-    color: '#92602F',
+    color: '#F0D9AD',
     fontSize: 10,
     fontWeight: '700',
   },
   readingHintMuted: {
     marginTop: 3,
-    color: '#938373',
+    color: '#CDBA9C',
     fontSize: 10,
   },
   readingArrow: {
     marginLeft: 7,
-    color: '#92602F',
+    color: '#F0D9AD',
     fontSize: 24,
   },
   readingExpand: {
@@ -891,24 +891,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(126,82,38,0.16)',
+    borderTopColor: 'rgba(244,220,168,0.20)',
+    backgroundColor: '#684229',
   },
   readingExpandText: {
-    color: '#8B5B30',
+    color: '#F5E2B8',
     fontSize: 11,
     fontWeight: '800',
   },
   readingExpandArrow: {
-    color: '#8B5B30',
+    color: '#F5E2B8',
     fontSize: 18,
   },
   readingContent: {
     paddingHorizontal: 13,
+    paddingTop: 12,
     paddingBottom: 14,
-    color: '#493226',
+    backgroundColor: '#FFF4DE',
+  },
+  readingChapter: {
+    marginTop: 7,
+    marginBottom: 5,
+    color: '#7A4F2D',
+    fontFamily: 'serif',
+    fontSize: 14,
+    lineHeight: 19,
+    fontWeight: '700',
+  },
+  readingVerseText: {
+    marginBottom: 6,
+    color: '#3E2A1D',
     fontFamily: 'serif',
     fontSize: 15,
     lineHeight: 24,
+  },
+  readingVerseNumber: {
+    color: '#A16E35',
+    fontFamily: 'serif',
+    fontSize: 11,
+    lineHeight: 16,
+    fontWeight: '700',
   },
   noReadings: {
     marginTop: 10,
