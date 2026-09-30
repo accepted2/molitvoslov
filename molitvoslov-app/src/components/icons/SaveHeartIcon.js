@@ -6,7 +6,7 @@ const HEARTS = {
   filled: require('../../../assets/icons/save-heart-filled.png'),
 };
 
-export const SaveHeartIcon = ({active = false, size = 19,  tintColor,}) => (
+export const SaveHeartIcon = ({active = false, size = 19, tintColor}) => (
   <Image
     accessible={false}
     source={active ? HEARTS.filled : HEARTS.outline}

@@ -25,11 +25,7 @@ export const FixedSectionHeader = ({
       {!minimal && (
         <LinearGradient
           pointerEvents="none"
-          colors={[
-            '#FFF4DE',
-            'rgba(255, 244, 222, 0.72)',
-            'rgba(255, 244, 222, 0)',
-          ]}
+          colors={['#FFF4DE', 'rgba(255, 244, 222, 0.72)', 'rgba(255, 244, 222, 0)']}
           locations={[0, 0.42, 1]}
           start={{x: 0.5, y: 0}}
           end={{x: 0.5, y: 1}}

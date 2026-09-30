@@ -30,11 +30,7 @@ const StartupScreen = () => (
     style={styles.startupImage}
   >
     <LinearGradient
-      colors={[
-        'rgba(58, 32, 17, 0.18)',
-        'rgba(67, 39, 21, 0.06)',
-        'rgba(61, 35, 18, 0.54)',
-      ]}
+      colors={['rgba(58, 32, 17, 0.18)', 'rgba(67, 39, 21, 0.06)', 'rgba(61, 35, 18, 0.54)']}
       locations={[0, 0.48, 1]}
       style={styles.startupOverlay}
     >
@@ -167,7 +163,6 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
-
 
 const styles = StyleSheet.create({
   startupImage: {

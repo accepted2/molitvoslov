@@ -52,9 +52,9 @@ class CalendarDayView(APIView):
 
         language = request_language(request)
         day = calendar_queryset().filter(date_gregorian=target_date).first()
-        imported_languages = set(
-            (day.source_payload or {}).get("imported_languages") or []
-        ) if day else set()
+        imported_languages = (
+            set((day.source_payload or {}).get("imported_languages") or []) if day else set()
+        )
 
         if day is None or language not in imported_languages:
             try:

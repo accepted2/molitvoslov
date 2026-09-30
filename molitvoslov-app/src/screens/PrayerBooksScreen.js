@@ -1,14 +1,5 @@
 import React, {useCallback, useState} from 'react';
-import {
-  Alert,
-  FlatList,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import {Alert, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
@@ -16,11 +7,7 @@ import {StatusBar} from 'expo-status-bar';
 import {AppBackground} from '../components/layout/AppBackground';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
-import {
-  createPrayerBook,
-  getPrayerBooks,
-  syncPrayerBooks,
-} from '../services/prayerBooks';
+import {createPrayerBook, getPrayerBooks, syncPrayerBooks} from '../services/prayerBooks';
 import {colors, radius, spacing} from '../theme';
 
 export const PrayerBooksScreen = ({navigation}) => {
@@ -84,8 +71,8 @@ export const PrayerBooksScreen = ({navigation}) => {
               <View style={styles.intro}>
                 <Text style={styles.introTitle}>Личные молитвенные сборники</Text>
                 <Text style={styles.introText}>
-                  Собирайте молитвы в свои правила: добавляйте полные тексты из избранного,
-                  находите молитвы в библиотеке, вставляйте свои тексты и фотографии.
+                  Собирайте молитвы в свои правила: добавляйте полные тексты из избранного, находите
+                  молитвы в библиотеке, вставляйте свои тексты и фотографии.
                 </Text>
               </View>
 
@@ -252,7 +239,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,244,222,0.94)',
   },
   emptyMark: {color: '#A16E35', fontSize: 24},
-  emptyTitle: {marginTop: 8, color: colors.text, fontFamily: 'serif', fontSize: 18, fontWeight: '700'},
+  emptyTitle: {
+    marginTop: 8,
+    color: colors.text,
+    fontFamily: 'serif',
+    fontSize: 18,
+    fontWeight: '700',
+  },
   emptyText: {marginTop: 7, textAlign: 'center', color: colors.textSecondary, lineHeight: 20},
   modalBackdrop: {
     flex: 1,
@@ -275,7 +268,12 @@ const styles = StyleSheet.create({
   modalActions: {marginTop: 16, flexDirection: 'row', justifyContent: 'flex-end', gap: 8},
   secondaryButton: {paddingHorizontal: 15, paddingVertical: 10},
   secondaryText: {color: '#765238', fontWeight: '700'},
-  primaryButton: {paddingHorizontal: 17, paddingVertical: 10, borderRadius: 12, backgroundColor: '#7A4F2D'},
+  primaryButton: {
+    paddingHorizontal: 17,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#7A4F2D',
+  },
   primaryText: {color: '#FFF4DE', fontWeight: '700'},
   pressed: {opacity: 0.65},
 });

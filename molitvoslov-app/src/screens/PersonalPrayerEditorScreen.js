@@ -205,10 +205,16 @@ export const PersonalPrayerEditorScreen = ({route, navigation}) => {
           </View>
 
           <View style={styles.photoActions}>
-            <Pressable onPress={takePhoto} style={({pressed}) => [styles.photoButton, pressed && styles.pressed]}>
+            <Pressable
+              onPress={takePhoto}
+              style={({pressed}) => [styles.photoButton, pressed && styles.pressed]}
+            >
               <Text style={styles.photoButtonText}>Камера</Text>
             </Pressable>
-            <Pressable onPress={pickPhotos} style={({pressed}) => [styles.photoButton, pressed && styles.pressed]}>
+            <Pressable
+              onPress={pickPhotos}
+              style={({pressed}) => [styles.photoButton, pressed && styles.pressed]}
+            >
               <Text style={styles.photoButtonText}>Добавить фото</Text>
             </Pressable>
           </View>
@@ -242,7 +248,11 @@ export const PersonalPrayerEditorScreen = ({route, navigation}) => {
           <Pressable
             onPress={save}
             disabled={saving}
-            style={({pressed}) => [styles.saveButton, saving && styles.disabled, pressed && styles.pressed]}
+            style={({pressed}) => [
+              styles.saveButton,
+              saving && styles.disabled,
+              pressed && styles.pressed,
+            ]}
           >
             <Text style={styles.saveText}>{saving ? 'Сохранение…' : 'Сохранить молитву'}</Text>
           </Pressable>
@@ -254,9 +264,16 @@ export const PersonalPrayerEditorScreen = ({route, navigation}) => {
           topInset={insets.top}
         />
 
-        <Modal visible={!!viewerUri} transparent animationType="fade" onRequestClose={() => setViewerUri(null)}>
+        <Modal
+          visible={!!viewerUri}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setViewerUri(null)}
+        >
           <Pressable style={styles.viewer} onPress={() => setViewerUri(null)}>
-            {!!viewerUri && <Image source={{uri: viewerUri}} style={styles.viewerImage} resizeMode="contain" />}
+            {!!viewerUri && (
+              <Image source={{uri: viewerUri}} style={styles.viewerImage} resizeMode="contain" />
+            )}
           </Pressable>
         </Modal>
       </KeyboardAvoidingView>
@@ -332,7 +349,13 @@ const styles = StyleSheet.create({
   },
   saveText: {color: '#FFF4DE', fontSize: 15, fontWeight: '700'},
   disabled: {opacity: 0.45},
-  viewer: {flex: 1, padding: 20, backgroundColor: 'rgba(20,12,8,0.92)', alignItems: 'center', justifyContent: 'center'},
+  viewer: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: 'rgba(20,12,8,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   viewerImage: {width: '100%', height: '100%'},
   pressed: {opacity: 0.65},
 });

@@ -32,8 +32,7 @@ CELEBRATION_PRIORITY = {
 
 def source_url():
     return (
-        os.environ.get("CHURCH_CALENDAR_SOURCE_URL", "").strip().rstrip("/")
-        or DEFAULT_SOURCE_URL
+        os.environ.get("CHURCH_CALENDAR_SOURCE_URL", "").strip().rstrip("/") or DEFAULT_SOURCE_URL
     )
 
 
@@ -55,9 +54,7 @@ def fetch_source_json(endpoint, params=None, language="ru", timeout=None):
         },
     )
 
-    effective_timeout = float(
-        timeout or os.environ.get("CHURCH_CALENDAR_TIMEOUT", "90")
-    )
+    effective_timeout = float(timeout or os.environ.get("CHURCH_CALENDAR_TIMEOUT", "90"))
     retries = max(
         1,
         int(os.environ.get("CHURCH_CALENDAR_RETRIES", "3")),
@@ -141,9 +138,7 @@ def upsert_feast(data, language="ru"):
     )
 
     feast.date_type = data.get("date_type") or feast.date_type or ""
-    feast.celebration_type = (
-        data.get("celebration_type") or feast.celebration_type or ""
-    )
+    feast.celebration_type = data.get("celebration_type") or feast.celebration_type or ""
     feast.celebration_rank = data.get("celebration_rank") or feast.celebration_rank or ""
     feast.julian_month = data.get("month") or feast.julian_month
     feast.julian_day = data.get("day") or feast.julian_day
@@ -175,9 +170,8 @@ def _priority(feast):
     if not feast:
         return -1
 
-    return (
-        CELEBRATION_PRIORITY.get(feast.celebration_type or "", 0)
-        + RANK_PRIORITY.get(feast.celebration_rank or "", 0)
+    return CELEBRATION_PRIORITY.get(feast.celebration_type or "", 0) + RANK_PRIORITY.get(
+        feast.celebration_rank or "", 0
     )
 
 
@@ -210,15 +204,9 @@ def upsert_day(payload, language="ru"):
             feast_objects.append(feast)
 
     main_payload = payload.get("main_feast")
-    main_feast = (
-        upsert_feast(main_payload, language=language)
-        if main_payload
-        else None
-    )
+    main_feast = upsert_feast(main_payload, language=language) if main_payload else None
 
-    if main_feast and all(
-        feast.source_id != main_feast.source_id for feast in feast_objects
-    ):
+    if main_feast and all(feast.source_id != main_feast.source_id for feast in feast_objects):
         feast_objects.insert(0, main_feast)
 
     if main_feast is None and feast_objects:
@@ -283,8 +271,7 @@ def _month_has_language(year, month, language):
         return True
 
     return all(
-        language in set((row.source_payload or {}).get("imported_languages") or [])
-        for row in rows
+        language in set((row.source_payload or {}).get("imported_languages") or []) for row in rows
     )
 
 
@@ -295,11 +282,7 @@ def ensure_month(year, month, language="ru", force=False):
     ).count()
     expected = monthrange(year, month)[1]
 
-    if (
-        not force
-        and existing >= expected
-        and _month_has_language(year, month, language)
-    ):
+    if not force and existing >= expected and _month_has_language(year, month, language):
         return existing
 
     payload = fetch_source_json(
@@ -327,9 +310,9 @@ def sync_month(year, month, languages=("ru", "uk")):
 def ensure_day(target_date, language="ru"):
     day = CalendarDay.objects.filter(date_gregorian=target_date).first()
 
-    imported_languages = set(
-        (day.source_payload or {}).get("imported_languages") or []
-    ) if day else set()
+    imported_languages = (
+        set((day.source_payload or {}).get("imported_languages") or []) if day else set()
+    )
 
     if day and (language == "ru" or language in imported_languages):
         return day

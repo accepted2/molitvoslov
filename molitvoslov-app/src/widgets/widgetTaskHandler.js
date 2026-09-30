@@ -9,11 +9,7 @@ import {ChurchCalendarWidget} from './ChurchCalendarWidget';
 export const widgetTaskHandler = async (props) => {
   const {widgetAction, widgetInfo, renderWidget} = props;
 
-  const shouldRender = [
-    'WIDGET_ADDED',
-    'WIDGET_UPDATE',
-    'WIDGET_RESIZED',
-  ].includes(widgetAction);
+  const shouldRender = ['WIDGET_ADDED', 'WIDGET_UPDATE', 'WIDGET_RESIZED'].includes(widgetAction);
 
   if (!shouldRender) {
     return;
@@ -23,11 +19,7 @@ export const widgetTaskHandler = async (props) => {
     const quote = getDailyQuote();
 
     renderWidget(
-      <QuoteOfDayWidget
-        quote={quote}
-        width={widgetInfo.width}
-        height={widgetInfo.height}
-      />
+      <QuoteOfDayWidget quote={quote} width={widgetInfo.width} height={widgetInfo.height} />
     );
     return;
   }
