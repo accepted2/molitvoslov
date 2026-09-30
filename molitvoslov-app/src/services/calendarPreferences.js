@@ -1,0 +1,148 @@
+import * as SecureStore from 'expo-secure-store';
+
+const KEY = 'church_calendar_language';
+
+export const CALENDAR_LANGUAGES = {
+  RU: 'ru',
+  UK: 'uk',
+};
+
+export const getCalendarLanguage = async () => {
+  try {
+    const value = await SecureStore.getItemAsync(KEY);
+    return value === 'uk' ? 'uk' : 'ru';
+  } catch {
+    return 'ru';
+  }
+};
+
+export const setCalendarLanguage = async (language) => {
+  const value = language === 'uk' ? 'uk' : 'ru';
+
+  try {
+    await SecureStore.setItemAsync(KEY, value);
+  } catch (error) {
+    console.log('Не удалось сохранить язык календаря:', error?.message || error);
+  }
+
+  return value;
+};
+
+export const calendarText = (language) => {
+  const uk = language === 'uk';
+
+  return {
+    language: uk ? 'uk' : 'ru',
+    calendarTitle: uk ? 'Церковний календар' : 'Церковный календарь',
+    allCalendar: uk ? 'Весь календар' : 'Весь календарь',
+    today: uk ? 'Сьогодні' : 'Сегодня',
+    selectedDay: uk ? 'Обраний день' : 'Выбранный день',
+    saintMemory: uk ? 'Пам’ять дня' : 'Память дня',
+    greatFeast: uk ? 'Велике свято' : 'Великий праздник',
+    noFastData: uk ? 'Піст: немає даних' : 'Пост: нет данных',
+    noFast: uk ? 'Посту немає' : 'Поста нет',
+    alsoToday: uk ? 'ТАКОЖ ЦЬОГО ДНЯ' : 'ТАКЖЕ В ЭТОТ ДЕНЬ',
+    noOtherMemories: uk ? 'Інші пам’яті не вказані' : 'Другие памяти не указаны',
+    life: uk ? 'Житіє' : 'Житие',
+    troparion: uk ? 'Тропар' : 'Тропарь',
+    kontakion: uk ? 'Кондак' : 'Кондак',
+    readings: uk ? 'ЧИТАННЯ ДНЯ' : 'ЧТЕНИЯ ДНЯ',
+    gospel: uk ? 'ЄВАНГЕЛІЄ ДНЯ' : 'ЕВАНГЕЛИЕ ДНЯ',
+    apostle: uk ? 'АПОСТОЛ ДНЯ' : 'АПОСТОЛ ДНЯ',
+    openBible: uk ? 'Відкрити в Біблії' : 'Открыть в Библии',
+    unrecognized: uk ? 'Посилання поки не розпізнано' : 'Ссылка пока не распознана',
+    readText: uk ? 'Читати текст' : 'Читать текст',
+    hideText: uk ? 'Сховати текст' : 'Скрыть текст',
+    noReadings: uk
+      ? 'Читання для цього дня поки не вказані'
+      : 'Чтения для этого дня пока не указаны',
+    noData: uk ? 'Немає даних для обраного дня' : 'Нет данных для выбранного дня',
+    loadingMemory: uk ? 'Завантажуємо пам’ять дня…' : 'Загружаем память дня…',
+    onScreen: uk ? 'На екран' : 'На экран',
+    widgetAlready: uk ? 'Віджет уже додано' : 'Виджет уже добавлен',
+    widgetName: uk ? 'Церковний календар' : 'Церковный календарь',
+  };
+};
+
+export const CALENDAR_MONTHS = {
+  ru: {
+    nominative: [
+      'Январь',
+      'Февраль',
+      'Март',
+      'Апрель',
+      'Май',
+      'Июнь',
+      'Июль',
+      'Август',
+      'Сентябрь',
+      'Октябрь',
+      'Ноябрь',
+      'Декабрь',
+    ],
+    genitive: [
+      'января',
+      'февраля',
+      'марта',
+      'апреля',
+      'мая',
+      'июня',
+      'июля',
+      'августа',
+      'сентября',
+      'октября',
+      'ноября',
+      'декабря',
+    ],
+    weekdays: [
+      'воскресенье',
+      'понедельник',
+      'вторник',
+      'среда',
+      'четверг',
+      'пятница',
+      'суббота',
+    ],
+    miniWeekdays: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+  },
+  uk: {
+    nominative: [
+      'Січень',
+      'Лютий',
+      'Березень',
+      'Квітень',
+      'Травень',
+      'Червень',
+      'Липень',
+      'Серпень',
+      'Вересень',
+      'Жовтень',
+      'Листопад',
+      'Грудень',
+    ],
+    genitive: [
+      'січня',
+      'лютого',
+      'березня',
+      'квітня',
+      'травня',
+      'червня',
+      'липня',
+      'серпня',
+      'вересня',
+      'жовтня',
+      'листопада',
+      'грудня',
+    ],
+    weekdays: [
+      'неділя',
+      'понеділок',
+      'вівторок',
+      'середа',
+      'четвер',
+      'п’ятниця',
+      'субота',
+    ],
+    miniWeekdays: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'],
+  },
+};
