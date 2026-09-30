@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/memorial-book
+      - feature/custom-prayer-books
   workflow_dispatch:
 
 permissions:
