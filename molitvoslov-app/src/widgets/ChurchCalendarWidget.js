@@ -1,11 +1,7 @@
 'use no memo';
 
 import React from 'react';
-import {
-  FlexWidget,
-  OverlapWidget,
-  TextWidget,
-} from 'react-native-android-widget';
+import {FlexWidget, OverlapWidget, TextWidget} from 'react-native-android-widget';
 
 import {CALENDAR_MONTHS, calendarText} from '../services/calendarPreferences';
 import {formatFast} from '../services/churchCalendar';
@@ -43,12 +39,7 @@ const chunk = (items, size) => {
   return rows;
 };
 
-export const ChurchCalendarWidget = ({
-  day,
-  language = 'ru',
-  width = 320,
-  height = 150,
-}) => {
+export const ChurchCalendarWidget = ({day, language = 'ru', width = 320, height = 150}) => {
   const lang = language === 'uk' ? 'uk' : 'ru';
   const copy = calendarText(lang);
   const locale = CALENDAR_MONTHS[lang];
@@ -61,10 +52,7 @@ export const ChurchCalendarWidget = ({
   const compact = widgetHeight < 145;
   const narrow = widgetWidth < 285;
 
-  const feast =
-    day?.main_feast?.short_title ||
-    day?.main_feast?.title ||
-    copy.saintMemory;
+  const feast = day?.main_feast?.short_title || day?.main_feast?.title || copy.saintMemory;
   const fast = formatFast(day, lang) || copy.noFastData;
 
   const horizontalPadding = compact ? 9 : 12;
@@ -82,15 +70,12 @@ export const ChurchCalendarWidget = ({
    * their geometry regardless of the launcher-reported widget size.
    */
   const desiredCalendarWidth = clamp(
-    Math.round(widgetWidth * (narrow ? 0.40 : 0.36)),
+    Math.round(widgetWidth * (narrow ? 0.4 : 0.36)),
     narrow ? 102 : 108,
     compact ? 124 : 136
   );
   const panelInset = 8;
-  const cellWidth = Math.max(
-    14,
-    Math.floor((desiredCalendarWidth - panelInset) / 7)
-  );
+  const cellWidth = Math.max(14, Math.floor((desiredCalendarWidth - panelInset) / 7));
   const gridWidth = cellWidth * 7;
   const calendarPanelWidth = gridWidth + panelInset;
   const weekdayHeight = compact ? 9 : 10;
@@ -279,11 +264,7 @@ export const ChurchCalendarWidget = ({
                     style={{
                       width: cell.today ? todayBubbleSize : cellWidth,
                       height: rowHeight,
-                      color: cell.today
-                        ? '#FFF7E7'
-                        : index >= 5
-                          ? '#A05243'
-                          : '#493225',
+                      color: cell.today ? '#FFF7E7' : index >= 5 ? '#A05243' : '#493225',
                       backgroundColor: cell.today ? '#A96F35' : '#00000000',
                       borderRadius: cell.today ? todayBubbleSize / 2 : 0,
                       fontFamily: 'Ponomar',

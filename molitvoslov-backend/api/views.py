@@ -639,7 +639,6 @@ class ReadingProgressViewSet(viewsets.ModelViewSet):
         )
 
 
-
 # =========================================================
 # ПОМЯННИК
 # =========================================================
@@ -652,8 +651,7 @@ class MemorialBookViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = (
-            MemorialBook.objects
-            .filter(user=self.request.user)
+            MemorialBook.objects.filter(user=self.request.user)
             .prefetch_related("photos")
             .order_by("-updated_at", "-id")
         )
@@ -831,11 +829,7 @@ class MemorialPhotoViewSet(viewsets.ModelViewSet):
         raw_sync_id = request.data.get("sync_id")
 
         try:
-            photo_sync_id = (
-                uuid.UUID(str(raw_sync_id))
-                if raw_sync_id
-                else uuid.uuid4()
-            )
+            photo_sync_id = uuid.UUID(str(raw_sync_id)) if raw_sync_id else uuid.uuid4()
         except (TypeError, ValueError, AttributeError):
             return Response(
                 {"detail": "Некорректный sync_id."},
@@ -873,11 +867,7 @@ class MemorialPhotoViewSet(viewsets.ModelViewSet):
         }:
             extension = extension_by_type.get(content_type, ".jpg")
 
-        storage_path = (
-            f"user-{request.user.id}/"
-            f"{book.sync_id}/"
-            f"{photo_sync_id}{extension}"
-        )
+        storage_path = f"user-{request.user.id}/" f"{book.sync_id}/" f"{photo_sync_id}{extension}"
 
         try:
             upload_bytes(
@@ -961,8 +951,7 @@ class PersonalPrayerBookViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = (
-            PersonalPrayerBook.objects
-            .filter(user=self.request.user)
+            PersonalPrayerBook.objects.filter(user=self.request.user)
             .prefetch_related("items__prayer__photos")
             .order_by("-updated_at", "-id")
         )
@@ -1030,8 +1019,7 @@ class PersonalPrayerViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = (
-            PersonalPrayer.objects
-            .filter(user=self.request.user)
+            PersonalPrayer.objects.filter(user=self.request.user)
             .prefetch_related("photos")
             .order_by("-updated_at", "-id")
         )
@@ -1116,8 +1104,7 @@ class PersonalPrayerBookItemViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = (
-            PersonalPrayerBookItem.objects
-            .filter(book__user=self.request.user)
+            PersonalPrayerBookItem.objects.filter(book__user=self.request.user)
             .select_related("book", "prayer")
             .prefetch_related("prayer__photos")
             .order_by("order", "created_at", "id")
@@ -1166,6 +1153,7 @@ class PersonalPrayerBookItemViewSet(viewsets.ModelViewSet):
         incoming_updated_at = request.data.get("updated_at")
         if incoming_updated_at:
             from django.utils.dateparse import parse_datetime
+
             incoming_updated_at = parse_datetime(str(incoming_updated_at))
         incoming_updated_at = incoming_updated_at or timezone.now()
 

@@ -326,7 +326,6 @@ export default function KathismaScreen({route, navigation}) {
     };
   }, [kathisma, savedProgress]);
 
-
   const normalizedFocusTarget = useMemo(() => {
     if (!focusTarget || !kathisma) {
       return focusTarget;
@@ -363,15 +362,9 @@ export default function KathismaScreen({route, navigation}) {
       anchorType === 'psalm' ||
       (anchorType === 'psalm_text' && focusTarget.save_type === 'psalm')
     ) {
-      const psalmId = Number(
-        metadata.psalm_id ||
-          focusTarget.anchor_id ||
-          focusTarget.anchorId
-      );
+      const psalmId = Number(metadata.psalm_id || focusTarget.anchor_id || focusTarget.anchorId);
 
-      const psalm = (kathisma.psalms || []).find(
-        (item) => Number(item.id) === psalmId
-      );
+      const psalm = (kathisma.psalms || []).find((item) => Number(item.id) === psalmId);
 
       if (!psalm) {
         return focusTarget;
@@ -432,9 +425,7 @@ export default function KathismaScreen({route, navigation}) {
         }
 
         const built = buildLanguageChunk(chunks[chunkIndex], field);
-        const range = built.verseRanges.find(
-          (item) => Number(item.verseId) === verseId
-        );
+        const range = built.verseRanges.find((item) => Number(item.verseId) === verseId);
 
         if (!range) {
           return focusTarget;
@@ -453,10 +444,8 @@ export default function KathismaScreen({route, navigation}) {
           ...focusTarget,
           anchor_type: 'psalm_text',
           anchor_id: Number(psalm.id),
-          start_offset:
-            legacyStart === null ? null : range.contentStart + legacyStart,
-          end_offset:
-            legacyEnd === null ? null : range.contentStart + legacyEnd,
+          start_offset: legacyStart === null ? null : range.contentStart + legacyStart,
+          end_offset: legacyEnd === null ? null : range.contentStart + legacyEnd,
           metadata: {
             ...metadata,
             psalm_id: Number(psalm.id),
@@ -767,24 +756,18 @@ export default function KathismaScreen({route, navigation}) {
             },
 
             memorialAction: {
-              marker:
-                '[Здесь можно прочитать прошение о здравии / об упокоении и помянуть имена.]',
+              marker: '[Здесь можно прочитать прошение о здравии / об упокоении и помянуть имена.]',
 
-              label:
-                'Открыть помянник',
+              label: 'Открыть помянник',
 
               context: {
-                source:
-                  'psalter',
+                source: 'psalter',
 
-                kathisma_number:
-                  Number(kathisma.number),
+                kathisma_number: Number(kathisma.number),
 
-                psalm_number:
-                  Number(psalm.number),
+                psalm_number: Number(psalm.number),
 
-                glory_number:
-                  Number(chunk.glory.number),
+                glory_number: Number(chunk.glory.number),
               },
             },
           });
@@ -1048,19 +1031,13 @@ export default function KathismaScreen({route, navigation}) {
         topContentInset={headerHeight}
         onProgress={handleProgress}
         onAction={handleAction}
-        onMemorialOpen={() =>
-          setMemorialVisible(true)
-        }
+        onMemorialOpen={() => setMemorialVisible(true)}
       />
 
       <MemorialQuickSheet
         visible={memorialVisible}
-        onClose={() =>
-          setMemorialVisible(false)
-        }
-        onManage={() =>
-          navigation.navigate('Memorial')
-        }
+        onClose={() => setMemorialVisible(false)}
+        onManage={() => navigation.navigate('Memorial')}
       />
 
       <FixedSectionHeader

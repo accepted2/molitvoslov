@@ -51,9 +51,7 @@
       [
         "react-native-android-widget",
         {
-          "fonts": [
-            "./assets/fonts/Ponomar-Regular.ttf"
-          ],
+          "fonts": ["./assets/fonts/Ponomar-Regular.ttf"],
           "widgets": [
             {
               "name": "QuoteOfDay",

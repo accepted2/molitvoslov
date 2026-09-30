@@ -14,11 +14,7 @@ const fetchCalendarJson = async (path) => {
   }
 
   if (!response.ok) {
-    throw new Error(
-      data?.detail ||
-        data?.error ||
-        `Ошибка календаря: ${response.status}`
-    );
+    throw new Error(data?.detail || data?.error || `Ошибка календаря: ${response.status}`);
   }
 
   return data;
@@ -32,17 +28,10 @@ const pad = (value) => String(value).padStart(2, '0');
 export const toCalendarDate = (value) => {
   const date = value instanceof Date ? value : new Date(value);
 
-  return [
-    date.getFullYear(),
-    pad(date.getMonth() + 1),
-    pad(date.getDate()),
-  ].join('-');
+  return [date.getFullYear(), pad(date.getMonth() + 1), pad(date.getDate())].join('-');
 };
 
-export const getCalendarDay = async (
-  value = new Date(),
-  {force = false, language = 'ru'} = {}
-) => {
+export const getCalendarDay = async (value = new Date(), {force = false, language = 'ru'} = {}) => {
   const dateKey = typeof value === 'string' ? value : toCalendarDate(value);
   const lang = language === 'uk' ? 'uk' : 'ru';
   const key = `${lang}:${dateKey}`;
@@ -59,11 +48,7 @@ export const getCalendarDay = async (
   return data;
 };
 
-export const getCalendarMonth = async (
-  year,
-  month,
-  {force = false, language = 'ru'} = {}
-) => {
+export const getCalendarMonth = async (year, month, {force = false, language = 'ru'} = {}) => {
   const lang = language === 'uk' ? 'uk' : 'ru';
   const key = `${lang}:${year}-${month}`;
 
@@ -125,8 +110,7 @@ const normalizeReference = (value) =>
     .replace(/\s+/g, ' ')
     .trim();
 
-const escapeRegExp = (value) =>
-  String(value || '').replace(/[.*+?^$()|[\]\\]/g, '\\$&');
+const escapeRegExp = (value) => String(value || '').replace(/[.*+?^$()|[\]\\]/g, '\\$&');
 
 const romanToNumber = (value) => {
   const source = String(value || '').toUpperCase();
@@ -148,14 +132,10 @@ const romanToNumber = (value) => {
   return total || null;
 };
 
-const findBookByCode = (code) =>
-  bibleContent.getBooks().find((book) => book.code === code) || null;
+const findBookByCode = (code) => bibleContent.getBooks().find((book) => book.code === code) || null;
 
 const matchesBookAlias = (normalized, alias) => {
-  const pattern = new RegExp(
-    `(^|\\s)${escapeRegExp(alias)}(?=\\s|$)`,
-    'i'
-  );
+  const pattern = new RegExp(`(^|\\s)${escapeRegExp(alias)}(?=\\s|$)`, 'i');
 
   return pattern.test(normalized);
 };
@@ -163,9 +143,7 @@ const matchesBookAlias = (normalized, alias) => {
 const parseVerseRange = (title) => {
   const source = String(title || '');
 
-  const colon = source.match(
-    /(\d+)\s*[:.]\s*(\d+)\s*(?:[-–—]\s*(?:(\d+)\s*[:.]\s*)?(\d+))?/
-  );
+  const colon = source.match(/(\d+)\s*[:.]\s*(\d+)\s*(?:[-–—]\s*(?:(\d+)\s*[:.]\s*)?(\d+))?/);
 
   if (colon) {
     return {
@@ -186,18 +164,12 @@ const parseVerseRange = (title) => {
     return {
       startChapter,
       startVerse: Number(romanRange[2]),
-      endChapter: romanRange[3]
-        ? romanToNumber(romanRange[3])
-        : startChapter,
-      endVerse: romanRange[4]
-        ? Number(romanRange[4])
-        : Number(romanRange[2]),
+      endChapter: romanRange[3] ? romanToNumber(romanRange[3]) : startChapter,
+      endVerse: romanRange[4] ? Number(romanRange[4]) : Number(romanRange[2]),
     };
   }
 
-  const afterLectionary = source
-    .replace(/\b\d+\s*зач\.?/gi, ' ')
-    .replace(/\s+/g, ' ');
+  const afterLectionary = source.replace(/\b\d+\s*зач\.?/gi, ' ').replace(/\s+/g, ' ');
 
   const commaRange = afterLectionary.match(
     /(\d+)\s*,\s*(\d+)\s*(?:[-–—]\s*(?:(\d+)\s*,\s*)?(\d+))?/
@@ -207,12 +179,8 @@ const parseVerseRange = (title) => {
     return {
       startChapter: Number(commaRange[1]),
       startVerse: Number(commaRange[2]),
-      endChapter: commaRange[3]
-        ? Number(commaRange[3])
-        : Number(commaRange[1]),
-      endVerse: commaRange[4]
-        ? Number(commaRange[4])
-        : Number(commaRange[2]),
+      endChapter: commaRange[3] ? Number(commaRange[3]) : Number(commaRange[1]),
+      endVerse: commaRange[4] ? Number(commaRange[4]) : Number(commaRange[2]),
     };
   }
 
@@ -248,9 +216,7 @@ export const resolveBibleReference = (title) => {
   }
 
   const verse =
-    (chapter.verses || []).find(
-      (item) => Number(item.number) === Number(range.startVerse)
-    ) ||
+    (chapter.verses || []).find((item) => Number(item.number) === Number(range.startVerse)) ||
     chapter.verses?.[0] ||
     null;
 
@@ -286,35 +252,21 @@ export const getBibleReadingVerses = (title) => {
     return [];
   }
 
-  for (
-    let chapterNumber = startChapter;
-    chapterNumber <= endChapter;
-    chapterNumber += 1
-  ) {
+  for (let chapterNumber = startChapter; chapterNumber <= endChapter; chapterNumber += 1) {
     const chapter = bibleContent.getChapter(target.book.id, chapterNumber);
 
     if (!chapter) {
       continue;
     }
 
-    const startVerse =
-      chapterNumber === startChapter ? Number(target.startVerse) : 1;
+    const startVerse = chapterNumber === startChapter ? Number(target.startVerse) : 1;
 
-    const lastVerseInChapter = Number(
-      chapter.verses?.[chapter.verses.length - 1]?.number || 0
-    );
+    const lastVerseInChapter = Number(chapter.verses?.[chapter.verses.length - 1]?.number || 0);
 
-    const endVerse =
-      chapterNumber === endChapter
-        ? Number(target.endVerse)
-        : lastVerseInChapter;
+    const endVerse = chapterNumber === endChapter ? Number(target.endVerse) : lastVerseInChapter;
 
     (chapter.verses || [])
-      .filter(
-        (verse) =>
-          Number(verse.number) >= startVerse &&
-          Number(verse.number) <= endVerse
-      )
+      .filter((verse) => Number(verse.number) >= startVerse && Number(verse.number) <= endVerse)
       .forEach((verse) => {
         result.push({
           chapterNumber,
@@ -336,8 +288,7 @@ export const getBibleReadingText = (title) => {
 
   const parts = [];
   let previousChapter = null;
-  const multipleChapters =
-    new Set(verses.map((verse) => verse.chapterNumber)).size > 1;
+  const multipleChapters = new Set(verses.map((verse) => verse.chapterNumber)).size > 1;
 
   verses.forEach((verse) => {
     if (multipleChapters && verse.chapterNumber !== previousChapter) {

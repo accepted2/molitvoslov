@@ -159,27 +159,16 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         viewSwitcher={viewSwitcher}
         topContentInset={headerHeight}
         memorialEnabled={slug === 'molitvy-utrennie'}
-        onMemorialOpen={(context) =>
-          setMemorialContext(
-            context || {}
-          )
-        }
+        onMemorialOpen={(context) => setMemorialContext(context || {})}
         onProgress={scheduleSave}
         onViewModeChange={setViewMode}
       />
 
       <MemorialQuickSheet
         visible={!!memorialContext}
-        preferredKind={
-          memorialContext?.kind ||
-          null
-        }
-        onClose={() =>
-          setMemorialContext(null)
-        }
-        onManage={() =>
-          navigation.navigate('Memorial')
-        }
+        preferredKind={memorialContext?.kind || null}
+        onClose={() => setMemorialContext(null)}
+        onManage={() => navigation.navigate('Memorial')}
       />
 
       <FixedSectionHeader

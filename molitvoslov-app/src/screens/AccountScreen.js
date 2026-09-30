@@ -73,13 +73,17 @@ export const AccountScreen = ({navigation}) => {
        * входа сразу восстанавливаем
        * облачные данные пользователя.
        */
-      const [savedItemsSyncResult, readingProgressSyncResult, memorialsSyncResult, prayerBooksSyncResult] =
-        await Promise.all([
-          syncSavedItems(),
-          syncReadingProgress(),
-          syncMemorials(),
-          syncPrayerBooks(),
-        ]);
+      const [
+        savedItemsSyncResult,
+        readingProgressSyncResult,
+        memorialsSyncResult,
+        prayerBooksSyncResult,
+      ] = await Promise.all([
+        syncSavedItems(),
+        syncReadingProgress(),
+        syncMemorials(),
+        syncPrayerBooks(),
+      ]);
 
       if (
         savedItemsSyncResult?.success &&

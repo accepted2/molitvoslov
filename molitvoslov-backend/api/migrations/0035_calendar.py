@@ -12,7 +12,12 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="CalendarFeast",
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
                 ("source_id", models.PositiveIntegerField(db_index=True, unique=True)),
                 ("date_type", models.CharField(blank=True, default="", max_length=20)),
                 ("celebration_type", models.CharField(blank=True, default="", max_length=20)),
@@ -44,7 +49,12 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="CalendarDay",
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
                 ("date_gregorian", models.DateField(db_index=True, unique=True)),
                 ("julian_month", models.PositiveSmallIntegerField(blank=True, null=True)),
                 ("julian_day", models.PositiveSmallIntegerField(blank=True, null=True)),

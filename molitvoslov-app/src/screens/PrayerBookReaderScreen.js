@@ -1,11 +1,5 @@
 import React, {useCallback, useMemo, useState} from 'react';
-import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import {Image, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
@@ -95,9 +89,7 @@ const ParallelText = ({church, russian, churchStyle, russianStyle}) => {
       </View>
 
       <View style={styles.parallelColumnRight}>
-        <Text style={[styles.psalterText, styles.psalterRussian, russianStyle]}>
-          {russian}
-        </Text>
+        <Text style={[styles.psalterText, styles.psalterRussian, russianStyle]}>{russian}</Text>
       </View>
     </View>
   );
@@ -181,9 +173,7 @@ const psalmChunks = (psalm, glories) => {
 
   if (
     chunks.length &&
-    (glories || []).some(
-      (item) => Number(item?.after_psalm) === Number(psalm?.id)
-    )
+    (glories || []).some((item) => Number(item?.after_psalm) === Number(psalm?.id))
   ) {
     chunks[chunks.length - 1].gloryAfter = true;
   }
@@ -289,9 +279,7 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
           paddingBottom: 36 + insets.bottom,
         }}
       >
-        {!!book?.description && (
-          <Text style={styles.description}>{book.description}</Text>
-        )}
+        {!!book?.description && <Text style={styles.description}>{book.description}</Text>}
 
         {items.map((item, index) => {
           const prayer = item.prayer;

@@ -12,17 +12,11 @@ class StorageConfigurationError(RuntimeError):
 
 def _storage_config():
     base_url = str(getattr(settings, "SUPABASE_URL", "") or "").rstrip("/")
-    secret_key = str(
-        getattr(settings, "SUPABASE_STORAGE_SECRET_KEY", "") or ""
-    ).strip()
-    bucket = str(
-        getattr(settings, "MEMORIAL_STORAGE_BUCKET", "memorials") or "memorials"
-    ).strip()
+    secret_key = str(getattr(settings, "SUPABASE_STORAGE_SECRET_KEY", "") or "").strip()
+    bucket = str(getattr(settings, "MEMORIAL_STORAGE_BUCKET", "memorials") or "memorials").strip()
 
     if not base_url or not secret_key:
-        raise StorageConfigurationError(
-            "Облачное хранилище фото помянника ещё не настроено."
-        )
+        raise StorageConfigurationError("Облачное хранилище фото помянника ещё не настроено.")
 
     return base_url, secret_key, bucket
 
@@ -74,10 +68,7 @@ def _request(method, path, data=None, content_type=None, extra_headers=None):
             payload = {}
 
         message = (
-            payload.get("message")
-            or payload.get("error")
-            or payload.get("statusCode")
-            or str(exc)
+            payload.get("message") or payload.get("error") or payload.get("statusCode") or str(exc)
         )
 
         raise RuntimeError(str(message)) from exc
@@ -133,10 +124,7 @@ def create_signed_download_url(storage_path, expires_in=3600):
     )
 
     signed_url = (
-        result.get("signedURL")
-        or result.get("signedUrl")
-        or result.get("signed_url")
-        or ""
+        result.get("signedURL") or result.get("signedUrl") or result.get("signed_url") or ""
     )
 
     if not signed_url:

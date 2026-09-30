@@ -57,11 +57,7 @@ class Command(BaseCommand):
 
                     results.append(f"{current_language}: {imported}")
 
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"{month:02d}.{year}: " + ", ".join(results)
-                    )
-                )
+                self.stdout.write(self.style.SUCCESS(f"{month:02d}.{year}: " + ", ".join(results)))
 
         self.stdout.write(
             self.style.SUCCESS(

@@ -77,18 +77,10 @@ const buildCells = (year, month) => {
 };
 
 const SoftChevron = ({expanded}) => (
-  <Text
-    style={[
-      styles.readingArrow,
-      expanded && styles.readingArrowExpanded,
-    ]}
-  >
-    ›
-  </Text>
+  <Text style={[styles.readingArrow, expanded && styles.readingArrowExpanded]}>›</Text>
 );
 
-const displayTitle = (feast, copy) =>
-  feast?.short_title || feast?.title || copy.saintMemory;
+const displayTitle = (feast, copy) => feast?.short_title || feast?.title || copy.saintMemory;
 
 const normalizeCalendarText = (value) =>
   String(value || '')
@@ -179,9 +171,7 @@ const ReadingLink = ({kind, title, navigation, copy, language}) => {
         </View>
 
         <View style={styles.readingTextWrap}>
-          <Text style={styles.readingKind}>
-            {kind === 'gospel' ? copy.gospel : copy.apostle}
-          </Text>
+          <Text style={styles.readingKind}>{kind === 'gospel' ? copy.gospel : copy.apostle}</Text>
           <Text style={styles.readingTitle}>{title}</Text>
 
           {target ? (
@@ -198,29 +188,21 @@ const ReadingLink = ({kind, title, navigation, copy, language}) => {
         <>
           <Pressable
             onPress={() => setExpanded((value) => !value)}
-            style={({pressed}) => [
-              styles.readingExpand,
-              pressed && styles.pressed,
-            ]}
+            style={({pressed}) => [styles.readingExpand, pressed && styles.pressed]}
           >
-            <Text style={styles.readingExpandText}>
-              {expanded ? copy.hideText : copy.readText}
-            </Text>
+            <Text style={styles.readingExpandText}>{expanded ? copy.hideText : copy.readText}</Text>
             <SoftChevron expanded={expanded} />
           </Pressable>
 
           {expanded && (
             <View style={styles.readingContent}>
               {verses.map((verse, index) => {
-                const showChapter =
-                  chapters.size > 1 && verse.chapterNumber !== previousChapter;
+                const showChapter = chapters.size > 1 && verse.chapterNumber !== previousChapter;
 
                 previousChapter = verse.chapterNumber;
 
                 return (
-                  <View
-                    key={`${verse.chapterNumber}-${verse.verseNumber}-${index}`}
-                  >
+                  <View key={`${verse.chapterNumber}-${verse.verseNumber}-${index}`}>
                     {showChapter && (
                       <Text style={styles.readingChapter}>
                         {language === 'uk' ? 'Глава' : 'Глава'} {verse.chapterNumber}
@@ -228,9 +210,7 @@ const ReadingLink = ({kind, title, navigation, copy, language}) => {
                     )}
 
                     <Text style={styles.readingVerseText} selectable>
-                      <Text style={styles.readingVerseNumber}>
-                        {verse.verseNumber}{' '}
-                      </Text>
+                      <Text style={styles.readingVerseNumber}>{verse.verseNumber} </Text>
                       {verse.text}
                     </Text>
                   </View>
@@ -327,20 +307,11 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   }, [language, selectedDate]);
 
   const daysMap = useMemo(
-    () =>
-      new Map(
-        (monthData?.days || []).map((day) => [
-          day.date_gregorian,
-          day,
-        ])
-      ),
+    () => new Map((monthData?.days || []).map((day) => [day.date_gregorian, day])),
     [monthData]
   );
 
-  const cells = useMemo(
-    () => buildCells(visibleYear, visibleMonth),
-    [visibleMonth, visibleYear]
-  );
+  const cells = useMemo(() => buildCells(visibleYear, visibleMonth), [visibleMonth, visibleYear]);
 
   const today = toCalendarDate(new Date());
   const mainFeast = dayData?.main_feast || dayData?.all_feasts?.[0] || null;
@@ -402,16 +373,10 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
               <Pressable
                 key={item}
                 onPress={() => changeLanguage(item)}
-                style={[
-                  styles.languageButton,
-                  active && styles.languageButtonActive,
-                ]}
+                style={[styles.languageButton, active && styles.languageButtonActive]}
               >
                 <Text
-                  style={[
-                    styles.languageButtonText,
-                    active && styles.languageButtonTextActive,
-                  ]}
+                  style={[styles.languageButtonText, active && styles.languageButtonTextActive]}
                 >
                   {item === 'ru' ? 'РУ' : 'УК'}
                 </Text>
@@ -445,13 +410,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
       <View style={styles.weekRow}>
         {locale.miniWeekdays.map((weekday, index) => (
-          <Text
-            key={weekday}
-            style={[
-              styles.weekday,
-              index >= 5 && styles.weekendText,
-            ]}
-          >
+          <Text key={weekday} style={[styles.weekday, index >= 5 && styles.weekendText]}>
             {weekday}
           </Text>
         ))}
@@ -478,12 +437,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
                   pressed && styles.pressed,
                 ]}
               >
-                <View
-                  style={[
-                    styles.dayBubble,
-                    isToday && styles.dayBubbleToday,
-                  ]}
-                >
+                <View style={[styles.dayBubble, isToday && styles.dayBubbleToday]}>
                   <Text
                     style={[
                       styles.dayNumber,
@@ -511,9 +465,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
         otherFeasts.map((feast) => (
           <View key={feast.source_id} style={styles.otherSaintRow}>
             <View style={styles.otherSaintDot} />
-            <Text style={styles.otherSaintText}>
-              {displayTitle(feast, copy)}
-            </Text>
+            <Text style={styles.otherSaintText}>{displayTitle(feast, copy)}</Text>
           </View>
         ))
       ) : (
@@ -554,17 +506,13 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
             <View style={styles.feastHeroText}>
               <Text style={styles.feastMemory}>
-                {language === 'uk'
-                  ? 'ПАМ’ЯТЬ СВЯТОГО / СВЯТО'
-                  : 'ПАМЯТЬ СВЯТОГО / ПРАЗДНИК'}
+                {language === 'uk' ? 'ПАМ’ЯТЬ СВЯТОГО / СВЯТО' : 'ПАМЯТЬ СВЯТОГО / ПРАЗДНИК'}
               </Text>
               <Text style={styles.feastTitle}>{displayTitle(mainFeast, copy)}</Text>
 
               {!!formatFast(dayData, language) && (
                 <View style={styles.fastBadge}>
-                  <Text style={styles.fastBadgeText}>
-                    {formatFast(dayData, language)}
-                  </Text>
+                  <Text style={styles.fastBadgeText}>{formatFast(dayData, language)}</Text>
                 </View>
               )}
             </View>

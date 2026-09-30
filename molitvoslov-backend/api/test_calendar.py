@@ -68,7 +68,6 @@ class CalendarApiTests(APITestCase):
         self.assertIsNotNone(day.main_feast)
         self.assertEqual(day.main_feast.source_id, 602)
 
-
     def test_day_endpoint_can_return_ukrainian_calendar_text(self):
         feast = CalendarFeast.objects.create(
             source_id=701,

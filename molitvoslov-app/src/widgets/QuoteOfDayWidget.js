@@ -1,20 +1,11 @@
 'use no memo';
 
 import React from 'react';
-import {
-  FlexWidget,
-  ImageWidget,
-  OverlapWidget,
-  TextWidget,
-} from 'react-native-android-widget';
+import {FlexWidget, ImageWidget, OverlapWidget, TextWidget} from 'react-native-android-widget';
 
 const QUOTE_BACKGROUND = require('../../assets/home/hero.png');
 
-export const QuoteOfDayWidget = ({
-                                   quote,
-                                   width = 240,
-                                   height = 100,
-                                 }) => {
+export const QuoteOfDayWidget = ({quote, width = 240, height = 100}) => {
   const text = quote?.text || '';
   const source = quote?.reference || quote?.source || '';
 
@@ -22,30 +13,19 @@ export const QuoteOfDayWidget = ({
   const widgetHeight = Math.max(Number(height) || 100, 1);
 
   // Отступы тоже немного растут вместе с виджетом.
-  const horizontalPadding = Math.max(
-    10,
-    Math.min(20, Math.round(widgetWidth * 0.045))
-  );
+  const horizontalPadding = Math.max(10, Math.min(20, Math.round(widgetWidth * 0.045)));
 
-  const verticalPadding = Math.max(
-    7,
-    Math.min(16, Math.round(widgetHeight * 0.05))
-  );
+  const verticalPadding = Math.max(7, Math.min(16, Math.round(widgetHeight * 0.05)));
 
   /*
    * Базовый размер — 240 × 100.
    * При увеличении площади виджета увеличивается и шрифт.
    */
-  const areaScale = Math.sqrt(
-    (widgetWidth * widgetHeight) / (240 * 100)
-  );
+  const areaScale = Math.sqrt((widgetWidth * widgetHeight) / (240 * 100));
 
   // Ограничиваем масштаб, чтобы огромный виджет
   // не получил гигантский текст.
-  const scale = Math.max(
-    0.85,
-    Math.min(1.85, areaScale)
-  );
+  const scale = Math.max(0.85, Math.min(1.85, areaScale));
 
   // Чем длиннее цитата, тем осторожнее увеличиваем шрифт.
   const textFactor =
@@ -59,23 +39,11 @@ export const QuoteOfDayWidget = ({
             ? 0.94
             : 1.08;
 
-  const quoteFontSize = Math.round(
-    Math.max(
-      12,
-      Math.min(28, 15 * scale * textFactor)
-    )
-  );
+  const quoteFontSize = Math.round(Math.max(12, Math.min(28, 15 * scale * textFactor)));
 
-  const quoteLineHeight = Math.round(
-    quoteFontSize * 1.22
-  );
+  const quoteLineHeight = Math.round(quoteFontSize * 1.22);
 
-  const sourceFontSize = Math.round(
-    Math.max(
-      9,
-      Math.min(14, quoteFontSize * 0.58)
-    )
-  );
+  const sourceFontSize = Math.round(Math.max(9, Math.min(14, quoteFontSize * 0.58)));
 
   const sourceLineHeight = sourceFontSize + 3;
 

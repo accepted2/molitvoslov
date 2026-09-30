@@ -1,14 +1,5 @@
 import React, {useCallback, useMemo, useState} from 'react';
-import {
-  Alert,
-  FlatList,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import {Alert, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
@@ -39,12 +30,7 @@ const SavedPickerModal = ({visible, items, onClose, onSelect}) => {
     }
 
     return items.filter((item) =>
-      [
-        item.item_title,
-        item.source_title,
-        item.save_type_display,
-        item.text,
-      ]
+      [item.item_title, item.source_title, item.save_type_display, item.text]
         .filter(Boolean)
         .join(' ')
         .toLowerCase()
@@ -89,10 +75,7 @@ const SavedPickerModal = ({visible, items, onClose, onSelect}) => {
                 style={({pressed}) => [styles.pickerRow, pressed && styles.pressed]}
               >
                 <Text style={styles.pickerRowTitle}>
-                  {item.item_title ||
-                    item.source_title ||
-                    item.save_type_display ||
-                    'Сохранённое'}
+                  {item.item_title || item.source_title || item.save_type_display || 'Сохранённое'}
                 </Text>
 
                 {!!(item.text || item.source_title) && (
@@ -110,8 +93,7 @@ const SavedPickerModal = ({visible, items, onClose, onSelect}) => {
   );
 };
 
-const escapeRegExp = (value) =>
-  String(value || '').replace(/[.*+?^$()|[\]\\]/g, '\\$&');
+const escapeRegExp = (value) => String(value || '').replace(/[.*+?^$()|[\]\\]/g, '\\$&');
 
 const HighlightedText = ({text, query, style, numberOfLines}) => {
   const value = String(text || '');
@@ -164,9 +146,7 @@ const getSearchPreview = (item, query) => {
     .filter((token) => token.length >= 2);
 
   const lower = source.toLowerCase();
-  const matchedToken = tokens.find((token) =>
-    lower.includes(token.toLowerCase())
-  );
+  const matchedToken = tokens.find((token) => lower.includes(token.toLowerCase()));
 
   if (!matchedToken) {
     return item?.preview || source.slice(0, 130);
@@ -174,15 +154,10 @@ const getSearchPreview = (item, query) => {
 
   const index = lower.indexOf(matchedToken.toLowerCase());
   const start = Math.max(0, index - 52);
-  const end = Math.min(
-    source.length,
-    index + matchedToken.length + 92
-  );
+  const end = Math.min(source.length, index + matchedToken.length + 92);
 
   return (
-    (start > 0 ? '…' : '') +
-    source.slice(start, end).trim() +
-    (end < source.length ? '…' : '')
+    (start > 0 ? '…' : '') + source.slice(start, end).trim() + (end < source.length ? '…' : '')
   );
 };
 
@@ -226,10 +201,7 @@ const GlobalPrayerSearchModal = ({
   }, [allResults]);
 
   const results = useMemo(
-    () =>
-      filter === 'all'
-        ? allResults
-        : allResults.filter((item) => item.group === filter),
+    () => (filter === 'all' ? allResults : allResults.filter((item) => item.group === filter)),
     [allResults, filter]
   );
 
@@ -275,16 +247,10 @@ const GlobalPrayerSearchModal = ({
                   <Pressable
                     key={item.key}
                     onPress={() => setFilter(item.key)}
-                    style={[
-                      styles.searchFilter,
-                      active && styles.searchFilterActive,
-                    ]}
+                    style={[styles.searchFilter, active && styles.searchFilterActive]}
                   >
                     <Text
-                      style={[
-                        styles.searchFilterText,
-                        active && styles.searchFilterTextActive,
-                      ]}
+                      style={[styles.searchFilterText, active && styles.searchFilterTextActive]}
                     >
                       {item.label} ({counts[item.key] || 0})
                     </Text>
@@ -299,8 +265,8 @@ const GlobalPrayerSearchModal = ({
               <Text style={styles.searchEmptyMark}>⌕</Text>
               <Text style={styles.searchEmptyTitle}>Введите хотя бы два символа</Text>
               <Text style={styles.searchEmptyText}>
-                Поиск смотрит название, описание и полный текст молитв. Ваши собственные
-                молитвы тоже участвуют в поиске.
+                Поиск смотрит название, описание и полный текст молитв. Ваши собственные молитвы
+                тоже участвуют в поиске.
               </Text>
             </View>
           ) : (
@@ -465,21 +431,17 @@ export const PrayerBookScreen = ({route, navigation}) => {
   };
 
   const remove = (item) => {
-    Alert.alert(
-      'Убрать из молитвослова?',
-      'Сама молитва останется в вашей библиотеке.',
-      [
-        {text: 'Отмена', style: 'cancel'},
-        {
-          text: 'Убрать',
-          style: 'destructive',
-          onPress: async () => {
-            await removePrayerFromBook(item.sync_id);
-            await load();
-          },
+    Alert.alert('Убрать из молитвослова?', 'Сама молитва останется в вашей библиотеке.', [
+      {text: 'Отмена', style: 'cancel'},
+      {
+        text: 'Убрать',
+        style: 'destructive',
+        onPress: async () => {
+          await removePrayerFromBook(item.sync_id);
+          await load();
         },
-      ]
-    );
+      },
+    ]);
   };
 
   if (!book) {
@@ -512,14 +474,10 @@ export const PrayerBookScreen = ({route, navigation}) => {
           }}
           ListHeaderComponent={
             <View style={styles.actionsWrap}>
-              {!!book.description && (
-                <Text style={styles.description}>{book.description}</Text>
-              )}
+              {!!book.description && <Text style={styles.description}>{book.description}</Text>}
 
               <Pressable
-                onPress={() =>
-                  navigation.navigate('PrayerBookReader', {bookSyncId: book.sync_id})
-                }
+                onPress={() => navigation.navigate('PrayerBookReader', {bookSyncId: book.sync_id})}
                 disabled={!book.items?.length}
                 style={({pressed}) => [
                   styles.readButton,
@@ -609,10 +567,7 @@ export const PrayerBookScreen = ({route, navigation}) => {
                     style={styles.orderButton}
                   >
                     <Text
-                      style={[
-                        styles.orderButtonText,
-                        index === 0 && styles.orderButtonDisabled,
-                      ]}
+                      style={[styles.orderButtonText, index === 0 && styles.orderButtonDisabled]}
                     >
                       ↑
                     </Text>
@@ -627,19 +582,14 @@ export const PrayerBookScreen = ({route, navigation}) => {
                     <Text
                       style={[
                         styles.orderButtonText,
-                        index === (book.items?.length || 0) - 1 &&
-                          styles.orderButtonDisabled,
+                        index === (book.items?.length || 0) - 1 && styles.orderButtonDisabled,
                       ]}
                     >
                       ↓
                     </Text>
                   </Pressable>
 
-                  <Pressable
-                    hitSlop={8}
-                    onPress={() => remove(item)}
-                    style={styles.removeButton}
-                  >
+                  <Pressable hitSlop={8} onPress={() => remove(item)} style={styles.removeButton}>
                     <Text style={styles.removeText}>×</Text>
                   </Pressable>
                 </View>
