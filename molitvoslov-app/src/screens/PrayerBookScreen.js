@@ -139,8 +139,9 @@ const HighlightedText = ({text, query, style, numberOfLines}) => {
   onSelect,
 }) => {
   const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState('all');
 
-  const results = useMemo(() => {
+  const allResults = useMemo(() => {
     if (!visible) {
       return [];
     }
@@ -149,6 +150,26 @@ const HighlightedText = ({text, query, style, numberOfLines}) => {
       (item) => item.kind !== 'personal' || !excludedPrayerIds.has(item.prayer?.sync_id)
     );
   }, [excludedPrayerIds, personalPrayers, query, visible]);
+
+  const counts = useMemo(() => {
+    const next = {all: allResults.length, prayer: 0, psalter: 0, personal: 0};
+
+    allResults.forEach((item) => {
+      if (item.group && Object.prototype.hasOwnProperty.call(next, item.group)) {
+        next[item.group] += 1;
+      }
+    });
+
+    return next;
+  }, [allResults]);
+
+  const results = useMemo(
+    () =>
+      filter === 'all'
+        ? allResults
+        : allResults.filter((item) => item.group === filter),
+    [allResults, filter]
+  );
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -183,6 +204,34 @@ const HighlightedText = ({text, query, style, numberOfLines}) => {
             )}
           </View>
 
+          {query.trim().length >= 2 && (
+            <View style={styles.searchFilters}>
+              {SEARCH_FILTERS.map((item) => {
+                const active = filter === item.key;
+
+                return (
+                  <Pressable
+                    key={item.key}
+                    onPress={() => setFilter(item.key)}
+                    style={[
+                      styles.searchFilter,
+                      active && styles.searchFilterActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.searchFilterText,
+                        active && styles.searchFilterTextActive,
+                      ]}
+                    >
+                      {item.label} ({counts[item.key] || 0})
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+
           {query.trim().length < 2 ? (
             <View style={styles.searchEmptyState}>
               <Text style={styles.searchEmptyMark}>⌕</Text>
@@ -211,14 +260,24 @@ const HighlightedText = ({text, query, style, numberOfLines}) => {
                   style={({pressed}) => [styles.searchResult, pressed && styles.pressed]}
                 >
                   <View style={styles.searchResultTop}>
-                    <Text style={styles.searchResultTitle}>{item.title}</Text>
+                    <HighlightedText
+                      text={item.title}
+                      query={query}
+                      style={styles.searchResultTitle}
+                      numberOfLines={2}
+                    />
                     <Text
                       style={[
                         styles.sourceBadge,
-                        item.kind === 'personal' && styles.sourceBadgePersonal,
+                        item.group === 'personal' && styles.sourceBadgePersonal,
+                        item.group === 'psalter' && styles.sourceBadgePsalter,
                       ]}
                     >
-                      {item.kind === 'personal' ? 'МОЯ' : 'БИБЛИОТЕКА'}
+                      {item.group === 'personal'
+                        ? 'МОЯ'
+                        : item.group === 'psalter'
+                          ? 'ПСАЛТИРЬ'
+                          : 'БИБЛИОТЕКА'}
                     </Text>
                   </View>
 
@@ -229,10 +288,17 @@ const HighlightedText = ({text, query, style, numberOfLines}) => {
                   )}
 
                   {!!item.preview && (
-                    <Text style={styles.searchResultPreview} numberOfLines={3}>
-                      {item.preview}
-                    </Text>
+                    <HighlightedText
+                      text={item.preview}
+                      query={query}
+                      style={styles.searchResultPreview}
+                      numberOfLines={3}
+                    />
                   )}
+
+                  <View style={styles.addSearchResultButton}>
+                    <Text style={styles.addSearchResultText}>＋</Text>
+                  </View>
                 </Pressable>
               )}
             />
