@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import {StatusBar} from 'expo-status-bar';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {requestWidgetUpdate} from 'react-native-android-widget';
 
 import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
@@ -24,24 +25,14 @@ import {
   resolveBibleReference,
   toCalendarDate,
 } from '../services/churchCalendar';
+import {
+  CALENDAR_MONTHS,
+  calendarText,
+  getCalendarLanguage,
+  setCalendarLanguage,
+} from '../services/calendarPreferences';
+import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
 import {colors} from '../theme';
-
-const MONTHS = [
-  'Январь',
-  'Февраль',
-  'Март',
-  'Апрель',
-  'Май',
-  'Июнь',
-  'Июль',
-  'Август',
-  'Сентябрь',
-  'Октябрь',
-  'Ноябрь',
-  'Декабрь',
-];
-
-const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
 const buildCells = (year, month) => {
   const first = new Date(year, month - 1, 1);
@@ -85,8 +76,33 @@ const buildCells = (year, month) => {
   });
 };
 
-const displayTitle = (feast) =>
-  feast?.short_title || feast?.title || 'Память святых дня';
+const SoftChevron = ({expanded, light = true}) => (
+  <View style={styles.chevronBox}>
+    <View
+      style={[
+        styles.chevronLine,
+        light ? styles.chevronLineLight : styles.chevronLineDark,
+        styles.chevronLineLeft,
+        {
+          transform: [{rotate: expanded ? '-34deg' : '34deg'}],
+        },
+      ]}
+    />
+    <View
+      style={[
+        styles.chevronLine,
+        light ? styles.chevronLineLight : styles.chevronLineDark,
+        styles.chevronLineRight,
+        {
+          transform: [{rotate: expanded ? '34deg' : '-34deg'}],
+        },
+      ]}
+    />
+  </View>
+);
+
+const displayTitle = (feast, copy) =>
+  feast?.short_title || feast?.title || copy.saintMemory;
 
 const ExpandableTextBlock = ({title, subtitle, text}) => {
   const [expanded, setExpanded] = useState(false);
@@ -103,15 +119,20 @@ const ExpandableTextBlock = ({title, subtitle, text}) => {
           <Text style={styles.textBlockTitle}>{title}</Text>
           {!!subtitle && <Text style={styles.textBlockSubtitle}>{subtitle}</Text>}
         </View>
-        <Text style={styles.textBlockArrow}>{expanded ? '⌃' : '⌄'}</Text>
+
+        <SoftChevron expanded={expanded} />
       </Pressable>
 
-      {expanded && <Text style={styles.textBlockContent}>{text}</Text>}
+      {expanded && (
+        <Text style={styles.textBlockContent} selectable>
+          {text}
+        </Text>
+      )}
     </View>
   );
 };
 
-const ReadingLink = ({kind, title, navigation}) => {
+const ReadingLink = ({kind, title, navigation, copy, language}) => {
   const [expanded, setExpanded] = useState(false);
 
   if (!title) return null;
@@ -138,15 +159,14 @@ const ReadingLink = ({kind, title, navigation}) => {
 
         <View style={styles.readingTextWrap}>
           <Text style={styles.readingKind}>
-            {kind === 'gospel' ? 'ЕВАНГЕЛИЕ ДНЯ' : 'АПОСТОЛ ДНЯ'}
+            {kind === 'gospel' ? copy.gospel : copy.apostle}
           </Text>
           <Text style={styles.readingTitle}>{title}</Text>
+
           {target ? (
-            <Text style={styles.readingHint}>Открыть в Библии</Text>
+            <Text style={styles.readingHint}>{copy.openBible}</Text>
           ) : (
-            <Text style={styles.readingHintMuted}>
-              Ссылка пока не распознана
-            </Text>
+            <Text style={styles.readingHintMuted}>{copy.unrecognized}</Text>
           )}
         </View>
 
@@ -163,11 +183,9 @@ const ReadingLink = ({kind, title, navigation}) => {
             ]}
           >
             <Text style={styles.readingExpandText}>
-              {expanded ? 'Скрыть текст' : 'Читать текст'}
+              {expanded ? copy.hideText : copy.readText}
             </Text>
-            <Text style={styles.readingExpandArrow}>
-              {expanded ? '⌃' : '⌄'}
-            </Text>
+            <SoftChevron expanded={expanded} />
           </Pressable>
 
           {expanded && (
@@ -184,7 +202,7 @@ const ReadingLink = ({kind, title, navigation}) => {
                   >
                     {showChapter && (
                       <Text style={styles.readingChapter}>
-                        Глава {verse.chapterNumber}
+                        {language === 'uk' ? 'Глава' : 'Глава'} {verse.chapterNumber}
                       </Text>
                     )}
 
@@ -205,7 +223,6 @@ const ReadingLink = ({kind, title, navigation}) => {
   );
 };
 
-
 export const ChurchCalendarScreen = ({route, navigation}) => {
   const insets = useSafeAreaInsets();
   const {width} = useWindowDimensions();
@@ -219,6 +236,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const [visibleYear, setVisibleYear] = useState(initial.getFullYear());
   const [visibleMonth, setVisibleMonth] = useState(initial.getMonth() + 1);
   const [selectedDate, setSelectedDate] = useState(toCalendarDate(initial));
+  const [language, setLanguageState] = useState('ru');
   const [monthData, setMonthData] = useState(null);
   const [dayData, setDayData] = useState(null);
   const [loadingMonth, setLoadingMonth] = useState(true);
@@ -227,12 +245,24 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
   const wide = width >= 760;
   const headerHeight = insets.top + 56;
+  const locale = CALENDAR_MONTHS[language];
+  const copy = calendarText(language);
+
+  useEffect(() => {
+    getCalendarLanguage()
+      .then((value) => setLanguageState(value))
+      .catch(() => setLanguageState('ru'));
+  }, []);
 
   useEffect(() => {
     let active = true;
 
     setLoadingMonth(true);
-    getCalendarMonth(visibleYear, visibleMonth)
+
+    getCalendarMonth(visibleYear, visibleMonth, {
+      language,
+      force: true,
+    })
       .then((data) => {
         if (!active) return;
         setMonthData(data);
@@ -240,20 +270,24 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
       })
       .catch((err) => {
         if (!active) return;
-        setError(err?.response?.data?.detail || 'Не удалось загрузить календарь');
+        setError(err?.message || 'Не удалось загрузить календарь');
       })
       .finally(() => active && setLoadingMonth(false));
 
     return () => {
       active = false;
     };
-  }, [visibleMonth, visibleYear]);
+  }, [language, visibleMonth, visibleYear]);
 
   useEffect(() => {
     let active = true;
 
     setLoadingDay(true);
-    getCalendarDay(selectedDate)
+
+    getCalendarDay(selectedDate, {
+      language,
+      force: true,
+    })
       .then((data) => {
         if (!active) return;
         setDayData(data);
@@ -262,14 +296,14 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
       .catch((err) => {
         if (!active) return;
         setDayData(null);
-        setError(err?.response?.data?.detail || 'Не удалось загрузить день');
+        setError(err?.message || 'Не удалось загрузить день');
       })
       .finally(() => active && setLoadingDay(false));
 
     return () => {
       active = false;
     };
-  }, [selectedDate]);
+  }, [language, selectedDate]);
 
   const daysMap = useMemo(
     () =>
@@ -293,6 +327,32 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
     (feast) => feast.source_id !== mainFeast?.source_id
   );
 
+  const changeLanguage = async (nextLanguage) => {
+    const next = await setCalendarLanguage(nextLanguage);
+    setLanguageState(next);
+
+    try {
+      const widgetDay = await getCalendarDay(new Date(), {
+        language: next,
+        force: true,
+      });
+
+      await requestWidgetUpdate({
+        widgetName: 'ChurchCalendar',
+        renderWidget: (widgetInfo) => (
+          <ChurchCalendarWidget
+            day={widgetDay}
+            language={next}
+            width={widgetInfo.width}
+            height={widgetInfo.height}
+          />
+        ),
+      });
+    } catch (err) {
+      console.log('Не удалось обновить виджет календаря:', err?.message || err);
+    }
+  };
+
   const moveMonth = (delta) => {
     const next = new Date(visibleYear, visibleMonth - 1 + delta, 1);
     setVisibleYear(next.getFullYear());
@@ -310,6 +370,36 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
   const calendar = (
     <View style={styles.calendarCard}>
+      <View style={styles.languageRow}>
+        <Text style={styles.calendarSectionTitle}>{copy.calendarTitle}</Text>
+
+        <View style={styles.languageSwitch}>
+          {['ru', 'uk'].map((item) => {
+            const active = language === item;
+
+            return (
+              <Pressable
+                key={item}
+                onPress={() => changeLanguage(item)}
+                style={[
+                  styles.languageButton,
+                  active && styles.languageButtonActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.languageButtonText,
+                    active && styles.languageButtonTextActive,
+                  ]}
+                >
+                  {item === 'ru' ? 'РУ' : 'УК'}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
       <View style={styles.calendarHeader}>
         <Pressable
           hitSlop={8}
@@ -320,7 +410,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
         </Pressable>
 
         <Text style={styles.monthTitle}>
-          {MONTHS[visibleMonth - 1]} {visibleYear}
+          {locale.nominative[visibleMonth - 1]} {visibleYear}
         </Text>
 
         <Pressable
@@ -333,7 +423,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
       </View>
 
       <View style={styles.weekRow}>
-        {WEEKDAYS.map((weekday, index) => (
+        {locale.miniWeekdays.map((weekday, index) => (
           <Text
             key={weekday}
             style={[
@@ -353,10 +443,10 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
       ) : (
         <View style={styles.grid}>
           {cells.map((cell, index) => {
-            const apiDay = daysMap.get(cell.date);
             const selected = selectedDate === cell.date;
             const isToday = today === cell.date;
             const weekend = index % 7 >= 5;
+
             return (
               <Pressable
                 key={cell.date}
@@ -384,7 +474,6 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
                     {cell.day}
                   </Text>
                 </View>
-
               </Pressable>
             );
           })}
@@ -395,19 +484,19 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
   const feastList = (
     <View style={styles.otherSaintsCard}>
-      <Text style={styles.sectionEyebrow}>ТАКЖЕ В ЭТОТ ДЕНЬ</Text>
+      <Text style={styles.sectionEyebrow}>{copy.alsoToday}</Text>
 
       {otherFeasts.length ? (
         otherFeasts.map((feast) => (
           <View key={feast.source_id} style={styles.otherSaintRow}>
             <View style={styles.otherSaintDot} />
             <Text style={styles.otherSaintText}>
-              {displayTitle(feast)}
+              {displayTitle(feast, copy)}
             </Text>
           </View>
         ))
       ) : (
-        <Text style={styles.otherSaintEmpty}>Другие памяти не указаны</Text>
+        <Text style={styles.otherSaintEmpty}>{copy.noOtherMemories}</Text>
       )}
     </View>
   );
@@ -422,7 +511,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
         <>
           <Text style={styles.dayDate}>
             {new Date(dayData.date_gregorian + 'T12:00:00').toLocaleDateString(
-              'ru-RU',
+              language === 'uk' ? 'uk-UA' : 'ru-RU',
               {day: 'numeric', month: 'long', year: 'numeric'}
             )}
           </Text>
@@ -443,12 +532,18 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             </View>
 
             <View style={styles.feastHeroText}>
-              <Text style={styles.feastMemory}>ПАМЯТЬ СВЯТОГО / ПРАЗДНИК</Text>
-              <Text style={styles.feastTitle}>{displayTitle(mainFeast)}</Text>
+              <Text style={styles.feastMemory}>
+                {language === 'uk'
+                  ? 'ПАМ’ЯТЬ СВЯТОГО / СВЯТО'
+                  : 'ПАМЯТЬ СВЯТОГО / ПРАЗДНИК'}
+              </Text>
+              <Text style={styles.feastTitle}>{displayTitle(mainFeast, copy)}</Text>
 
-              {!!formatFast(dayData) && (
+              {!!formatFast(dayData, language) && (
                 <View style={styles.fastBadge}>
-                  <Text style={styles.fastBadgeText}>{formatFast(dayData)}</Text>
+                  <Text style={styles.fastBadgeText}>
+                    {formatFast(dayData, language)}
+                  </Text>
                 </View>
               )}
             </View>
@@ -456,7 +551,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
           {!!mainFeast?.life_content && (
             <ExpandableTextBlock
-              title="Житие"
+              title={copy.life}
               subtitle={mainFeast.life_title}
               text={mainFeast.life_content}
             />
@@ -464,7 +559,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
           {!!mainFeast?.troparion_content && (
             <ExpandableTextBlock
-              title="Тропарь"
+              title={copy.troparion}
               subtitle={
                 mainFeast.troparion_echo
                   ? `Глас ${mainFeast.troparion_echo}`
@@ -476,7 +571,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
           {!!mainFeast?.kontakion_content && (
             <ExpandableTextBlock
-              title="Кондак"
+              title={copy.kontakion}
               subtitle={
                 mainFeast.kontakion_echo
                   ? `Глас ${mainFeast.kontakion_echo}`
@@ -487,27 +582,31 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
           )}
 
           <View style={styles.readingsSection}>
-            <Text style={styles.sectionEyebrow}>ЧТЕНИЯ ДНЯ</Text>
+            <Text style={styles.sectionEyebrow}>{copy.readings}</Text>
 
             <ReadingLink
               kind="gospel"
               title={dayData.gospel_title}
               navigation={navigation}
+              copy={copy}
+              language={language}
             />
 
             <ReadingLink
               kind="apostle"
               title={dayData.apostolic_title}
               navigation={navigation}
+              copy={copy}
+              language={language}
             />
 
             {!dayData.gospel_title && !dayData.apostolic_title && (
-              <Text style={styles.noReadings}>Чтения для этого дня пока не указаны</Text>
+              <Text style={styles.noReadings}>{copy.noReadings}</Text>
             )}
           </View>
         </>
       ) : (
-        <Text style={styles.errorText}>{error || 'Нет данных для выбранного дня'}</Text>
+        <Text style={styles.errorText}>{error || copy.noData}</Text>
       )}
     </View>
   );
@@ -550,7 +649,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
       </ScrollView>
 
       <FixedSectionHeader
-        title="Церковный календарь"
+        title={copy.calendarTitle}
         navigation={navigation}
         topInset={insets.top}
       />
@@ -580,6 +679,44 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(123,79,36,0.18)',
     backgroundColor: 'rgba(255,245,224,0.98)',
+  },
+  languageRow: {
+    minHeight: 34,
+    marginBottom: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  calendarSectionTitle: {
+    flex: 1,
+    color: '#5C3A24',
+    fontFamily: 'serif',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  languageSwitch: {
+    flexDirection: 'row',
+    padding: 2,
+    borderRadius: 10,
+    backgroundColor: '#E7D2B0',
+  },
+  languageButton: {
+    minWidth: 30,
+    height: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+  },
+  languageButtonActive: {
+    backgroundColor: '#8E5D32',
+  },
+  languageButtonText: {
+    color: '#7A5B43',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  languageButtonTextActive: {
+    color: '#FFF4DE',
   },
   calendarHeader: {
     flexDirection: 'row',
@@ -786,7 +923,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   textBlockHeader: {
-    minHeight: 52,
+    minHeight: 54,
     paddingHorizontal: 13,
     paddingVertical: 9,
     flexDirection: 'row',
@@ -806,20 +943,43 @@ const styles = StyleSheet.create({
     color: '#DCC7A4',
     fontSize: 11,
   },
-  textBlockArrow: {
-    marginLeft: 10,
-    color: '#F2D79E',
-    fontSize: 21,
-  },
   textBlockContent: {
-    paddingHorizontal: 13,
-    paddingTop: 12,
-    paddingBottom: 14,
+    paddingHorizontal: 15,
+    paddingTop: 14,
+    paddingBottom: 16,
     color: '#3E2A1D',
     backgroundColor: '#FFF4DE',
     fontFamily: 'serif',
     fontSize: 15,
-    lineHeight: 24,
+    lineHeight: 25,
+    textAlign: 'justify',
+  },
+  chevronBox: {
+    position: 'relative',
+    width: 38,
+    height: 34,
+    marginLeft: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chevronLine: {
+    position: 'absolute',
+    top: 16,
+    width: 11,
+    height: 2,
+    borderRadius: 2,
+  },
+  chevronLineLeft: {
+    left: 9,
+  },
+  chevronLineRight: {
+    right: 9,
+  },
+  chevronLineLight: {
+    backgroundColor: '#F2D79E',
+  },
+  chevronLineDark: {
+    backgroundColor: '#8B5B30',
   },
   readingsSection: {
     marginTop: 16,
@@ -885,8 +1045,9 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   readingExpand: {
-    minHeight: 38,
-    paddingHorizontal: 12,
+    minHeight: 42,
+    paddingLeft: 12,
+    paddingRight: 4,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -899,14 +1060,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
   },
-  readingExpandArrow: {
-    color: '#F5E2B8',
-    fontSize: 18,
-  },
   readingContent: {
-    paddingHorizontal: 13,
-    paddingTop: 12,
-    paddingBottom: 14,
+    paddingHorizontal: 15,
+    paddingTop: 14,
+    paddingBottom: 16,
     backgroundColor: '#FFF4DE',
   },
   readingChapter: {
@@ -924,6 +1081,7 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
     fontSize: 15,
     lineHeight: 24,
+    textAlign: 'justify',
   },
   readingVerseNumber: {
     color: '#A16E35',
