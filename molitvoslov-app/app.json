@@ -51,6 +51,9 @@
       [
         "react-native-android-widget",
         {
+          "fonts": [
+        "./assets/fonts/Ponomar-Regular.ttf"
+      ],
           "widgets": [
             {
               "name": "QuoteOfDay",
@@ -66,7 +69,8 @@
             }
           ]
         }
-      ]
+      ],
+      "expo-font"
     ],
     "androidNavigationBar": {
       "backgroundColor": "#FFF4DE",
