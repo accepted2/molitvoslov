@@ -353,7 +353,7 @@ export const MenuScreen = ({navigation}) => {
       console.log('Ошибка загрузки библиотеки:', err);
       setError('Не удалось загрузить библиотеку');
     }
-  }, [calendarLanguage]);
+  }, []);
 
   const loadCalendarDay = useCallback(async (targetDate) => {
     try {
@@ -368,7 +368,7 @@ export const MenuScreen = ({navigation}) => {
     } finally {
       setCalendarLoading(false);
     }
-  }, []);
+  }, [calendarLanguage]);
 
   const loadProgress = useCallback(async () => {
     try {
@@ -1011,7 +1011,50 @@ export const MenuScreen = ({navigation}) => {
                     ]}
                   >
                     <CalendarGlyph />
-                    <Text style={styles.calendarTitle}>Церковный календарь</Text>
+                    <Text style={styles.calendarTitle}>{calendarCopy.calendarTitle}</Text>
+                  </Pressable>
+
+                  <View style={styles.calendarHeaderRight}>
+                    <View style={styles.calendarLanguageSwitch}>
+                      {['ru', 'uk'].map((language) => {
+                        const active = calendarLanguage === language;
+
+                        return (
+                          <Pressable
+                            key={language}
+                            onPress={() => changeCalendarLanguage(language)}
+                            style={[
+                              styles.calendarLanguageButton,
+                              active && styles.calendarLanguageButtonActive,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.calendarLanguageText,
+                                active && styles.calendarLanguageTextActive,
+                              ]}
+                            >
+                              {language === 'ru' ? 'РУ' : 'УК'}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                </View>
+
+                <View style={styles.calendarHeaderActions}>
+                  <Pressable
+                    hitSlop={6}
+                    onPress={showCalendarWidgetInfo}
+                    style={({pressed}) => [
+                      styles.calendarWidgetButton,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Text style={styles.calendarWidgetButtonText}>
+                      {calendarCopy.onScreen}
+                    </Text>
                   </Pressable>
 
                   <Pressable
@@ -1022,7 +1065,7 @@ export const MenuScreen = ({navigation}) => {
                       pressed && styles.pressed,
                     ]}
                   >
-                    <Text style={styles.calendarOpenText}>Весь календарь</Text>
+                    <Text style={styles.calendarOpenText}>{calendarCopy.allCalendar}</Text>
                     <Text style={styles.calendarOpenArrow}>›</Text>
                   </Pressable>
                 </View>
@@ -1030,7 +1073,9 @@ export const MenuScreen = ({navigation}) => {
                 <View style={styles.calendarBody}>
                   <View style={styles.calendarTodayColumn}>
                     <Text style={styles.calendarTodayLabel}>
-                      {calendarSnapshot.isSelectedToday ? 'Сегодня' : 'Выбранный день'}
+                      {calendarSnapshot.isSelectedToday
+                        ? calendarCopy.today
+                        : calendarCopy.selectedDay}
                     </Text>
 
                     <Text
@@ -1072,15 +1117,15 @@ export const MenuScreen = ({navigation}) => {
                           {calendarToday?.main_feast?.short_title ||
                             calendarToday?.main_feast?.title ||
                             (calendarLoading
-                              ? 'Загружаем память дня…'
-                              : 'Память святых дня')}
+                              ? calendarCopy.loadingMemory
+                              : calendarCopy.saintMemory)}
                         </Text>
 
                         {!!calendarToday?.main_feast && (
                           <Text style={styles.calendarFeastSubtitle}>
                             {calendarToday.main_feast.celebration_type === 'great'
-                              ? 'Великий праздник'
-                              : 'Память дня'}
+                              ? calendarCopy.greatFeast
+                              : calendarCopy.saintMemory}
                           </Text>
                         )}
                       </View>
@@ -1089,7 +1134,8 @@ export const MenuScreen = ({navigation}) => {
                     <View style={styles.calendarMetaRow}>
                       <Text style={styles.calendarMetaIcon}>◇</Text>
                       <Text style={styles.calendarMetaText} numberOfLines={2}>
-                        {formatFast(calendarToday) || 'Пост: нет данных'}
+                        {formatFast(calendarToday, calendarLanguage) ||
+                          calendarCopy.noFastData}
                       </Text>
                     </View>
 
@@ -1184,7 +1230,7 @@ export const MenuScreen = ({navigation}) => {
                     </View>
 
                     <View style={styles.miniCalendarWeekdays}>
-                      {MINI_WEEKDAYS.map((weekday, index) => (
+                      {calendarSnapshot.miniWeekdays.map((weekday, index) => (
                         <Text
                           key={weekday}
                           style={[
