@@ -18,7 +18,7 @@ export const FixedSectionHeader = ({
       style={[
         styles.fixedHeader,
         {
-          height: minimal ? headerHeight : headerHeight + 26,
+          height: minimal ? headerHeight : headerHeight + 10,
         },
       ]}
     >
@@ -26,13 +26,13 @@ export const FixedSectionHeader = ({
         <LinearGradient
           pointerEvents="none"
           colors={[
-            'rgba(239, 211, 160, 0.94)',
-            'rgba(239, 211, 160, 0.90)',
-            'rgba(239, 211, 160, 0.72)',
-            'rgba(239, 211, 160, 0.34)',
-            'rgba(239, 211, 160, 0)',
+            '#FFF4DE',
+            'rgba(255, 244, 222, 0.72)',
+            'rgba(255, 244, 222, 0)',
           ]}
-          locations={[0, 0.5, 0.68, 0.86, 1]}
+          locations={[0, 0.42, 1]}
+          start={{x: 0.5, y: 0}}
+          end={{x: 0.5, y: 1}}
           style={StyleSheet.absoluteFill}
         />
       )}
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     color: '#6F4727',
     fontFamily: 'serif',
     fontSize: 34,
-    lineHeight: 36,
+    lineHeight: 46,
   },
 
   titleWrap: {

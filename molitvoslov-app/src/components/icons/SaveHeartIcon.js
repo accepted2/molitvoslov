@@ -6,13 +6,14 @@ const HEARTS = {
   filled: require('../../../assets/icons/save-heart-filled.png'),
 };
 
-export const SaveHeartIcon = ({active = false, size = 19}) => (
+export const SaveHeartIcon = ({active = false, size = 19,  tintColor,}) => (
   <Image
     accessible={false}
     source={active ? HEARTS.filled : HEARTS.outline}
     style={{
       width: size,
       height: size,
+      tintColor,
     }}
     resizeMode="contain"
   />

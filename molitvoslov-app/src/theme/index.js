@@ -14,6 +14,8 @@ export const colors = {
 
   liturgical: '#A33A32',
 
+  // F4DCA8
+
   border: 'rgba(112, 86, 55, 0.14)',
   borderStrong: 'rgba(112, 86, 55, 0.25)',
 

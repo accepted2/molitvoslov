@@ -14,16 +14,20 @@ export const BottomNav = ({navigation, active}) => {
   const insets = useSafeAreaInsets();
 
   return (
-    <View pointerEvents="box-none" style={styles.wrapper}>
+    <View pointerEvents="box-none"
+          style={[
+            styles.wrapper,
+            {
+              bottom: Math.max(insets.bottom + 5, 8),
+            },
+          ]}>
       <LinearGradient
         colors={['#3D2416', '#5A341D']}
         start={{x: 0, y: 0}}
         end={{x: 1, y: 1}}
         style={[
           styles.container,
-          {
-            paddingBottom: Math.max(insets.bottom, 8),
-          },
+
         ]}
       >
         <View style={styles.itemsRow}>
@@ -58,17 +62,23 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 10,
     right: 10,
-    bottom: 6,
+
     zIndex: 30,
+    maxWidth: 400,
+    alignSelf: 'center',
   },
 
   container: {
     overflow: 'hidden',
-    paddingTop: 6,
-    paddingHorizontal: 6,
-    borderRadius: 24,
+
+    paddingVertical: 4,
+    paddingHorizontal: 5,
+
+    borderRadius: 22,
+
     borderWidth: 1,
     borderColor: 'rgba(246, 216, 162, 0.16)',
+
     shadowColor: '#2C170B',
     shadowOffset: {width: 0, height: 5},
     shadowOpacity: 0.28,
@@ -78,19 +88,33 @@ const styles = StyleSheet.create({
 
   itemsRow: {
     flexDirection: 'row',
-    gap: 4,
+    gap: 2,
+
+    width: 350,
+    maxWidth: '100%',
+    alignSelf: 'center',
+
+    height: 44,
+    alignItems: 'center',
   },
 
   item: {
     flex: 1,
-    minHeight: 58,
+
+    height: 40,
+
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 18,
+
+    paddingHorizontal: 0,
+    paddingVertical: 2,
+
+    borderRadius: 16,
   },
 
   itemActive: {
-    backgroundColor: 'rgba(173, 108, 49, 0.28)',
+    backgroundColor: 'rgb(244, 220, 168)',
+
     borderWidth: 1,
     borderColor: 'rgba(239, 199, 127, 0.14)',
   },
@@ -101,26 +125,30 @@ const styles = StyleSheet.create({
 
   symbol: {
     color: '#E3C692',
+
     fontFamily: 'serif',
-    fontSize: 24,
-    lineHeight: 26,
+    fontSize: 20,
+    lineHeight: 21,
   },
 
   symbolActive: {
-    color: '#FFF5DF',
+    color: '#2C170B',
+    fontSize: 21,
   },
 
   label: {
-    marginTop: 2,
+    marginTop: 0,
+
     color: '#E7D2AB',
     fontFamily: 'serif',
-    fontSize: 11,
-    lineHeight: 15,
+
+    fontSize: 10,
+    lineHeight: 12,
     fontWeight: '600',
   },
 
   labelActive: {
-    color: '#FFF2D2',
+    color: '#2C170B',
     fontWeight: '800',
   },
 });
