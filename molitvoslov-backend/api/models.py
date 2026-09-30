@@ -1522,3 +1522,7 @@ class GoogleAccount(models.Model):
     class Meta:
         verbose_name = "Google-аккаунт"
         verbose_name_plural = "Google-аккаунты"
+
+
+# Церковный календарь, перенесённый из Church Site.
+from .calendar_models import CalendarFeast, CalendarDay
