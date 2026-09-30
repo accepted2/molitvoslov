@@ -1034,43 +1034,36 @@ export const MenuScreen = ({navigation}) => {
                       pressed && styles.pressed,
                     ]}
                   >
-                    <View style={styles.calendarTitleIcon}>
-                      <CalendarGlyph />
-                    </View>
-                    <View style={styles.calendarTitleTextWrap}>
-                      <Text style={styles.calendarTitle}>{calendarCopy.calendarTitle}</Text>
-                      <Text style={styles.calendarSubtitle}>
-                        {calendarLanguage === 'uk'
-                          ? 'Пам’ять дня та місяць'
-                          : 'Память дня и месяц'}
-                      </Text>
-                    </View>
+                    <CalendarGlyph />
+                    <Text style={styles.calendarTitle}>{calendarCopy.calendarTitle}</Text>
                   </Pressable>
 
-                  <View style={styles.calendarLanguageSwitch}>
-                    {['ru', 'uk'].map((language) => {
-                      const active = calendarLanguage === language;
+                  <View style={styles.calendarHeaderRight}>
+                    <View style={styles.calendarLanguageSwitch}>
+                      {['ru', 'uk'].map((language) => {
+                        const active = calendarLanguage === language;
 
-                      return (
-                        <Pressable
-                          key={language}
-                          onPress={() => changeCalendarLanguage(language)}
-                          style={[
-                            styles.calendarLanguageButton,
-                            active && styles.calendarLanguageButtonActive,
-                          ]}
-                        >
-                          <Text
+                        return (
+                          <Pressable
+                            key={language}
+                            onPress={() => changeCalendarLanguage(language)}
                             style={[
-                              styles.calendarLanguageText,
-                              active && styles.calendarLanguageTextActive,
+                              styles.calendarLanguageButton,
+                              active && styles.calendarLanguageButtonActive,
                             ]}
                           >
-                            {language === 'ru' ? 'РУ' : 'УК'}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
+                            <Text
+                              style={[
+                                styles.calendarLanguageText,
+                                active && styles.calendarLanguageTextActive,
+                              ]}
+                            >
+                              {language === 'ru' ? 'РУ' : 'УК'}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
                   </View>
                 </View>
 
@@ -1083,7 +1076,6 @@ export const MenuScreen = ({navigation}) => {
                       pressed && styles.pressed,
                     ]}
                   >
-                    <Text style={styles.calendarWidgetButtonIcon}>▣</Text>
                     <Text style={styles.calendarWidgetButtonText}>
                       {calendarCopy.onScreen}
                     </Text>
@@ -1102,8 +1094,8 @@ export const MenuScreen = ({navigation}) => {
                   </Pressable>
                 </View>
 
-                <View style={styles.calendarSummary}>
-                  <View style={styles.calendarDatePane}>
+                <View style={styles.calendarBody}>
+                  <View style={styles.calendarTodayColumn}>
                     <Text style={styles.calendarTodayLabel}>
                       {calendarSnapshot.isSelectedToday
                         ? calendarCopy.today
@@ -1112,9 +1104,9 @@ export const MenuScreen = ({navigation}) => {
 
                     <Text
                       style={styles.calendarTodayDate}
-                      numberOfLines={2}
+                      numberOfLines={1}
                       adjustsFontSizeToFit
-                      minimumFontScale={0.82}
+                      minimumFontScale={0.78}
                     >
                       {calendarSnapshot.dayTitle}
                     </Text>
@@ -1122,88 +1114,72 @@ export const MenuScreen = ({navigation}) => {
                     <Text style={styles.calendarTodayWeekday}>
                       {calendarSnapshot.weekday}
                     </Text>
-                  </View>
 
-                  <Pressable
-                    onPress={openFullCalendar}
-                    style={({pressed}) => [
-                      styles.calendarSaintCard,
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    {calendarToday?.main_feast?.icon_url ? (
-                      <Image
-                        source={{uri: calendarToday.main_feast.icon_url}}
-                        style={styles.calendarSaintImage}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View style={styles.calendarSaintPlaceholder}>
-                        <Text style={styles.calendarSaintCross}>☦</Text>
-                      </View>
-                    )}
+                    <View style={styles.calendarDivider} />
 
-                    <View style={styles.calendarFeastTextWrap}>
-                      <Text style={styles.calendarSaintEyebrow}>
-                        {calendarLanguage === 'uk' ? 'ПАМ’ЯТЬ ДНЯ' : 'ПАМЯТЬ ДНЯ'}
-                      </Text>
-                      <Text style={styles.calendarFeastTitle} numberOfLines={4}>
-                        {calendarToday?.main_feast?.short_title ||
-                          calendarToday?.main_feast?.title ||
-                          (calendarLoading
-                            ? calendarCopy.loadingMemory
-                            : calendarCopy.saintMemory)}
-                      </Text>
-
-                      {!!calendarToday?.main_feast && (
-                        <Text style={styles.calendarFeastSubtitle}>
-                          {calendarToday.main_feast.celebration_type === 'great'
-                            ? calendarCopy.greatFeast
-                            : calendarCopy.saintMemory}
-                        </Text>
+                    <Pressable
+                      onPress={openFullCalendar}
+                      style={({pressed}) => [
+                        styles.calendarFeastRow,
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      {calendarToday?.main_feast?.icon_url ? (
+                        <Image
+                          source={{uri: calendarToday.main_feast.icon_url}}
+                          style={styles.calendarSaintImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={styles.calendarSaintPlaceholder}>
+                          <Text style={styles.calendarSaintCross}>☦</Text>
+                        </View>
                       )}
-                    </View>
 
-                    <Text style={styles.calendarSaintArrow}>›</Text>
-                  </Pressable>
-                </View>
+                      <View style={styles.calendarFeastTextWrap}>
+                        <Text style={styles.calendarFeastTitle}>
+                          {calendarToday?.main_feast?.short_title ||
+                            calendarToday?.main_feast?.title ||
+                            (calendarLoading
+                              ? calendarCopy.loadingMemory
+                              : calendarCopy.saintMemory)}
+                        </Text>
 
-                <View style={styles.calendarMetaPanel}>
-                  <View style={styles.calendarMetaRow}>
-                    <Text style={styles.calendarMetaIcon}>◇</Text>
-                    <View style={styles.calendarMetaTextWrap}>
-                      <Text style={styles.calendarMetaLabel}>
-                        {calendarLanguage === 'uk' ? 'ПІСТ' : 'ПОСТ'}
-                      </Text>
+                        {!!calendarToday?.main_feast && (
+                          <Text style={styles.calendarFeastSubtitle}>
+                            {calendarToday.main_feast.celebration_type === 'great'
+                              ? calendarCopy.greatFeast
+                              : calendarCopy.saintMemory}
+                          </Text>
+                        )}
+                      </View>
+                    </Pressable>
+
+                    <View style={styles.calendarMetaRow}>
+                      <Text style={styles.calendarMetaIcon}>◇</Text>
                       <Text style={styles.calendarMetaText} numberOfLines={2}>
                         {formatFast(calendarToday, calendarLanguage) ||
                           calendarCopy.noFastData}
                       </Text>
                     </View>
-                  </View>
 
-                  {!!calendarToday?.gospel_title && (
-                    <Pressable
-                      disabled={!resolveBibleReference(calendarToday.gospel_title)}
-                      onPress={() =>
-                        openCalendarBibleReference(
-                          navigation,
-                          calendarToday.gospel_title
-                        )
-                      }
-                      style={({pressed}) => [
-                        styles.calendarMetaRow,
-                        styles.calendarMetaRowBorder,
-                        pressed && styles.pressed,
-                      ]}
-                    >
-                      <View style={styles.calendarMetaBook}>
-                        <CategoryIcon type="bible" size={22} />
-                      </View>
-                      <View style={styles.calendarMetaTextWrap}>
-                        <Text style={styles.calendarMetaLabel}>
-                          {calendarLanguage === 'uk' ? 'ЄВАНГЕЛІЄ' : 'ЕВАНГЕЛИЕ'}
-                        </Text>
+                    {!!calendarToday?.gospel_title && (
+                      <Pressable
+                        disabled={!resolveBibleReference(calendarToday.gospel_title)}
+                        onPress={() =>
+                          openCalendarBibleReference(
+                            navigation,
+                            calendarToday.gospel_title
+                          )
+                        }
+                        style={({pressed}) => [
+                          styles.calendarMetaRow,
+                          pressed && styles.pressed,
+                        ]}
+                      >
+                        <View style={styles.calendarMetaBook}>
+                          <CategoryIcon type="bible" size={17} />
+                        </View>
                         <Text
                           style={[
                             styles.calendarMetaText,
@@ -1214,35 +1190,26 @@ export const MenuScreen = ({navigation}) => {
                         >
                           {calendarToday.gospel_title}
                         </Text>
-                      </View>
-                      {!!resolveBibleReference(calendarToday.gospel_title) && (
-                        <Text style={styles.calendarMetaArrow}>›</Text>
-                      )}
-                    </Pressable>
-                  )}
+                      </Pressable>
+                    )}
 
-                  {!!calendarToday?.apostolic_title && (
-                    <Pressable
-                      disabled={!resolveBibleReference(calendarToday.apostolic_title)}
-                      onPress={() =>
-                        openCalendarBibleReference(
-                          navigation,
-                          calendarToday.apostolic_title
-                        )
-                      }
-                      style={({pressed}) => [
-                        styles.calendarMetaRow,
-                        styles.calendarMetaRowBorder,
-                        pressed && styles.pressed,
-                      ]}
-                    >
-                      <View style={styles.calendarMetaBook}>
-                        <CategoryIcon type="canons" size={22} />
-                      </View>
-                      <View style={styles.calendarMetaTextWrap}>
-                        <Text style={styles.calendarMetaLabel}>
-                          {calendarLanguage === 'uk' ? 'АПОСТОЛ' : 'АПОСТОЛ'}
-                        </Text>
+                    {!!calendarToday?.apostolic_title && (
+                      <Pressable
+                        disabled={!resolveBibleReference(calendarToday.apostolic_title)}
+                        onPress={() =>
+                          openCalendarBibleReference(
+                            navigation,
+                            calendarToday.apostolic_title
+                          )
+                        }
+                        style={({pressed}) => [
+                          styles.calendarMetaRow,
+                          pressed && styles.pressed,
+                        ]}
+                      >
+                        <View style={styles.calendarMetaBook}>
+                          <CategoryIcon type="canons" size={17} />
+                        </View>
                         <Text
                           style={[
                             styles.calendarMetaText,
@@ -1253,112 +1220,96 @@ export const MenuScreen = ({navigation}) => {
                         >
                           {calendarToday.apostolic_title}
                         </Text>
-                      </View>
-                      {!!resolveBibleReference(calendarToday.apostolic_title) && (
-                        <Text style={styles.calendarMetaArrow}>›</Text>
-                      )}
-                    </Pressable>
-                  )}
-                </View>
+                      </Pressable>
+                    )}
+                  </View>
 
-                <View style={styles.miniCalendar}>
-                  <View style={styles.miniCalendarHeader}>
-                    <Pressable
-                      hitSlop={8}
-                      onPress={() => moveMiniCalendarMonth(-1)}
-                      style={({pressed}) => [
-                        styles.miniCalendarArrowButton,
-                        pressed && styles.pressed,
-                      ]}
-                    >
-                      <Text style={styles.miniCalendarArrow}>‹</Text>
-                    </Pressable>
+                  <View style={styles.miniCalendar}>
+                    <View style={styles.miniCalendarHeader}>
+                      <Pressable
+                        hitSlop={8}
+                        onPress={() => moveMiniCalendarMonth(-1)}
+                        style={({pressed}) => [
+                          styles.miniCalendarArrowButton,
+                          pressed && styles.pressed,
+                        ]}
+                      >
+                        <Text style={styles.miniCalendarArrow}>‹</Text>
+                      </Pressable>
 
-                    <Pressable
-                      onPress={openFullCalendar}
-                      style={({pressed}) => [
-                        styles.miniCalendarMonthButton,
-                        pressed && styles.pressed,
-                      ]}
-                    >
                       <Text style={styles.miniCalendarMonth} numberOfLines={1}>
                         {calendarSnapshot.monthTitle}
                       </Text>
-                      <Text style={styles.miniCalendarHint}>
-                        {calendarLanguage === 'uk'
-                          ? 'Натисніть дату'
-                          : 'Нажмите дату'}
-                      </Text>
-                    </Pressable>
 
-                    <Pressable
-                      hitSlop={8}
-                      onPress={() => moveMiniCalendarMonth(1)}
-                      style={({pressed}) => [
-                        styles.miniCalendarArrowButton,
-                        pressed && styles.pressed,
-                      ]}
-                    >
-                      <Text style={styles.miniCalendarArrow}>›</Text>
-                    </Pressable>
-                  </View>
-
-                  <View style={styles.miniCalendarWeekdays}>
-                    {calendarSnapshot.miniWeekdays.map((weekday, index) => (
-                      <Text
-                        key={weekday}
-                        style={[
-                          styles.miniCalendarWeekday,
-                          index >= 5 && styles.miniCalendarWeekend,
+                      <Pressable
+                        hitSlop={8}
+                        onPress={() => moveMiniCalendarMonth(1)}
+                        style={({pressed}) => [
+                          styles.miniCalendarArrowButton,
+                          pressed && styles.pressed,
                         ]}
                       >
-                        {weekday}
-                      </Text>
-                    ))}
-                  </View>
+                        <Text style={styles.miniCalendarArrow}>›</Text>
+                      </Pressable>
+                    </View>
 
-                  <View style={styles.miniCalendarGrid}>
-                    {calendarSnapshot.cells.map((cell, index) => {
-                      const weekend = index % 7 >= 5;
-
-                      return (
-                        <Pressable
-                          key={cell.date}
-                          hitSlop={1}
-                          onPress={() => selectMiniCalendarDate(cell)}
-                          style={({pressed}) => [
-                            styles.miniCalendarCell,
-                            pressed && styles.miniCalendarCellPressed,
+                    <View style={styles.miniCalendarWeekdays}>
+                      {calendarSnapshot.miniWeekdays.map((weekday, index) => (
+                        <Text
+                          key={weekday}
+                          style={[
+                            styles.miniCalendarWeekday,
+                            index >= 5 && styles.miniCalendarWeekend,
                           ]}
                         >
-                          <View
-                            style={[
-                              styles.miniCalendarDayBubble,
-                              cell.today && styles.miniCalendarDayBubbleToday,
-                              cell.selected &&
-                                !cell.today &&
-                                styles.miniCalendarDayBubbleSelected,
+                          {weekday}
+                        </Text>
+                      ))}
+                    </View>
+
+                    <View style={styles.miniCalendarGrid}>
+                      {calendarSnapshot.cells.map((cell, index) => {
+                        const weekend = index % 7 >= 5;
+
+                        return (
+                          <Pressable
+                            key={cell.date}
+                            hitSlop={1}
+                            onPress={() => selectMiniCalendarDate(cell)}
+                            style={({pressed}) => [
+                              styles.miniCalendarCell,
+                              pressed && styles.miniCalendarCellPressed,
                             ]}
                           >
-                            <Text
+                            <View
                               style={[
-                                styles.miniCalendarDayText,
-                                cell.outside && styles.miniCalendarDayOutside,
-                                weekend &&
-                                  !cell.outside &&
-                                  styles.miniCalendarDayWeekend,
-                                cell.today && styles.miniCalendarDayToday,
+                                styles.miniCalendarDayBubble,
+                                cell.today && styles.miniCalendarDayBubbleToday,
                                 cell.selected &&
                                   !cell.today &&
-                                  styles.miniCalendarDaySelected,
+                                  styles.miniCalendarDayBubbleSelected,
                               ]}
                             >
-                              {cell.day}
-                            </Text>
-                          </View>
-                        </Pressable>
-                      );
-                    })}
+                              <Text
+                                style={[
+                                  styles.miniCalendarDayText,
+                                  cell.outside && styles.miniCalendarDayOutside,
+                                  weekend &&
+                                    !cell.outside &&
+                                    styles.miniCalendarDayWeekend,
+                                  cell.today && styles.miniCalendarDayToday,
+                                  cell.selected &&
+                                    !cell.today &&
+                                    styles.miniCalendarDaySelected,
+                                ]}
+                              >
+                                {cell.day}
+                              </Text>
+                            </View>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
                   </View>
                 </View>
               </View>
@@ -1877,22 +1828,24 @@ const styles = StyleSheet.create({
   },
 
   calendarCard: {
-    padding: 14,
-    borderRadius: 22,
+    padding: 12,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(123, 79, 36, 0.22)',
-    backgroundColor: 'rgba(255, 245, 224, 0.98)',
+    borderColor: 'rgba(123, 79, 36, 0.18)',
+    backgroundColor: 'rgba(255, 245, 224, 0.97)',
     shadowColor: '#4A2817',
-    shadowOffset: {width: 0, height: 5},
-    shadowOpacity: 0.14,
-    shadowRadius: 11,
-    elevation: 4,
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.13,
+    shadowRadius: 9,
+    elevation: 3,
   },
 
   calendarHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 9,
   },
 
   calendarTitleWrap: {
@@ -1902,20 +1855,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  calendarTitleIcon: {
-    width: 34,
-    height: 34,
-    marginRight: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 11,
-    backgroundColor: '#F0D7AD',
-  },
-
   calendarGlyph: {
     position: 'relative',
     width: 20,
     height: 19,
+    marginRight: 8,
     paddingTop: 7,
     paddingHorizontal: 3,
     borderWidth: 1.5,
@@ -1960,182 +1904,98 @@ const styles = StyleSheet.create({
     backgroundColor: '#B77A3E',
   },
 
-  calendarTitleTextWrap: {
-    minWidth: 0,
-    flex: 1,
-  },
-
   calendarTitle: {
-    color: '#3F291B',
+    flexShrink: 1,
+    color: '#4B2C18',
     fontFamily: 'serif',
     fontSize: 18,
-    lineHeight: 21,
-    fontWeight: '700',
-  },
-
-  calendarSubtitle: {
-    marginTop: 1,
-    color: '#8A6A51',
-    fontFamily: 'serif',
-    fontSize: 10,
-    lineHeight: 13,
-  },
-
-  calendarLanguageSwitch: {
-    flexDirection: 'row',
-    padding: 3,
-    borderRadius: 12,
-    backgroundColor: '#E7D2B0',
-  },
-
-  calendarLanguageButton: {
-    minWidth: 34,
-    height: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 9,
-  },
-
-  calendarLanguageButtonActive: {
-    backgroundColor: '#8E5D32',
-  },
-
-  calendarLanguageText: {
-    color: '#7B5D45',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-
-  calendarLanguageTextActive: {
-    color: '#FFF5E4',
-  },
-
-  calendarHeaderActions: {
-    marginTop: 11,
-    flexDirection: 'row',
-    gap: 8,
-  },
-
-  calendarWidgetButton: {
-    minHeight: 38,
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#D6B482',
-    backgroundColor: '#F8E8CB',
-  },
-
-  calendarWidgetButtonIcon: {
-    marginRight: 6,
-    color: '#98612D',
-    fontSize: 13,
-  },
-
-  calendarWidgetButtonText: {
-    color: '#6A4328',
-    fontFamily: 'serif',
-    fontSize: 12,
-    lineHeight: 15,
+    lineHeight: 22,
     fontWeight: '700',
   },
 
   calendarOpenButton: {
-    minHeight: 38,
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    backgroundColor: '#8E5D32',
+    paddingVertical: 5,
+    paddingLeft: 4,
   },
 
   calendarOpenText: {
-    color: '#FFF5E4',
+    color: '#9A642E',
     fontFamily: 'serif',
-    fontSize: 12,
-    lineHeight: 15,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
   },
 
   calendarOpenArrow: {
-    marginLeft: 5,
+    marginLeft: 4,
     marginTop: -1,
-    color: '#FFF5E4',
+    color: '#9A642E',
     fontSize: 19,
     lineHeight: 19,
   },
 
-  calendarSummary: {
-    marginTop: 12,
+  calendarBody: {
     flexDirection: 'row',
     gap: 10,
+    paddingTop: 9,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(139, 94, 49, 0.20)',
   },
 
-  calendarDatePane: {
-    width: 106,
-    padding: 11,
-    borderRadius: 15,
-    backgroundColor: '#F1D9B2',
+  calendarTodayColumn: {
+    flex: 1,
+    minWidth: 0,
   },
 
   calendarTodayLabel: {
-    color: '#8B603D',
-    fontSize: 9,
-    lineHeight: 12,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    color: '#4E3524',
+    fontFamily: 'serif',
+    fontSize: 12,
+    lineHeight: 16,
   },
 
   calendarTodayDate: {
-    marginTop: 4,
+    marginTop: 1,
     color: '#2F1E13',
     fontFamily: 'serif',
-    fontSize: 21,
-    lineHeight: 24,
+    fontSize: 17,
+    lineHeight: 21,
     fontWeight: '700',
   },
 
   calendarTodayWeekday: {
-    marginTop: 4,
-    color: '#6F5541',
+    color: '#5F4736',
     fontFamily: 'serif',
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 18,
     textTransform: 'lowercase',
   },
 
-  calendarSaintCard: {
-    minWidth: 0,
-    flex: 1,
-    minHeight: 100,
+  calendarDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginVertical: 8,
+    backgroundColor: 'rgba(139, 94, 49, 0.18)',
+  },
+
+  calendarFeastRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: 'rgba(139, 94, 49, 0.14)',
-    backgroundColor: '#FFF9ED',
   },
 
   calendarSaintImage: {
-    width: 60,
-    height: 72,
-    borderRadius: 11,
+    width: 48,
+    height: 52,
+    borderRadius: 10,
     backgroundColor: '#F0D6A5',
   },
 
   calendarSaintPlaceholder: {
-    width: 60,
-    height: 72,
+    width: 48,
+    height: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 11,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: 'rgba(157, 104, 46, 0.24)',
     backgroundColor: '#F0D6A5',
@@ -2144,190 +2004,120 @@ const styles = StyleSheet.create({
   calendarSaintCross: {
     color: '#8B5526',
     fontFamily: 'serif',
-    fontSize: 28,
-    lineHeight: 32,
+    fontSize: 25,
+    lineHeight: 29,
   },
 
   calendarFeastTextWrap: {
     minWidth: 0,
     flex: 1,
-    marginLeft: 10,
-  },
-
-  calendarSaintEyebrow: {
-    color: '#A16E35',
-    fontSize: 8,
-    lineHeight: 11,
-    fontWeight: '800',
-    letterSpacing: 0.6,
+    marginLeft: 8,
   },
 
   calendarFeastTitle: {
-    marginTop: 3,
-    color: '#3B271A',
+    color: '#3F291B',
     fontFamily: 'serif',
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: 11,
+    lineHeight: 14,
     fontWeight: '700',
     flexShrink: 1,
   },
 
   calendarFeastSubtitle: {
-    marginTop: 4,
-    color: '#806A57',
+    marginTop: 2,
+    color: '#7B6551',
     fontFamily: 'serif',
     fontSize: 10,
     lineHeight: 13,
   },
 
-  calendarSaintArrow: {
-    marginLeft: 5,
-    color: '#9A642E',
-    fontSize: 22,
-    lineHeight: 24,
-  },
-
-  calendarMetaPanel: {
-    marginTop: 10,
-    paddingHorizontal: 12,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: 'rgba(139, 94, 49, 0.13)',
-    backgroundColor: 'rgba(248, 232, 203, 0.64)',
-  },
-
   calendarMetaRow: {
-    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-  },
-
-  calendarMetaRowBorder: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(139, 94, 49, 0.18)',
+    marginTop: 7,
   },
 
   calendarMetaIcon: {
-    width: 30,
+    width: 19,
     color: '#A56C31',
     fontFamily: 'serif',
-    fontSize: 20,
+    fontSize: 15,
     textAlign: 'center',
   },
-
   calendarMetaBook: {
-    width: 30,
-    height: 30,
+    width: 19,
+    height: 19,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
 
-  calendarMetaTextWrap: {
-    minWidth: 0,
-    flex: 1,
-    marginLeft: 7,
-  },
-
-  calendarMetaLabel: {
-    color: '#9A6B42',
-    fontSize: 8,
-    lineHeight: 10,
-    fontWeight: '800',
-    letterSpacing: 0.7,
-  },
-
   calendarMetaText: {
-    marginTop: 2,
-    color: '#5E4634',
+    flex: 1,
+    marginLeft: 5,
+    color: '#735943',
     fontFamily: 'serif',
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 10,
+    lineHeight: 13,
   },
 
   calendarBibleLink: {
-    color: '#7B4D2A',
+    color: '#8E5D32',
     textDecorationLine: 'underline',
-    textDecorationColor: 'rgba(123,77,42,0.30)',
-  },
-
-  calendarMetaArrow: {
-    marginLeft: 5,
-    color: '#9A642E',
-    fontSize: 20,
-    lineHeight: 22,
+    textDecorationColor: 'rgba(142,93,50,0.42)',
   },
 
   miniCalendar: {
-    marginTop: 10,
-    padding: 11,
-    borderRadius: 16,
+    width: '46%',
+    minWidth: 136,
+    padding: 8,
+    borderRadius: 13,
     borderWidth: 1,
-    borderColor: 'rgba(139, 94, 49, 0.14)',
-    backgroundColor: 'rgba(255, 251, 242, 0.90)',
+    borderColor: 'rgba(139, 94, 49, 0.12)',
+    backgroundColor: 'rgba(255, 251, 242, 0.74)',
   },
 
   miniCalendarHeader: {
-    minHeight: 42,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    justifyContent: 'space-between',
+    marginBottom: 5,
   },
 
   miniCalendarArrowButton: {
-    width: 42,
-    height: 42,
+    width: 22,
+    height: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 13,
-    backgroundColor: '#F2DFC0',
   },
 
   miniCalendarArrow: {
     color: '#6F4727',
     fontFamily: 'serif',
-    fontSize: 25,
-    lineHeight: 27,
-    fontWeight: '700',
-  },
-
-  miniCalendarMonthButton: {
-    minWidth: 0,
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 8,
+    fontSize: 20,
+    lineHeight: 20,
   },
 
   miniCalendarMonth: {
-    color: '#432B1C',
+    flex: 1,
+    color: '#4B3020',
     fontFamily: 'serif',
-    fontSize: 16,
-    lineHeight: 20,
+    fontSize: 11,
+    lineHeight: 15,
     fontWeight: '700',
     textAlign: 'center',
   },
 
-  miniCalendarHint: {
-    marginTop: 1,
-    color: '#9A7A5E',
-    fontSize: 8,
-    lineHeight: 10,
-  },
-
   miniCalendarWeekdays: {
     flexDirection: 'row',
-    marginBottom: 3,
   },
 
   miniCalendarWeekday: {
     width: '14.2857%',
     color: '#807064',
     fontFamily: 'serif',
-    fontSize: 10,
-    lineHeight: 16,
-    fontWeight: '700',
+    fontSize: 8,
+    lineHeight: 12,
     textAlign: 'center',
   },
 
@@ -2338,34 +2128,33 @@ const styles = StyleSheet.create({
   miniCalendarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    marginTop: 2,
   },
 
   miniCalendarCell: {
     width: '14.2857%',
-    height: 34,
+    height: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 17,
+    borderRadius: 10,
   },
-
   miniCalendarCellPressed: {
     backgroundColor: 'rgba(155,100,44,0.08)',
   },
 
   miniCalendarDayBubble: {
-    width: 30,
-    height: 30,
+    width: 20,
+    height: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 15,
+    borderRadius: 10,
   },
 
   miniCalendarDayBubbleToday: {
     backgroundColor: '#B97A32',
   },
-
   miniCalendarDayBubbleSelected: {
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: '#B97A32',
     backgroundColor: 'rgba(185,122,50,0.10)',
   },
@@ -2373,8 +2162,8 @@ const styles = StyleSheet.create({
   miniCalendarDayText: {
     color: '#473226',
     fontFamily: 'serif',
-    fontSize: 11,
-    lineHeight: 14,
+    fontSize: 9,
+    lineHeight: 12,
   },
 
   miniCalendarDayOutside: {
@@ -2387,9 +2176,8 @@ const styles = StyleSheet.create({
 
   miniCalendarDayToday: {
     color: '#FFF7E7',
-    fontWeight: '800',
+    fontWeight: '700',
   },
-
   miniCalendarDaySelected: {
     color: '#7B4D25',
     fontWeight: '800',
