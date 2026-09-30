@@ -1,5 +1,28 @@
-import {api} from '../api';
+import {API_BASE_URL} from './backendAuth';
 import {bibleContent} from './bibleContent';
+
+const fetchCalendarJson = async (path) => {
+  const response = await fetch(`${API_BASE_URL}${path}`);
+
+  const text = await response.text();
+  let data = {};
+
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = {};
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data?.detail ||
+        data?.error ||
+        `Ошибка календаря: ${response.status}`
+    );
+  }
+
+  return data;
+};
 
 const monthCache = new Map();
 const dayCache = new Map();
@@ -23,13 +46,12 @@ export const getCalendarDay = async (value = new Date(), {force = false} = {}) =
     return dayCache.get(key);
   }
 
-  const response = await api.get('calendar/day/', {
-    params: {date: key},
-    timeout: 30000,
-  });
+  const data = await fetchCalendarJson(
+    `/api/calendar/day/?date=${encodeURIComponent(key)}`
+  );
 
-  dayCache.set(key, response.data);
-  return response.data;
+  dayCache.set(key, data);
+  return data;
 };
 
 export const getCalendarMonth = async (
@@ -43,20 +65,19 @@ export const getCalendarMonth = async (
     return monthCache.get(key);
   }
 
-  const response = await api.get('calendar/month/', {
-    params: {year, month},
-    timeout: 30000,
-  });
+  const data = await fetchCalendarJson(
+    `/api/calendar/month/?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}`
+  );
 
-  monthCache.set(key, response.data);
+  monthCache.set(key, data);
 
-  (response.data?.days || []).forEach((day) => {
+  (data?.days || []).forEach((day) => {
     if (day?.date_gregorian) {
       dayCache.set(day.date_gregorian, day);
     }
   });
 
-  return response.data;
+  return data;
 };
 
 const BOOK_ALIASES = [
