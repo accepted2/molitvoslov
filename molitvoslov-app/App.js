@@ -6,6 +6,8 @@ import NetInfo from '@react-native-community/netinfo';
 
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 
+import {useFonts} from 'expo-font';
+
 import {AppNavigator} from './src/navigation/AppNavigator';
 
 import {TextSelectionProvider} from './src/context/TextSelectionContext';
@@ -17,12 +19,15 @@ import {syncSavedItems} from './src/services/savedItems';
 import {syncReadingProgress} from './src/services/readingProgress';
 
 import {syncMemorials} from './src/services/memorials';
-import {useFonts} from 'expo-font';
+
+import {syncPrayerBooks} from './src/services/prayerBooks';
+
 export default function App() {
   const [databaseReady, setDatabaseReady] = useState(false);
+
   const [fontsLoaded] = useFonts({
-    Ponomar: require('./assets/fonts/Ponomar-Regular.ttf')
-  })
+    Ponomar: require('./assets/fonts/Ponomar-Regular.ttf'),
+  });
 
   useEffect(() => {
     const prepareDatabase = async () => {
@@ -49,16 +54,19 @@ export default function App() {
 
     const runSync = async (reason) => {
       try {
-        const [savedItemsResult, readingProgressResult, memorialsResult] = await Promise.all([
-          syncSavedItems(),
-          syncReadingProgress(),
-          syncMemorials(),
-        ]);
+        const [savedItemsResult, readingProgressResult, memorialsResult, prayerBooksResult] =
+          await Promise.all([
+            syncSavedItems(),
+            syncReadingProgress(),
+            syncMemorials(),
+            syncPrayerBooks(),
+          ]);
 
         const noUser =
           savedItemsResult?.reason === 'no-user' &&
           readingProgressResult?.reason === 'no-user' &&
-          memorialsResult?.reason === 'no-user';
+          memorialsResult?.reason === 'no-user' &&
+          prayerBooksResult?.reason === 'no-user';
 
         if (noUser) {
           return;
@@ -67,7 +75,8 @@ export default function App() {
         if (
           savedItemsResult?.success &&
           readingProgressResult?.success &&
-          memorialsResult?.success
+          memorialsResult?.success &&
+          prayerBooksResult?.success
         ) {
           console.log(`Cloud sync OK: ${reason}`);
 
@@ -77,7 +86,8 @@ export default function App() {
         const error =
           savedItemsResult?.error ||
           readingProgressResult?.error ||
-          memorialsResult?.error;
+          memorialsResult?.error ||
+          prayerBooksResult?.error;
 
         if (error) {
           console.log(`Cloud sync отложен: ${reason}`, error?.message || error);
@@ -87,19 +97,8 @@ export default function App() {
       }
     };
 
-    /*
-     * После запуска.
-     */
     runSync('startup');
 
-    /*
-     * Только при реальном переходе:
-     *
-     * offline -> online
-     *
-     * Первое событие NetInfo не запускает
-     * второй sync поверх startup.
-     */
     const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
       const online = Boolean(state.isConnected) && state.isInternetReachable !== false;
 
@@ -110,10 +109,6 @@ export default function App() {
       previousOnline = online;
     });
 
-    /*
-     * При возврате приложения
-     * из фона.
-     */
     const appStateSubscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
         runSync('foreground');
@@ -140,6 +135,7 @@ export default function App() {
       </View>
     );
   }
+
   if (!fontsLoaded) {
     return null;
   }
