@@ -118,7 +118,11 @@ export const AppNavigator = () => (
         component={MemorialBookScreen}
         options={{headerShown: false}}
       />
-      <Stack.Screen name="PrayerBooks" component={PrayerBooksScreen} options={{headerShown: false}} />
+      <Stack.Screen
+        name="PrayerBooks"
+        component={PrayerBooksScreen}
+        options={{headerShown: false}}
+      />
       <Stack.Screen name="PrayerBook" component={PrayerBookScreen} options={{headerShown: false}} />
       <Stack.Screen
         name="PersonalPrayerEditor"

@@ -1,19 +1,10 @@
 import * as Crypto from 'expo-crypto';
 
-import {
-  Directory,
-  File,
-  Paths,
-} from 'expo-file-system';
+import {Directory, File, Paths} from 'expo-file-system';
 
 import {getDatabase} from '../db/database';
 import {contentApi} from './contentApi';
-import {
-  API_BASE_URL,
-  authenticatedFetch,
-  getApiToken,
-  getCachedBackendUser,
-} from './backendAuth';
+import {API_BASE_URL, authenticatedFetch, getApiToken, getCachedBackendUser} from './backendAuth';
 
 let prayerBooksSyncPromise = null;
 
@@ -347,9 +338,7 @@ export const updatePrayerBook = async (syncId, patch = {}) => {
       patch.title !== undefined
         ? String(patch.title || '').trim() || 'Мой молитвослов'
         : current.title,
-      patch.description !== undefined
-        ? String(patch.description || '')
-        : current.description,
+      patch.description !== undefined ? String(patch.description || '') : current.description,
       user?.id ? 'pending' : 'local',
       now,
       current.id,
@@ -483,9 +472,7 @@ export const updatePersonalPrayer = async (syncId, patch = {}) => {
       patch.title !== undefined ? String(patch.title || '').trim() || current.title : current.title,
       patch.text !== undefined ? String(patch.text || '') : current.text,
       patch.origin_type !== undefined ? patch.origin_type : current.origin_type,
-      patch.origin_data !== undefined
-        ? stringifyJson(patch.origin_data)
-        : current.origin_data,
+      patch.origin_data !== undefined ? stringifyJson(patch.origin_data) : current.origin_data,
       user?.id ? 'pending' : 'local',
       now,
       current.id,
@@ -552,12 +539,7 @@ export const addPrayerToBook = async (bookSyncId, prayerSyncId) => {
         SET deleted_at = NULL, sort_order = ?, updated_at = ?, sync_status = ?
         WHERE id = ?
       `,
-      [
-        Number(maxOrder?.max_order ?? -1) + 1,
-        now,
-        user?.id ? 'pending' : 'local',
-        existing.id,
-      ]
+      [Number(maxOrder?.max_order ?? -1) + 1, now, user?.id ? 'pending' : 'local', existing.id]
     );
   } else {
     await db.runAsync(
@@ -682,14 +664,9 @@ const textFromObject = (object, language) => {
     return String(object.translation || object.russian || object.content || '').trim();
   }
   return String(
-    object.content ||
-      object.church_slavonic ||
-      object.translation ||
-      object.russian ||
-      ''
+    object.content || object.church_slavonic || object.translation || object.russian || ''
   ).trim();
 };
-
 
 const PSALTER_GLORY_TEXT = `Слава Отцу и Сыну и Святому Духу.
 И ныне и присно и во веки веков. Аминь.
@@ -769,20 +746,10 @@ const fullKathismaPsalmsText = (kathisma, language) =>
           return;
         }
 
-        const church = psalmLanguageText(
-          {verses: currentVerses},
-          'church'
-        );
-        const russian = psalmLanguageText(
-          {verses: currentVerses},
-          'russian'
-        );
+        const church = psalmLanguageText({verses: currentVerses}, 'church');
+        const russian = psalmLanguageText({verses: currentVerses}, 'russian');
 
-        const body = combineChurchAndRussian(
-          church,
-          russian,
-          language
-        );
+        const body = combineChurchAndRussian(church, russian, language);
 
         if (body) {
           chunks.push(body);
@@ -823,7 +790,6 @@ const fullKathismaPsalmsText = (kathisma, language) =>
     .filter(Boolean)
     .join('\n\n');
 
-
 const fullTextFromSavedItem = async (item) => {
   const metadata = item?.metadata || {};
   const language = metadata.language;
@@ -835,9 +801,7 @@ const fullTextFromSavedItem = async (item) => {
     }
 
     if (item.source_type === 'category' && metadata.category_slug) {
-      const response = await contentApi.get(
-        `categories/${metadata.category_slug}/texts/`
-      );
+      const response = await contentApi.get(`categories/${metadata.category_slug}/texts/`);
       const entry = (response.data || []).find(
         (row) =>
           Number(row?.text?.id) === Number(item.anchor_id) ||
@@ -863,16 +827,11 @@ const fullTextFromSavedItem = async (item) => {
     }
 
     if (item.source_type === 'psalter' && metadata.kathisma_number) {
-      const response = await contentApi.get(
-        `kathismas/${metadata.kathisma_number}/`
-      );
+      const response = await contentApi.get(`kathismas/${metadata.kathisma_number}/`);
       const kathisma = response.data;
 
       if (item.save_type === 'kathisma' || item.anchor_type === 'kathisma') {
-        const psalmsText = fullKathismaPsalmsText(
-          kathisma,
-          language
-        );
+        const psalmsText = fullKathismaPsalmsText(kathisma, language);
 
         const prayersAfter = combineChurchAndRussian(
           kathisma?.prayers_after,
@@ -880,19 +839,12 @@ const fullTextFromSavedItem = async (item) => {
           language
         );
 
-        return [psalmsText, prayersAfter]
-          .filter(Boolean)
-          .join('\n\n') || item.text || '';
+        return [psalmsText, prayersAfter].filter(Boolean).join('\n\n') || item.text || '';
       }
 
-      if (
-        item.save_type === 'psalm' ||
-        item.anchor_type === 'psalm'
-      ) {
+      if (item.save_type === 'psalm' || item.anchor_type === 'psalm') {
         const psalmId = Number(metadata.psalm_id || item.anchor_id);
-        const psalm = (kathisma?.psalms || []).find(
-          (row) => Number(row?.id) === psalmId
-        );
+        const psalm = (kathisma?.psalms || []).find((row) => Number(row?.id) === psalmId);
 
         return fullPsalmText(psalm, language) || item.text || '';
       }
@@ -968,11 +920,7 @@ const fullTextFromSavedItem = async (item) => {
 export const importSavedItemToBook = async (bookSyncId, item) => {
   const fullText = await fullTextFromSavedItem(item);
   const prayer = await createPersonalPrayer({
-    title:
-      item?.item_title ||
-      item?.source_title ||
-      item?.save_type_display ||
-      'Молитва',
+    title: item?.item_title || item?.source_title || item?.save_type_display || 'Молитва',
     text: fullText,
     origin_type: 'saved',
     origin_data: {
@@ -1108,13 +1056,17 @@ const pushBooks = async (db, user) => {
     );
     await db.runAsync(
       `UPDATE personal_prayer_books SET server_id = ?, sync_status = 'synced', updated_at = COALESCE(?, updated_at), deleted_at = ? WHERE id = ?`,
-      [server.id ?? row.server_id ?? null, server.updated_at ?? null, server.deleted_at ?? row.deleted_at ?? null, row.id]
+      [
+        server.id ?? row.server_id ?? null,
+        server.updated_at ?? null,
+        server.deleted_at ?? row.deleted_at ?? null,
+        row.id,
+      ]
     );
     if (row.deleted_at) {
-      const response = await authenticatedFetch(
-        `/api/personal-prayer-books/${row.sync_id}/`,
-        {method: 'DELETE'}
-      );
+      const response = await authenticatedFetch(`/api/personal-prayer-books/${row.sync_id}/`, {
+        method: 'DELETE',
+      });
       if (!response.ok && response.status !== 404) {
         await throwResponseError(response, 'Ошибка удаления молитвослова');
       }
@@ -1143,13 +1095,17 @@ const pushPrayers = async (db, user) => {
     );
     await db.runAsync(
       `UPDATE personal_prayers SET server_id = ?, sync_status = 'synced', updated_at = COALESCE(?, updated_at), deleted_at = ? WHERE id = ?`,
-      [server.id ?? row.server_id ?? null, server.updated_at ?? null, server.deleted_at ?? row.deleted_at ?? null, row.id]
+      [
+        server.id ?? row.server_id ?? null,
+        server.updated_at ?? null,
+        server.deleted_at ?? row.deleted_at ?? null,
+        row.id,
+      ]
     );
     if (row.deleted_at) {
-      const response = await authenticatedFetch(
-        `/api/personal-prayers/${row.sync_id}/`,
-        {method: 'DELETE'}
-      );
+      const response = await authenticatedFetch(`/api/personal-prayers/${row.sync_id}/`, {
+        method: 'DELETE',
+      });
       if (!response.ok && response.status !== 404) {
         await throwResponseError(response, 'Ошибка удаления молитвы');
       }
@@ -1177,13 +1133,17 @@ const pushItems = async (db, user) => {
     );
     await db.runAsync(
       `UPDATE personal_prayer_book_items SET server_id = ?, sync_status = 'synced', updated_at = COALESCE(?, updated_at), deleted_at = ? WHERE id = ?`,
-      [server.id ?? row.server_id ?? null, server.updated_at ?? null, server.deleted_at ?? row.deleted_at ?? null, row.id]
+      [
+        server.id ?? row.server_id ?? null,
+        server.updated_at ?? null,
+        server.deleted_at ?? row.deleted_at ?? null,
+        row.id,
+      ]
     );
     if (row.deleted_at) {
-      const response = await authenticatedFetch(
-        `/api/personal-prayer-book-items/${row.sync_id}/`,
-        {method: 'DELETE'}
-      );
+      const response = await authenticatedFetch(`/api/personal-prayer-book-items/${row.sync_id}/`, {
+        method: 'DELETE',
+      });
       if (!response.ok && response.status !== 404) {
         await throwResponseError(response, 'Ошибка удаления молитвы из сборника');
       }
@@ -1228,17 +1188,15 @@ const pushPhotos = async (db, user) => {
 
   for (const row of rows) {
     if (row.deleted_at) {
-      const response = await authenticatedFetch(
-        `/api/personal-prayer-photos/${row.sync_id}/`,
-        {method: 'DELETE'}
-      );
+      const response = await authenticatedFetch(`/api/personal-prayer-photos/${row.sync_id}/`, {
+        method: 'DELETE',
+      });
       if (!response.ok && response.status !== 404) {
         await throwResponseError(response, 'Ошибка удаления фото молитвы');
       }
-      await db.runAsync(
-        `UPDATE personal_prayer_photos SET sync_status = 'synced' WHERE id = ?`,
-        [row.id]
-      );
+      await db.runAsync(`UPDATE personal_prayer_photos SET sync_status = 'synced' WHERE id = ?`, [
+        row.id,
+      ]);
       continue;
     }
 
@@ -1425,10 +1383,7 @@ const pullAll = async (db, user) => {
       '/api/personal-prayer-books/?include_deleted=true',
       'Ошибка загрузки молитвословов'
     ),
-    pullJsonList(
-      '/api/personal-prayers/?include_deleted=true',
-      'Ошибка загрузки личных молитв'
-    ),
+    pullJsonList('/api/personal-prayers/?include_deleted=true', 'Ошибка загрузки личных молитв'),
     pullJsonList(
       '/api/personal-prayer-book-items/?include_deleted=true',
       'Ошибка загрузки состава молитвословов'

@@ -676,7 +676,6 @@ class ReadingProgressSerializer(serializers.ModelSerializer):
         return None
 
 
-
 # =========================================================
 # ПОМЯННИК
 # =========================================================
@@ -764,9 +763,7 @@ class MemorialBookSerializer(serializers.ModelSerializer):
                 continue
 
             if len(name) > 100:
-                raise serializers.ValidationError(
-                    "Одно имя не должно быть длиннее 100 символов."
-                )
+                raise serializers.ValidationError("Одно имя не должно быть длиннее 100 символов.")
 
             result.append(name)
 
@@ -853,9 +850,7 @@ class PersonalPrayerSerializer(serializers.ModelSerializer):
         return value
 
     def get_photos(self, obj):
-        photos = obj.photos.filter(deleted_at__isnull=True).order_by(
-            "order", "created_at", "id"
-        )
+        photos = obj.photos.filter(deleted_at__isnull=True).order_by("order", "created_at", "id")
         return PersonalPrayerPhotoSerializer(
             photos,
             many=True,

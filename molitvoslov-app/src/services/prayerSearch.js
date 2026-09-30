@@ -36,9 +36,7 @@ const textTitle = (item) => {
 };
 
 const categoryNames = (item) =>
-  (item?.categories || [])
-    .map((category) => String(category?.name || '').trim())
-    .filter(Boolean);
+  (item?.categories || []).map((category) => String(category?.name || '').trim()).filter(Boolean);
 
 const composeFullText = (item) => {
   const church = String(item?.content || '').trim();
@@ -78,9 +76,7 @@ const buildTextEntries = () =>
           text_id: item.id ?? null,
           slug: item.slug || '',
           language: item.language || '',
-          category_slugs: (item.categories || [])
-            .map((category) => category?.slug)
-            .filter(Boolean),
+          category_slugs: (item.categories || []).map((category) => category?.slug).filter(Boolean),
         },
         search: {
           title: normalizeSearchText(title),
@@ -128,11 +124,7 @@ const buildPsalmEntries = () => {
 
       const title = `Псалом ${psalm.number}`;
       const subtitle = `Псалтирь · Кафизма ${kathisma.number}`;
-      const description = [
-        psalm.title_russian,
-        psalm.title_church_slavonic,
-        psalm.description,
-      ]
+      const description = [psalm.title_russian, psalm.title_church_slavonic, psalm.description]
         .filter(Boolean)
         .join(' ');
 
@@ -145,10 +137,7 @@ const buildPsalmEntries = () => {
         title,
         subtitle,
         preview: preview(russian || church || description),
-        text:
-          church && russian
-            ? church + '\n\nРусский перевод\n' + russian
-            : church || russian,
+        text: church && russian ? church + '\n\nРусский перевод\n' + russian : church || russian,
         origin_data: {
           source_type: 'psalter',
           psalm_id: psalmId,
@@ -157,9 +146,7 @@ const buildPsalmEntries = () => {
         },
         search: {
           title: normalizeSearchText(
-            [title, psalm.title_russian, psalm.title_church_slavonic]
-              .filter(Boolean)
-              .join(' ')
+            [title, psalm.title_russian, psalm.title_church_slavonic].filter(Boolean).join(' ')
           ),
           description: normalizeSearchText(description),
           categories: normalizeSearchText('Псалтирь Кафизма ' + kathisma.number),
@@ -173,10 +160,7 @@ const buildPsalmEntries = () => {
   return entries;
 };
 
-const buildIndex = () => [
-  ...buildTextEntries(),
-  ...buildPsalmEntries(),
-];
+const buildIndex = () => [...buildTextEntries(), ...buildPsalmEntries()];
 
 let cachedIndex = null;
 
@@ -326,7 +310,4 @@ export const searchPersonalPrayerRows = (prayers, query, {limit = 20} = {}) => {
 };
 
 export const searchAllPrayers = (prayers, query) =>
-  dedupeEntries([
-    ...searchPersonalPrayerRows(prayers, query),
-    ...searchBuiltInPrayers(query),
-  ]);
+  dedupeEntries([...searchPersonalPrayerRows(prayers, query), ...searchBuiltInPrayers(query)]);

@@ -29,9 +29,7 @@ class MemorialBookApiTests(APITestCase):
         self.list_url = reverse("memorial-books-list")
 
     def authenticate(self, user=None):
-        self.client.force_authenticate(
-            user=user or self.user
-        )
+        self.client.force_authenticate(user=user or self.user)
 
     def test_memorial_books_require_authentication(self):
         response = self.client.get(self.list_url)
@@ -68,9 +66,7 @@ class MemorialBookApiTests(APITestCase):
             status.HTTP_201_CREATED,
         )
 
-        book = MemorialBook.objects.get(
-            sync_id=sync_id
-        )
+        book = MemorialBook.objects.get(sync_id=sync_id)
 
         self.assertEqual(
             book.user,
@@ -101,14 +97,8 @@ class MemorialBookApiTests(APITestCase):
         self.authenticate()
 
         sync_id = uuid.uuid4()
-        first_updated_at = (
-            timezone.now()
-            - timedelta(hours=2)
-        )
-        newer_updated_at = (
-            timezone.now()
-            - timedelta(hours=1)
-        )
+        first_updated_at = timezone.now() - timedelta(hours=2)
+        newer_updated_at = timezone.now() - timedelta(hours=1)
 
         first_response = self.client.post(
             self.list_url,
@@ -195,9 +185,7 @@ class MemorialBookApiTests(APITestCase):
 
         self.authenticate()
 
-        response = self.client.get(
-            self.list_url
-        )
+        response = self.client.get(self.list_url)
 
         self.assertEqual(
             response.status_code,
@@ -223,15 +211,11 @@ class MemorialBookApiTests(APITestCase):
         detail_url = reverse(
             "memorial-books-detail",
             kwargs={
-                "sync_id": str(
-                    book.sync_id
-                ),
+                "sync_id": str(book.sync_id),
             },
         )
 
-        response = self.client.delete(
-            detail_url
-        )
+        response = self.client.delete(detail_url)
 
         self.assertEqual(
             response.status_code,
@@ -240,13 +224,9 @@ class MemorialBookApiTests(APITestCase):
 
         book.refresh_from_db()
 
-        self.assertIsNotNone(
-            book.deleted_at
-        )
+        self.assertIsNotNone(book.deleted_at)
 
-        visible_response = self.client.get(
-            self.list_url
-        )
+        visible_response = self.client.get(self.list_url)
 
         self.assertEqual(
             visible_response.status_code,
@@ -274,7 +254,6 @@ class MemorialBookApiTests(APITestCase):
             len(all_response.data),
             1,
         )
-
 
 
 class PersonalPrayerBookApiTests(APITestCase):

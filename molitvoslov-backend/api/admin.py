@@ -834,7 +834,6 @@ class SavedItemAdmin(admin.ModelAdmin):
         return obj.text
 
 
-
 # =========================================================
 # ПОМЯННИК
 # =========================================================
@@ -903,17 +902,13 @@ class MemorialBookAdmin(admin.ModelAdmin):
         description="О здравии",
     )
     def health_count(self, obj):
-        return len(
-            obj.health_names or []
-        )
+        return len(obj.health_names or [])
 
     @admin.display(
         description="Об упокоении",
     )
     def repose_count(self, obj):
-        return len(
-            obj.repose_names or []
-        )
+        return len(obj.repose_names or [])
 
 
 @admin.register(MemorialPhoto)
