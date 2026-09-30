@@ -8,6 +8,7 @@ const pad = (value) => String(value).padStart(2, '0');
 
 export const toCalendarDate = (value) => {
   const date = value instanceof Date ? value : new Date(value);
+
   return [
     date.getFullYear(),
     pad(date.getMonth() + 1),
@@ -22,7 +23,11 @@ export const getCalendarDay = async (value = new Date(), {force = false} = {}) =
     return dayCache.get(key);
   }
 
-  const response = await api.get('calendar/day/', {params: {date: key}});
+  const response = await api.get('calendar/day/', {
+    params: {date: key},
+    timeout: 30000,
+  });
+
   dayCache.set(key, response.data);
   return response.data;
 };
@@ -40,6 +45,7 @@ export const getCalendarMonth = async (
 
   const response = await api.get('calendar/month/', {
     params: {year, month},
+    timeout: 30000,
   });
 
   monthCache.set(key, response.data);
@@ -92,6 +98,9 @@ const normalizeReference = (value) =>
     .replace(/\s+/g, ' ')
     .trim();
 
+const escapeRegExp = (value) =>
+  String(value || '').replace(/[.*+?^$()|[\]\\]/g, '\\$&');
+
 const romanToNumber = (value) => {
   const source = String(value || '').toUpperCase();
   const values = {I: 1, V: 5, X: 10, L: 50};
@@ -100,8 +109,10 @@ const romanToNumber = (value) => {
 
   for (let index = source.length - 1; index >= 0; index -= 1) {
     const current = values[source[index]] || 0;
-    if (current < previous) total -= current;
-    else {
+
+    if (current < previous) {
+      total -= current;
+    } else {
       total += current;
       previous = current;
     }
@@ -113,6 +124,15 @@ const romanToNumber = (value) => {
 const findBookByCode = (code) =>
   bibleContent.getBooks().find((book) => book.code === code) || null;
 
+const matchesBookAlias = (normalized, alias) => {
+  const pattern = new RegExp(
+    `(^|\\s)${escapeRegExp(alias)}(?=\\s|$)`,
+    'i'
+  );
+
+  return pattern.test(normalized);
+};
+
 export const resolveBibleReference = (title) => {
   if (!title) {
     return null;
@@ -121,7 +141,7 @@ export const resolveBibleReference = (title) => {
   const normalized = normalizeReference(title);
 
   const alias = BOOK_ALIASES.find((candidate) =>
-    candidate.aliases.some((item) => normalized.includes(item))
+    candidate.aliases.some((item) => matchesBookAlias(normalized, item))
   );
 
   if (!alias) {
@@ -129,6 +149,7 @@ export const resolveBibleReference = (title) => {
   }
 
   const book = findBookByCode(alias.code);
+
   if (!book) {
     return null;
   }
@@ -137,6 +158,7 @@ export const resolveBibleReference = (title) => {
   let verseNumber = null;
 
   const colonMatch = String(title).match(/(\d+)\s*[:.]\s*(\d+)/);
+
   if (colonMatch) {
     chapterNumber = Number(colonMatch[1]);
     verseNumber = Number(colonMatch[2]);
@@ -155,6 +177,7 @@ export const resolveBibleReference = (title) => {
 
   if (!chapterNumber) {
     const numbers = String(title).match(/\d+/g)?.map(Number) || [];
+
     if (numbers.length >= 2) {
       chapterNumber = numbers[numbers.length - 2];
       verseNumber = numbers[numbers.length - 1];
@@ -166,6 +189,7 @@ export const resolveBibleReference = (title) => {
   }
 
   const chapter = bibleContent.getChapter(book.id, chapterNumber);
+
   if (!chapter) {
     return null;
   }
@@ -217,7 +241,9 @@ export const openCalendarBibleReference = (navigation, title) => {
 };
 
 export const formatFast = (day) => {
-  if (!day) return '';
+  if (!day) {
+    return '';
+  }
 
   if (day.fast_type_code === 'no-fast') {
     return 'Поста нет';
