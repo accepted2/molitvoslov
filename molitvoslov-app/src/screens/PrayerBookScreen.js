@@ -111,7 +111,7 @@ const SavedPickerModal = ({visible, items, onClose, onSelect}) => {
 };
 
 const escapeRegExp = (value) =>
-  String(value || '').replace(/[.*+?^$()|[\]\\]/g, '\\const GlobalPrayerSearchModal = ({');
+  String(value || '').replace(/[.*+?^$()|[\]\\]/g, '\\$&');
 
 const HighlightedText = ({text, query, style, numberOfLines}) => {
   const value = String(text || '');
@@ -131,7 +131,31 @@ const HighlightedText = ({text, query, style, numberOfLines}) => {
 
   const source = tokens.map(escapeRegExp).join('|');
   const pattern = new RegExp('(' + source + ')', 'gi');
-  const exactPattern = new RegExp('^(' + source + ')
+  const exactPattern = new RegExp('^(' + source + ')$', 'i');
+
+  return (
+    <Text style={style} numberOfLines={numberOfLines}>
+      {value.split(pattern).map((part, index) =>
+        exactPattern.test(part) ? (
+          <Text key={part + '-' + index} style={styles.searchHighlight}>
+            {part}
+          </Text>
+        ) : (
+          part
+        )
+      )}
+    </Text>
+  );
+};
+
+const SEARCH_FILTERS = [
+  {key: 'all', label: 'Все'},
+  {key: 'prayer', label: 'Молитвы'},
+  {key: 'psalter', label: 'Псалтирь'},
+  {key: 'personal', label: 'Мои'},
+];
+
+const GlobalPrayerSearchModal = ({
   visible,
   personalPrayers,
   excludedPrayerIds,
@@ -250,7 +274,7 @@ const HighlightedText = ({text, query, style, numberOfLines}) => {
               ListHeaderComponent={
                 <Text style={styles.resultCount}>
                   {results.length
-                    ? `Найдено: ${results.length}`
+                    ? 'Найдено: ' + results.length
                     : 'По этому запросу ничего не найдено'}
                 </Text>
               }
