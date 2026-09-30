@@ -2516,6 +2516,11 @@ if (
             return true;
           }
         }
+        const targetAnchorType = target.anchor_type || target.anchorType;
+        if (targetAnchorType === 'kathisma') {
+          window.scrollTo( 0, 0 );
+          return true;
+        }
         const itemId = findFocusBlockId( target );
         if (itemId) {
           const root = document.querySelector( '.reader-text[data-item-id="' + itemId + '"]' );
