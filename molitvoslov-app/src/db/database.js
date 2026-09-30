@@ -137,6 +137,66 @@ export const initDatabase = async () => {
       updated_at TEXT NOT NULL,
       deleted_at TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS personal_prayer_books (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sync_id TEXT NOT NULL UNIQUE,
+      cloud_user_id INTEGER,
+      server_id INTEGER,
+      sync_status TEXT NOT NULL DEFAULT 'local',
+      title TEXT NOT NULL DEFAULT 'Мой молитвослов',
+      description TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS personal_prayers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sync_id TEXT NOT NULL UNIQUE,
+      cloud_user_id INTEGER,
+      server_id INTEGER,
+      sync_status TEXT NOT NULL DEFAULT 'local',
+      title TEXT NOT NULL,
+      text TEXT NOT NULL DEFAULT '',
+      origin_type TEXT NOT NULL DEFAULT 'custom',
+      origin_data TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS personal_prayer_book_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      book_sync_id TEXT NOT NULL,
+      prayer_sync_id TEXT NOT NULL,
+      sync_id TEXT NOT NULL UNIQUE,
+      cloud_user_id INTEGER,
+      server_id INTEGER,
+      sync_status TEXT NOT NULL DEFAULT 'local',
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS personal_prayer_photos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      prayer_sync_id TEXT NOT NULL,
+      sync_id TEXT NOT NULL UNIQUE,
+      cloud_user_id INTEGER,
+      server_id INTEGER,
+      sync_status TEXT NOT NULL DEFAULT 'local',
+      local_uri TEXT,
+      remote_url TEXT,
+      original_name TEXT,
+      content_type TEXT,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted_at TEXT
+    );
+
   `);
 
   /*
@@ -249,6 +309,35 @@ export const initDatabase = async () => {
     CREATE INDEX IF NOT EXISTS
     idx_memorial_photos_sync_status
     ON memorial_photos(sync_status);
+  `);
+
+  await db.execAsync(`
+
+    CREATE INDEX IF NOT EXISTS idx_personal_prayer_books_cloud_user
+    ON personal_prayer_books(cloud_user_id);
+    CREATE INDEX IF NOT EXISTS idx_personal_prayer_books_sync_status
+    ON personal_prayer_books(sync_status);
+
+    CREATE INDEX IF NOT EXISTS idx_personal_prayers_cloud_user
+    ON personal_prayers(cloud_user_id);
+    CREATE INDEX IF NOT EXISTS idx_personal_prayers_sync_status
+    ON personal_prayers(sync_status);
+
+    CREATE INDEX IF NOT EXISTS idx_personal_prayer_items_book
+    ON personal_prayer_book_items(book_sync_id);
+    CREATE INDEX IF NOT EXISTS idx_personal_prayer_items_prayer
+    ON personal_prayer_book_items(prayer_sync_id);
+    CREATE INDEX IF NOT EXISTS idx_personal_prayer_items_cloud_user
+    ON personal_prayer_book_items(cloud_user_id);
+    CREATE INDEX IF NOT EXISTS idx_personal_prayer_items_sync_status
+    ON personal_prayer_book_items(sync_status);
+
+    CREATE INDEX IF NOT EXISTS idx_personal_prayer_photos_prayer
+    ON personal_prayer_photos(prayer_sync_id);
+    CREATE INDEX IF NOT EXISTS idx_personal_prayer_photos_cloud_user
+    ON personal_prayer_photos(cloud_user_id);
+    CREATE INDEX IF NOT EXISTS idx_personal_prayer_photos_sync_status
+    ON personal_prayer_photos(sync_status);
   `);
 
   /*
