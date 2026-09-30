@@ -92,33 +92,107 @@ const PRAYER_RULES = [
     slug: 'molitvy-na-son-griadushchim',
   },
 ];
-const formatToday = () => {
-  const weekdays = [
-    'Воскресенье',
-    'Понедельник',
-    'Вторник',
-    'Среда',
-    'Четверг',
-    'Пятница',
-    'Суббота',
-  ];
-  const months = [
-    'января',
-    'февраля',
-    'марта',
-    'апреля',
-    'мая',
-    'июня',
-    'июля',
-    'августа',
-    'сентября',
-    'октября',
-    'ноября',
-    'декабря',
-  ];
-  const date = new Date();
-  return `${weekdays[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()} года`;
+const MONTHS_GENITIVE = [
+  'января',
+  'февраля',
+  'марта',
+  'апреля',
+  'мая',
+  'июня',
+  'июля',
+  'августа',
+  'сентября',
+  'октября',
+  'ноября',
+  'декабря',
+];
+
+const MONTHS_NOMINATIVE = [
+  'Январь',
+  'Февраль',
+  'Март',
+  'Апрель',
+  'Май',
+  'Июнь',
+  'Июль',
+  'Август',
+  'Сентябрь',
+  'Октябрь',
+  'Ноябрь',
+  'Декабрь',
+];
+
+const WEEKDAYS = [
+  'воскресенье',
+  'понедельник',
+  'вторник',
+  'среда',
+  'четверг',
+  'пятница',
+  'суббота',
+];
+
+const MINI_WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+const createCalendarSnapshot = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
+  const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPreviousMonth = new Date(year, month, 0).getDate();
+
+  const visibleCellCount = firstWeekday + daysInMonth <= 35 ? 35 : 42;
+
+  const cells = Array.from({length: visibleCellCount}, (_item, index) => {
+    const rawDay = index - firstWeekday + 1;
+
+    if (rawDay < 1) {
+      return {
+        day: daysInPreviousMonth + rawDay,
+        outside: true,
+      };
+    }
+
+    if (rawDay > daysInMonth) {
+      return {
+        day: rawDay - daysInMonth,
+        outside: true,
+      };
+    }
+
+    return {
+      day: rawDay,
+      outside: false,
+      today: rawDay === day,
+    };
+  });
+
+  return {
+    year,
+    month,
+    day,
+    monthTitle: `${MONTHS_NOMINATIVE[month]} ${year}`,
+    dayTitle: `${day} ${MONTHS_GENITIVE[month]} ${year}`,
+    weekday: WEEKDAYS[date.getDay()],
+    cells,
+  };
 };
+
+const SearchGlyph = () => (
+  <View style={styles.searchGlyph}>
+    <View style={styles.searchGlyphHandle} />
+  </View>
+);
+
+const BellGlyph = () => (
+  <View style={styles.bellGlyph}>
+    <View style={styles.bellGlyphBody} />
+    <View style={styles.bellGlyphBase} />
+    <View style={styles.bellGlyphClapper} />
+  </View>
+);
+
 
 const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress}) => (
   <Pressable
@@ -199,7 +273,7 @@ export const MenuScreen = ({navigation}) => {
   const [error, setError] = useState(null);
 
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 56;
+  const calendarSnapshot = useMemo(() => createCalendarSnapshot(new Date()), []);
   const loadLibrary = useCallback(async () => {
     try {
       const [
@@ -591,6 +665,11 @@ export const MenuScreen = ({navigation}) => {
     }
   };
 
+
+  const showPlaceholder = useCallback((title) => {
+    Alert.alert(title, 'Раздел пока в разработке.');
+  }, []);
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
@@ -620,111 +699,264 @@ export const MenuScreen = ({navigation}) => {
               styles.content,
               {
                 // paddingTop: headerHeight + 20,
-                paddingBottom: 80 + insets.bottom,
+                paddingBottom: 96 + insets.bottom,
               },
             ]}
           >
             <ImageBackground
               source={homeArtwork.hero_biblical}
               resizeMode="cover"
-              style={styles.hero}
+              style={[
+                styles.hero,
+                {
+                  paddingTop: Math.max(insets.top + 8, 32),
+                },
+              ]}
               imageStyle={styles.heroImage}
             >
-              {/*<View style={styles.heroWash} />*/}
-
-              <LinearGradient
-                pointerEvents="none"
-                colors={['rgba(45, 27, 16, 0.42)', 'rgba(45, 27, 16, 0.16)', 'rgba(45, 27, 16, 0)']}
-                locations={[0, 0.55, 1]}
-                style={styles.heroTopGradient}
-              />
               <LinearGradient
                 pointerEvents="none"
                 colors={[
-                  'rgba(183, 138, 88, 0)',
-                  'rgba(183, 138, 88, 0.08)',
-                  'rgba(183, 138, 88, 0.22)',
-                  'rgba(183, 138, 88, 0.5)',
-                  'rgba(183, 138, 88, 0.82)',
+                  'rgba(35, 20, 12, 0.70)',
+                  'rgba(35, 20, 12, 0.38)',
+                  'rgba(35, 20, 12, 0.10)',
                 ]}
-                locations={[0, 0.32, 0.56, 0.78, 1]}
+                locations={[0, 0.58, 1]}
+                start={{x: 0, y: 0.45}}
+                end={{x: 0.78, y: 0.45}}
+                style={styles.heroQuoteShade}
+              />
+
+              <LinearGradient
+                pointerEvents="none"
+                colors={[
+                  'rgba(255, 244, 222, 0)',
+                  'rgba(183, 138, 88, 0.18)',
+                  'rgba(183, 138, 88, 0.62)',
+                  '#D6B07C',
+                ]}
+                locations={[0, 0.46, 0.76, 1]}
                 style={styles.heroBottomGradient}
               />
 
-              <View style={styles.heroOrnament}>
-                <Text style={styles.heroCross}>☦</Text>
-                <Text style={styles.heroFlourish}>─── ✦ ───</Text>
+              <View style={styles.heroTopActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Поиск"
+                  onPress={() => showPlaceholder('Поиск')}
+                  style={({pressed}) => [
+                    styles.heroRoundAction,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <SearchGlyph />
+                </Pressable>
+
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Уведомления"
+                  onPress={() => showPlaceholder('Уведомления')}
+                  style={({pressed}) => [
+                    styles.heroRoundAction,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <BellGlyph />
+                  <View style={styles.notificationDot} />
+                </Pressable>
               </View>
-              <Text style={styles.brandTitle}>Молитвослов</Text>
-              <Text style={styles.today}>{formatToday()}</Text>
-              <Text style={styles.heroDivider}>───── ✥ ─────</Text>
+
+              <View style={styles.heroQuoteContent}>
+                <View style={styles.heroQuoteHeading}>
+                  <Text style={styles.heroQuoteMark}>❧</Text>
+                  <Text style={styles.heroQuoteLabel}>Цитата дня</Text>
+                </View>
+
+                <Text style={styles.heroQuoteText} numberOfLines={5}>
+                  {dailyQuote?.text ||
+                    'Молитва и духовное чтение помогают хранить внимание сердца.'}
+                </Text>
+
+                {!!(dailyQuote?.reference || dailyQuote?.source) && (
+                  <Text style={styles.heroQuoteSource}>
+                    {dailyQuote?.reference || dailyQuote?.source}
+                  </Text>
+                )}
+
+                <View style={styles.heroQuoteActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      savedDailyQuote
+                        ? 'Убрать цитату из избранного'
+                        : 'Добавить цитату в избранное'
+                    }
+                    hitSlop={6}
+                    onPress={toggleDailyQuoteSaved}
+                    style={({pressed}) => [
+                      styles.heroQuoteActionButton,
+                      savedDailyQuote && styles.heroQuoteActionButtonActive,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <SaveHeartIcon
+                      active={!!savedDailyQuote}
+                      size={18}
+                      color="#F8E5BC"
+                    />
+                    <Text style={styles.heroQuoteActionText}>
+                      {savedDailyQuote ? 'Сохранено' : 'Сохранить'}
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Добавить цитату дня на главный экран"
+                    hitSlop={6}
+                    onPress={showWidgetInfo}
+                    style={({pressed}) => [
+                      styles.heroQuoteActionButton,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <View style={styles.widgetGlyph}>
+                      <View style={styles.widgetGlyphSpeaker} />
+                    </View>
+                    <Text style={styles.heroQuoteActionText}>На экран</Text>
+                  </Pressable>
+                </View>
+              </View>
             </ImageBackground>
 
             <View style={styles.pageBody}>
-              <View style={styles.quoteCard}>
-                <ImageBackground
-                  source={homeArtwork.quote}
-                  resizeMode="cover"
-                  style={styles.quoteArtwork}
-                  imageStyle={styles.quoteArtworkImage}
-                />
-                {/*<View pointerEvents="none" style={styles.quoteFade1} />*/}
-                {/*<View pointerEvents="none" style={styles.quoteFade2} />*/}
-                {/*<View pointerEvents="none" style={styles.quoteFade3} />*/}
+              <View style={styles.calendarCard}>
+                <View style={styles.calendarHeader}>
+                  <View style={styles.calendarTitleWrap}>
+                    <Text style={styles.calendarHeaderIcon}>▦</Text>
+                    <Text style={styles.calendarTitle}>Церковный календарь</Text>
+                  </View>
 
-                <View style={styles.quoteContent}>
-                  <View style={styles.quoteHeader}>
-                    <View style={styles.quoteHeadingWrap}>
-                      <Text style={styles.quoteFeather}>🪶</Text>
-                      <Text style={styles.quoteLabel}>Цитата дня</Text>
+                  <Pressable
+                    hitSlop={8}
+                    onPress={() => showPlaceholder('Церковный календарь')}
+                    style={({pressed}) => [
+                      styles.calendarOpenButton,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Text style={styles.calendarOpenText}>Весь календарь</Text>
+                    <Text style={styles.calendarOpenArrow}>›</Text>
+                  </Pressable>
+                </View>
+
+                <View style={styles.calendarBody}>
+                  <View style={styles.calendarTodayColumn}>
+                    <Text style={styles.calendarTodayLabel}>Сегодня</Text>
+                    <Text style={styles.calendarTodayDate}>{calendarSnapshot.dayTitle}</Text>
+                    <Text style={styles.calendarTodayWeekday}>{calendarSnapshot.weekday}</Text>
+
+                    <View style={styles.calendarDivider} />
+
+                    <View style={styles.calendarFeastRow}>
+                      <View style={styles.calendarSaintPlaceholder}>
+                        <Text style={styles.calendarSaintCross}>☦</Text>
+                      </View>
+
+                      <View style={styles.calendarFeastTextWrap}>
+                        <Text style={styles.calendarFeastTitle}>Память святых дня</Text>
+                        <Text style={styles.calendarFeastSubtitle}>
+                          Праздники и чтения
+                        </Text>
+                      </View>
                     </View>
 
-                    <View style={styles.quoteActions}>
+                    <View style={styles.calendarMetaRow}>
+                      <Text style={styles.calendarMetaIcon}>◇</Text>
+                      <Text style={styles.calendarMetaText}>Пост: по календарю</Text>
+                    </View>
+
+                    <View style={styles.calendarMetaRow}>
+                      <Text style={styles.calendarMetaIcon}>❧</Text>
+                      <Text style={styles.calendarMetaText}>Ближайший праздник</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.miniCalendar}>
+                    <View style={styles.miniCalendarHeader}>
                       <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={
-                          savedDailyQuote
-                            ? 'Убрать цитату из избранного'
-                            : 'Добавить цитату в избранное'
-                        }
-                        hitSlop={8}
-                        onPress={toggleDailyQuoteSaved}
+                        hitSlop={6}
+                        onPress={() => showPlaceholder('Календарь')}
                         style={({pressed}) => [
-                          styles.quoteSaveButton,
-                          savedDailyQuote && styles.quoteSaveButtonActive,
+                          styles.miniCalendarArrowButton,
                           pressed && styles.pressed,
                         ]}
                       >
-                        <SaveHeartIcon active={!!savedDailyQuote} size={19} />
+                        <Text style={styles.miniCalendarArrow}>‹</Text>
                       </Pressable>
+
+                      <Text style={styles.miniCalendarMonth} numberOfLines={1}>
+                        {calendarSnapshot.monthTitle}
+                      </Text>
 
                       <Pressable
-                        hitSlop={8}
-                        onPress={showWidgetInfo}
-                        style={({pressed}) => [styles.widgetButton, pressed && styles.pressed]}
+                        hitSlop={6}
+                        onPress={() => showPlaceholder('Календарь')}
+                        style={({pressed}) => [
+                          styles.miniCalendarArrowButton,
+                          pressed && styles.pressed,
+                        ]}
                       >
-                        <Text style={styles.widgetPhone}>📱</Text>
-                        <Text style={styles.widgetText}>На экран</Text>
+                        <Text style={styles.miniCalendarArrow}>›</Text>
                       </Pressable>
                     </View>
+
+                    <View style={styles.miniCalendarWeekdays}>
+                      {MINI_WEEKDAYS.map((weekday, index) => (
+                        <Text
+                          key={weekday}
+                          style={[
+                            styles.miniCalendarWeekday,
+                            index >= 5 && styles.miniCalendarWeekend,
+                          ]}
+                        >
+                          {weekday}
+                        </Text>
+                      ))}
+                    </View>
+
+                    <View style={styles.miniCalendarGrid}>
+                      {calendarSnapshot.cells.map((cell, index) => {
+                        const weekend = index % 7 >= 5;
+
+                        return (
+                          <View
+                            key={`${index}-${cell.day}`}
+                            style={styles.miniCalendarCell}
+                          >
+                            <View
+                              style={[
+                                styles.miniCalendarDayBubble,
+                                cell.today && styles.miniCalendarDayBubbleToday,
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.miniCalendarDayText,
+                                  cell.outside && styles.miniCalendarDayOutside,
+                                  weekend &&
+                                    !cell.outside &&
+                                    styles.miniCalendarDayWeekend,
+                                  cell.today && styles.miniCalendarDayToday,
+                                ]}
+                              >
+                                {cell.day}
+                              </Text>
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
                   </View>
-
-                  <View style={styles.quoteRule}>
-                    <View style={styles.quoteRuleLine} />
-                    <Text style={styles.quoteRuleMark}>✦</Text>
-                    <View style={styles.quoteRuleLine} />
-                  </View>
-
-                  <Text style={styles.quoteText}>
-                    {dailyQuote?.text ||
-                      'Молитва и духовное чтение помогают хранить внимание сердца.'}
-                  </Text>
-
-                  {!!(dailyQuote?.reference || dailyQuote?.source) && (
-                    <Text style={styles.quoteSource}>
-                      {dailyQuote?.reference || dailyQuote?.source}
-                    </Text>
-                  )}
                 </View>
               </View>
 
@@ -946,215 +1178,518 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   hero: {
-    height: 270,
-    alignItems: 'center',
+    minHeight: 330,
     justifyContent: 'flex-start',
-    paddingTop: 38,
-    paddingHorizontal: 22,
+    paddingHorizontal: 18,
+    paddingBottom: 22,
     overflow: 'hidden',
-    backgroundColor: '#B78A58',
+    backgroundColor: '#9C7046',
   },
+
   heroImage: {
     opacity: 1,
   },
-  heroTopGradient: {
+
+  heroQuoteShade: {
     position: 'absolute',
     top: 0,
     left: 0,
-    right: 0,
-    height: 72,
+    bottom: 0,
+    width: '82%',
   },
+
   heroBottomGradient: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    height: 140,
+    height: 92,
   },
-  heroOrnament: {
+
+  heroTopActions: {
+    position: 'absolute',
+    top: 34,
+    right: 16,
+    zIndex: 5,
+    flexDirection: 'row',
+    gap: 9,
+  },
+
+  heroRoundAction: {
+    position: 'relative',
+    width: 46,
+    height: 46,
     alignItems: 'center',
-    marginBottom: 0,
+    justifyContent: 'center',
+    borderRadius: 23,
+    borderWidth: 1,
+    borderColor: 'rgba(111, 73, 48, 0.22)',
+    backgroundColor: 'rgba(255, 245, 224, 0.92)',
+    shadowColor: '#2C170B',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.14,
+    shadowRadius: 7,
+    elevation: 3,
   },
-  heroCross: {
-    color: '#774923',
-    fontSize: 25,
-    lineHeight: 28,
-    textShadowColor: 'rgba(255,255,255,0.65)',
-    textShadowRadius: 4,
+
+  searchGlyph: {
+    width: 18,
+    height: 18,
+    borderWidth: 2,
+    borderColor: '#4E2F1C',
+    borderRadius: 9,
   },
-  heroFlourish: {
-    marginTop: -3,
-    color: '#8B5A2D',
-    fontSize: 11,
-    letterSpacing: 1,
+
+  searchGlyphHandle: {
+    position: 'absolute',
+    right: -5,
+    bottom: -2,
+    width: 8,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#4E2F1C',
+    transform: [{rotate: '45deg'}],
   },
-  brandTitle: {
+
+  bellGlyph: {
+    width: 20,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+
+  bellGlyphBody: {
+    width: 14,
+    height: 15,
+    marginTop: 2,
+    borderWidth: 2,
+    borderColor: '#4E2F1C',
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    borderBottomWidth: 0,
+  },
+
+  bellGlyphBase: {
+    width: 18,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#4E2F1C',
+  },
+
+  bellGlyphClapper: {
+    width: 4,
+    height: 4,
     marginTop: 1,
-    color: '#432515',
+    borderRadius: 2,
+    backgroundColor: '#4E2F1C',
+  },
+
+  notificationDot: {
+    position: 'absolute',
+    top: 7,
+    right: 7,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#A7552E',
+    borderWidth: 1,
+    borderColor: '#FFF1D5',
+  },
+
+  heroQuoteContent: {
+    width: '74%',
+    marginTop: 74,
+    zIndex: 3,
+  },
+
+  heroQuoteHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 7,
+  },
+
+  heroQuoteMark: {
+    marginRight: 7,
+    color: '#F5D48C',
     fontFamily: 'serif',
-    fontSize: 38,
-    lineHeight: 43,
-    fontWeight: '700',
-    textAlign: 'center',
-    textShadowColor: 'rgba(255, 245, 220, 0.85)',
+    fontSize: 20,
+    lineHeight: 22,
+    textShadowColor: 'rgba(32, 18, 10, 0.55)',
     textShadowOffset: {width: 0, height: 1},
     textShadowRadius: 3,
-    zIndex: 3,
   },
-  today: {
-    marginTop: -1,
-    color: '#3F2A1E',
+
+  heroQuoteLabel: {
+    color: '#FFE6B0',
     fontFamily: 'serif',
-    fontSize: 14,
-    lineHeight: 19,
-    fontWeight: '600',
-    textAlign: 'center',
-    textTransform: 'capitalize',
-    textShadowColor: 'rgba(255, 245, 220, 0.85)',
+    fontSize: 18,
+    lineHeight: 22,
+    fontWeight: '700',
+    textShadowColor: 'rgba(24, 13, 7, 0.85)',
     textShadowOffset: {width: 0, height: 1},
-    textShadowRadius: 2,
-    zIndex: 3,
+    textShadowRadius: 4,
   },
-  heroDivider: {
+
+  heroQuoteText: {
+    color: '#FFF9EC',
+    fontFamily: 'serif',
+    fontSize: 23,
+    lineHeight: 31,
+    fontWeight: '600',
+    textShadowColor: 'rgba(26, 13, 6, 0.92)',
+    textShadowOffset: {width: 0, height: 2},
+    textShadowRadius: 5,
+  },
+
+  heroQuoteSource: {
     marginTop: 7,
-    color: '#8D5D2E',
-    fontSize: 10,
-    letterSpacing: 1,
+    color: '#F7DFB4',
+    fontFamily: 'serif',
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '600',
+    letterSpacing: 0.4,
+    textShadowColor: 'rgba(26, 13, 6, 0.85)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 3,
   },
+
+  heroQuoteActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    marginTop: 14,
+  },
+
+  heroQuoteActionButton: {
+    minHeight: 38,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 13,
+    borderRadius: 19,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 225, 167, 0.72)',
+    backgroundColor: 'rgba(52, 29, 16, 0.34)',
+  },
+
+  heroQuoteActionButtonActive: {
+    backgroundColor: 'rgba(122, 76, 35, 0.62)',
+  },
+
+  heroQuoteActionText: {
+    marginLeft: 7,
+    color: '#FFF0CB',
+    fontFamily: 'serif',
+    fontSize: 13,
+    lineHeight: 17,
+    fontWeight: '700',
+  },
+
+  widgetGlyph: {
+    width: 13,
+    height: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#F7DFAF',
+    borderRadius: 2,
+  },
+
+  widgetGlyphSpeaker: {
+    width: 5,
+    height: 1.5,
+    borderRadius: 1,
+    backgroundColor: '#F7DFAF',
+  },
+
   pageBody: {
-    marginTop: -82,
+    marginTop: -12,
     paddingHorizontal: 10,
     paddingBottom: 4,
     backgroundColor: 'transparent',
   },
-  quoteCard: {
-    position: 'relative',
-    minHeight: 148,
-    padding: 10,
+
+  calendarCard: {
+    padding: 12,
     borderRadius: 18,
-    overflow: 'hidden',
-    backgroundColor: '#FFF4DE',
     borderWidth: 1,
-    borderColor: 'rgba(123, 79, 36, 0.22)',
+    borderColor: 'rgba(123, 79, 36, 0.18)',
+    backgroundColor: 'rgba(255, 245, 224, 0.97)',
     shadowColor: '#4A2817',
     shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.14,
+    shadowOpacity: 0.13,
     shadowRadius: 9,
     elevation: 3,
   },
-  quoteArtwork: {
-    position: 'absolute',
-    top: 0,
-    right: 10,
-    bottom: 0,
-    width: '120%',
-  },
-  quoteArtworkImage: {
-    opacity: 0.45,
-    borderTopRightRadius: 17,
-    borderBottomRightRadius: 17,
-  },
 
-  quoteContent: {
-    position: 'relative',
-    zIndex: 2,
-  },
-  quoteHeader: {
+  calendarHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 5,
+    gap: 8,
+    marginBottom: 9,
   },
-  quoteHeadingWrap: {
+
+  calendarTitleWrap: {
+    minWidth: 0,
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
   },
-  quoteFeather: {
+
+  calendarHeaderIcon: {
     marginRight: 7,
-    fontSize: 17,
-    lineHeight: 21,
-  },
-  quoteLabel: {
-    color: '#7A4F2D',
+    color: '#9B642C',
     fontFamily: 'serif',
-    fontSize: 19,
+    fontSize: 22,
+    lineHeight: 25,
+  },
+
+  calendarTitle: {
+    flexShrink: 1,
+    color: '#4B2C18',
+    fontFamily: 'serif',
+    fontSize: 18,
+    lineHeight: 22,
     fontWeight: '700',
   },
-  quoteActions: {
+
+  calendarOpenButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    paddingVertical: 5,
+    paddingLeft: 4,
   },
-  quoteSaveButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(112, 86, 55, 0.24)',
-    borderRadius: 18,
-    backgroundColor: 'rgba(241, 223, 194, 0.94)',
-  },
-  quoteSaveButtonActive: {
-    borderColor: 'rgba(123, 79, 36, 0.28)',
-    backgroundColor: '#F1DFC2',
-  },
-  widgetButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 34,
-    paddingHorizontal: 11,
-    borderWidth: 1,
-    borderColor: 'rgba(126, 78, 34, 0.32)',
-    borderRadius: 17,
-    backgroundColor: 'rgba(248, 233, 207, 0.88)',
-  },
-  widgetPhone: {
-    marginRight: 5,
-    fontSize: 13,
-    lineHeight: 16,
-  },
-  widgetText: {
-    color: '#6F4930',
-    fontFamily: 'serif',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  quoteRule: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: 170,
-    marginTop: 5,
-    marginBottom: 8,
-  },
-  quoteRuleLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(146, 98, 47, 0.32)',
-  },
-  quoteRuleMark: {
-    marginHorizontal: 7,
-    color: '#A87943',
-    fontSize: 9,
-  },
-  quoteText: {
-    maxWidth: '82%',
-    color: '#3E2A1D',
-    fontFamily: 'serif',
-    fontSize: 19,
-    lineHeight: 27,
-    fontWeight: '500',
-  },
-  quoteSource: {
-    marginTop: 11,
-    color: '#1f0f0f',
+
+  calendarOpenText: {
+    color: '#9A642E',
     fontFamily: 'serif',
     fontSize: 11,
-    lineHeight: 16,
-    letterSpacing: 0.7,
-    textTransform: 'uppercase',
+    fontWeight: '600',
   },
+
+  calendarOpenArrow: {
+    marginLeft: 4,
+    marginTop: -1,
+    color: '#9A642E',
+    fontSize: 19,
+    lineHeight: 19,
+  },
+
+  calendarBody: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingTop: 9,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(139, 94, 49, 0.20)',
+  },
+
+  calendarTodayColumn: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  calendarTodayLabel: {
+    color: '#4E3524',
+    fontFamily: 'serif',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+
+  calendarTodayDate: {
+    marginTop: 1,
+    color: '#2F1E13',
+    fontFamily: 'serif',
+    fontSize: 22,
+    lineHeight: 27,
+    fontWeight: '700',
+  },
+
+  calendarTodayWeekday: {
+    color: '#5F4736',
+    fontFamily: 'serif',
+    fontSize: 13,
+    lineHeight: 18,
+    textTransform: 'lowercase',
+  },
+
+  calendarDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginVertical: 8,
+    backgroundColor: 'rgba(139, 94, 49, 0.18)',
+  },
+
+  calendarFeastRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  calendarSaintPlaceholder: {
+    width: 48,
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(157, 104, 46, 0.24)',
+    backgroundColor: '#F0D6A5',
+  },
+
+  calendarSaintCross: {
+    color: '#8B5526',
+    fontFamily: 'serif',
+    fontSize: 25,
+    lineHeight: 29,
+  },
+
+  calendarFeastTextWrap: {
+    minWidth: 0,
+    flex: 1,
+    marginLeft: 8,
+  },
+
+  calendarFeastTitle: {
+    color: '#3F291B',
+    fontFamily: 'serif',
+    fontSize: 12,
+    lineHeight: 15,
+    fontWeight: '700',
+  },
+
+  calendarFeastSubtitle: {
+    marginTop: 2,
+    color: '#7B6551',
+    fontFamily: 'serif',
+    fontSize: 10,
+    lineHeight: 13,
+  },
+
+  calendarMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 7,
+  },
+
+  calendarMetaIcon: {
+    width: 19,
+    color: '#A56C31',
+    fontFamily: 'serif',
+    fontSize: 15,
+    textAlign: 'center',
+  },
+
+  calendarMetaText: {
+    flex: 1,
+    marginLeft: 5,
+    color: '#735943',
+    fontFamily: 'serif',
+    fontSize: 10,
+    lineHeight: 13,
+  },
+
+  miniCalendar: {
+    width: '46%',
+    minWidth: 136,
+    padding: 8,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 94, 49, 0.12)',
+    backgroundColor: 'rgba(255, 251, 242, 0.74)',
+  },
+
+  miniCalendarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 5,
+  },
+
+  miniCalendarArrowButton: {
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  miniCalendarArrow: {
+    color: '#6F4727',
+    fontFamily: 'serif',
+    fontSize: 20,
+    lineHeight: 20,
+  },
+
+  miniCalendarMonth: {
+    flex: 1,
+    color: '#4B3020',
+    fontFamily: 'serif',
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+
+  miniCalendarWeekdays: {
+    flexDirection: 'row',
+  },
+
+  miniCalendarWeekday: {
+    width: '14.2857%',
+    color: '#807064',
+    fontFamily: 'serif',
+    fontSize: 8,
+    lineHeight: 12,
+    textAlign: 'center',
+  },
+
+  miniCalendarWeekend: {
+    color: '#A33A32',
+  },
+
+  miniCalendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 2,
+  },
+
+  miniCalendarCell: {
+    width: '14.2857%',
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  miniCalendarDayBubble: {
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+  },
+
+  miniCalendarDayBubbleToday: {
+    backgroundColor: '#B97A32',
+  },
+
+  miniCalendarDayText: {
+    color: '#473226',
+    fontFamily: 'serif',
+    fontSize: 9,
+    lineHeight: 12,
+  },
+
+  miniCalendarDayOutside: {
+    color: '#B6ACA2',
+  },
+
+  miniCalendarDayWeekend: {
+    color: '#A33A32',
+  },
+
+  miniCalendarDayToday: {
+    color: '#FFF7E7',
+    fontWeight: '700',
+  },
+
   readingCard: {
     marginTop: 11,
     padding: 13,
