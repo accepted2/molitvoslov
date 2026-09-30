@@ -437,7 +437,6 @@ export const MenuScreen = ({navigation}) => {
   useFocusEffect(
     useCallback(() => {
       loadProgress();
-      loadCalendarDay(calendarSelectedDate);
 
       if (dailyQuote?.id) {
         getSavedItems({
@@ -450,13 +449,7 @@ export const MenuScreen = ({navigation}) => {
           .then((saved) => setSavedDailyQuote(saved[0] || null))
           .catch((err) => console.log('Ошибка загрузки сохранённой цитаты:', err));
       }
-    }, [
-      loadProgress,
-      loadCalendarDay,
-      calendarSelectedDate,
-      dailyQuote?.id,
-      updateQuoteWidget,
-    ])
+    }, [loadProgress, dailyQuote?.id, updateQuoteWidget])
   );
 
   const moveMiniCalendarMonth = (delta) => {
