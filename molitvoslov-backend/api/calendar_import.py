@@ -46,6 +46,7 @@ def fetch_source_json(endpoint, params=None, timeout=25):
         url,
         headers={
             "Accept": "application/json",
+            "Accept-Language": "ru",
             "User-Agent": "MolitvoslovCalendarImporter/1.0",
         },
     )
