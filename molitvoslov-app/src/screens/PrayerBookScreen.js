@@ -17,60 +17,67 @@ import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {
   addPrayerToBook,
+  createPersonalPrayer,
   getPersonalPrayers,
   getPrayerBook,
   importSavedItemToBook,
   movePrayerInBook,
   removePrayerFromBook,
 } from '../services/prayerBooks';
+import {searchAllPrayers} from '../services/prayerSearch';
 import {getSavedItems} from '../services/savedItems';
 import {colors, spacing} from '../theme';
 
-const PickerModal = ({
-  visible,
-  title,
-  items,
-  onClose,
-  onSelect,
-  getTitle,
-  getSubtitle,
-}) => {
+const SavedPickerModal = ({visible, items, onClose, onSelect}) => {
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return items;
-    return items.filter((item) => {
-      const haystack = [
-        getTitle(item),
-        getSubtitle(item),
-        item?.text,
+
+    if (!needle) {
+      return items;
+    }
+
+    return items.filter((item) =>
+      [
+        item.item_title,
+        item.source_title,
+        item.save_type_display,
+        item.text,
       ]
         .filter(Boolean)
         .join(' ')
-        .toLowerCase();
-      return haystack.includes(needle);
-    });
-  }, [getSubtitle, getTitle, items, query]);
+        .toLowerCase()
+        .includes(needle)
+    );
+  }, [items, query]);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.modalBackdrop}>
         <View style={styles.pickerCard}>
           <View style={styles.pickerHeader}>
-            <Text style={styles.pickerTitle}>{title}</Text>
+            <Text style={styles.pickerTitle}>Добавить из избранного</Text>
             <Pressable onPress={onClose} hitSlop={10}>
               <Text style={styles.closeText}>×</Text>
             </Pressable>
           </View>
 
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Найти молитву…"
-            placeholderTextColor="#A58A73"
-            style={styles.searchInput}
-          />
+          <View style={styles.searchBox}>
+            <Text style={styles.searchIcon}>⌕</Text>
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Поиск в избранном"
+              placeholderTextColor="#9A7D66"
+              style={styles.searchInput}
+            />
+            {!!query && (
+              <Pressable onPress={() => setQuery('')} hitSlop={8}>
+                <Text style={styles.clearSearch}>×</Text>
+              </Pressable>
+            )}
+          </View>
 
           <FlatList
             data={filtered}
@@ -81,18 +88,134 @@ const PickerModal = ({
                 onPress={() => onSelect(item)}
                 style={({pressed}) => [styles.pickerRow, pressed && styles.pressed]}
               >
-                <Text style={styles.pickerRowTitle}>{getTitle(item)}</Text>
-                {!!getSubtitle(item) && (
+                <Text style={styles.pickerRowTitle}>
+                  {item.item_title ||
+                    item.source_title ||
+                    item.save_type_display ||
+                    'Сохранённое'}
+                </Text>
+
+                {!!(item.text || item.source_title) && (
                   <Text style={styles.pickerRowSubtitle} numberOfLines={2}>
-                    {getSubtitle(item)}
+                    {item.text || item.source_title}
                   </Text>
                 )}
               </Pressable>
             )}
-            ListEmptyComponent={
-              <Text style={styles.emptyPicker}>Ничего не найдено</Text>
-            }
+            ListEmptyComponent={<Text style={styles.emptyPicker}>Ничего не найдено</Text>}
           />
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const GlobalPrayerSearchModal = ({
+  visible,
+  personalPrayers,
+  excludedPrayerIds,
+  onClose,
+  onSelect,
+}) => {
+  const [query, setQuery] = useState('');
+
+  const results = useMemo(() => {
+    if (!visible) {
+      return [];
+    }
+
+    return searchAllPrayers(personalPrayers, query).filter(
+      (item) => item.kind !== 'personal' || !excludedPrayerIds.has(item.prayer?.sync_id)
+    );
+  }, [excludedPrayerIds, personalPrayers, query, visible]);
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.modalBackdrop}>
+        <View style={[styles.pickerCard, styles.globalSearchCard]}>
+          <View style={styles.pickerHeader}>
+            <View style={styles.searchHeading}>
+              <Text style={styles.pickerTitle}>Найти молитву</Text>
+              <Text style={styles.searchHeadingHint}>Поиск по всей библиотеке приложения</Text>
+            </View>
+
+            <Pressable onPress={onClose} hitSlop={10}>
+              <Text style={styles.closeText}>×</Text>
+            </Pressable>
+          </View>
+
+          <View style={[styles.searchBox, styles.globalSearchBox]}>
+            <Text style={styles.searchIcon}>⌕</Text>
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              autoFocus
+              returnKeyType="search"
+              placeholder="Например: перед дорогой, о здравии…"
+              placeholderTextColor="#8F725B"
+              style={styles.searchInput}
+            />
+            {!!query && (
+              <Pressable onPress={() => setQuery('')} hitSlop={8}>
+                <Text style={styles.clearSearch}>×</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {query.trim().length < 2 ? (
+            <View style={styles.searchEmptyState}>
+              <Text style={styles.searchEmptyMark}>⌕</Text>
+              <Text style={styles.searchEmptyTitle}>Введите хотя бы два символа</Text>
+              <Text style={styles.searchEmptyText}>
+                Поиск смотрит название, описание и полный текст молитв. Ваши собственные
+                молитвы тоже участвуют в поиске.
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={results}
+              keyExtractor={(item) => item.key}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              ListHeaderComponent={
+                <Text style={styles.resultCount}>
+                  {results.length
+                    ? `Найдено: ${results.length}`
+                    : 'По этому запросу ничего не найдено'}
+                </Text>
+              }
+              renderItem={({item}) => (
+                <Pressable
+                  onPress={() => onSelect(item)}
+                  style={({pressed}) => [styles.searchResult, pressed && styles.pressed]}
+                >
+                  <View style={styles.searchResultTop}>
+                    <Text style={styles.searchResultTitle}>{item.title}</Text>
+                    <Text
+                      style={[
+                        styles.sourceBadge,
+                        item.kind === 'personal' && styles.sourceBadgePersonal,
+                      ]}
+                    >
+                      {item.kind === 'personal' ? 'МОЯ' : 'БИБЛИОТЕКА'}
+                    </Text>
+                  </View>
+
+                  {!!item.subtitle && (
+                    <Text style={styles.searchResultSource} numberOfLines={1}>
+                      {item.subtitle}
+                    </Text>
+                  )}
+
+                  {!!item.preview && (
+                    <Text style={styles.searchResultPreview} numberOfLines={3}>
+                      {item.preview}
+                    </Text>
+                  )}
+                </Pressable>
+              )}
+            />
+          )}
         </View>
       </View>
     </Modal>
@@ -108,7 +231,7 @@ export const PrayerBookScreen = ({route, navigation}) => {
   const [savedItems, setSavedItems] = useState([]);
   const [personalPrayers, setPersonalPrayers] = useState([]);
   const [savedPicker, setSavedPicker] = useState(false);
-  const [libraryPicker, setLibraryPicker] = useState(false);
+  const [globalSearch, setGlobalSearch] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -118,6 +241,7 @@ export const PrayerBookScreen = ({route, navigation}) => {
         getSavedItems(),
         getPersonalPrayers(),
       ]);
+
       setBook(nextBook);
       setSavedItems(saved);
       setPersonalPrayers(prayers);
@@ -133,7 +257,10 @@ export const PrayerBookScreen = ({route, navigation}) => {
   );
 
   const addSaved = async (item) => {
-    if (busy) return;
+    if (busy) {
+      return;
+    }
+
     try {
       setBusy(true);
       await importSavedItemToBook(bookSyncId, item);
@@ -146,12 +273,31 @@ export const PrayerBookScreen = ({route, navigation}) => {
     }
   };
 
-  const addExisting = async (prayer) => {
-    if (busy) return;
+  const addSearchResult = async (result) => {
+    if (busy) {
+      return;
+    }
+
     try {
       setBusy(true);
-      await addPrayerToBook(bookSyncId, prayer.sync_id);
-      setLibraryPicker(false);
+
+      if (result.kind === 'personal' && result.prayer?.sync_id) {
+        await addPrayerToBook(bookSyncId, result.prayer.sync_id);
+      } else {
+        const prayer = await createPersonalPrayer({
+          title: result.title || 'Молитва',
+          text: result.text || '',
+          origin_type: 'library',
+          origin_data: {
+            ...(result.origin_data || {}),
+            search_source: 'global_prayer_search',
+          },
+        });
+
+        await addPrayerToBook(bookSyncId, prayer.sync_id);
+      }
+
+      setGlobalSearch(false);
       await load();
     } catch (error) {
       Alert.alert('Не удалось добавить молитву', error.message);
@@ -194,23 +340,17 @@ export const PrayerBookScreen = ({route, navigation}) => {
         <View style={styles.center}>
           <Text style={styles.loading}>Загрузка…</Text>
         </View>
-        <FixedSectionHeader
-          title="Молитвослов"
-          navigation={navigation}
-          topInset={insets.top}
-        />
+        <FixedSectionHeader title="Молитвослов" navigation={navigation} topInset={insets.top} />
       </AppBackground>
     );
   }
 
   const existingPrayerIds = new Set((book.items || []).map((item) => item.prayer_sync_id));
-  const reusablePrayers = personalPrayers.filter(
-    (prayer) => !existingPrayerIds.has(prayer.sync_id)
-  );
 
   return (
     <AppBackground imageOpacity={0.72}>
       <StatusBar style="light" translucent backgroundColor="transparent" />
+
       <View style={styles.screen}>
         <FlatList
           data={book.items || []}
@@ -261,11 +401,11 @@ export const PrayerBookScreen = ({route, navigation}) => {
                 </Pressable>
 
                 <Pressable
-                  onPress={() => setLibraryPicker(true)}
+                  onPress={() => setGlobalSearch(true)}
                   style={({pressed}) => [styles.actionButton, pressed && styles.pressed]}
                 >
-                  <Text style={styles.actionIcon}>☷</Text>
-                  <Text style={styles.actionText}>Из моих молитв</Text>
+                  <Text style={styles.actionIcon}>⌕</Text>
+                  <Text style={styles.actionText}>Найти молитву</Text>
                 </Pressable>
               </View>
 
@@ -276,12 +416,14 @@ export const PrayerBookScreen = ({route, navigation}) => {
             <View style={styles.emptyCard}>
               <Text style={styles.emptyTitle}>Сборник пока пуст</Text>
               <Text style={styles.emptyText}>
-                Добавьте свою молитву, выберите из сохранённого или используйте уже созданную.
+                Добавьте свой текст, выберите молитву из избранного или найдите её по всей
+                библиотеке приложения.
               </Text>
             </View>
           }
           renderItem={({item, index}) => {
             const prayer = item.prayer;
+
             return (
               <View style={styles.card}>
                 <Pressable
@@ -294,17 +436,18 @@ export const PrayerBookScreen = ({route, navigation}) => {
                   style={({pressed}) => [styles.cardBody, pressed && styles.pressed]}
                 >
                   <Text style={styles.order}>{index + 1}</Text>
+
                   <View style={styles.cardText}>
                     <Text style={styles.cardTitle}>{prayer.title}</Text>
+
                     {!!prayer.text && (
                       <Text style={styles.preview} numberOfLines={3}>
                         {prayer.text}
                       </Text>
                     )}
+
                     {!!prayer.photos?.length && (
-                      <Text style={styles.photoMeta}>
-                        Фото: {prayer.photos.length}
-                      </Text>
+                      <Text style={styles.photoMeta}>Фото: {prayer.photos.length}</Text>
                     )}
                   </View>
                 </Pressable>
@@ -316,8 +459,16 @@ export const PrayerBookScreen = ({route, navigation}) => {
                     onPress={() => move(item, -1)}
                     style={styles.orderButton}
                   >
-                    <Text style={[styles.orderButtonText, index === 0 && styles.orderButtonDisabled]}>↑</Text>
+                    <Text
+                      style={[
+                        styles.orderButtonText,
+                        index === 0 && styles.orderButtonDisabled,
+                      ]}
+                    >
+                      ↑
+                    </Text>
                   </Pressable>
+
                   <Pressable
                     disabled={index === (book.items?.length || 0) - 1}
                     hitSlop={6}
@@ -327,13 +478,19 @@ export const PrayerBookScreen = ({route, navigation}) => {
                     <Text
                       style={[
                         styles.orderButtonText,
-                        index === (book.items?.length || 0) - 1 && styles.orderButtonDisabled,
+                        index === (book.items?.length || 0) - 1 &&
+                          styles.orderButtonDisabled,
                       ]}
                     >
                       ↓
                     </Text>
                   </Pressable>
-                  <Pressable hitSlop={8} onPress={() => remove(item)} style={styles.removeButton}>
+
+                  <Pressable
+                    hitSlop={8}
+                    onPress={() => remove(item)}
+                    style={styles.removeButton}
+                  >
                     <Text style={styles.removeText}>×</Text>
                   </Pressable>
                 </View>
@@ -342,32 +499,21 @@ export const PrayerBookScreen = ({route, navigation}) => {
           }}
         />
 
-        <FixedSectionHeader
-          title={book.title}
-          navigation={navigation}
-          topInset={insets.top}
-        />
+        <FixedSectionHeader title={book.title} navigation={navigation} topInset={insets.top} />
 
-        <PickerModal
+        <SavedPickerModal
           visible={savedPicker}
-          title="Добавить из избранного"
           items={savedItems}
           onClose={() => setSavedPicker(false)}
           onSelect={addSaved}
-          getTitle={(item) =>
-            item.item_title || item.source_title || item.save_type_display || 'Сохранённое'
-          }
-          getSubtitle={(item) => item.text || item.source_title || ''}
         />
 
-        <PickerModal
-          visible={libraryPicker}
-          title="Мои молитвы"
-          items={reusablePrayers}
-          onClose={() => setLibraryPicker(false)}
-          onSelect={addExisting}
-          getTitle={(item) => item.title}
-          getSubtitle={(item) => item.text || (item.photos?.length ? 'Молитва с фото' : '')}
+        <GlobalPrayerSearchModal
+          visible={globalSearch}
+          personalPrayers={personalPrayers}
+          excludedPrayerIds={existingPrayerIds}
+          onClose={() => setGlobalSearch(false)}
+          onSelect={addSearchResult}
         />
       </View>
     </AppBackground>
@@ -379,7 +525,12 @@ const styles = StyleSheet.create({
   center: {flex: 1, alignItems: 'center', justifyContent: 'center'},
   loading: {color: colors.textSecondary},
   actionsWrap: {marginBottom: 14},
-  description: {marginBottom: 10, color: colors.textSecondary, fontFamily: 'serif', lineHeight: 20},
+  description: {
+    marginBottom: 10,
+    color: '#654731',
+    fontFamily: 'serif',
+    lineHeight: 20,
+  },
   readButton: {
     minHeight: 44,
     alignItems: 'center',
@@ -387,12 +538,17 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: '#5A3822',
   },
-  readButtonText: {color: '#FFF4DE', fontFamily: 'serif', fontSize: 15, fontWeight: '700'},
+  readButtonText: {
+    color: '#FFF4DE',
+    fontFamily: 'serif',
+    fontSize: 15,
+    fontWeight: '700',
+  },
   disabled: {opacity: 0.38},
   actionGrid: {marginTop: 9, flexDirection: 'row', gap: 7},
   actionButton: {
     flex: 1,
-    minHeight: 66,
+    minHeight: 68,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 5,
@@ -401,9 +557,22 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(126,82,38,0.20)',
     backgroundColor: 'rgba(255,244,222,0.94)',
   },
-  actionIcon: {color: '#99652F', fontSize: 19},
-  actionText: {marginTop: 4, textAlign: 'center', color: '#5A3822', fontSize: 11, fontWeight: '700'},
-  sectionTitle: {marginTop: 20, marginBottom: 8, color: '#432A19', fontFamily: 'serif', fontSize: 18, fontWeight: '700'},
+  actionIcon: {color: '#8F5C2D', fontSize: 20, lineHeight: 22},
+  actionText: {
+    marginTop: 4,
+    textAlign: 'center',
+    color: '#5A3822',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  sectionTitle: {
+    marginTop: 20,
+    marginBottom: 8,
+    color: '#432A19',
+    fontFamily: 'serif',
+    fontSize: 18,
+    fontWeight: '700',
+  },
   card: {
     marginBottom: 8,
     flexDirection: 'row',
@@ -427,8 +596,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   cardText: {flex: 1, minWidth: 0, marginLeft: 10},
-  cardTitle: {color: '#3E2A1D', fontFamily: 'serif', fontSize: 16, fontWeight: '700'},
-  preview: {marginTop: 5, color: '#765238', fontFamily: 'serif', fontSize: 13, lineHeight: 19},
+  cardTitle: {
+    color: '#3E2A1D',
+    fontFamily: 'serif',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  preview: {
+    marginTop: 5,
+    color: '#765238',
+    fontFamily: 'serif',
+    fontSize: 13,
+    lineHeight: 19,
+  },
   photoMeta: {marginTop: 5, color: '#9A714C', fontSize: 11},
   orderButtons: {width: 38, alignItems: 'center', justifyContent: 'center'},
   orderButton: {width: 34, height: 27, alignItems: 'center', justifyContent: 'center'},
@@ -436,35 +616,196 @@ const styles = StyleSheet.create({
   orderButtonDisabled: {opacity: 0.22},
   removeButton: {width: 34, height: 29, alignItems: 'center', justifyContent: 'center'},
   removeText: {color: '#9A714C', fontSize: 25},
-  emptyCard: {padding: 22, alignItems: 'center', borderRadius: 16, backgroundColor: 'rgba(255,244,222,0.94)'},
-  emptyTitle: {color: colors.text, fontFamily: 'serif', fontSize: 17, fontWeight: '700'},
-  emptyText: {marginTop: 7, textAlign: 'center', color: colors.textSecondary, lineHeight: 20},
-  modalBackdrop: {flex: 1, paddingTop: 70, backgroundColor: 'rgba(45,27,16,0.50)', justifyContent: 'flex-end'},
+  emptyCard: {
+    padding: 22,
+    alignItems: 'center',
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,244,222,0.94)',
+  },
+  emptyTitle: {
+    color: colors.text,
+    fontFamily: 'serif',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  emptyText: {
+    marginTop: 7,
+    textAlign: 'center',
+    color: '#654731',
+    lineHeight: 20,
+  },
+  modalBackdrop: {
+    flex: 1,
+    paddingTop: 70,
+    backgroundColor: 'rgba(45,27,16,0.50)',
+    justifyContent: 'flex-end',
+  },
   pickerCard: {
-    maxHeight: '82%',
+    maxHeight: '84%',
     minHeight: '58%',
     padding: 16,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     backgroundColor: '#FFF4DE',
   },
-  pickerHeader: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
-  pickerTitle: {color: '#3E2A1D', fontFamily: 'serif', fontSize: 20, fontWeight: '700'},
-  closeText: {color: '#7A4F2D', fontSize: 30},
-  searchInput: {
-    marginTop: 12,
-    marginBottom: 8,
-    minHeight: 43,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(126,82,38,0.24)',
-    backgroundColor: '#FFF9ED',
-    color: '#3E2A1D',
+  globalSearchCard: {
+    minHeight: '72%',
+    maxHeight: '92%',
   },
-  pickerRow: {paddingVertical: 11, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(126,82,38,0.18)'},
-  pickerRowTitle: {color: '#3E2A1D', fontFamily: 'serif', fontSize: 15, fontWeight: '700'},
-  pickerRowSubtitle: {marginTop: 3, color: '#81634D', fontSize: 12, lineHeight: 17},
-  emptyPicker: {padding: 28, textAlign: 'center', color: '#8A6B52'},
+  pickerHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  searchHeading: {flex: 1, paddingRight: 12},
+  pickerTitle: {
+    color: '#3E2A1D',
+    fontFamily: 'serif',
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  searchHeadingHint: {
+    marginTop: 3,
+    color: '#74563F',
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  closeText: {color: '#7A4F2D', fontSize: 30, lineHeight: 30},
+  searchBox: {
+    minHeight: 46,
+    marginTop: 12,
+    marginBottom: 9,
+    paddingHorizontal: 11,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(126,82,38,0.27)',
+    backgroundColor: '#FFF9ED',
+  },
+  globalSearchBox: {
+    minHeight: 50,
+    borderColor: 'rgba(106,67,40,0.42)',
+    shadowColor: '#56351F',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  searchIcon: {
+    marginRight: 7,
+    color: '#7A4F2D',
+    fontSize: 21,
+    lineHeight: 23,
+  },
+  searchInput: {
+    flex: 1,
+    minHeight: 44,
+    paddingVertical: 0,
+    color: '#3E2A1D',
+    fontSize: 14,
+  },
+  clearSearch: {
+    marginLeft: 8,
+    color: '#8E6B51',
+    fontSize: 23,
+    lineHeight: 25,
+  },
+  pickerRow: {
+    paddingVertical: 11,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(126,82,38,0.18)',
+  },
+  pickerRowTitle: {
+    color: '#3E2A1D',
+    fontFamily: 'serif',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  pickerRowSubtitle: {
+    marginTop: 3,
+    color: '#70523D',
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  emptyPicker: {padding: 28, textAlign: 'center', color: '#74563F'},
+  searchEmptyState: {
+    flex: 1,
+    minHeight: 260,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+  },
+  searchEmptyMark: {color: '#A16E35', fontSize: 34},
+  searchEmptyTitle: {
+    marginTop: 8,
+    color: '#4B3020',
+    fontFamily: 'serif',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  searchEmptyText: {
+    marginTop: 7,
+    textAlign: 'center',
+    color: '#70523D',
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  resultCount: {
+    paddingVertical: 8,
+    color: '#7A5B44',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+  },
+  searchResult: {
+    marginBottom: 8,
+    padding: 12,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: 'rgba(126,82,38,0.18)',
+    backgroundColor: 'rgba(255,249,237,0.86)',
+  },
+  searchResultTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  searchResultTitle: {
+    flex: 1,
+    color: '#3E2A1D',
+    fontFamily: 'serif',
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '700',
+  },
+  sourceBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 7,
+    overflow: 'hidden',
+    color: '#755030',
+    backgroundColor: '#EFD8AE',
+    fontSize: 9,
+    lineHeight: 11,
+    fontWeight: '800',
+  },
+  sourceBadgePersonal: {
+    color: '#5D3A24',
+    backgroundColor: '#E5C79D',
+  },
+  searchResultSource: {
+    marginTop: 4,
+    color: '#8B6A50',
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  searchResultPreview: {
+    marginTop: 5,
+    color: '#624633',
+    fontFamily: 'serif',
+    fontSize: 12,
+    lineHeight: 18,
+  },
   pressed: {opacity: 0.65},
 });
