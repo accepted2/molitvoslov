@@ -34,6 +34,13 @@ import {
   resolveBibleReference,
   toCalendarDate,
 } from '../services/churchCalendar';
+import {
+  CALENDAR_MONTHS,
+  calendarText,
+  getCalendarLanguage,
+  setCalendarLanguage,
+} from '../services/calendarPreferences';
+import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
 import {colors, spacing} from '../theme';
 
 const CATEGORY_ICONS = {
@@ -100,52 +107,12 @@ const PRAYER_RULES = [
     slug: 'molitvy-na-son-griadushchim',
   },
 ];
-const MONTHS_GENITIVE = [
-  'января',
-  'февраля',
-  'марта',
-  'апреля',
-  'мая',
-  'июня',
-  'июля',
-  'августа',
-  'сентября',
-  'октября',
-  'ноября',
-  'декабря',
-];
-
-const MONTHS_NOMINATIVE = [
-  'Январь',
-  'Февраль',
-  'Март',
-  'Апрель',
-  'Май',
-  'Июнь',
-  'Июль',
-  'Август',
-  'Сентябрь',
-  'Октябрь',
-  'Ноябрь',
-  'Декабрь',
-];
-
-const WEEKDAYS = [
-  'воскресенье',
-  'понедельник',
-  'вторник',
-  'среда',
-  'четверг',
-  'пятница',
-  'суббота',
-];
-
-const MINI_WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-
 const createCalendarSnapshot = (
   visibleDate = new Date(),
-  selectedDate = visibleDate
+  selectedDate = visibleDate,
+  language = 'ru'
 ) => {
+  const locale = CALENDAR_MONTHS[language === 'uk' ? 'uk' : 'ru'];
   const year = visibleDate.getFullYear();
   const month = visibleDate.getMonth();
   const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
@@ -197,9 +164,10 @@ const createCalendarSnapshot = (
   return {
     year,
     month,
-    monthTitle: `${MONTHS_NOMINATIVE[month]} ${year}`,
-    dayTitle: `${selectedDate.getDate()} ${MONTHS_GENITIVE[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`,
-    weekday: WEEKDAYS[selectedDate.getDay()],
+    monthTitle: `${locale.nominative[month]} ${year}`,
+    dayTitle: `${selectedDate.getDate()} ${locale.genitive[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`,
+    weekday: locale.weekdays[selectedDate.getDay()],
+    miniWeekdays: locale.miniWeekdays,
     isSelectedToday: selectedKey === todayKey,
     cells,
   };
@@ -316,6 +284,7 @@ export const MenuScreen = ({navigation}) => {
   const [savedDailyQuote, setSavedDailyQuote] = useState(null);
   const [calendarToday, setCalendarToday] = useState(null);
   const [calendarLoading, setCalendarLoading] = useState(true);
+  const [calendarLanguage, setCalendarLanguageState] = useState('ru');
   const [calendarSelectedDate, setCalendarSelectedDate] = useState(() => new Date());
   const [calendarVisibleMonth, setCalendarVisibleMonth] = useState(
     () => new Date(new Date().getFullYear(), new Date().getMonth(), 1)
@@ -324,8 +293,17 @@ export const MenuScreen = ({navigation}) => {
 
   const insets = useSafeAreaInsets();
   const calendarSnapshot = useMemo(
-    () => createCalendarSnapshot(calendarVisibleMonth, calendarSelectedDate),
-    [calendarVisibleMonth, calendarSelectedDate]
+    () =>
+      createCalendarSnapshot(
+        calendarVisibleMonth,
+        calendarSelectedDate,
+        calendarLanguage
+      ),
+    [calendarVisibleMonth, calendarSelectedDate, calendarLanguage]
+  );
+  const calendarCopy = useMemo(
+    () => calendarText(calendarLanguage),
+    [calendarLanguage]
   );
   const loadLibrary = useCallback(async () => {
     try {
@@ -375,12 +353,15 @@ export const MenuScreen = ({navigation}) => {
       console.log('Ошибка загрузки библиотеки:', err);
       setError('Не удалось загрузить библиотеку');
     }
-  }, []);
+  }, [calendarLanguage]);
 
   const loadCalendarDay = useCallback(async (targetDate) => {
     try {
       setCalendarLoading(true);
-      const day = await getCalendarDay(targetDate);
+      const day = await getCalendarDay(targetDate, {
+        language: calendarLanguage,
+        force: true,
+      });
       setCalendarToday(day);
     } catch (err) {
       console.log('Ошибка загрузки церковного календаря:', err?.message || err);
@@ -431,6 +412,12 @@ export const MenuScreen = ({navigation}) => {
   }, [loadLibrary, loadProgress, updateQuoteWidget]);
 
   useEffect(() => {
+    getCalendarLanguage()
+      .then((language) => setCalendarLanguageState(language))
+      .catch(() => setCalendarLanguageState('ru'));
+  }, []);
+
+  useEffect(() => {
     loadCalendarDay(calendarSelectedDate);
   }, [calendarSelectedDate, loadCalendarDay]);
 
@@ -451,6 +438,76 @@ export const MenuScreen = ({navigation}) => {
       }
     }, [loadProgress, dailyQuote?.id, updateQuoteWidget])
   );
+
+  const updateCalendarWidget = useCallback(async (day = calendarToday, language = calendarLanguage) => {
+    try {
+      await requestWidgetUpdate({
+        widgetName: 'ChurchCalendar',
+        renderWidget: (widgetInfo) => (
+          <ChurchCalendarWidget
+            day={day}
+            language={language}
+            width={widgetInfo.width}
+            height={widgetInfo.height}
+          />
+        ),
+      });
+    } catch (error) {
+      console.log('Ошибка обновления виджета календаря:', error?.message || error);
+    }
+  }, [calendarToday, calendarLanguage]);
+
+  const changeCalendarLanguage = async (language) => {
+    const next = await setCalendarLanguage(language);
+    setCalendarLanguageState(next);
+
+    try {
+      const day = await getCalendarDay(calendarSelectedDate, {
+        language: next,
+        force: true,
+      });
+      setCalendarToday(day);
+      await updateCalendarWidget(day, next);
+    } catch (error) {
+      console.log('Ошибка смены языка календаря:', error?.message || error);
+    }
+  };
+
+  const showCalendarWidgetInfo = async () => {
+    try {
+      const widgets = await getWidgetInfo('ChurchCalendar');
+
+      if (widgets.length > 0) {
+        Alert.alert(
+          calendarCopy.widgetAlready,
+          calendarLanguage === 'uk'
+            ? 'На головному екрані вже встановлено віджет «Церковний календар».'
+            : 'На главном экране уже установлен виджет «Церковный календарь».'
+        );
+        return;
+      }
+
+      const requested = await requestPinWidget({
+        widgetName: 'ChurchCalendar',
+      });
+
+      if (!requested) {
+        Alert.alert(
+          calendarLanguage === 'uk' ? 'Додавання віджета' : 'Добавление виджета',
+          calendarLanguage === 'uk'
+            ? 'Затисніть вільне місце на головному екрані → «Віджети» → «Молитвослов» → «Церковний календар».'
+            : 'Зажмите свободное место на главном экране → «Виджеты» → «Молитвослов» → «Церковный календарь».'
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        calendarLanguage === 'uk' ? 'Не вдалося додати віджет' : 'Не удалось добавить виджет',
+        calendarLanguage === 'uk'
+          ? 'Спробуйте додати його через меню віджетів Android.'
+          : 'Попробуйте добавить его через меню виджетов Android.'
+      );
+    }
+  };
 
   const moveMiniCalendarMonth = (delta) => {
     setCalendarVisibleMonth(
