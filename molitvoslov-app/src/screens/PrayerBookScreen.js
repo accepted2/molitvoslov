@@ -148,6 +148,44 @@ const HighlightedText = ({text, query, style, numberOfLines}) => {
   );
 };
 
+const getSearchPreview = (item, query) => {
+  const source = String(item?.text || item?.preview || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!source) {
+    return '';
+  }
+
+  const tokens = String(query || '')
+    .trim()
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2);
+
+  const lower = source.toLowerCase();
+  const matchedToken = tokens.find((token) =>
+    lower.includes(token.toLowerCase())
+  );
+
+  if (!matchedToken) {
+    return item?.preview || source.slice(0, 130);
+  }
+
+  const index = lower.indexOf(matchedToken.toLowerCase());
+  const start = Math.max(0, index - 52);
+  const end = Math.min(
+    source.length,
+    index + matchedToken.length + 92
+  );
+
+  return (
+    (start > 0 ? '…' : '') +
+    source.slice(start, end).trim() +
+    (end < source.length ? '…' : '')
+  );
+};
+
 const SEARCH_FILTERS = [
   {key: 'all', label: 'Все'},
   {key: 'prayer', label: 'Молитвы'},
@@ -311,9 +349,9 @@ const GlobalPrayerSearchModal = ({
                     </Text>
                   )}
 
-                  {!!item.preview && (
+                  {!!(item.text || item.preview) && (
                     <HighlightedText
-                      text={item.preview}
+                      text={getSearchPreview(item, query)}
                       query={query}
                       style={styles.searchResultPreview}
                       numberOfLines={3}
