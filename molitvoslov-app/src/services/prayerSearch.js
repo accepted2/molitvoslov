@@ -51,7 +51,7 @@ const composeFullText = (item) => {
   return church || russian;
 };
 
-const buildIndex = () =>
+const buildTextEntries = () =>
   Object.values(bundledContent?.texts || {})
     .filter((item) => item && (item.content || item.translation))
     .map((item) => {
@@ -90,6 +90,91 @@ const buildIndex = () =>
         },
       };
     });
+
+const buildPsalmEntries = () => {
+  const seen = new Set();
+  const entries = [];
+
+  Object.values(bundledContent?.kathismas?.by_number || {}).forEach((kathisma) => {
+    (kathisma?.psalms || []).forEach((psalm) => {
+      const psalmId = Number(psalm?.id || 0);
+
+      if (!psalmId || seen.has(psalmId)) {
+        return;
+      }
+
+      seen.add(psalmId);
+
+      const church = (psalm.verses || [])
+        .map((verse) => {
+          const value = String(verse?.church_slavonic || '').trim();
+          return value ? `${verse.number}. ${value}` : '';
+        })
+        .filter(Boolean)
+        .join('\n');
+
+      const russian = (psalm.verses || [])
+        .map((verse) => {
+          const value = String(verse?.russian || '').trim();
+          return value ? `${verse.number}. ${value}` : '';
+        })
+        .filter(Boolean)
+        .join('\n');
+
+      if (!church && !russian) {
+        return;
+      }
+
+      const title = `Псалом ${psalm.number}`;
+      const subtitle = `Псалтирь · Кафизма ${kathisma.number}`;
+      const description = [
+        psalm.title_russian,
+        psalm.title_church_slavonic,
+        psalm.description,
+      ]
+        .filter(Boolean)
+        .join(' ');
+
+      entries.push({
+        key: 'psalm:' + psalmId,
+        kind: 'library',
+        id: psalmId,
+        slug: '',
+        title,
+        subtitle,
+        preview: preview(russian || church || description),
+        text:
+          church && russian
+            ? church + '\n\nРусский перевод\n' + russian
+            : church || russian,
+        origin_data: {
+          source_type: 'psalter',
+          psalm_id: psalmId,
+          psalm_number: Number(psalm.number),
+          kathisma_number: Number(kathisma.number),
+        },
+        search: {
+          title: normalizeSearchText(
+            [title, psalm.title_russian, psalm.title_church_slavonic]
+              .filter(Boolean)
+              .join(' ')
+          ),
+          description: normalizeSearchText(description),
+          categories: normalizeSearchText('Псалтирь Кафизма ' + kathisma.number),
+          content: normalizeSearchText(church),
+          translation: normalizeSearchText(russian),
+        },
+      });
+    });
+  });
+
+  return entries;
+};
+
+const buildIndex = () => [
+  ...buildTextEntries(),
+  ...buildPsalmEntries(),
+];
 
 let cachedIndex = null;
 
