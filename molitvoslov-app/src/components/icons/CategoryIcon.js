@@ -11,10 +11,16 @@ const ICONS = {
   bible: require('../../../assets/icons/bible_icon.png'),
 };
 
-export const CategoryIcon = ({type}) => {
+export const CategoryIcon = ({type, size = 54}) => {
   const source = ICONS[type] || ICONS.canons;
 
-  return <Image source={source} style={styles.icon} resizeMode="contain" />;
+  return (
+    <Image
+      source={source}
+      style={[styles.icon, {width: size, height: size}]}
+      resizeMode="contain"
+    />
+  );
 };
 
 const styles = StyleSheet.create({
