@@ -690,6 +690,62 @@ const textFromObject = (object, language) => {
   ).trim();
 };
 
+
+const psalmLanguageText = (psalm, language) => {
+  const field = language === 'russian' ? 'russian' : 'church_slavonic';
+
+  return (psalm?.verses || [])
+    .map((verse) => {
+      const value = String(verse?.[field] || '').trim();
+
+      return value ? `${verse.number}. ${value}` : '';
+    })
+    .filter(Boolean)
+    .join('\n');
+};
+
+const fullPsalmText = (psalm, language) => {
+  if (!psalm) {
+    return '';
+  }
+
+  if (language === 'russian') {
+    return psalmLanguageText(psalm, 'russian');
+  }
+
+  if (language === 'church') {
+    return psalmLanguageText(psalm, 'church');
+  }
+
+  const church = psalmLanguageText(psalm, 'church');
+  const russian = psalmLanguageText(psalm, 'russian');
+
+  if (church && russian) {
+    return `${church}\n\nРусский перевод\n${russian}`;
+  }
+
+  return church || russian;
+};
+
+const combineChurchAndRussian = (church, russian, language) => {
+  const churchText = String(church || '').trim();
+  const russianText = String(russian || '').trim();
+
+  if (language === 'russian') {
+    return russianText || churchText;
+  }
+
+  if (language === 'church') {
+    return churchText || russianText;
+  }
+
+  if (churchText && russianText) {
+    return `${churchText}\n\nРусский перевод\n${russianText}`;
+  }
+
+  return churchText || russianText;
+};
+
 const fullTextFromSavedItem = async (item) => {
   const metadata = item?.metadata || {};
   const language = metadata.language;
@@ -726,6 +782,64 @@ const fullTextFromSavedItem = async (item) => {
         item.text ||
         ''
       );
+    }
+
+    if (item.source_type === 'psalter' && metadata.kathisma_number) {
+      const response = await contentApi.get(
+        `kathismas/${metadata.kathisma_number}/`
+      );
+      const kathisma = response.data;
+
+      if (item.save_type === 'kathisma' || item.anchor_type === 'kathisma') {
+        const psalmsText = (kathisma?.psalms || [])
+          .map((psalm) => {
+            const body = fullPsalmText(psalm, language);
+
+            return body ? `Псалом ${psalm.number}\n${body}` : '';
+          })
+          .filter(Boolean)
+          .join('\n\n');
+
+        const prayersAfter = combineChurchAndRussian(
+          kathisma?.prayers_after,
+          kathisma?.prayers_after_russian,
+          language
+        );
+
+        return [psalmsText, prayersAfter]
+          .filter(Boolean)
+          .join('\n\n') || item.text || '';
+      }
+
+      if (
+        item.save_type === 'psalm' ||
+        item.anchor_type === 'psalm'
+      ) {
+        const psalmId = Number(metadata.psalm_id || item.anchor_id);
+        const psalm = (kathisma?.psalms || []).find(
+          (row) => Number(row?.id) === psalmId
+        );
+
+        return fullPsalmText(psalm, language) || item.text || '';
+      }
+
+      if (item.anchor_type === 'kathisma_prayers_after') {
+        return (
+          combineChurchAndRussian(
+            kathisma?.prayers_after,
+            kathisma?.prayers_after_russian,
+            language
+          ) ||
+          item.text ||
+          ''
+        );
+      }
+
+      /*
+       * Для слова / предложения / абзаца / произвольного выделения
+       * не разворачиваем сохранение до целого псалма.
+       */
+      return String(item.text || '').trim();
     }
 
     if (item.source_type === 'akathist' && metadata.slug) {
