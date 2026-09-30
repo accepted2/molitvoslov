@@ -1179,6 +1179,115 @@ class MemorialPhoto(models.Model):
         verbose_name_plural = "Фото помянника"
 
 
+
+
+# =========================================================
+# ЛИЧНЫЙ МОЛИТВОСЛОВ
+# =========================================================
+
+
+class PersonalPrayerBook(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="personal_prayer_books",
+    )
+    sync_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    title = models.CharField(max_length=160, default="Мой молитвослов")
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(default=timezone.now)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-updated_at", "-id"]
+        verbose_name = "Личный молитвослов"
+        verbose_name_plural = "Личные молитвословы"
+
+    def __str__(self):
+        return f"{self.user}: {self.title}"
+
+
+class PersonalPrayer(models.Model):
+    ORIGIN_CHOICES = [
+        ("custom", "Добавлено пользователем"),
+        ("saved", "Из сохранённого"),
+        ("library", "Из библиотеки приложения"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="personal_prayers",
+    )
+    sync_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    title = models.CharField(max_length=255)
+    text = models.TextField(blank=True)
+    origin_type = models.CharField(max_length=20, choices=ORIGIN_CHOICES, default="custom")
+    origin_data = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(default=timezone.now)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-updated_at", "-id"]
+        verbose_name = "Личная молитва"
+        verbose_name_plural = "Личные молитвы"
+
+    def __str__(self):
+        return f"{self.user}: {self.title}"
+
+
+class PersonalPrayerBookItem(models.Model):
+    book = models.ForeignKey(
+        PersonalPrayerBook,
+        on_delete=models.CASCADE,
+        related_name="items",
+    )
+    prayer = models.ForeignKey(
+        PersonalPrayer,
+        on_delete=models.CASCADE,
+        related_name="book_items",
+    )
+    sync_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(default=timezone.now)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["order", "created_at", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["book", "prayer"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="unique_active_personal_prayer_in_book",
+            )
+        ]
+        verbose_name = "Молитва в личном молитвослове"
+        verbose_name_plural = "Молитвы в личных молитвословах"
+
+
+class PersonalPrayerPhoto(models.Model):
+    prayer = models.ForeignKey(
+        PersonalPrayer,
+        on_delete=models.CASCADE,
+        related_name="photos",
+    )
+    sync_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    storage_path = models.CharField(max_length=500, unique=True)
+    original_name = models.CharField(max_length=255, blank=True)
+    content_type = models.CharField(max_length=100, blank=True)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(default=timezone.now)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["order", "created_at", "id"]
+        verbose_name = "Фото личной молитвы"
+        verbose_name_plural = "Фото личных молитв"
+
 # =========================================================
 # БИБЛИЯ
 # =========================================================
