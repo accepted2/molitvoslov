@@ -23,6 +23,10 @@ from .views import (
     SavedItemViewSet,
     MemorialBookViewSet,
     MemorialPhotoViewSet,
+    PersonalPrayerBookViewSet,
+    PersonalPrayerViewSet,
+    PersonalPrayerBookItemViewSet,
+    PersonalPrayerPhotoViewSet,
 )
 
 from .auth_views import (
@@ -67,6 +71,11 @@ router.register("reading-progress", ReadingProgressViewSet, basename="reading-pr
 router.register("memorial-books", MemorialBookViewSet, basename="memorial-books")
 
 router.register("memorial-photos", MemorialPhotoViewSet, basename="memorial-photos")
+
+router.register("personal-prayer-books", PersonalPrayerBookViewSet, basename="personal-prayer-books")
+router.register("personal-prayers", PersonalPrayerViewSet, basename="personal-prayers")
+router.register("personal-prayer-book-items", PersonalPrayerBookItemViewSet, basename="personal-prayer-book-items")
+router.register("personal-prayer-photos", PersonalPrayerPhotoViewSet, basename="personal-prayer-photos")
 
 urlpatterns = [
     path(
