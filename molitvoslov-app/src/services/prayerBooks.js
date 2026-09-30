@@ -1213,7 +1213,10 @@ const pullAll = async (db, user) => {
 const runSync = async () => {
   const user = await getCachedBackendUser();
   if (!user?.id) {
-    return;
+    return {
+      success: false,
+      reason: 'no-user',
+    };
   }
 
   const db = await getDatabase();
@@ -1233,9 +1236,11 @@ const runSync = async () => {
     errors.push(error);
   }
 
-  if (errors.length) {
-    throw errors[0];
-  }
+  return {
+    success: errors.length === 0,
+    errors,
+    error: errors[0] || null,
+  };
 };
 
 export const syncPrayerBooks = async () => {
