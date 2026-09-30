@@ -124,7 +124,7 @@ const escapeRegExp = (value) =>
 
 const romanToNumber = (value) => {
   const source = String(value || '').toUpperCase();
-  const values = {I: 1, V: 5, X: 10, L: 50};
+  const values = {I: 1, V: 5, X: 10, L: 50, C: 100};
   let total = 0;
   let previous = 0;
 
@@ -154,6 +154,65 @@ const matchesBookAlias = (normalized, alias) => {
   return pattern.test(normalized);
 };
 
+const parseVerseRange = (title) => {
+  const source = String(title || '');
+
+  const colon = source.match(
+    /(\d+)\s*[:.]\s*(\d+)\s*(?:[-–—]\s*(?:(\d+)\s*[:.]\s*)?(\d+))?/
+  );
+
+  if (colon) {
+    return {
+      startChapter: Number(colon[1]),
+      startVerse: Number(colon[2]),
+      endChapter: colon[3] ? Number(colon[3]) : Number(colon[1]),
+      endVerse: colon[4] ? Number(colon[4]) : Number(colon[2]),
+    };
+  }
+
+  const romanRange = source.match(
+    /\b([IVXLCDM]{1,8})\s*[,.:]\s*(\d+)\s*(?:[-–—]\s*(?:([IVXLCDM]{1,8})\s*[,.:]\s*)?(\d+))?/i
+  );
+
+  if (romanRange) {
+    const startChapter = romanToNumber(romanRange[1]);
+
+    return {
+      startChapter,
+      startVerse: Number(romanRange[2]),
+      endChapter: romanRange[3]
+        ? romanToNumber(romanRange[3])
+        : startChapter,
+      endVerse: romanRange[4]
+        ? Number(romanRange[4])
+        : Number(romanRange[2]),
+    };
+  }
+
+  const afterLectionary = source
+    .replace(/\b\d+\s*зач\.?/gi, ' ')
+    .replace(/\s+/g, ' ');
+
+  const commaRange = afterLectionary.match(
+    /(\d+)\s*,\s*(\d+)\s*(?:[-–—]\s*(?:(\d+)\s*,\s*)?(\d+))?/
+  );
+
+  if (commaRange) {
+    return {
+      startChapter: Number(commaRange[1]),
+      startVerse: Number(commaRange[2]),
+      endChapter: commaRange[3]
+        ? Number(commaRange[3])
+        : Number(commaRange[1]),
+      endVerse: commaRange[4]
+        ? Number(commaRange[4])
+        : Number(commaRange[2]),
+    };
+  }
+
+  return null;
+};
+
 export const resolveBibleReference = (title) => {
   if (!title) {
     return null;
@@ -170,46 +229,13 @@ export const resolveBibleReference = (title) => {
   }
 
   const book = findBookByCode(alias.code);
+  const range = parseVerseRange(title);
 
-  if (!book) {
+  if (!book || !range?.startChapter) {
     return null;
   }
 
-  let chapterNumber = null;
-  let verseNumber = null;
-
-  const colonMatch = String(title).match(/(\d+)\s*[:.]\s*(\d+)/);
-
-  if (colonMatch) {
-    chapterNumber = Number(colonMatch[1]);
-    verseNumber = Number(colonMatch[2]);
-  }
-
-  if (!chapterNumber) {
-    const romanMatch = String(title).match(
-      /(?:зач\.?[^IVXLCDM\d]*)?\b([IVXLCDM]{1,8})\b\s*[,.:]?\s*(\d+)?/i
-    );
-
-    if (romanMatch) {
-      chapterNumber = romanToNumber(romanMatch[1]);
-      verseNumber = romanMatch[2] ? Number(romanMatch[2]) : null;
-    }
-  }
-
-  if (!chapterNumber) {
-    const numbers = String(title).match(/\d+/g)?.map(Number) || [];
-
-    if (numbers.length >= 2) {
-      chapterNumber = numbers[numbers.length - 2];
-      verseNumber = numbers[numbers.length - 1];
-    }
-  }
-
-  if (!chapterNumber) {
-    return null;
-  }
-
-  const chapter = bibleContent.getChapter(book.id, chapterNumber);
+  const chapter = bibleContent.getChapter(book.id, range.startChapter);
 
   if (!chapter) {
     return null;
@@ -217,18 +243,86 @@ export const resolveBibleReference = (title) => {
 
   const verse =
     (chapter.verses || []).find(
-      (item) => Number(item.number) === Number(verseNumber)
+      (item) => Number(item.number) === Number(range.startVerse)
     ) ||
     chapter.verses?.[0] ||
     null;
+
+  if (!verse) {
+    return null;
+  }
 
   return {
     book,
     chapter,
     verse,
     chapterNumber: Number(chapter.number),
-    verseNumber: verse ? Number(verse.number) : null,
+    verseNumber: Number(verse.number),
+    startChapter: range.startChapter,
+    startVerse: range.startVerse,
+    endChapter: range.endChapter || range.startChapter,
+    endVerse: range.endVerse || range.startVerse,
   };
+};
+
+export const getBibleReadingText = (title) => {
+  const target = resolveBibleReference(title);
+
+  if (!target) {
+    return '';
+  }
+
+  const parts = [];
+  const startChapter = Number(target.startChapter);
+  const endChapter = Number(target.endChapter || startChapter);
+
+  if (endChapter < startChapter || endChapter - startChapter > 3) {
+    return '';
+  }
+
+  for (let chapterNumber = startChapter; chapterNumber <= endChapter; chapterNumber += 1) {
+    const chapter = bibleContent.getChapter(target.book.id, chapterNumber);
+
+    if (!chapter) {
+      continue;
+    }
+
+    const startVerse =
+      chapterNumber === startChapter
+        ? Number(target.startVerse)
+        : 1;
+
+    const lastVerseInChapter = Number(
+      chapter.verses?.[chapter.verses.length - 1]?.number || 0
+    );
+
+    const endVerse =
+      chapterNumber === endChapter
+        ? Number(target.endVerse)
+        : lastVerseInChapter;
+
+    const verses = (chapter.verses || []).filter(
+      (verse) =>
+        Number(verse.number) >= startVerse &&
+        Number(verse.number) <= endVerse
+    );
+
+    if (!verses.length) {
+      continue;
+    }
+
+    if (startChapter !== endChapter) {
+      parts.push(`Глава ${chapterNumber}`);
+    }
+
+    parts.push(
+      verses
+        .map((verse) => `${verse.number} ${String(verse.text || '').trim()}`)
+        .join('\n')
+    );
+  }
+
+  return parts.join('\n\n').trim();
 };
 
 export const openCalendarBibleReference = (navigation, title) => {
@@ -241,21 +335,19 @@ export const openCalendarBibleReference = (navigation, title) => {
   navigation.push('BibleChapter', {
     bookId: target.book.id,
     chapterNumber: target.chapterNumber,
-    focusTarget: target.verse
-      ? {
-          save_type: 'verse',
-          anchor_type: 'bible_verse',
-          anchor_id: Number(target.verse.id),
-          start_offset: null,
-          end_offset: null,
-          metadata: {
-            book_id: Number(target.book.id),
-            book_slug: target.book.slug,
-            chapter_number: target.chapterNumber,
-            verse_number: target.verseNumber,
-          },
-        }
-      : null,
+    focusTarget: {
+      save_type: 'verse',
+      anchor_type: 'bible_verse',
+      anchor_id: Number(target.verse.id),
+      start_offset: null,
+      end_offset: null,
+      metadata: {
+        book_id: Number(target.book.id),
+        book_slug: target.book.slug,
+        chapter_number: target.chapterNumber,
+        verse_number: target.verseNumber,
+      },
+    },
   });
 
   return true;
