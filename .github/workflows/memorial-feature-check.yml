@@ -68,4 +68,4 @@ jobs:
 
       - name: Run Django API tests
         working-directory: molitvoslov-backend
-        run: python manage.py test api.tests
+        run: python manage.py test api
