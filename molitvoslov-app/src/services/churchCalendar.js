@@ -22,7 +22,10 @@ export const getCalendarDay = async (value = new Date(), {force = false} = {}) =
     return dayCache.get(key);
   }
 
-  const response = await api.get('calendar/day/', {params: {date: key}});
+  const response = await api.get('calendar/day/', {
+    params: {date: key},
+    timeout: 30000,
+  });
   dayCache.set(key, response.data);
   return response.data;
 };
@@ -40,6 +43,7 @@ export const getCalendarMonth = async (
 
   const response = await api.get('calendar/month/', {
     params: {year, month},
+    timeout: 30000,
   });
 
   monthCache.set(key, response.data);
@@ -121,7 +125,12 @@ export const resolveBibleReference = (title) => {
   const normalized = normalizeReference(title);
 
   const alias = BOOK_ALIASES.find((candidate) =>
+    candidate.aliases.some((item) => {
+      const escaped = item.replace(/[.*+?^$()|[\]\\]/g, '\\  const alias = BOOK_ALIASES.find((candidate) =>
     candidate.aliases.some((item) => normalized.includes(item))
+  );');
+      return new RegExp(`(^|\\s)${escaped}(?=\\s|$)`, 'i').test(normalized);
+    })
   );
 
   if (!alias) {
