@@ -76,29 +76,15 @@ const buildCells = (year, month) => {
   });
 };
 
-const SoftChevron = ({expanded, light = true}) => (
-  <View style={[styles.chevronBox, light && styles.chevronBoxLight]}>
-    <View
-      style={[
-        styles.chevronLine,
-        light ? styles.chevronLineLight : styles.chevronLineDark,
-        styles.chevronLineLeft,
-        {
-          transform: [{rotate: expanded ? '-28deg' : '28deg'}],
-        },
-      ]}
-    />
-    <View
-      style={[
-        styles.chevronLine,
-        light ? styles.chevronLineLight : styles.chevronLineDark,
-        styles.chevronLineRight,
-        {
-          transform: [{rotate: expanded ? '28deg' : '-28deg'}],
-        },
-      ]}
-    />
-  </View>
+const SoftChevron = ({expanded}) => (
+  <Text
+    style={[
+      styles.readingArrow,
+      expanded && styles.readingArrowExpanded,
+    ]}
+  >
+    ›
+  </Text>
 );
 
 const displayTitle = (feast, copy) =>
@@ -996,37 +982,6 @@ const styles = StyleSheet.create({
   textBlockParagraphLast: {
     marginBottom: 0,
   },
-  chevronBox: {
-    position: 'relative',
-    width: 42,
-    height: 34,
-    marginLeft: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 17,
-  },
-  chevronBoxLight: {
-    backgroundColor: 'rgba(255,244,222,0.42)',
-  },
-  chevronLine: {
-    position: 'absolute',
-    top: 16,
-    width: 14,
-    height: 2,
-    borderRadius: 2,
-  },
-  chevronLineLeft: {
-    left: 8,
-  },
-  chevronLineRight: {
-    right: 8,
-  },
-  chevronLineLight: {
-    backgroundColor: '#8A5B31',
-  },
-  chevronLineDark: {
-    backgroundColor: '#8A5B31',
-  },
   readingsSection: {
     marginTop: 16,
   },
@@ -1089,6 +1044,9 @@ const styles = StyleSheet.create({
     marginLeft: 7,
     color: '#8B5B30',
     fontSize: 24,
+  },
+  readingArrowExpanded: {
+    transform: [{rotate: '90deg'}],
   },
   readingExpand: {
     minHeight: 42,

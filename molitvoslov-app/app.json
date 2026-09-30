@@ -2,7 +2,7 @@
   "expo": {
     "name": "Молитвослов",
     "slug": "molitvoslov",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/branding/app-icon.png",
     "userInterfaceStyle": "light",
@@ -16,7 +16,7 @@
         "foregroundImage": "./assets/branding/app-icon.png"
       },
       "package": "com.accepted2.molitvoslov",
-      "versionCode": 7
+      "versionCode": 8
     },
     "web": {
       "favicon": "./assets/branding/app-icon.png"
@@ -52,8 +52,8 @@
         "react-native-android-widget",
         {
           "fonts": [
-        "./assets/fonts/Ponomar-Regular.ttf"
-      ],
+            "./assets/fonts/Ponomar-Regular.ttf"
+          ],
           "widgets": [
             {
               "name": "QuoteOfDay",
@@ -83,10 +83,7 @@
       ],
       "expo-font"
     ],
-    "androidNavigationBar": {
-      "backgroundColor": "#FFF4DE",
-      "barStyle": "dark-content"
-    },
+
     "owner": "anatoliy1",
     "extra": {
       "eas": {
