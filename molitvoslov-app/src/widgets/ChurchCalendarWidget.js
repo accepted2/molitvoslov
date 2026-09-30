@@ -139,7 +139,7 @@ export const ChurchCalendarWidget = ({
           height: 'match_parent',
           flexDirection: 'row',
           padding: outerPadding,
-          gap,
+          flexGap: gap,
           backgroundColor: '#F6E3C3',
           borderRadius: 22,
           borderWidth: 1,
