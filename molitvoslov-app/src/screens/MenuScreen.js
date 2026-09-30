@@ -3,6 +3,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   ImageBackground,
   Pressable,
   ScrollView,
@@ -26,6 +27,13 @@ import {contentApi as api} from '../services/contentApi';
 import {bibleContent} from '../services/bibleContent';
 import {deleteReadingProgress, getReadingProgress} from '../services/readingProgress';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
+import {
+  formatFast,
+  getCalendarDay,
+  openCalendarBibleReference,
+  resolveBibleReference,
+  toCalendarDate,
+} from '../services/churchCalendar';
 import {colors, spacing} from '../theme';
 
 const CATEGORY_ICONS = {
@@ -270,6 +278,8 @@ export const MenuScreen = ({navigation}) => {
   const [loading, setLoading] = useState(true);
   const [dailyQuote, setDailyQuote] = useState(null);
   const [savedDailyQuote, setSavedDailyQuote] = useState(null);
+  const [calendarToday, setCalendarToday] = useState(null);
+  const [calendarLoading, setCalendarLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const insets = useSafeAreaInsets();
@@ -324,6 +334,18 @@ export const MenuScreen = ({navigation}) => {
     }
   }, []);
 
+  const loadCalendarToday = useCallback(async () => {
+    try {
+      setCalendarLoading(true);
+      const day = await getCalendarDay(new Date());
+      setCalendarToday(day);
+    } catch (err) {
+      console.log('Ошибка загрузки церковного календаря:', err?.message || err);
+    } finally {
+      setCalendarLoading(false);
+    }
+  }, []);
+
   const loadProgress = useCallback(async () => {
     try {
       const progressList = await getReadingProgress();
@@ -354,7 +376,7 @@ export const MenuScreen = ({navigation}) => {
       try {
         setLoading(true);
 
-        await Promise.all([loadLibrary(), loadProgress()]);
+        await Promise.all([loadLibrary(), loadProgress(), loadCalendarToday()]);
 
         await updateQuoteWidget();
       } finally {
@@ -363,11 +385,12 @@ export const MenuScreen = ({navigation}) => {
     };
 
     load();
-  }, [loadLibrary, loadProgress, updateQuoteWidget]);
+  }, [loadLibrary, loadProgress, loadCalendarToday, updateQuoteWidget]);
 
   useFocusEffect(
     useCallback(() => {
       loadProgress();
+      loadCalendarToday();
 
       if (dailyQuote?.id) {
         getSavedItems({
@@ -380,7 +403,7 @@ export const MenuScreen = ({navigation}) => {
           .then((saved) => setSavedDailyQuote(saved[0] || null))
           .catch((err) => console.log('Ошибка загрузки сохранённой цитаты:', err));
       }
-    }, [loadProgress, dailyQuote?.id,updateQuoteWidget])
+    }, [loadProgress, loadCalendarToday, dailyQuote?.id, updateQuoteWidget])
   );
 
   const rootCategories = useMemo(
@@ -861,7 +884,11 @@ export const MenuScreen = ({navigation}) => {
 
                   <Pressable
                     hitSlop={8}
-                    onPress={() => showPlaceholder('Церковный календарь')}
+                    onPress={() =>
+                      navigation.navigate('ChurchCalendar', {
+                        date: toCalendarDate(new Date()),
+                      })
+                    }
                     style={({pressed}) => [
                       styles.calendarOpenButton,
                       pressed && styles.pressed,
@@ -880,57 +907,129 @@ export const MenuScreen = ({navigation}) => {
 
                     <View style={styles.calendarDivider} />
 
-                    <View style={styles.calendarFeastRow}>
-                      <View style={styles.calendarSaintPlaceholder}>
-                        <Text style={styles.calendarSaintCross}>☦</Text>
-                      </View>
+                    <Pressable
+                      onPress={() =>
+                        navigation.navigate('ChurchCalendar', {
+                          date: toCalendarDate(new Date()),
+                        })
+                      }
+                      style={({pressed}) => [
+                        styles.calendarFeastRow,
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      {calendarToday?.main_feast?.icon_url ? (
+                        <Image
+                          source={{uri: calendarToday.main_feast.icon_url}}
+                          style={styles.calendarSaintImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={styles.calendarSaintPlaceholder}>
+                          <Text style={styles.calendarSaintCross}>☦</Text>
+                        </View>
+                      )}
 
                       <View style={styles.calendarFeastTextWrap}>
-                        <Text style={styles.calendarFeastTitle}>Память святых дня</Text>
-                        <Text style={styles.calendarFeastSubtitle}>
-                          Праздники и чтения
+                        <Text style={styles.calendarFeastTitle} numberOfLines={3}>
+                          {calendarToday?.main_feast?.short_title ||
+                            calendarToday?.main_feast?.title ||
+                            (calendarLoading ? 'Загружаем память дня…' : 'Память святых дня')}
                         </Text>
+
+                        {!!calendarToday?.main_feast && (
+                          <Text style={styles.calendarFeastSubtitle}>
+                            {calendarToday.main_feast.celebration_type === 'great'
+                              ? 'Великий праздник'
+                              : 'Память дня'}
+                          </Text>
+                        )}
                       </View>
-                    </View>
+                    </Pressable>
 
                     <View style={styles.calendarMetaRow}>
                       <Text style={styles.calendarMetaIcon}>◇</Text>
-                      <Text style={styles.calendarMetaText}>Пост: по календарю</Text>
+                      <Text style={styles.calendarMetaText} numberOfLines={2}>
+                        {formatFast(calendarToday) || 'Пост: нет данных'}
+                      </Text>
                     </View>
 
-                    <View style={styles.calendarMetaRow}>
-                      <Text style={styles.calendarMetaIcon}>❧</Text>
-                      <Text style={styles.calendarMetaText}>Ближайший праздник</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.miniCalendar}>
-                    <View style={styles.miniCalendarHeader}>
+                    {!!calendarToday?.gospel_title && (
                       <Pressable
-                        hitSlop={6}
-                        onPress={() => showPlaceholder('Календарь')}
+                        disabled={!resolveBibleReference(calendarToday.gospel_title)}
+                        onPress={() =>
+                          openCalendarBibleReference(
+                            navigation,
+                            calendarToday.gospel_title
+                          )
+                        }
                         style={({pressed}) => [
-                          styles.miniCalendarArrowButton,
+                          styles.calendarMetaRow,
                           pressed && styles.pressed,
                         ]}
                       >
-                        <Text style={styles.miniCalendarArrow}>‹</Text>
+                        <Text style={styles.calendarMetaIcon}>✠</Text>
+                        <Text
+                          style={[
+                            styles.calendarMetaText,
+                            !!resolveBibleReference(calendarToday.gospel_title) &&
+                              styles.calendarBibleLink,
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {calendarToday.gospel_title}
+                        </Text>
                       </Pressable>
+                    )}
+
+                    {!!calendarToday?.apostolic_title && (
+                      <Pressable
+                        disabled={!resolveBibleReference(calendarToday.apostolic_title)}
+                        onPress={() =>
+                          openCalendarBibleReference(
+                            navigation,
+                            calendarToday.apostolic_title
+                          )
+                        }
+                        style={({pressed}) => [
+                          styles.calendarMetaRow,
+                          pressed && styles.pressed,
+                        ]}
+                      >
+                        <Text style={styles.calendarMetaIcon}>✦</Text>
+                        <Text
+                          style={[
+                            styles.calendarMetaText,
+                            !!resolveBibleReference(calendarToday.apostolic_title) &&
+                              styles.calendarBibleLink,
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {calendarToday.apostolic_title}
+                        </Text>
+                      </Pressable>
+                    )}
+                  </View>
+
+                  <Pressable
+                    onPress={() =>
+                      navigation.navigate('ChurchCalendar', {
+                        date: toCalendarDate(new Date()),
+                      })
+                    }
+                    style={({pressed}) => [
+                      styles.miniCalendar,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <View style={styles.miniCalendarHeader}>
+                      <Text style={styles.miniCalendarArrow}>‹</Text>
 
                       <Text style={styles.miniCalendarMonth} numberOfLines={1}>
                         {calendarSnapshot.monthTitle}
                       </Text>
 
-                      <Pressable
-                        hitSlop={6}
-                        onPress={() => showPlaceholder('Календарь')}
-                        style={({pressed}) => [
-                          styles.miniCalendarArrowButton,
-                          pressed && styles.pressed,
-                        ]}
-                      >
-                        <Text style={styles.miniCalendarArrow}>›</Text>
-                      </Pressable>
+                      <Text style={styles.miniCalendarArrow}>›</Text>
                     </View>
 
                     <View style={styles.miniCalendarWeekdays}>
@@ -979,10 +1078,9 @@ export const MenuScreen = ({navigation}) => {
                         );
                       })}
                     </View>
-                  </View>
+                  </Pressable>
                 </View>
               </View>
-
               <View style={styles.readingCard}>
                 <View style={styles.readingHeader}>
                   <Pressable
@@ -1612,6 +1710,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+  calendarSaintImage: {
+    width: 48,
+    height: 52,
+    borderRadius: 10,
+    backgroundColor: '#F0D6A5',
+  },
+
   calendarSaintPlaceholder: {
     width: 48,
     height: 52,
@@ -1673,6 +1778,12 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
     fontSize: 10,
     lineHeight: 13,
+  },
+
+  calendarBibleLink: {
+    color: '#8E5D32',
+    textDecorationLine: 'underline',
+    textDecorationColor: 'rgba(142,93,50,0.42)',
   },
 
   miniCalendar: {
