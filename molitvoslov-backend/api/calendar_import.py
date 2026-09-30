@@ -278,6 +278,10 @@ def _month_has_language(year, month, language):
     if rows.count() < expected:
         return False
 
+    if language == "ru":
+        # Данные, импортированные до появления двуязычности, уже русские.
+        return True
+
     return all(
         language in set((row.source_payload or {}).get("imported_languages") or [])
         for row in rows
@@ -323,9 +327,11 @@ def sync_month(year, month, languages=("ru", "uk")):
 def ensure_day(target_date, language="ru"):
     day = CalendarDay.objects.filter(date_gregorian=target_date).first()
 
-    if day and language in set(
+    imported_languages = set(
         (day.source_payload or {}).get("imported_languages") or []
-    ):
+    ) if day else set()
+
+    if day and (language == "ru" or language in imported_languages):
         return day
 
     try:
