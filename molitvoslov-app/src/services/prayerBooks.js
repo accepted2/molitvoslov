@@ -590,6 +590,61 @@ export const addPrayerToBook = async (bookSyncId, prayerSyncId) => {
   return getPrayerBook(bookSyncId);
 };
 
+export const movePrayerInBook = async (bookSyncId, itemSyncId, direction) => {
+  const db = await getDatabase();
+  const {user} = await currentOwner();
+  const owner = ownerWhere(user);
+
+  const items = await db.getAllAsync(
+    `
+      SELECT *
+      FROM personal_prayer_book_items
+      WHERE book_sync_id = ?
+      AND ${owner.clause}
+      AND deleted_at IS NULL
+      ORDER BY sort_order ASC, created_at ASC, id ASC
+    `,
+    [bookSyncId, ...owner.values]
+  );
+
+  const index = items.findIndex((item) => item.sync_id === itemSyncId);
+  const targetIndex = index + Number(direction || 0);
+
+  if (index < 0 || targetIndex < 0 || targetIndex >= items.length) {
+    return getPrayerBook(bookSyncId);
+  }
+
+  const current = items[index];
+  const target = items[targetIndex];
+  const now = new Date().toISOString();
+  const syncStatus = user?.id ? 'pending' : 'local';
+
+  await db.withTransactionAsync(async () => {
+    await db.runAsync(
+      `
+        UPDATE personal_prayer_book_items
+        SET sort_order = ?, updated_at = ?, sync_status = ?
+        WHERE id = ?
+      `,
+      [target.sort_order, now, syncStatus, current.id]
+    );
+    await db.runAsync(
+      `
+        UPDATE personal_prayer_book_items
+        SET sort_order = ?, updated_at = ?, sync_status = ?
+        WHERE id = ?
+      `,
+      [current.sort_order, now, syncStatus, target.id]
+    );
+  });
+
+  if (user?.id) {
+    syncPrayerBooks().catch(() => {});
+  }
+
+  return getPrayerBook(bookSyncId);
+};
+
 export const removePrayerFromBook = async (itemSyncId) => {
   const db = await getDatabase();
   const {user} = await currentOwner();

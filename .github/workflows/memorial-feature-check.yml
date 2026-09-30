@@ -1,4 +1,4 @@
-name: Memorial feature checks
+name: Feature checks
 
 on:
   push:

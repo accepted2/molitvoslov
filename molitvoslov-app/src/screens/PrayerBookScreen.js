@@ -20,6 +20,7 @@ import {
   getPersonalPrayers,
   getPrayerBook,
   importSavedItemToBook,
+  movePrayerInBook,
   removePrayerFromBook,
 } from '../services/prayerBooks';
 import {getSavedItems} from '../services/savedItems';
@@ -156,6 +157,15 @@ export const PrayerBookScreen = ({route, navigation}) => {
       Alert.alert('Не удалось добавить молитву', error.message);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const move = async (item, direction) => {
+    try {
+      const next = await movePrayerInBook(bookSyncId, item.sync_id, direction);
+      setBook(next);
+    } catch (error) {
+      Alert.alert('Не удалось изменить порядок', error.message);
     }
   };
 
@@ -299,9 +309,34 @@ export const PrayerBookScreen = ({route, navigation}) => {
                   </View>
                 </Pressable>
 
-                <Pressable hitSlop={8} onPress={() => remove(item)} style={styles.removeButton}>
-                  <Text style={styles.removeText}>×</Text>
-                </Pressable>
+                <View style={styles.orderButtons}>
+                  <Pressable
+                    disabled={index === 0}
+                    hitSlop={6}
+                    onPress={() => move(item, -1)}
+                    style={styles.orderButton}
+                  >
+                    <Text style={[styles.orderButtonText, index === 0 && styles.orderButtonDisabled]}>↑</Text>
+                  </Pressable>
+                  <Pressable
+                    disabled={index === (book.items?.length || 0) - 1}
+                    hitSlop={6}
+                    onPress={() => move(item, 1)}
+                    style={styles.orderButton}
+                  >
+                    <Text
+                      style={[
+                        styles.orderButtonText,
+                        index === (book.items?.length || 0) - 1 && styles.orderButtonDisabled,
+                      ]}
+                    >
+                      ↓
+                    </Text>
+                  </Pressable>
+                  <Pressable hitSlop={8} onPress={() => remove(item)} style={styles.removeButton}>
+                    <Text style={styles.removeText}>×</Text>
+                  </Pressable>
+                </View>
               </View>
             );
           }}
@@ -395,7 +430,11 @@ const styles = StyleSheet.create({
   cardTitle: {color: '#3E2A1D', fontFamily: 'serif', fontSize: 16, fontWeight: '700'},
   preview: {marginTop: 5, color: '#765238', fontFamily: 'serif', fontSize: 13, lineHeight: 19},
   photoMeta: {marginTop: 5, color: '#9A714C', fontSize: 11},
-  removeButton: {width: 38, alignItems: 'center', justifyContent: 'center'},
+  orderButtons: {width: 38, alignItems: 'center', justifyContent: 'center'},
+  orderButton: {width: 34, height: 27, alignItems: 'center', justifyContent: 'center'},
+  orderButtonText: {color: '#8A603A', fontSize: 16, fontWeight: '700'},
+  orderButtonDisabled: {opacity: 0.22},
+  removeButton: {width: 34, height: 29, alignItems: 'center', justifyContent: 'center'},
   removeText: {color: '#9A714C', fontSize: 25},
   emptyCard: {padding: 22, alignItems: 'center', borderRadius: 16, backgroundColor: 'rgba(255,244,222,0.94)'},
   emptyTitle: {color: colors.text, fontFamily: 'serif', fontSize: 17, fontWeight: '700'},
