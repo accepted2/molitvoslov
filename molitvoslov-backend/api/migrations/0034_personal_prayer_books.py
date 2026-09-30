@@ -269,7 +269,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="personalprayerbookitem",
             constraint=models.UniqueConstraint(
-                condition=models.Q(("deleted_at__isnull", True)),
+                condition=models.Q(deleted_at__isnull=True),
                 fields=("book", "prayer"),
                 name="unique_active_personal_prayer_in_book",
             ),
