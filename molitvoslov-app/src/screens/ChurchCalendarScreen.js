@@ -77,14 +77,14 @@ const buildCells = (year, month) => {
 };
 
 const SoftChevron = ({expanded, light = true}) => (
-  <View style={styles.chevronBox}>
+  <View style={[styles.chevronBox, light && styles.chevronBoxLight]}>
     <View
       style={[
         styles.chevronLine,
         light ? styles.chevronLineLight : styles.chevronLineDark,
         styles.chevronLineLeft,
         {
-          transform: [{rotate: expanded ? '-34deg' : '34deg'}],
+          transform: [{rotate: expanded ? '-28deg' : '28deg'}],
         },
       ]}
     />
@@ -94,7 +94,7 @@ const SoftChevron = ({expanded, light = true}) => (
         light ? styles.chevronLineLight : styles.chevronLineDark,
         styles.chevronLineRight,
         {
-          transform: [{rotate: expanded ? '34deg' : '-34deg'}],
+          transform: [{rotate: expanded ? '28deg' : '-28deg'}],
         },
       ]}
     />
@@ -103,6 +103,45 @@ const SoftChevron = ({expanded, light = true}) => (
 
 const displayTitle = (feast, copy) =>
   feast?.short_title || feast?.title || copy.saintMemory;
+
+const normalizeCalendarText = (value) =>
+  String(value || '')
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+const FormattedCalendarText = ({text}) => {
+  const normalized = normalizeCalendarText(text);
+
+  if (!normalized) {
+    return null;
+  }
+
+  const paragraphs = normalized
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+
+  return (
+    <View style={styles.textBlockContent}>
+      {paragraphs.map((paragraph, index) => (
+        <Text
+          key={`${index}-${paragraph.slice(0, 24)}`}
+          style={[
+            styles.textBlockParagraph,
+            index === paragraphs.length - 1 && styles.textBlockParagraphLast,
+          ]}
+          selectable
+        >
+          {paragraph}
+        </Text>
+      ))}
+    </View>
+  );
+};
 
 const ExpandableTextBlock = ({title, subtitle, text}) => {
   const [expanded, setExpanded] = useState(false);
@@ -123,11 +162,7 @@ const ExpandableTextBlock = ({title, subtitle, text}) => {
         <SoftChevron expanded={expanded} />
       </Pressable>
 
-      {expanded && (
-        <Text style={styles.textBlockContent} selectable>
-          {text}
-        </Text>
-      )}
+      {expanded && <FormattedCalendarText text={text} />}
     </View>
   );
 };
@@ -916,15 +951,16 @@ const styles = StyleSheet.create({
   },
   textBlock: {
     marginTop: 12,
-    borderRadius: 13,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#B98545',
-    backgroundColor: '#5A341D',
+    borderColor: '#D3B68B',
+    backgroundColor: '#EAD7B8',
     overflow: 'hidden',
   },
   textBlockHeader: {
-    minHeight: 54,
-    paddingHorizontal: 13,
+    minHeight: 56,
+    paddingLeft: 14,
+    paddingRight: 7,
     paddingVertical: 9,
     flexDirection: 'row',
     alignItems: 'center',
@@ -933,63 +969,73 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   textBlockTitle: {
-    color: '#F5E2B8',
+    color: '#5C3A24',
     fontFamily: 'serif',
     fontSize: 16,
     fontWeight: '700',
   },
   textBlockSubtitle: {
     marginTop: 2,
-    color: '#DCC7A4',
+    color: '#8A6547',
     fontSize: 11,
   },
   textBlockContent: {
-    paddingHorizontal: 15,
-    paddingTop: 14,
-    paddingBottom: 16,
-    color: '#3E2A1D',
+    paddingHorizontal: 16,
+    paddingTop: 15,
+    paddingBottom: 17,
     backgroundColor: '#FFF4DE',
+  },
+  textBlockParagraph: {
+    marginBottom: 12,
+    color: '#3E2A1D',
     fontFamily: 'serif',
     fontSize: 15,
     lineHeight: 25,
     textAlign: 'justify',
   },
+  textBlockParagraphLast: {
+    marginBottom: 0,
+  },
   chevronBox: {
     position: 'relative',
-    width: 38,
+    width: 42,
     height: 34,
     marginLeft: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 17,
+  },
+  chevronBoxLight: {
+    backgroundColor: 'rgba(255,244,222,0.42)',
   },
   chevronLine: {
     position: 'absolute',
     top: 16,
-    width: 11,
+    width: 14,
     height: 2,
     borderRadius: 2,
   },
   chevronLineLeft: {
-    left: 9,
+    left: 8,
   },
   chevronLineRight: {
-    right: 9,
+    right: 8,
   },
   chevronLineLight: {
-    backgroundColor: '#F2D79E',
+    backgroundColor: '#8A5B31',
   },
   chevronLineDark: {
-    backgroundColor: '#8B5B30',
+    backgroundColor: '#8A5B31',
   },
   readingsSection: {
     marginTop: 16,
   },
   readingCard: {
     marginTop: 9,
-    borderRadius: 13,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#B98545',
-    backgroundColor: '#5A341D',
+    borderColor: '#D3B68B',
+    backgroundColor: '#EAD7B8',
     overflow: 'hidden',
   },
   readingLink: {
@@ -1015,14 +1061,14 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   readingKind: {
-    color: '#E3C692',
+    color: '#8B5B30',
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.6,
   },
   readingTitle: {
     marginTop: 2,
-    color: '#FFF4DE',
+    color: '#4A3020',
     fontFamily: 'serif',
     fontSize: 14,
     lineHeight: 19,
@@ -1030,18 +1076,18 @@ const styles = StyleSheet.create({
   },
   readingHint: {
     marginTop: 3,
-    color: '#F0D9AD',
+    color: '#8B5B30',
     fontSize: 10,
     fontWeight: '700',
   },
   readingHintMuted: {
     marginTop: 3,
-    color: '#CDBA9C',
+    color: '#8A7563',
     fontSize: 10,
   },
   readingArrow: {
     marginLeft: 7,
-    color: '#F0D9AD',
+    color: '#8B5B30',
     fontSize: 24,
   },
   readingExpand: {
@@ -1052,11 +1098,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(244,220,168,0.20)',
-    backgroundColor: '#684229',
+    borderTopColor: 'rgba(123,79,36,0.16)',
+    backgroundColor: '#DFC59D',
   },
   readingExpandText: {
-    color: '#F5E2B8',
+    color: '#6C472B',
     fontSize: 11,
     fontWeight: '800',
   },
