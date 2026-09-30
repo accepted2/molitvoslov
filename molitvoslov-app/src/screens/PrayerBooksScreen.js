@@ -80,17 +80,24 @@ export const PrayerBooksScreen = ({navigation}) => {
             paddingBottom: 112 + insets.bottom,
           }}
           ListHeaderComponent={
-            <View style={styles.intro}>
-              <Text style={styles.introText}>
-                Собирайте свои молитвенные правила: добавляйте молитвы из сохранённого,
-                свои тексты и фотографии.
-              </Text>
+            <View>
+              <View style={styles.intro}>
+                <Text style={styles.introTitle}>Личные молитвенные сборники</Text>
+                <Text style={styles.introText}>
+                  Собирайте молитвы в свои правила: добавляйте полные тексты из избранного,
+                  находите молитвы в библиотеке, вставляйте свои тексты и фотографии.
+                </Text>
+              </View>
+
               <Pressable
                 onPress={() => setCreating(true)}
                 style={({pressed}) => [styles.createButton, pressed && styles.pressed]}
               >
-                <Text style={styles.createButtonText}>＋ Новый молитвослов</Text>
+                <Text style={styles.createIcon}>＋</Text>
+                <Text style={styles.createButtonText}>Новый молитвослов</Text>
               </Pressable>
+
+              {!!books.length && <Text style={styles.sectionLabel}>МОИ МОЛИТВОСЛОВЫ</Text>}
             </View>
           }
           ListEmptyComponent={
@@ -126,8 +133,9 @@ export const PrayerBooksScreen = ({navigation}) => {
           title="Мой молитвослов"
           navigation={navigation}
           topInset={insets.top}
+          showBack={false}
         />
-        <BottomNav navigation={navigation} active="favorites" />
+        <BottomNav navigation={navigation} active="prayerbooks" />
 
         <Modal
           visible={creating}
@@ -164,22 +172,54 @@ export const PrayerBooksScreen = ({navigation}) => {
 
 const styles = StyleSheet.create({
   screen: {flex: 1},
-  intro: {marginBottom: 14},
+  intro: {
+    marginBottom: 0,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(255, 244, 222, 0.90)',
+  },
+  introTitle: {
+    color: '#5C3822',
+    fontFamily: 'serif',
+    fontSize: 20,
+    lineHeight: 25,
+    fontWeight: '700',
+  },
   introText: {
-    color: colors.textSecondary,
+    marginTop: 7,
+    color: '#654731',
     fontFamily: 'serif',
     fontSize: 14,
     lineHeight: 21,
   },
   createButton: {
-    marginTop: 12,
-    minHeight: 44,
+    marginTop: 14,
+    minHeight: 52,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
-    backgroundColor: '#7A4F2D',
+    borderRadius: radius.md,
+    backgroundColor: '#6A4328',
   },
-  createButtonText: {color: '#FFF4DE', fontSize: 15, fontWeight: '700'},
+  createIcon: {
+    marginRight: 7,
+    color: '#FFF8EA',
+    fontSize: 24,
+    lineHeight: 26,
+    fontWeight: '300',
+  },
+  createButtonText: {color: '#FFF8EA', fontSize: 15, fontWeight: '700'},
+  sectionLabel: {
+    marginTop: 22,
+    marginBottom: 8,
+    marginLeft: 3,
+    color: '#74563F',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
   card: {
     minHeight: 72,
     marginBottom: 9,
