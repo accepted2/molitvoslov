@@ -10,10 +10,9 @@ import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
-import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getPrayerBook} from '../services/prayerBooks';
-import {colors, spacing} from '../theme';
+import {colors} from '../theme';
 
 export const PrayerBookReaderScreen = ({route, navigation}) => {
   const {bookSyncId} = route.params;
@@ -33,14 +32,13 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
   );
 
   return (
-    <AppBackground imageOpacity={0.36}>
+    <View style={styles.screen}>
       <StatusBar style="light" translucent backgroundColor="transparent" />
-      <View style={styles.screen}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
-            paddingTop: headerHeight + 22,
-            paddingHorizontal: spacing.md,
+            paddingTop: headerHeight + 14,
+            paddingHorizontal: 14,
             paddingBottom: 36 + insets.bottom,
           }}
         >
@@ -95,38 +93,41 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
           title={book?.title || 'Мой молитвослов'}
           navigation={navigation}
           topInset={insets.top}
+          showTitle={false}
         />
-      </View>
-    </AppBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  screen: {flex: 1},
+  screen: {flex: 1, backgroundColor: '#FFF4DE'},
   description: {
-    marginBottom: 20,
-    textAlign: 'center',
-    color: colors.textSecondary,
+    marginBottom: 18,
+    marginHorizontal: 4,
+    color: '#765238',
     fontFamily: 'serif',
     fontSize: 14,
     lineHeight: 21,
     fontStyle: 'italic',
   },
-  section: {marginBottom: 8},
+  section: {
+    marginBottom: 14,
+    paddingBottom: 14,
+  },
   title: {
-    marginBottom: 12,
+    marginBottom: 10,
     textAlign: 'center',
     color: '#7A4F2D',
     fontFamily: 'serif',
-    fontSize: 21,
-    lineHeight: 27,
+    fontSize: 19,
+    lineHeight: 25,
     fontWeight: '700',
   },
   text: {
     color: '#3E2A1D',
     fontFamily: 'serif',
-    fontSize: 18,
-    lineHeight: 29,
+    fontSize: 16,
+    lineHeight: 26,
     textAlign: 'justify',
   },
   photos: {marginTop: 14, gap: 10},
@@ -138,12 +139,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(234,215,184,0.50)',
   },
   separator: {
-    marginVertical: 24,
+    marginTop: 20,
+    marginBottom: 4,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  line: {flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(126,82,38,0.28)'},
+  line: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(123,79,36,0.20)',
+  },
   mark: {marginHorizontal: 9, color: '#A16E35', fontSize: 9},
   empty: {padding: 30, alignItems: 'center'},
-  emptyText: {color: colors.textSecondary},
+  emptyText: {color: '#765238'},
 });
