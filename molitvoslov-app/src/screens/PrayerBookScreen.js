@@ -862,6 +862,39 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
   },
+  searchFilters: {
+    marginBottom: 6,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  searchFilter: {
+    minHeight: 34,
+    paddingHorizontal: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: 'rgba(126,82,38,0.16)',
+    backgroundColor: 'rgba(255,249,237,0.72)',
+  },
+  searchFilterActive: {
+    borderColor: '#684229',
+    backgroundColor: '#684229',
+  },
+  searchFilterText: {
+    color: '#75543D',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  searchFilterTextActive: {
+    color: '#FFF4DE',
+  },
+  searchHighlight: {
+    color: '#684229',
+    backgroundColor: '#E8DCCB',
+    fontWeight: '800',
+  },
   resultCount: {
     paddingVertical: 8,
     color: '#7A5B44',
@@ -905,6 +938,10 @@ const styles = StyleSheet.create({
     color: '#5D3A24',
     backgroundColor: '#E5C79D',
   },
+  sourceBadgePsalter: {
+    color: '#5A4636',
+    backgroundColor: '#DED4C7',
+  },
   searchResultSource: {
     marginTop: 4,
     color: '#8B6A50',
@@ -913,10 +950,28 @@ const styles = StyleSheet.create({
   },
   searchResultPreview: {
     marginTop: 5,
+    paddingRight: 34,
     color: '#624633',
     fontFamily: 'serif',
     fontSize: 12,
     lineHeight: 18,
+  },
+  addSearchResultButton: {
+    position: 'absolute',
+    right: 10,
+    bottom: 10,
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 15,
+    backgroundColor: '#6A4328',
+  },
+  addSearchResultText: {
+    color: '#FFF4DE',
+    fontSize: 20,
+    lineHeight: 22,
+    fontWeight: '400',
   },
   pressed: {opacity: 0.65},
 });
