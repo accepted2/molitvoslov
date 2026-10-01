@@ -9,6 +9,8 @@ export const FixedSectionHeader = ({
   showBack = true,
   showTitle = true,
   minimal = false,
+  showMenu = false,
+  onMenuPress,
 }) => {
   const headerHeight = topInset + (minimal ? 46 : 56);
 
@@ -69,6 +71,21 @@ export const FixedSectionHeader = ({
             </View>
           </View>
         )}
+
+        {showMenu && (
+          <Pressable
+            hitSlop={12}
+            onPress={onMenuPress}
+            style={({pressed}) => [
+              styles.menuButton,
+              !showTitle && styles.menuButtonWithoutTitle,
+              minimal && styles.menuButtonMinimal,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={styles.menuText}>⋮</Text>
+          </Pressable>
+        )}
       </View>
     </View>
   );
@@ -88,9 +105,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
   },
+
   titleWrapRoot: {
     marginLeft: 8,
   },
+
   backButton: {
     width: 38,
     height: 44,
@@ -143,6 +162,29 @@ const styles = StyleSheet.create({
     marginHorizontal: 6,
     color: '#98622E',
     fontSize: 7,
+  },
+
+  menuButton: {
+    width: 38,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  menuButtonWithoutTitle: {
+    marginLeft: 'auto',
+  },
+
+  menuButtonMinimal: {
+    marginTop: -5,
+  },
+
+  menuText: {
+    marginTop: -3,
+    color: '#6F4727',
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '700',
   },
 
   pressed: {

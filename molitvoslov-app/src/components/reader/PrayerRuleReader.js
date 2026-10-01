@@ -2283,6 +2283,10 @@ const HTML_TEMPLATE = String.raw`
               text.translation ||
               '';
 
+            const traditionalText =
+              text.traditional_content ||
+              '';
+
             const viewMode =
               DATA.viewMode ||
               'both';
@@ -2292,13 +2296,20 @@ const HTML_TEMPLATE = String.raw`
                 'russian' &&
               russianText
                 ? 'russian'
-                : 'church';
+                : viewMode ===
+                      'traditional' &&
+                    traditionalText
+                  ? 'traditional'
+                  : 'church';
 
             const primaryText =
               primaryLanguage ===
                 'russian'
                 ? russianText
-                : churchText;
+                : primaryLanguage ===
+                    'traditional'
+                  ? traditionalText
+                  : churchText;
 
             const itemTitle =
               displayTitle ||

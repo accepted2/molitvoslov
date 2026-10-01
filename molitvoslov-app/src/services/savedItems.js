@@ -80,6 +80,7 @@ const SAVE_TYPE_NAMES = {
   canon: 'Канон',
   text: 'Текст',
   quote: 'Цитата',
+  bookmark: 'Закладка',
 };
 
 const parseMetadata = (value) => {

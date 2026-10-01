@@ -1,4 +1,4 @@
-import React, {useMemo, useRef} from 'react';
+import React, {forwardRef, useImperativeHandle, useMemo, useRef} from 'react';
 
 import {StyleSheet, View} from 'react-native';
 
@@ -12,19 +12,22 @@ import {deleteSavedItem, saveItem} from '../../services/savedItems';
 
 import {buildHtml, scriptSafeJson} from './selectableDocumentReader/buildHtml';
 
-export default function SelectableDocumentReader({
-  documentData,
-  savedProgress,
-  focusTarget,
-  topContentInset = 0,
-  bottomContentInset = 0,
-  onSaved,
-  onProgress,
-  onAction,
-  onMemorialOpen,
-  onViewModeChange,
-  onPageTurn,
-}) {
+const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
+  {
+    documentData,
+    savedProgress,
+    focusTarget,
+    topContentInset = 0,
+    bottomContentInset = 0,
+    onSaved,
+    onProgress,
+    onAction,
+    onMemorialOpen,
+    onViewModeChange,
+    onPageTurn,
+  },
+  ref
+) {
   const insets = useSafeAreaInsets();
 
   const webViewRef = useRef(null);
@@ -58,6 +61,22 @@ export default function SelectableDocumentReader({
   const inject = (script) => {
     webViewRef.current?.injectJavaScript(script + '; true;');
   };
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      goToProgress: (progress) => {
+        if (!progress) {
+          return;
+        }
+
+        inject(
+          'window.readerApi && window.readerApi.goToProgress(' + scriptSafeJson(progress) + ')'
+        );
+      },
+    }),
+    []
+  );
 
   const handleMessage = async (event) => {
     let message;
@@ -265,7 +284,9 @@ export default function SelectableDocumentReader({
       )}
     </View>
   );
-}
+});
+
+export default SelectableDocumentReader;
 
 const styles = StyleSheet.create({
   container: {
