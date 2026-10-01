@@ -107,6 +107,7 @@ class CalendarDaySerializer(serializers.ModelSerializer):
     is_today = serializers.SerializerMethodField()
     language = serializers.SerializerMethodField()
 
+    fast_type_code = serializers.SerializerMethodField()
     fast_type_title = serializers.SerializerMethodField()
     fast_name = serializers.SerializerMethodField()
     fast_description = serializers.SerializerMethodField()
@@ -191,13 +192,43 @@ class CalendarDaySerializer(serializers.ModelSerializer):
     def get_language(self, obj):
         return self._language()
 
+    def get_fast_type_code(self, obj):
+        if obj.fast_type:
+            return obj.fast_type.code
+
+        return obj.fast_type_code
+
+
     def get_fast_type_title(self, obj):
+        if obj.fast_type:
+            return _localized(
+                obj.fast_type,
+                "type_title",
+                self._language(),
+            )
+
         return self._get(obj, "fast_type_title")
 
+
     def get_fast_name(self, obj):
+        if obj.fast_type:
+            return _localized(
+                obj.fast_type,
+                "name",
+                self._language(),
+            )
+
         return self._get(obj, "fast_name")
 
+
     def get_fast_description(self, obj):
+        if obj.fast_type:
+            return _localized(
+                obj.fast_type,
+                "description",
+                self._language(),
+            )
+
         return self._get(obj, "fast_description")
 
     def get_summary(self, obj):

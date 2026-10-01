@@ -1410,12 +1410,22 @@ const pullAll = async (db, user) => {
 
 const runSync = async () => {
   const user = await getCachedBackendUser();
+  const token = await getApiToken();
+
   if (!user?.id) {
     return {
       success: false,
       reason: 'no-user',
     };
   }
+
+  if (!token) {
+    return {
+      success: false,
+      reason: 'no-auth',
+    };
+  }
+
 
   const db = await getDatabase();
   const errors = [];

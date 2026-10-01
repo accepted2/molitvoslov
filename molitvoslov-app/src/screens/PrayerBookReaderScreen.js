@@ -248,6 +248,32 @@ const PsalterPrayer = ({prayer}) => {
   );
 };
 
+const PrayerPhoto = ({photo}) => {
+  const [aspectRatio, setAspectRatio] = useState(0.7);
+
+  const handleLoad = (event) => {
+    const {width, height} = event.nativeEvent.source || {};
+
+    if (width && height) {
+      setAspectRatio(width / height);
+    }
+  };
+
+  return (
+    <Image
+      source={{uri: photo.uri}}
+      style={[
+        styles.photo,
+        {
+          aspectRatio,
+        },
+      ]}
+      resizeMode="contain"
+      onLoad={handleLoad}
+    />
+  );
+};
+
 export const PrayerBookReaderScreen = ({route, navigation}) => {
   const {bookSyncId} = route.params;
   const insets = useSafeAreaInsets();
@@ -304,11 +330,9 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
               {!!prayer.photos?.length && (
                 <View style={styles.photos}>
                   {prayer.photos.map((photo) => (
-                    <Image
+                    <PrayerPhoto
                       key={photo.sync_id}
-                      source={{uri: photo.uri}}
-                      style={styles.photo}
-                      resizeMode="contain"
+                      photo={photo}
                     />
                   ))}
                 </View>
@@ -467,7 +491,11 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     textAlign: 'justify',
   },
-  photos: {marginTop: 14, gap: 10},
+  photos: {
+    width: '100%',
+    borderRadius: 15,
+    backgroundColor: 'rgba(234,215,184,0.50)',
+  },
   photo: {
     width: '100%',
     minHeight: 220,

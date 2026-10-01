@@ -94,7 +94,6 @@ export const getCurrentBackendUser = async () => {
 
     if (response.status === 401 || response.status === 403) {
       await deleteApiToken();
-      await SecureStore.deleteItemAsync(API_USER_KEY);
 
       return null;
     }
@@ -170,7 +169,19 @@ export const logoutFromBackend = async () => {
      * из аккаунта всё равно должен сработать.
      */
   } finally {
+    /*
+     * Удаляем только авторизацию.
+     *
+     * Последнего локального пользователя
+     * сохраняем, чтобы после выхода:
+     *
+     * - помянники не исчезали;
+     * - молитвословы не исчезали;
+     * - избранное не исчезало;
+     * - прогресс продолжал сохраняться;
+     * - новые локальные изменения позже
+     *   синхронизировались после повторного входа.
+     */
     await SecureStore.deleteItemAsync(API_TOKEN_KEY);
-    await SecureStore.deleteItemAsync(API_USER_KEY);
   }
 };

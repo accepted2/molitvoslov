@@ -1,6 +1,12 @@
 import {getDatabase} from '../db/database';
 
-import {authenticatedFetch, getCachedBackendUser} from './backendAuth';
+import {
+  authenticatedFetch,
+  getApiToken,
+  getCachedBackendUser,
+} from './backendAuth';
+
+import {getOrCreateAnonymousLocalUser} from './localDataOwnership';
 
 let readingProgressSyncPromise = null;
 
@@ -335,11 +341,18 @@ const pullReadingProgress = async (db, user) => {
 
 const runReadingProgressSync = async () => {
   const user = await getCachedBackendUser();
+  const token = await getApiToken();
 
   if (!user?.id) {
     return {
       success: false,
       reason: 'no-user',
+    };
+  }
+  if (!token) {
+    return {
+      success: false,
+      reason: 'no-auth',
     };
   }
 
@@ -380,46 +393,74 @@ export const syncReadingProgress = async () => {
 export const getReadingProgress = async () => {
   const user = await getCachedBackendUser();
 
-  if (!user?.id) {
-    return [];
-  }
-
   const db = await getDatabase();
 
-  const rows = await db.getAllAsync(
-    `
-        SELECT
-          id,
+  let rows = [];
 
-          server_id,
-
-          source_type,
-          source_id,
-
-          anchor_type,
-          anchor_id,
-
-          offset,
-          progress_percent,
-
-          metadata,
-
-          updated_at,
-          deleted_at,
-
-          sync_status
-
-        FROM reading_progress
-
-        WHERE cloud_user_id = ?
-        AND deleted_at IS NULL
-
-        ORDER BY updated_at DESC
+  if (user?.id) {
+    rows = await db.getAllAsync(
+      `
+          SELECT
+              id,
+              server_id,
+              source_type,
+              source_id,
+              anchor_type,
+              anchor_id,
+              offset,
+              progress_percent,
+              metadata,
+              updated_at,
+              deleted_at,
+              sync_status
+          FROM reading_progress
+          WHERE cloud_user_id = ?
+            AND deleted_at IS NULL
+          ORDER BY updated_at DESC, id DESC
       `,
-    [user.id]
-  );
+      [user.id]
+    );
+  } else {
+    const guest = await getOrCreateAnonymousLocalUser(db);
 
-  return rows.map(prepareProgress);
+    rows = await db.getAllAsync(
+      `
+          SELECT
+              id,
+              server_id,
+              source_type,
+              source_id,
+              anchor_type,
+              anchor_id,
+              offset,
+              progress_percent,
+              metadata,
+              updated_at,
+              deleted_at,
+              sync_status
+          FROM reading_progress
+          WHERE cloud_user_id IS NULL
+            AND user_id = ?
+            AND deleted_at IS NULL
+          ORDER BY updated_at DESC, id DESC
+      `,
+      [guest.id]
+    );
+  }
+
+  return rows
+    .sort((left, right) => {
+      const timeDifference =
+        toTimestamp(right.updated_at) -
+        toTimestamp(left.updated_at);
+
+      if (timeDifference !== 0) {
+        return timeDifference;
+      }
+
+      return Number(right.id || 0) - Number(left.id || 0);
+    })
+    .map(prepareProgress);
 };
 
 export const saveReadingProgress = async ({
@@ -437,11 +478,23 @@ export const saveReadingProgress = async ({
 }) => {
   const user = await getCachedBackendUser();
 
-  if (!user?.id) {
-    return null;
-  }
-
   const db = await getDatabase();
+
+  let localUserId;
+  let cloudUserId;
+  let syncStatus;
+
+  if (user?.id) {
+    localUserId = -Math.abs(Number(user.id));
+    cloudUserId = user.id;
+    syncStatus = 'pending';
+  } else {
+    const guest = await getOrCreateAnonymousLocalUser(db);
+
+    localUserId = guest.id;
+    cloudUserId = null;
+    syncStatus = 'local';
+  }
 
   const updatedAt = new Date().toISOString();
 
@@ -451,13 +504,6 @@ export const saveReadingProgress = async ({
   );
 
   const normalizedMetadata = stringifyMetadata(metadata);
-
-  /*
-   * См. комментарий выше:
-   * отрицательный user_id отделяет
-   * Google-аккаунт от legacy local_users.
-   */
-  const localOwnerId = -Math.abs(Number(user.id));
 
   await db.runAsync(
     `
@@ -504,7 +550,7 @@ export const saveReadingProgress = async ({
             excluded.cloud_user_id,
 
           sync_status =
-            'pending',
+            excluded.sync_status,
 
           anchor_type =
             excluded.anchor_type,
@@ -528,10 +574,10 @@ export const saveReadingProgress = async ({
             NULL
       `,
     [
-      localOwnerId,
-      user.id,
+      localUserId,
+      cloudUserId,
 
-      'pending',
+      syncStatus,
 
       sourceType,
       sourceId,
@@ -550,16 +596,22 @@ export const saveReadingProgress = async ({
 
   const row = await db.getFirstAsync(
     `
-          SELECT *
-          FROM reading_progress
-          WHERE cloud_user_id = ?
+        SELECT *
+        FROM reading_progress
+        WHERE user_id = ?
           AND source_type = ?
           AND source_id = ?
-        `,
-    [user.id, sourceType, sourceId]
+    `,
+    [
+      localUserId,
+      sourceType,
+      sourceId,
+    ]
   );
 
-  syncReadingProgress().catch(() => {});
+  if (user?.id) {
+    syncReadingProgress().catch(() => {});
+  }
 
   return prepareProgress(row);
 };
@@ -570,27 +622,36 @@ export const deleteReadingProgress = async (progressId) => {
   }
 
   const user = await getCachedBackendUser();
+  const db = await getDatabase();
 
   if (!user?.id) {
+    const guest = await getOrCreateAnonymousLocalUser(db);
+
+    await db.runAsync(
+      `
+        DELETE FROM reading_progress
+        WHERE id = ?
+          AND cloud_user_id IS NULL
+          AND user_id = ?
+      `,
+      [progressId, guest.id]
+    );
+
     return;
   }
-
-  const db = await getDatabase();
 
   const now = new Date().toISOString();
 
   await db.runAsync(
     `
-        UPDATE reading_progress
-
-        SET
-          deleted_at = ?,
-          updated_at = ?,
-          sync_status = 'pending'
-
-        WHERE id = ?
+      UPDATE reading_progress
+      SET
+        deleted_at = ?,
+        updated_at = ?,
+        sync_status = 'pending'
+      WHERE id = ?
         AND cloud_user_id = ?
-      `,
+    `,
     [now, now, progressId, user.id]
   );
 

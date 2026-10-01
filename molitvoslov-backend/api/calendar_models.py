@@ -1,10 +1,23 @@
 from django.db import models
-
+import uuid
 
 class CalendarFeast(models.Model):
     """Одна календарная память/праздник, перенесённая из Church Site."""
 
-    source_id = models.PositiveIntegerField(unique=True, db_index=True)
+    source_id = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        unique=True,
+        db_index=True,
+    )
+
+    sync_uid = models.UUIDField(
+        null=True,
+        blank=True,
+        unique=True,
+        editable=False,
+        db_index=True,
+    )
     date_type = models.CharField(max_length=20, blank=True, default="")
     celebration_type = models.CharField(max_length=20, blank=True, default="")
     celebration_rank = models.CharField(max_length=30, blank=True, default="")
@@ -51,6 +64,77 @@ class CalendarFeast(models.Model):
     def __str__(self):
         return self.short_title or self.title
 
+class CalendarFastType(models.Model):
+    sync_uid = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+        db_index=True,
+    )
+
+    code = models.SlugField(
+        max_length=80,
+        unique=True,
+        verbose_name="Код",
+    )
+
+    type_title = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        verbose_name="Тип поста RU",
+    )
+
+    name = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        verbose_name="Название RU",
+    )
+
+    description = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Описание RU",
+    )
+
+    type_title_uk = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        verbose_name="Тип поста UK",
+    )
+
+    name_uk = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        verbose_name="Название UK",
+    )
+
+    description_uk = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Описание UK",
+    )
+
+    order = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Порядок",
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="Активен",
+    )
+
+    class Meta:
+        ordering = ["order", "name", "type_title", "code"]
+        verbose_name = "Календарь: пост"
+        verbose_name_plural = "Календарь: посты"
+
+    def __str__(self):
+        return self.name or self.type_title or self.code
 
 class CalendarDay(models.Model):
     """Готовый календарный день для мобильного приложения."""
@@ -59,6 +143,14 @@ class CalendarDay(models.Model):
     julian_month = models.PositiveSmallIntegerField(null=True, blank=True)
     julian_day = models.PositiveSmallIntegerField(null=True, blank=True)
 
+    fast_type = models.ForeignKey(
+        CalendarFastType,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="calendar_days",
+        verbose_name="Пост",
+    )
     main_feast = models.ForeignKey(
         CalendarFeast,
         null=True,
@@ -104,3 +196,5 @@ class CalendarDay(models.Model):
 
     def __str__(self):
         return self.date_gregorian.isoformat()
+
+

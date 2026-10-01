@@ -89,7 +89,7 @@ export const QuoteOfDayWidget = ({quote, width = 240, height = 100}) => {
           style={{
             flex: 1,
             width: 'match_parent',
-
+            fontFamily: 'Ponomar-Regular',
             justifyContent: 'center',
           }}
         >
@@ -98,14 +98,10 @@ export const QuoteOfDayWidget = ({quote, width = 240, height = 100}) => {
             allowFontScaling={false}
             style={{
               width: 'match_parent',
-
               color: '#F8E7C5',
-
-              fontFamily: 'Ponomar',
-
+              fontFamily: 'Ponomar-Regular',
               fontSize: quoteFontSize,
               lineHeight: quoteLineHeight,
-
               fontWeight: '500',
             }}
           />
@@ -117,11 +113,8 @@ export const QuoteOfDayWidget = ({quote, width = 240, height = 100}) => {
             allowFontScaling={false}
             style={{
               marginTop: 4,
-
               color: '#E5C58F',
-
-              fontFamily: 'Ponomar',
-
+              fontFamily: 'Ponomar-Regular',
               fontSize: sourceFontSize,
               lineHeight: sourceLineHeight,
 
