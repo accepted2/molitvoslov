@@ -10,6 +10,7 @@ import {useReadingProgress} from '../hooks/useReadingProgress';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
+import {ReaderBookmarkMenu} from '../components/reader/ReaderBookmarkMenu';
 
 import {MemorialQuickSheet} from '../components/memorial/MemorialQuickSheet';
 
@@ -103,6 +104,7 @@ export default function KathismaScreen({route, navigation}) {
   const [savedItems, setSavedItems] = useState([]);
 
   const savedItemsRef = useRef([]);
+  const readerRef = useRef(null);
 
   const [loading, setLoading] = useState(true);
 
@@ -110,7 +112,17 @@ export default function KathismaScreen({route, navigation}) {
 
   const [memorialVisible, setMemorialVisible] = useState(false);
 
-  const {savedProgress, progressReady, scheduleSave} = useReadingProgress({
+  const [readerMenuVisible, setReaderMenuVisible] = useState(false);
+  const [bookmarkPosition, setBookmarkPosition] = useState(null);
+  const [stablePosition, setStablePosition] = useState(null);
+
+  const {
+    savedProgress,
+    progressReady,
+    scheduleSave,
+    getCurrentProgress,
+    getStableProgress,
+  } = useReadingProgress({
     sourceType: 'psalter',
 
     sourceId: kathisma?.psalter,
@@ -1004,6 +1016,35 @@ export default function KathismaScreen({route, navigation}) {
     });
   };
 
+  const openReaderMenu = () => {
+    setBookmarkPosition(getCurrentProgress());
+    setStablePosition(getStableProgress());
+    setReaderMenuVisible(true);
+  };
+
+  const bookmarkPsalm = bookmarkPosition
+    ? (kathisma?.psalms || []).find(
+        (psalm) => Number(psalm.id) === Number(bookmarkPosition.anchorId)
+      )
+    : null;
+
+  const bookmarkConfig =
+    kathisma && bookmarkPosition && bookmarkPsalm
+      ? {
+          sourceType: 'psalter',
+          sourceId: Number(kathisma.psalter),
+          sourceTitle: 'Псалтирь',
+          itemTitle: `Псалом ${bookmarkPsalm.number}`,
+          position: bookmarkPosition,
+          metadata: {
+            kathisma_number: Number(kathisma.number),
+            kathisma_title: kathisma.title || '',
+            psalm_id: Number(bookmarkPsalm.id),
+            psalm_number: Number(bookmarkPsalm.number),
+          },
+        }
+      : null;
+
   if (loading || (kathisma && !progressReady)) {
     return (
       <View style={styles.center}>
@@ -1025,6 +1066,7 @@ export default function KathismaScreen({route, navigation}) {
       <StatusBar style="light" translucent backgroundColor="transparent" />
 
       <SelectableDocumentReader
+        ref={readerRef}
         documentData={documentData}
         savedProgress={readerProgress}
         focusTarget={normalizedFocusTarget}
@@ -1040,11 +1082,25 @@ export default function KathismaScreen({route, navigation}) {
         onManage={() => navigation.navigate('Memorial')}
       />
 
+      <ReaderBookmarkMenu
+        visible={readerMenuVisible}
+        onClose={() => setReaderMenuVisible(false)}
+        navigation={navigation}
+        bookmark={bookmarkConfig}
+        canReturnToProgress={!!stablePosition}
+        onReturnToProgress={() => {
+          readerRef.current?.goToProgress(stablePosition);
+          setReaderMenuVisible(false);
+        }}
+      />
+
       <FixedSectionHeader
         title={`Кафизма ${kathisma.number}`}
         navigation={navigation}
         topInset={insets.top}
         showTitle={false}
+        showMenu
+        onMenuPress={openReaderMenu}
       />
     </View>
   );

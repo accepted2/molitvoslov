@@ -1,4 +1,4 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 
 import {ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View} from 'react-native';
 
@@ -20,8 +20,12 @@ const WHOLE_SAVE_TYPES = new Set([
   'text',
 ]);
 
+const TAB_PLACES = 'places';
+const TAB_FRAGMENTS = 'fragments';
+
 export const BookmarksScreen = ({navigation}) => {
-  const [bookmarks, setBookmarks] = useState([]);
+  const [savedItems, setSavedItems] = useState([]);
+  const [activeTab, setActiveTab] = useState(TAB_PLACES);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -30,16 +34,7 @@ export const BookmarksScreen = ({navigation}) => {
       setLoading(true);
       setError(null);
 
-      const saved = await getSavedItems();
-
-      setBookmarks(
-        saved.filter(
-          (item) =>
-            !WHOLE_SAVE_TYPES.has(item.save_type) &&
-            item.start_offset !== null &&
-            item.end_offset !== null
-        )
-      );
+      setSavedItems(await getSavedItems());
     } catch (err) {
       console.log('Ошибка загрузки закладок:', err);
       setError('Не удалось загрузить закладки');
@@ -54,6 +49,25 @@ export const BookmarksScreen = ({navigation}) => {
     }, [loadData])
   );
 
+  const placeBookmarks = useMemo(
+    () => savedItems.filter((item) => item.save_type === 'bookmark'),
+    [savedItems]
+  );
+
+  const fragmentBookmarks = useMemo(
+    () =>
+      savedItems.filter(
+        (item) =>
+          item.save_type !== 'bookmark' &&
+          !WHOLE_SAVE_TYPES.has(item.save_type) &&
+          item.start_offset !== null &&
+          item.end_offset !== null
+      ),
+    [savedItems]
+  );
+
+  const bookmarks = activeTab === TAB_PLACES ? placeBookmarks : fragmentBookmarks;
+
   const makeFocusTarget = (item) => ({
     id: item.id,
     save_type: item.save_type,
@@ -67,6 +81,15 @@ export const BookmarksScreen = ({navigation}) => {
   const openBookmark = (item) => {
     const metadata = item.metadata || {};
     const focusTarget = makeFocusTarget(item);
+
+    if (item.source_type === 'bible' && metadata.book_id && metadata.chapter_number) {
+      navigation.navigate('BibleChapter', {
+        bookId: metadata.book_id,
+        chapterNumber: metadata.chapter_number,
+        focusTarget,
+      });
+      return;
+    }
 
     if (item.source_type === 'prayer_rule' && metadata.slug) {
       navigation.navigate('PrayerRule', {
@@ -128,12 +151,80 @@ export const BookmarksScreen = ({navigation}) => {
     }
   };
 
+  const emptyTitle =
+    activeTab === TAB_PLACES ? 'Мест пока нет' : 'Сохранённых фрагментов пока нет';
+
+  const emptyText =
+    activeTab === TAB_PLACES
+      ? 'Во время чтения откройте меню ⋮ и нажмите «Добавить закладку». Она останется здесь, даже если вы продолжите читать дальше.'
+      : 'Выделите слово, предложение или фрагмент во время чтения — сохранённый текст появится здесь.';
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.screen}>
         <View style={styles.header}>
           <Text style={styles.title}>Закладки</Text>
-          <Text style={styles.subtitle}>Сохранённые фрагменты для быстрого возврата</Text>
+          <Text style={styles.subtitle}>
+            Места чтения хранятся отдельно от сохранённых фрагментов
+          </Text>
+
+          <View style={styles.tabs}>
+            <Pressable
+              onPress={() => setActiveTab(TAB_PLACES)}
+              style={({pressed}) => [
+                styles.tab,
+                activeTab === TAB_PLACES && styles.tabActive,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === TAB_PLACES && styles.tabTextActive,
+                ]}
+              >
+                Места
+              </Text>
+              {!!placeBookmarks.length && (
+                <Text
+                  style={[
+                    styles.tabCount,
+                    activeTab === TAB_PLACES && styles.tabCountActive,
+                  ]}
+                >
+                  {placeBookmarks.length}
+                </Text>
+              )}
+            </Pressable>
+
+            <Pressable
+              onPress={() => setActiveTab(TAB_FRAGMENTS)}
+              style={({pressed}) => [
+                styles.tab,
+                activeTab === TAB_FRAGMENTS && styles.tabActive,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === TAB_FRAGMENTS && styles.tabTextActive,
+                ]}
+              >
+                Фрагменты
+              </Text>
+              {!!fragmentBookmarks.length && (
+                <Text
+                  style={[
+                    styles.tabCount,
+                    activeTab === TAB_FRAGMENTS && styles.tabCountActive,
+                  ]}
+                >
+                  {fragmentBookmarks.length}
+                </Text>
+              )}
+            </Pressable>
+          </View>
         </View>
 
         {loading ? (
@@ -151,11 +242,8 @@ export const BookmarksScreen = ({navigation}) => {
             contentContainerStyle={bookmarks.length ? styles.list : styles.emptyList}
             ListEmptyComponent={
               <View style={styles.emptyCard}>
-                <Text style={styles.emptyTitle}>Закладок пока нет</Text>
-                <Text style={styles.emptyText}>
-                  Выделите слово, предложение или фрагмент во время чтения — сохранённое место
-                  появится здесь.
-                </Text>
+                <Text style={styles.emptyTitle}>{emptyTitle}</Text>
+                <Text style={styles.emptyText}>{emptyText}</Text>
               </View>
             }
             renderItem={({item}) => (
@@ -164,7 +252,9 @@ export const BookmarksScreen = ({navigation}) => {
                 style={({pressed}) => [styles.card, pressed && styles.pressed]}
               >
                 <View style={styles.cardMark}>
-                  <Text style={styles.cardSymbol}>⌑</Text>
+                  <Text style={styles.cardSymbol}>
+                    {item.save_type === 'bookmark' ? '⌑' : '“'}
+                  </Text>
                 </View>
 
                 <View style={styles.cardContent}>
@@ -180,6 +270,10 @@ export const BookmarksScreen = ({navigation}) => {
 
                   <Text style={styles.cardMeta}>
                     {item.source_title || item.save_type_display || 'Закладка'}
+                    {item.save_type === 'bookmark' &&
+                    Number.isFinite(Number(item.metadata?.progress_percent))
+                      ? ` · ${Number(item.metadata.progress_percent)}%`
+                      : ''}
                   </Text>
                 </View>
 
@@ -223,6 +317,50 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     color: colors.textSecondary,
+  },
+
+  tabs: {
+    flexDirection: 'row',
+    marginTop: spacing.md,
+    padding: 3,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  tab: {
+    flex: 1,
+    minHeight: 38,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: radius.sm,
+  },
+
+  tabActive: {
+    backgroundColor: colors.accentSoft,
+  },
+
+  tabText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+
+  tabTextActive: {
+    color: colors.accent,
+  },
+
+  tabCount: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  tabCountActive: {
+    color: colors.accent,
   },
 
   center: {

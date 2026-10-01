@@ -877,6 +877,7 @@ class SavedItem(models.Model):
         ("canon", "Канон"),
         ("text", "Текст"),
         ("quote", "Цитата"),
+        ("bookmark", "Закладка"),
     ]
 
     user = models.ForeignKey(

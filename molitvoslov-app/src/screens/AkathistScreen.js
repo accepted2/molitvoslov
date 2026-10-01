@@ -9,6 +9,7 @@ import {useReadingProgress} from '../hooks/useReadingProgress';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
+import {ReaderBookmarkMenu} from '../components/reader/ReaderBookmarkMenu';
 
 import {colors} from '../theme';
 
@@ -102,6 +103,7 @@ export const AkathistScreen = ({route, navigation}) => {
   const [savedItems, setSavedItems] = useState([]);
 
   const savedItemsRef = useRef([]);
+  const readerRef = useRef(null);
 
   const [viewMode, setViewMode] = useState(MODE_BOTH);
 
@@ -109,7 +111,17 @@ export const AkathistScreen = ({route, navigation}) => {
 
   const [error, setError] = useState(null);
 
-  const {savedProgress, progressReady, scheduleSave} = useReadingProgress({
+  const [readerMenuVisible, setReaderMenuVisible] = useState(false);
+  const [bookmarkPosition, setBookmarkPosition] = useState(null);
+  const [stablePosition, setStablePosition] = useState(null);
+
+  const {
+    savedProgress,
+    progressReady,
+    scheduleSave,
+    getCurrentProgress,
+    getStableProgress,
+  } = useReadingProgress({
     sourceType: 'akathist',
 
     sourceId: akathistId,
@@ -576,6 +588,34 @@ export const AkathistScreen = ({route, navigation}) => {
     };
   }, [akathist, akathistId, hasRussianTranslation, savedItems, slug, title, viewMode]);
 
+  const openReaderMenu = () => {
+    setBookmarkPosition(getCurrentProgress());
+    setStablePosition(getStableProgress());
+    setReaderMenuVisible(true);
+  };
+
+  const bookmarkSection = bookmarkPosition
+    ? (akathist?.sections || []).find(
+        (section) => Number(section.id) === Number(bookmarkPosition.anchorId)
+      )
+    : null;
+
+  const bookmarkConfig =
+    akathist && bookmarkPosition && bookmarkSection
+      ? {
+          sourceType: 'akathist',
+          sourceId: Number(akathistId),
+          sourceTitle: akathist.title || title || 'Акафист',
+          itemTitle: getSectionTitle(bookmarkSection) || 'Место в акафисте',
+          position: bookmarkPosition,
+          metadata: {
+            slug: akathist.slug || slug,
+            section_type: bookmarkSection.section_type,
+            section_number: bookmarkSection.number,
+          },
+        }
+      : null;
+
   if (loading || (akathist && !progressReady)) {
     return (
       <View style={styles.center}>
@@ -599,6 +639,7 @@ export const AkathistScreen = ({route, navigation}) => {
       <StatusBar style="light" translucent backgroundColor="transparent" />
 
       <SelectableDocumentReader
+        ref={readerRef}
         documentData={documentData}
         savedProgress={savedProgress}
         focusTarget={focusTarget}
@@ -608,11 +649,25 @@ export const AkathistScreen = ({route, navigation}) => {
         onViewModeChange={setViewMode}
       />
 
+      <ReaderBookmarkMenu
+        visible={readerMenuVisible}
+        onClose={() => setReaderMenuVisible(false)}
+        navigation={navigation}
+        bookmark={bookmarkConfig}
+        canReturnToProgress={!!stablePosition}
+        onReturnToProgress={() => {
+          readerRef.current?.goToProgress(stablePosition);
+          setReaderMenuVisible(false);
+        }}
+      />
+
       <FixedSectionHeader
         title={akathist.title || title || 'Акафист'}
         navigation={navigation}
         topInset={insets.top}
         showTitle={false}
+        showMenu
+        onMenuPress={openReaderMenu}
       />
     </View>
   );

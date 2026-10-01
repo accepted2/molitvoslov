@@ -9,6 +9,7 @@ import {useReadingProgress} from '../hooks/useReadingProgress';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
+import {ReaderBookmarkMenu} from '../components/reader/ReaderBookmarkMenu';
 
 import {colors} from '../theme';
 
@@ -140,6 +141,7 @@ export const CanonScreen = ({route, navigation}) => {
   const [savedItems, setSavedItems] = useState([]);
 
   const savedItemsRef = useRef([]);
+  const readerRef = useRef(null);
 
   const [viewMode, setViewMode] = useState(MODE_BOTH);
 
@@ -147,7 +149,17 @@ export const CanonScreen = ({route, navigation}) => {
 
   const [error, setError] = useState(null);
 
-  const {savedProgress, progressReady, scheduleSave} = useReadingProgress({
+  const [readerMenuVisible, setReaderMenuVisible] = useState(false);
+  const [bookmarkPosition, setBookmarkPosition] = useState(null);
+  const [stablePosition, setStablePosition] = useState(null);
+
+  const {
+    savedProgress,
+    progressReady,
+    scheduleSave,
+    getCurrentProgress,
+    getStableProgress,
+  } = useReadingProgress({
     sourceType: 'canon',
 
     sourceId: canonId,
@@ -597,6 +609,39 @@ export const CanonScreen = ({route, navigation}) => {
     return belongsToVariant ? savedProgress : null;
   }, [activeSections, savedProgress]);
 
+  const openReaderMenu = () => {
+    setBookmarkPosition(getCurrentProgress());
+    setStablePosition(getStableProgress());
+    setReaderMenuVisible(true);
+  };
+
+  const bookmarkSection = bookmarkPosition
+    ? activeSections.find(
+        (section) => Number(section.id) === Number(bookmarkPosition.anchorId)
+      )
+    : null;
+
+  const bookmarkConfig =
+    canon && bookmarkPosition && bookmarkSection
+      ? {
+          sourceType: 'canon',
+          sourceId: Number(canon.id || canonId),
+          sourceTitle: canon.title || title || 'Канон',
+          itemTitle:
+            bookmarkSection.heading ||
+            SECTION_LABELS[bookmarkSection.display_section_type || bookmarkSection.section_type] ||
+            'Место в каноне',
+          position: bookmarkPosition,
+          metadata: {
+            slug: canon.slug || slug,
+            variant: primaryVariant,
+            ode_number: bookmarkSection.ode_number,
+            section_type:
+              bookmarkSection.display_section_type || bookmarkSection.section_type,
+          },
+        }
+      : null;
+
   if (loading || (canon && !progressReady)) {
     return (
       <View style={styles.center}>
@@ -620,6 +665,7 @@ export const CanonScreen = ({route, navigation}) => {
       <StatusBar style="light" translucent backgroundColor="transparent" />
 
       <SelectableDocumentReader
+        ref={readerRef}
         documentData={documentData}
         savedProgress={readerProgress}
         focusTarget={focusTarget}
@@ -629,11 +675,25 @@ export const CanonScreen = ({route, navigation}) => {
         onViewModeChange={setViewMode}
       />
 
+      <ReaderBookmarkMenu
+        visible={readerMenuVisible}
+        onClose={() => setReaderMenuVisible(false)}
+        navigation={navigation}
+        bookmark={bookmarkConfig}
+        canReturnToProgress={!!stablePosition}
+        onReturnToProgress={() => {
+          readerRef.current?.goToProgress(stablePosition);
+          setReaderMenuVisible(false);
+        }}
+      />
+
       <FixedSectionHeader
         title={canon.title || title || 'Канон'}
         navigation={navigation}
         topInset={insets.top}
         showTitle={false}
+        showMenu
+        onMenuPress={openReaderMenu}
       />
     </View>
   );

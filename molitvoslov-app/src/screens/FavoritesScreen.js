@@ -30,7 +30,7 @@ export const FavoritesScreen = ({navigation}) => {
 
       const saved = await getSavedItems();
 
-      setItems(saved);
+      setItems(saved.filter((item) => item.save_type !== 'bookmark'));
     } catch (err) {
       console.log('Ошибка загрузки сохранённого:', err);
 
