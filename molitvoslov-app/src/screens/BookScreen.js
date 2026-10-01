@@ -10,6 +10,11 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 
+import {
+  READER_LANGUAGE_MODES,
+  buildReaderLanguageOptions,
+} from '../services/readerLanguageModes';
+
 import {colors} from '../theme';
 
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -29,6 +34,8 @@ export const BookScreen = ({route, navigation}) => {
   const [savedItems, setSavedItems] = useState([]);
 
   const savedItemsRef = useRef([]);
+
+  const [viewMode, setViewMode] = useState(READER_LANGUAGE_MODES.BOTH);
 
   const [loading, setLoading] = useState(true);
 
@@ -79,6 +86,34 @@ export const BookScreen = ({route, navigation}) => {
       setLoading(false);
     }
   };
+
+  const hasRussianTranslation = useMemo(
+    () => texts.some((item) => !!item.text?.translation?.trim()),
+    [texts]
+  );
+
+  const hasTraditionalText = useMemo(
+    () => texts.some((item) => !!item.text?.traditional_content?.trim()),
+    [texts]
+  );
+
+  useEffect(() => {
+    if (
+      (viewMode === READER_LANGUAGE_MODES.BOTH ||
+        viewMode === READER_LANGUAGE_MODES.RUSSIAN) &&
+      !hasRussianTranslation
+    ) {
+      setViewMode(READER_LANGUAGE_MODES.CHURCH);
+      return;
+    }
+
+    if (
+      viewMode === READER_LANGUAGE_MODES.TRADITIONAL &&
+      !hasTraditionalText
+    ) {
+      setViewMode(READER_LANGUAGE_MODES.CHURCH);
+    }
+  }, [viewMode, hasRussianTranslation, hasTraditionalText]);
 
   const handleAction = async (actionKey) => {
     if (!actionKey?.startsWith('category-text:')) {
@@ -160,17 +195,56 @@ export const BookScreen = ({route, navigation}) => {
   };
 
   const documentData = useMemo(() => {
-    const savedForReader = savedItems
-      .filter(
-        (item) =>
-          item.anchor_type === 'category_text' &&
-          item.start_offset !== null &&
-          item.end_offset !== null
-      )
-      .map((item) => ({
-        ...item,
-        anchor_id: Number(item.anchor_id),
-      }));
+    const showChurch =
+      viewMode === READER_LANGUAGE_MODES.CHURCH ||
+      viewMode === READER_LANGUAGE_MODES.BOTH;
+    const showRussian =
+      viewMode === READER_LANGUAGE_MODES.RUSSIAN ||
+      viewMode === READER_LANGUAGE_MODES.BOTH;
+    const showTraditional = viewMode === READER_LANGUAGE_MODES.TRADITIONAL;
+
+    const normalizedSaved = [];
+
+    const makeBlock = ({item, text, language, syntheticId, className = ''}) => {
+      savedItems
+        .filter((saved) => {
+          if (
+            saved.anchor_type !== 'category_text' ||
+            Number(saved.anchor_id) !== Number(item.id) ||
+            saved.start_offset === null ||
+            saved.end_offset === null
+          ) {
+            return false;
+          }
+
+          const savedLanguage = saved.metadata?.language || 'church';
+          return savedLanguage === language;
+        })
+        .forEach((saved) => {
+          normalizedSaved.push({
+            ...saved,
+            anchor_id: syntheticId,
+          });
+        });
+
+      return {
+        id: syntheticId,
+        text,
+        className,
+        sourceType: 'category',
+        sourceId: categoryId,
+        anchorType: 'category_text',
+        anchorId: Number(item.id),
+        sourceTitle: categoryName,
+        itemTitle: item.text.title || item.text.description || 'Текст',
+        fullSaveType: 'prayer',
+        metadata: {
+          category_slug: categorySlug,
+          category_name: categoryName,
+          language,
+        },
+      };
+    };
 
     const sections = texts
       .filter((item) => !!item.text)
@@ -183,6 +257,42 @@ export const BookScreen = ({route, navigation}) => {
             Number(saved.anchor_id) === Number(item.id) &&
             saved.save_type === 'prayer'
         );
+
+        const blocks = [];
+
+        if (showTraditional && text.traditional_content?.trim()) {
+          blocks.push(
+            makeBlock({
+              item,
+              text: text.traditional_content,
+              language: 'traditional',
+              syntheticId: Number(item.id) * 10 + 3,
+            })
+          );
+        }
+
+        if (showChurch && text.content?.trim()) {
+          blocks.push(
+            makeBlock({
+              item,
+              text: text.content,
+              language: 'church',
+              syntheticId: Number(item.id) * 10 + 1,
+            })
+          );
+        }
+
+        if (showRussian && text.translation?.trim()) {
+          blocks.push(
+            makeBlock({
+              item,
+              text: text.translation,
+              language: 'russian',
+              syntheticId: Number(item.id) * 10 + 2,
+              className: 'secondary',
+            })
+          );
+        }
 
         return {
           progressAnchorId: Number(item.id),
@@ -201,37 +311,12 @@ export const BookScreen = ({route, navigation}) => {
 
           rows: [
             {
-              layout: 'stack',
+              layout:
+                viewMode === READER_LANGUAGE_MODES.BOTH && blocks.length > 1
+                  ? 'parallel'
+                  : 'stack',
 
-              blocks: [
-                {
-                  id: Number(item.id),
-
-                  text: text.content || '',
-
-                  className: '',
-
-                  sourceType: 'category',
-
-                  sourceId: categoryId,
-
-                  anchorType: 'category_text',
-
-                  anchorId: Number(item.id),
-
-                  sourceTitle: categoryName,
-
-                  itemTitle: text.title || text.description || 'Текст',
-
-                  fullSaveType: 'prayer',
-
-                  metadata: {
-                    category_slug: categorySlug,
-
-                    category_name: categoryName,
-                  },
-                },
-              ],
+              blocks,
             },
           ],
         };
@@ -242,13 +327,30 @@ export const BookScreen = ({route, navigation}) => {
 
       description: '',
 
+      viewSwitcher: {
+        activeKey: viewMode,
+        options: buildReaderLanguageOptions({
+          hasRussian: hasRussianTranslation,
+          hasTraditional: hasTraditionalText,
+        }),
+      },
+
       progressAnchorType: 'category_text',
 
-      savedItems: savedForReader,
+      savedItems: normalizedSaved,
 
       sections,
     };
-  }, [categoryId, categorySlug, categoryName, texts, savedItems]);
+  }, [
+    categoryId,
+    categorySlug,
+    categoryName,
+    texts,
+    savedItems,
+    viewMode,
+    hasRussianTranslation,
+    hasTraditionalText,
+  ]);
 
   if (loading || (categoryId && !progressReady)) {
     return (
@@ -279,6 +381,7 @@ export const BookScreen = ({route, navigation}) => {
         topContentInset={headerHeight}
         onProgress={scheduleSave}
         onAction={handleAction}
+        onViewModeChange={setViewMode}
       />
 
       <FixedSectionHeader
