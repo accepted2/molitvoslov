@@ -1,0 +1,35 @@
+name: Reader feature check
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "molitvoslov-app/**/*.js"
+      - "molitvoslov-backend/**/*.py"
+      - ".github/workflows/reader-feature-check.yml"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.19.4"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Parse and format-check React Native source
+        run: |
+          npx --yes prettier@3.6.2 --check             "molitvoslov-app/src/**/*.{js,jsx}"
+
+      - name: Verify Python syntax
+        run: python -m compileall -q molitvoslov-backend
+
+      - name: Check whitespace
+        run: git diff --check
