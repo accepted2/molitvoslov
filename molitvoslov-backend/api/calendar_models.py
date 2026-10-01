@@ -1,6 +1,7 @@
 from django.db import models
 import uuid
 
+
 class CalendarFeast(models.Model):
     """Одна календарная память/праздник, перенесённая из Church Site."""
 
@@ -63,6 +64,7 @@ class CalendarFeast(models.Model):
 
     def __str__(self):
         return self.short_title or self.title
+
 
 class CalendarFastType(models.Model):
     sync_uid = models.UUIDField(
@@ -136,6 +138,7 @@ class CalendarFastType(models.Model):
     def __str__(self):
         return self.name or self.type_title or self.code
 
+
 class CalendarDay(models.Model):
     """Готовый календарный день для мобильного приложения."""
 
@@ -196,5 +199,3 @@ class CalendarDay(models.Model):
 
     def __str__(self):
         return self.date_gregorian.isoformat()
-
-

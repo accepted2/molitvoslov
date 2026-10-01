@@ -87,9 +87,7 @@ def parse_iso_date(value, option_name):
     try:
         return date.fromisoformat(value)
     except (TypeError, ValueError) as error:
-        raise CommandError(
-            f"{option_name}: используйте дату в формате YYYY-MM-DD."
-        ) from error
+        raise CommandError(f"{option_name}: используйте дату в формате YYYY-MM-DD.") from error
 
 
 def deterministic_feast_uid(source_id):
@@ -144,9 +142,7 @@ class Command(BaseCommand):
         self._print_preview(preview, days, feasts, fast_types)
 
         if options["dry_run"]:
-            self.stdout.write(
-                self.style.WARNING("DRY-RUN: Supabase не изменён.")
-            )
+            self.stdout.write(self.style.WARNING("DRY-RUN: Supabase не изменён."))
             return
 
         counters = {
@@ -170,9 +166,7 @@ class Command(BaseCommand):
         if problems:
             for problem in problems[:30]:
                 self.stdout.write(self.style.ERROR(f"  - {problem}"))
-            raise CommandError(
-                f"После записи найдено расхождений: {len(problems)}."
-            )
+            raise CommandError(f"После записи найдено расхождений: {len(problems)}.")
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -289,9 +283,7 @@ class Command(BaseCommand):
 
     def _collect_fast_types(self, days):
         return {
-            day.fast_type.pk: day.fast_type
-            for day in days
-            if day.fast_type_id and day.fast_type
+            day.fast_type.pk: day.fast_type for day in days if day.fast_type_id and day.fast_type
         }
 
     def _ensure_local_uids(self, feasts, fast_types):
@@ -321,41 +313,23 @@ class Command(BaseCommand):
         return {field: getattr(day, field) for field in DAY_FIELDS}
 
     def _find_remote_fast(self, fast):
-        remote = (
-            CalendarFastType.objects.using(REMOTE_ALIAS)
-            .filter(sync_uid=fast.sync_uid)
-            .first()
-        )
+        remote = CalendarFastType.objects.using(REMOTE_ALIAS).filter(sync_uid=fast.sync_uid).first()
         if remote:
             return remote
-        return (
-            CalendarFastType.objects.using(REMOTE_ALIAS)
-            .filter(code=fast.code)
-            .first()
-        )
+        return CalendarFastType.objects.using(REMOTE_ALIAS).filter(code=fast.code).first()
 
     def _find_remote_feast(self, feast):
-        remote = (
-            CalendarFeast.objects.using(REMOTE_ALIAS)
-            .filter(sync_uid=feast.sync_uid)
-            .first()
-        )
+        remote = CalendarFeast.objects.using(REMOTE_ALIAS).filter(sync_uid=feast.sync_uid).first()
         if remote:
             return remote
         if feast.source_id is not None:
             return (
-                CalendarFeast.objects.using(REMOTE_ALIAS)
-                .filter(source_id=feast.source_id)
-                .first()
+                CalendarFeast.objects.using(REMOTE_ALIAS).filter(source_id=feast.source_id).first()
             )
         return None
 
     def _changed_fields(self, obj, values):
-        return [
-            field
-            for field, expected in values.items()
-            if getattr(obj, field) != expected
-        ]
+        return [field for field, expected in values.items() if getattr(obj, field) != expected]
 
     def _preview(self, days, feasts, fast_types):
         result = {
@@ -376,9 +350,7 @@ class Command(BaseCommand):
                 values["sync_uid"] = fast.sync_uid
                 changed = self._changed_fields(remote, values)
                 if changed:
-                    result["fast_update"].append(
-                        f"{fast.code} ({', '.join(changed)})"
-                    )
+                    result["fast_update"].append(f"{fast.code} ({', '.join(changed)})")
 
         for feast in feasts.values():
             remote = self._find_remote_feast(feast)
@@ -390,9 +362,7 @@ class Command(BaseCommand):
                 values["sync_uid"] = feast.sync_uid
                 changed = self._changed_fields(remote, values)
                 if changed:
-                    result["feast_update"].append(
-                        f"{label} ({', '.join(changed)})"
-                    )
+                    result["feast_update"].append(f"{label} ({', '.join(changed)})")
 
         for day in days:
             remote = (
@@ -408,35 +378,24 @@ class Command(BaseCommand):
 
             changed = self._changed_fields(remote, self._day_values(day))
 
-            local_fast_uid = (
-                str(day.fast_type.sync_uid) if day.fast_type else None
-            )
-            remote_fast_uid = (
-                str(remote.fast_type.sync_uid) if remote.fast_type else None
-            )
+            local_fast_uid = str(day.fast_type.sync_uid) if day.fast_type else None
+            remote_fast_uid = str(remote.fast_type.sync_uid) if remote.fast_type else None
             if local_fast_uid != remote_fast_uid:
                 changed.append("fast_type")
 
-            local_main_uid = (
-                str(day.main_feast.sync_uid) if day.main_feast else None
-            )
-            remote_main_uid = (
-                str(remote.main_feast.sync_uid) if remote.main_feast else None
-            )
+            local_main_uid = str(day.main_feast.sync_uid) if day.main_feast else None
+            remote_main_uid = str(remote.main_feast.sync_uid) if remote.main_feast else None
             if local_main_uid != remote_main_uid:
                 changed.append("main_feast")
 
             local_feasts = sorted(str(x.sync_uid) for x in day.feasts.all())
-            remote_feasts = sorted(
-                str(x.sync_uid) for x in remote.feasts.all() if x.sync_uid
-            )
+            remote_feasts = sorted(str(x.sync_uid) for x in remote.feasts.all() if x.sync_uid)
             if local_feasts != remote_feasts:
                 changed.append("feasts")
 
             if changed:
                 result["day_update"].append(
-                    f"{day.date_gregorian.isoformat()} "
-                    f"({', '.join(changed)})"
+                    f"{day.date_gregorian.isoformat()} " f"({', '.join(changed)})"
                 )
 
         return result
@@ -527,13 +486,9 @@ class Command(BaseCommand):
             was_created = remote is None
             desired = self._day_values(day)
             desired["main_feast"] = (
-                remote_feasts[day.main_feast.sync_uid]
-                if day.main_feast else None
+                remote_feasts[day.main_feast.sync_uid] if day.main_feast else None
             )
-            desired["fast_type"] = (
-                remote_fast[day.fast_type.sync_uid]
-                if day.fast_type else None
-            )
+            desired["fast_type"] = remote_fast[day.fast_type.sync_uid] if day.fast_type else None
 
             content_changed = False
 
@@ -551,12 +506,8 @@ class Command(BaseCommand):
                     remote.save(update_fields=changed)
                     content_changed = True
 
-            desired_feasts = [
-                remote_feasts[x.sync_uid] for x in day.feasts.all()
-            ]
-            current_uids = sorted(
-                str(x.sync_uid) for x in remote.feasts.all() if x.sync_uid
-            )
+            desired_feasts = [remote_feasts[x.sync_uid] for x in day.feasts.all()]
+            current_uids = sorted(str(x.sync_uid) for x in remote.feasts.all() if x.sync_uid)
             desired_uids = sorted(str(x.sync_uid) for x in desired_feasts)
             relations_changed = current_uids != desired_uids
 
@@ -575,9 +526,7 @@ class Command(BaseCommand):
 
         for fast in fast_types.values():
             remote = (
-                CalendarFastType.objects.using(REMOTE_ALIAS)
-                .filter(sync_uid=fast.sync_uid)
-                .first()
+                CalendarFastType.objects.using(REMOTE_ALIAS).filter(sync_uid=fast.sync_uid).first()
             )
             if remote is None:
                 problems.append(f"Пост {fast.code}: отсутствует")
@@ -588,20 +537,14 @@ class Command(BaseCommand):
 
         for feast in feasts.values():
             remote = (
-                CalendarFeast.objects.using(REMOTE_ALIAS)
-                .filter(sync_uid=feast.sync_uid)
-                .first()
+                CalendarFeast.objects.using(REMOTE_ALIAS).filter(sync_uid=feast.sync_uid).first()
             )
             if remote is None:
-                problems.append(
-                    f"Память {feast.short_title or feast.title}: отсутствует"
-                )
+                problems.append(f"Память {feast.short_title or feast.title}: отсутствует")
                 continue
             for field, expected in self._feast_values(feast).items():
                 if getattr(remote, field) != expected:
-                    problems.append(
-                        f"Память {feast.pk}: {field} отличается"
-                    )
+                    problems.append(f"Память {feast.pk}: {field} отличается")
 
         for day in days:
             remote = (
@@ -617,39 +560,21 @@ class Command(BaseCommand):
 
             for field, expected in self._day_values(day).items():
                 if getattr(remote, field) != expected:
-                    problems.append(
-                        f"День {day.date_gregorian}: {field} отличается"
-                    )
+                    problems.append(f"День {day.date_gregorian}: {field} отличается")
 
-            local_fast = (
-                str(day.fast_type.sync_uid) if day.fast_type else None
-            )
-            remote_fast = (
-                str(remote.fast_type.sync_uid) if remote.fast_type else None
-            )
+            local_fast = str(day.fast_type.sync_uid) if day.fast_type else None
+            remote_fast = str(remote.fast_type.sync_uid) if remote.fast_type else None
             if local_fast != remote_fast:
-                problems.append(
-                    f"День {day.date_gregorian}: fast_type отличается"
-                )
+                problems.append(f"День {day.date_gregorian}: fast_type отличается")
 
-            local_main = (
-                str(day.main_feast.sync_uid) if day.main_feast else None
-            )
-            remote_main = (
-                str(remote.main_feast.sync_uid) if remote.main_feast else None
-            )
+            local_main = str(day.main_feast.sync_uid) if day.main_feast else None
+            remote_main = str(remote.main_feast.sync_uid) if remote.main_feast else None
             if local_main != remote_main:
-                problems.append(
-                    f"День {day.date_gregorian}: main_feast отличается"
-                )
+                problems.append(f"День {day.date_gregorian}: main_feast отличается")
 
             local_feasts = sorted(str(x.sync_uid) for x in day.feasts.all())
-            remote_feasts = sorted(
-                str(x.sync_uid) for x in remote.feasts.all() if x.sync_uid
-            )
+            remote_feasts = sorted(str(x.sync_uid) for x in remote.feasts.all() if x.sync_uid)
             if local_feasts != remote_feasts:
-                problems.append(
-                    f"День {day.date_gregorian}: feasts отличаются"
-                )
+                problems.append(f"День {day.date_gregorian}: feasts отличаются")
 
         return problems

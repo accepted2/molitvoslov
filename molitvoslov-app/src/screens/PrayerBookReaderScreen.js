@@ -330,10 +330,7 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
               {!!prayer.photos?.length && (
                 <View style={styles.photos}>
                   {prayer.photos.map((photo) => (
-                    <PrayerPhoto
-                      key={photo.sync_id}
-                      photo={photo}
-                    />
+                    <PrayerPhoto key={photo.sync_id} photo={photo} />
                   ))}
                 </View>
               )}

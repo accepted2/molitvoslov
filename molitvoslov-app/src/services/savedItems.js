@@ -3,11 +3,7 @@ import * as Crypto from 'expo-crypto';
 import {getDatabase} from '../db/database';
 import {getCurrentUser} from './localAuth';
 
-import {
-  authenticatedFetch,
-  getApiToken,
-  getCachedBackendUser,
-} from './backendAuth';
+import {authenticatedFetch, getApiToken, getCachedBackendUser} from './backendAuth';
 
 const ANONYMOUS_LOCAL_USERNAME = '__molitvoslov_guest__';
 
@@ -601,9 +597,7 @@ export const getSavedItems = async (params = {}) => {
 
   return items
     .sort((left, right) => {
-      const timeDifference =
-        toTimestamp(right.created_at) -
-        toTimestamp(left.created_at);
+      const timeDifference = toTimestamp(right.created_at) - toTimestamp(left.created_at);
 
       if (timeDifference !== 0) {
         return timeDifference;

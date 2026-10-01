@@ -8,34 +8,77 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0038_calendarfeast_sync_uid_alter_calendarfeast_source_id'),
+        ("api", "0038_calendarfeast_sync_uid_alter_calendarfeast_source_id"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='CalendarFastType',
+            name="CalendarFastType",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('sync_uid', models.UUIDField(db_index=True, default=uuid.uuid4, editable=False, unique=True)),
-                ('code', models.SlugField(max_length=80, unique=True, verbose_name='Код')),
-                ('type_title', models.CharField(blank=True, default='', max_length=255, verbose_name='Тип поста RU')),
-                ('name', models.CharField(blank=True, default='', max_length=255, verbose_name='Название RU')),
-                ('description', models.TextField(blank=True, default='', verbose_name='Описание RU')),
-                ('type_title_uk', models.CharField(blank=True, default='', max_length=255, verbose_name='Тип поста UK')),
-                ('name_uk', models.CharField(blank=True, default='', max_length=255, verbose_name='Название UK')),
-                ('description_uk', models.TextField(blank=True, default='', verbose_name='Описание UK')),
-                ('order', models.PositiveIntegerField(default=0, verbose_name='Порядок')),
-                ('is_active', models.BooleanField(default=True, verbose_name='Активен')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "sync_uid",
+                    models.UUIDField(
+                        db_index=True, default=uuid.uuid4, editable=False, unique=True
+                    ),
+                ),
+                ("code", models.SlugField(max_length=80, unique=True, verbose_name="Код")),
+                (
+                    "type_title",
+                    models.CharField(
+                        blank=True, default="", max_length=255, verbose_name="Тип поста RU"
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        blank=True, default="", max_length=255, verbose_name="Название RU"
+                    ),
+                ),
+                (
+                    "description",
+                    models.TextField(blank=True, default="", verbose_name="Описание RU"),
+                ),
+                (
+                    "type_title_uk",
+                    models.CharField(
+                        blank=True, default="", max_length=255, verbose_name="Тип поста UK"
+                    ),
+                ),
+                (
+                    "name_uk",
+                    models.CharField(
+                        blank=True, default="", max_length=255, verbose_name="Название UK"
+                    ),
+                ),
+                (
+                    "description_uk",
+                    models.TextField(blank=True, default="", verbose_name="Описание UK"),
+                ),
+                ("order", models.PositiveIntegerField(default=0, verbose_name="Порядок")),
+                ("is_active", models.BooleanField(default=True, verbose_name="Активен")),
             ],
             options={
-                'verbose_name': 'Календарь: пост',
-                'verbose_name_plural': 'Календарь: посты',
-                'ordering': ['order', 'name', 'type_title', 'code'],
+                "verbose_name": "Календарь: пост",
+                "verbose_name_plural": "Календарь: посты",
+                "ordering": ["order", "name", "type_title", "code"],
             },
         ),
         migrations.AddField(
-            model_name='calendarday',
-            name='fast_type',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='calendar_days', to='api.calendarfasttype', verbose_name='Пост'),
+            model_name="calendarday",
+            name="fast_type",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="calendar_days",
+                to="api.calendarfasttype",
+                verbose_name="Пост",
+            ),
         ),
     ]

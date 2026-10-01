@@ -198,7 +198,6 @@ class CalendarDaySerializer(serializers.ModelSerializer):
 
         return obj.fast_type_code
 
-
     def get_fast_type_title(self, obj):
         if obj.fast_type:
             return _localized(
@@ -209,7 +208,6 @@ class CalendarDaySerializer(serializers.ModelSerializer):
 
         return self._get(obj, "fast_type_title")
 
-
     def get_fast_name(self, obj):
         if obj.fast_type:
             return _localized(
@@ -219,7 +217,6 @@ class CalendarDaySerializer(serializers.ModelSerializer):
             )
 
         return self._get(obj, "fast_name")
-
 
     def get_fast_description(self, obj):
         if obj.fast_type:

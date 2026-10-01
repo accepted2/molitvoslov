@@ -40,15 +40,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         year = options["year"]
 
-        output_path = Path(
-            options["output"]
-        ).expanduser().resolve()
+        output_path = Path(options["output"]).expanduser().resolve()
 
         queryset = (
-            CalendarDay.objects
-            .filter(
-                date_gregorian__year=year
-            )
+            CalendarDay.objects.filter(date_gregorian__year=year)
             .select_related(
                 "main_feast",
             )
@@ -64,10 +59,7 @@ class Command(BaseCommand):
 
         expected_count = 366 if self.is_leap_year(year) else 365
 
-        if (
-                len(days) != expected_count
-                and not options["allow_incomplete"]
-        ):
+        if len(days) != expected_count and not options["allow_incomplete"]:
             raise CommandError(
                 f"В базе найдено {len(days)} дней за {year} год, "
                 f"а ожидается {expected_count}. "
@@ -112,8 +104,8 @@ class Command(BaseCommand):
         )
 
         with output_path.open(
-                "w",
-                encoding="utf-8",
+            "w",
+            encoding="utf-8",
         ) as file:
             json.dump(
                 output,
@@ -123,18 +115,9 @@ class Command(BaseCommand):
             )
 
         self.stdout.write(
-            self.style.SUCCESS(
-                f"Готово: {len(days)} дней за {year} год\n"
-                f"Файл: {output_path}"
-            )
+            self.style.SUCCESS(f"Готово: {len(days)} дней за {year} год\n" f"Файл: {output_path}")
         )
 
     @staticmethod
     def is_leap_year(year):
-        return (
-                year % 4 == 0
-                and (
-                        year % 100 != 0
-                        or year % 400 == 0
-                )
-        )
+        return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)

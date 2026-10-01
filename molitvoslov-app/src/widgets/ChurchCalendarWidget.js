@@ -1,12 +1,7 @@
 'use no memo';
 
 import React from 'react';
-import {
-  FlexWidget,
-  ImageWidget,
-  OverlapWidget,
-  TextWidget,
-} from 'react-native-android-widget';
+import {FlexWidget, ImageWidget, OverlapWidget, TextWidget} from 'react-native-android-widget';
 
 import {CALENDAR_MONTHS, calendarText} from '../services/calendarPreferences';
 import {formatFast} from '../services/churchCalendar';
@@ -33,18 +28,13 @@ const buildMonthCells = (date, today, selectedDate) => {
     }
 
     const dateKey =
-      `${year}-` +
-      `${String(month + 1).padStart(2, '0')}-` +
-      `${String(day).padStart(2, '0')}`;
+      `${year}-` + `${String(month + 1).padStart(2, '0')}-` + `${String(day).padStart(2, '0')}`;
 
     return {
       day: String(day),
       date: dateKey,
 
-      today:
-        day === today.getDate() &&
-        month === today.getMonth() &&
-        year === today.getFullYear(),
+      today: day === today.getDate() && month === today.getMonth() && year === today.getFullYear(),
 
       selected:
         day === selectedDate.getDate() &&
@@ -64,8 +54,7 @@ const chunk = (items, size) => {
   return rows;
 };
 
-const shiftMonth = (date, delta) =>
-  new Date(date.getFullYear(), date.getMonth() + delta, 1);
+const shiftMonth = (date, delta) => new Date(date.getFullYear(), date.getMonth() + delta, 1);
 
 export const ChurchCalendarWidget = ({
   day,
@@ -80,30 +69,18 @@ export const ChurchCalendarWidget = ({
 
   const today = new Date();
   const shownDate =
-    displayDate instanceof Date && !Number.isNaN(displayDate.getTime())
-      ? displayDate
-      : today;
+    displayDate instanceof Date && !Number.isNaN(displayDate.getTime()) ? displayDate : today;
 
-  const selectedDate = day?.date_gregorian
-    ? new Date(`${day.date_gregorian}T12:00:00`)
-    : today;
+  const selectedDate = day?.date_gregorian ? new Date(`${day.date_gregorian}T12:00:00`) : today;
 
   const selectedDateKey =
     `${selectedDate.getFullYear()}-` +
-    `${String(
-      selectedDate.getMonth() + 1
-    ).padStart(2, '0')}-` +
-    `${String(
-      selectedDate.getDate()
-    ).padStart(2, '0')}`;
+    `${String(selectedDate.getMonth() + 1).padStart(2, '0')}-` +
+    `${String(selectedDate.getDate()).padStart(2, '0')}`;
 
   const previousMonth = shiftMonth(shownDate, -1);
   const nextMonth = shiftMonth(shownDate, 1);
-  const cells = buildMonthCells(
-    shownDate,
-    today,
-    selectedDate
-  );
+  const cells = buildMonthCells(shownDate, today, selectedDate);
   const weeks = chunk(cells, 7);
 
   const widgetWidth = Number(width) || 320;
@@ -113,10 +90,7 @@ export const ChurchCalendarWidget = ({
   const roomy = widgetHeight >= 185 && widgetWidth >= 300;
   const large = widgetHeight >= 215 || widgetWidth >= 360;
 
-  const feast =
-    day?.main_feast?.short_title ||
-    day?.main_feast?.title ||
-    copy.saintMemory;
+  const feast = day?.main_feast?.short_title || day?.main_feast?.title || copy.saintMemory;
   const fast = formatFast(day, lang) || copy.noFastData;
   const iconUrl = day?.main_feast?.icon_url || '';
 
@@ -142,15 +116,8 @@ export const ChurchCalendarWidget = ({
     56,
     widgetHeight - outerPadding * 2 - monthHeaderHeight - weekdayHeight - 8
   );
-  const rowHeight = Math.max(
-    tiny ? 11 : 14,
-    Math.floor(availableRowsHeight / weeks.length)
-  );
-  const dayBubbleSize = Math.min(
-    cellWidth,
-    rowHeight,
-    large ? 24 : 20
-  );
+  const rowHeight = Math.max(tiny ? 11 : 14, Math.floor(availableRowsHeight / weeks.length));
+  const dayBubbleSize = Math.min(cellWidth, rowHeight, large ? 24 : 20);
 
   const titleSize = tiny ? 8 : large ? 11 : 10;
 
@@ -192,7 +159,6 @@ export const ChurchCalendarWidget = ({
         }}
       >
         <FlexWidget
-
           style={{
             flex: 1,
             minWidth: 0,
@@ -461,7 +427,7 @@ export const ChurchCalendarWidget = ({
               }}
             />
           </FlexWidget>
-          </FlexWidget>
+        </FlexWidget>
 
         <FlexWidget
           style={{
@@ -579,8 +545,8 @@ export const ChurchCalendarWidget = ({
                   clickActionData={
                     cell.date
                       ? {
-                        date: cell.date,
-                      }
+                          date: cell.date,
+                        }
                       : undefined
                   }
                   style={{
@@ -595,15 +561,9 @@ export const ChurchCalendarWidget = ({
                     allowFontScaling={false}
                     maxLines={1}
                     style={{
-                      width:
-                        cell.selected || cell.today
-                          ? dayBubbleSize
-                          : cellWidth,
+                      width: cell.selected || cell.today ? dayBubbleSize : cellWidth,
 
-                      height:
-                        cell.selected || cell.today
-                          ? dayBubbleSize
-                          : rowHeight,
+                      height: cell.selected || cell.today ? dayBubbleSize : rowHeight,
 
                       color: cell.selected
                         ? '#FFF8EA'
@@ -613,36 +573,22 @@ export const ChurchCalendarWidget = ({
                             ? '#A24C40'
                             : '#493225',
 
-                      backgroundColor: cell.selected
-                        ? '#B97A32'
-                        : '#00000000',
+                      backgroundColor: cell.selected ? '#B97A32' : '#00000000',
 
-                      borderWidth:
-                        cell.today && !cell.selected
-                          ? 1
-                          : 0,
+                      borderWidth: cell.today && !cell.selected ? 1 : 0,
 
                       borderColor: '#B97A32',
 
-                      borderRadius:
-                        cell.selected || cell.today
-                          ? dayBubbleSize / 2
-                          : 0,
+                      borderRadius: cell.selected || cell.today ? dayBubbleSize / 2 : 0,
 
                       fontFamily: 'Ponomar-Regular',
                       fontSize: numberSize,
 
-                      lineHeight:
-                        cell.selected || cell.today
-                          ? dayBubbleSize
-                          : rowHeight,
+                      lineHeight: cell.selected || cell.today ? dayBubbleSize : rowHeight,
 
                       textAlign: 'center',
 
-                      fontWeight:
-                        cell.selected || cell.today
-                          ? '800'
-                          : '500',
+                      fontWeight: cell.selected || cell.today ? '800' : '500',
                     }}
                   />
                 </FlexWidget>

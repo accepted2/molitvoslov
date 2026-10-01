@@ -97,11 +97,7 @@ class Command(BaseCommand):
                 "Если это осознанно — повторите с --force."
             )
 
-        days = list(
-            CalendarDay.objects
-            .select_related("fast_type")
-            .order_by("date_gregorian")
-        )
+        days = list(CalendarDay.objects.select_related("fast_type").order_by("date_gregorian"))
 
         source_days = [day for day in days if has_any_fast_data(day)]
 
@@ -127,8 +123,7 @@ class Command(BaseCommand):
             representative = max(group, key=completeness_score)
 
             values = {
-                field: (getattr(representative, field) or "").strip()
-                for field in FAST_FIELDS
+                field: (getattr(representative, field) or "").strip() for field in FAST_FIELDS
             }
 
             variants = {}
@@ -166,9 +161,7 @@ class Command(BaseCommand):
                 or code
             )
 
-            self.stdout.write(
-                f"- {code}: {label} — дней {len(group)}"
-            )
+            self.stdout.write(f"- {code}: {label} — дней {len(group)}")
 
         if warnings:
             self.stdout.write("")
@@ -182,26 +175,14 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(f"  {code}:"))
 
                 for field, values in variants.items():
-                    self.stdout.write(
-                        self.style.WARNING(
-                            f"    {field}: {len(values)} вариантов"
-                        )
-                    )
+                    self.stdout.write(self.style.WARNING(f"    {field}: {len(values)} вариантов"))
 
             if len(warnings) > 20:
-                self.stdout.write(
-                    self.style.WARNING(
-                        f"  ... и ещё {len(warnings) - 20}"
-                    )
-                )
+                self.stdout.write(self.style.WARNING(f"  ... и ещё {len(warnings) - 20}"))
 
         if options["dry_run"]:
             self.stdout.write("")
-            self.stdout.write(
-                self.style.WARNING(
-                    "DRY-RUN: ничего не создано и дни не изменены."
-                )
-            )
+            self.stdout.write(self.style.WARNING("DRY-RUN: ничего не создано и дни не изменены."))
             return
 
         created = 0

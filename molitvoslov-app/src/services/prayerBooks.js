@@ -1426,7 +1426,6 @@ const runSync = async () => {
     };
   }
 
-
   const db = await getDatabase();
   const errors = [];
 

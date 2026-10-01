@@ -5,36 +5,25 @@ import {getCalendarDay} from '../services/churchCalendar';
 import {getCalendarLanguage} from '../services/calendarPreferences';
 import {QuoteOfDayWidget} from './QuoteOfDayWidget';
 import {ChurchCalendarWidget} from './ChurchCalendarWidget';
-import {
-  getBundledCalendarDay,
-  getStoredCalendarDay,
-} from '../services/calendarOfflineStore';
+import {getBundledCalendarDay, getStoredCalendarDay} from '../services/calendarOfflineStore';
 
 const getWidgetCalendarDay = async (value, language) => {
   const dateKey =
     value instanceof Date
-      ? `${value.getFullYear()}-${String(
-        value.getMonth() + 1
-      ).padStart(2, '0')}-${String(
-        value.getDate()
-      ).padStart(2, '0')}`
+      ? `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(
+          value.getDate()
+        ).padStart(2, '0')}`
       : value;
 
   // 1. Сначала уже сохранённые данные телефона
-  const stored = await getStoredCalendarDay(
-    dateKey,
-    language
-  );
+  const stored = await getStoredCalendarDay(dateKey, language);
 
   if (stored) {
     return stored;
   }
 
   // 2. Потом встроенный календарь 2026
-  const bundled = getBundledCalendarDay(
-    dateKey,
-    language
-  );
+  const bundled = getBundledCalendarDay(dateKey, language);
 
   if (bundled) {
     return bundled;
@@ -47,7 +36,6 @@ const getWidgetCalendarDay = async (value, language) => {
   });
 };
 
-
 const parseWidgetDate = (value) => {
   if (!value) {
     return null;
@@ -55,11 +43,8 @@ const parseWidgetDate = (value) => {
 
   const parsed = new Date(`${value}T12:00:00`);
 
-  return Number.isNaN(parsed.getTime())
-    ? null
-    : parsed;
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
-
 
 const resolveCalendarDisplayDate = (props) => {
   if (props.widgetAction !== 'WIDGET_CLICK') {
@@ -71,60 +56,32 @@ const resolveCalendarDisplayDate = (props) => {
   }
 
   if (props.clickAction === 'CALENDAR_SELECT_DAY') {
-    return parseWidgetDate(
-      props.clickActionData?.date
-    );
+    return parseWidgetDate(props.clickActionData?.date);
   }
 
-  if (
-    props.clickAction === 'CALENDAR_PREV_MONTH' ||
-    props.clickAction === 'CALENDAR_NEXT_MONTH'
-  ) {
-    const year = Number(
-      props.clickActionData?.year
-    );
+  if (props.clickAction === 'CALENDAR_PREV_MONTH' || props.clickAction === 'CALENDAR_NEXT_MONTH') {
+    const year = Number(props.clickActionData?.year);
 
-    const month = Number(
-      props.clickActionData?.month
-    );
+    const month = Number(props.clickActionData?.month);
 
-    if (
-      Number.isInteger(year) &&
-      Number.isInteger(month) &&
-      month >= 1 &&
-      month <= 12
-    ) {
-      return new Date(
-        year,
-        month - 1,
-        1
-      );
+    if (Number.isInteger(year) && Number.isInteger(month) && month >= 1 && month <= 12) {
+      return new Date(year, month - 1, 1);
     }
   }
 
   return null;
 };
 
-
 export const widgetTaskHandler = async (props) => {
-  const {
-    widgetAction,
-    clickAction,
-    clickActionData,
-    widgetInfo,
-    renderWidget,
-  } = props;
-
+  const {widgetAction, clickAction, clickActionData, widgetInfo, renderWidget} = props;
 
   /*
    * ЦИТАТА ДНЯ
    */
   if (widgetInfo.widgetName === 'QuoteOfDay') {
-    const shouldRenderQuote = [
-      'WIDGET_ADDED',
-      'WIDGET_UPDATE',
-      'WIDGET_RESIZED',
-    ].includes(widgetAction);
+    const shouldRenderQuote = ['WIDGET_ADDED', 'WIDGET_UPDATE', 'WIDGET_RESIZED'].includes(
+      widgetAction
+    );
 
     if (!shouldRenderQuote) {
       return;
@@ -133,33 +90,20 @@ export const widgetTaskHandler = async (props) => {
     const quote = getDailyQuote();
 
     renderWidget(
-      <QuoteOfDayWidget
-        quote={quote}
-        width={widgetInfo.width}
-        height={widgetInfo.height}
-      />
+      <QuoteOfDayWidget quote={quote} width={widgetInfo.width} height={widgetInfo.height} />
     );
 
     return;
   }
 
-
   /*
    * ЦЕРКОВНЫЙ КАЛЕНДАРЬ
    */
-  if (
-    widgetInfo.widgetName !==
-    'ChurchCalendar'
-  ) {
+  if (widgetInfo.widgetName !== 'ChurchCalendar') {
     return;
   }
 
-
-  const normalUpdate = [
-    'WIDGET_ADDED',
-    'WIDGET_UPDATE',
-    'WIDGET_RESIZED',
-  ].includes(widgetAction);
+  const normalUpdate = ['WIDGET_ADDED', 'WIDGET_UPDATE', 'WIDGET_RESIZED'].includes(widgetAction);
 
   const calendarClick =
     widgetAction === 'WIDGET_CLICK' &&
@@ -170,23 +114,16 @@ export const widgetTaskHandler = async (props) => {
       'CALENDAR_SELECT_DAY',
     ].includes(clickAction);
 
-
   if (!normalUpdate && !calendarClick) {
     return;
   }
 
-
-  const language =
-    await getCalendarLanguage();
-
+  const language = await getCalendarLanguage();
 
   /*
    * Какой месяц показываем справа
    */
-  const displayDate =
-    resolveCalendarDisplayDate(props) ||
-    new Date();
-
+  const displayDate = resolveCalendarDisplayDate(props) || new Date();
 
   /*
    * Какой день показываем слева:
@@ -198,55 +135,32 @@ export const widgetTaskHandler = async (props) => {
    */
   let requestedDayDate = new Date();
 
-
-  if (
-    widgetAction === 'WIDGET_CLICK' &&
-    clickAction === 'CALENDAR_SELECT_DAY'
-  ) {
-    const selectedDate =
-      parseWidgetDate(
-        clickActionData?.date
-      );
+  if (widgetAction === 'WIDGET_CLICK' && clickAction === 'CALENDAR_SELECT_DAY') {
+    const selectedDate = parseWidgetDate(clickActionData?.date);
 
     if (selectedDate) {
       requestedDayDate = selectedDate;
     }
   }
 
-
-  if (
-    widgetAction === 'WIDGET_CLICK' &&
-    clickAction === 'CALENDAR_TODAY'
-  ) {
+  if (widgetAction === 'WIDGET_CLICK' && clickAction === 'CALENDAR_TODAY') {
     requestedDayDate = new Date();
   }
-
 
   let day = null;
 
   try {
-    day = await getWidgetCalendarDay(
-      requestedDayDate,
-      language
-    );
+    day = await getWidgetCalendarDay(requestedDayDate, language);
   } catch (error) {
-    console.log(
-      'Ошибка обновления виджета календаря:',
-      error?.message || error
-    );
+    console.log('Ошибка обновления виджета календаря:', error?.message || error);
   }
-
 
   /*
    * Если нажали конкретный день,
    * месяц справа тоже должен перейти
    * к этому выбранному дню.
    */
-  const finalDisplayDate =
-    clickAction === 'CALENDAR_SELECT_DAY'
-      ? requestedDayDate
-      : displayDate;
-
+  const finalDisplayDate = clickAction === 'CALENDAR_SELECT_DAY' ? requestedDayDate : displayDate;
 
   renderWidget(
     <ChurchCalendarWidget

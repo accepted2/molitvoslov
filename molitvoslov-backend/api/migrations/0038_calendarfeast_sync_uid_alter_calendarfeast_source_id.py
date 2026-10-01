@@ -6,18 +6,20 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0037_calendar_ukrainian'),
+        ("api", "0037_calendar_ukrainian"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='calendarfeast',
-            name='sync_uid',
-            field=models.UUIDField(blank=True, db_index=True, editable=False, null=True, unique=True),
+            model_name="calendarfeast",
+            name="sync_uid",
+            field=models.UUIDField(
+                blank=True, db_index=True, editable=False, null=True, unique=True
+            ),
         ),
         migrations.AlterField(
-            model_name='calendarfeast',
-            name='source_id',
+            model_name="calendarfeast",
+            name="source_id",
             field=models.PositiveIntegerField(blank=True, db_index=True, null=True, unique=True),
         ),
     ]

@@ -1,9 +1,4 @@
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -38,7 +33,6 @@ import {
 } from '../services/calendarPreferences';
 import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
 import {colors} from '../theme';
-
 
 const buildCells = (year, month) => {
   const first = new Date(year, month - 1, 1);
@@ -151,7 +145,7 @@ const ExpandableTextBlock = ({title, subtitle, text}) => {
   );
 };
 
-const ReadingLink = ({kind, title, navigation, copy, language,onLayout,}) => {
+const ReadingLink = ({kind, title, navigation, copy, language, onLayout}) => {
   const [expanded, setExpanded] = useState(false);
 
   if (!title) return null;
@@ -242,8 +236,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
     apostle: null,
   });
 
-  const [readingLayoutVersion, setReadingLayoutVersion] =
-    useState(0);
+  const [readingLayoutVersion, setReadingLayoutVersion] = useState(0);
 
   const saveReadingLayout = (name, y) => {
     if (readingLayouts.current[name] === y) {
@@ -297,21 +290,15 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   useEffect(() => {
     const section = route.params?.section;
 
-    if (
-      !dayData ||
-      (section !== 'gospel' && section !== 'apostle')
-    ) {
+    if (!dayData || (section !== 'gospel' && section !== 'apostle')) {
       return;
     }
 
-    const dayCardY =
-      readingLayouts.current.dayCard;
+    const dayCardY = readingLayouts.current.dayCard;
 
-    const readingsY =
-      readingLayouts.current.readings;
+    const readingsY = readingLayouts.current.readings;
 
-    const readingY =
-      readingLayouts.current[section];
+    const readingY = readingLayouts.current[section];
 
     if (
       typeof dayCardY !== 'number' ||
@@ -322,12 +309,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
     }
 
     const timer = setTimeout(() => {
-      const targetY =
-        dayCardY +
-        readingsY +
-        readingY -
-        headerHeight -
-        12;
+      const targetY = dayCardY + readingsY + readingY - headerHeight - 12;
 
       scrollRef.current?.scrollTo({
         y: Math.max(0, targetY),
@@ -336,12 +318,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
     }, 180);
 
     return () => clearTimeout(timer);
-  }, [
-    dayData,
-    headerHeight,
-    readingLayoutVersion,
-    route.params?.section,
-  ]);
+  }, [dayData, headerHeight, readingLayoutVersion, route.params?.section]);
 
   useEffect(() => {
     getCalendarLanguage()
@@ -571,12 +548,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const dayContent = (
     <View
       style={styles.dayCard}
-      onLayout={(event) =>
-        saveReadingLayout(
-          'dayCard',
-          event.nativeEvent.layout.y
-        )
-      }
+      onLayout={(event) => saveReadingLayout('dayCard', event.nativeEvent.layout.y)}
     >
       {loadingDay ? (
         <View style={styles.dayLoading}>
@@ -654,12 +626,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
           <View
             style={styles.readingsSection}
-            onLayout={(event) =>
-                  saveReadingLayout(
-                    'readings',
-                    event.nativeEvent.layout.y
-                  )
-                }
+            onLayout={(event) => saveReadingLayout('readings', event.nativeEvent.layout.y)}
           >
             <Text style={styles.sectionEyebrow}>{copy.readings}</Text>
 
@@ -669,12 +636,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
               navigation={navigation}
               copy={copy}
               language={language}
-              onLayout={(event) =>
-                saveReadingLayout(
-                  'gospel',
-                  event.nativeEvent.layout.y
-                )
-              }
+              onLayout={(event) => saveReadingLayout('gospel', event.nativeEvent.layout.y)}
             />
 
             <ReadingLink
@@ -683,12 +645,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
               navigation={navigation}
               copy={copy}
               language={language}
-              onLayout={(event) =>
-                saveReadingLayout(
-                  'apostle',
-                  event.nativeEvent.layout.y
-                )
-              }
+              onLayout={(event) => saveReadingLayout('apostle', event.nativeEvent.layout.y)}
             />
 
             {!dayData.gospel_title && !dayData.apostolic_title && (
@@ -956,7 +913,7 @@ const styles = StyleSheet.create({
   feastImageWrap: {
     width: 88,
     height: 120,
-    alignSelf:'center',
+    alignSelf: 'center',
     borderRadius: 13,
     overflow: 'hidden',
     backgroundColor: '#EED7B3',

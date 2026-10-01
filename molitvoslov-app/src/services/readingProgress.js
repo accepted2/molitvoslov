@@ -1,10 +1,6 @@
 import {getDatabase} from '../db/database';
 
-import {
-  authenticatedFetch,
-  getApiToken,
-  getCachedBackendUser,
-} from './backendAuth';
+import {authenticatedFetch, getApiToken, getCachedBackendUser} from './backendAuth';
 
 import {getOrCreateAnonymousLocalUser} from './localDataOwnership';
 
@@ -450,9 +446,7 @@ export const getReadingProgress = async () => {
 
   return rows
     .sort((left, right) => {
-      const timeDifference =
-        toTimestamp(right.updated_at) -
-        toTimestamp(left.updated_at);
+      const timeDifference = toTimestamp(right.updated_at) - toTimestamp(left.updated_at);
 
       if (timeDifference !== 0) {
         return timeDifference;
@@ -602,11 +596,7 @@ export const saveReadingProgress = async ({
           AND source_type = ?
           AND source_id = ?
     `,
-    [
-      localUserId,
-      sourceType,
-      sourceId,
-    ]
+    [localUserId, sourceType, sourceId]
   );
 
   if (user?.id) {

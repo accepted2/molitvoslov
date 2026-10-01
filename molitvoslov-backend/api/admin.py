@@ -32,6 +32,7 @@ from django.utils.html import format_html
 from .calendar_models import CalendarDay, CalendarFeast
 from .calendar_models import CalendarDay, CalendarFeast, CalendarFastType
 
+
 class CategoryTextInline(admin.TabularInline):
     """Inline для добавления категорий с порядком прямо в тексте"""
 
@@ -1002,7 +1003,6 @@ class CalendarFeastAdmin(admin.ModelAdmin):
         "celebration_type",
         "celebration_rank",
         "has_icon",
-
     ]
 
     list_filter = [
@@ -1206,14 +1206,14 @@ class CalendarFeastAdmin(admin.ModelAdmin):
             '<img src="{}" '
             'style="max-width:220px; max-height:260px; '
             'object-fit:contain; border-radius:8px;" />'
-            '</div>'
+            "</div>"
             '<a href="{}" target="_blank">{}</a>',
             obj.icon_url,
             obj.icon_url,
             obj.icon_url,
         )
-    @admin.display(description="Дата по новому стилю")
 
+    @admin.display(description="Дата по новому стилю")
     def gregorian_dates_display(self, obj):
         dates = set(
             obj.calendar_days.values_list(
@@ -1234,11 +1234,7 @@ class CalendarFeastAdmin(admin.ModelAdmin):
 
         dates = sorted(dates)
 
-        return ", ".join(
-            date.strftime("%d.%m.%Y")
-            for date in dates
-        )
-
+        return ", ".join(date.strftime("%d.%m.%Y") for date in dates)
 
     @admin.display(description="Дата празднования")
     def celebration_dates(self, obj):
@@ -1267,10 +1263,8 @@ class CalendarFeastAdmin(admin.ModelAdmin):
 
         dates = sorted(dates)
 
-        return ", ".join(
-            f"{day:02d}.{month:02d}"
-            for month, day in dates
-        )
+        return ", ".join(f"{day:02d}.{month:02d}" for month, day in dates)
+
 
 @admin.register(CalendarFastType)
 class CalendarFastTypeAdmin(admin.ModelAdmin):
@@ -1366,7 +1360,6 @@ class CalendarFastTypeAdmin(admin.ModelAdmin):
         )
 
 
-
 @admin.register(CalendarDay)
 class CalendarDayAdmin(admin.ModelAdmin):
     list_display = [
@@ -1442,7 +1435,6 @@ class CalendarDayAdmin(admin.ModelAdmin):
                 ]
             },
         ),
-
         (
             "Описание дня — русский",
             {
@@ -1498,12 +1490,7 @@ class CalendarDayAdmin(admin.ModelAdmin):
     ]
 
     def get_queryset(self, request):
-        return (
-            super()
-            .get_queryset(request)
-            .select_related("main_feast")
-            .prefetch_related("feasts")
-        )
+        return super().get_queryset(request).select_related("main_feast").prefetch_related("feasts")
 
     @admin.display(description="Языки")
     def imported_languages(self, obj):
@@ -1516,19 +1503,11 @@ class CalendarDayAdmin(admin.ModelAdmin):
 
     @admin.display(boolean=True, description="Пост RU")
     def has_fast_ru(self, obj):
-        return bool(
-            obj.fast_type_title
-            or obj.fast_name
-            or obj.fast_description
-        )
+        return bool(obj.fast_type_title or obj.fast_name or obj.fast_description)
 
     @admin.display(boolean=True, description="Пост UK")
     def has_fast_uk(self, obj):
-        return bool(
-            obj.fast_type_title_uk
-            or obj.fast_name_uk
-            or obj.fast_description_uk
-        )
+        return bool(obj.fast_type_title_uk or obj.fast_name_uk or obj.fast_description_uk)
 
     @admin.display(boolean=True, description="Еванг. RU")
     def has_gospel_ru(self, obj):
@@ -1540,17 +1519,12 @@ class CalendarDayAdmin(admin.ModelAdmin):
 
     @admin.display(boolean=True, description="Апост. RU")
     def has_apostolic_ru(self, obj):
-        return bool(
-            obj.apostolic_title
-            or obj.apostolic_reading
-        )
+        return bool(obj.apostolic_title or obj.apostolic_reading)
 
     @admin.display(boolean=True, description="Апост. UK")
     def has_apostolic_uk(self, obj):
-        return bool(
-            obj.apostolic_title_uk
-            or obj.apostolic_reading_uk
-        )
+        return bool(obj.apostolic_title_uk or obj.apostolic_reading_uk)
+
 
 def save_model(self, request, obj, form, change):
     if obj.fast_type:

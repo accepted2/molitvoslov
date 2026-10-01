@@ -29,11 +29,7 @@ export const getOrCreateAnonymousLocalUser = async (existingDb = null) => {
         )
         VALUES (?, ?, ?)
       `,
-      [
-        ANONYMOUS_LOCAL_USERNAME,
-        '__anonymous__',
-        new Date().toISOString(),
-      ]
+      [ANONYMOUS_LOCAL_USERNAME, '__anonymous__', new Date().toISOString()]
     );
 
     return {
@@ -149,11 +145,7 @@ export const adoptAnonymousLocalData = async (cloudUserId) => {
           AND source_id = ?
           LIMIT 1
         `,
-        [
-          accountLocalUserId,
-          localRow.source_type,
-          localRow.source_id,
-        ]
+        [accountLocalUserId, localRow.source_type, localRow.source_id]
       );
 
       if (!existing) {
@@ -166,11 +158,7 @@ export const adoptAnonymousLocalData = async (cloudUserId) => {
               sync_status = 'pending'
             WHERE id = ?
           `,
-          [
-            accountLocalUserId,
-            userId,
-            localRow.id,
-          ]
+          [accountLocalUserId, userId, localRow.id]
         );
 
         continue;
@@ -185,10 +173,7 @@ export const adoptAnonymousLocalData = async (cloudUserId) => {
               sync_status = 'pending'
             WHERE id = ?
           `,
-          [
-            userId,
-            localRow.id,
-          ]
+          [userId, localRow.id]
         );
 
         continue;
