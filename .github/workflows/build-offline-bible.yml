@@ -130,4 +130,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add molitvoslov-app/src/data/offlineBible.json
           git commit -m "Generate compact offline Synodal Bible bundle"
-          git push
+          git pull --rebase origin main
+          git push origin HEAD:main
