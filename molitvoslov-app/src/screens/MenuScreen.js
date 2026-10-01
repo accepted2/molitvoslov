@@ -50,6 +50,7 @@ const CATEGORY_ICONS = {
   canons: 'canons',
   communion: 'communion',
   psalter: 'psalter',
+  misc: 'canons',
   bible: 'bible',
 };
 
@@ -556,9 +557,13 @@ export const MenuScreen = ({navigation}) => {
     () =>
       rootCategories.filter(
         (category) =>
-          !['utrennie-molitvy', 'molitvy-na-son-griadushchim', 'psaltir', 'akafisty'].includes(
-            category.slug
-          )
+          ![
+            'utrennie-molitvy',
+            'molitvy-na-son-griadushchim',
+            'psaltir',
+            'akafisty',
+            'raznye-molitvy',
+          ].includes(category.slug)
       ),
     [rootCategories]
   );
@@ -1381,6 +1386,14 @@ export const MenuScreen = ({navigation}) => {
                   iconSource={CATEGORY_ICONS.psalter}
                   artwork={homeArtwork.psalter}
                   onPress={() => navigation.navigate('Psalter')}
+                />
+                <DecorativeCard
+                  title="Разные молитвы"
+                  subtitle="Молитвы на разные случаи"
+                  symbol="✦"
+                  iconSource={CATEGORY_ICONS.misc}
+                  artwork={homeArtwork.communion}
+                  onPress={() => navigation.navigate('MiscPrayers')}
                 />
                 <DecorativeCard
                   title="Библия"
