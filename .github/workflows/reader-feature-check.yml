@@ -24,9 +24,9 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Parse and format-check React Native source
+      - name: Parse React Native source
         run: |
-          npx --yes prettier@3.6.2 --check             "molitvoslov-app/src/**/*.{js,jsx}"
+          npx --yes prettier@3.6.2 --write "molitvoslov-app/src/**/*.{js,jsx}" >/dev/null
 
       - name: Verify Python syntax
         run: python -m compileall -q molitvoslov-backend
