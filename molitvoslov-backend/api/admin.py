@@ -47,6 +47,20 @@ class CategoryTextInline(admin.TabularInline):
     verbose_name_plural = "Категории (с порядком)"
 
 
+class CategoryPrayerInline(admin.TabularInline):
+    """Молитвы внутри выбранной категории."""
+
+    model = CategoryText
+    fk_name = "category"
+    extra = 1
+    autocomplete_fields = ["text"]
+    fields = ["text", "order"]
+    ordering = ["order"]
+
+    verbose_name = "Молитва"
+    verbose_name_plural = "Молитвы в категории"
+
+
 class CollectionItemInline(admin.TabularInline):
     """Inline для добавления текста в сборник прямо из админки"""
 
@@ -83,6 +97,8 @@ class CategoryAdmin(admin.ModelAdmin):
     ordering = [
         "order",
     ]
+
+    inlines = [CategoryPrayerInline]
 
 
 @admin.register(Text)
