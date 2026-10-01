@@ -17,12 +17,15 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {
+  READER_LANGUAGE_MODES,
+  buildReaderLanguageOptions,
+} from '../services/readerLanguageModes';
 
-const MODE_CHURCH = 'church';
-
-const MODE_BOTH = 'both';
-
-const MODE_RUSSIAN = 'russian';
+const MODE_CHURCH = READER_LANGUAGE_MODES.CHURCH;
+const MODE_BOTH = READER_LANGUAGE_MODES.BOTH;
+const MODE_RUSSIAN = READER_LANGUAGE_MODES.RUSSIAN;
+const MODE_TRADITIONAL = READER_LANGUAGE_MODES.TRADITIONAL;
 
 const normalizeAkathistText = (value) => {
   let result = String(value || '')
@@ -181,11 +184,43 @@ export const AkathistScreen = ({route, navigation}) => {
     );
   }, [akathist]);
 
+  const hasTraditionalText = useMemo(() => {
+    if (!akathist) {
+      return false;
+    }
+
+    const specialTexts = [
+      akathist.troparion,
+      akathist.kontakion_before,
+      akathist.common_rule?.opening,
+      akathist.common_rule?.ending,
+    ];
+
+    return (
+      specialTexts.some((item) => !!item?.traditional_content?.trim()) ||
+      (akathist.sections || []).some(
+        (section) => !!section.text?.traditional_content?.trim()
+      )
+    );
+  }, [akathist]);
+
   useEffect(() => {
-    if (akathist && !hasRussianTranslation && viewMode !== MODE_CHURCH) {
+    if (!akathist) {
+      return;
+    }
+
+    if (
+      (viewMode === MODE_BOTH || viewMode === MODE_RUSSIAN) &&
+      !hasRussianTranslation
+    ) {
+      setViewMode(MODE_CHURCH);
+      return;
+    }
+
+    if (viewMode === MODE_TRADITIONAL && !hasTraditionalText) {
       setViewMode(MODE_CHURCH);
     }
-  }, [akathist, hasRussianTranslation, viewMode]);
+  }, [akathist, hasRussianTranslation, hasTraditionalText, viewMode]);
 
   const handleAction = async (actionKey) => {
     if (!actionKey?.startsWith('akathist:') || !akathist) {
@@ -266,6 +301,8 @@ export const AkathistScreen = ({route, navigation}) => {
     const showChurch = viewMode === MODE_CHURCH || viewMode === MODE_BOTH;
 
     const showRussian = viewMode === MODE_RUSSIAN || viewMode === MODE_BOTH;
+
+    const showTraditional = viewMode === MODE_TRADITIONAL;
 
     const attachSaved = ({syntheticId, anchorType, anchorId, language, segment, special}) => {
       savedItems
@@ -368,6 +405,66 @@ export const AkathistScreen = ({route, navigation}) => {
 
       const russian = normalizeAkathistText(textObject.translation);
 
+      const traditional = normalizeAkathistText(textObject.traditional_content);
+
+      if (showTraditional && traditional) {
+        blocks.push(
+          makeBlock({
+            text: traditional,
+
+            language: 'traditional',
+
+            anchorType: 'akathist_special',
+
+            anchorId: textObject.id,
+
+            itemTitle: heading,
+
+            fullSaveType: 'text',
+
+            metadata: {
+              slug,
+
+              special: specialKey,
+
+              language: 'traditional',
+            },
+
+            className: 'akathist-church',
+          })
+        );
+      }
+
+      if (showTraditional && traditional) {
+        blocks.push(
+          makeBlock({
+            text: traditional,
+
+            language: 'traditional',
+
+            anchorType: 'akathist_section',
+
+            anchorId: section.id,
+
+            itemTitle: sectionTitle,
+
+            fullSaveType,
+
+            metadata: {
+              slug,
+
+              section_type: section.section_type,
+
+              section_number: section.number,
+
+              language: 'traditional',
+            },
+
+            className: 'akathist-church',
+          })
+        );
+      }
+
       if (showChurch && church) {
         blocks.push(
           makeBlock({
@@ -455,6 +552,8 @@ export const AkathistScreen = ({route, navigation}) => {
       const church = normalizeAkathistText(section.text?.content);
 
       const russian = normalizeAkathistText(section.text?.translation);
+
+      const traditional = normalizeAkathistText(section.text?.traditional_content);
 
       const blocks = [];
 
@@ -561,23 +660,10 @@ export const AkathistScreen = ({route, navigation}) => {
 
       viewSwitcher: {
         activeKey: viewMode,
-
-        options: [
-          {
-            key: MODE_CHURCH,
-            label: 'ЦС',
-          },
-          {
-            key: MODE_BOTH,
-            label: 'ЦС + Рус.',
-            disabled: !hasRussianTranslation,
-          },
-          {
-            key: MODE_RUSSIAN,
-            label: 'Рус.',
-            disabled: !hasRussianTranslation,
-          },
-        ],
+        options: buildReaderLanguageOptions({
+          hasRussian: hasRussianTranslation,
+          hasTraditional: hasTraditionalText,
+        }),
       },
 
       progressAnchorType: 'akathist_section',
@@ -586,7 +672,16 @@ export const AkathistScreen = ({route, navigation}) => {
 
       sections,
     };
-  }, [akathist, akathistId, hasRussianTranslation, savedItems, slug, title, viewMode]);
+  }, [
+    akathist,
+    akathistId,
+    hasRussianTranslation,
+    hasTraditionalText,
+    savedItems,
+    slug,
+    title,
+    viewMode,
+  ]);
 
   const openReaderMenu = () => {
     setBookmarkPosition(getCurrentProgress());
