@@ -141,6 +141,7 @@ class TextAdmin(admin.ModelAdmin):
                     "description",
                     "description_position",
                     "content",
+                    "traditional_content",
                     "translation",
                     "slug",
                 ),
@@ -482,13 +483,20 @@ class PsalmVerseInline(admin.TabularInline):
 
 @admin.register(Psalm)
 class PsalmAdmin(admin.ModelAdmin):
-    list_display = ["number", "kathisma", "title_church_slavonic", "title_russian"]
+    list_display = [
+        "number",
+        "kathisma",
+        "title_church_slavonic",
+        "title_church_slavonic_traditional",
+        "title_russian",
+    ]
     list_filter = [
         "kathisma",
     ]
     search_fields = [
         "number",
         "title_church_slavonic",
+        "title_church_slavonic_traditional",
         "title_russian",
         "description",
         "verses__church_slavonic",
