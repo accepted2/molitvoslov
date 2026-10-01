@@ -19,6 +19,9 @@ export const ReaderBookmarkMenu = ({
   bookmark,
   canReturnToProgress = false,
   onReturnToProgress,
+  languageOptions = [],
+  activeLanguage = null,
+  onLanguageChange,
 }) => {
   const insets = useSafeAreaInsets();
   const [saving, setSaving] = useState(false);
@@ -76,6 +79,41 @@ export const ReaderBookmarkMenu = ({
           <View style={styles.handle} />
 
           <Text style={styles.title}>Место чтения</Text>
+
+          {!!languageOptions.length && (
+            <View style={styles.languageSection}>
+              <Text style={styles.languageTitle}>Текст</Text>
+
+              <View style={styles.languageRow}>
+                {languageOptions.map((option) => {
+                  const active = option.key === activeLanguage;
+
+                  return (
+                    <Pressable
+                      key={option.key}
+                      disabled={option.disabled}
+                      onPress={() => onLanguageChange?.(option.key)}
+                      style={({pressed}) => [
+                        styles.languageChip,
+                        active && styles.languageChipActive,
+                        option.disabled && styles.languageChipDisabled,
+                        pressed && !option.disabled && styles.pressed,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.languageChipText,
+                          active && styles.languageChipTextActive,
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          )}
 
           <Pressable
             disabled={!bookmark || saving}
@@ -176,6 +214,55 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
     fontSize: 20,
     fontWeight: '700',
+  },
+
+  languageSection: {
+    marginBottom: spacing.sm,
+  },
+
+  languageTitle: {
+    marginBottom: 7,
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+
+  languageRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+
+  languageChip: {
+    minHeight: 34,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+
+  languageChipActive: {
+    backgroundColor: colors.accentSoft,
+    borderColor: colors.borderStrong,
+  },
+
+  languageChipDisabled: {
+    opacity: 0.35,
+  },
+
+  languageChipText: {
+    color: colors.textSecondary,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  languageChipTextActive: {
+    color: colors.accentDark,
   },
 
   action: {
