@@ -263,16 +263,24 @@ def _month_has_language(year, month, language):
     ).only("source_payload")
 
     expected = monthrange(year, month)[1]
+
     if rows.count() < expected:
         return False
 
-    if language == "ru":
-        # Данные, импортированные до появления двуязычности, уже русские.
-        return True
+    for row in rows:
+        imported_languages = set((row.source_payload or {}).get("imported_languages") or [])
 
-    return all(
-        language in set((row.source_payload or {}).get("imported_languages") or []) for row in rows
-    )
+        if language in imported_languages:
+            continue
+
+        # Старые записи до появления imported_languages
+        # считаем русскими только если список языков вообще пуст.
+        if language == "ru" and not imported_languages:
+            continue
+
+        return False
+
+    return True
 
 
 def ensure_month(year, month, language="ru", force=False):
@@ -314,8 +322,14 @@ def ensure_day(target_date, language="ru"):
         set((day.source_payload or {}).get("imported_languages") or []) if day else set()
     )
 
-    if day and (language == "ru" or language in imported_languages):
-        return day
+    if day:
+        if language in imported_languages:
+            return day
+
+        # Совместимость со старыми русскими данными,
+        # созданными до imported_languages.
+        if language == "ru" and not imported_languages:
+            return day
 
     try:
         payload = fetch_source_json(

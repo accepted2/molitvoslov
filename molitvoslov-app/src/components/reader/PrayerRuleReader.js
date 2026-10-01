@@ -183,7 +183,7 @@ const HTML_TEMPLATE = String.raw`
     .favorite-action {
       position: absolute;
       top: 50%;
-      right: 0;
+      left: 0;
       display: flex;
       width: 36px;
       height: 36px;

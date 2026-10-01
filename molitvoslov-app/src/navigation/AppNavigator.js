@@ -35,6 +35,18 @@ import {colors} from '../theme';
 import {LinearGradient} from 'expo-linear-gradient';
 const Stack = createStackNavigator();
 
+const linking = {
+  prefixes: ['molitvoslov://'],
+
+  config: {
+    screens: {
+      ChurchCalendar: {
+        path: 'calendar/:date',
+      },
+    },
+  },
+};
+
 const SectionHeaderTitle = ({title}) => (
   <View style={styles.sectionHeaderTitle}>
     <Text style={styles.sectionHeaderText}>{title}</Text>
@@ -48,7 +60,7 @@ const SectionHeaderTitle = ({title}) => (
 );
 
 export const AppNavigator = () => (
-  <NavigationContainer>
+  <NavigationContainer linking={linking}>
     <Stack.Navigator
       screenOptions={{
         headerStyle: {
