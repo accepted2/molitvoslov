@@ -66,6 +66,7 @@ class TextSerializer(serializers.ModelSerializer):
             "title",
             "description",
             "content",
+            "traditional_content",
             "translation",
             "categories",
             "description_position",
@@ -192,7 +193,13 @@ class PrayerRuleSerializer(serializers.ModelSerializer):
 class PsalmVerseSerializer(serializers.ModelSerializer):
     class Meta:
         model = PsalmVerse
-        fields = ["id", "number", "church_slavonic", "russian"]
+        fields = [
+            "id",
+            "number",
+            "church_slavonic",
+            "church_slavonic_traditional",
+            "russian",
+        ]
 
 
 class PsalmSerializer(serializers.ModelSerializer):
@@ -204,6 +211,7 @@ class PsalmSerializer(serializers.ModelSerializer):
             "id",
             "number",
             "title_church_slavonic",
+            "title_church_slavonic_traditional",
             "title_russian",
             "description",
             "verses",
@@ -240,6 +248,7 @@ class KathismaSerializer(serializers.ModelSerializer):
             "title",
             "prayers_after",
             "prayers_after_russian",
+            "prayers_after_traditional",
             "psalms",
             "glories",
         ]
@@ -288,8 +297,10 @@ class PsalterSerializer(serializers.ModelSerializer):
             "description",
             "prayers_before",
             "prayers_before_russian",
+            "prayers_before_traditional",
             "prayers_after",
             "prayers_after_russian",
+            "prayers_after_traditional",
             "is_visible",
             "kathismas",
         ]
