@@ -483,6 +483,13 @@ export const BibleChapterScreen = ({route, navigation}) => {
         onClose={() => setReaderMenuVisible(false)}
         navigation={navigation}
         bookmark={bookmarkConfig}
+        languageOptions={[
+          {key: 'russian', label: 'Рус.'},
+          {key: 'church', label: 'ЦС', disabled: true},
+          {key: 'both', label: 'ЦС + Рус.', disabled: true},
+          {key: 'traditional', label: 'ЦС традиц.', disabled: true},
+        ]}
+        activeLanguage="russian"
         canReturnToProgress={!!stablePosition}
         onReturnToProgress={() => {
           readerRef.current?.goToProgress(stablePosition);
