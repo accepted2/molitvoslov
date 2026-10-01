@@ -21,6 +21,8 @@ import {BibleBooksScreen} from '../screens/BibleBooksScreen';
 import {BibleBookScreen} from '../screens/BibleBookScreen';
 import {BibleChapterScreen} from '../screens/BibleChapterScreen';
 import {FavoritesScreen} from '../screens/FavoritesScreen';
+import {MiscPrayersScreen} from '../screens/MiscPrayersScreen';
+import {MiscPrayerPlaceholderScreen} from '../screens/MiscPrayerPlaceholderScreen';
 import {ContinueReadingScreen} from '../screens/ContinueReadingScreen';
 import {AccountScreen} from '../screens/AccountScreen';
 import {MemorialScreen} from '../screens/MemorialScreen';
@@ -76,10 +78,18 @@ export const AppNavigator = () => (
         cardStyle: {
           backgroundColor: colors.background,
         },
+        gestureEnabled: true,
+        gestureDirection: 'horizontal',
       }}
     >
       <Stack.Screen name="Menu" component={MenuScreen} options={{headerShown: false}} />
       <Stack.Screen name="Favorites" component={FavoritesScreen} options={{headerShown: false}} />
+      <Stack.Screen name="MiscPrayers" component={MiscPrayersScreen} options={{headerShown: false}} />
+      <Stack.Screen
+        name="MiscPrayerPlaceholder"
+        component={MiscPrayerPlaceholderScreen}
+        options={{headerShown: false}}
+      />
       <Stack.Screen
         name="ContinueReading"
         component={ContinueReadingScreen}
