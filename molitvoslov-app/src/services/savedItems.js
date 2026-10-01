@@ -3,7 +3,7 @@ import * as Crypto from 'expo-crypto';
 import {getDatabase} from '../db/database';
 import {getCurrentUser} from './localAuth';
 
-import {authenticatedFetch, getCachedBackendUser} from './backendAuth';
+import {authenticatedFetch, getApiToken, getCachedBackendUser} from './backendAuth';
 
 const ANONYMOUS_LOCAL_USERNAME = '__molitvoslov_guest__';
 
@@ -105,6 +105,12 @@ const stringifyMetadata = (value) => {
   } catch {
     return '{}';
   }
+};
+
+const toTimestamp = (value) => {
+  const timestamp = new Date(value || 0).getTime();
+
+  return Number.isFinite(timestamp) ? timestamp : 0;
 };
 
 const prepareItem = (item) => ({
@@ -222,7 +228,6 @@ const pushSavedItem = async (db, user, localItem) => {
         server_id = ?,
         cloud_user_id = ?,
         sync_status = 'synced',
-        created_at = COALESCE(?, created_at),
         updated_at = COALESCE(?, updated_at),
         deleted_at = ?
       WHERE id = ?
@@ -232,7 +237,6 @@ const pushSavedItem = async (db, user, localItem) => {
       serverSyncId,
       serverItem.id ?? item.server_id ?? null,
       user.id,
-      serverItem.created_at ?? null,
       serverItem.updated_at ?? null,
       serverItem.deleted_at ?? item.deleted_at ?? null,
       item.id,
@@ -335,7 +339,6 @@ const pullSavedItems = async (db, user) => {
     if (existing && (existing.sync_status === 'pending' || existing.sync_status === 'deleted')) {
       continue;
     }
-
     const metadata = stringifyMetadata(serverItem.metadata);
 
     if (existing) {
@@ -393,7 +396,7 @@ const pullSavedItems = async (db, user) => {
 
           metadata,
 
-          serverItem.created_at || existing.created_at,
+          existing.created_at || serverItem.created_at,
 
           serverItem.updated_at || existing.updated_at,
 
@@ -493,11 +496,17 @@ const pullSavedItems = async (db, user) => {
  */
 const runSavedItemsSync = async () => {
   const user = await getCachedBackendUser();
-
+  const token = await getApiToken();
   if (!user?.id) {
     return {
       success: false,
       reason: 'no-user',
+    };
+  }
+  if (!token) {
+    return {
+      success: false,
+      reason: 'no-auth',
     };
   }
 
@@ -581,12 +590,22 @@ export const getSavedItems = async (params = {}) => {
         SELECT *
         FROM saved_items
         WHERE ${conditions.join(' AND ')}
-        ORDER BY created_at DESC
+        ORDER BY id DESC
     `,
     values
   );
 
-  return items.map(prepareItem);
+  return items
+    .sort((left, right) => {
+      const timeDifference = toTimestamp(right.created_at) - toTimestamp(left.created_at);
+
+      if (timeDifference !== 0) {
+        return timeDifference;
+      }
+
+      return Number(right.id || 0) - Number(left.id || 0);
+    })
+    .map(prepareItem);
 };
 export const saveItem = async (payload) => {
   const cloudUser = await getCachedBackendUser();

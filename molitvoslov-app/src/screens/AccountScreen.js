@@ -17,6 +17,8 @@ import {syncPrayerBooks} from '../services/prayerBooks';
 
 import {colors, radius, spacing} from '../theme';
 
+import {adoptAnonymousLocalData} from '../services/localDataOwnership';
+
 import {BottomNav} from '../components/navigation/BottomNav';
 
 export const AccountScreen = ({navigation}) => {
@@ -67,7 +69,7 @@ export const AccountScreen = ({navigation}) => {
       }
 
       setGoogleUser(googleResult.user);
-
+      await adoptAnonymousLocalData(googleResult.user.id);
       /*
        * После успешного Google/Django
        * входа сразу восстанавливаем

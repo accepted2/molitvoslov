@@ -28,6 +28,9 @@ from .models import (
     PersonalPrayerBookItem,
     PersonalPrayerPhoto,
 )
+from django.utils.html import format_html
+from .calendar_models import CalendarDay, CalendarFeast
+from .calendar_models import CalendarDay, CalendarFeast, CalendarFastType
 
 
 class CategoryTextInline(admin.TabularInline):
@@ -983,3 +986,558 @@ class PersonalPrayerPhotoAdmin(admin.ModelAdmin):
     search_fields = ["prayer__title", "original_name", "storage_path"]
     list_filter = ["content_type", "deleted_at"]
     readonly_fields = ["sync_id", "storage_path", "created_at", "updated_at"]
+
+
+# =========================================================
+# ЦЕРКОВНЫЙ КАЛЕНДАРЬ
+# =========================================================
+
+
+@admin.register(CalendarFeast)
+class CalendarFeastAdmin(admin.ModelAdmin):
+    list_display = [
+        "source_id",
+        "title_preview",
+        "title_uk_preview",
+        "celebration_dates",
+        "celebration_type",
+        "celebration_rank",
+        "has_icon",
+    ]
+
+    list_filter = [
+        "celebration_type",
+        "celebration_rank",
+        "date_type",
+    ]
+
+    search_fields = [
+        "title",
+        "short_title",
+        "title_uk",
+        "short_title_uk",
+        "source_id",
+    ]
+
+    ordering = [
+        "title",
+        "source_id",
+    ]
+
+    readonly_fields = [
+        "gregorian_dates_display",
+        "icon_preview",
+        "all_dates",
+        "updated_at",
+    ]
+
+    fieldsets = [
+        (
+            "Основное",
+            {
+                "fields": [
+                    "source_id",
+                    "date_type",
+                    "celebration_type",
+                    "celebration_rank",
+                ]
+            },
+        ),
+        (
+            "Название — русский",
+            {
+                "fields": [
+                    "title",
+                    "short_title",
+                ]
+            },
+        ),
+        (
+            "Название — украинский",
+            {
+                "fields": [
+                    "title_uk",
+                    "short_title_uk",
+                ]
+            },
+        ),
+        (
+            "Дата",
+            {
+                "fields": [
+                    "gregorian_dates_display",
+                    "julian_month",
+                    "julian_day",
+                    "easter_offset",
+                ]
+            },
+        ),
+        (
+            "Служебные данные дат",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "all_dates",
+                ],
+            },
+        ),
+        (
+            "Икона",
+            {
+                "fields": [
+                    "icon_url",
+                    "icon_preview",
+                ]
+            },
+        ),
+        (
+            "Тропарь — русский",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "troparion_title",
+                    "troparion_content",
+                    "troparion_echo",
+                ],
+            },
+        ),
+        (
+            "Тропарь — украинский",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "troparion_title_uk",
+                    "troparion_content_uk",
+                ],
+            },
+        ),
+        (
+            "Кондак — русский",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "kontakion_title",
+                    "kontakion_content",
+                    "kontakion_echo",
+                ],
+            },
+        ),
+        (
+            "Кондак — украинский",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "kontakion_title_uk",
+                    "kontakion_content_uk",
+                ],
+            },
+        ),
+        (
+            "Житие — русский",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "life_title",
+                    "life_content",
+                    "description",
+                ],
+            },
+        ),
+        (
+            "Житие — украинский",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "life_title_uk",
+                    "life_content_uk",
+                    "description_uk",
+                ],
+            },
+        ),
+        (
+            "Служебное",
+            {
+                "fields": [
+                    "updated_at",
+                ]
+            },
+        ),
+    ]
+
+    def get_queryset(self, request):
+        return (
+            super()
+            .get_queryset(request)
+            .prefetch_related(
+                "calendar_days",
+                "main_days",
+            )
+        )
+
+    @admin.display(description="Название RU")
+    def title_preview(self, obj):
+        value = obj.short_title or obj.title or ""
+
+        if len(value) > 70:
+            return value[:70] + "…"
+
+        return value
+
+    @admin.display(description="Название UK")
+    def title_uk_preview(self, obj):
+        value = obj.short_title_uk or obj.title_uk or ""
+
+        if len(value) > 70:
+            return value[:70] + "…"
+
+        return value or "—"
+
+    @admin.display(boolean=True, description="Икона")
+    def has_icon(self, obj):
+        return bool(obj.icon_url)
+
+    @admin.display(description="Предпросмотр иконы")
+    def icon_preview(self, obj):
+        if not obj.icon_url:
+            return "Икона не указана"
+
+        return format_html(
+            '<div style="margin-bottom:8px;">'
+            '<img src="{}" '
+            'style="max-width:220px; max-height:260px; '
+            'object-fit:contain; border-radius:8px;" />'
+            "</div>"
+            '<a href="{}" target="_blank">{}</a>',
+            obj.icon_url,
+            obj.icon_url,
+            obj.icon_url,
+        )
+
+    @admin.display(description="Дата по новому стилю")
+    def gregorian_dates_display(self, obj):
+        dates = set(
+            obj.calendar_days.values_list(
+                "date_gregorian",
+                flat=True,
+            )
+        )
+
+        dates.update(
+            obj.main_days.values_list(
+                "date_gregorian",
+                flat=True,
+            )
+        )
+
+        if not dates:
+            return "Пока не привязано к дням календаря"
+
+        dates = sorted(dates)
+
+        return ", ".join(date.strftime("%d.%m.%Y") for date in dates)
+
+    @admin.display(description="Дата празднования")
+    def celebration_dates(self, obj):
+        dates = set()
+
+        # Обычная привязка через список памятей дня
+        for day in obj.calendar_days.all():
+            dates.add(
+                (
+                    day.date_gregorian.month,
+                    day.date_gregorian.day,
+                )
+            )
+
+        # Если святой/праздник указан как главный праздник дня
+        for day in obj.main_days.all():
+            dates.add(
+                (
+                    day.date_gregorian.month,
+                    day.date_gregorian.day,
+                )
+            )
+
+        if not dates:
+            return "—"
+
+        dates = sorted(dates)
+
+        return ", ".join(f"{day:02d}.{month:02d}" for month, day in dates)
+
+
+@admin.register(CalendarFastType)
+class CalendarFastTypeAdmin(admin.ModelAdmin):
+    list_display = [
+        "name",
+        "type_title",
+        "name_uk",
+        "type_title_uk",
+        "code",
+        "is_active",
+        "order",
+    ]
+
+    list_editable = [
+        "is_active",
+        "order",
+    ]
+
+    search_fields = [
+        "code",
+        "name",
+        "type_title",
+        "name_uk",
+        "type_title_uk",
+    ]
+
+    ordering = [
+        "order",
+        "name",
+        "type_title",
+        "code",
+    ]
+
+    readonly_fields = [
+        "sync_uid",
+    ]
+
+    fieldsets = [
+        (
+            "Основное",
+            {
+                "fields": [
+                    "code",
+                    "is_active",
+                    "order",
+                ]
+            },
+        ),
+        (
+            "Русский",
+            {
+                "fields": [
+                    "type_title",
+                    "name",
+                    "description",
+                ]
+            },
+        ),
+        (
+            "Украинский",
+            {
+                "fields": [
+                    "type_title_uk",
+                    "name_uk",
+                    "description_uk",
+                ]
+            },
+        ),
+        (
+            "Служебное",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "sync_uid",
+                ],
+            },
+        ),
+    ]
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+
+        # Если изменили сам пост — обновляем все дни,
+        # к которым он уже привязан.
+        obj.calendar_days.update(
+            fast_type_code=obj.code,
+            fast_type_title=obj.type_title,
+            fast_name=obj.name,
+            fast_description=obj.description,
+            fast_type_title_uk=obj.type_title_uk,
+            fast_name_uk=obj.name_uk,
+            fast_description_uk=obj.description_uk,
+        )
+
+
+@admin.register(CalendarDay)
+class CalendarDayAdmin(admin.ModelAdmin):
+    list_display = [
+        "date_gregorian",
+        "main_feast",
+        "imported_languages",
+        "has_fast_ru",
+        "has_fast_uk",
+        "has_gospel_ru",
+        "has_gospel_uk",
+        "has_apostolic_ru",
+        "has_apostolic_uk",
+    ]
+
+    list_filter = [
+        "fast_type_code",
+        "date_gregorian",
+    ]
+
+    search_fields = [
+        "main_feast__title",
+        "main_feast__short_title",
+        "main_feast__title_uk",
+        "main_feast__short_title_uk",
+        "fast_name",
+        "fast_name_uk",
+        "gospel_title",
+        "gospel_title_uk",
+        "apostolic_title",
+        "apostolic_title_uk",
+    ]
+
+    date_hierarchy = "date_gregorian"
+
+    ordering = [
+        "-date_gregorian",
+    ]
+
+    autocomplete_fields = [
+        "main_feast",
+        "fast_type",
+    ]
+
+    filter_horizontal = [
+        "feasts",
+    ]
+
+    readonly_fields = [
+        "imported_languages",
+        "source_payload",
+        "updated_at",
+    ]
+
+    fieldsets = [
+        (
+            "Дата и память дня",
+            {
+                "fields": [
+                    "date_gregorian",
+                    "julian_month",
+                    "julian_day",
+                    "main_feast",
+                    "feasts",
+                    "imported_languages",
+                ]
+            },
+        ),
+        (
+            "Пост",
+            {
+                "fields": [
+                    "fast_type",
+                ]
+            },
+        ),
+        (
+            "Описание дня — русский",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "summary",
+                    "short_summary",
+                ],
+            },
+        ),
+        (
+            "Описание дня — украинский",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "summary_uk",
+                    "short_summary_uk",
+                ],
+            },
+        ),
+        (
+            "Чтения — русский",
+            {
+                "fields": [
+                    "gospel_title",
+                    "gospel_reading",
+                    "apostolic_title",
+                    "apostolic_reading",
+                ]
+            },
+        ),
+        (
+            "Чтения — украинский",
+            {
+                "fields": [
+                    "gospel_title_uk",
+                    "gospel_reading_uk",
+                    "apostolic_title_uk",
+                    "apostolic_reading_uk",
+                ]
+            },
+        ),
+        (
+            "Служебные данные",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "source_payload",
+                    "updated_at",
+                ],
+            },
+        ),
+    ]
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("main_feast").prefetch_related("feasts")
+
+    @admin.display(description="Языки")
+    def imported_languages(self, obj):
+        languages = (obj.source_payload or {}).get("imported_languages") or []
+
+        if not languages:
+            return "—"
+
+        return ", ".join(language.upper() for language in languages)
+
+    @admin.display(boolean=True, description="Пост RU")
+    def has_fast_ru(self, obj):
+        return bool(obj.fast_type_title or obj.fast_name or obj.fast_description)
+
+    @admin.display(boolean=True, description="Пост UK")
+    def has_fast_uk(self, obj):
+        return bool(obj.fast_type_title_uk or obj.fast_name_uk or obj.fast_description_uk)
+
+    @admin.display(boolean=True, description="Еванг. RU")
+    def has_gospel_ru(self, obj):
+        return bool(obj.gospel_title or obj.gospel_reading)
+
+    @admin.display(boolean=True, description="Еванг. UK")
+    def has_gospel_uk(self, obj):
+        return bool(obj.gospel_title_uk or obj.gospel_reading_uk)
+
+    @admin.display(boolean=True, description="Апост. RU")
+    def has_apostolic_ru(self, obj):
+        return bool(obj.apostolic_title or obj.apostolic_reading)
+
+    @admin.display(boolean=True, description="Апост. UK")
+    def has_apostolic_uk(self, obj):
+        return bool(obj.apostolic_title_uk or obj.apostolic_reading_uk)
+
+
+def save_model(self, request, obj, form, change):
+    if obj.fast_type:
+        fast = obj.fast_type
+
+        obj.fast_type_code = fast.code
+
+        obj.fast_type_title = fast.type_title
+        obj.fast_name = fast.name
+        obj.fast_description = fast.description
+
+        obj.fast_type_title_uk = fast.type_title_uk
+        obj.fast_name_uk = fast.name_uk
+        obj.fast_description_uk = fast.description_uk
+
+    super().save_model(request, obj, form, change)

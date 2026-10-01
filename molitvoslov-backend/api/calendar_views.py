@@ -23,7 +23,10 @@ def request_language(request):
 
 
 def calendar_queryset():
-    return CalendarDay.objects.select_related("main_feast").prefetch_related("feasts")
+    return CalendarDay.objects.select_related(
+        "main_feast",
+        "fast_type",
+    ).prefetch_related("feasts")
 
 
 def serialize_day(day, request):
