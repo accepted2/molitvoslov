@@ -435,36 +435,6 @@ export const AkathistScreen = ({route, navigation}) => {
         );
       }
 
-      if (showTraditional && traditional) {
-        blocks.push(
-          makeBlock({
-            text: traditional,
-
-            language: 'traditional',
-
-            anchorType: 'akathist_section',
-
-            anchorId: section.id,
-
-            itemTitle: sectionTitle,
-
-            fullSaveType,
-
-            metadata: {
-              slug,
-
-              section_type: section.section_type,
-
-              section_number: section.number,
-
-              language: 'traditional',
-            },
-
-            className: 'akathist-church',
-          })
-        );
-      }
-
       if (showChurch && church) {
         blocks.push(
           makeBlock({
@@ -560,6 +530,36 @@ export const AkathistScreen = ({route, navigation}) => {
       const sectionTitle = getSectionTitle(section);
 
       const fullSaveType = section.section_type === 'prayer' ? 'prayer' : 'section';
+
+      if (showTraditional && traditional) {
+        blocks.push(
+          makeBlock({
+            text: traditional,
+
+            language: 'traditional',
+
+            anchorType: 'akathist_section',
+
+            anchorId: section.id,
+
+            itemTitle: sectionTitle,
+
+            fullSaveType,
+
+            metadata: {
+              slug,
+
+              section_type: section.section_type,
+
+              section_number: section.number,
+
+              language: 'traditional',
+            },
+
+            className: 'akathist-church',
+          })
+        );
+      }
 
       if (showChurch && church) {
         blocks.push(
