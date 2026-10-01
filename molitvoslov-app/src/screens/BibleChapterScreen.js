@@ -40,16 +40,11 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
   const readerBottomInset = 38;
 
-  const {
-    savedProgress,
-    progressReady,
-    scheduleSave,
-    getCurrentProgress,
-    getStableProgress,
-  } = useReadingProgress({
-    sourceType: 'bible',
-    sourceId: book?.id,
-  });
+  const {savedProgress, progressReady, scheduleSave, getCurrentProgress, getStableProgress} =
+    useReadingProgress({
+      sourceType: 'bible',
+      sourceId: book?.id,
+    });
 
   const loadSavedItems = React.useCallback(async () => {
     if (!book?.id) {

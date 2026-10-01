@@ -17,10 +17,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
-import {
-  READER_LANGUAGE_MODES,
-  buildReaderLanguageOptions,
-} from '../services/readerLanguageModes';
+import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
 
 const MODE_CHURCH = READER_LANGUAGE_MODES.CHURCH;
 const MODE_BOTH = READER_LANGUAGE_MODES.BOTH;
@@ -156,17 +153,12 @@ export const CanonScreen = ({route, navigation}) => {
   const [bookmarkPosition, setBookmarkPosition] = useState(null);
   const [stablePosition, setStablePosition] = useState(null);
 
-  const {
-    savedProgress,
-    progressReady,
-    scheduleSave,
-    getCurrentProgress,
-    getStableProgress,
-  } = useReadingProgress({
-    sourceType: 'canon',
+  const {savedProgress, progressReady, scheduleSave, getCurrentProgress, getStableProgress} =
+    useReadingProgress({
+      sourceType: 'canon',
 
-    sourceId: canonId,
-  });
+      sourceId: canonId,
+    });
 
   useEffect(() => {
     loadCanon();
@@ -298,10 +290,7 @@ export const CanonScreen = ({route, navigation}) => {
       return;
     }
 
-    if (
-      (viewMode === MODE_BOTH || viewMode === MODE_RUSSIAN) &&
-      !hasRussianTranslation
-    ) {
+    if ((viewMode === MODE_BOTH || viewMode === MODE_RUSSIAN) && !hasRussianTranslation) {
       setViewMode(MODE_CHURCH);
       return;
     }
@@ -650,9 +639,7 @@ export const CanonScreen = ({route, navigation}) => {
   };
 
   const bookmarkSection = bookmarkPosition
-    ? activeSections.find(
-        (section) => Number(section.id) === Number(bookmarkPosition.anchorId)
-      )
+    ? activeSections.find((section) => Number(section.id) === Number(bookmarkPosition.anchorId))
     : null;
 
   const bookmarkConfig =
@@ -670,8 +657,7 @@ export const CanonScreen = ({route, navigation}) => {
             slug: canon.slug || slug,
             variant: primaryVariant,
             ode_number: bookmarkSection.ode_number,
-            section_type:
-              bookmarkSection.display_section_type || bookmarkSection.section_type,
+            section_type: bookmarkSection.display_section_type || bookmarkSection.section_type,
           },
         }
       : null;

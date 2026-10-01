@@ -10,10 +10,7 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 
-import {
-  READER_LANGUAGE_MODES,
-  buildReaderLanguageOptions,
-} from '../services/readerLanguageModes';
+import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
 
 import {colors} from '../theme';
 
@@ -99,18 +96,14 @@ export const BookScreen = ({route, navigation}) => {
 
   useEffect(() => {
     if (
-      (viewMode === READER_LANGUAGE_MODES.BOTH ||
-        viewMode === READER_LANGUAGE_MODES.RUSSIAN) &&
+      (viewMode === READER_LANGUAGE_MODES.BOTH || viewMode === READER_LANGUAGE_MODES.RUSSIAN) &&
       !hasRussianTranslation
     ) {
       setViewMode(READER_LANGUAGE_MODES.CHURCH);
       return;
     }
 
-    if (
-      viewMode === READER_LANGUAGE_MODES.TRADITIONAL &&
-      !hasTraditionalText
-    ) {
+    if (viewMode === READER_LANGUAGE_MODES.TRADITIONAL && !hasTraditionalText) {
       setViewMode(READER_LANGUAGE_MODES.CHURCH);
     }
   }, [viewMode, hasRussianTranslation, hasTraditionalText]);
@@ -196,11 +189,9 @@ export const BookScreen = ({route, navigation}) => {
 
   const documentData = useMemo(() => {
     const showChurch =
-      viewMode === READER_LANGUAGE_MODES.CHURCH ||
-      viewMode === READER_LANGUAGE_MODES.BOTH;
+      viewMode === READER_LANGUAGE_MODES.CHURCH || viewMode === READER_LANGUAGE_MODES.BOTH;
     const showRussian =
-      viewMode === READER_LANGUAGE_MODES.RUSSIAN ||
-      viewMode === READER_LANGUAGE_MODES.BOTH;
+      viewMode === READER_LANGUAGE_MODES.RUSSIAN || viewMode === READER_LANGUAGE_MODES.BOTH;
     const showTraditional = viewMode === READER_LANGUAGE_MODES.TRADITIONAL;
 
     const normalizedSaved = [];
@@ -312,9 +303,7 @@ export const BookScreen = ({route, navigation}) => {
           rows: [
             {
               layout:
-                viewMode === READER_LANGUAGE_MODES.BOTH && blocks.length > 1
-                  ? 'parallel'
-                  : 'stack',
+                viewMode === READER_LANGUAGE_MODES.BOTH && blocks.length > 1 ? 'parallel' : 'stack',
 
               blocks,
             },

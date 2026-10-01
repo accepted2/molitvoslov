@@ -1,12 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import {ActivityIndicator, Modal, Pressable, StyleSheet, Text, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {saveReadingBookmark} from '../../services/readerBookmarks';
@@ -101,10 +94,7 @@ export const ReaderBookmarkMenu = ({
                       ]}
                     >
                       <Text
-                        style={[
-                          styles.languageChipText,
-                          active && styles.languageChipTextActive,
-                        ]}
+                        style={[styles.languageChipText, active && styles.languageChipTextActive]}
                       >
                         {option.label}
                       </Text>
@@ -170,7 +160,9 @@ export const ReaderBookmarkMenu = ({
 
             <View style={styles.actionTextWrap}>
               <Text style={styles.actionTitle}>Открыть места</Text>
-              <Text style={styles.actionSubtitle}>Перейти к постоянным закладкам в «Избранном»</Text>
+              <Text style={styles.actionSubtitle}>
+                Перейти к постоянным закладкам в «Избранном»
+              </Text>
             </View>
           </Pressable>
 

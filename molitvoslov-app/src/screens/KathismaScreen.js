@@ -20,10 +20,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
-import {
-  READER_LANGUAGE_MODES,
-  buildReaderLanguageOptions,
-} from '../services/readerLanguageModes';
+import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
 
 const GLORY_TEXT = `Слава Отцу и Сыну и Святому Духу.
 И ныне и присно и во веки веков. Аминь.
@@ -122,17 +119,12 @@ export default function KathismaScreen({route, navigation}) {
   const [bookmarkPosition, setBookmarkPosition] = useState(null);
   const [stablePosition, setStablePosition] = useState(null);
 
-  const {
-    savedProgress,
-    progressReady,
-    scheduleSave,
-    getCurrentProgress,
-    getStableProgress,
-  } = useReadingProgress({
-    sourceType: 'psalter',
+  const {savedProgress, progressReady, scheduleSave, getCurrentProgress, getStableProgress} =
+    useReadingProgress({
+      sourceType: 'psalter',
 
-    sourceId: kathisma?.psalter,
-  });
+      sourceId: kathisma?.psalter,
+    });
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -501,9 +493,7 @@ export default function KathismaScreen({route, navigation}) {
     () =>
       !!kathisma?.prayers_after_traditional?.trim() ||
       (kathisma?.psalms || []).some((psalm) =>
-        (psalm.verses || []).some(
-          (verse) => !!verse.church_slavonic_traditional?.trim()
-        )
+        (psalm.verses || []).some((verse) => !!verse.church_slavonic_traditional?.trim())
       ),
     [kathisma]
   );
@@ -514,18 +504,14 @@ export default function KathismaScreen({route, navigation}) {
     }
 
     if (
-      (viewMode === READER_LANGUAGE_MODES.BOTH ||
-        viewMode === READER_LANGUAGE_MODES.RUSSIAN) &&
+      (viewMode === READER_LANGUAGE_MODES.BOTH || viewMode === READER_LANGUAGE_MODES.RUSSIAN) &&
       !hasRussianTranslation
     ) {
       setViewMode(READER_LANGUAGE_MODES.CHURCH);
       return;
     }
 
-    if (
-      viewMode === READER_LANGUAGE_MODES.TRADITIONAL &&
-      !hasTraditionalText
-    ) {
+    if (viewMode === READER_LANGUAGE_MODES.TRADITIONAL && !hasTraditionalText) {
       setViewMode(READER_LANGUAGE_MODES.CHURCH);
     }
   }, [kathisma, viewMode, hasRussianTranslation, hasTraditionalText]);
@@ -546,11 +532,9 @@ export default function KathismaScreen({route, navigation}) {
     }
 
     const showChurch =
-      viewMode === READER_LANGUAGE_MODES.CHURCH ||
-      viewMode === READER_LANGUAGE_MODES.BOTH;
+      viewMode === READER_LANGUAGE_MODES.CHURCH || viewMode === READER_LANGUAGE_MODES.BOTH;
     const showRussian =
-      viewMode === READER_LANGUAGE_MODES.RUSSIAN ||
-      viewMode === READER_LANGUAGE_MODES.BOTH;
+      viewMode === READER_LANGUAGE_MODES.RUSSIAN || viewMode === READER_LANGUAGE_MODES.BOTH;
     const showTraditional = viewMode === READER_LANGUAGE_MODES.TRADITIONAL;
 
     let nextBlockId = 1;
@@ -863,10 +847,7 @@ export default function KathismaScreen({route, navigation}) {
 
         const russian = buildLanguageChunk(chunk.verses, 'russian');
 
-        const traditional = buildLanguageChunk(
-          chunk.verses,
-          'church_slavonic_traditional'
-        );
+        const traditional = buildLanguageChunk(chunk.verses, 'church_slavonic_traditional');
 
         const blocks = [];
 
@@ -983,9 +964,7 @@ export default function KathismaScreen({route, navigation}) {
 
       const russianText = normalizePrayersAfter(kathisma.prayers_after_russian);
 
-      const traditionalText = normalizePrayersAfter(
-        kathisma.prayers_after_traditional
-      );
+      const traditionalText = normalizePrayersAfter(kathisma.prayers_after_traditional);
 
       const blocks = [];
 
@@ -1130,14 +1109,7 @@ export default function KathismaScreen({route, navigation}) {
 
       sections,
     };
-  }, [
-    kathisma,
-    kathismaNumber,
-    savedItems,
-    viewMode,
-    hasRussianTranslation,
-    hasTraditionalText,
-  ]);
+  }, [kathisma, kathismaNumber, savedItems, viewMode, hasRussianTranslation, hasTraditionalText]);
 
   const handleProgress = (progress) => {
     if (!kathisma) {

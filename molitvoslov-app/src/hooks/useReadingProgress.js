@@ -15,10 +15,7 @@ const normalizeStoredProgress = (item) => {
     anchorType: item.anchor_type,
     anchorId: item.anchor_id,
     offset: Math.max(0, Number(item.offset || 0)),
-    progressPercent: Math.max(
-      0,
-      Math.min(100, Math.round(Number(item.progress_percent || 0)))
-    ),
+    progressPercent: Math.max(0, Math.min(100, Math.round(Number(item.progress_percent || 0)))),
     metadata: item.metadata && typeof item.metadata === 'object' ? item.metadata : null,
   };
 };

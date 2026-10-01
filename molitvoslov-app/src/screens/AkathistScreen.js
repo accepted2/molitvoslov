@@ -17,10 +17,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
-import {
-  READER_LANGUAGE_MODES,
-  buildReaderLanguageOptions,
-} from '../services/readerLanguageModes';
+import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
 
 const MODE_CHURCH = READER_LANGUAGE_MODES.CHURCH;
 const MODE_BOTH = READER_LANGUAGE_MODES.BOTH;
@@ -118,17 +115,12 @@ export const AkathistScreen = ({route, navigation}) => {
   const [bookmarkPosition, setBookmarkPosition] = useState(null);
   const [stablePosition, setStablePosition] = useState(null);
 
-  const {
-    savedProgress,
-    progressReady,
-    scheduleSave,
-    getCurrentProgress,
-    getStableProgress,
-  } = useReadingProgress({
-    sourceType: 'akathist',
+  const {savedProgress, progressReady, scheduleSave, getCurrentProgress, getStableProgress} =
+    useReadingProgress({
+      sourceType: 'akathist',
 
-    sourceId: akathistId,
-  });
+      sourceId: akathistId,
+    });
 
   useEffect(() => {
     loadAkathist();
@@ -198,9 +190,7 @@ export const AkathistScreen = ({route, navigation}) => {
 
     return (
       specialTexts.some((item) => !!item?.traditional_content?.trim()) ||
-      (akathist.sections || []).some(
-        (section) => !!section.text?.traditional_content?.trim()
-      )
+      (akathist.sections || []).some((section) => !!section.text?.traditional_content?.trim())
     );
   }, [akathist]);
 
@@ -209,10 +199,7 @@ export const AkathistScreen = ({route, navigation}) => {
       return;
     }
 
-    if (
-      (viewMode === MODE_BOTH || viewMode === MODE_RUSSIAN) &&
-      !hasRussianTranslation
-    ) {
+    if ((viewMode === MODE_BOTH || viewMode === MODE_RUSSIAN) && !hasRussianTranslation) {
       setViewMode(MODE_CHURCH);
       return;
     }

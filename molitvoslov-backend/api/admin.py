@@ -1584,7 +1584,6 @@ def save_model(self, request, obj, form, change):
     super().save_model(request, obj, form, change)
 
 
-
 @admin.register(BibleTranslation)
 class BibleTranslationAdmin(admin.ModelAdmin):
     list_display = [

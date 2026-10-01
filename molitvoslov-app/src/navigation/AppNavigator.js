@@ -84,7 +84,11 @@ export const AppNavigator = () => (
     >
       <Stack.Screen name="Menu" component={MenuScreen} options={{headerShown: false}} />
       <Stack.Screen name="Favorites" component={FavoritesScreen} options={{headerShown: false}} />
-      <Stack.Screen name="MiscPrayers" component={MiscPrayersScreen} options={{headerShown: false}} />
+      <Stack.Screen
+        name="MiscPrayers"
+        component={MiscPrayersScreen}
+        options={{headerShown: false}}
+      />
       <Stack.Screen
         name="MiscPrayerPlaceholder"
         component={MiscPrayerPlaceholderScreen}

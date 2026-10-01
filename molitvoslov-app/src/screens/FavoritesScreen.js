@@ -64,17 +64,12 @@ export const FavoritesScreen = ({route, navigation}) => {
     }, [loadData])
   );
 
-  const placeItems = useMemo(
-    () => items.filter((item) => item.save_type === 'bookmark'),
-    [items]
-  );
+  const placeItems = useMemo(() => items.filter((item) => item.save_type === 'bookmark'), [items]);
 
   const fragmentItems = useMemo(
     () =>
       items.filter(
-        (item) =>
-          item.save_type !== 'bookmark' &&
-          FRAGMENT_SAVE_TYPES.has(item.save_type)
+        (item) => item.save_type !== 'bookmark' && FRAGMENT_SAVE_TYPES.has(item.save_type)
       ),
     [items]
   );
@@ -82,9 +77,7 @@ export const FavoritesScreen = ({route, navigation}) => {
   const savedItems = useMemo(
     () =>
       items.filter(
-        (item) =>
-          item.save_type !== 'bookmark' &&
-          !FRAGMENT_SAVE_TYPES.has(item.save_type)
+        (item) => item.save_type !== 'bookmark' && !FRAGMENT_SAVE_TYPES.has(item.save_type)
       ),
     [items]
   );
@@ -338,9 +331,7 @@ export const FavoritesScreen = ({route, navigation}) => {
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={[styles.tabText, active && styles.tabTextActive]}>
-                    {tab.label}
-                  </Text>
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
 
                   {!!tabCount(tab.key) && (
                     <Text style={[styles.tabCount, active && styles.tabCountActive]}>

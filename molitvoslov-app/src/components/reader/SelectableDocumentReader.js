@@ -12,19 +12,22 @@ import {deleteSavedItem, saveItem} from '../../services/savedItems';
 
 import {buildHtml, scriptSafeJson} from './selectableDocumentReader/buildHtml';
 
-const SelectableDocumentReader = forwardRef(function SelectableDocumentReader({
-  documentData,
-  savedProgress,
-  focusTarget,
-  topContentInset = 0,
-  bottomContentInset = 0,
-  onSaved,
-  onProgress,
-  onAction,
-  onMemorialOpen,
-  onViewModeChange,
-  onPageTurn,
-}, ref) {
+const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
+  {
+    documentData,
+    savedProgress,
+    focusTarget,
+    topContentInset = 0,
+    bottomContentInset = 0,
+    onSaved,
+    onProgress,
+    onAction,
+    onMemorialOpen,
+    onViewModeChange,
+    onPageTurn,
+  },
+  ref
+) {
   const insets = useSafeAreaInsets();
 
   const webViewRef = useRef(null);
@@ -68,9 +71,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader({
         }
 
         inject(
-          'window.readerApi && window.readerApi.goToProgress(' +
-            scriptSafeJson(progress) +
-            ')'
+          'window.readerApi && window.readerApi.goToProgress(' + scriptSafeJson(progress) + ')'
         );
       },
     }),

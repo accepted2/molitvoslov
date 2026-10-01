@@ -4,10 +4,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
-import {
-  READER_LANGUAGE_MODES,
-  buildReaderLanguageOptions,
-} from '../services/readerLanguageModes';
+import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
 import {colors, radius, spacing} from '../theme';
 
 export const MiscPrayerPlaceholderScreen = ({route, navigation}) => {
@@ -35,7 +32,13 @@ export const MiscPrayerPlaceholderScreen = ({route, navigation}) => {
     viewMode === READER_LANGUAGE_MODES.RUSSIAN
       ? [{key: 'russian', label: 'Русский', text: russianText}]
       : viewMode === READER_LANGUAGE_MODES.TRADITIONAL
-        ? [{key: 'traditional', label: 'Церковнославянский · традиционное написание', text: traditionalText}]
+        ? [
+            {
+              key: 'traditional',
+              label: 'Церковнославянский · традиционное написание',
+              text: traditionalText,
+            },
+          ]
         : viewMode === READER_LANGUAGE_MODES.BOTH
           ? [
               {key: 'church', label: 'Церковнославянский', text: churchText},
@@ -85,9 +88,7 @@ export const MiscPrayerPlaceholderScreen = ({route, navigation}) => {
             {viewMode === READER_LANGUAGE_MODES.BOTH && (
               <Text style={styles.languageLabel}>{item.label}</Text>
             )}
-            <Text style={styles.prayerText}>
-              {item.text || 'Текст будет добавлен позже.'}
-            </Text>
+            <Text style={styles.prayerText}>{item.text || 'Текст будет добавлен позже.'}</Text>
           </View>
         ))}
       </ScrollView>

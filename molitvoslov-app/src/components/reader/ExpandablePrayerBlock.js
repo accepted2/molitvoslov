@@ -46,10 +46,7 @@ export default function ExpandablePrayerBlock({
     return normalizeText(source);
   }, [text, saveProps?.metadata?.section]);
 
-  const normalizedSecondaryText = useMemo(
-    () => normalizeText(secondaryText),
-    [secondaryText]
-  );
+  const normalizedSecondaryText = useMemo(() => normalizeText(secondaryText), [secondaryText]);
 
   const normalizedTraditionalText = useMemo(
     () => normalizeText(traditionalText),
@@ -72,18 +69,14 @@ export default function ExpandablePrayerBlock({
 
   useEffect(() => {
     if (
-      (viewMode === READER_LANGUAGE_MODES.BOTH ||
-        viewMode === READER_LANGUAGE_MODES.RUSSIAN) &&
+      (viewMode === READER_LANGUAGE_MODES.BOTH || viewMode === READER_LANGUAGE_MODES.RUSSIAN) &&
       !normalizedSecondaryText
     ) {
       setViewMode(READER_LANGUAGE_MODES.CHURCH);
       return;
     }
 
-    if (
-      viewMode === READER_LANGUAGE_MODES.TRADITIONAL &&
-      !normalizedTraditionalText
-    ) {
+    if (viewMode === READER_LANGUAGE_MODES.TRADITIONAL && !normalizedTraditionalText) {
       setViewMode(READER_LANGUAGE_MODES.CHURCH);
     }
   }, [viewMode, normalizedSecondaryText, normalizedTraditionalText]);
@@ -155,9 +148,7 @@ export default function ExpandablePrayerBlock({
     };
 
     const psalterClass =
-      saveProps.sourceType === 'psalter'
-        ? 'psalter-prayer psalter-reading-prayers'
-        : '';
+      saveProps.sourceType === 'psalter' ? 'psalter-prayer psalter-reading-prayers' : '';
 
     if (viewMode === READER_LANGUAGE_MODES.TRADITIONAL) {
       addBlock({
@@ -216,9 +207,7 @@ export default function ExpandablePrayerBlock({
           rows: [
             {
               layout:
-                viewMode === READER_LANGUAGE_MODES.BOTH && blocks.length > 1
-                  ? 'parallel'
-                  : 'stack',
+                viewMode === READER_LANGUAGE_MODES.BOTH && blocks.length > 1 ? 'parallel' : 'stack',
               sharedTitle:
                 saveProps?.metadata?.section === 'prayers_before'
                   ? 'Разумно да будет, како подобает особь пети Псалтирь'

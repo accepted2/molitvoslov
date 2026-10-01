@@ -175,20 +175,21 @@ export const MiscPrayersScreen = ({route, navigation}) => {
   }, [categorySlug]);
 
   const items = useMemo(
-    () => [
-      ...subcategories.map((category) => ({
-        kind: 'category',
-        key: `category:${category.id}`,
-        order: Number(category.order || 0),
-        category,
-      })),
-      ...texts.map((row) => ({
-        kind: 'text',
-        key: `text:${row.id}`,
-        order: Number(row.order || 0),
-        row,
-      })),
-    ].sort((a, b) => a.order - b.order),
+    () =>
+      [
+        ...subcategories.map((category) => ({
+          kind: 'category',
+          key: `category:${category.id}`,
+          order: Number(category.order || 0),
+          category,
+        })),
+        ...texts.map((row) => ({
+          kind: 'text',
+          key: `text:${row.id}`,
+          order: Number(row.order || 0),
+          row,
+        })),
+      ].sort((a, b) => a.order - b.order),
     [subcategories, texts]
   );
 
