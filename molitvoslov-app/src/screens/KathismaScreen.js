@@ -10,6 +10,7 @@ import {useReadingProgress} from '../hooks/useReadingProgress';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
+import {ReaderBookmarkMenu} from '../components/reader/ReaderBookmarkMenu';
 
 import {MemorialQuickSheet} from '../components/memorial/MemorialQuickSheet';
 
@@ -19,6 +20,10 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {
+  READER_LANGUAGE_MODES,
+  buildReaderLanguageOptions,
+} from '../services/readerLanguageModes';
 
 const GLORY_TEXT = `Слава Отцу и Сыну и Святому Духу.
 И ныне и присно и во веки веков. Аминь.
@@ -43,7 +48,7 @@ const hyphenatePsalterText = (text, field) => {
     });
   }
 
-  if (field === 'church_slavonic') {
+  if (field === 'church_slavonic' || field === 'church_slavonic_traditional') {
     return hyphenateChurchSlavonic(text, {
       minWordLength: 5,
     });
@@ -103,14 +108,27 @@ export default function KathismaScreen({route, navigation}) {
   const [savedItems, setSavedItems] = useState([]);
 
   const savedItemsRef = useRef([]);
+  const readerRef = useRef(null);
 
   const [loading, setLoading] = useState(true);
 
   const [error, setError] = useState(null);
 
+  const [viewMode, setViewMode] = useState(READER_LANGUAGE_MODES.BOTH);
+
   const [memorialVisible, setMemorialVisible] = useState(false);
 
-  const {savedProgress, progressReady, scheduleSave} = useReadingProgress({
+  const [readerMenuVisible, setReaderMenuVisible] = useState(false);
+  const [bookmarkPosition, setBookmarkPosition] = useState(null);
+  const [stablePosition, setStablePosition] = useState(null);
+
+  const {
+    savedProgress,
+    progressReady,
+    scheduleSave,
+    getCurrentProgress,
+    getStableProgress,
+  } = useReadingProgress({
     sourceType: 'psalter',
 
     sourceId: kathisma?.psalter,
@@ -388,8 +406,18 @@ export default function KathismaScreen({route, navigation}) {
 
     if (anchorType === 'psalm_verse') {
       const verseId = Number(focusTarget.anchor_id || focusTarget.anchorId);
-      const language = metadata.language === 'russian' ? 'russian' : 'church';
-      const field = language === 'russian' ? 'russian' : 'church_slavonic';
+      const language =
+        metadata.language === 'russian'
+          ? 'russian'
+          : metadata.language === 'traditional'
+            ? 'traditional'
+            : 'church';
+      const field =
+        language === 'russian'
+          ? 'russian'
+          : language === 'traditional'
+            ? 'church_slavonic_traditional'
+            : 'church_slavonic';
 
       for (const psalm of kathisma.psalms || []) {
         const chunks = [];
@@ -460,6 +488,48 @@ export default function KathismaScreen({route, navigation}) {
     return focusTarget;
   }, [focusTarget, kathisma]);
 
+  const hasRussianTranslation = useMemo(
+    () =>
+      !!kathisma?.prayers_after_russian?.trim() ||
+      (kathisma?.psalms || []).some((psalm) =>
+        (psalm.verses || []).some((verse) => !!verse.russian?.trim())
+      ),
+    [kathisma]
+  );
+
+  const hasTraditionalText = useMemo(
+    () =>
+      !!kathisma?.prayers_after_traditional?.trim() ||
+      (kathisma?.psalms || []).some((psalm) =>
+        (psalm.verses || []).some(
+          (verse) => !!verse.church_slavonic_traditional?.trim()
+        )
+      ),
+    [kathisma]
+  );
+
+  useEffect(() => {
+    if (!kathisma) {
+      return;
+    }
+
+    if (
+      (viewMode === READER_LANGUAGE_MODES.BOTH ||
+        viewMode === READER_LANGUAGE_MODES.RUSSIAN) &&
+      !hasRussianTranslation
+    ) {
+      setViewMode(READER_LANGUAGE_MODES.CHURCH);
+      return;
+    }
+
+    if (
+      viewMode === READER_LANGUAGE_MODES.TRADITIONAL &&
+      !hasTraditionalText
+    ) {
+      setViewMode(READER_LANGUAGE_MODES.CHURCH);
+    }
+  }, [kathisma, viewMode, hasRussianTranslation, hasTraditionalText]);
+
   const documentData = useMemo(() => {
     if (!kathisma) {
       return {
@@ -474,6 +544,14 @@ export default function KathismaScreen({route, navigation}) {
         sections: [],
       };
     }
+
+    const showChurch =
+      viewMode === READER_LANGUAGE_MODES.CHURCH ||
+      viewMode === READER_LANGUAGE_MODES.BOTH;
+    const showRussian =
+      viewMode === READER_LANGUAGE_MODES.RUSSIAN ||
+      viewMode === READER_LANGUAGE_MODES.BOTH;
+    const showTraditional = viewMode === READER_LANGUAGE_MODES.TRADITIONAL;
 
     let nextBlockId = 1;
 
@@ -785,9 +863,32 @@ export default function KathismaScreen({route, navigation}) {
 
         const russian = buildLanguageChunk(chunk.verses, 'russian');
 
+        const traditional = buildLanguageChunk(
+          chunk.verses,
+          'church_slavonic_traditional'
+        );
+
         const blocks = [];
 
-        if (church.text) {
+        if (showTraditional && traditional.text) {
+          blocks.push(
+            makePsalmBlock({
+              psalm,
+              text: traditional.text,
+              verseRanges: traditional.verseRanges,
+              language: 'traditional',
+              chunkIndex: verseChunkIndex,
+              chunkCount: verseChunkCount,
+              className: 'psalter',
+              label:
+                psalmIndex === 0 && verseChunkIndex === 0
+                  ? 'Церковнославянский · традиционное написание'
+                  : '',
+            })
+          );
+        }
+
+        if (showChurch && church.text) {
           blocks.push(
             makePsalmBlock({
               psalm,
@@ -802,7 +903,7 @@ export default function KathismaScreen({route, navigation}) {
           );
         }
 
-        if (russian.text) {
+        if (showRussian && russian.text) {
           blocks.push(
             makePsalmBlock({
               psalm,
@@ -882,6 +983,41 @@ export default function KathismaScreen({route, navigation}) {
 
       const russianText = normalizePrayersAfter(kathisma.prayers_after_russian);
 
+      const traditionalText = normalizePrayersAfter(
+        kathisma.prayers_after_traditional
+      );
+
+      const blocks = [];
+
+      if (showTraditional && traditionalText) {
+        blocks.push(
+          makeOtherBlock({
+            text: traditionalText,
+
+            language: 'traditional',
+
+            anchorType: 'kathisma_prayers_after',
+
+            anchorId: kathisma.id,
+
+            itemTitle: `Молитвы после кафизмы ${kathisma.number}`,
+
+            fullSaveType: 'prayer',
+
+            className: 'psalter-prayer',
+
+            metadata: {
+              kathisma_number: kathisma.number,
+              kathisma_title: kathisma.title || '',
+              section: 'prayers_after',
+              language: 'traditional',
+            },
+
+            sectionName: 'prayers_after',
+          })
+        );
+      }
+
       const churchBlock = makeOtherBlock({
         text: churchText,
 
@@ -911,9 +1047,11 @@ export default function KathismaScreen({route, navigation}) {
         sectionName: 'prayers_after',
       });
 
-      const blocks = [churchBlock];
+      if (showChurch && churchText) {
+        blocks.push(churchBlock);
+      }
 
-      if (russianText) {
+      if (showRussian && russianText) {
         blocks.push(
           makeOtherBlock({
             text: russianText,
@@ -978,13 +1116,28 @@ export default function KathismaScreen({route, navigation}) {
         active: wholeKathismaSaved,
       },
 
+      viewSwitcher: {
+        activeKey: viewMode,
+        options: buildReaderLanguageOptions({
+          hasRussian: hasRussianTranslation,
+          hasTraditional: hasTraditionalText,
+        }),
+      },
+
       progressAnchorType: 'psalm',
 
       savedItems: normalizedSaved,
 
       sections,
     };
-  }, [kathisma, kathismaNumber, savedItems]);
+  }, [
+    kathisma,
+    kathismaNumber,
+    savedItems,
+    viewMode,
+    hasRussianTranslation,
+    hasTraditionalText,
+  ]);
 
   const handleProgress = (progress) => {
     if (!kathisma) {
@@ -1003,6 +1156,35 @@ export default function KathismaScreen({route, navigation}) {
       },
     });
   };
+
+  const openReaderMenu = () => {
+    setBookmarkPosition(getCurrentProgress());
+    setStablePosition(getStableProgress());
+    setReaderMenuVisible(true);
+  };
+
+  const bookmarkPsalm = bookmarkPosition
+    ? (kathisma?.psalms || []).find(
+        (psalm) => Number(psalm.id) === Number(bookmarkPosition.anchorId)
+      )
+    : null;
+
+  const bookmarkConfig =
+    kathisma && bookmarkPosition && bookmarkPsalm
+      ? {
+          sourceType: 'psalter',
+          sourceId: Number(kathisma.psalter),
+          sourceTitle: 'Псалтирь',
+          itemTitle: `Псалом ${bookmarkPsalm.number}`,
+          position: bookmarkPosition,
+          metadata: {
+            kathisma_number: Number(kathisma.number),
+            kathisma_title: kathisma.title || '',
+            psalm_id: Number(bookmarkPsalm.id),
+            psalm_number: Number(bookmarkPsalm.number),
+          },
+        }
+      : null;
 
   if (loading || (kathisma && !progressReady)) {
     return (
@@ -1025,6 +1207,7 @@ export default function KathismaScreen({route, navigation}) {
       <StatusBar style="light" translucent backgroundColor="transparent" />
 
       <SelectableDocumentReader
+        ref={readerRef}
         documentData={documentData}
         savedProgress={readerProgress}
         focusTarget={normalizedFocusTarget}
@@ -1032,6 +1215,7 @@ export default function KathismaScreen({route, navigation}) {
         onProgress={handleProgress}
         onAction={handleAction}
         onMemorialOpen={() => setMemorialVisible(true)}
+        onViewModeChange={setViewMode}
       />
 
       <MemorialQuickSheet
@@ -1040,11 +1224,25 @@ export default function KathismaScreen({route, navigation}) {
         onManage={() => navigation.navigate('Memorial')}
       />
 
+      <ReaderBookmarkMenu
+        visible={readerMenuVisible}
+        onClose={() => setReaderMenuVisible(false)}
+        navigation={navigation}
+        bookmark={bookmarkConfig}
+        canReturnToProgress={!!stablePosition}
+        onReturnToProgress={() => {
+          readerRef.current?.goToProgress(stablePosition);
+          setReaderMenuVisible(false);
+        }}
+      />
+
       <FixedSectionHeader
         title={`Кафизма ${kathisma.number}`}
         navigation={navigation}
         topInset={insets.top}
         showTitle={false}
+        showMenu
+        onMenuPress={openReaderMenu}
       />
     </View>
   );

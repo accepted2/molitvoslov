@@ -5,6 +5,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
+import {ReaderBookmarkMenu} from '../components/reader/ReaderBookmarkMenu';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {useReadingProgress} from '../hooks/useReadingProgress';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
@@ -25,8 +26,13 @@ export const BibleChapterScreen = ({route, navigation}) => {
   const [savedItems, setSavedItems] = useState([]);
 
   const savedItemsRef = useRef([]);
+  const readerRef = useRef(null);
 
   const [savedLoading, setSavedLoading] = useState(true);
+
+  const [readerMenuVisible, setReaderMenuVisible] = useState(false);
+  const [bookmarkPosition, setBookmarkPosition] = useState(null);
+  const [stablePosition, setStablePosition] = useState(null);
 
   const insets = useSafeAreaInsets();
 
@@ -34,7 +40,13 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
   const readerBottomInset = 38;
 
-  const {savedProgress, progressReady, scheduleSave} = useReadingProgress({
+  const {
+    savedProgress,
+    progressReady,
+    scheduleSave,
+    getCurrentProgress,
+    getStableProgress,
+  } = useReadingProgress({
     sourceType: 'bible',
     sourceId: book?.id,
   });
@@ -405,6 +417,36 @@ export const BibleChapterScreen = ({route, navigation}) => {
     });
   };
 
+  const openReaderMenu = () => {
+    setBookmarkPosition(getCurrentProgress());
+    setStablePosition(getStableProgress());
+    setReaderMenuVisible(true);
+  };
+
+  const bookmarkVerse = bookmarkPosition
+    ? verseInfo.byId.get(Number(bookmarkPosition.anchorId))
+    : null;
+
+  const bookmarkConfig =
+    book && bookmarkPosition && bookmarkVerse
+      ? {
+          sourceType: 'bible',
+          sourceId: Number(book.id),
+          sourceTitle: 'Библия · ' + displayName,
+          itemTitle:
+            displayName + ' ' + bookmarkVerse.chapterNumber + ':' + bookmarkVerse.verseNumber,
+          position: bookmarkPosition,
+          metadata: {
+            book_id: Number(book.id),
+            book_slug: book.slug,
+            book_name: displayName,
+            book_short_name: book.short_name,
+            chapter_number: bookmarkVerse.chapterNumber,
+            verse_number: bookmarkVerse.verseNumber,
+          },
+        }
+      : null;
+
   if (!book || !requestedChapter) {
     return (
       <View style={styles.center}>
@@ -426,6 +468,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
       <StatusBar style="dark" translucent backgroundColor="transparent" />
 
       <SelectableDocumentReader
+        ref={readerRef}
         documentData={documentData}
         savedProgress={readerProgress}
         focusTarget={effectiveFocusTarget}
@@ -435,12 +478,33 @@ export const BibleChapterScreen = ({route, navigation}) => {
         onAction={handleAction}
       />
 
+      <ReaderBookmarkMenu
+        visible={readerMenuVisible}
+        onClose={() => setReaderMenuVisible(false)}
+        navigation={navigation}
+        bookmark={bookmarkConfig}
+        languageOptions={[
+          {key: 'russian', label: 'Рус.'},
+          {key: 'church', label: 'ЦС', disabled: true},
+          {key: 'both', label: 'ЦС + Рус.', disabled: true},
+          {key: 'traditional', label: 'ЦС традиц.', disabled: true},
+        ]}
+        activeLanguage="russian"
+        canReturnToProgress={!!stablePosition}
+        onReturnToProgress={() => {
+          readerRef.current?.goToProgress(stablePosition);
+          setReaderMenuVisible(false);
+        }}
+      />
+
       <FixedSectionHeader
         title={displayName}
         navigation={navigation}
         topInset={insets.top}
         showTitle={false}
         minimal
+        showMenu
+        onMenuPress={openReaderMenu}
       />
     </View>
   );
