@@ -20,7 +20,6 @@ import {BibleScreen} from '../screens/BibleScreen';
 import {BibleBooksScreen} from '../screens/BibleBooksScreen';
 import {BibleBookScreen} from '../screens/BibleBookScreen';
 import {BibleChapterScreen} from '../screens/BibleChapterScreen';
-import {BookmarksScreen} from '../screens/BookmarksScreen';
 import {FavoritesScreen} from '../screens/FavoritesScreen';
 import {ContinueReadingScreen} from '../screens/ContinueReadingScreen';
 import {AccountScreen} from '../screens/AccountScreen';
@@ -80,7 +79,6 @@ export const AppNavigator = () => (
       }}
     >
       <Stack.Screen name="Menu" component={MenuScreen} options={{headerShown: false}} />
-      <Stack.Screen name="Bookmarks" component={BookmarksScreen} options={{headerShown: false}} />
       <Stack.Screen name="Favorites" component={FavoritesScreen} options={{headerShown: false}} />
       <Stack.Screen
         name="ContinueReading"
