@@ -51,7 +51,16 @@ class Text(models.Model):
         help_text="Используется для формирования URL, если заголовок пустой",
     )
 
-    content = models.TextField(verbose_name="Содержание")
+    content = models.TextField(verbose_name="Церковнославянский текст")
+
+    traditional_content = models.TextField(
+        blank=True,
+        verbose_name="Церковнославянский — традиционное написание",
+        help_text=(
+            "Отдельный текст в традиционной церковнославянской орфографии. "
+            "Это не шрифтовая замена основного текста."
+        ),
+    )
 
     translation = models.TextField(blank=True, verbose_name="Русский перевод")
 
@@ -605,9 +614,17 @@ class Psalter(models.Model):
     prayers_before_russian = models.TextField(
         blank=True, verbose_name="Молитвы перед чтением Псалтири — русский"
     )
+    prayers_before_traditional = models.TextField(
+        blank=True,
+        verbose_name="Молитвы перед чтением Псалтири — ЦС традиционный",
+    )
     prayers_after = models.TextField(blank=True, verbose_name="Молитвы после чтения Псалтири")
     prayers_after_russian = models.TextField(
         blank=True, verbose_name="Молитвы после чтения Псалтири — русский"
+    )
+    prayers_after_traditional = models.TextField(
+        blank=True,
+        verbose_name="Молитвы после чтения Псалтири — ЦС традиционный",
     )
 
     def __str__(self):
@@ -628,6 +645,10 @@ class Kathisma(models.Model):
     prayers_after_russian = models.TextField(
         blank=True,
         verbose_name="Молитвы после кафизмы — русский",
+    )
+    prayers_after_traditional = models.TextField(
+        blank=True,
+        verbose_name="Молитвы после кафизмы — ЦС традиционный",
     )
 
     def __str__(self):
@@ -653,6 +674,11 @@ class Psalm(models.Model):
     title_church_slavonic = models.CharField(
         max_length=500, blank=True, verbose_name="Заголовок на церковнославянском"
     )
+    title_church_slavonic_traditional = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name="Заголовок на ЦС — традиционное написание",
+    )
     title_russian = models.CharField(
         max_length=500, blank=True, verbose_name="Заголовок на русском"
     )
@@ -673,6 +699,10 @@ class PsalmVerse(models.Model):
     )
     number = models.PositiveIntegerField(verbose_name="Номер стиха")
     church_slavonic = models.TextField(verbose_name="Церковнославянский текст")
+    church_slavonic_traditional = models.TextField(
+        blank=True,
+        verbose_name="Церковнославянский текст — традиционное написание",
+    )
     russian = models.TextField(blank=True, verbose_name="Русский текст")
 
     def __str__(self):
@@ -877,6 +907,7 @@ class SavedItem(models.Model):
         ("canon", "Канон"),
         ("text", "Текст"),
         ("quote", "Цитата"),
+        ("bookmark", "Закладка"),
     ]
 
     user = models.ForeignKey(
@@ -1293,6 +1324,16 @@ class PersonalPrayerPhoto(models.Model):
 
 
 class BibleTranslation(models.Model):
+    SCRIPT_VARIANT_MODERN = "modern"
+    SCRIPT_VARIANT_CHURCH_CIVIL = "church_civil"
+    SCRIPT_VARIANT_CHURCH_TRADITIONAL = "church_traditional"
+
+    SCRIPT_VARIANT_CHOICES = [
+        (SCRIPT_VARIANT_MODERN, "Современное гражданское письмо"),
+        (SCRIPT_VARIANT_CHURCH_CIVIL, "Церковнославянский — гражданское письмо"),
+        (SCRIPT_VARIANT_CHURCH_TRADITIONAL, "Церковнославянский — традиционное письмо"),
+    ]
+
     code = models.SlugField(
         unique=True,
         verbose_name="Код перевода",
@@ -1305,6 +1346,12 @@ class BibleTranslation(models.Model):
         max_length=10,
         default="ru",
         verbose_name="Язык",
+    )
+    script_variant = models.CharField(
+        max_length=32,
+        choices=SCRIPT_VARIANT_CHOICES,
+        default=SCRIPT_VARIANT_MODERN,
+        verbose_name="Вариант письма",
     )
     source_url = models.URLField(
         blank=True,

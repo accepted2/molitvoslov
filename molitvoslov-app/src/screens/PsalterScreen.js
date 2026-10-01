@@ -220,6 +220,7 @@ export default function PsalterScreen({navigation}) {
                 title="Молитвы перед чтением Псалтири"
                 text={psalter?.prayers_before}
                 secondaryText={psalter?.prayers_before_russian}
+                traditionalText={psalter?.prayers_before_traditional}
                 onCollapse={handlePrayersCollapse}
                 saveProps={{
                   sourceType: 'psalter',
@@ -244,6 +245,7 @@ export default function PsalterScreen({navigation}) {
                     title="Молитвы после чтения Псалтири"
                     text={psalter?.prayers_after}
                     secondaryText={psalter?.prayers_after_russian}
+                    traditionalText={psalter?.prayers_after_traditional}
                     onExpand={handleAfterPrayersExpand}
                     onCollapse={handleAfterPrayersCollapse}
                     saveProps={{

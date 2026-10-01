@@ -74,6 +74,7 @@ class Command(BaseCommand):
                 "code": translation.code,
                 "name": translation.name,
                 "language": translation.language,
+                "script_variant": translation.script_variant,
                 "source_url": translation.source_url,
                 "source_revision": translation.source_revision,
                 "license": translation.license_name,

@@ -8,6 +8,8 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 
+import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
+
 import {colors} from '../theme';
 
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -27,6 +29,8 @@ export const ReaderScreen = ({route, navigation}) => {
   const [savedItems, setSavedItems] = useState([]);
 
   const savedItemsRef = useRef([]);
+
+  const [viewMode, setViewMode] = useState(READER_LANGUAGE_MODES.BOTH);
 
   const [loading, setLoading] = useState(true);
 
@@ -74,6 +78,29 @@ export const ReaderScreen = ({route, navigation}) => {
       setLoading(false);
     }
   };
+
+  const hasRussianTranslation = !!text?.translation?.trim();
+  const hasTraditionalText = !!text?.traditional_content?.trim();
+
+  useEffect(() => {
+    if (!text) {
+      return;
+    }
+
+    if (viewMode === READER_LANGUAGE_MODES.RUSSIAN && !hasRussianTranslation) {
+      setViewMode(READER_LANGUAGE_MODES.CHURCH);
+      return;
+    }
+
+    if (viewMode === READER_LANGUAGE_MODES.BOTH && !hasRussianTranslation) {
+      setViewMode(READER_LANGUAGE_MODES.CHURCH);
+      return;
+    }
+
+    if (viewMode === READER_LANGUAGE_MODES.TRADITIONAL && !hasTraditionalText) {
+      setViewMode(READER_LANGUAGE_MODES.CHURCH);
+    }
+  }, [text, viewMode, hasRussianTranslation, hasTraditionalText]);
 
   const handleAction = async (actionKey) => {
     if (!text || actionKey !== `text:${text.id}`) {
@@ -155,26 +182,90 @@ export const ReaderScreen = ({route, navigation}) => {
       };
     }
 
-    const normalizedSaved = savedItems
-      .filter(
-        (item) =>
-          item.anchor_type === 'text' &&
-          Number(item.anchor_id) === Number(text.id) &&
-          item.start_offset !== null &&
-          item.end_offset !== null
-      )
-      .map((item) => ({
-        ...item,
-
-        anchor_id: 1,
-      }));
-
     const wholeTextSaved = savedItems.some(
       (item) =>
         item.anchor_type === 'text' &&
         Number(item.anchor_id) === Number(text.id) &&
         item.save_type === 'text'
     );
+
+    const blocks = [];
+    const normalizedSaved = [];
+
+    const appendBlock = ({id, value, language, className = ''}) => {
+      if (!value) {
+        return;
+      }
+
+      blocks.push({
+        id,
+        text: value,
+        className,
+        sourceType: 'text',
+        sourceId: text.id,
+        anchorType: 'text',
+        anchorId: text.id,
+        sourceTitle: text.title || 'Чтение',
+        itemTitle: text.title || 'Текст',
+        fullSaveType: 'text',
+        metadata: {
+          slug: text.slug || slug,
+          language,
+        },
+      });
+
+      savedItems
+        .filter((item) => {
+          if (
+            item.anchor_type !== 'text' ||
+            Number(item.anchor_id) !== Number(text.id) ||
+            item.start_offset === null ||
+            item.end_offset === null
+          ) {
+            return false;
+          }
+
+          const savedLanguage = item.metadata?.language || 'church';
+          return savedLanguage === language;
+        })
+        .forEach((item) => {
+          normalizedSaved.push({
+            ...item,
+            anchor_id: id,
+          });
+        });
+    };
+
+    if (viewMode === READER_LANGUAGE_MODES.TRADITIONAL) {
+      appendBlock({
+        id: 3,
+        value: text.traditional_content || '',
+        language: 'traditional',
+        className: 'traditional',
+      });
+    } else if (viewMode === READER_LANGUAGE_MODES.RUSSIAN) {
+      appendBlock({
+        id: 2,
+        value: text.translation || '',
+        language: 'russian',
+        className: 'secondary',
+      });
+    } else {
+      appendBlock({
+        id: 1,
+        value: text.content || '',
+        language: 'church',
+      });
+
+      if (viewMode === READER_LANGUAGE_MODES.BOTH) {
+        appendBlock({
+          id: 2,
+          value: text.translation || '',
+          language: 'russian',
+          className: 'secondary',
+        });
+      }
+    }
 
     return {
       title: text.title || 'Чтение',
@@ -187,6 +278,14 @@ export const ReaderScreen = ({route, navigation}) => {
         label: wholeTextSaved ? 'В избранном' : 'В избранное',
 
         active: wholeTextSaved,
+      },
+
+      viewSwitcher: {
+        activeKey: viewMode,
+        options: buildReaderLanguageOptions({
+          hasRussian: hasRussianTranslation,
+          hasTraditional: hasTraditionalText,
+        }),
       },
 
       progressAnchorType: 'text',
@@ -203,39 +302,16 @@ export const ReaderScreen = ({route, navigation}) => {
 
           rows: [
             {
-              layout: 'stack',
+              layout:
+                viewMode === READER_LANGUAGE_MODES.BOTH && blocks.length > 1 ? 'parallel' : 'stack',
 
-              blocks: [
-                {
-                  id: 1,
-
-                  text: text.content || '',
-
-                  sourceType: 'text',
-
-                  sourceId: text.id,
-
-                  anchorType: 'text',
-
-                  anchorId: text.id,
-
-                  sourceTitle: text.title || 'Чтение',
-
-                  itemTitle: text.title || 'Текст',
-
-                  fullSaveType: 'text',
-
-                  metadata: {
-                    slug: text.slug || slug,
-                  },
-                },
-              ],
+              blocks,
             },
           ],
         },
       ],
     };
-  }, [savedItems, slug, text]);
+  }, [hasRussianTranslation, hasTraditionalText, savedItems, slug, text, viewMode]);
 
   if (loading) {
     return (
@@ -265,6 +341,7 @@ export const ReaderScreen = ({route, navigation}) => {
         focusTarget={focusTarget}
         topContentInset={headerHeight}
         onAction={handleAction}
+        onViewModeChange={setViewMode}
       />
 
       <FixedSectionHeader

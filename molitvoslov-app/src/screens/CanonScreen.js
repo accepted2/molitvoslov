@@ -9,6 +9,7 @@ import {useReadingProgress} from '../hooks/useReadingProgress';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
+import {ReaderBookmarkMenu} from '../components/reader/ReaderBookmarkMenu';
 
 import {colors} from '../theme';
 
@@ -16,12 +17,12 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
 
-const MODE_CHURCH = 'church';
-
-const MODE_BOTH = 'both';
-
-const MODE_RUSSIAN = 'russian';
+const MODE_CHURCH = READER_LANGUAGE_MODES.CHURCH;
+const MODE_BOTH = READER_LANGUAGE_MODES.BOTH;
+const MODE_RUSSIAN = READER_LANGUAGE_MODES.RUSSIAN;
+const MODE_TRADITIONAL = READER_LANGUAGE_MODES.TRADITIONAL;
 
 const SECTION_LABELS = {
   irmos: 'Ирмос',
@@ -140,6 +141,7 @@ export const CanonScreen = ({route, navigation}) => {
   const [savedItems, setSavedItems] = useState([]);
 
   const savedItemsRef = useRef([]);
+  const readerRef = useRef(null);
 
   const [viewMode, setViewMode] = useState(MODE_BOTH);
 
@@ -147,11 +149,16 @@ export const CanonScreen = ({route, navigation}) => {
 
   const [error, setError] = useState(null);
 
-  const {savedProgress, progressReady, scheduleSave} = useReadingProgress({
-    sourceType: 'canon',
+  const [readerMenuVisible, setReaderMenuVisible] = useState(false);
+  const [bookmarkPosition, setBookmarkPosition] = useState(null);
+  const [stablePosition, setStablePosition] = useState(null);
 
-    sourceId: canonId,
-  });
+  const {savedProgress, progressReady, scheduleSave, getCurrentProgress, getStableProgress} =
+    useReadingProgress({
+      sourceType: 'canon',
+
+      sourceId: canonId,
+    });
 
   useEffect(() => {
     loadCanon();
@@ -273,11 +280,25 @@ export const CanonScreen = ({route, navigation}) => {
     [displaySections]
   );
 
+  const hasTraditionalText = useMemo(
+    () => displaySections.some((section) => !!section.text?.traditional_content?.trim()),
+    [displaySections]
+  );
+
   useEffect(() => {
-    if (canon && !hasRussianTranslation && viewMode !== MODE_CHURCH) {
+    if (!canon) {
+      return;
+    }
+
+    if ((viewMode === MODE_BOTH || viewMode === MODE_RUSSIAN) && !hasRussianTranslation) {
+      setViewMode(MODE_CHURCH);
+      return;
+    }
+
+    if (viewMode === MODE_TRADITIONAL && !hasTraditionalText) {
       setViewMode(MODE_CHURCH);
     }
-  }, [canon, hasRussianTranslation, viewMode]);
+  }, [canon, hasRussianTranslation, hasTraditionalText, viewMode]);
 
   const handleAction = async (actionKey) => {
     if (!canon || actionKey !== `canon:${canon.id}`) {
@@ -356,6 +377,8 @@ export const CanonScreen = ({route, navigation}) => {
     const showChurch = viewMode === MODE_CHURCH || viewMode === MODE_BOTH;
 
     const showRussian = viewMode === MODE_RUSSIAN || viewMode === MODE_BOTH;
+
+    const showTraditional = viewMode === MODE_TRADITIONAL;
 
     let nextBlockId = 1;
 
@@ -441,6 +464,8 @@ export const CanonScreen = ({route, navigation}) => {
 
       const russian = section.text?.translation?.trim() || '';
 
+      const traditional = section.text?.traditional_content?.trim() || '';
+
       const effectiveSectionType = section.display_section_type || section.section_type;
 
       const effectiveHeading = section.display_heading || section.heading || '';
@@ -456,6 +481,19 @@ export const CanonScreen = ({route, navigation}) => {
       const label = effectiveHeading || SECTION_LABELS[effectiveSectionType] || '';
 
       const blocks = [];
+
+      if (showTraditional && traditional) {
+        blocks.push(
+          makeBlock({
+            section: displaySection,
+            text: traditional,
+            language: 'traditional',
+            className: 'canon-church',
+            label,
+            inlineLabel: '',
+          })
+        );
+      }
 
       if (showChurch && church) {
         blocks.push(
@@ -558,23 +596,10 @@ export const CanonScreen = ({route, navigation}) => {
 
       viewSwitcher: {
         activeKey: viewMode,
-
-        options: [
-          {
-            key: MODE_CHURCH,
-            label: 'ЦС',
-          },
-          {
-            key: MODE_BOTH,
-            label: 'ЦС + Рус.',
-            disabled: !hasRussianTranslation,
-          },
-          {
-            key: MODE_RUSSIAN,
-            label: 'Рус.',
-            disabled: !hasRussianTranslation,
-          },
-        ],
+        options: buildReaderLanguageOptions({
+          hasRussian: hasRussianTranslation,
+          hasTraditional: hasTraditionalText,
+        }),
       },
 
       progressAnchorType: 'canon_section',
@@ -583,7 +608,17 @@ export const CanonScreen = ({route, navigation}) => {
 
       sections,
     };
-  }, [canon, title, slug, displaySections, primaryVariant, savedItems, viewMode]);
+  }, [
+    canon,
+    title,
+    slug,
+    displaySections,
+    primaryVariant,
+    savedItems,
+    viewMode,
+    hasRussianTranslation,
+    hasTraditionalText,
+  ]);
 
   const readerProgress = useMemo(() => {
     if (!savedProgress) {
@@ -596,6 +631,36 @@ export const CanonScreen = ({route, navigation}) => {
 
     return belongsToVariant ? savedProgress : null;
   }, [activeSections, savedProgress]);
+
+  const openReaderMenu = () => {
+    setBookmarkPosition(getCurrentProgress());
+    setStablePosition(getStableProgress());
+    setReaderMenuVisible(true);
+  };
+
+  const bookmarkSection = bookmarkPosition
+    ? activeSections.find((section) => Number(section.id) === Number(bookmarkPosition.anchorId))
+    : null;
+
+  const bookmarkConfig =
+    canon && bookmarkPosition && bookmarkSection
+      ? {
+          sourceType: 'canon',
+          sourceId: Number(canon.id || canonId),
+          sourceTitle: canon.title || title || 'Канон',
+          itemTitle:
+            bookmarkSection.heading ||
+            SECTION_LABELS[bookmarkSection.display_section_type || bookmarkSection.section_type] ||
+            'Место в каноне',
+          position: bookmarkPosition,
+          metadata: {
+            slug: canon.slug || slug,
+            variant: primaryVariant,
+            ode_number: bookmarkSection.ode_number,
+            section_type: bookmarkSection.display_section_type || bookmarkSection.section_type,
+          },
+        }
+      : null;
 
   if (loading || (canon && !progressReady)) {
     return (
@@ -620,6 +685,7 @@ export const CanonScreen = ({route, navigation}) => {
       <StatusBar style="light" translucent backgroundColor="transparent" />
 
       <SelectableDocumentReader
+        ref={readerRef}
         documentData={documentData}
         savedProgress={readerProgress}
         focusTarget={focusTarget}
@@ -629,11 +695,25 @@ export const CanonScreen = ({route, navigation}) => {
         onViewModeChange={setViewMode}
       />
 
+      <ReaderBookmarkMenu
+        visible={readerMenuVisible}
+        onClose={() => setReaderMenuVisible(false)}
+        navigation={navigation}
+        bookmark={bookmarkConfig}
+        canReturnToProgress={!!stablePosition}
+        onReturnToProgress={() => {
+          readerRef.current?.goToProgress(stablePosition);
+          setReaderMenuVisible(false);
+        }}
+      />
+
       <FixedSectionHeader
         title={canon.title || title || 'Канон'}
         navigation={navigation}
         topInset={insets.top}
         showTitle={false}
+        showMenu
+        onMenuPress={openReaderMenu}
       />
     </View>
   );

@@ -2504,8 +2504,14 @@ if (
           return false;
         }
         const targetMetadata = target.metadata || {};
+        const targetSaveType = target.save_type || target.saveType;
+        const targetAnchorType = target.anchor_type || target.anchorType;
         const targetChapterNumber = Number( targetMetadata .chapter_number || 0 );
-        if ( bookMode && targetChapterNumber ) {
+        if (
+          bookMode &&
+          targetChapterNumber &&
+          ( targetSaveType === 'chapter' || targetAnchorType === 'bible_chapter' )
+        ) {
           const chapterStart = document.querySelector( '.bible-chapter-start[data-chapter-number="' +
               targetChapterNumber + '"]' );
           if (chapterStart) {
@@ -2516,7 +2522,6 @@ if (
             return true;
           }
         }
-        const targetAnchorType = target.anchor_type || target.anchorType;
         if (targetAnchorType === 'kathisma') {
           window.scrollTo( 0, 0 );
           return true;
@@ -2527,12 +2532,28 @@ if (
           if (!root) {
             return false;
           }
+          const bookmarkOffset = Number( targetMetadata .bookmark_offset );
+          const hasBookmarkOffset =
+            targetSaveType === 'bookmark' &&
+            Number.isFinite( bookmarkOffset ) &&
+            bookmarkOffset >= 0;
           const hasOffsets = target.start_offset !== null && target.start_offset !== undefined &&
             target.end_offset !== null && target.end_offset !== undefined;
           const wholeTypes = [ 'prayer', 'psalm', 'kathisma', 'chapter', 'section', 'akathist', 'canon',
             'text', ];
-          const preciseRange = hasOffsets && !wholeTypes.includes( target.save_type || target.saveType );
-          if (preciseRange) {
+          const preciseRange = hasOffsets && !wholeTypes.includes( targetSaveType );
+          if (hasBookmarkOffset) {
+            if (bookMode && DATA.document .progressOffsetMode === 'page') {
+              applyBookPage( bookmarkOffset, false );
+            } else {
+              const progressRoot = root.closest( '.rule-item[data-track-progress="true"]' ) || root;
+              const targetY = Math.max(
+                0,
+                progressRoot.offsetTop + bookmarkOffset - ( window.innerHeight / 2 )
+              );
+              window.scrollTo( 0, targetY );
+            }
+          } else if (preciseRange) {
             const rect = getRangeRect( root, Number( target.start_offset ), Number( target.end_offset ) );
             if (bookMode) {
               const targetPage = pageForElement( root );
@@ -2575,6 +2596,35 @@ if (
           return true;
         }
         return false;
+      };
+    const goToProgress = progress => {
+        if (!progress) {
+          return false;
+        }
+        const anchorId = Number( progress.anchorId ?? progress.anchor_id );
+        if (!anchorId) {
+          return false;
+        }
+        const item = document.querySelector(
+          '.rule-item[data-track-progress="true"][data-item-id="' + anchorId + '"]'
+        );
+        if (!item) {
+          return false;
+        }
+        const offset = Math.max( 0, Number( progress.offset || 0 ) );
+        if (bookMode) {
+          const savedPage =
+            DATA.document .progressOffsetMode === 'page'
+              ? offset
+              : pageForElement( item );
+          applyBookPage( savedPage, false );
+        } else {
+          const target = Math.max( 0, item.offsetTop + offset - ( window.innerHeight / 2 ) );
+          window.scrollTo( 0, target );
+        }
+        item.classList.add( 'focus-target' );
+        setTimeout( () => item.classList.remove( 'focus-target' ), 1200 );
+        return true;
       };
     const restoreProgress = () => {
         if ( focusSavedTarget() ) {
@@ -2637,6 +2687,7 @@ if (
             renderTextItem( itemId );
           }
         },
+      goToProgress: progress => goToProgress( progress ),
       updateAction: ( actionKey, label, active, savedItemId = null ) => {
           const action = document.querySelector( '.section-action[data-action-key="' + actionKey +
               '"], .document-action[data-action-key="' + actionKey + '"]' );
