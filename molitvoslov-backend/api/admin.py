@@ -27,6 +27,7 @@ from .models import (
     PersonalPrayer,
     PersonalPrayerBookItem,
     PersonalPrayerPhoto,
+    BibleTranslation,
 )
 from django.utils.html import format_html
 from .calendar_models import CalendarDay, CalendarFeast
@@ -103,6 +104,7 @@ class TextAdmin(admin.ModelAdmin):
         "title",
         "description",
         "content",
+        "traditional_content",
         "translation",
         "slug",
     ]
@@ -469,7 +471,12 @@ class KathismaAdmin(admin.ModelAdmin):
 class PsalmVerseInline(admin.TabularInline):
     model = PsalmVerse
     extra = 0
-    fields = ["number", "church_slavonic", "russian"]
+    fields = [
+        "number",
+        "church_slavonic",
+        "church_slavonic_traditional",
+        "russian",
+    ]
     ordering = ["number"]
 
 
@@ -500,6 +507,7 @@ class PsalmVerseAdmin(admin.ModelAdmin):
         "psalm",
         "number",
         "church_slavonic_preview",
+        "traditional_preview",
         "russian_preview",
     ]
 
@@ -509,6 +517,7 @@ class PsalmVerseAdmin(admin.ModelAdmin):
 
     search_fields = [
         "church_slavonic",
+        "church_slavonic_traditional",
         "russian",
     ]
 
@@ -527,6 +536,14 @@ class PsalmVerseAdmin(admin.ModelAdmin):
             return obj.church_slavonic[:80] + "..."
 
         return obj.church_slavonic
+
+    @admin.display(description="ЦС традиционный")
+    def traditional_preview(self, obj):
+        value = obj.church_slavonic_traditional or ""
+        if len(value) > 80:
+            return value[:80] + "..."
+
+        return value
 
     @admin.display(description="Русский")
     def russian_preview(self, obj):
@@ -1541,3 +1558,26 @@ def save_model(self, request, obj, form, change):
         obj.fast_description_uk = fast.description_uk
 
     super().save_model(request, obj, form, change)
+
+
+
+@admin.register(BibleTranslation)
+class BibleTranslationAdmin(admin.ModelAdmin):
+    list_display = [
+        "name",
+        "code",
+        "language",
+        "script_variant",
+        "is_visible",
+    ]
+    list_filter = [
+        "language",
+        "script_variant",
+        "is_visible",
+    ]
+    search_fields = [
+        "name",
+        "code",
+        "source_url",
+    ]
+    list_editable = ["is_visible"]
