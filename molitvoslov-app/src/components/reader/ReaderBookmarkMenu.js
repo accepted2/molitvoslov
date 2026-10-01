@@ -52,7 +52,7 @@ export const ReaderBookmarkMenu = ({
 
   const openBookmarks = () => {
     onClose?.();
-    navigation?.navigate('Bookmarks');
+    navigation?.navigate('Favorites', {tab: 'places'});
   };
 
   return (
@@ -131,8 +131,8 @@ export const ReaderBookmarkMenu = ({
             </View>
 
             <View style={styles.actionTextWrap}>
-              <Text style={styles.actionTitle}>Открыть закладки</Text>
-              <Text style={styles.actionSubtitle}>Перейти к сохранённым местам и фрагментам</Text>
+              <Text style={styles.actionTitle}>Открыть места</Text>
+              <Text style={styles.actionSubtitle}>Перейти к постоянным закладкам в «Избранном»</Text>
             </View>
           </Pressable>
 
