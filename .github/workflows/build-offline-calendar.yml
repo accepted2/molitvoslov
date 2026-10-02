@@ -9,6 +9,8 @@ on:
       - .github/workflows/build-offline-calendar.yml
       - .github/scripts/build_calendar_offline_bundle.py
       - molitvoslov-app/src/data/calendar_2026.json
+      - molitvoslov-app/src/services/calendarOfflineStore.js
+      - molitvoslov-app/src/screens/ChurchCalendarScreen.js
 
 permissions:
   contents: write
@@ -55,6 +57,21 @@ jobs:
 
           print(f'Verified: {total} days and generated icon module')
           PY
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: molitvoslov-app/package-lock.json
+
+      - name: Install mobile dependencies
+        working-directory: molitvoslov-app
+        run: npm ci
+
+      - name: Build Android JavaScript bundle
+        working-directory: molitvoslov-app
+        run: npx expo export --platform android --output-dir /tmp/molitvoslov-calendar-dist
 
       - name: Commit generated calendar bundle
         run: |
