@@ -207,88 +207,34 @@ const BiblePreview = () => (
   </View>
 );
 
-const LibraryPreview = () => (
-  <View style={styles.libraryStack}>
-    <LibraryCard
-      image={artwork.morning}
-      icon="morning"
-      title="Утренние молитвы"
-      subtitle="Начало дня"
-    />
-    <LibraryCard
-      image={artwork.akathists}
-      icon="akathists"
-      title="Акафисты"
-      subtitle="Молитвенные песнопения"
-    />
-    <LibraryCard
-      image={artwork.canons}
-      icon="canons"
-      title="Каноны"
-      subtitle="Покаянные и просительные"
-    />
-    <LibraryCard image={artwork.psalter} icon="psalter" title="Псалтирь" subtitle="Кафизмы" />
+const ScreenshotPreview = ({source}) => (
+  <View style={styles.screenshotStage}>
+    <View style={styles.screenshotPhone}>
+      <Image source={source} style={styles.screenshotImage} resizeMode="contain" />
+    </View>
   </View>
 );
 
+const LibraryPreview = () => <ScreenshotPreview source={artwork.menuScreen} />;
+
 const CalendarPreview = () => (
-  <AppScreenPreview title="Церковный календарь">
-    <View style={styles.calendarScreenPreview}>
-      <View style={styles.calendarCard}>
-        <View style={styles.calendarLanguageRow}>
-          <Text style={styles.calendarSectionTitle}>Церковный календарь</Text>
-          <View style={styles.languageSwitch}>
-            <View style={[styles.languageButton, styles.languageButtonActive]}>
-              <Text style={styles.languageButtonTextActive}>РУ</Text>
-            </View>
-            <View style={styles.languageButton}>
-              <Text style={styles.languageButtonText}>УК</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.monthHeader}>
-          <Text style={styles.monthArrow}>‹</Text>
-          <Text style={styles.monthTitle}>Октябрь 2026</Text>
-          <Text style={styles.monthArrow}>›</Text>
-        </View>
-
-        <MonthGrid />
-      </View>
-
-      <View style={styles.dayCard}>
-        <Text style={styles.dayDate}>{CALENDAR_SAMPLE.date}</Text>
-
-        <View style={styles.feastHero}>
-          <Image source={artwork.calendarSaint} style={styles.feastIconImage} resizeMode="cover" />
-
-          <View style={styles.feastText}>
-            <Text style={styles.feastKicker}>ПАМЯТЬ СВЯТОГО / ПРАЗДНИК</Text>
-            <Text style={styles.feastTitle} numberOfLines={3}>
-              {CALENDAR_SAMPLE.saint}
-            </Text>
-            <View style={styles.fastBadge}>
-              <Text style={styles.fastBadgeText}>{CALENDAR_SAMPLE.fast}</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.calendarReadingRows}>
-          <View style={styles.calendarReadingRow}>
-            <Text style={styles.calendarReadingLabel}>ЕВАНГЕЛИЕ</Text>
-            <Text style={styles.calendarReadingValue}>{CALENDAR_SAMPLE.gospel}</Text>
-            <Text style={styles.calendarReadingArrow}>›</Text>
-          </View>
-
-          <View style={styles.calendarReadingRow}>
-            <Text style={styles.calendarReadingLabel}>АПОСТОЛ</Text>
-            <Text style={styles.calendarReadingValue}>{CALENDAR_SAMPLE.apostle}</Text>
-            <Text style={styles.calendarReadingArrow}>›</Text>
-          </View>
-        </View>
-      </View>
+  <View style={styles.calendarCollage}>
+    <View style={[styles.calendarScreenshotCard, styles.calendarScreenshotBack]}>
+      <Image
+        source={artwork.calendarScreen1}
+        style={styles.calendarScreenshotImage}
+        resizeMode="contain"
+      />
     </View>
-  </AppScreenPreview>
+
+    <View style={[styles.calendarScreenshotCard, styles.calendarScreenshotFront]}>
+      <Image
+        source={artwork.calendarScreen2}
+        style={styles.calendarScreenshotImage}
+        resizeMode="contain"
+      />
+    </View>
+  </View>
 );
 
 const CalendarWidgetPreview = () => (
@@ -345,38 +291,7 @@ const QuoteWidgetPreview = () => (
   </ImageBackground>
 );
 
-const WidgetsPreview = () => (
-  <ImageBackground
-    source={artwork.hero}
-    resizeMode="cover"
-    style={styles.homeScreenPreview}
-    imageStyle={styles.homeScreenWallpaper}
-  >
-    <LinearGradient
-      pointerEvents="none"
-      colors={['rgba(28,18,11,0.16)', 'rgba(28,18,11,0.36)']}
-      style={StyleSheet.absoluteFillObject}
-    />
-
-    <View style={styles.homeStatus}>
-      <Text style={styles.homeTime}>11:17</Text>
-      <Text style={styles.homeStatusIcons}>◉ ▴ ▰</Text>
-    </View>
-
-    <View style={styles.homeWidgets}>
-      <CalendarWidgetPreview />
-      <QuoteWidgetPreview />
-    </View>
-
-    <View style={styles.homeDock}>
-      {['☦', '✉', '◉', '⌂'].map((icon, itemIndex) => (
-        <View key={itemIndex} style={styles.homeDockIcon}>
-          <Text style={styles.homeDockIconText}>{icon}</Text>
-        </View>
-      ))}
-    </View>
-  </ImageBackground>
-);
+const WidgetsPreview = () => <ScreenshotPreview source={artwork.widgetsScreen} />;
 
 const FavoriteCard = ({badge, title, text, meta, progress}) => (
   <View style={styles.favoriteCard}>
@@ -399,49 +314,7 @@ const FavoriteCard = ({badge, title, text, meta, progress}) => (
   </View>
 );
 
-const FavoritesPreview = () => (
-  <AppScreenPreview title="Избранное" background={artwork.page}>
-    <View style={styles.favoritesPreview}>
-      <View style={styles.favoriteTabs}>
-        <View style={[styles.favoriteTab, styles.favoriteTabActive]}>
-          <Text style={styles.favoriteTabTextActive}>Сохранённое</Text>
-        </View>
-        <View style={styles.favoriteTab}>
-          <Text style={styles.favoriteTabText}>Места</Text>
-        </View>
-        <View style={styles.favoriteTab}>
-          <Text style={styles.favoriteTabText}>Фрагменты</Text>
-        </View>
-      </View>
-
-      <FavoriteCard badge="МОЛИТВА" title="Утренняя молитва" meta="Сохранённый полный текст" />
-
-      <FavoriteCard
-        badge="ФРАГМЕНТ"
-        title="Евангелие от Иоанна"
-        text="«И свет во тьме светит, и тьма не объяла его…»"
-        meta="Сохранённый фрагмент"
-      />
-
-      <FavoriteCard
-        badge="МЕСТО ЧТЕНИЯ"
-        title="Евангелие от Матфея"
-        progress="62%"
-        meta="Глава 8 · 62%"
-      />
-
-      <View style={styles.syncBadge}>
-        <Text style={styles.syncCloud}>☁</Text>
-        <View style={styles.syncTextWrap}>
-          <Text style={styles.syncTitle}>Синхронизация</Text>
-          <Text style={styles.syncText}>
-            Избранное, закладки и прогресс можно сохранить между устройствами
-          </Text>
-        </View>
-      </View>
-    </View>
-  </AppScreenPreview>
-);
+const FavoritesPreview = () => <ScreenshotPreview source={artwork.favoritesScreen} />;
 
 const MemorialBookCard = ({title, health, repose}) => (
   <View style={styles.memorialBookCard}>
@@ -516,63 +389,7 @@ const PrayerBooksPreview = () => (
   </AppScreenPreview>
 );
 
-const ReadingModesPreview = () => (
-  <AppScreenPreview title="Кафизма 1" background={artwork.page}>
-    <View style={styles.readerPreview}>
-      <View style={styles.readerTabs}>
-        {[
-          ['ЦС', false],
-          ['ЦС + Рус.', true],
-          ['Рус.', false],
-          ['ЦС традиц.', false],
-        ].map(([label, active]) => (
-          <View key={label} style={[styles.readerTab, active && styles.readerTabActive]}>
-            <Text style={[styles.readerTabText, active && styles.readerTabTextActive]}>
-              {label}
-            </Text>
-          </View>
-        ))}
-      </View>
-
-      <View style={styles.readerSectionHeader}>
-        <Text style={styles.readerPsalmTitle}>Псалом 1</Text>
-        <Text style={styles.readerSave}>♡ В избранное</Text>
-      </View>
-
-      <View style={styles.parallelReader}>
-        <View style={styles.readerColumn}>
-          <Text style={styles.readerColumnLabel}>Церковнославянский</Text>
-          <Text style={styles.churchText}>
-            1. Блаже́н муж, и́же не и́де на сове́т нечести́вых, и на пути́ гре́шных не ста, и на седа́лищи
-            губи́телей не се́де.
-          </Text>
-          <Text style={styles.churchText}>
-            2. Но в зако́не Госпо́дни во́ля его́, и в зако́не Его́ поучи́тся день и нощь.
-          </Text>
-        </View>
-
-        <View style={styles.readerDivider} />
-
-        <View style={styles.readerColumn}>
-          <Text style={styles.readerColumnLabel}>Русский</Text>
-          <Text style={styles.russianText}>
-            1. Блажен муж, который не ходит на совет нечестивых и не стоит на пути грешных.
-          </Text>
-          <Text style={styles.russianText}>
-            2. Но в законе Господа воля его, и о законе Его размышляет он день и ночь.
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.readerHint}>
-        <Text style={styles.readerHintIcon}>↔</Text>
-        <Text style={styles.readerHintText}>
-          Выбирайте один текст или читайте церковнославянский и русский параллельно.
-        </Text>
-      </View>
-    </View>
-  </AppScreenPreview>
-);
+const ReadingModesPreview = () => <ScreenshotPreview source={artwork.psalterScreen} />;
 
 const FinishPreview = () => (
   <View style={styles.finishCenter}>
@@ -636,9 +453,9 @@ const slides = [
     background: artwork.page4,
     backgroundOpacity: 0.58,
     preview: <FavoritesPreview />,
-    eyebrow: 'ИЗБРАННОЕ И ЗАКЛАДКИ',
+    eyebrow: 'ЗАКЛАДКИ И ИЗБРАННОЕ',
     title: 'Сохраняйте то, к чему хотите вернуться',
-    text: 'Полные молитвы, акафисты, цитаты, фрагменты, закладки и прогресс чтения остаются под рукой.',
+    text: 'Молитвы, фрагменты, закладки и прогресс чтения остаются под рукой.',
   },
   {
     key: 'memorial',
@@ -1214,6 +1031,65 @@ const styles = StyleSheet.create({
     marginTop: 2,
     color: '#7E6047',
     fontSize: 10,
+  },
+
+  screenshotStage: {
+    flex: 1,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  screenshotPhone: {
+    height: '100%',
+    aspectRatio: 0.45,
+    overflow: 'hidden',
+    borderRadius: 24,
+    backgroundColor: '#F7E7CD',
+    borderWidth: 1,
+    borderColor: 'rgba(112,67,30,0.24)',
+    shadowColor: '#2D1609',
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.24,
+    shadowRadius: 14,
+    elevation: 7,
+  },
+  screenshotImage: {
+    width: '100%',
+    height: '100%',
+  },
+  calendarCollage: {
+    flex: 1,
+    alignSelf: 'stretch',
+    position: 'relative',
+  },
+  calendarScreenshotCard: {
+    position: 'absolute',
+    height: '91%',
+    aspectRatio: 0.45,
+    overflow: 'hidden',
+    borderRadius: 23,
+    backgroundColor: '#F7E7CD',
+    borderWidth: 1,
+    borderColor: 'rgba(112,67,30,0.28)',
+    shadowColor: '#2D1609',
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    elevation: 7,
+  },
+  calendarScreenshotBack: {
+    left: '4%',
+    top: '1%',
+    transform: [{rotate: '-3deg'}],
+  },
+  calendarScreenshotFront: {
+    right: '4%',
+    bottom: '1%',
+    transform: [{rotate: '3deg'}],
+  },
+  calendarScreenshotImage: {
+    width: '100%',
+    height: '100%',
   },
 
   calendarScreenPreview: {
