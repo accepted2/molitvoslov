@@ -85,6 +85,23 @@ jobs:
 
           assert total == 365, total
 
+          june = json.loads((root / '2026-06.json').read_text(encoding='utf-8'))
+          june_fifth = june['days']['2026-06-05']
+          assert june_fifth['ru']['main_feast']['source_id'] == 3012
+          assert june_fifth['uk']['main_feast']['source_id'] == 3012
+          assert 'Парам' not in june_fifth['uk']['main_feast']['title']
+          assert all(
+              'Филумен' not in (feast.get('title') or '')
+              for feast in june_fifth['uk'].get('all_feasts', [])
+          )
+
+          december = json.loads((root / '2026-12.json').read_text(encoding='utf-8'))
+          december_twelfth = december['days']['2026-12-12']
+          assert all(
+              feast.get('source_id') != 3012
+              for feast in december_twelfth['ru'].get('all_feasts', [])
+          )
+
           icon_module = Path('molitvoslov-app/src/data/calendarIconAssets.js')
           assert icon_module.exists(), icon_module
           assert 'bundledCalendarIconCount' in icon_module.read_text(encoding='utf-8')
