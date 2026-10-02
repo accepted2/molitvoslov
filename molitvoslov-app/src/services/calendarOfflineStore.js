@@ -137,6 +137,41 @@ export const getBundledCalendarDay = (date, language = 'ru') => {
 };
 
 /*
+ * Мгновенный месяц прямо из JS bundle.
+ * Здесь нет AsyncStorage и сети, поэтому экран может переключить
+ * сетку сразу, а более свежие данные догрузить следом в фоне.
+ */
+export const getBundledCalendarMonth = (year, month, language = 'ru') => {
+  const lang = normalizeLanguage(language);
+  const dateKeys = getMonthDateKeys(year, month);
+  const payload = getBundledMonthPayload(year, month);
+
+  if (!dateKeys.length || !payload) {
+    return null;
+  }
+
+  const days = dateKeys
+    .map((dateKey) => payload?.days?.[dateKey]?.[lang] || null)
+    .filter(Boolean);
+
+  if (!days.length) {
+    return null;
+  }
+
+  return {
+    year: Number(year),
+    month: Number(month),
+    language: lang,
+    days,
+    total_days: days.length,
+    start_date: dateKeys[0],
+    end_date: dateKeys[dateKeys.length - 1],
+    source_error: null,
+    offline: true,
+  };
+};
+
+/*
  * Лучший локальный вариант дня:
  * сначала более свежий кэш телефона, затем встроенный JSON из APK.
  */
@@ -247,15 +282,31 @@ export const storeCalendarMonth = async (data, language = 'ru') => {
     return false;
   }
 
-  await Promise.all(
-    days.map((day) =>
-      day?.date_gregorian
-        ? storeCalendarDay(day.date_gregorian, language, day)
-        : Promise.resolve(false)
-    )
-  );
+  const entries = days
+    .map((day) => {
+      if (!day?.date_gregorian) {
+        return null;
+      }
 
-  return true;
+      const key = getStorageKey(day.date_gregorian, language);
+
+      return key ? [key, JSON.stringify(day)] : null;
+    })
+    .filter(Boolean);
+
+  if (!entries.length) {
+    return false;
+  }
+
+  try {
+    await AsyncStorage.multiSet(entries);
+
+    return true;
+  } catch (error) {
+    console.log('Ошибка сохранения calendar month cache:', error?.message || error);
+
+    return false;
+  }
 };
 
 /*
