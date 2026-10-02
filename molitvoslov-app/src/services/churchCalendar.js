@@ -76,7 +76,9 @@ export const getCalendarDay = async (
     );
 
     if (signal?.aborted) {
-      throw new DOMException('Aborted', 'AbortError');
+      const abortError = new Error('Aborted');
+      abortError.name = 'AbortError';
+      throw abortError;
     }
 
     dayCache.set(key, data);
@@ -131,7 +133,9 @@ export const getCalendarMonth = async (
     );
 
     if (signal?.aborted) {
-      throw new DOMException('Aborted', 'AbortError');
+      const abortError = new Error('Aborted');
+      abortError.name = 'AbortError';
+      throw abortError;
     }
 
     monthCache.set(key, data);
