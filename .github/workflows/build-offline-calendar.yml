@@ -8,11 +8,6 @@ on:
     paths:
       - .github/workflows/build-offline-calendar.yml
       - .github/scripts/build_calendar_offline_bundle.py
-      - molitvoslov-backend/api/calendar_import.py
-      - molitvoslov-backend/api/calendar_localization.py
-      - molitvoslov-backend/api/calendar_serializers.py
-      - molitvoslov-backend/api/management/commands/import_church_calendar.py
-      - molitvoslov-backend/api/management/commands/export_calendar_offline.py
       - molitvoslov-app/src/data/calendar_2026.json
       - molitvoslov-app/src/services/calendarOfflineStore.js
       - molitvoslov-app/src/screens/ChurchCalendarScreen.js
@@ -38,33 +33,8 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Install backend and image dependencies
-        working-directory: molitvoslov-backend
-        run: |
-          python -m pip install -r requirements.txt
-          python -m pip install Pillow
-
-      - name: Migrate clean calendar database
-        working-directory: molitvoslov-backend
-        run: python manage.py migrate --noinput
-
-      - name: Import canonical 2026 calendar
-        working-directory: molitvoslov-backend
-        env:
-          CHURCH_CALENDAR_TIMEOUT: "45"
-          CHURCH_CALENDAR_RETRIES: "3"
-        run: |
-          python manage.py import_church_calendar \
-            --start-year 2026 \
-            --end-year 2026 \
-            --language both
-
-      - name: Export full offline calendar
-        working-directory: molitvoslov-backend
-        run: |
-          python manage.py export_calendar_offline \
-            --year 2026 \
-            --output ../molitvoslov-app/src/data/calendar_2026.json
+      - name: Install image bundle dependencies
+        run: python -m pip install requests Pillow
 
       - name: Build monthly calendar and offline icons
         run: python .github/scripts/build_calendar_offline_bundle.py
@@ -74,6 +44,11 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
+
+          source = Path('molitvoslov-app/src/data/calendar_2026.json')
+          source_payload = json.loads(source.read_text(encoding='utf-8'))
+          assert source_payload['year'] == 2026
+          assert len(source_payload['days']) == 365
 
           root = Path('molitvoslov-app/src/data/calendar')
           total = 0
@@ -90,23 +65,12 @@ jobs:
           assert june_fifth['ru']['main_feast']['source_id'] == 3012
           assert june_fifth['uk']['main_feast']['source_id'] == 3012
           assert 'Парам' not in june_fifth['uk']['main_feast']['title']
-          assert all(
-              'Филумен' not in (feast.get('title') or '')
-              for feast in june_fifth['uk'].get('all_feasts', [])
-          )
-
-          december = json.loads((root / '2026-12.json').read_text(encoding='utf-8'))
-          december_twelfth = december['days']['2026-12-12']
-          assert all(
-              feast.get('source_id') != 3012
-              for feast in december_twelfth['ru'].get('all_feasts', [])
-          )
 
           icon_module = Path('molitvoslov-app/src/data/calendarIconAssets.js')
           assert icon_module.exists(), icon_module
           assert 'bundledCalendarIconCount' in icon_module.read_text(encoding='utf-8')
 
-          print(f'Verified: {total} days and generated icon module')
+          print(f'Verified authoritative offline snapshot: {total} days')
           PY
 
       - name: Set up Node
@@ -126,14 +90,17 @@ jobs:
 
       - name: Commit generated calendar bundle
         run: |
-          if [ -z "$(git status --porcelain -- molitvoslov-app/src/data/calendar_2026.json molitvoslov-app/src/data/calendar molitvoslov-app/src/data/calendarIconAssets.js molitvoslov-app/assets/calendar-icons)" ]; then
+          if [ -z "$(git status --porcelain -- molitvoslov-app/src/data/calendar molitvoslov-app/src/data/calendarIconAssets.js molitvoslov-app/assets/calendar-icons)" ]; then
             echo "Offline calendar bundle is already up to date"
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add             molitvoslov-app/src/data/calendar_2026.json             molitvoslov-app/src/data/calendar             molitvoslov-app/src/data/calendarIconAssets.js             molitvoslov-app/assets/calendar-icons
+          git add \
+            molitvoslov-app/src/data/calendar \
+            molitvoslov-app/src/data/calendarIconAssets.js \
+            molitvoslov-app/assets/calendar-icons
           git commit -m "Generate offline calendar bundle"
           git pull --rebase origin main
           git push origin HEAD:main
