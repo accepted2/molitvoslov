@@ -33,10 +33,7 @@ import {
   getCalendarLanguage,
   setCalendarLanguage,
 } from '../services/calendarPreferences';
-import {
-  getOfflineCalendarDay,
-  getOfflineCalendarMonth,
-} from '../services/calendarOfflineStore';
+import {getOfflineCalendarDay, getOfflineCalendarMonth} from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
 import {colors} from '../theme';
