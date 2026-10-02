@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from .calendar_localization import same_feast_identity
 from .calendar_models import CalendarDay, CalendarFeast
 
 
@@ -67,7 +68,12 @@ class CalendarFeastSerializer(serializers.ModelSerializer):
         ]
 
     def _get(self, obj, field):
-        return _localized(obj, field, _language_from_context(self.context))
+        language = _language_from_context(self.context)
+
+        if language == "uk" and not same_feast_identity(obj.title, obj.title_uk):
+            return getattr(obj, field, "")
+
+        return _localized(obj, field, language)
 
     def get_title(self, obj):
         return self._get(obj, "title")
