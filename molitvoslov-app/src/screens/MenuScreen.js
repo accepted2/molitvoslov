@@ -1032,7 +1032,13 @@ export const MenuScreen = ({navigation}) => {
 
                     <View style={styles.calendarTitleTextWrap}>
                       <View style={styles.calendarTitleLine}>
-                        <Text style={styles.calendarTitle}>{calendarCopy.calendarTitle}</Text>
+                        <Text
+                          style={styles.calendarTitle}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.82}
+                          maxFontSizeMultiplier={1}
+                        >{calendarCopy.calendarTitle}</Text>
 
                         <Text style={styles.calendarTitleArrow}>›</Text>
                       </View>
@@ -1867,7 +1873,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     color: '#4B2C18',
     fontFamily: 'serif',
-    fontSize: 15,
+    fontSize: 16,
     lineHeight: 18,
     fontWeight: '700',
   },
@@ -2042,10 +2048,12 @@ const styles = StyleSheet.create({
   },
 
   calendarSaintImage: {
-    width: 42,
-    height: 59,
+    width: 46,
+    MaxWidth: 56,
+    height: 'auto',
+    maxHeight: '100%',
     // marginTop: 5,
-    borderRadius: 8,
+    borderRadius: 2,
     backgroundColor: '#F0D6A5',
   },
 

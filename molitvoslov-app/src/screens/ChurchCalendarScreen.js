@@ -1050,7 +1050,8 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(123,79,36,0.19)',
   },
   feastImageWrap: {
-    width: 88,
+    width: '98',
+    maxWidth:'120',
     height: 120,
     alignSelf: 'center',
     borderRadius: 13,
