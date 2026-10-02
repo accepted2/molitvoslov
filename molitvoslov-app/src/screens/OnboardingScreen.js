@@ -24,6 +24,7 @@ const artwork = {
   hero: require('../../assets/home/hero.png'),
   matthew: require('../../assets/bible/evangelists/matthew-bg.png'),
   morning: require('../../assets/home/morning.png'),
+  evening: require('../../assets/home/evening.png'),
   akathists: require('../../assets/home/akathists.png'),
   canons: require('../../assets/home/canons.png'),
   psalter: require('../../assets/home/psalter.png'),
@@ -207,34 +208,102 @@ const BiblePreview = () => (
   </View>
 );
 
-const ScreenshotPreview = ({source}) => (
-  <View style={styles.screenshotStage}>
-    <View style={styles.screenshotPhone}>
-      <Image source={source} style={styles.screenshotImage} resizeMode="contain" />
+const LibraryPreview = () => (
+  <AppScreenPreview title="Молитвослов" background={artwork.page}>
+    <View style={styles.libraryShowcase}>
+      <LibraryCard
+        image={artwork.morning}
+        icon="morning"
+        title="Утренние молитвы"
+        subtitle="Начало дня"
+      />
+      <LibraryCard
+        image={artwork.evening}
+        icon="evening"
+        title="Вечерние молитвы"
+        subtitle="Перед сном"
+      />
+      <LibraryCard
+        image={artwork.akathists}
+        icon="akathists"
+        title="Акафисты"
+        subtitle="Молитвенные песнопения"
+      />
+      <LibraryCard
+        image={artwork.canons}
+        icon="canons"
+        title="Каноны"
+        subtitle="Покаянные и просительные"
+      />
+      <LibraryCard image={artwork.psalter} icon="psalter" title="Псалтирь" subtitle="Кафизмы" />
     </View>
+  </AppScreenPreview>
+);
+
+const CalendarFeatureRow = ({label, value, icon}) => (
+  <View style={styles.calendarFeatureRow}>
+    <View style={styles.calendarFeatureIcon}>
+      <CategoryIcon type={icon} size={24} />
+    </View>
+    <View style={styles.calendarFeatureText}>
+      <Text style={styles.calendarFeatureLabel}>{label}</Text>
+      <Text style={styles.calendarFeatureValue} numberOfLines={1}>
+        {value}
+      </Text>
+    </View>
+    <Text style={styles.calendarFeatureArrow}>›</Text>
   </View>
 );
 
-const LibraryPreview = () => <ScreenshotPreview source={artwork.menuScreen} />;
-
 const CalendarPreview = () => (
-  <View style={styles.calendarCollage}>
-    <View style={[styles.calendarScreenshotCard, styles.calendarScreenshotBack]}>
-      <Image
-        source={artwork.calendarScreen1}
-        style={styles.calendarScreenshotImage}
-        resizeMode="contain"
-      />
-    </View>
+  <AppScreenPreview title="Церковный календарь" background={artwork.page}>
+    <View style={styles.calendarShowcase}>
+      <View style={styles.calendarCard}>
+        <View style={styles.calendarLanguageRow}>
+          <Text style={styles.calendarSectionTitle}>Церковный календарь</Text>
+          <View style={styles.languageSwitch}>
+            <View style={[styles.languageButton, styles.languageButtonActive]}>
+              <Text style={styles.languageButtonTextActive}>РУ</Text>
+            </View>
+            <View style={styles.languageButton}>
+              <Text style={styles.languageButtonText}>УК</Text>
+            </View>
+          </View>
+        </View>
 
-    <View style={[styles.calendarScreenshotCard, styles.calendarScreenshotFront]}>
-      <Image
-        source={artwork.calendarScreen2}
-        style={styles.calendarScreenshotImage}
-        resizeMode="contain"
-      />
+        <View style={styles.monthHeader}>
+          <Text style={styles.monthArrow}>‹</Text>
+          <Text style={styles.monthTitle}>Октябрь 2026</Text>
+          <Text style={styles.monthArrow}>›</Text>
+        </View>
+
+        <MonthGrid compact />
+      </View>
+
+      <View style={styles.calendarDayShowcase}>
+        <View style={styles.calendarDayHeader}>
+          <Image source={artwork.calendarSaint} style={styles.calendarDaySaint} resizeMode="cover" />
+          <View style={styles.calendarDayTitleWrap}>
+            <Text style={styles.calendarDayDate}>{CALENDAR_SAMPLE.date}</Text>
+            <Text style={styles.calendarDaySaintTitle} numberOfLines={2}>
+              {CALENDAR_SAMPLE.saint}
+            </Text>
+            <View style={styles.calendarDayFastBadge}>
+              <Text style={styles.calendarDayFastText} numberOfLines={1}>
+                {CALENDAR_SAMPLE.fast}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <CalendarFeatureRow label="ЖИТИЕ" value="Житие святого" icon="canons" />
+        <CalendarFeatureRow label="ТРОПАРЬ" value="Тропарь святому" icon="canons" />
+        <CalendarFeatureRow label="КОНДАК" value="Кондак святому" icon="canons" />
+        <CalendarFeatureRow label="ЕВАНГЕЛИЕ" value={CALENDAR_SAMPLE.gospel} icon="bible" />
+        <CalendarFeatureRow label="АПОСТОЛ" value={CALENDAR_SAMPLE.apostle} icon="canons" />
+      </View>
     </View>
-  </View>
+  </AppScreenPreview>
 );
 
 const CalendarWidgetPreview = () => (
@@ -291,7 +360,38 @@ const QuoteWidgetPreview = () => (
   </ImageBackground>
 );
 
-const WidgetsPreview = () => <ScreenshotPreview source={artwork.widgetsScreen} />;
+const WidgetsPreview = () => (
+  <ImageBackground
+    source={artwork.hero}
+    resizeMode="cover"
+    style={styles.homeScreenPreview}
+    imageStyle={styles.homeScreenWallpaper}
+  >
+    <LinearGradient
+      pointerEvents="none"
+      colors={['rgba(28,18,11,0.16)', 'rgba(28,18,11,0.36)']}
+      style={StyleSheet.absoluteFillObject}
+    />
+
+    <View style={styles.homeStatus}>
+      <Text style={styles.homeTime}>11:17</Text>
+      <Text style={styles.homeStatusIcons}>◉ ▴ ▰</Text>
+    </View>
+
+    <View style={styles.homeWidgets}>
+      <CalendarWidgetPreview />
+      <QuoteWidgetPreview />
+    </View>
+
+    <View style={styles.homeDock}>
+      {['☦', '✉', '◉', '⌂'].map((icon, itemIndex) => (
+        <View key={itemIndex} style={styles.homeDockIcon}>
+          <Text style={styles.homeDockIconText}>{icon}</Text>
+        </View>
+      ))}
+    </View>
+  </ImageBackground>
+);
 
 const FavoriteCard = ({badge, title, text, meta, progress}) => (
   <View style={styles.favoriteCard}>
@@ -314,7 +414,47 @@ const FavoriteCard = ({badge, title, text, meta, progress}) => (
   </View>
 );
 
-const FavoritesPreview = () => <ScreenshotPreview source={artwork.favoritesScreen} />;
+const FavoritesPreview = () => (
+  <AppScreenPreview title="Избранное" background={artwork.page}>
+    <View style={styles.favoritesPreview}>
+      <View style={styles.favoriteTabs}>
+        <View style={styles.favoriteTab}>
+          <Text style={styles.favoriteTabText}>Сохранённое</Text>
+        </View>
+        <View style={[styles.favoriteTab, styles.favoriteTabActive]}>
+          <Text style={styles.favoriteTabTextActive}>Закладки</Text>
+        </View>
+        <View style={styles.favoriteTab}>
+          <Text style={styles.favoriteTabText}>Фрагменты</Text>
+        </View>
+      </View>
+
+      <FavoriteCard
+        badge="ЗАКЛАДКА"
+        title="Евангелие от Матфея"
+        meta="Глава 8 · место чтения сохранено"
+        progress="62%"
+      />
+
+      <FavoriteCard
+        badge="ФРАГМЕНТ"
+        title="Евангелие от Иоанна"
+        text="«И свет во тьме светит, и тьма не объяла его…»"
+        meta="Сохранённый фрагмент"
+      />
+
+      <FavoriteCard badge="МОЛИТВА" title="Утренняя молитва" meta="Сохранённый полный текст" />
+
+      <View style={styles.syncBadge}>
+        <Text style={styles.syncCloud}>☁</Text>
+        <View style={styles.syncTextWrap}>
+          <Text style={styles.syncTitle}>Синхронизация</Text>
+          <Text style={styles.syncText}>Закладки, избранное и прогресс доступны между устройствами</Text>
+        </View>
+      </View>
+    </View>
+  </AppScreenPreview>
+);
 
 const MemorialBookCard = ({title, health, repose}) => (
   <View style={styles.memorialBookCard}>
@@ -389,7 +529,63 @@ const PrayerBooksPreview = () => (
   </AppScreenPreview>
 );
 
-const ReadingModesPreview = () => <ScreenshotPreview source={artwork.psalterScreen} />;
+const ReadingModesPreview = () => (
+  <AppScreenPreview title="Кафизма 1" background={artwork.page}>
+    <View style={styles.readerPreview}>
+      <View style={styles.readerTabs}>
+        {[
+          ['ЦС', false],
+          ['ЦС + Рус.', true],
+          ['Рус.', false],
+          ['ЦС традиц.', false],
+        ].map(([label, active]) => (
+          <View key={label} style={[styles.readerTab, active && styles.readerTabActive]}>
+            <Text style={[styles.readerTabText, active && styles.readerTabTextActive]}>
+              {label}
+            </Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.readerSectionHeader}>
+        <Text style={styles.readerPsalmTitle}>Псалом 1</Text>
+        <Text style={styles.readerSave}>♡ В избранное</Text>
+      </View>
+
+      <View style={styles.parallelReader}>
+        <View style={styles.readerColumn}>
+          <Text style={styles.readerColumnLabel}>Церковнославянский</Text>
+          <Text style={styles.churchText}>
+            1. Блаже́н муж, и́же не и́де на сове́т нечести́вых, и на пути́ гре́шных не ста, и на седа́лищи
+            губи́телей не се́де.
+          </Text>
+          <Text style={styles.churchText}>
+            2. Но в зако́не Госпо́дни во́ля его́, и в зако́не Его́ поучи́тся день и нощь.
+          </Text>
+        </View>
+
+        <View style={styles.readerDivider} />
+
+        <View style={styles.readerColumn}>
+          <Text style={styles.readerColumnLabel}>Русский</Text>
+          <Text style={styles.russianText}>
+            1. Блажен муж, который не ходит на совет нечестивых и не стоит на пути грешных.
+          </Text>
+          <Text style={styles.russianText}>
+            2. Но в законе Господа воля его, и о законе Его размышляет он день и ночь.
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.readerHint}>
+        <Text style={styles.readerHintIcon}>↔</Text>
+        <Text style={styles.readerHintText}>
+          Выбирайте один текст или читайте церковнославянский и русский параллельно.
+        </Text>
+      </View>
+    </View>
+  </AppScreenPreview>
+);
 
 const FinishPreview = () => (
   <View style={styles.finishCenter}>
@@ -423,6 +619,7 @@ const slides = [
   },
   {
     key: 'library',
+    expandedPreview: true,
     background: artwork.page,
     backgroundOpacity: 0.72,
     preview: <LibraryPreview />,
@@ -432,6 +629,7 @@ const slides = [
   },
   {
     key: 'calendar',
+    expandedPreview: true,
     background: artwork.page,
     backgroundOpacity: 0.66,
     preview: <CalendarPreview />,
@@ -441,6 +639,7 @@ const slides = [
   },
   {
     key: 'widgets',
+    expandedPreview: true,
     background: artwork.page,
     backgroundOpacity: 0.62,
     preview: <WidgetsPreview />,
@@ -450,6 +649,7 @@ const slides = [
   },
   {
     key: 'favorites',
+    expandedPreview: true,
     background: artwork.page4,
     backgroundOpacity: 0.58,
     preview: <FavoritesPreview />,
@@ -459,6 +659,7 @@ const slides = [
   },
   {
     key: 'memorial',
+    expandedPreview: true,
     background: artwork.page2,
     backgroundOpacity: 0.58,
     preview: <MemorialPreview />,
@@ -468,6 +669,7 @@ const slides = [
   },
   {
     key: 'prayerbooks',
+    expandedPreview: true,
     background: artwork.page4,
     backgroundOpacity: 0.58,
     preview: <PrayerBooksPreview />,
@@ -477,6 +679,7 @@ const slides = [
   },
   {
     key: 'reading-modes',
+    expandedPreview: true,
     background: artwork.page2,
     backgroundOpacity: 0.58,
     preview: <ReadingModesPreview />,
@@ -585,6 +788,7 @@ export const OnboardingScreen = ({onComplete}) => {
                 <Animated.View
                   style={[
                     styles.previewArea,
+                    slide.expandedPreview && styles.previewAreaExpanded,
                     {
                       opacity,
                       transform: [{translateX}, {scale}],
@@ -724,6 +928,13 @@ const styles = StyleSheet.create({
     bottom: 240,
     alignItems: 'stretch',
     justifyContent: 'center',
+  },
+  previewAreaExpanded: {
+    top: 84,
+    left: 12,
+    right: 12,
+    bottom: 194,
+    justifyContent: 'flex-start',
   },
   caption: {
     position: 'absolute',
@@ -971,9 +1182,15 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     gap: 8,
   },
+  libraryShowcase: {
+    flex: 1,
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+    gap: 7,
+  },
   libraryCard: {
     position: 'relative',
-    minHeight: 76,
+    minHeight: 68,
     flexDirection: 'row',
     alignItems: 'center',
     paddingLeft: 10,
@@ -1033,63 +1250,103 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
 
-  screenshotStage: {
+  calendarShowcase: {
     flex: 1,
     alignSelf: 'stretch',
+    gap: 8,
+  },
+  calendarDayShowcase: {
+    flex: 1,
+    padding: 9,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: 'rgba(123,79,36,0.18)',
+    backgroundColor: 'rgba(255,244,222,0.97)',
+  },
+  calendarDayHeader: {
+    minHeight: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  calendarDaySaint: {
+    width: 48,
+    height: 64,
+    borderRadius: 10,
+    backgroundColor: '#EED7B3',
+  },
+  calendarDayTitleWrap: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: 9,
+  },
+  calendarDayDate: {
+    color: '#8A5A38',
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+  },
+  calendarDaySaintTitle: {
+    marginTop: 2,
+    color: '#3F291B',
+    fontFamily: 'serif',
+    fontSize: 12,
+    lineHeight: 15,
+    fontWeight: '700',
+  },
+  calendarDayFastBadge: {
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    marginTop: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 7,
+    backgroundColor: '#EAD7B8',
+  },
+  calendarDayFastText: {
+    color: '#6C4A31',
+    fontSize: 7,
+    fontWeight: '700',
+  },
+  calendarFeatureRow: {
+    minHeight: 32,
+    marginTop: 5,
+    paddingHorizontal: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(126,82,38,0.16)',
+    backgroundColor: '#FFF9ED',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  calendarFeatureIcon: {
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  screenshotPhone: {
-    height: '100%',
-    aspectRatio: 0.45,
     overflow: 'hidden',
-    borderRadius: 24,
-    backgroundColor: '#F7E7CD',
-    borderWidth: 1,
-    borderColor: 'rgba(112,67,30,0.24)',
-    shadowColor: '#2D1609',
-    shadowOffset: {width: 0, height: 8},
-    shadowOpacity: 0.24,
-    shadowRadius: 14,
-    elevation: 7,
   },
-  screenshotImage: {
-    width: '100%',
-    height: '100%',
-  },
-  calendarCollage: {
+  calendarFeatureText: {
     flex: 1,
-    alignSelf: 'stretch',
-    position: 'relative',
+    minWidth: 0,
+    marginLeft: 5,
   },
-  calendarScreenshotCard: {
-    position: 'absolute',
-    height: '91%',
-    aspectRatio: 0.45,
-    overflow: 'hidden',
-    borderRadius: 23,
-    backgroundColor: '#F7E7CD',
-    borderWidth: 1,
-    borderColor: 'rgba(112,67,30,0.28)',
-    shadowColor: '#2D1609',
-    shadowOffset: {width: 0, height: 8},
-    shadowOpacity: 0.25,
-    shadowRadius: 14,
-    elevation: 7,
+  calendarFeatureLabel: {
+    color: '#9A6837',
+    fontSize: 7,
+    fontWeight: '800',
+    letterSpacing: 0.45,
   },
-  calendarScreenshotBack: {
-    left: '4%',
-    top: '1%',
-    transform: [{rotate: '-3deg'}],
+  calendarFeatureValue: {
+    marginTop: 1,
+    color: '#4A3020',
+    fontFamily: 'serif',
+    fontSize: 10,
+    fontWeight: '700',
   },
-  calendarScreenshotFront: {
-    right: '4%',
-    bottom: '1%',
-    transform: [{rotate: '3deg'}],
-  },
-  calendarScreenshotImage: {
-    width: '100%',
-    height: '100%',
+  calendarFeatureArrow: {
+    marginLeft: 4,
+    color: '#8B5B30',
+    fontSize: 18,
   },
 
   calendarScreenPreview: {
@@ -1744,7 +2001,7 @@ const styles = StyleSheet.create({
 
   appScreen: {
     alignSelf: 'stretch',
-    minHeight: 445,
+    height: '100%',
     borderRadius: 23,
     overflow: 'hidden',
     backgroundColor: '#B78A58',
@@ -1870,7 +2127,7 @@ const styles = StyleSheet.create({
   },
   homeScreenPreview: {
     alignSelf: 'stretch',
-    minHeight: 445,
+    height: '100%',
     paddingHorizontal: 10,
     paddingTop: 12,
     paddingBottom: 12,
