@@ -1102,7 +1102,7 @@ export const MenuScreen = ({navigation}) => {
                         <Image
                           source={calendarSaintSource}
                           style={styles.calendarSaintImage}
-                          resizeMode="contain"
+                          resizeMode="cover"
                         />
                       ) : (
                         <View style={styles.calendarSaintPlaceholder}>
@@ -2052,10 +2052,10 @@ const styles = StyleSheet.create({
   calendarSaintImage: {
     width: 46,
     MaxWidth: 56,
-    height: 'auto',
+    height: 58,
     maxHeight: '100%',
     // marginTop: 5,
-    borderRadius: 2,
+    borderRadius: 8,
     backgroundColor: '#F0D6A5',
   },
 
