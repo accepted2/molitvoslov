@@ -34,6 +34,7 @@ from .auth_views import (
     CurrentUserView,
     LogoutView,
 )
+from .mobile_content import MobileContentView
 
 router = DefaultRouter()
 
@@ -86,6 +87,7 @@ router.register(
 )
 
 urlpatterns = [
+    path("mobile-content/", MobileContentView.as_view(), name="mobile-content"),
     path("calendar/", include("api.calendar_urls")),
     path(
         "auth/google/",
