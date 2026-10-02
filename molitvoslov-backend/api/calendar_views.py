@@ -55,22 +55,21 @@ class CalendarDayView(APIView):
 
         language = request_language(request)
         day = calendar_queryset().filter(date_gregorian=target_date).first()
-        imported_languages = (
-            set((day.source_payload or {}).get("imported_languages") or []) if day else set()
-        )
 
-        if day is None or language not in imported_languages:
+        # Чтение календаря не должно перезаписывать уже существующие данные.
+        # Источник Church Site используем только если самого дня ещё нет.
+        # Отсутствующая локализация безопасно откатывается к RU в сериализаторе.
+        if day is None:
             try:
                 ensure_day(target_date, language=language)
             except Exception as error:
-                if day is None:
-                    return Response(
-                        {
-                            "detail": "Данные церковного календаря пока недоступны.",
-                            "source_error": str(error),
-                        },
-                        status=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    )
+                return Response(
+                    {
+                        "detail": "Данные церковного календаря пока недоступны.",
+                        "source_error": str(error),
+                    },
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                )
 
             day = calendar_queryset().filter(date_gregorian=target_date).first()
 
@@ -113,12 +112,9 @@ class CalendarMonthView(APIView):
         language = request_language(request)
         source_error = ""
 
+        # Полный локальный месяц читаем как есть. Обычный GET и переключение
+        # языка не должны запускать повторный импорт и менять ручные правки.
         if local_count < expected_days:
-            try:
-                ensure_month(year, month, language=language)
-            except Exception as error:
-                source_error = str(error)
-        else:
             try:
                 ensure_month(year, month, language=language)
             except Exception as error:
@@ -179,19 +175,27 @@ class CalendarWeekView(APIView):
         sunday = monday.fromordinal(monday.toordinal() + 6)
         language = request_language(request)
 
-        for year, month in {
-            (monday.year, monday.month),
-            (sunday.year, sunday.month),
-        }:
-            try:
-                ensure_month(year, month, language=language)
-            except Exception:
-                pass
-
         days = calendar_queryset().filter(
             date_gregorian__gte=monday,
             date_gregorian__lte=sunday,
         )
+
+        # Неделя тоже является read-only API. Подтягиваем источник только если
+        # локально вообще не хватает календарных дней.
+        if days.count() < 7:
+            for year, month in {
+                (monday.year, monday.month),
+                (sunday.year, sunday.month),
+            }:
+                try:
+                    ensure_month(year, month, language=language)
+                except Exception:
+                    pass
+
+            days = calendar_queryset().filter(
+                date_gregorian__gte=monday,
+                date_gregorian__lte=sunday,
+            )
 
         return Response(
             {

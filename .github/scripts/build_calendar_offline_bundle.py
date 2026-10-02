@@ -3,7 +3,10 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import re
 import sys
+import unicodedata
+from difflib import SequenceMatcher
 from pathlib import Path
 
 import requests
@@ -20,7 +23,168 @@ YEAR = 2026
 ICON_MAX_SIZE = (256, 384)
 ICON_QUALITY = 80
 USER_AGENT = "MolitvoslovOfflineCalendar/1.0"
+IDENTITY_SIMILARITY_THRESHOLD = 0.50
 
+_TRANSLATION_TABLE = str.maketrans(
+    {
+        "ё": "е",
+        "і": "и",
+        "ї": "и",
+        "є": "е",
+        "ґ": "г",
+        "й": "и",
+        "ь": "",
+        "ъ": "",
+    }
+)
+
+_GENERIC_PREFIXES = (
+    "свят",
+    "мучен",
+    "преподоб",
+    "священномуч",
+    "великомуч",
+    "апостол",
+    "пророк",
+    "епископ",
+    "архиепископ",
+    "митрополит",
+    "патриарх",
+    "отц",
+    "наш",
+    "жити",
+    "страдани",
+    "памят",
+    "преставлен",
+    "обретен",
+    "мощ",
+    "блаженн",
+    "праведн",
+    "равноапостол",
+    "чудотвор",
+    "собор",
+    "икон",
+    "праздн",
+    "священ",
+)
+
+_GENERIC_WORDS = {
+    "и",
+    "во",
+    "в",
+    "на",
+    "же",
+    "со",
+    "с",
+    "из",
+    "к",
+    "у",
+    "его",
+    "ее",
+    "ея",
+    "их",
+    "для",
+    "по",
+    "ради",
+}
+
+
+def normalize_feast_identity(value: str) -> str:
+    text = unicodedata.normalize("NFKD", str(value or "").lower())
+    text = "".join(char for char in text if not unicodedata.combining(char))
+    text = text.translate(_TRANSLATION_TABLE)
+    text = re.sub(r"[^а-яa-z0-9]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def feast_identity_terms(value: str) -> list[str]:
+    result = []
+
+    for word in normalize_feast_identity(value).split():
+        if len(word) < 3 or word in _GENERIC_WORDS:
+            continue
+
+        if any(word.startswith(prefix) for prefix in _GENERIC_PREFIXES):
+            continue
+
+        result.append(word)
+
+    return result
+
+
+def same_feast_identity(russian_title: str, localized_title: str) -> bool:
+    russian = normalize_feast_identity(russian_title)
+    localized = normalize_feast_identity(localized_title)
+
+    if not russian or not localized or russian == localized:
+        return True
+
+    russian_terms = " ".join(feast_identity_terms(russian_title))
+    localized_terms = " ".join(feast_identity_terms(localized_title))
+
+    if russian_terms and localized_terms:
+        score = SequenceMatcher(None, russian_terms, localized_terms).ratio()
+    else:
+        score = SequenceMatcher(None, russian, localized).ratio()
+
+    return score >= IDENTITY_SIMILARITY_THRESHOLD
+
+
+def sanitize_ukrainian_feasts(data: dict) -> int:
+    corrected = 0
+
+    for day in (data.get("days") or {}).values():
+        if not isinstance(day, dict):
+            continue
+
+        ru = day.get("ru") or {}
+        uk = day.get("uk") or {}
+        if not ru or not uk:
+            continue
+
+        ru_feasts = [
+            feast
+            for feast in [ru.get("main_feast"), *(ru.get("all_feasts") or [])]
+            if isinstance(feast, dict) and feast.get("source_id") is not None
+        ]
+        ru_by_source = {str(feast["source_id"]): feast for feast in ru_feasts}
+        day_corrected = False
+
+        uk_main = uk.get("main_feast")
+        if isinstance(uk_main, dict) and uk_main.get("source_id") is not None:
+            canonical = ru_by_source.get(str(uk_main["source_id"]))
+            if canonical and not same_feast_identity(
+                canonical.get("title") or canonical.get("short_title"),
+                uk_main.get("title") or uk_main.get("short_title"),
+            ):
+                uk["main_feast"] = dict(canonical)
+                corrected += 1
+                day_corrected = True
+
+        sanitized_all = []
+        for uk_feast in uk.get("all_feasts") or []:
+            if not isinstance(uk_feast, dict) or uk_feast.get("source_id") is None:
+                sanitized_all.append(uk_feast)
+                continue
+
+            canonical = ru_by_source.get(str(uk_feast["source_id"]))
+            if canonical and not same_feast_identity(
+                canonical.get("title") or canonical.get("short_title"),
+                uk_feast.get("title") or uk_feast.get("short_title"),
+            ):
+                sanitized_all.append(dict(canonical))
+                corrected += 1
+                day_corrected = True
+            else:
+                sanitized_all.append(uk_feast)
+
+        uk["all_feasts"] = sanitized_all
+
+        if day_corrected:
+            uk["summary"] = ru.get("summary") or uk.get("summary") or ""
+            uk["short_summary"] = ru.get("short_summary") or uk.get("short_summary") or ""
+
+    return corrected
 
 def load_source() -> dict:
     if not SOURCE.exists():
@@ -244,6 +408,8 @@ def build_icon_bundle(data: dict) -> None:
 
 def main() -> None:
     data = load_source()
+    corrected = sanitize_ukrainian_feasts(data)
+    print(f"localization guard: replaced {corrected} mismatched UK feast payloads")
     build_month_files(data)
     build_icon_bundle(data)
 

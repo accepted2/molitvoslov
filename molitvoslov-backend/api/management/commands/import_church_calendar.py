@@ -5,11 +5,20 @@ from api.calendar_import import ensure_month
 
 class Command(BaseCommand):
     help = (
-        "Импортировать церковный календарь из Church Site, не изменяя исходный проект. "
-        "По умолчанию синхронизируются русский и украинский языки."
+        "LEGACY/BOOTSTRAP: импортировать исходный календарь из Church Site. "
+        "Для обычного ведения календаря не использовать: локальная SQLite является "
+        "редактируемым источником, а изменения публикуются в Supabase."
     )
 
     def add_arguments(self, parser):
+        parser.add_argument(
+            "--bootstrap-from-church-site",
+            action="store_true",
+            help=(
+                "Явно разрешить legacy/bootstrap импорт из Church Site. "
+                "Без этого флага команда ничего не меняет."
+            ),
+        )
         parser.add_argument("--start-year", type=int, default=2025)
         parser.add_argument("--end-year", type=int, default=2030)
         parser.add_argument(
@@ -24,12 +33,30 @@ class Command(BaseCommand):
             default="both",
             help="Язык календарных данных. По умолчанию: both.",
         )
+        parser.add_argument(
+            "--overwrite-existing",
+            action="store_true",
+            help=(
+                "Разрешить источнику перезаписывать уже заполненные локальные поля. "
+                "По умолчанию существующие значения сохраняются, чтобы не терять "
+                "ручные правки из админки."
+            ),
+        )
 
     def handle(self, *args, **options):
+        if not options["bootstrap_from_church_site"]:
+            raise CommandError(
+                "Импорт из Church Site отключён для обычной работы. "
+                "Редактируйте календарь локально в админке и публикуйте выбранные "
+                "дни через sync_calendar_to_supabase. Если нужен именно первоначальный "
+                "bootstrap, повторите команду с --bootstrap-from-church-site."
+            )
+
         start_year = options["start_year"]
         end_year = options["end_year"]
         selected_month = options.get("month")
         language = options["language"]
+        overwrite_existing = options["overwrite_existing"]
 
         if end_year < start_year:
             raise CommandError("end-year не может быть меньше start-year")
@@ -48,6 +75,7 @@ class Command(BaseCommand):
                             month,
                             language=current_language,
                             force=True,
+                            overwrite_existing=overwrite_existing,
                         )
                     except Exception as error:
                         raise CommandError(
@@ -62,6 +90,8 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(
                 f"Готово. Календарь синхронизирован за {start_year}–{end_year} "
-                f"({', '.join(languages)})."
+                f"({', '.join(languages)}). "
+                f"Перезапись существующих полей: "
+                f"{'да' if overwrite_existing else 'нет'}."
             )
         )
