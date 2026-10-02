@@ -27,7 +27,7 @@ import {syncMemorials} from './src/services/memorials';
 import {syncPrayerBooks} from './src/services/prayerBooks';
 
 const ONBOARDING_STORAGE_KEY = '@molitvoslov/onboarding-version';
-const ONBOARDING_VERSION = 3;
+const ONBOARDING_VERSION = 5;
 
 const StartupScreen = () => (
   <ImageBackground

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import {StatusBar} from 'expo-status-bar';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {CategoryIcon} from '../components/icons/CategoryIcon';
 
@@ -28,6 +28,16 @@ const artwork = {
   canons: require('../../assets/home/canons.png'),
   psalter: require('../../assets/home/psalter.png'),
   calendarSaint: require('../../assets/calendar-icons/331e36b994aad994b582.webp'),
+
+  calendarScreen1: require('../../assets/onboarding/calendar_full_1.jpg'),
+  calendarScreen2: require('../../assets/onboarding/calendar_full_2.jpg'),
+  calendarSmallScreen: require('../../assets/onboarding/calendar_small.png'),
+  favoritesScreen: require('../../assets/onboarding/favorites_screen.png'),
+  widgetsScreen: require('../../assets/onboarding/widgets.png'),
+  menuScreen: require('../../assets/onboarding/menu_screen.png'),
+  psalterScreen: require('../../assets/onboarding/psalter_cu_ru.jpg'),
+
+
 };
 
 const CALENDAR_SAMPLE = {
@@ -671,6 +681,7 @@ const slides = [
 ];
 
 export const OnboardingScreen = ({onComplete}) => {
+  const insets = useSafeAreaInsets();
   const {width} = useWindowDimensions();
   const scrollX = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef(null);
@@ -693,10 +704,13 @@ export const OnboardingScreen = ({onComplete}) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <StatusBar style="dark" />
 
       <View style={styles.screen}>
+        <StatusBar
+          style="dark"
+          translucent
+          backgroundColor="transparent"
+        />
         <Animated.ScrollView
           ref={scrollRef}
           horizontal
@@ -777,10 +791,13 @@ export const OnboardingScreen = ({onComplete}) => {
           })}
         </Animated.ScrollView>
 
-        <View style={styles.topBar} pointerEvents="box-none">
+        <View  style={[styles.topBar, {top: insets.top}]} pointerEvents="box-none">
           <View style={styles.brandMini}>
             <Text style={styles.brandMiniCross}>☦</Text>
-            <Text style={styles.brandMiniText}>Молитвослов</Text>
+            <Text   style={[
+              styles.brandMiniText,
+              index === 1 && styles.brandMiniTextBible,
+            ]}>Молитвослов</Text>
           </View>
 
           {index < SLIDE_COUNT - 1 ? (
@@ -790,14 +807,22 @@ export const OnboardingScreen = ({onComplete}) => {
               onPress={finish}
               style={({pressed}) => [styles.skipButton, pressed && styles.pressed]}
             >
-              <Text style={styles.skipText}>Пропустить</Text>
+              <Text
+                style={[
+                  styles.skipText,
+                  index === 1 && styles.skipTextBible,
+                ]}
+              >Пропустить</Text>
             </Pressable>
           ) : (
             <View style={styles.skipPlaceholder} />
           )}
         </View>
 
-        <View style={styles.footer}>
+        <View  style={[
+          styles.footer,
+          {bottom: Math.max(insets.bottom, 9)},
+        ]}>
           <View style={styles.dots}>
             {slides.map((slide, dotIndex) => (
               <View key={slide.key} style={[styles.dot, dotIndex === index && styles.dotActive]} />
@@ -820,7 +845,7 @@ export const OnboardingScreen = ({onComplete}) => {
           </Pressable>
         </View>
       </View>
-    </SafeAreaView>
+
   );
 };
 
@@ -835,6 +860,7 @@ const styles = StyleSheet.create({
   },
   slide: {
     flex: 1,
+    overflow:'hidden',
   },
   slideBackground: {
     flex: 1,
@@ -842,7 +868,7 @@ const styles = StyleSheet.create({
   },
   topBar: {
     position: 'absolute',
-    top: 0,
+
     left: 0,
     right: 0,
     height: 56,
@@ -892,10 +918,10 @@ const styles = StyleSheet.create({
   },
   previewArea: {
     position: 'absolute',
-    top: 70,
-    left: 16,
-    right: 16,
-    bottom: 245,
+    top: 58,
+    left: 10,
+    right: 10,
+    bottom: 240,
     alignItems: 'stretch',
     justifyContent: 'center',
   },
@@ -926,11 +952,22 @@ const styles = StyleSheet.create({
     textShadowOffset: {width: 0, height: 2},
     textShadowRadius: 5,
   },
+
+  brandMiniTextBible: {
+    color: '#FFF0D0',
+    fontWeight: 600,
+  },
+
+  skipTextBible: {
+    color: '#FFF0D0',
+    fontWeight: 600,
+  },
+
   captionText: {
     marginTop: 7,
     maxWidth: 390,
-    color: '#F2DFC2',
-    fontSize: 13,
+    color: '#FFF2D8',
+    fontSize: 14,
     lineHeight: 18,
     textShadowColor: 'rgba(0,0,0,0.76)',
     textShadowOffset: {width: 0, height: 1},
@@ -940,7 +977,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
-    bottom: 8,
+
     zIndex: 20,
   },
   dots: {
@@ -1036,10 +1073,10 @@ const styles = StyleSheet.create({
   },
   introSubtitle: {
     marginTop: 12,
-    color: '#F3E0BE',
+    color: '#2A1408B8',
     fontFamily: 'serif',
     fontSize: 13,
-    textShadowColor: 'rgba(42,20,8,0.72)',
+    textShadowColor: 'rgb(190 171 131)',
     textShadowOffset: {width: 0, height: 1},
     textShadowRadius: 4,
   },
@@ -1051,6 +1088,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(45,23,10,0.66)',
     borderWidth: 1,
     borderColor: 'rgba(233,185,99,0.45)',
+    top: 30,
   },
   bibleKicker: {
     color: '#EAC57E',
@@ -1100,6 +1138,7 @@ const styles = StyleSheet.create({
   },
   chapterGrid: {
     marginTop: 9,
+
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
@@ -1153,7 +1192,7 @@ const styles = StyleSheet.create({
   libraryArtwork: {
     position: 'absolute',
     top: 0,
-    right: -26,
+    right: -34,
     bottom: 0,
     width: '90%',
   },

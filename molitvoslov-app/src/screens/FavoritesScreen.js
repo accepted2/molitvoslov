@@ -19,7 +19,7 @@ const TAB_FRAGMENTS = 'fragments';
 
 const TABS = [
   {key: TAB_SAVED, label: 'Сохранённое'},
-  {key: TAB_PLACES, label: 'Места'},
+  {key: TAB_PLACES, label: 'Закладки'},
   {key: TAB_FRAGMENTS, label: 'Фрагменты'},
 ];
 
@@ -258,7 +258,7 @@ export const FavoritesScreen = ({route, navigation}) => {
                 <View style={styles.cardTop}>
                   <Text style={styles.typeBadge}>
                     {activeTab === TAB_PLACES
-                      ? 'МЕСТО'
+                      ? 'Закладка'
                       : (item.save_type_display || item.save_type).toUpperCase()}
                   </Text>
 
