@@ -150,9 +150,7 @@ export const getBundledCalendarMonth = (year, month, language = 'ru') => {
     return null;
   }
 
-  const days = dateKeys
-    .map((dateKey) => payload?.days?.[dateKey]?.[lang] || null)
-    .filter(Boolean);
+  const days = dateKeys.map((dateKey) => payload?.days?.[dateKey]?.[lang] || null).filter(Boolean);
 
   if (!days.length) {
     return null;
