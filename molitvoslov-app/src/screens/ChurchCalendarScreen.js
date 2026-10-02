@@ -33,6 +33,11 @@ import {
   getCalendarLanguage,
   setCalendarLanguage,
 } from '../services/calendarPreferences';
+import {
+  getOfflineCalendarDay,
+  getOfflineCalendarMonth,
+} from '../services/calendarOfflineStore';
+import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
 import {colors} from '../theme';
 
@@ -83,6 +88,32 @@ const SoftChevron = ({expanded}) => (
 );
 
 const displayTitle = (feast, copy) => feast?.short_title || feast?.title || copy.saintMemory;
+
+const FeastImage = ({feast}) => {
+  const [failed, setFailed] = useState(false);
+  const source = getBundledCalendarIconSource(feast);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [feast?.icon_url, feast?.source_id]);
+
+  if (!source || failed) {
+    return (
+      <View style={styles.feastImageFallback}>
+        <Text style={styles.feastImageCross}>☦</Text>
+      </View>
+    );
+  }
+
+  return (
+    <Image
+      source={source}
+      style={styles.feastImage}
+      resizeMode="cover"
+      onError={() => setFailed(true)}
+    />
+  );
+};
 
 const normalizeCalendarText = (value) =>
   String(value || '')
@@ -365,22 +396,41 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   useEffect(() => {
     let active = true;
 
-    setLoadingMonth(true);
+    const loadMonth = async () => {
+      setLoadingMonth(true);
+      let hasOfflineData = false;
 
-    getCalendarMonth(visibleYear, visibleMonth, {
-      language,
-      force: true,
-    })
-      .then((data) => {
+      try {
+        const offline = await getOfflineCalendarMonth(visibleYear, visibleMonth, language);
+
+        if (active && offline) {
+          hasOfflineData = true;
+          setMonthData(offline);
+          setError('');
+          setLoadingMonth(false);
+        }
+
+        const fresh = await getCalendarMonth(visibleYear, visibleMonth, {
+          language,
+          force: true,
+        });
+
         if (!active) return;
-        setMonthData(data);
+
+        setMonthData(fresh);
         setError('');
-      })
-      .catch((err) => {
-        if (!active) return;
+      } catch (err) {
+        if (!active || hasOfflineData) return;
+
         setError(err?.message || 'Не удалось загрузить календарь');
-      })
-      .finally(() => active && setLoadingMonth(false));
+      } finally {
+        if (active) {
+          setLoadingMonth(false);
+        }
+      }
+    };
+
+    loadMonth();
 
     return () => {
       active = false;
@@ -390,23 +440,42 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   useEffect(() => {
     let active = true;
 
-    setLoadingDay(true);
+    const loadDay = async () => {
+      setLoadingDay(true);
+      let hasOfflineData = false;
 
-    getCalendarDay(selectedDate, {
-      language,
-      force: true,
-    })
-      .then((data) => {
+      try {
+        const offline = await getOfflineCalendarDay(selectedDate, language);
+
+        if (active && offline) {
+          hasOfflineData = true;
+          setDayData(offline);
+          setError('');
+          setLoadingDay(false);
+        }
+
+        const fresh = await getCalendarDay(selectedDate, {
+          language,
+          force: true,
+        });
+
         if (!active) return;
-        setDayData(data);
+
+        setDayData(fresh);
         setError('');
-      })
-      .catch((err) => {
-        if (!active) return;
+      } catch (err) {
+        if (!active || hasOfflineData) return;
+
         setDayData(null);
         setError(err?.message || 'Не удалось загрузить день');
-      })
-      .finally(() => active && setLoadingDay(false));
+      } finally {
+        if (active) {
+          setLoadingDay(false);
+        }
+      }
+    };
+
+    loadDay();
 
     return () => {
       active = false;
@@ -601,17 +670,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
           <View style={styles.feastHero}>
             <View style={styles.feastImageWrap}>
-              {mainFeast?.icon_url ? (
-                <Image
-                  source={{uri: mainFeast.icon_url}}
-                  style={styles.feastImage}
-                  resizeMode="cover"
-                />
-              ) : (
-                <View style={styles.feastImageFallback}>
-                  <Text style={styles.feastImageCross}>☦</Text>
-                </View>
-              )}
+              <FeastImage feast={mainFeast} />
             </View>
 
             <View style={styles.feastHeroText}>
