@@ -423,12 +423,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
         setMonthData(fresh);
         setError('');
       } catch (err) {
-        if (
-          !active ||
-          controller.signal.aborted ||
-          err?.name === 'AbortError' ||
-          hasOfflineData
-        ) {
+        if (!active || controller.signal.aborted || err?.name === 'AbortError' || hasOfflineData) {
           return;
         }
 
@@ -510,12 +505,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
         setDayData(fresh);
         setError('');
       } catch (err) {
-        if (
-          !active ||
-          controller.signal.aborted ||
-          err?.name === 'AbortError' ||
-          hasOfflineData
-        ) {
+        if (!active || controller.signal.aborted || err?.name === 'AbortError' || hasOfflineData) {
           return;
         }
 
