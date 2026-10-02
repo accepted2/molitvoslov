@@ -82,7 +82,15 @@ const AppScreenPreview = ({title, children, background = artwork.page}) => (
         <Text style={styles.appScreenBackText}>‹</Text>
       </View>
       <View style={styles.appScreenTitleWrap}>
-        <Text style={styles.appScreenTitle}>{title}</Text>
+        <Text
+          style={styles.appScreenTitle}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.82}
+          maxFontSizeMultiplier={1}
+        >
+          {title}
+        </Text>
         <View style={styles.appScreenOrnament}>
           <View style={styles.appScreenLine} />
           <Text style={styles.appScreenMark}>✦</Text>
@@ -260,7 +268,15 @@ const CalendarPreview = () => (
     <View style={styles.calendarShowcase}>
       <View style={styles.calendarCard}>
         <View style={styles.calendarLanguageRow}>
-          <Text style={styles.calendarSectionTitle}>Церковный календарь</Text>
+          <Text
+            style={styles.calendarSectionTitle}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.82}
+            maxFontSizeMultiplier={1}
+          >
+            Церковный календарь
+          </Text>
           <View style={styles.languageSwitch}>
             <View style={[styles.languageButton, styles.languageButtonActive]}>
               <Text style={styles.languageButtonTextActive}>РУ</Text>
