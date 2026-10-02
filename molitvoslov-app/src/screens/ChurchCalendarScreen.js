@@ -33,7 +33,11 @@ import {
   getCalendarLanguage,
   setCalendarLanguage,
 } from '../services/calendarPreferences';
-import {getOfflineCalendarDay, getOfflineCalendarMonth} from '../services/calendarOfflineStore';
+import {
+  getBundledCalendarMonth,
+  getOfflineCalendarDay,
+  getOfflineCalendarMonth,
+} from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
 import {colors} from '../theme';
@@ -392,32 +396,41 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
   useEffect(() => {
     let active = true;
+    let refreshTimer = null;
+    const controller = new AbortController();
+    const bundled = getBundledCalendarMonth(visibleYear, visibleMonth, language);
+    let hasOfflineData = Boolean(bundled);
 
-    const loadMonth = async () => {
+    if (bundled) {
+      setMonthData(bundled);
+      setError('');
+      setLoadingMonth(false);
+    } else {
       setLoadingMonth(true);
-      let hasOfflineData = false;
+    }
 
+    const refreshFromNetwork = async () => {
       try {
-        const offline = await getOfflineCalendarMonth(visibleYear, visibleMonth, language);
-
-        if (active && offline) {
-          hasOfflineData = true;
-          setMonthData(offline);
-          setError('');
-          setLoadingMonth(false);
-        }
-
         const fresh = await getCalendarMonth(visibleYear, visibleMonth, {
           language,
           force: true,
+          skipOffline: true,
+          signal: controller.signal,
         });
 
-        if (!active) return;
+        if (!active || controller.signal.aborted) return;
 
         setMonthData(fresh);
         setError('');
       } catch (err) {
-        if (!active || hasOfflineData) return;
+        if (
+          !active ||
+          controller.signal.aborted ||
+          err?.name === 'AbortError' ||
+          hasOfflineData
+        ) {
+          return;
+        }
 
         setError(err?.message || 'Не удалось загрузить календарь');
       } finally {
@@ -427,15 +440,49 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
       }
     };
 
+    const loadMonth = async () => {
+      try {
+        const offline = await getOfflineCalendarMonth(visibleYear, visibleMonth, language);
+
+        if (!active) return;
+
+        if (offline) {
+          hasOfflineData = true;
+          setMonthData(offline);
+          setError('');
+          setLoadingMonth(false);
+        }
+
+        /*
+         * Не запускаем HTTP-запрос на каждый промежуточный месяц,
+         * если пользователь быстро листает стрелками.
+         */
+        refreshTimer = setTimeout(refreshFromNetwork, 180);
+      } catch (err) {
+        if (!active) return;
+
+        if (!hasOfflineData) {
+          setError(err?.message || 'Не удалось загрузить календарь');
+          setLoadingMonth(false);
+        }
+      }
+    };
+
     loadMonth();
 
     return () => {
       active = false;
+      controller.abort();
+
+      if (refreshTimer) {
+        clearTimeout(refreshTimer);
+      }
     };
   }, [language, refreshVersion, visibleMonth, visibleYear]);
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
 
     const loadDay = async () => {
       setLoadingDay(true);
@@ -454,14 +501,23 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
         const fresh = await getCalendarDay(selectedDate, {
           language,
           force: true,
+          skipOffline: true,
+          signal: controller.signal,
         });
 
-        if (!active) return;
+        if (!active || controller.signal.aborted) return;
 
         setDayData(fresh);
         setError('');
       } catch (err) {
-        if (!active || hasOfflineData) return;
+        if (
+          !active ||
+          controller.signal.aborted ||
+          err?.name === 'AbortError' ||
+          hasOfflineData
+        ) {
+          return;
+        }
 
         setDayData(null);
         setError(err?.message || 'Не удалось загрузить день');
@@ -476,6 +532,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
     return () => {
       active = false;
+      controller.abort();
     };
   }, [language, refreshVersion, selectedDate]);
 
