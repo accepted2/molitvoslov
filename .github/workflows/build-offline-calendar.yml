@@ -1,0 +1,71 @@
+name: Build offline calendar
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/build-offline-calendar.yml
+      - .github/scripts/build_calendar_offline_bundle.py
+      - molitvoslov-app/src/data/calendar_2026.json
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install image bundle dependencies
+        run: python -m pip install requests Pillow
+
+      - name: Build monthly calendar and offline icons
+        run: python .github/scripts/build_calendar_offline_bundle.py
+
+      - name: Verify generated calendar
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('molitvoslov-app/src/data/calendar')
+          total = 0
+          for month in range(1, 13):
+              path = root / f'2026-{month:02d}.json'
+              assert path.exists(), path
+              payload = json.loads(path.read_text(encoding='utf-8'))
+              total += len(payload['days'])
+
+          assert total == 365, total
+
+          icon_module = Path('molitvoslov-app/src/data/calendarIconAssets.js')
+          assert icon_module.exists(), icon_module
+          assert 'bundledCalendarIconCount' in icon_module.read_text(encoding='utf-8')
+
+          print(f'Verified: {total} days and generated icon module')
+          PY
+
+      - name: Commit generated calendar bundle
+        run: |
+          if git diff --quiet --             molitvoslov-app/src/data/calendar             molitvoslov-app/src/data/calendarIconAssets.js             molitvoslov-app/assets/calendar-icons; then
+            echo "Offline calendar bundle is already up to date"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add             molitvoslov-app/src/data/calendar             molitvoslov-app/src/data/calendarIconAssets.js             molitvoslov-app/assets/calendar-icons
+          git commit -m "Generate offline calendar bundle"
+          git pull --rebase origin main
+          git push origin HEAD:main
