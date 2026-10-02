@@ -280,9 +280,7 @@ const QuoteWidgetPreview = () => (
     imageStyle={styles.quoteWidgetImage}
   >
     <View style={styles.quoteWidgetShade}>
-      <Text style={styles.quoteWidgetText}>
-        «Просите, и дано будет вам; ищите, и найдёте».
-      </Text>
+      <Text style={styles.quoteWidgetText}>«Просите, и дано будет вам; ищите, и найдёте».</Text>
       <Text style={styles.quoteWidgetSource}>Мф. 7:7</Text>
     </View>
   </ImageBackground>
@@ -330,11 +328,7 @@ const FavoritesPreview = () => (
       </View>
     </View>
 
-    <FavoriteCard
-      badge="МОЛИТВА"
-      title="Утренняя молитва"
-      meta="Сохранённый полный текст"
-    />
+    <FavoriteCard badge="МОЛИТВА" title="Утренняя молитва" meta="Сохранённый полный текст" />
 
     <FavoriteCard
       badge="ФРАГМЕНТ"
@@ -354,7 +348,9 @@ const FavoritesPreview = () => (
       <Text style={styles.syncCloud}>☁</Text>
       <View style={styles.syncTextWrap}>
         <Text style={styles.syncTitle}>Синхронизация</Text>
-        <Text style={styles.syncText}>Избранное, закладки и прогресс можно сохранить между устройствами</Text>
+        <Text style={styles.syncText}>
+          Избранное, закладки и прогресс можно сохранить между устройствами
+        </Text>
       </View>
     </View>
   </View>
@@ -368,7 +364,7 @@ const MemorialBookCard = ({title, health, repose}) => (
     <View style={styles.memorialBookText}>
       <Text style={styles.memorialBookTitle}>{title}</Text>
       <Text style={styles.memorialBookMeta}>
-        О здравии: {health}  ·  Об упокоении: {repose}
+        О здравии: {health} · Об упокоении: {repose}
       </Text>
     </View>
     <Text style={styles.memorialChevron}>›</Text>
@@ -653,10 +649,7 @@ export const OnboardingScreen = ({onComplete}) => {
         <View style={styles.footer}>
           <View style={styles.dots}>
             {slides.map((slide, dotIndex) => (
-              <View
-                key={slide.key}
-                style={[styles.dot, dotIndex === index && styles.dotActive]}
-              />
+              <View key={slide.key} style={[styles.dot, dotIndex === index && styles.dotActive]} />
             ))}
           </View>
 
