@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import {StatusBar} from 'expo-status-bar';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {CategoryIcon} from '../components/icons/CategoryIcon';
 
@@ -24,10 +24,19 @@ const artwork = {
   hero: require('../../assets/home/hero.png'),
   matthew: require('../../assets/bible/evangelists/matthew-bg.png'),
   morning: require('../../assets/home/morning.png'),
+  evening: require('../../assets/home/evening.png'),
   akathists: require('../../assets/home/akathists.png'),
   canons: require('../../assets/home/canons.png'),
   psalter: require('../../assets/home/psalter.png'),
   calendarSaint: require('../../assets/calendar-icons/331e36b994aad994b582.webp'),
+
+  calendarScreen1: require('../../assets/onboarding/calendar_full_1.jpg'),
+  calendarScreen2: require('../../assets/onboarding/calendar_full_2.jpg'),
+  calendarSmallScreen: require('../../assets/onboarding/calendar_small.png'),
+  favoritesScreen: require('../../assets/onboarding/favorites_screen.png'),
+  widgetsScreen: require('../../assets/onboarding/widgets.png'),
+  menuScreen: require('../../assets/onboarding/menu_screen.png'),
+  psalterScreen: require('../../assets/onboarding/psalter_cu_ru.jpg'),
 };
 
 const CALENDAR_SAMPLE = {
@@ -200,32 +209,55 @@ const BiblePreview = () => (
 );
 
 const LibraryPreview = () => (
-  <View style={styles.libraryStack}>
-    <LibraryCard
-      image={artwork.morning}
-      icon="morning"
-      title="Утренние молитвы"
-      subtitle="Начало дня"
-    />
-    <LibraryCard
-      image={artwork.akathists}
-      icon="akathists"
-      title="Акафисты"
-      subtitle="Молитвенные песнопения"
-    />
-    <LibraryCard
-      image={artwork.canons}
-      icon="canons"
-      title="Каноны"
-      subtitle="Покаянные и просительные"
-    />
-    <LibraryCard image={artwork.psalter} icon="psalter" title="Псалтирь" subtitle="Кафизмы" />
+  <AppScreenPreview title="Молитвослов" background={artwork.page}>
+    <View style={styles.libraryShowcase}>
+      <LibraryCard
+        image={artwork.morning}
+        icon="morning"
+        title="Утренние молитвы"
+        subtitle="Начало дня"
+      />
+      <LibraryCard
+        image={artwork.evening}
+        icon="evening"
+        title="Вечерние молитвы"
+        subtitle="Перед сном"
+      />
+      <LibraryCard
+        image={artwork.akathists}
+        icon="akathists"
+        title="Акафисты"
+        subtitle="Молитвенные песнопения"
+      />
+      <LibraryCard
+        image={artwork.canons}
+        icon="canons"
+        title="Каноны"
+        subtitle="Покаянные и просительные"
+      />
+      <LibraryCard image={artwork.psalter} icon="psalter" title="Псалтирь" subtitle="Кафизмы" />
+    </View>
+  </AppScreenPreview>
+);
+
+const CalendarFeatureRow = ({label, value, icon}) => (
+  <View style={styles.calendarFeatureRow}>
+    <View style={styles.calendarFeatureIcon}>
+      <CategoryIcon type={icon} size={24} />
+    </View>
+    <View style={styles.calendarFeatureText}>
+      <Text style={styles.calendarFeatureLabel}>{label}</Text>
+      <Text style={styles.calendarFeatureValue} numberOfLines={1}>
+        {value}
+      </Text>
+    </View>
+    <Text style={styles.calendarFeatureArrow}>›</Text>
   </View>
 );
 
 const CalendarPreview = () => (
-  <AppScreenPreview title="Церковный календарь">
-    <View style={styles.calendarScreenPreview}>
+  <AppScreenPreview title="Церковный календарь" background={artwork.page}>
+    <View style={styles.calendarShowcase}>
       <View style={styles.calendarCard}>
         <View style={styles.calendarLanguageRow}>
           <Text style={styles.calendarSectionTitle}>Церковный календарь</Text>
@@ -245,39 +277,34 @@ const CalendarPreview = () => (
           <Text style={styles.monthArrow}>›</Text>
         </View>
 
-        <MonthGrid />
+        <MonthGrid compact />
       </View>
 
-      <View style={styles.dayCard}>
-        <Text style={styles.dayDate}>{CALENDAR_SAMPLE.date}</Text>
-
-        <View style={styles.feastHero}>
-          <Image source={artwork.calendarSaint} style={styles.feastIconImage} resizeMode="cover" />
-
-          <View style={styles.feastText}>
-            <Text style={styles.feastKicker}>ПАМЯТЬ СВЯТОГО / ПРАЗДНИК</Text>
-            <Text style={styles.feastTitle} numberOfLines={3}>
+      <View style={styles.calendarDayShowcase}>
+        <View style={styles.calendarDayHeader}>
+          <Image
+            source={artwork.calendarSaint}
+            style={styles.calendarDaySaint}
+            resizeMode="cover"
+          />
+          <View style={styles.calendarDayTitleWrap}>
+            <Text style={styles.calendarDayDate}>{CALENDAR_SAMPLE.date}</Text>
+            <Text style={styles.calendarDaySaintTitle} numberOfLines={2}>
               {CALENDAR_SAMPLE.saint}
             </Text>
-            <View style={styles.fastBadge}>
-              <Text style={styles.fastBadgeText}>{CALENDAR_SAMPLE.fast}</Text>
+            <View style={styles.calendarDayFastBadge}>
+              <Text style={styles.calendarDayFastText} numberOfLines={1}>
+                {CALENDAR_SAMPLE.fast}
+              </Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.calendarReadingRows}>
-          <View style={styles.calendarReadingRow}>
-            <Text style={styles.calendarReadingLabel}>ЕВАНГЕЛИЕ</Text>
-            <Text style={styles.calendarReadingValue}>{CALENDAR_SAMPLE.gospel}</Text>
-            <Text style={styles.calendarReadingArrow}>›</Text>
-          </View>
-
-          <View style={styles.calendarReadingRow}>
-            <Text style={styles.calendarReadingLabel}>АПОСТОЛ</Text>
-            <Text style={styles.calendarReadingValue}>{CALENDAR_SAMPLE.apostle}</Text>
-            <Text style={styles.calendarReadingArrow}>›</Text>
-          </View>
-        </View>
+        <CalendarFeatureRow label="ЖИТИЕ" value="Житие святого" icon="canons" />
+        <CalendarFeatureRow label="ТРОПАРЬ" value="Тропарь святому" icon="canons" />
+        <CalendarFeatureRow label="КОНДАК" value="Кондак святому" icon="canons" />
+        <CalendarFeatureRow label="ЕВАНГЕЛИЕ" value={CALENDAR_SAMPLE.gospel} icon="bible" />
+        <CalendarFeatureRow label="АПОСТОЛ" value={CALENDAR_SAMPLE.apostle} icon="canons" />
       </View>
     </View>
   </AppScreenPreview>
@@ -395,18 +422,23 @@ const FavoritesPreview = () => (
   <AppScreenPreview title="Избранное" background={artwork.page}>
     <View style={styles.favoritesPreview}>
       <View style={styles.favoriteTabs}>
-        <View style={[styles.favoriteTab, styles.favoriteTabActive]}>
-          <Text style={styles.favoriteTabTextActive}>Сохранённое</Text>
-        </View>
         <View style={styles.favoriteTab}>
-          <Text style={styles.favoriteTabText}>Места</Text>
+          <Text style={styles.favoriteTabText}>Сохранённое</Text>
+        </View>
+        <View style={[styles.favoriteTab, styles.favoriteTabActive]}>
+          <Text style={styles.favoriteTabTextActive}>Закладки</Text>
         </View>
         <View style={styles.favoriteTab}>
           <Text style={styles.favoriteTabText}>Фрагменты</Text>
         </View>
       </View>
 
-      <FavoriteCard badge="МОЛИТВА" title="Утренняя молитва" meta="Сохранённый полный текст" />
+      <FavoriteCard
+        badge="ЗАКЛАДКА"
+        title="Евангелие от Матфея"
+        meta="Глава 8 · место чтения сохранено"
+        progress="62%"
+      />
 
       <FavoriteCard
         badge="ФРАГМЕНТ"
@@ -415,19 +447,14 @@ const FavoritesPreview = () => (
         meta="Сохранённый фрагмент"
       />
 
-      <FavoriteCard
-        badge="МЕСТО ЧТЕНИЯ"
-        title="Евангелие от Матфея"
-        progress="62%"
-        meta="Глава 8 · 62%"
-      />
+      <FavoriteCard badge="МОЛИТВА" title="Утренняя молитва" meta="Сохранённый полный текст" />
 
       <View style={styles.syncBadge}>
         <Text style={styles.syncCloud}>☁</Text>
         <View style={styles.syncTextWrap}>
           <Text style={styles.syncTitle}>Синхронизация</Text>
           <Text style={styles.syncText}>
-            Избранное, закладки и прогресс можно сохранить между устройствами
+            Закладки, избранное и прогресс доступны между устройствами
           </Text>
         </View>
       </View>
@@ -598,6 +625,7 @@ const slides = [
   },
   {
     key: 'library',
+    expandedPreview: true,
     background: artwork.page,
     backgroundOpacity: 0.72,
     preview: <LibraryPreview />,
@@ -607,6 +635,7 @@ const slides = [
   },
   {
     key: 'calendar',
+    expandedPreview: true,
     background: artwork.page,
     backgroundOpacity: 0.66,
     preview: <CalendarPreview />,
@@ -616,6 +645,7 @@ const slides = [
   },
   {
     key: 'widgets',
+    expandedPreview: true,
     background: artwork.page,
     backgroundOpacity: 0.62,
     preview: <WidgetsPreview />,
@@ -625,15 +655,17 @@ const slides = [
   },
   {
     key: 'favorites',
+    expandedPreview: true,
     background: artwork.page4,
     backgroundOpacity: 0.58,
     preview: <FavoritesPreview />,
-    eyebrow: 'ИЗБРАННОЕ И ЗАКЛАДКИ',
+    eyebrow: 'ЗАКЛАДКИ И ИЗБРАННОЕ',
     title: 'Сохраняйте то, к чему хотите вернуться',
-    text: 'Полные молитвы, акафисты, цитаты, фрагменты, закладки и прогресс чтения остаются под рукой.',
+    text: 'Молитвы, фрагменты, закладки и прогресс чтения остаются под рукой.',
   },
   {
     key: 'memorial',
+    expandedPreview: true,
     background: artwork.page2,
     backgroundOpacity: 0.58,
     preview: <MemorialPreview />,
@@ -643,6 +675,7 @@ const slides = [
   },
   {
     key: 'prayerbooks',
+    expandedPreview: true,
     background: artwork.page4,
     backgroundOpacity: 0.58,
     preview: <PrayerBooksPreview />,
@@ -652,6 +685,7 @@ const slides = [
   },
   {
     key: 'reading-modes',
+    expandedPreview: true,
     background: artwork.page2,
     backgroundOpacity: 0.58,
     preview: <ReadingModesPreview />,
@@ -671,6 +705,7 @@ const slides = [
 ];
 
 export const OnboardingScreen = ({onComplete}) => {
+  const insets = useSafeAreaInsets();
   const {width} = useWindowDimensions();
   const scrollX = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef(null);
@@ -693,134 +728,134 @@ export const OnboardingScreen = ({onComplete}) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <StatusBar style="dark" />
+    <View style={styles.screen}>
+      <StatusBar style="dark" translucent backgroundColor="transparent" />
+      <Animated.ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        bounces={false}
+        overScrollMode="never"
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event([{nativeEvent: {contentOffset: {x: scrollX}}}], {
+          useNativeDriver: true,
+        })}
+        onMomentumScrollEnd={(event) => {
+          const nextIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+          setIndex(Math.max(0, Math.min(nextIndex, SLIDE_COUNT - 1)));
+        }}
+      >
+        {slides.map((slide, slideIndex) => {
+          const inputRange = [
+            (slideIndex - 1) * width,
+            slideIndex * width,
+            (slideIndex + 1) * width,
+          ];
 
-      <View style={styles.screen}>
-        <Animated.ScrollView
-          ref={scrollRef}
-          horizontal
-          pagingEnabled
-          bounces={false}
-          overScrollMode="never"
-          showsHorizontalScrollIndicator={false}
-          scrollEventThrottle={16}
-          onScroll={Animated.event([{nativeEvent: {contentOffset: {x: scrollX}}}], {
-            useNativeDriver: true,
-          })}
-          onMomentumScrollEnd={(event) => {
-            const nextIndex = Math.round(event.nativeEvent.contentOffset.x / width);
-            setIndex(Math.max(0, Math.min(nextIndex, SLIDE_COUNT - 1)));
-          }}
-        >
-          {slides.map((slide, slideIndex) => {
-            const inputRange = [
-              (slideIndex - 1) * width,
-              slideIndex * width,
-              (slideIndex + 1) * width,
-            ];
+          const opacity = scrollX.interpolate({
+            inputRange,
+            outputRange: [0.45, 1, 0.45],
+            extrapolate: 'clamp',
+          });
 
-            const opacity = scrollX.interpolate({
-              inputRange,
-              outputRange: [0.45, 1, 0.45],
-              extrapolate: 'clamp',
-            });
+          const scale = scrollX.interpolate({
+            inputRange,
+            outputRange: [0.985, 1, 0.985],
+            extrapolate: 'clamp',
+          });
 
-            const scale = scrollX.interpolate({
-              inputRange,
-              outputRange: [0.985, 1, 0.985],
-              extrapolate: 'clamp',
-            });
+          const translateX = scrollX.interpolate({
+            inputRange,
+            outputRange: [16, 0, -16],
+            extrapolate: 'clamp',
+          });
 
-            const translateX = scrollX.interpolate({
-              inputRange,
-              outputRange: [16, 0, -16],
-              extrapolate: 'clamp',
-            });
+          return (
+            <View key={slide.key} style={[styles.slide, {width}]}>
+              <ImageBackground
+                source={slide.background}
+                resizeMode="cover"
+                style={styles.slideBackground}
+                imageStyle={[{opacity: slide.backgroundOpacity}, slide.imageStyle]}
+              >
+                <LinearGradient
+                  pointerEvents="none"
+                  colors={[
+                    'rgba(255,244,222,0.58)',
+                    'rgba(255,244,222,0.06)',
+                    'rgba(48,26,13,0.08)',
+                    'rgba(48,26,13,0.86)',
+                  ]}
+                  locations={[0, 0.22, 0.58, 1]}
+                  style={StyleSheet.absoluteFillObject}
+                />
 
-            return (
-              <View key={slide.key} style={[styles.slide, {width}]}>
-                <ImageBackground
-                  source={slide.background}
-                  resizeMode="cover"
-                  style={styles.slideBackground}
-                  imageStyle={[{opacity: slide.backgroundOpacity}, slide.imageStyle]}
+                <Animated.View
+                  style={[
+                    styles.previewArea,
+                    slide.expandedPreview && styles.previewAreaExpanded,
+                    {
+                      opacity,
+                      transform: [{translateX}, {scale}],
+                    },
+                  ]}
                 >
-                  <LinearGradient
-                    pointerEvents="none"
-                    colors={[
-                      'rgba(255,244,222,0.58)',
-                      'rgba(255,244,222,0.06)',
-                      'rgba(48,26,13,0.08)',
-                      'rgba(48,26,13,0.86)',
-                    ]}
-                    locations={[0, 0.22, 0.58, 1]}
-                    style={StyleSheet.absoluteFillObject}
-                  />
+                  {slide.preview}
+                </Animated.View>
 
-                  <Animated.View
-                    style={[
-                      styles.previewArea,
-                      {
-                        opacity,
-                        transform: [{translateX}, {scale}],
-                      },
-                    ]}
-                  >
-                    {slide.preview}
-                  </Animated.View>
+                <SlideCaption eyebrow={slide.eyebrow} title={slide.title} text={slide.text} />
+              </ImageBackground>
+            </View>
+          );
+        })}
+      </Animated.ScrollView>
 
-                  <SlideCaption eyebrow={slide.eyebrow} title={slide.title} text={slide.text} />
-                </ImageBackground>
-              </View>
-            );
-          })}
-        </Animated.ScrollView>
-
-        <View style={styles.topBar} pointerEvents="box-none">
-          <View style={styles.brandMini}>
-            <Text style={styles.brandMiniCross}>☦</Text>
-            <Text style={styles.brandMiniText}>Молитвослов</Text>
-          </View>
-
-          {index < SLIDE_COUNT - 1 ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Пропустить знакомство"
-              onPress={finish}
-              style={({pressed}) => [styles.skipButton, pressed && styles.pressed]}
-            >
-              <Text style={styles.skipText}>Пропустить</Text>
-            </Pressable>
-          ) : (
-            <View style={styles.skipPlaceholder} />
-          )}
+      <View style={[styles.topBar, {top: insets.top}]} pointerEvents="box-none">
+        <View style={styles.brandMini}>
+          <Text style={styles.brandMiniCross}>☦</Text>
+          <Text style={[styles.brandMiniText, index === 1 && styles.brandMiniTextBible]}>
+            Молитвослов
+          </Text>
         </View>
 
-        <View style={styles.footer}>
-          <View style={styles.dots}>
-            {slides.map((slide, dotIndex) => (
-              <View key={slide.key} style={[styles.dot, dotIndex === index && styles.dotActive]} />
-            ))}
-          </View>
-
+        {index < SLIDE_COUNT - 1 ? (
           <Pressable
             accessibilityRole="button"
-            onPress={next}
-            style={({pressed}) => [
-              styles.nextButton,
-              index === SLIDE_COUNT - 1 && styles.nextButtonFinal,
-              pressed && styles.pressed,
-            ]}
+            accessibilityLabel="Пропустить знакомство"
+            onPress={finish}
+            style={({pressed}) => [styles.skipButton, pressed && styles.pressed]}
           >
-            <Text style={styles.nextButtonText}>
-              {index === SLIDE_COUNT - 1 ? 'Открыть Молитвослов' : 'Далее'}
-            </Text>
-            {index < SLIDE_COUNT - 1 && <Text style={styles.nextArrow}>›</Text>}
+            <Text style={[styles.skipText, index === 1 && styles.skipTextBible]}>Пропустить</Text>
           </Pressable>
-        </View>
+        ) : (
+          <View style={styles.skipPlaceholder} />
+        )}
       </View>
-    </SafeAreaView>
+
+      <View style={[styles.footer, {bottom: Math.max(insets.bottom, 9)}]}>
+        <View style={styles.dots}>
+          {slides.map((slide, dotIndex) => (
+            <View key={slide.key} style={[styles.dot, dotIndex === index && styles.dotActive]} />
+          ))}
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={next}
+          style={({pressed}) => [
+            styles.nextButton,
+            index === SLIDE_COUNT - 1 && styles.nextButtonFinal,
+            pressed && styles.pressed,
+          ]}
+        >
+          <Text style={styles.nextButtonText}>
+            {index === SLIDE_COUNT - 1 ? 'Открыть Молитвослов' : 'Далее'}
+          </Text>
+          {index < SLIDE_COUNT - 1 && <Text style={styles.nextArrow}>›</Text>}
+        </Pressable>
+      </View>
+    </View>
   );
 };
 
@@ -835,6 +870,7 @@ const styles = StyleSheet.create({
   },
   slide: {
     flex: 1,
+    overflow: 'hidden',
   },
   slideBackground: {
     flex: 1,
@@ -842,7 +878,7 @@ const styles = StyleSheet.create({
   },
   topBar: {
     position: 'absolute',
-    top: 0,
+
     left: 0,
     right: 0,
     height: 56,
@@ -892,12 +928,19 @@ const styles = StyleSheet.create({
   },
   previewArea: {
     position: 'absolute',
-    top: 70,
-    left: 16,
-    right: 16,
-    bottom: 245,
+    top: 58,
+    left: 10,
+    right: 10,
+    bottom: 240,
     alignItems: 'stretch',
     justifyContent: 'center',
+  },
+  previewAreaExpanded: {
+    top: 84,
+    left: 12,
+    right: 12,
+    bottom: 194,
+    justifyContent: 'flex-start',
   },
   caption: {
     position: 'absolute',
@@ -926,11 +969,22 @@ const styles = StyleSheet.create({
     textShadowOffset: {width: 0, height: 2},
     textShadowRadius: 5,
   },
+
+  brandMiniTextBible: {
+    color: '#FFF0D0',
+    fontWeight: 600,
+  },
+
+  skipTextBible: {
+    color: '#FFF0D0',
+    fontWeight: 600,
+  },
+
   captionText: {
     marginTop: 7,
     maxWidth: 390,
-    color: '#F2DFC2',
-    fontSize: 13,
+    color: '#FFF2D8',
+    fontSize: 14,
     lineHeight: 18,
     textShadowColor: 'rgba(0,0,0,0.76)',
     textShadowOffset: {width: 0, height: 1},
@@ -940,7 +994,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
-    bottom: 8,
+
     zIndex: 20,
   },
   dots: {
@@ -1036,10 +1090,10 @@ const styles = StyleSheet.create({
   },
   introSubtitle: {
     marginTop: 12,
-    color: '#F3E0BE',
+    color: '#2A1408B8',
     fontFamily: 'serif',
     fontSize: 13,
-    textShadowColor: 'rgba(42,20,8,0.72)',
+    textShadowColor: 'rgb(190 171 131)',
     textShadowOffset: {width: 0, height: 1},
     textShadowRadius: 4,
   },
@@ -1051,6 +1105,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(45,23,10,0.66)',
     borderWidth: 1,
     borderColor: 'rgba(233,185,99,0.45)',
+    top: 30,
   },
   bibleKicker: {
     color: '#EAC57E',
@@ -1100,6 +1155,7 @@ const styles = StyleSheet.create({
   },
   chapterGrid: {
     marginTop: 9,
+
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
@@ -1132,9 +1188,15 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     gap: 8,
   },
+  libraryShowcase: {
+    flex: 1,
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+    gap: 7,
+  },
   libraryCard: {
     position: 'relative',
-    minHeight: 76,
+    minHeight: 68,
     flexDirection: 'row',
     alignItems: 'center',
     paddingLeft: 10,
@@ -1153,7 +1215,7 @@ const styles = StyleSheet.create({
   libraryArtwork: {
     position: 'absolute',
     top: 0,
-    right: -26,
+    right: -34,
     bottom: 0,
     width: '90%',
   },
@@ -1192,6 +1254,105 @@ const styles = StyleSheet.create({
     marginTop: 2,
     color: '#7E6047',
     fontSize: 10,
+  },
+
+  calendarShowcase: {
+    flex: 1,
+    alignSelf: 'stretch',
+    gap: 8,
+  },
+  calendarDayShowcase: {
+    flex: 1,
+    padding: 9,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: 'rgba(123,79,36,0.18)',
+    backgroundColor: 'rgba(255,244,222,0.97)',
+  },
+  calendarDayHeader: {
+    minHeight: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  calendarDaySaint: {
+    width: 48,
+    height: 64,
+    borderRadius: 10,
+    backgroundColor: '#EED7B3',
+  },
+  calendarDayTitleWrap: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: 9,
+  },
+  calendarDayDate: {
+    color: '#8A5A38',
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+  },
+  calendarDaySaintTitle: {
+    marginTop: 2,
+    color: '#3F291B',
+    fontFamily: 'serif',
+    fontSize: 12,
+    lineHeight: 15,
+    fontWeight: '700',
+  },
+  calendarDayFastBadge: {
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    marginTop: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 7,
+    backgroundColor: '#EAD7B8',
+  },
+  calendarDayFastText: {
+    color: '#6C4A31',
+    fontSize: 7,
+    fontWeight: '700',
+  },
+  calendarFeatureRow: {
+    minHeight: 32,
+    marginTop: 5,
+    paddingHorizontal: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(126,82,38,0.16)',
+    backgroundColor: '#FFF9ED',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  calendarFeatureIcon: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  calendarFeatureText: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: 5,
+  },
+  calendarFeatureLabel: {
+    color: '#9A6837',
+    fontSize: 7,
+    fontWeight: '800',
+    letterSpacing: 0.45,
+  },
+  calendarFeatureValue: {
+    marginTop: 1,
+    color: '#4A3020',
+    fontFamily: 'serif',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  calendarFeatureArrow: {
+    marginLeft: 4,
+    color: '#8B5B30',
+    fontSize: 18,
   },
 
   calendarScreenPreview: {
@@ -1846,7 +2007,7 @@ const styles = StyleSheet.create({
 
   appScreen: {
     alignSelf: 'stretch',
-    minHeight: 445,
+    height: '100%',
     borderRadius: 23,
     overflow: 'hidden',
     backgroundColor: '#B78A58',
@@ -1972,7 +2133,7 @@ const styles = StyleSheet.create({
   },
   homeScreenPreview: {
     alignSelf: 'stretch',
-    minHeight: 445,
+    height: '100%',
     paddingHorizontal: 10,
     paddingTop: 12,
     paddingBottom: 12,
