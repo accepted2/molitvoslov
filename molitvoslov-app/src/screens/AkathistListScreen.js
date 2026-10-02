@@ -17,6 +17,7 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {SaveHeartIcon} from '../components/icons/SaveHeartIcon';
 import {contentApi as api} from '../services/contentApi';
+import {subscribeToContentUpdates} from '../services/contentStore';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {colors} from '../theme';
 
@@ -58,6 +59,14 @@ export const AkathistListScreen = ({navigation}) => {
   useEffect(() => {
     loadAkathists();
   }, [loadAkathists]);
+
+  useEffect(
+    () =>
+      subscribeToContentUpdates(() => {
+        loadAkathists();
+      }),
+    [loadAkathists]
+  );
 
   useFocusEffect(
     useCallback(() => {
