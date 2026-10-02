@@ -19,6 +19,7 @@ import {
 import {useFocusEffect} from '@react-navigation/native';
 
 import {contentApi as api} from '../services/contentApi';
+import {subscribeToContentUpdates} from '../services/contentStore';
 
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
@@ -73,6 +74,14 @@ export const CanonListScreen = ({navigation}) => {
   useEffect(() => {
     loadCanons();
   }, [loadCanons]);
+
+  useEffect(
+    () =>
+      subscribeToContentUpdates(() => {
+        loadCanons();
+      }),
+    [loadCanons]
+  );
 
   useFocusEffect(
     useCallback(() => {
