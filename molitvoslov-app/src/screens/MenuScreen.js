@@ -42,7 +42,7 @@ import {
 } from '../services/calendarPreferences';
 import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
 import {colors, spacing} from '../theme';
-
+import {getBibleArtwork} from '../data/bibleArtwork';
 const CATEGORY_ICONS = {
   morning: 'morning',
   evening: 'evening',
@@ -279,7 +279,7 @@ export const MenuScreen = ({navigation}) => {
   const [canons, setCanons] = useState([]);
   const [prayerRules, setPrayerRules] = useState([]);
   const [readingProgress, setReadingProgress] = useState([]);
-  const [loading, setLoading] = useState(true);
+
   const [dailyQuote, setDailyQuote] = useState(null);
   const [savedDailyQuote, setSavedDailyQuote] = useState(null);
   const [calendarToday, setCalendarToday] = useState(null);
@@ -392,15 +392,10 @@ export const MenuScreen = ({navigation}) => {
 
   useEffect(() => {
     const load = async () => {
-      try {
-        setLoading(true);
+      await Promise.all([loadLibrary(), loadProgress()]);
 
-        await Promise.all([loadLibrary(), loadProgress()]);
-
-        await updateQuoteWidget();
-      } finally {
-        setLoading(false);
-      }
+      // Виджет не должен задерживать отрисовку главного экрана.
+      updateQuoteWidget();
     };
 
     load();
@@ -595,6 +590,8 @@ export const MenuScreen = ({navigation}) => {
 
       if (!book) return null;
 
+      const artwork = getBibleArtwork(book);
+
       const chapterNumber = Number(info.chapter_number || 1);
       const verseNumber = info.verse_number ? Number(info.verse_number) : null;
 
@@ -602,6 +599,7 @@ export const MenuScreen = ({navigation}) => {
         id: progress.id,
         type: 'Библия',
         symbol: '☷',
+        imageSource: artwork?.icon || null,
         title: bibleContent.getDisplayName(book),
         position: verseNumber
           ? 'Глава ' + chapterNumber + ' · стих ' + verseNumber
@@ -838,17 +836,17 @@ export const MenuScreen = ({navigation}) => {
     Alert.alert(title, 'Раздел пока в разработке.');
   }, []);
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
-        <StatusBar style="light" translucent backgroundColor="transparent" />
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.accent} />
-          <Text style={styles.loadingText}>Загрузка молитвослова...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
+  //       <StatusBar style="light" translucent backgroundColor="transparent" />
+  //       <View style={styles.center}>
+  //         <ActivityIndicator size="large" color={colors.accent} />
+  //         <Text style={styles.loadingText}>Загрузка молитвослова...</Text>
+  //       </View>
+  //     </SafeAreaView>
+  //   );
+  // }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
@@ -1281,7 +1279,13 @@ export const MenuScreen = ({navigation}) => {
                       style={({pressed}) => [styles.latestReadingMain, pressed && styles.pressed]}
                     >
                       <View style={styles.readingCategoryIcon}>
-                        {latestReading.iconSource ? (
+                        {latestReading.imageSource ? (
+                          <Image
+                            source={latestReading.imageSource}
+                            style={styles.readingCategoryImage}
+                            resizeMode="cover"
+                          />
+                        ) : latestReading.iconSource ? (
                           <CategoryIcon type={latestReading.iconSource} />
                         ) : (
                           <Text style={styles.readingCategoryGlyph}>
@@ -2071,7 +2075,6 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 12,
     borderWidth: 1,
-
     borderColor: 'rgba(255, 251, 242, 0.72)',
     backgroundColor: 'rgba(139, 94, 49, 0.13)',
   },
@@ -2628,5 +2631,10 @@ const styles = StyleSheet.create({
       height: 1,
     },
     textShadowRadius: 2,
+  },
+
+  readingCategoryImage: {
+    width: '100%',
+    height: '100%',
   },
 });

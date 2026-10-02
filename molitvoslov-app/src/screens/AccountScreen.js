@@ -139,15 +139,15 @@ export const AccountScreen = ({navigation}) => {
     }
   };
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.accent} />
-        </View>
-      </SafeAreaView>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <SafeAreaView style={styles.safeArea}>
+  //       <View style={styles.center}>
+  //         <ActivityIndicator size="large" color={colors.accent} />
+  //       </View>
+  //     </SafeAreaView>
+  //   );
+  // }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -155,7 +155,15 @@ export const AccountScreen = ({navigation}) => {
         <View style={styles.content}>
           <Text style={styles.title}>Аккаунт</Text>
 
-          {googleUser ? (
+          {loading ? (
+            <View style={styles.card}>
+              <View style={styles.accountLoading}>
+                <ActivityIndicator size="small" color={colors.accent} />
+
+                <Text style={styles.accountLoadingText}>Проверка аккаунта...</Text>
+              </View>
+            </View>
+          ) : googleUser ? (
             <View style={styles.card}>
               <Text style={styles.label}>Вы вошли через Google</Text>
 
@@ -255,6 +263,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
 
     borderColor: colors.border,
+  },
+  accountLoading: {
+    minHeight: 80,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+
+  accountLoadingText: {
+    color: colors.textSecondary,
+    fontSize: 14,
   },
 
   label: {
