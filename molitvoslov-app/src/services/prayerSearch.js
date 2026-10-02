@@ -1,4 +1,4 @@
-const bundledContent = require('../data/offlineContent.json');
+import {getContentGeneration, getCurrentContent} from './contentStore';
 
 const normalizeSearchText = (value) =>
   String(value || '')
@@ -50,7 +50,7 @@ const composeFullText = (item) => {
 };
 
 const buildTextEntries = () =>
-  Object.values(bundledContent?.texts || {})
+  Object.values(getCurrentContent()?.texts || {})
     .filter((item) => item && (item.content || item.translation))
     .map((item) => {
       const title = textTitle(item);
@@ -92,7 +92,7 @@ const buildPsalmEntries = () => {
   const seen = new Set();
   const entries = [];
 
-  Object.values(bundledContent?.kathismas?.by_number || {}).forEach((kathisma) => {
+  Object.values(getCurrentContent()?.kathismas?.by_number || {}).forEach((kathisma) => {
     (kathisma?.psalms || []).forEach((psalm) => {
       const psalmId = Number(psalm?.id || 0);
 
@@ -188,13 +188,19 @@ const prepareSearchEntry = (entry) => {
 const buildIndex = () => [...buildTextEntries(), ...buildPsalmEntries()].map(prepareSearchEntry);
 
 let cachedIndex = null;
+let cachedGeneration = -1;
 const builtInQueryCache = new Map();
 const QUERY_CACHE_LIMIT = 48;
 
 const getIndex = () => {
-  if (!cachedIndex) {
+  const generation = getContentGeneration();
+
+  if (!cachedIndex || cachedGeneration !== generation) {
     cachedIndex = buildIndex();
+    cachedGeneration = generation;
+    builtInQueryCache.clear();
   }
+
   return cachedIndex;
 };
 

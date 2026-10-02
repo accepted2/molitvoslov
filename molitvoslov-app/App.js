@@ -27,6 +27,8 @@ import {syncReadingProgress} from './src/services/readingProgress';
 import {syncMemorials} from './src/services/memorials';
 
 import {syncPrayerBooks} from './src/services/prayerBooks';
+import {hydratePublicContent} from './src/services/contentStore';
+import {syncPublicContent} from './src/services/contentSync';
 
 const ONBOARDING_STORAGE_KEY = '@molitvoslov/onboarding-version';
 const ONBOARDING_VERSION = 5;
@@ -99,6 +101,7 @@ export default function App() {
     const prepareDatabase = async () => {
       try {
         await initDatabase();
+        await hydratePublicContent();
 
         setDatabaseReady(true);
 
@@ -151,13 +154,28 @@ export default function App() {
 
     const runSync = async (reason) => {
       try {
-        const [savedItemsResult, readingProgressResult, memorialsResult, prayerBooksResult] =
-          await Promise.all([
-            syncSavedItems(),
-            syncReadingProgress(),
-            syncMemorials(),
-            syncPrayerBooks(),
-          ]);
+        const [
+          publicContentResult,
+          savedItemsResult,
+          readingProgressResult,
+          memorialsResult,
+          prayerBooksResult,
+        ] = await Promise.all([
+          syncPublicContent(),
+          syncSavedItems(),
+          syncReadingProgress(),
+          syncMemorials(),
+          syncPrayerBooks(),
+        ]);
+
+        if (publicContentResult?.updated) {
+          console.log(`Public content updated: ${reason}`);
+        } else if (!publicContentResult?.success && publicContentResult?.error) {
+          console.log(
+            `Public content sync отложен: ${reason}`,
+            publicContentResult.error?.message || publicContentResult.error
+          );
+        }
 
         const noUser =
           savedItemsResult?.reason === 'no-user' &&

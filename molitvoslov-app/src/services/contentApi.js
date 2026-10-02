@@ -1,10 +1,6 @@
 import {getDailyQuote} from './dailyQuote';
 import {isCuratedAkathist} from '../data/curatedAkathists';
-
-const bundledContent = require('../data/offlineContent.json');
-
-const bundleReady =
-  Number(bundledContent?.schema_version || 0) >= 1 && !!bundledContent?.generated_at;
+import {getCurrentContent} from './contentStore';
 
 const response = (data) => ({data});
 
@@ -41,6 +37,7 @@ const getDateOrdinal = (date) => {
 
 const getLocal = (rawPath) => {
   const path = normalizePath(rawPath);
+  const bundledContent = getCurrentContent();
 
   if (path === 'categories/') {
     return bundledContent.categories || [];
@@ -118,7 +115,10 @@ const getLocal = (rawPath) => {
 
 export const contentApi = {
   get: async (path) => {
-    if (!bundleReady) {
+    const content = getCurrentContent();
+    const ready = Number(content?.schema_version || 0) >= 1 && !!content?.generated_at;
+
+    if (!ready) {
       throw new Error('Офлайн-контент не собран. Запустите export_mobile_content.');
     }
 
@@ -126,10 +126,18 @@ export const contentApi = {
   },
 };
 
-export const isOfflineContentReady = () => bundleReady;
+export const isOfflineContentReady = () => {
+  const content = getCurrentContent();
+  return Number(content?.schema_version || 0) >= 1 && !!content?.generated_at;
+};
 
-export const getOfflineContentInfo = () => ({
-  ready: bundleReady,
-  schemaVersion: Number(bundledContent?.schema_version || 0),
-  generatedAt: bundledContent?.generated_at || null,
-});
+export const getOfflineContentInfo = () => {
+  const content = getCurrentContent();
+
+  return {
+    ready: Number(content?.schema_version || 0) >= 1 && !!content?.generated_at,
+    schemaVersion: Number(content?.schema_version || 0),
+    generatedAt: content?.generated_at || null,
+    contentVersion: content?.content_version || null,
+  };
+};

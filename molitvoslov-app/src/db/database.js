@@ -28,6 +28,13 @@ export const initDatabase = async () => {
       value TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS public_content_cache (
+      cache_key TEXT PRIMARY KEY NOT NULL,
+      version TEXT,
+      payload TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS saved_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
 
