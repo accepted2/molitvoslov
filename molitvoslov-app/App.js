@@ -1,6 +1,8 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 
 import {ActivityIndicator, AppState, ImageBackground, StyleSheet, Text, View} from 'react-native';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import NetInfo from '@react-native-community/netinfo';
 
@@ -10,6 +12,7 @@ import {useFonts} from 'expo-font';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import {AppNavigator} from './src/navigation/AppNavigator';
+import {OnboardingScreen} from './src/screens/OnboardingScreen';
 
 import {TextSelectionProvider} from './src/context/TextSelectionContext';
 
@@ -22,6 +25,9 @@ import {syncReadingProgress} from './src/services/readingProgress';
 import {syncMemorials} from './src/services/memorials';
 
 import {syncPrayerBooks} from './src/services/prayerBooks';
+
+const ONBOARDING_STORAGE_KEY = '@molitvoslov/onboarding-version';
+const ONBOARDING_VERSION = 3;
 
 const StartupScreen = () => (
   <ImageBackground
@@ -53,6 +59,8 @@ const StartupScreen = () => (
 
 export default function App() {
   const [databaseReady, setDatabaseReady] = useState(false);
+  const [onboardingReady, setOnboardingReady] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const [fontsLoaded] = useFonts({
     Ponomar: require('./assets/fonts/Ponomar-Regular.ttf'),
@@ -72,6 +80,37 @@ export default function App() {
     };
 
     prepareDatabase();
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const prepareOnboarding = async () => {
+      try {
+        const storedVersion = await AsyncStorage.getItem(ONBOARDING_STORAGE_KEY);
+        const seenVersion = Number(storedVersion || 0);
+
+        if (active) {
+          setShowOnboarding(seenVersion < ONBOARDING_VERSION);
+        }
+      } catch (error) {
+        console.log('Ошибка проверки onboarding:', error);
+
+        if (active) {
+          setShowOnboarding(true);
+        }
+      } finally {
+        if (active) {
+          setOnboardingReady(true);
+        }
+      }
+    };
+
+    prepareOnboarding();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -151,14 +190,24 @@ export default function App() {
     };
   }, [databaseReady]);
 
-  if (!databaseReady || !fontsLoaded) {
+  const completeOnboarding = useCallback(async () => {
+    setShowOnboarding(false);
+
+    try {
+      await AsyncStorage.setItem(ONBOARDING_STORAGE_KEY, String(ONBOARDING_VERSION));
+    } catch (error) {
+      console.log('Ошибка сохранения onboarding:', error);
+    }
+  }, []);
+
+  if (!databaseReady || !fontsLoaded || !onboardingReady) {
     return <StartupScreen />;
   }
 
   return (
     <SafeAreaProvider>
       <TextSelectionProvider>
-        <AppNavigator />
+        {showOnboarding ? <OnboardingScreen onComplete={completeOnboarding} /> : <AppNavigator />}
       </TextSelectionProvider>
     </SafeAreaProvider>
   );
