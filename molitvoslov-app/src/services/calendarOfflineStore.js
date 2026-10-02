@@ -192,10 +192,7 @@ export const getOfflineCalendarMonth = async (year, month, language = 'ru') => {
   const bundledMonth = getBundledMonthPayload(year, month);
 
   const days = dateKeys
-    .map(
-      (dateKey) =>
-        storedByDate.get(dateKey) || bundledMonth?.days?.[dateKey]?.[lang] || null
-    )
+    .map((dateKey) => storedByDate.get(dateKey) || bundledMonth?.days?.[dateKey]?.[lang] || null)
     .filter(Boolean);
 
   if (!days.length) {
