@@ -1,4 +1,4 @@
-const bundledContent = require('../data/offlineContent.json');
+import {getCurrentContent} from './contentStore';
 
 const getTodayString = () => {
   const date = new Date();
@@ -18,7 +18,7 @@ const getDateOrdinal = (date) => {
 };
 
 export const getDailyQuote = () => {
-  const quotes = bundledContent.daily_quotes || [];
+  const quotes = getCurrentContent()?.daily_quotes || [];
   const today = getTodayString();
 
   const exact = quotes.find((item) => item.quote_date === today);
