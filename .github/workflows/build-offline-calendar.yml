@@ -15,6 +15,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: offline-calendar-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -41,6 +45,11 @@ jobs:
           import json
           from pathlib import Path
 
+          source = Path('molitvoslov-app/src/data/calendar_2026.json')
+          source_payload = json.loads(source.read_text(encoding='utf-8'))
+          assert source_payload['year'] == 2026
+          assert len(source_payload['days']) == 365
+
           root = Path('molitvoslov-app/src/data/calendar')
           total = 0
           for month in range(1, 13):
@@ -51,11 +60,17 @@ jobs:
 
           assert total == 365, total
 
+          june = json.loads((root / '2026-06.json').read_text(encoding='utf-8'))
+          june_fifth = june['days']['2026-06-05']
+          assert june_fifth['ru']['main_feast']['source_id'] == 3012
+          assert june_fifth['uk']['main_feast']['source_id'] == 3012
+          assert 'Парам' not in june_fifth['uk']['main_feast']['title']
+
           icon_module = Path('molitvoslov-app/src/data/calendarIconAssets.js')
           assert icon_module.exists(), icon_module
           assert 'bundledCalendarIconCount' in icon_module.read_text(encoding='utf-8')
 
-          print(f'Verified: {total} days and generated icon module')
+          print(f'Verified authoritative offline snapshot: {total} days')
           PY
 
       - name: Set up Node
@@ -82,7 +97,10 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add             molitvoslov-app/src/data/calendar             molitvoslov-app/src/data/calendarIconAssets.js             molitvoslov-app/assets/calendar-icons
+          git add \
+            molitvoslov-app/src/data/calendar \
+            molitvoslov-app/src/data/calendarIconAssets.js \
+            molitvoslov-app/assets/calendar-icons
           git commit -m "Generate offline calendar bundle"
           git pull --rebase origin main
           git push origin HEAD:main

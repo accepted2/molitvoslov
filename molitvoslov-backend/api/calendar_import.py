@@ -8,6 +8,7 @@ from urllib.request import Request, urlopen
 
 from django.db import transaction
 
+from .calendar_localization import same_feast_identity
 from .calendar_models import CalendarDay, CalendarFeast
 
 
@@ -122,7 +123,23 @@ def _localized_assignments(data, language):
     }
 
 
-def upsert_feast(data, language="ru"):
+def _assign_imported_value(obj, field, value, overwrite_existing=False):
+    if value in [None, ""]:
+        return False
+
+    current = getattr(obj, field, None)
+
+    if not overwrite_existing and current not in [None, "", [], {}]:
+        return False
+
+    if current == value:
+        return False
+
+    setattr(obj, field, value)
+    return True
+
+
+def upsert_feast(data, language="ru", overwrite_existing=False):
     if not data:
         return None
 
@@ -130,37 +147,120 @@ def upsert_feast(data, language="ru"):
     if source_id in [None, ""]:
         return None
 
+    source_id = int(source_id)
+
+    if language == "uk":
+        feast = CalendarFeast.objects.filter(source_id=source_id).first()
+        if feast is None:
+            return None
+
+        incoming_title = data.get("title") or data.get("short_title") or ""
+        if not same_feast_identity(feast.title, incoming_title):
+            return feast
+
+        changed_fields = []
+
+        for field, value in _localized_assignments(data, language).items():
+            if _assign_imported_value(
+                feast,
+                field,
+                value,
+                overwrite_existing=overwrite_existing,
+            ):
+                changed_fields.append(field)
+
+        if changed_fields:
+            feast.save(update_fields=[*changed_fields, "updated_at"])
+
+        return feast
+
     feast, _created = CalendarFeast.objects.get_or_create(
-        source_id=int(source_id),
+        source_id=source_id,
         defaults={
             "title": data.get("title") or data.get("short_title") or "Память святого",
         },
     )
 
-    feast.date_type = data.get("date_type") or feast.date_type or ""
-    feast.celebration_type = data.get("celebration_type") or feast.celebration_type or ""
-    feast.celebration_rank = data.get("celebration_rank") or feast.celebration_rank or ""
-    feast.julian_month = data.get("month") or feast.julian_month
-    feast.julian_day = data.get("day") or feast.julian_day
+    _assign_imported_value(
+        feast,
+        "date_type",
+        data.get("date_type"),
+        overwrite_existing=overwrite_existing,
+    )
+    _assign_imported_value(
+        feast,
+        "celebration_type",
+        data.get("celebration_type"),
+        overwrite_existing=overwrite_existing,
+    )
+    _assign_imported_value(
+        feast,
+        "celebration_rank",
+        data.get("celebration_rank"),
+        overwrite_existing=overwrite_existing,
+    )
+    _assign_imported_value(
+        feast,
+        "julian_month",
+        data.get("month"),
+        overwrite_existing=overwrite_existing,
+    )
+    _assign_imported_value(
+        feast,
+        "julian_day",
+        data.get("day"),
+        overwrite_existing=overwrite_existing,
+    )
+
     if data.get("easter_offset") is not None:
-        feast.easter_offset = data.get("easter_offset")
+        _assign_imported_value(
+            feast,
+            "easter_offset",
+            data.get("easter_offset"),
+            overwrite_existing=overwrite_existing,
+        )
 
     icon = _icon_url(data)
-    if icon:
-        feast.icon_url = icon
+    _assign_imported_value(
+        feast,
+        "icon_url",
+        icon,
+        overwrite_existing=overwrite_existing,
+    )
 
     if data.get("troparion_echo") is not None:
-        feast.troparion_echo = data.get("troparion_echo")
-    if data.get("kontakion_echo") is not None:
-        feast.kontakion_echo = data.get("kontakion_echo")
+        _assign_imported_value(
+            feast,
+            "troparion_echo",
+            data.get("troparion_echo"),
+            overwrite_existing=overwrite_existing,
+        )
 
-    if language == "ru":
-        feast.all_dates = data.get("all_dates") or feast.all_dates or []
+    if data.get("kontakion_echo") is not None:
+        _assign_imported_value(
+            feast,
+            "kontakion_echo",
+            data.get("kontakion_echo"),
+            overwrite_existing=overwrite_existing,
+        )
+
+    _assign_imported_value(
+        feast,
+        "all_dates",
+        data.get("all_dates") or [],
+        overwrite_existing=overwrite_existing,
+    )
 
     for field, value in _localized_assignments(data, language).items():
         if field == "title" and not value:
             value = "Память святого"
-        setattr(feast, field, value)
+
+        _assign_imported_value(
+            feast,
+            field,
+            value,
+            overwrite_existing=overwrite_existing,
+        )
 
     feast.save()
     return feast
@@ -191,40 +291,93 @@ def _day_language_fields(payload, language):
     }
 
 
-def upsert_day(payload, language="ru"):
+def upsert_day(payload, language="ru", overwrite_existing=False):
     if not payload or not payload.get("date_gregorian"):
         return None
 
-    all_feast_payloads = payload.get("all_feasts") or payload.get("feasts") or []
-    feast_objects = []
-
-    for feast_payload in all_feast_payloads:
-        feast = upsert_feast(feast_payload, language=language)
-        if feast:
-            feast_objects.append(feast)
-
-    main_payload = payload.get("main_feast")
-    main_feast = upsert_feast(main_payload, language=language) if main_payload else None
-
-    if main_feast and all(feast.source_id != main_feast.source_id for feast in feast_objects):
-        feast_objects.insert(0, main_feast)
-
-    if main_feast is None and feast_objects:
-        main_feast = max(feast_objects, key=_priority)
-
     target_date = date.fromisoformat(str(payload["date_gregorian"])[:10])
+    all_feast_payloads = payload.get("all_feasts") or payload.get("feasts") or []
+    main_payload = payload.get("main_feast")
 
     day, _created = CalendarDay.objects.get_or_create(
         date_gregorian=target_date,
     )
 
-    day.julian_month = payload.get("julian_month") or day.julian_month
-    day.julian_day = payload.get("julian_day") or day.julian_day
-    day.main_feast = main_feast or day.main_feast
-    day.fast_type_code = payload.get("fast_type_code") or day.fast_type_code or ""
+    if language == "ru":
+        feast_objects = []
+
+        for feast_payload in all_feast_payloads:
+            feast = upsert_feast(
+                feast_payload,
+                language=language,
+                overwrite_existing=overwrite_existing,
+            )
+            if feast:
+                feast_objects.append(feast)
+
+        main_feast = (
+            upsert_feast(
+                main_payload,
+                language=language,
+                overwrite_existing=overwrite_existing,
+            )
+            if main_payload
+            else None
+        )
+
+        if main_feast and all(feast.source_id != main_feast.source_id for feast in feast_objects):
+            feast_objects.insert(0, main_feast)
+
+        if main_feast is None and feast_objects:
+            main_feast = max(feast_objects, key=_priority)
+
+        _assign_imported_value(
+            day,
+            "julian_month",
+            payload.get("julian_month"),
+            overwrite_existing=overwrite_existing,
+        )
+        _assign_imported_value(
+            day,
+            "julian_day",
+            payload.get("julian_day"),
+            overwrite_existing=overwrite_existing,
+        )
+
+        if main_feast and (overwrite_existing or day.main_feast_id is None):
+            day.main_feast = main_feast
+
+        _assign_imported_value(
+            day,
+            "fast_type_code",
+            payload.get("fast_type_code"),
+            overwrite_existing=overwrite_existing,
+        )
+    else:
+        # Украинский источник используется только как локализация уже
+        # импортированной русской канонической записи. Он не должен менять
+        # связи дня, главный праздник или структурные поля.
+        for feast_payload in all_feast_payloads:
+            upsert_feast(
+                feast_payload,
+                language=language,
+                overwrite_existing=overwrite_existing,
+            )
+
+        if main_payload:
+            upsert_feast(
+                main_payload,
+                language=language,
+                overwrite_existing=overwrite_existing,
+            )
 
     for field, value in _day_language_fields(payload, language).items():
-        setattr(day, field, value)
+        _assign_imported_value(
+            day,
+            field,
+            value,
+            overwrite_existing=overwrite_existing,
+        )
 
     source_payload = dict(day.source_payload or {})
     source_payload.update(
@@ -241,16 +394,24 @@ def upsert_day(payload, language="ru"):
     day.source_payload = source_payload
 
     day.save()
-    day.feasts.set(feast_objects)
+
+    if language == "ru":
+        if overwrite_existing or not day.feasts.exists():
+            day.feasts.set(feast_objects)
+
     return day
 
 
 @transaction.atomic
-def import_month_payload(payload, language="ru"):
+def import_month_payload(payload, language="ru", overwrite_existing=False):
     imported = 0
 
     for item in payload.get("days") or []:
-        if upsert_day(item, language=language):
+        if upsert_day(
+            item,
+            language=language,
+            overwrite_existing=overwrite_existing,
+        ):
             imported += 1
 
     return imported
@@ -283,7 +444,13 @@ def _month_has_language(year, month, language):
     return True
 
 
-def ensure_month(year, month, language="ru", force=False):
+def ensure_month(
+    year,
+    month,
+    language="ru",
+    force=False,
+    overwrite_existing=False,
+):
     existing = CalendarDay.objects.filter(
         date_gregorian__year=year,
         date_gregorian__month=month,
@@ -293,15 +460,36 @@ def ensure_month(year, month, language="ru", force=False):
     if not force and existing >= expected and _month_has_language(year, month, language):
         return existing
 
+    if language == "uk" and not _month_has_language(year, month, "ru"):
+        russian_payload = fetch_source_json(
+            "month/",
+            {"year": year, "month": month},
+            language="ru",
+        )
+        import_month_payload(
+            russian_payload,
+            language="ru",
+            overwrite_existing=overwrite_existing,
+        )
+
     payload = fetch_source_json(
         "month/",
         {"year": year, "month": month},
         language=language,
     )
-    return import_month_payload(payload, language=language)
+    return import_month_payload(
+        payload,
+        language=language,
+        overwrite_existing=overwrite_existing,
+    )
 
 
-def sync_month(year, month, languages=("ru", "uk")):
+def sync_month(
+    year,
+    month,
+    languages=("ru", "uk"),
+    overwrite_existing=False,
+):
     result = {}
 
     for language in languages:
@@ -310,12 +498,13 @@ def sync_month(year, month, languages=("ru", "uk")):
             month,
             language=language,
             force=True,
+            overwrite_existing=overwrite_existing,
         )
 
     return result
 
 
-def ensure_day(target_date, language="ru"):
+def ensure_day(target_date, language="ru", overwrite_existing=False):
     day = CalendarDay.objects.filter(date_gregorian=target_date).first()
 
     imported_languages = (
@@ -331,6 +520,26 @@ def ensure_day(target_date, language="ru"):
         if language == "ru" and not imported_languages:
             return day
 
+    if language == "uk" and (day is None or "ru" not in imported_languages):
+        try:
+            russian_payload = fetch_source_json(
+                "day/",
+                {"date": target_date.isoformat()},
+                language="ru",
+            )
+            upsert_day(
+                russian_payload,
+                language="ru",
+                overwrite_existing=overwrite_existing,
+            )
+        except Exception:
+            ensure_month(
+                target_date.year,
+                target_date.month,
+                language="ru",
+                overwrite_existing=overwrite_existing,
+            )
+
     try:
         payload = fetch_source_json(
             "day/",
@@ -342,7 +551,12 @@ def ensure_day(target_date, language="ru"):
             target_date.year,
             target_date.month,
             language=language,
+            overwrite_existing=overwrite_existing,
         )
         return CalendarDay.objects.filter(date_gregorian=target_date).first()
 
-    return upsert_day(payload, language=language)
+    return upsert_day(
+        payload,
+        language=language,
+        overwrite_existing=overwrite_existing,
+    )

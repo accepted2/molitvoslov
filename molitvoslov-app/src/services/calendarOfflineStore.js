@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const STORAGE_PREFIX = 'calendar-day';
+const STORAGE_PREFIX = 'calendar-day-v3';
 
 const bundledMonthLoaders = {
   '2026-01': () => require('../data/calendar/2026-01.json'),
@@ -189,8 +189,10 @@ export const getOfflineCalendarMonth = async (year, month, language = 'ru') => {
     console.log('Ошибка чтения calendar month cache:', error?.message || error);
   }
 
+  const bundledMonth = getBundledMonthPayload(year, month);
+
   const days = dateKeys
-    .map((dateKey) => storedByDate.get(dateKey) || calendar2026?.days?.[dateKey]?.[lang] || null)
+    .map((dateKey) => storedByDate.get(dateKey) || bundledMonth?.days?.[dateKey]?.[lang] || null)
     .filter(Boolean);
 
   if (!days.length) {
