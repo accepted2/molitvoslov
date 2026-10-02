@@ -5,7 +5,6 @@ import {getCalendarDay} from '../services/churchCalendar';
 import {getCalendarLanguage} from '../services/calendarPreferences';
 import {QuoteOfDayWidget} from './QuoteOfDayWidget';
 import {ChurchCalendarWidget} from './ChurchCalendarWidget';
-import {getBundledCalendarDay, getStoredCalendarDay} from '../services/calendarOfflineStore';
 
 const getWidgetCalendarDay = async (value, language) => {
   const dateKey =
@@ -15,24 +14,15 @@ const getWidgetCalendarDay = async (value, language) => {
         ).padStart(2, '0')}`
       : value;
 
-  // 1. Сначала уже сохранённые данные телефона
-  const stored = await getStoredCalendarDay(dateKey, language);
-
-  if (stored) {
-    return stored;
-  }
-
-  // 2. Потом встроенный календарь 2026
-  const bundled = getBundledCalendarDay(dateKey, language);
-
-  if (bundled) {
-    return bundled;
-  }
-
-  // 3. Только если локально ничего нет — сервер
+  /*
+   * getCalendarDay сам делает правильный приоритет:
+   * онлайн -> свежий сервер + кэш,
+   * офлайн -> кэш телефона -> встроенный календарь APK.
+   * force=true нужен, чтобы виджет не зависал на старом in-memory значении.
+   */
   return getCalendarDay(dateKey, {
     language,
-    force: false,
+    force: true,
   });
 };
 

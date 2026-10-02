@@ -1,5 +1,13 @@
+import NetInfo from '@react-native-community/netinfo';
+
 import {API_BASE_URL} from './backendAuth';
 import {bibleContent} from './bibleContent';
+import {
+  getOfflineCalendarDay,
+  getOfflineCalendarMonth,
+  storeCalendarDay,
+  storeCalendarMonth,
+} from './calendarOfflineStore';
 
 const fetchCalendarJson = async (path) => {
   const response = await fetch(`${API_BASE_URL}${path}`);
@@ -31,6 +39,16 @@ export const toCalendarDate = (value) => {
   return [date.getFullYear(), pad(date.getMonth() + 1), pad(date.getDate())].join('-');
 };
 
+const canReachNetwork = async () => {
+  try {
+    const state = await NetInfo.fetch();
+
+    return state.isConnected !== false && state.isInternetReachable !== false;
+  } catch {
+    return true;
+  }
+};
+
 export const getCalendarDay = async (value = new Date(), {force = false, language = 'ru'} = {}) => {
   const dateKey = typeof value === 'string' ? value : toCalendarDate(value);
   const lang = language === 'uk' ? 'uk' : 'ru';
@@ -40,12 +58,31 @@ export const getCalendarDay = async (value = new Date(), {force = false, languag
     return dayCache.get(key);
   }
 
-  const data = await fetchCalendarJson(
-    `/api/calendar/day/?date=${encodeURIComponent(dateKey)}&lang=${lang}`
-  );
+  const offline = await getOfflineCalendarDay(dateKey, lang);
+  const online = await canReachNetwork();
 
-  dayCache.set(key, data);
-  return data;
+  if (!online && offline) {
+    dayCache.set(key, offline);
+    return offline;
+  }
+
+  try {
+    const data = await fetchCalendarJson(
+      `/api/calendar/day/?date=${encodeURIComponent(dateKey)}&lang=${lang}`
+    );
+
+    dayCache.set(key, data);
+    await storeCalendarDay(dateKey, lang, data);
+
+    return data;
+  } catch (error) {
+    if (offline) {
+      dayCache.set(key, offline);
+      return offline;
+    }
+
+    throw error;
+  }
 };
 
 export const getCalendarMonth = async (year, month, {force = false, language = 'ru'} = {}) => {
@@ -56,19 +93,51 @@ export const getCalendarMonth = async (year, month, {force = false, language = '
     return monthCache.get(key);
   }
 
-  const data = await fetchCalendarJson(
-    `/api/calendar/month/?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}&lang=${lang}`
-  );
+  const offline = await getOfflineCalendarMonth(year, month, lang);
+  const online = await canReachNetwork();
 
-  monthCache.set(key, data);
+  if (!online && offline) {
+    monthCache.set(key, offline);
 
-  (data?.days || []).forEach((day) => {
-    if (day?.date_gregorian) {
-      dayCache.set(`${lang}:${day.date_gregorian}`, day);
+    (offline.days || []).forEach((day) => {
+      if (day?.date_gregorian) {
+        dayCache.set(`${lang}:${day.date_gregorian}`, day);
+      }
+    });
+
+    return offline;
+  }
+
+  try {
+    const data = await fetchCalendarJson(
+      `/api/calendar/month/?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}&lang=${lang}`
+    );
+
+    monthCache.set(key, data);
+    await storeCalendarMonth(data, lang);
+
+    (data?.days || []).forEach((day) => {
+      if (day?.date_gregorian) {
+        dayCache.set(`${lang}:${day.date_gregorian}`, day);
+      }
+    });
+
+    return data;
+  } catch (error) {
+    if (offline) {
+      monthCache.set(key, offline);
+
+      (offline.days || []).forEach((day) => {
+        if (day?.date_gregorian) {
+          dayCache.set(`${lang}:${day.date_gregorian}`, day);
+        }
+      });
+
+      return offline;
     }
-  });
 
-  return data;
+    throw error;
+  }
 };
 
 const BOOK_ALIASES = [
