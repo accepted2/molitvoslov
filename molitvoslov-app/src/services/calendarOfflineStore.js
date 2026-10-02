@@ -1,8 +1,42 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import calendar2026 from '../data/calendar_2026.json';
-
 const STORAGE_PREFIX = 'calendar-day';
+
+const bundledMonthLoaders = {
+  '2026-01': () => require('../data/calendar/2026-01.json'),
+  '2026-02': () => require('../data/calendar/2026-02.json'),
+  '2026-03': () => require('../data/calendar/2026-03.json'),
+  '2026-04': () => require('../data/calendar/2026-04.json'),
+  '2026-05': () => require('../data/calendar/2026-05.json'),
+  '2026-06': () => require('../data/calendar/2026-06.json'),
+  '2026-07': () => require('../data/calendar/2026-07.json'),
+  '2026-08': () => require('../data/calendar/2026-08.json'),
+  '2026-09': () => require('../data/calendar/2026-09.json'),
+  '2026-10': () => require('../data/calendar/2026-10.json'),
+  '2026-11': () => require('../data/calendar/2026-11.json'),
+  '2026-12': () => require('../data/calendar/2026-12.json'),
+};
+
+const bundledMonthCache = new Map();
+
+const getBundledMonthPayload = (year, month) => {
+  const key = `${Number(year)}-${String(Number(month)).padStart(2, '0')}`;
+
+  if (bundledMonthCache.has(key)) {
+    return bundledMonthCache.get(key);
+  }
+
+  const loader = bundledMonthLoaders[key];
+
+  if (!loader) {
+    return null;
+  }
+
+  const payload = loader();
+  bundledMonthCache.set(key, payload);
+
+  return payload;
+};
 
 const normalizeLanguage = (language) => (language === 'uk' ? 'uk' : 'ru');
 
@@ -96,7 +130,10 @@ export const getBundledCalendarDay = (date, language = 'ru') => {
     return null;
   }
 
-  return calendar2026?.days?.[dateKey]?.[lang] || null;
+  const [year, month] = dateKey.split('-').map(Number);
+  const payload = getBundledMonthPayload(year, month);
+
+  return payload?.days?.[dateKey]?.[lang] || null;
 };
 
 /*
