@@ -66,9 +66,7 @@ def build_mobile_content_payload():
     }
 
     psalters_qs = (
-        Psalter.objects.filter(is_visible=True)
-        .prefetch_related("kathismas__psalms")
-        .order_by("id")
+        Psalter.objects.filter(is_visible=True).prefetch_related("kathismas__psalms").order_by("id")
     )
     psalter_list = PsalterSerializer(psalters_qs, many=True).data
     psalters = {
@@ -91,9 +89,7 @@ def build_mobile_content_payload():
     }
 
     visible_akathists = list(Akathist.objects.filter(is_visible=True).order_by("id"))
-    curated_akathist_ids = [
-        item.id for item in visible_akathists if is_curated_akathist(item)
-    ]
+    curated_akathist_ids = [item.id for item in visible_akathists if is_curated_akathist(item)]
 
     akathists_qs = Akathist.objects.filter(id__in=curated_akathist_ids).order_by("id")
     akathist_list = AkathistSummarySerializer(akathists_qs, many=True).data
