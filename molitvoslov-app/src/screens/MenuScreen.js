@@ -1038,7 +1038,9 @@ export const MenuScreen = ({navigation}) => {
                           adjustsFontSizeToFit
                           minimumFontScale={0.82}
                           maxFontSizeMultiplier={1}
-                        >{calendarCopy.calendarTitle}</Text>
+                        >
+                          {calendarCopy.calendarTitle}
+                        </Text>
 
                         <Text style={styles.calendarTitleArrow}>›</Text>
                       </View>

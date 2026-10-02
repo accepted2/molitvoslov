@@ -1051,7 +1051,7 @@ const styles = StyleSheet.create({
   },
   feastImageWrap: {
     width: '98',
-    maxWidth:'120',
+    maxWidth: '120',
     height: 120,
     alignSelf: 'center',
     borderRadius: 13,
