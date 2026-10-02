@@ -526,7 +526,6 @@ def ensure_day(target_date, language="ru", overwrite_existing=False):
                 "day/",
                 {"date": target_date.isoformat()},
                 language="ru",
-                overwrite_existing=overwrite_existing,
             )
             upsert_day(
                 russian_payload,
@@ -538,6 +537,7 @@ def ensure_day(target_date, language="ru", overwrite_existing=False):
                 target_date.year,
                 target_date.month,
                 language="ru",
+                overwrite_existing=overwrite_existing,
             )
 
     try:
@@ -545,13 +545,13 @@ def ensure_day(target_date, language="ru", overwrite_existing=False):
             "day/",
             {"date": target_date.isoformat()},
             language=language,
-            overwrite_existing=overwrite_existing,
         )
     except Exception:
         ensure_month(
             target_date.year,
             target_date.month,
             language=language,
+            overwrite_existing=overwrite_existing,
         )
         return CalendarDay.objects.filter(date_gregorian=target_date).first()
 
