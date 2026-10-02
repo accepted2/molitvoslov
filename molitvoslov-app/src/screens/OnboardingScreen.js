@@ -31,7 +31,12 @@ const ChapterCell = ({number, active}) => (
 );
 
 const PrayerCard = ({image, title, subtitle}) => (
-  <ImageBackground source={image} resizeMode="cover" style={styles.prayerCard} imageStyle={styles.prayerCardImage}>
+  <ImageBackground
+    source={image}
+    resizeMode="cover"
+    style={styles.prayerCard}
+    imageStyle={styles.prayerCardImage}
+  >
     <LinearGradient
       colors={['rgba(45, 24, 12, 0.08)', 'rgba(45, 24, 12, 0.78)']}
       locations={[0.2, 1]}
@@ -52,11 +57,7 @@ const SlideIntro = () => (
       imageStyle={styles.introArtworkImage}
     >
       <LinearGradient
-        colors={[
-          'rgba(54, 29, 14, 0.08)',
-          'rgba(54, 29, 14, 0.22)',
-          'rgba(54, 29, 14, 0.72)',
-        ]}
+        colors={['rgba(54, 29, 14, 0.08)', 'rgba(54, 29, 14, 0.22)', 'rgba(54, 29, 14, 0.72)']}
         locations={[0, 0.5, 1]}
         style={styles.introShade}
       >
@@ -83,11 +84,7 @@ const SlideBible = () => (
       imageStyle={styles.gospelCardImage}
     >
       <LinearGradient
-        colors={[
-          'rgba(34, 18, 9, 0.18)',
-          'rgba(34, 18, 9, 0.45)',
-          'rgba(34, 18, 9, 0.82)',
-        ]}
+        colors={['rgba(34, 18, 9, 0.18)', 'rgba(34, 18, 9, 0.45)', 'rgba(34, 18, 9, 0.82)']}
         locations={[0, 0.48, 1]}
         style={styles.gospelShade}
       >
@@ -117,7 +114,11 @@ const SlideBible = () => (
 const SlideLibrary = () => (
   <View style={styles.visualFill}>
     <View style={styles.libraryStack}>
-      <PrayerCard image={artwork.morning} title="Утренние молитвы" subtitle="Начните день с Богом" />
+      <PrayerCard
+        image={artwork.morning}
+        title="Утренние молитвы"
+        subtitle="Начните день с Богом"
+      />
       <PrayerCard image={artwork.akathists} title="Акафисты" subtitle="Молитвенные песнопения" />
       <PrayerCard image={artwork.canons} title="Каноны" subtitle="Покаянные и просительные" />
       <PrayerCard image={artwork.psalter} title="Псалтирь" subtitle="Молитва и утешение" />
@@ -215,7 +216,9 @@ const SlidePersonal = () => (
       <Text style={styles.syncIcon}>☁</Text>
       <View style={styles.syncTextWrap}>
         <Text style={styles.syncTitle}>Синхронизация</Text>
-        <Text style={styles.syncText}>Прогресс и личные данные можно сохранить между устройствами</Text>
+        <Text style={styles.syncText}>
+          Прогресс и личные данные можно сохранить между устройствами
+        </Text>
       </View>
     </View>
   </View>
@@ -230,11 +233,7 @@ const SlideFinish = () => (
       imageStyle={styles.finishArtworkImage}
     >
       <LinearGradient
-        colors={[
-          'rgba(50, 27, 14, 0.22)',
-          'rgba(50, 27, 14, 0.46)',
-          'rgba(50, 27, 14, 0.82)',
-        ]}
+        colors={['rgba(50, 27, 14, 0.22)', 'rgba(50, 27, 14, 0.46)', 'rgba(50, 27, 14, 0.82)']}
         style={styles.finishShade}
       >
         <Text style={styles.finishCross}>☦</Text>
@@ -347,10 +346,9 @@ export const OnboardingScreen = ({onComplete}) => {
           overScrollMode="never"
           showsHorizontalScrollIndicator={false}
           scrollEventThrottle={16}
-          onScroll={Animated.event(
-            [{nativeEvent: {contentOffset: {x: scrollX}}}],
-            {useNativeDriver: true}
-          )}
+          onScroll={Animated.event([{nativeEvent: {contentOffset: {x: scrollX}}}], {
+            useNativeDriver: true,
+          })}
           onMomentumScrollEnd={(event) => {
             const nextIndex = Math.round(event.nativeEvent.contentOffset.x / width);
             setIndex(Math.max(0, Math.min(nextIndex, SLIDE_COUNT - 1)));
@@ -408,13 +406,7 @@ export const OnboardingScreen = ({onComplete}) => {
         <View style={styles.footer}>
           <View style={styles.dots}>
             {slides.map((_, dotIndex) => (
-              <View
-                key={dotIndex}
-                style={[
-                  styles.dot,
-                  dotIndex === index && styles.dotActive,
-                ]}
-              />
+              <View key={dotIndex} style={[styles.dot, dotIndex === index && styles.dotActive]} />
             ))}
           </View>
 
