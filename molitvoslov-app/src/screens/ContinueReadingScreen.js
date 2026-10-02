@@ -315,7 +315,11 @@ export const ContinueReadingScreen = ({navigation}) => {
                 >
                   <View style={styles.icon}>
                     {item.imageSource ? (
-                      <Image source={item.imageSource} style={styles.iconImage} resizeMode="cover" />
+                      <Image
+                        source={item.imageSource}
+                        style={styles.iconImage}
+                        resizeMode="cover"
+                      />
                     ) : item.iconSource ? (
                       <CategoryIcon type={item.iconSource} />
                     ) : (

@@ -392,10 +392,7 @@ export const MenuScreen = ({navigation}) => {
 
   useEffect(() => {
     const load = async () => {
-      await Promise.all([
-        loadLibrary(),
-        loadProgress(),
-      ]);
+      await Promise.all([loadLibrary(), loadProgress()]);
 
       // Виджет не должен задерживать отрисовку главного экрана.
       updateQuoteWidget();
@@ -1761,7 +1758,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-
   },
 
   calendarTitleButton: {
@@ -1769,7 +1765,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-
   },
 
   calendarGlyph: {
@@ -1843,7 +1838,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 18,
     fontWeight: '700',
-
   },
 
   calendarTitleArrow: {
@@ -2090,7 +2084,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 2,
-
   },
 
   miniCalendarArrowButton: {
@@ -2644,5 +2637,4 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-
 });

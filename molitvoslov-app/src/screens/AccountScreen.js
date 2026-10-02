@@ -158,18 +158,12 @@ export const AccountScreen = ({navigation}) => {
           {loading ? (
             <View style={styles.card}>
               <View style={styles.accountLoading}>
-                <ActivityIndicator
-                  size="small"
-                  color={colors.accent}
-                />
+                <ActivityIndicator size="small" color={colors.accent} />
 
-                <Text style={styles.accountLoadingText}>
-                  Проверка аккаунта...
-                </Text>
+                <Text style={styles.accountLoadingText}>Проверка аккаунта...</Text>
               </View>
             </View>
           ) : googleUser ? (
-
             <View style={styles.card}>
               <Text style={styles.label}>Вы вошли через Google</Text>
 

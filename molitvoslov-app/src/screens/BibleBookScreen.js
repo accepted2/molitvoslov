@@ -1,12 +1,5 @@
 import React, {useCallback, useState} from 'react';
-import {
-  FlatList,
-  ImageBackground,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import {FlatList, ImageBackground, Pressable, StyleSheet, Text, View} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -42,9 +35,7 @@ export const BibleBookScreen = ({route, navigation}) => {
 
     setBookProgress(
       progress.find(
-        (item) =>
-          item.source_type === 'bible' &&
-          Number(item.source_id) === Number(book.id)
+        (item) => item.source_type === 'bible' && Number(item.source_id) === Number(book.id)
       ) || null
     );
   }, [book?.id]);
@@ -71,8 +62,7 @@ export const BibleBookScreen = ({route, navigation}) => {
   const progressPercent = Number(bookProgress?.progress_percent || 0);
 
   const openChapter = (chapter) => {
-    const isResumeChapter =
-      !!bookProgress && Number(chapter.number) === progressChapter;
+    const isResumeChapter = !!bookProgress && Number(chapter.number) === progressChapter;
 
     navigation.navigate('BibleChapter', {
       bookId: book.id,
@@ -99,10 +89,7 @@ export const BibleBookScreen = ({route, navigation}) => {
         source={artwork?.background || homeArtwork.page_bg}
         resizeMode="cover"
         style={styles.background}
-        imageStyle={[
-          styles.backgroundImage,
-          !artwork?.background && styles.defaultBackgroundImage,
-        ]}
+        imageStyle={[styles.backgroundImage, !artwork?.background && styles.defaultBackgroundImage]}
       >
         {artwork?.background && (
           <>
@@ -120,10 +107,7 @@ export const BibleBookScreen = ({route, navigation}) => {
 
             <LinearGradient
               pointerEvents="none"
-              colors={[
-                'rgba(0,0,0,0.38)',
-                'rgba(0,0,0,0)',
-              ]}
+              colors={['rgba(0,0,0,0.38)', 'rgba(0,0,0,0)']}
               style={styles.topShade}
             />
           </>
@@ -148,12 +132,7 @@ export const BibleBookScreen = ({route, navigation}) => {
           }}
           ListHeaderComponent={
             <View>
-              <Text
-                style={[
-                  styles.fullName,
-                  artwork?.background && styles.fullNameArtwork,
-                ]}
-              >
+              <Text style={[styles.fullName, artwork?.background && styles.fullNameArtwork]}>
                 {displayName}
               </Text>
 
@@ -168,10 +147,7 @@ export const BibleBookScreen = ({route, navigation}) => {
                 >
                   <View style={styles.resumeText}>
                     <Text
-                      style={[
-                        styles.resumeLabel,
-                        artwork?.background && styles.resumeLabelArtwork,
-                      ]}
+                      style={[styles.resumeLabel, artwork?.background && styles.resumeLabelArtwork]}
                     >
                       Продолжить чтение
                     </Text>
@@ -184,10 +160,7 @@ export const BibleBookScreen = ({route, navigation}) => {
                     >
                       Глава {progressChapter}
                       {progressPage && progressPageCount
-                        ? ' · страница ' +
-                        progressPage +
-                        ' из ' +
-                        progressPageCount
+                        ? ' · страница ' + progressPage + ' из ' + progressPageCount
                         : ''}
                     </Text>
                   </View>
@@ -202,10 +175,7 @@ export const BibleBookScreen = ({route, navigation}) => {
                   </Text>
 
                   <Text
-                    style={[
-                      styles.resumeArrow,
-                      artwork?.background && styles.resumeArrowArtwork,
-                    ]}
+                    style={[styles.resumeArrow, artwork?.background && styles.resumeArrowArtwork]}
                   >
                     ›
                   </Text>
@@ -214,8 +184,7 @@ export const BibleBookScreen = ({route, navigation}) => {
             </View>
           }
           renderItem={({item}) => {
-            const isCurrent =
-              !!bookProgress && Number(item.number) === progressChapter;
+            const isCurrent = !!bookProgress && Number(item.number) === progressChapter;
 
             return (
               <Pressable
@@ -227,9 +196,7 @@ export const BibleBookScreen = ({route, navigation}) => {
 
                   isCurrent && styles.chapterCurrent,
 
-                  artwork?.background &&
-                  isCurrent &&
-                  styles.chapterCurrentArtwork,
+                  artwork?.background && isCurrent && styles.chapterCurrentArtwork,
 
                   pressed && styles.pressed,
                 ]}
@@ -252,11 +219,7 @@ export const BibleBookScreen = ({route, navigation}) => {
           }}
         />
 
-        <FixedSectionHeader
-          title={displayName}
-          navigation={navigation}
-          topInset={insets.top}
-        />
+        <FixedSectionHeader title={displayName} navigation={navigation} topInset={insets.top} />
 
         <BottomNav navigation={navigation} active={null} />
       </ImageBackground>
