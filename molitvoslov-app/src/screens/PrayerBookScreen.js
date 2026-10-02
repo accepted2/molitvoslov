@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {Alert, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -176,17 +176,38 @@ const GlobalPrayerSearchModal = ({
   onSelect,
 }) => {
   const [query, setQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    if (!visible) {
+      setSearchQuery('');
+      return undefined;
+    }
+
+    const trimmed = query.trim();
+
+    if (trimmed.length < 2) {
+      setSearchQuery(trimmed);
+      return undefined;
+    }
+
+    const timer = setTimeout(() => {
+      setSearchQuery(query);
+    }, 140);
+
+    return () => clearTimeout(timer);
+  }, [query, visible]);
 
   const allResults = useMemo(() => {
     if (!visible) {
       return [];
     }
 
-    return searchAllPrayers(personalPrayers, query).filter(
+    return searchAllPrayers(personalPrayers, searchQuery).filter(
       (item) => item.kind !== 'personal' || !excludedPrayerIds.has(item.prayer?.sync_id)
     );
-  }, [excludedPrayerIds, personalPrayers, query, visible]);
+  }, [excludedPrayerIds, personalPrayers, searchQuery, visible]);
 
   const counts = useMemo(() => {
     const next = {all: allResults.length, prayer: 0, psalter: 0, personal: 0};

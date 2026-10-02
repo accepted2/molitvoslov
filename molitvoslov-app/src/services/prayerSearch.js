@@ -160,9 +160,36 @@ const buildPsalmEntries = () => {
   return entries;
 };
 
-const buildIndex = () => [...buildTextEntries(), ...buildPsalmEntries()];
+const prepareSearchEntry = (entry) => {
+  const fields = entry.search || {};
+  const haystack = [
+    fields.title,
+    fields.description,
+    fields.categories,
+    fields.content,
+    fields.translation,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const normalizedBody = normalizeSearchText(entry.text || entry.preview || '');
+  const normalizedTitle = normalizeSearchText(entry.title || '');
+
+  return {
+    ...entry,
+    _searchHaystack: haystack,
+    _dedupeFingerprint:
+      normalizedBody.length >= 60
+        ? normalizedBody.slice(0, 900)
+        : normalizedTitle + '|' + normalizedBody,
+  };
+};
+
+const buildIndex = () => [...buildTextEntries(), ...buildPsalmEntries()].map(prepareSearchEntry);
 
 let cachedIndex = null;
+const builtInQueryCache = new Map();
+const QUERY_CACHE_LIMIT = 48;
 
 const getIndex = () => {
   if (!cachedIndex) {
@@ -171,15 +198,26 @@ const getIndex = () => {
   return cachedIndex;
 };
 
+const cacheBuiltInResult = (key, value) => {
+  if (builtInQueryCache.has(key)) {
+    builtInQueryCache.delete(key);
+  }
+
+  builtInQueryCache.set(key, value);
+
+  if (builtInQueryCache.size > QUERY_CACHE_LIMIT) {
+    const oldestKey = builtInQueryCache.keys().next().value;
+    builtInQueryCache.delete(oldestKey);
+  }
+};
+
 const scoreResult = (entry, tokens, normalizedQuery) => {
   const fields = entry.search;
-  const haystack = [
-    fields.title,
-    fields.description,
-    fields.categories,
-    fields.content,
-    fields.translation,
-  ].join(' ');
+  const haystack =
+    entry._searchHaystack ||
+    [fields.title, fields.description, fields.categories, fields.content, fields.translation]
+      .filter(Boolean)
+      .join(' ');
 
   if (!tokens.every((token) => haystack.includes(token))) {
     return -1;
@@ -214,13 +252,16 @@ const dedupeEntries = (entries) => {
   const seen = new Set();
 
   return entries.filter((entry) => {
-    const normalizedBody = normalizeSearchText(entry.text || entry.preview || '');
-    const normalizedTitle = normalizeSearchText(entry.title || '');
-
     const fingerprint =
-      normalizedBody.length >= 60
-        ? normalizedBody.slice(0, 900)
-        : normalizedTitle + '|' + normalizedBody;
+      entry._dedupeFingerprint ||
+      (() => {
+        const normalizedBody = normalizeSearchText(entry.text || entry.preview || '');
+        const normalizedTitle = normalizeSearchText(entry.title || '');
+
+        return normalizedBody.length >= 60
+          ? normalizedBody.slice(0, 900)
+          : normalizedTitle + '|' + normalizedBody;
+      })();
 
     if (!fingerprint || seen.has(fingerprint)) {
       return false;
@@ -236,6 +277,13 @@ export const searchBuiltInPrayers = (query, {limit = 40} = {}) => {
 
   if (normalizedQuery.length < 2) {
     return [];
+  }
+
+  const cacheKey = normalizedQuery + ':' + limit;
+  const cached = builtInQueryCache.get(cacheKey);
+
+  if (cached) {
+    return cached;
   }
 
   const tokens = normalizedQuery.split(' ').filter(Boolean);
@@ -254,7 +302,10 @@ export const searchBuiltInPrayers = (query, {limit = 40} = {}) => {
     })
     .map((item) => item.entry);
 
-  return dedupeEntries(ranked).slice(0, limit);
+  const result = dedupeEntries(ranked).slice(0, limit);
+  cacheBuiltInResult(cacheKey, result);
+
+  return result;
 };
 
 export const searchPersonalPrayerRows = (prayers, query, {limit = 20} = {}) => {
@@ -289,6 +340,8 @@ export const searchPersonalPrayerRows = (prayers, query, {limit = 20} = {}) => {
         if (normalizedText.includes(token)) score += 4;
       });
 
+      const normalizedBody = normalizedText || normalizeSearchText(text);
+
       return {
         score,
         entry: {
@@ -300,6 +353,11 @@ export const searchPersonalPrayerRows = (prayers, query, {limit = 20} = {}) => {
           subtitle: 'Моя молитва',
           preview: preview(text || (prayer.photos?.length ? 'Молитва с фото' : '')),
           text,
+          _searchHaystack: haystack,
+          _dedupeFingerprint:
+            normalizedBody.length >= 60
+              ? normalizedBody.slice(0, 900)
+              : normalizedTitle + '|' + normalizedBody,
         },
       };
     })
