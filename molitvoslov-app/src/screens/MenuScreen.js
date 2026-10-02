@@ -43,6 +43,7 @@ import {
 import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
 import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
+import {subscribeToContentUpdates} from '../services/contentStore';
 import {colors, spacing} from '../theme';
 import {getBibleArtwork} from '../data/bibleArtwork';
 const CATEGORY_ICONS = {
@@ -432,6 +433,15 @@ export const MenuScreen = ({navigation}) => {
 
     load();
   }, [loadLibrary, loadProgress, updateQuoteWidget]);
+
+  useEffect(
+    () =>
+      subscribeToContentUpdates(() => {
+        loadLibrary();
+        updateQuoteWidget();
+      }),
+    [loadLibrary, updateQuoteWidget]
+  );
 
   useEffect(() => {
     getCalendarLanguage()
