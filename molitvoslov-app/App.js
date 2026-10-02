@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useState} from 'react';
 
-import {AppState, ImageBackground, StyleSheet, Text, View} from 'react-native';
+import {AppState, Image, ImageBackground, StyleSheet, Text, View} from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -55,7 +55,11 @@ const StartupScreen = () => (
       </View>
 
       <View style={styles.startupBrand}>
-        <Text style={styles.startupCross}>☦</Text>
+        <Image
+          source={require('./assets/branding/app-icon.png')}
+          resizeMode="cover"
+          style={styles.startupLogo}
+        />
         <Text style={styles.startupTitle}>Молитвослов</Text>
 
         <View style={styles.startupOrnament}>
@@ -278,14 +282,13 @@ const styles = StyleSheet.create({
     right: 24,
     alignItems: 'center',
   },
-  startupCross: {
-    color: '#F2CC83',
-    fontFamily: 'serif',
-    fontSize: 48,
-    lineHeight: 54,
-    textShadowColor: 'rgba(42, 20, 8, 0.58)',
-    textShadowOffset: {width: 0, height: 2},
-    textShadowRadius: 6,
+  startupLogo: {
+    width: 126,
+    height: 126,
+    marginBottom: 6,
+    borderRadius: 63,
+    borderWidth: 1,
+    borderColor: 'rgba(234, 195, 124, 0.72)',
   },
   startupTitle: {
     marginTop: 3,
