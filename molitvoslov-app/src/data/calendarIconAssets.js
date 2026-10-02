@@ -2,17 +2,17 @@
 // Do not edit manually.
 
 const bySourceId = {
-  "3012": require("../../assets/calendar-icons/f53a7df19c9251ed5347.webp"),
-  "3046": require("../../assets/calendar-icons/6e5674f3d4600dd4c71a.webp"),
-  "3210": require("../../assets/calendar-icons/331e36b994aad994b582.webp"),
-  "4446": require("../../assets/calendar-icons/f4ac22ebe37f37f6d659.webp"),
+  3012: require('../../assets/calendar-icons/f53a7df19c9251ed5347.webp'),
+  3046: require('../../assets/calendar-icons/6e5674f3d4600dd4c71a.webp'),
+  3210: require('../../assets/calendar-icons/331e36b994aad994b582.webp'),
+  4446: require('../../assets/calendar-icons/f4ac22ebe37f37f6d659.webp'),
 };
 
 const byUrl = {
-  "https://res.cloudinary.com/dnmoe5gza/image/upload/v1/saints_icons/%D0%90%D0%BA%D0%B8%D0%BB%D0%B8%D0%BD%D0%B02_btdu08": require("../../assets/calendar-icons/6e5674f3d4600dd4c71a.webp"),
-  "https://res.cloudinary.com/dnmoe5gza/image/upload/v1/saints_icons/%D0%A1%D0%B2%D1%8F%D1%82%D0%B8%D1%82%D0%B5%D0%BB%D1%8C_%D0%9C%D0%B8%D1%85%D0%B0%D0%B8%D0%BB_%D0%B5%D0%BF%D0%B8%D1%81%D0%BA%D0%BE%D0%BF_%D0%A1%D0%B8%D0%BD%D0%B0%D0%B4%D1%81%D0%BA%D0%B8%D0%B91_afnnvh": require("../../assets/calendar-icons/f53a7df19c9251ed5347.webp"),
-  "https://res.cloudinary.com/dnmoe5gza/image/upload/v1/saints_icons/%D1%81%D0%B2%D1%8F%D1%82%D0%B0%D1%8F_%D0%A2%D1%80%D0%BE%D0%B8%D1%86%D0%B0_suftsa": require("../../assets/calendar-icons/f4ac22ebe37f37f6d659.webp"),
-  "https://res.cloudinary.com/dnmoe5gza/image/upload/v1790841538/%D0%9F%D1%80%D0%B5%D0%BF%D0%BE%D0%B4%D0%BE%D0%B1%D0%BD%D1%8B%D0%B9_%D0%95%D0%B2%D0%BC%D0%B5%CC%81%D0%BD%D0%B8%D0%B9_%D0%B5%D0%BF%D0%B8%D1%81%D0%BA%D0%BE%D0%BF_%D0%93%D0%BE%D1%80%D1%82%D0%B8%D0%BD%D1%81%D0%BA%D0%B8%D0%B9.png": require("../../assets/calendar-icons/331e36b994aad994b582.webp"),
+  'https://res.cloudinary.com/dnmoe5gza/image/upload/v1/saints_icons/%D0%90%D0%BA%D0%B8%D0%BB%D0%B8%D0%BD%D0%B02_btdu08': require('../../assets/calendar-icons/6e5674f3d4600dd4c71a.webp'),
+  'https://res.cloudinary.com/dnmoe5gza/image/upload/v1/saints_icons/%D0%A1%D0%B2%D1%8F%D1%82%D0%B8%D1%82%D0%B5%D0%BB%D1%8C_%D0%9C%D0%B8%D1%85%D0%B0%D0%B8%D0%BB_%D0%B5%D0%BF%D0%B8%D1%81%D0%BA%D0%BE%D0%BF_%D0%A1%D0%B8%D0%BD%D0%B0%D0%B4%D1%81%D0%BA%D0%B8%D0%B91_afnnvh': require('../../assets/calendar-icons/f53a7df19c9251ed5347.webp'),
+  'https://res.cloudinary.com/dnmoe5gza/image/upload/v1/saints_icons/%D1%81%D0%B2%D1%8F%D1%82%D0%B0%D1%8F_%D0%A2%D1%80%D0%BE%D0%B8%D1%86%D0%B0_suftsa': require('../../assets/calendar-icons/f4ac22ebe37f37f6d659.webp'),
+  'https://res.cloudinary.com/dnmoe5gza/image/upload/v1790841538/%D0%9F%D1%80%D0%B5%D0%BF%D0%BE%D0%B4%D0%BE%D0%B1%D0%BD%D1%8B%D0%B9_%D0%95%D0%B2%D0%BC%D0%B5%CC%81%D0%BD%D0%B8%D0%B9_%D0%B5%D0%BF%D0%B8%D1%81%D0%BA%D0%BE%D0%BF_%D0%93%D0%BE%D1%80%D1%82%D0%B8%D0%BD%D1%81%D0%BA%D0%B8%D0%B9.png': require('../../assets/calendar-icons/331e36b994aad994b582.webp'),
 };
 
 export const getBundledCalendarIconSource = (feast) => {
