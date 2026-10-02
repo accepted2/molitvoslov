@@ -41,9 +41,7 @@ class Command(BaseCommand):
 
         year = options.get("year")
         if year:
-            queryset = queryset.filter(
-                calendar_days__date_gregorian__year=year
-            ).distinct()
+            queryset = queryset.filter(calendar_days__date_gregorian__year=year).distinct()
 
         suspicious = []
 
@@ -58,9 +56,7 @@ class Command(BaseCommand):
                 )
             )
 
-        self.stdout.write(
-            f"Подозрительных украинских локализаций: {len(suspicious)}"
-        )
+        self.stdout.write(f"Подозрительных украинских локализаций: {len(suspicious)}")
 
         for feast, score in suspicious[:200]:
             self.stdout.write(
@@ -74,9 +70,7 @@ class Command(BaseCommand):
 
         if not options["apply"]:
             self.stdout.write(
-                self.style.WARNING(
-                    "DRY-RUN: база не изменена. Для очистки добавьте --apply."
-                )
+                self.style.WARNING("DRY-RUN: база не изменена. Для очистки добавьте --apply.")
             )
             return
 
