@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useState} from 'react';
 
-import {ActivityIndicator, AppState, ImageBackground, StyleSheet, Text, View} from 'react-native';
+import {AppState, ImageBackground, StyleSheet, Text, View} from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -10,6 +10,8 @@ import {SafeAreaProvider} from 'react-native-safe-area-context';
 
 import {useFonts} from 'expo-font';
 import {LinearGradient} from 'expo-linear-gradient';
+import * as SplashScreen from 'expo-splash-screen';
+import {StatusBar} from 'expo-status-bar';
 
 import {AppNavigator} from './src/navigation/AppNavigator';
 import {OnboardingScreen} from './src/screens/OnboardingScreen';
@@ -27,7 +29,7 @@ import {syncMemorials} from './src/services/memorials';
 import {syncPrayerBooks} from './src/services/prayerBooks';
 
 const ONBOARDING_STORAGE_KEY = '@molitvoslov/onboarding-version';
-const ONBOARDING_VERSION = 3;
+const ONBOARDING_VERSION = 5;
 
 const StartupScreen = () => (
   <ImageBackground
@@ -35,23 +37,42 @@ const StartupScreen = () => (
     resizeMode="cover"
     style={styles.startupImage}
   >
+    <StatusBar style="light" translucent backgroundColor="transparent" />
+
     <LinearGradient
-      colors={['rgba(58, 32, 17, 0.18)', 'rgba(67, 39, 21, 0.06)', 'rgba(61, 35, 18, 0.54)']}
-      locations={[0, 0.48, 1]}
+      colors={[
+        'rgba(255,244,222,0.18)',
+        'rgba(255,244,222,0.02)',
+        'rgba(48,26,13,0.08)',
+        'rgba(48,26,13,0.76)',
+      ]}
+      locations={[0, 0.24, 0.62, 1]}
       style={styles.startupOverlay}
     >
+      <View style={styles.startupTopBrand}>
+        <Text style={styles.startupTopCross}>☦</Text>
+        <Text style={styles.startupTopTitle}>Молитвослов</Text>
+      </View>
+
       <View style={styles.startupBrand}>
         <Text style={styles.startupCross}>☦</Text>
         <Text style={styles.startupTitle}>Молитвослов</Text>
+
         <View style={styles.startupOrnament}>
           <View style={styles.startupLine} />
           <Text style={styles.startupMark}>✦</Text>
           <View style={styles.startupLine} />
         </View>
+
+        <Text style={styles.startupSubtitle}>Молитва · Писание · Церковный календарь</Text>
       </View>
 
-      <View style={styles.startupLoading}>
-        <ActivityIndicator size="small" color="#F7E1B7" />
+      <View style={styles.startupIntro}>
+        <Text style={styles.startupEyebrow}>ДОБРО ПОЖАЛОВАТЬ</Text>
+        <Text style={styles.startupIntroTitle}>Молитвослов всегда рядом</Text>
+        <Text style={styles.startupIntroText}>
+          Молитва, Священное Писание и церковный календарь в одном приложении.
+        </Text>
       </View>
     </LinearGradient>
   </ImageBackground>
@@ -65,6 +86,10 @@ export default function App() {
   const [fontsLoaded] = useFonts({
     Ponomar: require('./assets/fonts/Ponomar-Regular.ttf'),
   });
+
+  useEffect(() => {
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
 
   useEffect(() => {
     const prepareDatabase = async () => {
@@ -216,42 +241,66 @@ export default function App() {
 const styles = StyleSheet.create({
   startupImage: {
     flex: 1,
-    backgroundColor: '#F7ECD8',
+    backgroundColor: '#E7C995',
   },
   startupOverlay: {
     flex: 1,
-    paddingHorizontal: 28,
-    paddingTop: 90,
-    paddingBottom: 44,
-    justifyContent: 'space-between',
+    paddingHorizontal: 22,
+    paddingTop: 46,
+    paddingBottom: 34,
+  },
+  startupTopBrand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+  startupTopCross: {
+    color: '#F4D49B',
+    fontFamily: 'serif',
+    fontSize: 17,
+    textShadowColor: 'rgba(45, 25, 13, 0.62)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 4,
+  },
+  startupTopTitle: {
+    color: '#FFF0D0',
+    fontFamily: 'serif',
+    fontSize: 16,
+    fontWeight: '700',
+    textShadowColor: 'rgba(45, 25, 13, 0.62)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 4,
   },
   startupBrand: {
+    position: 'absolute',
+    top: '31%',
+    left: 24,
+    right: 24,
     alignItems: 'center',
-    marginTop: '20%',
   },
   startupCross: {
-    color: '#E7B96F',
+    color: '#F2CC83',
     fontFamily: 'serif',
-    fontSize: 46,
-    lineHeight: 52,
-    textShadowColor: 'rgba(52, 30, 17, 0.45)',
-    textShadowOffset: {width: 0, height: 1},
-    textShadowRadius: 5,
+    fontSize: 48,
+    lineHeight: 54,
+    textShadowColor: 'rgba(42, 20, 8, 0.58)',
+    textShadowOffset: {width: 0, height: 2},
+    textShadowRadius: 6,
   },
   startupTitle: {
-    marginTop: 4,
-    color: '#F8E7C5',
+    marginTop: 3,
+    color: '#FFF0D0',
     fontFamily: 'serif',
     fontSize: 38,
-    lineHeight: 46,
-    fontWeight: '600',
-    letterSpacing: 0.6,
-    textShadowColor: 'rgba(45, 25, 13, 0.70)',
+    lineHeight: 45,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textShadowColor: 'rgba(42, 20, 8, 0.72)',
     textShadowOffset: {width: 0, height: 2},
     textShadowRadius: 7,
   },
   startupOrnament: {
-    width: 180,
+    width: 175,
     marginTop: 10,
     flexDirection: 'row',
     alignItems: 'center',
@@ -259,14 +308,57 @@ const styles = StyleSheet.create({
   startupLine: {
     flex: 1,
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(231, 185, 111, 0.82)',
+    backgroundColor: '#EAC37C',
   },
   startupMark: {
-    marginHorizontal: 9,
-    color: '#E7B96F',
-    fontSize: 12,
+    marginHorizontal: 8,
+    color: '#EAC37C',
+    fontSize: 11,
   },
-  startupLoading: {
-    alignItems: 'center',
+  startupSubtitle: {
+    marginTop: 12,
+    color: '#F4DDB5',
+    fontFamily: 'serif',
+    fontSize: 13,
+    textShadowColor: 'rgba(45, 25, 13, 0.72)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 4,
+  },
+  startupIntro: {
+    position: 'absolute',
+    left: 24,
+    right: 24,
+    bottom: 58,
+  },
+  startupEyebrow: {
+    color: '#E8BE78',
+    fontSize: 10,
+    lineHeight: 14,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textShadowColor: 'rgba(0,0,0,0.64)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 3,
+  },
+  startupIntroTitle: {
+    marginTop: 5,
+    color: '#FFF2D8',
+    fontFamily: 'serif',
+    fontSize: 27,
+    lineHeight: 31,
+    fontWeight: '700',
+    textShadowColor: 'rgba(0,0,0,0.78)',
+    textShadowOffset: {width: 0, height: 2},
+    textShadowRadius: 5,
+  },
+  startupIntroText: {
+    marginTop: 7,
+    maxWidth: 390,
+    color: '#FFF2D8',
+    fontSize: 14,
+    lineHeight: 18,
+    textShadowColor: 'rgba(0,0,0,0.76)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 4,
   },
 });
