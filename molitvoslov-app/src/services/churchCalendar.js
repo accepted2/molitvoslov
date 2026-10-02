@@ -9,8 +9,8 @@ import {
   storeCalendarMonth,
 } from './calendarOfflineStore';
 
-const fetchCalendarJson = async (path) => {
-  const response = await fetch(`${API_BASE_URL}${path}`);
+const fetchCalendarJson = async (path, {signal} = {}) => {
+  const response = await fetch(`${API_BASE_URL}${path}`, {signal});
 
   const text = await response.text();
   let data = {};
@@ -49,7 +49,10 @@ const canReachNetwork = async () => {
   }
 };
 
-export const getCalendarDay = async (value = new Date(), {force = false, language = 'ru'} = {}) => {
+export const getCalendarDay = async (
+  value = new Date(),
+  {force = false, language = 'ru', skipOffline = false, signal} = {}
+) => {
   const dateKey = typeof value === 'string' ? value : toCalendarDate(value);
   const lang = language === 'uk' ? 'uk' : 'ru';
   const key = `${lang}:${dateKey}`;
@@ -58,7 +61,7 @@ export const getCalendarDay = async (value = new Date(), {force = false, languag
     return dayCache.get(key);
   }
 
-  const offline = await getOfflineCalendarDay(dateKey, lang);
+  const offline = skipOffline ? null : await getOfflineCalendarDay(dateKey, lang);
   const online = await canReachNetwork();
 
   if (!online && offline) {
@@ -68,14 +71,23 @@ export const getCalendarDay = async (value = new Date(), {force = false, languag
 
   try {
     const data = await fetchCalendarJson(
-      `/api/calendar/day/?date=${encodeURIComponent(dateKey)}&lang=${lang}`
+      `/api/calendar/day/?date=${encodeURIComponent(dateKey)}&lang=${lang}`,
+      {signal}
     );
+
+    if (signal?.aborted) {
+      throw new DOMException('Aborted', 'AbortError');
+    }
 
     dayCache.set(key, data);
     await storeCalendarDay(dateKey, lang, data);
 
     return data;
   } catch (error) {
+    if (signal?.aborted || error?.name === 'AbortError') {
+      throw error;
+    }
+
     if (offline) {
       dayCache.set(key, offline);
       return offline;
@@ -85,7 +97,11 @@ export const getCalendarDay = async (value = new Date(), {force = false, languag
   }
 };
 
-export const getCalendarMonth = async (year, month, {force = false, language = 'ru'} = {}) => {
+export const getCalendarMonth = async (
+  year,
+  month,
+  {force = false, language = 'ru', skipOffline = false, signal} = {}
+) => {
   const lang = language === 'uk' ? 'uk' : 'ru';
   const key = `${lang}:${year}-${month}`;
 
@@ -93,7 +109,7 @@ export const getCalendarMonth = async (year, month, {force = false, language = '
     return monthCache.get(key);
   }
 
-  const offline = await getOfflineCalendarMonth(year, month, lang);
+  const offline = skipOffline ? null : await getOfflineCalendarMonth(year, month, lang);
   const online = await canReachNetwork();
 
   if (!online && offline) {
@@ -110,8 +126,13 @@ export const getCalendarMonth = async (year, month, {force = false, language = '
 
   try {
     const data = await fetchCalendarJson(
-      `/api/calendar/month/?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}&lang=${lang}`
+      `/api/calendar/month/?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}&lang=${lang}`,
+      {signal}
     );
+
+    if (signal?.aborted) {
+      throw new DOMException('Aborted', 'AbortError');
+    }
 
     monthCache.set(key, data);
     await storeCalendarMonth(data, lang);
@@ -124,6 +145,10 @@ export const getCalendarMonth = async (year, month, {force = false, language = '
 
     return data;
   } catch (error) {
+    if (signal?.aborted || error?.name === 'AbortError') {
+      throw error;
+    }
+
     if (offline) {
       monthCache.set(key, offline);
 
