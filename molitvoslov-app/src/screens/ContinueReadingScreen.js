@@ -1,5 +1,14 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import {getBibleArtwork} from '../data/bibleArtwork';
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
@@ -112,6 +121,8 @@ export const ContinueReadingScreen = ({navigation}) => {
 
       if (!book) return null;
 
+      const artwork = getBibleArtwork(book);
+
       const chapterNumber = Number(info.chapter_number || 1);
       const verseNumber = info.verse_number ? Number(info.verse_number) : null;
 
@@ -119,6 +130,7 @@ export const ContinueReadingScreen = ({navigation}) => {
         id: progressItem.id,
         type: 'Библия',
         glyph: '☷',
+        imageSource: artwork?.icon || null,
         title: bibleContent.getDisplayName(book),
         position: verseNumber
           ? 'Глава ' + chapterNumber + ' · стих ' + verseNumber
@@ -302,7 +314,9 @@ export const ContinueReadingScreen = ({navigation}) => {
                   style={({pressed}) => [styles.cardMain, pressed && styles.pressed]}
                 >
                   <View style={styles.icon}>
-                    {item.iconSource ? (
+                    {item.imageSource ? (
+                      <Image source={item.imageSource} style={styles.iconImage} resizeMode="cover" />
+                    ) : item.iconSource ? (
                       <CategoryIcon type={item.iconSource} />
                     ) : (
                       <Text style={styles.iconText}>{item.glyph}</Text>
@@ -513,5 +527,9 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.68,
+  },
+  iconImage: {
+    width: '100%',
+    height: '100%',
   },
 });
