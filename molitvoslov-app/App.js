@@ -207,11 +207,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <TextSelectionProvider>
-        {showOnboarding ? (
-          <OnboardingScreen onComplete={completeOnboarding} />
-        ) : (
-          <AppNavigator />
-        )}
+        {showOnboarding ? <OnboardingScreen onComplete={completeOnboarding} /> : <AppNavigator />}
       </TextSelectionProvider>
     </SafeAreaProvider>
   );
