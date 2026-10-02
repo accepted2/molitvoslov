@@ -36,8 +36,6 @@ const artwork = {
   widgetsScreen: require('../../assets/onboarding/widgets.png'),
   menuScreen: require('../../assets/onboarding/menu_screen.png'),
   psalterScreen: require('../../assets/onboarding/psalter_cu_ru.jpg'),
-
-
 };
 
 const CALENDAR_SAMPLE = {
@@ -704,148 +702,133 @@ export const OnboardingScreen = ({onComplete}) => {
   };
 
   return (
+    <View style={styles.screen}>
+      <StatusBar style="dark" translucent backgroundColor="transparent" />
+      <Animated.ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        bounces={false}
+        overScrollMode="never"
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event([{nativeEvent: {contentOffset: {x: scrollX}}}], {
+          useNativeDriver: true,
+        })}
+        onMomentumScrollEnd={(event) => {
+          const nextIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+          setIndex(Math.max(0, Math.min(nextIndex, SLIDE_COUNT - 1)));
+        }}
+      >
+        {slides.map((slide, slideIndex) => {
+          const inputRange = [
+            (slideIndex - 1) * width,
+            slideIndex * width,
+            (slideIndex + 1) * width,
+          ];
 
-      <View style={styles.screen}>
-        <StatusBar
-          style="dark"
-          translucent
-          backgroundColor="transparent"
-        />
-        <Animated.ScrollView
-          ref={scrollRef}
-          horizontal
-          pagingEnabled
-          bounces={false}
-          overScrollMode="never"
-          showsHorizontalScrollIndicator={false}
-          scrollEventThrottle={16}
-          onScroll={Animated.event([{nativeEvent: {contentOffset: {x: scrollX}}}], {
-            useNativeDriver: true,
-          })}
-          onMomentumScrollEnd={(event) => {
-            const nextIndex = Math.round(event.nativeEvent.contentOffset.x / width);
-            setIndex(Math.max(0, Math.min(nextIndex, SLIDE_COUNT - 1)));
-          }}
-        >
-          {slides.map((slide, slideIndex) => {
-            const inputRange = [
-              (slideIndex - 1) * width,
-              slideIndex * width,
-              (slideIndex + 1) * width,
-            ];
+          const opacity = scrollX.interpolate({
+            inputRange,
+            outputRange: [0.45, 1, 0.45],
+            extrapolate: 'clamp',
+          });
 
-            const opacity = scrollX.interpolate({
-              inputRange,
-              outputRange: [0.45, 1, 0.45],
-              extrapolate: 'clamp',
-            });
+          const scale = scrollX.interpolate({
+            inputRange,
+            outputRange: [0.985, 1, 0.985],
+            extrapolate: 'clamp',
+          });
 
-            const scale = scrollX.interpolate({
-              inputRange,
-              outputRange: [0.985, 1, 0.985],
-              extrapolate: 'clamp',
-            });
+          const translateX = scrollX.interpolate({
+            inputRange,
+            outputRange: [16, 0, -16],
+            extrapolate: 'clamp',
+          });
 
-            const translateX = scrollX.interpolate({
-              inputRange,
-              outputRange: [16, 0, -16],
-              extrapolate: 'clamp',
-            });
+          return (
+            <View key={slide.key} style={[styles.slide, {width}]}>
+              <ImageBackground
+                source={slide.background}
+                resizeMode="cover"
+                style={styles.slideBackground}
+                imageStyle={[{opacity: slide.backgroundOpacity}, slide.imageStyle]}
+              >
+                <LinearGradient
+                  pointerEvents="none"
+                  colors={[
+                    'rgba(255,244,222,0.58)',
+                    'rgba(255,244,222,0.06)',
+                    'rgba(48,26,13,0.08)',
+                    'rgba(48,26,13,0.86)',
+                  ]}
+                  locations={[0, 0.22, 0.58, 1]}
+                  style={StyleSheet.absoluteFillObject}
+                />
 
-            return (
-              <View key={slide.key} style={[styles.slide, {width}]}>
-                <ImageBackground
-                  source={slide.background}
-                  resizeMode="cover"
-                  style={styles.slideBackground}
-                  imageStyle={[{opacity: slide.backgroundOpacity}, slide.imageStyle]}
+                <Animated.View
+                  style={[
+                    styles.previewArea,
+                    {
+                      opacity,
+                      transform: [{translateX}, {scale}],
+                    },
+                  ]}
                 >
-                  <LinearGradient
-                    pointerEvents="none"
-                    colors={[
-                      'rgba(255,244,222,0.58)',
-                      'rgba(255,244,222,0.06)',
-                      'rgba(48,26,13,0.08)',
-                      'rgba(48,26,13,0.86)',
-                    ]}
-                    locations={[0, 0.22, 0.58, 1]}
-                    style={StyleSheet.absoluteFillObject}
-                  />
+                  {slide.preview}
+                </Animated.View>
 
-                  <Animated.View
-                    style={[
-                      styles.previewArea,
-                      {
-                        opacity,
-                        transform: [{translateX}, {scale}],
-                      },
-                    ]}
-                  >
-                    {slide.preview}
-                  </Animated.View>
+                <SlideCaption eyebrow={slide.eyebrow} title={slide.title} text={slide.text} />
+              </ImageBackground>
+            </View>
+          );
+        })}
+      </Animated.ScrollView>
 
-                  <SlideCaption eyebrow={slide.eyebrow} title={slide.title} text={slide.text} />
-                </ImageBackground>
-              </View>
-            );
-          })}
-        </Animated.ScrollView>
-
-        <View  style={[styles.topBar, {top: insets.top}]} pointerEvents="box-none">
-          <View style={styles.brandMini}>
-            <Text style={styles.brandMiniCross}>☦</Text>
-            <Text   style={[
-              styles.brandMiniText,
-              index === 1 && styles.brandMiniTextBible,
-            ]}>Молитвослов</Text>
-          </View>
-
-          {index < SLIDE_COUNT - 1 ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Пропустить знакомство"
-              onPress={finish}
-              style={({pressed}) => [styles.skipButton, pressed && styles.pressed]}
-            >
-              <Text
-                style={[
-                  styles.skipText,
-                  index === 1 && styles.skipTextBible,
-                ]}
-              >Пропустить</Text>
-            </Pressable>
-          ) : (
-            <View style={styles.skipPlaceholder} />
-          )}
+      <View style={[styles.topBar, {top: insets.top}]} pointerEvents="box-none">
+        <View style={styles.brandMini}>
+          <Text style={styles.brandMiniCross}>☦</Text>
+          <Text style={[styles.brandMiniText, index === 1 && styles.brandMiniTextBible]}>
+            Молитвослов
+          </Text>
         </View>
 
-        <View  style={[
-          styles.footer,
-          {bottom: Math.max(insets.bottom, 9)},
-        ]}>
-          <View style={styles.dots}>
-            {slides.map((slide, dotIndex) => (
-              <View key={slide.key} style={[styles.dot, dotIndex === index && styles.dotActive]} />
-            ))}
-          </View>
-
+        {index < SLIDE_COUNT - 1 ? (
           <Pressable
             accessibilityRole="button"
-            onPress={next}
-            style={({pressed}) => [
-              styles.nextButton,
-              index === SLIDE_COUNT - 1 && styles.nextButtonFinal,
-              pressed && styles.pressed,
-            ]}
+            accessibilityLabel="Пропустить знакомство"
+            onPress={finish}
+            style={({pressed}) => [styles.skipButton, pressed && styles.pressed]}
           >
-            <Text style={styles.nextButtonText}>
-              {index === SLIDE_COUNT - 1 ? 'Открыть Молитвослов' : 'Далее'}
-            </Text>
-            {index < SLIDE_COUNT - 1 && <Text style={styles.nextArrow}>›</Text>}
+            <Text style={[styles.skipText, index === 1 && styles.skipTextBible]}>Пропустить</Text>
           </Pressable>
-        </View>
+        ) : (
+          <View style={styles.skipPlaceholder} />
+        )}
       </View>
 
+      <View style={[styles.footer, {bottom: Math.max(insets.bottom, 9)}]}>
+        <View style={styles.dots}>
+          {slides.map((slide, dotIndex) => (
+            <View key={slide.key} style={[styles.dot, dotIndex === index && styles.dotActive]} />
+          ))}
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={next}
+          style={({pressed}) => [
+            styles.nextButton,
+            index === SLIDE_COUNT - 1 && styles.nextButtonFinal,
+            pressed && styles.pressed,
+          ]}
+        >
+          <Text style={styles.nextButtonText}>
+            {index === SLIDE_COUNT - 1 ? 'Открыть Молитвослов' : 'Далее'}
+          </Text>
+          {index < SLIDE_COUNT - 1 && <Text style={styles.nextArrow}>›</Text>}
+        </Pressable>
+      </View>
+    </View>
   );
 };
 
@@ -860,7 +843,7 @@ const styles = StyleSheet.create({
   },
   slide: {
     flex: 1,
-    overflow:'hidden',
+    overflow: 'hidden',
   },
   slideBackground: {
     flex: 1,
