@@ -8,6 +8,7 @@ from urllib.request import Request, urlopen
 
 from django.db import transaction
 
+from .calendar_localization import same_feast_identity
 from .calendar_models import CalendarDay, CalendarFeast
 
 
@@ -130,8 +131,38 @@ def upsert_feast(data, language="ru"):
     if source_id in [None, ""]:
         return None
 
+    source_id = int(source_id)
+
+    if language == "uk":
+        feast = CalendarFeast.objects.filter(source_id=source_id).first()
+        if feast is None:
+            return None
+
+        incoming_title = data.get("title") or data.get("short_title") or ""
+        if not same_feast_identity(feast.title, incoming_title):
+            return feast
+
+        for field, value in _localized_assignments(data, language).items():
+            setattr(feast, field, value)
+
+        feast.save(
+            update_fields=[
+                "title_uk",
+                "short_title_uk",
+                "troparion_title_uk",
+                "troparion_content_uk",
+                "kontakion_title_uk",
+                "kontakion_content_uk",
+                "life_title_uk",
+                "life_content_uk",
+                "description_uk",
+                "updated_at",
+            ]
+        )
+        return feast
+
     feast, _created = CalendarFeast.objects.get_or_create(
-        source_id=int(source_id),
+        source_id=source_id,
         defaults={
             "title": data.get("title") or data.get("short_title") or "Память святого",
         },
@@ -154,8 +185,7 @@ def upsert_feast(data, language="ru"):
     if data.get("kontakion_echo") is not None:
         feast.kontakion_echo = data.get("kontakion_echo")
 
-    if language == "ru":
-        feast.all_dates = data.get("all_dates") or feast.all_dates or []
+    feast.all_dates = data.get("all_dates") or feast.all_dates or []
 
     for field, value in _localized_assignments(data, language).items():
         if field == "title" and not value:
@@ -195,33 +225,43 @@ def upsert_day(payload, language="ru"):
     if not payload or not payload.get("date_gregorian"):
         return None
 
-    all_feast_payloads = payload.get("all_feasts") or payload.get("feasts") or []
-    feast_objects = []
-
-    for feast_payload in all_feast_payloads:
-        feast = upsert_feast(feast_payload, language=language)
-        if feast:
-            feast_objects.append(feast)
-
-    main_payload = payload.get("main_feast")
-    main_feast = upsert_feast(main_payload, language=language) if main_payload else None
-
-    if main_feast and all(feast.source_id != main_feast.source_id for feast in feast_objects):
-        feast_objects.insert(0, main_feast)
-
-    if main_feast is None and feast_objects:
-        main_feast = max(feast_objects, key=_priority)
-
     target_date = date.fromisoformat(str(payload["date_gregorian"])[:10])
+    all_feast_payloads = payload.get("all_feasts") or payload.get("feasts") or []
+    main_payload = payload.get("main_feast")
 
     day, _created = CalendarDay.objects.get_or_create(
         date_gregorian=target_date,
     )
 
-    day.julian_month = payload.get("julian_month") or day.julian_month
-    day.julian_day = payload.get("julian_day") or day.julian_day
-    day.main_feast = main_feast or day.main_feast
-    day.fast_type_code = payload.get("fast_type_code") or day.fast_type_code or ""
+    if language == "ru":
+        feast_objects = []
+
+        for feast_payload in all_feast_payloads:
+            feast = upsert_feast(feast_payload, language=language)
+            if feast:
+                feast_objects.append(feast)
+
+        main_feast = upsert_feast(main_payload, language=language) if main_payload else None
+
+        if main_feast and all(feast.source_id != main_feast.source_id for feast in feast_objects):
+            feast_objects.insert(0, main_feast)
+
+        if main_feast is None and feast_objects:
+            main_feast = max(feast_objects, key=_priority)
+
+        day.julian_month = payload.get("julian_month") or day.julian_month
+        day.julian_day = payload.get("julian_day") or day.julian_day
+        day.main_feast = main_feast or day.main_feast
+        day.fast_type_code = payload.get("fast_type_code") or day.fast_type_code or ""
+    else:
+        # Украинский источник используется только как локализация уже
+        # импортированной русской канонической записи. Он не должен менять
+        # связи дня, главный праздник или структурные поля.
+        for feast_payload in all_feast_payloads:
+            upsert_feast(feast_payload, language=language)
+
+        if main_payload:
+            upsert_feast(main_payload, language=language)
 
     for field, value in _day_language_fields(payload, language).items():
         setattr(day, field, value)
@@ -241,7 +281,10 @@ def upsert_day(payload, language="ru"):
     day.source_payload = source_payload
 
     day.save()
-    day.feasts.set(feast_objects)
+
+    if language == "ru":
+        day.feasts.set(feast_objects)
+
     return day
 
 
@@ -293,6 +336,14 @@ def ensure_month(year, month, language="ru", force=False):
     if not force and existing >= expected and _month_has_language(year, month, language):
         return existing
 
+    if language == "uk" and not _month_has_language(year, month, "ru"):
+        russian_payload = fetch_source_json(
+            "month/",
+            {"year": year, "month": month},
+            language="ru",
+        )
+        import_month_payload(russian_payload, language="ru")
+
     payload = fetch_source_json(
         "month/",
         {"year": year, "month": month},
@@ -330,6 +381,21 @@ def ensure_day(target_date, language="ru"):
         # созданными до imported_languages.
         if language == "ru" and not imported_languages:
             return day
+
+    if language == "uk" and (day is None or "ru" not in imported_languages):
+        try:
+            russian_payload = fetch_source_json(
+                "day/",
+                {"date": target_date.isoformat()},
+                language="ru",
+            )
+            upsert_day(russian_payload, language="ru")
+        except Exception:
+            ensure_month(
+                target_date.year,
+                target_date.month,
+                language="ru",
+            )
 
     try:
         payload = fetch_source_json(
