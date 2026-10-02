@@ -1,6 +1,7 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
+  AppState,
   Image,
   Pressable,
   ScrollView,
@@ -12,6 +13,7 @@ import {
 import {StatusBar} from 'expo-status-bar';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {requestWidgetUpdate} from 'react-native-android-widget';
+import NetInfo from '@react-native-community/netinfo';
 
 import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
@@ -228,6 +230,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const insets = useSafeAreaInsets();
   const {width} = useWindowDimensions();
   const scrollRef = useRef(null);
+  const appStateRef = useRef(AppState.currentState);
 
   const readingLayouts = useRef({
     dayCard: null,
@@ -263,6 +266,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const [loadingMonth, setLoadingMonth] = useState(true);
   const [loadingDay, setLoadingDay] = useState(true);
   const [error, setError] = useState('');
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
   useEffect(() => {
     const raw = route.params?.date;
@@ -327,6 +331,38 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   }, []);
 
   useEffect(() => {
+    let previousOnline = null;
+
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      const online = state.isConnected === true && state.isInternetReachable !== false;
+
+      if (online && previousOnline === false) {
+        setRefreshVersion((value) => value + 1);
+      }
+
+      if (state.isConnected !== null) {
+        previousOnline = online;
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      const wasBackground = /inactive|background/.test(appStateRef.current || '');
+
+      appStateRef.current = nextState;
+
+      if (wasBackground && nextState === 'active') {
+        setRefreshVersion((value) => value + 1);
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
     let active = true;
 
     setLoadingMonth(true);
@@ -349,7 +385,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
     return () => {
       active = false;
     };
-  }, [language, visibleMonth, visibleYear]);
+  }, [language, refreshVersion, visibleMonth, visibleYear]);
 
   useEffect(() => {
     let active = true;
@@ -375,7 +411,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
     return () => {
       active = false;
     };
-  }, [language, selectedDate]);
+  }, [language, refreshVersion, selectedDate]);
 
   const daysMap = useMemo(
     () => new Map((monthData?.days || []).map((day) => [day.date_gregorian, day])),
