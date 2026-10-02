@@ -352,7 +352,7 @@ const WidgetsPreview = () => (
 
     <View style={styles.homeStatus}>
       <Text style={styles.homeTime}>11:17</Text>
-      <Text style={styles.homeStatusIcons}>◉  ▴  ▰</Text>
+      <Text style={styles.homeStatusIcons}>◉ ▴ ▰</Text>
     </View>
 
     <View style={styles.homeWidgets}>
@@ -394,43 +394,43 @@ const FavoriteCard = ({badge, title, text, meta, progress}) => (
 const FavoritesPreview = () => (
   <AppScreenPreview title="Избранное" background={artwork.page}>
     <View style={styles.favoritesPreview}>
-    <View style={styles.favoriteTabs}>
-      <View style={[styles.favoriteTab, styles.favoriteTabActive]}>
-        <Text style={styles.favoriteTabTextActive}>Сохранённое</Text>
+      <View style={styles.favoriteTabs}>
+        <View style={[styles.favoriteTab, styles.favoriteTabActive]}>
+          <Text style={styles.favoriteTabTextActive}>Сохранённое</Text>
+        </View>
+        <View style={styles.favoriteTab}>
+          <Text style={styles.favoriteTabText}>Места</Text>
+        </View>
+        <View style={styles.favoriteTab}>
+          <Text style={styles.favoriteTabText}>Фрагменты</Text>
+        </View>
       </View>
-      <View style={styles.favoriteTab}>
-        <Text style={styles.favoriteTabText}>Места</Text>
+
+      <FavoriteCard badge="МОЛИТВА" title="Утренняя молитва" meta="Сохранённый полный текст" />
+
+      <FavoriteCard
+        badge="ФРАГМЕНТ"
+        title="Евангелие от Иоанна"
+        text="«И свет во тьме светит, и тьма не объяла его…»"
+        meta="Сохранённый фрагмент"
+      />
+
+      <FavoriteCard
+        badge="МЕСТО ЧТЕНИЯ"
+        title="Евангелие от Матфея"
+        progress="62%"
+        meta="Глава 8 · 62%"
+      />
+
+      <View style={styles.syncBadge}>
+        <Text style={styles.syncCloud}>☁</Text>
+        <View style={styles.syncTextWrap}>
+          <Text style={styles.syncTitle}>Синхронизация</Text>
+          <Text style={styles.syncText}>
+            Избранное, закладки и прогресс можно сохранить между устройствами
+          </Text>
+        </View>
       </View>
-      <View style={styles.favoriteTab}>
-        <Text style={styles.favoriteTabText}>Фрагменты</Text>
-      </View>
-    </View>
-
-    <FavoriteCard badge="МОЛИТВА" title="Утренняя молитва" meta="Сохранённый полный текст" />
-
-    <FavoriteCard
-      badge="ФРАГМЕНТ"
-      title="Евангелие от Иоанна"
-      text="«И свет во тьме светит, и тьма не объяла его…»"
-      meta="Сохранённый фрагмент"
-    />
-
-    <FavoriteCard
-      badge="МЕСТО ЧТЕНИЯ"
-      title="Евангелие от Матфея"
-      progress="62%"
-      meta="Глава 8 · 62%"
-    />
-
-    <View style={styles.syncBadge}>
-      <Text style={styles.syncCloud}>☁</Text>
-      <View style={styles.syncTextWrap}>
-        <Text style={styles.syncTitle}>Синхронизация</Text>
-        <Text style={styles.syncText}>
-          Избранное, закладки и прогресс можно сохранить между устройствами
-        </Text>
-      </View>
-    </View>
     </View>
   </AppScreenPreview>
 );
@@ -453,21 +453,21 @@ const MemorialBookCard = ({title, health, repose}) => (
 const MemorialPreview = () => (
   <AppScreenPreview title="Помянник" background={artwork.page}>
     <View style={styles.memorialPreview}>
-    <View style={styles.introCard}>
-      <Text style={styles.introCardTitle}>Поминальные записки</Text>
-      <Text style={styles.introCardText}>
-        Храните имена о здравии и упокоении, а также фотографии бумажных записок.
-      </Text>
-    </View>
+      <View style={styles.introCard}>
+        <Text style={styles.introCardTitle}>Поминальные записки</Text>
+        <Text style={styles.introCardText}>
+          Храните имена о здравии и упокоении, а также фотографии бумажных записок.
+        </Text>
+      </View>
 
-    <View style={styles.createButton}>
-      <Text style={styles.createButtonPlus}>+</Text>
-      <Text style={styles.createButtonText}>Новый помянник</Text>
-    </View>
+      <View style={styles.createButton}>
+        <Text style={styles.createButtonPlus}>+</Text>
+        <Text style={styles.createButtonText}>Новый помянник</Text>
+      </View>
 
-    <Text style={styles.sectionLabel}>МОИ ПОМЯННИКИ</Text>
-    <MemorialBookCard title="Мой помянник" health={8} repose={4} />
-    <MemorialBookCard title="Родные" health={6} repose={3} />
+      <Text style={styles.sectionLabel}>МОИ ПОМЯННИКИ</Text>
+      <MemorialBookCard title="Мой помянник" health={8} repose={4} />
+      <MemorialBookCard title="Родные" health={6} repose={3} />
     </View>
   </AppScreenPreview>
 );
@@ -488,22 +488,22 @@ const PrayerBookCard = ({title, count}) => (
 const PrayerBooksPreview = () => (
   <AppScreenPreview title="Мой молитвослов" background={artwork.page}>
     <View style={styles.prayerBooksPreview}>
-    <View style={styles.introCard}>
-      <Text style={styles.introCardTitle}>Личные молитвенные сборники</Text>
-      <Text style={styles.introCardText}>
-        Добавляйте полные тексты из избранного, молитвы из библиотеки, свои тексты и фотографии.
-      </Text>
-    </View>
+      <View style={styles.introCard}>
+        <Text style={styles.introCardTitle}>Личные молитвенные сборники</Text>
+        <Text style={styles.introCardText}>
+          Добавляйте полные тексты из избранного, молитвы из библиотеки, свои тексты и фотографии.
+        </Text>
+      </View>
 
-    <View style={styles.createButton}>
-      <Text style={styles.createButtonPlus}>＋</Text>
-      <Text style={styles.createButtonText}>Новый молитвослов</Text>
-    </View>
+      <View style={styles.createButton}>
+        <Text style={styles.createButtonPlus}>＋</Text>
+        <Text style={styles.createButtonText}>Новый молитвослов</Text>
+      </View>
 
-    <Text style={styles.sectionLabel}>МОИ МОЛИТВОСЛОВЫ</Text>
-    <PrayerBookCard title="На каждый день" count={12} />
-    <PrayerBookCard title="Перед дорогой" count={5} />
-    <PrayerBookCard title="Мой молитвослов" count={9} />
+      <Text style={styles.sectionLabel}>МОИ МОЛИТВОСЛОВЫ</Text>
+      <PrayerBookCard title="На каждый день" count={12} />
+      <PrayerBookCard title="Перед дорогой" count={5} />
+      <PrayerBookCard title="Мой молитвослов" count={9} />
     </View>
   </AppScreenPreview>
 );
@@ -519,22 +519,24 @@ const ReadingModesPreview = () => (
           ['ЦС традиц.', false],
         ].map(([label, active]) => (
           <View key={label} style={[styles.readerTab, active && styles.readerTabActive]}>
-            <Text style={[styles.readerTabText, active && styles.readerTabTextActive]}>{label}</Text>
+            <Text style={[styles.readerTabText, active && styles.readerTabTextActive]}>
+              {label}
+            </Text>
           </View>
         ))}
       </View>
 
       <View style={styles.readerSectionHeader}>
         <Text style={styles.readerPsalmTitle}>Псалом 1</Text>
-        <Text style={styles.readerSave}>♡  В избранное</Text>
+        <Text style={styles.readerSave}>♡ В избранное</Text>
       </View>
 
       <View style={styles.parallelReader}>
         <View style={styles.readerColumn}>
           <Text style={styles.readerColumnLabel}>Церковнославянский</Text>
           <Text style={styles.churchText}>
-            1. Блаже́н муж, и́же не и́де на сове́т нечести́вых, и на пути́ гре́шных не ста, и на
-            седа́лищи губи́телей не се́де.
+            1. Блаже́н муж, и́же не и́де на сове́т нечести́вых, и на пути́ гре́шных не ста, и на седа́лищи
+            губи́телей не се́де.
           </Text>
           <Text style={styles.churchText}>
             2. Но в зако́не Госпо́дни во́ля его́, и в зако́не Его́ поучи́тся день и нощь.
@@ -2151,5 +2153,4 @@ const styles = StyleSheet.create({
     fontSize: 9,
     lineHeight: 13,
   },
-
 });
