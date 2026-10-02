@@ -1,6 +1,7 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
+  AppState,
   Image,
   Pressable,
   ScrollView,
@@ -12,6 +13,7 @@ import {
 import {StatusBar} from 'expo-status-bar';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {requestWidgetUpdate} from 'react-native-android-widget';
+import NetInfo from '@react-native-community/netinfo';
 
 import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
@@ -31,6 +33,11 @@ import {
   getCalendarLanguage,
   setCalendarLanguage,
 } from '../services/calendarPreferences';
+import {
+  getOfflineCalendarDay,
+  getOfflineCalendarMonth,
+} from '../services/calendarOfflineStore';
+import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
 import {colors} from '../theme';
 
@@ -81,6 +88,32 @@ const SoftChevron = ({expanded}) => (
 );
 
 const displayTitle = (feast, copy) => feast?.short_title || feast?.title || copy.saintMemory;
+
+const FeastImage = ({feast}) => {
+  const [failed, setFailed] = useState(false);
+  const source = getBundledCalendarIconSource(feast);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [feast?.icon_url, feast?.source_id]);
+
+  if (!source || failed) {
+    return (
+      <View style={styles.feastImageFallback}>
+        <Text style={styles.feastImageCross}>☦</Text>
+      </View>
+    );
+  }
+
+  return (
+    <Image
+      source={source}
+      style={styles.feastImage}
+      resizeMode="cover"
+      onError={() => setFailed(true)}
+    />
+  );
+};
 
 const normalizeCalendarText = (value) =>
   String(value || '')
@@ -228,6 +261,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const insets = useSafeAreaInsets();
   const {width} = useWindowDimensions();
   const scrollRef = useRef(null);
+  const appStateRef = useRef(AppState.currentState);
 
   const readingLayouts = useRef({
     dayCard: null,
@@ -263,6 +297,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const [loadingMonth, setLoadingMonth] = useState(true);
   const [loadingDay, setLoadingDay] = useState(true);
   const [error, setError] = useState('');
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
   useEffect(() => {
     const raw = route.params?.date;
@@ -327,55 +362,125 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   }, []);
 
   useEffect(() => {
-    let active = true;
+    let previousOnline = null;
 
-    setLoadingMonth(true);
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      const online = state.isConnected === true && state.isInternetReachable !== false;
 
-    getCalendarMonth(visibleYear, visibleMonth, {
-      language,
-      force: true,
-    })
-      .then((data) => {
-        if (!active) return;
-        setMonthData(data);
-        setError('');
-      })
-      .catch((err) => {
-        if (!active) return;
-        setError(err?.message || 'Не удалось загрузить календарь');
-      })
-      .finally(() => active && setLoadingMonth(false));
+      if (online && previousOnline === false) {
+        setRefreshVersion((value) => value + 1);
+      }
 
-    return () => {
-      active = false;
-    };
-  }, [language, visibleMonth, visibleYear]);
+      if (state.isConnected !== null) {
+        previousOnline = online;
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      const wasBackground = /inactive|background/.test(appStateRef.current || '');
+
+      appStateRef.current = nextState;
+
+      if (wasBackground && nextState === 'active') {
+        setRefreshVersion((value) => value + 1);
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     let active = true;
 
-    setLoadingDay(true);
+    const loadMonth = async () => {
+      setLoadingMonth(true);
+      let hasOfflineData = false;
 
-    getCalendarDay(selectedDate, {
-      language,
-      force: true,
-    })
-      .then((data) => {
+      try {
+        const offline = await getOfflineCalendarMonth(visibleYear, visibleMonth, language);
+
+        if (active && offline) {
+          hasOfflineData = true;
+          setMonthData(offline);
+          setError('');
+          setLoadingMonth(false);
+        }
+
+        const fresh = await getCalendarMonth(visibleYear, visibleMonth, {
+          language,
+          force: true,
+        });
+
         if (!active) return;
-        setDayData(data);
+
+        setMonthData(fresh);
         setError('');
-      })
-      .catch((err) => {
-        if (!active) return;
-        setDayData(null);
-        setError(err?.message || 'Не удалось загрузить день');
-      })
-      .finally(() => active && setLoadingDay(false));
+      } catch (err) {
+        if (!active || hasOfflineData) return;
+
+        setError(err?.message || 'Не удалось загрузить календарь');
+      } finally {
+        if (active) {
+          setLoadingMonth(false);
+        }
+      }
+    };
+
+    loadMonth();
 
     return () => {
       active = false;
     };
-  }, [language, selectedDate]);
+  }, [language, refreshVersion, visibleMonth, visibleYear]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadDay = async () => {
+      setLoadingDay(true);
+      let hasOfflineData = false;
+
+      try {
+        const offline = await getOfflineCalendarDay(selectedDate, language);
+
+        if (active && offline) {
+          hasOfflineData = true;
+          setDayData(offline);
+          setError('');
+          setLoadingDay(false);
+        }
+
+        const fresh = await getCalendarDay(selectedDate, {
+          language,
+          force: true,
+        });
+
+        if (!active) return;
+
+        setDayData(fresh);
+        setError('');
+      } catch (err) {
+        if (!active || hasOfflineData) return;
+
+        setDayData(null);
+        setError(err?.message || 'Не удалось загрузить день');
+      } finally {
+        if (active) {
+          setLoadingDay(false);
+        }
+      }
+    };
+
+    loadDay();
+
+    return () => {
+      active = false;
+    };
+  }, [language, refreshVersion, selectedDate]);
 
   const daysMap = useMemo(
     () => new Map((monthData?.days || []).map((day) => [day.date_gregorian, day])),
@@ -565,17 +670,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
           <View style={styles.feastHero}>
             <View style={styles.feastImageWrap}>
-              {mainFeast?.icon_url ? (
-                <Image
-                  source={{uri: mainFeast.icon_url}}
-                  style={styles.feastImage}
-                  resizeMode="cover"
-                />
-              ) : (
-                <View style={styles.feastImageFallback}>
-                  <Text style={styles.feastImageCross}>☦</Text>
-                </View>
-              )}
+              <FeastImage feast={mainFeast} />
             </View>
 
             <View style={styles.feastHeroText}>
