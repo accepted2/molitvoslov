@@ -58,7 +58,7 @@ jobs:
 
       - name: Commit generated calendar bundle
         run: |
-          if git diff --quiet --             molitvoslov-app/src/data/calendar             molitvoslov-app/src/data/calendarIconAssets.js             molitvoslov-app/assets/calendar-icons; then
+          if [ -z "$(git status --porcelain -- molitvoslov-app/src/data/calendar molitvoslov-app/src/data/calendarIconAssets.js molitvoslov-app/assets/calendar-icons)" ]; then
             echo "Offline calendar bundle is already up to date"
             exit 0
           fi
