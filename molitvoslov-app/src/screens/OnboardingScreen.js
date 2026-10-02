@@ -282,7 +282,11 @@ const CalendarPreview = () => (
 
       <View style={styles.calendarDayShowcase}>
         <View style={styles.calendarDayHeader}>
-          <Image source={artwork.calendarSaint} style={styles.calendarDaySaint} resizeMode="cover" />
+          <Image
+            source={artwork.calendarSaint}
+            style={styles.calendarDaySaint}
+            resizeMode="cover"
+          />
           <View style={styles.calendarDayTitleWrap}>
             <Text style={styles.calendarDayDate}>{CALENDAR_SAMPLE.date}</Text>
             <Text style={styles.calendarDaySaintTitle} numberOfLines={2}>
@@ -449,7 +453,9 @@ const FavoritesPreview = () => (
         <Text style={styles.syncCloud}>☁</Text>
         <View style={styles.syncTextWrap}>
           <Text style={styles.syncTitle}>Синхронизация</Text>
-          <Text style={styles.syncText}>Закладки, избранное и прогресс доступны между устройствами</Text>
+          <Text style={styles.syncText}>
+            Закладки, избранное и прогресс доступны между устройствами
+          </Text>
         </View>
       </View>
     </View>
