@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {LinearGradient} from 'expo-linear-gradient';
 import {
   ActivityIndicator,
@@ -41,6 +41,8 @@ import {
   setCalendarLanguage,
 } from '../services/calendarPreferences';
 import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
+import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
+import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {colors, spacing} from '../theme';
 import {getBibleArtwork} from '../data/bibleArtwork';
 const CATEGORY_ICONS = {
@@ -292,11 +294,17 @@ export const MenuScreen = ({navigation}) => {
   const [error, setError] = useState(null);
 
   const insets = useSafeAreaInsets();
+  const calendarRequestRef = useRef(0);
   const calendarSnapshot = useMemo(
     () => createCalendarSnapshot(calendarVisibleMonth, calendarSelectedDate, calendarLanguage),
     [calendarVisibleMonth, calendarSelectedDate, calendarLanguage]
   );
   const calendarCopy = useMemo(() => calendarText(calendarLanguage), [calendarLanguage]);
+  const calendarSaintSource = useMemo(
+    () => getBundledCalendarIconSource(calendarToday?.main_feast),
+    [calendarToday?.main_feast]
+  );
+
   const loadLibrary = useCallback(async () => {
     try {
       const [
@@ -349,17 +357,41 @@ export const MenuScreen = ({navigation}) => {
 
   const loadCalendarDay = useCallback(
     async (targetDate) => {
+      const requestId = ++calendarRequestRef.current;
+
       try {
         setCalendarLoading(true);
-        const day = await getCalendarDay(targetDate, {
+
+        const offline = await getOfflineCalendarDay(targetDate, calendarLanguage);
+
+        if (requestId !== calendarRequestRef.current) {
+          return;
+        }
+
+        if (offline) {
+          setCalendarToday(offline);
+          setCalendarLoading(false);
+        }
+
+        const fresh = await getCalendarDay(targetDate, {
           language: calendarLanguage,
           force: true,
+          skipOffline: true,
         });
-        setCalendarToday(day);
+
+        if (requestId !== calendarRequestRef.current) {
+          return;
+        }
+
+        setCalendarToday(fresh);
       } catch (err) {
-        console.log('Ошибка загрузки церковного календаря:', err?.message || err);
+        if (requestId === calendarRequestRef.current) {
+          console.log('Фоновое обновление церковного календаря:', err?.message || err);
+        }
       } finally {
-        setCalendarLoading(false);
+        if (requestId === calendarRequestRef.current) {
+          setCalendarLoading(false);
+        }
       }
     },
     [calendarLanguage]
@@ -1000,7 +1032,15 @@ export const MenuScreen = ({navigation}) => {
 
                     <View style={styles.calendarTitleTextWrap}>
                       <View style={styles.calendarTitleLine}>
-                        <Text style={styles.calendarTitle}>{calendarCopy.calendarTitle}</Text>
+                        <Text
+                          style={styles.calendarTitle}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.82}
+                          maxFontSizeMultiplier={1}
+                        >
+                          {calendarCopy.calendarTitle}
+                        </Text>
 
                         <Text style={styles.calendarTitleArrow}>›</Text>
                       </View>
@@ -1058,9 +1098,9 @@ export const MenuScreen = ({navigation}) => {
                       onPress={openFullCalendar}
                       style={({pressed}) => [styles.calendarFeastCard, pressed && styles.pressed]}
                     >
-                      {calendarToday?.main_feast?.icon_url ? (
+                      {calendarSaintSource ? (
                         <Image
-                          source={{uri: calendarToday.main_feast.icon_url}}
+                          source={calendarSaintSource}
                           style={styles.calendarSaintImage}
                           resizeMode="cover"
                         />
@@ -1835,7 +1875,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     color: '#4B2C18',
     fontFamily: 'serif',
-    fontSize: 15,
+    fontSize: 16,
     lineHeight: 18,
     fontWeight: '700',
   },
@@ -2010,8 +2050,10 @@ const styles = StyleSheet.create({
   },
 
   calendarSaintImage: {
-    width: 42,
-    height: 59,
+    width: 46,
+    MaxWidth: 56,
+    height: 58,
+    maxHeight: '100%',
     // marginTop: 5,
     borderRadius: 8,
     backgroundColor: '#F0D6A5',
