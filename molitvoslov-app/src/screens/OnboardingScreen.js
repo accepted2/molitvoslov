@@ -1840,7 +1840,7 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(40,19,8,0.72)',
     textShadowOffset: {width: 0, height: 1},
     textShadowRadius: 4,
-  },,
+  },
 
   appScreen: {
     alignSelf: 'stretch',
