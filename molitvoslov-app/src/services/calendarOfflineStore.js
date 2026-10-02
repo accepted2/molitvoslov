@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const STORAGE_PREFIX = 'calendar-day';
+const STORAGE_PREFIX = 'calendar-day-v2';
 
 const bundledMonthLoaders = {
   '2026-01': () => require('../data/calendar/2026-01.json'),
