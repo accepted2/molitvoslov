@@ -234,8 +234,12 @@ def build_icon_bundle(data: dict) -> None:
 
     if failures:
         for url, error in failures:
-            print(f"FAILED {url}: {error}", file=sys.stderr)
-        raise SystemExit(f"Failed to bundle {len(failures)} calendar icons")
+            print(f"SKIPPED {url}: {error}", file=sys.stderr)
+        print(
+            f"WARNING: {len(failures)} icon URLs are unavailable; "
+            "the app will use its visual fallback for them.",
+            file=sys.stderr,
+        )
 
 
 def main() -> None:
