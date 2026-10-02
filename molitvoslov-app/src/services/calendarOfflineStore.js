@@ -189,8 +189,13 @@ export const getOfflineCalendarMonth = async (year, month, language = 'ru') => {
     console.log('Ошибка чтения calendar month cache:', error?.message || error);
   }
 
+  const bundledMonth = getBundledMonthPayload(year, month);
+
   const days = dateKeys
-    .map((dateKey) => storedByDate.get(dateKey) || calendar2026?.days?.[dateKey]?.[lang] || null)
+    .map(
+      (dateKey) =>
+        storedByDate.get(dateKey) || bundledMonth?.days?.[dateKey]?.[lang] || null
+    )
     .filter(Boolean);
 
   if (!days.length) {
