@@ -5,6 +5,7 @@ import {FlexWidget, ImageWidget, OverlapWidget, TextWidget} from 'react-native-a
 
 import {CALENDAR_MONTHS, calendarText} from '../services/calendarPreferences';
 import {formatFast} from '../services/churchCalendar';
+import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -93,6 +94,11 @@ export const ChurchCalendarWidget = ({
   const feast = day?.main_feast?.short_title || day?.main_feast?.title || copy.saintMemory;
   const fast = formatFast(day, lang) || copy.noFastData;
   const iconUrl = day?.main_feast?.icon_url || '';
+  const bundledIconSource = getBundledCalendarIconSource(day?.main_feast);
+  const iconSource =
+    typeof bundledIconSource === 'number'
+      ? bundledIconSource
+      : bundledIconSource?.uri || iconUrl || null;
 
   const gospel = day?.gospel_title || '—';
   const apostle = day?.apostolic_title || '—';
@@ -227,9 +233,9 @@ export const ChurchCalendarWidget = ({
               alignItems: 'center',
             }}
           >
-            {iconUrl ? (
+            {iconSource ? (
               <ImageWidget
-                image={iconUrl}
+                image={iconSource}
                 imageWidth={saintImageWidth}
                 imageHeight={saintImageHeight}
                 radius={7}
