@@ -2,11 +2,12 @@ import React from 'react';
 
 import {getDailyQuote} from '../services/dailyQuote';
 import {getCalendarDay} from '../services/churchCalendar';
+import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
 import {getCalendarLanguage} from '../services/calendarPreferences';
 import {QuoteOfDayWidget} from './QuoteOfDayWidget';
 import {ChurchCalendarWidget} from './ChurchCalendarWidget';
 
-const getWidgetCalendarDay = async (value, language) => {
+const getWidgetCalendarDay = async (value, language, {preferOffline = false} = {}) => {
   const dateKey =
     value instanceof Date
       ? `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(
@@ -15,10 +16,22 @@ const getWidgetCalendarDay = async (value, language) => {
       : value;
 
   /*
-   * getCalendarDay сам делает правильный приоритет:
-   * онлайн -> свежий сервер + кэш,
-   * офлайн -> кэш телефона -> встроенный календарь APK.
-   * force=true нужен, чтобы виджет не зависал на старом in-memory значении.
+   * Для навигации по месяцам не ждём сеть: справа меняется только
+   * локально построенная сетка, а слева остаётся сегодняшний день.
+   * Сначала берём AsyncStorage/bundled snapshot и только если его нет,
+   * используем обычный сетевой путь.
+   */
+  if (preferOffline) {
+    const offline = await getOfflineCalendarDay(dateKey, language);
+
+    if (offline) {
+      return offline;
+    }
+  }
+
+  /*
+   * Для обычного обновления и выбора конкретного дня сохраняем
+   * прежнее поведение: свежий сервер -> кэш, офлайн -> локальные данные.
    */
   return getCalendarDay(dateKey, {
     language,
@@ -137,10 +150,16 @@ export const widgetTaskHandler = async (props) => {
     requestedDayDate = new Date();
   }
 
+  const monthNavigation =
+    widgetAction === 'WIDGET_CLICK' &&
+    (clickAction === 'CALENDAR_PREV_MONTH' || clickAction === 'CALENDAR_NEXT_MONTH');
+
   let day = null;
 
   try {
-    day = await getWidgetCalendarDay(requestedDayDate, language);
+    day = await getWidgetCalendarDay(requestedDayDate, language, {
+      preferOffline: monthNavigation,
+    });
   } catch (error) {
     console.log('Ошибка обновления виджета календаря:', error?.message || error);
   }
