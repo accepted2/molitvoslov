@@ -7,4 +7,3 @@ import {widgetTaskHandler} from './src/widgets/widgetTaskHandler';
 registerRootComponent(App);
 
 registerWidgetTaskHandler(widgetTaskHandler);
-
