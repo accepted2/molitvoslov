@@ -1,6 +1,5 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
-  ActivityIndicator,
   AppState,
   Image,
   Pressable,
@@ -17,6 +16,7 @@ import NetInfo from '@react-native-community/netinfo';
 
 import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {PrayerBeadsLoader} from '../components/feedback/PrayerBeadsLoader';
 import {CategoryIcon} from '../components/icons/CategoryIcon';
 import {
   formatFast,
@@ -638,7 +638,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
       {loadingMonth ? (
         <View style={styles.calendarLoading}>
-          <ActivityIndicator color="#8E5D32" />
+          <PrayerBeadsLoader compact />
         </View>
       ) : (
         <View style={styles.grid}>
@@ -701,7 +701,9 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
     >
       {loadingDay ? (
         <View style={styles.dayLoading}>
-          <ActivityIndicator size="large" color="#8E5D32" />
+          <PrayerBeadsLoader
+            text={language === 'uk' ? 'Завантаження дня...' : 'Загрузка дня...'}
+          />
         </View>
       ) : dayData ? (
         <>
