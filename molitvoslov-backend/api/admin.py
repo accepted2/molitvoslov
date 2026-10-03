@@ -30,8 +30,7 @@ from .models import (
     BibleTranslation,
 )
 from django.utils.html import format_html
-from .calendar_models import CalendarDay, CalendarFeast
-from .calendar_models import CalendarDay, CalendarFeast, CalendarFastType
+from .calendar_models import CalendarDay, CalendarFeast, CalendarFastType, CalendarReading
 
 
 class CategoryTextInline(admin.TabularInline):
@@ -1401,6 +1400,27 @@ class CalendarFastTypeAdmin(admin.ModelAdmin):
         )
 
 
+class CalendarReadingInline(admin.TabularInline):
+    model = CalendarReading
+    extra = 1
+    fields = [
+        "kind",
+        "label",
+        "title",
+        "order",
+    ]
+    ordering = [
+        "kind",
+        "order",
+        "id",
+    ]
+    verbose_name = "Чтение"
+    verbose_name_plural = (
+        "Чтения — добавляйте каждое Евангелие/Апостол отдельной строкой. "
+        "Ссылка одна для RU и UK."
+    )
+
+
 @admin.register(CalendarDay)
 class CalendarDayAdmin(admin.ModelAdmin):
     list_display = [
@@ -1409,10 +1429,8 @@ class CalendarDayAdmin(admin.ModelAdmin):
         "imported_languages",
         "has_fast_ru",
         "has_fast_uk",
-        "has_gospel_ru",
-        "has_gospel_uk",
-        "has_apostolic_ru",
-        "has_apostolic_uk",
+        "has_gospel",
+        "has_apostolic",
     ]
 
     list_filter = [
@@ -1428,9 +1446,9 @@ class CalendarDayAdmin(admin.ModelAdmin):
         "fast_name",
         "fast_name_uk",
         "gospel_title",
-        "gospel_title_uk",
         "apostolic_title",
-        "apostolic_title_uk",
+        "readings__title",
+        "readings__label",
     ]
 
     date_hierarchy = "date_gregorian"
@@ -1446,6 +1464,10 @@ class CalendarDayAdmin(admin.ModelAdmin):
 
     filter_horizontal = [
         "feasts",
+    ]
+
+    inlines = [
+        CalendarReadingInline,
     ]
 
     readonly_fields = [
@@ -1497,28 +1519,6 @@ class CalendarDayAdmin(admin.ModelAdmin):
             },
         ),
         (
-            "Чтения — русский",
-            {
-                "fields": [
-                    "gospel_title",
-                    "gospel_reading",
-                    "apostolic_title",
-                    "apostolic_reading",
-                ]
-            },
-        ),
-        (
-            "Чтения — украинский",
-            {
-                "fields": [
-                    "gospel_title_uk",
-                    "gospel_reading_uk",
-                    "apostolic_title_uk",
-                    "apostolic_reading_uk",
-                ]
-            },
-        ),
-        (
             "Служебные данные",
             {
                 "classes": ["collapse"],
@@ -1531,7 +1531,12 @@ class CalendarDayAdmin(admin.ModelAdmin):
     ]
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related("main_feast").prefetch_related("feasts")
+        return (
+            super()
+            .get_queryset(request)
+            .select_related("main_feast", "fast_type")
+            .prefetch_related("feasts", "readings")
+        )
 
     @admin.display(description="Языки")
     def imported_languages(self, obj):
@@ -1550,38 +1555,59 @@ class CalendarDayAdmin(admin.ModelAdmin):
     def has_fast_uk(self, obj):
         return bool(obj.fast_type_title_uk or obj.fast_name_uk or obj.fast_description_uk)
 
-    @admin.display(boolean=True, description="Еванг. RU")
-    def has_gospel_ru(self, obj):
-        return bool(obj.gospel_title or obj.gospel_reading)
+    @admin.display(boolean=True, description="Евангелие")
+    def has_gospel(self, obj):
+        return any(reading.kind == CalendarReading.KIND_GOSPEL for reading in obj.readings.all()) or bool(
+            obj.gospel_title
+        )
 
-    @admin.display(boolean=True, description="Еванг. UK")
-    def has_gospel_uk(self, obj):
-        return bool(obj.gospel_title_uk or obj.gospel_reading_uk)
+    @admin.display(boolean=True, description="Апостол")
+    def has_apostolic(self, obj):
+        return any(reading.kind == CalendarReading.KIND_APOSTLE for reading in obj.readings.all()) or bool(
+            obj.apostolic_title
+        )
 
-    @admin.display(boolean=True, description="Апост. RU")
-    def has_apostolic_ru(self, obj):
-        return bool(obj.apostolic_title or obj.apostolic_reading)
+    def save_model(self, request, obj, form, change):
+        if obj.fast_type:
+            fast = obj.fast_type
 
-    @admin.display(boolean=True, description="Апост. UK")
-    def has_apostolic_uk(self, obj):
-        return bool(obj.apostolic_title_uk or obj.apostolic_reading_uk)
+            obj.fast_type_code = fast.code
 
+            obj.fast_type_title = fast.type_title
+            obj.fast_name = fast.name
+            obj.fast_description = fast.description
 
-def save_model(self, request, obj, form, change):
-    if obj.fast_type:
-        fast = obj.fast_type
+            obj.fast_type_title_uk = fast.type_title_uk
+            obj.fast_name_uk = fast.name_uk
+            obj.fast_description_uk = fast.description_uk
 
-        obj.fast_type_code = fast.code
+        super().save_model(request, obj, form, change)
 
-        obj.fast_type_title = fast.type_title
-        obj.fast_name = fast.name
-        obj.fast_description = fast.description
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
 
-        obj.fast_type_title_uk = fast.type_title_uk
-        obj.fast_name_uk = fast.name_uk
-        obj.fast_description_uk = fast.description_uk
+        day = form.instance
+        readings = list(day.readings.order_by("kind", "order", "id"))
+        gospel = next(
+            (reading for reading in readings if reading.kind == CalendarReading.KIND_GOSPEL),
+            None,
+        )
+        apostle = next(
+            (reading for reading in readings if reading.kind == CalendarReading.KIND_APOSTLE),
+            None,
+        )
 
-    super().save_model(request, obj, form, change)
+        gospel_title = gospel.title.strip() if gospel else ""
+        apostolic_title = apostle.title.strip() if apostle else ""
+
+        # Старые поля оставляем синхронизированными для совместимости со
+        # старыми сборками приложения. Ссылки на Писание одинаковы для RU/UK.
+        CalendarDay.objects.filter(pk=day.pk).update(
+            gospel_title=gospel_title,
+            gospel_title_uk=gospel_title,
+            apostolic_title=apostolic_title,
+            apostolic_title_uk=apostolic_title,
+        )
 
 
 @admin.register(BibleTranslation)
