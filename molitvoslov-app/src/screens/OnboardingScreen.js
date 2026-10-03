@@ -34,7 +34,7 @@ const artwork = {
   calendarScreen2: require('../../assets/onboarding/calendar_full_2.jpg'),
   calendarSmallScreen: require('../../assets/onboarding/calendar_small.png'),
   favoritesScreen: require('../../assets/onboarding/favorites_screen.png'),
-  widgetsScreen: require('../../assets/onboarding/widgets.png'),
+  widgetsScreen: require('../../assets/onboarding/widgets.jpg'),
   menuScreen: require('../../assets/onboarding/menu_screen.png'),
   psalterScreen: require('../../assets/onboarding/psalter_cu_ru.jpg'),
 };
