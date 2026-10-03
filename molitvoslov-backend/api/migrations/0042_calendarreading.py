@@ -86,8 +86,7 @@ class Migration(migrations.Migration):
                         blank=True,
                         default="",
                         help_text=(
-                            "Необязательно: например «Ряд.», "
-                            "«Субботы по Воздвижении», «Вмч.»"
+                            "Необязательно: например «Ряд.», " "«Субботы по Воздвижении», «Вмч.»"
                         ),
                         max_length=255,
                         verbose_name="Подпись",

@@ -39,7 +39,6 @@ export const toCalendarDate = (value) => {
   return [date.getFullYear(), pad(date.getMonth() + 1), pad(date.getDate())].join('-');
 };
 
-
 export const getCalendarReadingItems = (day, kind) => {
   const normalizedKind = kind === 'apostle' ? 'apostle' : 'gospel';
   const structured = Array.isArray(day?.readings)
@@ -57,8 +56,7 @@ export const getCalendarReadingItems = (day, kind) => {
     return structured;
   }
 
-  const legacyTitle =
-    normalizedKind === 'gospel' ? day?.gospel_title : day?.apostolic_title;
+  const legacyTitle = normalizedKind === 'gospel' ? day?.gospel_title : day?.apostolic_title;
 
   return legacyTitle
     ? [

@@ -212,16 +212,7 @@ const ExpandableTextBlock = ({title, subtitle, text}) => {
   );
 };
 
-const ReadingLink = ({
-  kind,
-  title,
-  label,
-  sequence,
-  navigation,
-  copy,
-  language,
-  onLayout,
-}) => {
+const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, onLayout}) => {
   const [expanded, setExpanded] = useState(false);
 
   if (!title) return null;
@@ -303,7 +294,6 @@ const ReadingLink = ({
     </View>
   );
 };
-
 
 const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout}) => {
   const [showAll, setShowAll] = useState(false);
@@ -415,14 +405,8 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const headerHeight = insets.top + 56;
   const locale = CALENDAR_MONTHS[language];
   const copy = calendarText(language);
-  const gospelReadings = useMemo(
-    () => getCalendarReadingItems(dayData, 'gospel'),
-    [dayData]
-  );
-  const apostleReadings = useMemo(
-    () => getCalendarReadingItems(dayData, 'apostle'),
-    [dayData]
-  );
+  const gospelReadings = useMemo(() => getCalendarReadingItems(dayData, 'gospel'), [dayData]);
+  const apostleReadings = useMemo(() => getCalendarReadingItems(dayData, 'apostle'), [dayData]);
 
   useEffect(() => {
     const section = route.params?.section;

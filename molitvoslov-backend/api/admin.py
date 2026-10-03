@@ -1556,15 +1556,15 @@ class CalendarDayAdmin(admin.ModelAdmin):
 
     @admin.display(boolean=True, description="Евангелие")
     def has_gospel(self, obj):
-        return any(reading.kind == CalendarReading.KIND_GOSPEL for reading in obj.readings.all()) or bool(
-            obj.gospel_title
-        )
+        return any(
+            reading.kind == CalendarReading.KIND_GOSPEL for reading in obj.readings.all()
+        ) or bool(obj.gospel_title)
 
     @admin.display(boolean=True, description="Апостол")
     def has_apostolic(self, obj):
-        return any(reading.kind == CalendarReading.KIND_APOSTLE for reading in obj.readings.all()) or bool(
-            obj.apostolic_title
-        )
+        return any(
+            reading.kind == CalendarReading.KIND_APOSTLE for reading in obj.readings.all()
+        ) or bool(obj.apostolic_title)
 
     def save_model(self, request, obj, form, change):
         if obj.fast_type:
