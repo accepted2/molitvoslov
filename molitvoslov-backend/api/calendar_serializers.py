@@ -118,7 +118,7 @@ class CalendarReadingSerializer(serializers.ModelSerializer):
 class CalendarDaySerializer(serializers.ModelSerializer):
     main_feast = CalendarFeastSerializer(read_only=True)
     all_feasts = CalendarFeastSerializer(source="feasts", many=True, read_only=True)
-    readings = CalendarReadingSerializer(many=True, read_only=True)
+    readings = serializers.SerializerMethodField()
     date_str = serializers.SerializerMethodField()
     weekday = serializers.SerializerMethodField()
     weekday_name = serializers.SerializerMethodField()
@@ -170,6 +170,17 @@ class CalendarDaySerializer(serializers.ModelSerializer):
 
     def _get(self, obj, field):
         return _localized(obj, field, self._language())
+
+    def get_readings(self, obj):
+        readings = list(obj.readings.all())
+        readings.sort(
+            key=lambda reading: (
+                0 if reading.kind == CalendarReading.KIND_GOSPEL else 1,
+                reading.order,
+                reading.pk,
+            )
+        )
+        return CalendarReadingSerializer(readings, many=True).data
 
     def get_date_str(self, obj):
         return obj.date_gregorian.isoformat()
