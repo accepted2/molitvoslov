@@ -132,7 +132,7 @@ class Migration(migrations.Migration):
             model_name="calendarreading",
             index=models.Index(
                 fields=["day", "kind", "order"],
-                name="api_calenda_day_id_0ccf6d_idx",
+                name="api_calread_day_kind_ord_idx",
             ),
         ),
         migrations.RunPython(forwards, backwards),
