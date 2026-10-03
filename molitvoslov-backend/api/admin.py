@@ -1410,7 +1410,6 @@ class CalendarReadingInline(admin.TabularInline):
         "order",
     ]
     ordering = [
-        "kind",
         "order",
         "id",
     ]
