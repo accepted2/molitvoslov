@@ -195,9 +195,7 @@ class Command(BaseCommand):
         }
         missing = sorted(set(local_texts) - set(remote))
         if missing:
-            raise CommandError(
-                "В Supabase отсутствуют связанные Text: " + ", ".join(missing[:20])
-            )
+            raise CommandError("В Supabase отсутствуют связанные Text: " + ", ".join(missing[:20]))
         return remote
 
     def _build_plan(self, local, remote):
@@ -259,12 +257,7 @@ class Command(BaseCommand):
 
     @staticmethod
     def _has_changes(plan):
-        return bool(
-            plan["akathist"]
-            or plan["relations"]
-            or plan["texts"]
-            or plan["sections"]
-        )
+        return bool(plan["akathist"] or plan["relations"] or plan["texts"] or plan["sections"])
 
     def _print_plan(self, local, plan, prefix="План синхронизации:"):
         self.stdout.write(f"Акафист: {local.title}")
