@@ -436,13 +436,9 @@ class Command(BaseCommand):
             # sync_uid=NULL (миграция 0038 разрешяла NULL), поэтому нельзя
             # просто отбрасывать такие памяти: иначе лишняя связь останется
             # незамеченной и продолжит попадать в all_feasts API.
-            local_feasts = sorted(
-                (str(x.sync_uid), x.source_id)
-                for x in day.feasts.all()
-            )
+            local_feasts = sorted((str(x.sync_uid), x.source_id) for x in day.feasts.all())
             remote_feasts = sorted(
-                (str(x.sync_uid) if x.sync_uid else "", x.source_id)
-                for x in remote.feasts.all()
+                (str(x.sync_uid) if x.sync_uid else "", x.source_id) for x in remote.feasts.all()
             )
             if local_feasts != remote_feasts:
                 changed.append("feasts")
@@ -471,9 +467,7 @@ class Command(BaseCommand):
                 reading_changed = self._changed_fields(remote_reading, values)
 
                 if reading_changed:
-                    result["reading_update"].append(
-                        f"{label} ({', '.join(reading_changed)})"
-                    )
+                    result["reading_update"].append(f"{label} ({', '.join(reading_changed)})")
 
             for remote_reading in remote.readings.all():
                 if remote_reading.pk in matched_remote_ids:
@@ -735,19 +729,14 @@ class Command(BaseCommand):
                 remote.feasts.order_by("pk").values_list("pk", flat=True)
             )
 
-            if (
-                missing_remote_feast
-                or sorted(expected_remote_feast_ids) != actual_remote_feast_ids
-            ):
+            if missing_remote_feast or sorted(expected_remote_feast_ids) != actual_remote_feast_ids:
                 problems.append(f"День {day.date_gregorian}: feasts отличаются")
 
             local_readings = list(day.readings.all())
             remote_readings = list(remote.readings.all())
 
             remote_by_uid = {
-                str(reading.sync_uid): reading
-                for reading in remote_readings
-                if reading.sync_uid
+                str(reading.sync_uid): reading for reading in remote_readings if reading.sync_uid
             }
 
             for reading in local_readings:

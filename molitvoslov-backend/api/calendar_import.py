@@ -291,7 +291,6 @@ def _day_language_fields(payload, language):
     }
 
 
-
 def _sync_structured_readings(day, payload, overwrite_existing=False):
     """Создать структурные чтения из старых полей источника, не затирая ручные правки."""
 
@@ -318,6 +317,7 @@ def _sync_structured_readings(day, payload, overwrite_existing=False):
             title=title,
             order=0,
         )
+
 
 def upsert_day(payload, language="ru", overwrite_existing=False):
     if not payload or not payload.get("date_gregorian"):

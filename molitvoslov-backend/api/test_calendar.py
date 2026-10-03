@@ -105,7 +105,6 @@ class CalendarApiTests(APITestCase):
         self.assertEqual(response.data["gospel_title"], "Мт. 10:17-22")
         self.assertEqual(response.data["weekday_name"], "П’ятниця")
 
-
     def test_day_endpoint_returns_multiple_ordered_readings(self):
         day = CalendarDay.objects.create(
             date_gregorian=date(2026, 10, 3),
