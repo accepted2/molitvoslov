@@ -610,9 +610,11 @@ export const MenuScreen = ({navigation}) => {
   };
 
   const openFullCalendar = (section = null) => {
+    const targetSection = section === 'gospel' || section === 'apostle' ? section : null;
+
     navigation.navigate('ChurchCalendar', {
       date: toCalendarDate(calendarSelectedDate),
-      ...(section ? {section} : {}),
+      ...(targetSection ? {section: targetSection} : {}),
     });
   };
 
