@@ -9,7 +9,7 @@ from urllib.request import Request, urlopen
 from django.db import transaction
 
 from .calendar_localization import same_feast_identity
-from .calendar_models import CalendarDay, CalendarFeast
+from .calendar_models import CalendarDay, CalendarFeast, CalendarReading
 
 
 DEFAULT_SOURCE_URL = "https://church-site-backend.onrender.com/api/calendar"
@@ -291,6 +291,34 @@ def _day_language_fields(payload, language):
     }
 
 
+
+def _sync_structured_readings(day, payload, overwrite_existing=False):
+    """Создать структурные чтения из старых полей источника, не затирая ручные правки."""
+
+    if day.readings.exists() and not overwrite_existing:
+        return
+
+    if overwrite_existing:
+        day.readings.all().delete()
+
+    rows = [
+        (CalendarReading.KIND_GOSPEL, payload.get("gospel_title") or ""),
+        (CalendarReading.KIND_APOSTLE, payload.get("apostolic_title") or ""),
+    ]
+
+    for kind, title in rows:
+        title = str(title).strip()
+
+        if not title:
+            continue
+
+        CalendarReading.objects.create(
+            day=day,
+            kind=kind,
+            title=title,
+            order=0,
+        )
+
 def upsert_day(payload, language="ru", overwrite_existing=False):
     if not payload or not payload.get("date_gregorian"):
         return None
@@ -398,6 +426,12 @@ def upsert_day(payload, language="ru", overwrite_existing=False):
     if language == "ru":
         if overwrite_existing or not day.feasts.exists():
             day.feasts.set(feast_objects)
+
+        _sync_structured_readings(
+            day,
+            payload,
+            overwrite_existing=overwrite_existing,
+        )
 
     return day
 
