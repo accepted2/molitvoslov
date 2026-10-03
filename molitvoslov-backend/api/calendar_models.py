@@ -250,7 +250,7 @@ class CalendarReading(models.Model):
     class Meta:
         ordering = ["kind", "order", "id"]
         indexes = [
-            models.Index(fields=["day", "kind", "order"]),
+            models.Index(fields=["day", "kind", "order"], name="api_calread_day_kind_ord_idx"),
         ]
         verbose_name = "Календарь: чтение"
         verbose_name_plural = "Календарь: чтения"
