@@ -701,9 +701,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
     >
       {loadingDay ? (
         <View style={styles.dayLoading}>
-          <PrayerBeadsLoader
-            text={language === 'uk' ? 'Завантаження дня...' : 'Загрузка дня...'}
-          />
+          <PrayerBeadsLoader text={language === 'uk' ? 'Завантаження дня...' : 'Загрузка дня...'} />
         </View>
       ) : dayData ? (
         <>
