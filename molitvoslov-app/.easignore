@@ -8,6 +8,7 @@ android/build/
 android/app/build/
 android/.cxx/
 android/app/.cxx/
+android/local.properties
 
 *.apk
 *.aab
