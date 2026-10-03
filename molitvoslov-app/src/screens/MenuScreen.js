@@ -1203,9 +1203,7 @@ export const MenuScreen = ({navigation}) => {
 
                       <Pressable
                         disabled={!calendarGospelReadings.length}
-                        onPress={() =>
-                          openCalendarQuickReading('gospel', calendarGospelReadings)
-                        }
+                        onPress={() => openCalendarQuickReading('gospel', calendarGospelReadings)}
                         style={({pressed}) => [
                           styles.calendarQuickItem,
                           styles.calendarQuickItemBorderTop,
@@ -1229,9 +1227,7 @@ export const MenuScreen = ({navigation}) => {
 
                       <Pressable
                         disabled={!calendarApostleReadings.length}
-                        onPress={() =>
-                          openCalendarQuickReading('apostle', calendarApostleReadings)
-                        }
+                        onPress={() => openCalendarQuickReading('apostle', calendarApostleReadings)}
                         style={({pressed}) => [
                           styles.calendarQuickItem,
                           styles.calendarQuickItemBorderTop,
