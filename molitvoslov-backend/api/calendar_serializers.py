@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from .calendar_localization import same_feast_identity
-from .calendar_models import CalendarDay, CalendarFeast
+from .calendar_models import CalendarDay, CalendarFeast, CalendarReading
 
 
 def _language_from_context(context):
@@ -103,9 +103,22 @@ class CalendarFeastSerializer(serializers.ModelSerializer):
         return self._get(obj, "description")
 
 
+class CalendarReadingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CalendarReading
+        fields = [
+            "id",
+            "kind",
+            "label",
+            "title",
+            "order",
+        ]
+
+
 class CalendarDaySerializer(serializers.ModelSerializer):
     main_feast = CalendarFeastSerializer(read_only=True)
     all_feasts = CalendarFeastSerializer(source="feasts", many=True, read_only=True)
+    readings = CalendarReadingSerializer(many=True, read_only=True)
     date_str = serializers.SerializerMethodField()
     weekday = serializers.SerializerMethodField()
     weekday_name = serializers.SerializerMethodField()
@@ -139,6 +152,7 @@ class CalendarDaySerializer(serializers.ModelSerializer):
             "language",
             "main_feast",
             "all_feasts",
+            "readings",
             "fast_type_code",
             "fast_type_title",
             "fast_name",
@@ -240,14 +254,27 @@ class CalendarDaySerializer(serializers.ModelSerializer):
     def get_short_summary(self, obj):
         return self._get(obj, "short_summary")
 
+    def _first_reading_title(self, obj, kind):
+        for reading in obj.readings.all():
+            if reading.kind == kind and reading.title:
+                return reading.title
+
+        return ""
+
     def get_gospel_title(self, obj):
-        return self._get(obj, "gospel_title")
+        return self._first_reading_title(obj, CalendarReading.KIND_GOSPEL) or self._get(
+            obj,
+            "gospel_title",
+        )
 
     def get_gospel_reading(self, obj):
         return self._get(obj, "gospel_reading")
 
     def get_apostolic_title(self, obj):
-        return self._get(obj, "apostolic_title")
+        return self._first_reading_title(obj, CalendarReading.KIND_APOSTLE) or self._get(
+            obj,
+            "apostolic_title",
+        )
 
     def get_apostolic_reading(self, obj):
         return self._get(obj, "apostolic_reading")

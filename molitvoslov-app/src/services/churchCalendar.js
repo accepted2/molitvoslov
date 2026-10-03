@@ -39,6 +39,40 @@ export const toCalendarDate = (value) => {
   return [date.getFullYear(), pad(date.getMonth() + 1), pad(date.getDate())].join('-');
 };
 
+
+export const getCalendarReadingItems = (day, kind) => {
+  const normalizedKind = kind === 'apostle' ? 'apostle' : 'gospel';
+  const structured = Array.isArray(day?.readings)
+    ? day.readings
+        .filter((reading) => reading?.kind === normalizedKind && reading?.title)
+        .slice()
+        .sort(
+          (left, right) =>
+            Number(left?.order || 0) - Number(right?.order || 0) ||
+            Number(left?.id || 0) - Number(right?.id || 0)
+        )
+    : [];
+
+  if (structured.length) {
+    return structured;
+  }
+
+  const legacyTitle =
+    normalizedKind === 'gospel' ? day?.gospel_title : day?.apostolic_title;
+
+  return legacyTitle
+    ? [
+        {
+          id: `legacy-${normalizedKind}`,
+          kind: normalizedKind,
+          label: '',
+          title: legacyTitle,
+          order: 0,
+        },
+      ]
+    : [];
+};
+
 const canReachNetwork = async () => {
   try {
     const state = await NetInfo.fetch();

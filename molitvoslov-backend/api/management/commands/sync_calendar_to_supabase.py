@@ -5,7 +5,7 @@ from datetime import date
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connections, transaction
 
-from api.calendar_models import CalendarDay, CalendarFeast, CalendarFastType
+from api.calendar_models import CalendarDay, CalendarFeast, CalendarFastType, CalendarReading
 
 
 REMOTE_ALIAS = "supabase_sync"
@@ -54,6 +54,13 @@ FEAST_FIELDS = [
     "life_content_uk",
     "description_uk",
     "all_dates",
+]
+
+READING_FIELDS = [
+    "kind",
+    "label",
+    "title",
+    "order",
 ]
 
 DAY_FIELDS = [
@@ -155,12 +162,17 @@ class Command(BaseCommand):
             "day_create": 0,
             "day_update": 0,
             "day_same": 0,
+            "reading_create": 0,
+            "reading_update": 0,
+            "reading_delete": 0,
+            "reading_same": 0,
         }
 
         with transaction.atomic(using=REMOTE_ALIAS):
             remote_fast = self._sync_fast_types(fast_types, counters)
             remote_feasts = self._sync_feasts(feasts, counters)
             self._sync_days(days, remote_fast, remote_feasts, counters)
+            self._sync_readings(days, counters)
 
         problems = self._verify(days, feasts, fast_types)
         if problems:
@@ -179,7 +191,11 @@ class Command(BaseCommand):
                 f"без изменений {counters['feast_same']}.\n"
                 f"Дни: +{counters['day_create']} / "
                 f"обновлено {counters['day_update']} / "
-                f"без изменений {counters['day_same']}."
+                f"без изменений {counters['day_same']}.\n"
+                f"Чтения: +{counters['reading_create']} / "
+                f"обновлено {counters['reading_update']} / "
+                f"удалено {counters['reading_delete']} / "
+                f"без изменений {counters['reading_same']}."
             )
         )
 
@@ -243,6 +259,7 @@ class Command(BaseCommand):
             CalendarDay.objects.using(REMOTE_ALIAS).count()
             CalendarFeast.objects.using(REMOTE_ALIAS).count()
             CalendarFastType.objects.using(REMOTE_ALIAS).count()
+            CalendarReading.objects.using(REMOTE_ALIAS).count()
         except Exception as error:
             raise CommandError(
                 "Не удалось подключиться к Supabase или там не применены "
@@ -253,7 +270,7 @@ class Command(BaseCommand):
         qs = (
             CalendarDay.objects.using("default")
             .select_related("main_feast", "fast_type")
-            .prefetch_related("feasts")
+            .prefetch_related("feasts", "readings")
             .order_by("date_gregorian")
         )
 
@@ -312,6 +329,24 @@ class Command(BaseCommand):
     def _day_values(self, day):
         return {field: getattr(day, field) for field in DAY_FIELDS}
 
+    def _reading_values(self, reading):
+        return {field: getattr(reading, field) for field in READING_FIELDS}
+
+    def _find_remote_reading(self, remote_day, reading):
+        qs = CalendarReading.objects.using(REMOTE_ALIAS).filter(day=remote_day)
+
+        remote = qs.filter(sync_uid=reading.sync_uid).first()
+        if remote:
+            return remote
+
+        # Fallback для случая, когда день был импортирован в обе базы отдельно
+        # до первой синхронизации и UUID чтения успели отличиться.
+        return qs.filter(
+            kind=reading.kind,
+            order=reading.order,
+            title=reading.title,
+        ).first()
+
     def _find_remote_fast(self, fast):
         remote = CalendarFastType.objects.using(REMOTE_ALIAS).filter(sync_uid=fast.sync_uid).first()
         if remote:
@@ -339,6 +374,9 @@ class Command(BaseCommand):
             "feast_update": [],
             "day_create": [],
             "day_update": [],
+            "reading_create": [],
+            "reading_update": [],
+            "reading_delete": [],
         }
 
         for fast in fast_types.values():
@@ -368,12 +406,18 @@ class Command(BaseCommand):
             remote = (
                 CalendarDay.objects.using(REMOTE_ALIAS)
                 .select_related("main_feast", "fast_type")
-                .prefetch_related("feasts")
+                .prefetch_related("feasts", "readings")
                 .filter(date_gregorian=day.date_gregorian)
                 .first()
             )
             if remote is None:
                 result["day_create"].append(day.date_gregorian.isoformat())
+
+                for reading in day.readings.all():
+                    result["reading_create"].append(
+                        f"{day.date_gregorian.isoformat()} "
+                        f"{reading.get_kind_display()}: {reading.title}"
+                    )
                 continue
 
             changed = self._changed_fields(remote, self._day_values(day))
@@ -398,6 +442,38 @@ class Command(BaseCommand):
                     f"{day.date_gregorian.isoformat()} " f"({', '.join(changed)})"
                 )
 
+            matched_remote_ids = set()
+
+            for reading in day.readings.all():
+                remote_reading = self._find_remote_reading(remote, reading)
+                label = (
+                    f"{day.date_gregorian.isoformat()} "
+                    f"{reading.get_kind_display()}: {reading.title}"
+                )
+
+                if remote_reading is None:
+                    result["reading_create"].append(label)
+                    continue
+
+                matched_remote_ids.add(remote_reading.pk)
+                values = self._reading_values(reading)
+                values["sync_uid"] = reading.sync_uid
+                reading_changed = self._changed_fields(remote_reading, values)
+
+                if reading_changed:
+                    result["reading_update"].append(
+                        f"{label} ({', '.join(reading_changed)})"
+                    )
+
+            for remote_reading in remote.readings.all():
+                if remote_reading.pk in matched_remote_ids:
+                    continue
+
+                result["reading_delete"].append(
+                    f"{day.date_gregorian.isoformat()} "
+                    f"{remote_reading.get_kind_display()}: {remote_reading.title}"
+                )
+
         return result
 
     def _print_preview(self, preview, days, feasts, fast_types):
@@ -413,6 +489,9 @@ class Command(BaseCommand):
             ("feast_update", "Памяти UPDATE"),
             ("day_create", "Дни CREATE"),
             ("day_update", "Дни UPDATE"),
+            ("reading_create", "Чтения CREATE"),
+            ("reading_update", "Чтения UPDATE"),
+            ("reading_delete", "Чтения DELETE"),
         ]:
             items = preview[key]
             self.stdout.write(f"  {title}: {len(items)}")
@@ -521,6 +600,59 @@ class Command(BaseCommand):
             else:
                 counters["day_same"] += 1
 
+    def _sync_readings(self, days, counters):
+        for day in days:
+            remote_day = (
+                CalendarDay.objects.using(REMOTE_ALIAS)
+                .prefetch_related("readings")
+                .filter(date_gregorian=day.date_gregorian)
+                .first()
+            )
+
+            if remote_day is None:
+                raise CommandError(
+                    f"Не найден удалённый день {day.date_gregorian} после синхронизации."
+                )
+
+            matched_remote_ids = set()
+
+            for reading in day.readings.all():
+                remote = self._find_remote_reading(remote_day, reading)
+                values = self._reading_values(reading)
+                values["sync_uid"] = reading.sync_uid
+
+                if remote is None:
+                    remote = CalendarReading.objects.using(REMOTE_ALIAS).create(
+                        day=remote_day,
+                        sync_uid=reading.sync_uid,
+                        **self._reading_values(reading),
+                    )
+                    counters["reading_create"] += 1
+                else:
+                    changed = self._changed_fields(remote, values)
+
+                    if changed:
+                        for field in changed:
+                            setattr(remote, field, values[field])
+                        remote.save(update_fields=changed)
+                        counters["reading_update"] += 1
+                    else:
+                        counters["reading_same"] += 1
+
+                matched_remote_ids.add(remote.pk)
+
+            extras = list(
+                CalendarReading.objects.using(REMOTE_ALIAS)
+                .filter(day=remote_day)
+                .exclude(pk__in=matched_remote_ids)
+            )
+
+            if extras:
+                counters["reading_delete"] += len(extras)
+                CalendarReading.objects.using(REMOTE_ALIAS).filter(
+                    pk__in=[item.pk for item in extras]
+                ).delete()
+
     def _verify(self, days, feasts, fast_types):
         problems = []
 
@@ -576,5 +708,38 @@ class Command(BaseCommand):
             remote_feasts = sorted(str(x.sync_uid) for x in remote.feasts.all() if x.sync_uid)
             if local_feasts != remote_feasts:
                 problems.append(f"День {day.date_gregorian}: feasts отличаются")
+
+            local_readings = list(day.readings.all())
+            remote_readings = list(remote.readings.all())
+
+            remote_by_uid = {
+                str(reading.sync_uid): reading
+                for reading in remote_readings
+                if reading.sync_uid
+            }
+
+            for reading in local_readings:
+                remote_reading = remote_by_uid.get(str(reading.sync_uid))
+
+                if remote_reading is None:
+                    problems.append(
+                        f"День {day.date_gregorian}: чтение {reading.title} отсутствует"
+                    )
+                    continue
+
+                for field, expected in self._reading_values(reading).items():
+                    if getattr(remote_reading, field) != expected:
+                        problems.append(
+                            f"День {day.date_gregorian}: чтение {reading.pk}, "
+                            f"{field} отличается"
+                        )
+
+            local_uids = sorted(str(reading.sync_uid) for reading in local_readings)
+            remote_uids = sorted(
+                str(reading.sync_uid) for reading in remote_readings if reading.sync_uid
+            )
+
+            if local_uids != remote_uids:
+                problems.append(f"День {day.date_gregorian}: список чтений отличается")
 
         return problems

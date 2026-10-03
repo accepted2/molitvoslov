@@ -22,6 +22,7 @@ import {
   formatFast,
   getBibleReadingVerses,
   getCalendarDay,
+  getCalendarReadingItems,
   getCalendarMonth,
   openCalendarBibleReference,
   resolveBibleReference,
@@ -211,7 +212,16 @@ const ExpandableTextBlock = ({title, subtitle, text}) => {
   );
 };
 
-const ReadingLink = ({kind, title, navigation, copy, language, onLayout}) => {
+const ReadingLink = ({
+  kind,
+  title,
+  label,
+  sequence,
+  navigation,
+  copy,
+  language,
+  onLayout,
+}) => {
   const [expanded, setExpanded] = useState(false);
 
   if (!title) return null;
@@ -237,7 +247,11 @@ const ReadingLink = ({kind, title, navigation, copy, language, onLayout}) => {
         </View>
 
         <View style={styles.readingTextWrap}>
-          <Text style={styles.readingKind}>{kind === 'gospel' ? copy.gospel : copy.apostle}</Text>
+          <Text style={styles.readingKind}>
+            {kind === 'gospel' ? copy.gospel : copy.apostle}
+            {!!sequence && ` · ${sequence}`}
+          </Text>
+          {!!label && <Text style={styles.readingLabel}>{label}</Text>}
           <Text style={styles.readingTitle}>{title}</Text>
 
           {target ? (
@@ -285,6 +299,53 @@ const ReadingLink = ({kind, title, navigation, copy, language, onLayout}) => {
             </View>
           )}
         </>
+      )}
+    </View>
+  );
+};
+
+
+const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout}) => {
+  const [showAll, setShowAll] = useState(false);
+
+  if (!readings.length) {
+    return null;
+  }
+
+  const visibleReadings = showAll ? readings : readings.slice(0, 2);
+  const hiddenCount = Math.max(0, readings.length - visibleReadings.length);
+
+  return (
+    <View onLayout={onLayout}>
+      {visibleReadings.map((reading, index) => (
+        <ReadingLink
+          key={reading.id || reading.sync_uid || `${kind}-${index}-${reading.title}`}
+          kind={kind}
+          title={reading.title}
+          label={reading.label}
+          sequence={readings.length > 1 ? `${index + 1}/${readings.length}` : ''}
+          navigation={navigation}
+          copy={copy}
+          language={language}
+        />
+      ))}
+
+      {readings.length > 2 && (
+        <Pressable
+          onPress={() => setShowAll((value) => !value)}
+          style={({pressed}) => [styles.readingMore, pressed && styles.pressed]}
+        >
+          <Text style={styles.readingMoreText}>
+            {showAll
+              ? language === 'uk'
+                ? 'Згорнути додаткові читання'
+                : 'Скрыть дополнительные чтения'
+              : language === 'uk'
+                ? `Ще читань: ${hiddenCount}`
+                : `Ещё чтений: ${hiddenCount}`}
+          </Text>
+          <SoftChevron expanded={showAll} />
+        </Pressable>
       )}
     </View>
   );
@@ -354,6 +415,14 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const headerHeight = insets.top + 56;
   const locale = CALENDAR_MONTHS[language];
   const copy = calendarText(language);
+  const gospelReadings = useMemo(
+    () => getCalendarReadingItems(dayData, 'gospel'),
+    [dayData]
+  );
+  const apostleReadings = useMemo(
+    () => getCalendarReadingItems(dayData, 'apostle'),
+    [dayData]
+  );
 
   useEffect(() => {
     const section = route.params?.section;
@@ -801,25 +870,25 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
           >
             <Text style={styles.sectionEyebrow}>{copy.readings}</Text>
 
-            <ReadingLink
+            <ReadingGroup
               kind="gospel"
-              title={dayData.gospel_title}
+              readings={gospelReadings}
               navigation={navigation}
               copy={copy}
               language={language}
               onLayout={(event) => saveReadingLayout('gospel', event.nativeEvent.layout.y)}
             />
 
-            <ReadingLink
+            <ReadingGroup
               kind="apostle"
-              title={dayData.apostolic_title}
+              readings={apostleReadings}
               navigation={navigation}
               copy={copy}
               language={language}
               onLayout={(event) => saveReadingLayout('apostle', event.nativeEvent.layout.y)}
             />
 
-            {!dayData.gospel_title && !dayData.apostolic_title && (
+            {!gospelReadings.length && !apostleReadings.length && (
               <Text style={styles.noReadings}>{copy.noReadings}</Text>
             )}
           </View>
@@ -1222,6 +1291,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.6,
   },
+  readingLabel: {
+    marginTop: 2,
+    color: '#76543A',
+    fontSize: 10,
+    fontWeight: '700',
+  },
   readingTitle: {
     marginTop: 2,
     color: '#4A3020',
@@ -1294,6 +1369,24 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 16,
     fontWeight: '700',
+  },
+  readingMore: {
+    minHeight: 42,
+    marginTop: 8,
+    paddingLeft: 12,
+    paddingRight: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(123,79,36,0.16)',
+    backgroundColor: 'rgba(234,215,184,0.75)',
+  },
+  readingMoreText: {
+    color: '#6C472B',
+    fontSize: 11,
+    fontWeight: '800',
   },
   noReadings: {
     marginTop: 10,

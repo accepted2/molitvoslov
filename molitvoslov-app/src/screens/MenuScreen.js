@@ -30,6 +30,7 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {
   formatFast,
   getCalendarDay,
+  getCalendarReadingItems,
   openCalendarBibleReference,
   resolveBibleReference,
   toCalendarDate,
@@ -301,6 +302,14 @@ export const MenuScreen = ({navigation}) => {
     [calendarVisibleMonth, calendarSelectedDate, calendarLanguage]
   );
   const calendarCopy = useMemo(() => calendarText(calendarLanguage), [calendarLanguage]);
+  const calendarGospelReadings = useMemo(
+    () => getCalendarReadingItems(calendarToday, 'gospel'),
+    [calendarToday]
+  );
+  const calendarApostleReadings = useMemo(
+    () => getCalendarReadingItems(calendarToday, 'apostle'),
+    [calendarToday]
+  );
   const calendarSaintSource = useMemo(
     () => getBundledCalendarIconSource(calendarToday?.main_feast),
     [calendarToday?.main_feast]
@@ -600,10 +609,41 @@ export const MenuScreen = ({navigation}) => {
     }
   };
 
-  const openFullCalendar = () => {
+  const openFullCalendar = (section = null) => {
     navigation.navigate('ChurchCalendar', {
       date: toCalendarDate(calendarSelectedDate),
+      ...(section ? {section} : {}),
     });
+  };
+
+  const openCalendarQuickReading = (kind, readings) => {
+    if (!readings.length) {
+      return;
+    }
+
+    const first = readings[0];
+
+    if (readings.length === 1 && resolveBibleReference(first.title)) {
+      openCalendarBibleReference(navigation, first.title);
+      return;
+    }
+
+    openFullCalendar(kind === 'gospel' ? 'gospel' : 'apostle');
+  };
+
+  const formatCalendarQuickReadings = (readings) => {
+    if (!readings.length) {
+      return '—';
+    }
+
+    const first = readings[0];
+    const firstTitle = first.label ? `${first.label}: ${first.title}` : first.title;
+
+    if (readings.length === 1) {
+      return firstTitle;
+    }
+
+    return `${firstTitle}  ·  +${readings.length - 1}`;
   };
 
   const rootCategories = useMemo(
@@ -1160,9 +1200,9 @@ export const MenuScreen = ({navigation}) => {
                       </Pressable>
 
                       <Pressable
-                        disabled={!resolveBibleReference(calendarToday?.gospel_title)}
+                        disabled={!calendarGospelReadings.length}
                         onPress={() =>
-                          openCalendarBibleReference(navigation, calendarToday?.gospel_title)
+                          openCalendarQuickReading('gospel', calendarGospelReadings)
                         }
                         style={({pressed}) => [
                           styles.calendarQuickItem,
@@ -1177,19 +1217,18 @@ export const MenuScreen = ({navigation}) => {
                         <Text
                           style={[
                             styles.calendarQuickText,
-                            !!resolveBibleReference(calendarToday?.gospel_title) &&
-                              styles.calendarBibleLink,
+                            !!calendarGospelReadings.length && styles.calendarBibleLink,
                           ]}
                           numberOfLines={2}
                         >
-                          {calendarToday?.gospel_title || '—'}
+                          {formatCalendarQuickReadings(calendarGospelReadings)}
                         </Text>
                       </Pressable>
 
                       <Pressable
-                        disabled={!resolveBibleReference(calendarToday?.apostolic_title)}
+                        disabled={!calendarApostleReadings.length}
                         onPress={() =>
-                          openCalendarBibleReference(navigation, calendarToday?.apostolic_title)
+                          openCalendarQuickReading('apostle', calendarApostleReadings)
                         }
                         style={({pressed}) => [
                           styles.calendarQuickItem,
@@ -1202,12 +1241,11 @@ export const MenuScreen = ({navigation}) => {
                         <Text
                           style={[
                             styles.calendarQuickText,
-                            !!resolveBibleReference(calendarToday?.apostolic_title) &&
-                              styles.calendarBibleLink,
+                            !!calendarApostleReadings.length && styles.calendarBibleLink,
                           ]}
                           numberOfLines={2}
                         >
-                          {calendarToday?.apostolic_title || '—'}
+                          {formatCalendarQuickReadings(calendarApostleReadings)}
                         </Text>
                       </Pressable>
                     </View>
