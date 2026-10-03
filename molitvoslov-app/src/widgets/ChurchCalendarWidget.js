@@ -93,12 +93,9 @@ export const ChurchCalendarWidget = ({
 
   const feast = day?.main_feast?.short_title || day?.main_feast?.title || copy.saintMemory;
   const fast = formatFast(day, lang) || copy.noFastData;
-  const iconUrl = day?.main_feast?.icon_url || '';
   const bundledIconSource = getBundledCalendarIconSource(day?.main_feast);
   const iconSource =
-    typeof bundledIconSource === 'number'
-      ? bundledIconSource
-      : bundledIconSource?.uri || iconUrl || null;
+    typeof bundledIconSource === 'number' ? bundledIconSource : bundledIconSource?.uri || null;
 
   const gospel = day?.gospel_title || '—';
   const apostle = day?.apostolic_title || '—';
