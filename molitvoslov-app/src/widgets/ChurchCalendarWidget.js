@@ -236,7 +236,7 @@ export const ChurchCalendarWidget = ({
                 imageWidth={saintImageWidth}
                 imageHeight={saintImageHeight}
                 radius={7}
-                resizeMode="cover"
+                resizeMode="contain"
                 style={{
                   marginRight: tiny ? 4 : 7,
                 }}
