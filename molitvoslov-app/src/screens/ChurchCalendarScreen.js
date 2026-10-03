@@ -1091,9 +1091,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#EED7B3',
   },
 
-
-
-
   feastImage: {
     borderRadius: 13,
   },
