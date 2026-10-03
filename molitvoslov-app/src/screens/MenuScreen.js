@@ -11,7 +11,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import {getWidgetInfo, requestPinWidget, requestWidgetUpdate} from 'react-native-android-widget';
+import {requestPinWidget, requestWidgetUpdate} from 'react-native-android-widget';
 
 import {getDailyQuote} from '../services/dailyQuote';
 import {QuoteOfDayWidget} from '../widgets/QuoteOfDayWidget';
@@ -535,19 +535,6 @@ export const MenuScreen = ({navigation}) => {
 
   const showCalendarWidgetInfo = async () => {
     try {
-      const widgets = await getWidgetInfo('ChurchCalendar');
-
-      if (widgets.length > 0) {
-        await updateCalendarWidget();
-        Alert.alert(
-          calendarLanguage === 'uk' ? 'Віджет оновлено' : 'Виджет обновлён',
-          calendarLanguage === 'uk'
-            ? 'Віджет «Церковний календар» вже є на головному екрані. Його вміст оновлено.'
-            : 'Виджет «Церковный календарь» уже есть на главном экране. Его содержимое обновлено.'
-        );
-        return;
-      }
-
       const requested = await requestPinWidget({
         widgetName: 'ChurchCalendar',
       });
@@ -853,17 +840,6 @@ export const MenuScreen = ({navigation}) => {
 
   const showWidgetInfo = async () => {
     try {
-      const widgets = await getWidgetInfo('QuoteOfDay');
-
-      if (widgets.length > 0) {
-        await updateQuoteWidget();
-        Alert.alert(
-          'Виджет обновлён',
-          'Виджет «Цитата дня» уже есть на главном экране. Его содержимое обновлено.'
-        );
-        return;
-      }
-
       const requested = await requestPinWidget({
         widgetName: 'QuoteOfDay',
       });
