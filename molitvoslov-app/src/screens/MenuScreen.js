@@ -306,6 +306,33 @@ export const MenuScreen = ({navigation}) => {
     [calendarToday?.main_feast]
   );
 
+  const CalendarSaintImage = ({source}) => {
+    const resolved = Image.resolveAssetSource(source);
+
+    const sourceWidth = resolved?.width || 46;
+    const sourceHeight = resolved?.height || 68;
+
+    const width = 46;
+
+    const calculatedHeight = width * (sourceHeight / sourceWidth);
+
+    const height = Math.max(54, Math.min(86, calculatedHeight));
+
+    return (
+      <Image
+        source={source}
+        resizeMode="cover"
+        style={[
+          styles.calendarSaintImage,
+          {
+            width,
+            height,
+          },
+        ]}
+      />
+    );
+  };
+
   const loadLibrary = useCallback(async () => {
     try {
       const [
@@ -1096,11 +1123,7 @@ export const MenuScreen = ({navigation}) => {
                       style={({pressed}) => [styles.calendarFeastCard, pressed && styles.pressed]}
                     >
                       {calendarSaintSource ? (
-                        <Image
-                          source={calendarSaintSource}
-                          style={styles.calendarSaintImage}
-                          resizeMode="cover"
-                        />
+                        <CalendarSaintImage source={calendarSaintSource} />
                       ) : (
                         <View style={styles.calendarSaintPlaceholder}>
                           <Text style={styles.calendarSaintCross}>☦</Text>
@@ -2047,12 +2070,16 @@ const styles = StyleSheet.create({
   },
 
   calendarSaintImage: {
-    width: 46,
-    MaxWidth: 56,
-    height: 58,
-    maxHeight: '100%',
-    // marginTop: 5,
-    borderRadius: 8,
+    // width: 46,
+    // // MaxWidth: 56,
+    // height: 79,
+    // // maxHeight: '100%',
+    // // marginTop: 5,
+    // borderRadius: 8,
+    // width: 98,
+    // // aspectRatio,
+    // minHeight: 105,
+    // maxHeight: 170,
     backgroundColor: '#F0D6A5',
   },
 
@@ -2066,20 +2093,17 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(157, 104, 46, 0.24)',
     backgroundColor: '#F0D6A5',
   },
-
   calendarSaintCross: {
     color: '#8B5526',
     fontFamily: 'serif',
     fontSize: 19,
     lineHeight: 22,
   },
-
   calendarFeastTextWrap: {
     minWidth: 0,
     flex: 1,
     marginLeft: 6,
   },
-
   calendarFeastLabel: {
     color: '#A16E35',
     fontSize: 9,

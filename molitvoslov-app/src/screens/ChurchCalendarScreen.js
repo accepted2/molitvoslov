@@ -92,10 +92,27 @@ const displayTitle = (feast, copy) => feast?.short_title || feast?.title || copy
 
 const FeastImage = ({feast}) => {
   const [failed, setFailed] = useState(false);
+  const [imageHeight, setImageHeight] = useState(120);
+
   const source = getBundledCalendarIconSource(feast);
+  const imageWidth = 98;
 
   useEffect(() => {
     setFailed(false);
+
+    if (!source) {
+      return;
+    }
+
+    const resolved = Image.resolveAssetSource(source);
+
+    if (resolved?.width && resolved?.height) {
+      const calculatedHeight = imageWidth * (resolved.height / resolved.width);
+
+      setImageHeight(Math.max(105, Math.min(170, calculatedHeight)));
+    } else {
+      setImageHeight(120);
+    }
   }, [feast?.icon_url, feast?.source_id]);
 
   if (!source || failed) {
@@ -109,8 +126,23 @@ const FeastImage = ({feast}) => {
   return (
     <Image
       source={source}
-      style={styles.feastImage}
       resizeMode="cover"
+      onLoad={(event) => {
+        const {width, height} = event.nativeEvent.source || {};
+
+        if (width && height) {
+          const calculatedHeight = imageWidth * (height / width);
+
+          setImageHeight(Math.max(105, Math.min(170, calculatedHeight)));
+        }
+      }}
+      style={[
+        styles.feastImage,
+        {
+          width: imageWidth,
+          height: imageHeight,
+        },
+      ]}
       onError={() => setFailed(true)}
     />
   );
@@ -1051,16 +1083,19 @@ const styles = StyleSheet.create({
   },
   feastImageWrap: {
     width: '98',
-    maxWidth: '120',
-    height: 120,
+    // maxWidth: '120',
+    // height: 142,
     alignSelf: 'center',
     borderRadius: 13,
     overflow: 'hidden',
     backgroundColor: '#EED7B3',
   },
+
+
+
+
   feastImage: {
-    width: '100%',
-    height: '100%',
+    borderRadius: 13,
   },
   feastImageFallback: {
     flex: 1,
