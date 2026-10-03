@@ -5,14 +5,8 @@ import {Animated, StyleSheet, Text, View} from 'react-native';
 const BEAD_COUNT = 9;
 const CURVE = [5, 3, 1, 0, 0, 0, 1, 3, 5];
 
-export const PrayerBeadsLoader = ({
-  text = '',
-  compact = false,
-  light = false,
-}) => {
-  const beads = useRef(
-    Array.from({length: BEAD_COUNT}, () => new Animated.Value(0))
-  ).current;
+export const PrayerBeadsLoader = ({text = '', compact = false, light = false}) => {
+  const beads = useRef(Array.from({length: BEAD_COUNT}, () => new Animated.Value(0))).current;
 
   useEffect(() => {
     const animation = Animated.loop(
@@ -96,11 +90,7 @@ export const PrayerBeadsLoader = ({
       {!!text && (
         <Text
           numberOfLines={compact ? 1 : 2}
-          style={[
-            styles.text,
-            compact && styles.textCompact,
-            light && styles.textLight,
-          ]}
+          style={[styles.text, compact && styles.textCompact, light && styles.textLight]}
         >
           {text}
         </Text>
