@@ -26,7 +26,7 @@ def calendar_queryset():
     return CalendarDay.objects.select_related(
         "main_feast",
         "fast_type",
-    ).prefetch_related("feasts")
+    ).prefetch_related("feasts", "readings")
 
 
 def serialize_day(day, request):
