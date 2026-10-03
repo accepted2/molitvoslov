@@ -3,7 +3,7 @@
     "name": "Молитвослов",
     "slug": "molitvoslov",
     "scheme": "molitvoslov",
-    "version": "1.0.9",
+    "version": "1.0.10",
     "orientation": "portrait",
     "icon": "./assets/branding/app-icon.png",
     "userInterfaceStyle": "light",
@@ -13,11 +13,12 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#F7ECD8",
+        "backgroundColor": "#2B190F",
         "foregroundImage": "./assets/branding/app-icon-foreground.png"
       },
       "package": "com.accepted2.molitvoslov",
-      "versionCode": 10
+      "versionCode": 11,
+      "icon": "./assets/branding/app-icon-foreground.png"
     },
     "web": {
       "favicon": "./assets/branding/app-icon.png"
@@ -52,7 +53,9 @@
       [
         "react-native-android-widget",
         {
-          "fonts": ["./assets/fonts/Ponomar-Regular.ttf"],
+          "fonts": [
+            "./assets/fonts/Ponomar-Regular.ttf"
+          ],
           "widgets": [
             {
               "name": "QuoteOfDay",
