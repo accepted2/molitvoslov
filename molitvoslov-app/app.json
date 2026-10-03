@@ -3,7 +3,7 @@
     "name": "Молитвослов",
     "slug": "molitvoslov",
     "scheme": "molitvoslov",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "orientation": "portrait",
     "icon": "./assets/branding/app-icon.png",
     "userInterfaceStyle": "light",
@@ -14,10 +14,10 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#F7ECD8",
-        "foregroundImage": "./assets/branding/app-icon.png"
+        "foregroundImage": "./assets/branding/app-icon-foreground.png"
       },
       "package": "com.accepted2.molitvoslov",
-      "versionCode": 9
+      "versionCode": 10
     },
     "web": {
       "favicon": "./assets/branding/app-icon.png"
@@ -82,7 +82,6 @@
       ],
       "expo-font"
     ],
-
     "owner": "anatoliy1",
     "extra": {
       "eas": {

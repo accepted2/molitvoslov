@@ -500,6 +500,12 @@ export const MenuScreen = ({navigation}) => {
     [calendarToday, calendarLanguage]
   );
 
+  useEffect(() => {
+    if (calendarToday) {
+      updateCalendarWidget(calendarToday, calendarLanguage);
+    }
+  }, [calendarToday, calendarLanguage, updateCalendarWidget]);
+
   const changeCalendarLanguage = async (language) => {
     const next = await setCalendarLanguage(language);
     setCalendarLanguageState(next);
@@ -532,11 +538,12 @@ export const MenuScreen = ({navigation}) => {
       const widgets = await getWidgetInfo('ChurchCalendar');
 
       if (widgets.length > 0) {
+        await updateCalendarWidget();
         Alert.alert(
-          calendarCopy.widgetAlready,
+          calendarLanguage === 'uk' ? 'Віджет оновлено' : 'Виджет обновлён',
           calendarLanguage === 'uk'
-            ? 'На головному екрані вже встановлено віджет «Церковний календар».'
-            : 'На главном экране уже установлен виджет «Церковный календарь».'
+            ? 'Віджет «Церковний календар» вже є на головному екрані. Його вміст оновлено.'
+            : 'Виджет «Церковный календарь» уже есть на главном экране. Его содержимое обновлено.'
         );
         return;
       }
@@ -849,7 +856,11 @@ export const MenuScreen = ({navigation}) => {
       const widgets = await getWidgetInfo('QuoteOfDay');
 
       if (widgets.length > 0) {
-        Alert.alert('Виджет уже добавлен', 'На главном экране уже установлен виджет «Цитата дня».');
+        await updateQuoteWidget();
+        Alert.alert(
+          'Виджет обновлён',
+          'Виджет «Цитата дня» уже есть на главном экране. Его содержимое обновлено.'
+        );
         return;
       }
 
