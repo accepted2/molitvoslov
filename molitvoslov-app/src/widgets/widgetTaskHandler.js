@@ -103,8 +103,7 @@ export const widgetTaskHandler = async (props) => {
     requestedDayDate = new Date();
   }
 
-  const finalDisplayDate =
-    clickAction === 'CALENDAR_SELECT_DAY' ? requestedDayDate : displayDate;
+  const finalDisplayDate = clickAction === 'CALENDAR_SELECT_DAY' ? requestedDayDate : displayDate;
 
   const dateKey = toDateKey(requestedDayDate);
 
