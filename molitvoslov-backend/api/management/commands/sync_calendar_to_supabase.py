@@ -432,8 +432,18 @@ class Command(BaseCommand):
             if local_main_uid != remote_main_uid:
                 changed.append("main_feast")
 
-            local_feasts = sorted(str(x.sync_uid) for x in day.feasts.all())
-            remote_feasts = sorted(str(x.sync_uid) for x in remote.feasts.all() if x.sync_uid)
+            # Сравниваем ВСЕ связи дня. Старые строки Supabase могут иметь
+            # sync_uid=NULL (миграция 0038 разрешяла NULL), поэтому нельзя
+            # просто отбрасывать такие памяти: иначе лишняя связь останется
+            # незамеченной и продолжит попадать в all_feasts API.
+            local_feasts = sorted(
+                (str(x.sync_uid), x.source_id)
+                for x in day.feasts.all()
+            )
+            remote_feasts = sorted(
+                (str(x.sync_uid) if x.sync_uid else "", x.source_id)
+                for x in remote.feasts.all()
+            )
             if local_feasts != remote_feasts:
                 changed.append("feasts")
 
@@ -586,11 +596,18 @@ class Command(BaseCommand):
                     content_changed = True
 
             desired_feasts = [remote_feasts[x.sync_uid] for x in day.feasts.all()]
-            current_uids = sorted(str(x.sync_uid) for x in remote.feasts.all() if x.sync_uid)
-            desired_uids = sorted(str(x.sync_uid) for x in desired_feasts)
-            relations_changed = current_uids != desired_uids
+
+            # Сравниваем фактические PK связей, а не только sync_uid.
+            # Это принципиально для старых записей Supabase с sync_uid=NULL:
+            # такие лишние связи должны быть отвязаны от дня.
+            current_ids = sorted(remote.feasts.values_list("pk", flat=True))
+            desired_ids = sorted(x.pk for x in desired_feasts)
+            relations_changed = current_ids != desired_ids
 
             if relations_changed:
+                # set() меняет только связь CalendarDay.feasts.
+                # Сами CalendarFeast не удаляются и могут использоваться
+                # другими календарными днями.
                 remote.feasts.set(desired_feasts)
 
             if was_created:
@@ -704,9 +721,24 @@ class Command(BaseCommand):
             if local_main != remote_main:
                 problems.append(f"День {day.date_gregorian}: main_feast отличается")
 
-            local_feasts = sorted(str(x.sync_uid) for x in day.feasts.all())
-            remote_feasts = sorted(str(x.sync_uid) for x in remote.feasts.all() if x.sync_uid)
-            if local_feasts != remote_feasts:
+            expected_remote_feast_ids = []
+            missing_remote_feast = False
+
+            for local_feast in day.feasts.all():
+                remote_feast = self._find_remote_feast(local_feast)
+                if remote_feast is None:
+                    missing_remote_feast = True
+                    continue
+                expected_remote_feast_ids.append(remote_feast.pk)
+
+            actual_remote_feast_ids = list(
+                remote.feasts.order_by("pk").values_list("pk", flat=True)
+            )
+
+            if (
+                missing_remote_feast
+                or sorted(expected_remote_feast_ids) != actual_remote_feast_ids
+            ):
                 problems.append(f"День {day.date_gregorian}: feasts отличаются")
 
             local_readings = list(day.readings.all())
