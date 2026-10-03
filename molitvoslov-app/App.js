@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useState} from 'react';
 
-import {AppState} from 'react-native';
+import {AppState, ImageBackground, StyleSheet, Text, View} from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -9,10 +9,10 @@ import NetInfo from '@react-native-community/netinfo';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 
 import {useFonts} from 'expo-font';
-import * as SplashScreen from 'expo-splash-screen';
 
 import {AppNavigator} from './src/navigation/AppNavigator';
 import {OnboardingScreen} from './src/screens/OnboardingScreen';
+import {PrayerBeadsLoader} from './src/components/feedback/PrayerBeadsLoader';
 
 import {TextSelectionProvider} from './src/context/TextSelectionContext';
 
@@ -31,12 +31,32 @@ import {syncPublicContent} from './src/services/contentSync';
 const ONBOARDING_STORAGE_KEY = '@molitvoslov/onboarding-version';
 const ONBOARDING_VERSION = 5;
 
-SplashScreen.preventAutoHideAsync().catch(() => {});
+const MIN_STARTUP_MS = 650;
+
+const StartupLoadingScreen = () => (
+  <ImageBackground
+    source={require('./assets/home/hero.png')}
+    resizeMode="cover"
+    style={styles.startupImage}
+  >
+    <View style={styles.startupShade}>
+      <View style={styles.startupBrand}>
+        <Text style={styles.startupCross}>☦</Text>
+        <Text style={styles.startupTitle}>Молитвослов</Text>
+      </View>
+
+      <View style={styles.startupLoader}>
+        <PrayerBeadsLoader light text="Подготавливаем молитвослов..." />
+      </View>
+    </View>
+  </ImageBackground>
+);
 
 export default function App() {
   const [databaseReady, setDatabaseReady] = useState(false);
   const [onboardingReady, setOnboardingReady] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [minimumStartupElapsed, setMinimumStartupElapsed] = useState(false);
 
   const [fontsLoaded] = useFonts({
     Ponomar: require('./assets/fonts/Ponomar-Regular.ttf'),
@@ -45,10 +65,12 @@ export default function App() {
   const appReady = databaseReady && fontsLoaded && onboardingReady;
 
   useEffect(() => {
-    if (appReady) {
-      SplashScreen.hideAsync().catch(() => {});
-    }
-  }, [appReady]);
+    const timer = setTimeout(() => {
+      setMinimumStartupElapsed(true);
+    }, MIN_STARTUP_MS);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const prepareDatabase = async () => {
@@ -200,8 +222,8 @@ export default function App() {
     }
   }, []);
 
-  if (!appReady) {
-    return null;
+  if (!appReady || !minimumStartupElapsed) {
+    return <StartupLoadingScreen />;
   }
 
   return (
@@ -212,3 +234,48 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  startupImage: {
+    flex: 1,
+    backgroundColor: '#2B190F',
+  },
+  startupShade: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    backgroundColor: 'rgba(42, 23, 12, 0.46)',
+  },
+  startupBrand: {
+    alignItems: 'center',
+    marginBottom: 28,
+  },
+  startupCross: {
+    color: '#F0CF92',
+    fontFamily: 'serif',
+    fontSize: 28,
+    lineHeight: 34,
+    textShadowColor: 'rgba(0, 0, 0, 0.72)',
+    textShadowOffset: {width: 0, height: 2},
+    textShadowRadius: 5,
+  },
+  startupTitle: {
+    marginTop: 3,
+    color: '#FFF0D0',
+    fontFamily: 'serif',
+    fontSize: 34,
+    lineHeight: 40,
+    fontWeight: '700',
+    textShadowColor: 'rgba(0, 0, 0, 0.72)',
+    textShadowOffset: {width: 0, height: 2},
+    textShadowRadius: 6,
+  },
+  startupLoader: {
+    minWidth: 220,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 18,
+    backgroundColor: 'rgba(45, 25, 14, 0.44)',
+  },
+});
