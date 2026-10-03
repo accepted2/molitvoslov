@@ -199,3 +199,61 @@ class CalendarDay(models.Model):
 
     def __str__(self):
         return self.date_gregorian.isoformat()
+
+
+class CalendarReading(models.Model):
+    """Одно евангельское или апостольское чтение календарного дня."""
+
+    KIND_GOSPEL = "gospel"
+    KIND_APOSTLE = "apostle"
+    KIND_CHOICES = [
+        (KIND_GOSPEL, "Евангелие"),
+        (KIND_APOSTLE, "Апостол"),
+    ]
+
+    sync_uid = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+        db_index=True,
+    )
+    day = models.ForeignKey(
+        CalendarDay,
+        on_delete=models.CASCADE,
+        related_name="readings",
+        verbose_name="Календарный день",
+    )
+    kind = models.CharField(
+        max_length=16,
+        choices=KIND_CHOICES,
+        db_index=True,
+        verbose_name="Тип",
+    )
+    label = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        verbose_name="Подпись",
+        help_text="Необязательно: например «Ряд.», «Субботы по Воздвижении», «Вмч.»",
+    )
+    title = models.TextField(
+        verbose_name="Ссылка на чтение",
+        help_text="Одна ссылка на чтение, например «1 Кор. 1:26-29». Одинакова для RU и UK.",
+    )
+    order = models.PositiveSmallIntegerField(
+        default=0,
+        verbose_name="Порядок",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["kind", "order", "id"]
+        indexes = [
+            models.Index(fields=["day", "kind", "order"], name="api_calread_day_kind_ord_idx"),
+        ]
+        verbose_name = "Календарь: чтение"
+        verbose_name_plural = "Календарь: чтения"
+
+    def __str__(self):
+        return f"{self.get_kind_display()}: {self.title}"

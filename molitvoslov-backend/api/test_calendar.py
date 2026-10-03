@@ -3,7 +3,7 @@ from datetime import date
 from rest_framework.test import APITestCase
 
 from api.calendar_import import upsert_day
-from api.calendar_models import CalendarDay, CalendarFeast
+from api.calendar_models import CalendarDay, CalendarFeast, CalendarReading
 
 
 class CalendarApiTests(APITestCase):
@@ -104,3 +104,66 @@ class CalendarApiTests(APITestCase):
         self.assertEqual(response.data["fast_type_title"], "Пісний день")
         self.assertEqual(response.data["gospel_title"], "Мт. 10:17-22")
         self.assertEqual(response.data["weekday_name"], "П’ятниця")
+
+
+    def test_day_endpoint_returns_multiple_ordered_readings(self):
+        day = CalendarDay.objects.create(
+            date_gregorian=date(2026, 10, 3),
+            gospel_title="Старое Евангелие",
+            gospel_title_uk="Старе Євангеліє",
+            apostolic_title="Старый Апостол",
+            apostolic_title_uk="Старий Апостол",
+        )
+
+        CalendarReading.objects.create(
+            day=day,
+            kind=CalendarReading.KIND_GOSPEL,
+            label="Ряд.",
+            title="Ин. 8:21-30",
+            order=20,
+        )
+        CalendarReading.objects.create(
+            day=day,
+            kind=CalendarReading.KIND_GOSPEL,
+            label="Субботы по Воздвижении",
+            title="Мф. 19:3-12",
+            order=10,
+        )
+        CalendarReading.objects.create(
+            day=day,
+            kind=CalendarReading.KIND_APOSTLE,
+            label="Вмч.",
+            title="Еф. 6:10-17",
+            order=10,
+        )
+
+        response = self.client.get(
+            "/api/calendar/day/",
+            {"date": "2026-10-03", "lang": "uk"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [item["title"] for item in response.data["readings"]],
+            ["Мф. 19:3-12", "Ин. 8:21-30", "Еф. 6:10-17"],
+        )
+        self.assertEqual(response.data["gospel_title"], "Мф. 19:3-12")
+        self.assertEqual(response.data["apostolic_title"], "Еф. 6:10-17")
+
+    def test_importer_creates_structured_readings_from_source_titles(self):
+        day = upsert_day(
+            {
+                "date_gregorian": "2026-10-04",
+                "gospel_title": "Лк. 5:1-11",
+                "apostolic_title": "2 Кор. 4:6-15",
+            }
+        )
+
+        self.assertEqual(day.readings.count(), 2)
+        self.assertEqual(
+            list(day.readings.values_list("kind", "title")),
+            [
+                (CalendarReading.KIND_APOSTLE, "2 Кор. 4:6-15"),
+                (CalendarReading.KIND_GOSPEL, "Лк. 5:1-11"),
+            ],
+        )
