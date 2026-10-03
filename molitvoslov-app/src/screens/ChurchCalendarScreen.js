@@ -22,6 +22,7 @@ import {
   formatFast,
   getBibleReadingVerses,
   getCalendarDay,
+  getCalendarReadingItems,
   getCalendarMonth,
   openCalendarBibleReference,
   resolveBibleReference,
@@ -304,37 +305,6 @@ const ReadingLink = ({
 };
 
 
-const getDayReadings = (day, kind) => {
-  const structured = Array.isArray(day?.readings)
-    ? day.readings
-        .filter((reading) => reading?.kind === kind && reading?.title)
-        .slice()
-        .sort(
-          (left, right) =>
-            Number(left?.order || 0) - Number(right?.order || 0) ||
-            Number(left?.id || 0) - Number(right?.id || 0)
-        )
-    : [];
-
-  if (structured.length) {
-    return structured;
-  }
-
-  const legacyTitle = kind === 'gospel' ? day?.gospel_title : day?.apostolic_title;
-
-  return legacyTitle
-    ? [
-        {
-          id: `legacy-${kind}`,
-          kind,
-          label: '',
-          title: legacyTitle,
-          order: 0,
-        },
-      ]
-    : [];
-};
-
 const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout}) => {
   const [showAll, setShowAll] = useState(false);
 
@@ -445,8 +415,14 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const headerHeight = insets.top + 56;
   const locale = CALENDAR_MONTHS[language];
   const copy = calendarText(language);
-  const gospelReadings = useMemo(() => getDayReadings(dayData, 'gospel'), [dayData]);
-  const apostleReadings = useMemo(() => getDayReadings(dayData, 'apostle'), [dayData]);
+  const gospelReadings = useMemo(
+    () => getCalendarReadingItems(dayData, 'gospel'),
+    [dayData]
+  );
+  const apostleReadings = useMemo(
+    () => getCalendarReadingItems(dayData, 'apostle'),
+    [dayData]
+  );
 
   useEffect(() => {
     const section = route.params?.section;
