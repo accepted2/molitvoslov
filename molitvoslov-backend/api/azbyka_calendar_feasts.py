@@ -2,7 +2,7 @@ import re
 import unicodedata
 from dataclasses import dataclass
 from difflib import SequenceMatcher
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -311,15 +311,23 @@ def extract_day_saint_links(html):
     anchors.reverse()
 
     for anchor in anchors:
-        href = anchor.get("href") or ""
-        if not re.match(r"^/days/sv-[^/?#]+/?$", href):
+        href = normalize_space(anchor.get("href") or "")
+        if not href:
+            continue
+
+        # Azbyka может отдавать как относительные /days/sv-..., так и
+        # абсолютные https://azbyka.ru/days/sv-... ссылки. Смотрим именно
+        # path, чтобы query/fragment и форма URL не ломали импорт.
+        parsed_href = urlparse(urljoin(AZBYKA_BASE_URL, href))
+        path = parsed_href.path.rstrip("/")
+        if not re.fullmatch(r"/days/sv-[^/?#]+", path):
             continue
 
         title = normalize_space(anchor.get_text(" ", strip=True))
         if not title:
             continue
 
-        url = urljoin(AZBYKA_BASE_URL, href)
+        url = urljoin(AZBYKA_BASE_URL, path)
         if url in seen:
             continue
 
