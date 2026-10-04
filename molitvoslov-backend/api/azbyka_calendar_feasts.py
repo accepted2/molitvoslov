@@ -387,60 +387,19 @@ def extract_day_saint_links(html):
     # /days/svv-*      — собор/группа святых
     # /days/prazdnik-* — праздник
     # /days/ikona-*    — икона Божией Матери
-    #
-    # Поэтому нельзя ограничиваться только /days/sv-* — иначе, например,
-    # 6 октября пропадут Зачатие Иоанна Предтечи, Ксанфиппа и Поликсения,
-    # Андрей/Иоанн/Пётр/Антонин и Словенская икона.
-    list_items = list(readings_heading.find_all_previous("li"))
-    list_items.reverse()
-
     allowed_path = re.compile(
         r"^/days/(?:sv|svv|prazdnik|ikona)-[^/?#]+$"
     )
 
-    for item in list_items:
-        source_url = ""
-
-        for anchor in item.find_all("a", href=True):
-            href = normalize_space(anchor.get("href") or "")
-            if not href:
-                continue
-
-            parsed_href = urlparse(urljoin(AZBYKA_BASE_URL, href))
-            path = parsed_href.path.rstrip("/")
-
-            if not allowed_path.fullmatch(path):
-                continue
-
-            source_url = urljoin(AZBYKA_BASE_URL, path)
-            break
-
-        if not source_url:
-            continue
-
-        # Берём текст всего <li>, а не только <a>. Это важно для записей
-        # вида "Иконы Божией Матери: Словенская (1635)", где префикс
-        # находится вне ссылки.
-        title = tag_text(item)
-        if not title:
-            continue
-
-        if source_url in seen:
-            continue
-
-        seen.add(source_url)
-        sources.append(DaySaintLink(title=title, url=source_url))
-
-    # Fallback для упрощённой/альтернативной разметки, где ссылка на память
-    # стоит напрямую перед блоком чтений и не обёрнута в <li>. Это также
-    # сохраняет корректное чтение слов с ударной буквой внутри <span>.
+    # Берём все ссылки, которые физически стоят ДО заголовка чтений.
+    # Если ссылка лежит внутри <li>, используем текст всего пункта: так
+    # сохраняется префикс вроде "Иконы Божией Матери:". Если <li> нет,
+    # безопасно используем текст самой ссылки. Это делает парсер устойчивым
+    # к вариантам разметки Azbyka и к упрощённым тестовым HTML.
     anchors = list(readings_heading.find_all_previous("a", href=True))
     anchors.reverse()
 
     for anchor in anchors:
-        if anchor.find_parent("li") is not None:
-            continue
-
         href = normalize_space(anchor.get("href") or "")
         if not href:
             continue
@@ -455,7 +414,8 @@ def extract_day_saint_links(html):
         if source_url in seen:
             continue
 
-        title = tag_text(anchor)
+        item = anchor.find_parent("li")
+        title = tag_text(item) if item is not None else tag_text(anchor)
         if not title:
             continue
 
