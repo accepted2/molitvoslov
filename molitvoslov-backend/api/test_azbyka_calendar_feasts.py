@@ -37,7 +37,7 @@ class AzbykaCalendarFeastsParserTests(SimpleTestCase):
           <h2>Священномученику Фоке Синопскому</h2>
           <h3>Тропарь, глас 4</h3>
           <p>Текст тропаря Фоке.</p>
-          <h3>Кондак, глас 6</h3>
+          <h3>И кондак, глас 6</h3>
           <p>Текст кондака Фоке.</p>
           <h2>Пророку Ионе</h2>
           <h3>Тропарь, глас 2</h3>
@@ -50,6 +50,7 @@ class AzbykaCalendarFeastsParserTests(SimpleTestCase):
         self.assertEqual(len(groups), 2)
         self.assertEqual(groups[0].troparion_echo, 4)
         self.assertEqual(groups[0].kontakion_echo, 6)
+        self.assertEqual(groups[0].kontakion_title, "И кондак, глас 6")
         self.assertEqual(groups[0].kontakion_content, "Текст кондака Фоке.")
 
         group, match = find_best_hymn_group(
