@@ -177,6 +177,15 @@ class Command(BaseCommand):
                 "поля дня, пост и чтения не изменяются."
             ),
         )
+        scope.add_argument(
+            "--azbyka-day-only",
+            action="store_true",
+            help=(
+                "Синхронизировать результат единого импорта Azbyka: "
+                "карточки памятей + связи дня + CalendarReading + legacy-поля "
+                "чтений. Пост, summary и остальные поля дня не изменяются."
+            ),
+        )
 
     def handle(self, *args, **options):
         self._assert_local_source()
@@ -189,8 +198,95 @@ class Command(BaseCommand):
         readings_only = options["readings_only"]
         feast_content_only = options["feast_content_only"]
         day_feasts_only = options["day_feasts_only"]
+        azbyka_day_only = options["azbyka_day_only"]
 
         self._check_remote()
+
+        if azbyka_day_only:
+            feasts = self._collect_feasts(days)
+            self._ensure_local_uids(feasts, {})
+
+            feast_preview = self._preview_day_feasts_only(days, feasts)
+            reading_preview = self._preview_readings_only(days)
+            self._print_azbyka_day_preview(
+                feast_preview,
+                reading_preview,
+                days,
+                feasts,
+            )
+
+            if options["dry_run"]:
+                self.stdout.write(
+                    self.style.WARNING("DRY-RUN: Supabase не изменён.")
+                )
+                return
+
+            feast_counters = {
+                "feast_create": 0,
+                "feast_update": 0,
+                "feast_same": 0,
+                "day_update": 0,
+                "day_same": 0,
+            }
+            reading_counters = {
+                "day_update": 0,
+                "day_same": 0,
+                "reading_create": 0,
+                "reading_update": 0,
+                "reading_delete": 0,
+                "reading_same": 0,
+            }
+
+            with transaction.atomic(using=REMOTE_ALIAS):
+                remote_feasts = self._sync_feasts(
+                    feasts,
+                    feast_counters,
+                )
+                self._sync_day_feast_links_only(
+                    days,
+                    remote_feasts,
+                    feast_counters,
+                )
+                self._sync_legacy_reading_fields(
+                    days,
+                    reading_counters,
+                )
+                self._sync_readings(
+                    days,
+                    reading_counters,
+                )
+
+            problems = [
+                *self._verify_day_feasts_only(days, feasts),
+                *self._verify_readings_only(days),
+            ]
+            if problems:
+                for problem in problems[:30]:
+                    self.stdout.write(self.style.ERROR(f"  - {problem}"))
+                raise CommandError(
+                    f"После записи найдено расхождений: {len(problems)}."
+                )
+
+            self.stdout.write(
+                self.style.SUCCESS(
+                    "Готово. В Supabase отправлен единый набор Azbyka: "
+                    "памяти + связи дня + чтения.\n"
+                    f"Памяти: +{feast_counters['feast_create']} / "
+                    f"обновлено {feast_counters['feast_update']} / "
+                    f"без изменений {feast_counters['feast_same']}.\n"
+                    f"Связи памятей дня: обновлено "
+                    f"{feast_counters['day_update']} / "
+                    f"без изменений {feast_counters['day_same']}.\n"
+                    f"Legacy-поля чтений: обновлено "
+                    f"{reading_counters['day_update']} / "
+                    f"без изменений {reading_counters['day_same']}.\n"
+                    f"Чтения: +{reading_counters['reading_create']} / "
+                    f"обновлено {reading_counters['reading_update']} / "
+                    f"удалено {reading_counters['reading_delete']} / "
+                    f"без изменений {reading_counters['reading_same']}."
+                )
+            )
+            return
 
         if day_feasts_only:
             feasts = self._collect_feasts(days)
@@ -627,6 +723,44 @@ class Command(BaseCommand):
                 )
 
         return result
+
+    def _print_azbyka_day_preview(
+        self,
+        feast_preview,
+        reading_preview,
+        days,
+        feasts,
+    ):
+        self.stdout.write(
+            f"Источник SQLite: дней {len(days)}, памятей {len(feasts)}. "
+            "Режим: единый набор Azbyka (памяти + чтения)."
+        )
+        self.stdout.write("План:")
+
+        for key, title in [
+            ("feast_create", "Памяти CREATE"),
+            ("feast_update", "Памяти UPDATE"),
+            ("day_relation_update", "Связи памятей дня UPDATE"),
+        ]:
+            items = feast_preview[key]
+            self.stdout.write(f"  {title}: {len(items)}")
+            for item in items[:30]:
+                self.stdout.write(f"    - {item}")
+            if len(items) > 30:
+                self.stdout.write(f"    ... и ещё {len(items) - 30}")
+
+        for key, title in [
+            ("day_update", "Legacy-поля чтений UPDATE"),
+            ("reading_create", "Чтения CREATE"),
+            ("reading_update", "Чтения UPDATE"),
+            ("reading_delete", "Чтения DELETE"),
+        ]:
+            items = reading_preview[key]
+            self.stdout.write(f"  {title}: {len(items)}")
+            for item in items[:30]:
+                self.stdout.write(f"    - {item}")
+            if len(items) > 30:
+                self.stdout.write(f"    ... и ещё {len(items) - 30}")
 
     def _print_day_feasts_only_preview(self, preview, days, feasts):
         self.stdout.write(
