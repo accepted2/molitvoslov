@@ -437,11 +437,17 @@ def extract_day_hymn_groups(html):
             voice = VOICE_RE.search(hymn_title)
             echo = int(voice.group(1)) if voice else None
 
-            if hymn_lower.startswith("тропарь") and not values["troparion_content"]:
+            if (
+                re.match(r"^(?:и\s+)?тропарь\b", hymn_lower)
+                and not values["troparion_content"]
+            ):
                 values["troparion_title"] = hymn_title
                 values["troparion_content"] = content
                 values["troparion_echo"] = echo
-            elif hymn_lower.startswith("кондак") and not values["kontakion_content"]:
+            elif (
+                re.match(r"^(?:и\s+)?кондак\b", hymn_lower)
+                and not values["kontakion_content"]
+            ):
                 values["kontakion_title"] = hymn_title
                 values["kontakion_content"] = content
                 values["kontakion_echo"] = echo
@@ -492,7 +498,10 @@ def extract_saint_content(html, url=""):
         heading_text = tag_text(heading)
         lowered = heading_text.lower()
 
-        if lowered.startswith("тропарь") and not values["troparion_content"]:
+        if (
+            re.match(r"^(?:и\s+)?тропарь\b", lowered)
+            and not values["troparion_content"]
+        ):
             content = _next_text_block(heading)
             if content:
                 values["troparion_title"] = heading_text
@@ -500,7 +509,10 @@ def extract_saint_content(html, url=""):
                 voice = VOICE_RE.search(heading_text)
                 values["troparion_echo"] = int(voice.group(1)) if voice else None
 
-        if lowered.startswith("кондак") and not values["kontakion_content"]:
+        if (
+            re.match(r"^(?:и\s+)?кондак\b", lowered)
+            and not values["kontakion_content"]
+        ):
             content = _next_text_block(heading)
             if content:
                 values["kontakion_title"] = heading_text
