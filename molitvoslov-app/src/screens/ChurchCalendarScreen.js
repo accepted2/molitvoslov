@@ -621,7 +621,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const today = toCalendarDate(new Date());
   const mainFeast = dayData?.main_feast || dayData?.all_feasts?.[0] || null;
   const otherFeasts = (dayData?.all_feasts || []).filter(
-    (feast) => feast.source_id !== mainFeast?.source_id
+    (feast) => Number(feast?.id) !== Number(mainFeast?.id)
   );
 
   const changeLanguage = async (nextLanguage) => {
@@ -768,7 +768,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
       {otherFeasts.length ? (
         otherFeasts.map((feast) => (
-          <View key={feast.source_id} style={styles.otherSaintRow}>
+          <View key={feast.id ?? feast.source_id ?? feast.title} style={styles.otherSaintRow}>
             <View style={styles.otherSaintDot} />
             <Text style={styles.otherSaintText}>{displayTitle(feast, copy)}</Text>
           </View>

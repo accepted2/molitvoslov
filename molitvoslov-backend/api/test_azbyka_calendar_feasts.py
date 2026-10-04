@@ -30,6 +30,65 @@ class AzbykaCalendarFeastsParserTests(SimpleTestCase):
         self.assertTrue(sources[0].url.endswith("/days/sv-iona"))
         self.assertTrue(sources[1].url.endswith("/days/sv-foka-sinopskij"))
 
+    def test_extracts_all_day_commemoration_types(self):
+        html = """
+        <html><body>
+          <h1>6 октября</h1>
+          <ul>
+            <li><a href="/days/prazdnik-zachatie-ioanna">Зачатие Иоанна Предтечи</a></li>
+            <li><a href="/days/sv-innokentij">свт. Иннокентия</a></li>
+            <li><a href="/days/svv-ksanfippa-i-polikseniya">Прпп. жен Ксанфиппы и Поликсении</a></li>
+            <li><a href="/days/sv-raisa">мц. Раисы</a></li>
+            <li><a href="/days/svv-andrej-ioann-petr-antonin">мчч. Андрея, Иоанна, Петра и Антонина</a></li>
+            <li><a href="/days/sv-ioann-pankratovich">Сщмч. Иоанна Панкратовича</a></li>
+            <li>Иконы Божией Матери: <a href="/days/ikona-slovenskaja">Словенская (1635)</a></li>
+          </ul>
+          <h2>Чтения Священного Писания</h2>
+        </body></html>
+        """
+
+        sources = extract_day_saint_links(html)
+
+        self.assertEqual(len(sources), 7)
+        self.assertIn("/days/prazdnik-zachatie-ioanna", sources[0].url)
+        self.assertIn("/days/svv-ksanfippa-i-polikseniya", sources[2].url)
+        self.assertIn("/days/svv-andrej-ioann-petr-antonin", sources[4].url)
+        self.assertIn("/days/ikona-slovenskaja", sources[6].url)
+        self.assertEqual(
+            sources[6].title,
+            "Иконы Божией Матери: Словенская (1635)",
+        )
+
+    def test_extracts_history_for_feast_page(self):
+        html = """
+        <html><body>
+          <h1>Зачатие Иоанна Предтечи</h1>
+          <h2>Даты</h2>
+          <p>6 октября</p>
+          <h2>Историческое содержание</h2>
+          <p>История праздника.</p>
+          <p>Продолжение.</p>
+          <h2>Богослужения</h2>
+          <h3>Тропарь, глас 4</h3>
+          <p>Текст тропаря.</p>
+          <h3>Кондак, глас 1</h3>
+          <p>Текст кондака.</p>
+        </body></html>
+        """
+
+        parsed = extract_saint_content(html)
+
+        self.assertEqual(
+            parsed.life_title,
+            "История: Зачатие Иоанна Предтечи",
+        )
+        self.assertEqual(
+            parsed.life_content,
+            "История праздника.\n\nПродолжение.",
+        )
+        self.assertEqual(parsed.troparion_echo, 4)
+        self.assertEqual(parsed.kontakion_echo, 1)
+
     def test_extracts_hymns_from_day_group(self):
         html = """
         <html><body>
@@ -97,7 +156,9 @@ class AzbykaCalendarFeastsParserTests(SimpleTestCase):
         html = """
         <html><body>
           <h1>5 октября</h1>
-          <a href="/days/sv-foka-sinopskij">сщмч. Ф<span>о́</span>ки, епископа Синопского</a>
+          <ul>
+            <li><a href="/days/sv-foka-sinopskij">сщмч. Ф<span>о́</span>ки, епископа Синопского</a></li>
+          </ul>
           <h2>Чтения Священного Писания</h2>
         </body></html>
         """
