@@ -96,6 +96,13 @@ def normalize_space(value):
     return re.sub(r"\s+", " ", value or "").strip()
 
 
+def tag_text(tag):
+    # Не вставляем искусственные пробелы между inline-узлами. На Azbyka
+    # ударная гласная внутри слова может быть обёрнута отдельным <span>;
+    # get_text(" ", ...) превращал "Фо́ки" в "Ф о ки".
+    return normalize_space(tag.get_text("", strip=False))
+
+
 def strip_accents(value):
     normalized = unicodedata.normalize("NFD", value or "")
     return "".join(ch for ch in normalized if unicodedata.category(ch) != "Mn")
@@ -234,7 +241,7 @@ def _next_text_block(heading):
         if tag.name not in {"p", "li"}:
             continue
 
-        text = normalize_space(tag.get_text(" ", strip=True))
+        text = tag_text(tag)
         if not text:
             continue
 
@@ -250,7 +257,7 @@ def _collect_life(soup, saint_title):
     memory_heading = None
 
     for heading in soup.find_all(HEADING_RE):
-        text = normalize_space(heading.get_text(" ", strip=True)).lower()
+        text = tag_text(heading).lower()
         if text in {"день памяти", "дни памяти"}:
             memory_heading = heading
             break
@@ -269,7 +276,7 @@ def _collect_life(soup, saint_title):
         if tag.name != "p":
             continue
 
-        text = normalize_space(tag.get_text(" ", strip=True))
+        text = tag_text(tag)
         if not text:
             continue
 
@@ -293,7 +300,7 @@ def extract_day_saint_links(html):
 
     readings_heading = None
     for heading in soup.find_all(HEADING_RE):
-        text = normalize_space(heading.get_text(" ", strip=True)).lower()
+        text = tag_text(heading).lower()
         if "чтения" in text and "священного писания" in text:
             readings_heading = heading
             break
@@ -323,7 +330,7 @@ def extract_day_saint_links(html):
         if not re.fullmatch(r"/days/sv-[^/?#]+", path):
             continue
 
-        title = normalize_space(anchor.get_text(" ", strip=True))
+        title = tag_text(anchor)
         if not title:
             continue
 
@@ -347,7 +354,7 @@ def extract_saint_content(html, url=""):
     if h1 is None:
         raise AzbykaFeastError(f"На странице святого нет H1: {url}")
 
-    title = normalize_space(h1.get_text(" ", strip=True))
+    title = tag_text(h1)
 
     values = {
         "troparion_title": "",
@@ -359,7 +366,7 @@ def extract_saint_content(html, url=""):
     }
 
     for heading in soup.find_all(HEADING_RE):
-        heading_text = normalize_space(heading.get_text(" ", strip=True))
+        heading_text = tag_text(heading)
         lowered = heading_text.lower()
 
         if lowered.startswith("тропарь") and not values["troparion_content"]:
