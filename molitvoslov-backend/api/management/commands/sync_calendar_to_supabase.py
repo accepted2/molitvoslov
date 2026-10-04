@@ -24,6 +24,17 @@ FAST_FIELDS = [
     "is_active",
 ]
 
+FEAST_CONTENT_FIELDS = [
+    "troparion_title",
+    "troparion_content",
+    "troparion_echo",
+    "kontakion_title",
+    "kontakion_content",
+    "kontakion_echo",
+    "life_title",
+    "life_content",
+]
+
 FEAST_FIELDS = [
     "source_id",
     "date_type",
@@ -138,13 +149,23 @@ class Command(BaseCommand):
         mode.add_argument("--dry-run", action="store_true")
         mode.add_argument("--apply", action="store_true")
 
-        parser.add_argument(
+        scope = parser.add_mutually_exclusive_group()
+        scope.add_argument(
             "--readings-only",
             action="store_true",
             help=(
                 "Синхронизировать только CalendarReading и четыре legacy-поля "
                 "ссылок на Евангелие/Апостол. Памяти, пост, описания и связи "
                 "дня не изменяются."
+            ),
+        )
+        scope.add_argument(
+            "--feast-content-only",
+            action="store_true",
+            help=(
+                "Синхронизировать только RU тропарь, кондак и житие памятей "
+                "выбранного дня. Названия, украинские поля, связи дня и пост "
+                "не изменяются."
             ),
         )
 
@@ -157,8 +178,44 @@ class Command(BaseCommand):
             raise CommandError("В локальной SQLite не найдено выбранных дней.")
 
         readings_only = options["readings_only"]
+        feast_content_only = options["feast_content_only"]
 
         self._check_remote()
+
+        if feast_content_only:
+            feasts = self._collect_feasts(days)
+            preview = self._preview_feast_content_only(feasts)
+            self._print_feast_content_only_preview(preview, days, feasts)
+
+            if options["dry_run"]:
+                self.stdout.write(self.style.WARNING("DRY-RUN: Supabase не изменён."))
+                return
+
+            counters = {
+                "feast_update": 0,
+                "feast_same": 0,
+            }
+
+            with transaction.atomic(using=REMOTE_ALIAS):
+                self._sync_feast_content_only(feasts, counters)
+
+            problems = self._verify_feast_content_only(feasts)
+            if problems:
+                for problem in problems[:30]:
+                    self.stdout.write(self.style.ERROR(f"  - {problem}"))
+                raise CommandError(
+                    f"После записи найдено расхождений: {len(problems)}."
+                )
+
+            self.stdout.write(
+                self.style.SUCCESS(
+                    "Готово. В Supabase синхронизированы только "
+                    "тропари/кондаки/жития.\n"
+                    f"Памяти: обновлено {counters['feast_update']} / "
+                    f"без изменений {counters['feast_same']}."
+                )
+            )
+            return
 
         if readings_only:
             preview = self._preview_readings_only(days)
@@ -434,6 +491,95 @@ class Command(BaseCommand):
 
     def _changed_fields(self, obj, values):
         return [field for field, expected in values.items() if getattr(obj, field) != expected]
+
+    def _feast_content_values(self, feast):
+        return {
+            field: getattr(feast, field)
+            for field in FEAST_CONTENT_FIELDS
+        }
+
+    def _preview_feast_content_only(self, feasts):
+        result = {
+            "feast_update": [],
+            "feast_missing": [],
+        }
+
+        for feast in feasts.values():
+            remote = self._find_remote_feast(feast)
+            label = feast.short_title or feast.title
+
+            if remote is None:
+                result["feast_missing"].append(label)
+                continue
+
+            changed = self._changed_fields(
+                remote,
+                self._feast_content_values(feast),
+            )
+            if changed:
+                result["feast_update"].append(
+                    f"{label} ({', '.join(changed)})"
+                )
+
+        return result
+
+    def _print_feast_content_only_preview(self, preview, days, feasts):
+        self.stdout.write(
+            f"Источник SQLite: дней {len(days)}, памятей {len(feasts)}. "
+            "Режим: только тропари/кондаки/жития."
+        )
+        self.stdout.write("План:")
+
+        for key, title in [
+            ("feast_update", "Памяти UPDATE"),
+            ("feast_missing", "Памяти MISSING"),
+        ]:
+            items = preview[key]
+            self.stdout.write(f"  {title}: {len(items)}")
+            for item in items[:20]:
+                self.stdout.write(f"    - {item}")
+            if len(items) > 20:
+                self.stdout.write(f"    ... и ещё {len(items) - 20}")
+
+    def _sync_feast_content_only(self, feasts, counters):
+        for feast in feasts.values():
+            remote = self._find_remote_feast(feast)
+            if remote is None:
+                raise CommandError(
+                    "В Supabase отсутствует память "
+                    f"{feast.short_title or feast.title}. "
+                    "Сначала выполните обычную синхронизацию этой даты."
+                )
+
+            desired = self._feast_content_values(feast)
+            changed = self._changed_fields(remote, desired)
+
+            if changed:
+                for field in changed:
+                    setattr(remote, field, desired[field])
+                remote.save(update_fields=changed)
+                counters["feast_update"] += 1
+            else:
+                counters["feast_same"] += 1
+
+    def _verify_feast_content_only(self, feasts):
+        problems = []
+
+        for feast in feasts.values():
+            remote = self._find_remote_feast(feast)
+            if remote is None:
+                problems.append(
+                    f"Память {feast.short_title or feast.title}: отсутствует"
+                )
+                continue
+
+            for field, expected in self._feast_content_values(feast).items():
+                if getattr(remote, field) != expected:
+                    problems.append(
+                        f"Память {feast.pk}: {field} отличается"
+                    )
+
+        return problems
 
     def _legacy_reading_values(self, day):
         return {field: getattr(day, field) for field in LEGACY_READING_FIELDS}
