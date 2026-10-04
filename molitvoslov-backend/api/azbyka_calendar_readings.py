@@ -128,9 +128,13 @@ def reading_kind(book):
 
 def _clean_label(value):
     value = normalize_space(value)
-    value = value.strip(" .;,–—-")
+    # Не снимаем точку справа: "Ряд.", "Свт.", "Сщмч." — это часть
+    # привычной богослужебной подписи.
+    value = value.strip(" ;,–—-")
+    value = value.lstrip(". ")
     value = SERVICE_PREFIX_RE.sub("", value)
-    value = value.strip(" .;,–—-")
+    value = value.strip(" ;,–—-")
+    value = value.lstrip(". ")
 
     replacements = {
         "на утрени": "Утр.",
@@ -227,8 +231,14 @@ def parse_readings_text(text):
         )
 
         # Один и тот же отрывок может встречаться в разных группах —
-        # это разные чтения. Удаляем только точный дубль.
-        if reading not in result:
+        # это разные чтения. Удаляем только точный дубль по содержанию.
+        duplicate = any(
+            existing.kind == reading.kind
+            and existing.label == reading.label
+            and existing.title == reading.title
+            for existing in result
+        )
+        if not duplicate:
             result.append(reading)
 
     return result
