@@ -71,6 +71,21 @@ class AzbykaCalendarReadingsParserTests(SimpleTestCase):
             ["", "", "Сщмч.", "Сщмч."],
         )
 
+    def test_normalizes_spaces_around_abbreviations(self):
+        source = (
+            "Флп.1:1–7 ( зач. 235). "
+            "Лк.3:19–22 ( зач. 10). "
+            "Сщмч .: Евр.4:14–5:6 (зач. 311). "
+            "Ин.10:9–16 (зач. 36)."
+        )
+
+        readings = parse_readings_text(source)
+
+        self.assertEqual(readings[0].title, "Флп.1:1–7 (зач. 235)")
+        self.assertEqual(readings[1].title, "Лк.3:19–22 (зач. 10)")
+        self.assertEqual(readings[2].label, "Сщмч.")
+        self.assertEqual(readings[3].label, "Сщмч.")
+
     def test_extracts_first_reading_paragraph_only(self):
         html = """
         <html><body>
