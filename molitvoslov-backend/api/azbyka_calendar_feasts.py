@@ -231,7 +231,7 @@ def _next_text_block(heading):
         if tag_level is not None and tag_level <= level:
             return ""
 
-        if tag.name not in {"p", "div", "li"}:
+        if tag.name not in {"p", "li"}:
             continue
 
         text = normalize_space(tag.get_text(" ", strip=True))
