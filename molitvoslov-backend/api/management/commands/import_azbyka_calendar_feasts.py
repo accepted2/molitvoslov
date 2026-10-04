@@ -1,4 +1,5 @@
 import time
+import uuid
 from pathlib import Path
 
 import requests
@@ -18,6 +19,10 @@ from api.calendar_models import CalendarDay, CalendarFeast
 from api.sqlite_backup import create_sqlite_backup
 
 
+AZBYKA_DAY_FEAST_NAMESPACE = uuid.UUID(
+    "7d2f2de2-0c81-4ca9-a852-924a35d5e46b"
+)
+
 IMPORT_FIELDS = [
     "troparion_title",
     "troparion_content",
@@ -29,11 +34,27 @@ IMPORT_FIELDS = [
     "life_content",
 ]
 
+TEXT_FIELDS = {
+    "troparion_title",
+    "troparion_content",
+    "kontakion_title",
+    "kontakion_content",
+    "life_title",
+    "life_content",
+}
+
+
+def deterministic_azbyka_day_feast_uid(target_date, source_url):
+    return uuid.uuid5(
+        AZBYKA_DAY_FEAST_NAMESPACE,
+        f"{target_date.isoformat()}:{source_url}",
+    )
+
 
 class Command(BaseCommand):
     help = (
-        "Заполнить тропарь, кондак и житие памятей выбранного дня "
-        "из календаря azbyka.ru. Работает только с локальной SQLite."
+        "Импортировать карточки святых/праздников выбранного дня "
+        "из календаря azbyka.ru в локальную SQLite."
     )
 
     def add_arguments(self, parser):
@@ -52,8 +73,18 @@ class Command(BaseCommand):
             "--overwrite",
             action="store_true",
             help=(
-                "Разрешить заменять уже заполненные RU тропарь/кондак/житие. "
-                "Без флага заполняются только пустые поля."
+                "В обычном режиме разрешить заменять уже заполненные RU "
+                "тропарь/кондак/житие."
+            ),
+        )
+        parser.add_argument(
+            "--replace-day-feasts",
+            action="store_true",
+            help=(
+                "Не сопоставлять со старыми карточками. Создать/обновить "
+                "отдельные карточки по списку Azbyka, отвязать от дня старые "
+                "карточки и привязать новый набор. Старые CalendarFeast "
+                "не удаляются из базы."
             ),
         )
         parser.add_argument(
@@ -98,13 +129,13 @@ class Command(BaseCommand):
             raise CommandError(f"Локально нет CalendarDay {target_date}.")
 
         local_feasts = list(day.feasts.all())
-
-        # main_feast должен участвовать даже если по старым данным он
-        # по ошибке отсутствует в M2M feasts.
-        if day.main_feast and all(item.pk != day.main_feast.pk for item in local_feasts):
+        if day.main_feast and all(
+            item.pk != day.main_feast.pk for item in local_feasts
+        ):
             local_feasts.insert(0, day.main_feast)
 
-        if not local_feasts:
+        replace_day = options["replace_day_feasts"]
+        if not replace_day and not local_feasts:
             raise CommandError(f"У {target_date} нет локальных памятей.")
 
         timeout = max(1.0, options["timeout"])
@@ -112,13 +143,13 @@ class Command(BaseCommand):
         overwrite = options["overwrite"]
         apply_changes = options["apply"]
 
+        if replace_day and overwrite:
+            raise CommandError(
+                "--overwrite не нужен вместе с --replace-day-feasts: "
+                "новый набор и так строится заново по Azbyka."
+            )
+
         session = requests.Session()
-        backup_done = False
-        source_cache = {}
-        updated = 0
-        unchanged = 0
-        unmatched = 0
-        failed = 0
 
         try:
             try:
@@ -135,145 +166,376 @@ class Command(BaseCommand):
             except AzbykaFeastError as error:
                 raise CommandError(str(error)) from error
 
-            self.stdout.write(
-                f"Дата: {target_date}. "
-                f"Локальных памятей: {len(local_feasts)}. "
-                f"На Azbyka найдено святых: {len(sources)}. "
-                f"Режим: {'APPLY' if apply_changes else 'DRY-RUN'}. "
-                f"Overwrite: {'да' if overwrite else 'нет'}."
+            if replace_day:
+                self._replace_day_feasts(
+                    day=day,
+                    local_feasts=local_feasts,
+                    sources=sources,
+                    hymn_groups=hymn_groups,
+                    session=session,
+                    timeout=timeout,
+                    delay=delay,
+                    apply_changes=apply_changes,
+                    backup_dir=options["backup_dir"],
+                )
+                return
+
+            self._fill_existing_feasts(
+                day=day,
+                local_feasts=local_feasts,
+                sources=sources,
+                hymn_groups=hymn_groups,
+                session=session,
+                timeout=timeout,
+                delay=delay,
+                overwrite=overwrite,
+                apply_changes=apply_changes,
+                backup_dir=options["backup_dir"],
             )
-
-            for feast in local_feasts:
-                local_label = feast.short_title or feast.title
-                match = find_best_source(local_label, sources)
-
-                if match.source is None:
-                    unmatched += 1
-                    self.stdout.write(
-                        self.style.WARNING(
-                            f"SKIP [{feast.pk}] {local_label}: {match.reason}"
-                        )
-                    )
-                    continue
-
-                source = match.source
-
-                try:
-                    if source.url not in source_cache:
-                        source_cache[source.url] = fetch_saint_content(
-                            source.url,
-                            session=session,
-                            timeout=timeout,
-                        )
-                        if delay:
-                            time.sleep(delay)
-
-                    parsed = source_cache[source.url]
-                except AzbykaFeastError as error:
-                    failed += 1
-                    self.stdout.write(
-                        self.style.ERROR(
-                            f"ERROR [{feast.pk}] {local_label}: {error}"
-                        )
-                    )
-                    continue
-
-                # Для тропаря/кондака предпочитаем страницу конкретного
-                # календарного дня: там нередко есть богослужебный текст,
-                # которого нет на отдельной странице святого. Житие берём
-                # с персональной страницы святого.
-                hymn_group, hymn_match = find_best_hymn_group(
-                    source.title,
-                    hymn_groups,
-                )
-
-                desired = {
-                    field: getattr(parsed, field)
-                    for field in IMPORT_FIELDS
-                    if getattr(parsed, field) not in ("", None)
-                }
-
-                if hymn_group is not None:
-                    for field in (
-                        "troparion_title",
-                        "troparion_content",
-                        "troparion_echo",
-                        "kontakion_title",
-                        "kontakion_content",
-                        "kontakion_echo",
-                    ):
-                        value = getattr(hymn_group, field)
-                        if value not in ("", None):
-                            desired[field] = value
-
-                changes = {}
-                for field, value in desired.items():
-                    current = getattr(feast, field)
-
-                    if overwrite:
-                        if current != value:
-                            changes[field] = value
-                    elif current in ("", None):
-                        changes[field] = value
-
-                self.stdout.write(
-                    f"[{feast.pk}] {local_label}"
-                )
-                self.stdout.write(
-                    f"  -> Azbyka: {source.title} "
-                    f"(совпадение {match.score:.2f})"
-                )
-                self.stdout.write(f"  URL: {source.url}")
-
-                found = []
-                if desired.get("troparion_content"):
-                    found.append("тропарь")
-                if desired.get("kontakion_content"):
-                    found.append("кондак")
-                if desired.get("life_content"):
-                    found.append("житие")
-
-                self.stdout.write(
-                    "  Найдено: " + (", ".join(found) if found else "ничего")
-                )
-                if hymn_group is not None:
-                    self.stdout.write(
-                        f"  Богослужебные тексты дня: {hymn_group.title} "
-                        f"(совпадение {hymn_match.score:.2f})"
-                    )
-
-                if not changes:
-                    unchanged += 1
-                    self.stdout.write(
-                        "  Изменений: 0 "
-                        "(поля уже заполнены либо на источнике нет данных)"
-                    )
-                    continue
-
-                self.stdout.write(
-                    "  Изменятся поля: " + ", ".join(changes)
-                )
-
-                if not apply_changes:
-                    continue
-
-                if not backup_done:
-                    destination, digest = self._backup(options["backup_dir"])
-                    backup_done = True
-                    self.stdout.write(
-                        self.style.SUCCESS(
-                            f"BACKUP перед изменениями: {destination}"
-                        )
-                    )
-                    self.stdout.write(f"SHA256: {digest}")
-
-                with transaction.atomic():
-                    CalendarFeast.objects.filter(pk=feast.pk).update(**changes)
-
-                updated += 1
-
         finally:
             session.close()
+
+    def _load_source_record(
+        self,
+        source,
+        hymn_groups,
+        source_cache,
+        session,
+        timeout,
+        delay,
+    ):
+        if source.url not in source_cache:
+            source_cache[source.url] = fetch_saint_content(
+                source.url,
+                session=session,
+                timeout=timeout,
+            )
+            if delay:
+                time.sleep(delay)
+
+        parsed = source_cache[source.url]
+        hymn_group, hymn_match = find_best_hymn_group(
+            source.title,
+            hymn_groups,
+        )
+
+        desired = {}
+        for field in IMPORT_FIELDS:
+            if field in TEXT_FIELDS:
+                desired[field] = getattr(parsed, field) or ""
+            else:
+                desired[field] = getattr(parsed, field)
+
+        # Для тропаря/кондака страница конкретного дня приоритетнее
+        # персональной страницы святого.
+        if hymn_group is not None:
+            for field in (
+                "troparion_title",
+                "troparion_content",
+                "troparion_echo",
+                "kontakion_title",
+                "kontakion_content",
+                "kontakion_echo",
+            ):
+                value = getattr(hymn_group, field)
+                if value not in ("", None):
+                    desired[field] = value
+
+        return parsed, hymn_group, hymn_match, desired
+
+    def _replace_day_feasts(
+        self,
+        day,
+        local_feasts,
+        sources,
+        hymn_groups,
+        session,
+        timeout,
+        delay,
+        apply_changes,
+        backup_dir,
+    ):
+        source_cache = {}
+        prepared = []
+        errors = []
+
+        # Сначала полностью скачиваем и разбираем новый набор.
+        # Если хоть одна персональная страница сломалась, существующие связи
+        # дня не трогаем вообще.
+        for source in sources:
+            try:
+                parsed, hymn_group, hymn_match, desired = self._load_source_record(
+                    source=source,
+                    hymn_groups=hymn_groups,
+                    source_cache=source_cache,
+                    session=session,
+                    timeout=timeout,
+                    delay=delay,
+                )
+                prepared.append(
+                    {
+                        "source": source,
+                        "parsed": parsed,
+                        "hymn_group": hymn_group,
+                        "hymn_match": hymn_match,
+                        "desired": desired,
+                    }
+                )
+            except AzbykaFeastError as error:
+                errors.append(f"{source.title}: {error}")
+
+        self.stdout.write(
+            f"Дата: {day.date_gregorian}. "
+            f"Сейчас привязано памятей: {len(local_feasts)}. "
+            f"Azbyka даёт памятей: {len(sources)}. "
+            f"Режим: {'APPLY' if apply_changes else 'DRY-RUN'}. "
+            "Стратегия: заменить набор дня по Azbyka."
+        )
+
+        self.stdout.write("")
+        self.stdout.write("Старые связи дня будут отвязаны:")
+        for feast in local_feasts:
+            self.stdout.write(
+                f"  - [{feast.pk}] {feast.short_title or feast.title}"
+            )
+
+        self.stdout.write("")
+        self.stdout.write("Новый набор Azbyka:")
+        for index, item in enumerate(prepared, start=1):
+            source = item["source"]
+            desired = item["desired"]
+            found = []
+            if desired.get("troparion_content"):
+                found.append("тропарь")
+            if desired.get("kontakion_content"):
+                found.append("кондак")
+            if desired.get("life_content"):
+                found.append("житие")
+
+            prefix = "MAIN" if index == 1 else "    "
+            self.stdout.write(
+                f"  {prefix} {index:02d}. {source.title}"
+            )
+            self.stdout.write(f"       {source.url}")
+            self.stdout.write(
+                "       Найдено: "
+                + (", ".join(found) if found else "только карточка")
+            )
+
+            hymn_group = item["hymn_group"]
+            hymn_match = item["hymn_match"]
+            if hymn_group is not None:
+                self.stdout.write(
+                    f"       Тексты дня: {hymn_group.title} "
+                    f"(совпадение {hymn_match.score:.2f})"
+                )
+
+        if errors:
+            self.stdout.write("")
+            for error in errors:
+                self.stdout.write(self.style.ERROR(f"  ERROR: {error}"))
+            raise CommandError(
+                "Новый набор неполный. Замена отменена; локальная база "
+                "не изменена."
+            )
+
+        if not prepared:
+            raise CommandError(
+                "Azbyka не дала ни одной пригодной карточки. Замена отменена."
+            )
+
+        if not apply_changes:
+            self.stdout.write("")
+            self.stdout.write(
+                self.style.WARNING(
+                    "DRY-RUN: старые связи не отвязаны, новые карточки "
+                    "не созданы."
+                )
+            )
+            return
+
+        destination, digest = self._backup(backup_dir)
+        self.stdout.write("")
+        self.stdout.write(
+            self.style.SUCCESS(f"BACKUP перед изменениями: {destination}")
+        )
+        self.stdout.write(f"SHA256: {digest}")
+
+        with transaction.atomic():
+            new_feasts = []
+
+            for item in prepared:
+                source = item["source"]
+                desired = item["desired"]
+                sync_uid = deterministic_azbyka_day_feast_uid(
+                    day.date_gregorian,
+                    source.url,
+                )
+
+                defaults = {
+                    "source_id": None,
+                    "title": source.title,
+                    "short_title": source.title,
+                    "julian_month": day.julian_month,
+                    "julian_day": day.julian_day,
+                    **desired,
+                }
+
+                feast, _created = CalendarFeast.objects.update_or_create(
+                    sync_uid=sync_uid,
+                    defaults=defaults,
+                )
+                new_feasts.append(feast)
+
+            # Меняем только связи этого календарного дня.
+            # Старые CalendarFeast намеренно НЕ удаляем: они могут быть
+            # связаны с другими днями или понадобиться для отката.
+            day.feasts.set(new_feasts)
+            day.main_feast = new_feasts[0]
+            day.save(update_fields=["main_feast"])
+
+        self.stdout.write("")
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Готово. К {day.date_gregorian} привязано "
+                f"{len(prepared)} карточек Azbyka."
+            )
+        )
+        self.stdout.write(
+            "Старые карточки из CalendarFeast не удалены; "
+            "от этого дня они только отвязаны."
+        )
+        self.stdout.write(
+            f"Главная память: {prepared[0]['source'].title}"
+        )
+
+    def _fill_existing_feasts(
+        self,
+        day,
+        local_feasts,
+        sources,
+        hymn_groups,
+        session,
+        timeout,
+        delay,
+        overwrite,
+        apply_changes,
+        backup_dir,
+    ):
+        backup_done = False
+        source_cache = {}
+        updated = 0
+        unchanged = 0
+        unmatched = 0
+        failed = 0
+
+        self.stdout.write(
+            f"Дата: {day.date_gregorian}. "
+            f"Локальных памятей: {len(local_feasts)}. "
+            f"На Azbyka найдено святых: {len(sources)}. "
+            f"Режим: {'APPLY' if apply_changes else 'DRY-RUN'}. "
+            f"Overwrite: {'да' if overwrite else 'нет'}."
+        )
+
+        for feast in local_feasts:
+            local_label = feast.short_title or feast.title
+            match = find_best_source(local_label, sources)
+
+            if match.source is None:
+                unmatched += 1
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"SKIP [{feast.pk}] {local_label}: {match.reason}"
+                    )
+                )
+                continue
+
+            source = match.source
+
+            try:
+                parsed, hymn_group, hymn_match, desired = self._load_source_record(
+                    source=source,
+                    hymn_groups=hymn_groups,
+                    source_cache=source_cache,
+                    session=session,
+                    timeout=timeout,
+                    delay=delay,
+                )
+            except AzbykaFeastError as error:
+                failed += 1
+                self.stdout.write(
+                    self.style.ERROR(
+                        f"ERROR [{feast.pk}] {local_label}: {error}"
+                    )
+                )
+                continue
+
+            changes = {}
+            for field, value in desired.items():
+                if value in ("", None):
+                    continue
+
+                current = getattr(feast, field)
+
+                if overwrite:
+                    if current != value:
+                        changes[field] = value
+                elif current in ("", None):
+                    changes[field] = value
+
+            self.stdout.write(f"[{feast.pk}] {local_label}")
+            self.stdout.write(
+                f"  -> Azbyka: {source.title} "
+                f"(совпадение {match.score:.2f})"
+            )
+            self.stdout.write(f"  URL: {source.url}")
+
+            found = []
+            if desired.get("troparion_content"):
+                found.append("тропарь")
+            if desired.get("kontakion_content"):
+                found.append("кондак")
+            if desired.get("life_content"):
+                found.append("житие")
+
+            self.stdout.write(
+                "  Найдено: " + (", ".join(found) if found else "ничего")
+            )
+            if hymn_group is not None:
+                self.stdout.write(
+                    f"  Богослужебные тексты дня: {hymn_group.title} "
+                    f"(совпадение {hymn_match.score:.2f})"
+                )
+
+            if not changes:
+                unchanged += 1
+                self.stdout.write(
+                    "  Изменений: 0 "
+                    "(поля уже заполнены либо на источнике нет данных)"
+                )
+                continue
+
+            self.stdout.write(
+                "  Изменятся поля: " + ", ".join(changes)
+            )
+
+            if not apply_changes:
+                continue
+
+            if not backup_done:
+                destination, digest = self._backup(backup_dir)
+                backup_done = True
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"BACKUP перед изменениями: {destination}"
+                    )
+                )
+                self.stdout.write(f"SHA256: {digest}")
+
+            with transaction.atomic():
+                CalendarFeast.objects.filter(pk=feast.pk).update(**changes)
+
+            updated += 1
 
         self.stdout.write("")
         self.stdout.write("Итог:")
