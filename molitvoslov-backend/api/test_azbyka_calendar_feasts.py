@@ -60,6 +60,41 @@ class AzbykaCalendarFeastsParserTests(SimpleTestCase):
             "Краткое житие пророка.\n\nПродолжение жития.",
         )
 
+    def test_preserves_word_split_by_inline_accent_markup(self):
+        html = """
+        <html><body>
+          <h1>5 октября</h1>
+          <a href="/days/sv-foka-sinopskij">сщмч. Ф<span>о́</span>ки, епископа Синопского</a>
+          <h2>Чтения Священного Писания</h2>
+        </body></html>
+        """
+
+        sources = extract_day_saint_links(html)
+
+        self.assertEqual(
+            sources[0].title,
+            "сщмч. Фо́ки, епископа Синопского",
+        )
+
+    def test_preserves_inline_markup_inside_hymn_words(self):
+        html = """
+        <html><body>
+          <h1>Пророк Иона</h1>
+          <h2>День памяти</h2>
+          <p>Краткое житие.</p>
+          <h2>Тропари, кондаки, молитвы и величания</h2>
+          <h3>Тропарь, глас 2</h3>
+          <p>Прор<span>о́</span>ка Твоего память.</p>
+        </body></html>
+        """
+
+        parsed = extract_saint_content(html)
+
+        self.assertEqual(
+            parsed.troparion_content,
+            "Проро́ка Твоего память.",
+        )
+
     def test_matches_old_church_site_titles_to_azbyka(self):
         sources = [
             DaySaintLink(
