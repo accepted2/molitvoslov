@@ -31,15 +31,23 @@ RANK_PATTERNS = [
     r"\bблж\w*\b",
     r"\bправедн\w*\b",
     r"\bправ\w*\b",
-    r"\bепископ\w*\b",
-    r"\bмитрополит\w*\b",
-    r"\bпресвитер\w*\b",
-    r"\bигумен\w*\b",
-    r"\bархиепископ\w*\b",
+    # Церковную должность (епископ, пресвитер и т. п.) НЕ удаляем:
+    # она помогает отличить одноимённых святых.
     r"\bсвят\w*\b",
     r"\bотц\w*\b",
     r"\bжитие\b",
     r"\bстрадани\w*\b",
+]
+
+HOLINESS_RANKS = [
+    ("hieromartyr", [r"\bсвященномуч\w*\b", r"\bсщмч\.?\b"]),
+    ("martyr", [r"\bмученик\w*\b", r"\bмч\.?\b"]),
+    ("reverend", [r"\bпреподоб\w*\b", r"\bпрп\.?\b"]),
+    ("prophet", [r"\bпророк\w*\b", r"\bпрор\.?\b"]),
+    ("apostle", [r"\bапостол\w*\b", r"\bап\.?\b"]),
+    ("blessed", [r"\bблаженн\w*\b", r"\bблж\.?\b"]),
+    ("righteous", [r"\bправедн\w*\b", r"\bправ\.?\b"]),
+    ("hierarch", [r"\bсвятител\w*\b", r"\bсвт\.?\b"]),
 ]
 
 GENERIC_WORDS = {
@@ -166,11 +174,27 @@ def _soft_stem(token):
     return token
 
 
+def holiness_rank(value):
+    normalized = strip_accents(value).lower().replace("ё", "е")
+    for rank, patterns in HOLINESS_RANKS:
+        if any(re.search(pattern, normalized) for pattern in patterns):
+            return rank
+    return ""
+
+
 def match_key(value):
     return " ".join(_soft_stem(token) for token in normalize_name(value).split())
 
 
 def similarity(left, right):
+    left_rank = holiness_rank(left)
+    right_rank = holiness_rank(right)
+
+    # Самая важная защита от ложных совпадений одноимённых святых:
+    # "прп. Иона" не может автоматически стать "прор. Ионой".
+    if left_rank and right_rank and left_rank != right_rank:
+        return 0.0
+
     left_key = match_key(left)
     right_key = match_key(right)
 
@@ -182,11 +206,25 @@ def similarity(left, right):
 
     left_tokens = set(left_key.split())
     right_tokens = set(right_key.split())
-    overlap = len(left_tokens & right_tokens) / max(len(left_tokens | right_tokens), 1)
+    intersection = left_tokens & right_tokens
+    overlap = len(intersection) / max(len(left_tokens | right_tokens), 1)
     sequence = SequenceMatcher(None, left_key, right_key).ratio()
+    score = max(sequence, overlap * 0.9 + sequence * 0.1)
 
-    # Совпадение имени/географического прозвания важнее порядка слов.
-    return max(sequence, overlap * 0.9 + sequence * 0.1)
+    # Старые данные часто содержат короткое имя, а Azbyka — полное:
+    # "преподобного Ионы пресвитера" против
+    # "прп. Ионы, пресвитера, отца ...".
+    # Если совпали чин святости и минимум два значимых токена, короткое
+    # название можно считать сильным подмножеством полного.
+    if (
+        left_rank
+        and left_rank == right_rank
+        and min(len(left_tokens), len(right_tokens)) >= 2
+        and (left_tokens <= right_tokens or right_tokens <= left_tokens)
+    ):
+        score = max(score, 0.92)
+
+    return score
 
 
 def find_best_source(local_title, sources, threshold=0.62, margin=0.08):
