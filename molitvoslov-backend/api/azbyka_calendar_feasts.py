@@ -304,11 +304,13 @@ def extract_day_saint_links(html):
     sources = []
     seen = set()
 
-    for anchor in soup.find_all("a", href=True):
-        if anchor.sourceline and readings_heading.sourceline:
-            if anchor.sourceline >= readings_heading.sourceline:
-                break
+    # Берём только ссылки, которые физически находятся ДО заголовка
+    # "Чтения Священного Писания". На sourceline полагаться нельзя:
+    # lxml/BeautifulSoup не гарантируют корректные номера строк после парсинга.
+    anchors = list(readings_heading.find_all_previous("a", href=True))
+    anchors.reverse()
 
+    for anchor in anchors:
         href = anchor.get("href") or ""
         if not re.match(r"^/days/sv-[^/?#]+/?$", href):
             continue
@@ -323,24 +325,6 @@ def extract_day_saint_links(html):
 
         seen.add(url)
         sources.append(DaySaintLink(title=title, url=url))
-
-    # lxml не всегда сохраняет sourceline после некоторых преобразований.
-    # Fallback: берём все /days/sv-* до первого явного богослужебного блока
-    # по порядку документа, но исключаем ссылки после списка дня.
-    if not sources:
-        for anchor in readings_heading.find_all_previous("a", href=True):
-            href = anchor.get("href") or ""
-            if not re.match(r"^/days/sv-[^/?#]+/?$", href):
-                continue
-
-            title = normalize_space(anchor.get_text(" ", strip=True))
-            url = urljoin(AZBYKA_BASE_URL, href)
-
-            if title and url not in seen:
-                seen.add(url)
-                sources.append(DaySaintLink(title=title, url=url))
-
-        sources.reverse()
 
     if not sources:
         raise AzbykaFeastError("На странице дня не найдены ссылки на святых.")
