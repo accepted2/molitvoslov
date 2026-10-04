@@ -8,8 +8,10 @@ from django.db import connections, transaction
 
 from api.azbyka_calendar_feasts import (
     AzbykaFeastError,
+    fetch_day_hymn_groups,
     fetch_day_saint_links,
     fetch_saint_content,
+    find_best_hymn_group,
     find_best_source,
 )
 from api.calendar_models import CalendarDay, CalendarFeast
@@ -125,6 +127,11 @@ class Command(BaseCommand):
                     session=session,
                     timeout=timeout,
                 )
+                hymn_groups = fetch_day_hymn_groups(
+                    target_date,
+                    session=session,
+                    timeout=timeout,
+                )
             except AzbykaFeastError as error:
                 raise CommandError(str(error)) from error
 
@@ -171,11 +178,33 @@ class Command(BaseCommand):
                     )
                     continue
 
+                # Для тропаря/кондака предпочитаем страницу конкретного
+                # календарного дня: там нередко есть богослужебный текст,
+                # которого нет на отдельной странице святого. Житие берём
+                # с персональной страницы святого.
+                hymn_group, hymn_match = find_best_hymn_group(
+                    source.title,
+                    hymn_groups,
+                )
+
                 desired = {
                     field: getattr(parsed, field)
                     for field in IMPORT_FIELDS
                     if getattr(parsed, field) not in ("", None)
                 }
+
+                if hymn_group is not None:
+                    for field in (
+                        "troparion_title",
+                        "troparion_content",
+                        "troparion_echo",
+                        "kontakion_title",
+                        "kontakion_content",
+                        "kontakion_echo",
+                    ):
+                        value = getattr(hymn_group, field)
+                        if value not in ("", None):
+                            desired[field] = value
 
                 changes = {}
                 for field, value in desired.items():
@@ -197,16 +226,21 @@ class Command(BaseCommand):
                 self.stdout.write(f"  URL: {source.url}")
 
                 found = []
-                if parsed.troparion_content:
+                if desired.get("troparion_content"):
                     found.append("тропарь")
-                if parsed.kontakion_content:
+                if desired.get("kontakion_content"):
                     found.append("кондак")
-                if parsed.life_content:
+                if desired.get("life_content"):
                     found.append("житие")
 
                 self.stdout.write(
                     "  Найдено: " + (", ".join(found) if found else "ничего")
                 )
+                if hymn_group is not None:
+                    self.stdout.write(
+                        f"  Богослужебные тексты дня: {hymn_group.title} "
+                        f"(совпадение {hymn_match.score:.2f})"
+                    )
 
                 if not changes:
                     unchanged += 1
