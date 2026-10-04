@@ -93,6 +93,17 @@ class SaintContent:
 
 
 @dataclass(frozen=True)
+class DayHymnGroup:
+    title: str
+    troparion_title: str = ""
+    troparion_content: str = ""
+    troparion_echo: int | None = None
+    kontakion_title: str = ""
+    kontakion_content: str = ""
+    kontakion_echo: int | None = None
+
+
+@dataclass(frozen=True)
 class MatchResult:
     source: DaySaintLink | None
     score: float
@@ -385,6 +396,80 @@ def extract_day_saint_links(html):
     return sources
 
 
+def extract_day_hymn_groups(html):
+    soup = BeautifulSoup(html, "lxml")
+    groups = []
+
+    for heading in soup.find_all("h2"):
+        title = tag_text(heading)
+        lowered = title.lower()
+
+        if not title or (
+            "тропари, кондаки" in lowered
+            or "чтения священного писания" in lowered
+        ):
+            continue
+
+        values = {
+            "troparion_title": "",
+            "troparion_content": "",
+            "troparion_echo": None,
+            "kontakion_title": "",
+            "kontakion_content": "",
+            "kontakion_echo": None,
+        }
+
+        # На странице дня имя святого/праздника обычно H2, а сами
+        # "Тропарь..." / "Кондак..." — H3 до следующего H2.
+        for child in heading.find_all_next():
+            if child is not heading and child.name == "h2":
+                break
+
+            if child.name != "h3":
+                continue
+
+            hymn_title = tag_text(child)
+            hymn_lower = hymn_title.lower()
+            content = _next_text_block(child)
+            if not content:
+                continue
+
+            voice = VOICE_RE.search(hymn_title)
+            echo = int(voice.group(1)) if voice else None
+
+            if hymn_lower.startswith("тропарь") and not values["troparion_content"]:
+                values["troparion_title"] = hymn_title
+                values["troparion_content"] = content
+                values["troparion_echo"] = echo
+            elif hymn_lower.startswith("кондак") and not values["kontakion_content"]:
+                values["kontakion_title"] = hymn_title
+                values["kontakion_content"] = content
+                values["kontakion_echo"] = echo
+
+        if values["troparion_content"] or values["kontakion_content"]:
+            groups.append(DayHymnGroup(title=title, **values))
+
+    return groups
+
+
+def find_best_hymn_group(local_title, groups, threshold=0.62, margin=0.08):
+    sources = [
+        DaySaintLink(title=group.title, url=str(index))
+        for index, group in enumerate(groups)
+    ]
+    result = find_best_source(
+        local_title,
+        sources,
+        threshold=threshold,
+        margin=margin,
+    )
+
+    if result.source is None:
+        return None, result
+
+    return groups[int(result.source.url)], result
+
+
 def extract_saint_content(html, url=""):
     soup = BeautifulSoup(html, "lxml")
 
@@ -450,6 +535,19 @@ def _get(session, url, timeout):
         return response.text
     except requests.RequestException as error:
         raise AzbykaFeastError(f"Не удалось загрузить {url}: {error}") from error
+
+
+def fetch_day_hymn_groups(day, session=None, timeout=20):
+    url = AZBYKA_DAY_URL.format(date=day.isoformat())
+    own_session = session is None
+    session = session or requests.Session()
+
+    try:
+        html = _get(session, url, timeout)
+        return extract_day_hymn_groups(html)
+    finally:
+        if own_session:
+            session.close()
 
 
 def fetch_day_saint_links(day, session=None, timeout=20):
