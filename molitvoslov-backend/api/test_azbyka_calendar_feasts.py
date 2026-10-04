@@ -156,7 +156,9 @@ class AzbykaCalendarFeastsParserTests(SimpleTestCase):
         html = """
         <html><body>
           <h1>5 октября</h1>
-          <a href="/days/sv-foka-sinopskij">сщмч. Ф<span>о́</span>ки, епископа Синопского</a>
+          <ul>
+            <li><a href="/days/sv-foka-sinopskij">сщмч. Ф<span>о́</span>ки, епископа Синопского</a></li>
+          </ul>
           <h2>Чтения Священного Писания</h2>
         </body></html>
         """
