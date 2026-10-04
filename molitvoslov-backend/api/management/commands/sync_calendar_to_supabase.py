@@ -63,6 +63,13 @@ READING_FIELDS = [
     "order",
 ]
 
+LEGACY_READING_FIELDS = [
+    "gospel_title",
+    "apostolic_title",
+    "gospel_title_uk",
+    "apostolic_title_uk",
+]
+
 DAY_FIELDS = [
     "julian_month",
     "julian_day",
@@ -131,6 +138,16 @@ class Command(BaseCommand):
         mode.add_argument("--dry-run", action="store_true")
         mode.add_argument("--apply", action="store_true")
 
+        parser.add_argument(
+            "--readings-only",
+            action="store_true",
+            help=(
+                "Синхронизировать только CalendarReading и четыре legacy-поля "
+                "ссылок на Евангелие/Апостол. Памяти, пост, описания и связи "
+                "дня не изменяются."
+            ),
+        )
+
     def handle(self, *args, **options):
         self._assert_local_source()
         self._configure_supabase_connection()
@@ -139,11 +156,63 @@ class Command(BaseCommand):
         if not days:
             raise CommandError("В локальной SQLite не найдено выбранных дней.")
 
+        readings_only = options["readings_only"]
+
+        self._check_remote()
+
+        if readings_only:
+            preview = self._preview_readings_only(days)
+            self._print_readings_only_preview(preview, days)
+
+            if options["dry_run"]:
+                self.stdout.write(self.style.WARNING("DRY-RUN: Supabase не изменён."))
+                return
+
+            counters = {
+                "fast_create": 0,
+                "fast_update": 0,
+                "fast_same": 0,
+                "feast_create": 0,
+                "feast_update": 0,
+                "feast_same": 0,
+                "day_create": 0,
+                "day_update": 0,
+                "day_same": 0,
+                "reading_create": 0,
+                "reading_update": 0,
+                "reading_delete": 0,
+                "reading_same": 0,
+            }
+
+            with transaction.atomic(using=REMOTE_ALIAS):
+                self._sync_legacy_reading_fields(days, counters)
+                self._sync_readings(days, counters)
+
+            problems = self._verify_readings_only(days)
+            if problems:
+                for problem in problems[:30]:
+                    self.stdout.write(self.style.ERROR(f"  - {problem}"))
+                raise CommandError(
+                    f"После записи найдено расхождений: {len(problems)}."
+                )
+
+            self.stdout.write(
+                self.style.SUCCESS(
+                    "Готово. В Supabase синхронизированы только чтения.\n"
+                    f"Legacy-поля дня: обновлено {counters['day_update']} / "
+                    f"без изменений {counters['day_same']}.\n"
+                    f"Чтения: +{counters['reading_create']} / "
+                    f"обновлено {counters['reading_update']} / "
+                    f"удалено {counters['reading_delete']} / "
+                    f"без изменений {counters['reading_same']}."
+                )
+            )
+            return
+
         feasts = self._collect_feasts(days)
         fast_types = self._collect_fast_types(days)
 
         self._ensure_local_uids(feasts, fast_types)
-        self._check_remote()
 
         preview = self._preview(days, feasts, fast_types)
         self._print_preview(preview, days, feasts, fast_types)
@@ -365,6 +434,173 @@ class Command(BaseCommand):
 
     def _changed_fields(self, obj, values):
         return [field for field, expected in values.items() if getattr(obj, field) != expected]
+
+    def _legacy_reading_values(self, day):
+        return {field: getattr(day, field) for field in LEGACY_READING_FIELDS}
+
+    def _preview_readings_only(self, days):
+        result = {
+            "day_update": [],
+            "reading_create": [],
+            "reading_update": [],
+            "reading_delete": [],
+        }
+
+        for day in days:
+            remote = (
+                CalendarDay.objects.using(REMOTE_ALIAS)
+                .prefetch_related("readings")
+                .filter(date_gregorian=day.date_gregorian)
+                .first()
+            )
+
+            if remote is None:
+                raise CommandError(
+                    f"В Supabase отсутствует CalendarDay {day.date_gregorian}. "
+                    "--readings-only не создаёт календарные дни."
+                )
+
+            changed = self._changed_fields(
+                remote,
+                self._legacy_reading_values(day),
+            )
+            if changed:
+                result["day_update"].append(
+                    f"{day.date_gregorian.isoformat()} ({', '.join(changed)})"
+                )
+
+            matched_remote_ids = set()
+
+            for reading in day.readings.all():
+                remote_reading = self._find_remote_reading(remote, reading)
+                label = (
+                    f"{day.date_gregorian.isoformat()} "
+                    f"{reading.get_kind_display()}: {reading.title}"
+                )
+
+                if remote_reading is None:
+                    result["reading_create"].append(label)
+                    continue
+
+                matched_remote_ids.add(remote_reading.pk)
+                values = self._reading_values(reading)
+                values["sync_uid"] = reading.sync_uid
+                reading_changed = self._changed_fields(remote_reading, values)
+
+                if reading_changed:
+                    result["reading_update"].append(
+                        f"{label} ({', '.join(reading_changed)})"
+                    )
+
+            for remote_reading in remote.readings.all():
+                if remote_reading.pk in matched_remote_ids:
+                    continue
+
+                result["reading_delete"].append(
+                    f"{day.date_gregorian.isoformat()} "
+                    f"{remote_reading.get_kind_display()}: {remote_reading.title}"
+                )
+
+        return result
+
+    def _print_readings_only_preview(self, preview, days):
+        self.stdout.write(
+            f"Источник SQLite: дней {len(days)}. "
+            "Режим: только чтения."
+        )
+        self.stdout.write("План:")
+        for key, title in [
+            ("day_update", "Legacy-поля дня UPDATE"),
+            ("reading_create", "Чтения CREATE"),
+            ("reading_update", "Чтения UPDATE"),
+            ("reading_delete", "Чтения DELETE"),
+        ]:
+            items = preview[key]
+            self.stdout.write(f"  {title}: {len(items)}")
+            for item in items[:20]:
+                self.stdout.write(f"    - {item}")
+            if len(items) > 20:
+                self.stdout.write(f"    ... и ещё {len(items) - 20}")
+
+    def _sync_legacy_reading_fields(self, days, counters):
+        for day in days:
+            remote = (
+                CalendarDay.objects.using(REMOTE_ALIAS)
+                .filter(date_gregorian=day.date_gregorian)
+                .first()
+            )
+            if remote is None:
+                raise CommandError(
+                    f"В Supabase отсутствует CalendarDay {day.date_gregorian}."
+                )
+
+            desired = self._legacy_reading_values(day)
+            changed = self._changed_fields(remote, desired)
+
+            if changed:
+                for field in changed:
+                    setattr(remote, field, desired[field])
+                remote.save(update_fields=changed)
+                counters["day_update"] += 1
+            else:
+                counters["day_same"] += 1
+
+    def _verify_readings_only(self, days):
+        problems = []
+
+        for day in days:
+            remote = (
+                CalendarDay.objects.using(REMOTE_ALIAS)
+                .prefetch_related("readings")
+                .filter(date_gregorian=day.date_gregorian)
+                .first()
+            )
+
+            if remote is None:
+                problems.append(f"День {day.date_gregorian}: отсутствует")
+                continue
+
+            for field, expected in self._legacy_reading_values(day).items():
+                if getattr(remote, field) != expected:
+                    problems.append(
+                        f"День {day.date_gregorian}: {field} отличается"
+                    )
+
+            local_readings = list(day.readings.all())
+            remote_readings = list(remote.readings.all())
+            remote_by_uid = {
+                str(reading.sync_uid): reading
+                for reading in remote_readings
+                if reading.sync_uid
+            }
+
+            for reading in local_readings:
+                remote_reading = remote_by_uid.get(str(reading.sync_uid))
+                if remote_reading is None:
+                    problems.append(
+                        f"День {day.date_gregorian}: чтение {reading.title} отсутствует"
+                    )
+                    continue
+
+                for field, expected in self._reading_values(reading).items():
+                    if getattr(remote_reading, field) != expected:
+                        problems.append(
+                            f"День {day.date_gregorian}: чтение {reading.pk}, "
+                            f"{field} отличается"
+                        )
+
+            local_uids = sorted(str(reading.sync_uid) for reading in local_readings)
+            remote_uids = sorted(
+                str(reading.sync_uid)
+                for reading in remote_readings
+                if reading.sync_uid
+            )
+            if local_uids != remote_uids:
+                problems.append(
+                    f"День {day.date_gregorian}: список чтений отличается"
+                )
+
+        return problems
 
     def _preview(self, days, feasts, fast_types):
         result = {
