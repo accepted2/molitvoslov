@@ -112,6 +112,7 @@ class Command(BaseCommand):
                 date_value,
                 mode_flag,
                 "--overwrite",
+                "--fail-on-error",
                 "--timeout",
                 timeout,
                 "--delay",
