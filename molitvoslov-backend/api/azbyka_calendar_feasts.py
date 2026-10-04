@@ -431,6 +431,37 @@ def extract_day_saint_links(html):
         seen.add(source_url)
         sources.append(DaySaintLink(title=title, url=source_url))
 
+    # Fallback для упрощённой/альтернативной разметки, где ссылка на память
+    # стоит напрямую перед блоком чтений и не обёрнута в <li>. Это также
+    # сохраняет корректное чтение слов с ударной буквой внутри <span>.
+    anchors = list(readings_heading.find_all_previous("a", href=True))
+    anchors.reverse()
+
+    for anchor in anchors:
+        if anchor.find_parent("li") is not None:
+            continue
+
+        href = normalize_space(anchor.get("href") or "")
+        if not href:
+            continue
+
+        parsed_href = urlparse(urljoin(AZBYKA_BASE_URL, href))
+        path = parsed_href.path.rstrip("/")
+
+        if not allowed_path.fullmatch(path):
+            continue
+
+        source_url = urljoin(AZBYKA_BASE_URL, path)
+        if source_url in seen:
+            continue
+
+        title = tag_text(anchor)
+        if not title:
+            continue
+
+        seen.add(source_url)
+        sources.append(DaySaintLink(title=title, url=source_url))
+
     if not sources:
         raise AzbykaFeastError(
             "На странице дня не найдены карточки памятей/праздников."
