@@ -1,3 +1,4 @@
+import argparse
 import time
 from datetime import date, timedelta
 from pathlib import Path
@@ -89,6 +90,11 @@ class Command(BaseCommand):
                 "Каталог автоматического backup перед первым --apply. "
                 "По умолчанию <backend>/backups/sqlite."
             ),
+        )
+        parser.add_argument(
+            "--fail-on-error",
+            action="store_true",
+            help=argparse.SUPPRESS,
         )
 
     def handle(self, *args, **options):
@@ -231,6 +237,13 @@ class Command(BaseCommand):
         if not apply_changes:
             self.stdout.write(
                 self.style.WARNING("DRY-RUN: локальная база не изменена.")
+            )
+
+        if options["fail_on_error"] and (failed or skipped_missing_day):
+            raise CommandError(
+                "Импорт чтений завершён не полностью: "
+                f"ошибок {failed}, отсутствующих CalendarDay "
+                f"{skipped_missing_day}."
             )
 
     def _assert_local_sqlite(self):
