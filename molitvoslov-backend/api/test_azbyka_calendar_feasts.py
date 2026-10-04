@@ -118,6 +118,44 @@ class AzbykaCalendarFeastsParserTests(SimpleTestCase):
         self.assertIsNotNone(foka.source)
         self.assertTrue(foka.source.url.endswith("/sv-foka-sinopskij"))
 
+    def test_does_not_match_reverend_iona_to_prophet_iona(self):
+        sources = [
+            DaySaintLink(
+                "Прор. Ионы (VIII в. до Р. Х.)",
+                "https://azbyka.ru/days/sv-iona",
+            ),
+            DaySaintLink(
+                "прп. Ионы, пресвитера (IX), отца святых Феофана, "
+                "творца канонов, и Феодора Начертанных",
+                "https://azbyka.ru/days/sv-iona-presviter",
+            ),
+        ]
+
+        result = find_best_source(
+            "преподобного Ионы пресвитера",
+            sources,
+        )
+
+        self.assertIsNotNone(result.source)
+        self.assertTrue(result.source.url.endswith("/sv-iona-presviter"))
+        self.assertGreaterEqual(result.score, 0.90)
+
+    def test_rank_mismatch_scores_zero(self):
+        sources = [
+            DaySaintLink(
+                "Прор. Ионы (VIII в. до Р. Х.)",
+                "https://azbyka.ru/days/sv-iona",
+            ),
+        ]
+
+        result = find_best_source(
+            "преподобного Ионы пресвитера",
+            sources,
+        )
+
+        self.assertIsNone(result.source)
+        self.assertEqual(result.score, 0.0)
+
     def test_skips_ambiguous_match(self):
         sources = [
             DaySaintLink("Прор. Ионы", "https://example.test/1"),
