@@ -15,7 +15,7 @@ class AzbykaCalendarFeastsParserTests(SimpleTestCase):
           <h1>5 октября</h1>
           <ul>
             <li><a href="/days/sv-iona">Прор. Ионы (VIII в. до Р. Х.)</a></li>
-            <li><a href="/days/sv-foka-sinopskij">сщмч. Фоки, епископа Синопского</a></li>
+            <li><a href="https://azbyka.ru/days/sv-foka-sinopskij?from=calendar">сщмч. Фоки, епископа Синопского</a></li>
           </ul>
           <h2>Чтения Священного Писания</h2>
           <a href="/days/sv-postoronnij">Не брать</a>
