@@ -303,45 +303,67 @@ def _next_text_block(heading):
 
 
 def _collect_life(soup, saint_title):
-    memory_heading = None
+    headings = list(soup.find_all(HEADING_RE))
 
-    for heading in soup.find_all(HEADING_RE):
+    # Обычная страница святого: после "День памяти" часто сразу идёт житие.
+    for heading in headings:
         text = tag_text(heading).lower()
-        if text in {"день памяти", "дни памяти"}:
-            memory_heading = heading
-            break
-
-    if memory_heading is None:
-        return "", ""
-
-    level = _heading_level(memory_heading) or 2
-    parts = []
-
-    for tag in memory_heading.find_all_next():
-        tag_level = _heading_level(tag)
-        if tag_level is not None and tag_level <= level:
-            break
-
-        if tag.name != "p":
+        if text not in {"день памяти", "дни памяти"}:
             continue
 
-        text = tag_text(tag)
-        if not text:
+        level = _heading_level(heading) or 2
+        parts = []
+
+        for tag in heading.find_all_next():
+            tag_level = _heading_level(tag)
+            if tag_level is not None and tag_level <= level:
+                break
+
+            if tag.name != "p":
+                continue
+
+            value = tag_text(tag)
+            if not value:
+                continue
+
+            if re.fullmatch(r"\d{1,2}\s+[а-яё]+(?:\s*[-–—].*)?", value, re.I):
+                continue
+
+            if value not in parts:
+                parts.append(value)
+
+        content = "\n\n".join(parts).strip()
+        if content:
+            return f"Житие {saint_title}", content
+
+    # Праздники и иконы на Azbyka устроены иначе:
+    # "Историческое содержание" / "История". Эти тексты сохраняем в
+    # life_* — в приложении это тот же разворачиваемый информационный блок.
+    for heading in headings:
+        text = tag_text(heading).lower()
+        if text not in {"историческое содержание", "история"}:
             continue
 
-        # Список дат памяти иногда размечен абзацами — он не является житием.
-        if re.fullmatch(r"\d{1,2}\s+[а-яё]+(?:\s*[-–—].*)?", text, re.I):
-            continue
+        level = _heading_level(heading) or 2
+        parts = []
 
-        if text not in parts:
-            parts.append(text)
+        for tag in heading.find_all_next():
+            tag_level = _heading_level(tag)
+            if tag_level is not None and tag_level <= level:
+                break
 
-    content = "\n\n".join(parts).strip()
+            if tag.name != "p":
+                continue
 
-    if not content:
-        return "", ""
+            value = tag_text(tag)
+            if value and value not in parts:
+                parts.append(value)
 
-    return f"Житие {saint_title}", content
+        content = "\n\n".join(parts).strip()
+        if content:
+            return f"История: {saint_title}", content
+
+    return "", ""
 
 
 def extract_day_saint_links(html):
@@ -360,41 +382,61 @@ def extract_day_saint_links(html):
     sources = []
     seen = set()
 
-    # Берём только ссылки, которые физически находятся ДО заголовка
-    # "Чтения Священного Писания". На sourceline полагаться нельзя:
-    # lxml/BeautifulSoup не гарантируют корректные номера строк после парсинга.
-    anchors = list(readings_heading.find_all_previous("a", href=True))
-    anchors.reverse()
+    # В календарном списке Azbyka бывают разные типы карточек:
+    # /days/sv-*       — один святой
+    # /days/svv-*      — собор/группа святых
+    # /days/prazdnik-* — праздник
+    # /days/ikona-*    — икона Божией Матери
+    #
+    # Поэтому нельзя ограничиваться только /days/sv-* — иначе, например,
+    # 6 октября пропадут Зачатие Иоанна Предтечи, Ксанфиппа и Поликсения,
+    # Андрей/Иоанн/Пётр/Антонин и Словенская икона.
+    list_items = list(readings_heading.find_all_previous("li"))
+    list_items.reverse()
 
-    for anchor in anchors:
-        href = normalize_space(anchor.get("href") or "")
-        if not href:
+    allowed_path = re.compile(
+        r"^/days/(?:sv|svv|prazdnik|ikona)-[^/?#]+$"
+    )
+
+    for item in list_items:
+        source_url = ""
+
+        for anchor in item.find_all("a", href=True):
+            href = normalize_space(anchor.get("href") or "")
+            if not href:
+                continue
+
+            parsed_href = urlparse(urljoin(AZBYKA_BASE_URL, href))
+            path = parsed_href.path.rstrip("/")
+
+            if not allowed_path.fullmatch(path):
+                continue
+
+            source_url = urljoin(AZBYKA_BASE_URL, path)
+            break
+
+        if not source_url:
             continue
 
-        # Azbyka может отдавать как относительные /days/sv-..., так и
-        # абсолютные https://azbyka.ru/days/sv-... ссылки. Смотрим именно
-        # path, чтобы query/fragment и форма URL не ломали импорт.
-        parsed_href = urlparse(urljoin(AZBYKA_BASE_URL, href))
-        path = parsed_href.path.rstrip("/")
-        if not re.fullmatch(r"/days/sv-[^/?#]+", path):
-            continue
-
-        title = tag_text(anchor)
+        # Берём текст всего <li>, а не только <a>. Это важно для записей
+        # вида "Иконы Божией Матери: Словенская (1635)", где префикс
+        # находится вне ссылки.
+        title = tag_text(item)
         if not title:
             continue
 
-        url = urljoin(AZBYKA_BASE_URL, path)
-        if url in seen:
+        if source_url in seen:
             continue
 
-        seen.add(url)
-        sources.append(DaySaintLink(title=title, url=url))
+        seen.add(source_url)
+        sources.append(DaySaintLink(title=title, url=source_url))
 
     if not sources:
-        raise AzbykaFeastError("На странице дня не найдены ссылки на святых.")
+        raise AzbykaFeastError(
+            "На странице дня не найдены карточки памятей/праздников."
+        )
 
     return sources
-
 
 def extract_day_hymn_groups(html):
     soup = BeautifulSoup(html, "lxml")
