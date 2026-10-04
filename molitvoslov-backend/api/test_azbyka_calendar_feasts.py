@@ -2,8 +2,10 @@ from django.test import SimpleTestCase
 
 from api.azbyka_calendar_feasts import (
     DaySaintLink,
+    extract_day_hymn_groups,
     extract_day_saint_links,
     extract_saint_content,
+    find_best_hymn_group,
     find_best_source,
 )
 
@@ -27,6 +29,36 @@ class AzbykaCalendarFeastsParserTests(SimpleTestCase):
         self.assertEqual(len(sources), 2)
         self.assertTrue(sources[0].url.endswith("/days/sv-iona"))
         self.assertTrue(sources[1].url.endswith("/days/sv-foka-sinopskij"))
+
+    def test_extracts_hymns_from_day_group(self):
+        html = """
+        <html><body>
+          <h2>Тропари, кондаки, молитвы и величания</h2>
+          <h2>Священномученику Фоке Синопскому</h2>
+          <h3>Тропарь, глас 4</h3>
+          <p>Текст тропаря Фоке.</p>
+          <h3>Кондак, глас 6</h3>
+          <p>Текст кондака Фоке.</p>
+          <h2>Пророку Ионе</h2>
+          <h3>Тропарь, глас 2</h3>
+          <p>Текст тропаря Ионе.</p>
+        </body></html>
+        """
+
+        groups = extract_day_hymn_groups(html)
+
+        self.assertEqual(len(groups), 2)
+        self.assertEqual(groups[0].troparion_echo, 4)
+        self.assertEqual(groups[0].kontakion_echo, 6)
+        self.assertEqual(groups[0].kontakion_content, "Текст кондака Фоке.")
+
+        group, match = find_best_hymn_group(
+            "сщмч. Фоки, епископа Синопского",
+            groups,
+        )
+        self.assertIsNotNone(group)
+        self.assertEqual(group.kontakion_content, "Текст кондака Фоке.")
+        self.assertGreaterEqual(match.score, 0.62)
 
     def test_extracts_troparion_kontakion_and_life(self):
         html = """
