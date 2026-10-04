@@ -110,8 +110,13 @@ def normalize_zach(value):
         return ""
 
     value = normalize_space(value)
-    value = re.sub(r"\s*\.\s*", ". ", value)
-    return value
+    # На странице Азбуки вокруг сокращений иногда появляются пробелы:
+    # "( зач. 235)" / "(зач . 235)". В базе храним единый вид.
+    value = re.sub(r"\(\s+", "(", value)
+    value = re.sub(r"\s+\)", ")", value)
+    value = re.sub(r"\s+\.", ".", value)
+    value = re.sub(r"\.\s*", ". ", value)
+    return value.strip()
 
 
 def reading_kind(book):
@@ -128,6 +133,7 @@ def reading_kind(book):
 
 def _clean_label(value):
     value = normalize_space(value)
+    value = re.sub(r"\s+\.", ".", value)
     # Не снимаем точку справа: "Ряд.", "Свт.", "Сщмч." — это часть
     # привычной богослужебной подписи.
     value = value.strip(" ;,–—-")
