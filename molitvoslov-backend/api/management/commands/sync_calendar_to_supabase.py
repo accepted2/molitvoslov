@@ -168,6 +168,15 @@ class Command(BaseCommand):
                 "не изменяются."
             ),
         )
+        scope.add_argument(
+            "--day-feasts-only",
+            action="store_true",
+            help=(
+                "Синхронизировать полный набор карточек памятей выбранного "
+                "дня и только связи CalendarDay.main_feast/feasts. Другие "
+                "поля дня, пост и чтения не изменяются."
+            ),
+        )
 
     def handle(self, *args, **options):
         self._assert_local_source()
@@ -179,8 +188,59 @@ class Command(BaseCommand):
 
         readings_only = options["readings_only"]
         feast_content_only = options["feast_content_only"]
+        day_feasts_only = options["day_feasts_only"]
 
         self._check_remote()
+
+        if day_feasts_only:
+            feasts = self._collect_feasts(days)
+            self._ensure_local_uids(feasts, {})
+
+            preview = self._preview_day_feasts_only(days, feasts)
+            self._print_day_feasts_only_preview(preview, days, feasts)
+
+            if options["dry_run"]:
+                self.stdout.write(
+                    self.style.WARNING("DRY-RUN: Supabase не изменён.")
+                )
+                return
+
+            counters = {
+                "feast_create": 0,
+                "feast_update": 0,
+                "feast_same": 0,
+                "day_update": 0,
+                "day_same": 0,
+            }
+
+            with transaction.atomic(using=REMOTE_ALIAS):
+                remote_feasts = self._sync_feasts(feasts, counters)
+                self._sync_day_feast_links_only(
+                    days,
+                    remote_feasts,
+                    counters,
+                )
+
+            problems = self._verify_day_feasts_only(days, feasts)
+            if problems:
+                for problem in problems[:30]:
+                    self.stdout.write(self.style.ERROR(f"  - {problem}"))
+                raise CommandError(
+                    f"После записи найдено расхождений: {len(problems)}."
+                )
+
+            self.stdout.write(
+                self.style.SUCCESS(
+                    "Готово. В Supabase синхронизированы только карточки "
+                    "памятей и их связи с выбранным днём.\n"
+                    f"Памяти: +{counters['feast_create']} / "
+                    f"обновлено {counters['feast_update']} / "
+                    f"без изменений {counters['feast_same']}.\n"
+                    f"Связи дня: обновлено {counters['day_update']} / "
+                    f"без изменений {counters['day_same']}."
+                )
+            )
+            return
 
         if feast_content_only:
             feasts = self._collect_feasts(days)
@@ -491,6 +551,222 @@ class Command(BaseCommand):
 
     def _changed_fields(self, obj, values):
         return [field for field, expected in values.items() if getattr(obj, field) != expected]
+
+    def _preview_day_feasts_only(self, days, feasts):
+        result = {
+            "feast_create": [],
+            "feast_update": [],
+            "day_relation_update": [],
+        }
+
+        for feast in feasts.values():
+            remote = self._find_remote_feast(feast)
+            label = feast.short_title or feast.title
+
+            if remote is None:
+                result["feast_create"].append(label)
+                continue
+
+            values = self._feast_values(feast)
+            values["sync_uid"] = feast.sync_uid
+            changed = self._changed_fields(remote, values)
+            if changed:
+                result["feast_update"].append(
+                    f"{label} ({', '.join(changed)})"
+                )
+
+        for day in days:
+            remote = (
+                CalendarDay.objects.using(REMOTE_ALIAS)
+                .select_related("main_feast")
+                .prefetch_related("feasts")
+                .filter(date_gregorian=day.date_gregorian)
+                .first()
+            )
+
+            if remote is None:
+                raise CommandError(
+                    f"В Supabase отсутствует CalendarDay {day.date_gregorian}. "
+                    "--day-feasts-only не создаёт календарные дни."
+                )
+
+            local_main_uid = (
+                str(day.main_feast.sync_uid)
+                if day.main_feast and day.main_feast.sync_uid
+                else None
+            )
+            remote_main_uid = (
+                str(remote.main_feast.sync_uid)
+                if remote.main_feast and remote.main_feast.sync_uid
+                else None
+            )
+
+            local_uids = sorted(
+                str(feast.sync_uid)
+                for feast in day.feasts.all()
+                if feast.sync_uid
+            )
+            remote_uids = sorted(
+                str(feast.sync_uid)
+                for feast in remote.feasts.all()
+                if feast.sync_uid
+            )
+
+            remote_total = remote.feasts.count()
+
+            changed = []
+            if local_main_uid != remote_main_uid:
+                changed.append("main_feast")
+            if local_uids != remote_uids or len(local_uids) != remote_total:
+                changed.append("feasts")
+
+            if changed:
+                result["day_relation_update"].append(
+                    f"{day.date_gregorian.isoformat()} "
+                    f"({', '.join(changed)})"
+                )
+
+        return result
+
+    def _print_day_feasts_only_preview(self, preview, days, feasts):
+        self.stdout.write(
+            f"Источник SQLite: дней {len(days)}, памятей {len(feasts)}. "
+            "Режим: только карточки памятей и связи дня."
+        )
+        self.stdout.write("План:")
+
+        for key, title in [
+            ("feast_create", "Памяти CREATE"),
+            ("feast_update", "Памяти UPDATE"),
+            ("day_relation_update", "Связи дня UPDATE"),
+        ]:
+            items = preview[key]
+            self.stdout.write(f"  {title}: {len(items)}")
+            for item in items[:30]:
+                self.stdout.write(f"    - {item}")
+            if len(items) > 30:
+                self.stdout.write(f"    ... и ещё {len(items) - 30}")
+
+    def _sync_day_feast_links_only(
+        self,
+        days,
+        remote_feasts,
+        counters,
+    ):
+        for day in days:
+            remote = (
+                CalendarDay.objects.using(REMOTE_ALIAS)
+                .select_related("main_feast")
+                .prefetch_related("feasts")
+                .filter(date_gregorian=day.date_gregorian)
+                .first()
+            )
+            if remote is None:
+                raise CommandError(
+                    f"В Supabase отсутствует CalendarDay {day.date_gregorian}."
+                )
+
+            desired_main = (
+                remote_feasts[day.main_feast.sync_uid]
+                if day.main_feast
+                else None
+            )
+            desired_feasts = [
+                remote_feasts[feast.sync_uid]
+                for feast in day.feasts.all()
+            ]
+
+            changed = False
+
+            if remote.main_feast_id != (
+                desired_main.pk if desired_main else None
+            ):
+                remote.main_feast = desired_main
+                remote.save(update_fields=["main_feast"])
+                changed = True
+
+            current_ids = sorted(
+                remote.feasts.values_list("pk", flat=True)
+            )
+            desired_ids = sorted(feast.pk for feast in desired_feasts)
+
+            if current_ids != desired_ids:
+                remote.feasts.set(desired_feasts)
+                changed = True
+
+            if changed:
+                counters["day_update"] += 1
+            else:
+                counters["day_same"] += 1
+
+    def _verify_day_feasts_only(self, days, feasts):
+        problems = []
+
+        for feast in feasts.values():
+            remote = self._find_remote_feast(feast)
+            if remote is None:
+                problems.append(
+                    f"Память {feast.short_title or feast.title}: отсутствует"
+                )
+                continue
+
+            for field, expected in self._feast_values(feast).items():
+                if getattr(remote, field) != expected:
+                    problems.append(
+                        f"Память {feast.pk}: {field} отличается"
+                    )
+
+            if str(remote.sync_uid) != str(feast.sync_uid):
+                problems.append(
+                    f"Память {feast.pk}: sync_uid отличается"
+                )
+
+        for day in days:
+            remote = (
+                CalendarDay.objects.using(REMOTE_ALIAS)
+                .select_related("main_feast")
+                .prefetch_related("feasts")
+                .filter(date_gregorian=day.date_gregorian)
+                .first()
+            )
+            if remote is None:
+                problems.append(f"День {day.date_gregorian}: отсутствует")
+                continue
+
+            local_main_uid = (
+                str(day.main_feast.sync_uid)
+                if day.main_feast
+                else None
+            )
+            remote_main_uid = (
+                str(remote.main_feast.sync_uid)
+                if remote.main_feast and remote.main_feast.sync_uid
+                else None
+            )
+            if local_main_uid != remote_main_uid:
+                problems.append(
+                    f"День {day.date_gregorian}: main_feast отличается"
+                )
+
+            local_uids = sorted(
+                str(feast.sync_uid)
+                for feast in day.feasts.all()
+            )
+            remote_uids = sorted(
+                str(feast.sync_uid)
+                for feast in remote.feasts.all()
+                if feast.sync_uid
+            )
+
+            if (
+                local_uids != remote_uids
+                or len(remote_uids) != remote.feasts.count()
+            ):
+                problems.append(
+                    f"День {day.date_gregorian}: feasts отличаются"
+                )
+
+        return problems
 
     def _feast_content_values(self, feast):
         return {
