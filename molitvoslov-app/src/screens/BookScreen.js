@@ -12,6 +12,7 @@ import SelectableDocumentReader from '../components/reader/SelectableDocumentRea
 
 import {
   READER_LANGUAGE_MODES,
+  buildReaderLanguageOptions,
   getReaderModeForAppLanguage,
 } from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
@@ -101,6 +102,11 @@ export const BookScreen = ({route, navigation}) => {
 
   const hasUkrainianTranslation = useMemo(
     () => texts.some((item) => !!item.text?.translation_uk?.trim()),
+    [texts]
+  );
+
+  const hasTraditionalTranslation = useMemo(
+    () => texts.some((item) => !!item.text?.traditional_content?.trim()),
     [texts]
   );
 
@@ -353,7 +359,13 @@ export const BookScreen = ({route, navigation}) => {
 
       description: '',
 
-      viewSwitcher: null,
+      viewSwitcher: {
+        activeKey: viewMode,
+        options: buildReaderLanguageOptions({
+          hasRussian: hasRussianTranslation,
+          hasTraditional: hasTraditionalTranslation,
+        }),
+      },
 
       progressAnchorType: 'category_text',
 
@@ -370,6 +382,7 @@ export const BookScreen = ({route, navigation}) => {
     viewMode,
     hasRussianTranslation,
     hasUkrainianTranslation,
+    hasTraditionalTranslation,
     language,
     t,
   ]);
@@ -403,6 +416,7 @@ export const BookScreen = ({route, navigation}) => {
         topContentInset={headerHeight}
         onProgress={scheduleSave}
         onAction={handleAction}
+        onViewModeChange={setViewMode}
       />
 
       <FixedSectionHeader
