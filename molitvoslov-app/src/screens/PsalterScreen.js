@@ -19,8 +19,11 @@ import ExpandablePrayerBlock from '../components/reader/ExpandablePrayerBlock';
 import {colors, radius, spacing} from '../theme';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {SaveHeartIcon} from '../components/icons/SaveHeartIcon';
+import {useLanguage} from '../context/LanguageContext';
+import {getLocalizedField} from '../services/localizedContent';
 
 export default function PsalterScreen({navigation}) {
+  const {language, t} = useLanguage();
   const [psalter, setPsalter] = useState(null);
 
   const [savedItems, setSavedItems] = useState([]);
@@ -96,7 +99,9 @@ export default function PsalterScreen({navigation}) {
     navigation.navigate('Kathisma', {
       kathismaNumber: kathisma.number,
 
-      kathismaTitle: kathisma.title || `Кафизма ${kathisma.number}`,
+      kathismaTitle:
+        getLocalizedField(kathisma, 'title', language) ||
+        t('psalter.kathisma', {number: kathisma.number}),
     });
   };
 
@@ -128,16 +133,16 @@ export default function PsalterScreen({navigation}) {
 
         anchor_id: kathisma.id,
 
-        source_title: psalter.name || 'Псалтирь',
+        source_title: getLocalizedField(psalter, 'name', language) || t('psalter.title'),
 
-        item_title: `Кафизма ${kathisma.number}`,
+        item_title: t('psalter.kathisma', {number: kathisma.number}),
 
         text: '',
 
         metadata: {
           kathisma_number: kathisma.number,
 
-          kathisma_title: kathisma.title || '',
+          kathisma_title: getLocalizedField(kathisma, 'title', language) || '',
         },
       });
 
@@ -217,9 +222,10 @@ export default function PsalterScreen({navigation}) {
           ListHeaderComponent={
             <View style={styles.header}>
               <ExpandablePrayerBlock
-                title="Молитвы перед чтением Псалтири"
+                title={t('psalter.prayersBefore')}
                 text={psalter?.prayers_before}
                 secondaryText={psalter?.prayers_before_russian}
+                ukrainianText={psalter?.prayers_before_uk}
                 traditionalText={psalter?.prayers_before_traditional}
                 onCollapse={handlePrayersCollapse}
                 saveProps={{
@@ -227,8 +233,9 @@ export default function PsalterScreen({navigation}) {
                   sourceId: psalter?.id,
                   anchorType: 'psalter_prayers_before',
                   anchorId: psalter?.id,
-                  sourceTitle: psalter?.name || 'Псалтирь',
-                  itemTitle: 'Молитвы перед чтением Псалтири',
+                  sourceTitle:
+                    getLocalizedField(psalter, 'name', language) || t('psalter.title'),
+                  itemTitle: t('psalter.prayersBefore'),
                   metadata: {
                     section: 'prayers_before',
                   },
@@ -242,9 +249,10 @@ export default function PsalterScreen({navigation}) {
                   }}
                 >
                   <ExpandablePrayerBlock
-                    title="Молитвы после чтения Псалтири"
+                    title={t('psalter.prayersAfter')}
                     text={psalter?.prayers_after}
                     secondaryText={psalter?.prayers_after_russian}
+                    ukrainianText={psalter?.prayers_after_uk}
                     traditionalText={psalter?.prayers_after_traditional}
                     onExpand={handleAfterPrayersExpand}
                     onCollapse={handleAfterPrayersCollapse}
@@ -253,8 +261,9 @@ export default function PsalterScreen({navigation}) {
                       sourceId: psalter?.id,
                       anchorType: 'psalter_prayers_after',
                       anchorId: psalter?.id,
-                      sourceTitle: psalter?.name || 'Псалтирь',
-                      itemTitle: 'Молитвы после чтения Псалтири',
+                      sourceTitle:
+                        getLocalizedField(psalter, 'name', language) || t('psalter.title'),
+                      itemTitle: t('psalter.prayersAfter'),
                       metadata: {
                         section: 'prayers_after',
                       },
@@ -283,22 +292,33 @@ export default function PsalterScreen({navigation}) {
                   onPress={() => openKathisma(item)}
                   style={({pressed}) => [styles.kathismaMain, pressed && styles.pressed]}
                 >
-                  <Text style={styles.kathismaNumber}>Кафизма {item.number}</Text>
+                  <Text style={styles.kathismaNumber}>
+                    {t('psalter.kathisma', {number: item.number})}
+                  </Text>
 
                   <Text style={styles.psalmRange}>
                     {item.first_psalm === item.last_psalm
-                      ? `Псалом ${item.first_psalm}`
-                      : `Псалмы ${item.first_psalm}–${item.last_psalm}`}
+                      ? t('psalter.psalm', {number: item.first_psalm})
+                      : t('psalter.psalmsRange', {
+                          first: item.first_psalm,
+                          last: item.last_psalm,
+                        })}
                   </Text>
 
                   {isCurrent && progressInfo && (
                     <Text style={styles.currentPosition}>
-                      Здесь остановились · Псалом {progressInfo.psalm_number}
-                      {progressInfo.verse_number ? `, стих ${progressInfo.verse_number}` : ''}
+                      {t('psalter.stoppedAt', {psalm: progressInfo.psalm_number})}
+                      {progressInfo.verse_number
+                        ? t('psalter.stoppedVerse', {verse: progressInfo.verse_number})
+                        : ''}
                     </Text>
                   )}
 
-                  {!!item.title && <Text style={styles.kathismaTitle}>{item.title}</Text>}
+                  {!!getLocalizedField(item, 'title', language) && (
+                    <Text style={styles.kathismaTitle}>
+                      {getLocalizedField(item, 'title', language)}
+                    </Text>
+                  )}
                 </Pressable>
 
                 <Pressable
@@ -325,7 +345,11 @@ export default function PsalterScreen({navigation}) {
             ) : null
           }
         />
-        <FixedSectionHeader title="Псалтирь" navigation={navigation} topInset={insets.top} />
+        <FixedSectionHeader
+          title={getLocalizedField(psalter, 'name', language) || t('psalter.title')}
+          navigation={navigation}
+          topInset={insets.top}
+        />
         <BottomNav navigation={navigation} active={null} />
       </View>
     </AppBackground>
