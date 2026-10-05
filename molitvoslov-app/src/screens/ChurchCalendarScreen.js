@@ -540,7 +540,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
         if (!active) return;
 
         if (!hasOfflineData) {
-          setError(err?.message || 'Не удалось загрузить календарь');
+          setError(err?.message || copy.loadCalendarError);
           setLoadingMonth(false);
         }
       }
