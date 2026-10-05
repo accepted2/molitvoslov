@@ -22,6 +22,7 @@ import {
   getReaderModeForAppLanguage,
 } from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
+import {getLocalizedField} from '../services/localizedContent';
 
 const MODE_CHURCH = READER_LANGUAGE_MODES.CHURCH;
 const MODE_BOTH = READER_LANGUAGE_MODES.BOTH;
@@ -80,24 +81,24 @@ const normalizeAkathistText = (value) => {
     .trim();
 };
 
-const getSectionTitle = (section) => {
+const getSectionTitle = (section, language) => {
   if (section.section_type === 'kontakion') {
     return `Кондак ${section.number}`;
   }
 
   if (section.section_type === 'ikos') {
-    return `Икос ${section.number}`;
+    return `${language === 'uk' ? 'Ікос' : 'Икос'} ${section.number}`;
   }
 
   if (section.section_type === 'prayer') {
     return section.number ? `Молитва ${section.number}` : 'Молитва';
   }
 
-  return section.text?.title || '';
+  return getLocalizedField(section.text, 'title', language);
 };
 
 export const AkathistScreen = ({route, navigation}) => {
-  const {language} = useLanguage();
+  const {language, t} = useLanguage();
   const {akathistId, slug, title, focusTarget = null} = route.params;
 
   const insets = useSafeAreaInsets();
@@ -248,9 +249,9 @@ export const AkathistScreen = ({route, navigation}) => {
 
       anchor_id: akathist.id,
 
-      source_title: akathist.title || title || 'Акафист',
+      source_title: getLocalizedField(akathist, 'title', language) || title || t('reading.akathist'),
 
-      item_title: akathist.title || title || 'Акафист',
+      item_title: getLocalizedField(akathist, 'title', language) || title || t('reading.akathist'),
 
       text: '',
 
@@ -375,7 +376,7 @@ export const AkathistScreen = ({route, navigation}) => {
 
         anchorId,
 
-        sourceTitle: akathist.title || title || 'Акафист',
+        sourceTitle: getLocalizedField(akathist, 'title', language) || title || t('reading.akathist'),
 
         itemTitle,
 
@@ -593,7 +594,7 @@ export const AkathistScreen = ({route, navigation}) => {
 
       const blocks = [];
 
-      const sectionTitle = getSectionTitle(section);
+      const sectionTitle = getSectionTitle(section, language);
 
       const fullSaveType = section.section_type === 'prayer' ? 'prayer' : 'section';
 
@@ -692,7 +693,7 @@ export const AkathistScreen = ({route, navigation}) => {
 
         title: sectionTitle,
 
-        note: section.note || '',
+        note: getLocalizedField(section, 'note', language),
 
         rows: blocks.map((block) => ({
           layout: 'stack',
@@ -712,9 +713,9 @@ export const AkathistScreen = ({route, navigation}) => {
     );
 
     return {
-      title: akathist.title || title || 'Акафист',
+      title: getLocalizedField(akathist, 'title', language) || title || t('reading.akathist'),
 
-      description: akathist.description || '',
+      description: getLocalizedField(akathist, 'description', language),
 
       action: {
         key: `akathist:${akathist.id}`,
@@ -741,6 +742,8 @@ export const AkathistScreen = ({route, navigation}) => {
     slug,
     title,
     viewMode,
+    language,
+    t,
   ]);
 
   const openReaderMenu = () => {
@@ -760,8 +763,10 @@ export const AkathistScreen = ({route, navigation}) => {
       ? {
           sourceType: 'akathist',
           sourceId: Number(akathistId),
-          sourceTitle: akathist.title || title || 'Акафист',
-          itemTitle: getSectionTitle(bookmarkSection) || 'Место в акафисте',
+          sourceTitle: getLocalizedField(akathist, 'title', language) || title || t('reading.akathist'),
+          itemTitle:
+            getSectionTitle(bookmarkSection, language) ||
+            (language === 'uk' ? 'Місце в акафісті' : 'Место в акафисте'),
           position: bookmarkPosition,
           metadata: {
             slug: akathist.slug || slug,
@@ -816,7 +821,7 @@ export const AkathistScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
-        title={akathist.title || title || 'Акафист'}
+        title={getLocalizedField(akathist, 'title', language) || title || t('reading.akathist')}
         navigation={navigation}
         topInset={insets.top}
         showTitle={false}
