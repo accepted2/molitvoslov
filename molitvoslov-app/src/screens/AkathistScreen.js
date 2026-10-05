@@ -81,17 +81,19 @@ const normalizeAkathistText = (value) => {
     .trim();
 };
 
-const getSectionTitle = (section, language) => {
+const getSectionTitle = (section, language, t) => {
   if (section.section_type === 'kontakion') {
-    return `Кондак ${section.number}`;
+    return `${t('reading.kontakion')} ${section.number}`;
   }
 
   if (section.section_type === 'ikos') {
-    return `${language === 'uk' ? 'Ікос' : 'Икос'} ${section.number}`;
+    return `${t('reading.ikos')} ${section.number}`;
   }
 
   if (section.section_type === 'prayer') {
-    return section.number ? `Молитва ${section.number}` : 'Молитва';
+    return section.number
+      ? `${t('reading.prayer')} ${section.number}`
+      : t('reading.prayer');
   }
 
   return getLocalizedField(section.text, 'title', language);
@@ -232,7 +234,7 @@ export const AkathistScreen = ({route, navigation}) => {
       savedItemsRef.current = savedItemsRef.current.filter((item) => item.id !== existing.id);
 
       return {
-        label: 'В избранное',
+        label: t('common.addToFavorites'),
 
         active: false,
       };
@@ -263,7 +265,7 @@ export const AkathistScreen = ({route, navigation}) => {
     savedItemsRef.current = [saved, ...savedItemsRef.current];
 
     return {
-      label: 'В избранном',
+      label: t('common.inFavorites'),
 
       active: true,
     };
@@ -272,7 +274,7 @@ export const AkathistScreen = ({route, navigation}) => {
   const documentData = useMemo(() => {
     if (!akathist) {
       return {
-        title: title || 'Акафист',
+        title: title || t('reading.akathist'),
 
         description: '',
 
@@ -594,7 +596,7 @@ export const AkathistScreen = ({route, navigation}) => {
 
       const blocks = [];
 
-      const sectionTitle = getSectionTitle(section, language);
+      const sectionTitle = getSectionTitle(section, language, t);
 
       const fullSaveType = section.section_type === 'prayer' ? 'prayer' : 'section';
 
@@ -720,7 +722,7 @@ export const AkathistScreen = ({route, navigation}) => {
       action: {
         key: `akathist:${akathist.id}`,
 
-        label: wholeAkathistSaved ? 'В избранном' : 'В избранное',
+        label: wholeAkathistSaved ? t('common.inFavorites') : t('common.addToFavorites'),
 
         active: wholeAkathistSaved,
       },
@@ -765,8 +767,8 @@ export const AkathistScreen = ({route, navigation}) => {
           sourceId: Number(akathistId),
           sourceTitle: getLocalizedField(akathist, 'title', language) || title || t('reading.akathist'),
           itemTitle:
-            getSectionTitle(bookmarkSection, language) ||
-            (language === 'uk' ? 'Місце в акафісті' : 'Место в акафисте'),
+            getSectionTitle(bookmarkSection, language, t) ||
+            t('reading.akathistPlace'),
           position: bookmarkPosition,
           metadata: {
             slug: akathist.slug || slug,
@@ -781,7 +783,7 @@ export const AkathistScreen = ({route, navigation}) => {
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.accent} />
 
-        <Text style={styles.loadingText}>Загрузка...</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -789,7 +791,7 @@ export const AkathistScreen = ({route, navigation}) => {
   if (error || !akathist) {
     return (
       <View style={styles.center}>
-        <Text style={styles.error}>{error || 'Акафист не найден'}</Text>
+        <Text style={styles.error}>{error || t('reading.akathistNotFound')}</Text>
       </View>
     );
   }

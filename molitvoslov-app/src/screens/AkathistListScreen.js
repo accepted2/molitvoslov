@@ -128,7 +128,7 @@ export const AkathistListScreen = ({navigation}) => {
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.accent} />
 
-          <Text style={styles.loadingText}>Загрузка...</Text>
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
         </View>
       </AppBackground>
     );
@@ -168,6 +168,8 @@ export const AkathistListScreen = ({navigation}) => {
                 </TouchableOpacity>
 
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={saved ? t('common.removeFromFavorites') : t('common.addFavorite')}
                   hitSlop={8}
                   onPress={() => toggleFavorite(item)}
                   style={({pressed}) => [styles.favoriteButton, pressed && styles.pressed]}
@@ -180,7 +182,7 @@ export const AkathistListScreen = ({navigation}) => {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
-                {language === 'uk' ? 'Акафісти поки не додані' : 'Акафисты пока не добавлены'}
+                {t('menu.akathistsEmpty')}
               </Text>
             </View>
           }
@@ -227,7 +229,7 @@ export const AkathistListScreen = ({navigation}) => {
 
             <View style={styles.headerTitleWrap}>
               <Text style={styles.headerTitle}>
-                {language === 'uk' ? 'Акафісти' : t('menu.akathistsTitle')}
+                {t('menu.akathistsTitle')}
               </Text>
 
               <View style={styles.headerOrnament}>
