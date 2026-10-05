@@ -2,13 +2,14 @@ import React from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {LinearGradient} from 'expo-linear-gradient';
+import {useLanguage} from '../../context/LanguageContext';
 
 const ITEMS = [
-  {key: 'home', route: 'Menu', label: 'Главная', icon: 'home'},
-  {key: 'favorites', route: 'Favorites', label: 'Избранное', icon: 'favorite'},
-  {key: 'prayerbooks', route: 'PrayerBooks', label: 'Молитвослов', icon: 'book'},
-  {key: 'memorial', route: 'Memorial', label: 'Помянник', icon: 'candle'},
-  {key: 'account', route: 'Account', label: 'Аккаунт', icon: 'account'},
+  {key: 'home', route: 'Menu', labelKey: 'nav.home', icon: 'home'},
+  {key: 'favorites', route: 'Favorites', labelKey: 'nav.favorites', icon: 'favorite'},
+  {key: 'prayerbooks', route: 'PrayerBooks', labelKey: 'nav.prayerBooks', icon: 'book'},
+  {key: 'memorial', route: 'Memorial', labelKey: 'nav.memorial', icon: 'candle'},
+  {key: 'account', route: 'Account', labelKey: 'nav.account', icon: 'account'},
 ];
 
 const NavIcon = ({type, active}) => {
@@ -52,6 +53,7 @@ const NavIcon = ({type, active}) => {
 
 export const BottomNav = ({navigation, active}) => {
   const insets = useSafeAreaInsets();
+  const {t} = useLanguage();
 
   return (
     <View
@@ -78,7 +80,7 @@ export const BottomNav = ({navigation, active}) => {
                 key={item.key}
                 accessibilityRole="button"
                 accessibilityState={{selected: isActive}}
-                accessibilityLabel={item.label}
+                accessibilityLabel={t(item.labelKey)}
                 onPress={() => navigation.navigate(item.route)}
                 style={({pressed}) => [
                   styles.item,
@@ -87,7 +89,7 @@ export const BottomNav = ({navigation, active}) => {
                 ]}
               >
                 <NavIcon type={item.icon} active={isActive} />
-                <Text style={[styles.label, isActive && styles.labelActive]}>{item.label}</Text>
+                <Text style={[styles.label, isActive && styles.labelActive]}>{t(item.labelKey)}</Text>
               </Pressable>
             );
           })}
