@@ -443,9 +443,10 @@ class Command(BaseCommand):
         if not cloudinary_configured():
             self.stdout.write(
                 self.style.WARNING(
-                    "Иконы: CLOUDINARY_URL не задан. "
-                    "Тексты будут сохранены, но изображения в Cloudinary "
-                    "не загружаются."
+                    "Иконы: Cloudinary не настроен. "
+                    "Задайте CLOUDINARY_URL либо CLOUD_NAME + "
+                    "CLOUD_API_KEY + CLOUD_API_SECRET. "
+                    "Тексты будут сохранены без загрузки изображений."
                 )
             )
             return
