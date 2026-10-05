@@ -5,7 +5,7 @@ import {Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-nati
 import {getSavedItems} from '../../services/savedItems';
 import {
   READER_LANGUAGE_MODES,
-  getReaderModeForAppLanguage,
+  buildReaderLanguageOptions,
 } from '../../services/readerLanguageModes';
 import {useLanguage} from '../../context/LanguageContext';
 
@@ -29,7 +29,7 @@ export default function ExpandablePrayerBlock({
   onExpand,
   saveProps = null,
 }) {
-  const {language, t} = useLanguage();
+  const {t} = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [savedItems, setSavedItems] = useState([]);
   const [headerHeight, setHeaderHeight] = useState(0);
@@ -71,14 +71,7 @@ export default function ExpandablePrayerBlock({
     saveProps?.anchorId,
   ]);
 
-  const viewMode = useMemo(
-    () =>
-      getReaderModeForAppLanguage(language, {
-        hasRussian: !!normalizedSecondaryText,
-        hasUkrainian: !!normalizedUkrainianText,
-      }),
-    [language, normalizedSecondaryText, normalizedUkrainianText]
-  );
+  const [viewMode, setViewMode] = useState(READER_LANGUAGE_MODES.CHURCH);
 
   const loadSaved = async () => {
     try {
@@ -198,7 +191,13 @@ export default function ExpandablePrayerBlock({
     return {
       title: '',
       description: '',
-      viewSwitcher: null,
+      viewSwitcher: {
+        activeKey: viewMode,
+        options: buildReaderLanguageOptions({
+          hasRussian: !!normalizedSecondaryText,
+          hasTraditional: !!normalizedTraditionalText,
+        }),
+      },
       progressAnchorType: saveProps.anchorType,
       savedItems: normalizedSaved,
       sections: [
@@ -288,7 +287,11 @@ export default function ExpandablePrayerBlock({
         <View style={styles.content}>
           {documentData ? (
             <View style={[styles.reader, {height: readerHeight}]}>
-              <SelectableDocumentReader documentData={documentData} savedProgress={null} />
+              <SelectableDocumentReader
+                documentData={documentData}
+                savedProgress={null}
+                onViewModeChange={setViewMode}
+              />
             </View>
           ) : (
             <Text style={styles.prayerText}>{normalizedText}</Text>
