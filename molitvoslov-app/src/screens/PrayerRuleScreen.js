@@ -18,7 +18,11 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
-import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
+import {
+  READER_LANGUAGE_MODES,
+  getReaderModeForAppLanguage,
+} from '../services/readerLanguageModes';
+import {useLanguage} from '../context/LanguageContext';
 
 const MODE_CHURCH = READER_LANGUAGE_MODES.CHURCH;
 const MODE_BOTH = READER_LANGUAGE_MODES.BOTH;
@@ -26,6 +30,7 @@ const MODE_RUSSIAN = READER_LANGUAGE_MODES.RUSSIAN;
 const MODE_TRADITIONAL = READER_LANGUAGE_MODES.TRADITIONAL;
 
 export const PrayerRuleScreen = ({route, navigation}) => {
+  const {language} = useLanguage();
   const {slug, focusTarget = null} = route.params;
 
   const insets = useSafeAreaInsets();
@@ -36,7 +41,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
 
   const [savedItems, setSavedItems] = useState([]);
 
-  const [viewMode, setViewMode] = useState(MODE_BOTH);
+  const [viewMode, setViewMode] = useState(MODE_CHURCH);
 
   const [loading, setLoading] = useState(true);
 
@@ -62,10 +67,10 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     [rule]
   );
 
-  const hasTraditionalText = useMemo(
+  const hasUkrainianTranslation = useMemo(
     () =>
       (rule?.items || []).some(
-        (item) => item.item_type === 'text' && !!item.text?.traditional_content?.trim()
+        (item) => item.item_type === 'text' && !!item.text?.translation_uk?.trim()
       ),
     [rule]
   );
@@ -75,15 +80,13 @@ export const PrayerRuleScreen = ({route, navigation}) => {
       return;
     }
 
-    if ((viewMode === MODE_BOTH || viewMode === MODE_RUSSIAN) && !hasRussianTranslation) {
-      setViewMode(MODE_CHURCH);
-      return;
-    }
-
-    if (viewMode === MODE_TRADITIONAL && !hasTraditionalText) {
-      setViewMode(MODE_CHURCH);
-    }
-  }, [rule, hasRussianTranslation, hasTraditionalText, viewMode]);
+    setViewMode(
+      getReaderModeForAppLanguage(language, {
+        hasRussian: hasRussianTranslation,
+        hasUkrainian: hasUkrainianTranslation,
+      })
+    );
+  }, [language, rule, hasRussianTranslation, hasUkrainianTranslation]);
 
   const loadRule = async () => {
     try {
@@ -142,13 +145,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     );
   }
 
-  const viewSwitcher = {
-    activeKey: viewMode,
-    options: buildReaderLanguageOptions({
-      hasRussian: hasRussianTranslation,
-      hasTraditional: hasTraditionalText,
-    }),
-  };
+  const viewSwitcher = null;
 
   return (
     <View style={styles.container}>
@@ -165,7 +162,6 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         memorialEnabled={slug === 'molitvy-utrennie'}
         onMemorialOpen={(context) => setMemorialContext(context || {})}
         onProgress={scheduleSave}
-        onViewModeChange={setViewMode}
       />
 
       <MemorialQuickSheet
