@@ -17,11 +17,16 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
-import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
+import {
+  READER_LANGUAGE_MODES,
+  getReaderModeForAppLanguage,
+} from '../services/readerLanguageModes';
+import {useLanguage} from '../context/LanguageContext';
 
 const MODE_CHURCH = READER_LANGUAGE_MODES.CHURCH;
 const MODE_BOTH = READER_LANGUAGE_MODES.BOTH;
 const MODE_RUSSIAN = READER_LANGUAGE_MODES.RUSSIAN;
+const MODE_UKRAINIAN = READER_LANGUAGE_MODES.UKRAINIAN;
 const MODE_TRADITIONAL = READER_LANGUAGE_MODES.TRADITIONAL;
 
 const SECTION_LABELS = {
@@ -130,6 +135,7 @@ const getCanonInlineLabel = (section, text) => {
 };
 
 export const CanonScreen = ({route, navigation}) => {
+  const {language} = useLanguage();
   const {canonId, slug, title, focusTarget = null} = route.params;
 
   const insets = useSafeAreaInsets();
@@ -143,7 +149,7 @@ export const CanonScreen = ({route, navigation}) => {
   const savedItemsRef = useRef([]);
   const readerRef = useRef(null);
 
-  const [viewMode, setViewMode] = useState(MODE_BOTH);
+  const [viewMode, setViewMode] = useState(MODE_CHURCH);
 
   const [loading, setLoading] = useState(true);
 
@@ -280,8 +286,8 @@ export const CanonScreen = ({route, navigation}) => {
     [displaySections]
   );
 
-  const hasTraditionalText = useMemo(
-    () => displaySections.some((section) => !!section.text?.traditional_content?.trim()),
+  const hasUkrainianTranslation = useMemo(
+    () => displaySections.some((section) => !!section.text?.translation_uk?.trim()),
     [displaySections]
   );
 
@@ -290,15 +296,13 @@ export const CanonScreen = ({route, navigation}) => {
       return;
     }
 
-    if ((viewMode === MODE_BOTH || viewMode === MODE_RUSSIAN) && !hasRussianTranslation) {
-      setViewMode(MODE_CHURCH);
-      return;
-    }
-
-    if (viewMode === MODE_TRADITIONAL && !hasTraditionalText) {
-      setViewMode(MODE_CHURCH);
-    }
-  }, [canon, hasRussianTranslation, hasTraditionalText, viewMode]);
+    setViewMode(
+      getReaderModeForAppLanguage(language, {
+        hasRussian: hasRussianTranslation,
+        hasUkrainian: hasUkrainianTranslation,
+      })
+    );
+  }, [language, canon, hasRussianTranslation, hasUkrainianTranslation]);
 
   const handleAction = async (actionKey) => {
     if (!canon || actionKey !== `canon:${canon.id}`) {
@@ -377,6 +381,8 @@ export const CanonScreen = ({route, navigation}) => {
     const showChurch = viewMode === MODE_CHURCH || viewMode === MODE_BOTH;
 
     const showRussian = viewMode === MODE_RUSSIAN || viewMode === MODE_BOTH;
+
+    const showUkrainian = viewMode === MODE_UKRAINIAN;
 
     const showTraditional = viewMode === MODE_TRADITIONAL;
 
@@ -464,6 +470,8 @@ export const CanonScreen = ({route, navigation}) => {
 
       const russian = section.text?.translation?.trim() || '';
 
+      const ukrainian = section.text?.translation_uk?.trim() || '';
+
       const traditional = section.text?.traditional_content?.trim() || '';
 
       const effectiveSectionType = section.display_section_type || section.section_type;
@@ -511,6 +519,35 @@ export const CanonScreen = ({route, navigation}) => {
             inlineLabel: getCanonInlineLabel(displaySection, church),
           })
         );
+      }
+
+      if (showUkrainian) {
+        const localized = ukrainian || russian || church;
+        const localizedLanguage = ukrainian ? 'ukrainian' : russian ? 'russian' : 'church';
+
+        if (localized) {
+          blocks.push(
+            makeBlock({
+              section,
+
+              text: localized,
+
+              language: localizedLanguage,
+
+              className:
+                localizedLanguage === 'church'
+                  ? `canon-church canon-${effectiveSectionType}`
+                  : `canon-russian canon-${effectiveSectionType}`,
+
+              label: '',
+
+              inlineLabel:
+                localizedLanguage === 'church'
+                  ? getCanonInlineLabel(displaySection, localized)
+                  : '',
+            })
+          );
+        }
       }
 
       if (showRussian && russian) {
@@ -594,13 +631,7 @@ export const CanonScreen = ({route, navigation}) => {
         highlightContent: true,
       },
 
-      viewSwitcher: {
-        activeKey: viewMode,
-        options: buildReaderLanguageOptions({
-          hasRussian: hasRussianTranslation,
-          hasTraditional: hasTraditionalText,
-        }),
-      },
+      viewSwitcher: null,
 
       progressAnchorType: 'canon_section',
 
@@ -617,7 +648,7 @@ export const CanonScreen = ({route, navigation}) => {
     savedItems,
     viewMode,
     hasRussianTranslation,
-    hasTraditionalText,
+    hasUkrainianTranslation,
   ]);
 
   const readerProgress = useMemo(() => {
@@ -692,7 +723,6 @@ export const CanonScreen = ({route, navigation}) => {
         topContentInset={headerHeight}
         onProgress={scheduleSave}
         onAction={handleAction}
-        onViewModeChange={setViewMode}
       />
 
       <ReaderBookmarkMenu
