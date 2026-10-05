@@ -278,7 +278,11 @@ const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress})
 );
 
 export const MenuScreen = ({navigation}) => {
-  const {language: calendarLanguage, setLanguage: setAppLanguage} = useLanguage();
+  const {
+    language: calendarLanguage,
+    setLanguage: setAppLanguage,
+    t,
+  } = useLanguage();
   const [categories, setCategories] = useState([]);
   const [akathists, setAkathists] = useState([]);
   const [canons, setCanons] = useState([]);
@@ -689,13 +693,13 @@ export const MenuScreen = ({navigation}) => {
 
       return {
         id: progress.id,
-        type: 'Библия',
+        type: t('reading.bible'),
         symbol: '☷',
         imageSource: artwork?.icon || null,
         title: bibleContent.getDisplayName(book),
         position: verseNumber
-          ? 'Глава ' + chapterNumber + ' · стих ' + verseNumber
-          : 'Глава ' + chapterNumber,
+          ? t('reading.chapterVerse', {chapter: chapterNumber, verse: verseNumber})
+          : t('reading.chapter', {chapter: chapterNumber}),
         onPress: () =>
           navigation.navigate('BibleChapter', {
             bookId: book.id,
@@ -710,15 +714,22 @@ export const MenuScreen = ({navigation}) => {
 
       return {
         id: progress.id,
-        type: 'Псалтирь',
+        type: t('reading.psalter'),
         symbol: '¶',
         iconSource: CATEGORY_ICONS.psalter,
-        title: 'Псалтирь',
+        title: t('reading.psalter'),
         position: info
           ? info.verse_number
-            ? `Кафизма ${info.kathisma_number} · Псалом ${info.psalm_number} · стих ${info.verse_number}`
-            : `Кафизма ${info.kathisma_number} · Псалом ${info.psalm_number}`
-          : 'Продолжить с сохранённого места',
+            ? t('reading.kathismaPsalmVerse', {
+                kathisma: info.kathisma_number,
+                psalm: info.psalm_number,
+                verse: info.verse_number,
+              })
+            : t('reading.kathismaPsalm', {
+                kathisma: info.kathisma_number,
+                psalm: info.psalm_number,
+              })
+          : t('reading.continueSaved'),
         onPress: () => navigation.navigate('Psalter'),
       };
     }
@@ -730,18 +741,22 @@ export const MenuScreen = ({navigation}) => {
       const section = akathist.sections?.find(
         (item) => Number(item.id) === Number(progress.anchor_id)
       );
-      let position = 'Продолжить акафист';
+      let position = t('reading.continueAkathist');
 
       if (section) {
-        const names = {kontakion: 'Кондак', ikos: 'Икос', prayer: 'Молитва'};
-        position = `${names[section.section_type] || 'Раздел'}${
+        const names = {
+          kontakion: t('reading.kontakion'),
+          ikos: t('reading.ikos'),
+          prayer: t('reading.prayer'),
+        };
+        position = `${names[section.section_type] || t('reading.section')}${
           section.number ? ` ${section.number}` : ''
         }`;
       }
 
       return {
         id: progress.id,
-        type: 'Акафист',
+        type: t('reading.akathist'),
         symbol: '☦',
         iconSource: CATEGORY_ICONS.akathists,
         title: akathist.title,
@@ -760,11 +775,11 @@ export const MenuScreen = ({navigation}) => {
       if (!canon) return null;
 
       const info = progress.anchor_info;
-      let position = 'Продолжить канон';
+      let position = t('reading.continueCanon');
 
       if (info) {
         const parts = [];
-        if (info.ode_number) parts.push(`Песнь ${info.ode_number}`);
+        if (info.ode_number) parts.push(t('reading.ode', {number: info.ode_number}));
         if (info.heading) {
           parts.push(info.heading);
         } else if (info.section_type_display) {
@@ -775,7 +790,7 @@ export const MenuScreen = ({navigation}) => {
 
       return {
         id: progress.id,
-        type: 'Канон',
+        type: t('reading.canon'),
         symbol: '☦',
         iconSource: CATEGORY_ICONS.canons,
         title: canon.title,
@@ -794,11 +809,11 @@ export const MenuScreen = ({navigation}) => {
       if (!rule) return null;
 
       const ruleItem = rule.items?.find((item) => Number(item.id) === Number(progress.anchor_id));
-      const position = ruleItem?.text?.title || ruleItem?.title || 'Продолжить правило';
+      const position = ruleItem?.text?.title || ruleItem?.title || t('reading.continueRule');
 
       return {
         id: progress.id,
-        type: 'Молитвенное правило',
+        type: t('reading.prayerRule'),
         symbol: '✦',
         iconSource: resolveCategoryIcon(rule.slug, rule.name) || CATEGORY_ICONS.canons,
         title: rule.name,
@@ -813,11 +828,11 @@ export const MenuScreen = ({navigation}) => {
 
       return {
         id: progress.id,
-        type: 'Молитвы',
+        type: t('reading.prayers'),
         symbol: '†',
         iconSource: resolveCategoryIcon(category.slug, category.name) || CATEGORY_ICONS.canons,
         title: category.name,
-        position: 'Продолжить с сохранённого места',
+        position: t('reading.continueSaved'),
         onPress: () =>
           navigation.navigate('Book', {
             categoryId: category.id,
@@ -840,7 +855,7 @@ export const MenuScreen = ({navigation}) => {
           return {...item, progress: Number(progress.progress_percent || 0)};
         })
         .filter(Boolean),
-    [readingProgress, categories, akathists, canons, prayerRules]
+    [readingProgress, categories, akathists, canons, prayerRules, t]
   );
 
   const finishReading = async (progressId) => {
@@ -890,7 +905,7 @@ export const MenuScreen = ({navigation}) => {
     } catch (err) {
       console.log('Ошибка сохранения цитаты:', err);
 
-      Alert.alert('Не удалось сохранить цитату', err.message || 'Попробуйте ещё раз.');
+      Alert.alert(t('menu.saveQuoteError'), err.message || t('common.tryAgain'));
     }
   };
 
@@ -901,25 +916,21 @@ export const MenuScreen = ({navigation}) => {
       });
 
       if (!requested) {
-        Alert.alert(
-          'Добавление виджета',
-          'Зажмите свободное место на главном экране телефона, ' +
-            'откройте «Виджеты» → «Молитвослов» → «Цитата дня».'
-        );
+        Alert.alert(t('menu.addWidgetTitle'), t('menu.addQuoteWidget'));
       }
     } catch (err) {
       console.log('Ошибка добавления виджета:', err);
 
-      Alert.alert(
-        'Не удалось добавить виджет',
-        'Попробуйте добавить его через меню виджетов Android.'
-      );
+      Alert.alert(t('menu.widgetErrorTitle'), t('menu.widgetError'));
     }
   };
 
-  const showPlaceholder = useCallback((title) => {
-    Alert.alert(title, 'Раздел пока в разработке.');
-  }, []);
+  const showPlaceholder = useCallback(
+    (title) => {
+      Alert.alert(title, t('common.inDevelopment'));
+    },
+    [t]
+  );
 
   // if (loading) {
   //   return (
