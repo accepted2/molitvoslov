@@ -68,11 +68,11 @@ export const CanonListScreen = ({navigation}) => {
     } catch (loadError) {
       console.log('Ошибка загрузки канонов:', loadError.response?.data || loadError.message);
 
-      setError('Не удалось загрузить каноны');
+      setError(t('menu.canonsLoadError'));
     } finally {
       setLoading(false);
     }
-  }, [loadSavedCanons]);
+  }, [loadSavedCanons, t]);
 
   useEffect(() => {
     loadCanons();
@@ -150,7 +150,7 @@ export const CanonListScreen = ({navigation}) => {
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.accent} />
 
-        <Text style={styles.loadingText}>Загрузка...</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -206,7 +206,7 @@ export const CanonListScreen = ({navigation}) => {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={
-                    saved ? 'Убрать канон из избранного' : 'Добавить канон в избранное'
+                    saved ? t('common.removeFromFavorites') : t('common.addFavorite')
                   }
                   hitSlop={6}
                   onPress={() => toggleFavorite(item)}
@@ -220,13 +220,13 @@ export const CanonListScreen = ({navigation}) => {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
-                {language === 'uk' ? 'Канони поки не додані' : 'Каноны пока не добавлены'}
+                {t('menu.canonsEmpty')}
               </Text>
             </View>
           }
         />
         <FixedSectionHeader
-          title={language === 'uk' ? 'Канони' : t('menu.canonsTitle')}
+          title={t('menu.canonsTitle')}
           navigation={navigation}
           topInset={insets.top}
         />
