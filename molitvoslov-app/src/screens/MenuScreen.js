@@ -41,6 +41,7 @@ import {
   LANGUAGE_OPTIONS,
   getCalendarDataLanguage,
 } from '../services/languagePreferences';
+import {getLocalizedField} from '../services/localizedContent';
 import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
 import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
@@ -675,7 +676,7 @@ export const MenuScreen = ({navigation}) => {
     navigation.navigate('Book', {
       categoryId: category.id,
       categorySlug: category.slug,
-      categoryName: category.name,
+      categoryName: getLocalizedField(category, 'name', calendarLanguage),
     });
   };
 
@@ -759,13 +760,13 @@ export const MenuScreen = ({navigation}) => {
         type: t('reading.akathist'),
         symbol: '☦',
         iconSource: CATEGORY_ICONS.akathists,
-        title: akathist.title,
+        title: getLocalizedField(akathist, 'title', calendarLanguage),
         position,
         onPress: () =>
           navigation.navigate('Akathist', {
             akathistId: akathist.id,
             slug: akathist.slug,
-            title: akathist.title,
+            title: getLocalizedField(akathist, 'title', calendarLanguage),
           }),
       };
     }
@@ -793,13 +794,13 @@ export const MenuScreen = ({navigation}) => {
         type: t('reading.canon'),
         symbol: '☦',
         iconSource: CATEGORY_ICONS.canons,
-        title: canon.title,
+        title: getLocalizedField(canon, 'title', calendarLanguage),
         position,
         onPress: () =>
           navigation.navigate('Canon', {
             canonId: canon.id,
             slug: canon.slug,
-            title: canon.title,
+            title: getLocalizedField(canon, 'title', calendarLanguage),
           }),
       };
     }
@@ -816,7 +817,7 @@ export const MenuScreen = ({navigation}) => {
         type: t('reading.prayerRule'),
         symbol: '✦',
         iconSource: resolveCategoryIcon(rule.slug, rule.name) || CATEGORY_ICONS.canons,
-        title: rule.name,
+        title: getLocalizedField(rule, 'name', calendarLanguage),
         position,
         onPress: () => navigation.navigate('PrayerRule', {slug: rule.slug}),
       };
@@ -831,13 +832,13 @@ export const MenuScreen = ({navigation}) => {
         type: t('reading.prayers'),
         symbol: '†',
         iconSource: resolveCategoryIcon(category.slug, category.name) || CATEGORY_ICONS.canons,
-        title: category.name,
+        title: getLocalizedField(category, 'name', calendarLanguage),
         position: t('reading.continueSaved'),
         onPress: () =>
           navigation.navigate('Book', {
             categoryId: category.id,
             categorySlug: category.slug,
-            categoryName: category.name,
+            categoryName: getLocalizedField(category, 'name', calendarLanguage),
           }),
       };
     }
@@ -870,7 +871,9 @@ export const MenuScreen = ({navigation}) => {
   const latestReading = activeReadings[0] || null;
 
   const toggleDailyQuoteSaved = async () => {
-    if (!dailyQuote?.id || !dailyQuote?.text) {
+    const quoteText = getLocalizedField(dailyQuote, 'text', calendarLanguage);
+
+    if (!dailyQuote?.id || !quoteText) {
       return;
     }
 
@@ -883,20 +886,23 @@ export const MenuScreen = ({navigation}) => {
         return;
       }
 
+      const quoteReference = getLocalizedField(dailyQuote, 'reference', calendarLanguage);
+      const quoteSource = getLocalizedField(dailyQuote, 'source', calendarLanguage);
+
       const saved = await saveItem({
         save_type: 'quote',
         source_type: 'daily_quote',
         source_id: Number(dailyQuote.id),
         anchor_type: 'daily_quote',
         anchor_id: Number(dailyQuote.id),
-        source_title: 'Цитата дня',
-        item_title: dailyQuote.reference || dailyQuote.source || 'Цитата дня',
-        text: dailyQuote.text,
+        source_title: t('menu.quoteOfDay'),
+        item_title: quoteReference || quoteSource || t('menu.quoteOfDay'),
+        text: quoteText,
         start_offset: 0,
-        end_offset: dailyQuote.text.length,
+        end_offset: quoteText.length,
         metadata: {
-          source: dailyQuote.source || '',
-          reference: dailyQuote.reference || '',
+          source: quoteSource,
+          reference: quoteReference,
           quote_date: dailyQuote.quote_date || dailyQuote.date || '',
         },
       });
@@ -1073,14 +1079,20 @@ export const MenuScreen = ({navigation}) => {
                 </View>
 
                 <View style={styles.quoteStaircase}>
-                  {!!dailyQuote?.text && (
-                    <Text style={styles.heroQuoteText}>{dailyQuote.text}</Text>
+                  {!!getLocalizedField(dailyQuote, 'text', calendarLanguage) && (
+                    <Text style={styles.heroQuoteText}>
+                      {getLocalizedField(dailyQuote, 'text', calendarLanguage)}
+                    </Text>
                   )}
                 </View>
 
-                {!!(dailyQuote?.reference || dailyQuote?.source) && (
+                {!!(
+                  getLocalizedField(dailyQuote, 'reference', calendarLanguage) ||
+                  getLocalizedField(dailyQuote, 'source', calendarLanguage)
+                ) && (
                   <Text style={styles.heroQuoteSource}>
-                    {dailyQuote?.reference || dailyQuote?.source}
+                    {getLocalizedField(dailyQuote, 'reference', calendarLanguage) ||
+                      getLocalizedField(dailyQuote, 'source', calendarLanguage)}
                   </Text>
                 )}
 
@@ -1516,7 +1528,9 @@ export const MenuScreen = ({navigation}) => {
                       style={({pressed}) => [styles.extraCard, pressed && styles.pressed]}
                     >
                       <View>
-                        <Text style={styles.extraCardTitle}>{category.name}</Text>
+                        <Text style={styles.extraCardTitle}>
+                          {getLocalizedField(category, 'name', calendarLanguage)}
+                        </Text>
                         <Text style={styles.extraCardSubtitle}>
                           {getSubcategories(category).length > 0
                             ? t('menu.sectionsCount', {
