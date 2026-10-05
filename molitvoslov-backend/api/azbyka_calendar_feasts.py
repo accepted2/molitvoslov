@@ -303,11 +303,8 @@ def _next_text_block(heading):
     return ""
 
 
-def _extract_saint_icon_url_from_soup(soup):
-    # На страницах Azbyka галерея икон обычно стоит непосредственно перед H1.
-    # Берём только изображения из storage/images, чтобы не схватить логотипы,
-    # счётчики и прочую служебную графику страницы.
-    for tag in soup.find_all(["a", "img"]):
+def _icon_url_from_tags(tags):
+    for tag in tags:
         raw_values = []
 
         if tag.name == "a":
@@ -339,6 +336,35 @@ def _extract_saint_icon_url_from_soup(soup):
             return absolute
 
     return ""
+
+
+def _extract_saint_icon_url_from_soup(soup):
+    # На страницах Azbyka галерея икон обычно стоит непосредственно перед H1.
+    # Сначала смотрим только эту верхнюю часть страницы, чтобы не принять
+    # иллюстрацию внутри жития за главную календарную икону.
+    h1 = soup.find("h1")
+    if h1 is not None:
+        previous = list(h1.find_all_previous(["a", "img"]))
+        previous.reverse()
+        icon_url = _icon_url_from_tags(previous)
+        if icon_url:
+            return icon_url
+
+        # Редкий вариант разметки: изображение может стоять сразу после H1,
+        # но до первого следующего заголовка.
+        nearby = []
+        for tag in h1.find_all_next(["a", "img", "h2", "h3", "h4", "h5", "h6"]):
+            if tag.name in {"h2", "h3", "h4", "h5", "h6"}:
+                break
+            nearby.append(tag)
+
+        icon_url = _icon_url_from_tags(nearby)
+        if icon_url:
+            return icon_url
+
+        return ""
+
+    return _icon_url_from_tags(soup.find_all(["a", "img"]))
 
 
 def extract_saint_icon_url(html):
