@@ -4,8 +4,15 @@ import {contentApi as api} from '../services/contentApi';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {useLanguage} from '../context/LanguageContext';
+import {
+  getLocalizedTextContent,
+  getLocalizedTextDescription,
+  getLocalizedTextTitle,
+} from '../services/localizedContent';
 
 export const TextsListScreen = ({route, navigation}) => {
+  const {language} = useLanguage();
   const {categorySlug, categoryName} = route.params;
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + 56;
@@ -59,9 +66,13 @@ export const TextsListScreen = ({route, navigation}) => {
             {/*<Text style={styles.order}>{index + 1}.</Text>*/}
             <View style={styles.textContainer}>
               <Text style={styles.title}>
-                {item.text.title || item.text.description || 'Молитва'}
+                {getLocalizedTextTitle(item.text, language) ||
+                  getLocalizedTextDescription(item.text, language) ||
+                  'Молитва'}
               </Text>
-              <Text style={styles.preview}>{item.text.content.slice(0, 60)}...</Text>
+              <Text style={styles.preview}>
+                {getLocalizedTextContent(item.text, language).slice(0, 60)}...
+              </Text>
             </View>
             <Text style={styles.arrow}>›</Text>
           </TouchableOpacity>
