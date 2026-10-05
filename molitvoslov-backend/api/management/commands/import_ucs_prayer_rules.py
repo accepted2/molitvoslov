@@ -116,32 +116,67 @@ def normalize_traditional_title(value):
     return str(value or "").strip().rstrip(":").strip()
 
 
-def find_best_traditional_title(rows, current_title):
+def find_best_traditional_title(rows, current_title, traditional_content=""):
     current_title = str(current_title or "").strip()
+    traditional_content = str(traditional_content or "").strip()
+
     if not current_title:
         return ""
+
+    target_content = normalize_for_similarity(traditional_content)
+
+    # Некоторые общие молитвы в Book.html находятся внутри большого
+    # абзаца без собственного <h3>. Если наш импортируемый текст буквально
+    # входит в такой безымянный абзац, нельзя заимствовать похожий заголовок
+    # у другой молитвы ниже по разделу. Лучше оставить traditional_title
+    # пустым, чем присвоить неверное название.
+    if target_content:
+        for row in rows:
+            if normalize_traditional_title(row.get("title")):
+                continue
+
+            row_content = normalize_for_similarity(row.get("content"))
+            if row_content and target_content in row_content:
+                return ""
 
     candidates = []
     seen = set()
 
     for row in rows:
         candidate = normalize_traditional_title(row.get("title"))
-        if not candidate or candidate in seen:
+        if not candidate:
             continue
 
-        seen.add(candidate)
-        candidates.append(candidate)
+        if traditional_content:
+            row_content = str(row.get("content") or "").strip()
+            content_score = similarity(traditional_content, row_content)
+
+            # Заголовок разрешаем брать только у того абзаца, чей текст
+            # действительно соответствует импортируемому Text.
+            if content_score < 0.72:
+                continue
+        else:
+            content_score = 0.0
+
+        key = (candidate, round(content_score, 4))
+        if key in seen:
+            continue
+
+        seen.add(key)
+        candidates.append(
+            (
+                similarity(current_title, candidate),
+                content_score,
+                candidate,
+            )
+        )
 
     if not candidates:
         return ""
 
-    scored = sorted(
-        ((similarity(current_title, candidate), candidate) for candidate in candidates),
-        reverse=True,
-    )
-    score, candidate = scored[0]
+    title_score, _content_score, candidate = max(candidates)
 
-    return candidate if score >= 0.55 else ""
+    return candidate if title_score >= 0.55 else ""
 
 
 def find_section_heading(soup, anchor_name):
@@ -538,6 +573,7 @@ class Command(BaseCommand):
             self._build_plan(key=key, soup=soup)
             for key in selected
         ]
+        self._validate_cross_plan_shared_texts(plans)
 
         self.stdout.write("")
         self.stdout.write(
@@ -698,6 +734,7 @@ class Command(BaseCommand):
             traditional_title = find_best_traditional_title(
                 rows,
                 item.text.title,
+                traditional,
             )
 
             mapped.append(
@@ -744,6 +781,56 @@ class Command(BaseCommand):
             "missing_expected_unmapped": missing_expected_unmapped,
             "ready": ready,
         }
+
+    def _validate_cross_plan_shared_texts(self, plans):
+        seen = {}
+
+        for plan in plans:
+            plan["cross_plan_conflicts"] = []
+
+        for plan in plans:
+            for row in plan["mapped"]:
+                text_id = row["item"].text_id
+                current = {
+                    "plan": plan,
+                    "order": row["order"],
+                    "traditional": row["traditional"],
+                    "traditional_title": row["traditional_title"],
+                }
+                previous = seen.get(text_id)
+
+                if previous is None:
+                    seen[text_id] = current
+                    continue
+
+                problems = []
+
+                if previous["traditional"] != current["traditional"]:
+                    problems.append("traditional_content")
+
+                previous_title = previous["traditional_title"]
+                current_title = current["traditional_title"]
+
+                if (
+                    previous_title
+                    and current_title
+                    and previous_title != current_title
+                ):
+                    problems.append("traditional_title")
+
+                if problems:
+                    message = (
+                        f"Text id={text_id}: "
+                        f"{previous['plan']['label']} order={previous['order']} и "
+                        f"{plan['label']} order={current['order']} дают разные "
+                        + ", ".join(problems)
+                    )
+                    previous["plan"]["cross_plan_conflicts"].append(message)
+                    plan["cross_plan_conflicts"].append(message)
+
+        for plan in plans:
+            if plan["cross_plan_conflicts"]:
+                plan["ready"] = False
 
     def _print_plan(self, plan):
         unsafe = [row for row in plan["mapped"] if not row["safe"]]
@@ -809,6 +896,14 @@ class Command(BaseCommand):
             self.stdout.write(
                 "Без найденного традиционного заголовка (контент всё равно безопасен): "
                 + ", ".join(str(row["order"]) for row in titled_without_match)
+            )
+
+        if plan.get("cross_plan_conflicts"):
+            self.stdout.write(
+                self.style.ERROR(
+                    "Конфликт общего Text между правилами: "
+                    + " | ".join(sorted(set(plan["cross_plan_conflicts"])))
+                )
             )
 
         self.stdout.write(
