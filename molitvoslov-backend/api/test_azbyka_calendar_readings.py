@@ -1,8 +1,14 @@
+from datetime import date
+
 from django.test import SimpleTestCase
 
 from api.azbyka_calendar_readings import (
+    ParsedReading,
     extract_readings_text,
     parse_readings_text,
+)
+from api.management.commands.import_azbyka_calendar_readings import (
+    deterministic_azbyka_reading_uid,
 )
 
 
@@ -100,3 +106,62 @@ class AzbykaCalendarReadingsParserTests(SimpleTestCase):
 
         self.assertIn("Флп.1:1", text)
         self.assertNotIn("Ин.10:9", text)
+
+
+class AzbykaCalendarReadingSyncUidTests(SimpleTestCase):
+    def test_sync_uid_is_stable_for_same_reading(self):
+        reading = ParsedReading(
+            kind="apostle",
+            label="Сщмч.",
+            title="Евр.4:14–5:6 (зач. 311)",
+            order=30,
+        )
+
+        first = deterministic_azbyka_reading_uid(date(2026, 10, 5), reading)
+        second = deterministic_azbyka_reading_uid(date(2026, 10, 5), reading)
+
+        self.assertEqual(first, second)
+
+    def test_sync_uid_changes_when_reading_identity_changes(self):
+        original = ParsedReading(
+            kind="gospel",
+            label="",
+            title="Лк.3:19–22 (зач. 10)",
+            order=20,
+        )
+        changed = ParsedReading(
+            kind="gospel",
+            label="",
+            title="Лк.3:20–22 (зач. 10)",
+            order=20,
+        )
+
+        original_uid = deterministic_azbyka_reading_uid(
+            date(2026, 10, 5),
+            original,
+        )
+        changed_uid = deterministic_azbyka_reading_uid(
+            date(2026, 10, 5),
+            changed,
+        )
+
+        self.assertNotEqual(original_uid, changed_uid)
+
+    def test_sync_uid_changes_for_same_reading_on_another_date(self):
+        reading = ParsedReading(
+            kind="gospel",
+            label="",
+            title="Лк.3:19–22 (зач. 10)",
+            order=20,
+        )
+
+        first_day = deterministic_azbyka_reading_uid(
+            date(2026, 10, 5),
+            reading,
+        )
+        second_day = deterministic_azbyka_reading_uid(
+            date(2026, 10, 6),
+            reading,
+        )
+
+        self.assertNotEqual(first_day, second_day)
