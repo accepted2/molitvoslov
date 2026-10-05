@@ -10,6 +10,7 @@ import SelectableDocumentReader from '../components/reader/SelectableDocumentRea
 
 import {
   READER_LANGUAGE_MODES,
+  buildReaderLanguageOptions,
   getReaderModeForAppLanguage,
 } from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
@@ -91,6 +92,7 @@ export const ReaderScreen = ({route, navigation}) => {
 
   const hasRussianTranslation = !!text?.translation?.trim();
   const hasUkrainianTranslation = !!text?.translation_uk?.trim();
+  const hasTraditionalTranslation = !!text?.traditional_content?.trim();
 
   useEffect(() => {
     if (!text) {
@@ -239,7 +241,19 @@ export const ReaderScreen = ({route, navigation}) => {
         });
     };
 
-    if (viewMode === READER_LANGUAGE_MODES.UKRAINIAN) {
+    if (viewMode === READER_LANGUAGE_MODES.TRADITIONAL) {
+      appendBlock({
+        id: 3,
+        value: text.traditional_content || text.content || text.translation || '',
+        language: text.traditional_content?.trim()
+          ? 'traditional'
+          : text.content?.trim()
+            ? 'church'
+            : 'russian',
+        className:
+          !text.traditional_content?.trim() && text.translation?.trim() ? 'secondary' : '',
+      });
+    } else if (viewMode === READER_LANGUAGE_MODES.UKRAINIAN) {
       appendBlock({
         id: 4,
         value: text.translation_uk || text.translation || text.content || '',
@@ -274,7 +288,13 @@ export const ReaderScreen = ({route, navigation}) => {
         active: wholeTextSaved,
       },
 
-      viewSwitcher: null,
+      viewSwitcher: {
+        activeKey: viewMode,
+        options: buildReaderLanguageOptions({
+          hasRussian: hasRussianTranslation,
+          hasTraditional: hasTraditionalTranslation,
+        }),
+      },
 
       progressAnchorType: 'text',
 
@@ -301,6 +321,7 @@ export const ReaderScreen = ({route, navigation}) => {
   }, [
     hasRussianTranslation,
     hasUkrainianTranslation,
+    hasTraditionalTranslation,
     language,
     savedItems,
     slug,
@@ -337,6 +358,7 @@ export const ReaderScreen = ({route, navigation}) => {
         focusTarget={focusTarget}
         topContentInset={headerHeight}
         onAction={handleAction}
+        onViewModeChange={setViewMode}
       />
 
       <FixedSectionHeader
