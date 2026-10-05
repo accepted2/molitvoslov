@@ -31,7 +31,10 @@ RULE_SPECS = {
 # Эти элементы есть в нашей базе, но отсутствуют в данном Book.html.
 # Их traditional_content импортёр намеренно не трогает.
 EXPECTED_UNMAPPED_ORDERS = {
-    "morning": {41, 42, 46},
+    # В Book.html эти две краткие поминальные молитвы есть, но их редакция
+    # заметно отличается от текста, который уже принят в нашей базе.
+    # Поэтому их traditional_content намеренно не заполняем этим источником.
+    "morning": {36, 37, 41, 42, 46},
     "evening": {6, 32, 33},
 }
 
@@ -60,6 +63,7 @@ HISTORIC_CHAR_MAP = str.maketrans(
         "ѫ": "у",
         "ѯ": "кс",
         "ѱ": "пс",
+        "ъ": "",
     }
 )
 
@@ -108,6 +112,38 @@ def similarity(left, right):
     return difflib.SequenceMatcher(None, a, b, autojunk=False).ratio()
 
 
+def normalize_traditional_title(value):
+    return str(value or "").strip().rstrip(":").strip()
+
+
+def find_best_traditional_title(rows, current_title):
+    current_title = str(current_title or "").strip()
+    if not current_title:
+        return ""
+
+    candidates = []
+    seen = set()
+
+    for row in rows:
+        candidate = normalize_traditional_title(row.get("title"))
+        if not candidate or candidate in seen:
+            continue
+
+        seen.add(candidate)
+        candidates.append(candidate)
+
+    if not candidates:
+        return ""
+
+    scored = sorted(
+        ((similarity(current_title, candidate), candidate) for candidate in candidates),
+        reverse=True,
+    )
+    score, candidate = scored[0]
+
+    return candidate if score >= 0.55 else ""
+
+
 def find_section_heading(soup, anchor_name):
     anchor = soup.find("a", attrs={"name": str(anchor_name)})
     if anchor is None:
@@ -148,6 +184,42 @@ def parse_section_paragraphs(soup, anchor_name):
         sibling = sibling.find_next_sibling()
 
     return rows
+
+
+def find_common_preinitial_raw(soup):
+    """
+    В утреннем/вечернем разделах этого издания стоит другая редакция
+    предначинательной молитвы ("Господи Иисусе Христе, Сыне Божий...").
+
+    Наша база использует:
+    "Молитвами святых отец наших, Господи Иисусе Христе, Боже наш..."
+
+    Та же самая редакция присутствует в Book.html в начале раздела
+    "Три канона" (anchor=4), поэтому берём её оттуда и используем для
+    общего Text, который разделяют утреннее и вечернее правила.
+    """
+    rows = parse_section_paragraphs(soup, "4")
+    if not rows:
+        raise CommandError(
+            "Не найден источник для общей предначинательной молитвы "
+            "в разделе anchor=4."
+        )
+
+    raw = rows[0]["raw_content"]
+    start_marker = "Мlтвами с™hхъ nтє1цъ нaшихъ"
+    end_marker = "Слaва тебЁ"
+
+    if start_marker not in raw:
+        raise CommandError(
+            "Предначинательная молитва в anchor=4 имеет неожиданную редакцию."
+        )
+
+    return _between(
+        raw,
+        start_marker,
+        end_marker,
+        "Общая предначинательная молитва",
+    )
 
 
 def _paragraph(rows, number):
@@ -223,7 +295,7 @@ def _strip_morning_instruction(raw, paragraph_number):
     return raw
 
 
-def build_morning_raw_map(rows):
+def build_morning_raw_map(rows, common_preinitial):
     if len(rows) != RULE_SPECS["morning"]["expected_paragraphs"]:
         raise CommandError(
             "Утренние молитвы: структура Book.html изменилась. "
@@ -235,7 +307,6 @@ def build_morning_raw_map(rows):
     direct = {
         2: 2,
         4: 3,
-        5: 4,
         6: 5,
         7: 6,
         8: 7,
@@ -263,8 +334,6 @@ def build_morning_raw_map(rows):
         33: 32,
         34: 33,
         35: 34,
-        36: 35,
-        37: 36,
         45: 38,
     }
 
@@ -273,6 +342,10 @@ def build_morning_raw_map(rows):
             _paragraph(rows, paragraph_number),
             paragraph_number,
         )
+
+    # Общий Text предначинательной молитвы берём из другой части того же
+    # Book.html, где редакция совпадает с принятой в нашей базе.
+    result[5] = common_preinitial
 
     # В нашей базе "Господи, помилуй. (Трижды). Слава, и ныне:"
     # является одним Text, а в Book.html славословие расписано полностью.
@@ -306,7 +379,7 @@ def build_morning_raw_map(rows):
     return result
 
 
-def build_evening_raw_map(rows):
+def build_evening_raw_map(rows, common_preinitial):
     if len(rows) != RULE_SPECS["evening"]["expected_paragraphs"]:
         raise CommandError(
             "Вечерние молитвы: структура Book.html изменилась. "
@@ -331,6 +404,11 @@ def build_evening_raw_map(rows):
     )
     for order, part in zip([1, 2, 3, 4, 8], parts):
         result[order] = part
+
+    # order=2 использует тот же Text, что и утреннее order=5.
+    # В самом вечернем разделе редакция иная, поэтому подставляем
+    # совпадающую редакцию из anchor=4.
+    result[2] = common_preinitial
 
     p2 = _paragraph(rows, 2)
     trinity_marker = "Прес™az трbце"
@@ -502,11 +580,19 @@ class Command(BaseCommand):
 
         with transaction.atomic():
             seen_text_values = {}
+            seen_title_values = {}
 
             for plan in plans:
+                rule = plan["rule"]
+
+                if rule.traditional_name != plan["traditional_name"]:
+                    rule.traditional_name = plan["traditional_name"]
+                    rule.save(update_fields=["traditional_name"])
+
                 for row in plan["mapped"]:
                     text = row["item"].text
                     new_value = row["traditional"]
+                    new_title = row["traditional_title"]
 
                     previous = seen_text_values.get(text.pk)
                     if previous is not None and previous != new_value:
@@ -518,9 +604,27 @@ class Command(BaseCommand):
 
                     seen_text_values[text.pk] = new_value
 
+                    if new_title:
+                        previous_title = seen_title_values.get(text.pk)
+                        if previous_title is not None and previous_title != new_title:
+                            raise CommandError(
+                                "Один и тот же Text получил разные традиционные заголовки. "
+                                f"Text id={text.pk}, item order={row['order']}."
+                            )
+                        seen_title_values[text.pk] = new_title
+
+                    update_fields = []
+
                     if text.traditional_content != new_value:
                         text.traditional_content = new_value
-                        text.save(update_fields=["traditional_content"])
+                        update_fields.append("traditional_content")
+
+                    if new_title and text.traditional_title != new_title:
+                        text.traditional_title = new_title
+                        update_fields.append("traditional_title")
+
+                    if update_fields:
+                        text.save(update_fields=update_fields)
 
         changed = sum(
             1
@@ -528,12 +632,22 @@ class Command(BaseCommand):
             for row in plan["mapped"]
             if row["changed"]
         )
+        titles_changed = sum(
+            1
+            for plan in plans
+            for row in plan["mapped"]
+            if row["title_changed"]
+        )
+        rule_names_changed = sum(1 for plan in plans if plan["rule_name_changed"])
 
         self.stdout.write("")
         self.stdout.write(
             self.style.SUCCESS(
-                "APPLY завершён. Изменено traditional_content: "
-                f"{changed}. Поля content/translation/translation_uk не тронуты."
+                "APPLY завершён. "
+                f"Изменено traditional_content: {changed}; "
+                f"traditional_title: {titles_changed}; "
+                f"traditional_name: {rule_names_changed}. "
+                "Поля content/translation/translation_uk не тронуты."
             )
         )
 
@@ -547,10 +661,14 @@ class Command(BaseCommand):
             )
 
         rows = parse_section_paragraphs(soup, spec["anchor"])
+        common_preinitial = find_common_preinitial_raw(soup)
         raw_map = (
-            build_morning_raw_map(rows)
+            build_morning_raw_map(rows, common_preinitial)
             if key == "morning"
-            else build_evening_raw_map(rows)
+            else build_evening_raw_map(rows, common_preinitial)
+        )
+        traditional_name = normalize_traditional_title(
+            ucs_to_unicode(clean_html_text(find_section_heading(soup, spec["anchor"])))
         )
 
         db_items = list(
@@ -577,14 +695,22 @@ class Command(BaseCommand):
             traditional = ucs_to_unicode(raw_map[order])
             score = similarity(item.text.content, traditional)
 
+            traditional_title = find_best_traditional_title(
+                rows,
+                item.text.title,
+            )
+
             mapped.append(
                 {
                     "order": order,
                     "item": item,
                     "traditional": traditional,
+                    "traditional_title": traditional_title,
                     "score": score,
                     "safe": score >= SIMILARITY_THRESHOLD,
                     "changed": item.text.traditional_content != traditional,
+                    "title_changed": bool(traditional_title)
+                    and item.text.traditional_title != traditional_title,
                 }
             )
 
@@ -608,6 +734,8 @@ class Command(BaseCommand):
             "key": key,
             "label": spec["label"],
             "rule": rule,
+            "traditional_name": traditional_name,
+            "rule_name_changed": rule.traditional_name != traditional_name,
             "rows": rows,
             "db_items": db_items,
             "mapped": mapped,
@@ -620,6 +748,12 @@ class Command(BaseCommand):
     def _print_plan(self, plan):
         unsafe = [row for row in plan["mapped"] if not row["safe"]]
         changed = [row for row in plan["mapped"] if row["changed"]]
+        title_changed = [row for row in plan["mapped"] if row["title_changed"]]
+        titled_without_match = [
+            row
+            for row in plan["mapped"]
+            if row["item"].text.title and not row["traditional_title"]
+        ]
 
         self.stdout.write("")
         self.stdout.write(self.style.HTTP_INFO(f'---- {plan["label"]} ----'))
@@ -628,10 +762,12 @@ class Command(BaseCommand):
             f'абзацев источника: {len(plan["rows"])}; '
             f'Text-элементов в БД: {len(plan["db_items"])}; '
             f'сопоставлено: {len(plan["mapped"])}; '
-            f'будет изменено: {len(changed)}.'
+            f'будет изменено traditional_content: {len(changed)}; '
+            f'будет изменено traditional_title: {len(title_changed)}; '
+            f'traditional_name: {"изменится" if plan["rule_name_changed"] else "без изменений"}.'
         )
         self.stdout.write(
-            "Не представлены в Book.html и будут сохранены как есть: "
+            "Не импортируются из этой редакции и будут сохранены как есть: "
             + (
                 ", ".join(map(str, plan["actual_unmapped"]))
                 if plan["actual_unmapped"]
@@ -668,6 +804,12 @@ class Command(BaseCommand):
                     f'  order={row["order"]:>2} '
                     f'similarity={row["score"]:.3f} | {label}'
                 )
+
+        if titled_without_match:
+            self.stdout.write(
+                "Без найденного традиционного заголовка (контент всё равно безопасен): "
+                + ", ".join(str(row["order"]) for row in titled_without_match)
+            )
 
         self.stdout.write(
             f'Готово к APPLY: {"ДА" if plan["ready"] else "НЕТ"}.'
