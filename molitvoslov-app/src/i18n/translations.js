@@ -1,0 +1,166 @@
+const COPY = {
+  ru: {
+    common: {
+      open: 'Открыть',
+      onScreen: 'На экран',
+      tryAgain: 'Попробуйте ещё раз.',
+      inDevelopment: 'Раздел пока в разработке.',
+    },
+    menu: {
+      search: 'Поиск',
+      notifications: 'Уведомления',
+      continueReading: 'Продолжить чтение',
+      lastReadingEmpty: 'Здесь появится последнее чтение',
+      lastReadingHint:
+        'Откройте молитву, акафист, канон, Псалтирь или Библию — место сохранится автоматически.',
+      morningTitle: 'Утренние молитвы',
+      morningSubtitle: 'Начните день с Богом',
+      eveningTitle: 'Вечерние молитвы',
+      eveningSubtitle: 'Завершите день в молитве',
+      akathistsTitle: 'Акафисты',
+      akathistsSubtitle: 'Молитвенные хвалебные песнопения',
+      canonsTitle: 'Каноны',
+      canonsSubtitle: 'Покаянные и просительные каноны',
+      communionTitle: 'Ко Святому Причащению',
+      communionSubtitle: 'Подготовительные молитвы',
+      psalterTitle: 'Псалтирь',
+      psalterSubtitle: 'Книга молитвы и духовного утешения',
+      miscTitle: 'Разные молитвы',
+      miscSubtitle: 'Молитвы на разные случаи',
+      bibleTitle: 'Библия',
+      bibleSubtitle: 'Ветхий и Новый Завет',
+      otherSections: 'Другие разделы',
+      sectionsCount: '{count} разделов',
+      quoteOfDay: 'Цитата дня',
+      addWidgetTitle: 'Добавление виджета',
+      addQuoteWidget:
+        'Зажмите свободное место на главном экране телефона, откройте «Виджеты» → «Молитвослов» → «Цитата дня».',
+      addCalendarWidget:
+        'Зажмите свободное место на главном экране → «Виджеты» → «Молитвослов» → «Церковный календарь».',
+      widgetErrorTitle: 'Не удалось добавить виджет',
+      widgetError: 'Попробуйте добавить его через меню виджетов Android.',
+      saveQuoteError: 'Не удалось сохранить цитату',
+      libraryError: 'Не удалось загрузить библиотеку',
+    },
+    calendar: {
+      open: 'Открыть календарь',
+      memory: 'ПАМЯТЬ ДНЯ',
+      fast: 'ПОСТ',
+      gospel: 'ЕВАНГЕЛИЕ',
+      apostle: 'АПОСТОЛ',
+    },
+    reading: {
+      continueAkathist: 'Продолжить акафист',
+      continueCanon: 'Продолжить канон',
+      continueRule: 'Продолжить правило',
+      continueSaved: 'Продолжить с сохранённого места',
+      bible: 'Библия',
+      psalter: 'Псалтирь',
+      akathist: 'Акафист',
+      canon: 'Канон',
+      prayerRule: 'Молитвенное правило',
+      prayers: 'Молитвы',
+      chapter: 'Глава {chapter}',
+      chapterVerse: 'Глава {chapter} · стих {verse}',
+      kathismaPsalm: 'Кафизма {kathisma} · Псалом {psalm}',
+      kathismaPsalmVerse: 'Кафизма {kathisma} · Псалом {psalm} · стих {verse}',
+      kontakion: 'Кондак',
+      ikos: 'Икос',
+      prayer: 'Молитва',
+      section: 'Раздел',
+      ode: 'Песнь {number}',
+    },
+  },
+  uk: {
+    common: {
+      open: 'Відкрити',
+      onScreen: 'На екран',
+      tryAgain: 'Спробуйте ще раз.',
+      inDevelopment: 'Розділ поки в розробці.',
+    },
+    menu: {
+      search: 'Пошук',
+      notifications: 'Сповіщення',
+      continueReading: 'Продовжити читання',
+      lastReadingEmpty: 'Тут з’явиться останнє читання',
+      lastReadingHint:
+        'Відкрийте молитву, акафіст, канон, Псалтир або Біблію — місце збережеться автоматично.',
+      morningTitle: 'Ранкові молитви',
+      morningSubtitle: 'Почніть день із Богом',
+      eveningTitle: 'Вечірні молитви',
+      eveningSubtitle: 'Завершіть день у молитві',
+      akathistsTitle: 'Акафісти',
+      akathistsSubtitle: 'Молитовні хвалебні піснеспіви',
+      canonsTitle: 'Канони',
+      canonsSubtitle: 'Покаянні та прохальні канони',
+      communionTitle: 'До Святого Причастя',
+      communionSubtitle: 'Підготовчі молитви',
+      psalterTitle: 'Псалтир',
+      psalterSubtitle: 'Книга молитви та духовної втіхи',
+      miscTitle: 'Різні молитви',
+      miscSubtitle: 'Молитви на різні випадки',
+      bibleTitle: 'Біблія',
+      bibleSubtitle: 'Старий і Новий Завіт',
+      otherSections: 'Інші розділи',
+      sectionsCount: '{count} розділів',
+      quoteOfDay: 'Цитата дня',
+      addWidgetTitle: 'Додавання віджета',
+      addQuoteWidget:
+        'Затисніть вільне місце на головному екрані телефону, відкрийте «Віджети» → «Молитвослов» → «Цитата дня».',
+      addCalendarWidget:
+        'Затисніть вільне місце на головному екрані → «Віджети» → «Молитвослов» → «Церковний календар».',
+      widgetErrorTitle: 'Не вдалося додати віджет',
+      widgetError: 'Спробуйте додати його через меню віджетів Android.',
+      saveQuoteError: 'Не вдалося зберегти цитату',
+      libraryError: 'Не вдалося завантажити бібліотеку',
+    },
+    calendar: {
+      open: 'Відкрити календар',
+      memory: 'ПАМ’ЯТЬ ДНЯ',
+      fast: 'ПІСТ',
+      gospel: 'ЄВАНГЕЛІЄ',
+      apostle: 'АПОСТОЛ',
+    },
+    reading: {
+      continueAkathist: 'Продовжити акафіст',
+      continueCanon: 'Продовжити канон',
+      continueRule: 'Продовжити правило',
+      continueSaved: 'Продовжити зі збереженого місця',
+      bible: 'Біблія',
+      psalter: 'Псалтир',
+      akathist: 'Акафіст',
+      canon: 'Канон',
+      prayerRule: 'Молитовне правило',
+      prayers: 'Молитви',
+      chapter: 'Розділ {chapter}',
+      chapterVerse: 'Розділ {chapter} · вірш {verse}',
+      kathismaPsalm: 'Кафізма {kathisma} · Псалом {psalm}',
+      kathismaPsalmVerse: 'Кафізма {kathisma} · Псалом {psalm} · вірш {verse}',
+      kontakion: 'Кондак',
+      ikos: 'Ікос',
+      prayer: 'Молитва',
+      section: 'Розділ',
+      ode: 'Пісня {number}',
+    },
+  },
+  cu: {
+    // Для интерфейса церковнославянский пока сознательно использует
+    // русский fallback. Сам молитвенный текст выбирается отдельно из
+    // content/traditional_content и не зависит от этого словаря.
+  },
+};
+
+const getPath = (source, key) =>
+  key.split('.').reduce((value, part) => (value == null ? undefined : value[part]), source);
+
+const interpolate = (value, params) =>
+  String(value).replace(/\{(\w+)\}/g, (_match, name) =>
+    params[name] === undefined || params[name] === null ? '' : String(params[name])
+  );
+
+export const translate = (language, key, params = {}) => {
+  const selected = COPY[language] || COPY.ru;
+  const value = getPath(selected, key) ?? getPath(COPY.ru, key) ?? key;
+
+  return interpolate(value, params);
+};
