@@ -20,7 +20,12 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
-import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
+import {
+  READER_LANGUAGE_MODES,
+  getReaderModeForAppLanguage,
+} from '../services/readerLanguageModes';
+import {useLanguage} from '../context/LanguageContext';
+import {getLocalizedField} from '../services/localizedContent';
 
 const GLORY_TEXT = `Слава Отцу и Сыну и Святому Духу.
 И ныне и присно и во веки веков. Аминь.
@@ -94,6 +99,7 @@ const buildLanguageChunk = (verses, field) => {
 };
 
 export default function KathismaScreen({route, navigation}) {
+  const {language, t} = useLanguage();
   const {kathismaNumber, kathismaTitle, focusTarget = null} = route.params;
 
   const insets = useSafeAreaInsets();
@@ -111,7 +117,7 @@ export default function KathismaScreen({route, navigation}) {
 
   const [error, setError] = useState(null);
 
-  const [viewMode, setViewMode] = useState(READER_LANGUAGE_MODES.BOTH);
+  const [viewMode, setViewMode] = useState(READER_LANGUAGE_MODES.CHURCH);
 
   const [memorialVisible, setMemorialVisible] = useState(false);
 
@@ -128,9 +134,9 @@ export default function KathismaScreen({route, navigation}) {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: kathismaTitle || `Кафизма ${kathismaNumber}`,
+      title: kathismaTitle || t('psalter.kathisma', {number: kathismaNumber}),
     });
-  }, [navigation, kathismaNumber, kathismaTitle]);
+  }, [navigation, kathismaNumber, kathismaTitle, t]);
 
   useEffect(() => {
     loadScreen();
@@ -228,7 +234,7 @@ export default function KathismaScreen({route, navigation}) {
         metadata: {
           kathisma_number: kathisma.number,
 
-          kathisma_title: kathisma.title || '',
+          kathisma_title: getLocalizedField(kathisma, 'title', language) || '',
         },
       });
 
@@ -287,7 +293,7 @@ export default function KathismaScreen({route, navigation}) {
       metadata: {
         kathisma_number: kathisma.number,
 
-        kathisma_title: kathisma.title || '',
+        kathisma_title: getLocalizedField(kathisma, 'title', language) || '',
 
         psalm_number: psalm.number,
       },
@@ -398,18 +404,22 @@ export default function KathismaScreen({route, navigation}) {
 
     if (anchorType === 'psalm_verse') {
       const verseId = Number(focusTarget.anchor_id || focusTarget.anchorId);
-      const language =
-        metadata.language === 'russian'
-          ? 'russian'
-          : metadata.language === 'traditional'
-            ? 'traditional'
-            : 'church';
+      const savedLanguage =
+        metadata.language === 'ukrainian'
+          ? 'ukrainian'
+          : metadata.language === 'russian'
+            ? 'russian'
+            : metadata.language === 'traditional'
+              ? 'traditional'
+              : 'church';
       const field =
-        language === 'russian'
-          ? 'russian'
-          : language === 'traditional'
-            ? 'church_slavonic_traditional'
-            : 'church_slavonic';
+        savedLanguage === 'ukrainian'
+          ? 'ukrainian'
+          : savedLanguage === 'russian'
+            ? 'russian'
+            : savedLanguage === 'traditional'
+              ? 'church_slavonic_traditional'
+              : 'church_slavonic';
 
       for (const psalm of kathisma.psalms || []) {
         const chunks = [];
@@ -471,7 +481,7 @@ export default function KathismaScreen({route, navigation}) {
             psalm_id: Number(psalm.id),
             psalm_number: Number(psalm.number),
             chunk_index: chunkIndex,
-            language,
+            language: savedLanguage,
           },
         };
       }
@@ -489,11 +499,11 @@ export default function KathismaScreen({route, navigation}) {
     [kathisma]
   );
 
-  const hasTraditionalText = useMemo(
+  const hasUkrainianTranslation = useMemo(
     () =>
-      !!kathisma?.prayers_after_traditional?.trim() ||
+      !!kathisma?.prayers_after_uk?.trim() ||
       (kathisma?.psalms || []).some((psalm) =>
-        (psalm.verses || []).some((verse) => !!verse.church_slavonic_traditional?.trim())
+        (psalm.verses || []).some((verse) => !!verse.ukrainian?.trim())
       ),
     [kathisma]
   );
@@ -503,23 +513,18 @@ export default function KathismaScreen({route, navigation}) {
       return;
     }
 
-    if (
-      (viewMode === READER_LANGUAGE_MODES.BOTH || viewMode === READER_LANGUAGE_MODES.RUSSIAN) &&
-      !hasRussianTranslation
-    ) {
-      setViewMode(READER_LANGUAGE_MODES.CHURCH);
-      return;
-    }
-
-    if (viewMode === READER_LANGUAGE_MODES.TRADITIONAL && !hasTraditionalText) {
-      setViewMode(READER_LANGUAGE_MODES.CHURCH);
-    }
-  }, [kathisma, viewMode, hasRussianTranslation, hasTraditionalText]);
+    setViewMode(
+      getReaderModeForAppLanguage(language, {
+        hasRussian: hasRussianTranslation,
+        hasUkrainian: hasUkrainianTranslation,
+      })
+    );
+  }, [language, kathisma, hasRussianTranslation, hasUkrainianTranslation]);
 
   const documentData = useMemo(() => {
     if (!kathisma) {
       return {
-        title: `Кафизма ${kathismaNumber}`,
+        title: t('psalter.kathisma', {number: kathismaNumber}),
 
         description: '',
 
@@ -535,6 +540,7 @@ export default function KathismaScreen({route, navigation}) {
       viewMode === READER_LANGUAGE_MODES.CHURCH || viewMode === READER_LANGUAGE_MODES.BOTH;
     const showRussian =
       viewMode === READER_LANGUAGE_MODES.RUSSIAN || viewMode === READER_LANGUAGE_MODES.BOTH;
+    const showUkrainian = viewMode === READER_LANGUAGE_MODES.UKRAINIAN;
     const showTraditional = viewMode === READER_LANGUAGE_MODES.TRADITIONAL;
 
     let nextBlockId = 1;
@@ -665,16 +671,16 @@ export default function KathismaScreen({route, navigation}) {
 
         anchorId: psalm.id,
 
-        sourceTitle: 'Псалтирь',
+        sourceTitle: t('psalter.title'),
 
-        itemTitle: `Псалом ${psalm.number}`,
+        itemTitle: t('psalter.psalm', {number: psalm.number}),
 
         fullSaveType: chunkCount === 1 ? 'psalm' : 'fragment',
 
         metadata: {
           kathisma_number: kathisma.number,
 
-          kathisma_title: kathisma.title || '',
+          kathisma_title: getLocalizedField(kathisma, 'title', language) || '',
 
           psalm_id: psalm.id,
 
@@ -723,7 +729,7 @@ export default function KathismaScreen({route, navigation}) {
 
         anchorId,
 
-        sourceTitle: 'Псалтирь',
+        sourceTitle: t('psalter.title'),
 
         itemTitle,
 
@@ -847,6 +853,8 @@ export default function KathismaScreen({route, navigation}) {
 
         const russian = buildLanguageChunk(chunk.verses, 'russian');
 
+        const ukrainian = buildLanguageChunk(chunk.verses, 'ukrainian');
+
         const traditional = buildLanguageChunk(chunk.verses, 'church_slavonic_traditional');
 
         const blocks = [];
@@ -884,6 +892,33 @@ export default function KathismaScreen({route, navigation}) {
           );
         }
 
+        if (showUkrainian) {
+          const localized = ukrainian.text || russian.text || church.text;
+          const localizedRanges =
+            ukrainian.text
+              ? ukrainian.verseRanges
+              : russian.text
+                ? russian.verseRanges
+                : church.verseRanges;
+          const localizedLanguage =
+            ukrainian.text ? 'ukrainian' : russian.text ? 'russian' : 'church';
+
+          if (localized) {
+            blocks.push(
+              makePsalmBlock({
+                psalm,
+                text: localized,
+                verseRanges: localizedRanges,
+                language: localizedLanguage,
+                chunkIndex: verseChunkIndex,
+                chunkCount: verseChunkCount,
+                className: localizedLanguage === 'church' ? 'psalter' : 'psalter secondary',
+                label: '',
+              })
+            );
+          }
+        }
+
         if (showRussian && russian.text) {
           blocks.push(
             makePsalmBlock({
@@ -901,7 +936,7 @@ export default function KathismaScreen({route, navigation}) {
 
         if (blocks.length) {
           rows.push({
-            layout: blocks.length > 1 ? 'parallel' : 'stack',
+            layout: 'stack',
 
             blocks,
           });
@@ -924,7 +959,7 @@ export default function KathismaScreen({route, navigation}) {
 
         trackProgress: true,
 
-        title: `Псалом ${psalm.number}`,
+        title: t('psalter.psalm', {number: psalm.number}),
 
         action: {
           key: `psalm:${psalm.id}`,
@@ -964,6 +999,8 @@ export default function KathismaScreen({route, navigation}) {
 
       const russianText = normalizePrayersAfter(kathisma.prayers_after_russian);
 
+      const ukrainianText = normalizePrayersAfter(kathisma.prayers_after_uk);
+
       const traditionalText = normalizePrayersAfter(kathisma.prayers_after_traditional);
 
       const blocks = [];
@@ -979,7 +1016,7 @@ export default function KathismaScreen({route, navigation}) {
 
             anchorId: kathisma.id,
 
-            itemTitle: `Молитвы после кафизмы ${kathisma.number}`,
+            itemTitle: t('psalter.prayersAfterKathisma', {number: kathisma.number}),
 
             fullSaveType: 'prayer',
 
@@ -987,7 +1024,7 @@ export default function KathismaScreen({route, navigation}) {
 
             metadata: {
               kathisma_number: kathisma.number,
-              kathisma_title: kathisma.title || '',
+              kathisma_title: getLocalizedField(kathisma, 'title', language) || '',
               section: 'prayers_after',
               language: 'traditional',
             },
@@ -1010,7 +1047,7 @@ export default function KathismaScreen({route, navigation}) {
 
         anchorId: kathisma.id,
 
-        itemTitle: `Молитвы после кафизмы ${kathisma.number}`,
+        itemTitle: t('psalter.prayersAfterKathisma', {number: kathisma.number}),
 
         fullSaveType: 'prayer',
 
@@ -1018,7 +1055,7 @@ export default function KathismaScreen({route, navigation}) {
 
         metadata: {
           kathisma_number: kathisma.number,
-          kathisma_title: kathisma.title || '',
+          kathisma_title: getLocalizedField(kathisma, 'title', language) || '',
           section: 'prayers_after',
           language: 'church',
         },
@@ -1028,6 +1065,44 @@ export default function KathismaScreen({route, navigation}) {
 
       if (showChurch && churchText) {
         blocks.push(churchBlock);
+      }
+
+      if (showUkrainian) {
+        const localized = ukrainianText || russianText || churchText;
+        const localizedLanguage =
+          ukrainianText ? 'ukrainian' : russianText ? 'russian' : 'church';
+
+        if (localized) {
+          blocks.push(
+            makeOtherBlock({
+              text: localized,
+
+              language: localizedLanguage,
+
+              anchorType: 'kathisma_prayers_after',
+
+              anchorId: kathisma.id,
+
+              itemTitle: t('psalter.prayersAfterKathisma', {number: kathisma.number}),
+
+              fullSaveType: 'prayer',
+
+              className:
+                localizedLanguage === 'church'
+                  ? 'psalter-prayer'
+                  : 'psalter-prayer secondary',
+
+              metadata: {
+                kathisma_number: kathisma.number,
+                kathisma_title: getLocalizedField(kathisma, 'title', language) || '',
+                section: 'prayers_after',
+                language: localizedLanguage,
+              },
+
+              sectionName: 'prayers_after',
+            })
+          );
+        }
       }
 
       if (showRussian && russianText) {
@@ -1043,7 +1118,7 @@ export default function KathismaScreen({route, navigation}) {
 
             anchorId: kathisma.id,
 
-            itemTitle: `Молитвы после кафизмы ${kathisma.number}`,
+            itemTitle: t('psalter.prayersAfterKathisma', {number: kathisma.number}),
 
             fullSaveType: 'prayer',
 
@@ -1051,7 +1126,7 @@ export default function KathismaScreen({route, navigation}) {
 
             metadata: {
               kathisma_number: kathisma.number,
-              kathisma_title: kathisma.title || '',
+              kathisma_title: getLocalizedField(kathisma, 'title', language) || '',
               section: 'prayers_after',
               language: 'russian',
             },
@@ -1066,11 +1141,11 @@ export default function KathismaScreen({route, navigation}) {
 
         trackProgress: false,
 
-        title: 'Молитвы после кафизмы',
+        title: t('psalter.prayersAfterKathisma', {number: kathisma.number}),
 
         rows: [
           {
-            layout: blocks.length > 1 ? 'parallel' : 'stack',
+            layout: 'stack',
 
             blocks,
           },
@@ -1083,9 +1158,9 @@ export default function KathismaScreen({route, navigation}) {
     );
 
     return {
-      title: `Кафизма ${kathisma.number}`,
+      title: t('psalter.kathisma', {number: kathisma.number}),
 
-      description: kathisma.title || '',
+      description: getLocalizedField(kathisma, 'title', language) || '',
 
       action: {
         key: `kathisma:${kathisma.id}`,
@@ -1095,13 +1170,7 @@ export default function KathismaScreen({route, navigation}) {
         active: wholeKathismaSaved,
       },
 
-      viewSwitcher: {
-        activeKey: viewMode,
-        options: buildReaderLanguageOptions({
-          hasRussian: hasRussianTranslation,
-          hasTraditional: hasTraditionalText,
-        }),
-      },
+      viewSwitcher: null,
 
       progressAnchorType: 'psalm',
 
@@ -1109,7 +1178,16 @@ export default function KathismaScreen({route, navigation}) {
 
       sections,
     };
-  }, [kathisma, kathismaNumber, savedItems, viewMode, hasRussianTranslation, hasTraditionalText]);
+  }, [
+    kathisma,
+    kathismaNumber,
+    savedItems,
+    viewMode,
+    hasRussianTranslation,
+    hasUkrainianTranslation,
+    language,
+    t,
+  ]);
 
   const handleProgress = (progress) => {
     if (!kathisma) {
@@ -1146,12 +1224,12 @@ export default function KathismaScreen({route, navigation}) {
       ? {
           sourceType: 'psalter',
           sourceId: Number(kathisma.psalter),
-          sourceTitle: 'Псалтирь',
-          itemTitle: `Псалом ${bookmarkPsalm.number}`,
+          sourceTitle: t('psalter.title'),
+          itemTitle: t('psalter.psalm', {number: bookmarkPsalm.number}),
           position: bookmarkPosition,
           metadata: {
             kathisma_number: Number(kathisma.number),
-            kathisma_title: kathisma.title || '',
+            kathisma_title: getLocalizedField(kathisma, 'title', language) || '',
             psalm_id: Number(bookmarkPsalm.id),
             psalm_number: Number(bookmarkPsalm.number),
           },
@@ -1187,7 +1265,6 @@ export default function KathismaScreen({route, navigation}) {
         onProgress={handleProgress}
         onAction={handleAction}
         onMemorialOpen={() => setMemorialVisible(true)}
-        onViewModeChange={setViewMode}
       />
 
       <MemorialQuickSheet
@@ -1209,7 +1286,7 @@ export default function KathismaScreen({route, navigation}) {
       />
 
       <FixedSectionHeader
-        title={`Кафизма ${kathisma.number}`}
+        title={t('psalter.kathisma', {number: kathisma.number})}
         navigation={navigation}
         topInset={insets.top}
         showTitle={false}
