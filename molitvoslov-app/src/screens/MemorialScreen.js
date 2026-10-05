@@ -17,8 +17,10 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {createMemorialBook, getMemorialBooks, syncMemorials} from '../services/memorials';
 
 import {colors, radius, spacing} from '../theme';
+import {useLanguage} from '../context/LanguageContext';
 
 export const MemorialScreen = ({navigation}) => {
+  const {t} = useLanguage();
   const insets = useSafeAreaInsets();
 
   const headerHeight = insets.top + 56;
@@ -48,11 +50,11 @@ export const MemorialScreen = ({navigation}) => {
     } catch (loadError) {
       console.log('Ошибка загрузки помянников:', loadError?.message || loadError);
 
-      setError('Не удалось загрузить помянник');
+      setError(t('memorial.loadError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -68,7 +70,7 @@ export const MemorialScreen = ({navigation}) => {
     try {
       setCreating(true);
 
-      const title = books.length === 0 ? 'Мой помянник' : `Помянник ${books.length + 1}`;
+      const title = books.length === 0 ? t('memorial.my') : t('memorial.newTitle', {number: books.length + 1});
 
       const book = await createMemorialBook(title);
 
@@ -78,7 +80,7 @@ export const MemorialScreen = ({navigation}) => {
     } catch (createError) {
       console.log('Ошибка создания помянника:', createError?.message || createError);
 
-      setError('Не удалось создать помянник');
+      setError(t('memorial.createError'));
     } finally {
       setCreating(false);
     }
@@ -106,16 +108,16 @@ export const MemorialScreen = ({navigation}) => {
 
         <View style={styles.cardContent}>
           <Text style={styles.cardTitle} numberOfLines={1}>
-            {item.title || 'Мой помянник'}
+            {item.title || t('memorial.my')}
           </Text>
 
           <Text style={styles.cardMeta}>
-            О здравии: {healthCount}
+            {t('memorial.health')}: {healthCount}
             {'  ·  '}
-            Об упокоении: {reposeCount}
+            {t('memorial.repose')}: {reposeCount}
           </Text>
 
-          {!!photoCount && <Text style={styles.cardPhotos}>Фотографий записок: {photoCount}</Text>}
+          {!!photoCount && <Text style={styles.cardPhotos}>{t('memorial.photosCount', {count: photoCount})}</Text>}
         </View>
 
         <Text style={styles.chevron}>›</Text>
@@ -149,11 +151,10 @@ export const MemorialScreen = ({navigation}) => {
             ListHeaderComponent={
               <View>
                 <View style={styles.intro}>
-                  <Text style={styles.introTitle}>Поминальные записки</Text>
+                  <Text style={styles.introTitle}>{t('memorial.introTitle')}</Text>
 
                   <Text style={styles.introText}>
-                    Храните имена о здравии и упокоении, а также фотографии бумажных записок.
-                    Помянник доступен прямо во время молитвы.
+                    {t('memorial.introText')}
                   </Text>
                 </View>
 
@@ -170,20 +171,20 @@ export const MemorialScreen = ({navigation}) => {
                 >
                   <Text style={styles.createIcon}>+</Text>
 
-                  <Text style={styles.createText}>Новый помянник</Text>
+                  <Text style={styles.createText}>{t('memorial.newBook')}</Text>
                 </Pressable>
 
-                {!!books.length && <Text style={styles.sectionLabel}>МОИ ПОМЯННИКИ</Text>}
+                {!!books.length && <Text style={styles.sectionLabel}>{t('memorial.myBooks')}</Text>}
               </View>
             }
             ListEmptyComponent={
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyMark}>✦</Text>
 
-                <Text style={styles.emptyTitle}>Здесь пока пусто</Text>
+                <Text style={styles.emptyTitle}>{t('memorial.listEmptyTitle')}</Text>
 
                 <Text style={styles.emptyText}>
-                  Создайте первый помянник и добавьте имена или фотографию записки.
+                  {t('memorial.listEmptyText')}
                 </Text>
               </View>
             }
@@ -191,7 +192,7 @@ export const MemorialScreen = ({navigation}) => {
         )}
 
         <FixedSectionHeader
-          title="Помянник"
+          title={t('memorial.title')}
           navigation={navigation}
           topInset={insets.top}
           showBack={false}
