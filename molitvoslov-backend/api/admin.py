@@ -85,6 +85,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
     search_fields = [
         "name",
+        "name_uk",
     ]
 
     prepopulated_fields = {"slug": ("name",)}
@@ -325,8 +326,11 @@ class PrayerRuleItemsInline(admin.TabularInline):
         "item_type",
         "text",
         "title",
+        "title_uk",
         "content",
+        "content_uk",
         "note",
+        "note_uk",
     ]
 
     ordering = [
@@ -344,6 +348,7 @@ class PrayerRuleFootnoteInline(admin.TabularInline):
     fields = [
         "number",
         "content",
+        "content_uk",
     ]
 
     ordering = [
@@ -364,7 +369,9 @@ class PrayerRuleAdmin(admin.ModelAdmin):
 
     search_fields = [
         "name",
+        "name_uk",
         "description",
+        "description_uk",
     ]
 
     list_filter = [
@@ -402,8 +409,11 @@ class PrayerRuleItemAdmin(admin.ModelAdmin):
         "text__description",
         "text__content",
         "title",
+        "title_uk",
         "content",
+        "content_uk",
         "note",
+        "note_uk",
     ]
 
     autocomplete_fields = [
@@ -443,6 +453,7 @@ class PrayerRuleFootnoteAdmin(admin.ModelAdmin):
     search_fields = [
         "rule__name",
         "content",
+        "content_uk",
     ]
 
     autocomplete_fields = [
@@ -468,7 +479,9 @@ class PslaterAdmin(admin.ModelAdmin):
     list_display = ["name", "slug", "is_visible"]
     search_fields = [
         "name",
+        "name_uk",
         "description",
+        "description_uk",
     ]
     list_filter = ["is_visible"]
     prepopulated_fields = {"slug": ("name",)}
@@ -482,7 +495,7 @@ class KathismaAdmin(admin.ModelAdmin):
         "title",
     ]
     list_filter = ["psalter"]
-    search_fields = ["title"]
+    search_fields = ["title", "title_uk"]
     ordering = [
         "psalter",
         "number",
@@ -498,6 +511,7 @@ class PsalmVerseInline(admin.TabularInline):
         "church_slavonic",
         "church_slavonic_traditional",
         "russian",
+        "ukrainian",
     ]
     ordering = ["number"]
 
@@ -510,6 +524,7 @@ class PsalmAdmin(admin.ModelAdmin):
         "title_church_slavonic",
         "title_church_slavonic_traditional",
         "title_russian",
+        "title_uk",
     ]
     list_filter = [
         "kathisma",
@@ -519,9 +534,12 @@ class PsalmAdmin(admin.ModelAdmin):
         "title_church_slavonic",
         "title_church_slavonic_traditional",
         "title_russian",
+        "title_uk",
         "description",
+        "description_uk",
         "verses__church_slavonic",
         "verses__russian",
+        "verses__ukrainian",
     ]
     ordering = ["number"]
     autocomplete_fields = [
@@ -548,6 +566,7 @@ class PsalmVerseAdmin(admin.ModelAdmin):
         "church_slavonic",
         "church_slavonic_traditional",
         "russian",
+        "ukrainian",
     ]
 
     ordering = [
@@ -626,6 +645,7 @@ class AkathistSectionInline(admin.TabularInline):
         "number",
         "text",
         "note",
+        "note_uk",
     ]
 
     ordering = [
@@ -646,7 +666,9 @@ class AkathistAdmin(admin.ModelAdmin):
 
     search_fields = [
         "title",
+        "title_uk",
         "description",
+        "description_uk",
     ]
 
     list_filter = [
@@ -682,7 +704,9 @@ class AkathistSectionAdmin(admin.ModelAdmin):
         "text__description",
         "text__content",
         "text__translation",
+        "text__translation_uk",
         "note",
+        "note_uk",
     ]
 
     autocomplete_fields = [
@@ -715,6 +739,7 @@ class CanonSectionInline(admin.TabularInline):
         "ode_number",
         "section_type",
         "heading",
+        "heading_uk",
         "text",
     ]
 
@@ -737,7 +762,9 @@ class CanonAdmin(admin.ModelAdmin):
 
     search_fields = [
         "title",
+        "title_uk",
         "description",
+        "description_uk",
         "slug",
     ]
 
@@ -775,9 +802,12 @@ class CanonSectionAdmin(admin.ModelAdmin):
     search_fields = [
         "canon__title",
         "heading",
+        "heading_uk",
         "text__title",
+        "text__title_uk",
         "text__content",
         "text__translation",
+        "text__translation_uk",
     ]
 
     autocomplete_fields = [
@@ -813,8 +843,11 @@ class DailyQuoteAdmin(admin.ModelAdmin):
 
     search_fields = [
         "text",
+        "text_uk",
         "source",
+        "source_uk",
         "reference",
+        "reference_uk",
     ]
 
     list_editable = [
