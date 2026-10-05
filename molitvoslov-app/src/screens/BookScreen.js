@@ -29,7 +29,7 @@ import {StatusBar} from 'expo-status-bar';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 
 export const BookScreen = ({route, navigation}) => {
-  const {language} = useLanguage();
+  const {language, t} = useLanguage();
   const {categoryId, categorySlug, categoryName, focusTarget = null} = route.params;
 
   const insets = useSafeAreaInsets();
@@ -88,7 +88,7 @@ export const BookScreen = ({route, navigation}) => {
     } catch (loadError) {
       console.log('Ошибка загрузки категории:', loadError.response?.data || loadError.message);
 
-      setError('Не удалось загрузить тексты');
+      setError(t('common.loadTextsError'));
     } finally {
       setLoading(false);
     }
@@ -139,7 +139,7 @@ export const BookScreen = ({route, navigation}) => {
       savedItemsRef.current = savedItemsRef.current.filter((saved) => saved.id !== existing.id);
 
       return {
-        label: 'В избранное',
+        label: t('common.addToFavorites'),
 
         active: false,
 
@@ -167,7 +167,7 @@ export const BookScreen = ({route, navigation}) => {
       item_title:
         getLocalizedTextTitle(item.text, language) ||
         getLocalizedTextDescription(item.text, language) ||
-        'Молитва',
+        t('common.prayer'),
 
       text: content,
 
@@ -185,7 +185,7 @@ export const BookScreen = ({route, navigation}) => {
     savedItemsRef.current = [saved, ...savedItemsRef.current];
 
     return {
-      label: 'В избранном',
+      label: t('common.inFavorites'),
 
       active: true,
 
@@ -239,7 +239,7 @@ export const BookScreen = ({route, navigation}) => {
         itemTitle:
           getLocalizedTextTitle(item.text, language) ||
           getLocalizedTextDescription(item.text, language) ||
-          'Текст',
+          t('common.text'),
         fullSaveType: 'prayer',
         metadata: {
           category_slug: categorySlug,
@@ -328,12 +328,12 @@ export const BookScreen = ({route, navigation}) => {
 
           trackProgress: true,
 
-          title: getLocalizedTextTitle(text, language) || 'Молитва',
+          title: getLocalizedTextTitle(text, language) || t('common.prayer'),
 
           action: {
             key: `category-text:${item.id}`,
 
-            label: wholeSaved ? 'В избранном' : 'В избранное',
+            label: wholeSaved ? t('common.inFavorites') : t('common.addToFavorites'),
 
             active: wholeSaved,
           },
@@ -371,6 +371,7 @@ export const BookScreen = ({route, navigation}) => {
     hasRussianTranslation,
     hasUkrainianTranslation,
     language,
+    t,
   ]);
 
   if (loading || (categoryId && !progressReady)) {
@@ -378,7 +379,7 @@ export const BookScreen = ({route, navigation}) => {
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.accent} />
 
-        <Text style={styles.loadingText}>Загрузка...</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -405,7 +406,7 @@ export const BookScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
-        title={categoryName || 'Чтение'}
+        title={categoryName || t('common.reading')}
         navigation={navigation}
         topInset={insets.top}
         showTitle={false}
