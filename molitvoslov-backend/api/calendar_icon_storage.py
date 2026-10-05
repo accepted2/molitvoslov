@@ -7,8 +7,20 @@ class CalendarIconStorageError(RuntimeError):
     pass
 
 
+def _cloudinary_credentials():
+    return {
+        "cloud_name": os.environ.get("CLOUD_NAME", "").strip(),
+        "api_key": os.environ.get("CLOUD_API_KEY", "").strip(),
+        "api_secret": os.environ.get("CLOUD_API_SECRET", "").strip(),
+    }
+
+
 def cloudinary_configured():
-    return bool(os.environ.get("CLOUDINARY_URL", "").strip())
+    if os.environ.get("CLOUDINARY_URL", "").strip():
+        return True
+
+    credentials = _cloudinary_credentials()
+    return all(credentials.values())
 
 
 def azbyka_icon_public_id(source_page_url):
@@ -26,7 +38,8 @@ def upload_azbyka_icon(source_url, source_page_url):
 
     if not cloudinary_configured():
         raise CalendarIconStorageError(
-            "CLOUDINARY_URL не задан. Икона в Cloudinary не загружена."
+            "Cloudinary не настроен. Задайте CLOUDINARY_URL либо "
+            "CLOUD_NAME + CLOUD_API_KEY + CLOUD_API_SECRET."
         )
 
     try:
@@ -39,7 +52,14 @@ def upload_azbyka_icon(source_url, source_page_url):
         ) from error
 
     try:
-        cloudinary.config(secure=True)
+        if os.environ.get("CLOUDINARY_URL", "").strip():
+            cloudinary.config(secure=True)
+        else:
+            cloudinary.config(
+                **_cloudinary_credentials(),
+                secure=True,
+            )
+
         result = cloudinary.uploader.upload(
             source_url,
             public_id=azbyka_icon_public_id(source_page_url),
