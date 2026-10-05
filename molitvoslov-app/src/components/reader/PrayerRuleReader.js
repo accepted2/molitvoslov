@@ -6514,6 +6514,8 @@ export default function PrayerRuleReader({
         }}
         originWhitelist={['*']}
         javaScriptEnabled
+        allowFileAccess
+        allowUniversalAccessFromFileURLs
         nestedScrollEnabled
         showsVerticalScrollIndicator={false}
         domStorageEnabled={false}
