@@ -16,6 +16,7 @@ import {getMemorialBooks, syncMemorials} from '../../services/memorials';
 import {colors, radius, spacing} from '../../theme';
 
 import {MemorialPhotoViewer} from './MemorialPhotoViewer';
+import {useLanguage} from '../../context/LanguageContext';
 
 const NameList = ({title, names, emptyText}) => {
   const list = Array.isArray(names) ? names.filter(Boolean) : [];
@@ -46,6 +47,7 @@ const NameList = ({title, names, emptyText}) => {
 };
 
 export const MemorialQuickSheet = ({visible, onClose, onManage, preferredKind = null}) => {
+  const {t} = useLanguage();
   const [books, setBooks] = useState([]);
 
   const [loading, setLoading] = useState(false);
@@ -128,9 +130,9 @@ export const MemorialQuickSheet = ({visible, onClose, onManage, preferredKind = 
 
             <View style={styles.header}>
               <View>
-                <Text style={styles.title}>Помянник</Text>
+                <Text style={styles.title}>{t('memorial.title')}</Text>
 
-                <Text style={styles.subtitle}>Имена для молитвенного поминовения</Text>
+                <Text style={styles.subtitle}>{t('memorial.subtitle')}</Text>
               </View>
 
               <Pressable
@@ -150,10 +152,10 @@ export const MemorialQuickSheet = ({visible, onClose, onManage, preferredKind = 
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyMark}>✦</Text>
 
-                <Text style={styles.emptyTitle}>Помянник пока пуст</Text>
+                <Text style={styles.emptyTitle}>{t('memorial.emptyTitle')}</Text>
 
                 <Text style={styles.emptyText}>
-                  Добавьте имена о здравии или упокоении, либо сфотографируйте бумажную записку.
+                  {t('memorial.emptyText')}
                 </Text>
 
                 {!!onManage && (
@@ -161,7 +163,7 @@ export const MemorialQuickSheet = ({visible, onClose, onManage, preferredKind = 
                     onPress={manage}
                     style={({pressed}) => [styles.manageButton, pressed && styles.pressed]}
                   >
-                    <Text style={styles.manageButtonText}>Создать помянник</Text>
+                    <Text style={styles.manageButtonText}>{t('memorial.create')}</Text>
                   </Pressable>
                 )}
               </View>
@@ -172,7 +174,7 @@ export const MemorialQuickSheet = ({visible, onClose, onManage, preferredKind = 
               >
                 {books.map((book) => (
                   <View key={book.sync_id} style={styles.bookCard}>
-                    <Text style={styles.bookTitle}>{book.title || 'Мой помянник'}</Text>
+                    <Text style={styles.bookTitle}>{book.title || t('memorial.my')}</Text>
 
                     <View style={styles.ornament}>
                       <View style={styles.line} />
@@ -184,24 +186,24 @@ export const MemorialQuickSheet = ({visible, onClose, onManage, preferredKind = 
                       ? [
                           {
                             key: 'repose',
-                            title: 'Об упокоении',
+                            title: t('memorial.repose'),
                             names: book.repose_names,
                           },
                           {
                             key: 'health',
-                            title: 'О здравии',
+                            title: t('memorial.health'),
                             names: book.health_names,
                           },
                         ]
                       : [
                           {
                             key: 'health',
-                            title: 'О здравии',
+                            title: t('memorial.health'),
                             names: book.health_names,
                           },
                           {
                             key: 'repose',
-                            title: 'Об упокоении',
+                            title: t('memorial.repose'),
                             names: book.repose_names,
                           },
                         ]
@@ -210,13 +212,13 @@ export const MemorialQuickSheet = ({visible, onClose, onManage, preferredKind = 
                         key={section.key}
                         title={section.title}
                         names={section.names}
-                        emptyText="Имена не добавлены"
+                        emptyText={t('memorial.noNames')}
                       />
                     ))}
 
                     {!!book.photos?.length && (
                       <View style={styles.photoSection}>
-                        <Text style={styles.photoTitle}>Фотографии записок</Text>
+                        <Text style={styles.photoTitle}>{t('memorial.photos')}</Text>
 
                         <ScrollView
                           horizontal
@@ -274,7 +276,7 @@ export const MemorialQuickSheet = ({visible, onClose, onManage, preferredKind = 
                     onPress={manage}
                     style={({pressed}) => [styles.manageLink, pressed && styles.pressed]}
                   >
-                    <Text style={styles.manageLinkText}>Редактировать помянник</Text>
+                    <Text style={styles.manageLinkText}>{t('memorial.edit')}</Text>
                   </Pressable>
                 )}
               </ScrollView>

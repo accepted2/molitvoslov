@@ -36,6 +36,7 @@ import {
 } from '../services/memorials';
 
 import {colors, radius, spacing} from '../theme';
+import {useLanguage} from '../context/LanguageContext';
 
 const cleanDraftNames = (names) =>
   (names || []).map((name) => String(name || '').trim()).filter(Boolean);
@@ -57,6 +58,7 @@ const ensureInputRows = (names, minimumRows = MIN_VISIBLE_ROWS) => {
 };
 
 const NameEditor = ({title, subtitle, names, onChange}) => {
+  const {t} = useLanguage();
   const inputRefs = useRef([]);
 
   const filledCount = names.filter((name) => String(name || '').trim()).length;
@@ -133,8 +135,15 @@ const NameEditor = ({title, subtitle, names, onChange}) => {
 
         <Text style={styles.namesCount}>
           {filledCount
-            ? `${filledCount} ${filledCount === 1 ? 'имя' : filledCount < 5 ? 'имени' : 'имён'}`
-            : 'пусто'}
+            ? t(
+                filledCount === 1
+                  ? 'memorial.nameCountOne'
+                  : filledCount < 5
+                    ? 'memorial.nameCountFew'
+                    : 'memorial.nameCountMany',
+                {count: filledCount}
+              )
+            : t('memorial.empty')}
         </Text>
       </View>
 
@@ -154,7 +163,7 @@ const NameEditor = ({title, subtitle, names, onChange}) => {
               value={name}
               onChangeText={(value) => update(index, value)}
               onSubmitEditing={() => focusNext(index)}
-              placeholder={index === 0 ? 'Введите имя' : ''}
+              placeholder={index === 0 ? t('memorial.enterName') : ''}
               placeholderTextColor={'#B4A693'}
               autoCapitalize="words"
               autoCorrect={false}
@@ -210,13 +219,14 @@ const NameEditor = ({title, subtitle, names, onChange}) => {
         onPress={() => addRows(4)}
         style={({pressed}) => [styles.addNameButton, pressed && styles.pressed]}
       >
-        <Text style={styles.addNameText}>+ Ещё 4 строки</Text>
+        <Text style={styles.addNameText}>{t('memorial.addFourRows')}</Text>
       </Pressable>
     </View>
   );
 };
 
 export const MemorialBookScreen = ({navigation, route}) => {
+  const {t} = useLanguage();
   const insets = useSafeAreaInsets();
 
   const headerHeight = insets.top + 56;
@@ -235,7 +245,7 @@ export const MemorialBookScreen = ({navigation, route}) => {
 
   const [saving, setSaving] = useState(false);
 
-  const [saveLabel, setSaveLabel] = useState('Сохранить');
+  const [saveStatus, setSaveStatus] = useState('save');
 
   const [viewer, setViewer] = useState({
     visible: false,
@@ -273,7 +283,7 @@ export const MemorialBookScreen = ({navigation, route}) => {
     editRevisionRef.current += 1;
     dirtyRef.current = true;
     setDirty(true);
-    setSaveLabel('Сохранить');
+    setSaveStatus('save');
   };
 
   const load = useCallback(async () => {
@@ -285,9 +295,9 @@ export const MemorialBookScreen = ({navigation, route}) => {
       const current = await getMemorialBook(bookSyncId);
 
       if (!current) {
-        Alert.alert('Помянник не найден', 'Возможно, он был удалён.', [
+        Alert.alert(t('memorial.notFoundTitle'), t('memorial.notFoundText'), [
           {
-            text: 'Назад',
+            text: t('memorial.back'),
             onPress: () => navigation.goBack(),
           },
         ]);
@@ -297,7 +307,7 @@ export const MemorialBookScreen = ({navigation, route}) => {
 
       setBook(current);
 
-      setTitle(current.title || 'Мой помянник');
+      setTitle(current.title || t('memorial.my'));
 
       setHealthNames(ensureInputRows(current.health_names));
 
@@ -306,11 +316,11 @@ export const MemorialBookScreen = ({navigation, route}) => {
       dirtyRef.current = false;
 
       setDirty(false);
-      setSaveLabel('Сохранить');
+      setSaveStatus('save');
     } catch (error) {
       console.log('Ошибка открытия помянника:', error?.message || error);
     }
-  }, [bookSyncId, navigation]);
+  }, [bookSyncId, navigation, t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -329,7 +339,7 @@ export const MemorialBookScreen = ({navigation, route}) => {
 
     try {
       setSaving(true);
-      setSaveLabel('Сохраняем…');
+      setSaveStatus('saving');
 
       const revisionAtStart = editRevisionRef.current;
 
@@ -361,7 +371,7 @@ export const MemorialBookScreen = ({navigation, route}) => {
         dirtyRef.current = true;
 
         setDirty(true);
-        setSaveLabel('Есть изменения');
+        setSaveStatus('hasChanges');
 
         return false;
       }
@@ -369,21 +379,21 @@ export const MemorialBookScreen = ({navigation, route}) => {
       dirtyRef.current = false;
 
       setDirty(false);
-      setSaveLabel('Сохранено');
+      setSaveStatus('saved');
 
       return true;
     } catch (error) {
       console.log('Ошибка сохранения помянника:', error?.message || error);
 
-      setSaveLabel('Ошибка');
+      setSaveStatus('error');
 
-      Alert.alert('Не удалось сохранить', error?.message || 'Попробуйте ещё раз.');
+      Alert.alert(t('memorial.saveErrorTitle'), error?.message || t('common.tryAgain'));
 
       return false;
     } finally {
       setSaving(false);
     }
-  }, [bookSyncId, saving]);
+  }, [bookSyncId, saving, t]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
@@ -453,7 +463,7 @@ export const MemorialBookScreen = ({navigation, route}) => {
     } catch (error) {
       console.log('Ошибка добавления фото:', error?.message || error);
 
-      Alert.alert('Не удалось добавить фото', error?.message || 'Попробуйте ещё раз.');
+      Alert.alert(t('memorial.addPhotoError'), error?.message || t('common.tryAgain'));
     }
   };
 
@@ -462,8 +472,8 @@ export const MemorialBookScreen = ({navigation, route}) => {
 
     if (!permission.granted) {
       Alert.alert(
-        'Нужен доступ к камере',
-        'Разрешите доступ к камере, чтобы сфотографировать записку.'
+        t('memorial.cameraPermissionTitle'),
+        t('memorial.cameraPermissionText')
       );
 
       return;
@@ -493,13 +503,13 @@ export const MemorialBookScreen = ({navigation, route}) => {
   };
 
   const removePhoto = (photo) => {
-    Alert.alert('Удалить фотографию?', 'Она будет удалена из этого помянника.', [
+    Alert.alert(t('memorial.deletePhotoTitle'), t('memorial.deletePhotoText'), [
       {
-        text: 'Отмена',
+        text: t('memorial.cancel'),
         style: 'cancel',
       },
       {
-        text: 'Удалить',
+        text: t('memorial.delete'),
         style: 'destructive',
         onPress: async () => {
           try {
@@ -507,7 +517,7 @@ export const MemorialBookScreen = ({navigation, route}) => {
 
             await refreshBook();
           } catch (error) {
-            Alert.alert('Не удалось удалить фото', error?.message || 'Попробуйте ещё раз.');
+            Alert.alert(t('memorial.deletePhotoError'), error?.message || t('common.tryAgain'));
           }
         },
       },
@@ -515,13 +525,13 @@ export const MemorialBookScreen = ({navigation, route}) => {
   };
 
   const confirmDeleteBook = () => {
-    Alert.alert('Удалить помянник?', 'Имена и фотографии этого помянника будут удалены.', [
+    Alert.alert(t('memorial.deleteBookTitle'), t('memorial.deleteBookText'), [
       {
-        text: 'Отмена',
+        text: t('memorial.cancel'),
         style: 'cancel',
       },
       {
-        text: 'Удалить',
+        text: t('memorial.delete'),
         style: 'destructive',
         onPress: async () => {
           try {
@@ -533,7 +543,7 @@ export const MemorialBookScreen = ({navigation, route}) => {
           } catch (error) {
             allowLeaveRef.current = false;
 
-            Alert.alert('Не удалось удалить', error?.message || 'Попробуйте ещё раз.');
+            Alert.alert(t('common.deleteFailed'), error?.message || t('common.tryAgain'));
           }
         },
       },
@@ -563,7 +573,7 @@ export const MemorialBookScreen = ({navigation, route}) => {
           ]}
         >
           <View style={styles.titleCard}>
-            <Text style={styles.fieldLabel}>НАЗВАНИЕ</Text>
+            <Text style={styles.fieldLabel}>{t('memorial.titleField')}</Text>
 
             <TextInput
               value={title}
@@ -573,38 +583,37 @@ export const MemorialBookScreen = ({navigation, route}) => {
               inputMode="text"
               autoCorrect={false}
               spellCheck={false}
-              placeholder="Мой помянник"
+              placeholder={t('memorial.my')}"
               placeholderTextColor={colors.textMuted}
               style={styles.titleInput}
             />
 
             <Text style={styles.syncHint}>
               {book?.cloud_user_id
-                ? 'Сохраняется на устройстве и синхронизируется с аккаунтом.'
-                : 'Без аккаунта данные хранятся только на этом устройстве.'}
+                ? t('memorial.syncedHint')
+                : t('memorial.deviceOnly')}
             </Text>
           </View>
 
           <NameEditor
-            title="О здравии"
-            subtitle="Живые родные, близкие и все, о ком хотите помолиться."
+            title={t('memorial.health')}
+            subtitle={t('memorial.healthHint')}
             names={healthNames}
             onChange={changeHealth}
           />
 
           <NameEditor
-            title="Об упокоении"
-            subtitle="Имена усопших для молитвенного поминовения."
+            title={t('memorial.repose')}
+            subtitle={t('memorial.reposeHint')}
             names={reposeNames}
             onChange={changeRepose}
           />
 
           <View style={styles.photoCard}>
-            <Text style={styles.namesTitle}>Записки на фото</Text>
+            <Text style={styles.namesTitle}>{t('memorial.photoNotes')}</Text>
 
             <Text style={styles.namesSubtitle}>
-              Добавьте бумажные записки отдельно от списка имён. Каждая записка открывается на весь
-              экран, а несколько фотографий можно листать свайпом.
+              {t('memorial.photoNotesHint')}
             </Text>
 
             <View style={styles.photoActions}>
@@ -614,7 +623,7 @@ export const MemorialBookScreen = ({navigation, route}) => {
               >
                 <Text style={styles.photoActionIcon}>◉</Text>
 
-                <Text style={styles.photoActionText}>Камера</Text>
+                <Text style={styles.photoActionText}>{t('memorial.camera')}</Text>
               </Pressable>
 
               <Pressable
@@ -623,7 +632,7 @@ export const MemorialBookScreen = ({navigation, route}) => {
               >
                 <Text style={styles.photoActionIcon}>▧</Text>
 
-                <Text style={styles.photoActionText}>Добавить фото</Text>
+                <Text style={styles.photoActionText}>{t('memorial.addPhoto')}</Text>
               </Pressable>
             </View>
 
@@ -679,19 +688,19 @@ export const MemorialBookScreen = ({navigation, route}) => {
               pressed && styles.pressed,
             ]}
           >
-            <Text style={styles.saveText}>{saveLabel}</Text>
+            <Text style={styles.saveText}>{t(`memorial.${saveStatus}`)}</Text>
           </Pressable>
 
           <Pressable
             onPress={confirmDeleteBook}
             style={({pressed}) => [styles.deleteBookButton, pressed && styles.pressed]}
           >
-            <Text style={styles.deleteBookText}>Удалить помянник</Text>
+            <Text style={styles.deleteBookText}>{t('memorial.deleteBook')}</Text>
           </Pressable>
         </ScrollView>
 
         <FixedSectionHeader
-          title={title || 'Помянник'}
+          title={title || t('memorial.title')}
           navigation={navigation}
           topInset={insets.top}
         />

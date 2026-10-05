@@ -18,8 +18,10 @@ import {
 import {searchAllPrayers} from '../services/prayerSearch';
 import {getSavedItems} from '../services/savedItems';
 import {colors, spacing} from '../theme';
+import {useLanguage} from '../context/LanguageContext';
 
 const SavedPickerModal = ({visible, items, onClose, onSelect}) => {
+  const {t} = useLanguage();
   const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {
@@ -43,7 +45,7 @@ const SavedPickerModal = ({visible, items, onClose, onSelect}) => {
       <View style={styles.modalBackdrop}>
         <View style={styles.pickerCard}>
           <View style={styles.pickerHeader}>
-            <Text style={styles.pickerTitle}>Добавить из избранного</Text>
+            <Text style={styles.pickerTitle}>{t('prayerBooks.fromFavoritesTitle')}</Text>
             <Pressable onPress={onClose} hitSlop={10}>
               <Text style={styles.closeText}>×</Text>
             </Pressable>
@@ -54,7 +56,7 @@ const SavedPickerModal = ({visible, items, onClose, onSelect}) => {
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder="Поиск в избранном"
+              placeholder={t('prayerBooks.searchFavorites')}
               placeholderTextColor="#9A7D66"
               style={styles.searchInput}
             />
@@ -75,7 +77,7 @@ const SavedPickerModal = ({visible, items, onClose, onSelect}) => {
                 style={({pressed}) => [styles.pickerRow, pressed && styles.pressed]}
               >
                 <Text style={styles.pickerRowTitle}>
-                  {item.item_title || item.source_title || item.save_type_display || 'Сохранённое'}
+                  {item.item_title || item.source_title || item.save_type_display || t('prayerBooks.savedFallback')}
                 </Text>
 
                 {!!(item.text || item.source_title) && (
@@ -85,7 +87,7 @@ const SavedPickerModal = ({visible, items, onClose, onSelect}) => {
                 )}
               </Pressable>
             )}
-            ListEmptyComponent={<Text style={styles.emptyPicker}>Ничего не найдено</Text>}
+            ListEmptyComponent={<Text style={styles.emptyPicker}>{t('prayerBooks.nothingFound')}</Text>}
           />
         </View>
       </View>
@@ -162,10 +164,10 @@ const getSearchPreview = (item, query) => {
 };
 
 const SEARCH_FILTERS = [
-  {key: 'all', label: 'Все'},
-  {key: 'prayer', label: 'Молитвы'},
-  {key: 'psalter', label: 'Псалтирь'},
-  {key: 'personal', label: 'Мои'},
+  {key: 'all', labelKey: 'prayerBooks.filterAll'},
+  {key: 'prayer', labelKey: 'prayerBooks.filterPrayers'},
+  {key: 'psalter', labelKey: 'prayerBooks.filterPsalter'},
+  {key: 'personal', labelKey: 'prayerBooks.filterMine'},
 ];
 
 const GlobalPrayerSearchModal = ({
@@ -175,6 +177,7 @@ const GlobalPrayerSearchModal = ({
   onClose,
   onSelect,
 }) => {
+  const {t} = useLanguage();
   const [query, setQuery] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('all');
@@ -232,8 +235,8 @@ const GlobalPrayerSearchModal = ({
         <View style={[styles.pickerCard, styles.globalSearchCard]}>
           <View style={styles.pickerHeader}>
             <View style={styles.searchHeading}>
-              <Text style={styles.pickerTitle}>Найти молитву</Text>
-              <Text style={styles.searchHeadingHint}>Поиск по всей библиотеке приложения</Text>
+              <Text style={styles.pickerTitle}>{t('prayerBooks.findPrayer')}</Text>
+              <Text style={styles.searchHeadingHint}>{t('prayerBooks.searchLibraryHint')}</Text>
             </View>
 
             <Pressable onPress={onClose} hitSlop={10}>
@@ -248,7 +251,7 @@ const GlobalPrayerSearchModal = ({
               onChangeText={setQuery}
               autoFocus
               returnKeyType="search"
-              placeholder="Например: перед дорогой, о здравии…"
+              placeholder={t('prayerBooks.searchPlaceholder')}
               placeholderTextColor="#8F725B"
               style={styles.searchInput}
             />
@@ -273,7 +276,7 @@ const GlobalPrayerSearchModal = ({
                     <Text
                       style={[styles.searchFilterText, active && styles.searchFilterTextActive]}
                     >
-                      {item.label} ({counts[item.key] || 0})
+                      {t(item.labelKey)} ({counts[item.key] || 0})
                     </Text>
                   </Pressable>
                 );
@@ -284,10 +287,9 @@ const GlobalPrayerSearchModal = ({
           {query.trim().length < 2 ? (
             <View style={styles.searchEmptyState}>
               <Text style={styles.searchEmptyMark}>⌕</Text>
-              <Text style={styles.searchEmptyTitle}>Введите хотя бы два символа</Text>
+              <Text style={styles.searchEmptyTitle}>{t('prayerBooks.enterTwoChars')}</Text>
               <Text style={styles.searchEmptyText}>
-                Поиск смотрит название, описание и полный текст молитв. Ваши собственные молитвы
-                тоже участвуют в поиске.
+                {t('prayerBooks.searchExplanation')}
               </Text>
             </View>
           ) : (
@@ -299,8 +301,8 @@ const GlobalPrayerSearchModal = ({
               ListHeaderComponent={
                 <Text style={styles.resultCount}>
                   {results.length
-                    ? 'Найдено: ' + results.length
-                    : 'По этому запросу ничего не найдено'}
+                    ? t('prayerBooks.found', {count: results.length})
+                    : t('prayerBooks.noSearchResults')}
                 </Text>
               }
               renderItem={({item}) => (
@@ -323,10 +325,10 @@ const GlobalPrayerSearchModal = ({
                       ]}
                     >
                       {item.group === 'personal'
-                        ? 'МОЯ'
+                        ? t('prayerBooks.badgeMine')
                         : item.group === 'psalter'
-                          ? 'ПСАЛТИРЬ'
-                          : 'БИБЛИОТЕКА'}
+                          ? t('prayerBooks.badgePsalter')
+                          : t('prayerBooks.badgeLibrary')}
                     </Text>
                   </View>
 
@@ -359,6 +361,7 @@ const GlobalPrayerSearchModal = ({
 };
 
 export const PrayerBookScreen = ({route, navigation}) => {
+  const {t} = useLanguage();
   const {bookSyncId} = route.params;
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + 56;
@@ -403,7 +406,7 @@ export const PrayerBookScreen = ({route, navigation}) => {
       setSavedPicker(false);
       await load();
     } catch (error) {
-      Alert.alert('Не удалось добавить молитву', error.message);
+      Alert.alert(t('prayerBooks.addPrayerError'), error.message);
     } finally {
       setBusy(false);
     }
@@ -421,7 +424,7 @@ export const PrayerBookScreen = ({route, navigation}) => {
         await addPrayerToBook(bookSyncId, result.prayer.sync_id);
       } else {
         const prayer = await createPersonalPrayer({
-          title: result.title || 'Молитва',
+          title: result.title || t('common.prayer'),
           text: result.text || '',
           origin_type: 'library',
           origin_data: {
@@ -436,7 +439,7 @@ export const PrayerBookScreen = ({route, navigation}) => {
       setGlobalSearch(false);
       await load();
     } catch (error) {
-      Alert.alert('Не удалось добавить молитву', error.message);
+      Alert.alert(t('prayerBooks.addPrayerError'), error.message);
     } finally {
       setBusy(false);
     }
@@ -447,15 +450,15 @@ export const PrayerBookScreen = ({route, navigation}) => {
       const next = await movePrayerInBook(bookSyncId, item.sync_id, direction);
       setBook(next);
     } catch (error) {
-      Alert.alert('Не удалось изменить порядок', error.message);
+      Alert.alert(t('prayerBooks.orderError'), error.message);
     }
   };
 
   const remove = (item) => {
-    Alert.alert('Убрать из молитвослова?', 'Сама молитва останется в вашей библиотеке.', [
-      {text: 'Отмена', style: 'cancel'},
+    Alert.alert(t('prayerBooks.removeTitle'), t('prayerBooks.removeText'), [
+      {text: t('prayerBooks.cancel'), style: 'cancel'},
       {
-        text: 'Убрать',
+        text: t('prayerBooks.remove'),
         style: 'destructive',
         onPress: async () => {
           await removePrayerFromBook(item.sync_id);
@@ -470,9 +473,9 @@ export const PrayerBookScreen = ({route, navigation}) => {
       <AppBackground imageOpacity={0.72}>
         <StatusBar style="light" translucent backgroundColor="transparent" />
         <View style={styles.center}>
-          <Text style={styles.loading}>Загрузка…</Text>
+          <Text style={styles.loading}>{t('common.loading')}</Text>
         </View>
-        <FixedSectionHeader title="Молитвослов" navigation={navigation} topInset={insets.top} />
+        <FixedSectionHeader title={t('nav.prayerBooks')} navigation={navigation} topInset={insets.top} />
       </AppBackground>
     );
   }
@@ -506,7 +509,7 @@ export const PrayerBookScreen = ({route, navigation}) => {
                   pressed && styles.pressed,
                 ]}
               >
-                <Text style={styles.readButtonText}>Читать как один молитвослов</Text>
+                <Text style={styles.readButtonText}>{t('prayerBooks.readAsOne')}</Text>
               </Pressable>
 
               <View style={styles.actionGrid}>
@@ -517,7 +520,7 @@ export const PrayerBookScreen = ({route, navigation}) => {
                   style={({pressed}) => [styles.actionButton, pressed && styles.pressed]}
                 >
                   <Text style={styles.actionIcon}>＋</Text>
-                  <Text style={styles.actionText}>Своя молитва</Text>
+                  <Text style={styles.actionText}>{t('prayerBooks.ownPrayer')}</Text>
                 </Pressable>
 
                 <Pressable
@@ -525,7 +528,7 @@ export const PrayerBookScreen = ({route, navigation}) => {
                   style={({pressed}) => [styles.actionButton, pressed && styles.pressed]}
                 >
                   <Text style={styles.actionIcon}>♡</Text>
-                  <Text style={styles.actionText}>Из избранного</Text>
+                  <Text style={styles.actionText}>{t('prayerBooks.fromFavorites')}</Text>
                 </Pressable>
 
                 <Pressable
@@ -533,19 +536,18 @@ export const PrayerBookScreen = ({route, navigation}) => {
                   style={({pressed}) => [styles.actionButton, pressed && styles.pressed]}
                 >
                   <Text style={styles.actionIcon}>⌕</Text>
-                  <Text style={styles.actionText}>Найти молитву</Text>
+                  <Text style={styles.actionText}>{t('prayerBooks.findPrayer')}</Text>
                 </Pressable>
               </View>
 
-              <Text style={styles.sectionTitle}>Молитвы в сборнике</Text>
+              <Text style={styles.sectionTitle}>{t('prayerBooks.prayersInBook')}</Text>
             </View>
           }
           ListEmptyComponent={
             <View style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>Сборник пока пуст</Text>
+              <Text style={styles.emptyTitle}>{t('prayerBooks.bookEmptyTitle')}</Text>
               <Text style={styles.emptyText}>
-                Добавьте свой текст, выберите молитву из избранного или найдите её по всей
-                библиотеке приложения.
+                {t('prayerBooks.bookEmptyText')}
               </Text>
             </View>
           }
@@ -575,7 +577,7 @@ export const PrayerBookScreen = ({route, navigation}) => {
                     )}
 
                     {!!prayer.photos?.length && (
-                      <Text style={styles.photoMeta}>Фото: {prayer.photos.length}</Text>
+                      <Text style={styles.photoMeta}>{t('prayerBooks.photosCount', {count: prayer.photos.length})}</Text>
                     )}
                   </View>
                 </Pressable>
