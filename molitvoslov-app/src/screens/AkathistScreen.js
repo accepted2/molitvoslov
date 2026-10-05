@@ -19,6 +19,7 @@ import {StatusBar} from 'expo-status-bar';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {
   READER_LANGUAGE_MODES,
+  buildReaderLanguageOptions,
   getReaderModeForAppLanguage,
 } from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
@@ -200,6 +201,26 @@ export const AkathistScreen = ({route, navigation}) => {
     return (
       specialTexts.some((item) => !!item?.translation_uk?.trim()) ||
       (akathist.sections || []).some((section) => !!section.text?.translation_uk?.trim())
+    );
+  }, [akathist]);
+
+  const hasTraditionalTranslation = useMemo(() => {
+    if (!akathist) {
+      return false;
+    }
+
+    const specialTexts = [
+      akathist.troparion,
+      akathist.kontakion_before,
+      akathist.common_rule?.opening,
+      akathist.common_rule?.ending,
+    ];
+
+    return (
+      specialTexts.some((item) => !!item?.traditional_content?.trim()) ||
+      (akathist.sections || []).some(
+        (section) => !!section.text?.traditional_content?.trim()
+      )
     );
   }, [akathist]);
 
@@ -727,7 +748,13 @@ export const AkathistScreen = ({route, navigation}) => {
         active: wholeAkathistSaved,
       },
 
-      viewSwitcher: null,
+      viewSwitcher: {
+        activeKey: viewMode,
+        options: buildReaderLanguageOptions({
+          hasRussian: hasRussianTranslation,
+          hasTraditional: hasTraditionalTranslation,
+        }),
+      },
 
       progressAnchorType: 'akathist_section',
 
@@ -740,6 +767,7 @@ export const AkathistScreen = ({route, navigation}) => {
     akathistId,
     hasRussianTranslation,
     hasUkrainianTranslation,
+    hasTraditionalTranslation,
     savedItems,
     slug,
     title,
@@ -808,6 +836,7 @@ export const AkathistScreen = ({route, navigation}) => {
         topContentInset={headerHeight}
         onProgress={scheduleSave}
         onAction={handleAction}
+        onViewModeChange={setViewMode}
       />
 
       <ReaderBookmarkMenu
