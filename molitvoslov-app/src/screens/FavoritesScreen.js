@@ -12,20 +12,22 @@ import {BottomNav} from '../components/navigation/BottomNav';
 import {deleteSavedItem, getSavedItems} from '../services/savedItems';
 
 import {colors, radius, spacing} from '../theme';
+import {useLanguage} from '../context/LanguageContext';
 
 const TAB_SAVED = 'saved';
 const TAB_PLACES = 'places';
 const TAB_FRAGMENTS = 'fragments';
 
 const TABS = [
-  {key: TAB_SAVED, label: 'Сохранённое'},
-  {key: TAB_PLACES, label: 'Закладки'},
-  {key: TAB_FRAGMENTS, label: 'Фрагменты'},
+  {key: TAB_SAVED, labelKey: 'favorites.saved'},
+  {key: TAB_PLACES, labelKey: 'favorites.bookmarks'},
+  {key: TAB_FRAGMENTS, labelKey: 'favorites.fragments'},
 ];
 
 const FRAGMENT_SAVE_TYPES = new Set(['word', 'sentence', 'paragraph', 'fragment']);
 
 export const FavoritesScreen = ({route, navigation}) => {
+  const {t} = useLanguage();
   const initialTab = TABS.some((tab) => tab.key === route.params?.tab)
     ? route.params.tab
     : TAB_SAVED;
@@ -52,11 +54,11 @@ export const FavoritesScreen = ({route, navigation}) => {
       setItems(await getSavedItems());
     } catch (err) {
       console.log('Ошибка загрузки сохранённого:', err);
-      setError('Не удалось загрузить избранное');
+      setError(t('favorites.loadError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -143,7 +145,7 @@ export const FavoritesScreen = ({route, navigation}) => {
       navigation.push('Akathist', {
         akathistId: item.source_id,
         slug: metadata.slug,
-        title: item.source_title || 'Акафист',
+        title: item.source_title || t('reading.akathist'),
         focusTarget,
       });
       return;
@@ -153,7 +155,7 @@ export const FavoritesScreen = ({route, navigation}) => {
       navigation.push('Canon', {
         canonId: item.source_id,
         slug: metadata.slug,
-        title: item.source_title || 'Канон',
+        title: item.source_title || t('reading.canon'),
         focusTarget,
       });
       return;
@@ -177,7 +179,7 @@ export const FavoritesScreen = ({route, navigation}) => {
       if (metadata.kathisma_number) {
         navigation.push('Kathisma', {
           kathismaNumber: metadata.kathisma_number,
-          kathismaTitle: metadata.kathisma_title || `Кафизма ${metadata.kathisma_number}`,
+          kathismaTitle: metadata.kathisma_title || t('psalter.kathisma', {number: metadata.kathisma_number}),
           focusTarget,
         });
         return;
@@ -188,7 +190,7 @@ export const FavoritesScreen = ({route, navigation}) => {
   };
 
   const getItemTitle = (item) =>
-    item.item_title || item.source_title || item.save_type_display || 'Сохранённое';
+    item.item_title || item.source_title || item.save_type_display || t('favorites.fallbackTitle');
 
   const tabCount = (tab) => {
     if (tab === TAB_PLACES) {
@@ -206,19 +208,19 @@ export const FavoritesScreen = ({route, navigation}) => {
     activeTab === TAB_PLACES
       ? {
           icon: '⌑',
-          title: 'Сохранённых мест пока нет',
-          text: 'Во время чтения откройте меню ⋮ и нажмите «Добавить закладку». Это место останется здесь независимо от дальнейшего прогресса.',
+          title: t('favorites.emptyPlacesTitle'),
+          text: t('favorites.emptyPlacesText'),
         }
       : activeTab === TAB_FRAGMENTS
         ? {
             icon: '“',
-            title: 'Фрагментов пока нет',
-            text: 'Выделите слово, предложение, абзац или произвольный фрагмент текста и сохраните его.',
+            title: t('favorites.emptyFragmentsTitle'),
+            text: t('favorites.emptyFragmentsText'),
           }
         : {
             icon: '♡',
-            title: 'Сохранённого пока нет',
-            text: 'Нажимайте сердечко у молитв, псалмов, глав, акафистов, канонов и других текстов — они появятся здесь.',
+            title: t('favorites.emptySavedTitle'),
+            text: t('favorites.emptySavedText'),
           };
 
   return (
@@ -258,7 +260,7 @@ export const FavoritesScreen = ({route, navigation}) => {
                 <View style={styles.cardTop}>
                   <Text style={styles.typeBadge}>
                     {activeTab === TAB_PLACES
-                      ? 'Закладка'
+                      ? t('favorites.bookmark')
                       : (item.save_type_display || item.save_type).toUpperCase()}
                   </Text>
 
@@ -267,7 +269,7 @@ export const FavoritesScreen = ({route, navigation}) => {
                     onPress={() => removeItem(item.id)}
                     style={({pressed}) => [styles.deleteButton, pressed && styles.pressed]}
                   >
-                    <Text style={styles.deleteText}>Удалить</Text>
+                    <Text style={styles.deleteText}>{t('favorites.delete')}</Text>
                   </Pressable>
                 </View>
 
@@ -279,16 +281,16 @@ export const FavoritesScreen = ({route, navigation}) => {
 
                   {activeTab === TAB_PLACES ? (
                     <Text style={styles.placeMeta}>
-                      {item.source_title || 'Место чтения'}
+                      {item.source_title || t('favorites.readingPlace')}
                       {Number.isFinite(Number(item.metadata?.progress_percent))
                         ? ` · ${Number(item.metadata.progress_percent)}%`
                         : ''}
                     </Text>
                   ) : item.source_type === 'bible' && item.save_type === 'chapter' ? (
                     <Text style={styles.quote}>
-                      Глава сохранена целиком
+                      {t('favorites.wholeChapter')}
                       {item.metadata?.verse_count
-                        ? ' · ' + item.metadata.verse_count + ' стихов'
+                        ? ' · ' + t('favorites.verses', {count: item.metadata.verse_count})
                         : ''}
                     </Text>
                   ) : (
@@ -331,7 +333,7 @@ export const FavoritesScreen = ({route, navigation}) => {
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{t(tab.labelKey)}</Text>
 
                   {!!tabCount(tab.key) && (
                     <Text style={[styles.tabCount, active && styles.tabCountActive]}>
@@ -345,7 +347,7 @@ export const FavoritesScreen = ({route, navigation}) => {
         </View>
 
         <FixedSectionHeader
-          title="Избранное"
+          title={t('favorites.title')}
           navigation={navigation}
           topInset={insets.top}
           showBack={false}
