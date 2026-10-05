@@ -35,12 +35,12 @@ import {
   resolveBibleReference,
   toCalendarDate,
 } from '../services/churchCalendar';
+import {CALENDAR_MONTHS, calendarText} from '../services/calendarPreferences';
+import {useLanguage} from '../context/LanguageContext';
 import {
-  CALENDAR_MONTHS,
-  calendarText,
-  getCalendarLanguage,
-  setCalendarLanguage,
-} from '../services/calendarPreferences';
+  LANGUAGE_OPTIONS,
+  getCalendarDataLanguage,
+} from '../services/languagePreferences';
 import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
 import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
@@ -278,6 +278,7 @@ const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress})
 );
 
 export const MenuScreen = ({navigation}) => {
+  const {language: calendarLanguage, setLanguage: setAppLanguage} = useLanguage();
   const [categories, setCategories] = useState([]);
   const [akathists, setAkathists] = useState([]);
   const [canons, setCanons] = useState([]);
@@ -288,7 +289,6 @@ export const MenuScreen = ({navigation}) => {
   const [savedDailyQuote, setSavedDailyQuote] = useState(null);
   const [calendarToday, setCalendarToday] = useState(null);
   const [calendarLoading, setCalendarLoading] = useState(true);
-  const [calendarLanguage, setCalendarLanguageState] = useState('ru');
   const [calendarSelectedDate, setCalendarSelectedDate] = useState(() => new Date());
   const [calendarVisibleMonth, setCalendarVisibleMonth] = useState(
     () => new Date(new Date().getFullYear(), new Date().getMonth(), 1)
@@ -399,7 +399,8 @@ export const MenuScreen = ({navigation}) => {
       try {
         setCalendarLoading(true);
 
-        const offline = await getOfflineCalendarDay(targetDate, calendarLanguage);
+        const dataLanguage = getCalendarDataLanguage(calendarLanguage);
+        const offline = await getOfflineCalendarDay(targetDate, dataLanguage);
 
         if (requestId !== calendarRequestRef.current) {
           return;
@@ -411,7 +412,7 @@ export const MenuScreen = ({navigation}) => {
         }
 
         const fresh = await getCalendarDay(targetDate, {
-          language: calendarLanguage,
+          language: dataLanguage,
           force: true,
           skipOffline: true,
         });
@@ -480,26 +481,12 @@ export const MenuScreen = ({navigation}) => {
   );
 
   useEffect(() => {
-    getCalendarLanguage()
-      .then((language) => setCalendarLanguageState(language))
-      .catch(() => setCalendarLanguageState('ru'));
-  }, []);
-
-  useEffect(() => {
     loadCalendarDay(calendarSelectedDate);
   }, [calendarSelectedDate, loadCalendarDay]);
 
   useFocusEffect(
     useCallback(() => {
       loadProgress();
-
-      getCalendarLanguage()
-        .then((language) => {
-          if (language !== calendarLanguage) {
-            setCalendarLanguageState(language);
-          }
-        })
-        .catch(() => {});
 
       if (dailyQuote?.id) {
         getSavedItems({
@@ -542,13 +529,13 @@ export const MenuScreen = ({navigation}) => {
     }
   }, [calendarToday, calendarLanguage, updateCalendarWidget]);
 
-  const changeCalendarLanguage = async (language) => {
-    const next = await setCalendarLanguage(language);
-    setCalendarLanguageState(next);
+  const changeAppLanguage = async (language) => {
+    const next = await setAppLanguage(language);
+    const dataLanguage = getCalendarDataLanguage(next);
 
     try {
       const day = await getCalendarDay(calendarSelectedDate, {
-        language: next,
+        language: dataLanguage,
         force: true,
       });
       setCalendarToday(day);
@@ -559,13 +546,13 @@ export const MenuScreen = ({navigation}) => {
         selectedKey === todayKey
           ? day
           : await getCalendarDay(new Date(), {
-              language: next,
+              language: dataLanguage,
               force: true,
             });
 
       await updateCalendarWidget(widgetDay, next);
     } catch (error) {
-      console.log('Ошибка смены языка календаря:', error?.message || error);
+      console.log('Ошибка смены языка приложения:', error?.message || error);
     }
   };
 
@@ -991,6 +978,34 @@ export const MenuScreen = ({navigation}) => {
               />
 
               <View style={styles.heroTopActions}>
+                <View style={styles.appLanguageSwitch}>
+                  {LANGUAGE_OPTIONS.map((item) => {
+                    const active = calendarLanguage === item.value;
+
+                    return (
+                      <Pressable
+                        key={item.value}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Язык: ${item.label}`}
+                        onPress={() => changeAppLanguage(item.value)}
+                        style={[
+                          styles.appLanguageButton,
+                          active && styles.appLanguageButtonActive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.appLanguageText,
+                            active && styles.appLanguageTextActive,
+                          ]}
+                        >
+                          {item.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Поиск"
@@ -1130,31 +1145,6 @@ export const MenuScreen = ({navigation}) => {
                       <Text style={styles.calendarWidgetButtonText}>{calendarCopy.onScreen}</Text>
                     </Pressable>
 
-                    <View style={styles.calendarLanguageSwitch}>
-                      {['ru', 'uk'].map((language) => {
-                        const active = calendarLanguage === language;
-
-                        return (
-                          <Pressable
-                            key={language}
-                            onPress={() => changeCalendarLanguage(language)}
-                            style={[
-                              styles.calendarLanguageButton,
-                              active && styles.calendarLanguageButtonActive,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.calendarLanguageText,
-                                active && styles.calendarLanguageTextActive,
-                              ]}
-                            >
-                              {language === 'ru' ? 'РУ' : 'УК'}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
                   </View>
                 </View>
 
@@ -1620,7 +1610,43 @@ const styles = StyleSheet.create({
     right: 16,
     zIndex: 5,
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 9,
+  },
+
+  appLanguageSwitch: {
+    height: 38,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 3,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(111, 73, 48, 0.22)',
+    backgroundColor: 'rgba(255, 245, 224, 0.92)',
+    shadowColor: '#2C170B',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.14,
+    shadowRadius: 7,
+    elevation: 3,
+  },
+  appLanguageButton: {
+    minWidth: 30,
+    height: 30,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+  },
+  appLanguageButtonActive: {
+    backgroundColor: '#8E5D32',
+  },
+  appLanguageText: {
+    color: '#6D4A31',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  appLanguageTextActive: {
+    color: '#FFF5E4',
   },
 
   heroRoundAction: {
