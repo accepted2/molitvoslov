@@ -5,6 +5,7 @@ import {WebView} from 'react-native-webview';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import {deleteSavedItem, saveItem} from '../../services/savedItems';
+import {useLanguage} from '../../context/LanguageContext';
 const scriptSafeJson = (value) =>
   JSON.stringify(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
 
@@ -613,7 +614,7 @@ const HTML_TEMPLATE = String.raw`
   <button
     id="reader-scroll-top"
     type="button"
-    aria-label="Наверх"
+    aria-label=""
   >
     ↑ 
   </button>
@@ -621,9 +622,7 @@ const HTML_TEMPLATE = String.raw`
   <div id="selection-bar">
     <div class="selection-info">
       <div id="selection-count"></div>
-      <div id="selection-hint">
-        Выделенный фрагмент
-      </div>
+      <div id="selection-hint"></div>
     </div>
 
     <button
@@ -636,9 +635,7 @@ const HTML_TEMPLATE = String.raw`
     <button
       id="selection-save"
       type="button"
-    >
-      Сохранить
-    </button>
+    ></button>
   </div>
 
   <script>
@@ -699,6 +696,20 @@ const HTML_TEMPLATE = String.raw`
       document.getElementById(
         'reader-scroll-top'
       );
+
+    document.documentElement.lang =
+      DATA.ui.language || 'ru';
+
+    scrollTopButton.setAttribute(
+      'aria-label',
+      DATA.ui.scrollTop
+    );
+
+    selectionHint.textContent =
+      DATA.ui.selectedFragment;
+
+    saveButton.textContent =
+      DATA.ui.save;
 
     const itemTextMap =
       new Map();
@@ -839,8 +850,8 @@ const HTML_TEMPLATE = String.raw`
 
       button.title =
         active
-          ? 'Убрать из избранного'
-          : 'Добавить в избранное';
+          ? DATA.ui.removeFromFavorites
+          : DATA.ui.addFavorite;
 
       button.setAttribute(
         'aria-label',
@@ -2342,7 +2353,7 @@ const HTML_TEMPLATE = String.raw`
             const itemTitle =
               displayTitle ||
               localizedDescription ||
-              'Текст';
+              DATA.ui.text;
 
             itemTextMap.set(
               Number(
@@ -2660,7 +2671,7 @@ const HTML_TEMPLATE = String.raw`
                 el(
                   'button',
                   'memorial-open-button',
-                  'Открыть помянник'
+                  DATA.ui.openMemorial
                 );
 
               memorialButton.type =
@@ -4039,8 +4050,10 @@ const HTML_TEMPLATE = String.raw`
           );
 
         selectionCount.textContent =
-          count +
-          ' симв.';
+          DATA.ui.charactersShort.replace(
+            '{count}',
+            String(count)
+          );
 
         selectionCount.classList
           .remove(
@@ -4056,7 +4069,7 @@ const HTML_TEMPLATE = String.raw`
           !state.savePending
         ) {
           selectionHint.textContent =
-            'Выделенный фрагмент';
+            DATA.ui.selectedFragment;
         }
 
         const savedRange =
@@ -4066,8 +4079,8 @@ const HTML_TEMPLATE = String.raw`
 
         saveButton.textContent =
           savedRange
-            ? 'Удалить'
-            : 'Сохранить';
+            ? DATA.ui.delete
+            : DATA.ui.save;
 
         saveButton.classList.toggle(
           'delete-mode',
@@ -5048,7 +5061,7 @@ const HTML_TEMPLATE = String.raw`
             true;
 
           selectionHint.textContent =
-            'Удаляем...';
+            DATA.ui.deleting;
 
           updateBar();
 
@@ -5087,7 +5100,7 @@ const HTML_TEMPLATE = String.raw`
           true;
 
         selectionHint.textContent =
-          'Сохраняем...';
+          DATA.ui.saving;
 
         updateBar();
 
@@ -6099,7 +6112,7 @@ const HTML_TEMPLATE = String.raw`
 
           selectionHint.textContent =
             message ||
-            'Не удалось сохранить';
+            DATA.ui.saveFailed;
 
           selectionHint.classList
             .add(
@@ -6149,6 +6162,7 @@ const buildHtml = ({
   viewSwitcher,
   topContentInset,
   memorialEnabled,
+  ui,
 }) => {
   const payload = {
     rule,
@@ -6158,6 +6172,8 @@ const buildHtml = ({
     viewSwitcher: viewSwitcher || null,
 
     memorialEnabled: !!memorialEnabled,
+
+    ui,
 
     savedItems: savedItems.filter(
       (item) =>
@@ -6198,8 +6214,31 @@ export default function PrayerRuleReader({
   onViewModeChange,
 }) {
   const insets = useSafeAreaInsets();
+  const {language, t} = useLanguage();
 
   const webViewRef = useRef(null);
+
+  const ui = useMemo(
+    () => ({
+      language,
+      removeFromFavorites: t('common.removeFromFavorites'),
+      addFavorite: t('common.addFavorite'),
+      openMemorial: t('common.openMemorial'),
+      selectedFragment: t('common.selectedFragment'),
+      save: t('common.save'),
+      delete: t('common.delete'),
+      charactersShort: t('common.charactersShort', {count: '{count}'}),
+      deleting: t('common.deleting'),
+      saving: t('common.saving'),
+      saveFailed: t('common.saveFailed'),
+      deleteFailed: t('common.deleteFailed'),
+      text: t('common.text'),
+      prayerRule: t('reading.prayerRule'),
+      prayer: t('common.prayer'),
+      scrollTop: t('common.scrollTop'),
+    }),
+    [language, t]
+  );
 
   const html = useMemo(
     () =>
@@ -6212,6 +6251,7 @@ export default function PrayerRuleReader({
         viewSwitcher,
         topContentInset,
         memorialEnabled,
+        ui,
       }),
     [
       rule,
@@ -6222,6 +6262,7 @@ export default function PrayerRuleReader({
       viewSwitcher,
       topContentInset,
       memorialEnabled,
+      ui,
     ]
   );
 
@@ -6318,8 +6359,8 @@ export default function PrayerRuleReader({
 
           source_title:
             viewMode === 'ukrainian'
-              ? rule.name_uk || rule.name || 'Молитвенное правило'
-              : rule.name || 'Молитвенное правило',
+              ? rule.name_uk || rule.name || t('reading.prayerRule')
+              : rule.name || t('reading.prayerRule'),
 
           item_title:
             viewMode === 'ukrainian'
@@ -6327,8 +6368,8 @@ export default function PrayerRuleReader({
                 item.text.title ||
                 item.text.description_uk ||
                 item.text.description ||
-                'Молитва'
-              : item.text.title || item.text.description || 'Молитва',
+                t('common.prayer')
+              : item.text.title || item.text.description || t('common.prayer'),
 
           text: content,
 
@@ -6374,7 +6415,11 @@ export default function PrayerRuleReader({
       } catch (deleteError) {
         console.log('Ошибка удаления выделения:', deleteError.message);
 
-        inject("window.readerApi && window.readerApi.saveFailed('Не удалось удалить')");
+        inject(
+          'window.readerApi && window.readerApi.saveFailed(' +
+            scriptSafeJson(t('common.deleteFailed')) +
+            ')'
+        );
       }
 
       return;
@@ -6393,9 +6438,9 @@ export default function PrayerRuleReader({
         anchor_id: Number(message.anchorId),
         source_title:
           viewMode === 'ukrainian'
-            ? rule.name_uk || rule.name || 'Молитвенное правило'
-            : rule.name || 'Молитвенное правило',
-        item_title: message.itemTitle || 'Молитва',
+            ? rule.name_uk || rule.name || t('reading.prayerRule')
+            : rule.name || t('reading.prayerRule'),
+        item_title: message.itemTitle || t('common.prayer'),
         text: message.text,
         start_offset: Number(message.start),
         end_offset: Number(message.end),
@@ -6411,7 +6456,11 @@ export default function PrayerRuleReader({
     } catch (error) {
       console.log('Ошибка сохранения выделения молитвы:', error.response?.data || error.message);
 
-      inject("window.readerApi && window.readerApi.saveFailed('Не удалось сохранить')");
+      inject(
+        'window.readerApi && window.readerApi.saveFailed(' +
+          scriptSafeJson(t('common.saveFailed')) +
+          ')'
+      );
     }
   };
 
