@@ -175,7 +175,7 @@ export default function KathismaScreen({route, navigation}) {
     } catch (loadError) {
       console.log('Ошибка загрузки кафизмы:', loadError.response?.data || loadError.message);
 
-      setError('Не удалось загрузить кафизму');
+      setError(t('menu.kathismaLoadError'));
     } finally {
       setLoading(false);
     }
@@ -208,7 +208,7 @@ export default function KathismaScreen({route, navigation}) {
         savedItemsRef.current = savedItemsRef.current.filter((item) => item.id !== existing.id);
 
         return {
-          label: 'В избранное',
+          label: t('common.addToFavorites'),
 
           active: false,
         };
@@ -225,9 +225,9 @@ export default function KathismaScreen({route, navigation}) {
 
         anchor_id: kathisma.id,
 
-        source_title: 'Псалтирь',
+        source_title: t('psalter.title'),
 
-        item_title: `Кафизма ${kathisma.number}`,
+        item_title: t('psalter.kathisma', {number: kathisma.number}),
 
         text: '',
 
@@ -241,7 +241,7 @@ export default function KathismaScreen({route, navigation}) {
       savedItemsRef.current = [saved, ...savedItemsRef.current];
 
       return {
-        label: 'В избранном',
+        label: t('common.inFavorites'),
 
         active: true,
       };
@@ -267,7 +267,7 @@ export default function KathismaScreen({route, navigation}) {
       savedItemsRef.current = savedItemsRef.current.filter((item) => item.id !== existing.id);
 
       return {
-        label: 'В избранное',
+        label: t('common.addToFavorites'),
 
         active: false,
       };
@@ -284,9 +284,9 @@ export default function KathismaScreen({route, navigation}) {
 
       anchor_id: psalm.id,
 
-      source_title: 'Псалтирь',
+      source_title: t('psalter.title'),
 
-      item_title: `Псалом ${psalm.number}`,
+      item_title: t('psalter.psalm', {number: psalm.number}),
 
       text: '',
 
@@ -302,7 +302,7 @@ export default function KathismaScreen({route, navigation}) {
     savedItemsRef.current = [saved, ...savedItemsRef.current];
 
     return {
-      label: 'В избранном',
+      label: t('common.inFavorites'),
 
       active: true,
 
@@ -811,7 +811,7 @@ export default function KathismaScreen({route, navigation}) {
             className: 'psalter-glory',
             anchorId: chunk.glory.id,
 
-            itemTitle: `Слава после Псалма ${psalm.number}`,
+            itemTitle: t('psalter.gloryAfterPsalm', {number: psalm.number}),
 
             fullSaveType: 'prayer',
 
@@ -826,7 +826,7 @@ export default function KathismaScreen({route, navigation}) {
             memorialAction: {
               marker: '[Здесь можно прочитать прошение о здравии / об упокоении и помянуть имена.]',
 
-              label: 'Открыть помянник',
+              label: t('common.openMemorial'),
 
               context: {
                 source: 'psalter',
@@ -964,7 +964,7 @@ export default function KathismaScreen({route, navigation}) {
         action: {
           key: `psalm:${psalm.id}`,
 
-          label: psalmSaved ? 'В избранном' : 'В избранное',
+          label: psalmSaved ? t('common.inFavorites') : t('common.addToFavorites'),
 
           active: psalmSaved,
 
@@ -1165,7 +1165,7 @@ export default function KathismaScreen({route, navigation}) {
       action: {
         key: `kathisma:${kathisma.id}`,
 
-        label: wholeKathismaSaved ? 'В избранном' : 'В избранное',
+        label: wholeKathismaSaved ? t('common.inFavorites') : t('common.addToFavorites'),
 
         active: wholeKathismaSaved,
       },
@@ -1247,7 +1247,7 @@ export default function KathismaScreen({route, navigation}) {
   if (error || !kathisma) {
     return (
       <View style={styles.center}>
-        <Text style={styles.error}>{error || 'Кафизма не найдена'}</Text>
+        <Text style={styles.error}>{error || t('psalter.kathismaNotFound')}</Text>
       </View>
     );
   }
