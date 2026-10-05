@@ -17,10 +17,6 @@ export const getReaderModeForAppLanguage = (
 ) => {
   const appLanguage = normalizeAppLanguage(language);
 
-  if (appLanguage === APP_LANGUAGES.CU) {
-    return READER_LANGUAGE_MODES.CHURCH;
-  }
-
   if (appLanguage === APP_LANGUAGES.UK) {
     if (hasUkrainian) {
       return READER_LANGUAGE_MODES.UKRAINIAN;
