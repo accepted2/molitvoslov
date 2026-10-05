@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 from django.test import SimpleTestCase
 
 from api.management.commands.import_ucs_prayer_rules import (
+    find_best_traditional_title,
     find_common_preinitial_raw,
     normalize_for_similarity,
     parse_section_paragraphs,
@@ -88,3 +89,20 @@ class UcsPrayerRuleParserTests(SimpleTestCase):
             normalize_for_similarity(historic),
         )
         self.assertGreater(similarity(modern, historic), 0.99)
+
+    def test_matches_traditional_prayer_title(self):
+        rows = [
+            {
+                "title": ucs_to_unicode(
+                    "Мlтва в7, с™aгw ґнті0ха, ко гDу нaшему ї}су хrтY:"
+                )
+            }
+        ]
+
+        matched = find_best_traditional_title(
+            rows,
+            "Молитва 2-я, святого Антиоха, ко Господу нашему Иисусу Христу",
+        )
+
+        self.assertTrue(matched)
+        self.assertIn("ґнті", matched.lower())
