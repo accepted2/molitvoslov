@@ -6316,9 +6316,19 @@ export default function PrayerRuleReader({
 
           anchor_id: itemId,
 
-          source_title: rule.name,
+          source_title:
+            viewMode === 'ukrainian'
+              ? rule.name_uk || rule.name || 'Молитвенное правило'
+              : rule.name || 'Молитвенное правило',
 
-          item_title: item.text.title || item.text.description || 'Молитва',
+          item_title:
+            viewMode === 'ukrainian'
+              ? item.text.title_uk ||
+                item.text.title ||
+                item.text.description_uk ||
+                item.text.description ||
+                'Молитва'
+              : item.text.title || item.text.description || 'Молитва',
 
           text: content,
 
@@ -6381,7 +6391,10 @@ export default function PrayerRuleReader({
         source_id: rule.id,
         anchor_type: 'prayer_rule_item',
         anchor_id: Number(message.anchorId),
-        source_title: rule.name,
+        source_title:
+          viewMode === 'ukrainian'
+            ? rule.name_uk || rule.name || 'Молитвенное правило'
+            : rule.name || 'Молитвенное правило',
         item_title: message.itemTitle || 'Молитва',
         text: message.text,
         start_offset: Number(message.start),
