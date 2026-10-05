@@ -24,8 +24,11 @@ import {subscribeToContentUpdates} from '../services/contentStore';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import {colors} from '../theme';
+import {useLanguage} from '../context/LanguageContext';
+import {getLocalizedField} from '../services/localizedContent';
 
 export const CanonListScreen = ({navigation}) => {
+  const {language, t} = useLanguage();
   const [canons, setCanons] = useState([]);
 
   const [savedCanons, setSavedCanons] = useState([]);
@@ -115,9 +118,9 @@ export const CanonListScreen = ({navigation}) => {
 
         anchor_id: canon.id,
 
-        source_title: canon.title,
+        source_title: getLocalizedField(canon, 'title', language),
 
-        item_title: canon.title,
+        item_title: getLocalizedField(canon, 'title', language),
 
         text: '',
 
@@ -138,7 +141,7 @@ export const CanonListScreen = ({navigation}) => {
 
       slug: canon.slug,
 
-      title: canon.title,
+      title: getLocalizedField(canon, 'title', language),
     });
   };
 
@@ -184,13 +187,15 @@ export const CanonListScreen = ({navigation}) => {
                   onPress={() => openCanon(item)}
                 >
                   <View style={styles.textContainer}>
-                    <Text style={styles.title}>{item.title}</Text>
+                    <Text style={styles.title}>
+                      {getLocalizedField(item, 'title', language)}
+                    </Text>
 
                     {!!item.tone && <Text style={styles.tone}>{item.tone}</Text>}
 
-                    {!!item.description && (
+                    {!!getLocalizedField(item, 'description', language) && (
                       <Text style={styles.description} numberOfLines={2}>
-                        {item.description}
+                        {getLocalizedField(item, 'description', language)}
                       </Text>
                     )}
                   </View>
@@ -214,11 +219,17 @@ export const CanonListScreen = ({navigation}) => {
           }}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Каноны пока не добавлены</Text>
+              <Text style={styles.emptyText}>
+                {language === 'uk' ? 'Канони поки не додані' : 'Каноны пока не добавлены'}
+              </Text>
             </View>
           }
         />
-        <FixedSectionHeader title="Каноны" navigation={navigation} topInset={insets.top} />
+        <FixedSectionHeader
+          title={language === 'uk' ? 'Канони' : t('menu.canonsTitle')}
+          navigation={navigation}
+          topInset={insets.top}
+        />
 
         <BottomNav navigation={navigation} active={null} />
       </View>
