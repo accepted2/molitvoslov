@@ -31,7 +31,10 @@ RULE_SPECS = {
 # Эти элементы есть в нашей базе, но отсутствуют в данном Book.html.
 # Их traditional_content импортёр намеренно не трогает.
 EXPECTED_UNMAPPED_ORDERS = {
-    "morning": {41, 42, 46},
+    # В Book.html эти две краткие поминальные молитвы есть, но их редакция
+    # заметно отличается от текста, который уже принят в нашей базе.
+    # Поэтому их traditional_content намеренно не заполняем этим источником.
+    "morning": {36, 37, 41, 42, 46},
     "evening": {6, 32, 33},
 }
 
@@ -151,6 +154,42 @@ def parse_section_paragraphs(soup, anchor_name):
     return rows
 
 
+def find_common_preinitial_raw(soup):
+    """
+    В утреннем/вечернем разделах этого издания стоит другая редакция
+    предначинательной молитвы ("Господи Иисусе Христе, Сыне Божий...").
+
+    Наша база использует:
+    "Молитвами святых отец наших, Господи Иисусе Христе, Боже наш..."
+
+    Та же самая редакция присутствует в Book.html в начале раздела
+    "Три канона" (anchor=4), поэтому берём её оттуда и используем для
+    общего Text, который разделяют утреннее и вечернее правила.
+    """
+    rows = parse_section_paragraphs(soup, "4")
+    if not rows:
+        raise CommandError(
+            "Не найден источник для общей предначинательной молитвы "
+            "в разделе anchor=4."
+        )
+
+    raw = rows[0]["raw_content"]
+    start_marker = "Мlтвами с™hхъ nтє1цъ нaшихъ"
+    end_marker = "Слaва тебЁ"
+
+    if start_marker not in raw:
+        raise CommandError(
+            "Предначинательная молитва в anchor=4 имеет неожиданную редакцию."
+        )
+
+    return _between(
+        raw,
+        start_marker,
+        end_marker,
+        "Общая предначинательная молитва",
+    )
+
+
 def _paragraph(rows, number):
     try:
         return rows[number - 1]["raw_content"]
@@ -224,7 +263,7 @@ def _strip_morning_instruction(raw, paragraph_number):
     return raw
 
 
-def build_morning_raw_map(rows):
+def build_morning_raw_map(rows, common_preinitial):
     if len(rows) != RULE_SPECS["morning"]["expected_paragraphs"]:
         raise CommandError(
             "Утренние молитвы: структура Book.html изменилась. "
@@ -236,7 +275,6 @@ def build_morning_raw_map(rows):
     direct = {
         2: 2,
         4: 3,
-        5: 4,
         6: 5,
         7: 6,
         8: 7,
@@ -264,8 +302,6 @@ def build_morning_raw_map(rows):
         33: 32,
         34: 33,
         35: 34,
-        36: 35,
-        37: 36,
         45: 38,
     }
 
@@ -274,6 +310,10 @@ def build_morning_raw_map(rows):
             _paragraph(rows, paragraph_number),
             paragraph_number,
         )
+
+    # Общий Text предначинательной молитвы берём из другой части того же
+    # Book.html, где редакция совпадает с принятой в нашей базе.
+    result[5] = common_preinitial
 
     # В нашей базе "Господи, помилуй. (Трижды). Слава, и ныне:"
     # является одним Text, а в Book.html славословие расписано полностью.
@@ -307,7 +347,7 @@ def build_morning_raw_map(rows):
     return result
 
 
-def build_evening_raw_map(rows):
+def build_evening_raw_map(rows, common_preinitial):
     if len(rows) != RULE_SPECS["evening"]["expected_paragraphs"]:
         raise CommandError(
             "Вечерние молитвы: структура Book.html изменилась. "
@@ -332,6 +372,11 @@ def build_evening_raw_map(rows):
     )
     for order, part in zip([1, 2, 3, 4, 8], parts):
         result[order] = part
+
+    # order=2 использует тот же Text, что и утреннее order=5.
+    # В самом вечернем разделе редакция иная, поэтому подставляем
+    # совпадающую редакцию из anchor=4.
+    result[2] = common_preinitial
 
     p2 = _paragraph(rows, 2)
     trinity_marker = "Прес™az трbце"
@@ -548,10 +593,11 @@ class Command(BaseCommand):
             )
 
         rows = parse_section_paragraphs(soup, spec["anchor"])
+        common_preinitial = find_common_preinitial_raw(soup)
         raw_map = (
-            build_morning_raw_map(rows)
+            build_morning_raw_map(rows, common_preinitial)
             if key == "morning"
-            else build_evening_raw_map(rows)
+            else build_evening_raw_map(rows, common_preinitial)
         )
 
         db_items = list(
@@ -632,7 +678,7 @@ class Command(BaseCommand):
             f'будет изменено: {len(changed)}.'
         )
         self.stdout.write(
-            "Не представлены в Book.html и будут сохранены как есть: "
+            "Не импортируются из этой редакции и будут сохранены как есть: "
             + (
                 ", ".join(map(str, plan["actual_unmapped"]))
                 if plan["actual_unmapped"]
