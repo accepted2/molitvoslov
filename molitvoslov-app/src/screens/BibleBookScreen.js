@@ -12,8 +12,10 @@ import {getReadingProgress} from '../services/readingProgress';
 import {getBibleArtwork} from '../data/bibleArtwork';
 import {homeArtwork} from '../data/homeArtwork';
 import {colors} from '../theme';
+import {useLanguage} from '../context/LanguageContext';
 
 export const BibleBookScreen = ({route, navigation}) => {
+  const {t} = useLanguage();
   const book = bibleContent.getBook(route.params?.bookId);
 
   const [bookProgress, setBookProgress] = useState(null);
@@ -49,7 +51,7 @@ export const BibleBookScreen = ({route, navigation}) => {
   if (!book) {
     return (
       <View style={styles.center}>
-        <Text style={styles.error}>Книга не найдена</Text>
+        <Text style={styles.error}>{t('bible.bookNotFound')}</Text>
       </View>
     );
   }
@@ -149,7 +151,7 @@ export const BibleBookScreen = ({route, navigation}) => {
                     <Text
                       style={[styles.resumeLabel, artwork?.background && styles.resumeLabelArtwork]}
                     >
-                      Продолжить чтение
+                      {t('bible.continueReading')}
                     </Text>
 
                     <Text
@@ -158,9 +160,9 @@ export const BibleBookScreen = ({route, navigation}) => {
                         artwork?.background && styles.resumePositionArtwork,
                       ]}
                     >
-                      Глава {progressChapter}
+                      {t('bible.chapter', {number: progressChapter})}
                       {progressPage && progressPageCount
-                        ? ' · страница ' + progressPage + ' из ' + progressPageCount
+                        ? ' · ' + t('bible.pageOf', {page: progressPage, count: progressPageCount})
                         : ''}
                     </Text>
                   </View>
