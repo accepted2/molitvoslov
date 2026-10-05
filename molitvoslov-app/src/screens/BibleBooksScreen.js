@@ -7,13 +7,15 @@ import {StatusBar} from 'expo-status-bar';
 import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
-import {BIBLE_SECTION_TITLES, bibleContent} from '../services/bibleContent';
+import {bibleContent} from '../services/bibleContent';
 import {getReadingProgress} from '../services/readingProgress';
 import {colors} from '../theme';
+import {useLanguage} from '../context/LanguageContext';
 
 const NEW_SECTION_ORDER = ['gospels', 'acts', 'epistles', 'revelation'];
 
 export const BibleBooksScreen = ({route, navigation}) => {
+  const {t} = useLanguage();
   const testament = route.params?.testament === 'new' ? 'new' : 'old';
 
   const [readingProgress, setReadingProgress] = useState([]);
@@ -40,11 +42,19 @@ export const BibleBooksScreen = ({route, navigation}) => {
   const books = useMemo(() => bibleContent.getBooks(testament), [testament]);
 
   const sections = useMemo(() => {
+    const sectionTitles = {
+      old: t('bible.sectionOld'),
+      gospels: t('bible.sectionGospels'),
+      acts: t('bible.sectionActs'),
+      epistles: t('bible.sectionEpistles'),
+      revelation: t('bible.sectionRevelation'),
+    };
+
     if (testament === 'old') {
       return [
         {
           key: 'old',
-          title: BIBLE_SECTION_TITLES.old,
+          title: sectionTitles.old,
           data: books,
         },
       ];
@@ -52,12 +62,12 @@ export const BibleBooksScreen = ({route, navigation}) => {
 
     return NEW_SECTION_ORDER.map((key) => ({
       key,
-      title: BIBLE_SECTION_TITLES[key],
+      title: sectionTitles[key],
       data: books.filter((book) => book.section === key),
     })).filter((section) => section.data.length);
-  }, [books, testament]);
+  }, [books, testament, t]);
 
-  const title = testament === 'new' ? 'Новый Завет' : 'Ветхий Завет';
+  const title = testament === 'new' ? t('bible.newTestament') : t('bible.oldTestament');
 
   return (
     <AppBackground imageOpacity={0.72}>
@@ -102,8 +112,8 @@ export const BibleBooksScreen = ({route, navigation}) => {
                 <Text style={styles.bookName}>{bibleContent.getDisplayName(item)}</Text>
 
                 <Text style={styles.chapterCount}>
-                  {item.chapters?.length || 0} глав
-                  {chapterNumber ? ' · остановились: глава ' + chapterNumber : ''}
+                  {t('bible.chapters', {count: item.chapters?.length || 0})}
+                  {chapterNumber ? ' · ' + t('bible.stoppedChapter', {chapter: chapterNumber}) : ''}
                 </Text>
               </View>
 

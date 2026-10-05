@@ -11,8 +11,10 @@ import {useReadingProgress} from '../hooks/useReadingProgress';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {bibleContent} from '../services/bibleContent';
 import {colors} from '../theme';
+import {useLanguage} from '../context/LanguageContext';
 
 export const BibleChapterScreen = ({route, navigation}) => {
+  const {t} = useLanguage();
   const {bookId, chapterNumber, focusTarget = null, resume = false} = route.params || {};
 
   const book = bibleContent.getBook(bookId);
@@ -186,7 +188,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
         savedItemsRef.current = savedItemsRef.current.filter((item) => item.id !== existing.id);
 
         return {
-          label: 'В избранное',
+          label: t('common.addToFavorites'),
           active: false,
         };
       }
@@ -206,9 +208,9 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
         anchor_id: chapterId,
 
-        source_title: 'Библия · ' + displayName,
+        source_title: t('bible.source', {book: displayName}),
 
-        item_title: displayName + ' · Глава ' + chapter.number,
+        item_title: t('bible.wholeChapterTitle', {book: displayName, chapter: chapter.number}),
 
         text,
 
@@ -236,18 +238,18 @@ export const BibleChapterScreen = ({route, navigation}) => {
       savedItemsRef.current = [saved, ...savedItemsRef.current];
 
       return {
-        label: 'В избранном',
+        label: t('common.inFavorites'),
         active: true,
         savedItemId: saved.id,
       };
     },
-    [book, chapters, displayName]
+    [book, chapters, displayName, t]
   );
 
   const documentData = useMemo(() => {
     if (!book) {
       return {
-        title: 'Библия',
+        title: t('bible.title'),
         description: '',
         progressAnchorType: 'bible_verse',
         savedItems: [],
@@ -297,14 +299,14 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
           chapterNumber: verseIndex === 0 ? Number(chapter.number) : null,
 
-          title: verseIndex === 0 ? 'Глава ' + chapter.number : '',
+          title: verseIndex === 0 ? t('bible.chapter', {number: chapter.number}) : '',
 
           action:
             verseIndex === 0
               ? {
                   key: 'bible-chapter:' + chapter.id,
 
-                  label: chapterSaved ? 'В избранном' : 'В избранное',
+                  label: chapterSaved ? t('common.inFavorites') : t('common.addToFavorites'),
 
                   active: !!chapterSaved,
 
@@ -342,7 +344,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
                   anchorId: verse.id,
 
-                  sourceTitle: 'Библия · ' + displayName,
+                  sourceTitle: t('bible.source', {book: displayName}),
 
                   itemTitle: displayName + ' ' + chapter.number + ':' + verse.number,
 
@@ -368,7 +370,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
         }));
       }),
     };
-  }, [book, chapters, savedItems, verseInfo.ids, displayName]);
+  }, [book, chapters, savedItems, verseInfo.ids, displayName, t]);
 
   const readerProgress = resume && !effectiveFocusTarget ? savedProgress : null;
 
@@ -427,7 +429,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
       ? {
           sourceType: 'bible',
           sourceId: Number(book.id),
-          sourceTitle: 'Библия · ' + displayName,
+          sourceTitle: t('bible.source', {book: displayName}),
           itemTitle:
             displayName + ' ' + bookmarkVerse.chapterNumber + ':' + bookmarkVerse.verseNumber,
           position: bookmarkPosition,
@@ -445,7 +447,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
   if (!book || !requestedChapter) {
     return (
       <View style={styles.center}>
-        <Text style={styles.error}>Книга не найдена</Text>
+        <Text style={styles.error}>{t('bible.bookNotFound')}</Text>
       </View>
     );
   }
@@ -479,10 +481,10 @@ export const BibleChapterScreen = ({route, navigation}) => {
         navigation={navigation}
         bookmark={bookmarkConfig}
         languageOptions={[
-          {key: 'russian', label: 'Рус.'},
-          {key: 'church', label: 'ЦС', disabled: true},
-          {key: 'both', label: 'ЦС + Рус.', disabled: true},
-          {key: 'traditional', label: 'ЦС традиц.', disabled: true},
+          {key: 'russian', label: t('readerModes.russian')},
+          {key: 'church', label: t('readerModes.church'), disabled: true},
+          {key: 'both', label: t('readerModes.both'), disabled: true},
+          {key: 'traditional', label: t('readerModes.traditional'), disabled: true},
         ]}
         activeLanguage="russian"
         canReturnToProgress={!!stablePosition}

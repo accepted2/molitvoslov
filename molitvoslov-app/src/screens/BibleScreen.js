@@ -8,8 +8,10 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {bibleContent} from '../services/bibleContent';
 import {colors, radius} from '../theme';
+import {useLanguage} from '../context/LanguageContext';
 
 export const BibleScreen = ({navigation}) => {
+  const {t} = useLanguage();
   const insets = useSafeAreaInsets();
 
   const headerHeight = insets.top + 56;
@@ -38,7 +40,7 @@ export const BibleScreen = ({navigation}) => {
         ]}
       >
         <Text style={styles.translation}>
-          {bibleContent.translation?.name || 'Синодальный перевод'}
+          {bibleContent.translation?.name || t('bible.synodalTranslation')}
         </Text>
 
         <Pressable
@@ -46,8 +48,8 @@ export const BibleScreen = ({navigation}) => {
           style={({pressed}) => [styles.card, pressed && styles.pressed]}
         >
           <View style={styles.cardText}>
-            <Text style={styles.cardTitle}>Ветхий Завет</Text>
-            <Text style={styles.cardSubtitle}>{oldBooks.length} книг и разделов</Text>
+            <Text style={styles.cardTitle}>{t('bible.oldTestament')}</Text>
+            <Text style={styles.cardSubtitle}>{t('bible.booksAndSections', {count: oldBooks.length})}</Text>
           </View>
           <Text style={styles.arrow}>›</Text>
         </Pressable>
@@ -57,18 +59,18 @@ export const BibleScreen = ({navigation}) => {
           style={({pressed}) => [styles.card, pressed && styles.pressed]}
         >
           <View style={styles.cardText}>
-            <Text style={styles.cardTitle}>Новый Завет</Text>
-            <Text style={styles.cardSubtitle}>{newBooks.length} книг</Text>
+            <Text style={styles.cardTitle}>{t('bible.newTestament')}</Text>
+            <Text style={styles.cardSubtitle}>{t('bible.books', {count: newBooks.length})}</Text>
           </View>
           <Text style={styles.arrow}>›</Text>
         </Pressable>
 
         {!oldBooks.length && !newBooks.length && (
-          <Text style={styles.empty}>Данные Библии ещё не экспортированы.</Text>
+          <Text style={styles.empty}>{t('bible.dataMissing')}</Text>
         )}
       </View>
 
-      <FixedSectionHeader title="Библия" navigation={navigation} topInset={insets.top} />
+      <FixedSectionHeader title={t('bible.title')} navigation={navigation} topInset={insets.top} />
 
       <BottomNav navigation={navigation} active={null} />
     </AppBackground>
