@@ -4,6 +4,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {saveReadingBookmark} from '../../services/readerBookmarks';
 import {colors, radius, spacing} from '../../theme';
+import {useLanguage} from '../../context/LanguageContext';
 
 export const ReaderBookmarkMenu = ({
   visible,
@@ -17,6 +18,7 @@ export const ReaderBookmarkMenu = ({
   onLanguageChange,
 }) => {
   const insets = useSafeAreaInsets();
+  const {t} = useLanguage();
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -37,10 +39,10 @@ export const ReaderBookmarkMenu = ({
 
       const result = await saveReadingBookmark(bookmark);
 
-      setMessage(result.created ? 'Закладка добавлена' : 'Такая закладка уже есть');
+      setMessage(result.created ? t('bookmarkMenu.added') : t('bookmarkMenu.exists'));
     } catch (error) {
       console.log('Ошибка добавления закладки:', error.message);
-      setMessage('Не удалось добавить закладку');
+      setMessage(t('bookmarkMenu.addFailed'));
     } finally {
       setSaving(false);
     }
@@ -71,11 +73,11 @@ export const ReaderBookmarkMenu = ({
         >
           <View style={styles.handle} />
 
-          <Text style={styles.title}>Место чтения</Text>
+          <Text style={styles.title}>{t('bookmarkMenu.title')}</Text>
 
           {!!languageOptions.length && (
             <View style={styles.languageSection}>
-              <Text style={styles.languageTitle}>Текст</Text>
+              <Text style={styles.languageTitle}>{t('bookmarkMenu.text')}</Text>
 
               <View style={styles.languageRow}>
                 {languageOptions.map((option) => {
@@ -123,11 +125,11 @@ export const ReaderBookmarkMenu = ({
             </View>
 
             <View style={styles.actionTextWrap}>
-              <Text style={styles.actionTitle}>Добавить закладку</Text>
+              <Text style={styles.actionTitle}>{t('bookmarkMenu.add')}</Text>
               <Text style={styles.actionSubtitle}>
                 {bookmark
-                  ? 'Сохранить это место независимо от прогресса чтения'
-                  : 'Позиция появится после начала чтения'}
+                  ? t('bookmarkMenu.savePlace')
+                  : t('bookmarkMenu.positionAfterStart')}
               </Text>
             </View>
           </Pressable>
@@ -142,9 +144,9 @@ export const ReaderBookmarkMenu = ({
               </View>
 
               <View style={styles.actionTextWrap}>
-                <Text style={styles.actionTitle}>Вернуться к месту чтения</Text>
+                <Text style={styles.actionTitle}>{t('bookmarkMenu.returnToPlace')}</Text>
                 <Text style={styles.actionSubtitle}>
-                  Перейти к последней устойчиво сохранённой позиции
+                  {t('bookmarkMenu.returnToPlaceHint')}
                 </Text>
               </View>
             </Pressable>
@@ -159,9 +161,9 @@ export const ReaderBookmarkMenu = ({
             </View>
 
             <View style={styles.actionTextWrap}>
-              <Text style={styles.actionTitle}>Открыть места</Text>
+              <Text style={styles.actionTitle}>{t('bookmarkMenu.openPlaces')}</Text>
               <Text style={styles.actionSubtitle}>
-                Перейти к постоянным закладкам в «Избранном»
+                {t('bookmarkMenu.openPlacesHint')}
               </Text>
             </View>
           </Pressable>
