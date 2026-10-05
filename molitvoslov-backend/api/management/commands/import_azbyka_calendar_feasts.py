@@ -15,6 +15,11 @@ from api.azbyka_calendar_feasts import (
     find_best_hymn_group,
     find_best_source,
 )
+from api.calendar_icon_storage import (
+    CalendarIconStorageError,
+    cloudinary_configured,
+    upload_azbyka_icon,
+)
 from api.calendar_models import CalendarDay, CalendarFeast
 from api.sqlite_backup import create_sqlite_backup
 
@@ -279,6 +284,7 @@ class Command(BaseCommand):
                         "hymn_group": hymn_group,
                         "hymn_match": hymn_match,
                         "desired": desired,
+                        "cloudinary_icon_url": None,
                     }
                 )
             except AzbykaFeastError as error:
@@ -311,6 +317,8 @@ class Command(BaseCommand):
                 found.append("кондак")
             if desired.get("life_content"):
                 found.append("житие")
+            if item["parsed"].icon_source_url:
+                found.append("икона")
 
             prefix = "MAIN" if index == 1 else "    "
             self.stdout.write(
@@ -321,6 +329,10 @@ class Command(BaseCommand):
                 "       Найдено: "
                 + (", ".join(found) if found else "только карточка")
             )
+            if item["parsed"].icon_source_url:
+                self.stdout.write(
+                    f"       Икона Azbyka: {item['parsed'].icon_source_url}"
+                )
 
             hymn_group = item["hymn_group"]
             hymn_match = item["hymn_match"]
@@ -361,6 +373,8 @@ class Command(BaseCommand):
         )
         self.stdout.write(f"SHA256: {digest}")
 
+        self._upload_prepared_icons(prepared)
+
         with transaction.atomic():
             new_feasts = []
 
@@ -380,6 +394,8 @@ class Command(BaseCommand):
                     "julian_day": day.julian_day,
                     **desired,
                 }
+                if item["cloudinary_icon_url"]:
+                    defaults["icon_url"] = item["cloudinary_icon_url"]
 
                 feast, _created = CalendarFeast.objects.update_or_create(
                     sync_uid=sync_uid,
@@ -407,6 +423,67 @@ class Command(BaseCommand):
         )
         self.stdout.write(
             f"Главная память: {prepared[0]['source'].title}"
+        )
+
+    def _upload_prepared_icons(self, prepared):
+        with_icons = [
+            item
+            for item in prepared
+            if item["parsed"].icon_source_url
+        ]
+
+        if not with_icons:
+            self.stdout.write(
+                self.style.WARNING(
+                    "Иконы: на страницах Azbyka не найдены."
+                )
+            )
+            return
+
+        if not cloudinary_configured():
+            self.stdout.write(
+                self.style.WARNING(
+                    "Иконы: CLOUDINARY_URL не задан. "
+                    "Тексты будут сохранены, но изображения в Cloudinary "
+                    "не загружаются."
+                )
+            )
+            return
+
+        uploaded = 0
+        failed = 0
+
+        self.stdout.write("")
+        self.stdout.write("Загрузка икон в Cloudinary:")
+
+        for item in with_icons:
+            source = item["source"]
+            source_icon_url = item["parsed"].icon_source_url
+
+            try:
+                cloudinary_url = upload_azbyka_icon(
+                    source_icon_url,
+                    source.url,
+                )
+            except CalendarIconStorageError as error:
+                failed += 1
+                self.stdout.write(
+                    self.style.WARNING(
+                        f"  WARN {source.title}: {error}"
+                    )
+                )
+                continue
+
+            item["cloudinary_icon_url"] = cloudinary_url
+            uploaded += 1
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"  OK {source.title}: {cloudinary_url}"
+                )
+            )
+
+        self.stdout.write(
+            f"Иконы Cloudinary: загружено {uploaded}, ошибок {failed}."
         )
 
     def _fill_existing_feasts(
