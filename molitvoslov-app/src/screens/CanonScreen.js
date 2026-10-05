@@ -19,6 +19,7 @@ import {StatusBar} from 'expo-status-bar';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {
   READER_LANGUAGE_MODES,
+  buildReaderLanguageOptions,
   getReaderModeForAppLanguage,
 } from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
@@ -310,6 +311,11 @@ export const CanonScreen = ({route, navigation}) => {
 
   const hasUkrainianTranslation = useMemo(
     () => displaySections.some((section) => !!section.text?.translation_uk?.trim()),
+    [displaySections]
+  );
+
+  const hasTraditionalTranslation = useMemo(
+    () => displaySections.some((section) => !!section.text?.traditional_content?.trim()),
     [displaySections]
   );
 
@@ -668,7 +674,13 @@ export const CanonScreen = ({route, navigation}) => {
         highlightContent: true,
       },
 
-      viewSwitcher: null,
+      viewSwitcher: {
+        activeKey: viewMode,
+        options: buildReaderLanguageOptions({
+          hasRussian: hasRussianTranslation,
+          hasTraditional: hasTraditionalTranslation,
+        }),
+      },
 
       progressAnchorType: 'canon_section',
 
@@ -686,6 +698,7 @@ export const CanonScreen = ({route, navigation}) => {
     viewMode,
     hasRussianTranslation,
     hasUkrainianTranslation,
+    hasTraditionalTranslation,
     language,
     t,
   ]);
@@ -764,6 +777,7 @@ export const CanonScreen = ({route, navigation}) => {
         topContentInset={headerHeight}
         onProgress={scheduleSave}
         onAction={handleAction}
+        onViewModeChange={setViewMode}
       />
 
       <ReaderBookmarkMenu
