@@ -41,7 +41,7 @@ class CategorySerializer(serializers.ModelSerializer):
             "id",
             "name",
             "name_uk",
-            "traditional_name",
+            # "traditional_name",
             "slug",
             "parent",
             "order",

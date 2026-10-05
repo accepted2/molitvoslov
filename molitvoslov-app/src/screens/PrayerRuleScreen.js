@@ -21,7 +21,7 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {
   READER_LANGUAGE_MODES,
   buildReaderLanguageOptions,
-  getReaderModeForAppLanguage,
+  // getReaderModeForAppLanguage,
 } from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
@@ -69,13 +69,13 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     [rule]
   );
 
-  const hasUkrainianTranslation = useMemo(
-    () =>
-      (rule?.items || []).some(
-        (item) => item.item_type === 'text' && !!item.text?.translation_uk?.trim()
-      ),
-    [rule]
-  );
+  // const hasUkrainianTranslation = useMemo(
+  //   () =>
+  //     (rule?.items || []).some(
+  //       (item) => item.item_type === 'text' && !!item.text?.translation_uk?.trim()
+  //     ),
+  //   [rule]
+  // );
 
   const hasTraditionalTranslation = useMemo(
     () =>
@@ -87,18 +87,18 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     [rule]
   );
 
-  useEffect(() => {
-    if (!rule) {
-      return;
-    }
-
-    setViewMode(
-      getReaderModeForAppLanguage(language, {
-        hasRussian: hasRussianTranslation,
-        hasUkrainian: hasUkrainianTranslation,
-      })
-    );
-  }, [language, rule, hasRussianTranslation, hasUkrainianTranslation]);
+  // useEffect(() => {
+  //   if (!rule) {
+  //     return;
+  //   }
+  //
+  //   setViewMode(
+  //     getReaderModeForAppLanguage(language, {
+  //       hasRussian: hasRussianTranslation,
+  //       hasUkrainian: hasUkrainianTranslation,
+  //     })
+  //   );
+  // }, [language, rule, hasRussianTranslation, hasUkrainianTranslation]);
 
   const loadRule = async () => {
     try {
@@ -161,7 +161,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     activeKey: viewMode,
     options: buildReaderLanguageOptions({
       hasRussian: hasRussianTranslation,
-      hasUkrainian: hasUkrainianTranslation,
+      // hasUkrainian: hasUkrainianTranslation,
       hasTraditional: hasTraditionalTranslation,
     }),
   };
