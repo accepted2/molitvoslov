@@ -83,6 +83,8 @@ const COPY = {
       prayersBefore: 'Молитвы перед чтением Псалтири',
       prayersAfter: 'Молитвы после чтения Псалтири',
       prayersAfterKathisma: 'Молитвы после кафизмы {number}',
+      gloryAfterPsalm: 'Слава после Псалма {number}',
+      kathismaNotFound: 'Кафизма не найдена',
     },
     reading: {
       continueAkathist: 'Продолжить акафист',
@@ -204,6 +206,8 @@ const COPY = {
       prayersBefore: 'Молитви перед читанням Псалтиря',
       prayersAfter: 'Молитви після читання Псалтиря',
       prayersAfterKathisma: 'Молитви після кафізми {number}',
+      gloryAfterPsalm: 'Слава після Псалма {number}',
+      kathismaNotFound: 'Кафізму не знайдено',
     },
     reading: {
       continueAkathist: 'Продовжити акафіст',
@@ -325,6 +329,8 @@ const COPY = {
       prayersBefore: 'Молитвы предъ чтеніемъ Псалтири',
       prayersAfter: 'Молитвы по чтеніи Псалтири',
       prayersAfterKathisma: 'Молитвы по каѳисмѣ {number}',
+      gloryAfterPsalm: 'Слава по Псалмѣ {number}',
+      kathismaNotFound: 'Каѳисма не найдена',
     },
     reading: {
       continueAkathist: 'Продолжити акаѳистъ',
