@@ -6,22 +6,16 @@ const LEGACY_CALENDAR_LANGUAGE_KEY = 'church_calendar_language';
 export const APP_LANGUAGES = {
   RU: 'ru',
   UK: 'uk',
-  CU: 'cu',
 };
 
 export const LANGUAGE_OPTIONS = [
   {value: APP_LANGUAGES.RU, label: 'РУ'},
   {value: APP_LANGUAGES.UK, label: 'УК'},
-  {value: APP_LANGUAGES.CU, label: 'ЦС'},
 ];
 
 export const normalizeAppLanguage = (language) => {
   if (language === APP_LANGUAGES.UK) {
     return APP_LANGUAGES.UK;
-  }
-
-  if (language === APP_LANGUAGES.CU) {
-    return APP_LANGUAGES.CU;
   }
 
   return APP_LANGUAGES.RU;
