@@ -12,7 +12,7 @@ import {
 } from '../services/localizedContent';
 
 export const TextsListScreen = ({route, navigation}) => {
-  const {language} = useLanguage();
+  const {language, t} = useLanguage();
   const {categorySlug, categoryName} = route.params;
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + 56;
@@ -45,7 +45,7 @@ export const TextsListScreen = ({route, navigation}) => {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#2c3e50" />
-        <Text style={{marginTop: 10}}>Загрузка...</Text>
+        <Text style={{marginTop: 10}}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -68,7 +68,7 @@ export const TextsListScreen = ({route, navigation}) => {
               <Text style={styles.title}>
                 {getLocalizedTextTitle(item.text, language) ||
                   getLocalizedTextDescription(item.text, language) ||
-                  'Молитва'}
+                  t('common.prayer')}
               </Text>
               <Text style={styles.preview}>
                 {getLocalizedTextContent(item.text, language).slice(0, 60)}...
@@ -80,7 +80,7 @@ export const TextsListScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
-        title={categoryName || 'Молитвы'}
+        title={categoryName || t('reading.prayers')}
         navigation={navigation}
         topInset={insets.top}
       />
