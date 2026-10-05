@@ -89,7 +89,7 @@ export default function PsalterScreen({navigation}) {
     } catch (err) {
       console.log('Ошибка загрузки Псалтири:', err);
 
-      setError('Не удалось загрузить Псалтирь');
+      setError(t('menu.psalterLoadError'));
     } finally {
       setLoading(false);
     }
@@ -324,7 +324,7 @@ export default function PsalterScreen({navigation}) {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={
-                    saved ? 'Убрать кафизму из избранного' : 'Добавить кафизму в избранное'
+                    saved ? t('common.removeFromFavorites') : t('common.addFavorite')
                   }
                   onPress={() => toggleKathismaSaved(item)}
                   style={({pressed}) => [styles.saveButton, pressed && styles.pressed]}
