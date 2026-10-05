@@ -64,10 +64,13 @@ class TextSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "title",
+            "title_uk",
             "description",
+            "description_uk",
             "content",
             "traditional_content",
             "translation",
+            "translation_uk",
             "categories",
             "description_position",
             "category_ids",
