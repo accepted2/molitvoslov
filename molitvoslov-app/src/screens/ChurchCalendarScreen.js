@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import {StatusBar} from 'expo-status-bar';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {requestWidgetUpdate} from 'react-native-android-widget';
 import NetInfo from '@react-native-community/netinfo';
 
 import {AppBackground} from '../components/layout/AppBackground';
@@ -28,19 +27,15 @@ import {
   resolveBibleReference,
   toCalendarDate,
 } from '../services/churchCalendar';
-import {
-  CALENDAR_MONTHS,
-  calendarText,
-  getCalendarLanguage,
-  setCalendarLanguage,
-} from '../services/calendarPreferences';
+import {CALENDAR_MONTHS, calendarText} from '../services/calendarPreferences';
+import {useLanguage} from '../context/LanguageContext';
+import {getCalendarDataLanguage} from '../services/languagePreferences';
 import {
   getBundledCalendarMonth,
   getOfflineCalendarDay,
   getOfflineCalendarMonth,
 } from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
-import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
 import {colors} from '../theme';
 
 const buildCells = (year, month) => {
@@ -342,6 +337,8 @@ const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout}) =>
 };
 
 export const ChurchCalendarScreen = ({route, navigation}) => {
+  const {language} = useLanguage();
+  const dataLanguage = getCalendarDataLanguage(language);
   const insets = useSafeAreaInsets();
   const {width} = useWindowDimensions();
   const scrollRef = useRef(null);
@@ -375,7 +372,6 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const [visibleYear, setVisibleYear] = useState(initial.getFullYear());
   const [visibleMonth, setVisibleMonth] = useState(initial.getMonth() + 1);
   const [selectedDate, setSelectedDate] = useState(toCalendarDate(initial));
-  const [language, setLanguageState] = useState('ru');
   const [monthData, setMonthData] = useState(null);
   const [dayData, setDayData] = useState(null);
   const [loadingMonth, setLoadingMonth] = useState(true);
@@ -403,7 +399,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
   const wide = width >= 760;
   const headerHeight = insets.top + 56;
-  const locale = CALENDAR_MONTHS[language];
+  const locale = CALENDAR_MONTHS[language === 'uk' ? 'uk' : 'ru'];
   const copy = calendarText(language);
   const gospelReadings = useMemo(() => getCalendarReadingItems(dayData, 'gospel'), [dayData]);
   const apostleReadings = useMemo(() => getCalendarReadingItems(dayData, 'apostle'), [dayData]);
@@ -442,12 +438,6 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   }, [dayData, headerHeight, readingLayoutVersion, route.params?.section]);
 
   useEffect(() => {
-    getCalendarLanguage()
-      .then((value) => setLanguageState(value))
-      .catch(() => setLanguageState('ru'));
-  }, []);
-
-  useEffect(() => {
     let previousOnline = null;
 
     const unsubscribe = NetInfo.addEventListener((state) => {
@@ -483,7 +473,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
     let active = true;
     let refreshTimer = null;
     const controller = new AbortController();
-    const bundled = getBundledCalendarMonth(visibleYear, visibleMonth, language);
+    const bundled = getBundledCalendarMonth(visibleYear, visibleMonth, dataLanguage);
     let hasOfflineData = Boolean(bundled);
 
     if (bundled) {
@@ -497,7 +487,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
     const refreshFromNetwork = async () => {
       try {
         const fresh = await getCalendarMonth(visibleYear, visibleMonth, {
-          language,
+          language: dataLanguage,
           force: true,
           skipOffline: true,
           signal: controller.signal,
@@ -522,7 +512,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
     const loadMonth = async () => {
       try {
-        const offline = await getOfflineCalendarMonth(visibleYear, visibleMonth, language);
+        const offline = await getOfflineCalendarMonth(visibleYear, visibleMonth, dataLanguage);
 
         if (!active) return;
 
@@ -558,7 +548,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
         clearTimeout(refreshTimer);
       }
     };
-  }, [language, refreshVersion, visibleMonth, visibleYear]);
+  }, [dataLanguage, refreshVersion, visibleMonth, visibleYear]);
 
   useEffect(() => {
     let active = true;
@@ -569,7 +559,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
       let hasOfflineData = false;
 
       try {
-        const offline = await getOfflineCalendarDay(selectedDate, language);
+        const offline = await getOfflineCalendarDay(selectedDate, dataLanguage);
 
         if (active && offline) {
           hasOfflineData = true;
@@ -579,7 +569,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
         }
 
         const fresh = await getCalendarDay(selectedDate, {
-          language,
+          language: dataLanguage,
           force: true,
           skipOffline: true,
           signal: controller.signal,
@@ -609,7 +599,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
       active = false;
       controller.abort();
     };
-  }, [language, refreshVersion, selectedDate]);
+  }, [dataLanguage, refreshVersion, selectedDate]);
 
   const daysMap = useMemo(
     () => new Map((monthData?.days || []).map((day) => [day.date_gregorian, day])),
@@ -623,32 +613,6 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const otherFeasts = (dayData?.all_feasts || []).filter(
     (feast) => Number(feast?.id) !== Number(mainFeast?.id)
   );
-
-  const changeLanguage = async (nextLanguage) => {
-    const next = await setCalendarLanguage(nextLanguage);
-    setLanguageState(next);
-
-    try {
-      const widgetDay = await getCalendarDay(new Date(), {
-        language: next,
-        force: true,
-      });
-
-      await requestWidgetUpdate({
-        widgetName: 'ChurchCalendar',
-        renderWidget: (widgetInfo) => (
-          <ChurchCalendarWidget
-            day={widgetDay}
-            language={next}
-            width={widgetInfo.width}
-            height={widgetInfo.height}
-          />
-        ),
-      });
-    } catch (err) {
-      console.log('Не удалось обновить виджет календаря:', err?.message || err);
-    }
-  };
 
   const moveMonth = (delta) => {
     const next = new Date(visibleYear, visibleMonth - 1 + delta, 1);
@@ -669,26 +633,6 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
     <View style={styles.calendarCard}>
       <View style={styles.languageRow}>
         <Text style={styles.calendarSectionTitle}>{copy.calendarTitle}</Text>
-
-        <View style={styles.languageSwitch}>
-          {['ru', 'uk'].map((item) => {
-            const active = language === item;
-
-            return (
-              <Pressable
-                key={item}
-                onPress={() => changeLanguage(item)}
-                style={[styles.languageButton, active && styles.languageButtonActive]}
-              >
-                <Text
-                  style={[styles.languageButtonText, active && styles.languageButtonTextActive]}
-                >
-                  {item === 'ru' ? 'РУ' : 'УК'}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
       </View>
 
       <View style={styles.calendarHeader}>

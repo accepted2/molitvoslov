@@ -1,32 +1,18 @@
-import * as SecureStore from 'expo-secure-store';
-
-const KEY = 'church_calendar_language';
+import {
+  APP_LANGUAGES,
+  getAppLanguage,
+  setAppLanguage,
+} from './languagePreferences';
 
 export const CALENDAR_LANGUAGES = {
-  RU: 'ru',
-  UK: 'uk',
+  RU: APP_LANGUAGES.RU,
+  UK: APP_LANGUAGES.UK,
+  CU: APP_LANGUAGES.CU,
 };
 
-export const getCalendarLanguage = async () => {
-  try {
-    const value = await SecureStore.getItemAsync(KEY);
-    return value === 'uk' ? 'uk' : 'ru';
-  } catch {
-    return 'ru';
-  }
-};
+export const getCalendarLanguage = getAppLanguage;
 
-export const setCalendarLanguage = async (language) => {
-  const value = language === 'uk' ? 'uk' : 'ru';
-
-  try {
-    await SecureStore.setItemAsync(KEY, value);
-  } catch (error) {
-    console.log('Не удалось сохранить язык календаря:', error?.message || error);
-  }
-
-  return value;
-};
+export const setCalendarLanguage = setAppLanguage;
 
 export const calendarText = (language) => {
   const uk = language === 'uk';
