@@ -22,6 +22,7 @@ import {
   getReaderModeForAppLanguage,
 } from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
+import {getLocalizedField} from '../services/localizedContent';
 
 const MODE_CHURCH = READER_LANGUAGE_MODES.CHURCH;
 const MODE_BOTH = READER_LANGUAGE_MODES.BOTH;
@@ -135,7 +136,7 @@ const getCanonInlineLabel = (section, text) => {
 };
 
 export const CanonScreen = ({route, navigation}) => {
-  const {language} = useLanguage();
+  const {language, t} = useLanguage();
   const {canonId, slug, title, focusTarget = null} = route.params;
 
   const insets = useSafeAreaInsets();
@@ -339,9 +340,9 @@ export const CanonScreen = ({route, navigation}) => {
 
       anchor_id: canon.id,
 
-      source_title: canon.title || title || 'Канон',
+      source_title: getLocalizedField(canon, 'title', language) || title || t('reading.canon'),
 
-      item_title: canon.title || title || 'Канон',
+      item_title: getLocalizedField(canon, 'title', language) || title || t('reading.canon'),
 
       text: '',
 
@@ -443,9 +444,12 @@ export const CanonScreen = ({route, navigation}) => {
 
         anchorId: section.id,
 
-        sourceTitle: canon.title || 'Канон',
+        sourceTitle: getLocalizedField(canon, 'title', language) || t('reading.canon'),
 
-        itemTitle: section.heading || SECTION_LABELS[section.section_type] || 'Раздел канона',
+        itemTitle:
+          getLocalizedField(section, 'heading', language) ||
+          SECTION_LABELS[section.section_type] ||
+          (language === 'uk' ? 'Розділ канону' : 'Раздел канона'),
 
         fullSaveType: section.section_type === 'prayer' ? 'prayer' : 'section',
 
@@ -458,7 +462,11 @@ export const CanonScreen = ({route, navigation}) => {
 
           section_type: section.display_section_type || section.section_type,
 
-          heading: section.display_heading || section.heading || '',
+          heading:
+            getLocalizedField(section, 'heading', language) ||
+            section.display_heading ||
+            section.heading ||
+            '',
 
           language,
         },
@@ -476,7 +484,11 @@ export const CanonScreen = ({route, navigation}) => {
 
       const effectiveSectionType = section.display_section_type || section.section_type;
 
-      const effectiveHeading = section.display_heading || section.heading || '';
+      const effectiveHeading =
+        getLocalizedField(section, 'heading', language) ||
+        section.display_heading ||
+        section.heading ||
+        '';
 
       const displaySection = {
         ...section,
@@ -579,7 +591,10 @@ export const CanonScreen = ({route, navigation}) => {
       let sectionTitle = '';
 
       if (odeNumber && odeNumber !== previousOde) {
-        sectionTitle = `Песнь ${odeNumber}`;
+        sectionTitle =
+          language === 'uk'
+            ? `Пісня ${odeNumber}`
+            : `Песнь ${odeNumber}`;
 
         previousOde = odeNumber;
       } else if (!odeNumber) {
@@ -615,9 +630,12 @@ export const CanonScreen = ({route, navigation}) => {
     );
 
     return {
-      title: canon.title || title || 'Канон',
+      title: getLocalizedField(canon, 'title', language) || title || t('reading.canon'),
 
-      description: canon.tone || '',
+      description:
+        getLocalizedField(canon, 'description', language) ||
+        canon.tone ||
+        '',
 
       action: {
         key: `canon:${canon.id}`,
@@ -649,6 +667,8 @@ export const CanonScreen = ({route, navigation}) => {
     viewMode,
     hasRussianTranslation,
     hasUkrainianTranslation,
+    language,
+    t,
   ]);
 
   const readerProgress = useMemo(() => {
@@ -678,11 +698,11 @@ export const CanonScreen = ({route, navigation}) => {
       ? {
           sourceType: 'canon',
           sourceId: Number(canon.id || canonId),
-          sourceTitle: canon.title || title || 'Канон',
+          sourceTitle: getLocalizedField(canon, 'title', language) || title || t('reading.canon'),
           itemTitle:
-            bookmarkSection.heading ||
+            getLocalizedField(bookmarkSection, 'heading', language) ||
             SECTION_LABELS[bookmarkSection.display_section_type || bookmarkSection.section_type] ||
-            'Место в каноне',
+            (language === 'uk' ? 'Місце в каноні' : 'Место в каноне'),
           position: bookmarkPosition,
           metadata: {
             slug: canon.slug || slug,
@@ -738,7 +758,7 @@ export const CanonScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
-        title={canon.title || title || 'Канон'}
+        title={getLocalizedField(canon, 'title', language) || title || t('reading.canon')}
         navigation={navigation}
         topInset={insets.top}
         showTitle={false}
