@@ -23,6 +23,7 @@ import {
   getReaderModeForAppLanguage,
 } from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
+import {getLocalizedField} from '../services/localizedContent';
 
 const MODE_CHURCH = READER_LANGUAGE_MODES.CHURCH;
 const MODE_BOTH = READER_LANGUAGE_MODES.BOTH;
@@ -30,7 +31,7 @@ const MODE_RUSSIAN = READER_LANGUAGE_MODES.RUSSIAN;
 const MODE_TRADITIONAL = READER_LANGUAGE_MODES.TRADITIONAL;
 
 export const PrayerRuleScreen = ({route, navigation}) => {
-  const {language} = useLanguage();
+  const {language, t} = useLanguage();
   const {slug, focusTarget = null} = route.params;
 
   const insets = useSafeAreaInsets();
@@ -172,7 +173,10 @@ export const PrayerRuleScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
-        title={rule.name || 'Молитвенное правило'}
+        title={
+          getLocalizedField(rule, 'name', language) ||
+          t('reading.prayerRule')
+        }
         navigation={navigation}
         topInset={insets.top}
         showTitle={false}
