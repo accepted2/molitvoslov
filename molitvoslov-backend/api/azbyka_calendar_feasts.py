@@ -452,6 +452,7 @@ def extract_day_saint_links(html):
 
     sources = []
     seen = set()
+    seen_items = set()
 
     # В календарном списке Azbyka бывают разные типы карточек:
     # /days/sv-*       — один святой
@@ -486,6 +487,20 @@ def extract_day_saint_links(html):
             continue
 
         item = anchor.find_parent("li")
+
+        # Один календарный пункт Azbyka может содержать несколько ссылок
+        # на персональные страницы святых. Например:
+        # "сщмчч. Андрея Быстрова и Павла Березина, пресвитеров,
+        # прмч. Виталия (Кокорева), монаха".
+        # Для календаря это ОДНА память, поэтому берём первый подходящий URL
+        # этого <li> как источник карточки и не создаём дубли по остальным
+        # ссылкам того же пункта.
+        if item is not None:
+            item_key = id(item)
+            if item_key in seen_items:
+                continue
+            seen_items.add(item_key)
+
         title = tag_text(item) if item is not None else tag_text(anchor)
         if not title:
             continue
