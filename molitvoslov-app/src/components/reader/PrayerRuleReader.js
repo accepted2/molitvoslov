@@ -1203,19 +1203,24 @@ const HTML_TEMPLATE = String.raw`
 
       const visibleFootnotes =
         footnotes.filter(
-          footnote =>
-            !(
+          footnote => {
+            const footnoteContent =
+              DATA.viewMode === 'ukrainian'
+                ? footnote?.content_uk || footnote?.content || ''
+                : footnote?.content || '';
+
+            return !(
               isMorningRule &&
               Number(
                 footnote?.number
               ) === 2 &&
               /при желании читается по окончании утренних молитв/i.test(
                 String(
-                  footnote?.content ||
-                  ''
+                  footnoteContent
                 )
               )
-            )
+            );
+          }
         );
 
       if (!visibleFootnotes.length) {
@@ -1237,7 +1242,11 @@ const HTML_TEMPLATE = String.raw`
               '[' +
               footnote.number +
               '] ' +
-              footnote.content
+              (
+                DATA.viewMode === 'ukrainian'
+                  ? footnote.content_uk || footnote.content || ''
+                  : footnote.content || ''
+              )
             )
           );
         }
@@ -2114,14 +2123,17 @@ const HTML_TEMPLATE = String.raw`
         );
       }
 
-      if (
-        DATA.rule.name
-      ) {
+      const ruleName =
+        DATA.viewMode === 'ukrainian'
+          ? DATA.rule.name_uk || DATA.rule.name || ''
+          : DATA.rule.name || '';
+
+      if (ruleName) {
         reader.appendChild(
           titleEl(
             'h1',
             'rule-title',
-            DATA.rule.name
+            ruleName
           )
         );
       }
@@ -2526,12 +2538,17 @@ const HTML_TEMPLATE = String.raw`
               );
             }
 
-            if (item.note) {
+            const localizedNote =
+              DATA.viewMode === 'ukrainian'
+                ? item.note_uk || item.note || ''
+                : item.note || '';
+
+            if (localizedNote) {
               wrapper.appendChild(
                 el(
                   'div',
                   'note',
-                  item.note
+                  localizedNote
                 )
               );
             }
@@ -2544,16 +2561,20 @@ const HTML_TEMPLATE = String.raw`
             item.item_type ===
             'instruction'
           ) {
+            const localizedContent =
+              DATA.viewMode === 'ukrainian'
+                ? item.content_uk || item.content || ''
+                : item.content || '';
+
             wrapper.appendChild(
               el(
                 'div',
                 isLiturgicalBlock(
-                  item.content
+                  localizedContent
                 )
                   ? 'instruction liturgical-block'
                   : 'instruction',
-                item.content ||
-                ''
+                localizedContent
               )
             );
 
@@ -2565,26 +2586,35 @@ const HTML_TEMPLATE = String.raw`
             item.item_type ===
             'section'
           ) {
-            if (item.title) {
+            const localizedTitle =
+              DATA.viewMode === 'ukrainian'
+                ? item.title_uk || item.title || ''
+                : item.title || '';
+            const localizedContent =
+              DATA.viewMode === 'ukrainian'
+                ? item.content_uk || item.content || ''
+                : item.content || '';
+
+            if (localizedTitle) {
               wrapper.appendChild(
                 el(
                   'h2',
                   'section-title',
-                  item.title
+                  localizedTitle
                 )
               );
             }
 
-            if (item.content) {
+            if (localizedContent) {
               wrapper.appendChild(
                 el(
                   'div',
                   isLiturgicalBlock(
-                    item.content
+                    localizedContent
                   )
                     ? 'section-content liturgical-block'
                     : 'section-content',
-                  item.content
+                  localizedContent
                 )
               );
             }
@@ -6286,9 +6316,19 @@ export default function PrayerRuleReader({
 
           anchor_id: itemId,
 
-          source_title: rule.name,
+          source_title:
+            viewMode === 'ukrainian'
+              ? rule.name_uk || rule.name || 'Молитвенное правило'
+              : rule.name || 'Молитвенное правило',
 
-          item_title: item.text.title || item.text.description || 'Молитва',
+          item_title:
+            viewMode === 'ukrainian'
+              ? item.text.title_uk ||
+                item.text.title ||
+                item.text.description_uk ||
+                item.text.description ||
+                'Молитва'
+              : item.text.title || item.text.description || 'Молитва',
 
           text: content,
 
@@ -6351,7 +6391,10 @@ export default function PrayerRuleReader({
         source_id: rule.id,
         anchor_type: 'prayer_rule_item',
         anchor_id: Number(message.anchorId),
-        source_title: rule.name,
+        source_title:
+          viewMode === 'ukrainian'
+            ? rule.name_uk || rule.name || 'Молитвенное правило'
+            : rule.name || 'Молитвенное правило',
         item_title: message.itemTitle || 'Молитва',
         text: message.text,
         start_offset: Number(message.start),
