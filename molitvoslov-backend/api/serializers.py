@@ -190,6 +190,7 @@ class PrayerRuleSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "name_uk",
+            "traditional_name",
             "slug",
             "description",
             "description_uk",

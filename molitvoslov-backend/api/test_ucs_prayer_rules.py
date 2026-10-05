@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 from django.test import SimpleTestCase
 
 from api.management.commands.import_ucs_prayer_rules import (
+    find_best_traditional_title,
     find_common_preinitial_raw,
     normalize_for_similarity,
     parse_section_paragraphs,
@@ -79,6 +80,52 @@ class UcsPrayerRuleParserTests(SimpleTestCase):
         self.assertNotIn("Слaва тебЁ", raw)
         self.assertIn("Ґми1нь.", raw)
 
+    def test_title_matching_uses_corresponding_source_content(self):
+        rows = [
+            {
+                "title": ucs_to_unicode("Мlтва с™0му д¦у:"),
+                "content": ucs_to_unicode("ЦRю2 нбcный, ўтёшителю, дш7е и4стины."),
+            },
+            {
+                "title": ucs_to_unicode("Мlтва G, ко прес™0му д¦у:"),
+                "content": ucs_to_unicode("ГDи, цRю2 нбcный, ўтёшителю, дш7е и4стины."),
+            },
+        ]
+
+        matched = find_best_traditional_title(
+            rows,
+            "Молитва Святому Духу",
+            ucs_to_unicode("ЦRю2 нбcный, ўтёшителю, дш7е и4стины."),
+        )
+
+        self.assertEqual(
+            normalize_for_similarity(matched),
+            normalize_for_similarity(ucs_to_unicode("Мlтва с™0му д¦у:")),
+        )
+
+    def test_title_matching_skips_unrelated_large_source_block(self):
+        rows = [
+            {
+                "title": "",
+                "content": ucs_to_unicode(
+                    "Во и4мz nц7A. ГDи ї}се хrтE. "
+                    "Слaва тебЁ. ЦRю2 нбcный, ўтёшителю."
+                ),
+            },
+            {
+                "title": ucs_to_unicode("Мlтва G, ко прес™0му д¦у:"),
+                "content": ucs_to_unicode("ГDи, цRю2 нбcный, ўтёшителю."),
+            },
+        ]
+
+        matched = find_best_traditional_title(
+            rows,
+            "Молитва Святому Духу",
+            ucs_to_unicode("ЦRю2 нбcный, ўтёшителю."),
+        )
+
+        self.assertEqual(matched, "")
+
     def test_similarity_normalizes_historic_letters_and_accents(self):
         modern = "Поми́луй нас."
         historic = "Поми́лꙋй насъ."
@@ -88,3 +135,20 @@ class UcsPrayerRuleParserTests(SimpleTestCase):
             normalize_for_similarity(historic),
         )
         self.assertGreater(similarity(modern, historic), 0.99)
+
+    def test_matches_traditional_prayer_title(self):
+        rows = [
+            {
+                "title": ucs_to_unicode(
+                    "Мlтва в7, с™aгw ґнті0ха, ко гDу нaшему ї}су хrтY:"
+                )
+            }
+        ]
+
+        matched = find_best_traditional_title(
+            rows,
+            "Молитва 2-я, святого Антиоха, ко Господу нашему Иисусу Христу",
+        )
+
+        self.assertTrue(matched)
+        self.assertIn("антиоха", normalize_for_similarity(matched))
