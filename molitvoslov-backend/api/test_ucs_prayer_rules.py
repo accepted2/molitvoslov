@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 from django.test import SimpleTestCase
 
 from api.management.commands.import_ucs_prayer_rules import (
+    find_common_preinitial_raw,
     normalize_for_similarity,
     parse_section_paragraphs,
     similarity,
@@ -59,6 +60,24 @@ class UcsPrayerRuleParserTests(SimpleTestCase):
         rows = parse_section_paragraphs(soup, "3")
 
         self.assertEqual(len(rows), 1)
+
+    def test_finds_common_preinitial_from_anchor_four(self):
+        soup = BeautifulSoup(
+            """
+            <h2><a name="4"></a>Три канона</h2>
+            <p>
+              Мlтвами с™hхъ nтє1цъ нaшихъ, гDи ї}се хrтE б9е нaшъ,
+              поми1луй нaсъ. Ґми1нь. Слaва тебЁ б9е нaшъ, слaва тебЁ.
+            </p>
+            """,
+            "html.parser",
+        )
+
+        raw = find_common_preinitial_raw(soup)
+
+        self.assertTrue(raw.startswith("Мlтвами с™hхъ nтє1цъ"))
+        self.assertNotIn("Слaва тебЁ", raw)
+        self.assertIn("Ґми1нь.", raw)
 
     def test_similarity_normalizes_historic_letters_and_accents(self):
         modern = "Поми́луй нас."
