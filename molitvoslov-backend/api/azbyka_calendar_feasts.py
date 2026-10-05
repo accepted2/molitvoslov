@@ -82,6 +82,7 @@ class DaySaintLink:
 class SaintContent:
     title: str
     url: str
+    icon_source_url: str = ""
     troparion_title: str = ""
     troparion_content: str = ""
     troparion_echo: int | None = None
@@ -302,6 +303,50 @@ def _next_text_block(heading):
     return ""
 
 
+def _extract_saint_icon_url_from_soup(soup):
+    # На страницах Azbyka галерея икон обычно стоит непосредственно перед H1.
+    # Берём только изображения из storage/images, чтобы не схватить логотипы,
+    # счётчики и прочую служебную графику страницы.
+    for tag in soup.find_all(["a", "img"]):
+        raw_values = []
+
+        if tag.name == "a":
+            raw_values.append(tag.get("href"))
+        else:
+            raw_values.extend(
+                [
+                    tag.get("src"),
+                    tag.get("data-src"),
+                    tag.get("data-lazy-src"),
+                ]
+            )
+
+        for raw_value in raw_values:
+            value = normalize_space(raw_value or "")
+            if not value:
+                continue
+
+            absolute = urljoin(AZBYKA_BASE_URL, value)
+            parsed = urlparse(absolute)
+            path = parsed.path.lower()
+
+            if "/storage/images/" not in path:
+                continue
+
+            if not re.search(r"\.(?:jpe?g|png|webp)$", path, re.IGNORECASE):
+                continue
+
+            return absolute
+
+    return ""
+
+
+def extract_saint_icon_url(html):
+    return _extract_saint_icon_url_from_soup(
+        BeautifulSoup(html, "lxml")
+    )
+
+
 def _collect_life(soup, saint_title):
     headings = list(soup.find_all(HEADING_RE))
 
@@ -517,6 +562,7 @@ def extract_saint_content(html, url=""):
         raise AzbykaFeastError(f"На странице святого нет H1: {url}")
 
     title = tag_text(h1)
+    icon_source_url = _extract_saint_icon_url_from_soup(soup)
 
     values = {
         "troparion_title": "",
@@ -558,6 +604,7 @@ def extract_saint_content(html, url=""):
     return SaintContent(
         title=title,
         url=url,
+        icon_source_url=icon_source_url,
         life_title=life_title,
         life_content=life_content,
         **values,
