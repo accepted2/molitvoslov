@@ -21,14 +21,11 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {
   READER_LANGUAGE_MODES,
   buildReaderLanguageOptions,
-  // getReaderModeForAppLanguage,
 } from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
 
 const MODE_CHURCH = READER_LANGUAGE_MODES.CHURCH;
-const MODE_BOTH = READER_LANGUAGE_MODES.BOTH;
-const MODE_RUSSIAN = READER_LANGUAGE_MODES.RUSSIAN;
 const MODE_TRADITIONAL = READER_LANGUAGE_MODES.TRADITIONAL;
 
 export const PrayerRuleScreen = ({route, navigation}) => {
@@ -69,14 +66,6 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     [rule]
   );
 
-  // const hasUkrainianTranslation = useMemo(
-  //   () =>
-  //     (rule?.items || []).some(
-  //       (item) => item.item_type === 'text' && !!item.text?.translation_uk?.trim()
-  //     ),
-  //   [rule]
-  // );
-
   const hasTraditionalTranslation = useMemo(
     () =>
       (rule?.items || []).some(
@@ -86,19 +75,6 @@ export const PrayerRuleScreen = ({route, navigation}) => {
       ),
     [rule]
   );
-
-  // useEffect(() => {
-  //   if (!rule) {
-  //     return;
-  //   }
-  //
-  //   setViewMode(
-  //     getReaderModeForAppLanguage(language, {
-  //       hasRussian: hasRussianTranslation,
-  //       hasUkrainian: hasUkrainianTranslation,
-  //     })
-  //   );
-  // }, [language, rule, hasRussianTranslation, hasUkrainianTranslation]);
 
   const loadRule = async () => {
     try {
@@ -161,7 +137,6 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     activeKey: viewMode,
     options: buildReaderLanguageOptions({
       hasRussian: hasRussianTranslation,
-      // hasUkrainian: hasUkrainianTranslation,
       hasTraditional: hasTraditionalTranslation,
     }),
   };
