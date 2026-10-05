@@ -1019,8 +1019,8 @@ export const MenuScreen = ({navigation}) => {
 
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Поиск"
-                  onPress={() => showPlaceholder('Поиск')}
+                  accessibilityLabel={t('menu.search')}
+                  onPress={() => showPlaceholder(t('menu.search'))}
                   style={({pressed}) => [styles.heroRoundAction, pressed && styles.pressed]}
                 >
                   <SearchGlyph />
@@ -1028,8 +1028,8 @@ export const MenuScreen = ({navigation}) => {
 
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Уведомления"
-                  onPress={() => showPlaceholder('Уведомления')}
+                  accessibilityLabel={t('menu.notifications')}
+                  onPress={() => showPlaceholder(t('menu.notifications'))}
                   style={({pressed}) => [styles.heroRoundAction, pressed && styles.pressed]}
                 >
                   <BellGlyph />
@@ -1106,7 +1106,7 @@ export const MenuScreen = ({navigation}) => {
                     {/*<View style={styles.widgetGlyph}>*/}
                     {/*  <View style={styles.widgetGlyphSpeaker} />*/}
                     {/*</View>*/}
-                    <Text style={styles.heroQuoteActionText}>На экран</Text>
+                    <Text style={styles.heroQuoteActionText}>{t('common.onScreen')}</Text>
                   </Pressable>
                 </View>
               </View>
@@ -1138,7 +1138,7 @@ export const MenuScreen = ({navigation}) => {
                       </View>
 
                       <Text style={styles.calendarOpenHint}>
-                        {calendarLanguage === 'uk' ? 'Відкрити календар' : 'Открыть календарь'}
+                        {t('calendar.open')}
                       </Text>
                     </View>
                   </Pressable>
@@ -1175,7 +1175,7 @@ export const MenuScreen = ({navigation}) => {
 
                       <View style={styles.calendarFeastTextWrap}>
                         <Text style={styles.calendarFeastLabel}>
-                          {calendarLanguage === 'uk' ? 'ПАМ’ЯТЬ ДНЯ' : 'ПАМЯТЬ ДНЯ'}
+                          {t('calendar.memory')}
                         </Text>
 
                         <Text style={styles.calendarFeastTitle} numberOfLines={6}>
@@ -1194,7 +1194,7 @@ export const MenuScreen = ({navigation}) => {
                         style={({pressed}) => [styles.calendarQuickItem, pressed && styles.pressed]}
                       >
                         <Text style={styles.calendarQuickLabel}>
-                          {calendarLanguage === 'uk' ? 'ПІСТ' : 'ПОСТ'}
+                          {t('calendar.fast')}
                         </Text>
 
                         <Text style={styles.calendarQuickText} numberOfLines={2}>
@@ -1212,7 +1212,7 @@ export const MenuScreen = ({navigation}) => {
                         ]}
                       >
                         <Text style={styles.calendarQuickLabel}>
-                          {calendarLanguage === 'uk' ? 'ЄВАНГЕЛІЄ' : 'ЕВАНГЕЛИЕ'}
+                          {t('calendar.gospel')}
                         </Text>
 
                         <Text
@@ -1235,7 +1235,7 @@ export const MenuScreen = ({navigation}) => {
                           pressed && styles.pressed,
                         ]}
                       >
-                        <Text style={styles.calendarQuickLabel}>АПОСТОЛ</Text>
+                        <Text style={styles.calendarQuickLabel}>{t('calendar.apostle')}</Text>
 
                         <Text
                           style={[
@@ -1354,7 +1354,7 @@ export const MenuScreen = ({navigation}) => {
                     style={({pressed}) => [styles.readingHeadingWrap, pressed && styles.pressed]}
                   >
                     <Text style={styles.readingBook}>▤</Text>
-                    <Text style={styles.readingSectionTitle}>Продолжить чтение</Text>
+                    <Text style={styles.readingSectionTitle}>{t('menu.continueReading')}</Text>
                   </Pressable>
 
                   {!!activeReadings.length && (
@@ -1363,7 +1363,7 @@ export const MenuScreen = ({navigation}) => {
                       onPress={() => navigation.navigate('ContinueReading')}
                       style={({pressed}) => [styles.openReadings, pressed && styles.pressed]}
                     >
-                      <Text style={styles.openReadingsText}>Открыть</Text>
+                      <Text style={styles.openReadingsText}>{t('common.open')}</Text>
                       <Text style={styles.openReadingsArrow}>›</Text>
                     </Pressable>
                   )}
@@ -1428,27 +1428,24 @@ export const MenuScreen = ({navigation}) => {
                   </View>
                 ) : (
                   <View style={styles.emptyReading}>
-                    <Text style={styles.emptyReadingTitle}>Здесь появится последнее чтение</Text>
-                    <Text style={styles.emptyReadingText}>
-                      Откройте молитву, акафист, канон, Псалтирь или Библию — место сохранится
-                      автоматически.
-                    </Text>
+                    <Text style={styles.emptyReadingTitle}>{t('menu.lastReadingEmpty')}</Text>
+                    <Text style={styles.emptyReadingText}>{t('menu.lastReadingHint')}</Text>
                   </View>
                 )}
               </View>
 
               <View style={styles.libraryList}>
                 <DecorativeCard
-                  title="Утренние молитвы"
-                  subtitle="Начните день с Богом"
+                  title={t('menu.morningTitle')}
+                  subtitle={t('menu.morningSubtitle')}
                   symbol="☀"
                   iconSource={CATEGORY_ICONS.morning}
                   artwork={homeArtwork.morning}
                   onPress={() => navigation.navigate('PrayerRule', {slug: 'molitvy-utrennie'})}
                 />
                 <DecorativeCard
-                  title="Вечерние молитвы"
-                  subtitle="Завершите день в молитве"
+                  title={t('menu.eveningTitle')}
+                  subtitle={t('menu.eveningSubtitle')}
                   symbol="☾"
                   iconSource={CATEGORY_ICONS.evening}
                   artwork={homeArtwork.evening}
@@ -1457,48 +1454,48 @@ export const MenuScreen = ({navigation}) => {
                   }
                 />
                 <DecorativeCard
-                  title="Акафисты"
-                  subtitle="Молитвенные хвалебные песнопения"
+                  title={t('menu.akathistsTitle')}
+                  subtitle={t('menu.akathistsSubtitle')}
                   symbol="☦"
                   iconSource={CATEGORY_ICONS.akathists}
                   artwork={homeArtwork.akathists}
                   onPress={() => navigation.navigate('AkathistList')}
                 />
                 <DecorativeCard
-                  title="Каноны"
-                  subtitle="Покаянные и просительные каноны"
+                  title={t('menu.canonsTitle')}
+                  subtitle={t('menu.canonsSubtitle')}
                   symbol="▤"
                   iconSource={CATEGORY_ICONS.canons}
                   artwork={homeArtwork.canons}
                   onPress={() => navigation.navigate('CanonList')}
                 />
                 <DecorativeCard
-                  title="Ко Святому Причащению"
-                  subtitle="Подготовительные молитвы"
+                  title={t('menu.communionTitle')}
+                  subtitle={t('menu.communionSubtitle')}
                   symbol="♱"
                   iconSource={CATEGORY_ICONS.communion}
                   artwork={homeArtwork.communion}
                   onPress={() => navigation.navigate('CommunionPreparation')}
                 />
                 <DecorativeCard
-                  title="Псалтирь"
-                  subtitle="Книга молитвы и духовного утешения"
+                  title={t('menu.psalterTitle')}
+                  subtitle={t('menu.psalterSubtitle')}
                   symbol="¶"
                   iconSource={CATEGORY_ICONS.psalter}
                   artwork={homeArtwork.psalter}
                   onPress={() => navigation.navigate('Psalter')}
                 />
                 <DecorativeCard
-                  title="Разные молитвы"
-                  subtitle="Молитвы на разные случаи"
+                  title={t('menu.miscTitle')}
+                  subtitle={t('menu.miscSubtitle')}
                   symbol="✦"
                   iconSource={CATEGORY_ICONS.misc}
                   artwork={homeArtwork.communion}
                   onPress={() => navigation.navigate('MiscPrayers')}
                 />
                 <DecorativeCard
-                  title="Библия"
-                  subtitle="Ветхий и Новый Завет"
+                  title={t('menu.bibleTitle')}
+                  subtitle={t('menu.bibleSubtitle')}
                   iconSource={CATEGORY_ICONS.bible}
                   artwork={homeArtwork.hero_biblical}
                   onPress={() => navigation.navigate('Bible')}
@@ -1508,7 +1505,7 @@ export const MenuScreen = ({navigation}) => {
               {!!libraryCategories.length && (
                 <View style={styles.extraSection}>
                   <View style={styles.extraHeader}>
-                    <Text style={styles.extraTitle}>Другие разделы</Text>
+                    <Text style={styles.extraTitle}>{t('menu.otherSections')}</Text>
                     <Text style={styles.extraOrnament}>✦</Text>
                   </View>
 
@@ -1522,8 +1519,10 @@ export const MenuScreen = ({navigation}) => {
                         <Text style={styles.extraCardTitle}>{category.name}</Text>
                         <Text style={styles.extraCardSubtitle}>
                           {getSubcategories(category).length > 0
-                            ? `${getSubcategories(category).length} разделов`
-                            : 'Открыть'}
+                            ? t('menu.sectionsCount', {
+                                count: getSubcategories(category).length,
+                              })
+                            : t('common.open')}
                         </Text>
                       </View>
                       <Text style={styles.extraArrow}>›</Text>
