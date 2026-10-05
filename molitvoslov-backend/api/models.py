@@ -54,6 +54,11 @@ class Text(models.Model):
         blank=True,
         verbose_name="Заголовок — украинский",
     )
+    traditional_title = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Заголовок — церковнославянский традиционный",
+    )
 
     description = models.CharField(
         max_length=255,
@@ -185,6 +190,11 @@ class PrayerRule(models.Model):
         max_length=255,
         blank=True,
         verbose_name="Название — украинский",
+    )
+    traditional_name = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Название — церковнославянское традиционное",
     )
 
     slug = models.SlugField(unique=True, verbose_name="URL-идентификатор")
