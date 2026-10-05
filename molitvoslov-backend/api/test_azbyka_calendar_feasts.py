@@ -330,3 +330,106 @@ class AzbykaCalendarFeastsParserTests(SimpleTestCase):
 
         self.assertIsNone(result.source)
         self.assertIn("неоднознач", result.reason)
+
+    def test_marks_strong_commemoration_as_primary(self):
+        html = """
+        <html><body>
+          <ul>
+            <li>
+              <a href="/days/sv-evfrosinija-aleksandrijskaja">
+                Прп. Евфросинии Александрийской
+              </a>
+            </li>
+            <li>
+              <a href="/days/sv-sergij-radonezhskij">
+                <strong>
+                  Преставление прп. Сергия Радонежского
+                </strong>
+              </a>
+            </li>
+          </ul>
+          <h2>Чтения Священного Писания</h2>
+        </body></html>
+        """
+
+        sources = extract_day_saint_links(html)
+
+        self.assertEqual(len(sources), 2)
+        self.assertFalse(sources[0].is_primary)
+        self.assertTrue(sources[1].is_primary)
+
+    def test_life_starts_from_explicit_life_heading(self):
+        html = """
+        <html><body>
+          <h1>Священномученик Петр, митрополит Крутицкий</h1>
+          <h2>Дни памяти</h2>
+          <p>7 февраля - Собор новомучеников</p>
+          <p>11 октября - Собор святых</p>
+          <p>
+            Сщмч. Петр (Полянский; 1862–1937) –
+            митрополит Крутицкий. Краткая аннотация.
+          </p>
+
+          <h2>
+            Краткое житие священномученика Петра,
+            митрополита Крутицкого
+          </h2>
+          <p>
+            Священномученик Пётр, митрополит Крутицкий
+            родился в 1862 году.
+          </p>
+
+          <h2>Другой раздел</h2>
+          <p>Этот текст уже не относится к житию.</p>
+        </body></html>
+        """
+
+        content = extract_saint_content(html)
+
+        self.assertIn("Краткое житие", content.life_title)
+        self.assertIn("родился в 1862 году", content.life_content)
+
+        self.assertNotIn("7 февраля", content.life_content)
+        self.assertNotIn("11 октября", content.life_content)
+        self.assertNotIn("Краткая аннотация", content.life_content)
+        self.assertNotIn("Другой раздел", content.life_content)
+
+def test_life_uses_text_after_separator_when_no_life_heading(self):
+    html = """
+    <html><body>
+      <h1>Преподобный Сергий Радонежский, игумен</h1>
+
+      <h2>Дни памяти</h2>
+      <p>5 июня - Собор Ростово-Ярославских святых</p>
+      <p>5 сентября (переходящая) - Собор Московских святых</p>
+      <p>
+        Прп. Сергий (в миру Варфоломей) — великий русский святой.
+      </p>
+
+      <p>* * *</p>
+
+      <p>
+        В первой половине XIV века возникла знаменитая
+        Троице-Сергиева Лавра.
+      </p>
+      <p>Продолжение полного жития.</p>
+    </body></html>
+    """
+
+    parsed = extract_saint_content(html)
+
+    self.assertIn(
+        "В первой половине XIV века",
+        parsed.life_content,
+    )
+    self.assertIn(
+        "Продолжение полного жития",
+        parsed.life_content,
+    )
+
+    self.assertNotIn("5 июня", parsed.life_content)
+    self.assertNotIn("5 сентября", parsed.life_content)
+    self.assertNotIn(
+        "великий русский святой",
+        parsed.life_content,
+    )

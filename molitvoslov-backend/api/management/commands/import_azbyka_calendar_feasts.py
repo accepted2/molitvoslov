@@ -263,6 +263,7 @@ class Command(BaseCommand):
         source_cache = {}
         prepared = []
         errors = []
+        main_index = 0
 
         # Сначала полностью скачиваем и разбираем новый набор.
         # Если хоть одна персональная страница сломалась, существующие связи
@@ -289,6 +290,24 @@ class Command(BaseCommand):
                 )
             except AzbykaFeastError as error:
                 errors.append(f"{source.title}: {error}")
+
+
+        primary_indexes = [
+            index
+            for index, item in enumerate(prepared)
+            if item["source"].is_primary
+            ]
+
+        if primary_indexes:
+            main_index = primary_indexes[0]
+
+        if len(primary_indexes) > 1:
+            self.stdout.write(
+                self.style.WARNING(
+                    "WARN: Azbyka выделила несколько главных памятей; "
+                    "используем первую выделенную."
+                )
+            )
 
         self.stdout.write(
             f"Дата: {day.date_gregorian}. "
@@ -320,7 +339,7 @@ class Command(BaseCommand):
             if item["parsed"].icon_source_url:
                 found.append("икона")
 
-            prefix = "MAIN" if index == 1 else "    "
+            prefix = "MAIN" if index - 1 == main_index else "    "
             self.stdout.write(
                 f"  {prefix} {index:02d}. {source.title}"
             )
@@ -386,14 +405,41 @@ class Command(BaseCommand):
                     source.url,
                 )
 
+                parsed = item["parsed"]
+
+                # Обычно полное название берём с персональной страницы
+                # Azbyka (<h1>), а название из календарного списка остаётся
+                # коротким вариантом.
+                #
+                # Исключение: один пункт календаря содержит несколько
+                # персональных ссылок. В таком случае parsed относится только
+                # к первому святому, поэтому полное название оставляем общим.
+                full_title = (
+                    source.title
+                    if source.is_multi_link_group
+                    else (parsed.title or source.title)
+                )
+
+                existing = (
+                    CalendarFeast.objects
+                    .filter(sync_uid=sync_uid)
+                    .only("short_title")
+                    .first()
+                )
+
                 defaults = {
                     "source_id": None,
-                    "title": source.title,
-                    "short_title": source.title,
+                    "title": full_title,
                     "julian_month": day.julian_month,
                     "julian_day": day.julian_day,
                     **desired,
                 }
+
+                # short_title заполняем автоматически только при первом
+                # импорте. Если пользователь потом сократил его вручную
+                # в админке, повторный импорт эту редактуру не затрёт.
+                if existing is None or not existing.short_title:
+                    defaults["short_title"] = source.title
                 if item["cloudinary_icon_url"]:
                     defaults["icon_url"] = item["cloudinary_icon_url"]
 
@@ -407,7 +453,7 @@ class Command(BaseCommand):
             # Старые CalendarFeast намеренно НЕ удаляем: они могут быть
             # связаны с другими днями или понадобиться для отката.
             day.feasts.set(new_feasts)
-            day.main_feast = new_feasts[0]
+            day.main_feast = new_feasts[main_index]
             day.save(update_fields=["main_feast"])
 
         self.stdout.write("")
@@ -422,7 +468,7 @@ class Command(BaseCommand):
             "от этого дня они только отвязаны."
         )
         self.stdout.write(
-            f"Главная память: {prepared[0]['source'].title}"
+            f"Главная память: {prepared[main_index]['source'].title}"
         )
 
     def _upload_prepared_icons(self, prepared):
