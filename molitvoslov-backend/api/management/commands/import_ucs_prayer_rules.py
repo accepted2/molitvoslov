@@ -60,6 +60,7 @@ HISTORIC_CHAR_MAP = str.maketrans(
         "ѫ": "у",
         "ѯ": "кс",
         "ѱ": "пс",
+        "ъ": "",
     }
 )
 
