@@ -9,8 +9,10 @@ import {BottomNav} from '../components/navigation/BottomNav';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {createPrayerBook, getPrayerBooks, syncPrayerBooks} from '../services/prayerBooks';
 import {colors, radius, spacing} from '../theme';
+import {useLanguage} from '../context/LanguageContext';
 
 export const PrayerBooksScreen = ({navigation}) => {
+  const {t} = useLanguage();
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + 56;
   const [books, setBooks] = useState([]);
@@ -47,7 +49,7 @@ export const PrayerBooksScreen = ({navigation}) => {
       await load();
       navigation.navigate('PrayerBook', {bookSyncId: book.sync_id});
     } catch (error) {
-      Alert.alert('Не удалось создать молитвослов', error.message);
+      Alert.alert(t('prayerBooks.createError'), error.message);
     } finally {
       setBusy(false);
     }
@@ -69,10 +71,9 @@ export const PrayerBooksScreen = ({navigation}) => {
           ListHeaderComponent={
             <View>
               <View style={styles.intro}>
-                <Text style={styles.introTitle}>Личные молитвенные сборники</Text>
+                <Text style={styles.introTitle}>{t('prayerBooks.introTitle')}</Text>
                 <Text style={styles.introText}>
-                  Собирайте молитвы в свои правила: добавляйте полные тексты из избранного, находите
-                  молитвы в библиотеке, вставляйте свои тексты и фотографии.
+                  {t('prayerBooks.introText')}
                 </Text>
               </View>
 
@@ -81,18 +82,18 @@ export const PrayerBooksScreen = ({navigation}) => {
                 style={({pressed}) => [styles.createButton, pressed && styles.pressed]}
               >
                 <Text style={styles.createIcon}>＋</Text>
-                <Text style={styles.createButtonText}>Новый молитвослов</Text>
+                <Text style={styles.createButtonText}>{t('prayerBooks.newBook')}</Text>
               </Pressable>
 
-              {!!books.length && <Text style={styles.sectionLabel}>МОИ МОЛИТВОСЛОВЫ</Text>}
+              {!!books.length && <Text style={styles.sectionLabel}>{t('prayerBooks.myBooks')}</Text>}
             </View>
           }
           ListEmptyComponent={
             <View style={styles.emptyCard}>
               <Text style={styles.emptyMark}>✦</Text>
-              <Text style={styles.emptyTitle}>Пока нет своих сборников</Text>
+              <Text style={styles.emptyTitle}>{t('prayerBooks.emptyTitle')}</Text>
               <Text style={styles.emptyText}>
-                Создайте, например, «На утро», «Перед дорогой» или «Мой молитвослов».
+                {t('prayerBooks.emptyText')}
               </Text>
             </View>
           }
@@ -107,7 +108,7 @@ export const PrayerBooksScreen = ({navigation}) => {
               <View style={styles.cardText}>
                 <Text style={styles.title}>{item.title}</Text>
                 <Text style={styles.meta}>
-                  {item.items?.length || 0} молитв
+                  {t('prayerBooks.prayersCount', {count: item.items?.length || 0})}
                   {item.description ? ` · ${item.description}` : ''}
                 </Text>
               </View>
@@ -117,7 +118,7 @@ export const PrayerBooksScreen = ({navigation}) => {
         />
 
         <FixedSectionHeader
-          title="Мой молитвослов"
+          title={t('prayerBooks.title')}
           navigation={navigation}
           topInset={insets.top}
           showBack={false}
@@ -132,21 +133,21 @@ export const PrayerBooksScreen = ({navigation}) => {
         >
           <View style={styles.modalBackdrop}>
             <View style={styles.modalCard}>
-              <Text style={styles.modalTitle}>Новый молитвослов</Text>
+              <Text style={styles.modalTitle}>{t('prayerBooks.newBook')}</Text>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
-                placeholder="Например: Молитвы на каждый день"
+                placeholder={t('prayerBooks.createPlaceholder')}
                 placeholderTextColor="#A78970"
                 autoFocus
                 style={styles.input}
               />
               <View style={styles.modalActions}>
                 <Pressable onPress={() => setCreating(false)} style={styles.secondaryButton}>
-                  <Text style={styles.secondaryText}>Отмена</Text>
+                  <Text style={styles.secondaryText}>{t('prayerBooks.cancel')}</Text>
                 </Pressable>
                 <Pressable onPress={create} style={styles.primaryButton}>
-                  <Text style={styles.primaryText}>{busy ? 'Создание…' : 'Создать'}</Text>
+                  <Text style={styles.primaryText}>{busy ? t('prayerBooks.creating') : t('prayerBooks.create')}</Text>
                 </Pressable>
               </View>
             </View>
