@@ -22,21 +22,30 @@ AZBYKA_READING_NAMESPACE = uuid.UUID(
 )
 
 
+def reading_identity(reading):
+    return (
+        str(reading.kind or ""),
+        int(reading.order or 0),
+        str(reading.label or ""),
+        str(reading.title or ""),
+    )
+
+
 def deterministic_azbyka_reading_uid(target_date, reading):
     """
     Стабильный UUID одного чтения Azbyka.
 
-    Повторный импорт одного и того же дня с теми же данными должен создавать
-    тот же sync_uid, иначе Supabase видит ложное изменение после каждого
-    overwrite локальной SQLite.
+    Для совершенно нового чтения UUID зависит только от даты и содержимого.
+    Уже существующий UUID при повторном импорте сохраняется отдельно ниже.
     """
+    kind, order, label, title = reading_identity(reading)
     identity = "|".join(
         [
             target_date.isoformat(),
-            str(reading.kind or ""),
-            str(reading.order or 0),
-            str(reading.label or ""),
-            str(reading.title or ""),
+            kind,
+            str(order),
+            label,
+            title,
         ]
     )
     return uuid.uuid5(AZBYKA_READING_NAMESPACE, identity)
@@ -183,7 +192,13 @@ class Command(BaseCommand):
                     )
                     continue
 
-                existing_count = day.readings.count()
+                existing_readings = list(day.readings.all())
+                existing_count = len(existing_readings)
+                existing_sync_uids = {
+                    reading_identity(reading): reading.sync_uid
+                    for reading in existing_readings
+                    if reading.sync_uid
+                }
 
                 if existing_count and not overwrite:
                     skipped_existing += 1
@@ -230,9 +245,12 @@ class Command(BaseCommand):
                     CalendarReading.objects.bulk_create(
                         [
                             CalendarReading(
-                                sync_uid=deterministic_azbyka_reading_uid(
-                                    target_date,
-                                    reading,
+                                sync_uid=(
+                                    existing_sync_uids.get(reading_identity(reading))
+                                    or deterministic_azbyka_reading_uid(
+                                        target_date,
+                                        reading,
+                                    )
                                 ),
                                 day=day,
                                 kind=reading.kind,
