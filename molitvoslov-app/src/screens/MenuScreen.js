@@ -118,7 +118,7 @@ const createCalendarSnapshot = (
   selectedDate = visibleDate,
   language = 'ru'
 ) => {
-  const locale = CALENDAR_MONTHS[language === 'uk' ? 'uk' : 'ru'];
+  const locale = CALENDAR_MONTHS[language] || CALENDAR_MONTHS.ru;
   const year = visibleDate.getFullYear();
   const month = visibleDate.getMonth();
   const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
@@ -568,20 +568,10 @@ export const MenuScreen = ({navigation}) => {
       });
 
       if (!requested) {
-        Alert.alert(
-          calendarLanguage === 'uk' ? 'Додавання віджета' : 'Добавление виджета',
-          calendarLanguage === 'uk'
-            ? 'Затисніть вільне місце на головному екрані → «Віджети» → «Молитвослов» → «Церковний календар».'
-            : 'Зажмите свободное место на главном экране → «Виджеты» → «Молитвослов» → «Церковный календарь».'
-        );
+        Alert.alert(t('menu.addWidgetTitle'), t('menu.addCalendarWidget'));
       }
     } catch (error) {
-      Alert.alert(
-        calendarLanguage === 'uk' ? 'Не вдалося додати віджет' : 'Не удалось добавить виджет',
-        calendarLanguage === 'uk'
-          ? 'Спробуйте додати його через меню віджетів Android.'
-          : 'Попробуйте добавить его через меню виджетов Android.'
-      );
+      Alert.alert(t('menu.widgetErrorTitle'), t('menu.widgetError'));
     }
   };
 
@@ -1003,7 +993,7 @@ export const MenuScreen = ({navigation}) => {
                       <Pressable
                         key={item.value}
                         accessibilityRole="button"
-                        accessibilityLabel={`Язык: ${item.label}`}
+                        accessibilityLabel={`${t('common.language')}: ${item.label}`}
                         onPress={() => changeAppLanguage(item.value)}
                         style={[
                           styles.appLanguageButton,

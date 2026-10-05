@@ -84,7 +84,19 @@ const SoftChevron = ({expanded}) => (
   <Text style={[styles.readingArrow, expanded && styles.readingArrowExpanded]}>›</Text>
 );
 
-const displayTitle = (feast, copy) =>  feast?.title|| feast?.short_title || copy.saintMemory;
+const displayTitle = (feast, copy) => feast?.title || feast?.short_title || copy.saintMemory;
+
+const formatCalendarDateLabel = (value, locale) => {
+  if (!value) return '';
+
+  const date = new Date(`${value}T12:00:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return `${date.getDate()} ${locale.genitive[date.getMonth()]} ${date.getFullYear()}`;
+};
 
 const FeastImage = ({feast}) => {
   const [failed, setFailed] = useState(false);
@@ -271,7 +283,7 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
                   <View key={`${verse.chapterNumber}-${verse.verseNumber}-${index}`}>
                     {showChapter && (
                       <Text style={styles.readingChapter}>
-                        {language === 'uk' ? 'Глава' : 'Глава'} {verse.chapterNumber}
+                        {copy.chapter} {verse.chapterNumber}
                       </Text>
                     )}
 
@@ -321,13 +333,9 @@ const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout}) =>
           style={({pressed}) => [styles.readingMore, pressed && styles.pressed]}
         >
           <Text style={styles.readingMoreText}>
-            {showAll
-              ? language === 'uk'
-                ? 'Згорнути додаткові читання'
-                : 'Скрыть дополнительные чтения'
-              : language === 'uk'
-                ? `Ще читань: ${hiddenCount}`
-                : `Ещё чтений: ${hiddenCount}`}
+{showAll
+              ? copy.hideExtraReadings
+              : copy.moreReadings.replace('{count}', String(hiddenCount))}
           </Text>
           <SoftChevron expanded={showAll} />
         </Pressable>
@@ -399,7 +407,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
   const wide = width >= 760;
   const headerHeight = insets.top + 56;
-  const locale = CALENDAR_MONTHS[language === 'uk' ? 'uk' : 'ru'];
+  const locale = CALENDAR_MONTHS[language] || CALENDAR_MONTHS.ru;
   const copy = calendarText(language);
   const gospelReadings = useMemo(() => getCalendarReadingItems(dayData, 'gospel'), [dayData]);
   const apostleReadings = useMemo(() => getCalendarReadingItems(dayData, 'apostle'), [dayData]);
@@ -502,7 +510,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
           return;
         }
 
-        setError(err?.message || 'Не удалось загрузить календарь');
+        setError(err?.message || copy.loadCalendarError);
       } finally {
         if (active) {
           setLoadingMonth(false);
@@ -585,7 +593,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
         }
 
         setDayData(null);
-        setError(err?.message || 'Не удалось загрузить день');
+        setError(err?.message || copy.loadDayError);
       } finally {
         if (active) {
           setLoadingDay(false);
@@ -730,15 +738,12 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
     >
       {loadingDay ? (
         <View style={styles.dayLoading}>
-          <PrayerBeadsLoader text={language === 'uk' ? 'Завантаження дня...' : 'Загрузка дня...'} />
+          <PrayerBeadsLoader text={copy.loadingDay} />
         </View>
       ) : dayData ? (
         <>
           <Text style={styles.dayDate}>
-            {new Date(dayData.date_gregorian + 'T12:00:00').toLocaleDateString(
-              language === 'uk' ? 'uk-UA' : 'ru-RU',
-              {day: 'numeric', month: 'long', year: 'numeric'}
-            )}
+            {formatCalendarDateLabel(dayData.date_gregorian, locale)}
           </Text>
 
           <View style={styles.feastHero}>
@@ -748,7 +753,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
             <View style={styles.feastHeroText}>
               <Text style={styles.feastMemory}>
-                {language === 'uk' ? 'ПАМ’ЯТЬ СВЯТОГО / СВЯТО' : 'ПАМЯТЬ СВЯТОГО / ПРАЗДНИК'}
+                {copy.feastMemory}
               </Text>
               <Text style={styles.feastTitle}>{displayTitle(mainFeast, copy)}</Text>
 
@@ -773,7 +778,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
               title={copy.troparion}
               subtitle={
                 mainFeast.troparion_echo
-                  ? `Глас ${mainFeast.troparion_echo}`
+                  ? `${copy.voice} ${mainFeast.troparion_echo}`
                   : mainFeast.troparion_title
               }
               text={mainFeast.troparion_content}
@@ -785,7 +790,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
               title={copy.kontakion}
               subtitle={
                 mainFeast.kontakion_echo
-                  ? `Глас ${mainFeast.kontakion_echo}`
+                  ? `${copy.voice} ${mainFeast.kontakion_echo}`
                   : mainFeast.kontakion_title
               }
               text={mainFeast.kontakion_content}
@@ -910,30 +915,6 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
     fontSize: 14,
     fontWeight: '700',
-  },
-  languageSwitch: {
-    flexDirection: 'row',
-    padding: 2,
-    borderRadius: 10,
-    backgroundColor: '#E7D2B0',
-  },
-  languageButton: {
-    minWidth: 30,
-    height: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-  },
-  languageButtonActive: {
-    backgroundColor: '#8E5D32',
-  },
-  languageButtonText: {
-    color: '#7A5B43',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  languageButtonTextActive: {
-    color: '#FFF4DE',
   },
   calendarHeader: {
     flexDirection: 'row',

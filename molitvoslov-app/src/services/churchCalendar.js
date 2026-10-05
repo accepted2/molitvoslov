@@ -469,7 +469,15 @@ export const formatFast = (day, language = 'ru') => {
   }
 
   if (day.fast_type_code === 'no-fast') {
-    return language === 'uk' ? 'Посту немає' : 'Поста нет';
+    if (language === 'uk') {
+      return 'Посту немає';
+    }
+
+    if (language === 'cu') {
+      return 'Поста нѣтъ';
+    }
+
+    return 'Поста нет';
   }
 
   if (day.fast_name && day.fast_type_title) {
