@@ -40,6 +40,7 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "name_uk",
             "slug",
             "parent",
             "order",
@@ -105,6 +106,7 @@ class PrayerRuleFootnoteSerializer(serializers.ModelSerializer):
             "id",
             "number",
             "content",
+            "content_uk",
         ]
 
 
@@ -138,8 +140,11 @@ class PrayerRuleItemSerializer(serializers.ModelSerializer):
             "text",
             "text_id",
             "title",
+            "title_uk",
             "content",
+            "content_uk",
             "note",
+            "note_uk",
             "footnotes",
             "order",
         ]
@@ -182,8 +187,10 @@ class PrayerRuleSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "name_uk",
             "slug",
             "description",
+            "description_uk",
             "is_visible",
             "items",
             "footnotes",
@@ -202,6 +209,7 @@ class PsalmVerseSerializer(serializers.ModelSerializer):
             "church_slavonic",
             "church_slavonic_traditional",
             "russian",
+            "ukrainian",
         ]
 
 
@@ -216,7 +224,9 @@ class PsalmSerializer(serializers.ModelSerializer):
             "title_church_slavonic",
             "title_church_slavonic_traditional",
             "title_russian",
+            "title_uk",
             "description",
+            "description_uk",
             "verses",
         ]
 
@@ -249,8 +259,10 @@ class KathismaSerializer(serializers.ModelSerializer):
             "psalter",
             "number",
             "title",
+            "title_uk",
             "prayers_after",
             "prayers_after_russian",
+            "prayers_after_uk",
             "prayers_after_traditional",
             "psalms",
             "glories",
@@ -267,6 +279,7 @@ class KathismaSummarySerializer(serializers.ModelSerializer):
             "id",
             "number",
             "title",
+            "title_uk",
             "first_psalm",
             "last_psalm",
         ]
@@ -296,13 +309,17 @@ class PsalterSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "name_uk",
             "slug",
             "description",
+            "description_uk",
             "prayers_before",
             "prayers_before_russian",
+            "prayers_before_uk",
             "prayers_before_traditional",
             "prayers_after",
             "prayers_after_russian",
+            "prayers_after_uk",
             "prayers_after_traditional",
             "is_visible",
             "kathismas",
@@ -334,6 +351,7 @@ class AkathistSectionSerializer(serializers.ModelSerializer):
             "text",
             "text_id",
             "note",
+            "note_uk",
             "order",
         ]
 
@@ -345,8 +363,10 @@ class AkathistSummarySerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "title",
+            "title_uk",
             "slug",
             "description",
+            "description_uk",
             "is_visible",
         ]
 
@@ -372,8 +392,10 @@ class AkathistSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "title",
+            "title_uk",
             "slug",
             "description",
+            "description_uk",
             "is_visible",
             "troparion",
             "kontakion_before",
@@ -423,6 +445,7 @@ class CanonSectionSerializer(serializers.ModelSerializer):
             "variant",
             "ode_number",
             "heading",
+            "heading_uk",
             "text",
             "order",
         ]
@@ -435,8 +458,10 @@ class CanonSummarySerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "title",
+            "title_uk",
             "slug",
             "description",
+            "description_uk",
             "tone",
             "is_visible",
         ]
@@ -454,8 +479,10 @@ class CanonSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "title",
+            "title_uk",
             "slug",
             "description",
+            "description_uk",
             "tone",
             "is_visible",
             "sections",
@@ -542,8 +569,11 @@ class DailyQuoteSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "text",
+            "text_uk",
             "source",
+            "source_uk",
             "reference",
+            "reference_uk",
             "quote_date",
         ]
 

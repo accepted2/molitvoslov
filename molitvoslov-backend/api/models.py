@@ -9,6 +9,11 @@ import uuid
 
 class Category(models.Model):
     name = models.CharField(max_length=100, verbose_name="Название")
+    name_uk = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Название — украинский",
+    )
     slug = models.SlugField(unique=True, verbose_name="URL-идентификатор")
     parent = models.ForeignKey(
         "self",
@@ -176,10 +181,16 @@ class CategoryText(models.Model):
 
 class PrayerRule(models.Model):
     name = models.CharField(max_length=255, verbose_name="Название")
+    name_uk = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Название — украинский",
+    )
 
     slug = models.SlugField(unique=True, verbose_name="URL-идентификатор")
 
     description = models.TextField(blank=True, verbose_name="Описание")
+    description_uk = models.TextField(blank=True, verbose_name="Описание — украинский")
 
     is_visible = models.BooleanField(default=True, verbose_name="Отображать")
 
@@ -228,18 +239,25 @@ class PrayerRuleItem(models.Model):
 
     # В основном нужен для section.
     title = models.CharField(max_length=255, blank=True, verbose_name="Заголовок")
+    title_uk = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Заголовок — украинский",
+    )
 
     # Используется для instruction.
     #
     # Например:
     # "От Пасхи до Вознесения вместо этой молитвы..."
     content = models.TextField(blank=True, verbose_name="Содержимое")
+    content_uk = models.TextField(blank=True, verbose_name="Содержимое — украинский")
 
     # Примечание именно к этому месту правила.
     #
     # Например:
     # "(Читается трижды...)"
     note = models.TextField(blank=True, verbose_name="Примечание")
+    note_uk = models.TextField(blank=True, verbose_name="Примечание — украинский")
 
     order = models.PositiveIntegerField(default=0, verbose_name="Порядок")
 
@@ -292,6 +310,7 @@ class PrayerRuleFootnote(models.Model):
     number = models.PositiveIntegerField(verbose_name="Номер")
 
     content = models.TextField(verbose_name="Текст сноски")
+    content_uk = models.TextField(blank=True, verbose_name="Текст сноски — украинский")
 
     def __str__(self):
         return f"[{self.number}] {self.content[:60]}"
@@ -319,6 +338,11 @@ class Akathist(models.Model):
         max_length=255,
         verbose_name="Название",
     )
+    title_uk = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Название — украинский",
+    )
     slug = models.SlugField(
         unique=True,
         max_length=200,
@@ -327,6 +351,10 @@ class Akathist(models.Model):
     description = models.TextField(
         blank=True,
         verbose_name="Описание",
+    )
+    description_uk = models.TextField(
+        blank=True,
+        verbose_name="Описание — украинский",
     )
     is_visible = models.BooleanField(
         default=True,
@@ -411,6 +439,7 @@ class AkathistSection(models.Model):
     )
 
     note = models.TextField(blank=True, verbose_name="Примечание")
+    note_uk = models.TextField(blank=True, verbose_name="Примечание — украинский")
 
     order = models.PositiveIntegerField(default=0, verbose_name="Порядок")
 
@@ -447,6 +476,11 @@ class Canon(models.Model):
         max_length=255,
         verbose_name="Название",
     )
+    title_uk = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Название — украинский",
+    )
 
     slug = models.SlugField(
         unique=True,
@@ -456,6 +490,10 @@ class Canon(models.Model):
     description = models.TextField(
         blank=True,
         verbose_name="Описание",
+    )
+    description_uk = models.TextField(
+        blank=True,
+        verbose_name="Описание — украинский",
     )
 
     tone = models.CharField(
@@ -572,6 +610,11 @@ class CanonSection(models.Model):
         blank=True,
         verbose_name="Заголовок / метка",
     )
+    heading_uk = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Заголовок / метка — украинский",
+    )
 
     text = models.ForeignKey(
         Text,
@@ -618,14 +661,23 @@ class CanonSection(models.Model):
 
 class Psalter(models.Model):
     name = models.CharField(max_length=255, verbose_name="Название")
+    name_uk = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Название — украинский",
+    )
     slug = models.SlugField(unique=True, verbose_name="Url-индетификатор")
 
     description = models.TextField(blank=True, verbose_name="Описание")
+    description_uk = models.TextField(blank=True, verbose_name="Описание — украинский")
     is_visible = models.BooleanField(default=True, verbose_name="Отображать")
 
     prayers_before = models.TextField(blank=True, verbose_name="Молитвы перед чтением Псалтири")
     prayers_before_russian = models.TextField(
         blank=True, verbose_name="Молитвы перед чтением Псалтири — русский"
+    )
+    prayers_before_uk = models.TextField(
+        blank=True, verbose_name="Молитвы перед чтением Псалтири — украинский"
     )
     prayers_before_traditional = models.TextField(
         blank=True,
@@ -634,6 +686,9 @@ class Psalter(models.Model):
     prayers_after = models.TextField(blank=True, verbose_name="Молитвы после чтения Псалтири")
     prayers_after_russian = models.TextField(
         blank=True, verbose_name="Молитвы после чтения Псалтири — русский"
+    )
+    prayers_after_uk = models.TextField(
+        blank=True, verbose_name="Молитвы после чтения Псалтири — украинский"
     )
     prayers_after_traditional = models.TextField(
         blank=True,
@@ -654,10 +709,19 @@ class Kathisma(models.Model):
     )
     number = models.PositiveIntegerField(verbose_name="Номер кафизмы")
     title = models.CharField(max_length=255, blank=True, verbose_name="Название")
+    title_uk = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Название — украинский",
+    )
     prayers_after = models.TextField(blank=True, verbose_name="Молитвы после кафизмы")
     prayers_after_russian = models.TextField(
         blank=True,
         verbose_name="Молитвы после кафизмы — русский",
+    )
+    prayers_after_uk = models.TextField(
+        blank=True,
+        verbose_name="Молитвы после кафизмы — украинский",
     )
     prayers_after_traditional = models.TextField(
         blank=True,
@@ -695,7 +759,14 @@ class Psalm(models.Model):
     title_russian = models.CharField(
         max_length=500, blank=True, verbose_name="Заголовок на русском"
     )
+    title_uk = models.CharField(
+        max_length=500, blank=True, verbose_name="Заголовок на украинском"
+    )
     description = models.TextField(blank=True, verbose_name="Краткое описание псалма")
+    description_uk = models.TextField(
+        blank=True,
+        verbose_name="Краткое описание псалма — украинский",
+    )
 
     def __str__(self):
         return f"Псалом {self.number}"
@@ -717,6 +788,7 @@ class PsalmVerse(models.Model):
         verbose_name="Церковнославянский текст — традиционное написание",
     )
     russian = models.TextField(blank=True, verbose_name="Русский текст")
+    ukrainian = models.TextField(blank=True, verbose_name="Украинский текст")
 
     def __str__(self):
         return f"Псалом {self.psalm.number}, стих {self.number}"
@@ -844,17 +916,31 @@ class DailyQuote(models.Model):
     text = models.TextField(
         verbose_name="Текст цитаты",
     )
+    text_uk = models.TextField(
+        blank=True,
+        verbose_name="Текст цитаты — украинский",
+    )
 
     source = models.CharField(
         max_length=255,
         blank=True,
         verbose_name="Источник / автор",
     )
+    source_uk = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Источник / автор — украинский",
+    )
 
     reference = models.CharField(
         max_length=255,
         blank=True,
         verbose_name="Ссылка на источник",
+    )
+    reference_uk = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Ссылка на источник — украинский",
     )
 
     quote_date = models.DateField(
