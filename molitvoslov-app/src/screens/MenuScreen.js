@@ -393,9 +393,9 @@ export const MenuScreen = ({navigation}) => {
       setError(null);
     } catch (err) {
       console.log('Ошибка загрузки библиотеки:', err);
-      setError('Не удалось загрузить библиотеку');
+      setError(t('menu.libraryError'));
     }
-  }, []);
+  }, [t]);
 
   const loadCalendarDay = useCallback(
     async (targetDate) => {
@@ -1100,7 +1100,7 @@ export const MenuScreen = ({navigation}) => {
 
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Добавить цитату дня на главный экран"
+                    accessibilityLabel={t('menu.addQuoteWidgetA11y')}
                     hitSlop={6}
                     onPress={showWidgetInfo}
                     style={({pressed}) => [styles.heroQuoteActionButton, pressed && styles.pressed]}
