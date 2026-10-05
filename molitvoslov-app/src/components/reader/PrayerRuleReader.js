@@ -2191,14 +2191,17 @@ const HTML_TEMPLATE = String.raw`
         );
       }
 
-      if (
-        DATA.rule.description
-      ) {
+      const ruleDescription =
+        DATA.viewMode === 'ukrainian'
+          ? DATA.rule.description_uk || DATA.rule.description || ''
+          : DATA.rule.description || '';
+
+      if (ruleDescription) {
         reader.appendChild(
           el(
             'div',
             'rule-description',
-            DATA.rule.description
+            ruleDescription
           )
         );
       }
@@ -2247,9 +2250,23 @@ const HTML_TEMPLATE = String.raw`
               );
             }
 
+            const viewMode =
+              DATA.viewMode ||
+              'church';
+
+            const localizedTitle =
+              viewMode === 'ukrainian'
+                ? text.title_uk || text.title || ''
+                : text.title || '';
+
+            const localizedDescription =
+              viewMode === 'ukrainian'
+                ? text.description_uk || text.description || ''
+                : text.description || '';
+
             const normalizedTitle =
               normalizeLiturgicalValue(
-                text.title
+                localizedTitle
               );
 
             const inlineLabel =
@@ -2265,8 +2282,7 @@ const HTML_TEMPLATE = String.raw`
               )
                 ? ''
                 : (
-                    text.title ||
-                    ''
+                    localizedTitle
                   );
 
             const displayTitleText =
@@ -2283,37 +2299,37 @@ const HTML_TEMPLATE = String.raw`
               text.translation ||
               '';
 
+            const ukrainianText =
+              text.translation_uk ||
+              '';
+
             const traditionalText =
               text.traditional_content ||
               '';
 
-            const viewMode =
-              DATA.viewMode ||
-              'both';
-
             const primaryLanguage =
-              viewMode ===
-                'russian' &&
-              russianText
-                ? 'russian'
-                : viewMode ===
-                      'traditional' &&
-                    traditionalText
-                  ? 'traditional'
-                  : 'church';
+              viewMode === 'ukrainian' && ukrainianText
+                ? 'ukrainian'
+                : viewMode === 'ukrainian' && russianText
+                  ? 'russian'
+                  : viewMode === 'russian' && russianText
+                    ? 'russian'
+                    : viewMode === 'traditional' && traditionalText
+                      ? 'traditional'
+                      : 'church';
 
             const primaryText =
-              primaryLanguage ===
-                'russian'
-                ? russianText
-                : primaryLanguage ===
-                    'traditional'
-                  ? traditionalText
-                  : churchText;
+              primaryLanguage === 'ukrainian'
+                ? ukrainianText
+                : primaryLanguage === 'russian'
+                  ? russianText
+                  : primaryLanguage === 'traditional'
+                    ? traditionalText
+                    : churchText;
 
             const itemTitle =
               displayTitle ||
-              text.description ||
+              localizedDescription ||
               'Текст';
 
             itemTextMap.set(
@@ -2423,7 +2439,7 @@ const HTML_TEMPLATE = String.raw`
             }
 
             if (
-              text.description &&
+              localizedDescription &&
               text.description_position ===
                 'before'
             ) {
@@ -2431,7 +2447,7 @@ const HTML_TEMPLATE = String.raw`
                 el(
                   'div',
                   'description',
-                  text.description
+                  localizedDescription
                 )
               );
             }
@@ -2497,7 +2513,7 @@ const HTML_TEMPLATE = String.raw`
             }
 
             if (
-              text.description &&
+              localizedDescription &&
               text.description_position ===
                 'after'
             ) {
@@ -2505,7 +2521,7 @@ const HTML_TEMPLATE = String.raw`
                 el(
                   'div',
                   'description after',
-                  text.description
+                  localizedDescription
                 )
               );
             }
@@ -6249,7 +6265,14 @@ export default function PrayerRuleReader({
         return;
       }
 
-      const content = item.text.content || '';
+      const content =
+        viewMode === 'ukrainian'
+          ? item.text.translation_uk || item.text.translation || item.text.content || ''
+          : viewMode === 'russian'
+            ? item.text.translation || item.text.content || ''
+            : viewMode === 'traditional'
+              ? item.text.traditional_content || item.text.content || ''
+              : item.text.content || item.text.traditional_content || '';
 
       try {
         const saved = await saveItem({
