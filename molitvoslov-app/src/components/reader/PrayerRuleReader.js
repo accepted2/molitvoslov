@@ -1,4 +1,4 @@
-import React, {useMemo, useRef} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Image, StyleSheet, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {WebView} from 'react-native-webview';
@@ -11,6 +11,63 @@ const ponomarFontUri =
   Image.resolveAssetSource(
     require('../../../assets/fonts/Ponomar-Regular.ttf')
   )?.uri || '';
+
+let ponomarFontDataUriCache = '';
+let ponomarFontDataUriPromise = null;
+
+const blobToDataUri = (blob) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onerror = () => reject(reader.error || new Error('Не удалось прочитать Ponomar'));
+    reader.onloadend = () => {
+      const value = String(reader.result || '');
+      resolve(
+        value.replace(
+          /^data:[^;]+;base64,/,
+          'data:font/ttf;base64,'
+        )
+      );
+    };
+
+    reader.readAsDataURL(blob);
+  });
+
+const loadPonomarFontDataUri = async () => {
+  if (ponomarFontDataUriCache) {
+    return ponomarFontDataUriCache;
+  }
+
+  if (ponomarFontDataUriPromise) {
+    return ponomarFontDataUriPromise;
+  }
+
+  ponomarFontDataUriPromise = (async () => {
+    if (!ponomarFontUri) {
+      return '';
+    }
+
+    const response = await fetch(ponomarFontUri);
+
+    if (!response.ok) {
+      throw new Error(`Не удалось загрузить Ponomar: ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    const dataUri = await blobToDataUri(blob);
+
+    ponomarFontDataUriCache = dataUri;
+
+    return dataUri;
+  })();
+
+  try {
+    return await ponomarFontDataUriPromise;
+  } finally {
+    ponomarFontDataUriPromise = null;
+  }
+};
+
 const scriptSafeJson = (value) =>
   JSON.stringify(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
 
@@ -29,6 +86,7 @@ const HTML_TEMPLATE = String.raw`
       src: url("__PONOMAR_FONT_URL__") format("truetype");
       font-weight: 400;
       font-style: normal;
+      font-display: block;
     }
 
     :root {
@@ -6192,6 +6250,7 @@ const buildHtml = ({
   topContentInset,
   memorialEnabled,
   ui,
+  ponomarFontDataUri,
 }) => {
   const payload = {
     rule,
@@ -6224,7 +6283,7 @@ const buildHtml = ({
 
   return HTML_TEMPLATE.replace(
     '__PONOMAR_FONT_URL__',
-    String(ponomarFontUri || '').replace(/"/g, '%22')
+    String(ponomarFontDataUri || '').replace(/"/g, '%22')
   )
     .replace(
       '__READER_TOP_PADDING__',
@@ -6251,6 +6310,30 @@ export default function PrayerRuleReader({
   const {language, t} = useLanguage();
 
   const webViewRef = useRef(null);
+  const [ponomarFontDataUri, setPonomarFontDataUri] = useState(
+    ponomarFontDataUriCache
+  );
+
+  useEffect(() => {
+    let active = true;
+
+    loadPonomarFontDataUri()
+      .then((dataUri) => {
+        if (active && dataUri) {
+          setPonomarFontDataUri(dataUri);
+        }
+      })
+      .catch((fontError) => {
+        console.log(
+          'Ошибка загрузки шрифта Ponomar для молитвенного правила:',
+          fontError?.message || fontError
+        );
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const ui = useMemo(
     () => ({
@@ -6286,6 +6369,7 @@ export default function PrayerRuleReader({
         topContentInset,
         memorialEnabled,
         ui,
+        ponomarFontDataUri,
       }),
     [
       rule,
@@ -6297,6 +6381,7 @@ export default function PrayerRuleReader({
       topContentInset,
       memorialEnabled,
       ui,
+      ponomarFontDataUri,
     ]
   );
 
