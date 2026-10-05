@@ -742,6 +742,8 @@ export const AkathistScreen = ({route, navigation}) => {
     slug,
     title,
     viewMode,
+    language,
+    t,
   ]);
 
   const openReaderMenu = () => {
