@@ -20,6 +20,7 @@ import {StatusBar} from 'expo-status-bar';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {
   READER_LANGUAGE_MODES,
+  buildReaderLanguageOptions,
   getReaderModeForAppLanguage,
 } from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
@@ -72,6 +73,16 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     () =>
       (rule?.items || []).some(
         (item) => item.item_type === 'text' && !!item.text?.translation_uk?.trim()
+      ),
+    [rule]
+  );
+
+  const hasTraditionalTranslation = useMemo(
+    () =>
+      (rule?.items || []).some(
+        (item) =>
+          item.item_type === 'text' &&
+          !!item.text?.traditional_content?.trim()
       ),
     [rule]
   );
@@ -146,7 +157,14 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     );
   }
 
-  const viewSwitcher = null;
+  const viewSwitcher = {
+    activeKey: viewMode,
+    options: buildReaderLanguageOptions({
+      hasRussian: hasRussianTranslation,
+      hasUkrainian: hasUkrainianTranslation,
+      hasTraditional: hasTraditionalTranslation,
+    }),
+  };
 
   return (
     <View style={styles.container}>
@@ -163,6 +181,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         memorialEnabled={slug === 'molitvy-utrennie'}
         onMemorialOpen={(context) => setMemorialContext(context || {})}
         onProgress={scheduleSave}
+        onViewModeChange={setViewMode}
       />
 
       <MemorialQuickSheet

@@ -1,11 +1,16 @@
 import React, {useMemo, useRef} from 'react';
-import {StyleSheet, View} from 'react-native';
+import {Image, StyleSheet, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {WebView} from 'react-native-webview';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import {deleteSavedItem, saveItem} from '../../services/savedItems';
 import {useLanguage} from '../../context/LanguageContext';
+
+const ponomarFontUri =
+  Image.resolveAssetSource(
+    require('../../../assets/fonts/Ponomar-Regular.ttf')
+  )?.uri || '';
 const scriptSafeJson = (value) =>
   JSON.stringify(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
 
@@ -19,6 +24,13 @@ const HTML_TEMPLATE = String.raw`
   />
 
   <style>
+    @font-face {
+      font-family: 'Ponomar';
+      src: url("__PONOMAR_FONT_URL__") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+    }
+
     :root {
       --background: #FFF4DE;
       --surface: #F8E9CF;
@@ -54,6 +66,15 @@ const HTML_TEMPLATE = String.raw`
 
     body {
       padding: __READER_TOP_PADDING__px 14px 88px;
+    }
+
+    .traditional-mode .rule-title,
+    .traditional-mode .prayer-title,
+    .traditional-mode .reader-text,
+    .traditional-mode .reader-inline-label {
+      font-family: 'Ponomar', Georgia, "Times New Roman", serif;
+      font-weight: 400;
+      font-variant-ligatures: common-ligatures;
     }
 
     .view-switcher {
@@ -2122,6 +2143,10 @@ const HTML_TEMPLATE = String.raw`
 
 
     const renderRule = () => {
+      if (DATA.viewMode === 'traditional') {
+        document.body.classList.add('traditional-mode');
+      }
+
       if (isEveningRule) {
         document.body.classList.add(
           'evening-rule'
@@ -2135,9 +2160,11 @@ const HTML_TEMPLATE = String.raw`
       }
 
       const ruleName =
-        DATA.viewMode === 'ukrainian'
-          ? DATA.rule.name_uk || DATA.rule.name || ''
-          : DATA.rule.name || '';
+        DATA.viewMode === 'traditional'
+          ? DATA.rule.traditional_name || DATA.rule.name || ''
+          : DATA.viewMode === 'ukrainian'
+            ? DATA.rule.name_uk || DATA.rule.name || ''
+            : DATA.rule.name || '';
 
       if (ruleName) {
         reader.appendChild(
@@ -2278,9 +2305,11 @@ const HTML_TEMPLATE = String.raw`
               'church';
 
             const localizedTitle =
-              viewMode === 'ukrainian'
-                ? text.title_uk || text.title || ''
-                : text.title || '';
+              viewMode === 'traditional'
+                ? text.traditional_title || text.title || ''
+                : viewMode === 'ukrainian'
+                  ? text.title_uk || text.title || ''
+                  : text.title || '';
 
             const localizedDescription =
               viewMode === 'ukrainian'
@@ -6194,9 +6223,14 @@ const buildHtml = ({
   };
 
   return HTML_TEMPLATE.replace(
-    '__READER_TOP_PADDING__',
-    String(Math.max(16, Number(topContentInset || 0) + 16))
-  ).replace('__READER_PAYLOAD__', scriptSafeJson(payload));
+    '__PONOMAR_FONT_URL__',
+    String(ponomarFontUri || '').replace(/"/g, '%22')
+  )
+    .replace(
+      '__READER_TOP_PADDING__',
+      String(Math.max(16, Number(topContentInset || 0) + 16))
+    )
+    .replace('__READER_PAYLOAD__', scriptSafeJson(payload));
 };
 
 export default function PrayerRuleReader({
