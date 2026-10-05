@@ -59,6 +59,37 @@ class AzbykaCalendarFeastsParserTests(SimpleTestCase):
             "Иконы Божией Матери: Словенская (1635)",
         )
 
+    def test_collapses_multiple_links_inside_one_commemoration_item(self):
+        html = """
+        <html><body>
+          <h1>7 октября</h1>
+          <ul>
+            <li>
+              сщмчч.
+              <a href="/days/sv-andrej-bystrov">Андрея Быстрова</a>
+              и
+              <a href="/days/sv-pavel-berezin">Павла Березина</a>,
+              пресвитеров,
+              <a href="/days/sv-vitalij-kokorev">прмч. Виталия (Кокорева), монаха</a>
+            </li>
+            <li>
+              <a href="/days/svv-vasilij-vinogradov-muchenik-sergij-mihajlov-spiridon-savelev">
+                мчч. Василия Виноградова, Сергия Михайлова и Спиридона Савельева
+              </a>
+            </li>
+          </ul>
+          <h2>Чтения Священного Писания</h2>
+        </body></html>
+        """
+
+        sources = extract_day_saint_links(html)
+
+        self.assertEqual(len(sources), 2)
+        self.assertTrue(sources[0].url.endswith("/days/sv-andrej-bystrov"))
+        self.assertIn("Андрея Быстрова", sources[0].title)
+        self.assertIn("Павла Березина", sources[0].title)
+        self.assertIn("Виталия (Кокорева)", sources[0].title)
+
     def test_extracts_history_for_feast_page(self):
         html = """
         <html><body>
