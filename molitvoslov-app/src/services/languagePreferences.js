@@ -31,7 +31,13 @@ export const getAppLanguage = async () => {
     const stored = await SecureStore.getItemAsync(APP_LANGUAGE_KEY);
 
     if (stored) {
-      return normalizeAppLanguage(stored);
+      const normalized = normalizeAppLanguage(stored);
+
+      if (stored !== normalized) {
+        await SecureStore.setItemAsync(APP_LANGUAGE_KEY, normalized);
+      }
+
+      return normalized;
     }
 
     // Миграция старой настройки языка календаря.
