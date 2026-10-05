@@ -89,6 +89,45 @@ class AzbykaCalendarFeastsParserTests(SimpleTestCase):
         self.assertEqual(parsed.troparion_echo, 4)
         self.assertEqual(parsed.kontakion_echo, 1)
 
+    def test_extracts_primary_icon_source_url(self):
+        html = """
+        <html><body>
+          <img src="https://mc.yandex.ru/watch/example.gif" alt="">
+          <a href="/days/cache/200x160/storage/images/icons-of-saints/6030/fekla.jpg">
+            <img src="/days/cache/200x160/storage/images/icons-of-saints/6030/fekla.jpg"
+                 alt="Фекла Иконийская">
+          </a>
+          <h1>Равноапостольная Фекла Иконийская</h1>
+          <h2>День памяти</h2>
+          <p>Краткое житие.</p>
+        </body></html>
+        """
+
+        parsed = extract_saint_content(
+            html,
+            url="https://azbyka.ru/days/sv-fekla-ikonijskaja",
+        )
+
+        self.assertEqual(
+            parsed.icon_source_url,
+            "https://azbyka.ru/days/cache/200x160/storage/images/"
+            "icons-of-saints/6030/fekla.jpg",
+        )
+
+    def test_icon_parser_ignores_non_storage_images(self):
+        html = """
+        <html><body>
+          <img src="/assets/logo.png" alt="logo">
+          <h1>Святой без иконы</h1>
+          <h2>День памяти</h2>
+          <p>Краткое житие.</p>
+        </body></html>
+        """
+
+        parsed = extract_saint_content(html)
+
+        self.assertEqual(parsed.icon_source_url, "")
+
     def test_extracts_hymns_from_day_group(self):
         html = """
         <html><body>
