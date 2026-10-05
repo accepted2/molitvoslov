@@ -16,7 +16,8 @@ class UcsPrayerRuleParserTests(SimpleTestCase):
         self.assertNotIn("1", converted)
         self.assertIn("Г", converted)
         self.assertIn("поми", converted)
-        self.assertIn("луй", converted)
+        self.assertIn("й.", converted)
+        self.assertIn("ꙋ", converted)
 
     def test_parses_heading_blocks_and_paragraphs(self):
         soup = BeautifulSoup(
