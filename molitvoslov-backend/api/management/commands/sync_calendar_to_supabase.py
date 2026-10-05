@@ -169,6 +169,15 @@ class Command(BaseCommand):
             ),
         )
         scope.add_argument(
+            "--feast-icons-only",
+            action="store_true",
+            help=(
+                "Синхронизировать только icon_url памятей выбранных дней. "
+                "Названия, жития, чтения, связи дня и остальные поля "
+                "не изменяются."
+            ),
+        )
+        scope.add_argument(
             "--day-feasts-only",
             action="store_true",
             help=(
@@ -197,10 +206,48 @@ class Command(BaseCommand):
 
         readings_only = options["readings_only"]
         feast_content_only = options["feast_content_only"]
+        feast_icons_only = options["feast_icons_only"]
         day_feasts_only = options["day_feasts_only"]
         azbyka_day_only = options["azbyka_day_only"]
 
         self._check_remote()
+
+        if feast_icons_only:
+            feasts = self._collect_feasts(days)
+            preview = self._preview_feast_icons_only(feasts)
+            self._print_feast_icons_only_preview(preview, days, feasts)
+
+            if options["dry_run"]:
+                self.stdout.write(
+                    self.style.WARNING("DRY-RUN: Supabase не изменён.")
+                )
+                return
+
+            counters = {
+                "feast_update": 0,
+                "feast_same": 0,
+            }
+
+            with transaction.atomic(using=REMOTE_ALIAS):
+                self._sync_feast_icons_only(feasts, counters)
+
+            problems = self._verify_feast_icons_only(feasts)
+            if problems:
+                for problem in problems[:30]:
+                    self.stdout.write(self.style.ERROR(f"  - {problem}"))
+                raise CommandError(
+                    f"После записи найдено расхождений: {len(problems)}."
+                )
+
+            self.stdout.write(
+                self.style.SUCCESS(
+                    "Готово. В Supabase синхронизированы только icon_url "
+                    "календарных памятей.\n"
+                    f"Памяти: обновлено {counters['feast_update']} / "
+                    f"без изменений {counters['feast_same']}."
+                )
+            )
+            return
 
         if azbyka_day_only:
             feasts = self._collect_feasts(days)
@@ -898,6 +945,78 @@ class Command(BaseCommand):
             ):
                 problems.append(
                     f"День {day.date_gregorian}: feasts отличаются"
+                )
+
+        return problems
+
+    def _preview_feast_icons_only(self, feasts):
+        result = {
+            "feast_update": [],
+            "feast_missing": [],
+        }
+
+        for feast in feasts.values():
+            remote = self._find_remote_feast(feast)
+            label = feast.short_title or feast.title
+
+            if remote is None:
+                result["feast_missing"].append(label)
+                continue
+
+            if remote.icon_url != feast.icon_url:
+                result["feast_update"].append(label)
+
+        return result
+
+    def _print_feast_icons_only_preview(self, preview, days, feasts):
+        self.stdout.write(
+            f"Источник SQLite: дней {len(days)}, памятей {len(feasts)}. "
+            "Режим: только icon_url."
+        )
+        self.stdout.write("План:")
+
+        for key, title in [
+            ("feast_update", "Иконы UPDATE"),
+            ("feast_missing", "Памяти MISSING"),
+        ]:
+            items = preview[key]
+            self.stdout.write(f"  {title}: {len(items)}")
+            for item in items[:30]:
+                self.stdout.write(f"    - {item}")
+            if len(items) > 30:
+                self.stdout.write(f"    ... и ещё {len(items) - 30}")
+
+    def _sync_feast_icons_only(self, feasts, counters):
+        for feast in feasts.values():
+            remote = self._find_remote_feast(feast)
+            if remote is None:
+                raise CommandError(
+                    "В Supabase отсутствует память "
+                    f"{feast.short_title or feast.title}. "
+                    "Сначала синхронизируйте карточку этой памяти."
+                )
+
+            if remote.icon_url != feast.icon_url:
+                remote.icon_url = feast.icon_url
+                remote.save(update_fields=["icon_url"])
+                counters["feast_update"] += 1
+            else:
+                counters["feast_same"] += 1
+
+    def _verify_feast_icons_only(self, feasts):
+        problems = []
+
+        for feast in feasts.values():
+            remote = self._find_remote_feast(feast)
+            if remote is None:
+                problems.append(
+                    f"Память {feast.short_title or feast.title}: отсутствует"
+                )
+                continue
+
+            if remote.icon_url != feast.icon_url:
+                problems.append(
+                    f"Память {feast.pk}: icon_url отличается"
                 )
 
         return problems
