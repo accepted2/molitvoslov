@@ -6,11 +6,13 @@ import {
   normalizeAppLanguage,
   setAppLanguage,
 } from '../services/languagePreferences';
+import {translate} from '../i18n/translations';
 
 const LanguageContext = createContext({
   language: APP_LANGUAGES.RU,
   languageReady: false,
   setLanguage: async () => APP_LANGUAGES.RU,
+  t: (key) => key,
 });
 
 export const LanguageProvider = ({children}) => {
@@ -46,13 +48,19 @@ export const LanguageProvider = ({children}) => {
     return normalized;
   }, []);
 
+  const t = useCallback(
+    (key, params = {}) => translate(language, key, params),
+    [language]
+  );
+
   const value = useMemo(
     () => ({
       language,
       languageReady,
       setLanguage,
+      t,
     }),
-    [language, languageReady, setLanguage]
+    [language, languageReady, setLanguage, t]
   );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
