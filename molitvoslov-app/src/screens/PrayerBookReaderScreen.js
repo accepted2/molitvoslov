@@ -6,6 +6,7 @@ import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getPrayerBook} from '../services/prayerBooks';
+import {useLanguage} from '../context/LanguageContext';
 
 const bundledContent = require('../data/offlineContent.json');
 
@@ -96,6 +97,7 @@ const ParallelText = ({church, russian, churchStyle, russianStyle}) => {
 };
 
 const PsalmParallel = ({psalm, verses: verseItems = null, showLabels = false}) => {
+  const {t} = useLanguage();
   const verses = verseItems || psalm?.verses || [];
   const hasRussian = verses.some((verse) => String(verse?.russian || '').trim());
 
@@ -103,8 +105,8 @@ const PsalmParallel = ({psalm, verses: verseItems = null, showLabels = false}) =
     <View>
       {showLabels && hasRussian && (
         <View style={styles.languageRow}>
-          <Text style={styles.languageLabel}>ЦЕРКОВНОСЛАВЯНСКИЙ</Text>
-          <Text style={[styles.languageLabel, styles.languageLabelRussian]}>РУССКИЙ</Text>
+          <Text style={styles.languageLabel}>{t('prayerBooks.churchSlavonic')}</Text>
+          <Text style={[styles.languageLabel, styles.languageLabelRussian]}>{t('prayerBooks.russian')}</Text>
         </View>
       )}
 
@@ -182,6 +184,7 @@ const psalmChunks = (psalm, glories) => {
 };
 
 const PsalterPrayer = ({prayer}) => {
+  const {t} = useLanguage();
   const mode = psalterMode(prayer);
   const kathisma = getKathisma(prayer);
 
@@ -198,7 +201,7 @@ const PsalterPrayer = ({prayer}) => {
 
     return (
       <View>
-        <Text style={styles.title}>{prayer.title || `Псалом ${psalm.number}`}</Text>
+        <Text style={styles.title}>{prayer.title || t('psalter.psalm', {number: psalm.number})}</Text>
         <PsalmParallel psalm={psalm} showLabels />
       </View>
     );
@@ -208,11 +211,11 @@ const PsalterPrayer = ({prayer}) => {
 
   return (
     <View>
-      <Text style={styles.title}>{prayer.title || `Кафизма ${kathisma.number}`}</Text>
+      <Text style={styles.title}>{prayer.title || t('psalter.kathisma', {number: kathisma.number})}</Text>
 
       {(kathisma.psalms || []).map((psalm, psalmIndex) => (
         <View key={psalm.id || psalm.number} style={styles.psalmSection}>
-          <Text style={styles.psalmTitle}>Псалом {psalm.number}</Text>
+          <Text style={styles.psalmTitle}>{t('psalter.psalm', {number: psalm.number})}</Text>
 
           {psalmChunks(psalm, glories).map((chunk, chunkIndex) => (
             <View key={`${psalm.id || psalm.number}-${chunkIndex}`}>
@@ -234,7 +237,7 @@ const PsalterPrayer = ({prayer}) => {
 
       {!!kathisma.prayers_after && (
         <View style={styles.afterPrayers}>
-          <Text style={styles.psalmTitle}>Молитвы после кафизмы</Text>
+          <Text style={styles.psalmTitle}>{t('psalter.prayersAfterKathisma', {number: kathisma.number})}</Text>
 
           <ParallelText
             church={String(kathisma.prayers_after || '').trim()}
@@ -275,7 +278,8 @@ const PrayerPhoto = ({photo}) => {
 };
 
 export const PrayerBookReaderScreen = ({route, navigation}) => {
-  const {bookSyncId} = route.params;
+  const {t} = useLanguage();
+  const {bookSyncId = route.params;
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + 56;
   const [book, setBook] = useState(null);
@@ -348,13 +352,13 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
 
         {!items.length && (
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>В этом молитвослове пока нет молитв.</Text>
+            <Text style={styles.emptyText}>{t('prayerBooks.readerEmpty')}</Text>
           </View>
         )}
       </ScrollView>
 
       <FixedSectionHeader
-        title={book?.title || 'Мой молитвослов'}
+        title={book?.title || t('prayerBooks.title')}
         navigation={navigation}
         topInset={insets.top}
         showTitle={false}

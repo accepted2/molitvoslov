@@ -28,8 +28,10 @@ import {
   updatePersonalPrayer,
 } from '../services/prayerBooks';
 import {colors, spacing} from '../theme';
+import {useLanguage} from '../context/LanguageContext';
 
 export const PersonalPrayerEditorScreen = ({route, navigation}) => {
+  const {t} = useLanguage();
   const {bookSyncId = null, prayerSyncId = null} = route.params || {};
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + 56;
@@ -66,7 +68,7 @@ export const PersonalPrayerEditorScreen = ({route, navigation}) => {
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Нужен доступ к камере', 'Разрешите доступ к камере, чтобы добавить фото.');
+      Alert.alert(t('prayerBooks.cameraPermissionTitle'), t('prayerBooks.cameraPermissionText'));
       return;
     }
 
@@ -93,11 +95,11 @@ export const PersonalPrayerEditorScreen = ({route, navigation}) => {
 
   const save = async () => {
     if (!title.trim()) {
-      Alert.alert('Укажите название', 'Например: Молитва перед дорогой.');
+      Alert.alert(t('prayerBooks.titleRequired'), t('prayerBooks.titleRequiredHint'));
       return;
     }
     if (!text.trim() && !(prayer?.photos?.length || pendingAssets.length)) {
-      Alert.alert('Добавьте текст или фото', 'Молитва не может быть полностью пустой.');
+      Alert.alert(t('prayerBooks.contentRequired'), t('prayerBooks.contentRequiredHint'));
       return;
     }
 
@@ -129,17 +131,17 @@ export const PersonalPrayerEditorScreen = ({route, navigation}) => {
       setPendingAssets([]);
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Не удалось сохранить молитву', error.message || 'Попробуйте ещё раз.');
+      Alert.alert(t('prayerBooks.savePrayerError'), error.message || t('common.tryAgain'));
     } finally {
       setSaving(false);
     }
   };
 
   const removeExistingPhoto = (photo) => {
-    Alert.alert('Удалить фото?', 'Фото будет удалено из этой молитвы.', [
-      {text: 'Отмена', style: 'cancel'},
+    Alert.alert(t('prayerBooks.deletePhotoTitle'), t('prayerBooks.deletePhotoText'), [
+      {text: t('prayerBooks.cancel'), style: 'cancel'},
       {
-        text: 'Удалить',
+        text: t('prayerBooks.delete'),
         style: 'destructive',
         onPress: async () => {
           await deletePrayerPhoto(photo.sync_id);
@@ -177,30 +179,30 @@ export const PersonalPrayerEditorScreen = ({route, navigation}) => {
             paddingBottom: 32 + insets.bottom,
           }}
         >
-          <Text style={styles.label}>Название</Text>
+          <Text style={styles.label}>{t('prayerBooks.fieldTitle')}</Text>
           <TextInput
             value={title}
             onChangeText={setTitle}
-            placeholder="Название молитвы"
+            placeholder={t('prayerBooks.prayerTitlePlaceholder')}
             placeholderTextColor="#A58A73"
             style={styles.titleInput}
           />
 
-          <Text style={[styles.label, styles.textLabel]}>Текст молитвы</Text>
+          <Text style={[styles.label, styles.textLabel]}>{t('prayerBooks.fieldText')}</Text>
           <TextInput
             value={text}
             onChangeText={setText}
             multiline
             textAlignVertical="top"
-            placeholder="Вставьте сюда скопированный текст молитвы…"
+            placeholder={t('prayerBooks.prayerTextPlaceholder')}
             placeholderTextColor="#A58A73"
             style={styles.textInput}
           />
 
           <View style={styles.photoHeading}>
             <View>
-              <Text style={styles.label}>Фото</Text>
-              <Text style={styles.photoHint}>Можно сохранить молитву и как фотографию.</Text>
+              <Text style={styles.label}>{t('prayerBooks.fieldPhoto')}</Text>
+              <Text style={styles.photoHint}>{t('prayerBooks.photoHint')}</Text>
             </View>
           </View>
 
@@ -209,13 +211,13 @@ export const PersonalPrayerEditorScreen = ({route, navigation}) => {
               onPress={takePhoto}
               style={({pressed}) => [styles.photoButton, pressed && styles.pressed]}
             >
-              <Text style={styles.photoButtonText}>Камера</Text>
+              <Text style={styles.photoButtonText}>{t('prayerBooks.camera')}</Text>
             </Pressable>
             <Pressable
               onPress={pickPhotos}
               style={({pressed}) => [styles.photoButton, pressed && styles.pressed]}
             >
-              <Text style={styles.photoButtonText}>Добавить фото</Text>
+              <Text style={styles.photoButtonText}>{t('prayerBooks.addPhoto')}</Text>
             </Pressable>
           </View>
 
@@ -254,12 +256,12 @@ export const PersonalPrayerEditorScreen = ({route, navigation}) => {
               pressed && styles.pressed,
             ]}
           >
-            <Text style={styles.saveText}>{saving ? 'Сохранение…' : 'Сохранить молитву'}</Text>
+            <Text style={styles.saveText}>{saving ? t('prayerBooks.saving') : t('prayerBooks.savePrayer')}</Text>
           </Pressable>
         </ScrollView>
 
         <FixedSectionHeader
-          title={prayer ? 'Редактировать молитву' : 'Новая молитва'}
+          title={prayer ? t('prayerBooks.editPrayer') : t('prayerBooks.newPrayer')}
           navigation={navigation}
           topInset={insets.top}
         />
