@@ -89,7 +89,7 @@ const SoftChevron = ({expanded}) => (
   <Text style={[styles.readingArrow, expanded && styles.readingArrowExpanded]}>›</Text>
 );
 
-const displayTitle = (feast, copy) => feast?.short_title || feast?.title || copy.saintMemory;
+const displayTitle = (feast, copy) =>  feast?.title|| feast?.short_title || copy.saintMemory;
 
 const FeastImage = ({feast}) => {
   const [failed, setFailed] = useState(false);
