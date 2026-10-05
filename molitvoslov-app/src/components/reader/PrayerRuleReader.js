@@ -2538,12 +2538,17 @@ const HTML_TEMPLATE = String.raw`
               );
             }
 
-            if (item.note) {
+            const localizedNote =
+              DATA.viewMode === 'ukrainian'
+                ? item.note_uk || item.note || ''
+                : item.note || '';
+
+            if (localizedNote) {
               wrapper.appendChild(
                 el(
                   'div',
                   'note',
-                  item.note
+                  localizedNote
                 )
               );
             }
@@ -2556,16 +2561,20 @@ const HTML_TEMPLATE = String.raw`
             item.item_type ===
             'instruction'
           ) {
+            const localizedContent =
+              DATA.viewMode === 'ukrainian'
+                ? item.content_uk || item.content || ''
+                : item.content || '';
+
             wrapper.appendChild(
               el(
                 'div',
                 isLiturgicalBlock(
-                  item.content
+                  localizedContent
                 )
                   ? 'instruction liturgical-block'
                   : 'instruction',
-                item.content ||
-                ''
+                localizedContent
               )
             );
 
@@ -2577,26 +2586,35 @@ const HTML_TEMPLATE = String.raw`
             item.item_type ===
             'section'
           ) {
-            if (item.title) {
+            const localizedTitle =
+              DATA.viewMode === 'ukrainian'
+                ? item.title_uk || item.title || ''
+                : item.title || '';
+            const localizedContent =
+              DATA.viewMode === 'ukrainian'
+                ? item.content_uk || item.content || ''
+                : item.content || '';
+
+            if (localizedTitle) {
               wrapper.appendChild(
                 el(
                   'h2',
                   'section-title',
-                  item.title
+                  localizedTitle
                 )
               );
             }
 
-            if (item.content) {
+            if (localizedContent) {
               wrapper.appendChild(
                 el(
                   'div',
                   isLiturgicalBlock(
-                    item.content
+                    localizedContent
                   )
                     ? 'section-content liturgical-block'
                     : 'section-content',
-                  item.content
+                  localizedContent
                 )
               );
             }
