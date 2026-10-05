@@ -30,6 +30,13 @@ const COPY = {
       deleting: 'Удаляем…',
       saving: 'Сохраняем…',
     },
+    nav: {
+      home: 'Главная',
+      favorites: 'Избранное',
+      prayerBooks: 'Молитвослов',
+      memorial: 'Помянник',
+      account: 'Аккаунт',
+    },
     menu: {
       search: 'Поиск',
       notifications: 'Уведомления',
@@ -160,6 +167,13 @@ const COPY = {
       deleting: 'Видаляємо…',
       saving: 'Зберігаємо…',
     },
+    nav: {
+      home: 'Головна',
+      favorites: 'Обране',
+      prayerBooks: 'Молитвослов',
+      memorial: 'Пом’янник',
+      account: 'Акаунт',
+    },
     menu: {
       search: 'Пошук',
       notifications: 'Сповіщення',
@@ -289,6 +303,13 @@ const COPY = {
       charactersShort: '{count} симв.',
       deleting: 'Удаляемъ…',
       saving: 'Сохраняемъ…',
+    },
+    nav: {
+      home: 'Главная',
+      favorites: 'Избранное',
+      prayerBooks: 'Молитвословъ',
+      memorial: 'Помянникъ',
+      account: 'Аккаунтъ',
     },
     menu: {
       search: 'Поискъ',
