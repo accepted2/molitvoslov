@@ -34,6 +34,7 @@ class Category(models.Model):
 class Text(models.Model):
     LANGUAGES = [
         ("ru", "Русский"),
+        ("uk", "Украинский"),
         ("cu", "Церковнославянский"),
     ]
 
@@ -43,12 +44,23 @@ class Text(models.Model):
     ]
 
     title = models.CharField(max_length=255, blank=True, verbose_name="Заголовок")
+    title_uk = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Заголовок — украинский",
+    )
 
     description = models.CharField(
         max_length=255,
         blank=True,
         verbose_name="Краткое описание",
         help_text="Используется для формирования URL, если заголовок пустой",
+    )
+
+    description_uk = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Краткое описание — украинский",
     )
 
     content = models.TextField(verbose_name="Церковнославянский текст")
@@ -63,6 +75,7 @@ class Text(models.Model):
     )
 
     translation = models.TextField(blank=True, verbose_name="Русский перевод")
+    translation_uk = models.TextField(blank=True, verbose_name="Украинский перевод")
 
     categories = models.ManyToManyField(Category, through="CategoryText", verbose_name="Категории")
 
