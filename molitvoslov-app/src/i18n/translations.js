@@ -19,6 +19,7 @@ const COPY = {
       openMemorial: 'Открыть помянник',
       saveFailed: 'Не удалось сохранить',
       deleteFailed: 'Не удалось удалить',
+      loadTextsError: 'Не удалось загрузить тексты',
     },
     menu: {
       search: 'Поиск',
@@ -126,6 +127,7 @@ const COPY = {
       openMemorial: 'Відкрити пом’янник',
       saveFailed: 'Не вдалося зберегти',
       deleteFailed: 'Не вдалося видалити',
+      loadTextsError: 'Не вдалося завантажити тексти',
     },
     menu: {
       search: 'Пошук',
@@ -233,6 +235,7 @@ const COPY = {
       openMemorial: 'Открыти помянникъ',
       saveFailed: 'Не удалось сохранити',
       deleteFailed: 'Не удалось удалити',
+      loadTextsError: 'Не удалось загрузити тексты',
     },
     menu: {
       search: 'Поискъ',
