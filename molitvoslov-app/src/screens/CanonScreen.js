@@ -56,6 +56,27 @@ const SECTION_LABELS = {
   other: 'Текст',
 };
 
+const getSectionLabel = (sectionType, t) => {
+  const keys = {
+    irmos: 'reading.irmos',
+    refrain: 'reading.refrain',
+    troparion: 'calendar.troparion',
+    theotokion: 'reading.theotokion',
+    glory: 'reading.glory',
+    now: 'reading.now',
+    sedalen: 'reading.sedalen',
+    kontakion: 'reading.kontakion',
+    ikos: 'reading.ikos',
+    svetilen: 'reading.svetilen',
+    prayer: 'reading.prayer',
+    other: 'reading.other',
+  };
+
+  const key = keys[sectionType];
+
+  return key ? t(key) : '';
+};
+
 const normalizeCanonCue = (value) =>
   String(value || '')
     .normalize('NFD')
@@ -71,7 +92,7 @@ const canonTextSignature = (value) =>
     .replace(/[^а-я0-9]+/giu, ' ')
     .trim();
 
-const getCanonInlineLabel = (section, text) => {
+const getCanonInlineLabel = (section, text, t) => {
   if (!section) {
     return '';
   }
@@ -109,7 +130,7 @@ const getCanonInlineLabel = (section, text) => {
         'prayer',
       ].includes(sectionType)
     ) {
-      value = SECTION_LABELS[sectionType] || '';
+      value = getSectionLabel(sectionType, t);
     }
   }
 
@@ -201,7 +222,7 @@ export const CanonScreen = ({route, navigation}) => {
     } catch (loadError) {
       console.log('Ошибка загрузки канона:', loadError.response?.data || loadError.message);
 
-      setError('Не удалось загрузить канон');
+      setError(t('menu.canonLoadError'));
     } finally {
       setLoading(false);
     }
@@ -268,7 +289,7 @@ export const CanonScreen = ({route, navigation}) => {
 
           display_section_type: 'refrain',
 
-          display_heading: 'Припев',
+          display_heading: '',
         };
       }
 
@@ -323,7 +344,7 @@ export const CanonScreen = ({route, navigation}) => {
       savedItemsRef.current = savedItemsRef.current.filter((item) => item.id !== existing.id);
 
       return {
-        label: 'В избранное',
+        label: t('common.addToFavorites'),
 
         active: false,
       };
@@ -356,7 +377,7 @@ export const CanonScreen = ({route, navigation}) => {
     savedItemsRef.current = [saved, ...savedItemsRef.current];
 
     return {
-      label: 'В избранном',
+      label: t('common.inFavorites'),
 
       active: true,
 
@@ -367,7 +388,7 @@ export const CanonScreen = ({route, navigation}) => {
   const documentData = useMemo(() => {
     if (!canon) {
       return {
-        title: title || 'Канон',
+        title: title || t('reading.canon'),
 
         description: '',
 
@@ -448,8 +469,8 @@ export const CanonScreen = ({route, navigation}) => {
 
         itemTitle:
           getLocalizedField(section, 'heading', language) ||
-          SECTION_LABELS[section.section_type] ||
-          (language === 'uk' ? 'Розділ канону' : 'Раздел канона'),
+          getSectionLabel(section.section_type, t) ||
+          t('reading.canonSection'),
 
         fullSaveType: section.section_type === 'prayer' ? 'prayer' : 'section',
 
@@ -498,7 +519,7 @@ export const CanonScreen = ({route, navigation}) => {
         heading: effectiveHeading,
       };
 
-      const label = effectiveHeading || SECTION_LABELS[effectiveSectionType] || '';
+      const label = effectiveHeading || getSectionLabel(effectiveSectionType, t);
 
       const blocks = [];
 
@@ -528,7 +549,7 @@ export const CanonScreen = ({route, navigation}) => {
 
             label: '',
 
-            inlineLabel: getCanonInlineLabel(displaySection, church),
+            inlineLabel: getCanonInlineLabel(displaySection, church, t),
           })
         );
       }
@@ -555,7 +576,7 @@ export const CanonScreen = ({route, navigation}) => {
 
               inlineLabel:
                 localizedLanguage === 'church'
-                  ? getCanonInlineLabel(displaySection, localized)
+                  ? getCanonInlineLabel(displaySection, localized, t)
                   : '',
             })
           );
@@ -592,9 +613,7 @@ export const CanonScreen = ({route, navigation}) => {
 
       if (odeNumber && odeNumber !== previousOde) {
         sectionTitle =
-          language === 'uk'
-            ? `Пісня ${odeNumber}`
-            : `Песнь ${odeNumber}`;
+          t('reading.ode', {number: odeNumber});
 
         previousOde = odeNumber;
       } else if (!odeNumber) {
@@ -640,7 +659,7 @@ export const CanonScreen = ({route, navigation}) => {
       action: {
         key: `canon:${canon.id}`,
 
-        label: wholeSaved ? 'В избранном' : 'В избранное',
+        label: wholeSaved ? t('common.inFavorites') : t('common.addToFavorites'),
 
         active: !!wholeSaved,
 
@@ -701,8 +720,10 @@ export const CanonScreen = ({route, navigation}) => {
           sourceTitle: getLocalizedField(canon, 'title', language) || title || t('reading.canon'),
           itemTitle:
             getLocalizedField(bookmarkSection, 'heading', language) ||
-            SECTION_LABELS[bookmarkSection.display_section_type || bookmarkSection.section_type] ||
-            (language === 'uk' ? 'Місце в каноні' : 'Место в каноне'),
+            getSectionLabel(
+              bookmarkSection.display_section_type || bookmarkSection.section_type,
+              t
+            ) || t('reading.canonPlace'),
           position: bookmarkPosition,
           metadata: {
             slug: canon.slug || slug,
@@ -718,7 +739,7 @@ export const CanonScreen = ({route, navigation}) => {
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.accent} />
 
-        <Text style={styles.loadingText}>Загрузка...</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -726,7 +747,7 @@ export const CanonScreen = ({route, navigation}) => {
   if (error || !canon) {
     return (
       <View style={styles.center}>
-        <Text style={styles.error}>{error || 'Канон не найден'}</Text>
+        <Text style={styles.error}>{error || t('reading.canonNotFound')}</Text>
       </View>
     );
   }
