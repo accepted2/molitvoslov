@@ -20,8 +20,11 @@ import {contentApi as api} from '../services/contentApi';
 import {subscribeToContentUpdates} from '../services/contentStore';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {colors} from '../theme';
+import {useLanguage} from '../context/LanguageContext';
+import {getLocalizedField} from '../services/localizedContent';
 
 export const AkathistListScreen = ({navigation}) => {
+  const {language, t} = useLanguage();
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + 56;
 
@@ -95,8 +98,8 @@ export const AkathistListScreen = ({navigation}) => {
         source_id: akathist.id,
         anchor_type: 'akathist',
         anchor_id: akathist.id,
-        source_title: akathist.title,
-        item_title: akathist.title,
+        source_title: getLocalizedField(akathist, 'title', language),
+        item_title: getLocalizedField(akathist, 'title', language),
         text: '',
         metadata: {
           slug: akathist.slug,
@@ -113,7 +116,7 @@ export const AkathistListScreen = ({navigation}) => {
     navigation.navigate('Akathist', {
       akathistId: akathist.id,
       slug: akathist.slug,
-      title: akathist.title,
+      title: getLocalizedField(akathist, 'title', language),
     });
   };
 
@@ -157,7 +160,9 @@ export const AkathistListScreen = ({navigation}) => {
                   activeOpacity={0.7}
                   onPress={() => handlePress(item)}
                 >
-                  <Text style={styles.title}>{item.title}</Text>
+                  <Text style={styles.title}>
+                    {getLocalizedField(item, 'title', language)}
+                  </Text>
 
                   <Text style={styles.arrow}>›</Text>
                 </TouchableOpacity>
@@ -174,7 +179,9 @@ export const AkathistListScreen = ({navigation}) => {
           }}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Акафисты пока не добавлены</Text>
+              <Text style={styles.emptyText}>
+                {language === 'uk' ? 'Акафісти поки не додані' : 'Акафисты пока не добавлены'}
+              </Text>
             </View>
           }
         />
@@ -219,7 +226,9 @@ export const AkathistListScreen = ({navigation}) => {
             </Pressable>
 
             <View style={styles.headerTitleWrap}>
-              <Text style={styles.headerTitle}>Акафисты</Text>
+              <Text style={styles.headerTitle}>
+                {language === 'uk' ? 'Акафісти' : t('menu.akathistsTitle')}
+              </Text>
 
               <View style={styles.headerOrnament}>
                 <View style={styles.headerLine} />
