@@ -21,6 +21,7 @@ const COPY = {
       saveFailed: 'Не удалось сохранить',
       deleteFailed: 'Не удалось удалить',
       loadTextsError: 'Не удалось загрузить тексты',
+      textNotFound: 'Текст не найден',
     },
     menu: {
       search: 'Поиск',
@@ -63,6 +64,7 @@ const COPY = {
       canonLoadError: 'Не удалось загрузить канон',
       psalterLoadError: 'Не удалось загрузить Псалтирь',
       prayerRuleLoadError: 'Не удалось загрузить молитвенное правило',
+      kathismaLoadError: 'Не удалось загрузить кафизму',
     },
     calendar: {
       open: 'Открыть календарь',
@@ -139,6 +141,7 @@ const COPY = {
       saveFailed: 'Не вдалося зберегти',
       deleteFailed: 'Не вдалося видалити',
       loadTextsError: 'Не вдалося завантажити тексти',
+      textNotFound: 'Текст не знайдено',
     },
     menu: {
       search: 'Пошук',
@@ -181,6 +184,7 @@ const COPY = {
       canonLoadError: 'Не вдалося завантажити канон',
       psalterLoadError: 'Не вдалося завантажити Псалтир',
       prayerRuleLoadError: 'Не вдалося завантажити молитовне правило',
+      kathismaLoadError: 'Не вдалося завантажити кафізму',
     },
     calendar: {
       open: 'Відкрити календар',
@@ -257,6 +261,7 @@ const COPY = {
       saveFailed: 'Не удалось сохранити',
       deleteFailed: 'Не удалось удалити',
       loadTextsError: 'Не удалось загрузити тексты',
+      textNotFound: 'Текстъ не найденъ',
     },
     menu: {
       search: 'Поискъ',
@@ -299,6 +304,7 @@ const COPY = {
       canonLoadError: 'Не удалось загрузити канонъ',
       psalterLoadError: 'Не удалось загрузити Псалтирь',
       prayerRuleLoadError: 'Не удалось загрузити молитвенное правило',
+      kathismaLoadError: 'Не удалось загрузити каѳисму',
     },
     calendar: {
       open: 'Открыти календарь',
