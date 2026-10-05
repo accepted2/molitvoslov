@@ -27,7 +27,7 @@ import {StatusBar} from 'expo-status-bar';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 
 export const ReaderScreen = ({route, navigation}) => {
-  const {language} = useLanguage();
+  const {language, t} = useLanguage();
   const {slug, focusTarget = null} = route.params;
 
   const insets = useSafeAreaInsets();
@@ -83,7 +83,7 @@ export const ReaderScreen = ({route, navigation}) => {
     } catch (loadError) {
       console.log('Ошибка загрузки текста:', loadError.response?.data || loadError.message);
 
-      setError('Текст не найден');
+      setError(t('common.textNotFound'));
     } finally {
       setLoading(false);
     }
@@ -123,7 +123,7 @@ export const ReaderScreen = ({route, navigation}) => {
       savedItemsRef.current = savedItemsRef.current.filter((item) => item.id !== existing.id);
 
       return {
-        label: 'В избранное',
+        label: t('common.addToFavorites'),
 
         active: false,
 
@@ -146,9 +146,9 @@ export const ReaderScreen = ({route, navigation}) => {
 
       anchor_id: text.id,
 
-      source_title: getLocalizedTextTitle(text, language) || 'Чтение',
+      source_title: getLocalizedTextTitle(text, language) || t('common.reading'),
 
-      item_title: getLocalizedTextTitle(text, language) || 'Текст',
+      item_title: getLocalizedTextTitle(text, language) || t('common.text'),
 
       text: content,
 
@@ -164,7 +164,7 @@ export const ReaderScreen = ({route, navigation}) => {
     savedItemsRef.current = [saved, ...savedItemsRef.current];
 
     return {
-      label: 'В избранном',
+      label: t('common.inFavorites'),
 
       active: true,
 
@@ -208,8 +208,8 @@ export const ReaderScreen = ({route, navigation}) => {
         sourceId: text.id,
         anchorType: 'text',
         anchorId: text.id,
-        sourceTitle: text.title || 'Чтение',
-        itemTitle: text.title || 'Текст',
+        sourceTitle: text.title || t('common.reading'),
+        itemTitle: text.title || t('common.text'),
         fullSaveType: 'text',
         metadata: {
           slug: text.slug || slug,
@@ -262,14 +262,14 @@ export const ReaderScreen = ({route, navigation}) => {
     }
 
     return {
-      title: getLocalizedTextTitle(text, language) || 'Чтение',
+      title: getLocalizedTextTitle(text, language) || t('common.reading'),
 
       description: getLocalizedTextDescription(text, language),
 
       action: {
         key: `text:${text.id}`,
 
-        label: wholeTextSaved ? 'В избранном' : 'В избранное',
+        label: wholeTextSaved ? t('common.inFavorites') : t('common.addToFavorites'),
 
         active: wholeTextSaved,
       },
@@ -306,6 +306,7 @@ export const ReaderScreen = ({route, navigation}) => {
     slug,
     text,
     viewMode,
+    t,
   ]);
 
   if (loading) {
@@ -313,7 +314,7 @@ export const ReaderScreen = ({route, navigation}) => {
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.accent} />
 
-        <Text style={styles.loadingText}>Загрузка...</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -321,7 +322,7 @@ export const ReaderScreen = ({route, navigation}) => {
   if (error || !text) {
     return (
       <View style={styles.center}>
-        <Text style={styles.error}>{error || 'Текст не найден'}</Text>
+        <Text style={styles.error}>{error || t('common.textNotFound')}</Text>
       </View>
     );
   }
@@ -339,7 +340,7 @@ export const ReaderScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
-        title={getLocalizedTextTitle(text, language) || 'Чтение'}
+        title={getLocalizedTextTitle(text, language) || t('common.reading')}
         navigation={navigation}
         topInset={insets.top}
         showTitle={false}
