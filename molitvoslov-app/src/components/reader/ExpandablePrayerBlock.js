@@ -29,7 +29,7 @@ export default function ExpandablePrayerBlock({
   onExpand,
   saveProps = null,
 }) {
-  const {language} = useLanguage();
+  const {language, t} = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [savedItems, setSavedItems] = useState([]);
   const [headerHeight, setHeaderHeight] = useState(0);
@@ -259,7 +259,7 @@ export default function ExpandablePrayerBlock({
     <View style={styles.container}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={isOpen ? `Свернуть ${title}` : `Развернуть ${title}`}
+        accessibilityLabel={isOpen ? t('common.collapse', {title}) : t('common.expand', {title})}
         style={({pressed}) => [styles.header, pressed && styles.pressed]}
         onPress={toggle}
         onLayout={(event) => setHeaderHeight(event.nativeEvent.layout.height)}
@@ -299,7 +299,7 @@ export default function ExpandablePrayerBlock({
             onPress={collapse}
           >
             <Text style={styles.collapseIcon}>▴</Text>
-            <Text style={styles.collapseText}>Свернуть</Text>
+            <Text style={styles.collapseText}>{t('common.collapseOnly')}</Text>
           </Pressable>
         </View>
       )}
