@@ -122,7 +122,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         loadError.response?.data || loadError.message
       );
 
-      setError('Не удалось загрузить молитвенное правило');
+      setError(t('menu.prayerRuleLoadError'));
     } finally {
       setLoading(false);
     }
@@ -133,7 +133,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.accent} />
 
-        <Text style={styles.loadingText}>Загрузка...</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -141,7 +141,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
   if (error || !rule) {
     return (
       <View style={styles.center}>
-        <Text style={styles.error}>{error || 'Молитвенное правило не найдено'}</Text>
+        <Text style={styles.error}>{error || t('reading.prayerRuleNotFound')}</Text>
       </View>
     );
   }
