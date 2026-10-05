@@ -5,15 +5,18 @@ import {BottomNav} from '../components/navigation/BottomNav';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {useLanguage} from '../context/LanguageContext';
+import {getLocalizedField} from '../services/localizedContent';
 
 export const CategoryMenuScreen = ({route, navigation}) => {
+  const {language} = useLanguage();
   const {parentCategory, subcategories} = route.params;
 
   const handlePress = (category) => {
     navigation.navigate('Book', {
       categoryId: category.id,
       categorySlug: category.slug,
-      categoryName: category.name,
+      categoryName: getLocalizedField(category, 'name', language),
     });
   };
   const insets = useSafeAreaInsets();
@@ -23,7 +26,7 @@ export const CategoryMenuScreen = ({route, navigation}) => {
     <AppBackground imageOpacity={0.72}>
       <StatusBar style="light" translucent backgroundColor="transparent" />
       <View style={styles.container}>
-        <Text style={styles.headerTitle}>{parentCategory.name}</Text>
+        <Text style={styles.headerTitle}>{getLocalizedField(parentCategory, 'name', language)}</Text>
         <FlatList
           data={subcategories}
           keyExtractor={(item) => item.id.toString()}
@@ -31,14 +34,14 @@ export const CategoryMenuScreen = ({route, navigation}) => {
             <TouchableOpacity style={styles.menuItem} onPress={() => handlePress(item)}>
               <Text style={styles.menuIcon}>{item.icon || '📖'}</Text>
               <View style={styles.menuTextContainer}>
-                <Text style={styles.menuTitle}>{item.name}</Text>
+                <Text style={styles.menuTitle}>{getLocalizedField(item, 'name', language)}</Text>
               </View>
               <Text style={styles.arrow}>›</Text>
             </TouchableOpacity>
           )}
         />
         <FixedSectionHeader
-          title={parentCategory.name}
+          title={getLocalizedField(parentCategory, 'name', language)}
           navigation={navigation}
           topInset={insets.top}
         />
