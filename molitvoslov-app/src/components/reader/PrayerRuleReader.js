@@ -1203,19 +1203,24 @@ const HTML_TEMPLATE = String.raw`
 
       const visibleFootnotes =
         footnotes.filter(
-          footnote =>
-            !(
+          footnote => {
+            const footnoteContent =
+              DATA.viewMode === 'ukrainian'
+                ? footnote?.content_uk || footnote?.content || ''
+                : footnote?.content || '';
+
+            return !(
               isMorningRule &&
               Number(
                 footnote?.number
               ) === 2 &&
               /при желании читается по окончании утренних молитв/i.test(
                 String(
-                  footnote?.content ||
-                  ''
+                  footnoteContent
                 )
               )
-            )
+            );
+          }
         );
 
       if (!visibleFootnotes.length) {
@@ -1237,7 +1242,11 @@ const HTML_TEMPLATE = String.raw`
               '[' +
               footnote.number +
               '] ' +
-              footnote.content
+              (
+                DATA.viewMode === 'ukrainian'
+                  ? footnote.content_uk || footnote.content || ''
+                  : footnote.content || ''
+              )
             )
           );
         }
@@ -2114,14 +2123,17 @@ const HTML_TEMPLATE = String.raw`
         );
       }
 
-      if (
-        DATA.rule.name
-      ) {
+      const ruleName =
+        DATA.viewMode === 'ukrainian'
+          ? DATA.rule.name_uk || DATA.rule.name || ''
+          : DATA.rule.name || '';
+
+      if (ruleName) {
         reader.appendChild(
           titleEl(
             'h1',
             'rule-title',
-            DATA.rule.name
+            ruleName
           )
         );
       }
