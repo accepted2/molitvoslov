@@ -5,8 +5,9 @@ import {Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-nati
 import {getSavedItems} from '../../services/savedItems';
 import {
   READER_LANGUAGE_MODES,
-  buildReaderLanguageOptions,
+  getReaderModeForAppLanguage,
 } from '../../services/readerLanguageModes';
+import {useLanguage} from '../../context/LanguageContext';
 
 import SelectableDocumentReader from './SelectableDocumentReader';
 
@@ -22,15 +23,16 @@ export default function ExpandablePrayerBlock({
   title,
   text,
   secondaryText = '',
+  ukrainianText = '',
   traditionalText = '',
   onCollapse,
   onExpand,
   saveProps = null,
 }) {
+  const {language} = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [savedItems, setSavedItems] = useState([]);
   const [headerHeight, setHeaderHeight] = useState(0);
-  const [viewMode, setViewMode] = useState(READER_LANGUAGE_MODES.BOTH);
 
   const {height: windowHeight} = useWindowDimensions();
 
@@ -47,6 +49,8 @@ export default function ExpandablePrayerBlock({
   }, [text, saveProps?.metadata?.section]);
 
   const normalizedSecondaryText = useMemo(() => normalizeText(secondaryText), [secondaryText]);
+
+  const normalizedUkrainianText = useMemo(() => normalizeText(ukrainianText), [ukrainianText]);
 
   const normalizedTraditionalText = useMemo(
     () => normalizeText(traditionalText),
@@ -67,19 +71,14 @@ export default function ExpandablePrayerBlock({
     saveProps?.anchorId,
   ]);
 
-  useEffect(() => {
-    if (
-      (viewMode === READER_LANGUAGE_MODES.BOTH || viewMode === READER_LANGUAGE_MODES.RUSSIAN) &&
-      !normalizedSecondaryText
-    ) {
-      setViewMode(READER_LANGUAGE_MODES.CHURCH);
-      return;
-    }
-
-    if (viewMode === READER_LANGUAGE_MODES.TRADITIONAL && !normalizedTraditionalText) {
-      setViewMode(READER_LANGUAGE_MODES.CHURCH);
-    }
-  }, [viewMode, normalizedSecondaryText, normalizedTraditionalText]);
+  const viewMode = useMemo(
+    () =>
+      getReaderModeForAppLanguage(language, {
+        hasRussian: !!normalizedSecondaryText,
+        hasUkrainian: !!normalizedUkrainianText,
+      }),
+    [language, normalizedSecondaryText, normalizedUkrainianText]
+  );
 
   const loadSaved = async () => {
     try {
@@ -150,53 +149,56 @@ export default function ExpandablePrayerBlock({
     const psalterClass =
       saveProps.sourceType === 'psalter' ? 'psalter-prayer psalter-reading-prayers' : '';
 
-    if (viewMode === READER_LANGUAGE_MODES.TRADITIONAL) {
+    if (viewMode === READER_LANGUAGE_MODES.UKRAINIAN) {
+      const value =
+        normalizedUkrainianText ||
+        normalizedSecondaryText ||
+        normalizedText ||
+        normalizedTraditionalText;
+      const blockLanguage = normalizedUkrainianText
+        ? 'ukrainian'
+        : normalizedSecondaryText
+          ? 'russian'
+          : 'church';
+
       addBlock({
-        id: 3,
-        value: normalizedTraditionalText,
-        language: 'traditional',
-        className: psalterClass,
+        id: 4,
+        value,
+        language: blockLanguage,
+        className:
+          blockLanguage === 'church'
+            ? psalterClass
+            : psalterClass
+              ? `${psalterClass} secondary`
+              : 'secondary',
       });
     } else if (viewMode === READER_LANGUAGE_MODES.RUSSIAN) {
+      const value = normalizedSecondaryText || normalizedText || normalizedTraditionalText;
+
       addBlock({
         id: 2,
-        value: normalizedSecondaryText,
-        language: 'russian',
-        className: psalterClass ? `${psalterClass} secondary` : 'secondary',
+        value,
+        language: normalizedSecondaryText ? 'russian' : 'church',
+        className:
+          normalizedSecondaryText
+            ? psalterClass
+              ? `${psalterClass} secondary`
+              : 'secondary'
+            : psalterClass,
       });
     } else {
       addBlock({
         id: 1,
-        value: normalizedText,
-        language: 'church',
-        label:
-          viewMode === READER_LANGUAGE_MODES.BOTH && normalizedSecondaryText
-            ? 'Церковнославянский'
-            : '',
+        value: normalizedText || normalizedTraditionalText || normalizedSecondaryText,
+        language: normalizedText || normalizedTraditionalText ? 'church' : 'russian',
         className: psalterClass,
       });
-
-      if (viewMode === READER_LANGUAGE_MODES.BOTH) {
-        addBlock({
-          id: 2,
-          value: normalizedSecondaryText,
-          language: 'russian',
-          label: 'Русский',
-          className: psalterClass ? `${psalterClass} secondary` : 'secondary',
-        });
-      }
     }
 
     return {
       title: '',
       description: '',
-      viewSwitcher: {
-        activeKey: viewMode,
-        options: buildReaderLanguageOptions({
-          hasRussian: !!normalizedSecondaryText,
-          hasTraditional: !!normalizedTraditionalText,
-        }),
-      },
+      viewSwitcher: null,
       progressAnchorType: saveProps.anchorType,
       savedItems: normalizedSaved,
       sections: [
@@ -206,8 +208,7 @@ export default function ExpandablePrayerBlock({
           title: '',
           rows: [
             {
-              layout:
-                viewMode === READER_LANGUAGE_MODES.BOTH && blocks.length > 1 ? 'parallel' : 'stack',
+              layout: 'stack',
               sharedTitle:
                 saveProps?.metadata?.section === 'prayers_before'
                   ? 'Разумно да будет, како подобает особь пети Псалтирь'
@@ -222,13 +223,19 @@ export default function ExpandablePrayerBlock({
     normalizedSecondaryText,
     normalizedText,
     normalizedTraditionalText,
+    normalizedUkrainianText,
     saveProps,
     savedItems,
     title,
     viewMode,
   ]);
 
-  if (!normalizedText && !normalizedSecondaryText && !normalizedTraditionalText) {
+  if (
+    !normalizedText &&
+    !normalizedSecondaryText &&
+    !normalizedUkrainianText &&
+    !normalizedTraditionalText
+  ) {
     return null;
   }
 
@@ -262,7 +269,14 @@ export default function ExpandablePrayerBlock({
 
           {!isOpen && (
             <Text style={styles.preview} numberOfLines={2}>
-              {normalizedText || normalizedSecondaryText || normalizedTraditionalText}
+              {viewMode === READER_LANGUAGE_MODES.UKRAINIAN
+                ? normalizedUkrainianText ||
+                  normalizedSecondaryText ||
+                  normalizedText ||
+                  normalizedTraditionalText
+                : viewMode === READER_LANGUAGE_MODES.RUSSIAN
+                  ? normalizedSecondaryText || normalizedText || normalizedTraditionalText
+                  : normalizedText || normalizedTraditionalText || normalizedSecondaryText}
             </Text>
           )}
         </View>
@@ -274,11 +288,7 @@ export default function ExpandablePrayerBlock({
         <View style={styles.content}>
           {documentData ? (
             <View style={[styles.reader, {height: readerHeight}]}>
-              <SelectableDocumentReader
-                documentData={documentData}
-                savedProgress={null}
-                onViewModeChange={setViewMode}
-              />
+              <SelectableDocumentReader documentData={documentData} savedProgress={null} />
             </View>
           ) : (
             <Text style={styles.prayerText}>{normalizedText}</Text>
