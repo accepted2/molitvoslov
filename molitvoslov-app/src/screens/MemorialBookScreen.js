@@ -583,7 +583,7 @@ export const MemorialBookScreen = ({navigation, route}) => {
               inputMode="text"
               autoCorrect={false}
               spellCheck={false}
-              placeholder={t('memorial.my')}"
+              placeholder={t('memorial.my')}
               placeholderTextColor={colors.textMuted}
               style={styles.titleInput}
             />
