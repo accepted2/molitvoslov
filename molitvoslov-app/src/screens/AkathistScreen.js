@@ -17,11 +17,16 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
-import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
+import {
+  READER_LANGUAGE_MODES,
+  getReaderModeForAppLanguage,
+} from '../services/readerLanguageModes';
+import {useLanguage} from '../context/LanguageContext';
 
 const MODE_CHURCH = READER_LANGUAGE_MODES.CHURCH;
 const MODE_BOTH = READER_LANGUAGE_MODES.BOTH;
 const MODE_RUSSIAN = READER_LANGUAGE_MODES.RUSSIAN;
+const MODE_UKRAINIAN = READER_LANGUAGE_MODES.UKRAINIAN;
 const MODE_TRADITIONAL = READER_LANGUAGE_MODES.TRADITIONAL;
 
 const normalizeAkathistText = (value) => {
@@ -92,6 +97,7 @@ const getSectionTitle = (section) => {
 };
 
 export const AkathistScreen = ({route, navigation}) => {
+  const {language} = useLanguage();
   const {akathistId, slug, title, focusTarget = null} = route.params;
 
   const insets = useSafeAreaInsets();
@@ -105,7 +111,7 @@ export const AkathistScreen = ({route, navigation}) => {
   const savedItemsRef = useRef([]);
   const readerRef = useRef(null);
 
-  const [viewMode, setViewMode] = useState(MODE_BOTH);
+  const [viewMode, setViewMode] = useState(MODE_CHURCH);
 
   const [loading, setLoading] = useState(true);
 
@@ -176,7 +182,7 @@ export const AkathistScreen = ({route, navigation}) => {
     );
   }, [akathist]);
 
-  const hasTraditionalText = useMemo(() => {
+  const hasUkrainianTranslation = useMemo(() => {
     if (!akathist) {
       return false;
     }
@@ -189,8 +195,8 @@ export const AkathistScreen = ({route, navigation}) => {
     ];
 
     return (
-      specialTexts.some((item) => !!item?.traditional_content?.trim()) ||
-      (akathist.sections || []).some((section) => !!section.text?.traditional_content?.trim())
+      specialTexts.some((item) => !!item?.translation_uk?.trim()) ||
+      (akathist.sections || []).some((section) => !!section.text?.translation_uk?.trim())
     );
   }, [akathist]);
 
@@ -199,15 +205,13 @@ export const AkathistScreen = ({route, navigation}) => {
       return;
     }
 
-    if ((viewMode === MODE_BOTH || viewMode === MODE_RUSSIAN) && !hasRussianTranslation) {
-      setViewMode(MODE_CHURCH);
-      return;
-    }
-
-    if (viewMode === MODE_TRADITIONAL && !hasTraditionalText) {
-      setViewMode(MODE_CHURCH);
-    }
-  }, [akathist, hasRussianTranslation, hasTraditionalText, viewMode]);
+    setViewMode(
+      getReaderModeForAppLanguage(language, {
+        hasRussian: hasRussianTranslation,
+        hasUkrainian: hasUkrainianTranslation,
+      })
+    );
+  }, [language, akathist, hasRussianTranslation, hasUkrainianTranslation]);
 
   const handleAction = async (actionKey) => {
     if (!actionKey?.startsWith('akathist:') || !akathist) {
@@ -288,6 +292,8 @@ export const AkathistScreen = ({route, navigation}) => {
     const showChurch = viewMode === MODE_CHURCH || viewMode === MODE_BOTH;
 
     const showRussian = viewMode === MODE_RUSSIAN || viewMode === MODE_BOTH;
+
+    const showUkrainian = viewMode === MODE_UKRAINIAN;
 
     const showTraditional = viewMode === MODE_TRADITIONAL;
 
@@ -392,6 +398,8 @@ export const AkathistScreen = ({route, navigation}) => {
 
       const russian = normalizeAkathistText(textObject.translation);
 
+      const ukrainian = normalizeAkathistText(textObject.translation_uk);
+
       const traditional = normalizeAkathistText(textObject.traditional_content);
 
       if (showTraditional && traditional) {
@@ -449,6 +457,75 @@ export const AkathistScreen = ({route, navigation}) => {
             special: specialKey,
           })
         );
+      }
+
+      if (showUkrainian) {
+        const localized = ukrainian || russian || church;
+        const localizedLanguage = ukrainian ? 'ukrainian' : russian ? 'russian' : 'church';
+
+        if (localized) {
+          blocks.push(
+            makeBlock({
+              text: localized,
+
+              language: localizedLanguage,
+
+              anchorType: 'akathist_special',
+
+              anchorId: textObject.id,
+
+              itemTitle: heading,
+
+              fullSaveType: 'text',
+
+              metadata: {
+                slug,
+
+                special: specialKey,
+
+                segment: 'whole',
+
+                language: localizedLanguage,
+              },
+
+              className: localizedLanguage === 'church' ? 'akathist-church' : 'akathist-russian',
+
+              special: specialKey,
+            })
+          );
+        }
+      }
+
+      if (showUkrainian) {
+        const localized = ukrainian || russian || church;
+        const localizedLanguage = ukrainian ? 'ukrainian' : russian ? 'russian' : 'church';
+
+        if (localized) {
+          blocks.push(
+            makeBlock({
+              text: localized,
+
+              language: localizedLanguage,
+
+              anchorType: 'akathist_section',
+
+              anchorId: section.id,
+
+              itemTitle: sectionTitle,
+
+              fullSaveType,
+
+              metadata: {
+                slug,
+                section_id: section.id,
+                segment: 'whole',
+                language: localizedLanguage,
+              },
+
+              className: localizedLanguage === 'church' ? 'akathist-church' : 'akathist-russian',
+            })
+          );
+        }
       }
 
       if (showRussian && russian) {
@@ -509,6 +586,8 @@ export const AkathistScreen = ({route, navigation}) => {
       const church = normalizeAkathistText(section.text?.content);
 
       const russian = normalizeAkathistText(section.text?.translation);
+
+      const ukrainian = normalizeAkathistText(section.text?.translation_uk);
 
       const traditional = normalizeAkathistText(section.text?.traditional_content);
 
@@ -645,13 +724,7 @@ export const AkathistScreen = ({route, navigation}) => {
         active: wholeAkathistSaved,
       },
 
-      viewSwitcher: {
-        activeKey: viewMode,
-        options: buildReaderLanguageOptions({
-          hasRussian: hasRussianTranslation,
-          hasTraditional: hasTraditionalText,
-        }),
-      },
+      viewSwitcher: null,
 
       progressAnchorType: 'akathist_section',
 
@@ -663,7 +736,7 @@ export const AkathistScreen = ({route, navigation}) => {
     akathist,
     akathistId,
     hasRussianTranslation,
-    hasTraditionalText,
+    hasUkrainianTranslation,
     savedItems,
     slug,
     title,
@@ -728,7 +801,6 @@ export const AkathistScreen = ({route, navigation}) => {
         topContentInset={headerHeight}
         onProgress={scheduleSave}
         onAction={handleAction}
-        onViewModeChange={setViewMode}
       />
 
       <ReaderBookmarkMenu
