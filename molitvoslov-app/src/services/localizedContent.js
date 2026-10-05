@@ -31,10 +31,6 @@ export const getLocalizedTextContent = (text, language) => {
 
   const lang = normalizeAppLanguage(language);
 
-  if (lang === APP_LANGUAGES.CU) {
-    return clean(text.content) || clean(text.traditional_content) || clean(text.translation);
-  }
-
   if (lang === APP_LANGUAGES.UK) {
     return (
       clean(text.translation_uk) ||
