@@ -105,4 +105,4 @@ class UcsPrayerRuleParserTests(SimpleTestCase):
         )
 
         self.assertTrue(matched)
-        self.assertIn("ґнті", matched.lower())
+        self.assertIn("антиоха", normalize_for_similarity(matched))
