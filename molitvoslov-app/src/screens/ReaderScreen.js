@@ -8,7 +8,16 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 
-import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
+import {
+  READER_LANGUAGE_MODES,
+  getReaderModeForAppLanguage,
+} from '../services/readerLanguageModes';
+import {useLanguage} from '../context/LanguageContext';
+import {
+  getLocalizedTextContent,
+  getLocalizedTextDescription,
+  getLocalizedTextTitle,
+} from '../services/localizedContent';
 
 import {colors} from '../theme';
 
@@ -18,6 +27,7 @@ import {StatusBar} from 'expo-status-bar';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 
 export const ReaderScreen = ({route, navigation}) => {
+  const {language} = useLanguage();
   const {slug, focusTarget = null} = route.params;
 
   const insets = useSafeAreaInsets();
@@ -30,7 +40,7 @@ export const ReaderScreen = ({route, navigation}) => {
 
   const savedItemsRef = useRef([]);
 
-  const [viewMode, setViewMode] = useState(READER_LANGUAGE_MODES.BOTH);
+  const [viewMode, setViewMode] = useState(READER_LANGUAGE_MODES.CHURCH);
 
   const [loading, setLoading] = useState(true);
 
@@ -80,27 +90,20 @@ export const ReaderScreen = ({route, navigation}) => {
   };
 
   const hasRussianTranslation = !!text?.translation?.trim();
-  const hasTraditionalText = !!text?.traditional_content?.trim();
+  const hasUkrainianTranslation = !!text?.translation_uk?.trim();
 
   useEffect(() => {
     if (!text) {
       return;
     }
 
-    if (viewMode === READER_LANGUAGE_MODES.RUSSIAN && !hasRussianTranslation) {
-      setViewMode(READER_LANGUAGE_MODES.CHURCH);
-      return;
-    }
-
-    if (viewMode === READER_LANGUAGE_MODES.BOTH && !hasRussianTranslation) {
-      setViewMode(READER_LANGUAGE_MODES.CHURCH);
-      return;
-    }
-
-    if (viewMode === READER_LANGUAGE_MODES.TRADITIONAL && !hasTraditionalText) {
-      setViewMode(READER_LANGUAGE_MODES.CHURCH);
-    }
-  }, [text, viewMode, hasRussianTranslation, hasTraditionalText]);
+    setViewMode(
+      getReaderModeForAppLanguage(language, {
+        hasRussian: hasRussianTranslation,
+        hasUkrainian: hasUkrainianTranslation,
+      })
+    );
+  }, [language, text, hasRussianTranslation, hasUkrainianTranslation]);
 
   const handleAction = async (actionKey) => {
     if (!text || actionKey !== `text:${text.id}`) {
@@ -130,7 +133,7 @@ export const ReaderScreen = ({route, navigation}) => {
       };
     }
 
-    const content = text.content || '';
+    const content = getLocalizedTextContent(text, language);
 
     const saved = await saveItem({
       save_type: 'text',
@@ -143,9 +146,9 @@ export const ReaderScreen = ({route, navigation}) => {
 
       anchor_id: text.id,
 
-      source_title: text.title || 'Чтение',
+      source_title: getLocalizedTextTitle(text, language) || 'Чтение',
 
-      item_title: text.title || 'Текст',
+      item_title: getLocalizedTextTitle(text, language) || 'Текст',
 
       text: content,
 
@@ -236,41 +239,32 @@ export const ReaderScreen = ({route, navigation}) => {
         });
     };
 
-    if (viewMode === READER_LANGUAGE_MODES.TRADITIONAL) {
+    if (viewMode === READER_LANGUAGE_MODES.UKRAINIAN) {
       appendBlock({
-        id: 3,
-        value: text.traditional_content || '',
-        language: 'traditional',
-        className: 'traditional',
+        id: 4,
+        value: text.translation_uk || text.translation || text.content || '',
+        language: text.translation_uk?.trim() ? 'ukrainian' : text.translation?.trim() ? 'russian' : 'church',
+        className: text.translation_uk?.trim() || text.translation?.trim() ? 'secondary' : '',
       });
     } else if (viewMode === READER_LANGUAGE_MODES.RUSSIAN) {
       appendBlock({
         id: 2,
-        value: text.translation || '',
-        language: 'russian',
-        className: 'secondary',
+        value: text.translation || text.content || '',
+        language: text.translation?.trim() ? 'russian' : 'church',
+        className: text.translation?.trim() ? 'secondary' : '',
       });
     } else {
       appendBlock({
         id: 1,
-        value: text.content || '',
+        value: text.content || text.traditional_content || '',
         language: 'church',
       });
-
-      if (viewMode === READER_LANGUAGE_MODES.BOTH) {
-        appendBlock({
-          id: 2,
-          value: text.translation || '',
-          language: 'russian',
-          className: 'secondary',
-        });
-      }
     }
 
     return {
-      title: text.title || 'Чтение',
+      title: getLocalizedTextTitle(text, language) || 'Чтение',
 
-      description: text.description || '',
+      description: getLocalizedTextDescription(text, language),
 
       action: {
         key: `text:${text.id}`,
@@ -280,13 +274,7 @@ export const ReaderScreen = ({route, navigation}) => {
         active: wholeTextSaved,
       },
 
-      viewSwitcher: {
-        activeKey: viewMode,
-        options: buildReaderLanguageOptions({
-          hasRussian: hasRussianTranslation,
-          hasTraditional: hasTraditionalText,
-        }),
-      },
+      viewSwitcher: null,
 
       progressAnchorType: 'text',
 
@@ -302,8 +290,7 @@ export const ReaderScreen = ({route, navigation}) => {
 
           rows: [
             {
-              layout:
-                viewMode === READER_LANGUAGE_MODES.BOTH && blocks.length > 1 ? 'parallel' : 'stack',
+              layout: 'stack',
 
               blocks,
             },
@@ -311,7 +298,15 @@ export const ReaderScreen = ({route, navigation}) => {
         },
       ],
     };
-  }, [hasRussianTranslation, hasTraditionalText, savedItems, slug, text, viewMode]);
+  }, [
+    hasRussianTranslation,
+    hasUkrainianTranslation,
+    language,
+    savedItems,
+    slug,
+    text,
+    viewMode,
+  ]);
 
   if (loading) {
     return (
@@ -341,11 +336,10 @@ export const ReaderScreen = ({route, navigation}) => {
         focusTarget={focusTarget}
         topContentInset={headerHeight}
         onAction={handleAction}
-        onViewModeChange={setViewMode}
       />
 
       <FixedSectionHeader
-        title={text.title || 'Чтение'}
+        title={getLocalizedTextTitle(text, language) || 'Чтение'}
         navigation={navigation}
         topInset={insets.top}
         showTitle={false}
