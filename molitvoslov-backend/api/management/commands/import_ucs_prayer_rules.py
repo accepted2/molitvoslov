@@ -123,6 +123,22 @@ def find_best_traditional_title(rows, current_title, traditional_content=""):
     if not current_title:
         return ""
 
+    target_content = normalize_for_similarity(traditional_content)
+
+    # Некоторые общие молитвы в Book.html находятся внутри большого
+    # абзаца без собственного <h3>. Если наш импортируемый текст буквально
+    # входит в такой безымянный абзац, нельзя заимствовать похожий заголовок
+    # у другой молитвы ниже по разделу. Лучше оставить traditional_title
+    # пустым, чем присвоить неверное название.
+    if target_content:
+        for row in rows:
+            if normalize_traditional_title(row.get("title")):
+                continue
+
+            row_content = normalize_for_similarity(row.get("content"))
+            if row_content and target_content in row_content:
+                return ""
+
     candidates = []
     seen = set()
 
@@ -136,9 +152,7 @@ def find_best_traditional_title(rows, current_title, traditional_content=""):
             content_score = similarity(traditional_content, row_content)
 
             # Заголовок разрешаем брать только у того абзаца, чей текст
-            # действительно соответствует импортируемому Text. Это не даёт
-            # общей молитве вроде "Царю Небесный" случайно получить название
-            # другой молитвы из того же раздела.
+            # действительно соответствует импортируемому Text.
             if content_score < 0.72:
                 continue
         else:
