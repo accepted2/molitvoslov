@@ -279,7 +279,7 @@ const PrayerPhoto = ({photo}) => {
 
 export const PrayerBookReaderScreen = ({route, navigation}) => {
   const {t} = useLanguage();
-  const {bookSyncId = route.params;
+  const {bookSyncId} = route.params;
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + 56;
   const [book, setBook] = useState(null);
