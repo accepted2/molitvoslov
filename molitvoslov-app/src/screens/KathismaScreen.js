@@ -22,6 +22,7 @@ import {StatusBar} from 'expo-status-bar';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {
   READER_LANGUAGE_MODES,
+  buildReaderLanguageOptions,
   getReaderModeForAppLanguage,
 } from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
@@ -504,6 +505,17 @@ export default function KathismaScreen({route, navigation}) {
       !!kathisma?.prayers_after_uk?.trim() ||
       (kathisma?.psalms || []).some((psalm) =>
         (psalm.verses || []).some((verse) => !!verse.ukrainian?.trim())
+      ),
+    [kathisma]
+  );
+
+  const hasTraditionalTranslation = useMemo(
+    () =>
+      !!kathisma?.prayers_after_traditional?.trim() ||
+      (kathisma?.psalms || []).some((psalm) =>
+        (psalm.verses || []).some(
+          (verse) => !!verse.church_slavonic_traditional?.trim()
+        )
       ),
     [kathisma]
   );
@@ -1170,7 +1182,13 @@ export default function KathismaScreen({route, navigation}) {
         active: wholeKathismaSaved,
       },
 
-      viewSwitcher: null,
+      viewSwitcher: {
+        activeKey: viewMode,
+        options: buildReaderLanguageOptions({
+          hasRussian: hasRussianTranslation,
+          hasTraditional: hasTraditionalTranslation,
+        }),
+      },
 
       progressAnchorType: 'psalm',
 
@@ -1185,6 +1203,7 @@ export default function KathismaScreen({route, navigation}) {
     viewMode,
     hasRussianTranslation,
     hasUkrainianTranslation,
+    hasTraditionalTranslation,
     language,
     t,
   ]);
@@ -1264,6 +1283,7 @@ export default function KathismaScreen({route, navigation}) {
         topContentInset={headerHeight}
         onProgress={handleProgress}
         onAction={handleAction}
+        onViewModeChange={setViewMode}
         onMemorialOpen={() => setMemorialVisible(true)}
       />
 
