@@ -82,6 +82,7 @@ class DaySaintLink:
 class SaintContent:
     title: str
     url: str
+    icon_source_url: str = ""
     troparion_title: str = ""
     troparion_content: str = ""
     troparion_echo: int | None = None
@@ -302,6 +303,76 @@ def _next_text_block(heading):
     return ""
 
 
+def _icon_url_from_tags(tags):
+    for tag in tags:
+        raw_values = []
+
+        if tag.name == "a":
+            raw_values.append(tag.get("href"))
+        else:
+            raw_values.extend(
+                [
+                    tag.get("src"),
+                    tag.get("data-src"),
+                    tag.get("data-lazy-src"),
+                ]
+            )
+
+        for raw_value in raw_values:
+            value = normalize_space(raw_value or "")
+            if not value:
+                continue
+
+            absolute = urljoin(AZBYKA_BASE_URL, value)
+            parsed = urlparse(absolute)
+            path = parsed.path.lower()
+
+            if "/storage/images/" not in path:
+                continue
+
+            if not re.search(r"\.(?:jpe?g|png|webp)$", path, re.IGNORECASE):
+                continue
+
+            return absolute
+
+    return ""
+
+
+def _extract_saint_icon_url_from_soup(soup):
+    # На страницах Azbyka галерея икон обычно стоит непосредственно перед H1.
+    # Сначала смотрим только эту верхнюю часть страницы, чтобы не принять
+    # иллюстрацию внутри жития за главную календарную икону.
+    h1 = soup.find("h1")
+    if h1 is not None:
+        previous = list(h1.find_all_previous(["a", "img"]))
+        previous.reverse()
+        icon_url = _icon_url_from_tags(previous)
+        if icon_url:
+            return icon_url
+
+        # Редкий вариант разметки: изображение может стоять сразу после H1,
+        # но до первого следующего заголовка.
+        nearby = []
+        for tag in h1.find_all_next(["a", "img", "h2", "h3", "h4", "h5", "h6"]):
+            if tag.name in {"h2", "h3", "h4", "h5", "h6"}:
+                break
+            nearby.append(tag)
+
+        icon_url = _icon_url_from_tags(nearby)
+        if icon_url:
+            return icon_url
+
+        return ""
+
+    return _icon_url_from_tags(soup.find_all(["a", "img"]))
+
+
+def extract_saint_icon_url(html):
+    return _extract_saint_icon_url_from_soup(
+        BeautifulSoup(html, "lxml")
+    )
+
+
 def _collect_life(soup, saint_title):
     headings = list(soup.find_all(HEADING_RE))
 
@@ -381,6 +452,7 @@ def extract_day_saint_links(html):
 
     sources = []
     seen = set()
+    seen_items = set()
 
     # В календарном списке Azbyka бывают разные типы карточек:
     # /days/sv-*       — один святой
@@ -415,6 +487,20 @@ def extract_day_saint_links(html):
             continue
 
         item = anchor.find_parent("li")
+
+        # Один календарный пункт Azbyka может содержать несколько ссылок
+        # на персональные страницы святых. Например:
+        # "сщмчч. Андрея Быстрова и Павла Березина, пресвитеров,
+        # прмч. Виталия (Кокорева), монаха".
+        # Для календаря это ОДНА память, поэтому берём первый подходящий URL
+        # этого <li> как источник карточки и не создаём дубли по остальным
+        # ссылкам того же пункта.
+        if item is not None:
+            item_key = id(item)
+            if item_key in seen_items:
+                continue
+            seen_items.add(item_key)
+
         title = tag_text(item) if item is not None else tag_text(anchor)
         if not title:
             continue
@@ -517,6 +603,7 @@ def extract_saint_content(html, url=""):
         raise AzbykaFeastError(f"На странице святого нет H1: {url}")
 
     title = tag_text(h1)
+    icon_source_url = _extract_saint_icon_url_from_soup(soup)
 
     values = {
         "troparion_title": "",
@@ -558,6 +645,7 @@ def extract_saint_content(html, url=""):
     return SaintContent(
         title=title,
         url=url,
+        icon_source_url=icon_source_url,
         life_title=life_title,
         life_content=life_content,
         **values,
