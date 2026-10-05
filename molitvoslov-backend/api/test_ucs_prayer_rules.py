@@ -2,8 +2,9 @@ from bs4 import BeautifulSoup
 from django.test import SimpleTestCase
 
 from api.management.commands.import_ucs_prayer_rules import (
-    parse_section_blocks,
+    normalize_for_similarity,
     parse_section_paragraphs,
+    similarity,
     ucs_to_unicode,
 )
 
@@ -19,7 +20,7 @@ class UcsPrayerRuleParserTests(SimpleTestCase):
         self.assertIn("й.", converted)
         self.assertIn("ꙋ", converted)
 
-    def test_parses_heading_blocks_and_paragraphs(self):
+    def test_parses_paragraphs_and_keeps_heading(self):
         soup = BeautifulSoup(
             """
             <html><body>
@@ -34,14 +35,15 @@ class UcsPrayerRuleParserTests(SimpleTestCase):
             "html.parser",
         )
 
-        blocks = parse_section_blocks(soup, "1")
         paragraphs = parse_section_paragraphs(soup, "1")
 
-        self.assertEqual(len(blocks), 2)
         self.assertEqual(len(paragraphs), 3)
-        self.assertTrue(blocks[0]["content"])
-        self.assertTrue(blocks[1]["title"])
-        self.assertIn("\n\n", blocks[1]["content"])
+        self.assertEqual(paragraphs[0]["raw_title"], "")
+        self.assertTrue(paragraphs[1]["title"])
+        self.assertEqual(
+            paragraphs[1]["raw_title"],
+            "Мlтва мытарS:",
+        )
 
     def test_stops_at_next_h2(self):
         soup = BeautifulSoup(
@@ -57,3 +59,13 @@ class UcsPrayerRuleParserTests(SimpleTestCase):
         rows = parse_section_paragraphs(soup, "3")
 
         self.assertEqual(len(rows), 1)
+
+    def test_similarity_normalizes_historic_letters_and_accents(self):
+        modern = "Поми́луй нас."
+        historic = "Поми́лꙋй насъ."
+
+        self.assertEqual(
+            normalize_for_similarity(modern),
+            normalize_for_similarity(historic),
+        )
+        self.assertGreater(similarity(modern, historic), 0.99)
