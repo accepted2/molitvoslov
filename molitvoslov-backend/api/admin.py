@@ -117,10 +117,13 @@ class TextAdmin(admin.ModelAdmin):
 
     search_fields = [
         "title",
+        "title_uk",
         "description",
+        "description_uk",
         "content",
         "traditional_content",
         "translation",
+        "translation_uk",
         "slug",
     ]
 
@@ -153,11 +156,14 @@ class TextAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "title",
+                    "title_uk",
                     "description",
+                    "description_uk",
                     "description_position",
                     "content",
                     "traditional_content",
                     "translation",
+                    "translation_uk",
                     "slug",
                 ),
                 "classes": (
