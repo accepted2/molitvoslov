@@ -10,7 +10,16 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 
-import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
+import {
+  READER_LANGUAGE_MODES,
+  getReaderModeForAppLanguage,
+} from '../services/readerLanguageModes';
+import {useLanguage} from '../context/LanguageContext';
+import {
+  getLocalizedTextContent,
+  getLocalizedTextDescription,
+  getLocalizedTextTitle,
+} from '../services/localizedContent';
 
 import {colors} from '../theme';
 
@@ -20,6 +29,7 @@ import {StatusBar} from 'expo-status-bar';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 
 export const BookScreen = ({route, navigation}) => {
+  const {language} = useLanguage();
   const {categoryId, categorySlug, categoryName, focusTarget = null} = route.params;
 
   const insets = useSafeAreaInsets();
@@ -32,7 +42,7 @@ export const BookScreen = ({route, navigation}) => {
 
   const savedItemsRef = useRef([]);
 
-  const [viewMode, setViewMode] = useState(READER_LANGUAGE_MODES.BOTH);
+  const [viewMode, setViewMode] = useState(READER_LANGUAGE_MODES.CHURCH);
 
   const [loading, setLoading] = useState(true);
 
@@ -89,24 +99,19 @@ export const BookScreen = ({route, navigation}) => {
     [texts]
   );
 
-  const hasTraditionalText = useMemo(
-    () => texts.some((item) => !!item.text?.traditional_content?.trim()),
+  const hasUkrainianTranslation = useMemo(
+    () => texts.some((item) => !!item.text?.translation_uk?.trim()),
     [texts]
   );
 
   useEffect(() => {
-    if (
-      (viewMode === READER_LANGUAGE_MODES.BOTH || viewMode === READER_LANGUAGE_MODES.RUSSIAN) &&
-      !hasRussianTranslation
-    ) {
-      setViewMode(READER_LANGUAGE_MODES.CHURCH);
-      return;
-    }
-
-    if (viewMode === READER_LANGUAGE_MODES.TRADITIONAL && !hasTraditionalText) {
-      setViewMode(READER_LANGUAGE_MODES.CHURCH);
-    }
-  }, [viewMode, hasRussianTranslation, hasTraditionalText]);
+    setViewMode(
+      getReaderModeForAppLanguage(language, {
+        hasRussian: hasRussianTranslation,
+        hasUkrainian: hasUkrainianTranslation,
+      })
+    );
+  }, [language, hasRussianTranslation, hasUkrainianTranslation]);
 
   const handleAction = async (actionKey) => {
     if (!actionKey?.startsWith('category-text:')) {
@@ -144,7 +149,7 @@ export const BookScreen = ({route, navigation}) => {
       };
     }
 
-    const content = item.text.content || '';
+    const content = getLocalizedTextContent(item.text, language);
 
     const saved = await saveItem({
       save_type: 'prayer',
@@ -159,7 +164,10 @@ export const BookScreen = ({route, navigation}) => {
 
       source_title: categoryName,
 
-      item_title: item.text.title || item.text.description || 'Молитва',
+      item_title:
+        getLocalizedTextTitle(item.text, language) ||
+        getLocalizedTextDescription(item.text, language) ||
+        'Молитва',
 
       text: content,
 
@@ -192,6 +200,7 @@ export const BookScreen = ({route, navigation}) => {
       viewMode === READER_LANGUAGE_MODES.CHURCH || viewMode === READER_LANGUAGE_MODES.BOTH;
     const showRussian =
       viewMode === READER_LANGUAGE_MODES.RUSSIAN || viewMode === READER_LANGUAGE_MODES.BOTH;
+    const showUkrainian = viewMode === READER_LANGUAGE_MODES.UKRAINIAN;
     const showTraditional = viewMode === READER_LANGUAGE_MODES.TRADITIONAL;
 
     const normalizedSaved = [];
@@ -227,7 +236,10 @@ export const BookScreen = ({route, navigation}) => {
         anchorType: 'category_text',
         anchorId: Number(item.id),
         sourceTitle: categoryName,
-        itemTitle: item.text.title || item.text.description || 'Текст',
+        itemTitle:
+          getLocalizedTextTitle(item.text, language) ||
+          getLocalizedTextDescription(item.text, language) ||
+          'Текст',
         fullSaveType: 'prayer',
         metadata: {
           category_slug: categorySlug,
@@ -273,6 +285,32 @@ export const BookScreen = ({route, navigation}) => {
           );
         }
 
+        if (showUkrainian) {
+          const localized =
+            text.translation_uk?.trim() ||
+            text.translation?.trim() ||
+            text.content?.trim() ||
+            text.traditional_content?.trim() ||
+            '';
+          const localizedLanguage = text.translation_uk?.trim()
+            ? 'ukrainian'
+            : text.translation?.trim()
+              ? 'russian'
+              : 'church';
+
+          if (localized) {
+            blocks.push(
+              makeBlock({
+                item,
+                text: localized,
+                language: localizedLanguage,
+                syntheticId: Number(item.id) * 10 + 4,
+                className: localizedLanguage === 'church' ? '' : 'secondary',
+              })
+            );
+          }
+        }
+
         if (showRussian && text.translation?.trim()) {
           blocks.push(
             makeBlock({
@@ -290,7 +328,7 @@ export const BookScreen = ({route, navigation}) => {
 
           trackProgress: true,
 
-          title: text.title || 'Молитва',
+          title: getLocalizedTextTitle(text, language) || 'Молитва',
 
           action: {
             key: `category-text:${item.id}`,
@@ -302,8 +340,7 @@ export const BookScreen = ({route, navigation}) => {
 
           rows: [
             {
-              layout:
-                viewMode === READER_LANGUAGE_MODES.BOTH && blocks.length > 1 ? 'parallel' : 'stack',
+              layout: 'stack',
 
               blocks,
             },
@@ -316,13 +353,7 @@ export const BookScreen = ({route, navigation}) => {
 
       description: '',
 
-      viewSwitcher: {
-        activeKey: viewMode,
-        options: buildReaderLanguageOptions({
-          hasRussian: hasRussianTranslation,
-          hasTraditional: hasTraditionalText,
-        }),
-      },
+      viewSwitcher: null,
 
       progressAnchorType: 'category_text',
 
@@ -338,7 +369,8 @@ export const BookScreen = ({route, navigation}) => {
     savedItems,
     viewMode,
     hasRussianTranslation,
-    hasTraditionalText,
+    hasUkrainianTranslation,
+    language,
   ]);
 
   if (loading || (categoryId && !progressReady)) {
@@ -370,7 +402,6 @@ export const BookScreen = ({route, navigation}) => {
         topContentInset={headerHeight}
         onProgress={scheduleSave}
         onAction={handleAction}
-        onViewModeChange={setViewMode}
       />
 
       <FixedSectionHeader
