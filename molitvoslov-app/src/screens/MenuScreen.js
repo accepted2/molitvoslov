@@ -2116,6 +2116,8 @@ const styles = StyleSheet.create({
     // // aspectRatio,
     // minHeight: 105,
     // maxHeight: 170,
+    alignSelf: 'center',
+
     backgroundColor: '#F0D6A5',
   },
 

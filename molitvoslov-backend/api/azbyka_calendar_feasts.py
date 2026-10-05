@@ -71,11 +71,12 @@ GENERIC_WORDS = {
 class AzbykaFeastError(RuntimeError):
     pass
 
-
 @dataclass(frozen=True)
 class DaySaintLink:
     title: str
     url: str
+    is_multi_link_group: bool = False
+    is_primary: bool = False
 
 
 @dataclass(frozen=True)
@@ -376,17 +377,13 @@ def extract_saint_icon_url(html):
 def _collect_life(soup, saint_title):
     headings = list(soup.find_all(HEADING_RE))
 
-    # Обычная страница святого: после "День памяти" часто сразу идёт житие.
-    for heading in headings:
-        text = tag_text(heading).lower()
-        if text not in {"день памяти", "дни памяти"}:
-            continue
-
+    def collect_section(heading):
         level = _heading_level(heading) or 2
         parts = []
 
         for tag in heading.find_all_next():
             tag_level = _heading_level(tag)
+
             if tag_level is not None and tag_level <= level:
                 break
 
@@ -397,42 +394,104 @@ def _collect_life(soup, saint_title):
             if not value:
                 continue
 
-            if re.fullmatch(r"\d{1,2}\s+[а-яё]+(?:\s*[-–—].*)?", value, re.I):
-                continue
-
             if value not in parts:
                 parts.append(value)
 
-        content = "\n\n".join(parts).strip()
-        if content:
-            return f"Житие {saint_title}", content
+        return "\n\n".join(parts).strip()
 
-    # Праздники и иконы на Azbyka устроены иначе:
-    # "Историческое содержание" / "История". Эти тексты сохраняем в
-    # life_* — в приложении это тот же разворачиваемый информационный блок.
+    # 1. Лучший вариант: на странице есть явный раздел жития.
+    # Он имеет приоритет над "Днями памяти" и краткой аннотацией.
+    for heading in headings:
+        heading_text = tag_text(heading)
+        lowered = heading_text.lower()
+
+        if "житие" not in lowered and "страдание" not in lowered:
+            continue
+
+        content = collect_section(heading)
+        if content:
+            return heading_text, content
+
+    # 2. Для праздников / икон Azbyka вместо жития часто даёт
+    # "Историческое содержание" или "История".
+    for heading in headings:
+        heading_text = tag_text(heading)
+        lowered = heading_text.lower()
+
+        if lowered not in {"историческое содержание", "история"}:
+            continue
+
+        content = collect_section(heading)
+        if content:
+            return f"История: {saint_title}", content
+
+    # 3. Старый формат страниц святых:
+    # отдельного заголовка "Житие" нет, и сам текст идёт после
+    # "День памяти" / "Дни памяти".
+    #
+    # Этот fallback используется ТОЛЬКО если выше не найдено
+    # явного жития или исторического раздела.
     for heading in headings:
         text = tag_text(heading).lower()
-        if text not in {"историческое содержание", "история"}:
+
+        if text not in {"день памяти", "дни памяти"}:
             continue
 
         level = _heading_level(heading) or 2
-        parts = []
+        before_separator = []
+        after_separator = []
+        separator_found = False
 
         for tag in heading.find_all_next():
             tag_level = _heading_level(tag)
+
             if tag_level is not None and tag_level <= level:
                 break
+
+            # На некоторых страницах Azbyka полноценное житие
+            # отделено от краткой справки горизонтальной чертой.
+            if tag.name == "hr":
+                separator_found = True
+                continue
 
             if tag.name != "p":
                 continue
 
             value = tag_text(tag)
-            if value and value not in parts:
-                parts.append(value)
+            if not value:
+                continue
+
+            # Текстовый вариант разделителя.
+            compact = re.sub(r"\s+", "", value)
+            if compact and set(compact) == {"*"} and len(compact) >= 3:
+                separator_found = True
+                continue
+
+            # Строки "Дней памяти" в житие не включаем.
+            if re.fullmatch(
+                    r"\d{1,2}\s+[а-яё]+"
+                    r"(?:\s*\([^)]*\))?"
+                    r"\s*[-–—].*",
+                    value,
+                    re.I,
+            ):
+                continue
+
+            if separator_found:
+                if value not in after_separator:
+                    after_separator.append(value)
+            else:
+                if value not in before_separator:
+                    before_separator.append(value)
+
+        # Если Azbyka явно отделила длинное житие звёздочками/линией,
+        # краткую справку перед разделителем отбрасываем.
+        parts = after_separator if separator_found and after_separator else before_separator
 
         content = "\n\n".join(parts).strip()
+
         if content:
-            return f"История: {saint_title}", content
+            return f"Житие {saint_title}", content
 
     return "", ""
 
@@ -487,26 +546,52 @@ def extract_day_saint_links(html):
             continue
 
         item = anchor.find_parent("li")
+        is_multi_link_group = False
+        is_primary = anchor.find("strong") is not None
 
-        # Один календарный пункт Azbyka может содержать несколько ссылок
-        # на персональные страницы святых. Например:
-        # "сщмчч. Андрея Быстрова и Павла Березина, пресвитеров,
-        # прмч. Виталия (Кокорева), монаха".
-        # Для календаря это ОДНА память, поэтому берём первый подходящий URL
-        # этого <li> как источник карточки и не создаём дубли по остальным
-        # ссылкам того же пункта.
+        # Один пункт календаря может содержать несколько ссылок на разных
+        # святых. Тогда это одна общая память, а не отдельная карточка
+        # первого святого.
         if item is not None:
             item_key = id(item)
             if item_key in seen_items:
                 continue
             seen_items.add(item_key)
 
+            item_paths = set()
+
+            for item_anchor in item.find_all("a", href=True):
+                item_href = normalize_space(item_anchor.get("href") or "")
+                if not item_href:
+                    continue
+
+                item_path = urlparse(
+                    urljoin(AZBYKA_BASE_URL, item_href)
+                ).path.rstrip("/")
+
+                if allowed_path.fullmatch(item_path):
+                    item_paths.add(item_path)
+
+                    # Azbyka выделяет главную память дня через <strong>
+                    # внутри ссылки на святого/праздник.
+                    if item_anchor.find("strong") is not None:
+                        is_primary = True
+
+            is_multi_link_group = len(item_paths) > 1
+
         title = tag_text(item) if item is not None else tag_text(anchor)
         if not title:
             continue
 
         seen.add(source_url)
-        sources.append(DaySaintLink(title=title, url=source_url))
+        sources.append(
+            DaySaintLink(
+                title=title,
+                url=source_url,
+                is_multi_link_group=is_multi_link_group,
+                is_primary=is_primary,
+            )
+        )
 
     if not sources:
         raise AzbykaFeastError(
