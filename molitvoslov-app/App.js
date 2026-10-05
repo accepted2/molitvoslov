@@ -15,6 +15,7 @@ import {OnboardingScreen} from './src/screens/OnboardingScreen';
 import {PrayerBeadsLoader} from './src/components/feedback/PrayerBeadsLoader';
 
 import {TextSelectionProvider} from './src/context/TextSelectionContext';
+import {LanguageProvider} from './src/context/LanguageContext';
 
 import {initDatabase} from './src/db/database';
 
@@ -228,9 +229,11 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <TextSelectionProvider>
-        {showOnboarding ? <OnboardingScreen onComplete={completeOnboarding} /> : <AppNavigator />}
-      </TextSelectionProvider>
+      <LanguageProvider>
+        <TextSelectionProvider>
+          {showOnboarding ? <OnboardingScreen onComplete={completeOnboarding} /> : <AppNavigator />}
+        </TextSelectionProvider>
+      </LanguageProvider>
     </SafeAreaProvider>
   );
 }
