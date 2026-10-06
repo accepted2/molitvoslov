@@ -614,6 +614,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
         topContentInset={readerTopInset}
         bottomContentInset={readerBottomInset}
         respectBottomSafeArea={false}
+        backgroundColor={readerTheme === 'night' ? '#171310' : '#FBF0D9'}
         onProgress={handleProgress}
         onAction={handleAction}
         onReady={applyReaderAppearance}
