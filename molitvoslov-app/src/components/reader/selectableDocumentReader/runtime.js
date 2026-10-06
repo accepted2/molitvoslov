@@ -287,15 +287,149 @@ export const READER_RUNTIME = String.raw`
         start: left, end: right, };
     };
     const savedForItem = itemId => savedRanges.get( Number( itemId ) ) || [];
-    const activeForItem = itemId => state.active && Number( state.active.itemId ) === Number( itemId )
-          ? state.active : null;
+    const activeForItem = itemId => {
+      if (!state.active) {
+        return null;
+      }
+
+      if (Array.isArray(state.active.segments)) {
+        return (
+          state.active.segments.find(
+            segment => Number(segment.itemId) === Number(itemId)
+          ) || null
+        );
+      }
+
+      return Number(state.active.itemId) === Number(itemId)
+        ? state.active
+        : null;
+    };
+
     const removableSavedRange = active => {
-        if (!active) {
-          return null;
+      if (!active) {
+        return null;
+      }
+
+      const segments =
+        Array.isArray(active.segments) && active.segments.length
+          ? active.segments
+          : [
+              {
+                itemId: active.itemId,
+                start: active.start,
+                end: active.end,
+              },
+            ];
+
+      let sharedIds = null;
+
+      segments.forEach(segment => {
+        const matching = savedForItem(segment.itemId).filter(
+          range =>
+            !range.actionKey &&
+            Number.isFinite(Number(range.id)) &&
+            segment.start >= range.start &&
+            segment.end <= range.end
+        );
+
+        const ids = new Set(matching.map(range => Number(range.id)));
+
+        sharedIds =
+          sharedIds === null
+            ? ids
+            : new Set([...sharedIds].filter(id => ids.has(id)));
+      });
+
+      const savedId = sharedIds && sharedIds.size ? [...sharedIds][0] : null;
+
+      if (!savedId) {
+        return null;
+      }
+
+      return (
+        savedForItem(segments[0].itemId).find(
+          range => Number(range.id) === Number(savedId)
+        ) || null
+      );
+    };
+
+    const itemOrder = () =>
+      Array.from(itemTextMap.keys()).map(Number);
+
+    const compareSelectionPoints = (left, right) => {
+      const order = itemOrder();
+      const leftIndex = order.indexOf(Number(left.itemId));
+      const rightIndex = order.indexOf(Number(right.itemId));
+
+      if (leftIndex !== rightIndex) {
+        return leftIndex - rightIndex;
+      }
+
+      return Number(left.offset) - Number(right.offset);
+    };
+
+    const selectionSegmentsBetween = (leftPoint, rightPoint) => {
+      let startPoint = leftPoint;
+      let endPoint = rightPoint;
+
+      if (compareSelectionPoints(startPoint, endPoint) > 0) {
+        startPoint = rightPoint;
+        endPoint = leftPoint;
+      }
+
+      const order = itemOrder();
+      const startIndex = order.indexOf(Number(startPoint.itemId));
+      const endIndex = order.indexOf(Number(endPoint.itemId));
+
+      if (startIndex < 0 || endIndex < 0) {
+        return [];
+      }
+
+      const segments = [];
+
+      for (let index = startIndex; index <= endIndex; index += 1) {
+        const itemId = order[index];
+        const text = itemTextMap.get(itemId) || '';
+        const rawStart =
+          index === startIndex ? Number(startPoint.offset || 0) : 0;
+        const rawEnd =
+          index === endIndex ? Number(endPoint.offset || 0) : text.length;
+        const range = normalizeRange(text, rawStart, rawEnd);
+
+        if (range.end > range.start) {
+          segments.push({
+            itemId,
+            start: range.start,
+            end: range.end,
+          });
         }
-        return ( savedForItem( active.itemId ).find( range => !range.actionKey && Number.isFinite(
-                Number(range.id) ) && active.start >= range.start && active.end <= range.end ) || null );
-      };
+      }
+
+      return segments;
+    };
+
+    const selectionText = active => {
+      const segments =
+        Array.isArray(active?.segments) && active.segments.length
+          ? active.segments
+          : active
+            ? [
+                {
+                  itemId: active.itemId,
+                  start: active.start,
+                  end: active.end,
+                },
+              ]
+            : [];
+
+      return segments
+        .map(segment => {
+          const text = itemTextMap.get(Number(segment.itemId)) || '';
+          return text.slice(segment.start, segment.end).trim();
+        })
+        .filter(Boolean)
+        .join('\n');
+    };
     const normalizedAkathistTextWithIndex = value => {
         const source = String( value || '' );
         const chars = [];
@@ -1607,19 +1741,49 @@ if (
     };
     const loadSavedRanges = () => {
         ( DATA.savedItems || [] ).forEach( item => {
-            const itemId = Number( item.anchor_id );
-            const text = itemTextMap.get( itemId );
-            if (!text) {
-              return;
-            }
-            const range = normalizeRange( text, Number( item.start_offset ), Number( item.end_offset ) );
-            if ( range.end <= range.start ) {
-              return;
-            }
-            const current = savedRanges.get( itemId ) || [];
-            current.push({
-              id: item.id, start: range.start, end: range.end, });
-            savedRanges.set( itemId, current );
+            const storedSegments = Array.isArray(item.metadata?.selection_segments)
+              ? item.metadata.selection_segments
+              : null;
+
+            const rawSegments =
+              storedSegments && storedSegments.length
+                ? storedSegments
+                : [
+                    {
+                      item_id: Number(item.anchor_id),
+                      start: Number(item.start_offset),
+                      end: Number(item.end_offset),
+                    },
+                  ];
+
+            rawSegments.forEach(segment => {
+              const itemId = Number(segment.item_id ?? segment.itemId);
+              const text = itemTextMap.get(itemId);
+
+              if (!text) {
+                return;
+              }
+
+              const range = normalizeRange(
+                text,
+                Number(segment.start),
+                Number(segment.end)
+              );
+
+              if (range.end <= range.start) {
+                return;
+              }
+
+              const current = savedRanges.get(itemId) || [];
+
+              current.push({
+                id: item.id,
+                start: range.start,
+                end: range.end,
+              });
+
+              savedRanges.set(itemId, current);
+            });
           }
         );
         ( DATA.document.sections || [] ).forEach( section => {
@@ -1699,51 +1863,97 @@ if (
       return {
         start, end, };
     };
-    const domRange = ( itemId, start, end ) => {
-      const root = document.querySelector( '.reader-text[data-item-id="' + itemId + '"]' );
+    const locateDomPoint = point => {
+      const root = document.querySelector(
+        '.reader-text[data-item-id="' + Number(point.itemId) + '"]'
+      );
+
       if (!root) {
         return null;
       }
-      const locate = targetOffset => {
-          const walker = document.createTreeWalker( root, NodeFilter.SHOW_TEXT );
-          let total = 0;
-          let node = null;
-          while ( ( node = walker.nextNode() ) ) {
-            const length = node.textContent .length;
-            if ( targetOffset <= total + length ) {
-              return {
-                node, offset: Math.max( 0, Math.min( targetOffset - total, length ) ), };
-            }
-            total += length;
-          }
-          return null;
-        };
-      const from = locate( start );
-      const to = locate( end );
-      if ( !from || !to ) {
+
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let total = 0;
+      let node = null;
+
+      while ((node = walker.nextNode())) {
+        const length = node.textContent.length;
+
+        if (Number(point.offset) <= total + length) {
+          return {
+            node,
+            offset: Math.max(
+              0,
+              Math.min(Number(point.offset) - total, length)
+            ),
+          };
+        }
+
+        total += length;
+      }
+
+      return null;
+    };
+
+    const domRangeForActive = active => {
+      if (!active) {
         return null;
       }
+
+      const segments =
+        Array.isArray(active.segments) && active.segments.length
+          ? active.segments
+          : [
+              {
+                itemId: active.itemId,
+                start: active.start,
+                end: active.end,
+              },
+            ];
+
+      const firstSegment = segments[0];
+      const lastSegment = segments[segments.length - 1];
+      const from = locateDomPoint({
+        itemId: firstSegment.itemId,
+        offset: firstSegment.start,
+      });
+      const to = locateDomPoint({
+        itemId: lastSegment.itemId,
+        offset: lastSegment.end,
+      });
+
+      if (!from || !to) {
+        return null;
+      }
+
       const range = document.createRange();
-      range.setStart( from.node, from.offset );
-      range.setEnd( to.node, to.offset );
+      range.setStart(from.node, from.offset);
+      range.setEnd(to.node, to.offset);
       return range;
     };
+
     const updateHandles = () => {
         if (!state.active) {
           startHandle.style.display = 'none';
           endHandle.style.display = 'none';
           return;
         }
-        const range = domRange( state.active.itemId, state.active.start, state.active.end );
+
+        const range = domRangeForActive(state.active);
+
         if (!range) {
           return;
         }
-        const rects = Array.from( range.getClientRects() );
+
+        const rects = Array.from(range.getClientRects());
+
         if (!rects.length) {
           return;
         }
+
         const first = rects[0];
         const last = rects[ rects.length - 1 ];
+
         startHandle.style.display = 'block';
         endHandle.style.display = 'block';
         startHandle.style.left = ( first.left - 18 ) + 'px';
@@ -1753,108 +1963,201 @@ if (
       };
     const updateBar = () => {
         if (!state.active) {
-          selectionBar.classList .remove( 'visible' );
+          selectionBar.classList.remove('visible');
           return;
         }
-        const count = state.active.end - state.active.start;
-        selectionBar.classList .add( 'visible' );
+
+        const count = (state.active.segments || []).reduce(
+          (total, segment) => total + Math.max(0, segment.end - segment.start),
+          0
+        );
+
+        selectionBar.classList.add('visible');
         selectionCount.textContent = count + ' симв.';
-        selectionCount.classList .remove( 'error' );
-        selectionHint.classList .remove( 'error' );
-        if ( !state.savePending ) {
+        selectionCount.classList.remove('error');
+        selectionHint.classList.remove('error');
+
+        if (!state.savePending) {
           selectionHint.textContent = 'Выделенный фрагмент';
         }
-        const savedRange = removableSavedRange( state.active );
+
+        const savedRange = removableSavedRange(state.active);
+
         saveButton.textContent = savedRange ? 'Удалить' : 'Сохранить';
-        saveButton.classList.toggle( 'delete-mode', !!savedRange );
+        saveButton.classList.toggle('delete-mode', !!savedRange);
         saveButton.disabled = count <= 0 || state.savePending;
       };
-    const setActive = ( itemId, start, end, anchorStart, anchorEnd ) => {
-      const text = itemTextMap.get( Number( itemId ) );
-      if (!text) {
+
+    const setActivePoints = (
+      startPoint,
+      endPoint,
+      anchorStartPoint,
+      anchorEndPoint
+    ) => {
+      const segments = selectionSegmentsBetween(startPoint, endPoint);
+
+      if (!segments.length) {
         return;
       }
-      const range = normalizeRange( text, Math.min( start, end ), Math.max( start, end ) );
-      if ( range.end <= range.start ) {
-        return;
-      }
+
+      const previousIds = new Set(
+        (state.active?.segments || []).map(segment => Number(segment.itemId))
+      );
+      const nextIds = new Set(segments.map(segment => Number(segment.itemId)));
+      const allIds = new Set([...previousIds, ...nextIds]);
+
       state.active = {
-        itemId: Number( itemId ), start: range.start, end: range.end, anchorStart: anchorStart, anchorEnd:
-          anchorEnd, };
-      renderTextItem( itemId );
+        itemId: Number(segments[0].itemId),
+        start: Number(segments[0].start),
+        end: Number(segments[segments.length - 1].end),
+        startPoint:
+          compareSelectionPoints(startPoint, endPoint) <= 0
+            ? startPoint
+            : endPoint,
+        endPoint:
+          compareSelectionPoints(startPoint, endPoint) <= 0
+            ? endPoint
+            : startPoint,
+        anchorStartPoint,
+        anchorEndPoint,
+        segments,
+      };
+
+      allIds.forEach(itemId => renderTextItem(itemId));
       updateHandles();
       updateBar();
     };
+
+    const setActive = ( itemId, start, end, anchorStart, anchorEnd ) => {
+      setActivePoints(
+        {itemId: Number(itemId), offset: start},
+        {itemId: Number(itemId), offset: end},
+        {itemId: Number(itemId), offset: anchorStart},
+        {itemId: Number(itemId), offset: anchorEnd}
+      );
+    };
+
     const clearSelection = () => {
         if (!state.active) {
           return;
         }
-        const itemId = state.active.itemId;
+
+        const itemIds = new Set(
+          (state.active.segments || []).map(segment => Number(segment.itemId))
+        );
+
+        if (!itemIds.size && state.active.itemId) {
+          itemIds.add(Number(state.active.itemId));
+        }
+
         state.active = null;
         state.drag = null;
         state.pointer = null;
         state.lastDragPoint = null;
         state.savePending = false;
+
         if ( state.longPressTimer ) {
           clearTimeout( state.longPressTimer );
           state.longPressTimer = null;
         }
-        renderTextItem( itemId );
+
+        itemIds.forEach(itemId => renderTextItem(itemId));
         updateHandles();
         updateBar();
       };
+
     const activateAtPoint = ( x, y, pointerId ) => {
       const point = textOffsetFromPoint( x, y );
+
       if (!point) {
         return false;
       }
+
       const text = itemTextMap.get( point.itemId );
       const word = wordRangeAt( text, point.offset );
+
       if (!word) {
         return false;
       }
+
       setActive( point.itemId, word.start, word.end, word.start, word.end );
+
       state.drag = {
-        mode: 'initial', pointerId, itemId: point.itemId, };
+        mode: 'initial',
+        pointerId,
+        itemId: point.itemId,
+      };
+
       return true;
     };
+
     const updateFromPoint = ( clientX, clientY ) => {
       if ( !state.active || !state.drag ) {
         return;
       }
-      const point = textOffsetFromPoint( clientX, clientY, state.active.itemId );
+
+      const originConfig = itemConfigMap.get(Number(state.active.itemId));
+      const allowAcrossItems =
+        bookMode && originConfig?.sourceType === 'bible';
+
+      const point = textOffsetFromPoint(
+        clientX,
+        clientY,
+        allowAcrossItems ? null : state.active.itemId
+      );
+
       if (!point) {
         return;
       }
-      const text = itemTextMap.get( state.active.itemId );
-      let start = state.active.start;
-      let end = state.active.end;
-      if ( state.drag.mode === 'start' ) {
-        if ( point.offset < end ) {
-          start = point.offset;
-        } else {
-          start = end;
-          end = Math.max( point.offset, start + 1 );
-          state.drag.mode = 'end';
-        }
-      } else if ( state.drag.mode === 'end' ) {
-        if ( point.offset > start ) {
-          end = point.offset;
-        } else {
-          end = start;
-          start = Math.min( point.offset, end - 1 );
-          state.drag.mode = 'start';
-        }
-      } else if ( point.offset < state.active.anchorStart ) {
-        start = point.offset;
-        end = state.active.anchorEnd;
-      } else {
-        start = state.active.anchorStart;
-        end = Math.max( point.offset, state.active.anchorEnd );
+
+      if (
+        allowAcrossItems &&
+        itemConfigMap.get(Number(point.itemId))?.sourceType !== 'bible'
+      ) {
+        return;
       }
-      start = Math.max( 0, Math.min( start, text.length ) );
-      end = Math.max( 0, Math.min( end, text.length ) );
-      setActive( state.active.itemId, start, end, state.active.anchorStart, state.active.anchorEnd );
+
+      let startPoint = state.active.startPoint;
+      let endPoint = state.active.endPoint;
+      let mode = state.drag.mode;
+
+      if (mode === 'start') {
+        if (compareSelectionPoints(point, endPoint) < 0) {
+          startPoint = point;
+        } else {
+          startPoint = endPoint;
+          endPoint = point;
+          mode = 'end';
+        }
+      } else if (mode === 'end') {
+        if (compareSelectionPoints(point, startPoint) > 0) {
+          endPoint = point;
+        } else {
+          endPoint = startPoint;
+          startPoint = point;
+          mode = 'start';
+        }
+      } else if (
+        compareSelectionPoints(point, state.active.anchorStartPoint) < 0
+      ) {
+        startPoint = point;
+        endPoint = state.active.anchorEndPoint;
+      } else {
+        startPoint = state.active.anchorStartPoint;
+        endPoint =
+          compareSelectionPoints(point, state.active.anchorEndPoint) > 0
+            ? point
+            : state.active.anchorEndPoint;
+      }
+
+      state.drag.mode = mode;
+
+      setActivePoints(
+        startPoint,
+        endPoint,
+        state.active.anchorStartPoint,
+        state.active.anchorEndPoint
+      );
     };
     const autoScroll = () => {
       if ( bookMode || !state.drag || !state.lastDragPoint ) {
@@ -2256,31 +2559,66 @@ if (
         if ( !state.active || state.savePending ) {
           return;
         }
-        const count = state.active.end - state.active.start;
+        const segments =
+          Array.isArray(state.active.segments) && state.active.segments.length
+            ? state.active.segments
+            : [];
+
+        const count = segments.reduce(
+          (total, segment) => total + Math.max(0, segment.end - segment.start),
+          0
+        );
+
         if ( count <= 0 ) {
           return;
         }
+
         const savedRange = removableSavedRange( state.active );
+
         if (savedRange) {
           state.savePending = true;
           selectionHint.textContent = 'Удаляем...';
           updateBar();
+
           post({
-            type: 'remove-selection', itemId: state.active.itemId, savedItemId: Number( savedRange.id ), });
+            type: 'remove-selection',
+            itemId: state.active.itemId,
+            savedItemId: Number(savedRange.id),
+          });
+
           return;
         }
-        const text = itemTextMap.get( state.active.itemId ) || '';
-        const selectedText = text .slice( state.active.start, state.active.end ) .trim();
+
+        const selectedText = selectionText(state.active);
+
         if (!selectedText) {
           return;
         }
+
+        const firstSegment = segments[0];
+        const lastSegment = segments[segments.length - 1];
+        const multiItem = segments.length > 1;
+
         state.savePending = true;
         selectionHint.textContent = 'Сохраняем...';
         updateBar();
+
         post({
-          type: 'save-selection', itemId: state.active.itemId, start: state.active.start, end:
-            state.active.end, text: selectedText, saveType: classify( state.active ), itemTitle:
-            itemTitleMap.get( state.active.itemId ) || 'Молитва', });
+          type: 'save-selection',
+          itemId: Number(firstSegment.itemId),
+          start: Number(firstSegment.start),
+          end: Number(firstSegment.end),
+          finalItemId: Number(lastSegment.itemId),
+          finalEnd: Number(lastSegment.end),
+          text: selectedText,
+          segments: segments.map(segment => ({
+            item_id: Number(segment.itemId),
+            start: Number(segment.start),
+            end: Number(segment.end),
+          })),
+          saveType: multiItem ? 'fragment' : classify(state.active),
+          itemTitle: itemTitleMap.get(Number(firstSegment.itemId)) || 'Молитва',
+        });
       }
     );
     const reportProgress = () => {
@@ -2705,27 +3043,67 @@ if (
       };
     window.readerApi = {
       saveSucceeded: ( itemId, savedItem ) => {
-          itemId = Number( itemId );
-          const current = savedRanges.get( itemId ) || [];
-          current.push({
-            id: savedItem.id, start: Number( savedItem.start_offset ), end: Number( savedItem.end_offset ),
+          const storedSegments = Array.isArray(savedItem?.metadata?.selection_segments)
+            ? savedItem.metadata.selection_segments
+            : null;
+
+          const segments =
+            storedSegments && storedSegments.length
+              ? storedSegments
+              : [
+                  {
+                    item_id: Number(itemId),
+                    start: Number(savedItem.start_offset),
+                    end: Number(savedItem.end_offset),
+                  },
+                ];
+
+          segments.forEach(segment => {
+            const segmentItemId = Number(segment.item_id ?? segment.itemId);
+            const current = savedRanges.get(segmentItemId) || [];
+
+            current.push({
+              id: savedItem.id,
+              start: Number(segment.start),
+              end: Number(segment.end),
+            });
+
+            savedRanges.set(segmentItemId, current);
           });
-          savedRanges.set( itemId, current );
+
           state.savePending = false;
           clearSelection();
-          renderTextItem( itemId );
+
+          segments.forEach(segment =>
+            renderTextItem(Number(segment.item_id ?? segment.itemId))
+          );
         },
+
       removeSavedItem: ( itemId, savedItemId ) => {
-          itemId = Number( itemId );
-          savedItemId = Number( savedItemId );
-          const current = savedRanges.get( itemId ) || [];
-          savedRanges.set( itemId, current.filter( range => Number( range.id ) !== savedItemId ) );
+          savedItemId = Number(savedItemId);
+          const affected = [];
+
+          savedRanges.forEach((ranges, rangeItemId) => {
+            if (ranges.some(range => Number(range.id) === savedItemId)) {
+              savedRanges.set(
+                rangeItemId,
+                ranges.filter(range => Number(range.id) !== savedItemId)
+              );
+              affected.push(Number(rangeItemId));
+            }
+          });
+
           state.savePending = false;
-          if ( state.active && Number( state.active.itemId ) === itemId ) {
+
+          if (state.active) {
             clearSelection();
-          } else {
-            renderTextItem( itemId );
           }
+
+          if (!affected.length) {
+            affected.push(Number(itemId));
+          }
+
+          affected.forEach(affectedItemId => renderTextItem(affectedItemId));
         },
       goToProgress: progress => goToProgress( progress ),
       updateAction: ( actionKey, label, active, savedItemId = null ) => {
