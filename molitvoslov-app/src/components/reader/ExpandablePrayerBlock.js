@@ -142,28 +142,17 @@ export default function ExpandablePrayerBlock({
     const psalterClass =
       saveProps.sourceType === 'psalter' ? 'psalter-prayer psalter-reading-prayers' : '';
 
-    if (viewMode === READER_LANGUAGE_MODES.UKRAINIAN) {
-      const value =
-        normalizedUkrainianText ||
-        normalizedSecondaryText ||
-        normalizedText ||
-        normalizedTraditionalText;
-      const blockLanguage = normalizedUkrainianText
-        ? 'ukrainian'
-        : normalizedSecondaryText
-          ? 'russian'
-          : 'church';
-
+    if (viewMode === READER_LANGUAGE_MODES.TRADITIONAL) {
       addBlock({
-        id: 4,
-        value,
-        language: blockLanguage,
+        id: 3,
+        value: normalizedTraditionalText || normalizedText || normalizedSecondaryText,
+        language: normalizedTraditionalText ? 'traditional' : normalizedText ? 'church' : 'russian',
         className:
-          blockLanguage === 'church'
+          !normalizedTraditionalText && !normalizedText && normalizedSecondaryText
             ? psalterClass
-            : psalterClass
               ? `${psalterClass} secondary`
-              : 'secondary',
+              : 'secondary'
+            : psalterClass,
       });
     } else if (viewMode === READER_LANGUAGE_MODES.RUSSIAN) {
       const value = normalizedSecondaryText || normalizedText || normalizedTraditionalText;
@@ -179,12 +168,35 @@ export default function ExpandablePrayerBlock({
               : 'secondary'
             : psalterClass,
       });
+    } else if (viewMode === READER_LANGUAGE_MODES.BOTH) {
+      addBlock({
+        id: 1,
+        value: normalizedText || normalizedTraditionalText,
+        language: normalizedText ? 'church' : 'traditional',
+        className: psalterClass,
+      });
+
+      addBlock({
+        id: 2,
+        value: normalizedSecondaryText,
+        language: 'russian',
+        className: psalterClass ? `${psalterClass} secondary` : 'secondary',
+      });
     } else {
       addBlock({
         id: 1,
         value: normalizedText || normalizedTraditionalText || normalizedSecondaryText,
-        language: normalizedText || normalizedTraditionalText ? 'church' : 'russian',
-        className: psalterClass,
+        language: normalizedText
+          ? 'church'
+          : normalizedTraditionalText
+            ? 'traditional'
+            : 'russian',
+        className:
+          !normalizedText && !normalizedTraditionalText && normalizedSecondaryText
+            ? psalterClass
+              ? `${psalterClass} secondary`
+              : 'secondary'
+            : psalterClass,
       });
     }
 
@@ -207,7 +219,7 @@ export default function ExpandablePrayerBlock({
           title: '',
           rows: [
             {
-              layout: 'stack',
+              layout: blocks.length > 1 ? 'parallel' : 'stack',
               sharedTitle:
                 saveProps?.metadata?.section === 'prayers_before'
                   ? 'Разумно да будет, како подобает особь пети Псалтирь'
