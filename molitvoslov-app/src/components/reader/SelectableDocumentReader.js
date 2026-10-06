@@ -20,6 +20,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     topContentInset = 0,
     bottomContentInset = 0,
     respectBottomSafeArea = true,
+    backgroundColor = '#FFF4DE',
     onSaved,
     onProgress,
     onAction,
@@ -277,6 +278,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         styles.container,
         {
           paddingBottom: respectBottomSafeArea ? Math.max(insets.bottom, 8) : 0,
+          backgroundColor,
         },
       ]}
     >
@@ -296,7 +298,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         textZoom={100}
         onMessage={handleMessage}
         onLoadEnd={onReady}
-        style={styles.webView}
+        style={[styles.webView, {backgroundColor}]}
       />
 
       {documentData.readerMode !== 'book' && (
