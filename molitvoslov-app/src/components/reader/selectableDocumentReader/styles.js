@@ -615,17 +615,39 @@ export const READER_STYLES = String.raw`
       touch-action: none;
       text-align: justify;
       background:
-        radial-gradient(circle at 16% 8%, rgba(170, 118, 62, 0.045), transparent 28%),
-        radial-gradient(circle at 82% 78%, rgba(145, 94, 49, 0.035), transparent 34%),
+        radial-gradient(circle at 16% 8%, rgba(170, 118, 62, 0.055), transparent 28%),
+        radial-gradient(circle at 82% 78%, rgba(145, 94, 49, 0.045), transparent 34%),
         linear-gradient(
           90deg,
-          rgba(115, 74, 38, 0.055),
-          transparent 5%,
-          transparent 95%,
-          rgba(115, 74, 38, 0.055)
+          rgba(166, 112, 50, 0.115) 0%,
+          rgba(166, 112, 50, 0.050) 3.5%,
+          transparent 8%,
+          transparent 92%,
+          rgba(166, 112, 50, 0.050) 96.5%,
+          rgba(166, 112, 50, 0.115) 100%
+        ),
+        linear-gradient(
+          180deg,
+          rgba(151, 98, 43, 0.045) 0%,
+          transparent 8%,
+          transparent 92%,
+          rgba(151, 98, 43, 0.050) 100%
         ),
         #FBF0D9;
-      box-shadow: inset 0 0 28px rgba(104, 66, 34, 0.045);
+      box-shadow: inset 0 0 24px rgba(110, 70, 30, 0.10);
+    }
+
+    body.book-mode::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 996;
+      pointer-events: none;
+      box-shadow:
+        inset 12px 0 20px -15px rgba(139, 87, 34, 0.36),
+        inset -12px 0 20px -15px rgba(139, 87, 34, 0.36),
+        inset 0 10px 20px -17px rgba(139, 87, 34, 0.24),
+        inset 0 -10px 20px -17px rgba(139, 87, 34, 0.24);
     }
     #book-viewport {
       display: contents;
@@ -659,7 +681,7 @@ export const READER_STYLES = String.raw`
       height: 100%;
       min-width: 0;
       min-height: 0;
-      padding: 0 11px;
+      padding: 0 8px;
       overflow: hidden;
       box-sizing: border-box;
       visibility: hidden;
@@ -787,7 +809,7 @@ export const READER_STYLES = String.raw`
       padding: 0;
     }
     body.book-mode .reader-inline-label {
-      margin-right: 3px;
+      margin-right: 2px;
       color: #A06B34;
       font-family: Georgia, "Times New Roman", serif;
       font-size: 9px;
@@ -804,8 +826,8 @@ export const READER_STYLES = String.raw`
     body.book-mode .reader-text.bible-verse {
       color: #3C2A20;
       font-family: Georgia, "Times New Roman", serif;
-      font-size: 17px;
-      line-height: 23.5px;
+      font-size: 16.5px;
+      line-height: 21.8px;
       letter-spacing: -0.03px;
       white-space: normal;
       overflow-wrap: anywhere;
@@ -824,15 +846,32 @@ export const READER_STYLES = String.raw`
       margin-top: 0 !important;
     }
 
-    body.book-mode .bible-chapter-start .reader-text.bible-verse::first-letter {
+    body.book-mode .bible-chapter-start .reader-inline {
+      position: relative;
+      display: block;
+      padding-left: 12px;
+    }
+
+    body.book-mode .bible-chapter-start .reader-inline-label {
+      position: absolute;
+      top: 3px;
+      left: 0;
+      margin-right: 0;
+    }
+
+    body.book-mode .bible-chapter-start .reader-inline .reader-text.bible-verse {
+      display: block;
+    }
+
+    body.book-mode .bible-drop-cap {
       float: left;
-      margin: 4px 6px 0 0;
-      color: #8B5C31;
+      margin: 2px 6px -1px 0;
+      color: #A04432;
       font-family: Georgia, "Times New Roman", serif;
-      font-size: 48px;
-      line-height: 0.80;
+      font-size: 45px;
+      line-height: 0.82;
       font-weight: 700;
-      text-shadow: 0 1px 0 rgba(255, 250, 236, 0.75);
+      text-shadow: 0 1px 0 rgba(255, 250, 236, 0.78);
     }
     body.book-mode .reader-text.focus-target, body.book-mode .prayer-title.focus-target {
       outline-color: rgba( 152, 98, 46, 0.32 );
