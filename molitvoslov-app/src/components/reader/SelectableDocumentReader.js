@@ -224,7 +224,18 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
 
         end_offset: Number(message.end),
 
-        metadata: itemConfig.metadata || {},
+        metadata: {
+          ...(itemConfig.metadata || {}),
+          ...(Array.isArray(message.segments) && message.segments.length > 1
+            ? {
+                selection_segments: message.segments.map((segment) => ({
+                  item_id: Number(segment.item_id ?? segment.itemId),
+                  start: Number(segment.start),
+                  end: Number(segment.end),
+                })),
+              }
+            : {}),
+        },
       });
 
       onSaved?.(saved, itemConfig);
