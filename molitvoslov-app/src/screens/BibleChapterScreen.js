@@ -40,6 +40,9 @@ export const BibleChapterScreen = ({route, navigation}) => {
     Number(requestedChapter?.number || 1)
   );
   const [bookmarkFeedback, setBookmarkFeedback] = useState('');
+  const [fontPanelVisible, setFontPanelVisible] = useState(false);
+  const [readerFontSize, setReaderFontSize] = useState(16.5);
+  const [readerTheme, setReaderTheme] = useState('paper');
   const bookmarkFeedbackTimerRef = useRef(null);
 
   const insets = useSafeAreaInsets();
@@ -96,6 +99,14 @@ export const BibleChapterScreen = ({route, navigation}) => {
     },
     []
   );
+
+  useEffect(() => {
+    readerRef.current?.setBookFontSize(readerFontSize);
+  }, [readerFontSize]);
+
+  useEffect(() => {
+    readerRef.current?.setBookTheme(readerTheme);
+  }, [readerTheme]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -478,6 +489,22 @@ export const BibleChapterScreen = ({route, navigation}) => {
     };
   };
 
+  const applyReaderAppearance = () => {
+    readerRef.current?.setBookFontSize(readerFontSize);
+    readerRef.current?.setBookTheme(readerTheme);
+  };
+
+  const changeFontSize = (delta) => {
+    setReaderFontSize((current) =>
+      Math.max(14, Math.min(22, Math.round((current + delta) * 2) / 2))
+    );
+  };
+
+  const toggleReaderTheme = () => {
+    setReaderTheme((current) => (current === 'night' ? 'paper' : 'night'));
+    setFontPanelVisible(false);
+  };
+
   const addCurrentBookmark = async () => {
     let position = getCurrentProgress() || getStableProgress();
 
@@ -567,8 +594,17 @@ export const BibleChapterScreen = ({route, navigation}) => {
   }
 
   return (
-    <View style={styles.screen}>
-      <StatusBar style="dark" translucent backgroundColor="transparent" />
+    <View
+      style={[
+        styles.screen,
+        readerTheme === 'night' && styles.screenNight,
+      ]}
+    >
+      <StatusBar
+        style={readerTheme === 'night' ? 'light' : 'dark'}
+        translucent
+        backgroundColor="transparent"
+      />
 
       <SelectableDocumentReader
         ref={readerRef}
@@ -580,6 +616,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
         respectBottomSafeArea={false}
         onProgress={handleProgress}
         onAction={handleAction}
+        onReady={applyReaderAppearance}
       />
 
       <ReaderBookmarkMenu
@@ -608,6 +645,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
         showTitle
         showMenu
         onMenuPress={openReaderMenu}
+        dark={readerTheme === 'night'}
       />
 
       {!!bookmarkFeedback && (
@@ -616,9 +654,71 @@ export const BibleChapterScreen = ({route, navigation}) => {
         </View>
       )}
 
+      {fontPanelVisible && (
+        <View
+          style={[
+            styles.fontPanel,
+            readerTheme === 'night' && styles.fontPanelNight,
+            {
+              bottom: 58 + Math.max(insets.bottom, 7),
+            },
+          ]}
+        >
+          <Pressable
+            disabled={readerFontSize <= 14}
+            onPress={() => changeFontSize(-1)}
+            style={({pressed}) => [
+              styles.fontPanelButton,
+              readerTheme === 'night' && styles.fontPanelButtonNight,
+              readerFontSize <= 14 && styles.toolbarButtonDisabled,
+              pressed && readerFontSize > 14 && styles.toolbarPressed,
+            ]}
+          >
+            <Text
+              style={[
+                styles.fontPanelButtonText,
+                readerTheme === 'night' && styles.fontPanelTextNight,
+              ]}
+            >
+              A−
+            </Text>
+          </Pressable>
+
+          <Text
+            style={[
+              styles.fontPanelValue,
+              readerTheme === 'night' && styles.fontPanelTextNight,
+            ]}
+          >
+            {readerFontSize.toFixed(1)}
+          </Text>
+
+          <Pressable
+            disabled={readerFontSize >= 22}
+            onPress={() => changeFontSize(1)}
+            style={({pressed}) => [
+              styles.fontPanelButton,
+              readerTheme === 'night' && styles.fontPanelButtonNight,
+              readerFontSize >= 22 && styles.toolbarButtonDisabled,
+              pressed && readerFontSize < 22 && styles.toolbarPressed,
+            ]}
+          >
+            <Text
+              style={[
+                styles.fontPanelButtonText,
+                readerTheme === 'night' && styles.fontPanelTextNight,
+              ]}
+            >
+              A+
+            </Text>
+          </Pressable>
+        </View>
+      )}
+
       <View
         style={[
           styles.bookToolbar,
+          readerTheme === 'night' && styles.bookToolbarNight,
           {
             paddingBottom: Math.max(insets.bottom, 7),
           },
@@ -633,8 +733,20 @@ export const BibleChapterScreen = ({route, navigation}) => {
             pressed && previousChapter && styles.toolbarPressed,
           ]}
         >
-          <Text style={styles.chapterNavArrow}>‹</Text>
-          <Text style={styles.chapterNavText}>
+          <Text
+            style={[
+              styles.chapterNavArrow,
+              readerTheme === 'night' && styles.toolbarIconTextNight,
+            ]}
+          >
+            ‹
+          </Text>
+          <Text
+            style={[
+              styles.chapterNavText,
+              readerTheme === 'night' && styles.toolbarTextNight,
+            ]}
+          >
             {previousChapter
               ? t('bible.chapter', {number: previousChapter.number})
               : t('bible.chapter', {number: currentChapterNumber})}
@@ -649,25 +761,54 @@ export const BibleChapterScreen = ({route, navigation}) => {
           onPress={addCurrentBookmark}
           style={({pressed}) => [styles.toolbarIconButton, pressed && styles.toolbarPressed]}
         >
-          <Text style={styles.bookmarkIcon}>⌑</Text>
+          <Text
+            style={[
+              styles.bookmarkIcon,
+              readerTheme === 'night' && styles.toolbarIconTextNight,
+            ]}
+          >
+            ⌑
+          </Text>
         </Pressable>
 
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Настройки шрифта"
-          onPress={() => showBookmarkFeedback('Настройки шрифта — скоро')}
-          style={({pressed}) => [styles.toolbarIconButton, pressed && styles.toolbarPressed]}
+          onPress={() => setFontPanelVisible((visible) => !visible)}
+          style={({pressed}) => [
+            styles.toolbarIconButton,
+            fontPanelVisible && styles.toolbarIconButtonActive,
+            pressed && styles.toolbarPressed,
+          ]}
         >
-          <Text style={styles.toolbarAa}>Aa</Text>
+          <Text
+            style={[
+              styles.toolbarAa,
+              readerTheme === 'night' && styles.toolbarIconTextNight,
+            ]}
+          >
+            Aa
+          </Text>
         </Pressable>
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Тема чтения"
-          onPress={() => showBookmarkFeedback('Темы чтения — скоро')}
-          style={({pressed}) => [styles.toolbarIconButton, pressed && styles.toolbarPressed]}
+          accessibilityLabel="Сменить тему чтения"
+          onPress={toggleReaderTheme}
+          style={({pressed}) => [
+            styles.toolbarIconButton,
+            readerTheme === 'night' && styles.toolbarIconButtonActiveNight,
+            pressed && styles.toolbarPressed,
+          ]}
         >
-          <Text style={styles.toolbarMoon}>◔</Text>
+          <Text
+            style={[
+              styles.toolbarMoon,
+              readerTheme === 'night' && styles.toolbarIconTextNight,
+            ]}
+          >
+            ◔
+          </Text>
         </Pressable>
 
         <View style={styles.toolbarDivider} />
@@ -682,12 +823,25 @@ export const BibleChapterScreen = ({route, navigation}) => {
             pressed && nextChapter && styles.toolbarPressed,
           ]}
         >
-          <Text style={[styles.chapterNavText, styles.chapterNavTextRight]}>
+          <Text
+            style={[
+              styles.chapterNavText,
+              styles.chapterNavTextRight,
+              readerTheme === 'night' && styles.toolbarTextNight,
+            ]}
+          >
             {nextChapter
               ? t('bible.chapter', {number: nextChapter.number})
               : t('bible.chapter', {number: currentChapterNumber})}
           </Text>
-          <Text style={styles.chapterNavArrow}>›</Text>
+          <Text
+            style={[
+              styles.chapterNavArrow,
+              readerTheme === 'night' && styles.toolbarIconTextNight,
+            ]}
+          >
+            ›
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -698,6 +852,10 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: '#FFF4DE',
+  },
+
+  screenNight: {
+    backgroundColor: '#171310',
   },
 
   center: {
@@ -723,6 +881,11 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(120, 78, 41, 0.20)',
     backgroundColor: '#F7E9CF',
+  },
+
+  bookToolbarNight: {
+    borderTopColor: 'rgba(218, 185, 143, 0.14)',
+    backgroundColor: '#1D1713',
   },
 
   chapterNavButton: {
@@ -773,6 +936,15 @@ const styles = StyleSheet.create({
     height: 42,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 21,
+  },
+
+  toolbarIconButtonActive: {
+    backgroundColor: 'rgba(139, 88, 40, 0.10)',
+  },
+
+  toolbarIconButtonActiveNight: {
+    backgroundColor: 'rgba(210, 166, 110, 0.12)',
   },
 
   bookmarkIcon: {
@@ -796,6 +968,72 @@ const styles = StyleSheet.create({
     fontSize: 27,
     lineHeight: 30,
     transform: [{rotate: '-35deg'}],
+  },
+
+  toolbarTextNight: {
+    color: '#D8C1A6',
+  },
+
+  toolbarIconTextNight: {
+    color: '#E0C39B',
+  },
+
+  fontPanel: {
+    position: 'absolute',
+    right: 54,
+    zIndex: 31,
+    minWidth: 150,
+    height: 50,
+    paddingHorizontal: 7,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: 'rgba(120, 78, 41, 0.20)',
+    borderRadius: 18,
+    backgroundColor: '#F7E9CF',
+    shadowColor: '#50321E',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+
+  fontPanelNight: {
+    borderColor: 'rgba(218, 185, 143, 0.16)',
+    backgroundColor: '#211A16',
+  },
+
+  fontPanelButton: {
+    width: 42,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+    backgroundColor: 'rgba(139, 88, 40, 0.07)',
+  },
+
+  fontPanelButtonNight: {
+    backgroundColor: 'rgba(210, 166, 110, 0.08)',
+  },
+
+  fontPanelButtonText: {
+    color: '#55351F',
+    fontFamily: 'serif',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+
+  fontPanelValue: {
+    minWidth: 42,
+    textAlign: 'center',
+    color: '#765238',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  fontPanelTextNight: {
+    color: '#E0C39B',
   },
 
   toolbarPressed: {
