@@ -44,9 +44,9 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
   const insets = useSafeAreaInsets();
 
-  const readerTopInset = insets.top + 68;
+  const readerTopInset = insets.top + 64;
 
-  const readerBottomInset = 16;
+  const readerBottomInset = 4;
 
   const {savedProgress, progressReady, scheduleSave, getCurrentProgress, getStableProgress} =
     useReadingProgress({
@@ -602,7 +602,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
-        title={displayName + ' · ' + t('bible.chapter', {number: currentChapterNumber})}
+        title={displayName}
         navigation={navigation}
         topInset={insets.top}
         showTitle
