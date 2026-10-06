@@ -75,6 +75,22 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
           'window.readerApi && window.readerApi.goToProgress(' + scriptSafeJson(progress) + ')'
         );
       },
+
+      setBookFontSize: (size) => {
+        inject(
+          'window.readerApi && window.readerApi.setBookFontSize(' +
+            Number(size || 16.5) +
+            ')'
+        );
+      },
+
+      setBookTheme: (theme) => {
+        inject(
+          'window.readerApi && window.readerApi.setBookTheme(' +
+            scriptSafeJson(theme || 'paper') +
+            ')'
+        );
+      },
     }),
     []
   );
