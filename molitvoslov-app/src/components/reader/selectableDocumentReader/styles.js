@@ -615,14 +615,17 @@ export const READER_STYLES = String.raw`
       touch-action: none;
       text-align: justify;
       background:
+        radial-gradient(circle at 16% 8%, rgba(170, 118, 62, 0.045), transparent 28%),
+        radial-gradient(circle at 82% 78%, rgba(145, 94, 49, 0.035), transparent 34%),
         linear-gradient(
           90deg,
-          rgba(115, 74, 38, 0.035),
-          transparent 8%,
-          transparent 92%,
-          rgba(115, 74, 38, 0.035)
+          rgba(115, 74, 38, 0.055),
+          transparent 5%,
+          transparent 95%,
+          rgba(115, 74, 38, 0.055)
         ),
-        #FFF4DE;
+        #FBF0D9;
+      box-shadow: inset 0 0 28px rgba(104, 66, 34, 0.045);
     }
     #book-viewport {
       display: contents;
@@ -656,7 +659,7 @@ export const READER_STYLES = String.raw`
       height: 100%;
       min-width: 0;
       min-height: 0;
-      padding: 0 18px;
+      padding: 0 11px;
       overflow: hidden;
       box-sizing: border-box;
       visibility: hidden;
@@ -694,23 +697,23 @@ export const READER_STYLES = String.raw`
       border-bottom: 0;
     }
     body.book-mode .bible-chapter-start {
-      padding-top: 5px;
+      padding-top: 2px;
 
     }
     body.book-mode .bible-chapter-start .section-header {
-      margin: 0px 0 5px;
-      padding: 1px 8px 4px 5px;
+      margin: 0 0 2px;
+      padding: 0 4px 2px 2px;
 
     }
     body.book-mode .bible-chapter-start .prayer-title {
-      margin-left: 63px;
+      margin-left: 54px;
       text-align: center;
-      color: #71472C;
+      color: #7A5134;
       font-family: Georgia, "Times New Roman", serif;
-      font-size: 17px;
-      line-height: 22px;
+      font-size: 15px;
+      line-height: 19px;
       font-weight: 700;
-      letter-spacing: 0.20px;
+      letter-spacing: 0.16px;
 
     }
     body.book-mode .bible-chapter-start .section-action {
@@ -784,10 +787,10 @@ export const READER_STYLES = String.raw`
       padding: 0;
     }
     body.book-mode .reader-inline-label {
-      margin-right: 5px;
-      color: #98622E;
+      margin-right: 3px;
+      color: #A06B34;
       font-family: Georgia, "Times New Roman", serif;
-      font-size: 10px;
+      font-size: 9px;
       line-height: 1;
       font-weight: 700;
       font-style: normal;
@@ -799,11 +802,11 @@ export const READER_STYLES = String.raw`
 
     }
     body.book-mode .reader-text.bible-verse {
-      color: #38271D;
+      color: #3C2A20;
       font-family: Georgia, "Times New Roman", serif;
-      font-size: 18px;
-      line-height: 28px;
-      letter-spacing: 0;
+      font-size: 17px;
+      line-height: 23.5px;
+      letter-spacing: -0.03px;
       white-space: normal;
       overflow-wrap: anywhere;
       word-break: normal;
@@ -815,6 +818,21 @@ export const READER_STYLES = String.raw`
       text-align: justify;
       text-align-last: auto;
       text-justify: inter-word;
+    }
+
+    body.book-mode .bible-verse-section + .bible-verse-section {
+      margin-top: 0 !important;
+    }
+
+    body.book-mode .bible-chapter-start .reader-text.bible-verse::first-letter {
+      float: left;
+      margin: 4px 6px 0 0;
+      color: #8B5C31;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 48px;
+      line-height: 0.80;
+      font-weight: 700;
+      text-shadow: 0 1px 0 rgba(255, 250, 236, 0.75);
     }
     body.book-mode .reader-text.focus-target, body.book-mode .prayer-title.focus-target {
       outline-color: rgba( 152, 98, 46, 0.32 );
@@ -828,23 +846,7 @@ export const READER_STYLES = String.raw`
       display: none;
     }
     body.book-mode #book-page-indicator {
-      display: block;
-      position: fixed;
-      left: 50%;
-      bottom: 8px;
-      z-index: 997;
-      min-width: 68px;
-      padding: 3px 10px;
-      transform: translateX(-50%);
-      border-radius: 999px;
-      background: rgba( 255, 244, 222, 0.94 );
-      color: rgba( 92, 61, 39, 0.72 );
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: 12px;
-      line-height: 18px;
-      letter-spacing: 0.65px;
-      text-align: center;
-      box-shadow: 0 1px 5px rgba( 74, 45, 28, 0.08 );
+      display: none;
     }
     .reader-text span {
       white-space: inherit;
