@@ -3041,6 +3041,42 @@ if (
             }
           }, 350 );
       };
+    const setBookFontSize = rawSize => {
+      if (!bookMode) {
+        return;
+      }
+
+      const size = Math.max(14, Math.min(22, Number(rawSize) || 16.5));
+      const lineHeight = size * 1.32;
+      const dropCapSize = size * 2.72;
+
+      document.documentElement.style.setProperty(
+        '--book-font-size',
+        size.toFixed(1) + 'px'
+      );
+      document.documentElement.style.setProperty(
+        '--book-line-height',
+        lineHeight.toFixed(1) + 'px'
+      );
+      document.documentElement.style.setProperty(
+        '--book-drop-cap-size',
+        dropCapSize.toFixed(1) + 'px'
+      );
+
+      requestAnimationFrame(() => {
+        refreshBookPagination();
+        reportProgress();
+      });
+    };
+
+    const setBookTheme = theme => {
+      if (!bookMode) {
+        return;
+      }
+
+      document.body.classList.toggle('book-night', theme === 'night');
+    };
+
     window.readerApi = {
       saveSucceeded: ( itemId, savedItem ) => {
           const storedSegments = Array.isArray(savedItem?.metadata?.selection_segments)
@@ -3106,6 +3142,8 @@ if (
           affected.forEach(affectedItemId => renderTextItem(affectedItemId));
         },
       goToProgress: progress => goToProgress( progress ),
+      setBookFontSize: size => setBookFontSize(size),
+      setBookTheme: theme => setBookTheme(theme),
       updateAction: ( actionKey, label, active, savedItemId = null ) => {
           const action = document.querySelector( '.section-action[data-action-key="' + actionKey +
               '"], .document-action[data-action-key="' + actionKey + '"]' );
