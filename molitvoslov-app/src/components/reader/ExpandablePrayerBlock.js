@@ -38,23 +38,44 @@ export default function ExpandablePrayerBlock({
 
   const readerHeight = Math.max(500, Math.min(windowHeight * 0.78, 720));
 
-  const normalizedText = useMemo(() => {
-    let source = String(text || '');
+  const stripSharedRubric = (value) => {
+    let source = String(value || '');
 
     if (saveProps?.metadata?.section === 'prayers_before') {
-      source = source.replace(/^s*Разумно да будет, како подобает особь пети Псалтирьs*/iu, '');
+      source = source.replace(
+        /^\s*Разумно да будет, како подобает особь пети Псалтирь\s*/iu,
+        ''
+      );
+    }
+
+    if (saveProps?.metadata?.section === 'prayers_after') {
+      source = source.replace(
+        /^\s*Молитвы по прочтении нескольких кафизм или всей Псалтири[.:]?\s*/iu,
+        ''
+      );
     }
 
     return normalizeText(source);
-  }, [text, saveProps?.metadata?.section]);
+  };
 
-  const normalizedSecondaryText = useMemo(() => normalizeText(secondaryText), [secondaryText]);
+  const normalizedText = useMemo(
+    () => stripSharedRubric(text),
+    [text, saveProps?.metadata?.section]
+  );
 
-  const normalizedUkrainianText = useMemo(() => normalizeText(ukrainianText), [ukrainianText]);
+  const normalizedSecondaryText = useMemo(
+    () => stripSharedRubric(secondaryText),
+    [secondaryText, saveProps?.metadata?.section]
+  );
+
+  const normalizedUkrainianText = useMemo(
+    () => stripSharedRubric(ukrainianText),
+    [ukrainianText, saveProps?.metadata?.section]
+  );
 
   const normalizedTraditionalText = useMemo(
-    () => normalizeText(traditionalText),
-    [traditionalText]
+    () => stripSharedRubric(traditionalText),
+    [traditionalText, saveProps?.metadata?.section]
   );
 
   useEffect(() => {
@@ -223,7 +244,9 @@ export default function ExpandablePrayerBlock({
               sharedTitle:
                 saveProps?.metadata?.section === 'prayers_before'
                   ? 'Разумно да будет, како подобает особь пети Псалтирь'
-                  : '',
+                  : saveProps?.metadata?.section === 'prayers_after'
+                    ? 'Молитвы по прочтении нескольких кафизм или всей Псалтири'
+                    : '',
               blocks,
             },
           ],
