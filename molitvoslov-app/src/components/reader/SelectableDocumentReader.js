@@ -19,6 +19,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     focusTarget,
     topContentInset = 0,
     bottomContentInset = 0,
+    respectBottomSafeArea = true,
     onSaved,
     onProgress,
     onAction,
@@ -72,6 +73,22 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
 
         inject(
           'window.readerApi && window.readerApi.goToProgress(' + scriptSafeJson(progress) + ')'
+        );
+      },
+
+      setBookFontSize: (size) => {
+        inject(
+          'window.readerApi && window.readerApi.setBookFontSize(' +
+            Number(size || 16.5) +
+            ')'
+        );
+      },
+
+      setBookTheme: (theme) => {
+        inject(
+          'window.readerApi && window.readerApi.setBookTheme(' +
+            scriptSafeJson(theme || 'paper') +
+            ')'
         );
       },
     }),
@@ -223,7 +240,18 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
 
         end_offset: Number(message.end),
 
-        metadata: itemConfig.metadata || {},
+        metadata: {
+          ...(itemConfig.metadata || {}),
+          ...(Array.isArray(message.segments) && message.segments.length > 1
+            ? {
+                selection_segments: message.segments.map((segment) => ({
+                  item_id: Number(segment.item_id ?? segment.itemId),
+                  start: Number(segment.start),
+                  end: Number(segment.end),
+                })),
+              }
+            : {}),
+        },
       });
 
       onSaved?.(saved, itemConfig);
@@ -247,7 +275,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       style={[
         styles.container,
         {
-          paddingBottom: Math.max(insets.bottom, 8),
+          paddingBottom: respectBottomSafeArea ? Math.max(insets.bottom, 8) : 0,
         },
       ]}
     >
