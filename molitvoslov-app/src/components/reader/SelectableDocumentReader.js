@@ -19,6 +19,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     focusTarget,
     topContentInset = 0,
     bottomContentInset = 0,
+    respectBottomSafeArea = true,
     onSaved,
     onProgress,
     onAction,
@@ -247,7 +248,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       style={[
         styles.container,
         {
-          paddingBottom: Math.max(insets.bottom, 8),
+          paddingBottom: respectBottomSafeArea ? Math.max(insets.bottom, 8) : 0,
         },
       ]}
     >
