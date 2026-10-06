@@ -12,6 +12,9 @@ export const READER_STYLES = String.raw`
       --saved: rgba(194, 145, 73, 0.24);
       --active: rgba(161, 110, 53, 0.22);
       --handle: #9A693A;
+      --book-font-size: 16.5px;
+      --book-line-height: 21.8px;
+      --book-drop-cap-size: 45px;
     }
     * {
       box-sizing: border-box;
@@ -649,6 +652,60 @@ export const READER_STYLES = String.raw`
         inset 0 10px 20px -17px rgba(139, 87, 34, 0.24),
         inset 0 -10px 20px -17px rgba(139, 87, 34, 0.24);
     }
+
+    body.book-mode.book-night {
+      --background: #171310;
+      --surface: #211A16;
+      --text: #E8D8C5;
+      --secondary: #BBA48E;
+      --muted: #8F7C6B;
+      --accent: #C49A62;
+      --accent-dark: #D1AE7A;
+      --liturgical: #D98578;
+      --border: rgba(218, 185, 143, 0.16);
+      --saved: rgba(194, 145, 73, 0.18);
+      --active: rgba(208, 164, 104, 0.20);
+      --handle: #D2A66E;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(115, 82, 53, 0.10), transparent 30%),
+        radial-gradient(circle at 85% 80%, rgba(104, 72, 47, 0.08), transparent 34%),
+        linear-gradient(
+          90deg,
+          rgba(0, 0, 0, 0.30) 0%,
+          rgba(0, 0, 0, 0.10) 5%,
+          transparent 10%,
+          transparent 90%,
+          rgba(0, 0, 0, 0.10) 95%,
+          rgba(0, 0, 0, 0.30) 100%
+        ),
+        #171310;
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.30);
+    }
+
+    body.book-mode.book-night::after {
+      box-shadow:
+        inset 12px 0 20px -15px rgba(0, 0, 0, 0.72),
+        inset -12px 0 20px -15px rgba(0, 0, 0, 0.72),
+        inset 0 10px 20px -17px rgba(0, 0, 0, 0.56),
+        inset 0 -10px 20px -17px rgba(0, 0, 0, 0.56);
+    }
+
+    body.book-mode.book-night .bible-chapter-start .prayer-title {
+      color: #D0AA77;
+    }
+
+    body.book-mode.book-night .reader-inline-label {
+      color: #C28D52;
+    }
+
+    body.book-mode.book-night .reader-text.bible-verse {
+      color: #E7D7C6;
+    }
+
+    body.book-mode.book-night .bible-drop-cap {
+      color: #D06F5F;
+      text-shadow: none;
+    }
     #book-viewport {
       display: contents;
     }
@@ -826,8 +883,8 @@ export const READER_STYLES = String.raw`
     body.book-mode .reader-text.bible-verse {
       color: #3C2A20;
       font-family: Georgia, "Times New Roman", serif;
-      font-size: 16.5px;
-      line-height: 21.8px;
+      font-size: var(--book-font-size);
+      line-height: var(--book-line-height);
       letter-spacing: -0.03px;
       white-space: normal;
       overflow-wrap: anywhere;
@@ -868,7 +925,7 @@ export const READER_STYLES = String.raw`
       margin: 2px 6px -1px 0;
       color: #A04432;
       font-family: Georgia, "Times New Roman", serif;
-      font-size: 45px;
+      font-size: var(--book-drop-cap-size);
       line-height: 0.82;
       font-weight: 700;
       text-shadow: 0 1px 0 rgba(255, 250, 236, 0.78);
