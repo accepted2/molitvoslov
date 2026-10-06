@@ -12,6 +12,9 @@ export const READER_STYLES = String.raw`
       --saved: rgba(194, 145, 73, 0.24);
       --active: rgba(161, 110, 53, 0.22);
       --handle: #9A693A;
+      --book-font-size: 16.5px;
+      --book-line-height: 21.8px;
+      --book-drop-cap-size: 45px;
     }
     * {
       box-sizing: border-box;
@@ -615,14 +618,93 @@ export const READER_STYLES = String.raw`
       touch-action: none;
       text-align: justify;
       background:
+        radial-gradient(circle at 16% 8%, rgba(170, 118, 62, 0.055), transparent 28%),
+        radial-gradient(circle at 82% 78%, rgba(145, 94, 49, 0.045), transparent 34%),
         linear-gradient(
           90deg,
-          rgba(115, 74, 38, 0.035),
+          rgba(166, 112, 50, 0.115) 0%,
+          rgba(166, 112, 50, 0.050) 3.5%,
           transparent 8%,
           transparent 92%,
-          rgba(115, 74, 38, 0.035)
+          rgba(166, 112, 50, 0.050) 96.5%,
+          rgba(166, 112, 50, 0.115) 100%
         ),
-        #FFF4DE;
+        linear-gradient(
+          180deg,
+          rgba(151, 98, 43, 0.045) 0%,
+          transparent 8%,
+          transparent 92%,
+          rgba(151, 98, 43, 0.050) 100%
+        ),
+        #FBF0D9;
+      box-shadow: inset 0 0 24px rgba(110, 70, 30, 0.10);
+    }
+
+    body.book-mode::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 996;
+      pointer-events: none;
+      box-shadow:
+        inset 12px 0 20px -15px rgba(139, 87, 34, 0.36),
+        inset -12px 0 20px -15px rgba(139, 87, 34, 0.36),
+        inset 0 10px 20px -17px rgba(139, 87, 34, 0.24),
+        inset 0 -10px 20px -17px rgba(139, 87, 34, 0.24);
+    }
+
+    body.book-mode.book-night {
+      --background: #171310;
+      --surface: #211A16;
+      --text: #E8D8C5;
+      --secondary: #BBA48E;
+      --muted: #8F7C6B;
+      --accent: #C49A62;
+      --accent-dark: #D1AE7A;
+      --liturgical: #D98578;
+      --border: rgba(218, 185, 143, 0.16);
+      --saved: rgba(194, 145, 73, 0.18);
+      --active: rgba(208, 164, 104, 0.20);
+      --handle: #D2A66E;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(115, 82, 53, 0.10), transparent 30%),
+        radial-gradient(circle at 85% 80%, rgba(104, 72, 47, 0.08), transparent 34%),
+        linear-gradient(
+          90deg,
+          rgba(0, 0, 0, 0.30) 0%,
+          rgba(0, 0, 0, 0.10) 5%,
+          transparent 10%,
+          transparent 90%,
+          rgba(0, 0, 0, 0.10) 95%,
+          rgba(0, 0, 0, 0.30) 100%
+        ),
+        #171310;
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.30);
+    }
+
+    body.book-mode.book-night::after {
+      box-shadow:
+        inset 12px 0 20px -15px rgba(0, 0, 0, 0.72),
+        inset -12px 0 20px -15px rgba(0, 0, 0, 0.72),
+        inset 0 10px 20px -17px rgba(0, 0, 0, 0.56),
+        inset 0 -10px 20px -17px rgba(0, 0, 0, 0.56);
+    }
+
+    body.book-mode.book-night .bible-chapter-start .prayer-title {
+      color: #D0AA77;
+    }
+
+    body.book-mode.book-night .reader-inline-label {
+      color: #C28D52;
+    }
+
+    body.book-mode.book-night .reader-text.bible-verse {
+      color: #E7D7C6;
+    }
+
+    body.book-mode.book-night .bible-drop-cap {
+      color: #D06F5F;
+      text-shadow: none;
     }
     #book-viewport {
       display: contents;
@@ -656,7 +738,7 @@ export const READER_STYLES = String.raw`
       height: 100%;
       min-width: 0;
       min-height: 0;
-      padding: 0 18px;
+      padding: 0 8px;
       overflow: hidden;
       box-sizing: border-box;
       visibility: hidden;
@@ -694,23 +776,23 @@ export const READER_STYLES = String.raw`
       border-bottom: 0;
     }
     body.book-mode .bible-chapter-start {
-      padding-top: 5px;
+      padding-top: 2px;
 
     }
     body.book-mode .bible-chapter-start .section-header {
-      margin: 0px 0 5px;
-      padding: 1px 8px 4px 5px;
+      margin: 0 0 2px;
+      padding: 0 4px 2px 2px;
 
     }
     body.book-mode .bible-chapter-start .prayer-title {
-      margin-left: 63px;
+      margin-left: 54px;
       text-align: center;
-      color: #71472C;
+      color: #7A5134;
       font-family: Georgia, "Times New Roman", serif;
-      font-size: 17px;
-      line-height: 22px;
+      font-size: 15px;
+      line-height: 19px;
       font-weight: 700;
-      letter-spacing: 0.20px;
+      letter-spacing: 0.16px;
 
     }
     body.book-mode .bible-chapter-start .section-action {
@@ -784,10 +866,10 @@ export const READER_STYLES = String.raw`
       padding: 0;
     }
     body.book-mode .reader-inline-label {
-      margin-right: 5px;
-      color: #98622E;
+      margin-right: 2px;
+      color: #A06B34;
       font-family: Georgia, "Times New Roman", serif;
-      font-size: 10px;
+      font-size: 9px;
       line-height: 1;
       font-weight: 700;
       font-style: normal;
@@ -799,11 +881,11 @@ export const READER_STYLES = String.raw`
 
     }
     body.book-mode .reader-text.bible-verse {
-      color: #38271D;
+      color: #3C2A20;
       font-family: Georgia, "Times New Roman", serif;
-      font-size: 18px;
-      line-height: 28px;
-      letter-spacing: 0;
+      font-size: var(--book-font-size);
+      line-height: var(--book-line-height);
+      letter-spacing: -0.03px;
       white-space: normal;
       overflow-wrap: anywhere;
       word-break: normal;
@@ -815,6 +897,38 @@ export const READER_STYLES = String.raw`
       text-align: justify;
       text-align-last: auto;
       text-justify: inter-word;
+    }
+
+    body.book-mode .bible-verse-section + .bible-verse-section {
+      margin-top: 0 !important;
+    }
+
+    body.book-mode .bible-chapter-start .reader-inline {
+      position: relative;
+      display: block;
+      padding-left: 12px;
+    }
+
+    body.book-mode .bible-chapter-start .reader-inline-label {
+      position: absolute;
+      top: 3px;
+      left: 0;
+      margin-right: 0;
+    }
+
+    body.book-mode .bible-chapter-start .reader-inline .reader-text.bible-verse {
+      display: block;
+    }
+
+    body.book-mode .bible-drop-cap {
+      float: left;
+      margin: 2px 6px -1px 0;
+      color: #A04432;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: var(--book-drop-cap-size);
+      line-height: 0.82;
+      font-weight: 700;
+      text-shadow: 0 1px 0 rgba(255, 250, 236, 0.78);
     }
     body.book-mode .reader-text.focus-target, body.book-mode .prayer-title.focus-target {
       outline-color: rgba( 152, 98, 46, 0.32 );
@@ -828,23 +942,7 @@ export const READER_STYLES = String.raw`
       display: none;
     }
     body.book-mode #book-page-indicator {
-      display: block;
-      position: fixed;
-      left: 50%;
-      bottom: 8px;
-      z-index: 997;
-      min-width: 68px;
-      padding: 3px 10px;
-      transform: translateX(-50%);
-      border-radius: 999px;
-      background: rgba( 255, 244, 222, 0.94 );
-      color: rgba( 92, 61, 39, 0.72 );
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: 12px;
-      line-height: 18px;
-      letter-spacing: 0.65px;
-      text-align: center;
-      box-shadow: 0 1px 5px rgba( 74, 45, 28, 0.08 );
+      display: none;
     }
     .reader-text span {
       white-space: inherit;
