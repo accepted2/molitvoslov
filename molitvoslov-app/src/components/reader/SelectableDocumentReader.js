@@ -26,6 +26,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     onMemorialOpen,
     onViewModeChange,
     onPageTurn,
+    onReady,
   },
   ref
 ) {
@@ -294,6 +295,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         overScrollMode="never"
         textZoom={100}
         onMessage={handleMessage}
+        onLoadEnd={onReady}
         style={styles.webView}
       />
 
