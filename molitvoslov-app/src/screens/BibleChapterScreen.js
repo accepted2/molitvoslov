@@ -577,6 +577,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
         focusTarget={effectiveFocusTarget}
         topContentInset={readerTopInset}
         bottomContentInset={readerBottomInset}
+        respectBottomSafeArea={false}
         onProgress={handleProgress}
         onAction={handleAction}
       />
