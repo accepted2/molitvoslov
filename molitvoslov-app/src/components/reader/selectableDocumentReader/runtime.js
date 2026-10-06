@@ -993,6 +993,45 @@ const collectPsalterRubricRanges = value => {
         });
     };
 
+    const applyBibleDropCap = root => {
+      if (
+        !bookMode ||
+        !root ||
+        !root.classList.contains('bible-verse') ||
+        !root.closest('.bible-chapter-start')
+      ) {
+        return;
+      }
+
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let node = null;
+
+      while ((node = walker.nextNode())) {
+        const value = String(node.textContent || '');
+        const match = value.match(/[A-Za-zА-Яа-яЁёІіЇїЄєҐґ\u0400-\u052F]/u);
+
+        if (!match) {
+          continue;
+        }
+
+        const index = match.index;
+        const fragment = document.createDocumentFragment();
+
+        if (index > 0) {
+          fragment.appendChild(document.createTextNode(value.slice(0, index)));
+        }
+
+        fragment.appendChild(el('span', 'bible-drop-cap', value[index]));
+
+        if (index + 1 < value.length) {
+          fragment.appendChild(document.createTextNode(value.slice(index + 1)));
+        }
+
+        node.replaceWith(fragment);
+        return;
+      }
+    };
+
     const renderTextItem = itemId => {
         const root = document.querySelector( '.reader-text[data-item-id="' + itemId + '"]' );
         if (!root) {
@@ -1516,6 +1555,7 @@ if (
         hideKnownEditorialMarkers( root );
         compactParagraphGaps( root );
         collapsePsalterRubricTrailingWhitespace( root );
+        applyBibleDropCap( root );
       };
     const refreshSavedBookRunClasses = () => {
         if (!bookMode) {
