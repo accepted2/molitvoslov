@@ -948,7 +948,7 @@ export default function KathismaScreen({route, navigation}) {
 
         if (blocks.length) {
           rows.push({
-            layout: 'stack',
+            layout: blocks.length > 1 ? 'parallel' : 'stack',
 
             blocks,
           });
@@ -1157,7 +1157,7 @@ export default function KathismaScreen({route, navigation}) {
 
         rows: [
           {
-            layout: 'stack',
+            layout: blocks.length > 1 ? 'parallel' : 'stack',
 
             blocks,
           },
