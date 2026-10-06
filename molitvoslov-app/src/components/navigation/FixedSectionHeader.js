@@ -11,6 +11,7 @@ export const FixedSectionHeader = ({
   minimal = false,
   showMenu = false,
   onMenuPress,
+  dark = false,
 }) => {
   const headerHeight = topInset + (minimal ? 46 : 56);
 
@@ -27,7 +28,11 @@ export const FixedSectionHeader = ({
       {!minimal && (
         <LinearGradient
           pointerEvents="none"
-          colors={['#FFF4DE', 'rgba(255, 244, 222, 0.72)', 'rgba(255, 244, 222, 0)']}
+          colors={
+            dark
+              ? ['#171310', 'rgba(23, 19, 16, 0.82)', 'rgba(23, 19, 16, 0)']
+              : ['#FFF4DE', 'rgba(255, 244, 222, 0.72)', 'rgba(255, 244, 222, 0)']
+          }
           locations={[0, 0.42, 1]}
           start={{x: 0.5, y: 0}}
           end={{x: 0.5, y: 1}}
@@ -54,20 +59,24 @@ export const FixedSectionHeader = ({
               pressed && styles.pressed,
             ]}
           >
-            <Text style={styles.backArrow}>‹</Text>
+            <Text style={[styles.backArrow, dark && styles.backArrowDark]}>‹</Text>
           </Pressable>
         )}
 
         {showTitle && (
           <View style={[styles.titleWrap, !showBack && styles.titleWrapRoot]}>
-            <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+            <Text
+              style={[styles.title, dark && styles.titleDark]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
               {title}
             </Text>
 
             <View style={styles.ornament}>
-              <View style={styles.line} />
-              <Text style={styles.mark}>✦</Text>
-              <View style={styles.line} />
+              <View style={[styles.line, dark && styles.lineDark]} />
+              <Text style={[styles.mark, dark && styles.markDark]}>✦</Text>
+              <View style={[styles.line, dark && styles.lineDark]} />
             </View>
           </View>
         )}
@@ -83,7 +92,7 @@ export const FixedSectionHeader = ({
               pressed && styles.pressed,
             ]}
           >
-            <Text style={styles.menuText}>⋮</Text>
+            <Text style={[styles.menuText, dark && styles.menuTextDark]}>⋮</Text>
           </Pressable>
         )}
       </View>
@@ -185,6 +194,26 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 34,
     fontWeight: '700',
+  },
+
+  backArrowDark: {
+    color: '#D7B88C',
+  },
+
+  titleDark: {
+    color: '#EADBC7',
+  },
+
+  lineDark: {
+    backgroundColor: 'rgba(205, 163, 108, 0.30)',
+  },
+
+  markDark: {
+    color: '#C59762',
+  },
+
+  menuTextDark: {
+    color: '#D7B88C',
   },
 
   pressed: {
