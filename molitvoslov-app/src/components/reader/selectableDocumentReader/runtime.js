@@ -248,6 +248,14 @@ export const READER_RUNTIME = String.raw`
                   itemTitleMap.set( itemId, block.itemTitle || section.title || 'Текст' );
                   itemConfigMap.set( itemId, block );
                   const column = el( 'div', 'reader-column' );
+                  const blockLanguage = String(
+                    block?.metadata?.language || ''
+                  ).trim().toLowerCase();
+
+                  if (blockLanguage) {
+                    column.classList.add('reader-language-' + blockLanguage);
+                  }
+
                   if ( block.label ) {
                     column.appendChild( el( 'div', 'reader-label', block.label ) );
                   }
