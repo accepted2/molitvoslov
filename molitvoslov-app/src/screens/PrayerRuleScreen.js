@@ -18,10 +18,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
-import {
-  READER_LANGUAGE_MODES,
-  buildReaderLanguageOptions,
-} from '../services/readerLanguageModes';
+import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
 
@@ -69,9 +66,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
   const hasTraditionalTranslation = useMemo(
     () =>
       (rule?.items || []).some(
-        (item) =>
-          item.item_type === 'text' &&
-          !!item.text?.traditional_content?.trim()
+        (item) => item.item_type === 'text' && !!item.text?.traditional_content?.trim()
       ),
     [rule]
   );
@@ -167,10 +162,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
-        title={
-          getLocalizedField(rule, 'name', language) ||
-          t('reading.prayerRule')
-        }
+        title={getLocalizedField(rule, 'name', language) || t('reading.prayerRule')}
         navigation={navigation}
         topInset={insets.top}
         showTitle={false}

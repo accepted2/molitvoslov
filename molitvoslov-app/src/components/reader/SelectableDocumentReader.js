@@ -80,9 +80,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
 
       setBookFontSize: (size) => {
         inject(
-          'window.readerApi && window.readerApi.setBookFontSize(' +
-            Number(size || 16.5) +
-            ')'
+          'window.readerApi && window.readerApi.setBookFontSize(' + Number(size || 16.5) + ')'
         );
       },
 

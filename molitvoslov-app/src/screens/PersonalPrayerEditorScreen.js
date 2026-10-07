@@ -256,7 +256,9 @@ export const PersonalPrayerEditorScreen = ({route, navigation}) => {
               pressed && styles.pressed,
             ]}
           >
-            <Text style={styles.saveText}>{saving ? t('prayerBooks.saving') : t('prayerBooks.savePrayer')}</Text>
+            <Text style={styles.saveText}>
+              {saving ? t('prayerBooks.saving') : t('prayerBooks.savePrayer')}
+            </Text>
           </Pressable>
         </ScrollView>
 

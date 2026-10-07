@@ -42,10 +42,7 @@ export default function ExpandablePrayerBlock({
     let source = String(value || '');
 
     if (saveProps?.metadata?.section === 'prayers_before') {
-      source = source.replace(
-        /^\s*Разумно да будет, како подобает особь пети Псалтирь\s*/iu,
-        ''
-      );
+      source = source.replace(/^\s*Разумно да будет, како подобает особь пети Псалтирь\s*/iu, '');
     }
 
     if (saveProps?.metadata?.section === 'prayers_after') {
@@ -182,12 +179,11 @@ export default function ExpandablePrayerBlock({
         id: 2,
         value,
         language: normalizedSecondaryText ? 'russian' : 'church',
-        className:
-          normalizedSecondaryText
-            ? psalterClass
-              ? `${psalterClass} secondary`
-              : 'secondary'
-            : psalterClass,
+        className: normalizedSecondaryText
+          ? psalterClass
+            ? `${psalterClass} secondary`
+            : 'secondary'
+          : psalterClass,
       });
     } else if (viewMode === READER_LANGUAGE_MODES.BOTH) {
       addBlock({
@@ -207,11 +203,7 @@ export default function ExpandablePrayerBlock({
       addBlock({
         id: 1,
         value: normalizedText || normalizedTraditionalText || normalizedSecondaryText,
-        language: normalizedText
-          ? 'church'
-          : normalizedTraditionalText
-            ? 'traditional'
-            : 'russian',
+        language: normalizedText ? 'church' : normalizedTraditionalText ? 'traditional' : 'russian',
         className:
           !normalizedText && !normalizedTraditionalText && normalizedSecondaryText
             ? psalterClass

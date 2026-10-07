@@ -769,9 +769,7 @@ class Psalm(models.Model):
     title_russian = models.CharField(
         max_length=500, blank=True, verbose_name="Заголовок на русском"
     )
-    title_uk = models.CharField(
-        max_length=500, blank=True, verbose_name="Заголовок на украинском"
-    )
+    title_uk = models.CharField(max_length=500, blank=True, verbose_name="Заголовок на украинском")
     description = models.TextField(blank=True, verbose_name="Краткое описание псалма")
     description_uk = models.TextField(
         blank=True,

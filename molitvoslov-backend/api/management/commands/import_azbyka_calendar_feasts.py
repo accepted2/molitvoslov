@@ -24,9 +24,7 @@ from api.calendar_models import CalendarDay, CalendarFeast
 from api.sqlite_backup import create_sqlite_backup
 
 
-AZBYKA_DAY_FEAST_NAMESPACE = uuid.UUID(
-    "7d2f2de2-0c81-4ca9-a852-924a35d5e46b"
-)
+AZBYKA_DAY_FEAST_NAMESPACE = uuid.UUID("7d2f2de2-0c81-4ca9-a852-924a35d5e46b")
 
 IMPORT_FIELDS = [
     "troparion_title",
@@ -78,8 +76,7 @@ class Command(BaseCommand):
             "--overwrite",
             action="store_true",
             help=(
-                "В обычном режиме разрешить заменять уже заполненные RU "
-                "тропарь/кондак/житие."
+                "В обычном режиме разрешить заменять уже заполненные RU " "тропарь/кондак/житие."
             ),
         )
         parser.add_argument(
@@ -108,8 +105,7 @@ class Command(BaseCommand):
             "--backup-dir",
             default="",
             help=(
-                "Каталог backup перед первым изменением. "
-                "По умолчанию <backend>/backups/sqlite."
+                "Каталог backup перед первым изменением. " "По умолчанию <backend>/backups/sqlite."
             ),
         )
 
@@ -124,8 +120,7 @@ class Command(BaseCommand):
             raise CommandError("--date: используйте YYYY-MM-DD.") from error
 
         day = (
-            CalendarDay.objects
-            .select_related("main_feast")
+            CalendarDay.objects.select_related("main_feast")
             .prefetch_related("feasts")
             .filter(date_gregorian=target_date)
             .first()
@@ -134,9 +129,7 @@ class Command(BaseCommand):
             raise CommandError(f"Локально нет CalendarDay {target_date}.")
 
         local_feasts = list(day.feasts.all())
-        if day.main_feast and all(
-            item.pk != day.main_feast.pk for item in local_feasts
-        ):
+        if day.main_feast and all(item.pk != day.main_feast.pk for item in local_feasts):
             local_feasts.insert(0, day.main_feast)
 
         replace_day = options["replace_day_feasts"]
@@ -291,12 +284,9 @@ class Command(BaseCommand):
             except AzbykaFeastError as error:
                 errors.append(f"{source.title}: {error}")
 
-
         primary_indexes = [
-            index
-            for index, item in enumerate(prepared)
-            if item["source"].is_primary
-            ]
+            index for index, item in enumerate(prepared) if item["source"].is_primary
+        ]
 
         if primary_indexes:
             main_index = primary_indexes[0]
@@ -320,9 +310,7 @@ class Command(BaseCommand):
         self.stdout.write("")
         self.stdout.write("Старые связи дня будут отвязаны:")
         for feast in local_feasts:
-            self.stdout.write(
-                f"  - [{feast.pk}] {feast.short_title or feast.title}"
-            )
+            self.stdout.write(f"  - [{feast.pk}] {feast.short_title or feast.title}")
 
         self.stdout.write("")
         self.stdout.write("Новый набор Azbyka:")
@@ -340,25 +328,19 @@ class Command(BaseCommand):
                 found.append("икона")
 
             prefix = "MAIN" if index - 1 == main_index else "    "
-            self.stdout.write(
-                f"  {prefix} {index:02d}. {source.title}"
-            )
+            self.stdout.write(f"  {prefix} {index:02d}. {source.title}")
             self.stdout.write(f"       {source.url}")
             self.stdout.write(
-                "       Найдено: "
-                + (", ".join(found) if found else "только карточка")
+                "       Найдено: " + (", ".join(found) if found else "только карточка")
             )
             if item["parsed"].icon_source_url:
-                self.stdout.write(
-                    f"       Икона Azbyka: {item['parsed'].icon_source_url}"
-                )
+                self.stdout.write(f"       Икона Azbyka: {item['parsed'].icon_source_url}")
 
             hymn_group = item["hymn_group"]
             hymn_match = item["hymn_match"]
             if hymn_group is not None:
                 self.stdout.write(
-                    f"       Тексты дня: {hymn_group.title} "
-                    f"(совпадение {hymn_match.score:.2f})"
+                    f"       Тексты дня: {hymn_group.title} " f"(совпадение {hymn_match.score:.2f})"
                 )
 
         if errors:
@@ -366,30 +348,24 @@ class Command(BaseCommand):
             for error in errors:
                 self.stdout.write(self.style.ERROR(f"  ERROR: {error}"))
             raise CommandError(
-                "Новый набор неполный. Замена отменена; локальная база "
-                "не изменена."
+                "Новый набор неполный. Замена отменена; локальная база " "не изменена."
             )
 
         if not prepared:
-            raise CommandError(
-                "Azbyka не дала ни одной пригодной карточки. Замена отменена."
-            )
+            raise CommandError("Azbyka не дала ни одной пригодной карточки. Замена отменена.")
 
         if not apply_changes:
             self.stdout.write("")
             self.stdout.write(
                 self.style.WARNING(
-                    "DRY-RUN: старые связи не отвязаны, новые карточки "
-                    "не созданы."
+                    "DRY-RUN: старые связи не отвязаны, новые карточки " "не созданы."
                 )
             )
             return
 
         destination, digest = self._backup(backup_dir)
         self.stdout.write("")
-        self.stdout.write(
-            self.style.SUCCESS(f"BACKUP перед изменениями: {destination}")
-        )
+        self.stdout.write(self.style.SUCCESS(f"BACKUP перед изменениями: {destination}"))
         self.stdout.write(f"SHA256: {digest}")
 
         self._upload_prepared_icons(prepared)
@@ -415,16 +391,11 @@ class Command(BaseCommand):
                 # персональных ссылок. В таком случае parsed относится только
                 # к первому святому, поэтому полное название оставляем общим.
                 full_title = (
-                    source.title
-                    if source.is_multi_link_group
-                    else (parsed.title or source.title)
+                    source.title if source.is_multi_link_group else (parsed.title or source.title)
                 )
 
                 existing = (
-                    CalendarFeast.objects
-                    .filter(sync_uid=sync_uid)
-                    .only("short_title")
-                    .first()
+                    CalendarFeast.objects.filter(sync_uid=sync_uid).only("short_title").first()
                 )
 
                 defaults = {
@@ -459,31 +430,19 @@ class Command(BaseCommand):
         self.stdout.write("")
         self.stdout.write(
             self.style.SUCCESS(
-                f"Готово. К {day.date_gregorian} привязано "
-                f"{len(prepared)} карточек Azbyka."
+                f"Готово. К {day.date_gregorian} привязано " f"{len(prepared)} карточек Azbyka."
             )
         )
         self.stdout.write(
-            "Старые карточки из CalendarFeast не удалены; "
-            "от этого дня они только отвязаны."
+            "Старые карточки из CalendarFeast не удалены; " "от этого дня они только отвязаны."
         )
-        self.stdout.write(
-            f"Главная память: {prepared[main_index]['source'].title}"
-        )
+        self.stdout.write(f"Главная память: {prepared[main_index]['source'].title}")
 
     def _upload_prepared_icons(self, prepared):
-        with_icons = [
-            item
-            for item in prepared
-            if item["parsed"].icon_source_url
-        ]
+        with_icons = [item for item in prepared if item["parsed"].icon_source_url]
 
         if not with_icons:
-            self.stdout.write(
-                self.style.WARNING(
-                    "Иконы: на страницах Azbyka не найдены."
-                )
-            )
+            self.stdout.write(self.style.WARNING("Иконы: на страницах Azbyka не найдены."))
             return
 
         if not cloudinary_configured():
@@ -514,24 +473,14 @@ class Command(BaseCommand):
                 )
             except CalendarIconStorageError as error:
                 failed += 1
-                self.stdout.write(
-                    self.style.WARNING(
-                        f"  WARN {source.title}: {error}"
-                    )
-                )
+                self.stdout.write(self.style.WARNING(f"  WARN {source.title}: {error}"))
                 continue
 
             item["cloudinary_icon_url"] = cloudinary_url
             uploaded += 1
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"  OK {source.title}: {cloudinary_url}"
-                )
-            )
+            self.stdout.write(self.style.SUCCESS(f"  OK {source.title}: {cloudinary_url}"))
 
-        self.stdout.write(
-            f"Иконы Cloudinary: загружено {uploaded}, ошибок {failed}."
-        )
+        self.stdout.write(f"Иконы Cloudinary: загружено {uploaded}, ошибок {failed}.")
 
     def _fill_existing_feasts(
         self,
@@ -568,9 +517,7 @@ class Command(BaseCommand):
             if match.source is None:
                 unmatched += 1
                 self.stdout.write(
-                    self.style.WARNING(
-                        f"SKIP [{feast.pk}] {local_label}: {match.reason}"
-                    )
+                    self.style.WARNING(f"SKIP [{feast.pk}] {local_label}: {match.reason}")
                 )
                 continue
 
@@ -587,11 +534,7 @@ class Command(BaseCommand):
                 )
             except AzbykaFeastError as error:
                 failed += 1
-                self.stdout.write(
-                    self.style.ERROR(
-                        f"ERROR [{feast.pk}] {local_label}: {error}"
-                    )
-                )
+                self.stdout.write(self.style.ERROR(f"ERROR [{feast.pk}] {local_label}: {error}"))
                 continue
 
             changes = {}
@@ -608,10 +551,7 @@ class Command(BaseCommand):
                     changes[field] = value
 
             self.stdout.write(f"[{feast.pk}] {local_label}")
-            self.stdout.write(
-                f"  -> Azbyka: {source.title} "
-                f"(совпадение {match.score:.2f})"
-            )
+            self.stdout.write(f"  -> Azbyka: {source.title} " f"(совпадение {match.score:.2f})")
             self.stdout.write(f"  URL: {source.url}")
 
             found = []
@@ -622,9 +562,7 @@ class Command(BaseCommand):
             if desired.get("life_content"):
                 found.append("житие")
 
-            self.stdout.write(
-                "  Найдено: " + (", ".join(found) if found else "ничего")
-            )
+            self.stdout.write("  Найдено: " + (", ".join(found) if found else "ничего"))
             if hymn_group is not None:
                 self.stdout.write(
                     f"  Богослужебные тексты дня: {hymn_group.title} "
@@ -634,14 +572,11 @@ class Command(BaseCommand):
             if not changes:
                 unchanged += 1
                 self.stdout.write(
-                    "  Изменений: 0 "
-                    "(поля уже заполнены либо на источнике нет данных)"
+                    "  Изменений: 0 " "(поля уже заполнены либо на источнике нет данных)"
                 )
                 continue
 
-            self.stdout.write(
-                "  Изменятся поля: " + ", ".join(changes)
-            )
+            self.stdout.write("  Изменятся поля: " + ", ".join(changes))
 
             if not apply_changes:
                 continue
@@ -649,11 +584,7 @@ class Command(BaseCommand):
             if not backup_done:
                 destination, digest = self._backup(backup_dir)
                 backup_done = True
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"BACKUP перед изменениями: {destination}"
-                    )
-                )
+                self.stdout.write(self.style.SUCCESS(f"BACKUP перед изменениями: {destination}"))
                 self.stdout.write(f"SHA256: {digest}")
 
             with transaction.atomic():
@@ -669,16 +600,13 @@ class Command(BaseCommand):
         self.stdout.write(f"  Ошибок сети/парсинга: {failed}")
 
         if not apply_changes:
-            self.stdout.write(
-                self.style.WARNING("DRY-RUN: локальная база не изменена.")
-            )
+            self.stdout.write(self.style.WARNING("DRY-RUN: локальная база не изменена."))
 
     def _assert_local_sqlite(self):
         engine = connections["default"].settings_dict.get("ENGINE", "")
         if engine != "django.db.backends.sqlite3":
             raise CommandError(
-                "Команда работает только с локальной SQLite. "
-                "Уберите SUPABASE_DB_PASSWORD."
+                "Команда работает только с локальной SQLite. " "Уберите SUPABASE_DB_PASSWORD."
             )
 
     def _backup(self, output_dir):

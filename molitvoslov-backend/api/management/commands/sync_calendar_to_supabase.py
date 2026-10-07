@@ -218,9 +218,7 @@ class Command(BaseCommand):
             self._print_feast_icons_only_preview(preview, days, feasts)
 
             if options["dry_run"]:
-                self.stdout.write(
-                    self.style.WARNING("DRY-RUN: Supabase не изменён.")
-                )
+                self.stdout.write(self.style.WARNING("DRY-RUN: Supabase не изменён."))
                 return
 
             counters = {
@@ -235,9 +233,7 @@ class Command(BaseCommand):
             if problems:
                 for problem in problems[:30]:
                     self.stdout.write(self.style.ERROR(f"  - {problem}"))
-                raise CommandError(
-                    f"После записи найдено расхождений: {len(problems)}."
-                )
+                raise CommandError(f"После записи найдено расхождений: {len(problems)}.")
 
             self.stdout.write(
                 self.style.SUCCESS(
@@ -263,9 +259,7 @@ class Command(BaseCommand):
             )
 
             if options["dry_run"]:
-                self.stdout.write(
-                    self.style.WARNING("DRY-RUN: Supabase не изменён.")
-                )
+                self.stdout.write(self.style.WARNING("DRY-RUN: Supabase не изменён."))
                 return
 
             feast_counters = {
@@ -310,9 +304,7 @@ class Command(BaseCommand):
             if problems:
                 for problem in problems[:30]:
                     self.stdout.write(self.style.ERROR(f"  - {problem}"))
-                raise CommandError(
-                    f"После записи найдено расхождений: {len(problems)}."
-                )
+                raise CommandError(f"После записи найдено расхождений: {len(problems)}.")
 
             self.stdout.write(
                 self.style.SUCCESS(
@@ -343,9 +335,7 @@ class Command(BaseCommand):
             self._print_day_feasts_only_preview(preview, days, feasts)
 
             if options["dry_run"]:
-                self.stdout.write(
-                    self.style.WARNING("DRY-RUN: Supabase не изменён.")
-                )
+                self.stdout.write(self.style.WARNING("DRY-RUN: Supabase не изменён."))
                 return
 
             counters = {
@@ -368,9 +358,7 @@ class Command(BaseCommand):
             if problems:
                 for problem in problems[:30]:
                     self.stdout.write(self.style.ERROR(f"  - {problem}"))
-                raise CommandError(
-                    f"После записи найдено расхождений: {len(problems)}."
-                )
+                raise CommandError(f"После записи найдено расхождений: {len(problems)}.")
 
             self.stdout.write(
                 self.style.SUCCESS(
@@ -406,9 +394,7 @@ class Command(BaseCommand):
             if problems:
                 for problem in problems[:30]:
                     self.stdout.write(self.style.ERROR(f"  - {problem}"))
-                raise CommandError(
-                    f"После записи найдено расхождений: {len(problems)}."
-                )
+                raise CommandError(f"После записи найдено расхождений: {len(problems)}.")
 
             self.stdout.write(
                 self.style.SUCCESS(
@@ -452,9 +438,7 @@ class Command(BaseCommand):
             if problems:
                 for problem in problems[:30]:
                     self.stdout.write(self.style.ERROR(f"  - {problem}"))
-                raise CommandError(
-                    f"После записи найдено расхождений: {len(problems)}."
-                )
+                raise CommandError(f"После записи найдено расхождений: {len(problems)}.")
 
             self.stdout.write(
                 self.style.SUCCESS(
@@ -714,9 +698,7 @@ class Command(BaseCommand):
             values["sync_uid"] = feast.sync_uid
             changed = self._changed_fields(remote, values)
             if changed:
-                result["feast_update"].append(
-                    f"{label} ({', '.join(changed)})"
-                )
+                result["feast_update"].append(f"{label} ({', '.join(changed)})")
 
         for day in days:
             remote = (
@@ -734,9 +716,7 @@ class Command(BaseCommand):
                 )
 
             local_main_uid = (
-                str(day.main_feast.sync_uid)
-                if day.main_feast and day.main_feast.sync_uid
-                else None
+                str(day.main_feast.sync_uid) if day.main_feast and day.main_feast.sync_uid else None
             )
             remote_main_uid = (
                 str(remote.main_feast.sync_uid)
@@ -744,15 +724,9 @@ class Command(BaseCommand):
                 else None
             )
 
-            local_uids = sorted(
-                str(feast.sync_uid)
-                for feast in day.feasts.all()
-                if feast.sync_uid
-            )
+            local_uids = sorted(str(feast.sync_uid) for feast in day.feasts.all() if feast.sync_uid)
             remote_uids = sorted(
-                str(feast.sync_uid)
-                for feast in remote.feasts.all()
-                if feast.sync_uid
+                str(feast.sync_uid) for feast in remote.feasts.all() if feast.sync_uid
             )
 
             remote_total = remote.feasts.count()
@@ -765,8 +739,7 @@ class Command(BaseCommand):
 
             if changed:
                 result["day_relation_update"].append(
-                    f"{day.date_gregorian.isoformat()} "
-                    f"({', '.join(changed)})"
+                    f"{day.date_gregorian.isoformat()} " f"({', '.join(changed)})"
                 )
 
         return result
@@ -843,32 +816,19 @@ class Command(BaseCommand):
                 .first()
             )
             if remote is None:
-                raise CommandError(
-                    f"В Supabase отсутствует CalendarDay {day.date_gregorian}."
-                )
+                raise CommandError(f"В Supabase отсутствует CalendarDay {day.date_gregorian}.")
 
-            desired_main = (
-                remote_feasts[day.main_feast.sync_uid]
-                if day.main_feast
-                else None
-            )
-            desired_feasts = [
-                remote_feasts[feast.sync_uid]
-                for feast in day.feasts.all()
-            ]
+            desired_main = remote_feasts[day.main_feast.sync_uid] if day.main_feast else None
+            desired_feasts = [remote_feasts[feast.sync_uid] for feast in day.feasts.all()]
 
             changed = False
 
-            if remote.main_feast_id != (
-                desired_main.pk if desired_main else None
-            ):
+            if remote.main_feast_id != (desired_main.pk if desired_main else None):
                 remote.main_feast = desired_main
                 remote.save(update_fields=["main_feast"])
                 changed = True
 
-            current_ids = sorted(
-                remote.feasts.values_list("pk", flat=True)
-            )
+            current_ids = sorted(remote.feasts.values_list("pk", flat=True))
             desired_ids = sorted(feast.pk for feast in desired_feasts)
 
             if current_ids != desired_ids:
@@ -886,21 +846,15 @@ class Command(BaseCommand):
         for feast in feasts.values():
             remote = self._find_remote_feast(feast)
             if remote is None:
-                problems.append(
-                    f"Память {feast.short_title or feast.title}: отсутствует"
-                )
+                problems.append(f"Память {feast.short_title or feast.title}: отсутствует")
                 continue
 
             for field, expected in self._feast_values(feast).items():
                 if getattr(remote, field) != expected:
-                    problems.append(
-                        f"Память {feast.pk}: {field} отличается"
-                    )
+                    problems.append(f"Память {feast.pk}: {field} отличается")
 
             if str(remote.sync_uid) != str(feast.sync_uid):
-                problems.append(
-                    f"Память {feast.pk}: sync_uid отличается"
-                )
+                problems.append(f"Память {feast.pk}: sync_uid отличается")
 
         for day in days:
             remote = (
@@ -914,38 +868,22 @@ class Command(BaseCommand):
                 problems.append(f"День {day.date_gregorian}: отсутствует")
                 continue
 
-            local_main_uid = (
-                str(day.main_feast.sync_uid)
-                if day.main_feast
-                else None
-            )
+            local_main_uid = str(day.main_feast.sync_uid) if day.main_feast else None
             remote_main_uid = (
                 str(remote.main_feast.sync_uid)
                 if remote.main_feast and remote.main_feast.sync_uid
                 else None
             )
             if local_main_uid != remote_main_uid:
-                problems.append(
-                    f"День {day.date_gregorian}: main_feast отличается"
-                )
+                problems.append(f"День {day.date_gregorian}: main_feast отличается")
 
-            local_uids = sorted(
-                str(feast.sync_uid)
-                for feast in day.feasts.all()
-            )
+            local_uids = sorted(str(feast.sync_uid) for feast in day.feasts.all())
             remote_uids = sorted(
-                str(feast.sync_uid)
-                for feast in remote.feasts.all()
-                if feast.sync_uid
+                str(feast.sync_uid) for feast in remote.feasts.all() if feast.sync_uid
             )
 
-            if (
-                local_uids != remote_uids
-                or len(remote_uids) != remote.feasts.count()
-            ):
-                problems.append(
-                    f"День {day.date_gregorian}: feasts отличаются"
-                )
+            if local_uids != remote_uids or len(remote_uids) != remote.feasts.count():
+                problems.append(f"День {day.date_gregorian}: feasts отличаются")
 
         return problems
 
@@ -970,8 +908,7 @@ class Command(BaseCommand):
 
     def _print_feast_icons_only_preview(self, preview, days, feasts):
         self.stdout.write(
-            f"Источник SQLite: дней {len(days)}, памятей {len(feasts)}. "
-            "Режим: только icon_url."
+            f"Источник SQLite: дней {len(days)}, памятей {len(feasts)}. " "Режим: только icon_url."
         )
         self.stdout.write("План:")
 
@@ -1009,23 +946,16 @@ class Command(BaseCommand):
         for feast in feasts.values():
             remote = self._find_remote_feast(feast)
             if remote is None:
-                problems.append(
-                    f"Память {feast.short_title or feast.title}: отсутствует"
-                )
+                problems.append(f"Память {feast.short_title or feast.title}: отсутствует")
                 continue
 
             if remote.icon_url != feast.icon_url:
-                problems.append(
-                    f"Память {feast.pk}: icon_url отличается"
-                )
+                problems.append(f"Память {feast.pk}: icon_url отличается")
 
         return problems
 
     def _feast_content_values(self, feast):
-        return {
-            field: getattr(feast, field)
-            for field in FEAST_CONTENT_FIELDS
-        }
+        return {field: getattr(feast, field) for field in FEAST_CONTENT_FIELDS}
 
     def _preview_feast_content_only(self, feasts):
         result = {
@@ -1046,9 +976,7 @@ class Command(BaseCommand):
                 self._feast_content_values(feast),
             )
             if changed:
-                result["feast_update"].append(
-                    f"{label} ({', '.join(changed)})"
-                )
+                result["feast_update"].append(f"{label} ({', '.join(changed)})")
 
         return result
 
@@ -1097,16 +1025,12 @@ class Command(BaseCommand):
         for feast in feasts.values():
             remote = self._find_remote_feast(feast)
             if remote is None:
-                problems.append(
-                    f"Память {feast.short_title or feast.title}: отсутствует"
-                )
+                problems.append(f"Память {feast.short_title or feast.title}: отсутствует")
                 continue
 
             for field, expected in self._feast_content_values(feast).items():
                 if getattr(remote, field) != expected:
-                    problems.append(
-                        f"Память {feast.pk}: {field} отличается"
-                    )
+                    problems.append(f"Память {feast.pk}: {field} отличается")
 
         return problems
 
@@ -1163,9 +1087,7 @@ class Command(BaseCommand):
                 reading_changed = self._changed_fields(remote_reading, values)
 
                 if reading_changed:
-                    result["reading_update"].append(
-                        f"{label} ({', '.join(reading_changed)})"
-                    )
+                    result["reading_update"].append(f"{label} ({', '.join(reading_changed)})")
 
             for remote_reading in remote.readings.all():
                 if remote_reading.pk in matched_remote_ids:
@@ -1179,10 +1101,7 @@ class Command(BaseCommand):
         return result
 
     def _print_readings_only_preview(self, preview, days):
-        self.stdout.write(
-            f"Источник SQLite: дней {len(days)}. "
-            "Режим: только чтения."
-        )
+        self.stdout.write(f"Источник SQLite: дней {len(days)}. " "Режим: только чтения.")
         self.stdout.write("План:")
         for key, title in [
             ("day_update", "Legacy-поля дня UPDATE"),
@@ -1205,9 +1124,7 @@ class Command(BaseCommand):
                 .first()
             )
             if remote is None:
-                raise CommandError(
-                    f"В Supabase отсутствует CalendarDay {day.date_gregorian}."
-                )
+                raise CommandError(f"В Supabase отсутствует CalendarDay {day.date_gregorian}.")
 
             desired = self._legacy_reading_values(day)
             changed = self._changed_fields(remote, desired)
@@ -1237,16 +1154,12 @@ class Command(BaseCommand):
 
             for field, expected in self._legacy_reading_values(day).items():
                 if getattr(remote, field) != expected:
-                    problems.append(
-                        f"День {day.date_gregorian}: {field} отличается"
-                    )
+                    problems.append(f"День {day.date_gregorian}: {field} отличается")
 
             local_readings = list(day.readings.all())
             remote_readings = list(remote.readings.all())
             remote_by_uid = {
-                str(reading.sync_uid): reading
-                for reading in remote_readings
-                if reading.sync_uid
+                str(reading.sync_uid): reading for reading in remote_readings if reading.sync_uid
             }
 
             for reading in local_readings:
@@ -1266,14 +1179,10 @@ class Command(BaseCommand):
 
             local_uids = sorted(str(reading.sync_uid) for reading in local_readings)
             remote_uids = sorted(
-                str(reading.sync_uid)
-                for reading in remote_readings
-                if reading.sync_uid
+                str(reading.sync_uid) for reading in remote_readings if reading.sync_uid
             )
             if local_uids != remote_uids:
-                problems.append(
-                    f"День {day.date_gregorian}: список чтений отличается"
-                )
+                problems.append(f"День {day.date_gregorian}: список чтений отличается")
 
         return problems
 

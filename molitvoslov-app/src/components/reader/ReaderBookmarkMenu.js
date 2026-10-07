@@ -127,9 +127,7 @@ export const ReaderBookmarkMenu = ({
             <View style={styles.actionTextWrap}>
               <Text style={styles.actionTitle}>{t('bookmarkMenu.add')}</Text>
               <Text style={styles.actionSubtitle}>
-                {bookmark
-                  ? t('bookmarkMenu.savePlace')
-                  : t('bookmarkMenu.positionAfterStart')}
+                {bookmark ? t('bookmarkMenu.savePlace') : t('bookmarkMenu.positionAfterStart')}
               </Text>
             </View>
           </Pressable>
@@ -145,9 +143,7 @@ export const ReaderBookmarkMenu = ({
 
               <View style={styles.actionTextWrap}>
                 <Text style={styles.actionTitle}>{t('bookmarkMenu.returnToPlace')}</Text>
-                <Text style={styles.actionSubtitle}>
-                  {t('bookmarkMenu.returnToPlaceHint')}
-                </Text>
+                <Text style={styles.actionSubtitle}>{t('bookmarkMenu.returnToPlaceHint')}</Text>
               </View>
             </Pressable>
           )}
@@ -162,9 +158,7 @@ export const ReaderBookmarkMenu = ({
 
             <View style={styles.actionTextWrap}>
               <Text style={styles.actionTitle}>{t('bookmarkMenu.openPlaces')}</Text>
-              <Text style={styles.actionSubtitle}>
-                {t('bookmarkMenu.openPlacesHint')}
-              </Text>
+              <Text style={styles.actionSubtitle}>{t('bookmarkMenu.openPlacesHint')}</Text>
             </View>
           </Pressable>
 

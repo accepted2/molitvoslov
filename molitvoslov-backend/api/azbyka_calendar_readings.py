@@ -57,10 +57,7 @@ REFERENCE_RE = re.compile(
 
 SPACE_RE = re.compile(r"\s+")
 SERVICE_PREFIX_RE = re.compile(
-    r"^(?:"
-    r"Лит(?:\.|ургия)?"
-    r"|На\s+литургии"
-    r")\s*[–—-]?\s*",
+    r"^(?:" r"Лит(?:\.|ургия)?" r"|На\s+литургии" r")\s*[–—-]?\s*",
     re.IGNORECASE,
 )
 
@@ -332,8 +329,7 @@ def fetch_day_readings(day, session=None, timeout=20):
             timeout=timeout,
             headers={
                 "User-Agent": (
-                    "MolitvoslovCalendarImporter/1.0 "
-                    "(personal church-calendar data import)"
+                    "MolitvoslovCalendarImporter/1.0 " "(personal church-calendar data import)"
                 )
             },
         )

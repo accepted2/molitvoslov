@@ -47,8 +47,7 @@ def upload_azbyka_icon(source_url, source_page_url):
         import cloudinary.uploader
     except ImportError as error:
         raise CalendarIconStorageError(
-            "Python-пакет cloudinary не установлен. "
-            "Выполните pip install -r requirements.txt."
+            "Python-пакет cloudinary не установлен. " "Выполните pip install -r requirements.txt."
         ) from error
 
     try:
@@ -76,8 +75,6 @@ def upload_azbyka_icon(source_url, source_page_url):
 
     secure_url = (result or {}).get("secure_url", "").strip()
     if not secure_url:
-        raise CalendarIconStorageError(
-            "Cloudinary завершил upload без secure_url."
-        )
+        raise CalendarIconStorageError("Cloudinary завершил upload без secure_url.")
 
     return secure_url

@@ -25,11 +25,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         default_source = (
-            settings.BASE_DIR.parent
-            / "molitvoslov-app"
-            / "src"
-            / "data"
-            / "offlineContent.json"
+            settings.BASE_DIR.parent / "molitvoslov-app" / "src" / "data" / "offlineContent.json"
         )
 
         parser.add_argument(
@@ -63,19 +59,13 @@ class Command(BaseCommand):
         except (UnicodeDecodeError, json.JSONDecodeError) as error:
             raise CommandError(f"Не удалось прочитать {source_path}: {error}") from error
 
-        selected = (
-            ["morning", "evening"]
-            if options["rule"] == "both"
-            else [options["rule"]]
-        )
+        selected = ["morning", "evening"] if options["rule"] == "both" else [options["rule"]]
 
         plans = [self._build_plan(payload, key) for key in selected]
 
         self.stdout.write("")
         self.stdout.write(
-            self.style.MIGRATE_HEADING(
-                "Восстановление русских переводов молитвенных правил"
-            )
+            self.style.MIGRATE_HEADING("Восстановление русских переводов молитвенных правил")
         )
 
         for plan in plans:
@@ -90,33 +80,22 @@ class Command(BaseCommand):
 
             if plan["unsafe"]:
                 self.stdout.write(
-                    self.style.ERROR(
-                        "Есть несовпадения source/DB; APPLY заблокирован:"
-                    )
+                    self.style.ERROR("Есть несовпадения source/DB; APPLY заблокирован:")
                 )
                 for row in plan["unsafe"]:
-                    self.stdout.write(
-                        f'  order={row["order"]} similarity={row["score"]:.3f}'
-                    )
+                    self.stdout.write(f'  order={row["order"]} similarity={row["score"]:.3f}')
 
-            self.stdout.write(
-                f'Готово к APPLY: {"ДА" if plan["ready"] else "НЕТ"}.'
-            )
+            self.stdout.write(f'Готово к APPLY: {"ДА" if plan["ready"] else "НЕТ"}.')
 
         if options["dry_run"]:
             self.stdout.write("")
-            self.stdout.write(
-                self.style.SUCCESS(
-                    "DRY-RUN завершён. База не изменена."
-                )
-            )
+            self.stdout.write(self.style.SUCCESS("DRY-RUN завершён. База не изменена."))
             return
 
         invalid = [plan for plan in plans if not plan["ready"]]
         if invalid:
             raise CommandError(
-                "APPLY остановлен из-за несовпадения данных. "
-                "Сначала проверьте --dry-run."
+                "APPLY остановлен из-за несовпадения данных. " "Сначала проверьте --dry-run."
             )
 
         self._backup(options["backup_dir"])
@@ -145,38 +124,23 @@ class Command(BaseCommand):
 
         self.stdout.write("")
         self.stdout.write(
-            self.style.SUCCESS(
-                f"APPLY завершён. Заполнено translation: {len(seen)}."
-            )
+            self.style.SUCCESS(f"APPLY завершён. Заполнено translation: {len(seen)}.")
         )
 
     def _build_plan(self, payload, key):
         slug = RULE_SLUGS[key]
-        label = (
-            "Утренние молитвы"
-            if key == "morning"
-            else "Вечерние молитвы"
-        )
+        label = "Утренние молитвы" if key == "morning" else "Вечерние молитвы"
 
-        source_rule = (
-            payload.get("prayer_rules", {})
-            .get("by_slug", {})
-            .get(slug)
-        )
+        source_rule = payload.get("prayer_rules", {}).get("by_slug", {}).get(slug)
         if not source_rule:
-            raise CommandError(
-                f'В offlineContent.json нет PrayerRule slug="{slug}".'
-            )
+            raise CommandError(f'В offlineContent.json нет PrayerRule slug="{slug}".')
 
         rule = PrayerRule.objects.filter(slug=slug).first()
         if rule is None:
-            raise CommandError(
-                f'В локальной БД нет PrayerRule slug="{slug}".'
-            )
+            raise CommandError(f'В локальной БД нет PrayerRule slug="{slug}".')
 
         db_items = list(
-            rule.items
-            .filter(
+            rule.items.filter(
                 item_type=PrayerRuleItem.TYPE_TEXT,
                 text__isnull=False,
             )
@@ -252,9 +216,7 @@ class Command(BaseCommand):
                 output_dir,
             )
         except Exception as error:
-            raise CommandError(
-                f"Не удалось создать backup перед APPLY: {error}"
-            ) from error
+            raise CommandError(f"Не удалось создать backup перед APPLY: {error}") from error
 
         self.stdout.write("")
         self.stdout.write(self.style.SUCCESS("Резервная копия создана."))

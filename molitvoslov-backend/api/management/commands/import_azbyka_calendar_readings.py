@@ -17,9 +17,7 @@ from api.calendar_models import CalendarDay, CalendarReading
 from api.sqlite_backup import create_sqlite_backup
 
 
-AZBYKA_READING_NAMESPACE = uuid.UUID(
-    "91d7606f-7ea4-4d92-a691-4f88d0d73cd0"
-)
+AZBYKA_READING_NAMESPACE = uuid.UUID("91d7606f-7ea4-4d92-a691-4f88d0d73cd0")
 
 
 def reading_identity(reading):
@@ -55,9 +53,7 @@ def parse_iso_date(value, option_name):
     try:
         return date.fromisoformat(value)
     except (TypeError, ValueError) as error:
-        raise CommandError(
-            f"{option_name}: используйте дату в формате YYYY-MM-DD."
-        ) from error
+        raise CommandError(f"{option_name}: используйте дату в формате YYYY-MM-DD.") from error
 
 
 def iter_dates(start, end):
@@ -161,8 +157,7 @@ class Command(BaseCommand):
         try:
             for index, target_date in enumerate(dates, start=1):
                 day = (
-                    CalendarDay.objects
-                    .prefetch_related("readings")
+                    CalendarDay.objects.prefetch_related("readings")
                     .filter(date_gregorian=target_date)
                     .first()
                 )
@@ -186,9 +181,7 @@ class Command(BaseCommand):
                 except AzbykaReadingsError as error:
                     failed += 1
                     self.stdout.write(
-                        self.style.ERROR(
-                            f"[{index}/{len(dates)}] {target_date}: ERROR — {error}"
-                        )
+                        self.style.ERROR(f"[{index}/{len(dates)}] {target_date}: ERROR — {error}")
                     )
                     continue
 
@@ -213,16 +206,14 @@ class Command(BaseCommand):
 
                 action = "REPLACE" if existing_count else "CREATE"
                 self.stdout.write(
-                    f"[{index}/{len(dates)}] {target_date}: "
-                    f"{action} {len(parsed.readings)}"
+                    f"[{index}/{len(dates)}] {target_date}: " f"{action} {len(parsed.readings)}"
                 )
                 self.stdout.write(f"  Источник: {parsed.url}")
 
                 for reading in parsed.readings:
                     label = f" [{reading.label}]" if reading.label else ""
                     self.stdout.write(
-                        f"  - {reading.kind}{label}: "
-                        f"{reading.title} (order={reading.order})"
+                        f"  - {reading.kind}{label}: " f"{reading.title} (order={reading.order})"
                     )
 
                 if not apply_changes:
@@ -232,9 +223,7 @@ class Command(BaseCommand):
                     destination, digest = self._backup(options["backup_dir"])
                     backup_done = True
                     self.stdout.write(
-                        self.style.SUCCESS(
-                            f"BACKUP перед изменениями: {destination}"
-                        )
+                        self.style.SUCCESS(f"BACKUP перед изменениями: {destination}")
                     )
                     self.stdout.write(f"SHA256: {digest}")
 
@@ -283,9 +272,7 @@ class Command(BaseCommand):
         self.stdout.write(f"  Ошибок парсинга/сети: {failed}")
 
         if not apply_changes:
-            self.stdout.write(
-                self.style.WARNING("DRY-RUN: локальная база не изменена.")
-            )
+            self.stdout.write(self.style.WARNING("DRY-RUN: локальная база не изменена."))
 
         if options["fail_on_error"] and (failed or skipped_missing_day):
             raise CommandError(
@@ -298,18 +285,12 @@ class Command(BaseCommand):
         engine = connections["default"].settings_dict.get("ENGINE", "")
         if engine != "django.db.backends.sqlite3":
             raise CommandError(
-                "Источник должен быть локальной SQLite. "
-                "Уберите SUPABASE_DB_PASSWORD."
+                "Источник должен быть локальной SQLite. " "Уберите SUPABASE_DB_PASSWORD."
             )
 
     def _selected_dates(self, options):
         if options.get("dates"):
-            return sorted(
-                {
-                    parse_iso_date(value, "--date")
-                    for value in options["dates"]
-                }
-            )
+            return sorted({parse_iso_date(value, "--date") for value in options["dates"]})
 
         if options.get("range"):
             start = parse_iso_date(options["range"][0], "--range START")

@@ -9,9 +9,7 @@ def parse_iso_date(value, option_name):
     try:
         return date.fromisoformat(value)
     except (TypeError, ValueError) as error:
-        raise CommandError(
-            f"{option_name}: используйте дату в формате YYYY-MM-DD."
-        ) from error
+        raise CommandError(f"{option_name}: используйте дату в формате YYYY-MM-DD.") from error
 
 
 def iter_dates(start, end):
@@ -79,18 +77,11 @@ class Command(BaseCommand):
         delay = str(max(0.0, options["delay"]))
         backup_dir = options["backup_dir"]
 
+        self.stdout.write(self.style.MIGRATE_HEADING("AZBYKA: единый импорт чтений + памятей"))
         self.stdout.write(
-            self.style.MIGRATE_HEADING(
-                "AZBYKA: единый импорт чтений + памятей"
-            )
+            f"Дат: {len(dates)}. " f"Режим: {'APPLY' if apply_changes else 'DRY-RUN'}."
         )
-        self.stdout.write(
-            f"Дат: {len(dates)}. "
-            f"Режим: {'APPLY' if apply_changes else 'DRY-RUN'}."
-        )
-        self.stdout.write(
-            "Чтения: всегда заменяются данными Azbyka для выбранной даты."
-        )
+        self.stdout.write("Чтения: всегда заменяются данными Azbyka для выбранной даты.")
         self.stdout.write(
             "Памяти: старые связи дня заменяются полным набором Azbyka; "
             "старые CalendarFeast физически не удаляются."
@@ -102,9 +93,7 @@ class Command(BaseCommand):
             date_value = target_date.isoformat()
             self.stdout.write("")
             self.stdout.write(
-                self.style.MIGRATE_LABEL(
-                    f"===== [{index}/{len(dates)}] {date_value} ====="
-                )
+                self.style.MIGRATE_LABEL(f"===== [{index}/{len(dates)}] {date_value} =====")
             )
 
             reading_args = [
@@ -144,24 +133,19 @@ class Command(BaseCommand):
                     self._run_readings(reading_args)
                     self._run_feasts(feast_args)
             except CommandError as error:
-                raise CommandError(
-                    f"{date_value}: единый импорт остановлен. {error}"
-                ) from error
+                raise CommandError(f"{date_value}: единый импорт остановлен. {error}") from error
 
             completed += 1
 
         self.stdout.write("")
         if apply_changes:
             self.stdout.write(
-                self.style.SUCCESS(
-                    f"Готово. Полностью обработано дней: {completed}."
-                )
+                self.style.SUCCESS(f"Готово. Полностью обработано дней: {completed}.")
             )
         else:
             self.stdout.write(
                 self.style.WARNING(
-                    f"DRY-RUN завершён. Проверено дней: {completed}. "
-                    "Локальная база не изменена."
+                    f"DRY-RUN завершён. Проверено дней: {completed}. " "Локальная база не изменена."
                 )
             )
 
@@ -187,12 +171,7 @@ class Command(BaseCommand):
 
     def _selected_dates(self, options):
         if options.get("dates"):
-            return sorted(
-                {
-                    parse_iso_date(value, "--date")
-                    for value in options["dates"]
-                }
-            )
+            return sorted({parse_iso_date(value, "--date") for value in options["dates"]})
 
         start_raw, end_raw = options["range"]
         start = parse_iso_date(start_raw, "--range START")

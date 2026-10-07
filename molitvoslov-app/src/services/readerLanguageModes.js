@@ -6,20 +6,10 @@ export const READER_LANGUAGE_MODES = {
   TRADITIONAL: 'traditional',
 };
 
-export const getReaderModeForAppLanguage = (
-  _language,
-  {
-    hasRussian = false,
-  } = {}
-) =>
-  hasRussian
-    ? READER_LANGUAGE_MODES.RUSSIAN
-    : READER_LANGUAGE_MODES.CHURCH;
+export const getReaderModeForAppLanguage = (_language, {hasRussian = false} = {}) =>
+  hasRussian ? READER_LANGUAGE_MODES.RUSSIAN : READER_LANGUAGE_MODES.CHURCH;
 
-export const buildReaderLanguageOptions = ({
-  hasRussian = false,
-  hasTraditional = false,
-} = {}) => [
+export const buildReaderLanguageOptions = ({hasRussian = false, hasTraditional = false} = {}) => [
   {
     key: READER_LANGUAGE_MODES.CHURCH,
     label: 'ЦС',

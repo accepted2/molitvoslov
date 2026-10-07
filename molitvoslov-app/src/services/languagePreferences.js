@@ -22,9 +22,7 @@ export const normalizeAppLanguage = (language) => {
 };
 
 export const getCalendarDataLanguage = (language) =>
-  normalizeAppLanguage(language) === APP_LANGUAGES.UK
-    ? APP_LANGUAGES.UK
-    : APP_LANGUAGES.RU;
+  normalizeAppLanguage(language) === APP_LANGUAGES.UK ? APP_LANGUAGES.UK : APP_LANGUAGES.RU;
 
 export const getAppLanguage = async () => {
   try {
@@ -60,10 +58,7 @@ export const setAppLanguage = async (language) => {
 
     // Пока календарный API поддерживает RU/UK, сохраняем совместимое
     // legacy-значение для старых частей приложения/виджетов.
-    await SecureStore.setItemAsync(
-      LEGACY_CALENDAR_LANGUAGE_KEY,
-      getCalendarDataLanguage(next)
-    );
+    await SecureStore.setItemAsync(LEGACY_CALENDAR_LANGUAGE_KEY, getCalendarDataLanguage(next));
   } catch (error) {
     console.log('Не удалось сохранить язык приложения:', error?.message || error);
   }

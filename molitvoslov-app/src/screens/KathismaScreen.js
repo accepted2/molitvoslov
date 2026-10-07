@@ -513,9 +513,7 @@ export default function KathismaScreen({route, navigation}) {
     () =>
       !!kathisma?.prayers_after_traditional?.trim() ||
       (kathisma?.psalms || []).some((psalm) =>
-        (psalm.verses || []).some(
-          (verse) => !!verse.church_slavonic_traditional?.trim()
-        )
+        (psalm.verses || []).some((verse) => !!verse.church_slavonic_traditional?.trim())
       ),
     [kathisma]
   );
@@ -906,14 +904,16 @@ export default function KathismaScreen({route, navigation}) {
 
         if (showUkrainian) {
           const localized = ukrainian.text || russian.text || church.text;
-          const localizedRanges =
-            ukrainian.text
-              ? ukrainian.verseRanges
-              : russian.text
-                ? russian.verseRanges
-                : church.verseRanges;
-          const localizedLanguage =
-            ukrainian.text ? 'ukrainian' : russian.text ? 'russian' : 'church';
+          const localizedRanges = ukrainian.text
+            ? ukrainian.verseRanges
+            : russian.text
+              ? russian.verseRanges
+              : church.verseRanges;
+          const localizedLanguage = ukrainian.text
+            ? 'ukrainian'
+            : russian.text
+              ? 'russian'
+              : 'church';
 
           if (localized) {
             blocks.push(
@@ -1081,8 +1081,7 @@ export default function KathismaScreen({route, navigation}) {
 
       if (showUkrainian) {
         const localized = ukrainianText || russianText || churchText;
-        const localizedLanguage =
-          ukrainianText ? 'ukrainian' : russianText ? 'russian' : 'church';
+        const localizedLanguage = ukrainianText ? 'ukrainian' : russianText ? 'russian' : 'church';
 
         if (localized) {
           blocks.push(
@@ -1100,9 +1099,7 @@ export default function KathismaScreen({route, navigation}) {
               fullSaveType: 'prayer',
 
               className:
-                localizedLanguage === 'church'
-                  ? 'psalter-prayer'
-                  : 'psalter-prayer secondary',
+                localizedLanguage === 'church' ? 'psalter-prayer' : 'psalter-prayer secondary',
 
               metadata: {
                 kathisma_number: kathisma.number,

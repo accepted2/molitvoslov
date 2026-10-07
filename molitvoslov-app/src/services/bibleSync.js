@@ -27,9 +27,7 @@ const runBibleContentSync = async (translationCode = 'rst') => {
 
   await hydrateBibleContent(code);
 
-  const currentVersion = normalizeVersion(
-    getCurrentBibleContentVersion(code)
-  );
+  const currentVersion = normalizeVersion(getCurrentBibleContentVersion(code));
   const headers = {};
 
   if (currentVersion) {
@@ -56,9 +54,7 @@ const runBibleContentSync = async (translationCode = 'rst') => {
   if (!response.ok) {
     const detail = await readError(response);
 
-    throw new Error(
-      detail || `Ошибка обновления Библии: ${response.status}`
-    );
+    throw new Error(detail || `Ошибка обновления Библии: ${response.status}`);
   }
 
   const payload = await response.json();
@@ -66,11 +62,7 @@ const runBibleContentSync = async (translationCode = 'rst') => {
     response.headers.get('etag') || payload?.content_version
   );
 
-  if (
-    currentVersion &&
-    responseVersion &&
-    currentVersion === responseVersion
-  ) {
+  if (currentVersion && responseVersion && currentVersion === responseVersion) {
     return {
       success: true,
       updated: false,

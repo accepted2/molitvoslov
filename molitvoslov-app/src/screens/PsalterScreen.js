@@ -233,8 +233,7 @@ export default function PsalterScreen({navigation}) {
                   sourceId: psalter?.id,
                   anchorType: 'psalter_prayers_before',
                   anchorId: psalter?.id,
-                  sourceTitle:
-                    getLocalizedField(psalter, 'name', language) || t('psalter.title'),
+                  sourceTitle: getLocalizedField(psalter, 'name', language) || t('psalter.title'),
                   itemTitle: t('psalter.prayersBefore'),
                   metadata: {
                     section: 'prayers_before',

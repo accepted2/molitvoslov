@@ -92,9 +92,7 @@ const getSectionTitle = (section, language, t) => {
   }
 
   if (section.section_type === 'prayer') {
-    return section.number
-      ? `${t('reading.prayer')} ${section.number}`
-      : t('reading.prayer');
+    return section.number ? `${t('reading.prayer')} ${section.number}` : t('reading.prayer');
   }
 
   return getLocalizedField(section.text, 'title', language);
@@ -218,9 +216,7 @@ export const AkathistScreen = ({route, navigation}) => {
 
     return (
       specialTexts.some((item) => !!item?.traditional_content?.trim()) ||
-      (akathist.sections || []).some(
-        (section) => !!section.text?.traditional_content?.trim()
-      )
+      (akathist.sections || []).some((section) => !!section.text?.traditional_content?.trim())
     );
   }, [akathist]);
 
@@ -272,7 +268,8 @@ export const AkathistScreen = ({route, navigation}) => {
 
       anchor_id: akathist.id,
 
-      source_title: getLocalizedField(akathist, 'title', language) || title || t('reading.akathist'),
+      source_title:
+        getLocalizedField(akathist, 'title', language) || title || t('reading.akathist'),
 
       item_title: getLocalizedField(akathist, 'title', language) || title || t('reading.akathist'),
 
@@ -399,7 +396,8 @@ export const AkathistScreen = ({route, navigation}) => {
 
         anchorId,
 
-        sourceTitle: getLocalizedField(akathist, 'title', language) || title || t('reading.akathist'),
+        sourceTitle:
+          getLocalizedField(akathist, 'title', language) || title || t('reading.akathist'),
 
         itemTitle,
 
@@ -793,10 +791,9 @@ export const AkathistScreen = ({route, navigation}) => {
       ? {
           sourceType: 'akathist',
           sourceId: Number(akathistId),
-          sourceTitle: getLocalizedField(akathist, 'title', language) || title || t('reading.akathist'),
-          itemTitle:
-            getSectionTitle(bookmarkSection, language, t) ||
-            t('reading.akathistPlace'),
+          sourceTitle:
+            getLocalizedField(akathist, 'title', language) || title || t('reading.akathist'),
+          itemTitle: getSectionTitle(bookmarkSection, language, t) || t('reading.akathistPlace'),
           position: bookmarkPosition,
           metadata: {
             slug: akathist.slug || slug,
