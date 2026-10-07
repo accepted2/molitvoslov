@@ -7,18 +7,20 @@ import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {bibleContent} from '../services/bibleContent';
+import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {colors, radius} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
 
 export const BibleScreen = ({navigation}) => {
   const {t} = useLanguage();
+  const bibleGeneration = useBibleContentGeneration();
   const insets = useSafeAreaInsets();
 
   const headerHeight = insets.top + 56;
 
-  const oldBooks = useMemo(() => bibleContent.getBooks('old'), []);
+  const oldBooks = useMemo(() => bibleContent.getBooks('old'), [bibleGeneration]);
 
-  const newBooks = useMemo(() => bibleContent.getBooks('new'), []);
+  const newBooks = useMemo(() => bibleContent.getBooks('new'), [bibleGeneration]);
 
   const openTestament = (testament) => {
     navigation.navigate('BibleBooks', {
