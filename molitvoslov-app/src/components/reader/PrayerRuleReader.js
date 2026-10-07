@@ -6,10 +6,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 
 import {deleteSavedItem, saveItem} from '../../services/savedItems';
 import {useLanguage} from '../../context/LanguageContext';
-import {
-  getCachedPonomarFontDataUri,
-  loadPonomarFontDataUri,
-} from '../../services/ponomarFont';
+import {getCachedPonomarFontDataUri, loadPonomarFontDataUri} from '../../services/ponomarFont';
 
 const scriptSafeJson = (value) =>
   JSON.stringify(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
@@ -6250,9 +6247,7 @@ export default function PrayerRuleReader({
   const {language, t} = useLanguage();
 
   const webViewRef = useRef(null);
-  const [ponomarFontDataUri, setPonomarFontDataUri] = useState(
-    getCachedPonomarFontDataUri()
-  );
+  const [ponomarFontDataUri, setPonomarFontDataUri] = useState(getCachedPonomarFontDataUri());
 
   useEffect(() => {
     let active = true;
