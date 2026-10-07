@@ -1,65 +1,15 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Image, StyleSheet, View} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {WebView} from 'react-native-webview';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import {deleteSavedItem, saveItem} from '../../services/savedItems';
 import {useLanguage} from '../../context/LanguageContext';
-
-const ponomarFontUri =
-  Image.resolveAssetSource(require('../../../assets/fonts/Ponomar-Regular.ttf'))?.uri || '';
-
-let ponomarFontDataUriCache = '';
-let ponomarFontDataUriPromise = null;
-
-const blobToDataUri = (blob) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onerror = () => reject(reader.error || new Error('Не удалось прочитать Ponomar'));
-    reader.onloadend = () => {
-      const value = String(reader.result || '');
-      resolve(value.replace(/^data:[^;]+;base64,/, 'data:font/ttf;base64,'));
-    };
-
-    reader.readAsDataURL(blob);
-  });
-
-const loadPonomarFontDataUri = async () => {
-  if (ponomarFontDataUriCache) {
-    return ponomarFontDataUriCache;
-  }
-
-  if (ponomarFontDataUriPromise) {
-    return ponomarFontDataUriPromise;
-  }
-
-  ponomarFontDataUriPromise = (async () => {
-    if (!ponomarFontUri) {
-      return '';
-    }
-
-    const response = await fetch(ponomarFontUri);
-
-    if (!response.ok) {
-      throw new Error(`Не удалось загрузить Ponomar: ${response.status}`);
-    }
-
-    const blob = await response.blob();
-    const dataUri = await blobToDataUri(blob);
-
-    ponomarFontDataUriCache = dataUri;
-
-    return dataUri;
-  })();
-
-  try {
-    return await ponomarFontDataUriPromise;
-  } finally {
-    ponomarFontDataUriPromise = null;
-  }
-};
+import {
+  getCachedPonomarFontDataUri,
+  loadPonomarFontDataUri,
+} from '../../services/ponomarFont';
 
 const scriptSafeJson = (value) =>
   JSON.stringify(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
@@ -6300,7 +6250,9 @@ export default function PrayerRuleReader({
   const {language, t} = useLanguage();
 
   const webViewRef = useRef(null);
-  const [ponomarFontDataUri, setPonomarFontDataUri] = useState(ponomarFontDataUriCache);
+  const [ponomarFontDataUri, setPonomarFontDataUri] = useState(
+    getCachedPonomarFontDataUri()
+  );
 
   useEffect(() => {
     let active = true;
