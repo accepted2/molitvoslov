@@ -70,7 +70,8 @@ export const MemorialScreen = ({navigation}) => {
     try {
       setCreating(true);
 
-      const title = books.length === 0 ? t('memorial.my') : t('memorial.newTitle', {number: books.length + 1});
+      const title =
+        books.length === 0 ? t('memorial.my') : t('memorial.newTitle', {number: books.length + 1});
 
       const book = await createMemorialBook(title);
 
@@ -117,7 +118,9 @@ export const MemorialScreen = ({navigation}) => {
             {t('memorial.repose')}: {reposeCount}
           </Text>
 
-          {!!photoCount && <Text style={styles.cardPhotos}>{t('memorial.photosCount', {count: photoCount})}</Text>}
+          {!!photoCount && (
+            <Text style={styles.cardPhotos}>{t('memorial.photosCount', {count: photoCount})}</Text>
+          )}
         </View>
 
         <Text style={styles.chevron}>›</Text>
@@ -153,9 +156,7 @@ export const MemorialScreen = ({navigation}) => {
                 <View style={styles.intro}>
                   <Text style={styles.introTitle}>{t('memorial.introTitle')}</Text>
 
-                  <Text style={styles.introText}>
-                    {t('memorial.introText')}
-                  </Text>
+                  <Text style={styles.introText}>{t('memorial.introText')}</Text>
                 </View>
 
                 {!!error && <Text style={styles.error}>{error}</Text>}
@@ -183,9 +184,7 @@ export const MemorialScreen = ({navigation}) => {
 
                 <Text style={styles.emptyTitle}>{t('memorial.listEmptyTitle')}</Text>
 
-                <Text style={styles.emptyText}>
-                  {t('memorial.listEmptyText')}
-                </Text>
+                <Text style={styles.emptyText}>{t('memorial.listEmptyText')}</Text>
               </View>
             }
           />

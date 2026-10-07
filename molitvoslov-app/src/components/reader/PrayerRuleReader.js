@@ -8,9 +8,7 @@ import {deleteSavedItem, saveItem} from '../../services/savedItems';
 import {useLanguage} from '../../context/LanguageContext';
 
 const ponomarFontUri =
-  Image.resolveAssetSource(
-    require('../../../assets/fonts/Ponomar-Regular.ttf')
-  )?.uri || '';
+  Image.resolveAssetSource(require('../../../assets/fonts/Ponomar-Regular.ttf'))?.uri || '';
 
 let ponomarFontDataUriCache = '';
 let ponomarFontDataUriPromise = null;
@@ -22,12 +20,7 @@ const blobToDataUri = (blob) =>
     reader.onerror = () => reject(reader.error || new Error('Не удалось прочитать Ponomar'));
     reader.onloadend = () => {
       const value = String(reader.result || '');
-      resolve(
-        value.replace(
-          /^data:[^;]+;base64,/,
-          'data:font/ttf;base64,'
-        )
-      );
+      resolve(value.replace(/^data:[^;]+;base64,/, 'data:font/ttf;base64,'));
     };
 
     reader.readAsDataURL(blob);
@@ -6285,10 +6278,7 @@ const buildHtml = ({
     '__PONOMAR_FONT_URL__',
     String(ponomarFontDataUri || '').replace(/"/g, '%22')
   )
-    .replace(
-      '__READER_TOP_PADDING__',
-      String(Math.max(16, Number(topContentInset || 0) + 16))
-    )
+    .replace('__READER_TOP_PADDING__', String(Math.max(16, Number(topContentInset || 0) + 16)))
     .replace('__READER_PAYLOAD__', scriptSafeJson(payload));
 };
 
@@ -6310,9 +6300,7 @@ export default function PrayerRuleReader({
   const {language, t} = useLanguage();
 
   const webViewRef = useRef(null);
-  const [ponomarFontDataUri, setPonomarFontDataUri] = useState(
-    ponomarFontDataUriCache
-  );
+  const [ponomarFontDataUri, setPonomarFontDataUri] = useState(ponomarFontDataUriCache);
 
   useEffect(() => {
     let active = true;

@@ -23,25 +23,18 @@ class Command(BaseCommand):
             connection.ensure_connection()
             executor = MigrationExecutor(connection)
         except Exception as error:
-            raise CommandError(
-                f"Не удалось подключиться к Supabase: {error}"
-            ) from error
+            raise CommandError(f"Не удалось подключиться к Supabase: {error}") from error
 
         applied = executor.loader.applied_migrations
         leaf_nodes = executor.loader.graph.leaf_nodes()
         plan = executor.migration_plan(leaf_nodes)
 
-        api_applied = sorted(
-            name
-            for app_label, name in applied
-            if app_label == "api"
-        )
+        api_applied = sorted(name for app_label, name in applied if app_label == "api")
 
         self.stdout.write("")
         self.stdout.write(self.style.MIGRATE_HEADING("Supabase migration status"))
         self.stdout.write(
-            "Последняя применённая api-миграция: "
-            + (api_applied[-1] if api_applied else "нет")
+            "Последняя применённая api-миграция: " + (api_applied[-1] if api_applied else "нет")
         )
 
         if not plan:
@@ -52,23 +45,17 @@ class Command(BaseCommand):
 
         for migration, backwards in plan:
             direction = "UNAPPLY" if backwards else "APPLY"
-            self.stdout.write(
-                f"  {direction} {migration.app_label}.{migration.name}"
-            )
+            self.stdout.write(f"  {direction} {migration.app_label}.{migration.name}")
 
         self.stdout.write("")
         self.stdout.write(
-            self.style.WARNING(
-                "Команда только проверяет состояние. Supabase не изменён."
-            )
+            self.style.WARNING("Команда только проверяет состояние. Supabase не изменён.")
         )
 
     def _assert_local_source(self):
         engine = connections["default"].settings_dict.get("ENGINE", "")
         if engine != "django.db.backends.sqlite3":
-            raise CommandError(
-                "Источник должен оставаться локальной SQLite."
-            )
+            raise CommandError("Источник должен оставаться локальной SQLite.")
 
     def _configure_supabase_connection(self):
         password = os.environ.get("SUPABASE_SYNC_DB_PASSWORD", "").strip()

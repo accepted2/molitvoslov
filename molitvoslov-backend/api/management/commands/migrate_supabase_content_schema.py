@@ -37,50 +37,28 @@ class Command(BaseCommand):
             connection.ensure_connection()
             executor = MigrationExecutor(connection)
         except Exception as error:
-            raise CommandError(
-                f"Не удалось подключиться к Supabase: {error}"
-            ) from error
+            raise CommandError(f"Не удалось подключиться к Supabase: {error}") from error
 
-        plan = executor.migration_plan(
-            [("api", TARGET_MIGRATION)]
-        )
+        plan = executor.migration_plan([("api", TARGET_MIGRATION)])
 
         forward = [
-            (migration.app_label, migration.name)
-            for migration, backwards in plan
-            if not backwards
+            (migration.app_label, migration.name) for migration, backwards in plan if not backwards
         ]
 
         backwards = [
-            (migration.app_label, migration.name)
-            for migration, backwards in plan
-            if backwards
+            (migration.app_label, migration.name) for migration, backwards in plan if backwards
         ]
 
         if backwards:
-            raise CommandError(
-                "План содержит обратные миграции. Применение остановлено."
-            )
+            raise CommandError("План содержит обратные миграции. Применение остановлено.")
 
-        unexpected = [
-            item
-            for item in forward
-            if item not in ALLOWED_PENDING
-        ]
+        unexpected = [item for item in forward if item not in ALLOWED_PENDING]
 
         self.stdout.write("")
-        self.stdout.write(
-            self.style.MIGRATE_HEADING(
-                "Supabase content schema migration plan"
-            )
-        )
+        self.stdout.write(self.style.MIGRATE_HEADING("Supabase content schema migration plan"))
 
         if not forward:
-            self.stdout.write(
-                self.style.SUCCESS(
-                    "api.0043-api.0045 уже применены. Изменений нет."
-                )
-            )
+            self.stdout.write(self.style.SUCCESS("api.0043-api.0045 уже применены. Изменений нет."))
             return
 
         for app_label, name in forward:
@@ -89,10 +67,7 @@ class Command(BaseCommand):
         if unexpected:
             raise CommandError(
                 "В плане есть неожиданные миграции: "
-                + ", ".join(
-                    f"{app}.{name}"
-                    for app, name in unexpected
-                )
+                + ", ".join(f"{app}.{name}" for app, name in unexpected)
                 + ". APPLY заблокирован."
             )
 
@@ -115,9 +90,7 @@ class Command(BaseCommand):
             verbosity=1,
         )
 
-        verify = MigrationExecutor(
-            connections[REMOTE_ALIAS]
-        ).migration_plan(
+        verify = MigrationExecutor(connections[REMOTE_ALIAS]).migration_plan(
             [("api", TARGET_MIGRATION)]
         )
 
@@ -130,17 +103,13 @@ class Command(BaseCommand):
         if remaining:
             raise CommandError(
                 "После APPLY остались ожидающие миграции: "
-                + ", ".join(
-                    f"{app}.{name}"
-                    for app, name in remaining
-                )
+                + ", ".join(f"{app}.{name}" for app, name in remaining)
             )
 
         self.stdout.write("")
         self.stdout.write(
             self.style.SUCCESS(
-                "Готово: api.0043, api.0044 и api.0045 "
-                "применены к Supabase и проверены."
+                "Готово: api.0043, api.0044 и api.0045 " "применены к Supabase и проверены."
             )
         )
 
@@ -149,8 +118,7 @@ class Command(BaseCommand):
 
         if engine != "django.db.backends.sqlite3":
             raise CommandError(
-                "Источник должен оставаться локальной SQLite. "
-                "Supabase не должен быть default."
+                "Источник должен оставаться локальной SQLite. " "Supabase не должен быть default."
             )
 
     def _configure_supabase_connection(self):

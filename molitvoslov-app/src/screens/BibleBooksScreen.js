@@ -41,10 +41,7 @@ export const BibleBooksScreen = ({route, navigation}) => {
     [readingProgress]
   );
 
-  const books = useMemo(
-    () => bibleContent.getBooks(testament),
-    [testament, bibleGeneration]
-  );
+  const books = useMemo(() => bibleContent.getBooks(testament), [testament, bibleGeneration]);
 
   const sections = useMemo(() => {
     const sectionTitles = {

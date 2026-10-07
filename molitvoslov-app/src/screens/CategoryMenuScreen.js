@@ -26,7 +26,9 @@ export const CategoryMenuScreen = ({route, navigation}) => {
     <AppBackground imageOpacity={0.72}>
       <StatusBar style="light" translucent backgroundColor="transparent" />
       <View style={styles.container}>
-        <Text style={styles.headerTitle}>{getLocalizedField(parentCategory, 'name', language)}</Text>
+        <Text style={styles.headerTitle}>
+          {getLocalizedField(parentCategory, 'name', language)}
+        </Text>
         <FlatList
           data={subcategories}
           keyExtractor={(item) => item.id.toString()}

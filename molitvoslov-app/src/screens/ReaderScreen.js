@@ -250,14 +250,17 @@ export const ReaderScreen = ({route, navigation}) => {
           : text.content?.trim()
             ? 'church'
             : 'russian',
-        className:
-          !text.traditional_content?.trim() && text.translation?.trim() ? 'secondary' : '',
+        className: !text.traditional_content?.trim() && text.translation?.trim() ? 'secondary' : '',
       });
     } else if (viewMode === READER_LANGUAGE_MODES.UKRAINIAN) {
       appendBlock({
         id: 4,
         value: text.translation_uk || text.translation || text.content || '',
-        language: text.translation_uk?.trim() ? 'ukrainian' : text.translation?.trim() ? 'russian' : 'church',
+        language: text.translation_uk?.trim()
+          ? 'ukrainian'
+          : text.translation?.trim()
+            ? 'russian'
+            : 'church',
         className: text.translation_uk?.trim() || text.translation?.trim() ? 'secondary' : '',
       });
     } else if (viewMode === READER_LANGUAGE_MODES.RUSSIAN) {

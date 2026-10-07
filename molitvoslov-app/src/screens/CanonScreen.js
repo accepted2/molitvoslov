@@ -618,8 +618,7 @@ export const CanonScreen = ({route, navigation}) => {
       let sectionTitle = '';
 
       if (odeNumber && odeNumber !== previousOde) {
-        sectionTitle =
-          t('reading.ode', {number: odeNumber});
+        sectionTitle = t('reading.ode', {number: odeNumber});
 
         previousOde = odeNumber;
       } else if (!odeNumber) {
@@ -657,10 +656,7 @@ export const CanonScreen = ({route, navigation}) => {
     return {
       title: getLocalizedField(canon, 'title', language) || title || t('reading.canon'),
 
-      description:
-        getLocalizedField(canon, 'description', language) ||
-        canon.tone ||
-        '',
+      description: getLocalizedField(canon, 'description', language) || canon.tone || '',
 
       action: {
         key: `canon:${canon.id}`,
@@ -736,7 +732,8 @@ export const CanonScreen = ({route, navigation}) => {
             getSectionLabel(
               bookmarkSection.display_section_type || bookmarkSection.section_type,
               t
-            ) || t('reading.canonPlace'),
+            ) ||
+            t('reading.canonPlace'),
           position: bookmarkPosition,
           metadata: {
             slug: canon.slug || slug,

@@ -40,11 +40,7 @@ export const getLocalizedTextContent = (text, language) => {
     );
   }
 
-  return (
-    clean(text.translation) ||
-    clean(text.content) ||
-    clean(text.traditional_content)
-  );
+  return clean(text.translation) || clean(text.content) || clean(text.traditional_content);
 };
 
 export const getLocalizedField = (item, field, language, fallbackField = field) => {

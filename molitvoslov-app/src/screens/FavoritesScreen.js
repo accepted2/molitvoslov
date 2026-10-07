@@ -179,7 +179,8 @@ export const FavoritesScreen = ({route, navigation}) => {
       if (metadata.kathisma_number) {
         navigation.push('Kathisma', {
           kathismaNumber: metadata.kathisma_number,
-          kathismaTitle: metadata.kathisma_title || t('psalter.kathisma', {number: metadata.kathisma_number}),
+          kathismaTitle:
+            metadata.kathisma_title || t('psalter.kathisma', {number: metadata.kathisma_number}),
           focusTarget,
         });
         return;
@@ -333,7 +334,9 @@ export const FavoritesScreen = ({route, navigation}) => {
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{t(tab.labelKey)}</Text>
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>
+                    {t(tab.labelKey)}
+                  </Text>
 
                   {!!tabCount(tab.key) && (
                     <Text style={[styles.tabCount, active && styles.tabCountActive]}>

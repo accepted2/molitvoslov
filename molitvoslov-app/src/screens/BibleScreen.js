@@ -51,7 +51,9 @@ export const BibleScreen = ({navigation}) => {
         >
           <View style={styles.cardText}>
             <Text style={styles.cardTitle}>{t('bible.oldTestament')}</Text>
-            <Text style={styles.cardSubtitle}>{t('bible.booksAndSections', {count: oldBooks.length})}</Text>
+            <Text style={styles.cardSubtitle}>
+              {t('bible.booksAndSections', {count: oldBooks.length})}
+            </Text>
           </View>
           <Text style={styles.arrow}>›</Text>
         </Pressable>

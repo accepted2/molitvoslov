@@ -141,8 +141,7 @@ class AzbykaCalendarFeastsParserTests(SimpleTestCase):
 
         self.assertEqual(
             parsed.icon_source_url,
-            "https://azbyka.ru/days/cache/200x160/storage/images/"
-            "icons-of-saints/6030/fekla.jpg",
+            "https://azbyka.ru/days/cache/200x160/storage/images/" "icons-of-saints/6030/fekla.jpg",
         )
 
     def test_icon_parser_ignores_non_storage_images(self):
@@ -393,6 +392,7 @@ class AzbykaCalendarFeastsParserTests(SimpleTestCase):
         self.assertNotIn("11 октября", content.life_content)
         self.assertNotIn("Краткая аннотация", content.life_content)
         self.assertNotIn("Другой раздел", content.life_content)
+
 
 def test_life_uses_text_after_separator_when_no_life_heading(self):
     html = """

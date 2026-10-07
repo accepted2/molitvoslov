@@ -10,23 +10,16 @@ from .models import BibleBook, BibleChapter, BibleTranslation, BibleVerse
 
 
 def build_bible_content_payload(translation_code="rst"):
-    translation = (
-        BibleTranslation.objects.filter(
-            code=translation_code,
-            is_visible=True,
-        )
-        .first()
-    )
+    translation = BibleTranslation.objects.filter(
+        code=translation_code,
+        is_visible=True,
+    ).first()
 
     if translation is None:
         return None
 
     verses = BibleVerse.objects.all().order_by("number", "id")
-    chapters = (
-        BibleChapter.objects.all()
-        .order_by("number", "id")
-        .prefetch_related("verses")
-    )
+    chapters = BibleChapter.objects.all().order_by("number", "id").prefetch_related("verses")
     books = (
         BibleBook.objects.filter(translation=translation)
         .order_by("canonical_order", "id")
