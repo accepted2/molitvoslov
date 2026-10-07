@@ -8,6 +8,7 @@ import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {bibleContent} from '../services/bibleContent';
+import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {getReadingProgress} from '../services/readingProgress';
 import {colors} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
@@ -16,6 +17,7 @@ const NEW_SECTION_ORDER = ['gospels', 'acts', 'epistles', 'revelation'];
 
 export const BibleBooksScreen = ({route, navigation}) => {
   const {t} = useLanguage();
+  const bibleGeneration = useBibleContentGeneration();
   const testament = route.params?.testament === 'new' ? 'new' : 'old';
 
   const [readingProgress, setReadingProgress] = useState([]);
@@ -39,7 +41,10 @@ export const BibleBooksScreen = ({route, navigation}) => {
     [readingProgress]
   );
 
-  const books = useMemo(() => bibleContent.getBooks(testament), [testament]);
+  const books = useMemo(
+    () => bibleContent.getBooks(testament),
+    [testament, bibleGeneration]
+  );
 
   const sections = useMemo(() => {
     const sectionTitles = {
