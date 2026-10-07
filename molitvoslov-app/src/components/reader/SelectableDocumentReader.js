@@ -36,9 +36,35 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
 
   const webViewRef = useRef(null);
 
-  const [ponomarFontDataUri, setPonomarFontDataUri] = useState(getCachedPonomarFontDataUri());
+  const needsPonomar = useMemo(
+    () =>
+      (documentData.sections || []).some((section) =>
+        (section.rows || []).some((row) =>
+          (row.blocks || []).some(
+            (block) => block?.metadata?.language === 'traditional'
+          )
+        )
+      ),
+    [documentData.sections]
+  );
+
+  const [ponomarFontDataUri, setPonomarFontDataUri] = useState(() =>
+    needsPonomar ? getCachedPonomarFontDataUri() : ''
+  );
 
   useEffect(() => {
+    if (!needsPonomar) {
+      setPonomarFontDataUri('');
+      return undefined;
+    }
+
+    const cached = getCachedPonomarFontDataUri();
+
+    if (cached) {
+      setPonomarFontDataUri(cached);
+      return undefined;
+    }
+
     let active = true;
 
     loadPonomarFontDataUri()
@@ -54,7 +80,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     return () => {
       active = false;
     };
-  }, []);
+  }, [needsPonomar]);
 
   const itemConfigMap = useMemo(() => {
     const result = new Map();
