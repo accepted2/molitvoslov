@@ -1,4 +1,4 @@
-import React, {forwardRef, useImperativeHandle, useMemo, useRef} from 'react';
+import React, {forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react';
 
 import {StyleSheet, View} from 'react-native';
 
@@ -9,6 +9,10 @@ import {WebView} from 'react-native-webview';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import {deleteSavedItem, saveItem} from '../../services/savedItems';
+import {
+  getCachedPonomarFontDataUri,
+  loadPonomarFontDataUri,
+} from '../../services/ponomarFont';
 
 import {buildHtml, scriptSafeJson} from './selectableDocumentReader/buildHtml';
 
@@ -35,6 +39,31 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
 
   const webViewRef = useRef(null);
 
+  const [ponomarFontDataUri, setPonomarFontDataUri] = useState(
+    getCachedPonomarFontDataUri()
+  );
+
+  useEffect(() => {
+    let active = true;
+
+    loadPonomarFontDataUri()
+      .then((dataUri) => {
+        if (active && dataUri) {
+          setPonomarFontDataUri(dataUri);
+        }
+      })
+      .catch((fontError) => {
+        console.log(
+          'Ошибка загрузки шрифта Ponomar для WebView:',
+          fontError?.message || fontError
+        );
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const itemConfigMap = useMemo(() => {
     const result = new Map();
 
@@ -57,8 +86,16 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         focusTarget,
         topContentInset,
         bottomContentInset,
+        ponomarFontDataUri,
       }),
-    [documentData, savedProgress, focusTarget, topContentInset, bottomContentInset]
+    [
+      documentData,
+      savedProgress,
+      focusTarget,
+      topContentInset,
+      bottomContentInset,
+      ponomarFontDataUri,
+    ]
   );
 
   const inject = (script) => {

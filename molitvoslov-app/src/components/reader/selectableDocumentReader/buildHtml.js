@@ -9,6 +9,7 @@ export const buildHtml = ({
   focusTarget,
   topContentInset,
   bottomContentInset,
+  ponomarFontDataUri,
 }) => {
   const payload = {
     document: documentData,
@@ -37,7 +38,11 @@ export const buildHtml = ({
 
   const resolvedBottomPadding = bookMode ? Math.max(34, Number(bottomContentInset || 0)) : 88;
 
-  return HTML_TEMPLATE.replace('__READER_TOP_PADDING__', String(resolvedTopPadding))
+  return HTML_TEMPLATE.replace(
+    '__PONOMAR_FONT_URL__',
+    String(ponomarFontDataUri || '').replace(/"/g, '%22')
+  )
+    .replace('__READER_TOP_PADDING__', String(resolvedTopPadding))
     .replace('__READER_BOTTOM_PADDING__', String(resolvedBottomPadding))
     .replace('__READER_PAYLOAD__', scriptSafeJson(payload));
 };
