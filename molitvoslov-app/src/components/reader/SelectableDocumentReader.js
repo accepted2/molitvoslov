@@ -40,9 +40,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     () =>
       (documentData.sections || []).some((section) =>
         (section.rows || []).some((row) =>
-          (row.blocks || []).some(
-            (block) => block?.metadata?.language === 'traditional'
-          )
+          (row.blocks || []).some((block) => block?.metadata?.language === 'traditional')
         )
       ),
     [documentData.sections]
