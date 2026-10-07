@@ -8,6 +8,7 @@ import {StatusBar} from 'expo-status-bar';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {bibleContent} from '../services/bibleContent';
+import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {getReadingProgress} from '../services/readingProgress';
 import {getBibleArtwork} from '../data/bibleArtwork';
 import {homeArtwork} from '../data/homeArtwork';
@@ -16,6 +17,7 @@ import {useLanguage} from '../context/LanguageContext';
 
 export const BibleBookScreen = ({route, navigation}) => {
   const {t} = useLanguage();
+  useBibleContentGeneration();
   const book = bibleContent.getBook(route.params?.bookId);
 
   const [bookProgress, setBookProgress] = useState(null);
