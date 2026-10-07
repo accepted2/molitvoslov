@@ -72,9 +72,7 @@ export const PrayerBooksScreen = ({navigation}) => {
             <View>
               <View style={styles.intro}>
                 <Text style={styles.introTitle}>{t('prayerBooks.introTitle')}</Text>
-                <Text style={styles.introText}>
-                  {t('prayerBooks.introText')}
-                </Text>
+                <Text style={styles.introText}>{t('prayerBooks.introText')}</Text>
               </View>
 
               <Pressable
@@ -85,16 +83,16 @@ export const PrayerBooksScreen = ({navigation}) => {
                 <Text style={styles.createButtonText}>{t('prayerBooks.newBook')}</Text>
               </Pressable>
 
-              {!!books.length && <Text style={styles.sectionLabel}>{t('prayerBooks.myBooks')}</Text>}
+              {!!books.length && (
+                <Text style={styles.sectionLabel}>{t('prayerBooks.myBooks')}</Text>
+              )}
             </View>
           }
           ListEmptyComponent={
             <View style={styles.emptyCard}>
               <Text style={styles.emptyMark}>✦</Text>
               <Text style={styles.emptyTitle}>{t('prayerBooks.emptyTitle')}</Text>
-              <Text style={styles.emptyText}>
-                {t('prayerBooks.emptyText')}
-              </Text>
+              <Text style={styles.emptyText}>{t('prayerBooks.emptyText')}</Text>
             </View>
           }
           renderItem={({item}) => (
@@ -147,7 +145,9 @@ export const PrayerBooksScreen = ({navigation}) => {
                   <Text style={styles.secondaryText}>{t('prayerBooks.cancel')}</Text>
                 </Pressable>
                 <Pressable onPress={create} style={styles.primaryButton}>
-                  <Text style={styles.primaryText}>{busy ? t('prayerBooks.creating') : t('prayerBooks.create')}</Text>
+                  <Text style={styles.primaryText}>
+                    {busy ? t('prayerBooks.creating') : t('prayerBooks.create')}
+                  </Text>
                 </Pressable>
               </View>
             </View>

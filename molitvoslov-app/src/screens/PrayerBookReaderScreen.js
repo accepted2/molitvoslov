@@ -106,7 +106,9 @@ const PsalmParallel = ({psalm, verses: verseItems = null, showLabels = false}) =
       {showLabels && hasRussian && (
         <View style={styles.languageRow}>
           <Text style={styles.languageLabel}>{t('prayerBooks.churchSlavonic')}</Text>
-          <Text style={[styles.languageLabel, styles.languageLabelRussian]}>{t('prayerBooks.russian')}</Text>
+          <Text style={[styles.languageLabel, styles.languageLabelRussian]}>
+            {t('prayerBooks.russian')}
+          </Text>
         </View>
       )}
 
@@ -201,7 +203,9 @@ const PsalterPrayer = ({prayer}) => {
 
     return (
       <View>
-        <Text style={styles.title}>{prayer.title || t('psalter.psalm', {number: psalm.number})}</Text>
+        <Text style={styles.title}>
+          {prayer.title || t('psalter.psalm', {number: psalm.number})}
+        </Text>
         <PsalmParallel psalm={psalm} showLabels />
       </View>
     );
@@ -211,7 +215,9 @@ const PsalterPrayer = ({prayer}) => {
 
   return (
     <View>
-      <Text style={styles.title}>{prayer.title || t('psalter.kathisma', {number: kathisma.number})}</Text>
+      <Text style={styles.title}>
+        {prayer.title || t('psalter.kathisma', {number: kathisma.number})}
+      </Text>
 
       {(kathisma.psalms || []).map((psalm, psalmIndex) => (
         <View key={psalm.id || psalm.number} style={styles.psalmSection}>
@@ -237,7 +243,9 @@ const PsalterPrayer = ({prayer}) => {
 
       {!!kathisma.prayers_after && (
         <View style={styles.afterPrayers}>
-          <Text style={styles.psalmTitle}>{t('psalter.prayersAfterKathisma', {number: kathisma.number})}</Text>
+          <Text style={styles.psalmTitle}>
+            {t('psalter.prayersAfterKathisma', {number: kathisma.number})}
+          </Text>
 
           <ParallelText
             church={String(kathisma.prayers_after || '').trim()}

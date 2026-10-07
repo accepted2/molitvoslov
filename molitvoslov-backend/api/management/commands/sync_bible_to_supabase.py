@@ -88,8 +88,7 @@ class Command(BaseCommand):
         engine = connections["default"].settings_dict.get("ENGINE", "")
         if engine != "django.db.backends.sqlite3":
             raise CommandError(
-                "Источник должен быть локальной SQLite. "
-                "Не задавайте Supabase как default."
+                "Источник должен быть локальной SQLite. " "Не задавайте Supabase как default."
             )
 
     def _configure_supabase_connection(self):
@@ -148,35 +147,20 @@ class Command(BaseCommand):
             raise CommandError(f"Не удалось подключиться к Supabase: {error}") from error
 
     def _local_translation(self, code):
-        translation = (
-            BibleTranslation.objects.using("default")
-            .filter(code=code)
-            .first()
-        )
+        translation = BibleTranslation.objects.using("default").filter(code=code).first()
         if translation is None:
             raise CommandError(f"Локально нет BibleTranslation code={code!r}.")
         return translation
 
     @staticmethod
     def _changed_fields(remote, local, fields):
-        return [
-            field
-            for field in fields
-            if getattr(remote, field) != getattr(local, field)
-        ]
+        return [field for field in fields if getattr(remote, field) != getattr(local, field)]
 
     def _build_plan(self, code):
         local_translation = self._local_translation(code)
-        remote_translation = (
-            BibleTranslation.objects.using(REMOTE_ALIAS)
-            .filter(code=code)
-            .first()
-        )
+        remote_translation = BibleTranslation.objects.using(REMOTE_ALIAS).filter(code=code).first()
 
-        if (
-            remote_translation is not None
-            and remote_translation.pk != local_translation.pk
-        ):
+        if remote_translation is not None and remote_translation.pk != local_translation.pk:
             raise CommandError(
                 f"BibleTranslation {code!r}: local id={local_translation.pk}, "
                 f"Supabase id={remote_translation.pk}. "
@@ -312,14 +296,10 @@ class Command(BaseCommand):
         remote_book_keys = set(remote_books)
         local_book_keys = {item.code for item in local_books}
         remote_chapter_keys = set(remote_chapters)
-        local_chapter_keys = {
-            (item.book.code, item.number)
-            for item in local_chapters
-        }
+        local_chapter_keys = {(item.book.code, item.number) for item in local_chapters}
         remote_verse_keys = set(remote_verses)
         local_verse_keys = {
-            (item.chapter.book.code, item.chapter.number, item.number)
-            for item in local_verses
+            (item.chapter.book.code, item.chapter.number, item.number) for item in local_verses
         }
 
         translation_fields = (
@@ -350,12 +330,8 @@ class Command(BaseCommand):
             "verse_create": verse_create,
             "verse_update": verse_update,
             "remote_extra_books": sorted(remote_book_keys - local_book_keys),
-            "remote_extra_chapters": sorted(
-                remote_chapter_keys - local_chapter_keys
-            ),
-            "remote_extra_verses": sorted(
-                remote_verse_keys - local_verse_keys
-            ),
+            "remote_extra_chapters": sorted(remote_chapter_keys - local_chapter_keys),
+            "remote_extra_verses": sorted(remote_verse_keys - local_verse_keys),
         }
 
     @staticmethod
@@ -372,11 +348,7 @@ class Command(BaseCommand):
 
     def _print_plan(self, plan, prefix="План синхронизации:"):
         self.stdout.write("")
-        self.stdout.write(
-            self.style.HTTP_INFO(
-                f"---- BibleTranslation {plan['code']} ----"
-            )
-        )
+        self.stdout.write(self.style.HTTP_INFO(f"---- BibleTranslation {plan['code']} ----"))
         self.stdout.write(
             "Локально: "
             f"книг={len(plan['local_books'])}; "
@@ -386,22 +358,14 @@ class Command(BaseCommand):
         self.stdout.write(prefix)
 
         if plan["translation_create"]:
-            self.stdout.write(
-                f"  CREATE BibleTranslation id={plan['local_translation'].pk}"
-            )
+            self.stdout.write(f"  CREATE BibleTranslation id={plan['local_translation'].pk}")
         elif plan["translation_fields"]:
-            self.stdout.write(
-                "  UPDATE BibleTranslation: "
-                + ", ".join(plan["translation_fields"])
-            )
+            self.stdout.write("  UPDATE BibleTranslation: " + ", ".join(plan["translation_fields"]))
 
         self.stdout.write(
-            f"  Books: CREATE {len(plan['book_create'])}; "
-            f"UPDATE {len(plan['book_update'])}."
+            f"  Books: CREATE {len(plan['book_create'])}; " f"UPDATE {len(plan['book_update'])}."
         )
-        self.stdout.write(
-            f"  Chapters: CREATE {len(plan['chapter_create'])}."
-        )
+        self.stdout.write(f"  Chapters: CREATE {len(plan['chapter_create'])}.")
         self.stdout.write(
             f"  Verses: CREATE {len(plan['verse_create'])}; "
             f"UPDATE text {len(plan['verse_update'])}."

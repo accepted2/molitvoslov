@@ -108,8 +108,7 @@ class UcsPrayerRuleParserTests(SimpleTestCase):
             {
                 "title": "",
                 "content": ucs_to_unicode(
-                    "Во и4мz nц7A. ГDи ї}се хrтE. "
-                    "Слaва тебЁ. ЦRю2 нбcный, ўтёшителю."
+                    "Во и4мz nц7A. ГDи ї}се хrтE. " "Слaва тебЁ. ЦRю2 нбcный, ўтёшителю."
                 ),
             },
             {
@@ -137,13 +136,7 @@ class UcsPrayerRuleParserTests(SimpleTestCase):
         self.assertGreater(similarity(modern, historic), 0.99)
 
     def test_matches_traditional_prayer_title(self):
-        rows = [
-            {
-                "title": ucs_to_unicode(
-                    "Мlтва в7, с™aгw ґнті0ха, ко гDу нaшему ї}су хrтY:"
-                )
-            }
-        ]
+        rows = [{"title": ucs_to_unicode("Мlтва в7, с™aгw ґнті0ха, ко гDу нaшему ї}су хrтY:")}]
 
         matched = find_best_traditional_title(
             rows,

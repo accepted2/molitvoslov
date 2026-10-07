@@ -333,7 +333,7 @@ const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout}) =>
           style={({pressed}) => [styles.readingMore, pressed && styles.pressed]}
         >
           <Text style={styles.readingMoreText}>
-{showAll
+            {showAll
               ? copy.hideExtraReadings
               : copy.moreReadings.replace('{count}', String(hiddenCount))}
           </Text>
@@ -752,9 +752,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             </View>
 
             <View style={styles.feastHeroText}>
-              <Text style={styles.feastMemory}>
-                {copy.feastMemory}
-              </Text>
+              <Text style={styles.feastMemory}>{copy.feastMemory}</Text>
               <Text style={styles.feastTitle}>{displayTitle(mainFeast, copy)}</Text>
 
               {!!formatFast(dayData, language) && (

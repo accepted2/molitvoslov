@@ -82,8 +82,7 @@ def ucs_to_unicode(value):
     except UnicodeEncodeError as error:
         bad = value[error.start : error.end]
         raise CommandError(
-            "UCS-текст содержит символ, который нельзя представить в cp1251: "
-            f"{bad!r}."
+            "UCS-текст содержит символ, который нельзя представить в cp1251: " f"{bad!r}."
         ) from error
 
     converted, _length = ucs_decode(raw)
@@ -93,11 +92,7 @@ def ucs_to_unicode(value):
 def normalize_for_similarity(value):
     value = unicodedata.normalize("NFD", str(value or "").lower())
     value = value.translate(HISTORIC_CHAR_MAP)
-    value = "".join(
-        char
-        for char in value
-        if unicodedata.category(char) not in {"Mn", "Me"}
-    )
+    value = "".join(char for char in value if unicodedata.category(char) not in {"Mn", "Me"})
     value = re.sub(r"[^а-яё]+", "", value)
     return value
 
@@ -186,9 +181,7 @@ def find_section_heading(soup, anchor_name):
 
     heading = anchor.find_parent("h2")
     if heading is None:
-        raise CommandError(
-            f"Anchor {anchor_name!r} найден, но не находится внутри <h2>."
-        )
+        raise CommandError(f"Anchor {anchor_name!r} найден, но не находится внутри <h2>.")
 
     return heading
 
@@ -236,8 +229,7 @@ def find_common_preinitial_raw(soup):
     rows = parse_section_paragraphs(soup, "4")
     if not rows:
         raise CommandError(
-            "Не найден источник для общей предначинательной молитвы "
-            "в разделе anchor=4."
+            "Не найден источник для общей предначинательной молитвы " "в разделе anchor=4."
         )
 
     raw = rows[0]["raw_content"]
@@ -245,9 +237,7 @@ def find_common_preinitial_raw(soup):
     end_marker = "Слaва тебЁ"
 
     if start_marker not in raw:
-        raise CommandError(
-            "Предначинательная молитва в anchor=4 имеет неожиданную редакцию."
-        )
+        raise CommandError("Предначинательная молитва в anchor=4 имеет неожиданную редакцию.")
 
     return _between(
         raw,
@@ -261,9 +251,7 @@ def _paragraph(rows, number):
     try:
         return rows[number - 1]["raw_content"]
     except IndexError as error:
-        raise CommandError(
-            f"В источнике отсутствует ожидаемый абзац #{number}."
-        ) from error
+        raise CommandError(f"В источнике отсутствует ожидаемый абзац #{number}.") from error
 
 
 def _before(value, marker, label):
@@ -384,10 +372,7 @@ def build_morning_raw_map(rows, common_preinitial):
 
     # В нашей базе "Господи, помилуй. (Трижды). Слава, и ныне:"
     # является одним Text, а в Book.html славословие расписано полностью.
-    result[11] = (
-        _paragraph(rows, 10).strip()
-        + " Слaва, и3 нhнэ:"
-    )
+    result[11] = _paragraph(rows, 10).strip() + " Слaва, и3 нhнэ:"
 
     # Абзац "И ныне..." заканчивается отдельным "Господи, помилуй. (12)".
     p15 = _paragraph(rows, 15)
@@ -468,14 +453,11 @@ def build_evening_raw_map(rows, common_preinitial):
     mercy_door_marker = "Млcрдіz двє1ри"
 
     result[13] = _before(p4, glory_marker, "Вечерние #4")
-    result[14] = (
-        "Слaва: "
-        + _between(
-            p4,
-            second_prayer_marker,
-            now_marker,
-            "Вечерние #4",
-        )
+    result[14] = "Слaва: " + _between(
+        p4,
+        second_prayer_marker,
+        now_marker,
+        "Вечерние #4",
     )
 
     final_mercy_pos = p4.rfind(mercy_marker)
@@ -540,10 +522,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--backup-dir",
             default="",
-            help=(
-                "Каталог backup перед APPLY. "
-                "По умолчанию <backend>/backups/sqlite."
-            ),
+            help=("Каталог backup перед APPLY. " "По умолчанию <backend>/backups/sqlite."),
         )
 
         mode = parser.add_mutually_exclusive_group(required=True)
@@ -563,23 +542,14 @@ class Command(BaseCommand):
             raise CommandError("Book.html должен читаться как UTF-8.") from error
 
         soup = BeautifulSoup(html, "html.parser")
-        selected = (
-            ["morning", "evening"]
-            if options["rule"] == "both"
-            else [options["rule"]]
-        )
+        selected = ["morning", "evening"] if options["rule"] == "both" else [options["rule"]]
 
-        plans = [
-            self._build_plan(key=key, soup=soup)
-            for key in selected
-        ]
+        plans = [self._build_plan(key=key, soup=soup) for key in selected]
         self._validate_cross_plan_shared_texts(plans)
 
         self.stdout.write("")
         self.stdout.write(
-            self.style.MIGRATE_HEADING(
-                "Церковнославянский UCS -> Unicode: traditional_content"
-            )
+            self.style.MIGRATE_HEADING("Церковнославянский UCS -> Unicode: traditional_content")
         )
 
         for plan in plans:
@@ -599,8 +569,7 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(
                     self.style.SUCCESS(
-                        "DRY-RUN завершён. База не изменена. "
-                        "Все сопоставления прошли проверку."
+                        "DRY-RUN завершён. База не изменена. " "Все сопоставления прошли проверку."
                     )
                 )
             return
@@ -662,18 +631,8 @@ class Command(BaseCommand):
                     if update_fields:
                         text.save(update_fields=update_fields)
 
-        changed = sum(
-            1
-            for plan in plans
-            for row in plan["mapped"]
-            if row["changed"]
-        )
-        titles_changed = sum(
-            1
-            for plan in plans
-            for row in plan["mapped"]
-            if row["title_changed"]
-        )
+        changed = sum(1 for plan in plans for row in plan["mapped"] if row["changed"])
+        titles_changed = sum(1 for plan in plans for row in plan["mapped"] if row["title_changed"])
         rule_names_changed = sum(1 for plan in plans if plan["rule_name_changed"])
 
         self.stdout.write("")
@@ -692,9 +651,7 @@ class Command(BaseCommand):
 
         rule = PrayerRule.objects.filter(slug=spec["slug"]).first()
         if rule is None:
-            raise CommandError(
-                f'В локальной базе не найден PrayerRule slug="{spec["slug"]}".'
-            )
+            raise CommandError(f'В локальной базе не найден PrayerRule slug="{spec["slug"]}".')
 
         rows = parse_section_paragraphs(soup, spec["anchor"])
         common_preinitial = find_common_preinitial_raw(soup)
@@ -708,8 +665,7 @@ class Command(BaseCommand):
         )
 
         db_items = list(
-            rule.items
-            .filter(
+            rule.items.filter(
                 item_type=PrayerRuleItem.TYPE_TEXT,
                 text__isnull=False,
             )
@@ -751,11 +707,7 @@ class Command(BaseCommand):
                 }
             )
 
-        actual_unmapped = {
-            item.order
-            for item in db_items
-            if item.order not in raw_map
-        }
+        actual_unmapped = {item.order for item in db_items if item.order not in raw_map}
         expected_unmapped = EXPECTED_UNMAPPED_ORDERS[key]
 
         unexpected_unmapped = sorted(actual_unmapped - expected_unmapped)
@@ -811,11 +763,7 @@ class Command(BaseCommand):
                 previous_title = previous["traditional_title"]
                 current_title = current["traditional_title"]
 
-                if (
-                    previous_title
-                    and current_title
-                    and previous_title != current_title
-                ):
+                if previous_title and current_title and previous_title != current_title:
                     problems.append("traditional_title")
 
                 if problems:
@@ -837,9 +785,7 @@ class Command(BaseCommand):
         changed = [row for row in plan["mapped"] if row["changed"]]
         title_changed = [row for row in plan["mapped"] if row["title_changed"]]
         titled_without_match = [
-            row
-            for row in plan["mapped"]
-            if row["item"].text.title and not row["traditional_title"]
+            row for row in plan["mapped"] if row["item"].text.title and not row["traditional_title"]
         ]
 
         self.stdout.write("")
@@ -849,17 +795,13 @@ class Command(BaseCommand):
             f'абзацев источника: {len(plan["rows"])}; '
             f'Text-элементов в БД: {len(plan["db_items"])}; '
             f'сопоставлено: {len(plan["mapped"])}; '
-            f'будет изменено traditional_content: {len(changed)}; '
-            f'будет изменено traditional_title: {len(title_changed)}; '
+            f"будет изменено traditional_content: {len(changed)}; "
+            f"будет изменено traditional_title: {len(title_changed)}; "
             f'traditional_name: {"изменится" if plan["rule_name_changed"] else "без изменений"}.'
         )
         self.stdout.write(
             "Не импортируются из этой редакции и будут сохранены как есть: "
-            + (
-                ", ".join(map(str, plan["actual_unmapped"]))
-                if plan["actual_unmapped"]
-                else "нет"
-            )
+            + (", ".join(map(str, plan["actual_unmapped"])) if plan["actual_unmapped"] else "нет")
         )
 
         if plan["unexpected_unmapped"]:
@@ -880,16 +822,13 @@ class Command(BaseCommand):
 
         if unsafe:
             self.stdout.write(
-                self.style.WARNING(
-                    "Низкая уверенность. Эти элементы НЕ дают разрешить APPLY:"
-                )
+                self.style.WARNING("Низкая уверенность. Эти элементы НЕ дают разрешить APPLY:")
             )
             for row in unsafe:
                 text = row["item"].text
                 label = text.title or text.description or f"Text #{text.pk}"
                 self.stdout.write(
-                    f'  order={row["order"]:>2} '
-                    f'similarity={row["score"]:.3f} | {label}'
+                    f'  order={row["order"]:>2} ' f'similarity={row["score"]:.3f} | {label}'
                 )
 
         if titled_without_match:
@@ -906,9 +845,7 @@ class Command(BaseCommand):
                 )
             )
 
-        self.stdout.write(
-            f'Готово к APPLY: {"ДА" if plan["ready"] else "НЕТ"}.'
-        )
+        self.stdout.write(f'Готово к APPLY: {"ДА" if plan["ready"] else "НЕТ"}.')
 
     def _backup(self, backup_dir):
         database = settings.DATABASES["default"]
@@ -925,9 +862,7 @@ class Command(BaseCommand):
                 output_dir,
             )
         except Exception as error:
-            raise CommandError(
-                f"Не удалось создать backup перед APPLY: {error}"
-            ) from error
+            raise CommandError(f"Не удалось создать backup перед APPLY: {error}") from error
 
         self.stdout.write("")
         self.stdout.write(self.style.SUCCESS("Резервная копия создана."))

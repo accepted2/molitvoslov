@@ -89,7 +89,9 @@ export const BottomNav = ({navigation, active}) => {
                 ]}
               >
                 <NavIcon type={item.icon} active={isActive} />
-                <Text style={[styles.label, isActive && styles.labelActive]}>{t(item.labelKey)}</Text>
+                <Text style={[styles.label, isActive && styles.labelActive]}>
+                  {t(item.labelKey)}
+                </Text>
               </Pressable>
             );
           })}

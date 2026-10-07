@@ -48,10 +48,7 @@ export const LanguageProvider = ({children}) => {
     return normalized;
   }, []);
 
-  const t = useCallback(
-    (key, params = {}) => translate(language, key, params),
-    [language]
-  );
+  const t = useCallback((key, params = {}) => translate(language, key, params), [language]);
 
   const value = useMemo(
     () => ({

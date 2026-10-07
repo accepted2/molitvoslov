@@ -79,10 +79,7 @@ export default function App() {
     const prepareDatabase = async () => {
       try {
         await initDatabase();
-        await Promise.all([
-          hydratePublicContent(),
-          hydrateBibleContent('rst'),
-        ]);
+        await Promise.all([hydratePublicContent(), hydrateBibleContent('rst')]);
 
         setDatabaseReady(true);
 

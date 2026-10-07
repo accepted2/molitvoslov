@@ -6,9 +6,7 @@ const CACHE_PREFIX = 'bible-content-v1:';
 const bundledCode = String(bundledBible?.translation?.code || 'rst');
 
 const currentByCode = new Map([[bundledCode, bundledBible]]);
-const versionByCode = new Map([
-  [bundledCode, bundledBible?.content_version || null],
-]);
+const versionByCode = new Map([[bundledCode, bundledBible?.content_version || null]]);
 
 let generation = 0;
 const listeners = new Set();
@@ -24,11 +22,7 @@ const isValidBibleContent = (payload, expectedCode = null) => {
   );
 };
 
-const activateBibleContent = (
-  payload,
-  version,
-  {notify = true} = {}
-) => {
+const activateBibleContent = (payload, version, {notify = true} = {}) => {
   const code = String(payload?.translation?.code || '');
 
   if (!isValidBibleContent(payload, code)) {
@@ -48,10 +42,7 @@ const activateBibleContent = (
           generation,
         });
       } catch (error) {
-        console.log(
-          'Ошибка слушателя обновления Библии:',
-          error?.message || error
-        );
+        console.log('Ошибка слушателя обновления Библии:', error?.message || error);
       }
     });
   }
@@ -89,10 +80,7 @@ export const hydrateBibleContent = async (code = 'rst') => {
       }
     }
   } catch (error) {
-    console.log(
-      'Не удалось прочитать локальный кэш Библии:',
-      error?.message || error
-    );
+    console.log('Не удалось прочитать локальный кэш Библии:', error?.message || error);
   }
 
   return {
@@ -102,10 +90,7 @@ export const hydrateBibleContent = async (code = 'rst') => {
   };
 };
 
-export const saveSyncedBibleContent = async (
-  payload,
-  version
-) => {
+export const saveSyncedBibleContent = async (payload, version) => {
   const code = String(payload?.translation?.code || '');
 
   if (!isValidBibleContent(payload, code)) {

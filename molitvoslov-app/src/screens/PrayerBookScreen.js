@@ -77,7 +77,10 @@ const SavedPickerModal = ({visible, items, onClose, onSelect}) => {
                 style={({pressed}) => [styles.pickerRow, pressed && styles.pressed]}
               >
                 <Text style={styles.pickerRowTitle}>
-                  {item.item_title || item.source_title || item.save_type_display || t('prayerBooks.savedFallback')}
+                  {item.item_title ||
+                    item.source_title ||
+                    item.save_type_display ||
+                    t('prayerBooks.savedFallback')}
                 </Text>
 
                 {!!(item.text || item.source_title) && (
@@ -87,7 +90,9 @@ const SavedPickerModal = ({visible, items, onClose, onSelect}) => {
                 )}
               </Pressable>
             )}
-            ListEmptyComponent={<Text style={styles.emptyPicker}>{t('prayerBooks.nothingFound')}</Text>}
+            ListEmptyComponent={
+              <Text style={styles.emptyPicker}>{t('prayerBooks.nothingFound')}</Text>
+            }
           />
         </View>
       </View>
@@ -288,9 +293,7 @@ const GlobalPrayerSearchModal = ({
             <View style={styles.searchEmptyState}>
               <Text style={styles.searchEmptyMark}>⌕</Text>
               <Text style={styles.searchEmptyTitle}>{t('prayerBooks.enterTwoChars')}</Text>
-              <Text style={styles.searchEmptyText}>
-                {t('prayerBooks.searchExplanation')}
-              </Text>
+              <Text style={styles.searchEmptyText}>{t('prayerBooks.searchExplanation')}</Text>
             </View>
           ) : (
             <FlatList
@@ -475,7 +478,11 @@ export const PrayerBookScreen = ({route, navigation}) => {
         <View style={styles.center}>
           <Text style={styles.loading}>{t('common.loading')}</Text>
         </View>
-        <FixedSectionHeader title={t('nav.prayerBooks')} navigation={navigation} topInset={insets.top} />
+        <FixedSectionHeader
+          title={t('nav.prayerBooks')}
+          navigation={navigation}
+          topInset={insets.top}
+        />
       </AppBackground>
     );
   }
@@ -546,9 +553,7 @@ export const PrayerBookScreen = ({route, navigation}) => {
           ListEmptyComponent={
             <View style={styles.emptyCard}>
               <Text style={styles.emptyTitle}>{t('prayerBooks.bookEmptyTitle')}</Text>
-              <Text style={styles.emptyText}>
-                {t('prayerBooks.bookEmptyText')}
-              </Text>
+              <Text style={styles.emptyText}>{t('prayerBooks.bookEmptyText')}</Text>
             </View>
           }
           renderItem={({item, index}) => {
@@ -577,7 +582,9 @@ export const PrayerBookScreen = ({route, navigation}) => {
                     )}
 
                     {!!prayer.photos?.length && (
-                      <Text style={styles.photoMeta}>{t('prayerBooks.photosCount', {count: prayer.photos.length})}</Text>
+                      <Text style={styles.photoMeta}>
+                        {t('prayerBooks.photosCount', {count: prayer.photos.length})}
+                      </Text>
                     )}
                   </View>
                 </Pressable>

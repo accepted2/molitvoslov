@@ -37,10 +37,7 @@ import {
 } from '../services/churchCalendar';
 import {CALENDAR_MONTHS, calendarText} from '../services/calendarPreferences';
 import {useLanguage} from '../context/LanguageContext';
-import {
-  LANGUAGE_OPTIONS,
-  getCalendarDataLanguage,
-} from '../services/languagePreferences';
+import {LANGUAGE_OPTIONS, getCalendarDataLanguage} from '../services/languagePreferences';
 import {getLocalizedField} from '../services/localizedContent';
 import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
 import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
@@ -279,11 +276,7 @@ const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress})
 );
 
 export const MenuScreen = ({navigation}) => {
-  const {
-    language: calendarLanguage,
-    setLanguage: setAppLanguage,
-    t,
-  } = useLanguage();
+  const {language: calendarLanguage, setLanguage: setAppLanguage, t} = useLanguage();
   const [categories, setCategories] = useState([]);
   const [akathists, setAkathists] = useState([]);
   const [canons, setCanons] = useState([]);
@@ -995,16 +988,10 @@ export const MenuScreen = ({navigation}) => {
                         accessibilityRole="button"
                         accessibilityLabel={`${t('common.language')}: ${item.label}`}
                         onPress={() => changeAppLanguage(item.value)}
-                        style={[
-                          styles.appLanguageButton,
-                          active && styles.appLanguageButtonActive,
-                        ]}
+                        style={[styles.appLanguageButton, active && styles.appLanguageButtonActive]}
                       >
                         <Text
-                          style={[
-                            styles.appLanguageText,
-                            active && styles.appLanguageTextActive,
-                          ]}
+                          style={[styles.appLanguageText, active && styles.appLanguageTextActive]}
                         >
                           {item.label}
                         </Text>
@@ -1139,9 +1126,7 @@ export const MenuScreen = ({navigation}) => {
                         <Text style={styles.calendarTitleArrow}>›</Text>
                       </View>
 
-                      <Text style={styles.calendarOpenHint}>
-                        {t('calendar.open')}
-                      </Text>
+                      <Text style={styles.calendarOpenHint}>{t('calendar.open')}</Text>
                     </View>
                   </Pressable>
 
@@ -1157,7 +1142,6 @@ export const MenuScreen = ({navigation}) => {
                       <Text style={styles.calendarWidgetButtonIcon}>▣</Text>
                       <Text style={styles.calendarWidgetButtonText}>{calendarCopy.onScreen}</Text>
                     </Pressable>
-
                   </View>
                 </View>
 
@@ -1176,9 +1160,7 @@ export const MenuScreen = ({navigation}) => {
                       )}
 
                       <View style={styles.calendarFeastTextWrap}>
-                        <Text style={styles.calendarFeastLabel}>
-                          {t('calendar.memory')}
-                        </Text>
+                        <Text style={styles.calendarFeastLabel}>{t('calendar.memory')}</Text>
 
                         <Text style={styles.calendarFeastTitle} numberOfLines={6}>
                           {calendarToday?.main_feast?.short_title ||
@@ -1195,9 +1177,7 @@ export const MenuScreen = ({navigation}) => {
                         onPress={openFullCalendar}
                         style={({pressed}) => [styles.calendarQuickItem, pressed && styles.pressed]}
                       >
-                        <Text style={styles.calendarQuickLabel}>
-                          {t('calendar.fast')}
-                        </Text>
+                        <Text style={styles.calendarQuickLabel}>{t('calendar.fast')}</Text>
 
                         <Text style={styles.calendarQuickText} numberOfLines={2}>
                           {formatFast(calendarToday, calendarLanguage) || calendarCopy.noFastData}
@@ -1213,9 +1193,7 @@ export const MenuScreen = ({navigation}) => {
                           pressed && styles.pressed,
                         ]}
                       >
-                        <Text style={styles.calendarQuickLabel}>
-                          {t('calendar.gospel')}
-                        </Text>
+                        <Text style={styles.calendarQuickLabel}>{t('calendar.gospel')}</Text>
 
                         <Text
                           style={[

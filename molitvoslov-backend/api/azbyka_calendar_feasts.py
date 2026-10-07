@@ -71,6 +71,7 @@ GENERIC_WORDS = {
 class AzbykaFeastError(RuntimeError):
     pass
 
+
 @dataclass(frozen=True)
 class DaySaintLink:
     title: str
@@ -266,10 +267,7 @@ def find_best_source(local_title, sources, threshold=0.62, margin=0.08):
             None,
             score,
             second_score,
-            (
-                "неоднозначное совпадение "
-                f"({score:.2f} против {second_score:.2f})"
-            ),
+            ("неоднозначное совпадение " f"({score:.2f} против {second_score:.2f})"),
         )
 
     return MatchResult(source, score, second_score)
@@ -369,9 +367,7 @@ def _extract_saint_icon_url_from_soup(soup):
 
 
 def extract_saint_icon_url(html):
-    return _extract_saint_icon_url_from_soup(
-        BeautifulSoup(html, "lxml")
-    )
+    return _extract_saint_icon_url_from_soup(BeautifulSoup(html, "lxml"))
 
 
 def _collect_life(soup, saint_title):
@@ -469,11 +465,9 @@ def _collect_life(soup, saint_title):
 
             # Строки "Дней памяти" в житие не включаем.
             if re.fullmatch(
-                    r"\d{1,2}\s+[а-яё]+"
-                    r"(?:\s*\([^)]*\))?"
-                    r"\s*[-–—].*",
-                    value,
-                    re.I,
+                r"\d{1,2}\s+[а-яё]+" r"(?:\s*\([^)]*\))?" r"\s*[-–—].*",
+                value,
+                re.I,
             ):
                 continue
 
@@ -518,9 +512,7 @@ def extract_day_saint_links(html):
     # /days/svv-*      — собор/группа святых
     # /days/prazdnik-* — праздник
     # /days/ikona-*    — икона Божией Матери
-    allowed_path = re.compile(
-        r"^/days/(?:sv|svv|prazdnik|ikona)-[^/?#]+$"
-    )
+    allowed_path = re.compile(r"^/days/(?:sv|svv|prazdnik|ikona)-[^/?#]+$")
 
     # Берём все ссылки, которые физически стоят ДО заголовка чтений.
     # Если ссылка лежит внутри <li>, используем текст всего пункта: так
@@ -565,9 +557,7 @@ def extract_day_saint_links(html):
                 if not item_href:
                     continue
 
-                item_path = urlparse(
-                    urljoin(AZBYKA_BASE_URL, item_href)
-                ).path.rstrip("/")
+                item_path = urlparse(urljoin(AZBYKA_BASE_URL, item_href)).path.rstrip("/")
 
                 if allowed_path.fullmatch(item_path):
                     item_paths.add(item_path)
@@ -594,11 +584,10 @@ def extract_day_saint_links(html):
         )
 
     if not sources:
-        raise AzbykaFeastError(
-            "На странице дня не найдены карточки памятей/праздников."
-        )
+        raise AzbykaFeastError("На странице дня не найдены карточки памятей/праздников.")
 
     return sources
+
 
 def extract_day_hymn_groups(html):
     soup = BeautifulSoup(html, "lxml")
@@ -608,10 +597,7 @@ def extract_day_hymn_groups(html):
         title = tag_text(heading)
         lowered = title.lower()
 
-        if not title or (
-            "тропари, кондаки" in lowered
-            or "чтения священного писания" in lowered
-        ):
+        if not title or ("тропари, кондаки" in lowered or "чтения священного писания" in lowered):
             continue
 
         values = {
@@ -641,17 +627,11 @@ def extract_day_hymn_groups(html):
             voice = VOICE_RE.search(hymn_title)
             echo = int(voice.group(1)) if voice else None
 
-            if (
-                re.match(r"^(?:и\s+)?тропарь\b", hymn_lower)
-                and not values["troparion_content"]
-            ):
+            if re.match(r"^(?:и\s+)?тропарь\b", hymn_lower) and not values["troparion_content"]:
                 values["troparion_title"] = hymn_title
                 values["troparion_content"] = content
                 values["troparion_echo"] = echo
-            elif (
-                re.match(r"^(?:и\s+)?кондак\b", hymn_lower)
-                and not values["kontakion_content"]
-            ):
+            elif re.match(r"^(?:и\s+)?кондак\b", hymn_lower) and not values["kontakion_content"]:
                 values["kontakion_title"] = hymn_title
                 values["kontakion_content"] = content
                 values["kontakion_echo"] = echo
@@ -664,8 +644,7 @@ def extract_day_hymn_groups(html):
 
 def find_best_hymn_group(local_title, groups, threshold=0.62, margin=0.08):
     sources = [
-        DaySaintLink(title=group.title, url=str(index))
-        for index, group in enumerate(groups)
+        DaySaintLink(title=group.title, url=str(index)) for index, group in enumerate(groups)
     ]
     result = find_best_source(
         local_title,
@@ -703,10 +682,7 @@ def extract_saint_content(html, url=""):
         heading_text = tag_text(heading)
         lowered = heading_text.lower()
 
-        if (
-            re.match(r"^(?:и\s+)?тропарь\b", lowered)
-            and not values["troparion_content"]
-        ):
+        if re.match(r"^(?:и\s+)?тропарь\b", lowered) and not values["troparion_content"]:
             content = _next_text_block(heading)
             if content:
                 values["troparion_title"] = heading_text
@@ -714,10 +690,7 @@ def extract_saint_content(html, url=""):
                 voice = VOICE_RE.search(heading_text)
                 values["troparion_echo"] = int(voice.group(1)) if voice else None
 
-        if (
-            re.match(r"^(?:и\s+)?кондак\b", lowered)
-            and not values["kontakion_content"]
-        ):
+        if re.match(r"^(?:и\s+)?кондак\b", lowered) and not values["kontakion_content"]:
             content = _next_text_block(heading)
             if content:
                 values["kontakion_title"] = heading_text
@@ -744,8 +717,7 @@ def _get(session, url, timeout):
             timeout=timeout,
             headers={
                 "User-Agent": (
-                    "MolitvoslovCalendarImporter/1.0 "
-                    "(personal church-calendar data import)"
+                    "MolitvoslovCalendarImporter/1.0 " "(personal church-calendar data import)"
                 )
             },
         )

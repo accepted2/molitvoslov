@@ -13,10 +13,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--output-dir",
             default="",
-            help=(
-                "Каталог для копии. По умолчанию: "
-                "<backend>/backups/sqlite."
-            ),
+            help=("Каталог для копии. По умолчанию: " "<backend>/backups/sqlite."),
         )
 
     def handle(self, *args, **options):
@@ -24,8 +21,7 @@ class Command(BaseCommand):
 
         if database.get("ENGINE") != "django.db.backends.sqlite3":
             raise CommandError(
-                "Команда работает только с локальной SQLite. "
-                "Уберите SUPABASE_DB_PASSWORD."
+                "Команда работает только с локальной SQLite. " "Уберите SUPABASE_DB_PASSWORD."
             )
 
         source_path = Path(database["NAME"])

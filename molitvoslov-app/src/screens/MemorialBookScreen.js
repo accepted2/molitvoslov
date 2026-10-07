@@ -471,10 +471,7 @@ export const MemorialBookScreen = ({navigation, route}) => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
 
     if (!permission.granted) {
-      Alert.alert(
-        t('memorial.cameraPermissionTitle'),
-        t('memorial.cameraPermissionText')
-      );
+      Alert.alert(t('memorial.cameraPermissionTitle'), t('memorial.cameraPermissionText'));
 
       return;
     }
@@ -589,9 +586,7 @@ export const MemorialBookScreen = ({navigation, route}) => {
             />
 
             <Text style={styles.syncHint}>
-              {book?.cloud_user_id
-                ? t('memorial.syncedHint')
-                : t('memorial.deviceOnly')}
+              {book?.cloud_user_id ? t('memorial.syncedHint') : t('memorial.deviceOnly')}
             </Text>
           </View>
 
@@ -612,9 +607,7 @@ export const MemorialBookScreen = ({navigation, route}) => {
           <View style={styles.photoCard}>
             <Text style={styles.namesTitle}>{t('memorial.photoNotes')}</Text>
 
-            <Text style={styles.namesSubtitle}>
-              {t('memorial.photoNotesHint')}
-            </Text>
+            <Text style={styles.namesSubtitle}>{t('memorial.photoNotesHint')}</Text>
 
             <View style={styles.photoActions}>
               <Pressable

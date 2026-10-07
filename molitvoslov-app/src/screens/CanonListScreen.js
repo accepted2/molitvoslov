@@ -187,9 +187,7 @@ export const CanonListScreen = ({navigation}) => {
                   onPress={() => openCanon(item)}
                 >
                   <View style={styles.textContainer}>
-                    <Text style={styles.title}>
-                      {getLocalizedField(item, 'title', language)}
-                    </Text>
+                    <Text style={styles.title}>{getLocalizedField(item, 'title', language)}</Text>
 
                     {!!item.tone && <Text style={styles.tone}>{item.tone}</Text>}
 
@@ -219,9 +217,7 @@ export const CanonListScreen = ({navigation}) => {
           }}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
-                {t('menu.canonsEmpty')}
-              </Text>
+              <Text style={styles.emptyText}>{t('menu.canonsEmpty')}</Text>
             </View>
           }
         />

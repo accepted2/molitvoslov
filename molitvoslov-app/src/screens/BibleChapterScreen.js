@@ -596,12 +596,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
   }
 
   return (
-    <View
-      style={[
-        styles.screen,
-        readerTheme === 'night' && styles.screenNight,
-      ]}
-    >
+    <View style={[styles.screen, readerTheme === 'night' && styles.screenNight]}>
       <StatusBar
         style={readerTheme === 'night' ? 'light' : 'dark'}
         translucent
@@ -688,10 +683,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
           </Pressable>
 
           <Text
-            style={[
-              styles.fontPanelValue,
-              readerTheme === 'night' && styles.fontPanelTextNight,
-            ]}
+            style={[styles.fontPanelValue, readerTheme === 'night' && styles.fontPanelTextNight]}
           >
             {readerFontSize.toFixed(1)}
           </Text>
@@ -737,19 +729,11 @@ export const BibleChapterScreen = ({route, navigation}) => {
           ]}
         >
           <Text
-            style={[
-              styles.chapterNavArrow,
-              readerTheme === 'night' && styles.toolbarIconTextNight,
-            ]}
+            style={[styles.chapterNavArrow, readerTheme === 'night' && styles.toolbarIconTextNight]}
           >
             ‹
           </Text>
-          <Text
-            style={[
-              styles.chapterNavText,
-              readerTheme === 'night' && styles.toolbarTextNight,
-            ]}
-          >
+          <Text style={[styles.chapterNavText, readerTheme === 'night' && styles.toolbarTextNight]}>
             {previousChapter
               ? t('bible.chapter', {number: previousChapter.number})
               : t('bible.chapter', {number: currentChapterNumber})}
@@ -765,10 +749,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
           style={({pressed}) => [styles.toolbarIconButton, pressed && styles.toolbarPressed]}
         >
           <Text
-            style={[
-              styles.bookmarkIcon,
-              readerTheme === 'night' && styles.toolbarIconTextNight,
-            ]}
+            style={[styles.bookmarkIcon, readerTheme === 'night' && styles.toolbarIconTextNight]}
           >
             ⌑
           </Text>
@@ -784,12 +765,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
             pressed && styles.toolbarPressed,
           ]}
         >
-          <Text
-            style={[
-              styles.toolbarAa,
-              readerTheme === 'night' && styles.toolbarIconTextNight,
-            ]}
-          >
+          <Text style={[styles.toolbarAa, readerTheme === 'night' && styles.toolbarIconTextNight]}>
             Aa
           </Text>
         </Pressable>
@@ -805,10 +781,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
           ]}
         >
           <Text
-            style={[
-              styles.toolbarMoon,
-              readerTheme === 'night' && styles.toolbarIconTextNight,
-            ]}
+            style={[styles.toolbarMoon, readerTheme === 'night' && styles.toolbarIconTextNight]}
           >
             ◔
           </Text>
@@ -838,10 +811,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
               : t('bible.chapter', {number: currentChapterNumber})}
           </Text>
           <Text
-            style={[
-              styles.chapterNavArrow,
-              readerTheme === 'night' && styles.toolbarIconTextNight,
-            ]}
+            style={[styles.chapterNavArrow, readerTheme === 'night' && styles.toolbarIconTextNight]}
           >
             ›
           </Text>

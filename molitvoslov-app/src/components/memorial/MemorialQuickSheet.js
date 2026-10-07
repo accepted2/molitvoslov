@@ -154,9 +154,7 @@ export const MemorialQuickSheet = ({visible, onClose, onManage, preferredKind = 
 
                 <Text style={styles.emptyTitle}>{t('memorial.emptyTitle')}</Text>
 
-                <Text style={styles.emptyText}>
-                  {t('memorial.emptyText')}
-                </Text>
+                <Text style={styles.emptyText}>{t('memorial.emptyText')}</Text>
 
                 {!!onManage && (
                   <Pressable

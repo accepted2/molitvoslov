@@ -44,20 +44,14 @@ class Command(BaseCommand):
         self._configure_supabase_connection()
         self._check_remote()
 
-        selected = (
-            ["morning", "evening"]
-            if options["rule"] == "both"
-            else [options["rule"]]
-        )
+        selected = ["morning", "evening"] if options["rule"] == "both" else [options["rule"]]
 
         plans = [self._build_rule_plan(key) for key in selected]
         self._validate_shared_texts(plans)
 
         self.stdout.write("")
         self.stdout.write(
-            self.style.MIGRATE_HEADING(
-                "PrayerRule traditional CS: local SQLite -> Supabase"
-            )
+            self.style.MIGRATE_HEADING("PrayerRule traditional CS: local SQLite -> Supabase")
         )
 
         for plan in plans:
@@ -65,9 +59,7 @@ class Command(BaseCommand):
 
         if options["dry_run"]:
             self.stdout.write("")
-            self.stdout.write(
-                self.style.WARNING("DRY-RUN: Supabase не изменён.")
-            )
+            self.stdout.write(self.style.WARNING("DRY-RUN: Supabase не изменён."))
             return
 
         with transaction.atomic(using=REMOTE_ALIAS):
@@ -96,8 +88,7 @@ class Command(BaseCommand):
         engine = connections["default"].settings_dict.get("ENGINE", "")
         if engine != "django.db.backends.sqlite3":
             raise CommandError(
-                "Источник должен быть локальной SQLite. "
-                "Не задавайте Supabase как default."
+                "Источник должен быть локальной SQLite. " "Не задавайте Supabase как default."
             )
 
     def _configure_supabase_connection(self):
@@ -151,9 +142,7 @@ class Command(BaseCommand):
             PrayerRule.objects.using(REMOTE_ALIAS).count()
             Text.objects.using(REMOTE_ALIAS).count()
         except Exception as error:
-            raise CommandError(
-                f"Не удалось подключиться к Supabase: {error}"
-            ) from error
+            raise CommandError(f"Не удалось подключиться к Supabase: {error}") from error
 
     def _get_rule(self, alias, slug):
         return (
@@ -167,10 +156,7 @@ class Command(BaseCommand):
         return {
             item.order: item
             for item in rule.items.all()
-            if (
-                item.item_type == PrayerRuleItem.TYPE_TEXT
-                and item.text_id is not None
-            )
+            if (item.item_type == PrayerRuleItem.TYPE_TEXT and item.text_id is not None)
         }
 
     def _build_rule_plan(self, key):
@@ -179,14 +165,10 @@ class Command(BaseCommand):
         remote = self._get_rule(REMOTE_ALIAS, slug)
 
         if local is None:
-            raise CommandError(
-                f"Локально отсутствует PrayerRule slug={slug!r}."
-            )
+            raise CommandError(f"Локально отсутствует PrayerRule slug={slug!r}.")
 
         if remote is None:
-            raise CommandError(
-                f"В Supabase отсутствует PrayerRule slug={slug!r}."
-            )
+            raise CommandError(f"В Supabase отсутствует PrayerRule slug={slug!r}.")
 
         local_items = self._text_items_by_order(local)
         remote_items = self._text_items_by_order(remote)
@@ -216,8 +198,7 @@ class Command(BaseCommand):
             changed = [
                 field
                 for field in TEXT_FIELDS
-                if getattr(local_item.text, field)
-                != getattr(remote_item.text, field)
+                if getattr(local_item.text, field) != getattr(remote_item.text, field)
             ]
 
             if changed:
@@ -235,9 +216,7 @@ class Command(BaseCommand):
             "remote": remote,
             "local_items": local_items,
             "remote_items": remote_items,
-            "rule_name_changed": (
-                local.traditional_name != remote.traditional_name
-            ),
+            "rule_name_changed": (local.traditional_name != remote.traditional_name),
             "texts": text_changes,
         }
 
@@ -274,8 +253,7 @@ class Command(BaseCommand):
     def _print_plan(self, plan, prefix="План синхронизации:"):
         local_items = plan["local_items"]
         with_traditional = sum(
-            bool((item.text.traditional_content or "").strip())
-            for item in local_items.values()
+            bool((item.text.traditional_content or "").strip()) for item in local_items.values()
         )
 
         self.stdout.write("")
@@ -297,10 +275,7 @@ class Command(BaseCommand):
             plan["texts"].items(),
             key=lambda pair: pair[1]["order"],
         ):
-            self.stdout.write(
-                f"  order={row['order']:>2} Text {slug}: "
-                + ", ".join(row["fields"])
-            )
+            self.stdout.write(f"  order={row['order']:>2} Text {slug}: " + ", ".join(row["fields"]))
 
     def _apply(self, plans):
         updated_texts = set()

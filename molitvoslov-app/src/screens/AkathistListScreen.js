@@ -160,16 +160,16 @@ export const AkathistListScreen = ({navigation}) => {
                   activeOpacity={0.7}
                   onPress={() => handlePress(item)}
                 >
-                  <Text style={styles.title}>
-                    {getLocalizedField(item, 'title', language)}
-                  </Text>
+                  <Text style={styles.title}>{getLocalizedField(item, 'title', language)}</Text>
 
                   <Text style={styles.arrow}>›</Text>
                 </TouchableOpacity>
 
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={saved ? t('common.removeFromFavorites') : t('common.addFavorite')}
+                  accessibilityLabel={
+                    saved ? t('common.removeFromFavorites') : t('common.addFavorite')
+                  }
                   hitSlop={8}
                   onPress={() => toggleFavorite(item)}
                   style={({pressed}) => [styles.favoriteButton, pressed && styles.pressed]}
@@ -181,9 +181,7 @@ export const AkathistListScreen = ({navigation}) => {
           }}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
-                {t('menu.akathistsEmpty')}
-              </Text>
+              <Text style={styles.emptyText}>{t('menu.akathistsEmpty')}</Text>
             </View>
           }
         />
@@ -228,9 +226,7 @@ export const AkathistListScreen = ({navigation}) => {
             </Pressable>
 
             <View style={styles.headerTitleWrap}>
-              <Text style={styles.headerTitle}>
-                {t('menu.akathistsTitle')}
-              </Text>
+              <Text style={styles.headerTitle}>{t('menu.akathistsTitle')}</Text>
 
               <View style={styles.headerOrnament}>
                 <View style={styles.headerLine} />

@@ -1,8 +1,4 @@
-import {
-  APP_LANGUAGES,
-  getAppLanguage,
-  setAppLanguage,
-} from './languagePreferences';
+import {APP_LANGUAGES, getAppLanguage, setAppLanguage} from './languagePreferences';
 
 export const CALENDAR_LANGUAGES = {
   RU: APP_LANGUAGES.RU,
@@ -90,8 +86,7 @@ const CALENDAR_COPY = {
   },
 };
 
-export const calendarText = (language) =>
-  CALENDAR_COPY[language] || CALENDAR_COPY.ru;
+export const calendarText = (language) => CALENDAR_COPY[language] || CALENDAR_COPY.ru;
 
 export const CALENDAR_MONTHS = {
   ru: {
