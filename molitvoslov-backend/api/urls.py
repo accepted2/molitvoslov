@@ -35,6 +35,7 @@ from .auth_views import (
     LogoutView,
 )
 from .mobile_content import MobileContentView
+from .bible_content import BibleContentView
 
 router = DefaultRouter()
 
@@ -88,6 +89,7 @@ router.register(
 
 urlpatterns = [
     path("mobile-content/", MobileContentView.as_view(), name="mobile-content"),
+    path("bible-content/", BibleContentView.as_view(), name="bible-content"),
     path("calendar/", include("api.calendar_urls")),
     path(
         "auth/google/",
