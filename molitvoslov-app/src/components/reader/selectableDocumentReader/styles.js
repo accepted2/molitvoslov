@@ -1,4 +1,12 @@
 export const READER_STYLES = String.raw`
+    @font-face {
+      font-family: 'Ponomar';
+      src: url("__PONOMAR_FONT_URL__") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: block;
+    }
+
     :root {
       --background: #FFF4DE;
       --surface: #F8E9CF;
@@ -35,6 +43,13 @@ export const READER_STYLES = String.raw`
       --reader-top-padding: __READER_TOP_PADDING__px;
       --reader-bottom-padding: __READER_BOTTOM_PADDING__px;
       padding: var(--reader-top-padding) 14px var(--reader-bottom-padding);
+    }
+
+    .reader-language-traditional .reader-text,
+    .reader-language-traditional .reader-inline-label {
+      font-family: 'Ponomar', Georgia, "Times New Roman", serif;
+      font-weight: 400;
+      font-variant-ligatures: common-ligatures;
     }
     .view-switcher {
       display: flex;
