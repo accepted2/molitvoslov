@@ -509,17 +509,6 @@ class Command(BaseCommand):
                 new_chapters,
                 batch_size=500,
             )
-            for item in new_chapters:
-                local_book = next(
-                    book
-                    for book in plan["local_books"]
-                    if book.pk == next(
-                        chapter.book_id
-                        for chapter in plan["local_chapters"]
-                        if chapter.pk == item.pk
-                    )
-                )
-                remote_chapters[(local_book.code, item.number)] = item
 
         # После создания глав перечитываем только текущий перевод:
         # это проще и надёжнее для 37k стихов, чем собирать FK вручную.
