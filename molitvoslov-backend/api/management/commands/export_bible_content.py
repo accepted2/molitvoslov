@@ -1,3 +1,4 @@
+import hashlib
 import json
 from pathlib import Path
 
@@ -125,6 +126,14 @@ class Command(BaseCommand):
             raise CommandError(
                 "Ожидалось 78 машинных книг/единиц, " f'получено {len(data["books"])}.'
             )
+
+        version_source = json.dumps(
+            data,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        data["content_version"] = hashlib.sha256(version_source).hexdigest()
 
         output_path.parent.mkdir(
             parents=True,
