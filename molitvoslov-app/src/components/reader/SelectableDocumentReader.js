@@ -9,10 +9,7 @@ import {WebView} from 'react-native-webview';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import {deleteSavedItem, saveItem} from '../../services/savedItems';
-import {
-  getCachedPonomarFontDataUri,
-  loadPonomarFontDataUri,
-} from '../../services/ponomarFont';
+import {getCachedPonomarFontDataUri, loadPonomarFontDataUri} from '../../services/ponomarFont';
 
 import {buildHtml, scriptSafeJson} from './selectableDocumentReader/buildHtml';
 
@@ -39,9 +36,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
 
   const webViewRef = useRef(null);
 
-  const [ponomarFontDataUri, setPonomarFontDataUri] = useState(
-    getCachedPonomarFontDataUri()
-  );
+  const [ponomarFontDataUri, setPonomarFontDataUri] = useState(getCachedPonomarFontDataUri());
 
   useEffect(() => {
     let active = true;
@@ -53,10 +48,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         }
       })
       .catch((fontError) => {
-        console.log(
-          'Ошибка загрузки шрифта Ponomar для WebView:',
-          fontError?.message || fontError
-        );
+        console.log('Ошибка загрузки шрифта Ponomar для WebView:', fontError?.message || fontError);
       });
 
     return () => {
