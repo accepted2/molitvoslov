@@ -11,11 +11,13 @@ import {useReadingProgress} from '../hooks/useReadingProgress';
 import {saveReadingBookmark} from '../services/readerBookmarks';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {bibleContent} from '../services/bibleContent';
+import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {colors} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
 
 export const BibleChapterScreen = ({route, navigation}) => {
   const {t} = useLanguage();
+  useBibleContentGeneration();
   const {bookId, chapterNumber, focusTarget = null, resume = false} = route.params || {};
 
   const book = bibleContent.getBook(bookId);

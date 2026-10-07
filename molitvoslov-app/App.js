@@ -28,6 +28,8 @@ import {syncMemorials} from './src/services/memorials';
 import {syncPrayerBooks} from './src/services/prayerBooks';
 import {hydratePublicContent} from './src/services/contentStore';
 import {syncPublicContent} from './src/services/contentSync';
+import {hydrateBibleContent} from './src/services/bibleStore';
+import {syncBibleContent} from './src/services/bibleSync';
 
 const ONBOARDING_STORAGE_KEY = '@molitvoslov/onboarding-version';
 const ONBOARDING_VERSION = 5;
@@ -77,7 +79,10 @@ export default function App() {
     const prepareDatabase = async () => {
       try {
         await initDatabase();
-        await hydratePublicContent();
+        await Promise.all([
+          hydratePublicContent(),
+          hydrateBibleContent('rst'),
+        ]);
 
         setDatabaseReady(true);
 
@@ -132,12 +137,14 @@ export default function App() {
       try {
         const [
           publicContentResult,
+          bibleContentResult,
           savedItemsResult,
           readingProgressResult,
           memorialsResult,
           prayerBooksResult,
         ] = await Promise.all([
           syncPublicContent(),
+          syncBibleContent('rst'),
           syncSavedItems(),
           syncReadingProgress(),
           syncMemorials(),
@@ -150,6 +157,15 @@ export default function App() {
           console.log(
             `Public content sync отложен: ${reason}`,
             publicContentResult.error?.message || publicContentResult.error
+          );
+        }
+
+        if (bibleContentResult?.updated) {
+          console.log(`Bible content updated: ${reason}`);
+        } else if (!bibleContentResult?.success && bibleContentResult?.error) {
+          console.log(
+            `Bible content sync отложен: ${reason}`,
+            bibleContentResult.error?.message || bibleContentResult.error
           );
         }
 
