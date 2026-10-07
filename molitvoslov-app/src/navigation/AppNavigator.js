@@ -49,24 +49,29 @@ const linking = {
 };
 
 /*
- * Мягкое проявление нового экрана.
+ * Короткий непрозрачный переход между экранами.
  *
- * Не создаёт искусственную задержку и работает
- * непосредственно вместе с навигацией.
+ * Карточка остаётся полностью непрозрачной, поэтому предыдущий
+ * экран не просвечивает под новым во время навигации.
  */
-const fadeTransition = ({current}) => ({
+const solidTransition = ({current}) => ({
   cardStyle: {
-    opacity: current.progress.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0.9, 1],
-    }),
+    opacity: 1,
+    transform: [
+      {
+        scale: current.progress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [1.008, 1],
+        }),
+      },
+    ],
   },
 });
 
-const fadeTiming = {
+const transitionTiming = {
   animation: 'timing',
   config: {
-    duration: 160,
+    duration: 90,
   },
 };
 
@@ -93,16 +98,15 @@ export const AppNavigator = () => {
             backgroundColor: colors.background,
           },
 
-          gestureEnabled: true,
-          gestureDirection: 'horizontal',
+          gestureEnabled: false,
 
           animationEnabled: true,
 
-          cardStyleInterpolator: fadeTransition,
+          cardStyleInterpolator: solidTransition,
 
           transitionSpec: {
-            open: fadeTiming,
-            close: fadeTiming,
+            open: transitionTiming,
+            close: transitionTiming,
           },
         }}
       >
