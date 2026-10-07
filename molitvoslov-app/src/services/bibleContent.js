@@ -1,10 +1,22 @@
-import offlineBible from '../data/offlineBible.json';
+import {getCurrentBibleContent} from './bibleStore';
 
-const books = Array.isArray(offlineBible?.books) ? offlineBible.books : [];
+const currentBible = () => getCurrentBibleContent('rst') || {};
 
-const byId = new Map(books.map((book) => [Number(book.id), book]));
+const currentBooks = () => {
+  const payload = currentBible();
 
-const bySlug = new Map(books.map((book) => [book.slug, book]));
+  return Array.isArray(payload?.books) ? payload.books : [];
+};
+
+const currentIndexes = () => {
+  const books = currentBooks();
+
+  return {
+    books,
+    byId: new Map(books.map((book) => [Number(book.id), book])),
+    bySlug: new Map(books.map((book) => [book.slug, book])),
+  };
+};
 
 const BIBLE_BOOK_DISPLAY_TITLES = {
   MAT: 'Евангелие от Матфея',
@@ -45,9 +57,13 @@ export const BIBLE_SECTION_TITLES = {
 };
 
 export const bibleContent = {
-  translation: offlineBible?.translation || null,
+  get translation() {
+    return currentBible()?.translation || null;
+  },
 
   getBooks(testament = null) {
+    const books = currentBooks();
+
     if (!testament) {
       return books;
     }
@@ -56,6 +72,8 @@ export const bibleContent = {
   },
 
   getBook(bookIdOrSlug) {
+    const {byId, bySlug} = currentIndexes();
+
     if (typeof bookIdOrSlug === 'string' && bySlug.has(bookIdOrSlug)) {
       return bySlug.get(bookIdOrSlug);
     }
