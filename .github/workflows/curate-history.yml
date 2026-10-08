@@ -17,7 +17,7 @@ jobs:
 
     env:
       SOURCE_BRANCH: archive/pre-history-cleanup-2026-10-08
-      TARGET_BRANCH: cleanup/curated-history-v1
+      TARGET_BRANCH: cleanup/curated-history-v2
       EXPECTED_SOURCE_HEAD: 8ab1218432f35d05e21354d7787f8c655b989a75
       MAX_GAP_MINUTES: "30"
 
@@ -81,7 +81,7 @@ jobs:
               rules = [
                   ("bible", r"bible|scripture|verse|chapter|synodal|evangel"),
                   ("calendar", r"calendar|azbyka|feast|saint|cloudinary|holiday|church calendar"),
-                  ("prayer-rule", r"ponomar|ucs|church slavonic|traditional|prayer rule|morning|evening"),
+                  ("prayer-rule", r"ponomar|ucs|church slavonic|traditional|prayer rule|morning|evening|communion"),
                   ("psalter", r"psalter|kathisma|psalm"),
                   ("akathist", r"akathist"),
                   ("canon", r"canon"),
@@ -195,6 +195,20 @@ jobs:
                   f"Safety stop: expected 300..450 curated commits, got {len(groups)}"
               )
 
+          def clean_subject(value):
+              subject = (value or "").strip()
+              subject = re.sub(
+                  r"^(feat|fix|chore|refactor|test|docs|perf|style)(?:\([^)]*\))?:\s*",
+                  "",
+                  subject,
+                  flags=re.IGNORECASE,
+              ).strip()
+
+              if subject:
+                  subject = subject[0].upper() + subject[1:]
+
+              return subject
+
           def message_for(group):
               items = group["items"]
               meaningful = [
@@ -202,7 +216,7 @@ jobs:
                   if item["topic"] != "automation"
               ]
               representative = meaningful[0] if meaningful else items[-1]
-              subject = representative["subject"] or LABELS[group["topic"]]
+              subject = clean_subject(representative["subject"]) or LABELS[group["topic"]]
 
               label = LABELS[group["topic"]]
               if group["topic"] != "general" and label.lower() not in subject.lower():
