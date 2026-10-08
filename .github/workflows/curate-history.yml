@@ -1,0 +1,309 @@
+name: Curate portfolio history
+
+on:
+  push:
+    branches:
+      - cleanup/history-v1
+    paths:
+      - .github/workflows/curate-history.yml
+
+permissions:
+  contents: write
+
+jobs:
+  curate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      SOURCE_BRANCH: archive/pre-history-cleanup-2026-10-08
+      TARGET_BRANCH: cleanup/curated-history-v1
+      EXPECTED_SOURCE_HEAD: 8ab1218432f35d05e21354d7787f8c655b989a75
+      MAX_GAP_MINUTES: "30"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: cleanup/history-v1
+
+      - name: Verify immutable source snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "${SOURCE_BRANCH}" main --prune
+          source_head="$(git rev-parse "origin/${SOURCE_BRANCH}")"
+          main_head="$(git rev-parse origin/main)"
+
+          echo "Source snapshot: ${source_head}"
+          echo "Current main:    ${main_head}"
+
+          test "${source_head}" = "${EXPECTED_SOURCE_HEAD}"
+          test "${main_head}" = "${EXPECTED_SOURCE_HEAD}"
+
+      - name: Build curated linear history
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python3 <<'PY'
+          import os
+          import re
+          import subprocess
+          from datetime import datetime, timezone
+
+          SOURCE = os.environ["SOURCE_BRANCH"]
+          TARGET = os.environ["TARGET_BRANCH"]
+          EXPECTED = os.environ["EXPECTED_SOURCE_HEAD"]
+          MAX_GAP = int(os.environ.get("MAX_GAP_MINUTES", "30"))
+
+          def git(*args, env=None):
+              merged = os.environ.copy()
+              if env:
+                  merged.update(env)
+              return subprocess.check_output(
+                  ["git", *args],
+                  text=True,
+                  env=merged,
+              ).rstrip("\n")
+
+          def classify(subject):
+              s = subject.lower().strip()
+
+              if s in {
+                  "format project source code",
+                  "generate offline calendar bundle",
+                  "refresh bundled mobile content",
+              }:
+                  return "automation"
+
+              rules = [
+                  ("bible", r"bible|scripture|verse|chapter|synodal|evangel"),
+                  ("calendar", r"calendar|azbyka|feast|saint|cloudinary|holiday|church calendar"),
+                  ("prayer-rule", r"ponomar|ucs|church slavonic|traditional|prayer rule|morning|evening"),
+                  ("psalter", r"psalter|kathisma|psalm"),
+                  ("akathist", r"akathist"),
+                  ("canon", r"canon"),
+                  ("personal-prayers", r"prayer book|personal prayer|memorial"),
+                  ("reading-state", r"favorite|saved|bookmark|progress|continue reading|selection"),
+                  ("reader", r"reader|reading|webview|text selection|scroll|typography|book-style|font|highlight"),
+                  ("auth", r"auth|google|account|login|token|user"),
+                  ("ui", r"navigation|screen|menu|header|safe area|layout|spacing|\bui\b|style|icon|onboarding|home"),
+                  ("backend-sync", r"supabase|sync|\bapi\b|serializer|backend|endpoint|migration|content"),
+                  ("build", r"build|android|expo|version|release|\bapk\b|\beas\b|bundle"),
+              ]
+
+              for name, pattern in rules:
+                  if re.search(pattern, s):
+                      return name
+
+              return "general"
+
+          LABELS = {
+              "bible": "Bible",
+              "calendar": "Calendar",
+              "prayer-rule": "Prayer rules",
+              "psalter": "Psalter",
+              "akathist": "Akathists",
+              "canon": "Canons",
+              "personal-prayers": "Personal prayers",
+              "reading-state": "Reading state",
+              "reader": "Reader",
+              "auth": "Auth",
+              "ui": "UI",
+              "backend-sync": "Backend sync",
+              "build": "Build",
+              "general": "Project",
+              "automation": "Maintenance",
+          }
+
+          def parse_commit(sha):
+              fmt = "%T%x00%an%x00%ae%x00%aI%x00%cn%x00%ce%x00%cI%x00%s"
+              raw = git("show", "-s", f"--format={fmt}", sha)
+              tree, an, ae, ad, cn, ce, cd, subject = raw.split("\x00", 7)
+              return {
+                  "sha": sha,
+                  "tree": tree,
+                  "author_name": an,
+                  "author_email": ae,
+                  "author_date": ad,
+                  "committer_name": cn,
+                  "committer_email": ce,
+                  "committer_date": cd,
+                  "subject": subject.strip(),
+                  "topic": classify(subject),
+              }
+
+          source_ref = f"origin/{SOURCE}"
+          source_head = git("rev-parse", source_ref)
+          if source_head != EXPECTED:
+              raise SystemExit(f"Source snapshot moved: {source_head} != {EXPECTED}")
+
+          shas = git("rev-list", "--reverse", "--first-parent", source_ref).splitlines()
+          commits = [parse_commit(sha) for sha in shas]
+
+          groups = []
+          for index, commit in enumerate(commits):
+              dt = datetime.fromisoformat(commit["committer_date"].replace("Z", "+00:00"))
+
+              if index == 0:
+                  groups.append({
+                      "topic": commit["topic"],
+                      "start": dt,
+                      "end": dt,
+                      "items": [commit],
+                  })
+                  continue
+
+              prev = groups[-1]
+              same_day = dt.date() == prev["end"].date()
+              gap_minutes = (dt - prev["end"]).total_seconds() / 60.0
+              topic = commit["topic"]
+
+              merge_same = (
+                  topic == prev["topic"]
+                  and same_day
+                  and gap_minutes <= MAX_GAP
+              )
+              merge_automation = (
+                  topic == "automation"
+                  and same_day
+                  and gap_minutes <= MAX_GAP
+              )
+              merge_into_automation = (
+                  prev["topic"] == "automation"
+                  and same_day
+                  and gap_minutes <= MAX_GAP
+              )
+
+              if merge_same or merge_automation or merge_into_automation:
+                  if prev["topic"] == "automation" and topic != "automation":
+                      prev["topic"] = topic
+                  prev["items"].append(commit)
+                  prev["end"] = dt
+              else:
+                  groups.append({
+                      "topic": topic,
+                      "start": dt,
+                      "end": dt,
+                      "items": [commit],
+                  })
+
+          if not 300 <= len(groups) <= 450:
+              raise SystemExit(
+                  f"Safety stop: expected 300..450 curated commits, got {len(groups)}"
+              )
+
+          def message_for(group):
+              items = group["items"]
+              meaningful = [
+                  item for item in items
+                  if item["topic"] != "automation"
+              ]
+              representative = meaningful[0] if meaningful else items[-1]
+              subject = representative["subject"] or LABELS[group["topic"]]
+
+              label = LABELS[group["topic"]]
+              if group["topic"] != "general" and label.lower() not in subject.lower():
+                  subject = f"{label}: {subject[0].lower() + subject[1:] if subject else 'related changes'}"
+
+              unique = []
+              seen = set()
+              for item in items:
+                  s = item["subject"].strip()
+                  if not s or s.lower() in {
+                      "format project source code",
+                      "generate offline calendar bundle",
+                  }:
+                      continue
+                  if s not in seen:
+                      seen.add(s)
+                      unique.append(s)
+
+              if len(items) == 1:
+                  return subject
+
+              lines = [subject, "", f"Consolidates {len(items)} related source commits."]
+              for s in unique[:8]:
+                  lines.append(f"- {s}")
+              if len(unique) > 8:
+                  lines.append(f"- … and {len(unique) - 8} more related changes")
+              return "\n".join(lines)
+
+          parent = None
+          for group in groups:
+              last = group["items"][-1]
+              representative = next(
+                  (item for item in group["items"] if item["topic"] != "automation"),
+                  last,
+              )
+
+              env = {
+                  "GIT_AUTHOR_NAME": representative["author_name"],
+                  "GIT_AUTHOR_EMAIL": representative["author_email"],
+                  "GIT_AUTHOR_DATE": representative["author_date"],
+                  "GIT_COMMITTER_NAME": representative["committer_name"],
+                  "GIT_COMMITTER_EMAIL": representative["committer_email"],
+                  "GIT_COMMITTER_DATE": last["committer_date"],
+              }
+
+              args = ["commit-tree", last["tree"]]
+              if parent:
+                  args.extend(["-p", parent])
+
+              commit_message = message_for(group)
+              proc = subprocess.run(
+                  ["git", *args],
+                  input=commit_message + "\n",
+                  text=True,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+                  env={**os.environ, **env},
+                  check=True,
+              )
+              parent = proc.stdout.strip()
+
+          curated_head = parent
+          source_tree = git("rev-parse", f"{source_ref}^{{tree}}")
+          curated_tree = git("rev-parse", f"{curated_head}^{{tree}}")
+
+          if source_tree != curated_tree:
+              raise SystemExit(
+                  f"Tree mismatch: source={source_tree}, curated={curated_tree}"
+              )
+
+          curated_count = int(git("rev-list", "--count", curated_head))
+          if curated_count != len(groups):
+              raise SystemExit(
+                  f"Unexpected curated count: {curated_count} != {len(groups)}"
+              )
+
+          print(f"Source first-parent commits: {len(commits)}")
+          print(f"Curated commits: {curated_count}")
+          print(f"Source tree: {source_tree}")
+          print(f"Curated tree: {curated_tree}")
+          print(f"Curated head: {curated_head}")
+
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as fh:
+              fh.write(f"CURATED_HEAD={curated_head}\n")
+              fh.write(f"CURATED_COUNT={curated_count}\n")
+              fh.write(f"SOURCE_TREE={source_tree}\n")
+          PY
+
+      - name: Push curated branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git push --force origin "${CURATED_HEAD}:refs/heads/${TARGET_BRANCH}"
+
+      - name: Verify remote curated tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "${TARGET_BRANCH}"
+          remote_tree="$(git rev-parse "origin/${TARGET_BRANCH}^{tree}")"
+          test "${remote_tree}" = "${SOURCE_TREE}"
+          echo "Curated branch: ${TARGET_BRANCH}"
+          echo "Curated commits: ${CURATED_COUNT}"
+          echo "Verified tree: ${remote_tree}"
