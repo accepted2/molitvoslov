@@ -34,10 +34,10 @@ export const addSearchHistory = async (query) => {
   const current = await getSearchHistory();
   const normalized = normalizeSearchText(clean);
 
-  const next = [
-    clean,
-    ...current.filter((item) => normalizeSearchText(item) !== normalized),
-  ].slice(0, MAX_HISTORY_ITEMS);
+  const next = [clean, ...current.filter((item) => normalizeSearchText(item) !== normalized)].slice(
+    0,
+    MAX_HISTORY_ITEMS
+  );
 
   await AsyncStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(next));
 

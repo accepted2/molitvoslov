@@ -455,7 +455,6 @@ export const SearchScreen = ({navigation}) => {
                 <Text style={styles.centerText}>{copy.start}</Text>
               </>
             )}
-
           </View>
         ) : queryTooShort ? (
           <View style={styles.center}>

@@ -1063,8 +1063,7 @@ const getQueryTokens = (normalizedQuery) =>
     )
   );
 
-const bibleCorpusKey = (bible) =>
-  String(bible?.content_version || bible?.generated_at || 'bible');
+const bibleCorpusKey = (bible) => String(bible?.content_version || bible?.generated_at || 'bible');
 
 export const prepareBibleSearchCorpus = async ({
   chunkSize = 900,
