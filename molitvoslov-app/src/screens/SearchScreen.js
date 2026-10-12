@@ -18,11 +18,7 @@ import {AppBackground} from '../components/layout/AppBackground';
 import {useLanguage} from '../context/LanguageContext';
 import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {subscribeToContentUpdates} from '../services/contentStore';
-import {
-  addSearchHistory,
-  clearSearchHistory,
-  getSearchHistory,
-} from '../services/searchHistory';
+import {addSearchHistory, clearSearchHistory, getSearchHistory} from '../services/searchHistory';
 import {
   SEARCH_GROUPS,
   SEARCH_GROUP_OPTIONS,
@@ -332,176 +328,176 @@ export const SearchScreen = ({navigation}) => {
       <View style={styles.screen}>
         <StatusBar style="dark" translucent backgroundColor="transparent" />
 
-      <View
-        style={[
-          styles.searchPanel,
-          {
-            paddingTop: headerHeight + 8,
-          },
-        ]}
-      >
-        <View style={styles.inputWrap}>
-          <SearchIcon />
-
-          <TextInput
-            autoFocus
-            value={query}
-            onChangeText={setQuery}
-            placeholder={copy.placeholder}
-            placeholderTextColor="#9B806A"
-            autoCorrect={false}
-            autoCapitalize="none"
-            returnKeyType="search"
-            onSubmitEditing={submitSearch}
-            selectionColor="#A16E35"
-            style={styles.input}
-          />
-
-          {!!query && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Очистить поиск"
-              onPress={() => setQuery('')}
-              hitSlop={8}
-              style={({pressed}) => [styles.clearButton, pressed && styles.pressed]}
-            >
-              <Text style={styles.clearText}>×</Text>
-            </Pressable>
-          )}
-        </View>
-
-        <Text style={styles.searchHint}>{copy.hint}</Text>
-
-        <View style={styles.tabsContent}>
-          {tabs.map((tab) => {
-            const active = tab.key === activeGroup;
-
-            return (
-              <Pressable
-                key={tab.key}
-                onPress={() => setActiveGroup(tab.key)}
-                style={({pressed}) => [
-                  styles.tab,
-                  active && styles.tabActive,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {!!suggestions.length && trimmedQuery.length > 0 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyboardShouldPersistTaps="always"
-            contentContainerStyle={styles.suggestionsContent}
-          >
-            {suggestions.map((suggestion) => (
-              <Pressable
-                key={suggestion}
-                onPress={() => setQuery(suggestion)}
-                style={({pressed}) => [styles.suggestion, pressed && styles.pressed]}
-              >
-                <HighlightedText
-                  text={suggestion}
-                  query={query}
-                  style={styles.suggestionText}
-                  highlightStyle={styles.suggestionHighlight}
-                  numberOfLines={1}
-                />
-              </Pressable>
-            ))}
-          </ScrollView>
-        )}
-
-        {!waitingForQuery && !queryTooShort && !indexLoading && (
-          <View style={styles.countRow}>
-            {searchLoading ? (
-              <>
-                <ActivityIndicator size="small" color="#A16E35" />
-                <Text style={styles.countText}>Ищем…</Text>
-              </>
-            ) : result.total > 0 ? (
-              <Text style={styles.countText}>{copy.found(result.total)}</Text>
-            ) : null}
-          </View>
-        )}
-      </View>
-
-      {waitingForQuery ? (
-        <View style={styles.emptyState}>
-          {!!history.length ? (
-            <View style={styles.historyCard}>
-              <View style={styles.historyHeader}>
-                <Text style={styles.historyTitle}>{copy.recent}</Text>
-
-                <Pressable
-                  onPress={clearHistory}
-                  hitSlop={8}
-                  style={({pressed}) => [styles.historyClear, pressed && styles.pressed]}
-                >
-                  <Text style={styles.historyClearText}>{copy.clearRecent}</Text>
-                </Pressable>
-              </View>
-
-              <View style={styles.historyChips}>
-                {history.map((item) => (
-                  <Pressable
-                    key={item}
-                    onPress={() => setQuery(item)}
-                    style={({pressed}) => [styles.historyChip, pressed && styles.pressed]}
-                  >
-                    <Text style={styles.historyChipText}>{item}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-          ) : (
-            <>
-              <Text style={styles.emptyGlyph}>⌕</Text>
-              <Text style={styles.centerText}>{copy.start}</Text>
-            </>
-          )}
-
-          {indexLoading && <Text style={styles.indexHint}>{copy.preparing}</Text>}
-        </View>
-      ) : queryTooShort ? (
-        <View style={styles.center}>
-          <Text style={styles.centerText}>{copy.short}</Text>
-        </View>
-      ) : indexLoading || searchLoading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#A16E35" />
-          <Text style={styles.centerText}>Ищем по библиотеке…</Text>
-        </View>
-      ) : showEmpty ? (
-        <View style={styles.center}>
-          <Text style={styles.emptyGlyph}>⌕</Text>
-          <Text style={styles.centerText}>{copy.empty}</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={result.items}
-          keyExtractor={(item) => item.id}
-          renderItem={renderResult}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          contentContainerStyle={[
-            styles.results,
+        <View
+          style={[
+            styles.searchPanel,
             {
-              paddingBottom: 28 + insets.bottom,
+              paddingTop: headerHeight + 8,
             },
           ]}
-          ListFooterComponent={
-            result.total > result.items.length ? (
-              <Text style={styles.moreText}>{copy.more}</Text>
-            ) : null
-          }
-        />
-      )}
+        >
+          <View style={styles.inputWrap}>
+            <SearchIcon />
+
+            <TextInput
+              autoFocus
+              value={query}
+              onChangeText={setQuery}
+              placeholder={copy.placeholder}
+              placeholderTextColor="#9B806A"
+              autoCorrect={false}
+              autoCapitalize="none"
+              returnKeyType="search"
+              onSubmitEditing={submitSearch}
+              selectionColor="#A16E35"
+              style={styles.input}
+            />
+
+            {!!query && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Очистить поиск"
+                onPress={() => setQuery('')}
+                hitSlop={8}
+                style={({pressed}) => [styles.clearButton, pressed && styles.pressed]}
+              >
+                <Text style={styles.clearText}>×</Text>
+              </Pressable>
+            )}
+          </View>
+
+          <Text style={styles.searchHint}>{copy.hint}</Text>
+
+          <View style={styles.tabsContent}>
+            {tabs.map((tab) => {
+              const active = tab.key === activeGroup;
+
+              return (
+                <Pressable
+                  key={tab.key}
+                  onPress={() => setActiveGroup(tab.key)}
+                  style={({pressed}) => [
+                    styles.tab,
+                    active && styles.tabActive,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {!!suggestions.length && trimmedQuery.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyboardShouldPersistTaps="always"
+              contentContainerStyle={styles.suggestionsContent}
+            >
+              {suggestions.map((suggestion) => (
+                <Pressable
+                  key={suggestion}
+                  onPress={() => setQuery(suggestion)}
+                  style={({pressed}) => [styles.suggestion, pressed && styles.pressed]}
+                >
+                  <HighlightedText
+                    text={suggestion}
+                    query={query}
+                    style={styles.suggestionText}
+                    highlightStyle={styles.suggestionHighlight}
+                    numberOfLines={1}
+                  />
+                </Pressable>
+              ))}
+            </ScrollView>
+          )}
+
+          {!waitingForQuery && !queryTooShort && !indexLoading && (
+            <View style={styles.countRow}>
+              {searchLoading ? (
+                <>
+                  <ActivityIndicator size="small" color="#A16E35" />
+                  <Text style={styles.countText}>Ищем…</Text>
+                </>
+              ) : result.total > 0 ? (
+                <Text style={styles.countText}>{copy.found(result.total)}</Text>
+              ) : null}
+            </View>
+          )}
+        </View>
+
+        {waitingForQuery ? (
+          <View style={styles.emptyState}>
+            {!!history.length ? (
+              <View style={styles.historyCard}>
+                <View style={styles.historyHeader}>
+                  <Text style={styles.historyTitle}>{copy.recent}</Text>
+
+                  <Pressable
+                    onPress={clearHistory}
+                    hitSlop={8}
+                    style={({pressed}) => [styles.historyClear, pressed && styles.pressed]}
+                  >
+                    <Text style={styles.historyClearText}>{copy.clearRecent}</Text>
+                  </Pressable>
+                </View>
+
+                <View style={styles.historyChips}>
+                  {history.map((item) => (
+                    <Pressable
+                      key={item}
+                      onPress={() => setQuery(item)}
+                      style={({pressed}) => [styles.historyChip, pressed && styles.pressed]}
+                    >
+                      <Text style={styles.historyChipText}>{item}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.emptyGlyph}>⌕</Text>
+                <Text style={styles.centerText}>{copy.start}</Text>
+              </>
+            )}
+
+            {indexLoading && <Text style={styles.indexHint}>{copy.preparing}</Text>}
+          </View>
+        ) : queryTooShort ? (
+          <View style={styles.center}>
+            <Text style={styles.centerText}>{copy.short}</Text>
+          </View>
+        ) : indexLoading || searchLoading ? (
+          <View style={styles.center}>
+            <ActivityIndicator size="large" color="#A16E35" />
+            <Text style={styles.centerText}>Ищем по библиотеке…</Text>
+          </View>
+        ) : showEmpty ? (
+          <View style={styles.center}>
+            <Text style={styles.emptyGlyph}>⌕</Text>
+            <Text style={styles.centerText}>{copy.empty}</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={result.items}
+            keyExtractor={(item) => item.id}
+            renderItem={renderResult}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            contentContainerStyle={[
+              styles.results,
+              {
+                paddingBottom: 28 + insets.bottom,
+              },
+            ]}
+            ListFooterComponent={
+              result.total > result.items.length ? (
+                <Text style={styles.moreText}>{copy.more}</Text>
+              ) : null
+            }
+          />
+        )}
 
         <FixedSectionHeader title={copy.title} navigation={navigation} topInset={insets.top} />
       </View>
@@ -828,7 +824,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-    center: {
+  center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',

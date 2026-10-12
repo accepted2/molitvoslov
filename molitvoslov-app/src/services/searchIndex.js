@@ -861,8 +861,7 @@ export const buildSearchIndex = (language = 'ru') => {
           preview: chapterPreview,
         })
       );
-
-});
+    });
   });
 
   cachedKey = cacheKey;
