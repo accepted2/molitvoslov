@@ -21,6 +21,8 @@ on:
       - molitvoslov-app/src/screens/PrayerRuleScreen.js
       - molitvoslov-app/src/navigation/AppNavigator.js
       - molitvoslov-app/src/screens/MenuScreen.js
+      - molitvoslov-app/src/screens/SearchScreen.js
+      - molitvoslov-app/src/services/searchIndex.js
       - molitvoslov-app/src/screens/ContinueReadingScreen.js
       - molitvoslov-app/src/screens/FavoritesScreen.js
       - molitvoslov-backend/api/akathist_curated.py
