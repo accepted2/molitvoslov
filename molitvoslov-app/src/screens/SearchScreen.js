@@ -2,7 +2,6 @@ import React, {useDeferredValue, useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  InteractionManager,
   Keyboard,
   Pressable,
   ScrollView,
@@ -86,6 +85,22 @@ const SearchIcon = () => (
   </View>
 );
 
+const scheduleIdleTask = (callback) => {
+  if (typeof globalThis.requestIdleCallback === 'function') {
+    const taskId = globalThis.requestIdleCallback(callback, {timeout: 500});
+
+    return () => {
+      if (typeof globalThis.cancelIdleCallback === 'function') {
+        globalThis.cancelIdleCallback(taskId);
+      }
+    };
+  }
+
+  const timeoutId = setTimeout(callback, 0);
+
+  return () => clearTimeout(timeoutId);
+};
+
 export const SearchScreen = ({navigation}) => {
   const {language} = useLanguage();
   const insets = useSafeAreaInsets();
@@ -113,7 +128,7 @@ export const SearchScreen = ({navigation}) => {
     let active = true;
     setIndexLoading(true);
 
-    const task = InteractionManager.runAfterInteractions(() => {
+    const cancelTask = scheduleIdleTask(() => {
       if (!active) {
         return;
       }
@@ -129,7 +144,7 @@ export const SearchScreen = ({navigation}) => {
 
     return () => {
       active = false;
-      task.cancel?.();
+      cancelTask();
     };
   }, [language, publicGeneration, bibleGeneration]);
 
