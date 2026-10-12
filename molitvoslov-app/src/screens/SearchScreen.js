@@ -14,9 +14,15 @@ import {StatusBar} from 'expo-status-bar';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {AppBackground} from '../components/layout/AppBackground';
 import {useLanguage} from '../context/LanguageContext';
 import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {subscribeToContentUpdates} from '../services/contentStore';
+import {
+  addSearchHistory,
+  clearSearchHistory,
+  getSearchHistory,
+} from '../services/searchHistory';
 import {
   SEARCH_GROUPS,
   SEARCH_GROUP_OPTIONS,
@@ -37,6 +43,9 @@ const copyForLanguage = (language) =>
         empty: 'Нічого не знайдено.',
         found: (count) => `Знайдено: ${count}`,
         more: 'Показано перші результати. Уточніть запит, щоб звузити пошук.',
+        recent: 'Недавні пошуки',
+        clearRecent: 'Очистити',
+        preparing: 'Пошук стане доступним за мить…',
         tabs: {
           all: 'Усе',
           prayers: 'Молитви',
@@ -55,6 +64,9 @@ const copyForLanguage = (language) =>
         empty: 'Ничего не найдено.',
         found: (count) => `Найдено: ${count}`,
         more: 'Показаны первые результаты. Уточните запрос, чтобы сузить поиск.',
+        recent: 'Недавние запросы',
+        clearRecent: 'Очистить',
+        preparing: 'Поиск станет доступен через мгновение…',
         tabs: {
           all: 'Все',
           prayers: 'Молитвы',
@@ -118,6 +130,7 @@ export const SearchScreen = ({navigation}) => {
     items: [],
     total: 0,
   });
+  const [history, setHistory] = useState([]);
 
   const copy = useMemo(() => copyForLanguage(language), [language]);
 
@@ -128,6 +141,10 @@ export const SearchScreen = ({navigation}) => {
       }),
     []
   );
+
+  useEffect(() => {
+    getSearchHistory().then(setHistory);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -226,6 +243,16 @@ export const SearchScreen = ({navigation}) => {
     [copy]
   );
 
+  const rememberQuery = async (value = query) => {
+    const clean = String(value || '').trim();
+
+    if (clean.length < 2) {
+      return;
+    }
+
+    setHistory(await addSearchHistory(clean));
+  };
+
   const openResult = (item) => {
     Keyboard.dismiss();
 
@@ -233,7 +260,18 @@ export const SearchScreen = ({navigation}) => {
       return;
     }
 
+    rememberQuery();
     navigation.navigate(item.route.name, item.route.params || {});
+  };
+
+  const submitSearch = () => {
+    rememberQuery();
+    Keyboard.dismiss();
+  };
+
+  const clearHistory = async () => {
+    await clearSearchHistory();
+    setHistory([]);
   };
 
   const renderResult = ({item}) => (
@@ -290,8 +328,9 @@ export const SearchScreen = ({navigation}) => {
     !indexLoading && !searchLoading && !waitingForQuery && !queryTooShort && result.total === 0;
 
   return (
-    <View style={styles.screen}>
-      <StatusBar style="dark" translucent backgroundColor="transparent" />
+    <AppBackground imageOpacity={0.42}>
+      <View style={styles.screen}>
+        <StatusBar style="dark" translucent backgroundColor="transparent" />
 
       <View
         style={[
@@ -313,6 +352,7 @@ export const SearchScreen = ({navigation}) => {
             autoCorrect={false}
             autoCapitalize="none"
             returnKeyType="search"
+            onSubmitEditing={submitSearch}
             selectionColor="#A16E35"
             style={styles.input}
           />
@@ -332,12 +372,7 @@ export const SearchScreen = ({navigation}) => {
 
         <Text style={styles.searchHint}>{copy.hint}</Text>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabsContent}
-          keyboardShouldPersistTaps="handled"
-        >
+        <View style={styles.tabsContent}>
           {tabs.map((tab) => {
             const active = tab.key === activeGroup;
 
@@ -355,7 +390,7 @@ export const SearchScreen = ({navigation}) => {
               </Pressable>
             );
           })}
-        </ScrollView>
+        </View>
 
         {!!suggestions.length && trimmedQuery.length > 0 && (
           <ScrollView
@@ -396,21 +431,48 @@ export const SearchScreen = ({navigation}) => {
         )}
       </View>
 
-      {indexLoading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#A16E35" />
-          <Text style={styles.centerText}>Подготавливаем поиск…</Text>
-        </View>
-      ) : waitingForQuery ? (
-        <View style={styles.center}>
-          <Text style={styles.emptyGlyph}>⌕</Text>
-          <Text style={styles.centerText}>{copy.start}</Text>
+      {waitingForQuery ? (
+        <View style={styles.emptyState}>
+          {!!history.length ? (
+            <View style={styles.historyCard}>
+              <View style={styles.historyHeader}>
+                <Text style={styles.historyTitle}>{copy.recent}</Text>
+
+                <Pressable
+                  onPress={clearHistory}
+                  hitSlop={8}
+                  style={({pressed}) => [styles.historyClear, pressed && styles.pressed]}
+                >
+                  <Text style={styles.historyClearText}>{copy.clearRecent}</Text>
+                </Pressable>
+              </View>
+
+              <View style={styles.historyChips}>
+                {history.map((item) => (
+                  <Pressable
+                    key={item}
+                    onPress={() => setQuery(item)}
+                    style={({pressed}) => [styles.historyChip, pressed && styles.pressed]}
+                  >
+                    <Text style={styles.historyChipText}>{item}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.emptyGlyph}>⌕</Text>
+              <Text style={styles.centerText}>{copy.start}</Text>
+            </>
+          )}
+
+          {indexLoading && <Text style={styles.indexHint}>{copy.preparing}</Text>}
         </View>
       ) : queryTooShort ? (
         <View style={styles.center}>
           <Text style={styles.centerText}>{copy.short}</Text>
         </View>
-      ) : searchLoading ? (
+      ) : indexLoading || searchLoading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#A16E35" />
           <Text style={styles.centerText}>Ищем по библиотеке…</Text>
@@ -441,15 +503,16 @@ export const SearchScreen = ({navigation}) => {
         />
       )}
 
-      <FixedSectionHeader title={copy.title} navigation={navigation} topInset={insets.top} />
-    </View>
+        <FixedSectionHeader title={copy.title} navigation={navigation} topInset={insets.top} />
+      </View>
+    </AppBackground>
   );
 };
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#FFF4DE',
+    backgroundColor: 'rgba(255, 244, 222, 0.64)',
   },
 
   searchPanel: {
@@ -457,7 +520,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(123, 79, 36, 0.16)',
-    backgroundColor: '#FFF4DE',
+    backgroundColor: 'rgba(255, 244, 222, 0.88)',
   },
 
   inputWrap: {
@@ -524,9 +587,10 @@ const styles = StyleSheet.create({
   },
 
   tabsContent: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 7,
     paddingTop: 9,
-    paddingRight: 12,
   },
 
   tab: {
@@ -694,7 +758,77 @@ const styles = StyleSheet.create({
     lineHeight: 28,
   },
 
-  center: {
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+  },
+
+  historyCard: {
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(123, 79, 36, 0.18)',
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 244, 222, 0.88)',
+  },
+
+  historyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 11,
+  },
+
+  historyTitle: {
+    color: '#4A3121',
+    fontFamily: 'serif',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+
+  historyClear: {
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
+
+  historyClearText: {
+    color: '#9B6D46',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  historyChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+
+  historyChip: {
+    minHeight: 34,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    borderRadius: 17,
+    backgroundColor: 'rgba(161, 110, 53, 0.11)',
+    borderWidth: 1,
+    borderColor: 'rgba(123, 79, 36, 0.13)',
+  },
+
+  historyChipText: {
+    maxWidth: 250,
+    color: '#68452F',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
+  indexHint: {
+    marginTop: 14,
+    color: '#9B806A',
+    fontSize: 11,
+    lineHeight: 15,
+    textAlign: 'center',
+  },
+
+    center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',

@@ -862,51 +862,7 @@ export const buildSearchIndex = (language = 'ru') => {
         })
       );
 
-      (chapter.verses || []).forEach((verse) => {
-        entries.push(
-          makeEntry({
-            id: `bible:${book.id}:${chapter.id}:${verse.id}`,
-            group: SEARCH_GROUPS.SCRIPTURE,
-            kind: 'bible-verse',
-            title: `${displayName} ${chapter.number}:${verse.number}`,
-            source: `Писание · ${sectionLabel}`,
-            searchTitle: false,
-            fields: compactFields([
-              field(`${displayName} ${chapter.number}:${verse.number}`, '', 'reference', 680),
-              field(
-                `${book.short_name || displayName} ${chapter.number}:${verse.number}`,
-                '',
-                'reference',
-                660
-              ),
-              field(verse.text, 'russian', 'content', 150),
-            ]),
-            route: {
-              name: 'BibleChapter',
-              params: {
-                bookId: Number(book.id),
-                chapterNumber: Number(chapter.number),
-                resume: false,
-                focusTarget: {
-                  save_type: 'fragment',
-                  anchor_type: 'bible_verse',
-                  anchor_id: Number(verse.id),
-                  start_offset: null,
-                  end_offset: null,
-                  metadata: {
-                    book_id: Number(book.id),
-                    book_slug: book.slug,
-                    chapter_number: Number(chapter.number),
-                    verse_number: Number(verse.number),
-                  },
-                },
-              },
-            },
-            preview: previewText(verse.text),
-          })
-        );
-      });
-    });
+});
   });
 
   cachedKey = cacheKey;
@@ -1085,6 +1041,83 @@ export const searchIndex = (index, query, {group = SEARCH_GROUPS.ALL, limit = 10
 
 const yieldToSearchUI = () => new Promise((resolve) => setTimeout(resolve, 0));
 
+const searchBibleVersesAsync = async ({
+  query,
+  normalizedQuery,
+  tokens,
+  isCancelled,
+  chunkSize = 500,
+}) => {
+  const bible = getCurrentBibleContent('rst') || {};
+  const matches = [];
+  let processed = 0;
+
+  for (const book of bible.books || []) {
+    const displayName = bibleContent.getDisplayName(book);
+    const sectionLabel = bibleSectionLabel(book.section);
+
+    for (const chapter of book.chapters || []) {
+      for (const verse of chapter.verses || []) {
+        if (isCancelled()) {
+          return null;
+        }
+
+        const reference = `${displayName} ${chapter.number}:${verse.number}`;
+        const shortReference = `${book.short_name || displayName} ${chapter.number}:${verse.number}`;
+        const verseEntry = makeEntry({
+          id: `bible:${book.id}:${chapter.id}:${verse.id}`,
+          group: SEARCH_GROUPS.SCRIPTURE,
+          kind: 'bible-verse',
+          title: reference,
+          source: `Писание · ${sectionLabel}`,
+          searchTitle: false,
+          fields: compactFields([
+            field(reference, '', 'reference', 680),
+            field(shortReference, '', 'reference', 660),
+            field(verse.text, 'russian', 'content', 150),
+          ]),
+          route: {
+            name: 'BibleChapter',
+            params: {
+              bookId: Number(book.id),
+              chapterNumber: Number(chapter.number),
+              resume: false,
+              focusTarget: {
+                save_type: 'fragment',
+                anchor_type: 'bible_verse',
+                anchor_id: Number(verse.id),
+                start_offset: null,
+                end_offset: null,
+                metadata: {
+                  book_id: Number(book.id),
+                  book_slug: book.slug,
+                  chapter_number: Number(chapter.number),
+                  verse_number: Number(verse.number),
+                },
+              },
+            },
+          },
+          preview: previewText(verse.text),
+        });
+
+        const result = buildSearchResult(verseEntry, query, normalizedQuery, tokens);
+
+        if (result) {
+          matches.push(result);
+        }
+
+        processed += 1;
+
+        if (processed % chunkSize === 0) {
+          await yieldToSearchUI();
+        }
+      }
+    }
+  }
+
+  return matches;
+};
+
 export const searchIndexAsync = async (
   index,
   query,
@@ -1128,6 +1161,21 @@ export const searchIndexAsync = async (
 
   if (isCancelled()) {
     return null;
+  }
+
+  if (group === SEARCH_GROUPS.ALL || group === SEARCH_GROUPS.SCRIPTURE) {
+    const bibleMatches = await searchBibleVersesAsync({
+      query,
+      normalizedQuery,
+      tokens,
+      isCancelled,
+    });
+
+    if (bibleMatches === null || isCancelled()) {
+      return null;
+    }
+
+    matches.push(...bibleMatches);
   }
 
   await yieldToSearchUI();
