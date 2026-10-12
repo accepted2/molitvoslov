@@ -872,12 +872,7 @@ export const buildSearchIndex = (language = 'ru') => {
             source: `Писание · ${sectionLabel}`,
             searchTitle: false,
             fields: compactFields([
-              field(
-                `${displayName} ${chapter.number}:${verse.number}`,
-                '',
-                'reference',
-                680
-              ),
+              field(`${displayName} ${chapter.number}:${verse.number}`, '', 'reference', 680),
               field(
                 `${book.short_name || displayName} ${chapter.number}:${verse.number}`,
                 '',
@@ -1093,12 +1088,7 @@ const yieldToSearchUI = () => new Promise((resolve) => setTimeout(resolve, 0));
 export const searchIndexAsync = async (
   index,
   query,
-  {
-    group = SEARCH_GROUPS.ALL,
-    limit = 100,
-    chunkSize = 650,
-    isCancelled = () => false,
-  } = {}
+  {group = SEARCH_GROUPS.ALL, limit = 100, chunkSize = 650, isCancelled = () => false} = {}
 ) => {
   const normalizedQuery = normalizeSearchText(query);
 
@@ -1111,7 +1101,9 @@ export const searchIndexAsync = async (
 
   const tokens = Array.from(new Set(normalizedQuery.split(' ').filter(Boolean)));
   const entries =
-    group === SEARCH_GROUPS.ALL ? index || [] : (index || []).filter((entry) => entry.group === group);
+    group === SEARCH_GROUPS.ALL
+      ? index || []
+      : (index || []).filter((entry) => entry.group === group);
   const matches = [];
 
   for (let offset = 0; offset < entries.length; offset += chunkSize) {
@@ -1122,12 +1114,7 @@ export const searchIndexAsync = async (
     const end = Math.min(entries.length, offset + chunkSize);
 
     for (let entryIndex = offset; entryIndex < end; entryIndex += 1) {
-      const result = buildSearchResult(
-        entries[entryIndex],
-        query,
-        normalizedQuery,
-        tokens
-      );
+      const result = buildSearchResult(entries[entryIndex], query, normalizedQuery, tokens);
 
       if (result) {
         matches.push(result);

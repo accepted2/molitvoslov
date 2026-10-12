@@ -287,11 +287,7 @@ export const SearchScreen = ({navigation}) => {
   const waitingForQuery = !trimmedQuery;
   const queryTooShort = !!trimmedQuery && trimmedQuery.length < 2;
   const showEmpty =
-    !indexLoading &&
-    !searchLoading &&
-    !waitingForQuery &&
-    !queryTooShort &&
-    result.total === 0;
+    !indexLoading && !searchLoading && !waitingForQuery && !queryTooShort && result.total === 0;
 
   return (
     <View style={styles.screen}>
