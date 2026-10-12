@@ -58,6 +58,12 @@ const foldWithMap = (value) => {
   for (let sourceIndex = 0; sourceIndex < source.length; ) {
     const codePoint = source.codePointAt(sourceIndex);
     const originalChar = String.fromCodePoint(codePoint);
+
+    if (COMBINING_MARK.test(originalChar)) {
+      sourceIndex += originalChar.length;
+      continue;
+    }
+
     const decomposed = originalChar.normalize('NFD').toLowerCase();
 
     let addedCharacter = false;
