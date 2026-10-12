@@ -840,7 +840,7 @@ const hasWholeToken = (value, token) => {
     return false;
   }
 
-  return (` ${value} `).includes(` ${token} `);
+  return ` ${value} `.includes(` ${token} `);
 };
 
 const firstMatchField = (entry, normalizedQuery, tokens) => {
