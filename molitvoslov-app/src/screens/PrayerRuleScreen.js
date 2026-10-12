@@ -137,12 +137,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     return () => {
       active = false;
     };
-  }, [
-    rule,
-    slug,
-    hasRussianTranslation,
-    hasTraditionalTranslation,
-  ]);
+  }, [rule, slug, hasRussianTranslation, hasTraditionalTranslation]);
 
   const handleViewModeChange = useCallback(
     (nextMode) => {

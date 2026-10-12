@@ -6230,18 +6230,17 @@ const buildHtml = ({
 
     focusTarget: focusTarget || null,
 
-    progress:
-      restoreProgress?.anchorId
+    progress: restoreProgress?.anchorId
+      ? {
+          anchorId: Number(restoreProgress.anchorId),
+          offset: Number(restoreProgress.offset || 0),
+        }
+      : savedProgress?.anchor_type === 'prayer_rule_item'
         ? {
-            anchorId: Number(restoreProgress.anchorId),
-            offset: Number(restoreProgress.offset || 0),
+            anchorId: Number(savedProgress.anchor_id),
+            offset: Number(savedProgress.offset || 0),
           }
-        : savedProgress?.anchor_type === 'prayer_rule_item'
-          ? {
-              anchorId: Number(savedProgress.anchor_id),
-              offset: Number(savedProgress.offset || 0),
-            }
-          : null,
+        : null,
   };
 
   return HTML_TEMPLATE.replace(
