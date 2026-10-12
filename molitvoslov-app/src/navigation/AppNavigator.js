@@ -3,6 +3,7 @@ import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 
 import {MenuScreen} from '../screens/MenuScreen';
+import {SearchScreen} from '../screens/SearchScreen';
 import {CategoryMenuScreen} from '../screens/CategoryMenuScreen';
 import {TextsListScreen} from '../screens/TextsListScreen';
 import {ReaderScreen} from '../screens/ReaderScreen';
@@ -113,6 +114,14 @@ export const AppNavigator = () => {
         <Stack.Screen
           name="Menu"
           component={MenuScreen}
+          options={{
+            headerShown: false,
+          }}
+        />
+
+        <Stack.Screen
+          name="Search"
+          component={SearchScreen}
           options={{
             headerShown: false,
           }}

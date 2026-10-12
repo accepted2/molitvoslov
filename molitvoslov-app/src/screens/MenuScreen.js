@@ -1003,7 +1003,7 @@ export const MenuScreen = ({navigation}) => {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t('menu.search')}
-                  onPress={() => showPlaceholder(t('menu.search'))}
+                  onPress={() => navigation.navigate('Search')}
                   style={({pressed}) => [styles.heroRoundAction, pressed && styles.pressed]}
                 >
                   <SearchGlyph />
