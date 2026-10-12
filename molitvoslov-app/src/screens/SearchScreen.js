@@ -360,11 +360,7 @@ export const SearchScreen = ({navigation}) => {
         />
       )}
 
-      <FixedSectionHeader
-        title={copy.title}
-        navigation={navigation}
-        topInset={insets.top}
-      />
+      <FixedSectionHeader title={copy.title} navigation={navigation} topInset={insets.top} />
     </View>
   );
 };

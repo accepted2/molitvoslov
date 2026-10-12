@@ -257,7 +257,12 @@ const collectStructuredTextIds = (content) => {
   });
 
   Object.values(content?.akathists?.by_slug || {}).forEach((akathist) => {
-    [akathist?.troparion, akathist?.kontakion_before, akathist?.common_rule?.opening, akathist?.common_rule?.ending]
+    [
+      akathist?.troparion,
+      akathist?.kontakion_before,
+      akathist?.common_rule?.opening,
+      akathist?.common_rule?.ending,
+    ]
       .filter(Boolean)
       .forEach((item) => {
         if (item.id) {
@@ -639,7 +644,9 @@ export const buildSearchIndex = (language = 'ru') => {
     }
 
     const kathismaTitle =
-      localized(kathisma, 'title', language) || clean(kathisma.title) || `Кафизма ${kathismaNumber}`;
+      localized(kathisma, 'title', language) ||
+      clean(kathisma.title) ||
+      `Кафизма ${kathismaNumber}`;
 
     entries.push(
       makeEntry({
@@ -671,7 +678,9 @@ export const buildSearchIndex = (language = 'ru') => {
       const psalmTitle =
         language === 'uk'
           ? clean(psalm.title_uk) || clean(psalm.title_russian) || `Псалом ${psalmNumber}`
-          : clean(psalm.title_russian) || clean(psalm.title_church_slavonic) || `Псалом ${psalmNumber}`;
+          : clean(psalm.title_russian) ||
+            clean(psalm.title_church_slavonic) ||
+            `Псалом ${psalmNumber}`;
 
       entries.push(
         makeEntry({
@@ -829,9 +838,11 @@ const firstMatchField = (entry, normalizedQuery, tokens) => {
     return full;
   }
 
-  return entry.fields
-    .filter((item) => tokens.some((token) => item.normalized.includes(token)))
-    .sort((a, b) => b.weight - a.weight)[0] || null;
+  return (
+    entry.fields
+      .filter((item) => tokens.some((token) => item.normalized.includes(token)))
+      .sort((a, b) => b.weight - a.weight)[0] || null
+  );
 };
 
 const makeSnippet = (value, query, radius = 78) => {
