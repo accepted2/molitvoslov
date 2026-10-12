@@ -63,6 +63,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
   const [error, setError] = useState(null);
 
   const [memorialContext, setMemorialContext] = useState(null);
+  const [showStickyTitle, setShowStickyTitle] = useState(false);
 
   const {savedProgress, progressReady, scheduleSave} = useReadingProgress({
     sourceType: 'prayer_rule',
@@ -173,6 +174,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
       setRule(null);
       setSavedItems([]);
       setViewModeReady(false);
+      setShowStickyTitle(false);
 
       const response = await api.get(`prayer-rules/${slug}/`);
 
@@ -248,6 +250,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         onMemorialOpen={(context) => setMemorialContext(context || {})}
         onProgress={scheduleSave}
         onViewModeChange={handleViewModeChange}
+        onHeaderTitleVisibilityChange={setShowStickyTitle}
       />
 
       <MemorialQuickSheet
@@ -261,6 +264,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         title={getLocalizedField(rule, 'name', language) || t('reading.prayerRule')}
         navigation={navigation}
         topInset={insets.top}
+        showTitle={showStickyTitle}
       />
     </View>
   );

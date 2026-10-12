@@ -757,6 +757,7 @@ const HTML_TEMPLATE = String.raw`
       scrollUiTimer: null,
       lastScrollY: 0,
       savePending: false,
+      headerTitleVisible: null,
     };
 
 
@@ -2848,6 +2849,124 @@ const HTML_TEMPLATE = String.raw`
       };
 
 
+    const collectLiturgicalRubricRanges =
+      value => {
+        const source =
+          String(
+            value ||
+            ''
+          );
+
+        const normalizedChars = [];
+        const originalIndex = [];
+
+        for (
+          let index = 0;
+          index < source.length;
+          index += 1
+        ) {
+          const decomposed =
+            source[
+              index
+            ].normalize(
+              'NFD'
+            );
+
+          for (const char of decomposed) {
+            if (
+              /[\u0300-\u036f\u0483-\u0487]/u.test(
+                char
+              )
+            ) {
+              continue;
+            }
+
+            normalizedChars.push(
+              char
+            );
+            originalIndex.push(
+              index
+            );
+          }
+        }
+
+        const normalized =
+          normalizedChars.join(
+            ''
+          );
+
+        const patterns = [
+          /[\[(]\s*(?:(?:читается\s+)?(?:трижды|дважды|единожды|три\s+раза|два\s+раза|3\s+раза?|12\s+раз|40\s+раз))\s*[\])]/giu,
+          /Слава\s*,?\s*и\s+нын[еѣ]\s*:/giu,
+        ];
+
+        const ranges = [];
+
+        patterns.forEach(
+          pattern => {
+            let match = null;
+
+            while (
+              (
+                match =
+                  pattern.exec(
+                    normalized
+                  )
+              )
+            ) {
+              const normalizedStart =
+                match.index;
+              const normalizedEnd =
+                match.index +
+                match[0].length -
+                1;
+              const rangeStart =
+                originalIndex[
+                  normalizedStart
+                ];
+
+              let rangeEnd =
+                (
+                  originalIndex[
+                    normalizedEnd
+                  ] ??
+                  rangeStart
+                ) + 1;
+
+              while (
+                rangeEnd <
+                  source.length &&
+                /[\u0300-\u036f\u0483-\u0487]/u.test(
+                  source[
+                    rangeEnd
+                  ]
+                )
+              ) {
+                rangeEnd += 1;
+              }
+
+              if (
+                Number.isFinite(
+                  rangeStart
+                ) &&
+                rangeEnd >
+                  rangeStart
+              ) {
+                ranges.push({
+                  start:
+                    rangeStart,
+                  end:
+                    rangeEnd,
+                });
+              }
+            }
+          }
+        );
+
+        return ranges;
+      };
+
+
     const findLeadingCueRange =
       value => {
         const source =
@@ -3153,6 +3272,16 @@ const HTML_TEMPLATE = String.raw`
           text,
           leadingCue,
           eveningItemKind
+        ).forEach(
+          range => {
+            liturgicalRanges.push(
+              range
+            );
+          }
+        );
+
+        collectLiturgicalRubricRanges(
+          text
         ).forEach(
           range => {
             liturgicalRanges.push(
@@ -5267,6 +5396,46 @@ const HTML_TEMPLATE = String.raw`
       };
 
 
+    const reportHeaderTitleVisibility =
+      () => {
+        const title =
+          document.querySelector(
+            '.rule-title'
+          );
+
+        const revealOffset =
+          Math.max(
+            0,
+            Number(
+              DATA.headerRevealOffset ||
+              0
+            )
+          );
+
+        const visible =
+          !!title &&
+          title.getBoundingClientRect()
+            .bottom <=
+            revealOffset;
+
+        if (
+          state.headerTitleVisible ===
+          visible
+        ) {
+          return;
+        }
+
+        state.headerTitleVisible =
+          visible;
+
+        post({
+          type:
+            'header-title-visibility',
+          visible,
+        });
+      };
+
+
     const updateScrollControls =
       () => {
         const documentHeight =
@@ -5612,7 +5781,10 @@ const HTML_TEMPLATE = String.raw`
 
     window.addEventListener(
       'resize',
-      updateScrollControls
+      () => {
+        updateScrollControls();
+        reportHeaderTitleVisibility();
+      }
     );
 
 
@@ -5636,6 +5808,8 @@ const HTML_TEMPLATE = String.raw`
         showScrollControls(
           direction
         );
+
+        reportHeaderTitleVisibility();
 
         if (
           state.progressTimer
@@ -6184,11 +6358,15 @@ const HTML_TEMPLATE = String.raw`
     requestAnimationFrame(
       () => {
         updateScrollControls();
+        reportHeaderTitleVisibility();
         restoreProgress();
 
         setTimeout(
-          updateScrollControls,
-          180
+          () => {
+            updateScrollControls();
+            reportHeaderTitleVisibility();
+          },
+          380
         );
       }
     );
@@ -6216,6 +6394,8 @@ const buildHtml = ({
     viewMode: viewMode || 'both',
 
     viewSwitcher: viewSwitcher || null,
+
+    headerRevealOffset: Math.max(0, Number(topContentInset || 0)),
 
     memorialEnabled: !!memorialEnabled,
 
@@ -6264,6 +6444,7 @@ export default function PrayerRuleReader({
   onProgress,
   onMemorialOpen,
   onViewModeChange,
+  onHeaderTitleVisibilityChange,
 }) {
   const insets = useSafeAreaInsets();
   const {language, t} = useLanguage();
@@ -6362,6 +6543,12 @@ export default function PrayerRuleReader({
     try {
       message = JSON.parse(event.nativeEvent.data);
     } catch {
+      return;
+    }
+
+    if (message.type === 'header-title-visibility') {
+      onHeaderTitleVisibilityChange?.(!!message.visible);
+
       return;
     }
 
