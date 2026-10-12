@@ -43,7 +43,7 @@ const localized = (item, field, language) => {
   }
 
   if (language === 'uk') {
-    return clean(item[\`${field}_uk\`]) || clean(item[field]);
+    return clean(item[`${field}_uk`]) || clean(item[field]);
   }
 
   return clean(item[field]);
