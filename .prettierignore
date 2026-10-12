@@ -10,6 +10,7 @@ molitvoslov-app/src/data/offlineBible.json
 molitvoslov-app/src/data/offlineContent.json
 molitvoslov-app/src/data/calendar/**
 molitvoslov-app/package-lock.json
+molitvoslov-app/src/data/ponomarFontBase64.generated.js
 
 # Source/import archives and downloaded content
 molitvoslov-backend/files/**

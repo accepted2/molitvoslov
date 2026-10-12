@@ -2223,6 +2223,8 @@ const HTML_TEMPLATE = String.raw`
                       'view-mode',
                     value:
                       option.key,
+                    progress:
+                      getProgressSnapshot(),
                   });
                 }
               }
@@ -5161,12 +5163,12 @@ const HTML_TEMPLATE = String.raw`
     );
 
 
-    const reportProgress =
+    const getProgressSnapshot =
       () => {
         if (
           state.restoring
         ) {
-          return;
+          return null;
         }
 
         const items =
@@ -5177,7 +5179,7 @@ const HTML_TEMPLATE = String.raw`
           );
 
         if (!items.length) {
-          return;
+          return null;
         }
 
         const center =
@@ -5241,11 +5243,26 @@ const HTML_TEMPLATE = String.raw`
           ? Math.round((window.scrollY / maxScroll) * 100)
           : 100;
 
-        post({
-          type: 'progress',
+        return {
           anchorId: Number(current.dataset.itemId),
           offset: Math.round(offset),
           progressPercent: Math.max(0, Math.min(progressPercent, 100)),
+        };
+      };
+
+
+    const reportProgress =
+      () => {
+        const progress =
+          getProgressSnapshot();
+
+        if (!progress) {
+          return;
+        }
+
+        post({
+          type: 'progress',
+          ...progress,
         });
       };
 
@@ -6184,6 +6201,7 @@ const buildHtml = ({
   rule,
   savedItems,
   savedProgress,
+  restoreProgress,
   focusTarget,
   viewMode,
   viewSwitcher,
@@ -6213,12 +6231,17 @@ const buildHtml = ({
     focusTarget: focusTarget || null,
 
     progress:
-      savedProgress?.anchor_type === 'prayer_rule_item'
+      restoreProgress?.anchorId
         ? {
-            anchorId: Number(savedProgress.anchor_id),
-            offset: Number(savedProgress.offset || 0),
+            anchorId: Number(restoreProgress.anchorId),
+            offset: Number(restoreProgress.offset || 0),
           }
-        : null,
+        : savedProgress?.anchor_type === 'prayer_rule_item'
+          ? {
+              anchorId: Number(savedProgress.anchor_id),
+              offset: Number(savedProgress.offset || 0),
+            }
+          : null,
   };
 
   return HTML_TEMPLATE.replace(
@@ -6247,7 +6270,16 @@ export default function PrayerRuleReader({
   const {language, t} = useLanguage();
 
   const webViewRef = useRef(null);
+  const progressSourceRef = useRef(null);
+  const sessionProgressRef = useRef(null);
   const [ponomarFontDataUri, setPonomarFontDataUri] = useState(getCachedPonomarFontDataUri());
+
+  const progressSource = String(rule?.id || '');
+
+  if (progressSourceRef.current !== progressSource) {
+    progressSourceRef.current = progressSource;
+    sessionProgressRef.current = null;
+  }
 
   useEffect(() => {
     let active = true;
@@ -6298,6 +6330,7 @@ export default function PrayerRuleReader({
         rule,
         savedItems,
         savedProgress,
+        restoreProgress: sessionProgressRef.current,
         focusTarget,
         viewMode,
         viewSwitcher,
@@ -6334,17 +6367,47 @@ export default function PrayerRuleReader({
     }
 
     if (message.type === 'view-mode') {
+      const switchProgress = message.progress?.anchorId
+        ? {
+            anchorId: Number(message.progress.anchorId),
+            offset: Math.max(0, Number(message.progress.offset || 0)),
+            progressPercent: Math.max(
+              0,
+              Math.min(Number(message.progress.progressPercent || 0), 100)
+            ),
+          }
+        : null;
+
+      if (switchProgress) {
+        sessionProgressRef.current = switchProgress;
+
+        onProgress?.({
+          anchorType: 'prayer_rule_item',
+          anchorId: switchProgress.anchorId,
+          offset: switchProgress.offset,
+          progressPercent: switchProgress.progressPercent,
+        });
+      }
+
       onViewModeChange?.(message.value);
 
       return;
     }
 
     if (message.type === 'progress') {
-      onProgress?.({
-        anchorType: 'prayer_rule_item',
+      const currentProgress = {
         anchorId: Number(message.anchorId),
         offset: Math.max(0, Number(message.offset || 0)),
         progressPercent: Math.max(0, Math.min(Number(message.progressPercent || 0), 100)),
+      };
+
+      sessionProgressRef.current = currentProgress;
+
+      onProgress?.({
+        anchorType: 'prayer_rule_item',
+        anchorId: currentProgress.anchorId,
+        offset: currentProgress.offset,
+        progressPercent: currentProgress.progressPercent,
       });
 
       return;

@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 
 import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
 
@@ -21,9 +21,27 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
+import {
+  getReaderLanguageModePreference,
+  saveReaderLanguageModePreference,
+} from '../services/readerPreferences';
 
 const MODE_CHURCH = READER_LANGUAGE_MODES.CHURCH;
+const MODE_RUSSIAN = READER_LANGUAGE_MODES.RUSSIAN;
+const MODE_BOTH = READER_LANGUAGE_MODES.BOTH;
 const MODE_TRADITIONAL = READER_LANGUAGE_MODES.TRADITIONAL;
+
+const resolveAvailableViewMode = (mode, {hasRussian, hasTraditional}) => {
+  if ((mode === MODE_RUSSIAN || mode === MODE_BOTH) && hasRussian) {
+    return mode;
+  }
+
+  if (mode === MODE_TRADITIONAL && hasTraditional) {
+    return mode;
+  }
+
+  return MODE_CHURCH;
+};
 
 export const PrayerRuleScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
@@ -38,6 +56,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
   const [savedItems, setSavedItems] = useState([]);
 
   const [viewMode, setViewMode] = useState(MODE_CHURCH);
+  const [viewModeReady, setViewModeReady] = useState(false);
 
   const [loading, setLoading] = useState(true);
 
@@ -71,12 +90,94 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     [rule]
   );
 
+  useEffect(() => {
+    if (!rule) {
+      setViewMode(MODE_CHURCH);
+      setViewModeReady(false);
+      return;
+    }
+
+    let active = true;
+    const preferenceId = rule.slug || slug;
+
+    setViewModeReady(false);
+
+    getReaderLanguageModePreference({
+      sourceType: 'prayer_rule',
+      sourceId: preferenceId,
+    })
+      .then((savedMode) => {
+        if (!active) {
+          return;
+        }
+
+        setViewMode(
+          resolveAvailableViewMode(savedMode, {
+            hasRussian: hasRussianTranslation,
+            hasTraditional: hasTraditionalTranslation,
+          })
+        );
+      })
+      .catch((preferenceError) => {
+        console.log(
+          'Ошибка загрузки режима чтения молитвенного правила:',
+          preferenceError?.message || preferenceError
+        );
+
+        if (active) {
+          setViewMode(MODE_CHURCH);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setViewModeReady(true);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [
+    rule,
+    slug,
+    hasRussianTranslation,
+    hasTraditionalTranslation,
+  ]);
+
+  const handleViewModeChange = useCallback(
+    (nextMode) => {
+      if (!rule) {
+        return;
+      }
+
+      const resolvedMode = resolveAvailableViewMode(nextMode, {
+        hasRussian: hasRussianTranslation,
+        hasTraditional: hasTraditionalTranslation,
+      });
+
+      setViewMode(resolvedMode);
+
+      saveReaderLanguageModePreference({
+        sourceType: 'prayer_rule',
+        sourceId: rule.slug || slug,
+        mode: resolvedMode,
+      }).catch((preferenceError) => {
+        console.log(
+          'Ошибка сохранения режима чтения молитвенного правила:',
+          preferenceError?.message || preferenceError
+        );
+      });
+    },
+    [rule, slug, hasRussianTranslation, hasTraditionalTranslation]
+  );
+
   const loadRule = async () => {
     try {
       setLoading(true);
       setError(null);
       setRule(null);
       setSavedItems([]);
+      setViewModeReady(false);
 
       const response = await api.get(`prayer-rules/${slug}/`);
 
@@ -110,7 +211,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     }
   };
 
-  if (loading || (rule && !progressReady)) {
+  if (loading || (rule && (!progressReady || !viewModeReady))) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.accent} />
@@ -151,7 +252,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         memorialEnabled={slug === 'molitvy-utrennie'}
         onMemorialOpen={(context) => setMemorialContext(context || {})}
         onProgress={scheduleSave}
-        onViewModeChange={setViewMode}
+        onViewModeChange={handleViewModeChange}
       />
 
       <MemorialQuickSheet
@@ -165,7 +266,6 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         title={getLocalizedField(rule, 'name', language) || t('reading.prayerRule')}
         navigation={navigation}
         topInset={insets.top}
-        showTitle={false}
       />
     </View>
   );
