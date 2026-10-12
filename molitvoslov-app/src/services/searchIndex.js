@@ -1041,7 +1041,11 @@ export const getHighlightSegments = (text, query) => {
 
       const start = folded.map[found];
       const mappedEnd = folded.map[Math.min(folded.map.length - 1, found + token.length - 1)];
-      const end = Math.min(source.length, Number(mappedEnd ?? start) + 1);
+      let end = Math.min(source.length, Number(mappedEnd ?? start) + 1);
+
+      while (end < source.length && COMBINING_MARK.test(source[end])) {
+        end += 1;
+      }
 
       if (Number.isFinite(start) && end > start) {
         ranges.push({start, end});
