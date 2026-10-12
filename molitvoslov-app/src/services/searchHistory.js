@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import {normalizeSearchText} from './searchIndex';
+
 const SEARCH_HISTORY_KEY = '@molitvoslov/search-history/v1';
 const MAX_HISTORY_ITEMS = 8;
 
@@ -30,11 +32,11 @@ export const addSearchHistory = async (query) => {
   }
 
   const current = await getSearchHistory();
-  const normalized = clean.toLocaleLowerCase('ru');
+  const normalized = normalizeSearchText(clean);
 
   const next = [
     clean,
-    ...current.filter((item) => item.toLocaleLowerCase('ru') !== normalized),
+    ...current.filter((item) => normalizeSearchText(item) !== normalized),
   ].slice(0, MAX_HISTORY_ITEMS);
 
   await AsyncStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(next));

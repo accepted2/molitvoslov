@@ -188,10 +188,6 @@ export const SearchScreen = ({navigation}) => {
     }
 
     setSearchLoading(true);
-    setResult({
-      items: [],
-      total: 0,
-    });
 
     searchIndexAsync(index, searchQuery, {
       group: activeGroup,
@@ -411,9 +407,9 @@ export const SearchScreen = ({navigation}) => {
             </ScrollView>
           )}
 
-          {!waitingForQuery && !queryTooShort && !indexLoading && (
+          {!waitingForQuery && !queryTooShort && (
             <View style={styles.countRow}>
-              {searchLoading ? (
+              {indexLoading || searchLoading ? (
                 <>
                   <ActivityIndicator size="small" color="#A16E35" />
                   <Text style={styles.countText}>Ищем…</Text>
@@ -460,16 +456,10 @@ export const SearchScreen = ({navigation}) => {
               </>
             )}
 
-            {indexLoading && <Text style={styles.indexHint}>{copy.preparing}</Text>}
           </View>
         ) : queryTooShort ? (
           <View style={styles.center}>
             <Text style={styles.centerText}>{copy.short}</Text>
-          </View>
-        ) : indexLoading || searchLoading ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color="#A16E35" />
-            <Text style={styles.centerText}>Ищем по библиотеке…</Text>
           </View>
         ) : showEmpty ? (
           <View style={styles.center}>

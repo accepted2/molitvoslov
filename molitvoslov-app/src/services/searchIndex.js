@@ -304,8 +304,11 @@ const collectStructuredTextIds = (content) => {
   return ids;
 };
 
-let cachedIndex = null;
-let cachedKey = '';
+const cachedIndexes = new Map();
+
+let cachedBibleCorpus = null;
+let cachedBibleCorpusKey = '';
+let pendingBibleCorpus = null;
 
 export const buildSearchIndex = (language = 'ru') => {
   const content = getCurrentContent() || {};
@@ -316,8 +319,8 @@ export const buildSearchIndex = (language = 'ru') => {
     bible.content_version || bible.generated_at || 'bible',
   ].join(':');
 
-  if (cachedIndex && cachedKey === cacheKey) {
-    return cachedIndex;
+  if (cachedIndexes.has(cacheKey)) {
+    return cachedIndexes.get(cacheKey);
   }
 
   const entries = [];
@@ -864,8 +867,11 @@ export const buildSearchIndex = (language = 'ru') => {
     });
   });
 
-  cachedKey = cacheKey;
-  cachedIndex = entries;
+  if (cachedIndexes.size >= 4) {
+    cachedIndexes.clear();
+  }
+
+  cachedIndexes.set(cacheKey, entries);
 
   return entries;
 };
@@ -903,7 +909,7 @@ const makeSnippet = (value, query, radius = 78) => {
 
   const folded = foldWithMap(source);
   const normalizedQuery = normalizeSearchText(query);
-  const tokens = normalizedQuery.split(' ').filter(Boolean);
+  const tokens = getQueryTokens(normalizedQuery);
   let index = normalizedQuery ? folded.value.indexOf(normalizedQuery) : -1;
 
   if (index < 0 && tokens.length) {
@@ -1020,7 +1026,15 @@ export const searchIndex = (index, query, {group = SEARCH_GROUPS.ALL, limit = 10
     };
   }
 
-  const tokens = Array.from(new Set(normalizedQuery.split(' ').filter(Boolean)));
+  const tokens = getQueryTokens(normalizedQuery);
+
+  if (!tokens.length) {
+    return {
+      items: [],
+      total: 0,
+    };
+  }
+
   const matches = [];
 
   (index || []).forEach((entry) => {
@@ -1040,77 +1054,212 @@ export const searchIndex = (index, query, {group = SEARCH_GROUPS.ALL, limit = 10
 
 const yieldToSearchUI = () => new Promise((resolve) => setTimeout(resolve, 0));
 
+const getQueryTokens = (normalizedQuery) =>
+  Array.from(
+    new Set(
+      String(normalizedQuery || '')
+        .split(' ')
+        .filter((token) => token.length >= 2)
+    )
+  );
+
+const bibleCorpusKey = (bible) =>
+  String(bible?.content_version || bible?.generated_at || 'bible');
+
+export const prepareBibleSearchCorpus = async ({
+  chunkSize = 900,
+  isCancelled = () => false,
+} = {}) => {
+  const bible = getCurrentBibleContent('rst') || {};
+  const key = bibleCorpusKey(bible);
+
+  if (cachedBibleCorpus && cachedBibleCorpusKey === key) {
+    return cachedBibleCorpus;
+  }
+
+  if (pendingBibleCorpus?.key === key) {
+    return pendingBibleCorpus.promise;
+  }
+
+  const promise = (async () => {
+    const corpus = [];
+    let processed = 0;
+
+    for (const book of bible.books || []) {
+      const displayName = bibleContent.getDisplayName(book);
+      const sectionLabel = bibleSectionLabel(book.section);
+
+      for (const chapter of book.chapters || []) {
+        for (const verse of chapter.verses || []) {
+          if (isCancelled()) {
+            return null;
+          }
+
+          const text = clean(verse.text);
+          const reference = `${displayName} ${chapter.number}:${verse.number}`;
+          const shortReference = `${book.short_name || displayName} ${chapter.number}:${verse.number}`;
+
+          corpus.push({
+            id: `bible:${book.id}:${chapter.id}:${verse.id}`,
+            bookId: Number(book.id),
+            bookSlug: book.slug,
+            chapterNumber: Number(chapter.number),
+            verseId: Number(verse.id),
+            verseNumber: Number(verse.number),
+            title: reference,
+            source: `Писание · ${sectionLabel}`,
+            text,
+            normalizedText: normalizeSearchText(text),
+            normalizedReference: normalizeSearchText(reference),
+            normalizedShortReference: normalizeSearchText(shortReference),
+          });
+
+          processed += 1;
+
+          if (processed % chunkSize === 0) {
+            await yieldToSearchUI();
+          }
+        }
+      }
+    }
+
+    if (isCancelled()) {
+      return null;
+    }
+
+    cachedBibleCorpus = corpus;
+    cachedBibleCorpusKey = key;
+
+    return corpus;
+  })();
+
+  pendingBibleCorpus = {
+    key,
+    promise,
+  };
+
+  try {
+    return await promise;
+  } finally {
+    if (pendingBibleCorpus?.promise === promise) {
+      pendingBibleCorpus = null;
+    }
+  }
+};
+
+export const warmSearchData = async () => {
+  try {
+    buildSearchIndex('ru');
+    await prepareBibleSearchCorpus();
+  } catch (error) {
+    console.log('Фоновая подготовка поиска отложена:', error?.message || error);
+  }
+};
+
 const searchBibleVersesAsync = async ({
   query,
   normalizedQuery,
   tokens,
   isCancelled,
-  chunkSize = 500,
+  chunkSize = 1400,
 }) => {
-  const bible = getCurrentBibleContent('rst') || {};
+  const corpus = await prepareBibleSearchCorpus({
+    isCancelled,
+  });
+
+  if (!corpus || isCancelled()) {
+    return null;
+  }
+
   const matches = [];
-  let processed = 0;
 
-  for (const book of bible.books || []) {
-    const displayName = bibleContent.getDisplayName(book);
-    const sectionLabel = bibleSectionLabel(book.section);
+  for (let offset = 0; offset < corpus.length; offset += chunkSize) {
+    if (isCancelled()) {
+      return null;
+    }
 
-    for (const chapter of book.chapters || []) {
-      for (const verse of chapter.verses || []) {
-        if (isCancelled()) {
-          return null;
+    const end = Math.min(corpus.length, offset + chunkSize);
+
+    for (let itemIndex = offset; itemIndex < end; itemIndex += 1) {
+      const item = corpus[itemIndex];
+      const searchable = [
+        item.normalizedReference,
+        item.normalizedShortReference,
+        item.normalizedText,
+      ];
+
+      if (!tokens.every((token) => searchable.some((value) => value.includes(token)))) {
+        continue;
+      }
+
+      let score = 150;
+
+      if (
+        item.normalizedReference === normalizedQuery ||
+        item.normalizedShortReference === normalizedQuery
+      ) {
+        score += 1800;
+      } else if (
+        item.normalizedReference.startsWith(normalizedQuery) ||
+        item.normalizedShortReference.startsWith(normalizedQuery)
+      ) {
+        score += 1200;
+      } else if (
+        item.normalizedReference.includes(normalizedQuery) ||
+        item.normalizedShortReference.includes(normalizedQuery)
+      ) {
+        score += 850;
+      }
+
+      if (item.normalizedText.includes(normalizedQuery)) {
+        score += 260;
+      }
+
+      tokens.forEach((token) => {
+        if (hasWholeToken(item.normalizedText, token)) {
+          score += 260;
+        } else if (item.normalizedText.includes(token)) {
+          score += 90;
         }
+      });
 
-        const reference = `${displayName} ${chapter.number}:${verse.number}`;
-        const shortReference = `${book.short_name || displayName} ${chapter.number}:${verse.number}`;
-        const verseEntry = makeEntry({
-          id: `bible:${book.id}:${chapter.id}:${verse.id}`,
-          group: SEARCH_GROUPS.SCRIPTURE,
-          kind: 'bible-verse',
-          title: reference,
-          source: `Писание · ${sectionLabel}`,
-          searchTitle: false,
-          fields: compactFields([
-            field(reference, '', 'reference', 680),
-            field(shortReference, '', 'reference', 660),
-            field(verse.text, 'russian', 'content', 150),
-          ]),
-          route: {
-            name: 'BibleChapter',
-            params: {
-              bookId: Number(book.id),
-              chapterNumber: Number(chapter.number),
-              resume: false,
-              focusTarget: {
-                save_type: 'fragment',
-                anchor_type: 'bible_verse',
-                anchor_id: Number(verse.id),
-                start_offset: null,
-                end_offset: null,
-                metadata: {
-                  book_id: Number(book.id),
-                  book_slug: book.slug,
-                  chapter_number: Number(chapter.number),
-                  verse_number: Number(verse.number),
-                },
+      matches.push({
+        id: item.id,
+        group: SEARCH_GROUPS.SCRIPTURE,
+        kind: 'bible-verse',
+        title: item.title,
+        source: item.source,
+        score,
+        snippet: makeSnippet(item.text, query),
+        matchedLanguage: 'russian',
+        matchedLanguageLabel: languageLabel('russian'),
+        groupLabel: GROUP_LABELS[SEARCH_GROUPS.SCRIPTURE] || '',
+        route: {
+          name: 'BibleChapter',
+          params: {
+            bookId: item.bookId,
+            chapterNumber: item.chapterNumber,
+            resume: false,
+            focusTarget: {
+              save_type: 'fragment',
+              anchor_type: 'bible_verse',
+              anchor_id: item.verseId,
+              start_offset: null,
+              end_offset: null,
+              metadata: {
+                book_id: item.bookId,
+                book_slug: item.bookSlug,
+                chapter_number: item.chapterNumber,
+                verse_number: item.verseNumber,
               },
             },
           },
-          preview: previewText(verse.text),
-        });
+        },
+      });
+    }
 
-        const result = buildSearchResult(verseEntry, query, normalizedQuery, tokens);
-
-        if (result) {
-          matches.push(result);
-        }
-
-        processed += 1;
-
-        if (processed % chunkSize === 0) {
-          await yieldToSearchUI();
-        }
-      }
+    if (end < corpus.length) {
+      await yieldToSearchUI();
     }
   }
 
@@ -1131,7 +1280,15 @@ export const searchIndexAsync = async (
     };
   }
 
-  const tokens = Array.from(new Set(normalizedQuery.split(' ').filter(Boolean)));
+  const tokens = getQueryTokens(normalizedQuery);
+
+  if (!tokens.length) {
+    return {
+      items: [],
+      total: 0,
+    };
+  }
+
   const entries =
     group === SEARCH_GROUPS.ALL
       ? index || []
@@ -1234,7 +1391,7 @@ export const getHighlightSegments = (text, query) => {
   const source = String(text || '');
   const normalizedQuery = normalizeSearchText(query);
   const tokens = Array.from(
-    new Set(normalizedQuery.split(' ').filter((token) => token.length >= 1))
+    new Set(normalizedQuery.split(' ').filter((token) => token.length >= 2))
   );
 
   if (!source || !tokens.length) {
