@@ -2896,7 +2896,7 @@ const HTML_TEMPLATE = String.raw`
           );
 
         const patterns = [
-          /[\[(]\s*(?:(?:читается\s+)?(?:трижды|дважды|единожды|три\s+раза|два\s+раза|3\s+раза?|12\s+раз|40\s+раз))\s*[\])]/giu,
+          /[\[(]\s*(?:(?:читается\s+)?(?:тр[иії]жды|дважды|единожды|три\s+раза|два\s+раза|3\s+раза?|12\s+раз|40\s+раз))\s*[\])]/giu,
           /Слава\s*,?\s*и\s+нын[еѣ]\s*:/giu,
         ];
 
@@ -3280,9 +3280,12 @@ const HTML_TEMPLATE = String.raw`
           }
         );
 
-        collectLiturgicalRubricRanges(
-          text
-        ).forEach(
+        const liturgicalRubricRanges =
+          collectLiturgicalRubricRanges(
+            text
+          );
+
+        liturgicalRubricRanges.forEach(
           range => {
             liturgicalRanges.push(
               range
@@ -3422,14 +3425,26 @@ const HTML_TEMPLATE = String.raw`
             midpoint <
               active.end;
 
-          const isLiturgical =
-            !isEveningMinorLiturgical &&
-            liturgicalRanges.some(
+          const isLiturgicalRubric =
+            liturgicalRubricRanges.some(
               range =>
                 midpoint >=
                   range.start &&
                 midpoint <
                   range.end
+            );
+
+          const isLiturgical =
+            isLiturgicalRubric ||
+            (
+              !isEveningMinorLiturgical &&
+              liturgicalRanges.some(
+                range =>
+                  midpoint >=
+                    range.start &&
+                  midpoint <
+                    range.end
+              )
             );
 
           const span =
@@ -5412,11 +5427,25 @@ const HTML_TEMPLATE = String.raw`
             )
           );
 
-        const visible =
-          !!title &&
+        if (!title) {
+          return;
+        }
+
+        const titleBottom =
           title.getBoundingClientRect()
-            .bottom <=
-            revealOffset;
+            .bottom;
+
+        const showThreshold =
+          revealOffset - 6;
+        const hideThreshold =
+          revealOffset + 18;
+
+        const visible =
+          state.headerTitleVisible === true
+            ? titleBottom <
+              hideThreshold
+            : titleBottom <=
+              showThreshold;
 
         if (
           state.headerTitleVisible ===

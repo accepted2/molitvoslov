@@ -91,6 +91,17 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     [rule]
   );
 
+  const viewSwitcher = useMemo(
+    () => ({
+      activeKey: viewMode,
+      options: buildReaderLanguageOptions({
+        hasRussian: hasRussianTranslation,
+        hasTraditional: hasTraditionalTranslation,
+      }),
+    }),
+    [viewMode, hasRussianTranslation, hasTraditionalTranslation]
+  );
+
   useEffect(() => {
     if (!rule) {
       setViewMode(MODE_CHURCH);
@@ -226,14 +237,6 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     );
   }
 
-  const viewSwitcher = {
-    activeKey: viewMode,
-    options: buildReaderLanguageOptions({
-      hasRussian: hasRussianTranslation,
-      hasTraditional: hasTraditionalTranslation,
-    }),
-  };
-
   return (
     <View style={styles.container}>
       <StatusBar style="light" translucent backgroundColor="transparent" />
@@ -265,6 +268,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         navigation={navigation}
         topInset={insets.top}
         showTitle={showStickyTitle}
+        titleOffsetY={-4}
       />
     </View>
   );

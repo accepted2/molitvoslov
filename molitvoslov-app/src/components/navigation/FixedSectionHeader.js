@@ -12,6 +12,7 @@ export const FixedSectionHeader = ({
   showMenu = false,
   onMenuPress,
   dark = false,
+  titleOffsetY = 0,
 }) => {
   const headerHeight = topInset + (minimal ? 46 : 56);
 
@@ -64,7 +65,15 @@ export const FixedSectionHeader = ({
         )}
 
         {showTitle && (
-          <View style={[styles.titleWrap, !showBack && styles.titleWrapRoot]}>
+          <View
+            style={[
+              styles.titleWrap,
+              !showBack && styles.titleWrapRoot,
+              titleOffsetY !== 0 && {
+                transform: [{translateY: titleOffsetY}],
+              },
+            ]}
+          >
             <Text
               style={[styles.title, dark && styles.titleDark]}
               numberOfLines={1}
