@@ -835,6 +835,14 @@ export const buildSearchIndex = (language = 'ru') => {
   return entries;
 };
 
+const hasWholeToken = (value, token) => {
+  if (!value || !token) {
+    return false;
+  }
+
+  return (` ${value} `).includes(` ${token} `);
+};
+
 const firstMatchField = (entry, normalizedQuery, tokens) => {
   const full = entry.fields
     .filter((item) => item.normalized.includes(normalizedQuery))
@@ -918,6 +926,12 @@ const scoreEntry = (entry, normalizedQuery, tokens) => {
       score += 180;
     }
   }
+
+  tokens.forEach((token) => {
+    if (searchable.some((value) => hasWholeToken(value, token))) {
+      score += 260;
+    }
+  });
 
   score += Math.max(0, 80 - entry.title.length);
 
