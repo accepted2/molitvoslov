@@ -41,7 +41,6 @@ const copyForLanguage = (language) =>
         more: 'Показано перші результати. Уточніть запит, щоб звузити пошук.',
         recent: 'Недавні пошуки',
         clearRecent: 'Очистити',
-        preparing: 'Пошук стане доступним за мить…',
         tabs: {
           all: 'Усе',
           prayers: 'Молитви',
@@ -62,7 +61,6 @@ const copyForLanguage = (language) =>
         more: 'Показаны первые результаты. Уточните запрос, чтобы сузить поиск.',
         recent: 'Недавние запросы',
         clearRecent: 'Очистить',
-        preparing: 'Поиск станет доступен через мгновение…',
         tabs: {
           all: 'Все',
           prayers: 'Молитвы',
@@ -814,14 +812,6 @@ const styles = StyleSheet.create({
     color: '#68452F',
     fontSize: 12,
     fontWeight: '600',
-  },
-
-  indexHint: {
-    marginTop: 14,
-    color: '#9B806A',
-    fontSize: 11,
-    lineHeight: 15,
-    textAlign: 'center',
   },
 
   center: {
