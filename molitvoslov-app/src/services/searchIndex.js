@@ -37,6 +37,16 @@ const clean = (value) =>
     .replace(/\s+/g, ' ')
     .trim();
 
+const previewText = (value, limit = 190) => {
+  const text = clean(value);
+
+  if (!text) {
+    return '';
+  }
+
+  return text.length > limit ? text.slice(0, limit).trimEnd() + '…' : text;
+};
+
 const localized = (item, field, language) => {
   if (!item) {
     return '';
@@ -688,6 +698,19 @@ export const buildSearchIndex = (language = 'ru') => {
             clean(psalm.title_church_slavonic) ||
             `Псалом ${psalmNumber}`;
 
+      const psalmPreview = previewText(
+        (psalm.verses || [])
+          .slice(0, 2)
+          .map(
+            (verse) =>
+              clean(verse.russian) ||
+              clean(verse.church_slavonic) ||
+              clean(verse.church_slavonic_traditional)
+          )
+          .filter(Boolean)
+          .join(' ')
+      );
+
       entries.push(
         makeEntry({
           id: `psalm:${psalm.id}`,
@@ -721,6 +744,7 @@ export const buildSearchIndex = (language = 'ru') => {
               },
             },
           },
+          preview: psalmPreview,
         })
       );
 
@@ -736,6 +760,7 @@ export const buildSearchIndex = (language = 'ru') => {
             source: `Псалтирь · ${kathismaTitle}`,
             searchTitle: false,
             fields: compactFields([
+              field(`Псалом ${psalmNumber}:${verseNumber}`, '', 'reference', 620),
               field(verse.church_slavonic, 'church', 'content', 130),
               field(verse.church_slavonic_traditional, 'traditional', 'content', 130),
               field(verse.russian, 'russian', 'content', 140),
@@ -760,6 +785,11 @@ export const buildSearchIndex = (language = 'ru') => {
                 },
               },
             },
+            preview: previewText(
+              clean(verse.russian) ||
+                clean(verse.church_slavonic) ||
+                clean(verse.church_slavonic_traditional)
+            ),
           })
         );
       });
@@ -769,6 +799,14 @@ export const buildSearchIndex = (language = 'ru') => {
   (bible?.books || []).forEach((book) => {
     const displayName = bibleContent.getDisplayName(book);
     const sectionLabel = bibleSectionLabel(book.section);
+    const firstChapter = (book.chapters || [])[0];
+    const bookPreview = previewText(
+      (firstChapter?.verses || [])
+        .slice(0, 2)
+        .map((verse) => clean(verse.text))
+        .filter(Boolean)
+        .join(' ')
+    );
 
     entries.push(
       makeEntry({
@@ -788,10 +826,42 @@ export const buildSearchIndex = (language = 'ru') => {
             bookId: Number(book.id),
           },
         },
+        preview: bookPreview,
       })
     );
 
     (book.chapters || []).forEach((chapter) => {
+      const chapterPreview = previewText(
+        (chapter.verses || [])
+          .slice(0, 2)
+          .map((verse) => clean(verse.text))
+          .filter(Boolean)
+          .join(' ')
+      );
+
+      entries.push(
+        makeEntry({
+          id: `bible-chapter:${book.id}:${chapter.id}`,
+          group: SEARCH_GROUPS.SCRIPTURE,
+          kind: 'bible-chapter',
+          title: `${displayName} ${chapter.number}`,
+          source: `Писание · ${sectionLabel}`,
+          fields: compactFields([
+            field(`${displayName} ${chapter.number}`, '', 'reference', 640),
+            field(`${book.short_name || displayName} ${chapter.number}`, '', 'reference', 620),
+          ]),
+          route: {
+            name: 'BibleChapter',
+            params: {
+              bookId: Number(book.id),
+              chapterNumber: Number(chapter.number),
+              resume: false,
+            },
+          },
+          preview: chapterPreview,
+        })
+      );
+
       (chapter.verses || []).forEach((verse) => {
         entries.push(
           makeEntry({
@@ -801,7 +871,21 @@ export const buildSearchIndex = (language = 'ru') => {
             title: `${displayName} ${chapter.number}:${verse.number}`,
             source: `Писание · ${sectionLabel}`,
             searchTitle: false,
-            fields: [field(verse.text, 'russian', 'content', 150)],
+            fields: compactFields([
+              field(
+                `${displayName} ${chapter.number}:${verse.number}`,
+                '',
+                'reference',
+                680
+              ),
+              field(
+                `${book.short_name || displayName} ${chapter.number}:${verse.number}`,
+                '',
+                'reference',
+                660
+              ),
+              field(verse.text, 'russian', 'content', 150),
+            ]),
             route: {
               name: 'BibleChapter',
               params: {
@@ -823,6 +907,7 @@ export const buildSearchIndex = (language = 'ru') => {
                 },
               },
             },
+            preview: previewText(verse.text),
           })
         );
       });
@@ -941,6 +1026,40 @@ const scoreEntry = (entry, normalizedQuery, tokens) => {
   };
 };
 
+const buildSearchResult = (entry, query, normalizedQuery, tokens) => {
+  const match = scoreEntry(entry, normalizedQuery, tokens);
+
+  if (!match) {
+    return null;
+  }
+
+  const matchedField = match.matchedField;
+  const snippet =
+    matchedField?.role === 'content' || matchedField?.role === 'description'
+      ? makeSnippet(matchedField.text, query)
+      : entry.preview
+        ? makeSnippet(entry.preview, query)
+        : '';
+
+  return {
+    ...entry,
+    score: match.score,
+    snippet,
+    matchedLanguage: matchedField?.language || '',
+    matchedLanguageLabel: languageLabel(matchedField?.language),
+    groupLabel: GROUP_LABELS[entry.group] || '',
+  };
+};
+
+const sortSearchResults = (matches, limit) => {
+  matches.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title, 'ru'));
+
+  return {
+    items: matches.slice(0, limit),
+    total: matches.length,
+  };
+};
+
 export const searchIndex = (index, query, {group = SEARCH_GROUPS.ALL, limit = 100} = {}) => {
   const normalizedQuery = normalizeSearchText(query);
 
@@ -959,36 +1078,78 @@ export const searchIndex = (index, query, {group = SEARCH_GROUPS.ALL, limit = 10
       return;
     }
 
-    const match = scoreEntry(entry, normalizedQuery, tokens);
+    const result = buildSearchResult(entry, query, normalizedQuery, tokens);
 
-    if (!match) {
-      return;
+    if (result) {
+      matches.push(result);
     }
-
-    const matchedField = match.matchedField;
-    const snippet =
-      matchedField?.role === 'content' || matchedField?.role === 'description'
-        ? makeSnippet(matchedField.text, query)
-        : entry.preview
-          ? makeSnippet(entry.preview, query)
-          : '';
-
-    matches.push({
-      ...entry,
-      score: match.score,
-      snippet,
-      matchedLanguage: matchedField?.language || '',
-      matchedLanguageLabel: languageLabel(matchedField?.language),
-      groupLabel: GROUP_LABELS[entry.group] || '',
-    });
   });
 
-  matches.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title, 'ru'));
+  return sortSearchResults(matches, limit);
+};
 
-  return {
-    items: matches.slice(0, limit),
-    total: matches.length,
-  };
+const yieldToSearchUI = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+export const searchIndexAsync = async (
+  index,
+  query,
+  {
+    group = SEARCH_GROUPS.ALL,
+    limit = 100,
+    chunkSize = 650,
+    isCancelled = () => false,
+  } = {}
+) => {
+  const normalizedQuery = normalizeSearchText(query);
+
+  if (normalizedQuery.length < 2) {
+    return {
+      items: [],
+      total: 0,
+    };
+  }
+
+  const tokens = Array.from(new Set(normalizedQuery.split(' ').filter(Boolean)));
+  const entries =
+    group === SEARCH_GROUPS.ALL ? index || [] : (index || []).filter((entry) => entry.group === group);
+  const matches = [];
+
+  for (let offset = 0; offset < entries.length; offset += chunkSize) {
+    if (isCancelled()) {
+      return null;
+    }
+
+    const end = Math.min(entries.length, offset + chunkSize);
+
+    for (let entryIndex = offset; entryIndex < end; entryIndex += 1) {
+      const result = buildSearchResult(
+        entries[entryIndex],
+        query,
+        normalizedQuery,
+        tokens
+      );
+
+      if (result) {
+        matches.push(result);
+      }
+    }
+
+    if (end < entries.length) {
+      await yieldToSearchUI();
+    }
+  }
+
+  if (isCancelled()) {
+    return null;
+  }
+
+  await yieldToSearchUI();
+
+  if (isCancelled()) {
+    return null;
+  }
+
+  return sortSearchResults(matches, limit);
 };
 
 export const getSearchSuggestions = (index, query, {group = SEARCH_GROUPS.ALL, limit = 6} = {}) => {

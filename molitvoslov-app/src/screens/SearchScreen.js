@@ -1,4 +1,4 @@
-import React, {useDeferredValue, useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -23,7 +23,7 @@ import {
   buildSearchIndex,
   getHighlightSegments,
   getSearchSuggestions,
-  searchIndex,
+  searchIndexAsync,
 } from '../services/searchIndex';
 
 const copyForLanguage = (language) =>
@@ -112,9 +112,14 @@ export const SearchScreen = ({navigation}) => {
   const [activeGroup, setActiveGroup] = useState(SEARCH_GROUPS.ALL);
   const [index, setIndex] = useState(null);
   const [indexLoading, setIndexLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [result, setResult] = useState({
+    items: [],
+    total: 0,
+  });
 
   const copy = useMemo(() => copyForLanguage(language), [language]);
-  const deferredQuery = useDeferredValue(query);
 
   useEffect(
     () =>
@@ -148,22 +153,68 @@ export const SearchScreen = ({navigation}) => {
     };
   }, [language, publicGeneration, bibleGeneration]);
 
-  const result = useMemo(
-    () =>
-      searchIndex(index || [], deferredQuery, {
-        group: activeGroup,
-        limit: 120,
-      }),
-    [index, deferredQuery, activeGroup]
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(query);
+    }, 110);
+
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const trimmed = searchQuery.trim();
+
+    if (indexLoading || !index || trimmed.length < 2) {
+      setSearchLoading(false);
+      setResult({
+        items: [],
+        total: 0,
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setSearchLoading(true);
+    setResult({
+      items: [],
+      total: 0,
+    });
+
+    searchIndexAsync(index, searchQuery, {
+      group: activeGroup,
+      limit: 120,
+      isCancelled: () => cancelled,
+    })
+      .then((nextResult) => {
+        if (!cancelled && nextResult) {
+          setResult(nextResult);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setSearchLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [index, indexLoading, searchQuery, activeGroup]);
+
+  const suggestionIndex = useMemo(
+    () => (index || []).filter((entry) => !!entry.titleNormalized),
+    [index]
   );
 
   const suggestions = useMemo(
     () =>
-      getSearchSuggestions(index || [], deferredQuery, {
+      getSearchSuggestions(suggestionIndex, query, {
         group: activeGroup,
         limit: 6,
       }),
-    [index, deferredQuery, activeGroup]
+    [suggestionIndex, query, activeGroup]
   );
 
   const tabs = useMemo(
@@ -202,7 +253,7 @@ export const SearchScreen = ({navigation}) => {
 
       <HighlightedText
         text={item.title}
-        query={deferredQuery}
+        query={searchQuery}
         style={styles.resultTitle}
         highlightStyle={styles.highlightTitle}
         numberOfLines={2}
@@ -211,7 +262,7 @@ export const SearchScreen = ({navigation}) => {
       {!!item.source && (
         <HighlightedText
           text={item.source}
-          query={deferredQuery}
+          query={searchQuery}
           style={styles.resultSource}
           highlightStyle={styles.highlightSource}
           numberOfLines={2}
@@ -221,7 +272,7 @@ export const SearchScreen = ({navigation}) => {
       {!!item.snippet && (
         <HighlightedText
           text={item.snippet}
-          query={deferredQuery}
+          query={searchQuery}
           style={styles.resultSnippet}
           highlightStyle={styles.highlightSnippet}
           numberOfLines={3}
@@ -234,8 +285,13 @@ export const SearchScreen = ({navigation}) => {
 
   const trimmedQuery = query.trim();
   const waitingForQuery = !trimmedQuery;
-  const queryTooShort = !!trimmedQuery && deferredQuery.trim().length < 2;
-  const showEmpty = !indexLoading && !waitingForQuery && !queryTooShort && result.total === 0;
+  const queryTooShort = !!trimmedQuery && trimmedQuery.length < 2;
+  const showEmpty =
+    !indexLoading &&
+    !searchLoading &&
+    !waitingForQuery &&
+    !queryTooShort &&
+    result.total === 0;
 
   return (
     <View style={styles.screen}>
@@ -330,8 +386,17 @@ export const SearchScreen = ({navigation}) => {
           </ScrollView>
         )}
 
-        {!waitingForQuery && !queryTooShort && !indexLoading && result.total > 0 && (
-          <Text style={styles.countText}>{copy.found(result.total)}</Text>
+        {!waitingForQuery && !queryTooShort && !indexLoading && (
+          <View style={styles.countRow}>
+            {searchLoading ? (
+              <>
+                <ActivityIndicator size="small" color="#A16E35" />
+                <Text style={styles.countText}>Ищем…</Text>
+              </>
+            ) : result.total > 0 ? (
+              <Text style={styles.countText}>{copy.found(result.total)}</Text>
+            ) : null}
+          </View>
         )}
       </View>
 
@@ -348,6 +413,11 @@ export const SearchScreen = ({navigation}) => {
       ) : queryTooShort ? (
         <View style={styles.center}>
           <Text style={styles.centerText}>{copy.short}</Text>
+        </View>
+      ) : searchLoading ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#A16E35" />
+          <Text style={styles.centerText}>Ищем по библиотеке…</Text>
         </View>
       ) : showEmpty ? (
         <View style={styles.center}>
@@ -515,9 +585,16 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 
-  countText: {
-    marginTop: 8,
+  countRow: {
+    minHeight: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginTop: 7,
     marginHorizontal: 3,
+  },
+
+  countText: {
     color: '#8A6B53',
     fontSize: 11,
     fontWeight: '600',
