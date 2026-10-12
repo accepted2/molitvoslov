@@ -1345,7 +1345,7 @@ export const searchIndexAsync = async (
 export const getSearchSuggestions = (index, query, {group = SEARCH_GROUPS.ALL, limit = 6} = {}) => {
   const normalizedQuery = normalizeSearchText(query);
 
-  if (!normalizedQuery) {
+  if (normalizedQuery.length < 2) {
     return [];
   }
 
