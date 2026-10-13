@@ -31,6 +31,7 @@ import {syncPublicContent} from './src/services/contentSync';
 import {hydrateBibleContent} from './src/services/bibleStore';
 import {syncBibleContent} from './src/services/bibleSync';
 import {warmSearchData} from './src/services/searchIndex';
+import {syncYearMarkers2026} from './src/services/calendarYearMarkers';
 
 const ONBOARDING_STORAGE_KEY = '@molitvoslov/onboarding-version';
 const ONBOARDING_VERSION = 5;
@@ -138,6 +139,10 @@ export default function App() {
 
     const runSync = async (reason) => {
       try {
+        // Calendar markers are light-weight and independent of bulky saint records.
+        syncYearMarkers2026().catch((error) =>
+          console.log('Calendar markers sync отложен:', error?.message || error)
+        );
         const [
           publicContentResult,
           bibleContentResult,
