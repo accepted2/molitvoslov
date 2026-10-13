@@ -231,17 +231,20 @@ export const getOfflineCalendarMonth = async (year, month, language = 'ru') => {
     return null;
   }
 
-  return applyYearMarkersToMonth({
-    year: Number(year),
-    month: Number(month),
-    language: lang,
-    days,
-    total_days: days.length,
-    start_date: dateKeys[0],
-    end_date: dateKeys[dateKeys.length - 1],
-    source_error: null,
-    offline: true,
-  }, await loadYearMarkers(year));
+  return applyYearMarkersToMonth(
+    {
+      year: Number(year),
+      month: Number(month),
+      language: lang,
+      days,
+      total_days: days.length,
+      start_date: dateKeys[0],
+      end_date: dateKeys[dateKeys.length - 1],
+      source_error: null,
+      offline: true,
+    },
+    await loadYearMarkers(year)
+  );
 };
 
 /*
