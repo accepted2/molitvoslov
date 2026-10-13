@@ -1,6 +1,11 @@
 from django.urls import path
 
-from .calendar_views import CalendarDayView, CalendarMonthView, CalendarWeekView, CalendarYearMarkersView
+from .calendar_views import (
+    CalendarDayView,
+    CalendarMonthView,
+    CalendarWeekView,
+    CalendarYearMarkersView,
+)
 
 
 urlpatterns = [
