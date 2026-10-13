@@ -117,11 +117,10 @@ class MatchResult:
 def normalize_space(value):
     return re.sub(r"\s+", " ", value or "").strip()
 
+
 def make_short_feast_title(title, source_url=""):
     value = normalize_space(title)
-    if value.lower().startswith(
-            "покров пресвятой владычицы нашей богородицы"
-    ):
+    if value.lower().startswith("покров пресвятой владычицы нашей богородицы"):
         return "Покров Пресвятой Богородицы"
 
     if value.startswith("Празднование Казанской иконе Божией Матери"):
@@ -130,30 +129,18 @@ def make_short_feast_title(title, source_url=""):
     # используем явно заданное краткое название.
     overrides = {
         # 16 октября
-        "svv-dionisij-areopagit-rustik-parizhskij-elevferij-parizhskij":
-            "Сщмч. Дионисий Ареопагит",
-
+        "svv-dionisij-areopagit-rustik-parizhskij-elevferij-parizhskij": "Сщмч. Дионисий Ареопагит",
         # 17 октября
-        "sv-gurij-kazanskij":
-            "Обретение мощей свтт. Гурия и Варсонофия",
-        "sv-nikolaj-vereshchagin":
-            "Сщмч. Николай Верещагин и другие новомученики",
-
+        "sv-gurij-kazanskij": "Обретение мощей свтт. Гурия и Варсонофия",
+        "sv-nikolaj-vereshchagin": "Сщмч. Николай Верещагин и другие новомученики",
         # 18 октября
-        "sv-sobor-moskovskih-svjatitelej":
-            "Собор Московских святителей",
-        "svv-damian-pecherskij-ieremija-pecherskij-matfej-pecherskij":
-            "Прпп. Дамиана, Иеремии и Матфея Печерских",
-        "sv-haritina-litovskaja":
-            "Прп. Харитины Литовской",
-
+        "sv-sobor-moskovskih-svjatitelej": "Собор Московских святителей",
+        "svv-damian-pecherskij-ieremija-pecherskij-matfej-pecherskij": "Прпп. Дамиана, Иеремии и Матфея Печерских",
+        "sv-haritina-litovskaja": "Прп. Харитины Литовской",
         # 21 октября
-        "sv-dimitrij-dobroserdov":
-            "Сщмч. Димитрий (Добросердов) и другие новомученики",
-        "sv-iona-lazarev":
-            "Сщмч. Иона (Лазарев) и другие новомученики",
-        "svv-viktor-frolov-ioann-rybin-muchenik-nikolaj-kuzmin-elisaveta-kuranova":
-            "Мчч. Виктор, Иоанн, Николай и Елисавета",
+        "sv-dimitrij-dobroserdov": "Сщмч. Димитрий (Добросердов) и другие новомученики",
+        "sv-iona-lazarev": "Сщмч. Иона (Лазарев) и другие новомученики",
+        "svv-viktor-frolov-ioann-rybin-muchenik-nikolaj-kuzmin-elisaveta-kuranova": "Мчч. Виктор, Иоанн, Николай и Елисавета",
     }
 
     slug = urlparse(source_url).path.rstrip("/").rsplit("/", 1)[-1]
@@ -177,9 +164,7 @@ def make_short_feast_title(title, source_url=""):
 
     # Не сокращаем групповые памяти по первой запятой:
     # так можно случайно исключить других святых.
-    group_pattern = (
-        r"\b(?:сщмчч|мчч|мцц|прпп|свтт|правв)\."
-    )
+    group_pattern = r"\b(?:сщмчч|мчч|мцц|прпп|свтт|правв)\."
 
     if re.search(group_pattern, value, re.IGNORECASE):
         return value
@@ -472,6 +457,7 @@ def _collect_life(soup, saint_title):
 
         return "\n\n".join(parts).strip()
         # Разметка Azbyka: H2 "Жития", затем H3 с названием
+
     # конкретного жития и абзацы с основным текстом.
     for heading in headings:
         heading_text = tag_text(heading).lower()

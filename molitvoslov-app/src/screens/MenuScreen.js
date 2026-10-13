@@ -275,7 +275,6 @@ const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress})
   </Pressable>
 );
 
-
 const CalendarReadingText = ({readings, style}) => {
   const first = readings[0];
 
@@ -294,18 +293,13 @@ const CalendarReadingText = ({readings, style}) => {
   const extra = count > 0 ? ` +${count}` : '';
 
   // Отделяем библейскую ссылку от обозначения зачала.
-  const match = firstTitle.match(
-    /^(.*?)\s*(\([^()]*зач[^()]*\))$/i
-  );
+  const match = firstTitle.match(/^(.*?)\s*(\([^()]*зач[^()]*\))$/i);
 
   if (match) {
     const reference = match[1].trim();
 
     // Зачало вместе с +N — один неделимый фрагмент.
-    const ending = `${match[2]}${extra}`.replace(
-      /\s/g,
-      '\u00A0'
-    );
+    const ending = `${match[2]}${extra}`.replace(/\s/g, '\u00A0');
 
     return (
       <Text
@@ -315,9 +309,7 @@ const CalendarReadingText = ({readings, style}) => {
         minimumFontScale={0.85}
         ellipsizeMode="tail"
       >
-        {reference}
-        {' '}
-        {ending}
+        {reference} {ending}
       </Text>
     );
   }
@@ -327,12 +319,7 @@ const CalendarReadingText = ({readings, style}) => {
 
   if (parts && count > 0) {
     return (
-      <Text
-        style={style}
-        numberOfLines={3}
-        adjustsFontSizeToFit
-        minimumFontScale={0.85}
-      >
+      <Text style={style} numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.85}>
         {parts[1]}
         {`${parts[2]}${extra}`.replace(/\s/g, '\u00A0')}
       </Text>
@@ -345,8 +332,6 @@ const CalendarReadingText = ({readings, style}) => {
     </Text>
   );
 };
-
-
 
 export const MenuScreen = ({navigation}) => {
   const {language: calendarLanguage, setLanguage: setAppLanguage, t} = useLanguage();
@@ -687,11 +672,13 @@ export const MenuScreen = ({navigation}) => {
     }
 
     const first = readings[0];
-    const label = String(first.label || '').replace(/^ап(?:остол)?\.?\s*:?$/i,'').trim()
-    const title = String(first.title || '').trim()
+    const label = String(first.label || '')
+      .replace(/^ап(?:остол)?\.?\s*:?$/i, '')
+      .trim();
+    const title = String(first.title || '').trim();
     const firstTitle = label ? `${label}: ${title}` : title;
-    const extra = readings.length > 1 ? `.+${readings.length -1}` : '';
-    const match = firstTitle.match(/^(.*?)\s+(\([^()]*зач[^()]*\))$/i)
+    const extra = readings.length > 1 ? `.+${readings.length - 1}` : '';
+    const match = firstTitle.match(/^(.*?)\s+(\([^()]*зач[^()]*\))$/i);
 
     // if(match) {
     //   const ending = `${match[2]}${extra}`.replace(/ /g, '\u00A0')
@@ -1003,8 +990,6 @@ export const MenuScreen = ({navigation}) => {
     },
     [t]
   );
-
-
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>

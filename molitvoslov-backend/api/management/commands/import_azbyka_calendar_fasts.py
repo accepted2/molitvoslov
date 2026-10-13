@@ -6,6 +6,7 @@ Usage:
 
 Does not infer dietary strictness; retains existing fasting type/code and meal guidance.
 """
+
 from __future__ import annotations
 
 from collections import Counter
@@ -56,11 +57,13 @@ def fast_period_name(target_date: date) -> str:
 
 def fetch_calendar(year: int, timeout: float) -> dict[str, dict]:
     url = AZBYKA_URL.format(year=year)
-    response = requests.get(url, timeout=timeout, headers={"User-Agent": "Molitvoslov-calendar-import/1.0"})
+    response = requests.get(
+        url, timeout=timeout, headers={"User-Agent": "Molitvoslov-calendar-import/1.0"}
+    )
     response.raise_for_status()
     soup = BeautifulSoup(response.text, "lxml")
     data = {}
-    for item in soup.select('a.pika-day[data-date]'):
+    for item in soup.select("a.pika-day[data-date]"):
         raw_date = item.get("data-date", "")
         if not raw_date.startswith(f"{year}-"):
             continue
@@ -88,10 +91,16 @@ def fetch_calendar(year: int, timeout: float) -> dict[str, dict]:
                 )
             else:
                 continue
-        data[raw_date] = {"classes": markers, "title": item.get("title", "").strip(), "outside": outside}
+        data[raw_date] = {
+            "classes": markers,
+            "title": item.get("title", "").strip(),
+            "outside": outside,
+        }
     expected = 366 if (year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)) else 365
     if len(data) != expected:
-        raise CommandError(f"Azbyka вернула {len(data)} уникальных дат вместо {expected}; запись запрещена")
+        raise CommandError(
+            f"Azbyka вернула {len(data)} уникальных дат вместо {expected}; запись запрещена"
+        )
     if sum("easter" in item["classes"] for item in data.values()) != 1:
         raise CommandError("Azbyka не отметила ровно один день Пасхи; запись запрещена")
     return data
@@ -131,12 +140,21 @@ class Command(BaseCommand):
         except (ValueError, requests.RequestException) as exc:
             raise CommandError(f"Не удалось получить календарь: {exc}") from exc
         marker_counts = Counter(marker for item in days.values() for marker in item["classes"])
-        self.stdout.write(f"AZBYKA {year}: дней={len(days)}, режим={'APPLY' if apply else 'DRY-RUN'}")
-        self.stdout.write("Классы: " + ", ".join(f"{k}={v}" for k, v in sorted(marker_counts.items())))
+        self.stdout.write(
+            f"AZBYKA {year}: дней={len(days)}, режим={'APPLY' if apply else 'DRY-RUN'}"
+        )
+        self.stdout.write(
+            "Классы: " + ", ".join(f"{k}={v}" for k, v in sorted(marker_counts.items()))
+        )
         if year == 2026:
-            self.stdout.write("Контроль: 2026-11-04 post=" + str("post" in days["2026-11-04"]["classes"]))
+            self.stdout.write(
+                "Контроль: 2026-11-04 post=" + str("post" in days["2026-11-04"]["classes"])
+            )
 
-        current_days = {d.date_gregorian.isoformat(): d for d in CalendarDay.objects.filter(date_gregorian__year=year)}
+        current_days = {
+            d.date_gregorian.isoformat(): d
+            for d in CalendarDay.objects.filter(date_gregorian__year=year)
+        }
         creates = updates = unchanged = conflicts = cleared = reset_no_fast = 0
         prepared = []
         for day_string, info in sorted(days.items()):
@@ -145,7 +163,11 @@ class Command(BaseCommand):
             is_post = "post" in markers
             derived_name = fast_period_name(dt) if is_post else ""
             existing = current_days.get(day_string)
-            payload = dict(existing.source_payload) if existing and isinstance(existing.source_payload, dict) else {}
+            payload = (
+                dict(existing.source_payload)
+                if existing and isinstance(existing.source_payload, dict)
+                else {}
+            )
             previous = payload.get("azbyka_calendar_markers")
             record = {
                 "source": AZBYKA_URL.format(year=year),
@@ -163,29 +185,65 @@ class Command(BaseCommand):
             # Preserve diet prescriptions when status matches; clear known contradictory data.
             name_to_set = derived_name if derived_name and not old_name else None
             equivalent_names = {"Петров пост", "Апостольский пост"}
-            if derived_name and old_name and old_name != derived_name and {old_name, derived_name} != equivalent_names:
+            if (
+                derived_name
+                and old_name
+                and old_name != derived_name
+                and {old_name, derived_name} != equivalent_names
+            ):
                 conflicts += 1
                 if conflicts <= 12:
-                    self.stdout.write(self.style.WARNING(
-                        f"  Проверить название {day_string}: {old_name!r} / {derived_name!r}; сохраняем прежнее"
-                    ))
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"  Проверить название {day_string}: {old_name!r} / {derived_name!r}; сохраняем прежнее"
+                        )
+                    )
             changes = {"source_payload": payload}
             if name_to_set:
                 changes["fast_name"] = name_to_set
             if old_name and not is_post:
                 # E.g. 1-7 June 2026: obsolete 'Apostolic fast' and food prescriptions.
                 # A day may be nonfasting as part of a solid week, not just ordinary Tuesday.
-                changes.update(fast_name="", fast_type=None, fast_type_code="", fast_type_title="", fast_description="")
+                changes.update(
+                    fast_name="",
+                    fast_type=None,
+                    fast_type_code="",
+                    fast_type_title="",
+                    fast_description="",
+                )
                 cleared += 1
-            elif is_post and existing and (existing.fast_type_code == "no-fast" or (existing.fast_type and existing.fast_type.code == "no-fast")):
+            elif (
+                is_post
+                and existing
+                and (
+                    existing.fast_type_code == "no-fast"
+                    or (existing.fast_type and existing.fast_type.code == "no-fast")
+                )
+            ):
                 # The legacy database says "no fast" on a date explicitly marked fasting.
-                changes.update(fast_type=None, fast_type_code="", fast_type_title="Постный день", fast_description="")
+                changes.update(
+                    fast_type=None,
+                    fast_type_code="",
+                    fast_type_title="Постный день",
+                    fast_description="",
+                )
                 reset_no_fast += 1
-            elif is_post and (not existing or not existing.fast_type_title and not existing.fast_type_code and not existing.fast_type_id):
+            elif is_post and (
+                not existing
+                or not existing.fast_type_title
+                and not existing.fast_type_code
+                and not existing.fast_type_id
+            ):
                 changes["fast_type_title"] = "Постный день"
-            changed = (not existing or previous != record or any(
-                getattr(existing, key) != val for key, val in changes.items() if key != "source_payload"
-            ))
+            changed = (
+                not existing
+                or previous != record
+                or any(
+                    getattr(existing, key) != val
+                    for key, val in changes.items()
+                    if key != "source_payload"
+                )
+            )
             if not existing:
                 creates += 1
             elif changed:
@@ -193,11 +251,19 @@ class Command(BaseCommand):
             else:
                 unchanged += 1
             prepared.append((dt, existing, changes, changed))
-        self.stdout.write(f"Итог: CREATE {creates}; UPDATE {updates}; без изменений {unchanged}; предупреждений {conflicts}")
-        self.stdout.write(f"Очистить устаревшие значения поста: {cleared}; исправить ложное no-fast: {reset_no_fast}")
-        self.stdout.write("Сохраняем правила трапезы, кроме явно противоречащих постному статусу Azbyka. Памяти/чтения/иконы не затрагиваем.")
+        self.stdout.write(
+            f"Итог: CREATE {creates}; UPDATE {updates}; без изменений {unchanged}; предупреждений {conflicts}"
+        )
+        self.stdout.write(
+            f"Очистить устаревшие значения поста: {cleared}; исправить ложное no-fast: {reset_no_fast}"
+        )
+        self.stdout.write(
+            "Сохраняем правила трапезы, кроме явно противоречащих постному статусу Azbyka. Памяти/чтения/иконы не затрагиваем."
+        )
         if not apply:
-            self.stdout.write("DRY-RUN: база не изменена. Для записи используйте --apply после проверки.")
+            self.stdout.write(
+                "DRY-RUN: база не изменена. Для записи используйте --apply после проверки."
+            )
             return
         if connections["default"].vendor != "sqlite":
             raise CommandError("--apply разрешён только для локальной SQLite")

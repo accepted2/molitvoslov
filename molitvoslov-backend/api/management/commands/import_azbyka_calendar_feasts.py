@@ -411,7 +411,7 @@ class Command(BaseCommand):
                 # импорте. Если пользователь потом сократил его вручную
                 # в админке, повторный импорт эту редактуру не затрёт.
                 if existing is None or not existing.short_title:
-                    defaults["short_title"]  = make_short_feast_title(
+                    defaults["short_title"] = make_short_feast_title(
                         source.title,
                         source.url,
                     )
