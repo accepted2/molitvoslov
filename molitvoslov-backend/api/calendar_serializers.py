@@ -130,6 +130,7 @@ class CalendarDaySerializer(serializers.ModelSerializer):
     fast_type_title = serializers.SerializerMethodField()
     fast_name = serializers.SerializerMethodField()
     fast_description = serializers.SerializerMethodField()
+    calendar_markers = serializers.SerializerMethodField()
     summary = serializers.SerializerMethodField()
     short_summary = serializers.SerializerMethodField()
     gospel_title = serializers.SerializerMethodField()
@@ -157,6 +158,7 @@ class CalendarDaySerializer(serializers.ModelSerializer):
             "fast_type_title",
             "fast_name",
             "fast_description",
+            "calendar_markers",
             "summary",
             "short_summary",
             "gospel_title",
@@ -223,41 +225,26 @@ class CalendarDaySerializer(serializers.ModelSerializer):
     def get_language(self, obj):
         return self._language()
 
-    def get_fast_type_code(self, obj):
-        if obj.fast_type:
-            return obj.fast_type.code
+    def get_calendar_markers(self, obj):
+        payload = obj.source_payload if isinstance(obj.source_payload, dict) else {}
+        markers = payload.get("azbyka_calendar_markers")
+        return markers if isinstance(markers, dict) else None
 
-        return obj.fast_type_code
+    def get_fast_type_code(self, obj):
+        return obj.fast_type_code or (obj.fast_type.code if obj.fast_type else "")
 
     def get_fast_type_title(self, obj):
-        if obj.fast_type:
-            return _localized(
-                obj.fast_type,
-                "type_title",
-                self._language(),
-            )
-
-        return self._get(obj, "fast_type_title")
+        return self._get(obj, "fast_type_title") or (
+            _localized(obj.fast_type, "type_title", self._language()) if obj.fast_type else ""
+        )
 
     def get_fast_name(self, obj):
-        if obj.fast_type:
-            return _localized(
-                obj.fast_type,
-                "name",
-                self._language(),
-            )
-
         return self._get(obj, "fast_name")
 
     def get_fast_description(self, obj):
-        if obj.fast_type:
-            return _localized(
-                obj.fast_type,
-                "description",
-                self._language(),
-            )
-
-        return self._get(obj, "fast_description")
+        return self._get(obj, "fast_description") or (
+            _localized(obj.fast_type, "description", self._language()) if obj.fast_type else ""
+        )
 
     def get_summary(self, obj):
         return self._get(obj, "summary")
