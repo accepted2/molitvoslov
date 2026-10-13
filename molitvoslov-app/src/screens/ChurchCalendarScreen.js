@@ -688,7 +688,9 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             const selected = selectedDate === cell.date;
             const isToday = today === cell.date;
             const weekend = index % 7 >= 5;
-            const appearance = cell.outside ? null : getCalendarDayAppearance(daysMap.get(cell.date));
+            const appearance = cell.outside
+              ? null
+              : getCalendarDayAppearance(daysMap.get(cell.date));
 
             return (
               <Pressable
@@ -700,11 +702,13 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
                   pressed && styles.pressed,
                 ]}
               >
-                <View style={[
-                  styles.dayBubble,
-                  appearance && styles[`dayBubble_${appearance}`],
-                  isToday && styles.dayBubbleToday,
-                ]}>
+                <View
+                  style={[
+                    styles.dayBubble,
+                    appearance && styles[`dayBubble_${appearance}`],
+                    isToday && styles.dayBubbleToday,
+                  ]}
+                >
                   <Text
                     style={[
                       styles.dayNumber,
