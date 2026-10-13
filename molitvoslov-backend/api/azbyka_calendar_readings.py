@@ -145,6 +145,8 @@ def _clean_label(value):
         "утр.": "Утр.",
     }
 
+    if re.fullmatch(r"ап(?:\.|остол)?", value, flags=re.IGNORECASE):
+        return ""
     lowered = value.lower()
     if lowered in replacements:
         return replacements[lowered]

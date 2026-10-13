@@ -8,6 +8,8 @@ export const homeArtwork = {
   canons: require('../../assets/home/canons.png'),
   communion: require('../../assets/home/communion.png'),
   psalter: require('../../assets/home/psalter.png'),
+  misc: require('../../assets/home/misc_prayers.jpg'),
+  bible: require('../../assets/home/bible.jpg'),
 };
 
 // page_bg2

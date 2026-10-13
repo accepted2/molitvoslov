@@ -14,6 +14,7 @@ from api.azbyka_calendar_feasts import (
     fetch_saint_content,
     find_best_hymn_group,
     find_best_source,
+    make_short_feast_title,
 )
 from api.calendar_icon_storage import (
     CalendarIconStorageError,
@@ -410,7 +411,10 @@ class Command(BaseCommand):
                 # импорте. Если пользователь потом сократил его вручную
                 # в админке, повторный импорт эту редактуру не затрёт.
                 if existing is None or not existing.short_title:
-                    defaults["short_title"] = source.title
+                    defaults["short_title"]  = make_short_feast_title(
+                        source.title,
+                        source.url,
+                    )
                 if item["cloudinary_icon_url"]:
                     defaults["icon_url"] = item["cloudinary_icon_url"]
 

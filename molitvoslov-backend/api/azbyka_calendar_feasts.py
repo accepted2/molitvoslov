@@ -117,6 +117,83 @@ class MatchResult:
 def normalize_space(value):
     return re.sub(r"\s+", " ", value or "").strip()
 
+def make_short_feast_title(title, source_url=""):
+    value = normalize_space(title)
+    if value.lower().startswith(
+            "покров пресвятой владычицы нашей богородицы"
+    ):
+        return "Покров Пресвятой Богородицы"
+
+    if value.startswith("Празднование Казанской иконе Божией Матери"):
+        return "Казанская икона Божией Матери"
+    # Для некоторых сложных групповых памятей
+    # используем явно заданное краткое название.
+    overrides = {
+        # 16 октября
+        "svv-dionisij-areopagit-rustik-parizhskij-elevferij-parizhskij":
+            "Сщмч. Дионисий Ареопагит",
+
+        # 17 октября
+        "sv-gurij-kazanskij":
+            "Обретение мощей свтт. Гурия и Варсонофия",
+        "sv-nikolaj-vereshchagin":
+            "Сщмч. Николай Верещагин и другие новомученики",
+
+        # 18 октября
+        "sv-sobor-moskovskih-svjatitelej":
+            "Собор Московских святителей",
+        "svv-damian-pecherskij-ieremija-pecherskij-matfej-pecherskij":
+            "Прпп. Дамиана, Иеремии и Матфея Печерских",
+        "sv-haritina-litovskaja":
+            "Прп. Харитины Литовской",
+
+        # 21 октября
+        "sv-dimitrij-dobroserdov":
+            "Сщмч. Димитрий (Добросердов) и другие новомученики",
+        "sv-iona-lazarev":
+            "Сщмч. Иона (Лазарев) и другие новомученики",
+        "svv-viktor-frolov-ioann-rybin-muchenik-nikolaj-kuzmin-elisaveta-kuranova":
+            "Мчч. Виктор, Иоанн, Николай и Елисавета",
+    }
+
+    slug = urlparse(source_url).path.rstrip("/").rsplit("/", 1)[-1]
+
+    if slug in overrides:
+        return overrides[slug]
+
+    # Убираем годы и века в конце названия.
+    value = re.sub(
+        r"\s*\((?:ок\.\s*)?"
+        r"(?:\d{1,4}(?:\s*[–—-]\s*\d{1,4})?|"
+        r"[IVXLCDM]+(?:\s*[–—-]\s*[IVXLCDM]+)?)"
+        r"\)\s*$",
+        "",
+        value,
+        flags=re.IGNORECASE,
+    ).strip()
+
+    if len(value) <= 52:
+        return value
+
+    # Не сокращаем групповые памяти по первой запятой:
+    # так можно случайно исключить других святых.
+    group_pattern = (
+        r"\b(?:сщмчч|мчч|мцц|прпп|свтт|правв)\."
+    )
+
+    if re.search(group_pattern, value, re.IGNORECASE):
+        return value
+    # У длинного названия удаляем пояснения
+    # после первой запятой, не разрывая слова.
+    if "," in value:
+        candidate = value.split(",", 1)[0].strip()
+
+        if candidate:
+            return candidate
+
+    # Не обрезаем автоматически имена посередине.
+    return value
+
 
 def tag_text(tag):
     # Не вставляем искусственные пробелы между inline-узлами. На Azbyka
@@ -394,6 +471,25 @@ def _collect_life(soup, saint_title):
                 parts.append(value)
 
         return "\n\n".join(parts).strip()
+        # Разметка Azbyka: H2 "Жития", затем H3 с названием
+    # конкретного жития и абзацы с основным текстом.
+    for heading in headings:
+        heading_text = tag_text(heading).lower()
+
+        if heading.name != "h2" or heading_text != "жития":
+            continue
+
+        for child in heading.find_all_next():
+            if child.name == "h2":
+                break
+
+            if child.name != "h3":
+                continue
+
+            content = collect_section(child)
+
+            if content and len(content) >= 100:
+                return tag_text(child), content
 
     # 1. Лучший вариант: на странице есть явный раздел жития.
     # Он имеет приоритет над "Днями памяти" и краткой аннотацией.

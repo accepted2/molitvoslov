@@ -275,6 +275,79 @@ const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress})
   </Pressable>
 );
 
+
+const CalendarReadingText = ({readings, style}) => {
+  const first = readings[0];
+
+  if (!first) {
+    return <Text style={style}>—</Text>;
+  }
+
+  const label = String(first.label || '')
+    .replace(/^ап(?:остол)?\.?\s*:?$/i, '')
+    .trim();
+
+  const title = String(first.title || '').trim();
+  const firstTitle = label ? `${label}: ${title}` : title;
+
+  const count = Math.max(0, readings.length - 1);
+  const extra = count > 0 ? ` +${count}` : '';
+
+  // Отделяем библейскую ссылку от обозначения зачала.
+  const match = firstTitle.match(
+    /^(.*?)\s*(\([^()]*зач[^()]*\))$/i
+  );
+
+  if (match) {
+    const reference = match[1].trim();
+
+    // Зачало вместе с +N — один неделимый фрагмент.
+    const ending = `${match[2]}${extra}`.replace(
+      /\s/g,
+      '\u00A0'
+    );
+
+    return (
+      <Text
+        style={style}
+        numberOfLines={3}
+        adjustsFontSizeToFit
+        minimumFontScale={0.85}
+        ellipsizeMode="tail"
+      >
+        {reference}
+        {' '}
+        {ending}
+      </Text>
+    );
+  }
+
+  // Для ссылок без зачала также не оставляем +N отдельно.
+  const parts = firstTitle.match(/^(.*?)(\S+)$/);
+
+  if (parts && count > 0) {
+    return (
+      <Text
+        style={style}
+        numberOfLines={3}
+        adjustsFontSizeToFit
+        minimumFontScale={0.85}
+      >
+        {parts[1]}
+        {`${parts[2]}${extra}`.replace(/\s/g, '\u00A0')}
+      </Text>
+    );
+  }
+
+  return (
+    <Text style={style} numberOfLines={3}>
+      {firstTitle}
+    </Text>
+  );
+};
+
+
+
 export const MenuScreen = ({navigation}) => {
   const {language: calendarLanguage, setLanguage: setAppLanguage, t} = useLanguage();
   const [categories, setCategories] = useState([]);
@@ -614,13 +687,23 @@ export const MenuScreen = ({navigation}) => {
     }
 
     const first = readings[0];
-    const firstTitle = first.label ? `${first.label}: ${first.title}` : first.title;
+    const label = String(first.label || '').replace(/^ап(?:остол)?\.?\s*:?$/i,'').trim()
+    const title = String(first.title || '').trim()
+    const firstTitle = label ? `${label}: ${title}` : title;
+    const extra = readings.length > 1 ? `.+${readings.length -1}` : '';
+    const match = firstTitle.match(/^(.*?)\s+(\([^()]*зач[^()]*\))$/i)
+
+    // if(match) {
+    //   const ending = `${match[2]}${extra}`.replace(/ /g, '\u00A0')
+    //   return `${match[1]}\n${ending}`;
+    // }
+    // return `${firstTitle}${extra}`
 
     if (readings.length === 1) {
       return firstTitle;
     }
 
-    return `${firstTitle}  ·  +${readings.length - 1}`;
+    return `${firstTitle} · +${readings.length - 1}`;
   };
 
   const rootCategories = useMemo(
@@ -769,7 +852,7 @@ export const MenuScreen = ({navigation}) => {
         } else if (info.section_type_display) {
           parts.push(info.section_type_display);
         }
-        if (parts.length) position = parts.join(' · ');
+        if (parts.length) position = parts.join('·');
       }
 
       return {
@@ -921,17 +1004,7 @@ export const MenuScreen = ({navigation}) => {
     [t]
   );
 
-  // if (loading) {
-  //   return (
-  //     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
-  //       <StatusBar style="light" translucent backgroundColor="transparent" />
-  //       <View style={styles.center}>
-  //         <ActivityIndicator size="large" color={colors.accent} />
-  //         <Text style={styles.loadingText}>Загрузка молитвослова...</Text>
-  //       </View>
-  //     </SafeAreaView>
-  //   );
-  // }
+
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
@@ -1195,15 +1268,15 @@ export const MenuScreen = ({navigation}) => {
                       >
                         <Text style={styles.calendarQuickLabel}>{t('calendar.gospel')}</Text>
 
-                        <Text
+                        <CalendarReadingText
+                          key={`gospel-${toCalendarDate(calendarSelectedDate)}`}
+                          readings={calendarGospelReadings}
+                          kind="gospel"
                           style={[
                             styles.calendarQuickText,
                             !!calendarGospelReadings.length && styles.calendarBibleLink,
                           ]}
-                          numberOfLines={2}
-                        >
-                          {formatCalendarQuickReadings(calendarGospelReadings)}
-                        </Text>
+                        />
                       </Pressable>
 
                       <Pressable
@@ -1217,15 +1290,15 @@ export const MenuScreen = ({navigation}) => {
                       >
                         <Text style={styles.calendarQuickLabel}>{t('calendar.apostle')}</Text>
 
-                        <Text
+                        <CalendarReadingText
+                          key={`apostle-${toCalendarDate(calendarSelectedDate)}`}
+                          readings={calendarApostleReadings}
+                          kind="apostle"
                           style={[
                             styles.calendarQuickText,
                             !!calendarApostleReadings.length && styles.calendarBibleLink,
                           ]}
-                          numberOfLines={2}
-                        >
-                          {formatCalendarQuickReadings(calendarApostleReadings)}
-                        </Text>
+                        />
                       </Pressable>
                     </View>
                   </View>
@@ -1470,14 +1543,14 @@ export const MenuScreen = ({navigation}) => {
                   subtitle={t('menu.miscSubtitle')}
                   symbol="✦"
                   iconSource={CATEGORY_ICONS.misc}
-                  artwork={homeArtwork.communion}
+                  artwork={homeArtwork.misc}
                   onPress={() => navigation.navigate('MiscPrayers')}
                 />
                 <DecorativeCard
                   title={t('menu.bibleTitle')}
                   subtitle={t('menu.bibleSubtitle')}
                   iconSource={CATEGORY_ICONS.bible}
-                  artwork={homeArtwork.hero_biblical}
+                  artwork={homeArtwork.bible}
                   onPress={() => navigation.navigate('Bible')}
                 />
               </View>
@@ -1743,18 +1816,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#FFF1D5',
   },
-
-  // heroQuoteContent: {
-  //   width: '100%',
-  //   marginTop: 24,
-  //   zIndex: 3,
-  //   textAlign: 'justify',
-  //   position: 'relative',
-  //   alignSelf: 'flex-start',
-  //   paddingVertical: 2,
-  //   paddingHorizontal: 3,
-  //
-  // },
 
   heroQuoteHeading: {
     flexDirection: 'row',
@@ -2037,7 +2098,7 @@ const styles = StyleSheet.create({
   calendarMainRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    gap: 8,
+    gap: 5,
     marginTop: 8,
     paddingTop: 8,
 
@@ -2048,11 +2109,11 @@ const styles = StyleSheet.create({
   calendarTodayColumn: {
     flex: 1,
     minWidth: 0,
-    padding: 4,
+    padding: 1,
     borderRadius: 11,
     borderWidth: 1,
-    width: '42%',
-    alignSelf: 'stretch',
+    width: '44%',
+    alignSelf: 'flex-start',
     borderColor: 'rgba(255, 251, 242, 0.72)',
     backgroundColor: 'rgba(139, 94, 49, 0.13)',
   },
@@ -2117,6 +2178,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'stretch',
     padding: 6,
+    gap: 2,
     borderRadius: 11,
     borderWidth: 1,
     borderColor: 'rgba(139, 94, 49, 0.13)',
@@ -2178,6 +2240,7 @@ const styles = StyleSheet.create({
     lineHeight: 13,
     fontWeight: '700',
   },
+
   calendarQuickColumn: {
     marginTop: 6,
     borderRadius: 10,
@@ -2335,7 +2398,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     minHeight: 45,
     justifyContent: 'center',
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
     paddingVertical: 1,
   },
 
