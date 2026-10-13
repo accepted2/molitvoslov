@@ -4,6 +4,13 @@ import {API_BASE_URL} from './backendAuth';
 const PREFIX = '@molitvoslov/calendar-markers-v1:';
 const REFRESH_MS = 24 * 60 * 60 * 1000;
 const memory = new Map();
+const bundled2026 = () => {
+  try {
+    return require('../data/calendar/markers-2026.json')?.days || {};
+  } catch {
+    return key === 2026 ? bundled2026() : {};
+  }
+};
 let pending = null;
 
 export const loadYearMarkers = async (year) => {
@@ -11,7 +18,7 @@ export const loadYearMarkers = async (year) => {
   if (memory.has(key)) return memory.get(key);
   try {
     const raw = await AsyncStorage.getItem(`${PREFIX}${key}`);
-    const value = raw ? JSON.parse(raw) : {};
+    const value = raw ? JSON.parse(raw) : {days: key === 2026 ? bundled2026() : {}};
     const days = value?.days && typeof value.days === 'object' ? value.days : {};
     memory.set(key, days);
     return days;
