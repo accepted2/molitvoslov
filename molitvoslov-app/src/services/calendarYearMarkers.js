@@ -29,7 +29,9 @@ export const applyYearMarkers = (day, markersByDate) => {
 };
 
 export const applyYearMarkersToMonth = (month, markersByDate) =>
-  month ? {...month, days: (month.days || []).map((day) => applyYearMarkers(day, markersByDate))} : month;
+  month
+    ? {...month, days: (month.days || []).map((day) => applyYearMarkers(day, markersByDate))}
+    : month;
 
 export const syncYearMarkers2026 = async () => {
   if (pending) return pending;
@@ -43,14 +45,20 @@ export const syncYearMarkers2026 = async () => {
     if (!response.ok) throw new Error(`Calendar markers HTTP ${response.status}`);
     const payload = await response.json();
     // Prevent accidentally replacing a complete cache with an empty or partial year.
-    if (payload?.year !== year || payload?.total_days !== 365 ||
-        !payload?.days || Object.keys(payload.days).length !== 365) {
+    if (
+      payload?.year !== year ||
+      payload?.total_days !== 365 ||
+      !payload?.days ||
+      Object.keys(payload.days).length !== 365
+    ) {
       throw new Error('Calendar markers: incomplete 2026 year; keeping local data');
     }
     await AsyncStorage.setItem(`${PREFIX}${year}`, JSON.stringify(payload));
     memory.set(year, payload.days);
     await AsyncStorage.setItem(stampKey, String(Date.now()));
     return {updated: true};
-  })().finally(() => { pending = null; });
+  })().finally(() => {
+    pending = null;
+  });
   return pending;
 };
