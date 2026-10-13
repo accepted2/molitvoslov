@@ -210,3 +210,34 @@ class CalendarWeekView(APIView):
                 ).data,
             }
         )
+
+
+class CalendarYearMarkersView(APIView):
+    """Compact read-only yearly calendar flags; never imports or modifies calendar data."""
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        try:
+            year = int(request.query_params.get("year") or timezone.localdate().year)
+        except (TypeError, ValueError):
+            return Response({"detail": "Некорректный год."}, status=400)
+        if not 1900 <= year <= 2200:
+            return Response({"detail": "Некорректный год."}, status=400)
+        days = CalendarDay.objects.filter(date_gregorian__year=year).values(
+            "date_gregorian", "source_payload", "fast_name", "fast_type_title",
+            "fast_type_code", "fast_description",
+        )
+        result = {}
+        for day in days.iterator():
+            payload = day["source_payload"] if isinstance(day["source_payload"], dict) else {}
+            markers = payload.get("azbyka_calendar_markers")
+            if not isinstance(markers, dict):
+                continue
+            result[day["date_gregorian"].isoformat()] = {
+                "calendar_markers": markers,
+                "fast_name": day["fast_name"],
+                "fast_type_title": day["fast_type_title"],
+                "fast_type_code": day["fast_type_code"],
+                "fast_description": day["fast_description"],
+            }
+        return Response({"year": year, "days": result, "total_days": len(result)})
