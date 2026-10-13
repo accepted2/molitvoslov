@@ -36,6 +36,7 @@ const ONBOARDING_STORAGE_KEY = '@molitvoslov/onboarding-version';
 const ONBOARDING_VERSION = 5;
 
 const MIN_STARTUP_MS = 650;
+const CONTENT_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
 const StartupLoadingScreen = () => (
   <ImageBackground
@@ -210,6 +211,31 @@ export default function App() {
 
     runSync('startup');
 
+    // Keep the RU/UK offline content fresh without blocking language switches.
+    // Conditional requests (ETag / 304) avoid downloading unchanged bundles.
+    let isForeground = true;
+    const contentRefreshTimer = setInterval(async () => {
+      if (!isForeground) {
+        return;
+      }
+
+      const [publicResult, bibleResult] = await Promise.all([
+        syncPublicContent(),
+        syncBibleContent('rst'),
+      ]);
+
+      if (publicResult?.updated || bibleResult?.updated) {
+        warmSearchData();
+      }
+
+      if (!publicResult?.success && publicResult?.error) {
+        console.log(
+          'Periodic public content sync отложен:',
+          publicResult.error?.message || publicResult.error
+        );
+      }
+    }, CONTENT_REFRESH_INTERVAL_MS);
+
     const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
       const online = Boolean(state.isConnected) && state.isInternetReachable !== false;
 
@@ -221,12 +247,14 @@ export default function App() {
     });
 
     const appStateSubscription = AppState.addEventListener('change', (nextState) => {
+      isForeground = nextState === 'active';
       if (nextState === 'active') {
         runSync('foreground');
       }
     });
 
     return () => {
+      clearInterval(contentRefreshTimer);
       unsubscribeNetInfo();
 
       appStateSubscription.remove();
