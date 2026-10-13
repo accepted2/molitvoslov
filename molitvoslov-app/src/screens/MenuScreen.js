@@ -2368,12 +2368,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
 
-  miniCalendarDayBubble_fast: {backgroundColor: '#E4D5EF'},
-  miniCalendarDayBubble_solid: {backgroundColor: '#F2E1AA'},
-  miniCalendarDayBubble_feast: {backgroundColor: '#F6D7D1'},
-  miniCalendarDayBubble_easter: {backgroundColor: '#CFA54D'},
-  miniCalendarDayBubble_memorial: {backgroundColor: '#E6DDD1'},
-  miniCalendarDayMarked: {color: '#603B4B', fontWeight: '700'},
+  miniCalendarDayBubble_fast: {backgroundColor: '#A78AB9'},
+  miniCalendarDayBubble_solid: {backgroundColor: '#E0B65C'},
+  miniCalendarDayBubble_feast: {backgroundColor: '#C98275'},
+  miniCalendarDayBubble_easter: {backgroundColor: '#C99535'},
+  miniCalendarDayBubble_memorial: {backgroundColor: '#A69A86'},
+  miniCalendarDayMarked: {color: '#6A4B3B', fontWeight: '700'},
   miniCalendarDayBubbleToday: {
     backgroundColor: '#B97A32',
   },
