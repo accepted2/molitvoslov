@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {applyYearMarkers, applyYearMarkersToMonth, loadYearMarkers} from './calendarYearMarkers';
 
 const STORAGE_PREFIX = 'calendar-day-v3';
 
@@ -176,11 +177,9 @@ export const getBundledCalendarMonth = (year, month, language = 'ru') => {
 export const getOfflineCalendarDay = async (date, language = 'ru') => {
   const stored = await getStoredCalendarDay(date, language);
 
-  if (stored) {
-    return stored;
-  }
-
-  return getBundledCalendarDay(date, language);
+  const day = stored || getBundledCalendarDay(date, language);
+  const year = Number(normalizeDate(date)?.slice(0, 4));
+  return applyYearMarkers(day, await loadYearMarkers(year));
 };
 
 /*
@@ -232,7 +231,7 @@ export const getOfflineCalendarMonth = async (year, month, language = 'ru') => {
     return null;
   }
 
-  return {
+  return applyYearMarkersToMonth({
     year: Number(year),
     month: Number(month),
     language: lang,
@@ -242,7 +241,7 @@ export const getOfflineCalendarMonth = async (year, month, language = 'ru') => {
     end_date: dateKeys[dateKeys.length - 1],
     source_error: null,
     offline: true,
-  };
+  }, await loadYearMarkers(year));
 };
 
 /*
