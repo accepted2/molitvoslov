@@ -5,6 +5,7 @@ Run after local import:
 
 No database writes. The output is generated from the local SQLite source of truth.
 """
+
 import json
 from pathlib import Path
 
@@ -39,13 +40,23 @@ class Command(BaseCommand):
             }
         expected = 366 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 365
         if len(result) != expected:
-            raise CommandError(
-                f"Неполный год: {len(result)} из {expected}. Экспорт отменён."
-            )
-        target = Path(settings.BASE_DIR).parent / "molitvoslov-app" / "src" / "data" / "calendar" / f"markers-{year}.json"
+            raise CommandError(f"Неполный год: {len(result)} из {expected}. Экспорт отменён.")
+        target = (
+            Path(settings.BASE_DIR).parent
+            / "molitvoslov-app"
+            / "src"
+            / "data"
+            / "calendar"
+            / f"markers-{year}.json"
+        )
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(
-            json.dumps({"year": year, "days": result, "total_days": len(result)}, ensure_ascii=False, indent=2) + "\n",
+            json.dumps(
+                {"year": year, "days": result, "total_days": len(result)},
+                ensure_ascii=False,
+                indent=2,
+            )
+            + "\n",
             encoding="utf-8",
         )
         self.stdout.write(self.style.SUCCESS(f"Создан файл {target} ({len(result)} дней)"))
