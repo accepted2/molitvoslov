@@ -29,6 +29,7 @@ import {deleteReadingProgress, getReadingProgress} from '../services/readingProg
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {
   formatFast,
+  formatMemorialDay,
   getCalendarDayAppearance,
   getCalendarDay,
   getCalendarMonth,
@@ -1273,6 +1274,11 @@ export const MenuScreen = ({navigation}) => {
                         <Text style={styles.calendarQuickText} numberOfLines={2}>
                           {formatFast(calendarToday, calendarLanguage) || calendarCopy.noFastData}
                         </Text>
+                        {!!formatMemorialDay(calendarToday, calendarLanguage) && (
+                          <Text style={styles.calendarQuickText} numberOfLines={2}>
+                            {formatMemorialDay(calendarToday, calendarLanguage)}
+                          </Text>
+                        )}
                       </Pressable>
 
                       <Pressable
