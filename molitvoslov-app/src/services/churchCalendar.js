@@ -466,6 +466,13 @@ export const openCalendarBibleReference = (navigation, title) => {
 export const getCalendarMarkers = (day) =>
   day?.calendar_markers || day?.source_payload?.azbyka_calendar_markers || null;
 
+export const formatMemorialDay = (day, language = 'ru') => {
+  const markers = getCalendarMarkers(day);
+  if (!markers?.is_memorial_day) return '';
+  const title = markers.memorial_title || '';
+  return title || (language === 'uk' ? 'День поминання спочилих' : 'День поминовения усопших');
+};
+
 export const getCalendarDayAppearance = (day) => {
   const markers = getCalendarMarkers(day);
   if (!markers) return null;
