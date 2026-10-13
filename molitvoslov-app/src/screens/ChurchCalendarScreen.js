@@ -19,6 +19,7 @@ import {PrayerBeadsLoader} from '../components/feedback/PrayerBeadsLoader';
 import {CategoryIcon} from '../components/icons/CategoryIcon';
 import {
   formatFast,
+  getCalendarDayAppearance,
   getBibleReadingVerses,
   getCalendarDay,
   getCalendarReadingItems,
@@ -687,6 +688,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             const selected = selectedDate === cell.date;
             const isToday = today === cell.date;
             const weekend = index % 7 >= 5;
+            const appearance = cell.outside ? null : getCalendarDayAppearance(daysMap.get(cell.date));
 
             return (
               <Pressable
@@ -698,12 +700,17 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
                   pressed && styles.pressed,
                 ]}
               >
-                <View style={[styles.dayBubble, isToday && styles.dayBubbleToday]}>
+                <View style={[
+                  styles.dayBubble,
+                  appearance && styles[`dayBubble_${appearance}`],
+                  isToday && styles.dayBubbleToday,
+                ]}>
                   <Text
                     style={[
                       styles.dayNumber,
                       cell.outside && styles.dayOutside,
                       weekend && !cell.outside && styles.weekendText,
+                      appearance && styles.dayNumberMarked,
                       isToday && styles.dayNumberToday,
                     ]}
                   >
@@ -982,6 +989,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 16,
   },
+  dayBubble_fast: {backgroundColor: '#E4D5EF'},
+  dayBubble_solid: {backgroundColor: '#F2E1AA'},
+  dayBubble_feast: {backgroundColor: '#F6D7D1'},
+  dayBubble_easter: {backgroundColor: '#CFA54D'},
+  dayBubble_memorial: {backgroundColor: '#E6DDD1'},
+  dayNumberMarked: {fontWeight: '700', color: '#5D334B'},
   dayBubbleToday: {
     backgroundColor: '#9A642E',
   },
