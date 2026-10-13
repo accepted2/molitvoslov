@@ -415,7 +415,11 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   useEffect(() => {
     const section = route.params?.section;
 
-    if (!dayData || (section !== 'gospel' && section !== 'apostle')) {
+    if (
+      !navigation.isFocused() ||
+      !dayData ||
+      (section !== 'gospel' && section !== 'apostle')
+    ) {
       return;
     }
 
@@ -440,10 +444,14 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
         y: Math.max(0, targetY),
         animated: true,
       });
+
+      // Consume the one-shot navigation intent. Accordion expansion, data
+      // refreshes and layout changes must never re-trigger this scroll.
+      navigation.setParams({section: undefined});
     }, 180);
 
     return () => clearTimeout(timer);
-  }, [dayData, headerHeight, readingLayoutVersion, route.params?.section]);
+  }, [dayData, headerHeight, navigation, readingLayoutVersion, route.params?.section]);
 
   useEffect(() => {
     let previousOnline = null;
