@@ -177,7 +177,11 @@ class Command(BaseCommand):
                 "is_major_feast": "great12" in markers,
                 "is_easter": "easter" in markers,
                 "is_memorial_day": "memorial" in markers,
-                "memorial_title": (info["title"].splitlines()[-1].split(". ")[-1].strip() if "memorial" in markers else ""),
+                "memorial_title": (
+                    info["title"].splitlines()[-1].split(". ")[-1].strip()
+                    if "memorial" in markers
+                    else ""
+                ),
                 "fast_period_name": derived_name,
             }
             payload["azbyka_calendar_markers"] = record
