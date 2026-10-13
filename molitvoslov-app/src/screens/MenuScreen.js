@@ -29,7 +29,9 @@ import {deleteReadingProgress, getReadingProgress} from '../services/readingProg
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {
   formatFast,
+  getCalendarDayAppearance,
   getCalendarDay,
+  getCalendarMonth,
   getCalendarReadingItems,
   openCalendarBibleReference,
   resolveBibleReference,
@@ -344,6 +346,7 @@ export const MenuScreen = ({navigation}) => {
   const [dailyQuote, setDailyQuote] = useState(null);
   const [savedDailyQuote, setSavedDailyQuote] = useState(null);
   const [calendarToday, setCalendarToday] = useState(null);
+  const [calendarMonthDays, setCalendarMonthDays] = useState([]);
   const [calendarLoading, setCalendarLoading] = useState(true);
   const [calendarSelectedDate, setCalendarSelectedDate] = useState(() => new Date());
   const [calendarVisibleMonth, setCalendarVisibleMonth] = useState(
@@ -356,6 +359,10 @@ export const MenuScreen = ({navigation}) => {
   const calendarSnapshot = useMemo(
     () => createCalendarSnapshot(calendarVisibleMonth, calendarSelectedDate, calendarLanguage),
     [calendarVisibleMonth, calendarSelectedDate, calendarLanguage]
+  );
+  const calendarMonthMap = useMemo(
+    () => new Map(calendarMonthDays.map((day) => [day.date_gregorian, day])),
+    [calendarMonthDays]
   );
   const calendarCopy = useMemo(() => calendarText(calendarLanguage), [calendarLanguage]);
   const calendarGospelReadings = useMemo(
@@ -490,6 +497,32 @@ export const MenuScreen = ({navigation}) => {
     },
     [calendarLanguage]
   );
+
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    const year = calendarVisibleMonth.getFullYear();
+    const month = calendarVisibleMonth.getMonth() + 1;
+    const language = getCalendarDataLanguage(calendarLanguage);
+    getCalendarMonth(year, month, {
+      language,
+      force: true,
+      skipOffline: true,
+      signal: controller.signal,
+    })
+      .then((data) => {
+        if (active) setCalendarMonthDays(data?.days || []);
+      })
+      .catch((error) => {
+        if (active && error?.name !== 'AbortError') {
+          console.log('Фоновое обновление мини-календаря:', error?.message || error);
+        }
+      });
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [calendarVisibleMonth, calendarLanguage]);
 
   const loadProgress = useCallback(async () => {
     try {
@@ -1342,6 +1375,9 @@ export const MenuScreen = ({navigation}) => {
                     <View style={styles.miniCalendarGrid}>
                       {calendarSnapshot.cells.map((cell, index) => {
                         const weekend = index % 7 >= 5;
+                        const appearance = cell.outside
+                          ? null
+                          : getCalendarDayAppearance(calendarMonthMap.get(cell.date));
 
                         return (
                           <Pressable
@@ -1359,6 +1395,7 @@ export const MenuScreen = ({navigation}) => {
                             <View
                               style={[
                                 styles.miniCalendarDayBubble,
+                                appearance && styles[`miniCalendarDayBubble_${appearance}`],
                                 cell.today && styles.miniCalendarDayBubbleToday,
                                 cell.selected &&
                                   !cell.today &&
@@ -1370,6 +1407,7 @@ export const MenuScreen = ({navigation}) => {
                                   styles.miniCalendarDayText,
                                   cell.outside && styles.miniCalendarDayOutside,
                                   weekend && !cell.outside && styles.miniCalendarDayWeekend,
+                                  appearance && styles.miniCalendarDayMarked,
                                   cell.today && styles.miniCalendarDayToday,
                                   cell.selected && !cell.today && styles.miniCalendarDaySelected,
                                 ]}
@@ -2330,6 +2368,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
 
+  miniCalendarDayBubble_fast: {backgroundColor: '#E4D5EF'},
+  miniCalendarDayBubble_solid: {backgroundColor: '#F2E1AA'},
+  miniCalendarDayBubble_feast: {backgroundColor: '#F6D7D1'},
+  miniCalendarDayBubble_easter: {backgroundColor: '#CFA54D'},
+  miniCalendarDayBubble_memorial: {backgroundColor: '#E6DDD1'},
+  miniCalendarDayMarked: {color: '#603B4B', fontWeight: '700'},
   miniCalendarDayBubbleToday: {
     backgroundColor: '#B97A32',
   },
