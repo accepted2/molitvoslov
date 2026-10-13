@@ -1,4 +1,5 @@
 import NetInfo from '@react-native-community/netinfo';
+import {applyYearMarkers, applyYearMarkersToMonth, loadYearMarkers} from './calendarYearMarkers';
 
 import {API_BASE_URL} from './backendAuth';
 import {bibleContent} from './bibleContent';
@@ -113,10 +114,11 @@ export const getCalendarDay = async (
       throw abortError;
     }
 
-    dayCache.set(key, data);
-    await storeCalendarDay(dateKey, lang, data);
+    const enriched = applyYearMarkers(data, await loadYearMarkers(Number(dateKey.slice(0, 4))));
+    dayCache.set(key, enriched);
+    await storeCalendarDay(dateKey, lang, enriched);
 
-    return data;
+    return enriched;
   } catch (error) {
     if (signal?.aborted || error?.name === 'AbortError') {
       throw error;
@@ -170,16 +172,17 @@ export const getCalendarMonth = async (
       throw abortError;
     }
 
-    monthCache.set(key, data);
-    await storeCalendarMonth(data, lang);
+    const enriched = applyYearMarkersToMonth(data, await loadYearMarkers(year));
+    monthCache.set(key, enriched);
+    await storeCalendarMonth(enriched, lang);
 
-    (data?.days || []).forEach((day) => {
+    (enriched?.days || []).forEach((day) => {
       if (day?.date_gregorian) {
         dayCache.set(`${lang}:${day.date_gregorian}`, day);
       }
     });
 
-    return data;
+    return enriched;
   } catch (error) {
     if (signal?.aborted || error?.name === 'AbortError') {
       throw error;
