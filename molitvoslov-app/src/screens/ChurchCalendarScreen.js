@@ -19,6 +19,7 @@ import {PrayerBeadsLoader} from '../components/feedback/PrayerBeadsLoader';
 import {CategoryIcon} from '../components/icons/CategoryIcon';
 import {
   formatFast,
+  formatMemorialDay,
   getCalendarDayAppearance,
   getBibleReadingVerses,
   getCalendarDay,
@@ -769,6 +770,12 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             <View style={styles.feastHeroText}>
               <Text style={styles.feastMemory}>{copy.feastMemory}</Text>
               <Text style={styles.feastTitle}>{displayTitle(mainFeast, copy)}</Text>
+
+              {!!formatMemorialDay(dayData, language) && (
+                <View style={styles.fastBadge}>
+                  <Text style={styles.fastBadgeText}>{formatMemorialDay(dayData, language)}</Text>
+                </View>
+              )}
 
               {!!formatFast(dayData, language) && (
                 <View style={styles.fastBadge}>
