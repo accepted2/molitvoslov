@@ -415,11 +415,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   useEffect(() => {
     const section = route.params?.section;
 
-    if (
-      !navigation.isFocused() ||
-      !dayData ||
-      (section !== 'gospel' && section !== 'apostle')
-    ) {
+    if (!navigation.isFocused() || !dayData || (section !== 'gospel' && section !== 'apostle')) {
       return;
     }
 
