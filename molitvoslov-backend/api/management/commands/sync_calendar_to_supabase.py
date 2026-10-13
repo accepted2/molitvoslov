@@ -219,7 +219,8 @@ class Command(BaseCommand):
 
         if options["fast_markers_only"]:
             missing = [
-                day.date_gregorian.isoformat() for day in days
+                day.date_gregorian.isoformat()
+                for day in days
                 if not isinstance(day.source_payload, dict)
                 or not isinstance(day.source_payload.get("azbyka_calendar_markers"), dict)
             ]
@@ -228,9 +229,7 @@ class Command(BaseCommand):
                     f"Не у всех дней есть импортированные признаки: {len(missing)}. "
                     f"Примеры: {', '.join(missing[:8])}"
                 )
-            self.stdout.write(
-                f"Режим FAST-MARKERS-ONLY: {len(days)} дней, без памятей и чтений."
-            )
+            self.stdout.write(f"Режим FAST-MARKERS-ONLY: {len(days)} дней, без памятей и чтений.")
             if options["dry_run"]:
                 self.stdout.write("DRY-RUN: Supabase не изменён.")
                 return
@@ -240,24 +239,44 @@ class Command(BaseCommand):
                     remote, is_new = CalendarDay.objects.using(REMOTE_ALIAS).get_or_create(
                         date_gregorian=day.date_gregorian,
                     )
-                    payload = dict(remote.source_payload) if isinstance(remote.source_payload, dict) else {}
-                    payload["azbyka_calendar_markers"] = day.source_payload["azbyka_calendar_markers"]
+                    payload = (
+                        dict(remote.source_payload)
+                        if isinstance(remote.source_payload, dict)
+                        else {}
+                    )
+                    payload["azbyka_calendar_markers"] = day.source_payload[
+                        "azbyka_calendar_markers"
+                    ]
                     remote.source_payload = payload
                     for field in (
-                        "fast_type_code", "fast_type_title", "fast_name",
-                        "fast_description", "fast_type_title_uk", "fast_name_uk",
+                        "fast_type_code",
+                        "fast_type_title",
+                        "fast_name",
+                        "fast_description",
+                        "fast_type_title_uk",
+                        "fast_name_uk",
                         "fast_description_uk",
                     ):
                         setattr(remote, field, getattr(day, field))
-                    remote.save(using=REMOTE_ALIAS, update_fields=[
-                        "source_payload", "fast_type_code", "fast_type_title",
-                        "fast_name", "fast_description", "fast_type_title_uk",
-                        "fast_name_uk", "fast_description_uk",
-                    ])
+                    remote.save(
+                        using=REMOTE_ALIAS,
+                        update_fields=[
+                            "source_payload",
+                            "fast_type_code",
+                            "fast_type_title",
+                            "fast_name",
+                            "fast_description",
+                            "fast_type_title_uk",
+                            "fast_name_uk",
+                            "fast_description_uk",
+                        ],
+                    )
                     created += int(is_new)
                     updated += int(not is_new)
             self.stdout.write(
-                self.style.SUCCESS(f"Постные признаки синхронизированы: CREATE {created}, UPDATE {updated}")
+                self.style.SUCCESS(
+                    f"Постные признаки синхронизированы: CREATE {created}, UPDATE {updated}"
+                )
             )
             return
 
