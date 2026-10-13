@@ -463,26 +463,42 @@ export const openCalendarBibleReference = (navigation, title) => {
   return true;
 };
 
+export const getCalendarMarkers = (day) =>
+  day?.calendar_markers || day?.source_payload?.azbyka_calendar_markers || null;
+
+export const getCalendarDayAppearance = (day) => {
+  const markers = getCalendarMarkers(day);
+  if (!markers) return null;
+  if (markers.is_easter) return 'easter';
+  if (markers.is_major_feast) return 'feast';
+  if (markers.is_solid_week) return 'solid';
+  if (markers.is_fasting_day) return 'fast';
+  if (markers.is_memorial_day) return 'memorial';
+  return null;
+};
+
 export const formatFast = (day, language = 'ru') => {
-  if (!day) {
-    return '';
+  if (!day) return '';
+
+  const markers = getCalendarMarkers(day);
+  const uk = language === 'uk';
+  const cu = language === 'cu';
+  const noFast = uk ? 'Посту немає' : cu ? 'Поста нѣсть' : 'Поста нет';
+  const solid = uk ? 'Суцільний тиждень' : 'Сплошная седмица';
+  const fasting = uk ? 'Пісний день' : 'Постный день';
+
+  // A confirmed Azbyka marker takes precedence over outdated food rules.
+  if (markers?.is_solid_week) return solid;
+  if (markers?.is_fasting_day === false) return noFast;
+
+  const name = day.fast_name || markers?.fast_period_name || '';
+  const type = day.fast_type_title || '';
+  if (name && type && type !== fasting && type !== 'Постный день') {
+    return `${name} — ${type}`;
   }
-
-  if (day.fast_type_code === 'no-fast') {
-    if (language === 'uk') {
-      return 'Посту немає';
-    }
-
-    if (language === 'cu') {
-      return 'Поста нѣтъ';
-    }
-
-    return 'Поста нет';
-  }
-
-  if (day.fast_name && day.fast_type_title) {
-    return `${day.fast_name} — ${day.fast_type_title}`;
-  }
-
-  return day.fast_name || day.fast_type_title || day.fast_description || '';
+  if (name) return name;
+  if (type) return type;
+  if (markers?.is_fasting_day) return fasting;
+  if (day.fast_type_code === 'no-fast') return noFast;
+  return day.fast_description || '';
 };
