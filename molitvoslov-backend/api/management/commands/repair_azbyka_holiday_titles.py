@@ -1,4 +1,5 @@
 """Repair imported holiday titles without re-importing calendar content."""
+
 from datetime import date, timedelta
 from pathlib import Path
 import requests
@@ -37,7 +38,9 @@ class Command(BaseCommand):
             while current <= end:
                 day = CalendarDay.objects.filter(date_gregorian=current).first()
                 if day is None:
-                    self.stdout.write(self.style.WARNING(f"SKIP {current}: CalendarDay отсутствует"))
+                    self.stdout.write(
+                        self.style.WARNING(f"SKIP {current}: CalendarDay отсутствует")
+                    )
                     current += timedelta(days=1)
                     continue
                 try:
@@ -62,7 +65,9 @@ class Command(BaseCommand):
 
         self.stdout.write(f"Найдено исправлений: {len(changes)}")
         if not options["apply"] or not changes:
-            self.stdout.write("DRY-RUN: база не изменена." if not options["apply"] else "Изменений нет.")
+            self.stdout.write(
+                "DRY-RUN: база не изменена." if not options["apply"] else "Изменений нет."
+            )
             return
         backup, digest = create_sqlite_backup(
             Path(db["NAME"]), Path(settings.BASE_DIR) / "backups" / "sqlite"
@@ -71,7 +76,11 @@ class Command(BaseCommand):
         with transaction.atomic():
             for pk, old_title, new_title, _ in changes:
                 # Guard against concurrent edits; update title only.
-                updated = CalendarFeast.objects.filter(pk=pk, title=old_title).update(title=new_title)
+                updated = CalendarFeast.objects.filter(pk=pk, title=old_title).update(
+                    title=new_title
+                )
                 if not updated:
-                    raise CommandError(f"Карточка {pk} изменилась во время работы; транзакция отменена.")
+                    raise CommandError(
+                        f"Карточка {pk} изменилась во время работы; транзакция отменена."
+                    )
         self.stdout.write(self.style.SUCCESS(f"Исправлено заголовков: {len(changes)}"))
