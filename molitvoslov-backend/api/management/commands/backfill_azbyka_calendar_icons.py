@@ -1,4 +1,5 @@
 """Fill missing Cloudinary icon URLs without touching calendar texts or links."""
+
 from datetime import date, timedelta
 from pathlib import Path
 import time
@@ -9,7 +10,11 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import connections
 
 from api.azbyka_calendar_feasts import AzbykaFeastError, fetch_day_saint_links, fetch_saint_content
-from api.calendar_icon_storage import CalendarIconStorageError, cloudinary_configured, upload_azbyka_icon
+from api.calendar_icon_storage import (
+    CalendarIconStorageError,
+    cloudinary_configured,
+    upload_azbyka_icon,
+)
 from api.calendar_models import CalendarDay
 from api.management.commands.import_azbyka_calendar_feasts import deterministic_azbyka_day_feast_uid
 from api.sqlite_backup import create_sqlite_backup
@@ -50,7 +55,11 @@ class Command(BaseCommand):
         session = requests.Session()
         try:
             while current <= end:
-                day = CalendarDay.objects.prefetch_related("feasts").filter(date_gregorian=current).first()
+                day = (
+                    CalendarDay.objects.prefetch_related("feasts")
+                    .filter(date_gregorian=current)
+                    .first()
+                )
                 if day is None:
                     self.stdout.write(self.style.WARNING(f"{current}: CalendarDay отсутствует"))
                     current += timedelta(days=1)
@@ -71,7 +80,9 @@ class Command(BaseCommand):
                     continue
 
                 for source in sources:
-                    feast = pending.pop(deterministic_azbyka_day_feast_uid(current, source.url), None)
+                    feast = pending.pop(
+                        deterministic_azbyka_day_feast_uid(current, source.url), None
+                    )
                     if feast is None:
                         continue
                     try:
@@ -88,7 +99,9 @@ class Command(BaseCommand):
                         continue
                     if not options["apply"]:
                         skipped += 1
-                        self.stdout.write(f"DRY-RUN {current}: {source.title} -> {parsed.icon_source_url}")
+                        self.stdout.write(
+                            f"DRY-RUN {current}: {source.title} -> {parsed.icon_source_url}"
+                        )
                         continue
                     if not backup_created:
                         db_path = Path(db["NAME"])
@@ -104,16 +117,33 @@ class Command(BaseCommand):
                         continue
                     # Update only an empty icon_url; no texts or feast relations change.
                     from api.calendar_models import CalendarFeast
-                    changed = CalendarFeast.objects.filter(pk=feast.pk, icon_url="").update(icon_url=url)
+
+                    changed = CalendarFeast.objects.filter(pk=feast.pk, icon_url="").update(
+                        icon_url=url
+                    )
                     uploaded += changed
-                    self.stdout.write(self.style.SUCCESS(f"OK {current}: {source.title}" if changed else f"SKIP {current}: уже заполнено"))
+                    self.stdout.write(
+                        self.style.SUCCESS(
+                            f"OK {current}: {source.title}"
+                            if changed
+                            else f"SKIP {current}: уже заполнено"
+                        )
+                    )
                     time.sleep(max(0.0, options["delay"]))
                 if pending:
                     skipped += len(pending)
-                    self.stdout.write(self.style.WARNING(f"{current}: {len(pending)} карточек не совпали с источником по UID"))
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"{current}: {len(pending)} карточек не совпали с источником по UID"
+                        )
+                    )
                 current += timedelta(days=1)
         finally:
             session.close()
-        self.stdout.write(f"ИТОГ: загружено={uploaded}, на Azbyka без иконы={missing}, dry-run/пропущено={skipped}, ошибок={errors}.")
+        self.stdout.write(
+            f"ИТОГ: загружено={uploaded}, на Azbyka без иконы={missing}, dry-run/пропущено={skipped}, ошибок={errors}."
+        )
         if errors:
-            raise CommandError("Есть ошибки загрузки; проверьте вывод и повторите для незаполненных икон.")
+            raise CommandError(
+                "Есть ошибки загрузки; проверьте вывод и повторите для незаполненных икон."
+            )
