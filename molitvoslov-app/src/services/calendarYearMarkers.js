@@ -11,7 +11,7 @@ const bundled2026 = () => {
     return {};
   }
 };
-export const getBundledYearMarkers = (year) => Number(year) === 2026 ? bundled2026() : {};
+export const getBundledYearMarkers = (year) => (Number(year) === 2026 ? bundled2026() : {});
 let pending = null;
 
 export const loadYearMarkers = async (year) => {
