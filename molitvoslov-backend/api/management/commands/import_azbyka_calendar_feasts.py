@@ -213,9 +213,13 @@ class Command(BaseCommand):
                 time.sleep(delay)
 
         parsed = source_cache[source.url]
+        # Low-confidence day-level hymn titles can refer to a different saint.
+        # A saint may legitimately have a short life but no personal hymns.
         hymn_group, hymn_match = find_best_hymn_group(
             source.title,
             hymn_groups,
+            threshold=0.85,
+            margin=0.08,
         )
 
         desired = {}
