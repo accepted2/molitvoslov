@@ -8,9 +8,10 @@ const bundled2026 = () => {
   try {
     return require('../data/calendar/markers-2026.json')?.days || {};
   } catch {
-    return key === 2026 ? bundled2026() : {};
+    return {};
   }
 };
+export const getBundledYearMarkers = (year) => Number(year) === 2026 ? bundled2026() : {};
 let pending = null;
 
 export const loadYearMarkers = async (year) => {
@@ -23,7 +24,7 @@ export const loadYearMarkers = async (year) => {
     memory.set(key, days);
     return days;
   } catch {
-    return {};
+    return getBundledYearMarkers(key);
   }
 };
 
