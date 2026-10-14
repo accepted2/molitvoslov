@@ -1007,14 +1007,14 @@ const styles = StyleSheet.create({
   dayBubble_memorial: {backgroundColor: '#A69A86'},
   dayNumberMarked: {fontWeight: '700', color: '#6A4B3B'},
   dayBubbleToday: {
-    backgroundColor: '#9A642E',
+    borderWidth: 2,
+    borderColor: '#9A642E',
   },
   dayNumber: {
     color: '#493225',
     fontSize: 13,
   },
   dayNumberToday: {
-    color: '#FFF7E7',
     fontWeight: '800',
   },
   dayOutside: {
