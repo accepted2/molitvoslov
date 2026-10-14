@@ -395,8 +395,14 @@ class Command(BaseCommand):
                 # Исключение: один пункт календаря содержит несколько
                 # персональных ссылок. В таком случае parsed относится только
                 # к первому святому, поэтому полное название оставляем общим.
+                # A holiday page is shared by forefeasts, afterfeasts and
+                # leavetakings. The day-list title is the actual observance;
+                # the shared page H1 names the underlying major feast.
+                is_holiday = "/days/prazdnik-" in source.url
                 full_title = (
-                    source.title if source.is_multi_link_group else (parsed.title or source.title)
+                    source.title
+                    if is_holiday or source.is_multi_link_group
+                    else (parsed.title or source.title)
                 )
 
                 existing = (
