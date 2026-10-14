@@ -1,5 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {applyYearMarkers, applyYearMarkersToMonth, getBundledYearMarkers, loadYearMarkers} from './calendarYearMarkers';
+import {
+  applyYearMarkers,
+  applyYearMarkersToMonth,
+  getBundledYearMarkers,
+  loadYearMarkers,
+} from './calendarYearMarkers';
 
 const STORAGE_PREFIX = 'calendar-day-v3';
 
