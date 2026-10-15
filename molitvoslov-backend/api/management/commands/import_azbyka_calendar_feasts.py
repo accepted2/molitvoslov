@@ -336,8 +336,12 @@ class Command(BaseCommand):
             "Антипасха. Неделя 2-я по Пасхе, апостола Фомы",
         }
         preserved_feasts = [feast for feast in local_feasts if feast.title in protected_titles]
+        # Liturgical day labels are supplementary commemorations, not saints.
+        # Pascha itself remains a principal feast.
         preserved_main = (
-            day.main_feast if day.main_feast and day.main_feast.title in protected_titles else None
+            day.main_feast
+            if day.main_feast and day.main_feast.title == "Светлое Христово Воскресение"
+            else None
         )
 
         if len(primary_indexes) > 1:
