@@ -222,7 +222,7 @@ export default function App() {
         syncBibleContent('rst'),
       ]);
 
-if (!publicResult?.success && publicResult?.error) {
+      if (!publicResult?.success && publicResult?.error) {
         console.log(
           'Periodic public content sync отложен:',
           publicResult.error?.message || publicResult.error
