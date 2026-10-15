@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 AZBYKA_DAY_URL = "https://azbyka.ru/days/{date}"
 
 GOSPEL_BOOKS = {"Мф", "Мк", "Лк", "Ин"}
+OLD_TESTAMENT_BOOKS = {"Иоил"}
 APOSTLE_BOOKS = {
     "Деян",
     "Иак",
@@ -38,7 +39,7 @@ APOSTLE_BOOKS = {
 
 _BOOK_PART = (
     r"(?:[123]\s*)?"
-    r"(?:Мф|Мк|Лк|Ин|Деян|Иак|Пет|Иуд|Рим|Кор|Гал|Еф|Флп|Кол|"
+    r"(?:Мф|Мк|Лк|Ин|Иоил|Деян|Иак|Пет|Иуд|Рим|Кор|Гал|Еф|Флп|Кол|"
     r"Фес|Сол|Тим|Тит|Флм|Евр)"
 )
 
@@ -121,6 +122,9 @@ def reading_kind(book):
 
     if canonical in GOSPEL_BOOKS:
         return "gospel"
+
+    if canonical in OLD_TESTAMENT_BOOKS:
+        return "old_testament"
 
     if canonical in APOSTLE_BOOKS:
         return "apostle"
@@ -270,8 +274,8 @@ def extract_readings_text(html):
 
     level = _heading_level(heading) or 2
 
-    # Берём первый абзац после заголовка, в котором действительно есть
-    # новозаветная ссылка. Пояснительные примечания ниже не импортируем
+    # Берём первый абзац после заголовка, в котором есть
+    # поддерживаемая ссылка на Писание. Пояснительные примечания ниже не импортируем
     # как отдельные чтения.
     for tag in heading.find_all_next():
         tag_level = _heading_level(tag)
