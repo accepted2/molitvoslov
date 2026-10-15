@@ -107,6 +107,23 @@ class AzbykaCalendarReadingsParserTests(SimpleTestCase):
         self.assertEqual(readings[4].title, "Лк.10:38–42,11:27–28 (зач. 54)")
         self.assertEqual(readings[5].label, "Или свт.")
 
+    def test_lenten_sixth_hour_and_vespers_keep_service_labels(self):
+        source = (
+            "На 6-м часе: Ис.5:7–16. "
+            "На веч.: Быт.4:8–15. Притч.5:1–15."
+        )
+
+        readings = parse_readings_text(source)
+
+        self.assertEqual(
+            [(item.kind, item.label, item.title) for item in readings],
+            [
+                ("old_testament", "На 6-м часе", "Ис.5:7–16"),
+                ("old_testament", "На веч.", "Быт.4:8–15"),
+                ("old_testament", "На веч.", "Притч.5:1–15"),
+            ],
+        )
+
     def test_extracts_first_reading_paragraph_only(self):
         html = """
         <html><body>
