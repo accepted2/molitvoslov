@@ -296,6 +296,18 @@ class Command(BaseCommand):
         if primary_indexes:
             main_index = primary_indexes[0]
 
+        # On 15 February the Meeting of the Lord is a Great Feast.
+        # Azbyka may highlight the Sunday synaxis instead; it must not
+        # override the Twelve Great Feasts in the day's main card.
+        if day.date_gregorian.month == 2 and day.date_gregorian.day == 15:
+            meeting_indexes = [
+                index for index, item in enumerate(prepared)
+                if item["source"].title.strip()
+                == "Сретение Господа Бога и Спаса нашего Иисуса Христа"
+            ]
+            if len(meeting_indexes) == 1:
+                main_index = meeting_indexes[0]
+
         if len(primary_indexes) > 1:
             self.stdout.write(
                 self.style.WARNING(
