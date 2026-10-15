@@ -2,7 +2,6 @@ import React from 'react';
 import {Image, ScrollView, StyleSheet, Text, View, useWindowDimensions} from 'react-native';
 import {StatusBar} from 'expo-status-bar';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {useLanguage} from '../context/LanguageContext';
@@ -15,7 +14,7 @@ const Section = ({title, subtitle, body, scrollable = false, maxHeight = 320}) =
       {scrollable ? (
         <ScrollView
           nestedScrollEnabled
-          style={[styles.lifeScroll, {maxHeight}]}
+          style={[styles.lifeScroll, {height: maxHeight}]}
           contentContainerStyle={styles.lifeScrollContent}
           showsVerticalScrollIndicator
           persistentScrollbar
@@ -46,7 +45,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const kontakion = (uk && feast?.kontakion_content_uk) || feast?.kontakion_content;
 
   return (
-    <AppBackground imageOpacity={0.72}>
+    <View style={styles.screen}>
       <StatusBar style="light" translucent backgroundColor="transparent" />
       <ScrollView
         contentContainerStyle={[
@@ -62,10 +61,9 @@ export const SaintDetailScreen = ({route, navigation}) => {
         </View>
         <Section
           title={uk ? 'Житіє' : 'Житие'}
-          subtitle={feast?.life_title}
           body={life}
           scrollable={String(life || '').length > 700}
-          maxHeight={Math.max(260, Math.min(450, viewportHeight * 0.48))}
+          maxHeight={Math.max(240, Math.min(390, viewportHeight * 0.44))}
         />
         <Section
           title={uk ? 'Тропар' : 'Тропарь'}
@@ -84,18 +82,19 @@ export const SaintDetailScreen = ({route, navigation}) => {
         )}
       </ScrollView>
       <FixedSectionHeader
-        title={title || (uk ? 'Святий' : 'Святой')}
+        title={uk ? 'Житіє святого' : 'Житие святого'}
         navigation={navigation}
         topInset={insets.top}
       />
-    </AppBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  content: {paddingHorizontal: 18},
+  screen: {flex: 1, backgroundColor: '#FAF1E2'},
+  content: {paddingHorizontal: 20, backgroundColor: '#FAF1E2'},
   hero: {alignItems: 'center', paddingHorizontal: 8, paddingBottom: 8},
-  image: {width: 148, height: 176, marginBottom: 12},
+  image: {width: 130, height: 154, marginBottom: 12},
   title: {
     fontFamily: 'serif',
     fontSize: 23,
@@ -105,10 +104,10 @@ const styles = StyleSheet.create({
     color: '#4C2F1B',
   },
   date: {textAlign: 'center', color: '#89674D', fontSize: 13, marginTop: 7},
-  heroRule: {height: 1, width: 84, backgroundColor: '#B5946E', marginTop: 20},
+  heroRule: {height: 1, width: 84, backgroundColor: '#B5946E', marginTop: 14},
   section: {
-    marginTop: 20,
-    paddingBottom: 14,
+    marginTop: 14,
+    paddingBottom: 17,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(126,82,38,0.30)',
   },
@@ -131,8 +130,10 @@ const styles = StyleSheet.create({
   lifeScroll: {
     marginTop: 12,
     borderRadius: 9,
-    backgroundColor: 'rgba(255,248,235,0.62)',
+    backgroundColor: '#FFFDF8',
+    borderWidth: 1,
+    borderColor: '#E7D8BF',
   },
-  lifeScrollContent: {paddingHorizontal: 10, paddingBottom: 15},
+  lifeScrollContent: {paddingHorizontal: 13, paddingTop: 2, paddingBottom: 18},
   empty: {color: '#89674D', textAlign: 'center', marginTop: 30},
 });
