@@ -41,7 +41,7 @@ export const toCalendarDate = (value) => {
 };
 
 export const getCalendarReadingItems = (day, kind) => {
-  const normalizedKind = kind === 'apostle' ? 'apostle' : 'gospel';
+  const normalizedKind = ['gospel', 'apostle', 'old_testament'].includes(kind) ? kind : 'gospel';
   const structured = Array.isArray(day?.readings)
     ? day.readings
         .filter((reading) => reading?.kind === normalizedKind && reading?.title)
@@ -57,7 +57,7 @@ export const getCalendarReadingItems = (day, kind) => {
     return structured;
   }
 
-  const legacyTitle = normalizedKind === 'gospel' ? day?.gospel_title : day?.apostolic_title;
+  const legacyTitle = normalizedKind === 'gospel' ? day?.gospel_title : normalizedKind === 'apostle' ? day?.apostolic_title : null;
 
   return legacyTitle
     ? [
