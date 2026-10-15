@@ -344,29 +344,13 @@ class Command(BaseCommand):
             if len(matches) == 1:
                 main_index = matches[0]
 
-        # Movable services may be absent from Azbyka's list of saints.
-        # Keep both the main observance and additional observances (for
-        # example Great Tuesday alongside Annunciation).
-        protected_titles = {
-            "Великий Понедельник",
-            "Великий Вторник",
-            "Великая Среда",
-            "Великий Четверг",
-            "Великая Пятница",
-            "Великая Суббота",
-            "Светлое Христово Воскресение",
-            "Вторник Светлой седмицы",
-            "Среда Светлой седмицы",
-            "Четверг Светлой седмицы",
-            "Суббота Светлой седмицы",
-            "Антипасха. Неделя 2-я по Пасхе, апостола Фомы",
-        }
+        # Only Pascha is a principal feast in this group. Weekday labels
+        # are computed from the date and must not be stored among saints.
+        protected_titles = {"Светлое Христово Воскресение"}
         preserved_feasts = [feast for feast in local_feasts if feast.title in protected_titles]
-        # Liturgical day labels are supplementary commemorations, not saints.
-        # Pascha itself remains a principal feast.
         preserved_main = (
             day.main_feast
-            if day.main_feast and day.main_feast.title == "Светлое Христово Воскресение"
+            if day.main_feast and day.main_feast.title in protected_titles
             else None
         )
 
