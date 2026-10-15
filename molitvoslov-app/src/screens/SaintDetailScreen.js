@@ -18,11 +18,16 @@ const Section = ({title, subtitle, body, scrollable = false, maxHeight = 320}) =
           style={[styles.lifeScroll, {maxHeight}]}
           contentContainerStyle={styles.lifeScrollContent}
           showsVerticalScrollIndicator
-          persistentScrollbar>
-          <Text selectable style={styles.text}>{body}</Text>
+          persistentScrollbar
+        >
+          <Text selectable style={styles.text}>
+            {body}
+          </Text>
         </ScrollView>
       ) : (
-        <Text selectable style={styles.text}>{body}</Text>
+        <Text selectable style={styles.text}>
+          {body}
+        </Text>
       )}
     </View>
   );
