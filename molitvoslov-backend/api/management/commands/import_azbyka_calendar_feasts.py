@@ -378,7 +378,8 @@ class Command(BaseCommand):
             expected_title = major_movable_titles.get(paschal_offset)
             if expected_title:
                 matches = [
-                    index for index, item in enumerate(prepared)
+                    index
+                    for index, item in enumerate(prepared)
                     if item["source"].title.strip() == expected_title
                 ]
                 if len(matches) == 1:
