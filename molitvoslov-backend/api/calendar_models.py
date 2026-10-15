@@ -206,9 +206,11 @@ class CalendarReading(models.Model):
 
     KIND_GOSPEL = "gospel"
     KIND_APOSTLE = "apostle"
+    KIND_OLD_TESTAMENT = "old_testament"
     KIND_CHOICES = [
         (KIND_GOSPEL, "Евангелие"),
         (KIND_APOSTLE, "Апостол"),
+        (KIND_OLD_TESTAMENT, "Ветхий Завет"),
     ]
 
     sync_uid = models.UUIDField(
