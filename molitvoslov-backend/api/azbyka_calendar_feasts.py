@@ -457,7 +457,7 @@ def _collect_life(soup, saint_title):
             # Some Azbyka life sections begin with a standalone memorial date.
             # It is page metadata, not a paragraph of the saint's life.
             if not parts and re.fullmatch(
-                r"\d{1,2}\s+" 
+                r"\d{1,2}\s+"
                 r"(?:января|февраля|марта|апреля|мая|июня|июля|августа|"
                 r"сентября|октября|ноября|декабря)"
                 r"(?:\s*\([^\n)]{1,80}\))?",
