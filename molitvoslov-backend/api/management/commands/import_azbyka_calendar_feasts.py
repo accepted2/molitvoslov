@@ -1,4 +1,5 @@
 import time
+import re
 import uuid
 from pathlib import Path
 
@@ -46,6 +47,29 @@ TEXT_FIELDS = {
     "life_title",
     "life_content",
 }
+
+
+LIFE_INITIAL_DATE = re.compile(
+    r"\\A(?:\\s*\\d{1,2}\\s+(?:января|февраля|марта|апреля|мая|июня|июля|"
+    r"августа|сентября|октября|ноября|декабря)"
+    r"(?:\\s*\\([^\\n)]{1,80}\\))?\\s*(?:\\r?\\n|$))+",
+    re.I,
+)
+LIFE_NOTES = re.compile(r"(?m)^Примечани(?:е|я)\\s*$")
+
+
+def clean_imported_life(text):
+    """Strip source-only metadata, preserving meaningful biographical text."""
+    original = text or ""
+    cleaned = LIFE_INITIAL_DATE.sub("", original).lstrip()
+    notes = LIFE_NOTES.search(cleaned)
+    if notes:
+        candidate = cleaned[: notes.start()].rstrip()
+        # Same safety threshold as the separate notes-cleanup command.
+        if len(candidate) >= 100 and len(candidate) >= len(cleaned) * 0.5:
+            cleaned = candidate
+    # Do not destroy a short biography or a date-only source stub.
+    return cleaned if len(cleaned) >= 40 else original
 
 
 def deterministic_azbyka_day_feast_uid(target_date, source_url):
@@ -228,6 +252,8 @@ class Command(BaseCommand):
                 desired[field] = getattr(parsed, field) or ""
             else:
                 desired[field] = getattr(parsed, field)
+
+        desired["life_content"] = clean_imported_life(desired["life_content"])
 
         # Для тропаря/кондака страница конкретного дня приоритетнее
         # персональной страницы святого.
