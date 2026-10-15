@@ -309,6 +309,27 @@ class Command(BaseCommand):
             if len(meeting_indexes) == 1:
                 main_index = meeting_indexes[0]
 
+        if day.date_gregorian.month == 4 and day.date_gregorian.day == 7:
+            matches = [
+                index for index, item in enumerate(prepared)
+                if item["source"].title.strip() == "Благовещение Пресвятой Богородицы"
+            ]
+            if len(matches) == 1:
+                main_index = matches[0]
+
+        # Preserve movable observances absent from the Azbyka saint list.
+        protected_titles = {
+            "Великий Четверг",
+            "Великая Пятница",
+            "Великая Суббота",
+            "Светлое Христово Воскресение",
+        }
+        preserved_main = (
+            day.main_feast
+            if day.main_feast and day.main_feast.title in protected_titles
+            else None
+        )
+
         if len(primary_indexes) > 1:
             self.stdout.write(
                 self.style.WARNING(
@@ -450,8 +471,10 @@ class Command(BaseCommand):
             # Меняем только связи этого календарного дня.
             # Старые CalendarFeast намеренно НЕ удаляем: они могут быть
             # связаны с другими днями или понадобиться для отката.
+            if preserved_main is not None:
+                new_feasts.append(preserved_main)
             day.feasts.set(new_feasts)
-            day.main_feast = new_feasts[main_index]
+            day.main_feast = preserved_main or new_feasts[main_index]
             day.save(update_fields=["main_feast"])
 
         self.stdout.write("")
@@ -463,7 +486,7 @@ class Command(BaseCommand):
         self.stdout.write(
             "Старые карточки из CalendarFeast не удалены; " "от этого дня они только отвязаны."
         )
-        self.stdout.write(f"Главная память: {prepared[main_index]['source'].title}")
+        self.stdout.write(f"Главная память: {(preserved_main.title if preserved_main else prepared[main_index]['source'].title)}")
 
     def _upload_prepared_icons(self, prepared):
         with_icons = [item for item in prepared if item["parsed"].icon_source_url]
