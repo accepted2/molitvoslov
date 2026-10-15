@@ -72,6 +72,19 @@ def clean_imported_life(text):
     return cleaned if len(cleaned) >= 40 else original
 
 
+def orthodox_pascha_gregorian(year):
+    """Gregorian date of Orthodox Easter (Julian Paschalion, 1900-2099)."""
+    from datetime import date, timedelta
+
+    a, b, c = year % 4, year % 7, year % 19
+    d = (19 * c + 15) % 30
+    e = (2 * a + 4 * b - d + 34) % 7
+    month = (d + e + 114) // 31
+    day = ((d + e + 114) % 31) + 1
+    julian_offset = year // 100 - year // 400 - 2
+    return date(year, month, day) + timedelta(days=julian_offset)
+
+
 def deterministic_azbyka_day_feast_uid(target_date, source_url):
     return uuid.uuid5(
         AZBYKA_DAY_FEAST_NAMESPACE,
@@ -351,6 +364,32 @@ class Command(BaseCommand):
         preserved_main = (
             day.main_feast if day.main_feast and day.main_feast.title in protected_titles else None
         )
+
+        # Major movable feasts take precedence over a saint highlighted
+        # by the Azbyka calendar. Dates move with Orthodox Pascha.
+        if 1900 <= day.date_gregorian.year <= 2099:
+            paschal_offset = (
+                day.date_gregorian - orthodox_pascha_gregorian(day.date_gregorian.year)
+            ).days
+            major_movable_titles = {
+                39: "Вознесение Господне",
+                49: "День Святой Троицы. Пятидесятница",
+            }
+            expected_title = major_movable_titles.get(paschal_offset)
+            if expected_title:
+                matches = [
+                    index for index, item in enumerate(prepared)
+                    if item["source"].title.strip() == expected_title
+                ]
+                if len(matches) == 1:
+                    main_index = matches[0]
+                else:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"WARN: главный переходящий праздник {expected_title} "
+                            "отсутствует или неоднозначен в источнике."
+                        )
+                    )
 
         if len(primary_indexes) > 1:
             self.stdout.write(
