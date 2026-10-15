@@ -1,4 +1,5 @@
 """Repair April 2026 main commemorations after experimental weekday feast cards."""
+
 from pathlib import Path
 
 from django.conf import settings
@@ -43,21 +44,18 @@ class Command(BaseCommand):
             raise CommandError("Только локальная SQLite.")
         days = {
             str(d.date_gregorian): d
-            for d in CalendarDay.objects.filter(
-                date_gregorian__range=("2026-04-01", "2026-04-30")
-            ).prefetch_related("feasts").select_related("main_feast")
+            for d in CalendarDay.objects.filter(date_gregorian__range=("2026-04-01", "2026-04-30"))
+            .prefetch_related("feasts")
+            .select_related("main_feast")
         }
         assert len(days) == 30, "Не все дни апреля присутствуют"
-        target_dates = set(MAIN_IDS) | {
-            "2026-04-13", "2026-04-14", "2026-04-18", "2026-04-21"
-        }
+        target_dates = set(MAIN_IDS) | {"2026-04-13", "2026-04-14", "2026-04-18", "2026-04-21"}
         plans = []
         for date in sorted(target_dates):
             day = days[date]
             attached = list(day.feasts.all())
             legitimate = [
-                f for f in attached
-                if f.pk not in TEMP_IDS and f.title not in TEMP_TITLES
+                f for f in attached if f.pk not in TEMP_IDS and f.title not in TEMP_TITLES
             ]
             if date in MAIN_IDS:
                 new_main = next((f for f in legitimate if f.pk == MAIN_IDS[date]), None)
@@ -67,11 +65,16 @@ class Command(BaseCommand):
                 new_main = next((f for f in legitimate if "Святитель Иов" in f.title), None)
             else:
                 new_main = next(
-                    (f for f in sorted(
-                        legitimate,
-                        key=lambda f: (bool(f.icon_url), bool(f.life_content), -f.pk),
-                        reverse=True,
-                    ) if f.life_content), None
+                    (
+                        f
+                        for f in sorted(
+                            legitimate,
+                            key=lambda f: (bool(f.icon_url), bool(f.life_content), -f.pk),
+                            reverse=True,
+                        )
+                        if f.life_content
+                    ),
+                    None,
                 )
             if new_main is None:
                 raise CommandError(f"{date}: не найдена безопасная главная память")
