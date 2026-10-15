@@ -349,9 +349,7 @@ class Command(BaseCommand):
         protected_titles = {"Светлое Христово Воскресение"}
         preserved_feasts = [feast for feast in local_feasts if feast.title in protected_titles]
         preserved_main = (
-            day.main_feast
-            if day.main_feast and day.main_feast.title in protected_titles
-            else None
+            day.main_feast if day.main_feast and day.main_feast.title in protected_titles else None
         )
 
         if len(primary_indexes) > 1:
