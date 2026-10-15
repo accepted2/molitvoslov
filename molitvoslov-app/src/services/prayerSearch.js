@@ -1,6 +1,6 @@
 import {getContentGeneration, getCurrentContent} from './contentStore';
 
-const normalizeSearchText = (value) =>
+export const normalizeSearchText = (value) =>
   String(value || '')
     .normalize('NFKD')
     .replace(/[\u0300-\u036f\u0483-\u0489]/g, '')
