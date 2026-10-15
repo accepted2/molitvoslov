@@ -318,13 +318,26 @@ class Command(BaseCommand):
             if len(matches) == 1:
                 main_index = matches[0]
 
-        # Preserve movable observances absent from the Azbyka saint list.
+        # Movable services may be absent from Azbyka's list of saints.
+        # Keep both the main observance and additional observances (for
+        # example Great Tuesday alongside Annunciation).
         protected_titles = {
+            "Великий Понедельник",
+            "Великий Вторник",
+            "Великая Среда",
             "Великий Четверг",
             "Великая Пятница",
             "Великая Суббота",
             "Светлое Христово Воскресение",
+            "Вторник Светлой седмицы",
+            "Среда Светлой седмицы",
+            "Четверг Светлой седмицы",
+            "Суббота Светлой седмицы",
+            "Антипасха. Неделя 2-я по Пасхе, апостола Фомы",
         }
+        preserved_feasts = [
+            feast for feast in local_feasts if feast.title in protected_titles
+        ]
         preserved_main = (
             day.main_feast if day.main_feast and day.main_feast.title in protected_titles else None
         )
@@ -470,8 +483,10 @@ class Command(BaseCommand):
             # Меняем только связи этого календарного дня.
             # Старые CalendarFeast намеренно НЕ удаляем: они могут быть
             # связаны с другими днями или понадобиться для отката.
-            if preserved_main is not None:
-                new_feasts.append(preserved_main)
+            known_ids = {feast.pk for feast in new_feasts}
+            new_feasts.extend(
+                feast for feast in preserved_feasts if feast.pk not in known_ids
+            )
             day.feasts.set(new_feasts)
             day.main_feast = preserved_main or new_feasts[main_index]
             day.save(update_fields=["main_feast"])
