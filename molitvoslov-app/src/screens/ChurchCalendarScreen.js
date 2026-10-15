@@ -97,7 +97,7 @@ const orthodoxPascha = (year) => {
 };
 
 const movableDayLabel = (isoDate, language) => {
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(isoDate || '')) return '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate || '')) return '';
   const [year, month, day] = isoDate.split('-').map(Number);
   if (year < 1900 || year > 2099) return '';
   const offset = Math.round((Date.UTC(year, month - 1, day) - orthodoxPascha(year)) / 86400000);
