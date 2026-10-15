@@ -82,6 +82,70 @@ const buildCells = (year, month) => {
   });
 };
 
+// Movable liturgical day labels are calculated from Orthodox Pascha, not
+// stored as saints or tied to fixed month/day values.
+const orthodoxPascha = (year) => {
+  const a = year % 4;
+  const b = year % 7;
+  const c = year % 19;
+  const d = (19 * c + 15) % 30;
+  const e = (2 * a + 4 * b - d + 34) % 7;
+  const julianMonth = Math.floor((d + e + 114) / 31);
+  const julianDay = ((d + e + 114) % 31) + 1;
+  const julianOffset = Math.floor(year / 100) - Math.floor(year / 400) - 2;
+  return Date.UTC(year, julianMonth - 1, julianDay + julianOffset);
+};
+
+const movableDayLabel = (isoDate, language) => {
+  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(isoDate || '')) return '';
+  const [year, month, day] = isoDate.split('-').map(Number);
+  if (year < 1900 || year > 2099) return '';
+  const offset = Math.round((Date.UTC(year, month - 1, day) - orthodoxPascha(year)) / 86400000);
+  const ru = {
+    [-6]: 'Великий Понедельник',
+    [-5]: 'Великий Вторник',
+    [-4]: 'Великая Среда',
+    [-3]: 'Великий Четверг',
+    [-2]: 'Великая Пятница',
+    [-1]: 'Великая Суббота',
+    [1]: 'Понедельник Светлой седмицы',
+    [2]: 'Вторник Светлой седмицы',
+    [3]: 'Среда Светлой седмицы',
+    [4]: 'Четверг Светлой седмицы',
+    [5]: 'Пятница Светлой седмицы',
+    [6]: 'Суббота Светлой седмицы',
+    [7]: 'Антипасха — Неделя апостола Фомы',
+    [9]: 'Радоница',
+  };
+  const uk = {
+    [-6]: 'Великий понеділок',
+    [-5]: 'Великий вівторок',
+    [-4]: 'Велика середа',
+    [-3]: 'Великий четвер',
+    [-2]: 'Велика п’ятниця',
+    [-1]: 'Велика субота',
+    [1]: 'Світлий понеділок',
+    [2]: 'Світлий вівторок',
+    [3]: 'Світла середа',
+    [4]: 'Світлий четвер',
+    [5]: 'Світла п’ятниця',
+    [6]: 'Світла субота',
+    [7]: 'Антипасха — Неділя апостола Фоми',
+    [9]: 'Радониця',
+  };
+  return (language === 'uk' ? uk : ru)[offset] || '';
+};
+
+const MOVABLE_CARD_TITLES = new Set([
+  'Великий Понедельник', 'Великий Вторник', 'Великая Среда',
+  'Великий Четверг', 'Великая Пятница', 'Великая Суббота',
+  'Понедельник Светлой седмицы', 'Вторник Светлой седмицы',
+  'Среда Светлой седмицы', 'Четверг Светлой седмицы',
+  'Пятница Светлой седмицы', 'Суббота Светлой седмицы',
+  'Антипасха. Неделя 2-я по Пасхе, апостола Фомы',
+]);
+const isMovableDayCard = (feast) => MOVABLE_CARD_TITLES.has(feast?.title);
+
 const SoftChevron = ({expanded}) => (
   <Text style={[styles.readingArrow, expanded && styles.readingArrowExpanded]}>›</Text>
 );
@@ -631,10 +695,17 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const cells = useMemo(() => buildCells(visibleYear, visibleMonth), [visibleMonth, visibleYear]);
 
   const today = toCalendarDate(new Date());
-  const mainFeast = dayData?.main_feast || dayData?.all_feasts?.[0] || null;
-  const otherFeasts = (dayData?.all_feasts || []).filter(
+  const regularFeasts = (dayData?.all_feasts || []).filter(
+    (feast) => !isMovableDayCard(feast)
+  );
+  const suggestedMain = dayData?.main_feast;
+  const mainFeast = suggestedMain && !isMovableDayCard(suggestedMain)
+    ? suggestedMain
+    : (regularFeasts.find((feast) => !!feast?.icon_url) || regularFeasts[0] || null);
+  const otherFeasts = regularFeasts.filter(
     (feast) => Number(feast?.id) !== Number(mainFeast?.id)
   );
+  const liturgicalDayLabel = movableDayLabel(dayData?.date_gregorian, language);
 
   const moveMonth = (delta) => {
     const next = new Date(visibleYear, visibleMonth - 1 + delta, 1);
@@ -769,6 +840,9 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
           <Text style={styles.dayDate}>
             {formatCalendarDateLabel(dayData.date_gregorian, locale)}
           </Text>
+          {!!liturgicalDayLabel && (
+            <Text style={styles.liturgicalDayLabel}>{liturgicalDayLabel}</Text>
+          )}
 
           <View style={styles.feastHero}>
             <View style={styles.feastImageWrap}>
@@ -1089,10 +1163,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dayDate: {
-    marginBottom: 12,
+    marginBottom: 4,
     color: '#765238',
     fontFamily: 'serif',
     fontSize: 15,
+  },
+  liturgicalDayLabel: {
+    marginBottom: 12,
+    color: '#8E5D32',
+    fontFamily: 'serif',
+    fontSize: 14,
+    fontWeight: '700',
   },
   feastHero: {
     flexDirection: 'row',
