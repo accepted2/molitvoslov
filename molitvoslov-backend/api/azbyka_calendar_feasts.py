@@ -477,6 +477,16 @@ def _collect_life(soup, saint_title):
             if content and len(content) >= 100:
                 return tag_text(child), content
 
+    # Некоторые страницы (например, Собор Пресвятой Богородицы)
+    # помещают текст сразу под H2 "Жития", без вложенных H3.
+    # Не допускаем, чтобы единственная дата из блока "День памяти"
+    # считалась житийным текстом.
+    for heading in headings:
+        if heading.name == "h2" and tag_text(heading).strip().lower() == "жития":
+            content = collect_section(heading)
+            if len(content) >= 100:
+                return f"Житие: {saint_title}", content
+
     # 1. Лучший вариант: на странице есть явный раздел жития.
     # Он имеет приоритет над "Днями памяти" и краткой аннотацией.
     for heading in headings:
