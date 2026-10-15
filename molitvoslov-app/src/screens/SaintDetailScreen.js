@@ -167,10 +167,13 @@ export const SaintDetailScreen = ({route, navigation}) => {
         )}
       </ScrollView>
       <View style={[styles.bottomBar, {paddingBottom: Math.max(insets.bottom, 12)}]}>
-        <Pressable style={styles.bottomButton} accessibilityRole="button"
-          onPress={() => navigation.navigate('ChurchCalendar', date ? {date} : {})}>
+        <Pressable
+          style={styles.bottomButton}
+          accessibilityRole="button"
+          onPress={() => navigation.navigate('ChurchCalendar', date ? {date} : {})}
+        >
           <Text style={styles.bottomButtonText}>
-            ▣  {uk ? 'Перейти до календаря' : 'Перейти в календарь'}  ›
+            ▣ {uk ? 'Перейти до календаря' : 'Перейти в календарь'} ›
           </Text>
         </Pressable>
       </View>
