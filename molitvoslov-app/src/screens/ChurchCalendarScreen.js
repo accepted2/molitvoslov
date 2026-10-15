@@ -248,7 +248,11 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
 
         <View style={styles.readingTextWrap}>
           <Text style={styles.readingKind}>
-            {kind === 'gospel' ? copy.gospel : kind === 'old_testament' ? 'Ветхий Завет' : copy.apostle}
+            {kind === 'gospel'
+              ? copy.gospel
+              : kind === 'old_testament'
+                ? 'Ветхий Завет'
+                : copy.apostle}
             {!!sequence && ` · ${sequence}`}
           </Text>
           {!!label && <Text style={styles.readingLabel}>{label}</Text>}
@@ -413,7 +417,10 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const copy = calendarText(language);
   const gospelReadings = useMemo(() => getCalendarReadingItems(dayData, 'gospel'), [dayData]);
   const apostleReadings = useMemo(() => getCalendarReadingItems(dayData, 'apostle'), [dayData]);
-  const oldTestamentReadings = useMemo(() => getCalendarReadingItems(dayData, 'old_testament'), [dayData]);
+  const oldTestamentReadings = useMemo(
+    () => getCalendarReadingItems(dayData, 'old_testament'),
+    [dayData]
+  );
 
   useEffect(() => {
     const section = route.params?.section;
