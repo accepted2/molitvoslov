@@ -821,11 +821,14 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
         otherFeasts.map((feast) => (
           <Pressable
             key={feast.id ?? feast.source_id ?? feast.title}
-            onPress={() => navigation.navigate('SaintDetail', {feast, date: dayData?.date_gregorian})}
+            onPress={() =>
+              navigation.navigate('SaintDetail', {feast, date: dayData?.date_gregorian})
+            }
             style={styles.otherSaintRow}
-            accessibilityRole="button">
+            accessibilityRole="button"
+          >
             <View style={styles.otherSaintDot} />
-            <Text style={styles.otherSaintText}>{displayTitle(feast, copy)}  ›</Text>
+            <Text style={styles.otherSaintText}>{displayTitle(feast, copy)} ›</Text>
           </Pressable>
         ))
       ) : (
@@ -853,10 +856,14 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
           )}
 
           <Pressable
-            onPress={() => mainFeast && navigation.navigate('SaintDetail', {feast: mainFeast, date: dayData?.date_gregorian})}
+            onPress={() =>
+              mainFeast &&
+              navigation.navigate('SaintDetail', {feast: mainFeast, date: dayData?.date_gregorian})
+            }
             disabled={!mainFeast}
             style={styles.feastHero}
-            accessibilityRole="button">
+            accessibilityRole="button"
+          >
             <View style={styles.feastImageWrap}>
               <FeastImage feast={mainFeast} />
             </View>
