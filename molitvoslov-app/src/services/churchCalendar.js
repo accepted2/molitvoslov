@@ -57,7 +57,12 @@ export const getCalendarReadingItems = (day, kind) => {
     return structured;
   }
 
-  const legacyTitle = normalizedKind === 'gospel' ? day?.gospel_title : normalizedKind === 'apostle' ? day?.apostolic_title : null;
+  const legacyTitle =
+    normalizedKind === 'gospel'
+      ? day?.gospel_title
+      : normalizedKind === 'apostle'
+        ? day?.apostolic_title
+        : null;
 
   return legacyTitle
     ? [
