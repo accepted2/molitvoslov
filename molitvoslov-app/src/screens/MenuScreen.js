@@ -1258,7 +1258,16 @@ export const MenuScreen = ({navigation}) => {
                 <View style={styles.calendarMainRow}>
                   <View style={styles.calendarTodayColumn}>
                     <Pressable
-                      onPress={openFullCalendar}
+                      onPress={() => {
+                        if (calendarToday?.main_feast) {
+                          navigation.navigate('SaintDetail', {
+                            feast: calendarToday.main_feast,
+                            date: calendarToday.date_gregorian,
+                          });
+                        } else {
+                          openFullCalendar();
+                        }
+                      }}
                       style={({pressed}) => [styles.calendarFeastCard, pressed && styles.pressed]}
                     >
                       {calendarSaintSource ? (
