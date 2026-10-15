@@ -9,7 +9,7 @@ from django.db import transaction
 from api.calendar_models import CalendarDay, CalendarFeast
 from api.sqlite_backup import create_sqlite_backup
 
-NOTE_HEADING = re.compile(r"(?m)^Примечания?\s*$")
+NOTE_HEADING = re.compile(r"(?m)^Примечани(?:е|я)\s*$")
 
 
 class Command(BaseCommand):
