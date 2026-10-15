@@ -325,6 +325,43 @@ const parseVerseRange = (title) => {
   return null;
 };
 
+// A lectionary reference can contain separate sections, e.g.
+// 11:24–26,32–12:2 or 19:29–40,22:7–39.
+// A number after a comma is a verse in the current chapter unless
+// it is followed by a colon, in which case it starts a new chapter.
+const parseReadingSegments = (title) => {
+  const source = String(title || '').split(/\\s*\\(\\s*зач\\.?/i)[0];
+  const first = /(\\d+)\\s*[:.]\\s*(\\d+)\\s*(?:[-–—]\\s*(?:(\\d+)\\s*[:.]\\s*)?(\\d+))?/.exec(source);
+  if (!first) {
+    const single = parseVerseRange(title);
+    return single ? [single] : [];
+  }
+
+  const segments = [{
+    startChapter: Number(first[1]),
+    startVerse: Number(first[2]),
+    endChapter: first[3] ? Number(first[3]) : Number(first[1]),
+    endVerse: first[4] ? Number(first[4]) : Number(first[2]),
+  }];
+  let currentChapter = segments[0].endChapter;
+  let offset = first.index + first[0].length;
+
+  while (offset < source.length) {
+    const rest = source.slice(offset);
+    const match = /^\\s*[,;]\\s*(\\d+)\\s*(?:[:.]\\s*(\\d+))?\\s*(?:[-–—]\\s*(?:(\\d+)\\s*[:.]\\s*)?(\\d+))?/.exec(rest);
+    if (!match) break;
+
+    const startChapter = match[2] ? Number(match[1]) : currentChapter;
+    const startVerse = match[2] ? Number(match[2]) : Number(match[1]);
+    const endChapter = match[3] ? Number(match[3]) : startChapter;
+    const endVerse = match[4] ? Number(match[4]) : startVerse;
+    segments.push({startChapter, startVerse, endChapter, endVerse});
+    currentChapter = endChapter;
+    offset += match[0].length;
+  }
+  return segments;
+};
+
 export const resolveBibleReference = (title) => {
   if (!title) {
     return null;
@@ -341,7 +378,8 @@ export const resolveBibleReference = (title) => {
   }
 
   const book = findBookByCode(alias.code);
-  const range = parseVerseRange(title);
+  const ranges = parseReadingSegments(title);
+  const range = ranges[0];
 
   if (!book || !range?.startChapter) {
     return null;
@@ -368,6 +406,7 @@ export const resolveBibleReference = (title) => {
     verse,
     chapterNumber: Number(chapter.number),
     verseNumber: Number(verse.number),
+    ranges,
     startChapter: range.startChapter,
     startVerse: range.startVerse,
     endChapter: range.endChapter || range.startChapter,
@@ -383,35 +422,33 @@ export const getBibleReadingVerses = (title) => {
   }
 
   const result = [];
-  const startChapter = Number(target.startChapter);
-  const endChapter = Number(target.endChapter || startChapter);
+  const seen = new Set();
 
-  if (endChapter < startChapter || endChapter - startChapter > 3) {
-    return [];
-  }
+  for (const range of target.ranges || [target]) {
+    const startChapter = Number(range.startChapter);
+    const endChapter = Number(range.endChapter || startChapter);
 
-  for (let chapterNumber = startChapter; chapterNumber <= endChapter; chapterNumber += 1) {
-    const chapter = bibleContent.getChapter(target.book.id, chapterNumber);
-
-    if (!chapter) {
+    if (endChapter < startChapter || endChapter - startChapter > 3) {
       continue;
     }
 
-    const startVerse = chapterNumber === startChapter ? Number(target.startVerse) : 1;
+    for (let chapterNumber = startChapter; chapterNumber <= endChapter; chapterNumber += 1) {
+      const chapter = bibleContent.getChapter(target.book.id, chapterNumber);
+      if (!chapter) continue;
 
-    const lastVerseInChapter = Number(chapter.verses?.[chapter.verses.length - 1]?.number || 0);
+      const startVerse = chapterNumber === startChapter ? Number(range.startVerse) : 1;
+      const lastVerse = Number(chapter.verses?.[chapter.verses.length - 1]?.number || 0);
+      const endVerse = chapterNumber === endChapter ? Number(range.endVerse) : lastVerse;
 
-    const endVerse = chapterNumber === endChapter ? Number(target.endVerse) : lastVerseInChapter;
-
-    (chapter.verses || [])
-      .filter((verse) => Number(verse.number) >= startVerse && Number(verse.number) <= endVerse)
-      .forEach((verse) => {
-        result.push({
-          chapterNumber,
-          verseNumber: Number(verse.number),
-          text: String(verse.text || '').trim(),
-        });
-      });
+      for (const verse of chapter.verses || []) {
+        const verseNumber = Number(verse.number);
+        if (verseNumber < startVerse || verseNumber > endVerse) continue;
+        const key = `${chapterNumber}:${verseNumber}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        result.push({chapterNumber, verseNumber, text: String(verse.text || '').trim()});
+      }
+    }
   }
 
   return result;
