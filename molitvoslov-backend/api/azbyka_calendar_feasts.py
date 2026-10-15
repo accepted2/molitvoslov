@@ -441,15 +441,17 @@ def _collect_life(soup, saint_title):
 
         for tag in heading.find_all_next():
             tag_level = _heading_level(tag)
+            value = tag_text(tag) if tag.name in {"p", "h1", "h2", "h3", "h4", "h5", "h6"} else ""
+
+            # Azbyka can place numbered editorial footnotes inside the
+            # same "Жития" section. They are not part of the life text.
+            if re.match(r"^Примечания(?:\s*[:.]|$|\s+\[\d+\])", value, re.I):
+                break
 
             if tag_level is not None and tag_level <= level:
                 break
 
-            if tag.name != "p":
-                continue
-
-            value = tag_text(tag)
-            if not value:
+            if tag.name != "p" or not value:
                 continue
 
             if value not in parts:
