@@ -1,5 +1,5 @@
 import React, {useCallback, useMemo, useState} from 'react';
-import {Image, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Image, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
@@ -260,34 +260,62 @@ const PsalterPrayer = ({prayer}) => {
 };
 
 const PrayerPhoto = ({photo}) => {
+  const {width: screenWidth, height: screenHeight} = useWindowDimensions();
   const [aspectRatio, setAspectRatio] = useState(0.7);
+  const [expanded, setExpanded] = useState(false);
+  const [zoomed, setZoomed] = useState(false);
+  const displayWidth = Math.max(240, screenWidth - 28);
+  const imageHeight = Math.min(1000, displayWidth / aspectRatio);
+  const enlargedWidth = zoomed ? screenWidth * 2 : screenWidth;
+  const enlargedHeight = enlargedWidth / aspectRatio;
 
   const handleLoad = (event) => {
     const {width, height} = event.nativeEvent.source || {};
-
-    if (width && height) {
-      setAspectRatio(width / height);
-    }
+    if (width && height) setAspectRatio(width / height);
   };
 
   return (
-    <Image
-      source={{uri: photo.uri}}
-      style={[
-        styles.photo,
-        {
-          aspectRatio,
-        },
-      ]}
-      resizeMode="contain"
-      onLoad={handleLoad}
-    />
+    <>
+      <Pressable onPress={() => setExpanded(true)} accessibilityRole="button"
+        accessibilityLabel="Увеличить фотографию молитвы">
+        <Image
+          source={{uri: photo.uri}}
+          style={[styles.photo, {height: imageHeight}]}
+          resizeMode="contain"
+          onLoad={handleLoad}
+        />
+        <Text style={styles.photoZoomHint}>Нажмите для увеличения</Text>
+      </Pressable>
+      <Modal visible={expanded} transparent animationType="fade"
+        onRequestClose={() => {setExpanded(false); setZoomed(false);}}>
+        <View style={styles.photoModal}>
+          <Pressable
+            onPress={() => {setExpanded(false); setZoomed(false);}}
+            style={styles.photoModalClose}
+            accessibilityRole="button"
+            accessibilityLabel="Закрыть фотографию">
+            <Text style={styles.photoModalCloseText}>×</Text>
+          </Pressable>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{alignItems: 'center'}}>
+            <ScrollView showsVerticalScrollIndicator={false}
+              contentContainerStyle={{minHeight: screenHeight, justifyContent: 'center'}}>
+              <Pressable onPress={() => setZoomed((value) => !value)}>
+                <Image source={{uri: photo.uri}} resizeMode="contain"
+                  style={{width: enlargedWidth, height: enlargedHeight}} />
+              </Pressable>
+            </ScrollView>
+          </ScrollView>
+          <Text style={styles.photoModalHint}>Нажмите на фото: {zoomed ? 'уменьшить' : 'увеличить в 2 раза'}</Text>
+        </View>
+      </Modal>
+    </>
   );
 };
 
 export const PrayerBookReaderScreen = ({route, navigation}) => {
   const {t} = useLanguage();
-  const {bookSyncId} = route.params;
+  const {bookSyncId, prayerSyncId = null} = route.params;
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + 56;
   const [book, setBook] = useState(null);
@@ -303,7 +331,12 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
     }, [load])
   );
 
-  const items = useMemo(() => book?.items || [], [book]);
+  const items = useMemo(
+    () => (book?.items || []).filter(
+      (item) => !prayerSyncId || item.prayer?.sync_id === prayerSyncId
+    ),
+    [book, prayerSyncId]
+  );
 
   return (
     <View style={styles.screen}>
@@ -317,7 +350,9 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
           paddingBottom: 36 + insets.bottom,
         }}
       >
-        {!!book?.description && <Text style={styles.description}>{book.description}</Text>}
+        {!prayerSyncId && !!book?.description && (
+          <Text style={styles.description}>{book.description}</Text>
+        )}
 
         {items.map((item, index) => {
           const prayer = item.prayer;
@@ -364,6 +399,17 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
           </View>
         )}
       </ScrollView>
+
+      {!!prayerSyncId && items.length > 0 && (
+        <View style={[styles.editBar, {paddingBottom: Math.max(insets.bottom, 12)}]}>
+          <Pressable
+            onPress={() => navigation.navigate('PersonalPrayerEditor', {bookSyncId, prayerSyncId})}
+            style={styles.editButton}
+            accessibilityRole="button">
+            <Text style={styles.editButtonText}>✎  Редактировать молитву</Text>
+          </Pressable>
+        </View>
+      )}
 
       <FixedSectionHeader
         title={book?.title || t('prayerBooks.title')}
@@ -507,11 +553,55 @@ const styles = StyleSheet.create({
   },
   photo: {
     width: '100%',
-    minHeight: 220,
-    height: 380,
-    borderRadius: 15,
+    borderRadius: 12,
     backgroundColor: 'rgba(234,215,184,0.50)',
   },
+  photoZoomHint: {
+    textAlign: 'center',
+    color: '#806245',
+    fontSize: 12,
+    paddingVertical: 8,
+  },
+  photoModal: {
+    flex: 1,
+    backgroundColor: '#15110E',
+    justifyContent: 'center',
+  },
+  photoModalClose: {
+    position: 'absolute',
+    zIndex: 4,
+    top: 34,
+    right: 14,
+    width: 52,
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 26,
+    backgroundColor: '#3A2C24',
+  },
+  photoModalCloseText: {color: '#FFFFFF', fontSize: 36},
+  photoModalHint: {
+    position: 'absolute',
+    bottom: 18,
+    alignSelf: 'center',
+    color: '#FFFFFF',
+    fontSize: 13,
+  },
+  editBar: {
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    backgroundColor: '#FFF4DE',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(123,79,36,0.20)',
+  },
+  editButton: {
+    minHeight: 48,
+    backgroundColor: '#5A3822',
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editButtonText: {color: '#FFF4DE', fontSize: 15, fontWeight: '700'},
   separator: {
     marginTop: 20,
     marginBottom: 4,
