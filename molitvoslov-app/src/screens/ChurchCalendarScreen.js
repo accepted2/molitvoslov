@@ -137,11 +137,18 @@ const movableDayLabel = (isoDate, language) => {
 };
 
 const MOVABLE_CARD_TITLES = new Set([
-  'Великий Понедельник', 'Великий Вторник', 'Великая Среда',
-  'Великий Четверг', 'Великая Пятница', 'Великая Суббота',
-  'Понедельник Светлой седмицы', 'Вторник Светлой седмицы',
-  'Среда Светлой седмицы', 'Четверг Светлой седмицы',
-  'Пятница Светлой седмицы', 'Суббота Светлой седмицы',
+  'Великий Понедельник',
+  'Великий Вторник',
+  'Великая Среда',
+  'Великий Четверг',
+  'Великая Пятница',
+  'Великая Суббота',
+  'Понедельник Светлой седмицы',
+  'Вторник Светлой седмицы',
+  'Среда Светлой седмицы',
+  'Четверг Светлой седмицы',
+  'Пятница Светлой седмицы',
+  'Суббота Светлой седмицы',
   'Антипасха. Неделя 2-я по Пасхе, апостола Фомы',
 ]);
 const isMovableDayCard = (feast) => MOVABLE_CARD_TITLES.has(feast?.title);
@@ -695,16 +702,13 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const cells = useMemo(() => buildCells(visibleYear, visibleMonth), [visibleMonth, visibleYear]);
 
   const today = toCalendarDate(new Date());
-  const regularFeasts = (dayData?.all_feasts || []).filter(
-    (feast) => !isMovableDayCard(feast)
-  );
+  const regularFeasts = (dayData?.all_feasts || []).filter((feast) => !isMovableDayCard(feast));
   const suggestedMain = dayData?.main_feast;
-  const mainFeast = suggestedMain && !isMovableDayCard(suggestedMain)
-    ? suggestedMain
-    : (regularFeasts.find((feast) => !!feast?.icon_url) || regularFeasts[0] || null);
-  const otherFeasts = regularFeasts.filter(
-    (feast) => Number(feast?.id) !== Number(mainFeast?.id)
-  );
+  const mainFeast =
+    suggestedMain && !isMovableDayCard(suggestedMain)
+      ? suggestedMain
+      : regularFeasts.find((feast) => !!feast?.icon_url) || regularFeasts[0] || null;
+  const otherFeasts = regularFeasts.filter((feast) => Number(feast?.id) !== Number(mainFeast?.id));
   const liturgicalDayLabel = movableDayLabel(dayData?.date_gregorian, language);
 
   const moveMonth = (delta) => {
