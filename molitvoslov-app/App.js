@@ -30,7 +30,6 @@ import {hydratePublicContent} from './src/services/contentStore';
 import {syncPublicContent} from './src/services/contentSync';
 import {hydrateBibleContent} from './src/services/bibleStore';
 import {syncBibleContent} from './src/services/bibleSync';
-import {warmSearchData} from './src/services/searchIndex';
 import {syncYearMarkers2026} from './src/services/calendarYearMarkers';
 
 const ONBOARDING_STORAGE_KEY = '@molitvoslov/onboarding-version';
@@ -85,10 +84,6 @@ export default function App() {
         await Promise.all([hydratePublicContent(), hydrateBibleContent('rst')]);
 
         setDatabaseReady(true);
-
-        setTimeout(() => {
-          warmSearchData();
-        }, 900);
 
         console.log('Локальная база данных готова');
       } catch (error) {
@@ -161,7 +156,6 @@ export default function App() {
 
         if (publicContentResult?.updated) {
           console.log(`Public content updated: ${reason}`);
-          warmSearchData();
         } else if (!publicContentResult?.success && publicContentResult?.error) {
           console.log(
             `Public content sync отложен: ${reason}`,
