@@ -5,6 +5,7 @@ import {
   Alert,
   Image,
   ImageBackground,
+  InteractionManager,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -613,10 +614,27 @@ export const MenuScreen = ({navigation}) => {
     [calendarToday, calendarLanguage]
   );
 
+  // The native Android widget update can be expensive. Do not run it in
+  // the same interaction window as the initial calendar render or a tap.
+  // In particular, navigation must remain responsive while calendar data loads.
   useEffect(() => {
-    if (calendarToday) {
-      updateCalendarWidget(calendarToday, calendarLanguage);
-    }
+    if (!calendarToday) return undefined;
+
+    let cancelled = false;
+    let interaction = null;
+    const timer = setTimeout(() => {
+      interaction = InteractionManager.runAfterInteractions(() => {
+        if (!cancelled) {
+          updateCalendarWidget(calendarToday, calendarLanguage);
+        }
+      });
+    }, 1200);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      interaction?.cancel?.();
+    };
   }, [calendarToday, calendarLanguage, updateCalendarWidget]);
 
   const changeAppLanguage = async (language) => {
