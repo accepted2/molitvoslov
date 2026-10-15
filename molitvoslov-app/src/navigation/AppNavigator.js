@@ -32,6 +32,7 @@ import {PrayerBookScreen} from '../screens/PrayerBookScreen';
 import {PersonalPrayerEditorScreen} from '../screens/PersonalPrayerEditorScreen';
 import {PrayerBookReaderScreen} from '../screens/PrayerBookReaderScreen';
 import {ChurchCalendarScreen} from '../screens/ChurchCalendarScreen';
+import {SaintDetailScreen} from '../screens/SaintDetailScreen';
 
 import {colors} from '../theme';
 
@@ -269,6 +270,11 @@ export const AppNavigator = () => {
           options={{
             headerShown: false,
           }}
+        />
+        <Stack.Screen
+          name="SaintDetail"
+          component={SaintDetailScreen}
+          options={{headerShown: false}}
         />
 
         <Stack.Screen
