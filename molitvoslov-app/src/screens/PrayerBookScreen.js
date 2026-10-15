@@ -507,18 +507,6 @@ export const PrayerBookScreen = ({route, navigation}) => {
             <View style={styles.actionsWrap}>
               {!!book.description && <Text style={styles.description}>{book.description}</Text>}
 
-              <Pressable
-                onPress={() => navigation.navigate('PrayerBookReader', {bookSyncId: book.sync_id})}
-                disabled={!book.items?.length}
-                style={({pressed}) => [
-                  styles.readButton,
-                  !book.items?.length && styles.disabled,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <Text style={styles.readButtonText}>{t('prayerBooks.readAsOne')}</Text>
-              </Pressable>
-
               <View style={styles.actionGrid}>
                 <Pressable
                   onPress={() =>
@@ -563,7 +551,7 @@ export const PrayerBookScreen = ({route, navigation}) => {
               <View style={styles.card}>
                 <Pressable
                   onPress={() =>
-                    navigation.navigate('PersonalPrayerEditor', {
+                    navigation.navigate('PrayerBookReader', {
                       bookSyncId: book.sync_id,
                       prayerSyncId: prayer.sync_id,
                     })
@@ -628,6 +616,20 @@ export const PrayerBookScreen = ({route, navigation}) => {
           }}
         />
 
+        <View style={[styles.stickyReadBar, {paddingBottom: Math.max(insets.bottom, 12)}]}>
+          <Pressable
+            onPress={() => navigation.navigate('PrayerBookReader', {bookSyncId: book.sync_id})}
+            disabled={!book.items?.length}
+            style={({pressed}) => [
+              styles.readButton,
+              !book.items?.length && styles.disabled,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={styles.readButtonText}>{t('prayerBooks.readAsOne')}</Text>
+          </Pressable>
+        </View>
+
         <FixedSectionHeader title={book.title} navigation={navigation} topInset={insets.top} />
 
         <SavedPickerModal
@@ -659,6 +661,13 @@ const styles = StyleSheet.create({
     color: '#654731',
     fontFamily: 'serif',
     lineHeight: 20,
+  },
+  stickyReadBar: {
+    paddingHorizontal: spacing.md,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(126,82,38,0.25)',
+    backgroundColor: '#FFF4DE',
   },
   readButton: {
     minHeight: 44,
@@ -739,12 +748,12 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   photoMeta: {marginTop: 5, color: '#9A714C', fontSize: 11},
-  orderButtons: {width: 38, alignItems: 'center', justifyContent: 'center'},
-  orderButton: {width: 34, height: 27, alignItems: 'center', justifyContent: 'center'},
-  orderButtonText: {color: '#8A603A', fontSize: 16, fontWeight: '700'},
+  orderButtons: {width: 50, alignItems: 'center', justifyContent: 'center'},
+  orderButton: {width: 46, height: 43, alignItems: 'center', justifyContent: 'center'},
+  orderButtonText: {color: '#68401E', fontSize: 25, fontWeight: '800'},
   orderButtonDisabled: {opacity: 0.22},
-  removeButton: {width: 34, height: 29, alignItems: 'center', justifyContent: 'center'},
-  removeText: {color: '#9A714C', fontSize: 25},
+  removeButton: {width: 46, height: 43, alignItems: 'center', justifyContent: 'center'},
+  removeText: {color: '#9A4A39', fontSize: 31},
   emptyCard: {
     padding: 22,
     alignItems: 'center',
