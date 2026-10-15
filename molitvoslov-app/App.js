@@ -165,7 +165,6 @@ export default function App() {
 
         if (bibleContentResult?.updated) {
           console.log(`Bible content updated: ${reason}`);
-          warmSearchData();
         } else if (!bibleContentResult?.success && bibleContentResult?.error) {
           console.log(
             `Bible content sync отложен: ${reason}`,
@@ -223,11 +222,7 @@ export default function App() {
         syncBibleContent('rst'),
       ]);
 
-      if (publicResult?.updated || bibleResult?.updated) {
-        warmSearchData();
-      }
-
-      if (!publicResult?.success && publicResult?.error) {
+if (!publicResult?.success && publicResult?.error) {
         console.log(
           'Periodic public content sync отложен:',
           publicResult.error?.message || publicResult.error
