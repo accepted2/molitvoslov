@@ -99,7 +99,6 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const troparion = (uk && feast?.troparion_content_uk) || feast?.troparion_content;
   const kontakion = (uk && feast?.kontakion_content_uk) || feast?.kontakion_content;
   const prayer = (uk && feast?.prayer_content_uk) || feast?.prayer_content;
-  const [readFully, setReadFully] = useState(false);
   const large = width >= 560;
   const heroImageWidth = large ? 180 : Math.min(132, width * 0.34);
   const lifeHeight = Math.max(235, Math.min(390, height * 0.39));
@@ -136,7 +135,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
           icon="▤"
           text={life}
           initialOpen
-          innerScroll={!readFully && String(life || '').length > 550}
+          innerScroll={String(life || '').length > 550}
           height={lifeHeight}
         />
         <Accordion
@@ -167,27 +166,14 @@ export const SaintDetailScreen = ({route, navigation}) => {
           </Text>
         )}
       </ScrollView>
-      {!!life && (
-        <View style={[styles.bottomBar, {paddingBottom: Math.max(insets.bottom, 12)}]}>
-          <Pressable
-            style={styles.bottomButton}
-            accessibilityRole="button"
-            onPress={() => setReadFully((value) => !value)}
-          >
-            <Text style={styles.bottomButtonText}>
-              ▤{' '}
-              {readFully
-                ? uk
-                  ? 'Згорнути житіє'
-                  : 'Свернуть житие'
-                : uk
-                  ? 'Читати повністю'
-                  : 'Читать полностью'}{' '}
-              ›
-            </Text>
-          </Pressable>
-        </View>
-      )}
+      <View style={[styles.bottomBar, {paddingBottom: Math.max(insets.bottom, 12)}]}>
+        <Pressable style={styles.bottomButton} accessibilityRole="button"
+          onPress={() => navigation.navigate('ChurchCalendar', date ? {date} : {})}>
+          <Text style={styles.bottomButtonText}>
+            ▣  {uk ? 'Перейти до календаря' : 'Перейти в календарь'}  ›
+          </Text>
+        </Pressable>
+      </View>
       <FixedSectionHeader
         title={uk ? 'Святий дня' : 'Святой дня'}
         navigation={navigation}
