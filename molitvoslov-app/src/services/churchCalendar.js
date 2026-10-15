@@ -330,8 +330,8 @@ const parseVerseRange = (title) => {
 // A number after a comma is a verse in the current chapter unless
 // it is followed by a colon, in which case it starts a new chapter.
 const parseReadingSegments = (title) => {
-  const source = String(title || '').split(/\\s*\\(\\s*зач\\.?/i)[0];
-  const first = /(\\d+)\\s*[:.]\\s*(\\d+)\\s*(?:[-–—]\\s*(?:(\\d+)\\s*[:.]\\s*)?(\\d+))?/.exec(source);
+  const source = String(title || '').split(/\s*\(\s*зач\.?/i)[0];
+  const first = /(\d+)\s*[:.]\s*(\d+)\s*(?:[-–—]\s*(?:(\d+)\s*[:.]\s*)?(\d+))?/.exec(source);
   if (!first) {
     const single = parseVerseRange(title);
     return single ? [single] : [];
@@ -348,7 +348,7 @@ const parseReadingSegments = (title) => {
 
   while (offset < source.length) {
     const rest = source.slice(offset);
-    const match = /^\\s*[,;]\\s*(\\d+)\\s*(?:[:.]\\s*(\\d+))?\\s*(?:[-–—]\\s*(?:(\\d+)\\s*[:.]\\s*)?(\\d+))?/.exec(rest);
+    const match = /^\s*[,;]\s*(\d+)\s*(?:[:.]\s*(\d+))?\s*(?:[-–—]\s*(?:(\d+)\s*[:.]\s*)?(\d+))?/.exec(rest);
     if (!match) break;
 
     const startChapter = match[2] ? Number(match[1]) : currentChapter;
