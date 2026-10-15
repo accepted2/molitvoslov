@@ -335,9 +335,7 @@ class Command(BaseCommand):
             "Суббота Светлой седмицы",
             "Антипасха. Неделя 2-я по Пасхе, апостола Фомы",
         }
-        preserved_feasts = [
-            feast for feast in local_feasts if feast.title in protected_titles
-        ]
+        preserved_feasts = [feast for feast in local_feasts if feast.title in protected_titles]
         preserved_main = (
             day.main_feast if day.main_feast and day.main_feast.title in protected_titles else None
         )
@@ -484,9 +482,7 @@ class Command(BaseCommand):
             # Старые CalendarFeast намеренно НЕ удаляем: они могут быть
             # связаны с другими днями или понадобиться для отката.
             known_ids = {feast.pk for feast in new_feasts}
-            new_feasts.extend(
-                feast for feast in preserved_feasts if feast.pk not in known_ids
-            )
+            new_feasts.extend(feast for feast in preserved_feasts if feast.pk not in known_ids)
             day.feasts.set(new_feasts)
             day.main_feast = preserved_main or new_feasts[main_index]
             day.save(update_fields=["main_feast"])
