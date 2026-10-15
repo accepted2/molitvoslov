@@ -1,5 +1,14 @@
 import React, {useCallback, useMemo, useState} from 'react';
-import {Image, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions} from 'react-native';
+import {
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
@@ -276,8 +285,11 @@ const PrayerPhoto = ({photo}) => {
 
   return (
     <>
-      <Pressable onPress={() => setExpanded(true)} accessibilityRole="button"
-        accessibilityLabel="Увеличить фотографию молитвы">
+      <Pressable
+        onPress={() => setExpanded(true)}
+        accessibilityRole="button"
+        accessibilityLabel="Увеличить фотографию молитвы"
+      >
         <Image
           source={{uri: photo.uri}}
           style={[styles.photo, {height: imageHeight}]}
@@ -286,27 +298,48 @@ const PrayerPhoto = ({photo}) => {
         />
         <Text style={styles.photoZoomHint}>Нажмите для увеличения</Text>
       </Pressable>
-      <Modal visible={expanded} transparent animationType="fade"
-        onRequestClose={() => {setExpanded(false); setZoomed(false);}}>
+      <Modal
+        visible={expanded}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setExpanded(false);
+          setZoomed(false);
+        }}
+      >
         <View style={styles.photoModal}>
           <Pressable
-            onPress={() => {setExpanded(false); setZoomed(false);}}
+            onPress={() => {
+              setExpanded(false);
+              setZoomed(false);
+            }}
             style={styles.photoModalClose}
             accessibilityRole="button"
-            accessibilityLabel="Закрыть фотографию">
+            accessibilityLabel="Закрыть фотографию"
+          >
             <Text style={styles.photoModalCloseText}>×</Text>
           </Pressable>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{alignItems: 'center'}}>
-            <ScrollView showsVerticalScrollIndicator={false}
-              contentContainerStyle={{minHeight: screenHeight, justifyContent: 'center'}}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{alignItems: 'center'}}
+          >
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{minHeight: screenHeight, justifyContent: 'center'}}
+            >
               <Pressable onPress={() => setZoomed((value) => !value)}>
-                <Image source={{uri: photo.uri}} resizeMode="contain"
-                  style={{width: enlargedWidth, height: enlargedHeight}} />
+                <Image
+                  source={{uri: photo.uri}}
+                  resizeMode="contain"
+                  style={{width: enlargedWidth, height: enlargedHeight}}
+                />
               </Pressable>
             </ScrollView>
           </ScrollView>
-          <Text style={styles.photoModalHint}>Нажмите на фото: {zoomed ? 'уменьшить' : 'увеличить в 2 раза'}</Text>
+          <Text style={styles.photoModalHint}>
+            Нажмите на фото: {zoomed ? 'уменьшить' : 'увеличить в 2 раза'}
+          </Text>
         </View>
       </Modal>
     </>
@@ -332,9 +365,8 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
   );
 
   const items = useMemo(
-    () => (book?.items || []).filter(
-      (item) => !prayerSyncId || item.prayer?.sync_id === prayerSyncId
-    ),
+    () =>
+      (book?.items || []).filter((item) => !prayerSyncId || item.prayer?.sync_id === prayerSyncId),
     [book, prayerSyncId]
   );
 
@@ -405,8 +437,9 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
           <Pressable
             onPress={() => navigation.navigate('PersonalPrayerEditor', {bookSyncId, prayerSyncId})}
             style={styles.editButton}
-            accessibilityRole="button">
-            <Text style={styles.editButtonText}>✎  Редактировать молитву</Text>
+            accessibilityRole="button"
+          >
+            <Text style={styles.editButtonText}>✎ Редактировать молитву</Text>
           </Pressable>
         </View>
       )}
