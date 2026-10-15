@@ -92,6 +92,21 @@ class AzbykaCalendarReadingsParserTests(SimpleTestCase):
         self.assertEqual(readings[2].label, "Сщмч.")
         self.assertEqual(readings[3].label, "Сщмч.")
 
+    def test_preserves_comma_separated_chapter_verses_and_following_labels(self):
+        source = (
+            "3Ин.1:1–15 (зач. 76). "
+            "Лк.19:29–40,22:7–39 (зач. 96). "
+            "Прав.: Евр.9:11–14 (зач. 321). Лк.2:25–38 (зач. 8). "
+            "Богородицы: Лк.10:38–42,11:27–28 (зач. 54). "
+            "Или свт.: Евр.13:17–21 (зач. 335)."
+        )
+        readings = parse_readings_text(source)
+        self.assertEqual(len(readings), 6)
+        self.assertEqual(readings[1].title, "Лк.19:29–40,22:7–39 (зач. 96)")
+        self.assertEqual(readings[2].label, "Прав.")
+        self.assertEqual(readings[4].title, "Лк.10:38–42,11:27–28 (зач. 54)")
+        self.assertEqual(readings[5].label, "Или свт.")
+
     def test_extracts_first_reading_paragraph_only(self):
         html = """
         <html><body>
