@@ -337,18 +337,21 @@ const parseReadingSegments = (title) => {
     return single ? [single] : [];
   }
 
-  const segments = [{
-    startChapter: Number(first[1]),
-    startVerse: Number(first[2]),
-    endChapter: first[3] ? Number(first[3]) : Number(first[1]),
-    endVerse: first[4] ? Number(first[4]) : Number(first[2]),
-  }];
+  const segments = [
+    {
+      startChapter: Number(first[1]),
+      startVerse: Number(first[2]),
+      endChapter: first[3] ? Number(first[3]) : Number(first[1]),
+      endVerse: first[4] ? Number(first[4]) : Number(first[2]),
+    },
+  ];
   let currentChapter = segments[0].endChapter;
   let offset = first.index + first[0].length;
 
   while (offset < source.length) {
     const rest = source.slice(offset);
-    const match = /^\s*[,;]\s*(\d+)\s*(?:[:.]\s*(\d+))?\s*(?:[-–—]\s*(?:(\d+)\s*[:.]\s*)?(\d+))?/.exec(rest);
+    const match =
+      /^\s*[,;]\s*(\d+)\s*(?:[:.]\s*(\d+))?\s*(?:[-–—]\s*(?:(\d+)\s*[:.]\s*)?(\d+))?/.exec(rest);
     if (!match) break;
 
     const startChapter = match[2] ? Number(match[1]) : currentChapter;
