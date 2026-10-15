@@ -311,7 +311,8 @@ class Command(BaseCommand):
 
         if day.date_gregorian.month == 4 and day.date_gregorian.day == 7:
             matches = [
-                index for index, item in enumerate(prepared)
+                index
+                for index, item in enumerate(prepared)
                 if item["source"].title.strip() == "Благовещение Пресвятой Богородицы"
             ]
             if len(matches) == 1:
@@ -325,9 +326,7 @@ class Command(BaseCommand):
             "Светлое Христово Воскресение",
         }
         preserved_main = (
-            day.main_feast
-            if day.main_feast and day.main_feast.title in protected_titles
-            else None
+            day.main_feast if day.main_feast and day.main_feast.title in protected_titles else None
         )
 
         if len(primary_indexes) > 1:
@@ -486,7 +485,9 @@ class Command(BaseCommand):
         self.stdout.write(
             "Старые карточки из CalendarFeast не удалены; " "от этого дня они только отвязаны."
         )
-        self.stdout.write(f"Главная память: {(preserved_main.title if preserved_main else prepared[main_index]['source'].title)}")
+        self.stdout.write(
+            f"Главная память: {(preserved_main.title if preserved_main else prepared[main_index]['source'].title)}"
+        )
 
     def _upload_prepared_icons(self, prepared):
         with_icons = [item for item in prepared if item["parsed"].icon_source_url]
