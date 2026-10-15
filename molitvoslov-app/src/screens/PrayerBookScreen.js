@@ -15,7 +15,7 @@ import {
   movePrayerInBook,
   removePrayerFromBook,
 } from '../services/prayerBooks';
-import {searchAllPrayers} from '../services/prayerSearch';
+import {normalizeSearchText, searchAllPrayers} from '../services/prayerSearch';
 import {getSavedItems} from '../services/savedItems';
 import {colors, spacing} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
@@ -153,7 +153,9 @@ const getSearchPreview = (item, query) => {
     .filter((token) => token.length >= 2);
 
   const lower = source.toLowerCase();
-  const matchedToken = tokens.find((token) => lower.includes(token.toLowerCase()));
+  const matchedToken = tokens.find((token) =>
+    normalizeSearchText(source).includes(normalizeSearchText(token))
+  );
 
   if (!matchedToken) {
     return item?.preview || source.slice(0, 130);
@@ -193,7 +195,7 @@ const GlobalPrayerSearchModal = ({
       return undefined;
     }
 
-    const trimmed = query.trim();
+    const trimmed = normalizeSearchText(query);
 
     if (trimmed.length < 2) {
       setSearchQuery(trimmed);
@@ -267,7 +269,7 @@ const GlobalPrayerSearchModal = ({
             )}
           </View>
 
-          {query.trim().length >= 2 && (
+          {normalizeSearchText(query).length >= 2 && (
             <View style={styles.searchFilters}>
               {SEARCH_FILTERS.map((item) => {
                 const active = filter === item.key;
@@ -289,7 +291,7 @@ const GlobalPrayerSearchModal = ({
             </View>
           )}
 
-          {query.trim().length < 2 ? (
+          {normalizeSearchText(query).length < 2 ? (
             <View style={styles.searchEmptyState}>
               <Text style={styles.searchEmptyMark}>⌕</Text>
               <Text style={styles.searchEmptyTitle}>{t('prayerBooks.enterTwoChars')}</Text>
