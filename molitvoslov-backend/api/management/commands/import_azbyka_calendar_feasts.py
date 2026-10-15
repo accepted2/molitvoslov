@@ -301,7 +301,8 @@ class Command(BaseCommand):
         # override the Twelve Great Feasts in the day's main card.
         if day.date_gregorian.month == 2 and day.date_gregorian.day == 15:
             meeting_indexes = [
-                index for index, item in enumerate(prepared)
+                index
+                for index, item in enumerate(prepared)
                 if item["source"].title.strip()
                 == "Сретение Господа Бога и Спаса нашего Иисуса Христа"
             ]
