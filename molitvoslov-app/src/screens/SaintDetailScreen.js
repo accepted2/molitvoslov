@@ -1,5 +1,5 @@
 import React from 'react';
-import {Image, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Image, ScrollView, StyleSheet, Text, View, useWindowDimensions} from 'react-native';
 import {StatusBar} from 'expo-status-bar';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {AppBackground} from '../components/layout/AppBackground';
@@ -7,14 +7,23 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {useLanguage} from '../context/LanguageContext';
 
-const Section = ({title, subtitle, body}) =>
+const Section = ({title, subtitle, body, scrollable = false, maxHeight = 320}) =>
   !body ? null : (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
       {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-      <Text selectable style={styles.text}>
-        {body}
-      </Text>
+      {scrollable ? (
+        <ScrollView
+          nestedScrollEnabled
+          style={[styles.lifeScroll, {maxHeight}]}
+          contentContainerStyle={styles.lifeScrollContent}
+          showsVerticalScrollIndicator
+          persistentScrollbar>
+          <Text selectable style={styles.text}>{body}</Text>
+        </ScrollView>
+      ) : (
+        <Text selectable style={styles.text}>{body}</Text>
+      )}
     </View>
   );
 
@@ -22,6 +31,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const {language} = useLanguage();
   const {feast, date} = route.params || {};
   const insets = useSafeAreaInsets();
+  const {height: viewportHeight} = useWindowDimensions();
   const uk = language === 'uk';
   const title = (uk && feast?.title_uk) || feast?.title || '';
   const bundled = getBundledCalendarIconSource(feast);
@@ -39,10 +49,19 @@ export const SaintDetailScreen = ({route, navigation}) => {
           {paddingTop: insets.top + 76, paddingBottom: insets.bottom + 36},
         ]}
       >
-        {!!source && <Image source={source} resizeMode="contain" style={styles.image} />}
-        <Text style={styles.title}>{title}</Text>
-        {!!date && <Text style={styles.date}>{date}</Text>}
-        <Section title={uk ? 'Житіє' : 'Житие'} subtitle={feast?.life_title} body={life} />
+        <View style={styles.hero}>
+          {!!source && <Image source={source} resizeMode="contain" style={styles.image} />}
+          <Text style={styles.title}>{title}</Text>
+          {!!date && <Text style={styles.date}>{date}</Text>}
+          <View style={styles.heroRule} />
+        </View>
+        <Section
+          title={uk ? 'Житіє' : 'Житие'}
+          subtitle={feast?.life_title}
+          body={life}
+          scrollable={String(life || '').length > 700}
+          maxHeight={Math.max(260, Math.min(450, viewportHeight * 0.48))}
+        />
         <Section
           title={uk ? 'Тропар' : 'Тропарь'}
           subtitle={feast?.troparion_echo ? 'Глас ' + feast.troparion_echo : feast?.troparion_title}
@@ -69,27 +88,46 @@ export const SaintDetailScreen = ({route, navigation}) => {
 };
 
 const styles = StyleSheet.create({
-  content: {paddingHorizontal: 16},
-  image: {width: '100%', height: 250, marginBottom: 16},
+  content: {paddingHorizontal: 18},
+  hero: {alignItems: 'center', paddingHorizontal: 8, paddingBottom: 8},
+  image: {width: 148, height: 176, marginBottom: 12},
   title: {
     fontFamily: 'serif',
-    fontSize: 22,
-    lineHeight: 30,
+    fontSize: 23,
+    lineHeight: 31,
     textAlign: 'center',
     fontWeight: '700',
     color: '#4C2F1B',
   },
-  date: {textAlign: 'center', color: '#89674D', marginTop: 8},
+  date: {textAlign: 'center', color: '#89674D', fontSize: 13, marginTop: 7},
+  heroRule: {height: 1, width: 84, backgroundColor: '#B5946E', marginTop: 20},
   section: {
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255,246,229,0.96)',
-    borderWidth: 1,
-    borderColor: 'rgba(126,82,38,0.20)',
+    marginTop: 20,
+    paddingBottom: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(126,82,38,0.30)',
   },
-  sectionTitle: {fontFamily: 'serif', color: '#5A3822', fontSize: 19, fontWeight: '700'},
-  subtitle: {color: '#89674D', marginTop: 4, fontSize: 12},
-  text: {fontFamily: 'serif', color: '#3E2A1D', fontSize: 16, lineHeight: 26, marginTop: 12},
+  sectionTitle: {
+    fontFamily: 'serif',
+    color: '#5A3822',
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  subtitle: {color: '#89674D', marginTop: 6, fontSize: 13, textAlign: 'center'},
+  text: {
+    fontFamily: 'serif',
+    color: '#3E2A1D',
+    fontSize: 16,
+    lineHeight: 27,
+    marginTop: 12,
+    textAlign: 'justify',
+  },
+  lifeScroll: {
+    marginTop: 12,
+    borderRadius: 9,
+    backgroundColor: 'rgba(255,248,235,0.62)',
+  },
+  lifeScrollContent: {paddingHorizontal: 10, paddingBottom: 15},
   empty: {color: '#89674D', textAlign: 'center', marginTop: 30},
 });
