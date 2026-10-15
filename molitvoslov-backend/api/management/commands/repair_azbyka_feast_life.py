@@ -1,4 +1,5 @@
 """Repair obviously broken short life texts without changing any other fields."""
+
 from datetime import date
 from pathlib import Path
 
@@ -34,7 +35,8 @@ class Command(BaseCommand):
         if day is None:
             raise CommandError("CalendarDay не найден.")
         matches = [
-            f for f in day.feasts.all()
+            f
+            for f in day.feasts.all()
             if options["title_contains"].casefold() in f.title.casefold()
         ]
         if len(matches) != 1:
