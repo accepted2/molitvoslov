@@ -207,6 +207,8 @@ export const SearchScreen = ({navigation}) => {
       };
     }
 
+    // Results from the previous category/query must disappear immediately.
+    setResult({items: [], total: 0});
     setSearchLoading(true);
     let lastProgressAt = 0;
 
