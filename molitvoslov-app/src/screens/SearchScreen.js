@@ -19,7 +19,6 @@ import {useLanguage} from '../context/LanguageContext';
 import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {subscribeToContentUpdates} from '../services/contentStore';
 import {addSearchHistory, clearSearchHistory, getSearchHistory} from '../services/searchHistory';
-import {isPersistentSearchReady, searchPersistent} from '../services/persistentSearch';
 import {
   SEARCH_GROUPS,
   SEARCH_GROUP_OPTIONS,
@@ -118,7 +117,6 @@ export const SearchScreen = ({navigation}) => {
   const [query, setQuery] = useState('');
   const [activeGroup, setActiveGroup] = useState(SEARCH_GROUPS.ALL);
   const [index, setIndex] = useState(null);
-  const [persistentReady, setPersistentReady] = useState(false);
   const [indexLoading, setIndexLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
@@ -144,32 +142,19 @@ export const SearchScreen = ({navigation}) => {
 
   useEffect(() => {
     let active = true;
-    let useStoredIndex = false;
     setIndexLoading(true);
-    setPersistentReady(false);
-
-    isPersistentSearchReady(language).then((ready) => {
-      if (active && ready) {
-        useStoredIndex = true;
-        setPersistentReady(true);
-        setIndexLoading(false);
-        cancelTask();
-      }
-    }).catch((error) => {
-      console.warn('Saved search index unavailable:', error?.message || error);
-    });
 
     // Build in batches so navigation and typing remain responsive.
     // Publish partial results as soon as entries become searchable.
     const cancelTask = scheduleIdleTask(() => {
-      if (!active || useStoredIndex) {
+      if (!active) {
         return;
       }
 
       buildSearchIndexAsync(language, {
-        isCancelled: () => !active || useStoredIndex,
+        isCancelled: () => !active,
         onProgress: (partialIndex) => {
-          if (active && !useStoredIndex) {
+          if (active) {
             setIndex(partialIndex);
           }
         },
@@ -202,7 +187,7 @@ export const SearchScreen = ({navigation}) => {
     let cancelled = false;
     const trimmed = searchQuery.trim();
 
-    if ((!index && !persistentReady) || trimmed.length < 2) {
+    if (!index || trimmed.length < 2) {
       setSearchLoading(false);
       setResult({
         items: [],
@@ -215,19 +200,15 @@ export const SearchScreen = ({navigation}) => {
 
     setSearchLoading(true);
 
-    (persistentReady ? searchPersistent(language, searchQuery, activeGroup, 120) : searchIndexAsync(index, searchQuery, {
+    searchIndexAsync(index, searchQuery, {
       group: activeGroup,
       limit: 120,
       isCancelled: () => cancelled,
-    }))
+    })
       .then((nextResult) => {
         if (!cancelled && nextResult) {
           setResult(nextResult);
         }
-      })
-      .catch((error) => {
-        console.warn('Search query failed:', error);
-        if (!cancelled) setResult({items: [], total: 0});
       })
       .finally(() => {
         if (!cancelled) {
@@ -238,7 +219,7 @@ export const SearchScreen = ({navigation}) => {
     return () => {
       cancelled = true;
     };
-  }, [index, persistentReady, language, searchQuery, activeGroup]);
+  }, [index, searchQuery, activeGroup]);
 
   const suggestionIndex = useMemo(
     () => (index || []).filter((entry) => !!entry.titleNormalized),
