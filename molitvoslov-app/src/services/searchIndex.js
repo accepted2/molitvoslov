@@ -326,221 +326,153 @@ const buildSearchIndexIterator = function* (language = 'ru') {
   const entries = [];
   const structuredTextIds = collectStructuredTextIds(content);
 
-  for (const rule of (content?.prayer_rules?.list || [])) {
+  for (const rule of content?.prayer_rules?.list || []) {
     ((rule) => {
-    const ruleTitle =
-      localized(rule, 'name', language) ||
-      clean(rule.name) ||
-      clean(rule.traditional_name) ||
-      'Молитвенное правило';
-
-    entries.push(
-      makeEntry({
-        id: `prayer-rule:${rule.id}`,
-        group: SEARCH_GROUPS.PRAYERS,
-        kind: 'prayer-rule',
-        title: ruleTitle,
-        source: 'Молитвенное правило',
-        fields: compactFields([
-          field(rule.name, '', 'title', 540),
-          field(rule.name_uk, 'ukrainian', 'title', 520),
-          field(rule.traditional_name, 'traditional', 'title', 520),
-          field(rule.description, '', 'description', 260),
-          field(rule.description_uk, 'ukrainian', 'description', 250),
-        ]),
-        route: {
-          name: 'PrayerRule',
-          params: {
-            slug: rule.slug,
-          },
-        },
-        preview: localized(rule, 'description', language),
-      })
-    );
-
-    (rule.items || []).forEach((item) => {
-      const itemTitle = prayerRuleItemTitle(item, ruleTitle);
-      const itemFields =
-        item.item_type === 'text'
-          ? textFields(item.text)
-          : compactFields([
-              field(item.title, '', 'title', 430),
-              field(item.title_uk, 'ukrainian', 'title', 410),
-              field(item.content, 'church', 'content', 120),
-              field(item.content_uk, 'ukrainian', 'content', 120),
-              field(item.note, '', 'description', 180),
-              field(item.note_uk, 'ukrainian', 'description', 180),
-            ]);
-
-      if (!itemFields.length) {
-        return;
-      }
+      const ruleTitle =
+        localized(rule, 'name', language) ||
+        clean(rule.name) ||
+        clean(rule.traditional_name) ||
+        'Молитвенное правило';
 
       entries.push(
         makeEntry({
-          id: `prayer-rule:${rule.id}:item:${item.id}`,
+          id: `prayer-rule:${rule.id}`,
           group: SEARCH_GROUPS.PRAYERS,
-          kind: 'prayer',
-          title: itemTitle,
-          source: `Молитвенное правило · ${ruleTitle}`,
-          fields: itemFields,
+          kind: 'prayer-rule',
+          title: ruleTitle,
+          source: 'Молитвенное правило',
+          fields: compactFields([
+            field(rule.name, '', 'title', 540),
+            field(rule.name_uk, 'ukrainian', 'title', 520),
+            field(rule.traditional_name, 'traditional', 'title', 520),
+            field(rule.description, '', 'description', 260),
+            field(rule.description_uk, 'ukrainian', 'description', 250),
+          ]),
           route: {
             name: 'PrayerRule',
             params: {
               slug: rule.slug,
-              focusTarget: {
-                anchor_type: 'prayer_rule_item',
-                anchor_id: Number(item.id),
-                start_offset: null,
-                end_offset: null,
-              },
             },
           },
+          preview: localized(rule, 'description', language),
         })
       );
-    });
+
+      (rule.items || []).forEach((item) => {
+        const itemTitle = prayerRuleItemTitle(item, ruleTitle);
+        const itemFields =
+          item.item_type === 'text'
+            ? textFields(item.text)
+            : compactFields([
+                field(item.title, '', 'title', 430),
+                field(item.title_uk, 'ukrainian', 'title', 410),
+                field(item.content, 'church', 'content', 120),
+                field(item.content_uk, 'ukrainian', 'content', 120),
+                field(item.note, '', 'description', 180),
+                field(item.note_uk, 'ukrainian', 'description', 180),
+              ]);
+
+        if (!itemFields.length) {
+          return;
+        }
+
+        entries.push(
+          makeEntry({
+            id: `prayer-rule:${rule.id}:item:${item.id}`,
+            group: SEARCH_GROUPS.PRAYERS,
+            kind: 'prayer',
+            title: itemTitle,
+            source: `Молитвенное правило · ${ruleTitle}`,
+            fields: itemFields,
+            route: {
+              name: 'PrayerRule',
+              params: {
+                slug: rule.slug,
+                focusTarget: {
+                  anchor_type: 'prayer_rule_item',
+                  anchor_id: Number(item.id),
+                  start_offset: null,
+                  end_offset: null,
+                },
+              },
+            },
+          })
+        );
+      });
     })(rule);
     yield entries;
   }
 
   for (const text of Object.values(content?.texts || {})) {
     ((text) => {
-    if (!text?.id || structuredTextIds.has(Number(text.id))) {
-      return;
-    }
+      if (!text?.id || structuredTextIds.has(Number(text.id))) {
+        return;
+      }
 
-    const title =
-      language === 'uk'
-        ? clean(text.title_uk) || clean(text.title)
-        : clean(text.title) || clean(text.traditional_title);
+      const title =
+        language === 'uk'
+          ? clean(text.title_uk) || clean(text.title)
+          : clean(text.title) || clean(text.traditional_title);
 
-    if (!title && !text.content && !text.translation) {
-      return;
-    }
+      if (!title && !text.content && !text.translation) {
+        return;
+      }
 
-    const categoryNames = (text.categories || [])
-      .map((category) => localized(category, 'name', language))
-      .filter(Boolean);
+      const categoryNames = (text.categories || [])
+        .map((category) => localized(category, 'name', language))
+        .filter(Boolean);
 
-    entries.push(
-      makeEntry({
-        id: `text:${text.id}`,
-        group: SEARCH_GROUPS.PRAYERS,
-        kind: 'text',
-        title: title || 'Молитва',
-        source: categoryNames[0] || 'Молитвы',
-        fields: textFields(text),
-        route: {
-          name: 'Reader',
-          params: {
-            slug: text.slug,
-            focusTarget: {
-              anchor_type: 'text',
-              anchor_id: Number(text.id),
-              start_offset: null,
-              end_offset: null,
+      entries.push(
+        makeEntry({
+          id: `text:${text.id}`,
+          group: SEARCH_GROUPS.PRAYERS,
+          kind: 'text',
+          title: title || 'Молитва',
+          source: categoryNames[0] || 'Молитвы',
+          fields: textFields(text),
+          route: {
+            name: 'Reader',
+            params: {
+              slug: text.slug,
+              focusTarget: {
+                anchor_type: 'text',
+                anchor_id: Number(text.id),
+                start_offset: null,
+                end_offset: null,
+              },
             },
           },
-        },
-        preview:
-          language === 'uk'
-            ? clean(text.translation_uk) || clean(text.translation) || clean(text.content)
-            : clean(text.translation) || clean(text.content),
-      })
-    );
+          preview:
+            language === 'uk'
+              ? clean(text.translation_uk) || clean(text.translation) || clean(text.content)
+              : clean(text.translation) || clean(text.content),
+        })
+      );
     })(text);
     yield entries;
   }
 
   for (const akathist of Object.values(content?.akathists?.by_slug || {})) {
     ((akathist) => {
-    if (!akathist?.id) {
-      return;
-    }
-
-    const akathistTitle =
-      localized(akathist, 'title', language) || clean(akathist.title) || 'Акафист';
-
-    entries.push(
-      makeEntry({
-        id: `akathist:${akathist.id}`,
-        group: SEARCH_GROUPS.AKATHISTS,
-        kind: 'akathist',
-        title: akathistTitle,
-        source: 'Акафист',
-        fields: compactFields([
-          field(akathist.title, '', 'title', 560),
-          field(akathist.title_uk, 'ukrainian', 'title', 540),
-          field(akathist.description, '', 'description', 260),
-          field(akathist.description_uk, 'ukrainian', 'description', 250),
-        ]),
-        route: {
-          name: 'Akathist',
-          params: {
-            akathistId: Number(akathist.id),
-            slug: akathist.slug,
-            title: akathistTitle,
-          },
-        },
-        preview: localized(akathist, 'description', language),
-      })
-    );
-
-    const addAkathistText = (text, title, key) => {
-      if (!text?.id) {
+      if (!akathist?.id) {
         return;
       }
 
-      entries.push(
-        makeEntry({
-          id: `akathist:${akathist.id}:special:${key}`,
-          group: SEARCH_GROUPS.AKATHISTS,
-          kind: 'akathist-section',
-          title,
-          source: `Акафист · ${akathistTitle}`,
-          fields: textFields(text),
-          route: {
-            name: 'Akathist',
-            params: {
-              akathistId: Number(akathist.id),
-              slug: akathist.slug,
-              title: akathistTitle,
-              focusTarget: {
-                anchor_type: 'akathist_special',
-                anchor_id: Number(text.id),
-                start_offset: null,
-                end_offset: null,
-                metadata: {
-                  special: key,
-                },
-              },
-            },
-          },
-        })
-      );
-    };
-
-    addAkathistText(akathist.troparion, 'Тропарь', 'troparion');
-    addAkathistText(akathist.kontakion_before, 'Кондак', 'kontakion_before');
-    addAkathistText(akathist.common_rule?.opening, 'Молитвы перед акафистом', 'opening');
-    addAkathistText(akathist.common_rule?.ending, 'Молитвы после акафиста', 'ending');
-
-    (akathist.sections || []).forEach((section) => {
-      if (!section?.id || !section.text) {
-        return;
-      }
+      const akathistTitle =
+        localized(akathist, 'title', language) || clean(akathist.title) || 'Акафист';
 
       entries.push(
         makeEntry({
-          id: `akathist:${akathist.id}:section:${section.id}`,
+          id: `akathist:${akathist.id}`,
           group: SEARCH_GROUPS.AKATHISTS,
-          kind: 'akathist-section',
-          title: akathistSectionTitle(section),
-          source: `Акафист · ${akathistTitle}`,
+          kind: 'akathist',
+          title: akathistTitle,
+          source: 'Акафист',
           fields: compactFields([
-            ...textFields(section.text),
-            field(section.note, '', 'description', 180),
-            field(section.note_uk, 'ukrainian', 'description', 170),
+            field(akathist.title, '', 'title', 560),
+            field(akathist.title_uk, 'ukrainian', 'title', 540),
+            field(akathist.description, '', 'description', 260),
+            field(akathist.description_uk, 'ukrainian', 'description', 250),
           ]),
           route: {
             name: 'Akathist',
@@ -548,71 +480,110 @@ const buildSearchIndexIterator = function* (language = 'ru') {
               akathistId: Number(akathist.id),
               slug: akathist.slug,
               title: akathistTitle,
-              focusTarget: {
-                anchor_type: 'akathist_section',
-                anchor_id: Number(section.id),
-                start_offset: null,
-                end_offset: null,
-              },
             },
           },
+          preview: localized(akathist, 'description', language),
         })
       );
-    });
+
+      const addAkathistText = (text, title, key) => {
+        if (!text?.id) {
+          return;
+        }
+
+        entries.push(
+          makeEntry({
+            id: `akathist:${akathist.id}:special:${key}`,
+            group: SEARCH_GROUPS.AKATHISTS,
+            kind: 'akathist-section',
+            title,
+            source: `Акафист · ${akathistTitle}`,
+            fields: textFields(text),
+            route: {
+              name: 'Akathist',
+              params: {
+                akathistId: Number(akathist.id),
+                slug: akathist.slug,
+                title: akathistTitle,
+                focusTarget: {
+                  anchor_type: 'akathist_special',
+                  anchor_id: Number(text.id),
+                  start_offset: null,
+                  end_offset: null,
+                  metadata: {
+                    special: key,
+                  },
+                },
+              },
+            },
+          })
+        );
+      };
+
+      addAkathistText(akathist.troparion, 'Тропарь', 'troparion');
+      addAkathistText(akathist.kontakion_before, 'Кондак', 'kontakion_before');
+      addAkathistText(akathist.common_rule?.opening, 'Молитвы перед акафистом', 'opening');
+      addAkathistText(akathist.common_rule?.ending, 'Молитвы после акафиста', 'ending');
+
+      (akathist.sections || []).forEach((section) => {
+        if (!section?.id || !section.text) {
+          return;
+        }
+
+        entries.push(
+          makeEntry({
+            id: `akathist:${akathist.id}:section:${section.id}`,
+            group: SEARCH_GROUPS.AKATHISTS,
+            kind: 'akathist-section',
+            title: akathistSectionTitle(section),
+            source: `Акафист · ${akathistTitle}`,
+            fields: compactFields([
+              ...textFields(section.text),
+              field(section.note, '', 'description', 180),
+              field(section.note_uk, 'ukrainian', 'description', 170),
+            ]),
+            route: {
+              name: 'Akathist',
+              params: {
+                akathistId: Number(akathist.id),
+                slug: akathist.slug,
+                title: akathistTitle,
+                focusTarget: {
+                  anchor_type: 'akathist_section',
+                  anchor_id: Number(section.id),
+                  start_offset: null,
+                  end_offset: null,
+                },
+              },
+            },
+          })
+        );
+      });
     })(akathist);
     yield entries;
   }
 
   for (const canon of Object.values(content?.canons?.by_slug || {})) {
     ((canon) => {
-    if (!canon?.id) {
-      return;
-    }
-
-    const canonTitle = localized(canon, 'title', language) || clean(canon.title) || 'Канон';
-
-    entries.push(
-      makeEntry({
-        id: `canon:${canon.id}`,
-        group: SEARCH_GROUPS.CANONS,
-        kind: 'canon',
-        title: canonTitle,
-        source: 'Канон',
-        fields: compactFields([
-          field(canon.title, '', 'title', 560),
-          field(canon.title_uk, 'ukrainian', 'title', 540),
-          field(canon.description, '', 'description', 260),
-          field(canon.description_uk, 'ukrainian', 'description', 250),
-          field(canon.tone, '', 'description', 180),
-        ]),
-        route: {
-          name: 'Canon',
-          params: {
-            canonId: Number(canon.id),
-            slug: canon.slug,
-            title: canonTitle,
-          },
-        },
-        preview: localized(canon, 'description', language),
-      })
-    );
-
-    (canon.sections || []).forEach((section) => {
-      if (!section?.id || !section.text) {
+      if (!canon?.id) {
         return;
       }
 
+      const canonTitle = localized(canon, 'title', language) || clean(canon.title) || 'Канон';
+
       entries.push(
         makeEntry({
-          id: `canon:${canon.id}:section:${section.id}`,
+          id: `canon:${canon.id}`,
           group: SEARCH_GROUPS.CANONS,
-          kind: 'canon-section',
-          title: canonSectionTitle(section),
-          source: `Канон · ${canonTitle}`,
+          kind: 'canon',
+          title: canonTitle,
+          source: 'Канон',
           fields: compactFields([
-            field(section.heading, '', 'title', 460),
-            field(section.heading_uk, 'ukrainian', 'title', 440),
-            ...textFields(section.text),
+            field(canon.title, '', 'title', 560),
+            field(canon.title_uk, 'ukrainian', 'title', 540),
+            field(canon.description, '', 'description', 260),
+            field(canon.description_uk, 'ukrainian', 'description', 250),
+            field(canon.tone, '', 'description', 180),
           ]),
           route: {
             name: 'Canon',
@@ -620,17 +591,46 @@ const buildSearchIndexIterator = function* (language = 'ru') {
               canonId: Number(canon.id),
               slug: canon.slug,
               title: canonTitle,
-              focusTarget: {
-                anchor_type: 'canon_section',
-                anchor_id: Number(section.id),
-                start_offset: null,
-                end_offset: null,
-              },
             },
           },
+          preview: localized(canon, 'description', language),
         })
       );
-    });
+
+      (canon.sections || []).forEach((section) => {
+        if (!section?.id || !section.text) {
+          return;
+        }
+
+        entries.push(
+          makeEntry({
+            id: `canon:${canon.id}:section:${section.id}`,
+            group: SEARCH_GROUPS.CANONS,
+            kind: 'canon-section',
+            title: canonSectionTitle(section),
+            source: `Канон · ${canonTitle}`,
+            fields: compactFields([
+              field(section.heading, '', 'title', 460),
+              field(section.heading_uk, 'ukrainian', 'title', 440),
+              ...textFields(section.text),
+            ]),
+            route: {
+              name: 'Canon',
+              params: {
+                canonId: Number(canon.id),
+                slug: canon.slug,
+                title: canonTitle,
+                focusTarget: {
+                  anchor_type: 'canon_section',
+                  anchor_id: Number(section.id),
+                  start_offset: null,
+                  end_offset: null,
+                },
+              },
+            },
+          })
+        );
+      });
     })(canon);
     yield entries;
   }
@@ -669,118 +669,78 @@ const buildSearchIndexIterator = function* (language = 'ru') {
 
   for (const kathisma of Object.values(content?.kathismas?.by_number || {})) {
     ((kathisma) => {
-    const kathismaNumber = Number(kathisma?.number || 0);
+      const kathismaNumber = Number(kathisma?.number || 0);
 
-    if (!kathismaNumber) {
-      return;
-    }
+      if (!kathismaNumber) {
+        return;
+      }
 
-    const kathismaTitle =
-      localized(kathisma, 'title', language) ||
-      clean(kathisma.title) ||
-      `Кафизма ${kathismaNumber}`;
-
-    entries.push(
-      makeEntry({
-        id: `kathisma:${kathisma.id || kathismaNumber}`,
-        group: SEARCH_GROUPS.PSALTER,
-        kind: 'kathisma',
-        title: kathismaTitle,
-        source: 'Псалтирь',
-        fields: compactFields([
-          field(kathisma.title, '', 'title', 500),
-          field(kathisma.title_uk, 'ukrainian', 'title', 480),
-          field(`Кафизма ${kathismaNumber}`, '', 'title', 520),
-          field(kathisma.prayers_after, 'church', 'content', 110),
-          field(kathisma.prayers_after_russian, 'russian', 'content', 120),
-          field(kathisma.prayers_after_traditional, 'traditional', 'content', 110),
-        ]),
-        route: {
-          name: 'Kathisma',
-          params: {
-            kathismaNumber,
-            kathismaTitle,
-          },
-        },
-      })
-    );
-
-    (kathisma.psalms || []).forEach((psalm) => {
-      const psalmNumber = Number(psalm?.number || 0);
-      const psalmTitle =
-        language === 'uk'
-          ? clean(psalm.title_uk) || clean(psalm.title_russian) || `Псалом ${psalmNumber}`
-          : clean(psalm.title_russian) ||
-            clean(psalm.title_church_slavonic) ||
-            `Псалом ${psalmNumber}`;
-
-      const psalmPreview = previewText(
-        (psalm.verses || [])
-          .slice(0, 2)
-          .map(
-            (verse) =>
-              clean(verse.russian) ||
-              clean(verse.church_slavonic) ||
-              clean(verse.church_slavonic_traditional)
-          )
-          .filter(Boolean)
-          .join(' ')
-      );
+      const kathismaTitle =
+        localized(kathisma, 'title', language) ||
+        clean(kathisma.title) ||
+        `Кафизма ${kathismaNumber}`;
 
       entries.push(
         makeEntry({
-          id: `psalm:${psalm.id}`,
+          id: `kathisma:${kathisma.id || kathismaNumber}`,
           group: SEARCH_GROUPS.PSALTER,
-          kind: 'psalm',
-          title: `Псалом ${psalmNumber}`,
-          source: `Псалтирь · ${kathismaTitle}`,
+          kind: 'kathisma',
+          title: kathismaTitle,
+          source: 'Псалтирь',
           fields: compactFields([
-            field(`Псалом ${psalmNumber}`, '', 'title', 540),
-            field(psalmTitle, '', 'title', 480),
-            field(psalm.title_church_slavonic, 'church', 'title', 450),
-            field(psalm.title_church_slavonic_traditional, 'traditional', 'title', 450),
-            field(psalm.description, '', 'description', 220),
-            field(psalm.description_uk, 'ukrainian', 'description', 210),
+            field(kathisma.title, '', 'title', 500),
+            field(kathisma.title_uk, 'ukrainian', 'title', 480),
+            field(`Кафизма ${kathismaNumber}`, '', 'title', 520),
+            field(kathisma.prayers_after, 'church', 'content', 110),
+            field(kathisma.prayers_after_russian, 'russian', 'content', 120),
+            field(kathisma.prayers_after_traditional, 'traditional', 'content', 110),
           ]),
           route: {
             name: 'Kathisma',
             params: {
               kathismaNumber,
               kathismaTitle,
-              focusTarget: {
-                save_type: 'psalm',
-                anchor_type: 'psalm',
-                anchor_id: Number(psalm.id),
-                start_offset: null,
-                end_offset: null,
-                metadata: {
-                  psalm_id: Number(psalm.id),
-                  psalm_number: psalmNumber,
-                },
-              },
             },
           },
-          preview: psalmPreview,
         })
       );
 
-      (psalm.verses || []).forEach((verse) => {
-        const verseNumber = Number(verse?.number || 0);
+      (kathisma.psalms || []).forEach((psalm) => {
+        const psalmNumber = Number(psalm?.number || 0);
+        const psalmTitle =
+          language === 'uk'
+            ? clean(psalm.title_uk) || clean(psalm.title_russian) || `Псалом ${psalmNumber}`
+            : clean(psalm.title_russian) ||
+              clean(psalm.title_church_slavonic) ||
+              `Псалом ${psalmNumber}`;
+
+        const psalmPreview = previewText(
+          (psalm.verses || [])
+            .slice(0, 2)
+            .map(
+              (verse) =>
+                clean(verse.russian) ||
+                clean(verse.church_slavonic) ||
+                clean(verse.church_slavonic_traditional)
+            )
+            .filter(Boolean)
+            .join(' ')
+        );
 
         entries.push(
           makeEntry({
-            id: `psalm:${psalm.id}:verse:${verse.id}`,
+            id: `psalm:${psalm.id}`,
             group: SEARCH_GROUPS.PSALTER,
-            kind: 'psalm-verse',
-            title: `Псалом ${psalmNumber}:${verseNumber}`,
+            kind: 'psalm',
+            title: `Псалом ${psalmNumber}`,
             source: `Псалтирь · ${kathismaTitle}`,
-            searchTitle: false,
             fields: compactFields([
-              field(`Псалом ${psalmNumber}:${verseNumber}`, '', 'reference', 620),
-              field(verse.church_slavonic, 'church', 'content', 130),
-              field(verse.church_slavonic_traditional, 'traditional', 'content', 130),
-              field(verse.russian, 'russian', 'content', 140),
-              field(verse.ukrainian, 'ukrainian', 'content', 135),
+              field(`Псалом ${psalmNumber}`, '', 'title', 540),
+              field(psalmTitle, '', 'title', 480),
+              field(psalm.title_church_slavonic, 'church', 'title', 450),
+              field(psalm.title_church_slavonic_traditional, 'traditional', 'title', 450),
+              field(psalm.description, '', 'description', 220),
+              field(psalm.description_uk, 'ukrainian', 'description', 210),
             ]),
             route: {
               name: 'Kathisma',
@@ -788,70 +748,79 @@ const buildSearchIndexIterator = function* (language = 'ru') {
                 kathismaNumber,
                 kathismaTitle,
                 focusTarget: {
-                  save_type: 'fragment',
-                  anchor_type: 'psalm_verse',
-                  anchor_id: Number(verse.id),
+                  save_type: 'psalm',
+                  anchor_type: 'psalm',
+                  anchor_id: Number(psalm.id),
                   start_offset: null,
                   end_offset: null,
                   metadata: {
                     psalm_id: Number(psalm.id),
                     psalm_number: psalmNumber,
-                    verse_number: verseNumber,
                   },
                 },
               },
             },
-            preview: previewText(
-              clean(verse.russian) ||
-                clean(verse.church_slavonic) ||
-                clean(verse.church_slavonic_traditional)
-            ),
+            preview: psalmPreview,
           })
         );
+
+        (psalm.verses || []).forEach((verse) => {
+          const verseNumber = Number(verse?.number || 0);
+
+          entries.push(
+            makeEntry({
+              id: `psalm:${psalm.id}:verse:${verse.id}`,
+              group: SEARCH_GROUPS.PSALTER,
+              kind: 'psalm-verse',
+              title: `Псалом ${psalmNumber}:${verseNumber}`,
+              source: `Псалтирь · ${kathismaTitle}`,
+              searchTitle: false,
+              fields: compactFields([
+                field(`Псалом ${psalmNumber}:${verseNumber}`, '', 'reference', 620),
+                field(verse.church_slavonic, 'church', 'content', 130),
+                field(verse.church_slavonic_traditional, 'traditional', 'content', 130),
+                field(verse.russian, 'russian', 'content', 140),
+                field(verse.ukrainian, 'ukrainian', 'content', 135),
+              ]),
+              route: {
+                name: 'Kathisma',
+                params: {
+                  kathismaNumber,
+                  kathismaTitle,
+                  focusTarget: {
+                    save_type: 'fragment',
+                    anchor_type: 'psalm_verse',
+                    anchor_id: Number(verse.id),
+                    start_offset: null,
+                    end_offset: null,
+                    metadata: {
+                      psalm_id: Number(psalm.id),
+                      psalm_number: psalmNumber,
+                      verse_number: verseNumber,
+                    },
+                  },
+                },
+              },
+              preview: previewText(
+                clean(verse.russian) ||
+                  clean(verse.church_slavonic) ||
+                  clean(verse.church_slavonic_traditional)
+              ),
+            })
+          );
+        });
       });
-    });
     })(kathisma);
     yield entries;
   }
 
-  for (const book of (bible?.books || [])) {
+  for (const book of bible?.books || []) {
     ((book) => {
-    const displayName = bibleContent.getDisplayName(book);
-    const sectionLabel = bibleSectionLabel(book.section);
-    const firstChapter = (book.chapters || [])[0];
-    const bookPreview = previewText(
-      (firstChapter?.verses || [])
-        .slice(0, 2)
-        .map((verse) => clean(verse.text))
-        .filter(Boolean)
-        .join(' ')
-    );
-
-    entries.push(
-      makeEntry({
-        id: `bible-book:${book.id}`,
-        group: SEARCH_GROUPS.SCRIPTURE,
-        kind: 'bible-book',
-        title: displayName,
-        source: `Писание · ${sectionLabel}`,
-        fields: compactFields([
-          field(displayName, '', 'title', 600),
-          field(book.name, '', 'title', 580),
-          field(book.short_name, '', 'title', 540),
-        ]),
-        route: {
-          name: 'BibleBook',
-          params: {
-            bookId: Number(book.id),
-          },
-        },
-        preview: bookPreview,
-      })
-    );
-
-    (book.chapters || []).forEach((chapter) => {
-      const chapterPreview = previewText(
-        (chapter.verses || [])
+      const displayName = bibleContent.getDisplayName(book);
+      const sectionLabel = bibleSectionLabel(book.section);
+      const firstChapter = (book.chapters || [])[0];
+      const bookPreview = previewText(
+        (firstChapter?.verses || [])
           .slice(0, 2)
           .map((verse) => clean(verse.text))
           .filter(Boolean)
@@ -860,27 +829,58 @@ const buildSearchIndexIterator = function* (language = 'ru') {
 
       entries.push(
         makeEntry({
-          id: `bible-chapter:${book.id}:${chapter.id}`,
+          id: `bible-book:${book.id}`,
           group: SEARCH_GROUPS.SCRIPTURE,
-          kind: 'bible-chapter',
-          title: `${displayName} ${chapter.number}`,
+          kind: 'bible-book',
+          title: displayName,
           source: `Писание · ${sectionLabel}`,
           fields: compactFields([
-            field(`${displayName} ${chapter.number}`, '', 'reference', 640),
-            field(`${book.short_name || displayName} ${chapter.number}`, '', 'reference', 620),
+            field(displayName, '', 'title', 600),
+            field(book.name, '', 'title', 580),
+            field(book.short_name, '', 'title', 540),
           ]),
           route: {
-            name: 'BibleChapter',
+            name: 'BibleBook',
             params: {
               bookId: Number(book.id),
-              chapterNumber: Number(chapter.number),
-              resume: false,
             },
           },
-          preview: chapterPreview,
+          preview: bookPreview,
         })
       );
-    });
+
+      (book.chapters || []).forEach((chapter) => {
+        const chapterPreview = previewText(
+          (chapter.verses || [])
+            .slice(0, 2)
+            .map((verse) => clean(verse.text))
+            .filter(Boolean)
+            .join(' ')
+        );
+
+        entries.push(
+          makeEntry({
+            id: `bible-chapter:${book.id}:${chapter.id}`,
+            group: SEARCH_GROUPS.SCRIPTURE,
+            kind: 'bible-chapter',
+            title: `${displayName} ${chapter.number}`,
+            source: `Писание · ${sectionLabel}`,
+            fields: compactFields([
+              field(`${displayName} ${chapter.number}`, '', 'reference', 640),
+              field(`${book.short_name || displayName} ${chapter.number}`, '', 'reference', 620),
+            ]),
+            route: {
+              name: 'BibleChapter',
+              params: {
+                bookId: Number(book.id),
+                chapterNumber: Number(chapter.number),
+                resume: false,
+              },
+            },
+            preview: chapterPreview,
+          })
+        );
+      });
     })(book);
     yield entries;
   }
@@ -893,7 +893,6 @@ const buildSearchIndexIterator = function* (language = 'ru') {
 
   return entries;
 };
-
 
 /**
  * Cooperative index building. Each yield follows one source item (a prayer,
@@ -920,7 +919,10 @@ export const buildSearchIndexAsync = async (
     processed += 1;
     if (processed % batchSize === 0) {
       const now = Date.now();
-      if (latestEntries.length !== lastPublished && (lastPublishTime === 0 || now - lastPublishTime >= 160)) {
+      if (
+        latestEntries.length !== lastPublished &&
+        (lastPublishTime === 0 || now - lastPublishTime >= 160)
+      ) {
         lastPublished = latestEntries.length;
         lastPublishTime = now;
         onProgress(latestEntries.slice());
