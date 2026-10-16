@@ -208,6 +208,35 @@ class AzbykaCalendarReadingsParserTests(SimpleTestCase):
         self.assertEqual(len(readings), 4)
         self.assertEqual([r.label for r in readings], ["Субботы", "Субботы", "Мч.", "Мч."])
 
+
+    def test_three_reading_groups_in_nested_divs(self):
+        html = """
+        <h2>Чтения Священного Писания</h2>
+        <div class="readings">
+          <div>Субботы: 1Тим.3:14-4:5. Мф.3:1-11.</div>
+          <div>Мч.: 2Тим.2:1-10. Мф.10:16-22.</div>
+          <div>Рядовое: 1Сол.5:14-23. Лк.17:3-10.</div>
+        </div>
+        <h2>Богослужения</h2>
+        """
+        readings = parse_readings_text(extract_readings_text(html))
+        self.assertEqual(len(readings), 6)
+        self.assertEqual([r.label for r in readings], ["Субботы"] * 2 + ["Мч."] * 2 + ["Ряд."] * 2)
+
+    def test_three_reading_groups_in_table_rows(self):
+        html = """
+        <h2>Чтения Священного Писания</h2>
+        <table>
+          <tr><td>Субботы: 1Тим.3:14-4:5. Мф.3:1-11.</td></tr>
+          <tr><td>Мч.: 2Тим.2:1-10. Мф.10:16-22.</td></tr>
+          <tr><td>Рядовое: 1Сол.5:14-23. Лк.17:3-10.</td></tr>
+        </table>
+        <h2>Богослужения</h2>
+        """
+        readings = parse_readings_text(extract_readings_text(html))
+        self.assertEqual(len(readings), 6)
+        self.assertEqual([r.label for r in readings], ["Субботы"] * 2 + ["Мч."] * 2 + ["Ряд."] * 2)
+
     def test_explanatory_prose_after_readings_is_not_read_as_daily_service(self):
         html = """
         <h2>Чтения Священного Писания</h2>
