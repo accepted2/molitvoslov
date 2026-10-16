@@ -118,6 +118,7 @@ export const SearchScreen = ({navigation}) => {
   const [activeGroup, setActiveGroup] = useState(SEARCH_GROUPS.ALL);
   const [index, setIndex] = useState(null);
   const [indexLoading, setIndexLoading] = useState(true);
+  const [searchScope, setSearchScope] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [result, setResult] = useState({
@@ -207,8 +208,13 @@ export const SearchScreen = ({navigation}) => {
       };
     }
 
-    // Results from the previous category/query must disappear immediately.
-    setResult({items: [], total: 0});
+    // Keep previous matches for the same query/category while the index grows.
+    // Clear only on a real query or category change.
+    const scope = `${language}:${activeGroup}:${searchQuery}`;
+    if (scope !== searchScope) {
+      setResult({items: [], total: 0});
+      setSearchScope(scope);
+    }
     setSearchLoading(true);
     let lastProgressAt = 0;
 
@@ -244,7 +250,7 @@ export const SearchScreen = ({navigation}) => {
     return () => {
       cancelled = true;
     };
-  }, [index, searchQuery, activeGroup]);
+  }, [index, searchQuery, activeGroup, language]);
 
   const suggestionIndex = useMemo(
     () => (index || []).filter((entry) => !!entry.titleNormalized),
