@@ -67,6 +67,29 @@ class CalendarRemoteReadingMatchingTests(SimpleTestCase):
         local = row(22, "gospel", "", "Ин.1:18–28")
         self.assertIsNone(self._find([remote], local))
 
+    def test_mass_feast_create_needs_explicit_confirmation(self):
+        with self.assertRaises(CommandError):
+            Command()._guard_mass_feast_create(
+                {"feast_create": ["Feast"] * 2752},
+                {"apply": True, "confirm_mass_feast_create": False},
+            )
+
+    def test_mass_feast_create_allows_dry_run_and_confirmed_apply(self):
+        options = {"apply": False, "confirm_mass_feast_create": False}
+        Command()._guard_mass_feast_create(
+            {"feast_create": ["Feast"] * 2752}, options,
+        )
+        options = {"apply": True, "confirm_mass_feast_create": True}
+        Command()._guard_mass_feast_create(
+            {"feast_create": ["Feast"] * 2752}, options,
+        )
+
+    def test_small_feast_sync_does_not_require_mass_confirmation(self):
+        Command()._guard_mass_feast_create(
+            {"feast_create": ["Feast"] * 100},
+            {"apply": True, "confirm_mass_feast_create": False},
+        )
+
     def test_prevents_unapproved_remote_deletion(self):
         with self.assertRaises(CommandError):
             Command()._guard_reading_deletions(
