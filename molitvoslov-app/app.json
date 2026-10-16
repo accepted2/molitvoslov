@@ -33,7 +33,12 @@
           "microphonePermission": false
         }
       ],
-      "expo-sqlite",
+      [
+        "expo-sqlite",
+        {
+          "enableFTS": true
+        }
+      ],
       "expo-secure-store",
       [
         "react-native-nitro-google-signin",
@@ -53,7 +58,9 @@
       [
         "react-native-android-widget",
         {
-          "fonts": ["./assets/fonts/Ponomar-Regular.ttf"],
+          "fonts": [
+            "./assets/fonts/Ponomar-Regular.ttf"
+          ],
           "widgets": [
             {
               "name": "QuoteOfDay",

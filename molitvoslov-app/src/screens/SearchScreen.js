@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import {StatusBar} from 'expo-status-bar';
+import {SQLiteProvider, useSQLiteContext} from 'expo-sqlite';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
@@ -19,6 +20,7 @@ import {useLanguage} from '../context/LanguageContext';
 import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {subscribeToContentUpdates} from '../services/contentStore';
 import {addSearchHistory, clearSearchHistory, getSearchHistory} from '../services/searchHistory';
+import {isPersistentSearchReady, searchPersistent} from '../services/persistentSearch';
 import {
   SEARCH_GROUPS,
   SEARCH_GROUP_OPTIONS,
@@ -107,7 +109,9 @@ const scheduleIdleTask = (callback) => {
   return () => clearTimeout(timeoutId);
 };
 
-export const SearchScreen = ({navigation}) => {
+const SearchContent = ({navigation}) => {
+  const seedDb = useSQLiteContext();
+  const [seedReady, setSeedReady] = useState(false);
   const {language} = useLanguage();
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + 56;
@@ -118,6 +122,7 @@ export const SearchScreen = ({navigation}) => {
   const [activeGroup, setActiveGroup] = useState(SEARCH_GROUPS.ALL);
   const [index, setIndex] = useState(null);
   const [indexLoading, setIndexLoading] = useState(true);
+  const [searchScope, setSearchScope] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [result, setResult] = useState({
@@ -142,6 +147,20 @@ export const SearchScreen = ({navigation}) => {
 
   useEffect(() => {
     let active = true;
+    setSeedReady(false);
+    isPersistentSearchReady(language, seedDb)
+      .then((ready) => { if (active) setSeedReady(ready); })
+      .catch((error) => console.warn('Search seed unavailable:', error?.message || error));
+    return () => { active = false; };
+  }, [seedDb, language, publicGeneration, bibleGeneration]);
+
+  useEffect(() => {
+    if (seedReady) {
+      setIndexLoading(false);
+      return undefined;
+    }
+    let active = true;
+    let lastPartialUpdate = 0;
     setIndexLoading(true);
 
     // Build in batches so navigation and typing remain responsive.
@@ -153,12 +172,19 @@ export const SearchScreen = ({navigation}) => {
 
       buildSearchIndexAsync(language, {
         isCancelled: () => !active,
+        // Make already indexed documents searchable before the full build completes.
+        // Limit UI publications to prevent continuous re-render/search cycles.
         onProgress: (partialIndex) => {
-          if (active) {
+          const now = Date.now();
+          if (active && partialIndex.length && now - lastPartialUpdate >= 1500) {
+            lastPartialUpdate = now;
             setIndex(partialIndex);
           }
         },
       })
+        .then((builtIndex) => {
+          if (active && builtIndex) setIndex(builtIndex);
+        })
         .catch((error) => {
           console.warn('Search index preparation failed:', error);
         })
@@ -173,12 +199,12 @@ export const SearchScreen = ({navigation}) => {
       active = false;
       cancelTask();
     };
-  }, [language, publicGeneration, bibleGeneration]);
+  }, [language, publicGeneration, bibleGeneration, seedReady]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearchQuery(query);
-    }, 110);
+    }, 320);
 
     return () => clearTimeout(timer);
   }, [query]);
@@ -187,27 +213,53 @@ export const SearchScreen = ({navigation}) => {
     let cancelled = false;
     const trimmed = searchQuery.trim();
 
-    if (!index || trimmed.length < 2) {
+    if ((!index && !seedReady) || trimmed.length < 2) {
       setSearchLoading(false);
-      setResult({
-        items: [],
-        total: 0,
-      });
+      setResult((previous) =>
+        previous.total === 0 && previous.items.length === 0
+          ? previous
+          : {items: [], total: 0}
+      );
       return () => {
         cancelled = true;
       };
     }
 
+    // Keep previous matches for the same query/category while the index grows.
+    // Clear only on a real query or category change.
+    const scope = `${language}:${activeGroup}:${searchQuery}`;
+    if (scope !== searchScope) {
+      setResult({items: [], total: 0});
+      setSearchScope(scope);
+    }
     setSearchLoading(true);
+    let lastProgressAt = 0;
 
-    searchIndexAsync(index, searchQuery, {
+    const executeSearch = seedReady
+      ? searchPersistent(language, searchQuery, activeGroup, 120, seedDb)
+      : searchIndexAsync(index, searchQuery, {
       group: activeGroup,
       limit: 120,
       isCancelled: () => cancelled,
-    })
+      onProgress: (partial) => {
+        const now = Date.now();
+        if (!cancelled && (now - lastProgressAt >= 400)) {
+          lastProgressAt = now;
+          setResult(partial);
+        }
+      },
+    });
+
+    executeSearch
       .then((nextResult) => {
         if (!cancelled && nextResult) {
           setResult(nextResult);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.warn('Search request failed:', error?.message || error);
+          setResult({items: [], total: 0});
         }
       })
       .finally(() => {
@@ -219,7 +271,7 @@ export const SearchScreen = ({navigation}) => {
     return () => {
       cancelled = true;
     };
-  }, [index, searchQuery, activeGroup]);
+  }, [index, searchQuery, activeGroup, language, seedReady, seedDb]);
 
   const suggestionIndex = useMemo(
     () => (index || []).filter((entry) => !!entry.titleNormalized),
@@ -325,6 +377,13 @@ export const SearchScreen = ({navigation}) => {
   const trimmedQuery = query.trim();
   const waitingForQuery = !trimmedQuery;
   const queryTooShort = !!trimmedQuery && trimmedQuery.length < 2;
+  const visibleResults = useMemo(
+    () => activeGroup === SEARCH_GROUPS.ALL
+      ? result.items
+      : result.items.filter((item) => item.group === activeGroup),
+    [result.items, activeGroup]
+  );
+
   const showEmpty =
     !indexLoading && !searchLoading && !waitingForQuery && !queryTooShort && result.total === 0;
 
@@ -380,7 +439,12 @@ export const SearchScreen = ({navigation}) => {
               return (
                 <Pressable
                   key={tab.key}
-                  onPress={() => setActiveGroup(tab.key)}
+                  onPress={() => {
+                    if (tab.key !== activeGroup) {
+                      setResult({items: [], total: 0});
+                      setActiveGroup(tab.key);
+                    }
+                  }}
                   style={({pressed}) => [
                     styles.tab,
                     active && styles.tabActive,
@@ -478,7 +542,7 @@ export const SearchScreen = ({navigation}) => {
           </View>
         ) : (
           <FlatList
-            data={result.items}
+            data={visibleResults}
             keyExtractor={(item) => item.id}
             renderItem={renderResult}
             keyboardShouldPersistTaps="handled"
@@ -849,3 +913,11 @@ const styles = StyleSheet.create({
     opacity: 0.68,
   },
 });
+
+// Expo copies the bundled seed into a separate search database on first use.
+// The main molitvoslov.db and user data are never overwritten.
+export const SearchScreen = (props) => (
+  <SQLiteProvider databaseName="molitvoslov_search_seed.db" assetSource={{assetId: require('../data/search_seed.db')}}>
+    <SearchContent {...props} />
+  </SQLiteProvider>
+);
