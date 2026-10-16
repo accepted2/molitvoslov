@@ -144,11 +144,13 @@ export const SearchScreen = ({navigation}) => {
 
   useEffect(() => {
     let active = true;
+    let useStoredIndex = false;
     setIndexLoading(true);
     setPersistentReady(false);
 
     isPersistentSearchReady(language).then((ready) => {
       if (active && ready) {
+        useStoredIndex = true;
         setPersistentReady(true);
         setIndexLoading(false);
         cancelTask();
@@ -158,7 +160,7 @@ export const SearchScreen = ({navigation}) => {
     // Build in batches so navigation and typing remain responsive.
     // Publish partial results as soon as entries become searchable.
     const cancelTask = scheduleIdleTask(() => {
-      if (!active) {
+      if (!active || useStoredIndex) {
         return;
       }
 
@@ -220,6 +222,10 @@ export const SearchScreen = ({navigation}) => {
         if (!cancelled && nextResult) {
           setResult(nextResult);
         }
+      })
+      .catch((error) => {
+        console.warn('Search query failed:', error);
+        if (!cancelled) setResult({items: [], total: 0});
       })
       .finally(() => {
         if (!cancelled) {
