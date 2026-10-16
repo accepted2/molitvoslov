@@ -11,14 +11,8 @@ changes = {
     "2026-04-12": 236,
 }
 
-days = {
-    date: CalendarDay.objects.get(date_gregorian=date)
-    for date in changes
-}
-feasts = {
-    pk: CalendarFeast.objects.get(pk=pk)
-    for pk in changes.values()
-}
+days = {date: CalendarDay.objects.get(date_gregorian=date) for date in changes}
+feasts = {pk: CalendarFeast.objects.get(pk=pk) for pk in changes.values()}
 
 assert days["2026-04-07"].feasts.filter(pk=4135).exists()
 assert feasts[236].title == "Светлое Христово Воскресение"

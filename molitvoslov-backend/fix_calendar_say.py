@@ -8,11 +8,13 @@ source = path.read_text(encoding="utf-8-sig")
 # Исправляем объявление функции, а не отдельные вызовы
 pattern = r"(?m)^(def\s+say\s*\()([^)]*)(\)\s*:)"
 
+
 def replace(match):
     args = match.group(2)
     if "**kwargs" in args:
         return match.group(0)
     return match.group(1) + args.rstrip().rstrip(",") + ", **kwargs" + match.group(3)
+
 
 fixed, count = re.subn(pattern, replace, source, count=1)
 

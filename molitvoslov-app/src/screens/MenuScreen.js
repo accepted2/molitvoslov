@@ -2408,7 +2408,6 @@ const styles = StyleSheet.create({
   miniCalendarDayBubble_memorial: {backgroundColor: '#A69A86'},
   miniCalendarDayMarked: {color: '#6A4B3B', fontWeight: '700'},
   miniCalendarDayBubbleToday: {
-
     backgroundColor: '#B97A32',
   },
 
@@ -2437,7 +2436,6 @@ const styles = StyleSheet.create({
   miniCalendarDayToday: {
     color: '#FFF7E7',
     fontWeight: '700',
-
   },
 
   miniCalendarDaySelected: {

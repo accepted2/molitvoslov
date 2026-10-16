@@ -29,28 +29,19 @@ fast_changes = []
 
 # 1. Главные памяти
 for number, feast_id in main_targets.items():
-    day = CalendarDay.objects.prefetch_related("feasts").get(
-        date_gregorian=date(2026, 8, number)
-    )
+    day = CalendarDay.objects.prefetch_related("feasts").get(date_gregorian=date(2026, 8, number))
 
-    matches = [
-        feast for feast in day.feasts.all()
-        if feast.pk == feast_id
-    ]
+    matches = [feast for feast in day.feasts.all() if feast.pk == feast_id]
 
     if len(matches) != 1:
-        raise RuntimeError(
-            f"{day.date_gregorian}: память {feast_id} не найдена"
-        )
+        raise RuntimeError(f"{day.date_gregorian}: память {feast_id} не найдена")
 
     if day.main_feast_id != feast_id:
         main_changes.append((day, matches[0]))
 
 # 2. Очистка житий
 for number, rule in life_rules.items():
-    day = CalendarDay.objects.select_related("main_feast").get(
-        date_gregorian=date(2026, 8, number)
-    )
+    day = CalendarDay.objects.select_related("main_feast").get(date_gregorian=date(2026, 8, number))
 
     feast = day.main_feast
     original = feast.life_content or ""
@@ -89,28 +80,20 @@ for number, rule in life_rules.items():
     cleaned = cleaned.strip()
 
     if cleaned == original:
-        raise RuntimeError(
-            f"{day.date_gregorian}: ожидаемый фрагмент не найден"
-        )
+        raise RuntimeError(f"{day.date_gregorian}: ожидаемый фрагмент не найден")
 
     if feast.pk in life_changes:
         if life_changes[feast.pk][1] != cleaned:
-            raise RuntimeError(
-                f"Конфликт очистки жития {feast.pk}"
-            )
+            raise RuntimeError(f"Конфликт очистки жития {feast.pk}")
     else:
         life_changes[feast.pk] = (feast, cleaned)
 
 # 3. Исправление названия поста до 14 августа
 for number in (5, 7, 12):
-    day = CalendarDay.objects.get(
-        date_gregorian=date(2026, 8, number)
-    )
+    day = CalendarDay.objects.get(date_gregorian=date(2026, 8, number))
 
     if day.fast_name != "Успенский пост":
-        raise RuntimeError(
-            f"{day.date_gregorian}: неожиданное название поста"
-        )
+        raise RuntimeError(f"{day.date_gregorian}: неожиданное название поста")
 
     fast_changes.append(day)
 
@@ -120,11 +103,7 @@ for day, feast in main_changes:
     print(day.date_gregorian, "->", feast.title)
 
 for feast, cleaned in life_changes.values():
-    print(
-        "Житие", feast.pk,
-        len(feast.life_content or ""),
-        "->", len(cleaned)
-    )
+    print("Житие", feast.pk, len(feast.life_content or ""), "->", len(cleaned))
 
 for day in fast_changes:
     print("Исправление названия поста:", day.date_gregorian)
@@ -135,9 +114,7 @@ backup_dir = Path("backups/sqlite")
 backup_dir.mkdir(parents=True, exist_ok=True)
 
 backup_path = backup_dir / (
-    "before_august_cleanup_"
-    + datetime.now().strftime("%Y%m%d_%H%M%S")
-    + ".sqlite3"
+    "before_august_cleanup_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".sqlite3"
 )
 
 source = sqlite3.connect(str(db_path))

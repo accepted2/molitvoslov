@@ -5,10 +5,7 @@ from pathlib import Path
 print("=== DJANGO_SETTINGS_MODULE ===")
 
 manage = Path("manage.py").read_text(encoding="utf-8-sig")
-match = re.search(
-    r'setdefault\(["\']DJANGO_SETTINGS_MODULE["\'],\s*["\']([^"\']+)',
-    manage
-)
+match = re.search(r'setdefault\(["\']DJANGO_SETTINGS_MODULE["\'],\s*["\']([^"\']+)', manage)
 
 print("Модуль:", match.group(1) if match else "Не определён")
 
@@ -43,13 +40,9 @@ else:
 
 print("\n=== НАСТРОЙКИ ИМПОРТЁРА ===")
 
-source = Path(
-    "api/management/commands/import_azbyka_calendar_day.py"
-)
+source = Path("api/management/commands/import_azbyka_calendar_day.py")
 
-for number, line in enumerate(
-    source.read_text(encoding="utf-8-sig").splitlines(), 1
-):
+for number, line in enumerate(source.read_text(encoding="utf-8-sig").splitlines(), 1):
     if (
         "CLOUDINARY" in line.upper()
         or "CLOUD_NAME" in line.upper()

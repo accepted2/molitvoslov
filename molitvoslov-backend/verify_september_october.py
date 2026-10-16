@@ -4,10 +4,7 @@ from api.models import CalendarDay
 for month, last_day in ((9, 30), (10, 31)):
     days = list(
         CalendarDay.objects.filter(
-            date_gregorian__range=(
-                date(2026, month, 1),
-                date(2026, month, last_day)
-            )
+            date_gregorian__range=(date(2026, month, 1), date(2026, month, last_day))
         )
         .select_related("main_feast")
         .prefetch_related("readings", "feasts")
@@ -21,14 +18,23 @@ for month, last_day in ((9, 30), (10, 31)):
     print("С житиями:", sum(bool(d.main_feast and d.main_feast.life_content) for d in days))
 
     for d in days:
-        if not d.main_feast or not d.main_feast.life_content or not d.main_feast.icon_url or not d.readings.all():
+        if (
+            not d.main_feast
+            or not d.main_feast.life_content
+            or not d.main_feast.icon_url
+            or not d.readings.all()
+        ):
             print(
                 "ПРОБЛЕМА:",
                 d.date_gregorian,
-                "| главная:", d.main_feast.title if d.main_feast else "НЕТ",
-                "| житие:", bool(d.main_feast and d.main_feast.life_content),
-                "| икона:", bool(d.main_feast and d.main_feast.icon_url),
-                "| чтения:", len(d.readings.all())
+                "| главная:",
+                d.main_feast.title if d.main_feast else "НЕТ",
+                "| житие:",
+                bool(d.main_feast and d.main_feast.life_content),
+                "| икона:",
+                bool(d.main_feast and d.main_feast.icon_url),
+                "| чтения:",
+                len(d.readings.all()),
             )
 
     for number in (11, 21, 27):

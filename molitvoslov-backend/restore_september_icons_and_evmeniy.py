@@ -6,6 +6,7 @@ Run from C:\\m\\repo\\molitvoslov-backend with the active virtualenv:
 No existing icons, other texts, readings or calendar associations are replaced.
 Can be run again safely after partial failures.
 """
+
 from __future__ import annotations
 
 import os
@@ -25,10 +26,12 @@ os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 env_file = BASE / ".env"
 if env_file.is_file():
     for line in env_file.read_text(encoding="utf-8-sig").splitlines():
-        item = re.match(r"^\s*(CLOUD_NAME|CLOUD_API_KEY|CLOUD_API_SECRET|CLOUDINARY_URL)\s*=\s*(.*?)\s*$", line)
+        item = re.match(
+            r"^\s*(CLOUD_NAME|CLOUD_API_KEY|CLOUD_API_SECRET|CLOUDINARY_URL)\s*=\s*(.*?)\s*$", line
+        )
         if item:
             key, raw = item.groups()
-            value = raw.strip().strip('"\'')
+            value = raw.strip().strip("\"'")
             if value and not os.environ.get(key):
                 os.environ[key] = value
 
@@ -70,9 +73,7 @@ if not db_path.is_file():
     sys.exit(f"СТОП: файл БД не существует: {db_path}")
 
 days = list(
-    CalendarDay.objects.filter(
-        date_gregorian__range=(date(2026, 9, 1), date(2026, 9, 30))
-    )
+    CalendarDay.objects.filter(date_gregorian__range=(date(2026, 9, 1), date(2026, 9, 30)))
     .select_related("main_feast")
     .prefetch_related("readings", "feasts")
     .order_by("date_gregorian")
@@ -131,15 +132,21 @@ with requests.Session() as session:
                 if not new_url:
                     stat["no_source_icon"] += 1
                     continue
-                changed = CalendarFeast.objects.filter(pk=feast.pk, icon_url="").update(icon_url=new_url)
+                changed = CalendarFeast.objects.filter(pk=feast.pk, icon_url="").update(
+                    icon_url=new_url
+                )
                 if changed:
                     feast.icon_url = new_url
                     stat["saved"] += 1
                     daily_saved += 1
             except Exception as exc:
                 stat["errors"] += 1
-                report(f"  {day.date_gregorian}: ошибка [{source.title[:55]}]: {type(exc).__name__} {str(exc)[:160]}")
-        report(f"{day.date_gregorian}: икон добавлено {daily_saved}; доступных памятей {len(candidates)}")
+                report(
+                    f"  {day.date_gregorian}: ошибка [{source.title[:55]}]: {type(exc).__name__} {str(exc)[:160]}"
+                )
+        report(
+            f"{day.date_gregorian}: икон добавлено {daily_saved}; доступных памятей {len(candidates)}"
+        )
 
 report("\nРезультат икон:", stat)
 
@@ -147,7 +154,12 @@ report("\n=== 1 ОКТЯБРЯ: ЕВМЕНИЙ ГОРТИНСКИЙ ===")
 try:
     ev_day = CalendarDay.objects.select_related("main_feast").get(date_gregorian=date(2026, 10, 1))
     feast = ev_day.main_feast
-    if not feast or feast.pk != 2331 or "евмен" not in feast.title.casefold() or "гортин" not in feast.title.casefold():
+    if (
+        not feast
+        or feast.pk != 2331
+        or "евмен" not in feast.title.casefold()
+        or "гортин" not in feast.title.casefold()
+    ):
         report("Житие не изменено: ID или имя главной памяти дня отличается от ожидаемого")
     elif feast.life_content.strip():
         report("Житие уже заполнено; ничего не меняем")
@@ -173,14 +185,28 @@ except Exception as exc:
 
 report("\n=== ИТОГ ===")
 fresh_days = list(
-    CalendarDay.objects.filter(
-        date_gregorian__range=(date(2026, 9, 1), date(2026, 9, 30))
-    ).select_related("main_feast").prefetch_related("readings")
+    CalendarDay.objects.filter(date_gregorian__range=(date(2026, 9, 1), date(2026, 9, 30)))
+    .select_related("main_feast")
+    .prefetch_related("readings")
 )
 report("Чтения главных дней:", sum(bool(d.readings.all()) for d in fresh_days), "/30")
-report("Жития главных памятей:", sum(bool(d.main_feast and d.main_feast.life_content) for d in fresh_days), "/30")
-report("Иконы главных памятей:", sum(bool(d.main_feast and d.main_feast.icon_url) for d in fresh_days), "/30")
-report("Без главной иконы:", ", ".join(str(d.date_gregorian) for d in fresh_days if not d.main_feast or not d.main_feast.icon_url) or "нет")
+report(
+    "Жития главных памятей:",
+    sum(bool(d.main_feast and d.main_feast.life_content) for d in fresh_days),
+    "/30",
+)
+report(
+    "Иконы главных памятей:",
+    sum(bool(d.main_feast and d.main_feast.icon_url) for d in fresh_days),
+    "/30",
+)
+report(
+    "Без главной иконы:",
+    ", ".join(
+        str(d.date_gregorian) for d in fresh_days if not d.main_feast or not d.main_feast.icon_url
+    )
+    or "нет",
+)
 try:
     oct_feast = CalendarFeast.objects.get(pk=2331)
     report("Житие Евмения:", len(oct_feast.life_content or ""), "символов")

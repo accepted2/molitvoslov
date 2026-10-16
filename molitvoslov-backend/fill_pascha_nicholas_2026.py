@@ -6,6 +6,7 @@ from datetime import date, datetime
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 
 import django
+
 django.setup()
 
 from django.conf import settings
@@ -46,21 +47,15 @@ print("=== ПРОВЕРКА КАРТОЧЕК ===")
 pending = []
 
 for target_date, item in TEXTS.items():
-    day = CalendarDay.objects.select_related("main_feast").get(
-        date_gregorian=target_date
-    )
+    day = CalendarDay.objects.select_related("main_feast").get(date_gregorian=target_date)
 
     if day.main_feast_id != item["id"]:
-        raise RuntimeError(
-            f"СТОП: {target_date}: ID отличается от ожидаемого"
-        )
+        raise RuntimeError(f"СТОП: {target_date}: ID отличается от ожидаемого")
 
     feast = day.main_feast
 
     if item["title"].casefold() not in feast.title.casefold():
-        raise RuntimeError(
-            f"СТОП: {target_date}: название не совпадает"
-        )
+        raise RuntimeError(f"СТОП: {target_date}: название не совпадает")
 
     if feast.life_content.strip():
         print(f"{target_date}: текст уже заполнен, пропускаем")
@@ -79,9 +74,7 @@ backup_dir = Path("backups/sqlite")
 backup_dir.mkdir(parents=True, exist_ok=True)
 
 backup = backup_dir / (
-    "before_pascha_nicholas_texts_" +
-    datetime.now().strftime("%Y%m%d_%H%M%S") +
-    ".sqlite3"
+    "before_pascha_nicholas_texts_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".sqlite3"
 )
 
 with sqlite3.connect(str(db)) as src:
@@ -94,15 +87,12 @@ print("\n=== СОХРАНЕНИЕ ===")
 
 with transaction.atomic():
     for target_date, item in pending:
-        changed = CalendarFeast.objects.filter(
-            pk=item["id"],
-            life_content=""
-        ).update(life_content=item["text"])
+        changed = CalendarFeast.objects.filter(pk=item["id"], life_content="").update(
+            life_content=item["text"]
+        )
 
         if changed != 1:
-            raise RuntimeError(
-                f"СТОП: {target_date}: текст изменился. Транзакция отменена."
-            )
+            raise RuntimeError(f"СТОП: {target_date}: текст изменился. Транзакция отменена.")
 
         print(f"OK: {target_date} — сохранено {len(item['text'])} символов")
 

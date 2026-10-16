@@ -3,22 +3,18 @@ from bs4 import BeautifulSoup
 
 url = "https://azbyka.ru/days/sv-feodosij-pecherskij"
 
-response = requests.get(
-    url,
-    timeout=30,
-    headers={"User-Agent": "Mozilla/5.0"}
-)
+response = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
 response.raise_for_status()
 
 soup = BeautifulSoup(response.text, "html.parser")
 
 heading = next(
     (
-        h for h in soup.find_all(["h2", "h3", "h4"])
-        if "Полное житие преподобного Феодосия Печерского"
-        in h.get_text(" ", strip=True)
+        h
+        for h in soup.find_all(["h2", "h3", "h4"])
+        if "Полное житие преподобного Феодосия Печерского" in h.get_text(" ", strip=True)
     ),
-    None
+    None,
 )
 
 if heading is None:

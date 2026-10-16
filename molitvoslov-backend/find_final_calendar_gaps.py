@@ -6,26 +6,29 @@ from difflib import SequenceMatcher
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 
 import django
+
 django.setup()
 
 from api.calendar_models import CalendarDay, CalendarFeast
+
 
 def normalize(value):
     value = (value or "").casefold().replace("ё", "е")
     value = re.sub(r"[\u0300-\u036f]", "", value)
     return re.sub(r"\s+", " ", value).strip()
 
+
 targets = [
-    (date(2026,1,18), ["богоявлен", "крещен"]),
-    (date(2026,3,7), ["во евгении", "обретение мощей мучеников"]),
-    (date(2026,4,12), ["воскресение христово", "пасха", "светлое христово воскресение"]),
-    (date(2026,11,7), ["родительская суббота", "поминовение усопших"]),
+    (date(2026, 1, 18), ["богоявлен", "крещен"]),
+    (date(2026, 3, 7), ["во евгении", "обретение мощей мучеников"]),
+    (date(2026, 4, 12), ["воскресение христово", "пасха", "светлое христово воскресение"]),
+    (date(2026, 11, 7), ["родительская суббота", "поминовение усопших"]),
 ]
 
 print("=== МАЙ: НЕДОСТАЮЩЕЕ ЖИТИЕ ===")
 
 may = CalendarDay.objects.filter(
-    date_gregorian__range=(date(2026,5,1),date(2026,5,31))
+    date_gregorian__range=(date(2026, 5, 1), date(2026, 5, 31))
 ).select_related("main_feast")
 
 for day in may:
@@ -40,14 +43,11 @@ for day in may:
 print("\n=== ЧЕТЫРЕ ДАТЫ: КАНДИДАТЫ ===")
 
 all_feasts = list(
-    CalendarFeast.objects.exclude(icon_url="")
-    .only("id","title","icon_url","life_content")
+    CalendarFeast.objects.exclude(icon_url="").only("id", "title", "icon_url", "life_content")
 )
 
 for target, keywords in targets:
-    day = CalendarDay.objects.select_related("main_feast").get(
-        date_gregorian=target
-    )
+    day = CalendarDay.objects.select_related("main_feast").get(date_gregorian=target)
     main = day.main_feast
     print(f"\n{target}: {main.title} [ID {main.pk}]")
 
@@ -57,16 +57,14 @@ for target, keywords in targets:
             continue
 
         title = normalize(feast.title)
-        score = SequenceMatcher(
-            None, normalize(main.title), title
-        ).ratio()
+        score = SequenceMatcher(None, normalize(main.title), title).ratio()
 
         keyword_match = any(normalize(k) in title for k in keywords)
 
         if keyword_match or score >= 0.76:
             found.append((score, keyword_match, feast))
 
-    found.sort(key=lambda x: (x[1],x[0]), reverse=True)
+    found.sort(key=lambda x: (x[1], x[0]), reverse=True)
 
     for score, matched, feast in found[:10]:
         print(

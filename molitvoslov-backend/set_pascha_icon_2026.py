@@ -12,6 +12,7 @@ for line in Path(".env").read_text(encoding="utf-8-sig").splitlines():
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 
 import django
+
 django.setup()
 
 import requests
@@ -21,7 +22,9 @@ from api.calendar_icon_storage import upload_azbyka_icon
 from api.sqlite_backup import create_sqlite_backup
 from datetime import date
 
-source_url = "https://azbyka.ru/days/storage/images/icons-of-holidays/15/p1bdgqi9c21ijacrq1ub5a11fqb3.jpg"
+source_url = (
+    "https://azbyka.ru/days/storage/images/icons-of-holidays/15/p1bdgqi9c21ijacrq1ub5a11fqb3.jpg"
+)
 page_url = "https://azbyka.ru/days/prazdnik-svetloe-hristovo-voskresenie-pasha"
 
 day = CalendarDay.objects.get(date_gregorian=date(2026, 4, 12))
@@ -45,10 +48,7 @@ if not response.headers.get("Content-Type", "").lower().startswith("image/"):
 
 response.close()
 
-backup, digest = create_sqlite_backup(
-    settings.DATABASES["default"]["NAME"],
-    Path("backups/sqlite")
-)
+backup, digest = create_sqlite_backup(settings.DATABASES["default"]["NAME"], Path("backups/sqlite"))
 
 print("Backup:", backup)
 

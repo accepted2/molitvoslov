@@ -57,37 +57,26 @@ for day_number, rule in rules.items():
     cleaned = cleaned.strip()
 
     if cleaned == original:
-        raise RuntimeError(
-            f"{day.date_gregorian}: ожидаемый фрагмент не найден"
-        )
+        raise RuntimeError(f"{day.date_gregorian}: ожидаемый фрагмент не найден")
 
     updates[feast.pk] = (feast, cleaned)
 
 # Проверяем главную память 12 июля
-day_12 = CalendarDay.objects.prefetch_related("feasts").get(
-    date_gregorian=date(2026, 7, 12)
-)
+day_12 = CalendarDay.objects.prefetch_related("feasts").get(date_gregorian=date(2026, 7, 12))
 
 matches = [
-    feast for feast in day_12.feasts.all()
-    if feast.pk == 4923
-    and "Петра и Павла" in feast.title
+    feast for feast in day_12.feasts.all() if feast.pk == 4923 and "Петра и Павла" in feast.title
 ]
 
 if len(matches) != 1:
-    raise RuntimeError(
-        "Не найдена ожидаемая память апостолов Петра и Павла"
-    )
+    raise RuntimeError("Не найдена ожидаемая память апостолов Петра и Павла")
 
 new_main = matches[0]
 
 print("ИСПРАВЛЕНИЯ ИЮЛЯ 2026")
 
 for feast, cleaned in updates.values():
-    print(
-        f"Житие [{feast.pk}]: "
-        f"{len(feast.life_content or '')} -> {len(cleaned)}"
-    )
+    print(f"Житие [{feast.pk}]: " f"{len(feast.life_content or '')} -> {len(cleaned)}")
 
 print("12 июля:")
 print("Было:", day_12.main_feast)
@@ -99,9 +88,7 @@ backup_dir = Path("backups/sqlite")
 backup_dir.mkdir(parents=True, exist_ok=True)
 
 backup_path = backup_dir / (
-    "before_july_fix_"
-    + datetime.now().strftime("%Y%m%d_%H%M%S")
-    + ".sqlite3"
+    "before_july_fix_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".sqlite3"
 )
 
 source = sqlite3.connect(str(db_path))

@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parent
 os.chdir(ROOT)
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 import django
+
 django.setup()
 from django.conf import settings
 from django.db import transaction
@@ -85,38 +86,96 @@ CASES = [
 ]
 # More complex forms (родные святые, Церковь, Русь, Россия) are intentionally
 # excluded. They require human-level interpretation; no destructive edits.
-RULES = list({(a,b): c for a,b,c in CASES}.items())
+RULES = list({(a, b): c for a, b, c in CASES}.items())
 # Compile using normalized (lowercase, unaccented) text.
 PATTERNS = [
-    (re.compile(r"(?<![а-яa-zё])" + re.escape(a) + r"\s+" + re.escape(b) + r"(?![а-яa-zё])", re.I), repl)
-    for ((a,b), repl) in RULES
+    (
+        re.compile(
+            r"(?<![а-яa-zё])" + re.escape(a) + r"\s+" + re.escape(b) + r"(?![а-яa-zё])", re.I
+        ),
+        repl,
+    )
+    for ((a, b), repl) in RULES
 ]
 
 FIELDS = [
-    "life_content", "troparion_content", "kontakion_content",
-    "title", "short_title", "life_title", "troparion_title", "kontakion_title"
+    "life_content",
+    "troparion_content",
+    "kontakion_content",
+    "title",
+    "short_title",
+    "life_title",
+    "troparion_title",
+    "kontakion_title",
 ]
 
 # In жития, only explicit prayers to God or the saint qualify; narrative
 # descriptions of a country's history must be left unchanged.
 PRAYER_CUES = (
-    "моли", "молим", "молит", "помол", "сохрани", "сохран", "спаси", "спас",
-    "избав", "защит", "укреп", "благослов", "призри", "помилуй", "даруй",
-    "услыши", "покрый", "покров", "утверди", "соблюди", "исцели", "прослав",
+    "моли",
+    "молим",
+    "молит",
+    "помол",
+    "сохрани",
+    "сохран",
+    "спаси",
+    "спас",
+    "избав",
+    "защит",
+    "укреп",
+    "благослов",
+    "призри",
+    "помилуй",
+    "даруй",
+    "услыши",
+    "покрый",
+    "покров",
+    "утверди",
+    "соблюди",
+    "исцели",
+    "прослав",
 )
 HISTORY_CUES = (
-    "импер", "государств", "век", "столет", "войн", "битв", "нашеств",
-    "плен", "княз", "царств", "правлен", "монарх", "арм", "завоева",
-    "пересел", "жил", "родил", "родился", "происхожд", "основал",
-    "истор", "летопис", "г.", "году", "в 1", "в 2",
-    "прибы", "посел", "перенес", "переехал", "переход",
+    "импер",
+    "государств",
+    "век",
+    "столет",
+    "войн",
+    "битв",
+    "нашеств",
+    "плен",
+    "княз",
+    "царств",
+    "правлен",
+    "монарх",
+    "арм",
+    "завоева",
+    "пересел",
+    "жил",
+    "родил",
+    "родился",
+    "происхожд",
+    "основал",
+    "истор",
+    "летопис",
+    "г.",
+    "году",
+    "в 1",
+    "в 2",
+    "прибы",
+    "посел",
+    "перенес",
+    "переехал",
+    "переход",
 )
+
 
 def plain(s):
     # Remove stress marks, but KEEP й: NFD decomposition of й would
     # otherwise turn «Российскую» into «Россиискую».
     s = unicodedata.normalize("NFC", s.casefold().replace("ё", "е"))
     return "".join(c for c in s if c not in ("\u0301", "\u0341", "\u0300"))
+
 
 def normalized_with_map(s):
     out, offsets = [], []
@@ -126,19 +185,30 @@ def normalized_with_map(s):
             offsets.append(i)
     return "".join(out), offsets
 
+
 def allowed(field, original, pos, end):
     if field.endswith("title") or field in ("title", "short_title"):
         # Only an explicit prayer heading can be safely localized.
         # Official feast names and geographic titles remain unchanged.
-        head = plain(original[:min(len(original), 120)])
+        head = plain(original[: min(len(original), 120)])
         if re.search(r"\\bмолитв[аыеоу]\\b", head) and not any(x in head for x in HISTORY_CUES):
             return True, "Название молитвенного обращения"
         return False, "Историческое/официальное название: пропуск"
     if field in ("troparion_content", "kontakion_content"):
         # Historical narrative can also appear inside hymns.
-        left = max(0, original.rfind(".", 0, pos), original.rfind(";", 0, pos), original.rfind("\n", 0, pos), original.rfind("/", 0, pos))
-        right_candidates = [p for p in (original.find(".", end), original.find(";", end), original.find("\n", end)) if p >= 0]
-        right = min(right_candidates) if right_candidates else min(len(original), end+140)
+        left = max(
+            0,
+            original.rfind(".", 0, pos),
+            original.rfind(";", 0, pos),
+            original.rfind("\n", 0, pos),
+            original.rfind("/", 0, pos),
+        )
+        right_candidates = [
+            p
+            for p in (original.find(".", end), original.find(";", end), original.find("\n", end))
+            if p >= 0
+        ]
+        right = min(right_candidates) if right_candidates else min(len(original), end + 140)
         clause = plain(original[left:right])
         if any(x in clause for x in HISTORY_CUES) and not any(x in clause for x in PRAYER_CUES):
             return False, "Исторический контекст песнопения"
@@ -146,7 +216,13 @@ def allowed(field, original, pos, end):
             return True, "Молитвенное обращение"
         return False, "Нет явного молитвенного обращения"
     # Biographies: require local prayer imperative, not merely saint's life
-    start = max(0, original.rfind("\n", 0, pos), original.rfind(".", 0, pos), original.rfind("!", 0, pos), original.rfind("?", 0, pos))
+    start = max(
+        0,
+        original.rfind("\n", 0, pos),
+        original.rfind(".", 0, pos),
+        original.rfind("!", 0, pos),
+        original.rfind("?", 0, pos),
+    )
     endloc = min(len(original), end + 90)
     clause = plain(original[start:endloc])
     if any(x in clause for x in HISTORY_CUES):
@@ -155,9 +231,11 @@ def allowed(field, original, pos, end):
         return True, "Молитвенное обращение внутри жития"
     return False, "Повествовательный текст жития"
 
+
 def original_case(repl, fragment):
     # Case of entire phrase follows first letter; never invent new stress marks.
     return repl[0].upper() + repl[1:] if fragment[:1].isupper() else repl
+
 
 def preserve_noun_stress(old, replacement):
     """Keep original church-Slavonic accentuation on unchanged noun."""
@@ -181,45 +259,52 @@ def preserve_noun_stress(old, replacement):
                 return " ".join(new_words)
     return original_case(replacement, old)
 
+
 def examine(field, text):
     norm, offsets = normalized_with_map(text)
     candidates = []
     for regex, repl in PATTERNS:
         for m in regex.finditer(norm):
             a = offsets[m.start()]
-            b = offsets[m.end()-1] + 1
+            b = offsets[m.end() - 1] + 1
             # absorb trailing combining stress mark if any
             while b < len(text) and unicodedata.category(text[b]) == "Mn":
                 b += 1
             ok, why = allowed(field, text, a, b)
             candidates.append((a, b, repl, ok, why))
-    candidates.sort(key=lambda v: (v[0], -(v[1]-v[0])))
+    candidates.sort(key=lambda v: (v[0], -(v[1] - v[0])))
     changes, skipped, previous_end = [], [], -1
-    for a,b,repl,ok,why in candidates:
+    for a, b, repl, ok, why in candidates:
         if a < previous_end:
             continue
         previous_end = b
         old = text[a:b]
         new = preserve_noun_stress(old, repl)
-        row = {"before": old, "after": new, "context": re.sub(r"\s+", " ", text[max(0,a-100): min(len(text),b+100)]), "reason": why}
+        row = {
+            "before": old,
+            "after": new,
+            "context": re.sub(r"\s+", " ", text[max(0, a - 100) : min(len(text), b + 100)]),
+            "reason": why,
+        }
         if ok and plain(old) != plain(new):
-            changes.append((a,b,new,row))
+            changes.append((a, b, new, row))
         else:
             skipped.append(row)
     result = text
-    for a,b,new,row in reversed(changes):
+    for a, b, new, row in reversed(changes):
         result = result[:a] + new + result[b:]
-    return result, [r for a,b,new,r in changes], skipped
+    return result, [r for a, b, new, r in changes], skipped
+
 
 def main():
     db = Path(settings.DATABASES["default"]["NAME"]).resolve()
     if not db.exists() or db.suffix.lower() != ".sqlite3":
         raise SystemExit(f"СТОП: ожидалась SQLite, получено {db}")
-    report_dir = ROOT/"reports"
+    report_dir = ROOT / "reports"
     report_dir.mkdir(exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    applied_file = report_dir/f"neutral_all_applied_{ts}.csv"
-    skipped_file = report_dir/f"neutral_all_skipped_{ts}.csv"
+    applied_file = report_dir / f"neutral_all_applied_{ts}.csv"
+    skipped_file = report_dir / f"neutral_all_skipped_{ts}.csv"
     applied_rows, skipped_rows = [], []
     edits = []
     cards = 0
@@ -233,9 +318,9 @@ def main():
                 continue
             after, applied, skipped = examine(field, before)
             for row in applied:
-                applied_rows.append({"id":feast.pk,"title":feast.title,"field":field,**row})
+                applied_rows.append({"id": feast.pk, "title": feast.title, "field": field, **row})
             for row in skipped:
-                skipped_rows.append({"id":feast.pk,"title":feast.title,"field":field,**row})
+                skipped_rows.append({"id": feast.pk, "title": feast.title, "field": field, **row})
             if before != after:
                 changeset[field] = after
         if changeset:
@@ -245,20 +330,21 @@ def main():
     print(f"Пропущено сомнительных: {len(skipped_rows)}")
     print(f"Изменяемых карточек: {len(edits)}")
 
-    headers = ["id","title","field","before","after","reason","context"]
-    for path, rows in ((applied_file,applied_rows),(skipped_file,skipped_rows)):
-        with path.open("w",encoding="utf-8-sig",newline="") as f:
-            w=csv.DictWriter(f,fieldnames=headers,delimiter=";")
-            w.writeheader();w.writerows(rows)
+    headers = ["id", "title", "field", "before", "after", "reason", "context"]
+    for path, rows in ((applied_file, applied_rows), (skipped_file, skipped_rows)):
+        with path.open("w", encoding="utf-8-sig", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=headers, delimiter=";")
+            w.writeheader()
+            w.writerows(rows)
     print("Журнал замен:", applied_file)
     print("Пропущенные случаи:", skipped_file)
     if not edits:
         print("Изменений нет. Готово.")
         return
 
-    backup_dir = ROOT/"backups"/"sqlite"
-    backup_dir.mkdir(parents=True,exist_ok=True)
-    backup = backup_dir/f"before_neutral_all_{ts}.sqlite3"
+    backup_dir = ROOT / "backups" / "sqlite"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    backup = backup_dir / f"before_neutral_all_{ts}.sqlite3"
     with sqlite3.connect(str(db)) as s, sqlite3.connect(str(backup)) as d:
         s.backup(d)
     print("Резервная копия:", backup)
@@ -267,11 +353,12 @@ def main():
         for pk, updates in edits:
             # Concurrency protection: one local user typically, but safety matters.
             obj = CalendarFeast.objects.select_for_update().get(pk=pk)
-            for fld,val in updates.items():
-                setattr(obj,fld,val)
+            for fld, val in updates.items():
+                setattr(obj, fld, val)
             obj.save(update_fields=list(updates))
     print(f"ГОТОВО: {len(applied_rows)} новых замен; {len(edits)} карточек.")
     print("Ранее выполненные 78 замен не отменялись и не пересчитывались.")
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     main()

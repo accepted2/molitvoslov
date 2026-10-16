@@ -2,19 +2,16 @@
 from django.db import transaction
 from api.models import CalendarDay
 
-day = CalendarDay.objects.prefetch_related("feasts").get(
-    date_gregorian=date(2026, 5, 22)
-)
+day = CalendarDay.objects.prefetch_related("feasts").get(date_gregorian=date(2026, 5, 22))
 
 matches = [
-    feast for feast in day.feasts.all()
+    feast
+    for feast in day.feasts.all()
     if "Перенесение мощей святителя и чудотворца Николая" in feast.title
 ]
 
 if len(matches) != 1:
-    raise RuntimeError(
-        f"Ожидалась одна память Николая Чудотворца, найдено: {len(matches)}"
-    )
+    raise RuntimeError(f"Ожидалась одна память Николая Чудотворца, найдено: {len(matches)}")
 
 new_main = matches[0]
 

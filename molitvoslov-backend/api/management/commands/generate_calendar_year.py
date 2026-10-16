@@ -7,6 +7,7 @@ Run: python manage.py generate_calendar_year --year 2027 --dry-run
 Conservative by design: never reassign existing feast links or override manually
 entered day fields; no reading or feast-content modifications.
 """
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -112,10 +113,12 @@ def safe_backup():
 
 def priority(feast):
     # Applied only to selecting a default for a NEW, unedited day.
-    return (
-        {"great": 100, "middle": 50, "low": 10}.get(feast.celebration_type or "", 0)
-        + {"great": 100, "polyeleos": 40, "vigil": 50, "middle": 30}.get(feast.celebration_rank or "", 0)
-    )
+    return {"great": 100, "middle": 50, "low": 10}.get(feast.celebration_type or "", 0) + {
+        "great": 100,
+        "polyeleos": 40,
+        "vigil": 50,
+        "middle": 30,
+    }.get(feast.celebration_rank or "", 0)
 
 
 class Command(BaseCommand):
@@ -124,7 +127,11 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--year", type=int, required=True)
         parser.add_argument("--month", type=int, choices=range(1, 13), help="Only one month (1-12)")
-        parser.add_argument("--replace-links", action="store_true", help="Replace day.feasts and main_feast even on existing days; no reading/content edits")
+        parser.add_argument(
+            "--replace-links",
+            action="store_true",
+            help="Replace day.feasts and main_feast even on existing days; no reading/content edits",
+        )
         mode = parser.add_mutually_exclusive_group(required=True)
         mode.add_argument("--dry-run", action="store_true")
         mode.add_argument("--apply", action="store_true")
@@ -136,8 +143,12 @@ class Command(BaseCommand):
         if connections["default"].vendor != "sqlite":
             raise CommandError("Для безопасности требуется локальная SQLite")
         easter = pascha(year)
-        requested_dates = [d for d in dates_in_year(year) if not options["month"] or d.month == options["month"]]
-        source_days = list(CalendarDay.objects.filter(date_gregorian__year=2026).prefetch_related("feasts"))
+        requested_dates = [
+            d for d in dates_in_year(year) if not options["month"] or d.month == options["month"]
+        ]
+        source_days = list(
+            CalendarDay.objects.filter(date_gregorian__year=2026).prefetch_related("feasts")
+        )
         if len(source_days) != 365:
             raise CommandError("В базе должно быть 365 дней исходного 2026 года")
         # Map main-feast preference from the source year. It is a fallback only.
@@ -166,10 +177,11 @@ class Command(BaseCommand):
 
         # Existing days are preserved unless individual missing fields can safely be filled.
         existing = {
-            day.date_gregorian: day
-            for day in CalendarDay.objects.filter(date_gregorian__year=year)
+            day.date_gregorian: day for day in CalendarDay.objects.filter(date_gregorian__year=year)
         }
-        feast_lookup = CalendarFeast.objects.in_bulk(set().union(*target.values()) if target else set())
+        feast_lookup = CalendarFeast.objects.in_bulk(
+            set().union(*target.values()) if target else set()
+        )
         created = 0
         untouched = 0
         completed = 0
@@ -184,14 +196,23 @@ class Command(BaseCommand):
                 feast_ids = target.get(d, set())
                 if not feast_ids:
                     empty += 1
-                sorted_feasts = sorted((feast_lookup[i] for i in feast_ids), key=lambda f: (-priority(f), -source_main[f.pk], f.pk))
+                sorted_feasts = sorted(
+                    (feast_lookup[i] for i in feast_ids),
+                    key=lambda f: (-priority(f), -source_main[f.pk], f.pk),
+                )
                 principal = sorted_feasts[0] if sorted_feasts else None
                 is_fast, fasting_name = fasting_info(d, easter)
                 # Existing fields are not copied blindly from 2026: readings and dietary
                 # prescriptions have independent year-specific rules.
                 julian_previous = d - timedelta(days=13)
-                payload = {MARKER: {"year": year, "reference_year": 2026, "is_fasting_day": is_fast,
-                                    "is_dietary_rule_complete": False}}
+                payload = {
+                    MARKER: {
+                        "year": year,
+                        "reference_year": 2026,
+                        "is_fasting_day": is_fast,
+                        "is_dietary_rule_complete": False,
+                    }
+                }
                 if day_existing is not None:
                     changed = False
                     if options["replace_links"]:
@@ -214,7 +235,13 @@ class Command(BaseCommand):
                     old_ids = set(day_existing.feasts.values_list("id", flat=True))
                     need_links = not old_ids and bool(feast_ids)
                     need_main = day_existing.main_feast_id is None and principal is not None
-                    need_fast = bool(not day_existing.fast_name and not day_existing.fast_type_id and not day_existing.fast_type_code and not day_existing.fast_type_title and is_fast)
+                    need_fast = bool(
+                        not day_existing.fast_name
+                        and not day_existing.fast_type_id
+                        and not day_existing.fast_type_code
+                        and not day_existing.fast_type_title
+                        and is_fast
+                    )
                     changed = need_links or need_main or need_fast
                     if changed and options["apply"]:
                         if need_links:
@@ -225,7 +252,9 @@ class Command(BaseCommand):
                         if need_fast:
                             day_existing.fast_name = fasting_name
                             day_existing.fast_type_title = "Постный день"
-                            day_existing.save(update_fields=["fast_name", "fast_type_title", "updated_at"])
+                            day_existing.save(
+                                update_fields=["fast_name", "fast_type_title", "updated_at"]
+                            )
                     if changed:
                         completed += 1
                     else:
@@ -245,10 +274,18 @@ class Command(BaseCommand):
                         obj.feasts.set(feast_ids)
                 created += 1
         self.stdout.write(f"Пасха {year}: {easter}")
-        self.stdout.write(f"{'APPLY' if options['apply'] else 'DRY-RUN'}: новых дней={created}; дополнено существующих={completed}; заменены связи существующих={replaced}; существующих без изменений={untouched}; дней без назначенных памятей={empty}")
+        self.stdout.write(
+            f"{'APPLY' if options['apply'] else 'DRY-RUN'}: новых дней={created}; дополнено существующих={completed}; заменены связи существующих={replaced}; существующих без изменений={untouched}; дней без назначенных памятей={empty}"
+        )
         self.stdout.write(f"Карточек без поддерживаемого правила даты: {len(unclassified)}")
         for pk, title in unclassified[:15]:
             self.stdout.write(f"  ID={pk}: {title}")
         if unclassified:
-            self.stdout.write(self.style.WARNING("Карточки без даты не переносились; при необходимости задайте julian_month/julian_day или easter_offset."))
-        self.stdout.write("Чтения, жития, тропари, кондаки и карточки святых не изменялись. При --replace-links перезаписаны только связи памятей и main_feast выбранного периода.")
+            self.stdout.write(
+                self.style.WARNING(
+                    "Карточки без даты не переносились; при необходимости задайте julian_month/julian_day или easter_offset."
+                )
+            )
+        self.stdout.write(
+            "Чтения, жития, тропари, кондаки и карточки святых не изменялись. При --replace-links перезаписаны только связи памятей и main_feast выбранного периода."
+        )

@@ -5,23 +5,18 @@ from datetime import date
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 import django
+
 django.setup()
 
 from django.db import transaction
 from api.models import CalendarDay
 from api.sqlite_backup import create_sqlite_backup
 
-days = (
-    CalendarDay.objects
-    .filter(date_gregorian__range=(date(2026, 5, 1), date(2026, 5, 31)))
-    .select_related("main_feast")
-)
+days = CalendarDay.objects.filter(
+    date_gregorian__range=(date(2026, 5, 1), date(2026, 5, 31))
+).select_related("main_feast")
 
-feasts = {
-    day.main_feast.pk: day.main_feast
-    for day in days
-    if day.main_feast_id
-}
+feasts = {day.main_feast.pk: day.main_feast for day in days if day.main_feast_id}
 
 changes = []
 

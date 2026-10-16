@@ -1,8 +1,10 @@
 ﻿import os
 from datetime import date
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 
 import django
+
 django.setup()
 
 from api.calendar_models import CalendarDay
@@ -39,23 +41,14 @@ print("\n=== ПОЛНОТА КАЛЕНДАРЯ ЗА 2026 ГОД ===")
 
 for month in range(1, 13):
     days = list(
-        CalendarDay.objects.filter(
-            date_gregorian__year=2026,
-            date_gregorian__month=month
-        )
+        CalendarDay.objects.filter(date_gregorian__year=2026, date_gregorian__month=month)
         .select_related("main_feast")
         .prefetch_related("readings")
     )
 
     reading_count = sum(bool(d.readings.all()) for d in days)
-    icon_count = sum(
-        bool(d.main_feast and d.main_feast.icon_url)
-        for d in days
-    )
-    life_count = sum(
-        bool(d.main_feast and d.main_feast.life_content)
-        for d in days
-    )
+    icon_count = sum(bool(d.main_feast and d.main_feast.icon_url) for d in days)
+    life_count = sum(bool(d.main_feast and d.main_feast.life_content) for d in days)
 
     print(
         f"{month:02d}: дней={len(days)}, "

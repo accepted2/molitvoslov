@@ -10,6 +10,7 @@ the full snapshot always remains. It never modifies Sep or Nov 1-5.
 
 Run from molitvoslov-backend: python -X utf8 .\\finish_calendar_nov_dec_2026.py
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -36,7 +37,9 @@ def say(*items, **kwargs):
 
 
 def normalized(text: str) -> str:
-    return "".join(c for c in unicodedata.normalize("NFD", text or "") if unicodedata.category(c) != "Mn").casefold()
+    return "".join(
+        c for c in unicodedata.normalize("NFD", text or "") if unicodedata.category(c) != "Mn"
+    ).casefold()
 
 
 def sqlite_snapshot(source: Path, dest: Path) -> None:
@@ -55,10 +58,13 @@ def load_cloudinary_env() -> None:
     if not env.is_file():
         return
     for raw in env.read_text(encoding="utf-8-sig").splitlines():
-        match = re.match(r"^\s*(?:export\s+)?(CLOUD_NAME|CLOUD_API_KEY|CLOUD_API_SECRET|CLOUDINARY_URL)\s*=\s*(.*?)\s*$", raw)
+        match = re.match(
+            r"^\s*(?:export\s+)?(CLOUD_NAME|CLOUD_API_KEY|CLOUD_API_SECRET|CLOUDINARY_URL)\s*=\s*(.*?)\s*$",
+            raw,
+        )
         if match:
             key, value = match.groups()
-            value = value.strip().strip('"\'')
+            value = value.strip().strip("\"'")
             if value and not os.environ.get(key):
                 os.environ[key] = value
 
@@ -86,9 +92,23 @@ def day_is_imported(target: date) -> bool:
 
 
 def audit_period(name: str, start: date, end: date) -> None:
-    qs = list(CalendarDay.objects.filter(date_gregorian__range=(start, end)).select_related("main_feast").prefetch_related("readings").order_by("date_gregorian"))
+    qs = list(
+        CalendarDay.objects.filter(date_gregorian__range=(start, end))
+        .select_related("main_feast")
+        .prefetch_related("readings")
+        .order_by("date_gregorian")
+    )
     say(f"\n=== {name} ===")
-    say("Дней:", len(qs), "| С чтениями:", sum(bool(d.readings.all()) for d in qs), "| С житиями главных памятей:", sum(bool(d.main_feast and d.main_feast.life_content.strip()) for d in qs), "| С иконами главных памятей:", sum(bool(d.main_feast and d.main_feast.icon_url) for d in qs))
+    say(
+        "Дней:",
+        len(qs),
+        "| С чтениями:",
+        sum(bool(d.readings.all()) for d in qs),
+        "| С житиями главных памятей:",
+        sum(bool(d.main_feast and d.main_feast.life_content.strip()) for d in qs),
+        "| С иконами главных памятей:",
+        sum(bool(d.main_feast and d.main_feast.icon_url) for d in qs),
+    )
     for d in qs:
         missing = []
         if not d.readings.all():
@@ -111,7 +131,11 @@ def audit_period(name: str, start: date, end: date) -> None:
 
 def fix_evmeniy() -> None:
     say("\n=== ЕВМЕНИЙ ГОРТИНСКИЙ, 1 ОКТЯБРЯ ===")
-    d = CalendarDay.objects.select_related("main_feast").filter(date_gregorian=date(2026, 10, 1)).first()
+    d = (
+        CalendarDay.objects.select_related("main_feast")
+        .filter(date_gregorian=date(2026, 10, 1))
+        .first()
+    )
     if not d or not d.main_feast:
         say("ПРОПУСК: не найдена главная память 1 октября")
         return
@@ -134,21 +158,45 @@ def fix_evmeniy() -> None:
         say("Длина:", len(life))
         say("Начало:", life[:180].replace("\n", " "))
         say("Конец:", life[-140:].replace("\n", " "))
-        if not ("евмен" in title and "гортин" in title and 150 <= len(life) <= 20000 and "евмен" in life_normalized):
+        if not (
+            "евмен" in title
+            and "гортин" in title
+            and 150 <= len(life) <= 20000
+            and "евмен" in life_normalized
+        ):
             say("ПРОПУСК: источник не прошёл проверку названия или текста")
             return
-        updated = CalendarFeast.objects.filter(pk=feast.pk, life_content="").update(life_content=life)
+        updated = CalendarFeast.objects.filter(pk=feast.pk, life_content="").update(
+            life_content=life
+        )
         say("Результат:", "ЖИТИЕ СОХРАНЕНО" if updated else "Без изменений")
     except Exception as exc:
         say("ПРОПУСК: ошибка получения жития:", type(exc).__name__, str(exc)[:220])
 
 
 def run_import_one(day: date, tmp_backups: Path, log_path: Path) -> tuple[bool, str]:
-    args = [sys.executable, "-X", "utf8", "manage.py", "import_azbyka_calendar_day", "--date", day.isoformat(), "--apply", "--delay", "0.35", "--timeout", "35", "--backup-dir", str(tmp_backups)]
+    args = [
+        sys.executable,
+        "-X",
+        "utf8",
+        "manage.py",
+        "import_azbyka_calendar_day",
+        "--date",
+        day.isoformat(),
+        "--apply",
+        "--delay",
+        "0.35",
+        "--timeout",
+        "35",
+        "--backup-dir",
+        str(tmp_backups),
+    ]
     with log_path.open("a", encoding="utf-8") as out:
         out.write(f"\n===== START {day} =====\n")
         out.flush()
-        result = subprocess.run(args, cwd=BASE, env=os.environ.copy(), stdout=out, stderr=subprocess.STDOUT, check=False)
+        result = subprocess.run(
+            args, cwd=BASE, env=os.environ.copy(), stdout=out, stderr=subprocess.STDOUT, check=False
+        )
         out.write(f"===== END {day} CODE {result.returncode} =====\n")
     if result.returncode:
         tail = "\n".join(log_path.read_text(encoding="utf-8", errors="replace").splitlines()[-18:])
@@ -190,7 +238,9 @@ def main() -> None:
         sys.exit("СТОП: не установлен Python-пакет cloudinary")
     if not (BASE / "manage.py").exists():
         sys.exit("СТОП: запускайте файл в каталоге molitvoslov-backend")
-    sep = CalendarDay.objects.filter(date_gregorian__range=(date(2026, 9, 1), date(2026, 9, 30))).count()
+    sep = CalendarDay.objects.filter(
+        date_gregorian__range=(date(2026, 9, 1), date(2026, 9, 30))
+    ).count()
     if sep != 30:
         sys.exit("СТОП: сентябрьские дни не найдены, вероятно открыта не та база")
     say("SQLite:", db_path)
@@ -207,7 +257,10 @@ def main() -> None:
     say("Лог:", log_path)
     say("\n=== НОЯБРЬ (6–30) И ДЕКАБРЬ (1–31) ===")
     ok, skipped, failed = [], [], []
-    all_dates = [*dates(date(2026, 11, 6), date(2026, 11, 30)), *dates(date(2026, 12, 1), date(2026, 12, 31))]
+    all_dates = [
+        *dates(date(2026, 11, 6), date(2026, 11, 30)),
+        *dates(date(2026, 12, 1), date(2026, 12, 31)),
+    ]
     for i, target in enumerate(all_dates, 1):
         # Earlier November 1-5 and all of October are NEVER candidates.
         if day_is_imported(target):
@@ -216,9 +269,13 @@ def main() -> None:
             continue
         say(f"[{i}/{len(all_dates)}] {target}: импорт...")
         # Preserve old icon only if December 19 remains St. Nicholas after import.
-        old_main = CalendarDay.objects.select_related("main_feast").filter(date_gregorian=target).first()
+        old_main = (
+            CalendarDay.objects.select_related("main_feast").filter(date_gregorian=target).first()
+        )
         old_icon = (old_main.main_feast.icon_url if old_main and old_main.main_feast else "") or ""
-        old_nicholas = bool(old_main and old_main.main_feast and "никола" in normalized(old_main.main_feast.title))
+        old_nicholas = bool(
+            old_main and old_main.main_feast and "никола" in normalized(old_main.main_feast.title)
+        )
         success, detail = run_import_one(target, tmp_backups, log_path)
         if not success:
             failed.append(str(target))
@@ -228,8 +285,14 @@ def main() -> None:
             continue
         if target == date(2026, 12, 19) and old_icon and old_nicholas:
             fresh = CalendarDay.objects.select_related("main_feast").get(date_gregorian=target)
-            if fresh.main_feast and not fresh.main_feast.icon_url and "никола" in normalized(fresh.main_feast.title):
-                CalendarFeast.objects.filter(pk=fresh.main_feast_id, icon_url="").update(icon_url=old_icon)
+            if (
+                fresh.main_feast
+                and not fresh.main_feast.icon_url
+                and "никола" in normalized(fresh.main_feast.title)
+            ):
+                CalendarFeast.objects.filter(pk=fresh.main_feast_id, icon_url="").update(
+                    icon_url=old_icon
+                )
                 say("  Восстановлена ранее существовавшая икона святителя Николая")
         ok.append(str(target))
         say(f"  OK: {main_stats(target)}", flush=True)
@@ -246,7 +309,14 @@ def main() -> None:
         except OSError:
             pass
     say("\n=== РЕЗУЛЬТАТ ===")
-    say("Импортировано в этом запуске:", len(ok), "| Пропущено готовых:", len(skipped), "| Ошибок:", len(failed))
+    say(
+        "Импортировано в этом запуске:",
+        len(ok),
+        "| Пропущено готовых:",
+        len(skipped),
+        "| Ошибок:",
+        len(failed),
+    )
     if failed:
         say("Дни с ошибками:", ", ".join(failed))
         say("Повторный запуск безопасен: уже импортированные дни будут пропущены")

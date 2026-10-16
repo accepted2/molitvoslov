@@ -7,9 +7,9 @@ import sqlite3
 from api.models import CalendarDay
 
 days = list(
-    CalendarDay.objects
-    .filter(date_gregorian__range=(date(2026, 6, 1), date(2026, 6, 30)))
-    .select_related("main_feast")
+    CalendarDay.objects.filter(
+        date_gregorian__range=(date(2026, 6, 1), date(2026, 6, 30))
+    ).select_related("main_feast")
 )
 
 life_updates = {}
@@ -62,7 +62,10 @@ if life_updates or fast_updates:
     backup_dir = Path("backups/sqlite")
     backup_dir.mkdir(parents=True, exist_ok=True)
     from datetime import datetime
-    backup_path = backup_dir / ("before_june_cleanup_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".sqlite3")
+
+    backup_path = backup_dir / (
+        "before_june_cleanup_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".sqlite3"
+    )
 
     src = sqlite3.connect(str(db_path))
     dst = sqlite3.connect(str(backup_path))

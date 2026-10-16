@@ -18,15 +18,10 @@ for day_number, title_fragment in targets.items():
         date_gregorian=date(2026, 6, day_number)
     )
 
-    matches = [
-        feast for feast in day.feasts.all()
-        if title_fragment in feast.title
-    ]
+    matches = [feast for feast in day.feasts.all() if title_fragment in feast.title]
 
     if len(matches) != 1:
-        raise RuntimeError(
-            f"{day.date_gregorian}: найдено {len(matches)} совпадений"
-        )
+        raise RuntimeError(f"{day.date_gregorian}: найдено {len(matches)} совпадений")
 
     new_main = matches[0]
 
@@ -45,9 +40,7 @@ else:
     backup_dir.mkdir(parents=True, exist_ok=True)
 
     backup_path = backup_dir / (
-        "before_june_main_fix_"
-        + datetime.now().strftime("%Y%m%d_%H%M%S")
-        + ".sqlite3"
+        "before_june_main_fix_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".sqlite3"
     )
 
     source = sqlite3.connect(str(db_path))

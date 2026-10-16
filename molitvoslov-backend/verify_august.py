@@ -4,6 +4,7 @@ import re
 raw = Path("august_2026_dryrun.log").read_bytes()
 text = raw.decode("utf-16")
 
+
 # Восстанавливаем кириллицу, ошибочно прочитанную как CP866.
 def repair(line):
     try:
@@ -11,19 +12,13 @@ def repair(line):
     except (UnicodeError, ValueError):
         return line
 
+
 text = "\n".join(repair(line) for line in text.splitlines())
 
-Path("august_2026_dryrun_repaired.log").write_text(
-    text, encoding="utf-8"
-)
+Path("august_2026_dryrun_repaired.log").write_text(text, encoding="utf-8")
 
 for date in ("2026-08-19", "2026-08-28"):
-    pattern = (
-        r"(?ms)^===== \[\d+/31\] "
-        + re.escape(date)
-        + r" =====$"
-        + r"(.*?)(?=^===== \[|\Z)"
-    )
+    pattern = r"(?ms)^===== \[\d+/31\] " + re.escape(date) + r" =====$" + r"(.*?)(?=^===== \[|\Z)"
     match = re.search(pattern, text)
 
     print("\n" + "=" * 45)

@@ -20,9 +20,7 @@ db_path = Path(settings.DATABASES["default"]["NAME"])
 backup_dir = Path("backups/sqlite")
 backup_dir.mkdir(parents=True, exist_ok=True)
 backup_path = backup_dir / (
-    "before_august_final_"
-    + datetime.now().strftime("%Y%m%d_%H%M%S")
-    + ".sqlite3"
+    "before_august_final_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".sqlite3"
 )
 
 with sqlite3.connect(str(db_path)) as src:
@@ -41,18 +39,13 @@ print("\n=== ИСТОЧНИК ЖИТИЯ ФЕОДОСИЯ ===")
 url = "https://azbyka.ru/days/sv-feodosij-pecherskij"
 
 try:
-    response = requests.get(
-        url, timeout=25,
-        headers={"User-Agent": "Mozilla/5.0"}
-    )
+    response = requests.get(url, timeout=25, headers={"User-Agent": "Mozilla/5.0"})
     print("HTTP:", response.status_code)
     response.raise_for_status()
 
     soup = BeautifulSoup(response.text, "html.parser")
 
-    for heading in soup.find_all(
-        ["h1", "h2", "h3", "h4", "h5"]
-    ):
+    for heading in soup.find_all(["h1", "h2", "h3", "h4", "h5"]):
         title = heading.get_text(" ", strip=True)
         if "житие" in title.lower() and "Феодос" in title:
             print("Заголовок:", title)

@@ -6,9 +6,12 @@ command = [
     sys.executable,
     "manage.py",
     "import_azbyka_calendar_day",
-    "--range", "2026-09-01", "2026-09-30",
+    "--range",
+    "2026-09-01",
+    "2026-09-30",
     "--apply",
-    "--delay", "0.35",
+    "--delay",
+    "0.35",
 ]
 
 log_path = Path("september_2026_apply.log")
@@ -27,8 +30,6 @@ print("Лог:", log_path.resolve())
 
 if result.returncode != 0:
     print("\nПоследние строки лога:")
-    print("\n".join(
-        log_path.read_text(encoding="utf-8").splitlines()[-25:]
-    ))
+    print("\n".join(log_path.read_text(encoding="utf-8").splitlines()[-25:]))
 
 sys.exit(result.returncode)

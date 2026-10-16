@@ -1,4 +1,5 @@
 ﻿from pathlib import Path
+
 p = Path("august_2026_dryrun.log")
 raw = p.read_bytes()
 text = raw.decode("utf-8-sig", errors="replace")

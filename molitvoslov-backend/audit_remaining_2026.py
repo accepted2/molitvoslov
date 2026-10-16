@@ -24,7 +24,10 @@ for month, last_day in [(9, 30), (10, 31), (11, 30), (12, 31)]:
     for d in days:
         print(
             d.date_gregorian,
-            "| памятей:", len(d.feasts.all()),
-            "| чтений:", len(d.readings.all()),
-            "| главная:", d.main_feast.title if d.main_feast else "НЕТ",
+            "| памятей:",
+            len(d.feasts.all()),
+            "| чтений:",
+            len(d.readings.all()),
+            "| главная:",
+            d.main_feast.title if d.main_feast else "НЕТ",
         )

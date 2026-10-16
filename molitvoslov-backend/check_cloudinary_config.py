@@ -6,6 +6,7 @@ print("Файл существует:", Path(".env").exists())
 
 try:
     from dotenv import dotenv_values
+
     config = dotenv_values(".env")
 except ImportError:
     config = {}
@@ -22,11 +23,7 @@ for name in (
     "CLOUDINARY_API_KEY",
     "CLOUDINARY_API_SECRET",
 ):
-    print(
-        name,
-        "| .env:", bool(config.get(name)),
-        "| окружение:", bool(os.environ.get(name))
-    )
+    print(name, "| .env:", bool(config.get(name)), "| окружение:", bool(os.environ.get(name)))
 
 print("\n=== НАСТРОЙКИ DJANGO ===")
 
@@ -34,6 +31,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 try:
     import django
+
     django.setup()
     from django.conf import settings
 

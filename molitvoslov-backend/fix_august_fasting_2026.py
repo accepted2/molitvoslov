@@ -27,16 +27,13 @@ codes = {
 changes = []
 
 for number, code in codes.items():
-    day = CalendarDay.objects.get(
-        date_gregorian=date(2026, 8, number)
-    )
+    day = CalendarDay.objects.get(date_gregorian=date(2026, 8, number))
 
     expected_name = "Успенский пост" if number <= 27 else ""
 
     if day.fast_name != expected_name:
         raise RuntimeError(
-            f"{day.date_gregorian}: неожиданное название поста: "
-            f"{day.fast_name!r}"
+            f"{day.date_gregorian}: неожиданное название поста: " f"{day.fast_name!r}"
         )
 
     if day.fast_type_code != code:
@@ -45,12 +42,7 @@ for number, code in codes.items():
 print("ПЛАН ИСПРАВЛЕНИЙ")
 
 for day, code in changes:
-    print(
-        day.date_gregorian,
-        repr(day.fast_type_code),
-        "->",
-        repr(code)
-    )
+    print(day.date_gregorian, repr(day.fast_type_code), "->", repr(code))
 
 if changes:
     db_path = Path(settings.DATABASES["default"]["NAME"])
@@ -58,9 +50,7 @@ if changes:
     backup_dir.mkdir(parents=True, exist_ok=True)
 
     backup_path = backup_dir / (
-        "before_august_fast_"
-        + datetime.now().strftime("%Y%m%d_%H%M%S")
-        + ".sqlite3"
+        "before_august_fast_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".sqlite3"
     )
 
     with sqlite3.connect(str(db_path)) as source:
@@ -77,19 +67,17 @@ if changes:
 print("\nИТОГОВАЯ ПРОВЕРКА")
 
 for number, expected_code in codes.items():
-    day = CalendarDay.objects.get(
-        date_gregorian=date(2026, 8, number)
-    )
+    day = CalendarDay.objects.get(date_gregorian=date(2026, 8, number))
 
     assert day.fast_type_code == expected_code
-    assert day.fast_name == (
-        "Успенский пост" if number <= 27 else ""
-    )
+    assert day.fast_name == ("Успенский пост" if number <= 27 else "")
 
     print(
         day.date_gregorian,
-        "|", day.fast_type_code,
-        "|", day.fast_name or "Без названия многодневного поста"
+        "|",
+        day.fast_type_code,
+        "|",
+        day.fast_name or "Без названия многодневного поста",
     )
 
 print("\nУспешно. Исправлено дней:", len(changes))
