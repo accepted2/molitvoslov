@@ -315,7 +315,44 @@ def _heading_level(tag):
     return int(tag.name[1])
 
 
+def _is_readings_paragraph(text):
+    """Accept tabulated services, not later conditional prose with Bible quotes."""
+    text = normalize_space(text)
+    match = REFERENCE_RE.search(text)
+    if not match:
+        return False
+
+    prefix = text[:match.start()].strip(" •*–—-")
+    if not prefix:
+        return True  # A bare Bible reference (or pair of references).
+
+    # The source uses paragraphs such as "Субботы: Лит. – Ап.: ...".
+    # Short rubrics followed by a colon are day appointments; explanatory
+    # sentences ("Если служба полиелейная, читается ...") are NOT.
+    if re.match(r"^(?:если|когда|в случае|примечани|см\\.)\\b", prefix, re.I):
+        return False
+
+    if ":" in prefix and len(prefix) <= 160:
+        return True
+
+    # "Лит. – ..." / "Утр. – ..." / "На веч. – ..." formats may lack ":".
+    if re.match(
+        r"^(?:лит\\.?|на литургии|утр\\.?|на утрени|веч\\.?|на веч\\.|"
+        r"на [1369]-?м часе|ряд\\.?|рядовое|субботы|недели|мч\\.|"
+        r"вмч\\.|свт\\.|сщмч\\.|богородицы)\\b",
+        prefix, re.I,
+    ):
+        return True
+
+    return False
+
+
 def extract_readings_text(html):
+    """Extract ALL scripture reading groups belonging to the day section.
+
+    Older implementation returned the FIRST <p> only, silently losing e.g.
+    martyr and ordinary readings on 2027-01-16.
+    """
     soup = BeautifulSoup(html, "lxml")
 
     heading = None
@@ -329,10 +366,12 @@ def extract_readings_text(html):
         raise AzbykaReadingsError('Не найден блок "Чтения Священного Писания".')
 
     level = _heading_level(heading) or 2
+    chunks = []
+    first_found = False
 
-    # Берём первый абзац после заголовка, в котором есть
-    # поддерживаемая ссылка на Писание. Пояснительные примечания ниже не импортируем
-    # как отдельные чтения.
+    # A heading may contain navigation links (which are not readings).
+    # Look at every independent <p>/<li> until the NEXT same/higher heading.
+    # Avoid processing a wrapper <li> and its child <p> twice.
     for tag in heading.find_all_next():
         tag_level = _heading_level(tag)
         if tag_level is not None and tag_level <= level:
@@ -340,39 +379,48 @@ def extract_readings_text(html):
 
         if tag.name not in {"p", "li"}:
             continue
+        if tag.name == "li" and tag.find(["p", "li"]):
+            continue
+        if tag.name == "p" and tag.find_parent("li") and tag.find_parent("li").find("p") is None:
+            continue
 
         text = normalize_space(tag.get_text(" ", strip=True))
-        lowered = text.lower()
+        if not text:
+            continue
+        lower = text.lower()
+        if lower in STOP_TEXTS:
+            if first_found:
+                break
+            continue
 
-        if any(stop in lowered for stop in STOP_TEXTS):
-            break
+        if _is_readings_paragraph(text):
+            chunks.append(text)
+            first_found = True
+            continue
 
-        if REFERENCE_RE.search(text):
-            return text
+        if first_found:
+            # Finish at the first paragraph of explanatory prose. It may
+            # itself quote Scripture but must not become a new day's reading.
+            if REFERENCE_RE.search(text):
+                break
+            # Ignore empty controls and short navigation text between groups.
+            if len(text) > 120:
+                break
 
-    # Fallback для страниц, где чтения завернуты не в <p>.
-    chunks = []
+    if chunks:
+        return " ".join(chunks)
+
+    # Fallback: alternative markup with <div> instead of separate paragraphs.
+    # Take one complete div, not nested duplicates of the same content.
     for tag in heading.find_all_next():
         tag_level = _heading_level(tag)
         if tag_level is not None and tag_level <= level:
             break
-
-        if tag.name in {"script", "style", "noscript"}:
+        if tag.name != "div":
             continue
-
-        if tag.name in {"a", "button"}:
-            text = normalize_space(tag.get_text(" ", strip=True))
-            if text.lower() in STOP_TEXTS:
-                break
-
-        if tag.name == "div":
-            text = normalize_space(tag.get_text(" ", strip=True))
-            if REFERENCE_RE.search(text):
-                chunks.append(text)
-                break
-
-    if chunks:
-        return chunks[0]
+        text = normalize_space(tag.get_text(" ", strip=True))
+        if _is_readings_paragraph(text):
+            return text
 
     raise AzbykaReadingsError("В блоке чтений не найдены поддерживаемые ссылки.")
 
