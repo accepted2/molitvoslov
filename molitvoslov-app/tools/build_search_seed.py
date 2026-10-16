@@ -85,6 +85,59 @@ def main():
                                                       "anchor_id": sid, "start_offset": None, "end_offset": None}
                     add(lang, group, group + ":section:" + str(sid), st.get("title") or title,
                         title, texts, {"name": route_name, "params": section_params}, kind=group + "-section")
+        for rule in content.get("prayer_rules", {}).get("list", []):
+            rule_title = (rule.get("name_uk") if lang == "uk" else rule.get("name")) or rule.get("name") or "Молитвенное правило"
+            add(lang, "prayers", f"prayer-rule:{rule.get('id')}", rule_title, "Молитвенное правило",
+                [rule.get("name"), rule.get("name_uk"), rule.get("traditional_name"), rule.get("description")],
+                {"name": "PrayerRule", "params": {"slug": rule.get("slug")}}, "prayer-rule")
+            for item in rule.get("items", []):
+                title = item.get("title") or (item.get("text") or {}).get("title") or rule_title
+                st = item.get("text") or {}
+                values = [item.get("content"), item.get("content_uk"), item.get("note"),
+                          st.get("title"), st.get("content"), st.get("traditional_content"),
+                          st.get("translation"), st.get("translation_uk")]
+                add(lang, "prayers", f"prayer-rule:{rule.get('id')}:item:{item.get('id')}",
+                    title, rule_title, values, {"name": "PrayerRule", "params": {
+                    "slug": rule.get("slug"), "focusTarget": {
+                    "anchor_type": "prayer_rule_item", "anchor_id": item.get("id"),
+                    "start_offset": None, "end_offset": None}}}, "prayer")
+        for psalter in content.get("psalters", {}).get("list", [])[:1]:
+            add(lang, "psalter", f"psalter:{psalter.get('id')}", psalter.get("name") or "Псалтирь",
+                "Псалтирь", [psalter.get("description"), psalter.get("prayers_before"),
+                psalter.get("prayers_before_russian"), psalter.get("prayers_after"),
+                psalter.get("prayers_after_russian")],
+                {"name": "Psalter", "params": {}}, "psalter")
+        for kathisma in content.get("kathismas", {}).get("by_number", {}).values():
+            knum = kathisma.get("number")
+            ktitle = kathisma.get("title") or f"Кафизма {knum}"
+            base = {"kathismaNumber": knum, "kathismaTitle": ktitle}
+            add(lang, "psalter", f"kathisma:{kathisma.get('id') or knum}",
+                ktitle, "Псалтирь", [kathisma.get("prayers_after"), kathisma.get("prayers_after_russian")],
+                {"name": "Kathisma", "params": base}, "kathisma")
+            for psalm in kathisma.get("psalms", []):
+                pnum = psalm.get("number")
+                ptitle = f"Псалом {pnum}"
+                params = dict(base)
+                params["focusTarget"] = {"save_type": "psalm", "anchor_type": "psalm",
+                                         "anchor_id": psalm.get("id"), "start_offset": None,
+                                         "end_offset": None, "metadata": {
+                                         "psalm_id": psalm.get("id"), "psalm_number": pnum}}
+                add(lang, "psalter", f"psalm:{psalm.get('id')}", ptitle, ktitle,
+                    [psalm.get("title_russian"), psalm.get("title_church_slavonic")],
+                    {"name": "Kathisma", "params": params}, "psalm")
+                for verse in psalm.get("verses", []):
+                    vnum = verse.get("number")
+                    vparams = dict(base)
+                    vparams["focusTarget"] = {"save_type": "fragment", "anchor_type": "psalm_verse",
+                        "anchor_id": verse.get("id"), "start_offset": None, "end_offset": None,
+                        "metadata": {"psalm_id": psalm.get("id"), "psalm_number": pnum,
+                                     "verse_number": vnum}}
+                    add(lang, "psalter", f"psalm:{psalm.get('id')}:verse:{verse.get('id')}",
+                        f"Псалом {pnum}:{vnum}", ktitle,
+                        [verse.get("russian"), verse.get("church_slavonic"),
+                         verse.get("church_slavonic_traditional"), verse.get("ukrainian")],
+                        {"name": "Kathisma", "params": vparams}, "psalm-verse",
+                        verse.get("russian") or verse.get("church_slavonic") or "")
         for book in books:
             book_id = book.get("id")
             display = book.get("name") or book.get("short_name") or "Библия"
