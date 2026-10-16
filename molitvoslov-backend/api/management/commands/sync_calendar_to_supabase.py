@@ -147,6 +147,15 @@ class Command(BaseCommand):
         )
 
         parser.add_argument(
+            "--confirm-mass-feast-create",
+            action="store_true",
+            help=(
+                "Подтверждение создания более 100 карточек памятей "
+                "после отдельной проверки дублей командой audit_calendar_feast_sync."
+            ),
+        )
+
+        parser.add_argument(
             "--allow-reading-deletes",
             action="store_true",
             help=(
@@ -328,6 +337,7 @@ class Command(BaseCommand):
             self._ensure_local_uids(feasts, {})
 
             feast_preview = self._preview_day_feasts_only(days, feasts)
+            self._guard_mass_feast_create(feast_preview, options)
             reading_preview = self._preview_readings_only(days)
             self._guard_reading_deletions(reading_preview, options)
             self._print_azbyka_day_preview(
@@ -412,6 +422,7 @@ class Command(BaseCommand):
 
             preview = self._preview_day_feasts_only(days, feasts)
             self._print_day_feasts_only_preview(preview, days, feasts)
+            self._guard_mass_feast_create(preview, options)
 
             if options["dry_run"]:
                 self.stdout.write(self.style.WARNING("DRY-RUN: Supabase не изменён."))
@@ -540,6 +551,7 @@ class Command(BaseCommand):
 
         preview = self._preview(days, feasts, fast_types)
         self._print_preview(preview, days, feasts, fast_types)
+        self._guard_mass_feast_create(preview, options)
         self._guard_reading_deletions(preview, options)
 
         if options["dry_run"]:
@@ -770,6 +782,21 @@ class Command(BaseCommand):
             ):
                 return row
         return None
+
+    def _guard_mass_feast_create(self, preview, options):
+        if not options["apply"] or options["confirm_mass_feast_create"]:
+            return
+        planned = len(preview.get("feast_create", ()))
+        if planned > 100:
+            raise CommandError(
+                f"Безопасность синхронизации: запланировано создание "
+                f"{planned} карточек памятей Supabase. Перед массовой записью "
+                "проверьте совпадения командой "
+                "'python manage.py audit_calendar_feast_sync --year YYYY'. "
+                "Затем подтвердите осознанный перенос флагом "
+                "--confirm-mass-feast-create. "
+                "Supabase не изменён."
+            )
 
     def _guard_reading_deletions(self, preview, options):
         if not options["apply"] or options["allow_reading_deletes"]:
