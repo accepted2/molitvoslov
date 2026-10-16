@@ -1,0 +1,111 @@
+"""Safe final audit/repair for 2026 calendar. Run from molitvoslov-backend."""
+import os
+import re
+import sqlite3
+import sys
+from datetime import date, datetime
+from pathlib import Path
+
+BASE = Path.cwd()
+if not (BASE / 'manage.py').is_file():
+    sys.exit('СТОП: запускать из каталога molitvoslov-backend')
+
+for raw in (BASE / '.env').read_text(encoding='utf-8-sig').splitlines():
+    m = re.match(r'^\s*(CLOUD_NAME|CLOUD_API_KEY|CLOUD_API_SECRET)\s*=\s*(.*?)\s*$', raw)
+    if m and not os.getenv(m[1]):
+        os.environ[m[1]] = m[2].strip().strip('\"\'')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
+import django
+django.setup()
+from django.conf import settings
+from api.calendar_models import CalendarDay, CalendarFeast
+from api.azbyka_calendar_feasts import fetch_saint_content
+from api.calendar_icon_storage import cloudinary_configured, upload_azbyka_icon
+
+TARGETS = [
+    (date(2026, 1, 18), 3528, 'Навечерие Богоявления'),
+    (date(2026, 3, 7), 3904, 'Мученики, иже во Евгении'),
+    (date(2026, 4, 12), 236, 'Светлое Христово Воскресение'),
+    (date(2026, 5, 22), 4482, 'Перенесение мощей святителя Николая'),
+    (date(2026, 11, 7), 5723, 'Димитриевская родительская суббота'),
+]
+URLS = {
+    date(2026, 4, 12): 'https://azbyka.ru/days/prazdnik-svetloe-hristovo-voskresenie-pasha',
+    date(2026, 5, 22): 'https://azbyka.ru/days/prazdnik-perenesenie-moshhej-svjatitelja-i-chudotvorca-nikolaja-iz-mir-likijskih-v-bar-1087',
+    date(2026, 11, 7): 'https://azbyka.ru/days/prazdnik-dimitrievskaja-roditelskaja-subbota',
+}
+
+def clean(s):
+    return re.sub(r'\s+', ' ', (s or '').lower().replace('ё','е').replace('\u0301','')).strip()
+
+print('=== ПРОВЕРКА И BACKUP ===', flush=True)
+for d, expected_id, title in TARGETS:
+    day = CalendarDay.objects.select_related('main_feast').get(date_gregorian=d)
+    if day.main_feast_id != expected_id or clean(title) not in clean(day.main_feast.title):
+        sys.exit(f'СТОП: {d} — главная память отличается: {day.main_feast_id}, {day.main_feast.title}')
+
+p = Path(settings.DATABASES['default']['NAME']).resolve()
+out = BASE / 'backups' / 'sqlite'
+out.mkdir(parents=True, exist_ok=True)
+backup = out / f'before_final_calendar_gaps_{datetime.now():%Y%m%d_%H%M%S}.sqlite3'
+with sqlite3.connect(str(p)) as source, sqlite3.connect(str(backup)) as dst:
+    source.backup(dst)
+print('SQLite:', p)
+print('Backup:', backup)
+print('Cloudinary:', 'OK' if cloudinary_configured() else 'НЕ НАСТРОЕН')
+
+print('\n=== 18 ЯНВАРЯ: ИКОНА ===', flush=True)
+jan = CalendarFeast.objects.get(pk=3528)
+source = CalendarFeast.objects.get(pk=3542)
+if jan.icon_url:
+    print('Уже заполнено, пропуск')
+elif source.icon_url and 'богоявлен' in clean(source.title) and 'крещен' in clean(source.title):
+    changed = CalendarFeast.objects.filter(pk=jan.pk, icon_url='').update(icon_url=source.icon_url)
+    print('Праздничная икона Богоявления установлена:', bool(changed))
+else:
+    print('Не найден проверенный источник для иконы; пропуск')
+
+print('\n=== 22 МАЯ: ПРАЗДНИЧНЫЙ ТЕКСТ ===', flush=True)
+may = CalendarFeast.objects.get(pk=4482)
+if may.life_content.strip():
+    print('Уже заполнено:', len(may.life_content), 'символов')
+else:
+    url = URLS[date(2026, 5, 22)]
+    try:
+        parsed = fetch_saint_content(url, timeout=35)
+        life = (parsed.life_content or '').strip()
+        print('Страница:', getattr(parsed, 'title', '')[:140])
+        print('Длина:', len(life))
+        print('Начало:', life[:330].replace('\n',' '))
+        # Allow saving only a clear, on-topic history of transfer of relics.
+        low = clean(life)
+        if len(life) >= 180 and 'никола' in low and ('перенесен' in low or 'перенесени' in low or 'перенос' in low) and ('бар' in low or 'мир лик' in low):
+            saved = CalendarFeast.objects.filter(pk=4482, life_content='').update(life_content=life)
+            print('Праздничный текст сохранён:', bool(saved))
+        else:
+            print('НЕ СОХРАНЕНО: требуется сверка текста; не подставляем обычное житие Николая')
+    except Exception as exc:
+        print('Ошибка получения:', type(exc).__name__, str(exc)[:220])
+
+print('\n=== ПРОВЕРКА ИСТОЧНИКОВ ДЛЯ ПРОЧИХ ДАТ ===', flush=True)
+# We intentionally do not auto-assign images to multi-saint group or memorial day.
+for d in (date(2026, 4, 12), date(2026, 11, 7)):
+    print('\nДата:', d, 'Источник:', URLS[d])
+    try:
+        parsed = fetch_saint_content(URLS[d], timeout=35)
+        print('Название:', str(parsed.title)[:150])
+        print('Икона из Azbyka:', parsed.icon_source_url or 'НЕТ')
+        print('Текст:', len(parsed.life_content or ''), 'символов')
+        print('Начало:', (parsed.life_content or '')[:180].replace('\n',' '))
+    except Exception as exc:
+        print('Ошибка:', type(exc).__name__, str(exc)[:230])
+
+print('\n7 МАРТА: кандидаты в базе (без автоматической замены)')
+for f in CalendarFeast.objects.filter(title__icontains='Евгени')[:30]:
+    print(f'ID {f.pk}: {f.title[:110]} | икона={bool(f.icon_url)}')
+
+print('\n=== ИТОГ ===')
+for d, pk, title in TARGETS:
+    f = CalendarFeast.objects.get(pk=pk)
+    print(d, '|', f.title[:70], '| икона:', bool(f.icon_url), '| текст:', len(f.life_content or ''))
+print('Готово. Существующие чтения, связи дней и тексты не изменялись.')

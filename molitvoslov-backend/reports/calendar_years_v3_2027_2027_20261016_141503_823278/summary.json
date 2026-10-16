@@ -1,0 +1,51 @@
+{
+  "years": [
+    2027
+  ],
+  "mode": "DRY-RUN",
+  "reference_2026_days": 365,
+  "reference_2026_links": 3056,
+  "reference_checksum_before": "879d8cb5389d194e6f2636430404143ecc71e96944f56bc6c4e819d38422baf9",
+  "reference_checksum_after": null,
+  "source_rule_links": 3056,
+  "year_summaries": {
+    "2027": {
+      "pascha": "2027-05-02",
+      "days": 365,
+      "status": {
+        "UNCHANGED": 31,
+        "RELINK": 58,
+        "MAIN_CONFLICT": 16,
+        "CREATE": 260
+      },
+      "days_without_any_readings": 365,
+      "proposed_feast_links": 2890,
+      "unclassified_memorials": 0
+    }
+  },
+  "blockers": [
+    "2027-02-07: MAIN_CONFLICT; предложено 12 памятей; главные: [3693, 3704]",
+    "2027-04-24: MAIN_CONFLICT; предложено 9 памятей; главные: [4111, 4256]",
+    "2027-04-25: MAIN_CONFLICT; предложено 10 памятей; главные: [4116, 4264]",
+    "2027-05-02: MAIN_CONFLICT; предложено 9 памятей; главные: [236, 4324]",
+    "2027-05-04: MAIN_CONFLICT; предложено 10 памятей; главные: [4180, 4341]",
+    "2027-05-07: MAIN_CONFLICT; предложено 13 памятей; главные: [4203, 4367]",
+    "2027-05-16: MAIN_CONFLICT; предложено 10 памятей; главные: [4273, 4437]",
+    "2027-06-02: MAIN_CONFLICT; предложено 7 памятей; главные: [4410, 4589]",
+    "2027-06-10: MAIN_CONFLICT; предложено 14 памятей; главные: [4473, 4648]",
+    "2027-06-15: MAIN_CONFLICT; предложено 7 памятей; главные: [4516, 4690]",
+    "2027-06-16: MAIN_CONFLICT; предложено 7 памятей; главные: [4526, 4696]",
+    "2027-06-18: MAIN_CONFLICT; предложено 13 памятей; главные: [4547, 4713]",
+    "2027-06-20: MAIN_CONFLICT; предложено 9 памятей; главные: [4562, 4732]",
+    "2027-06-26: MAIN_CONFLICT; предложено 10 памятей; главные: [4620, 4787]",
+    "2027-07-11: MAIN_CONFLICT; предложено 13 памятей; главные: [4745, 4916]",
+    "2027-11-06: MAIN_CONFLICT; предложено 13 памятей; главные: [5711, 5723]"
+  ],
+  "suspected_other_movable_rules_for_review": 38,
+  "ready_for_full_release": false,
+  "verified_reading_table_provided": false,
+  "dietary_rules_complete": false,
+  "backup": null,
+  "applied": {},
+  "reminder": "Памяти/главные по выводам 2026, не нормативная таблица всех исключений. Чтения/пищевой устав требуют отдельного движка и проверки."
+}

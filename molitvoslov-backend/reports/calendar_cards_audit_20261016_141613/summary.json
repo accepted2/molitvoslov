@@ -1,0 +1,37 @@
+{
+  "timestamp": "20261016_141613",
+  "sqlite": "C:\\m\\repo\\molitvoslov-backend\\db.sqlite3",
+  "sqlite_bytes": 57962496,
+  "sqlite_pages_bytes": 57962496,
+  "freelist_bytes_estimate": 978944,
+  "integrity_check": "ok",
+  "foreign_key_issues": [],
+  "cards_total": 6150,
+  "cards_referenced": 3778,
+  "orphan_candidates_count": 2372,
+  "orphans_with_source_id": 2359,
+  "orphans_with_sync_uid": 9,
+  "cards_with_source_id": 3094,
+  "cards_with_sync_uid": 3064,
+  "2026_days": 365,
+  "2026_days_with_no_feasts": 0,
+  "2026_main_missing_from_feasts": 0,
+  "other_years": {
+    "2025": 61,
+    "2027": 90
+  },
+  "reference_fields_checked": [
+    "api.CalendarDay.main_feast",
+    "api.CalendarDay.feasts"
+  ],
+  "duplicates_group_count": 1882,
+  "fast_types_count": 6,
+  "notes": [
+    "orphan_candidates.csv — возможные кандидаты, НЕ список на автоматическое удаление.",
+    "Поле sync_uid может принадлежать старой карточке. Ссылка Azbyka не сохранена отдельно; идентификаторы текущего импортёра включают дату.",
+    "Похожие названия и одинаковые тексты не доказывают, что это одна память.",
+    "Проверены объявленные Django FK/M2M связи; внешние ссылки по числовому id, GenericForeignKey и JSON необходимо проверить отдельно.",
+    "После безопасного удаления SQLite может требовать VACUUM для фактического уменьшения файла; аудит VACUUM не вызывает.",
+    "Годовые посты и Пасха требуют отдельной модели правил/расчёта, не копирования 2026 года."
+  ]
+}

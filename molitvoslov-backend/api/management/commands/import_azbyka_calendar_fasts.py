@@ -8,20 +8,17 @@ Does not infer dietary strictness; retains existing fasting type/code and meal g
 """
 
 from __future__ import annotations
-
 from collections import Counter
 from datetime import date, timedelta
 from pathlib import Path
 import json
 import sqlite3
 import time
-
 import requests
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connections, transaction
-
 from api.calendar_models import CalendarDay
 
 AZBYKA_URL = "https://azbyka.ru/days/calendar/{year}"

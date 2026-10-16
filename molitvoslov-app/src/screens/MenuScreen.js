@@ -1431,7 +1431,7 @@ export const MenuScreen = ({navigation}) => {
                                 appearance && styles[`miniCalendarDayBubble_${appearance}`],
                                 cell.today && styles.miniCalendarDayBubbleToday,
                                 cell.selected &&
-                                  !cell.today &&
+                                  // !cell.today &&
                                   styles.miniCalendarDayBubbleSelected,
                               ]}
                             >
@@ -1442,7 +1442,7 @@ export const MenuScreen = ({navigation}) => {
                                   weekend && !cell.outside && styles.miniCalendarDayWeekend,
                                   appearance && styles.miniCalendarDayMarked,
                                   cell.today && styles.miniCalendarDayToday,
-                                  cell.selected && !cell.today && styles.miniCalendarDaySelected,
+                                  cell.selected && styles.miniCalendarDaySelected,
                                 ]}
                               >
                                 {cell.day}
@@ -2408,13 +2408,15 @@ const styles = StyleSheet.create({
   miniCalendarDayBubble_memorial: {backgroundColor: '#A69A86'},
   miniCalendarDayMarked: {color: '#6A4B3B', fontWeight: '700'},
   miniCalendarDayBubbleToday: {
+
     backgroundColor: '#B97A32',
   },
 
   miniCalendarDayBubbleSelected: {
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#B97A32',
-    backgroundColor: 'rgba(185,122,50,0.10)',
+    borderRadius: 10,
+    // backgroundColor: 'rgba(185,122,50,0.10)',
   },
 
   miniCalendarDayText: {
@@ -2435,6 +2437,7 @@ const styles = StyleSheet.create({
   miniCalendarDayToday: {
     color: '#FFF7E7',
     fontWeight: '700',
+
   },
 
   miniCalendarDaySelected: {

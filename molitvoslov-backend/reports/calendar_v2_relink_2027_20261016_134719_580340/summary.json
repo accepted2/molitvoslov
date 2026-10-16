@@ -1,0 +1,24 @@
+{
+  "year": 2027,
+  "month": 1,
+  "mode": "APPLY",
+  "reference_2026_days": 365,
+  "reference_2026_links": 3056,
+  "reference_2026_selfcheck": "OK",
+  "reference_specials": 0,
+  "target_pascha": "2027-05-02",
+  "status_counts": {
+    "RELINK": 31
+  },
+  "planned_days": 31,
+  "unchanged_count": 0,
+  "existing_days_not_created": 0,
+  "no_feast_records_deleted": true,
+  "readings_and_fasts_intentionally_unchanged": true,
+  "reference_2026_fingerprint_before": "879d8cb5389d194e6f2636430404143ecc71e96944f56bc6c4e819d38422baf9",
+  "reference_2026_fingerprint_after": "879d8cb5389d194e6f2636430404143ecc71e96944f56bc6c4e819d38422baf9",
+  "backup": "C:\\m\\repo\\molitvoslov-backend\\backups\\sqlite\\before_relink_calendar_v2_20261016_134719_580340.sqlite3",
+  "applied_days": 31,
+  "note": "Изменяются только CalendarDay.feasts и CalendarDay.main_feast. Это не проверка полноты чтений/постов и не доказательство полной корректности переходящих праздников.",
+  "result": "OK"
+}

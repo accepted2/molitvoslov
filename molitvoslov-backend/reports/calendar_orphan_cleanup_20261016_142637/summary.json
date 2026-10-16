@@ -1,0 +1,19 @@
+{
+  "db": "C:\\m\\repo\\molitvoslov-backend\\db.sqlite3",
+  "db_bytes_before": 57962496,
+  "days_total": 516,
+  "cards_total": 6150,
+  "used_2026": 3056,
+  "used_other_years_only": 722,
+  "used_any_year": 3778,
+  "orphan_count": 2372,
+  "links_sha256_before": "608517c9ef81f78d2a5d58a3cac3552fbb23495e76e1939ecf278792e17b6515",
+  "mode": "APPLY",
+  "warning": "Кандидаты не связаны ни с одним CalendarDay; проверьте внешние не-Django ID и JSON до очистки.",
+  "deleted": 2372,
+  "cards_remaining": 3778,
+  "links_sha256_after": "608517c9ef81f78d2a5d58a3cac3552fbb23495e76e1939ecf278792e17b6515",
+  "integrity_after": "ok",
+  "db_bytes_after": 57962496,
+  "backup": "C:\\m\\repo\\molitvoslov-backend\\backups\\sqlite\\before_calendar_orphans_20261016_142637.sqlite3"
+}

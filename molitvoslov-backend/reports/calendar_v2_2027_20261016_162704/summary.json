@@ -1,0 +1,19 @@
+{
+  "year": 2027,
+  "month": 1,
+  "pascha": "2027-05-02",
+  "reference_year": 2026,
+  "reference_selfcheck": "OK: all 365 days and main feasts",
+  "source_links": 3056,
+  "days": 31,
+  "status_counts": {
+    "EXISTING_SKIP": 31
+  },
+  "special_rules": 0,
+  "days_without_feasts": 0,
+  "days_without_verified_readings": 31,
+  "day_rule": "julian_fixed/pascha_offset; special holidays require manual rules",
+  "diet_level": "not computed; no guessed dry/oil/fish",
+  "source_2026_untouched": true,
+  "database_untouched": true
+}

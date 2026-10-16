@@ -1,0 +1,1885 @@
+AZBYKA: единый импорт чтений + памятей
+Дат: 28. Режим: DRY-RUN.
+Чтения: всегда заменяются данными Azbyka для выбранной даты.
+Памяти: старые связи дня заменяются полным набором Azbyka; старые CalendarFeast физически не удаляются.
+
+===== [1/28] 2026-02-01 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-01: CREATE 3
+  Источник: https://azbyka.ru/days/2026-02-01
+  - gospel: Мф.28:16–20 (зач. 116) (order=10)
+  - apostle: 2Тим.3:10–15 (зач. 296) (order=20)
+  - gospel: Лк.18:10–14 (зач. 89) (order=30)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+WARN: Azbyka выделила несколько главных памятей; используем первую выделенную.
+Дата: 2026-02-01. Сейчас привязано памятей: 5. Azbyka даёт памятей: 14. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [468] Житие преподобного отца нашего Макария Александрийского
+  - [469] Житие преподобного отца нашего Макария Египетского
+  - [470] Обретение честных мощей преподобнаго Саввы Сторожевскаго
+  - [471] Память святой мученицы Евфрасии
+  - [472] Преподобнаго отца нашего Макариа египтянина
+
+Новый набор Azbyka:
+  MAIN 01. Прп. Макария Великого, Египетского (390–391)
+       https://azbyka.ru/days/sv-makarij-velikij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/3754/p1b7q42es613a718hv69g1tu1i0v5.jpg
+       Тексты дня: Преподобному Макарию Великому, Египетскому (совпадение 0.95)
+       02. свт. Марка Евгеника, архиепископа Ефесского (1444)
+       https://azbyka.ru/days/sv-mark-evgenik
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/842/p1b7q4gp5d1p901a971ad61par1aj63.jpg
+       Тексты дня: Святителю Марку Евгенику, Ефесскому (совпадение 0.92)
+       03. блж. Феодора Новгородского, Христа ради юродивого (1392)
+       https://azbyka.ru/days/sv-feodor-novgorodskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2597/p1dqhoci7t1ps17qo11tmq781mtm3.jpg
+       Тексты дня: Блаженному Феодору Новгородскому, Христа ради юродивому (совпадение 0.97)
+       04. прп. Макария Римлянина, Новгородского (XVI)
+       https://azbyka.ru/days/sv-makarij-rimljanin
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2901/p19d1usf4cpuf13881q064gn1v5f3.jpg
+       05. Прп. Макария, постника Печерского, в Ближних пещерах (XII)
+       https://azbyka.ru/days/sv-makarij-pecherskij-postnik
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4143/p1b7qbbit411v552hnrb81m156h3.jpg
+       Тексты дня: Преподобному Макарию, постнику Печерскому (совпадение 0.92)
+       06. прп. Макария, диакона Печерского, в Дальних пещерах (XIII–XIV)
+       https://azbyka.ru/days/sv-makarij-pecherskij-diakon
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4063/p1b7qb47f6pa01m2b10de17rg8663.jpg
+       07. Обретение мощей прп. Саввы Сторожевского, Звенигородского (1652)
+       https://azbyka.ru/days/sv-savva-storozhevskij-zvenigorodskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4686/1fe126d863b7a55f519df51007656e98.jpg
+       08. мц. Евфрасии девы (303)
+       https://azbyka.ru/days/sv-evfrasija-nikomidijskaja
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/5923/622f281bc2a63214565129.jpg
+       09. прп. Макария Александрийского, иеромонаха (394–395)
+       https://azbyka.ru/days/sv-makarij-aleksandrijskij-novyj-gradskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/3087/p1b7qaoec2ckhh79jr323eul05.jpg
+       10. свт. Арсения, архиепископа Керкирского (ок. 953)
+       https://azbyka.ru/days/sv-arsenij-kerkirskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1433/p1dqhor6uq1mqs175umjdn8425q3.jpg
+       11. прп. Антония Марткопского, столпника (VI) (Груз.)
+       https://azbyka.ru/days/sv-antonij-martkopskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1110/p1b7q4u3jrc7fqj91g57ia1lh85.jpg
+       12. Сщмч. Петра Скипетрова, пресвитера (1918)
+       https://azbyka.ru/days/sv-petr-skipetrov
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/5314/p1b7qcmqoedjvmgq1mte1u2e14hk3.jpg
+       13. сщмч. Николая Восторгова, пресвитера (1930)
+       https://azbyka.ru/days/sv-nikolaj-vostorgov
+       Найдено: тропарь, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/3491/p1b7qbno1p6i95781phap6p1ogf3.jpg
+       14. мч. Феодора Гусева (1940)
+       https://azbyka.ru/days/sv-feodor-gusev-muchenik
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1169/p1b7qd0th858i1bvehaijo71dfl3.jpg
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [2/28] 2026-02-02 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-02: CREATE 3
+  Источник: https://azbyka.ru/days/2026-02-02
+  - gospel: Мф.11:27–30 (зач. 43) (order=10)
+  - apostle [Прп.]: Евр.13:17–21 (зач. 335) (order=20)
+  - gospel [Прп.]: Лк.6:17–23 (зач. 24) (order=30)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-02. Сейчас привязано памятей: 4. Azbyka даёт памятей: 7. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [473] Житие преподобного отца нашего Евфимия Великого
+  - [474] Память святых мучеников Васса, Евсевия, Евтихия и Василида
+  - [475] Память святых мучеников Инны, Пинны и Риммы
+  - [476] Преподобнаго и богоноснаго отца нашего Евфимиа Великаго
+
+Новый набор Azbyka:
+  MAIN 01. Прп. Евфимия Великого, иеромонаха (473)
+       https://azbyka.ru/days/sv-evfimij-velikij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2285/p1b7s9qtsi6vc1f15rq32h2mb84.jpg
+       02. Прпп. Евфимия схимника (XIV) и Лаврентия затворника (XIII–XIV), Печерских, в Дальних пещерах
+       https://azbyka.ru/days/sv-evfimij-pecherskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1517/p1b7sa38rsgc54k5u81kfp1ltj3.jpg
+       03. прп. Евфимия Сянжемского, Вологодского (ок. 1465)
+       https://azbyka.ru/days/sv-evfimij-sjanzhemskij-vologodskij
+       Найдено: тропарь, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4979/p1b7saiqk61q9l1o9f1v8dob41i5k3.jpg
+       04. мчч. Инны, Пинны и Риммы (I–II)
+       https://azbyka.ru/days/svv-inna-novodunskij-pinna-novodunskij-rimma-novodunskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/282/63f3941ade613916688964.jpg
+       05. мчч. Васса, Евсевия, Евтихия и Василида (303)
+       https://azbyka.ru/days/svv-vass-nikomidijskij-evsevij-nikomidijskij-evtihij-nikomidijskij-vasilid-nikomidijskij
+       Найдено: житие
+       06. прп. Евфимия (Кереселидзе) исп., игумена (1944) (Груз.)
+       https://azbyka.ru/days/sv-evfimij-kereselidze
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/485/p1b7q9qgts1j7auid5e71imt5lj3.jpg
+       07. Сщмч. Павла Добромыслова, пресвитера (1940)
+       https://azbyka.ru/days/sv-pavel-dobromyslov-rjazanskij
+       Найдено: тропарь, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/74/p1b7sbv410h9ce0eh9h16qct013.jpg
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [3/28] 2026-02-03 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-03: CREATE 9
+  Источник: https://azbyka.ru/days/2026-02-03
+  - gospel: Мф.11:27–30 (зач. 43) (order=10)
+  - apostle: 2Пет.1:20–2:9 (зач. 66) (order=20)
+  - gospel: Мк.13:9–13 (зач. 59) (order=30)
+  - apostle [за понедельник и за вторник (под зачало)]: 2Пет.2:9–22 (зач. 67) (order=40)
+  - gospel [за понедельник и за вторник (под зачало)]: Мк.13:14–23 (зач. 60) (order=50)
+  - apostle [Прп. и мч.]: Евр.11:33–12:2 (зач. 330) (order=60)
+  - gospel [Прп. и мч.]: Лк.12:8–12 (зач. 64) (order=70)
+  - apostle [или прп. Максима Грека]: Гал.5:22–6:2 (зач. 213) (order=80)
+  - gospel [или прп. Максима Грека]: Лк.6:17–23 (зач. 24) (order=90)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-03. Сейчас привязано памятей: 7. Azbyka даёт памятей: 9. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [477] Житие и страдание святой мученицы Агнии девы
+  - [478] Житие преподобного отца нашего Максима Исповедника
+  - [479] Память святых мучеников Валериана, Кандида, Евгения и Акилы
+  - [480] Преподобнаго отца нашего Максима исповедника
+  - [481] Святаго мученика Неофита
+  - [482] Святых мучеников Евгениа, Кандида, Уалериана и Акилы
+  - [483] Страдание святаго мученика Неофита
+
+Новый набор Azbyka:
+       01. Прп. Максима Исповедника (662)
+       https://azbyka.ru/days/sv-maksim-ispovednik
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4547/p1aqgvu83a10um70b2kp1vkou5n7.jpg
+       Тексты дня: Преподобному Максиму Исповеднику (совпадение 1.00)
+       02. мч. Неофита Никейского (303–305)
+       https://azbyka.ru/days/sv-neofit-nikejskij
+       Найдено: тропарь, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1098/6230692ab84bf518657082.jpg
+       Тексты дня: Мученику Неофиту Никейскому (совпадение 1.00)
+       03. мчч. Евгения, Кандида, Валериана и Акилы (III)
+       https://azbyka.ru/days/svv-kandid-trapezundskij-valerian-trapezundskij-akila-trapezundskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/126/63fccaf7b4657907979374.jpg
+  MAIN 04. прп. Максима Грека (1556)
+       https://azbyka.ru/days/sv-maksim-grek
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/3025/p1b7sdv065na71fupvne1qmnufv3.jpg
+       Тексты дня: Преподобному Максиму Греку (совпадение 1.00)
+       05. Мц. Агнии (Анны) девы (ок. 304)
+       https://azbyka.ru/days/sv-agnija-anna-rimskaja
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/5791/p1anulua6l1b8r102bj4jbnt189s3.png
+       06. прп. Анастасия Римского, исп. (662)
+       https://azbyka.ru/days/sv-anastasij-rimskij
+       Найдено: житие
+       07. Сщмч. Илии Березовского, пресвитера (1938)
+       https://azbyka.ru/days/sv-ilija-berezovskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/239/p18eaa2fpcb2k1ie5k991fki9i23.jpg
+       08. Иконы Божией Матери: Ктиторская (IV)
+       https://azbyka.ru/days/ikona-ktitorskaja
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-our-lady/281/61fa5c780a243514010139.jpg
+       09. Отрада (Утешение) Ватопедская (807)
+       https://azbyka.ru/days/ikona-otrada-uteshenie-vatopedskaja
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-our-lady/297/620b8f68e49a9828586237.jpg
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [4/28] 2026-02-04 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-04: CREATE 4
+  Источник: https://azbyka.ru/days/2026-02-04
+  - apostle: 2Пет.3:1–18 (зач. 68) (order=10)
+  - gospel: Мк.13:24–31 (зач. 61) (order=20)
+  - apostle: 2Тим.1:3–9 (зач. 290 от полу́) (order=30)
+  - gospel: Лк.10:1–15 (зач. 50) (order=40)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-04. Сейчас привязано памятей: 5. Azbyka даёт памятей: 6. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [484] Житие и страдание святаго преподобномученика Анастасия Персянина
+  - [485] Житие святаго апостола Тимофея
+  - [486] Память святых мучеников Мануила, Георгия, Петра, Леонтия, Сиония, Гавриила, Иоанна, Леонта, Парода и прочих, числом 377, с ними пострадавших
+  - [487] Святаго апостола Тимофеа
+  - [488] Святаго преподобномученика Анастасиа Персскаго
+
+Новый набор Azbyka:
+  MAIN 01. Ап. от 70-ти Тимофея Ефесского (ок. 96)
+       https://azbyka.ru/days/sv-timofej
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1705/p1b7uvk51t1o5ucvq1t2lkdq4r93.jpg
+       Тексты дня: Апостолу Тимофею Ефесскому (совпадение 0.92)
+       02. прмч. Анастасия Персянина (628)
+       https://azbyka.ru/days/sv-anastasij-persjanin
+       Найдено: тропарь, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/3952/p1b7uuavu11pdo1i361rsmjfjvv43.jpg
+       Тексты дня: Преподобномученику Анастасию Персянину (совпадение 0.87)
+       03. прп. Макария Жабынского, Белевского чудотворца (1623)
+       https://azbyka.ru/days/sv-makarij-zhabynskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/879/p1b7uusg7216tpq3jsbg2211893.jpg
+       Тексты дня: Преподобному Макарию Жабынскому, Белевскому чудотворцу (совпадение 1.00)
+       04. Прмч. Анастасия, диакона Печерского, в Ближних пещерах (XII)
+       https://azbyka.ru/days/sv-anastasij-pecherskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2340/p1b7uvqqh2ipa1rm1kmc199417mf3.jpg
+       Тексты дня: Преподобномученику Анастасию, диакону Печерскому, в Ближних пещерах (совпадение 0.94)
+       05. мчч. Мануила, Георгия, Петра, Леонтия (Леона), епископов, Сиония, Гавриила, Иоанна, Леонта, Парода, пресвитеров, и прочих 377-ми (ок. 817)
+       https://azbyka.ru/days/svv-manuil-adrianopolskij-georgij-develtskij-petr-adrianopolskij-leontij-leon-nikejskij-sionij-adrianopolskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/127/63fccaaccffdc897324188.jpg
+       06. Сщмчч. Иоанна Успенского и Евфимия Тихонравова, пресвитеров (1938)
+       https://azbyka.ru/days/sv-ioann-uspenskij
+       Найдено: житие
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [5/28] 2026-02-05 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-05: CREATE 4
+  Источник: https://azbyka.ru/days/2026-02-05
+  - apostle: 1Ин.1:8–2:6 (зач. 69) (order=10)
+  - gospel: Мк.13:31–14:2 (зач. 62) (order=20)
+  - apostle [Сщмч.]: Евр.13:7–16 (зач. 334) (order=30)
+  - gospel [Сщмч.]: Ин.10:9–16 (зач. 36) (order=40)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-05. Сейчас привязано памятей: 8. Azbyka даёт памятей: 10. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [489] Воспоминание Шестого Вселенского Собора
+  - [490] Житие и страдание святаго священномученика Климента, епископа Анкирского, и святаго мученика Агафангела и прочих с ними
+  - [491] Житие преподобного отца нашего Геннадия Костромского
+  - [492] Житие святаго Павлина Милостивого, епископа Ноланского
+  - [493] Память преподобного Мавсимы Сирина
+  - [494] Память преподобного Саламана молчальника
+  - [495] Святаго мученика Агафаггела
+  - [496] Святаго священномученика Климента, епископа Агкирскаго
+
+Новый набор Azbyka:
+       01. Сщмч. Климента, епископа Анкирского, и мч. Агафангела Римлянина (312)
+       https://azbyka.ru/days/svv-kliment-ankirskij-mnogostradalnyj-agafangel-rimljanin
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/128/63fcca00bd844080065833.jpg
+       Тексты дня: Священномученику Клименту, епископу Анкирскому (совпадение 0.92)
+       02. Прп. Геннадия Костромского, Любимоградского (1565)
+       https://azbyka.ru/days/sv-gennadij-kostromskoj-ljubimogradskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1151/p1b7v216q11558ine9bpn2h4tq5.jpg
+       Тексты дня: Преподобному Геннадию, Костромскому и Любимоградскому чудотворцу (совпадение 0.92)
+  MAIN 03. Собор святых Костромской митрополии
+       https://azbyka.ru/days/sv-sobor-kostromskih-svjatyh
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/5/p1b7v2n06gs13bq23mu114t1p3o3.jpg
+       04. перенесение мощей свт. Феоктиста, архиепископа Новгородского (1786)
+       https://azbyka.ru/days/sv-feoktist-novgorodskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2689/p1c339mj5nd0b1r4p1nq8nd8tbp3.jpg
+       Тексты дня: Святителю Феоктисту, архиепископу Новгородскому (совпадение 0.92)
+       05. прп. Мавсимы Сирина, пресвитера (IV)
+       https://azbyka.ru/days/sv-mavsima-sirin
+       Найдено: житие
+       06. прп. Саламана молчальника (ок. 400)
+       https://azbyka.ru/days/sv-salaman-persijanin
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/5144/p1dqllmrktcau18lr1v8i1516ite3.jpg
+       07. свт. Павлина Милостивого, епископа Ноланского (431)
+       https://azbyka.ru/days/sv-pavlin-milostivyj
+       Найдено: тропарь, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/3798/p1b7v2fio11tlp182u105kcqr13gc5.jpg
+       08. Воспоминание VI Вселенского Собора (680-681)
+       https://azbyka.ru/days/sv-sobor-vi-vselenskij-sobor
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/6/p1dqlmr758ufh138saub1s5oa0s3.jpg
+       09. Прмч. Серафима (Булашова), игумена
+       https://azbyka.ru/days/sv-serafim-bulashov
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2353/p18eaoli3lvjv9uh1csdgrl1k5m3.jpg
+       10. прмцц. Евдокии Кузьминовой и Екатерины Черкасовой, послушниц, мц. Милицы Кувшиновой (1938)
+       https://azbyka.ru/days/sv-evdokija-kuzminova
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/6212/p1b7v6o5ds48scett5dbsm8jj3.jpg
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [6/28] 2026-02-06 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-06: CREATE 5
+  Источник: https://azbyka.ru/days/2026-02-06
+  - gospel: Мф.11:27–30 (зач. 43) (order=10)
+  - apostle: 1Ин.2:7–17 (зач. 70) (order=20)
+  - gospel: Мк.14:3–9 (зач. 63) (order=30)
+  - apostle [Блж.]: Гал.5:22–6:2 (зач. 213) (order=40)
+  - gospel [Блж.]: Лк.6:17–23 (зач. 24) (order=50)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-06. Сейчас привязано памятей: 4. Azbyka даёт памятей: 7. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [497] Житие преподобной матери нашей Ксении, в мире Евсевии
+  - [498] Память преподобного Македония пустынника
+  - [499] Память святых мучеников Вавилы Сицилийского и учеников его Тимофея и Агапия
+  - [500] Преподобныя матере нашея Ксении
+
+Новый набор Azbyka:
+       01. Прп. Ксении (в миру Евсевии) Миласской, диаконисы (V)
+       https://azbyka.ru/days/sv-ksenija-v-miru-evsevija-milasskaja
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/6357/p1b81fu2mg1har89nhsmg3i1pp3.jpg
+       Тексты дня: Преподобной Ксении Миласской (совпадение 0.92)
+  MAIN 02. блж. Ксении Петербургской (XIX)
+       https://azbyka.ru/days/sv-ksenija-peterburgskaja
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/6232/p1b81esrlk1hv6qrs47n1sls1dpr5.jpg
+       Тексты дня: Блаженной Ксении Петербургской (совпадение 1.00)
+       03. Свт. Герасима, епископа Великопермского, Устьвымского (1441)
+       https://azbyka.ru/days/sv-gerasim-velikopermskij-ustvymskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4756/p1ar0f9ven1imt1thm1id711pltv63.png
+       Тексты дня: Святителю Герасиму, епископу Великопермскому, Устьвымскому (совпадение 1.00)
+       04. мч. Иоанна Казанского (1529)
+       https://azbyka.ru/days/sv-ioann-kazanskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1046/p1b81gckkt1klr17qm1tid10ejpia3.jpg
+       Тексты дня: Мученику Иоанну Казанскому (совпадение 1.00)
+       05. мчч. Вавилы Сицилийского, пресвитера, и учеников его Тимофея и Агапия (III)
+       https://azbyka.ru/days/svv-vavila-sicilijskij-timofej-sicilijskij-agapij-sicilijskij
+       Найдено: житие
+       06. прп. Македония, сирийского пустынника (ок. 420)
+       https://azbyka.ru/days/sv-makedonij-sirijskij
+       Найдено: житие
+       07. перенесение мощей прмч. Анастасия Персянина (VII)
+       https://azbyka.ru/days/sv-anastasij-persjanin
+       Найдено: тропарь, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/3952/p1b7uuavu11pdo1i361rsmjfjvv43.jpg
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [7/28] 2026-02-07 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-07: CREATE 6
+  Источник: https://azbyka.ru/days/2026-02-07
+  - gospel: Ин.10:1–9 (зач. 35 от полу́) (order=10)
+  - apostle [Свт.]: 1Кор.12:7–11 (зач. 151) (order=20)
+  - gospel [Свт.]: Ин.10:9–16 (зач. 36) (order=30)
+  - apostle [Сщмч.]: Евр.13:7–16 (зач. 334) (order=40)
+  - apostle [Ряд.]: 2Тим.3:1–9 (зач. 295) (order=50)
+  - gospel [Ряд.]: Лк.20:45–21:4 (зач. 103) (order=60)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+WARN: Azbyka выделила несколько главных памятей; используем первую выделенную.
+Дата: 2026-02-07. Сейчас привязано памятей: 5. Azbyka даёт памятей: 11. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [501] Житие святаго отца нашего Григория Богослова, Патриарха Константинопольского
+  - [502] Иже во святых отца нашего Григориа, архиепископа Константиня града, богослова
+  - [503] Память преподобного Мара певца
+  - [504] Память преподобного Поплия
+  - [505] Память святой мученицы Фелицаты и семи сыновей ее
+
+Новый набор Azbyka:
+  MAIN 01. Свт. Григория Богослова, архиепископа Константинопольского (389)
+       https://azbyka.ru/days/sv-grigorij-bogoslov
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2945/p1b81k7v2d19a7np1evm1pt0u5b8.jpg
+       Тексты дня: Святителю Григорию Богослову (совпадение 0.92)
+       02. прп. Анатолия Оптинского, Старшего (Зерцалова) (1894)
+       https://azbyka.ru/days/sv-anatolij-i-optinskij-zercalov
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1157/p1bl01372114ae1oi21oet8gokfd3.jpg
+       Тексты дня: Преподобному Анатолию Оптинскому старшему (совпадение 0.93)
+       03. сщмч. Владимира (Богоявленского), митрополита Киевского (1918)
+       https://azbyka.ru/days/sv-vladimir-bogojavlenskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1948/p1b81jdsvb56be2n11sddg7j7.jpg
+       Тексты дня: Священномученику Владимиру, митрополиту Киевскому (совпадение 1.00)
+       04. Свт. Моисея, архиепископа Новгородского (1362)
+       https://azbyka.ru/days/sv-moisej-novgorodskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2116/p1b81kiahg15b91ri513ip1272mpi3.jpg
+       Тексты дня: Святителю Моисею, архиепископу Новгородскому (совпадение 1.00)
+       05. мц. Филицаты Римской и сыновей ее мчч. Ианнуария, Феликса, Филиппа, Сильвана, Александра, Виталия и Марциала (ок. 164)
+       https://azbyka.ru/days/svv-filicata-iannuarij-feliks-filipp-silvan-aleksandr-rimljane
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/6052/p1dqlnnfgrapi16fqc71o7eti93.jpg
+       06. прп. Поплия Сирийского (ок. 380)
+       https://azbyka.ru/days/sv-poplij-sirijskij
+       Найдено: житие
+       07. прп. Мара певца (ок. 430)
+       https://azbyka.ru/days/sv-mar-pevec
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4630/p18ecviqm21e36kvd14pu1jsonao3.jpg
+       08. Сщмч. Петра (Зверева), архиепископа Воронежского (1929)
+       https://azbyka.ru/days/sv-petr-zverev-voronezhskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/5100/p1b81mk1kklo51m2j1oi31g2k1sk83.png
+       Тексты дня: Священномученику Петру (Звереву), архиепископу Воронежскому (совпадение 1.00)
+       09. сщмч. Василия (Зеленцова), епископа Прилукского (1930)
+       https://azbyka.ru/days/sv-vasilij-zelencov
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/486/p1b81m87mf1dln1fjl18do1ht7gl93.jpg
+       Тексты дня: Священномученику Василию (Зеленцову), епископу Прилукскому (совпадение 1.00)
+       10. сщмч. Стефана Грачева, пресвитера, мч. Бориса Заварина (1938)
+       https://azbyka.ru/days/sv-stefan-grachev
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2391/p1b81mt07c1o9654a8l79kkto93.jpg
+       11. Иконы Божией Матери: Утоли моя печали
+       https://azbyka.ru/days/ikona-utoli-moja-pechali
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-our-lady/40/p1b81n4ooc12bhpp3d7d1ahl18935.jpg
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [8/28] 2026-02-08 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-08: CREATE 5
+  Источник: https://azbyka.ru/days/2026-02-08
+  - gospel: Мк.16:1–8 (зач. 70) (order=10)
+  - apostle: 1Кор.6:12–20 (зач. 135) (order=20)
+  - gospel: Лк.15:11–32 (зач. 79) (order=30)
+  - apostle [Мчч.]: Рим.8:28–39 (зач. 99) (order=40)
+  - gospel [Мчч.]: Лк.21:8–19 (зач. 105–106) (order=50)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-08. Сейчас привязано памятей: 4. Azbyka даёт памятей: 10. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [506] Житие преподобных Ксенофонта и Марии и сыновей их Иоанна и Аркадия
+  - [507] Память преподобного Симеона Ветхого
+  - [508] Память святых мучеников Анании пресвитера, Петра темничного ключаря и с ними семи воинов
+  - [509] Преподобнаго отца нашего Ксенофонта и дружины его
+
+Новый набор Azbyka:
+  MAIN 01. Собор новомучеников и исповедников Церкви Русской
+       https://azbyka.ru/days/sv-sobor-novomuchenikov-i-ispovednikov-cerkvi-russkoj
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/4/p1b7v1fp77t3aaof1271p0k1afn3.jpg
+       Тексты дня: Собору новомучеников и исповедников Церкви Русской (совпадение 1.00)
+       02. Интронизация святителя Иова, Патриарха Московского, и начало Патриаршества на Руси (1589)
+       https://azbyka.ru/days/prazdnik-intronizacija-svjatitelja-iova-patriarha-moskovskogo-i-nachalo-patriarshestva-na-rusi
+       Найдено: житие
+       03. Прпп. Ксенофонта Константинопольского, супруги его Марии и сыновей их Аркадия и Иоанна (V–VI)
+       https://azbyka.ru/days/svv-ksenofont-marija-arkadij-ioann-konstantinopolskie
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/131/63fcc8f2e925b417258618.jpg
+       04. Прп. Ксенофонта Робейского, игумена (1262)
+       https://azbyka.ru/days/sv-ksenofont-robejskij
+       Найдено: тропарь, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4652/p1e08b3cpq12f51n82ae159916a33.jpg
+       Тексты дня: Преподобному Ксенофонту Робейскому (совпадение 0.92)
+       05. мчч. Анании, пресвитера, Петра, темничного стража, и с ними семи воинов (295)
+       https://azbyka.ru/days/svv-ananija-finikijskij-petr-finikijskij
+       Найдено: житие
+       06. прп. Симеона Ветхого, игумена (ок. 390)
+       https://azbyka.ru/days/sv-simeon-vethij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4139/6239b3cde0fed990482986.jpg
+       07. перенесение мощей прп. Феодора Студита, игумена, песнописца (845)
+       https://azbyka.ru/days/sv-feodor-studit
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1351/p18vtejrc8bm5pdl1icu16kp10kg5.jpg
+       Тексты дня: Преподобному Феодору Студиту (совпадение 0.92)
+       08. свт. Иосифа Студита, архиепископа Солунского, песнописца (830)
+       https://azbyka.ru/days/sv-iosif-solunskij-fessalonikijskij
+       Найдено: житие
+       09. блгв. Давида IV Возобновителя (Строителя), царя Иверии и Абхазии (1125) (Груз.)
+       https://azbyka.ru/days/sv-david-iv-vozobnovitel
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/833/p1b89t1b58bs73e01ml0j0d12693.jpg
+       10. Мч. Иоанна Попова (1938)
+       https://azbyka.ru/days/sv-ioann-popov
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/762/p1b89u1qbccm118ipskoh9cbg83.jpg
+       Тексты дня: Мученику Иоанну Попову (совпадение 1.00)
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [9/28] 2026-02-09 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-09: CREATE 5
+  Источник: https://azbyka.ru/days/2026-02-09
+  - gospel: Ин.10:1–9 (зач. 35 от полу́) (order=10)
+  - apostle: 1Ин.2:18–3:10 (зач. 71) (order=20)
+  - gospel: Мк.11:1–11 (зач. 49) (order=30)
+  - apostle [Свт.]: Евр.7:26–8:2 (зач. 318) (order=40)
+  - gospel [Свт.]: Ин.10:9–16 (зач. 36) (order=50)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-09. Сейчас привязано памятей: 2. Azbyka даёт памятей: 1. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [510] Перенесение мощей святаго отца нашего Иоанна Златоустого
+  - [511] Пренесение мощей во святых отца нашего Иоанна Златоустаго
+
+Новый набор Azbyka:
+  MAIN 01. Перенесение мощей свт. Иоанна Златоуста (438)
+       https://azbyka.ru/days/prazdnik-perenesenie-moshhej-svt-ioanna-zlatousta-438
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-holidays/140/63c6aae89b009612693394.png
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [10/28] 2026-02-10 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-10: CREATE 4
+  Источник: https://azbyka.ru/days/2026-02-10
+  - apostle: 1Ин.3:10–20 (зач. 72) (order=10)
+  - gospel: Мк.14:10–42 (зач. 64) (order=20)
+  - apostle [Прп.]: Гал.5:22–6:2 (зач. 213) (order=30)
+  - gospel [Прп.]: Мф.11:27–30 (зач. 43) (order=40)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-10. Сейчас привязано памятей: 6. Azbyka даёт памятей: 10. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [512] Житие преподобного отца нашего Ефрема Сирина
+  - [513] Житие святаго Ефрема Печерского, епископа Переяславского
+  - [514] Память преподобнаго отца нашего Феодосиа тотемскаго, Спасосуморина монастыря
+                начальника и основателя, новоявленнаго чудотворца
+  - [515] Память преподобного Ефрема Новоторжского
+  - [516] Память преподобного Палладия Пустынника
+  - [517] Преподобнаго отца нашего Ефрема Сирина
+
+Новый набор Azbyka:
+  MAIN 01. Прп. Ефрема Сирина, иеродиакона (373–379)
+       https://azbyka.ru/days/sv-efrem-sirin
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/3799/p1b8bqn8cnno11gle1ibv1g9qoud6.png
+       02. прп. Феодосия Тотемского (1568)
+       https://azbyka.ru/days/sv-feodosij-totemskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4508/p1b8br3oo8ck012n599e1plu4o83.png
+       Тексты дня: Преподобному Феодосию Тотемскому (совпадение 1.00)
+       03. Прп. Ефрема Новоторжского, архимандрита (1053)
+       https://azbyka.ru/days/sv-efrem-novotorzhskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1592/p1ebh30jvt1nie1tk91nb2od51i1a3.jpg
+       04. прп. Ефрема Печерского, епископа Переяславского (ок. 1098)
+       https://azbyka.ru/days/sv-efrem-pecherskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2696/p1dqn1sgtcdcjs8h5amci41oed3.jpg
+       Тексты дня: Преподобному Ефрему Печерскому, епископу Переяславскому (совпадение 0.96)
+       05. прп. Палладия Антиохийского (Сирийского), пустынника (IV)
+       https://azbyka.ru/days/sv-palladij-antiohijskij-sirijskij
+       Найдено: житие
+       06. прп. Исаака Сирина, епископа Ниневийского (VII)
+       https://azbyka.ru/days/sv-isaak-sirin-ninevijskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/63/p1b8brid15m8kcco1ptn4msff63.jpg
+       07. Св. Феодора Богоявленского, исп., пресвитера (1933)
+       https://azbyka.ru/days/sv-feodor-bogojavlenskij
+       Найдено: житие
+       08. сщмч. Игнатия (Садковского), епископа Скопинского, сщмч. Владимира Пищулина, пресвитера и прмч. Варфоломея (Ратных), иеромонаха, мц. Ольги Евдокимовой (1938)
+       https://azbyka.ru/days/sv-ignatij-sadkovskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/3289/p1dqoauf2jc0f1udfv8k1tq5ntr3.jpg
+       09. прп. Леонтия Михайловского (Стасевича), исп., архимандрита (1972)
+       https://azbyka.ru/days/sv-leontij-stasevich-mihajlovskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4273/p1b8bsjvtl1h891f6a1hph1fto9u13.jpg
+       10. Иконы Божией Матери: Тотемская-Суморинская
+       https://azbyka.ru/days/ikona-totemskaja-sumorinskaja
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-our-lady/112/p1b8bth8os19c01rto1cfg1g307575.jpg
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [11/28] 2026-02-11 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-11: CREATE 6
+  Источник: https://azbyka.ru/days/2026-02-11
+  - apostle: 1Ин.3:21–4:6 (зач. 73) (order=10)
+  - gospel: Мк.14:43–15:1 (зач. 65) (order=20)
+  - apostle [и за четверг (под зачало)]: 1Ин.4:20–5:21 (зач. 74) (order=30)
+  - gospel [и за четверг (под зачало)]: Мк.15:1–15 (зач. 66) (order=40)
+  - apostle [Сщмч.]: Евр.4:14–5:6 (зач. 311) (order=50)
+  - gospel [Сщмч.]: Мк.9:33–41 (зач. 41) (order=60)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+WARN: Azbyka выделила несколько главных памятей; используем первую выделенную.
+Дата: 2026-02-11. Сейчас привязано памятей: 5. Azbyka даёт памятей: 8. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [518] Житие преподобного отца нашего Лаврентия, затворника Печерского
+  - [519] Память святых мучеников Романа, Иакова, Филофея, Иперихия, Авива, Иулиана и Паригория
+  - [520] Память святых мучеников Сильвана епископа, Луки диакона и Мокия чтеца
+  - [521] Перенесение мощей святаго священномученика Игнатиа Богоносца
+  - [522] Перенесение мощей святаго священномученика Игнатия Богоносца
+
+Новый набор Azbyka:
+       01. Перенесение мощей сщмч. Игнатия Богоносца, епископа (107)
+       https://azbyka.ru/days/prazdnik-perenesenie-moshhej-sshhmch-ignatija-bogonosca
+       Найдено: тропарь, кондак, житие
+       Тексты дня: Священномученику Игнатию Богоносцу (совпадение 0.92)
+       02. Свт. Лаврентия, затворника Печерского, епископа Туровского, в Ближних пещерах (1194)
+       https://azbyka.ru/days/sv-lavrentij-pecherskij-turovskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1616/p1dqoc1tue10aksddemi1skle7g3.jpg
+       03. свтт. Герасима (1441–1467), Питирима (1455) и Ионы (1470), епископов Великопермских, Устьвымских
+       https://azbyka.ru/days/sv-gerasim-velikopermskij-ustvymskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4756/p1ar0f9ven1imt1thm1id711pltv63.png
+       Тексты дня: Святителям Герасиму, Питириму и Ионе, епископам Великопермским, Устьвымским (совпадение 0.98)
+  MAIN 04. Собор Коми святых
+       https://azbyka.ru/days/sv-sobor-komi-svjatyh
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/88/6239a42d8b86a953918638.jpg
+       05. мчч. Романа, Иакова, Филофея, Иперихия, Авива, Иулиана и Паригория (297)
+       https://azbyka.ru/days/svv-roman-iakov-filofej-iperihij-aviv-iulian-samosatskie
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/5439/p1b8bulhaqs8v1vlg1o9s1oml1c143.jpg
+       06. мчч. Сильвана, епископа, Луки, диакона, и Мокия, чтеца (312)
+       https://azbyka.ru/days/svv-silvan-emesskij-emisskij-luka-emesskij-emisskij-mokij-emesskij-emisskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/134/63fcc7a6b06af953138519.jpg
+       07. Собор Екатеринбургских святых
+       https://azbyka.ru/days/sv-sobor-ekaterinburgskih-svjatyh
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/7/67a76764a7913097717524.jpg
+       Тексты дня: Собору Екатеринбургских святых (совпадение 1.00)
+       08. Сщмчч. Иоанна Гранитова и Леонтия Клименко, пресвитеров, Константина Зверева, диакона, и с ними 5-ти мучеников (1920)
+       https://azbyka.ru/days/svv-ioann-granitov-leontij-klimenko-konstantin-zverev
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/135/63fcc6f784b3f610442821.jpg
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [12/28] 2026-02-12 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-12: CREATE 3
+  Источник: https://azbyka.ru/days/2026-02-12
+  - gospel: Ин.10:9–16 (зач. 36) (order=10)
+  - apostle [Свтт.]: Евр.13:7–16 (зач. 334) (order=20)
+  - gospel [Свтт.]: Мф.5:14–19 (зач. 11) (order=30)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-12. Сейчас привязано памятей: 6. Azbyka даёт памятей: 9. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [523] Иже во святых отец наших, и великих иерархов, Василиа Великаго, Григориа Богослова и
+                Иоанна Златоустаго
+  - [524] Память преподобного Зинона
+  - [525] Память святаго мученика Феофила Нового
+  - [526] Память святых мучеников Ипполита, Кенсорина, Савина, Хрисии девицы и прочих двадцати мучеников
+  - [527] Святаго священномученика Ипполита, папы римскаго
+  - [528] Собор трех великих вселенских учителей Василия Великого, Григория Богослова и Иоанна Златоустого
+
+Новый набор Azbyka:
+  MAIN 01. Собор вселенских учителей и святителей Василия Великого, Григория Богослова и Иоанна Златоустого
+       https://azbyka.ru/days/sv-sobor-vselenskih-uchitelej-i-svjatitelej-vasilija-velikogo-grigorija-bogoslova-i-ioanna-zlatoustogo
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-holidays/179/63e49bdb8deac206842978.jpg
+       02. сщмч. Ипполита, епископа Остинского, и с ним мчч. Кенсорина, Савина, мц. Хрисии девы и прочих 20-ти мучеников (III)
+       https://azbyka.ru/days/svv-ippolit-ostinskij-kensorin-rimskij-savin-rimskij-hrisija-rimskaja
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4380/p1b8ebbj6ak60q7452j1o9v1otk3.jpg
+       03. блж. Пелагии Дивеевской (Серебренниковой) (1884)
+       https://azbyka.ru/days/sv-pelagija-diveevskaja-serebrennikova
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/5996/p1b8ecdjiv1ltfmob13dq123c18nh3.jpg
+       04. Прп. Зинона, постника Печерского, в Дальних пещерах (XIV)
+       https://azbyka.ru/days/sv-zinon-pecherskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/3465/p1b8edl758rvb6qo1h9vncv9eq3.jpg
+       Тексты дня: Преподобному Зинону, постнику Печерскому, в Дальних пещерах (совпадение 1.00)
+       05. прп. Зинона Каппадокийского, ученика свт. Василия Великого (V)
+       https://azbyka.ru/days/sv-zinon-kappadokijskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1686/624182340605c782230290.png
+       06. мч. Феофила Нового (784)
+       https://azbyka.ru/days/sv-feofil-novyj
+       Найдено: житие
+       07. блгв. Петра, царя Болгарского (967)
+       https://azbyka.ru/days/sv-petr-bolgarskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4690/p1dqp7gpd11t2v14cj11pumfe14u03.jpg
+       08. Сщмч. Владимира Хрищеновича, пресвитера (1933)
+       https://azbyka.ru/days/sv-vladimir-hrishchenovich
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/311/p1e46nm0hqtv11ksikiu1pn418833.jpg
+       09. мч. Стефана Наливайко (1945)
+       https://azbyka.ru/days/sv-stefan-nalivajko
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2611/p1b8eeav48odbo1ck731eoiih65.png
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [13/28] 2026-02-13 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-13: CREATE 6
+  Источник: https://azbyka.ru/days/2026-02-13
+  - apostle: 2Ин.1:1–13 (зач. 75) (order=10)
+  - gospel: Мк.15:22,25,33–41 (зач. 68) (order=20)
+  - apostle [Бессребреников (под зачало)]: 1Кор.12:27–13:8 (зач. 153) (order=30)
+  - gospel [Бессребреников (под зачало)]: Мф.10:1,5–8 (зач. 34 от полу́) (order=40)
+  - apostle [Мч.]: Рим.8:28–39 (зач. 99) (order=50)
+  - gospel [Мч.]: Лк.10:19–21 (зач. 51 от полу́) (order=60)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-13. Сейчас привязано памятей: 6. Azbyka даёт памятей: 4. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [529] Житие святаго Никиты, епископа Новгородского
+  - [530] Память во святых отца нашего Никиты епископа, новгородскаго чудотворца
+  - [531] Память святой мученицы Трифены
+  - [532] Память святых мучеников Викторина, Виктора, Никифора, Клавдия, Диодора, Серапиона и Папия
+  - [533] Святых чудотворцев и безсребренников, Кира и Иоанна
+  - [534] Страдание святых чудотворцев и бессребреников Кира и Иоанна и святой мученицы Афанасии и трех дщерей ея: Феоктисты, Феодотии и Евдоксии
+
+Новый набор Azbyka:
+  MAIN 01. Бессребреников мчч. Кира и Иоанна и с ними мцц. Афанасии и дочерей ее Феодотии, Феоктисты и Евдоксии (311)
+       https://azbyka.ru/days/svv-kir-ioann-aleksandrijskie-afanasija-feodotija-feoktista-kanopskie
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/137/63fcc55118e39250447949.png
+       02. свт. Никиты, затворника Печерского, епископа Новгородского (1108)
+       https://azbyka.ru/days/sv-nikita-pecherskij-novgorodskij-zatvornik
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/444/p1b8efbugcgpu8611jhf1fd41fk3.png
+       Тексты дня: Святителю Никите, затворнику Печерскому, епископу Новгородскому (совпадение 1.00)
+       03. Мчч. Викторина, Виктора, Никифора, Клавдия, Диодора, Серафиона (Серапиона) и Папия (251)
+       https://azbyka.ru/days/svv-viktorin-viktor-nikifor-klavdij-diodor-serafion-korinfskie
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4612/68527d2a53769471797544.JPG
+       04. мц. Трифены Кизической
+       https://azbyka.ru/days/sv-trifena-kizicheskaja
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/6341/p1b8eg20n8jdl15jb2a4pal1o4e3.jpg
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [14/28] 2026-02-14 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-14: CREATE 4
+  Источник: https://azbyka.ru/days/2026-02-14
+  - apostle: 1Кор.10:23–28 (зач. 146) (order=10)
+  - gospel: Лк.21:8–9,25–27,33–36 (зач. 105) (order=20)
+  - apostle [За упокой]: 1Сол.4:13–17 (зач. 270) (order=30)
+  - gospel [За упокой]: Ин.5:24–30 (зач. 16) (order=40)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-14. Сейчас привязано памятей: 5. Azbyka даёт памятей: 7. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [535] Память преподобного Вендимиана, пустынника Вифинийского
+  - [536] Память святой мученицы Перпетуи и с нею святых юношей Сатира, Ревоката, Саторнила, Секунда и святыя Филикитаты жены
+  - [537] Предпразднство Сретения Господа Бога, и Спаса нашего Иисуса Христа
+  - [538] Святаго мученика Трифона
+  - [539] Страдание святаго мученика Трифона
+
+Новый набор Azbyka:
+  MAIN 01. Предпразднство Сретения Господня
+       https://azbyka.ru/days/prazdnik-sretenie-gospoda-boga-i-spasa-nashego-iisusa-hrista
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-holidays/8/p1b8guh3i4h051e22tmo11e39j8.jpg
+       Тексты дня: Предпразднства Сретения Господня (совпадение 0.98)
+       02. Мч. Трифона Апамейского (250)
+       https://azbyka.ru/days/sv-trifon-apamejskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1484/p1b8gt8bql19g41atf1tno1174nfl3.png
+       Тексты дня: Мученику Трифону Апамейскому (совпадение 1.00)
+       03. Мц. Перпетуи, мчч. Сатира (Сатура), Ревоката, Саторнила (Сатурнила), Секунда и мц. Филицитаты (202–203)
+       https://azbyka.ru/days/svv-perpetuja-satir-satur-revokat-satornil-saturnil-sekund-karfagenskie
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/139/63fcc480583a6951718979.jpg
+       04. прп. Петра Галатийского, Молчальника (ок. 429)
+       https://azbyka.ru/days/sv-petr-galatijskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1858/p1cubi4fhd1vm91c4v9p2mrr15c43.jpg
+       05. прп. Вендимиана, пустынника Вифинийского (ок. 512)
+       https://azbyka.ru/days/sv-vendimian-vifinijskij
+       Найдено: житие
+       06. Сщмч. Михаила Белороссова, пресвитера (1920)
+       https://azbyka.ru/days/sv-mihail-belorossov
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/274/p1e91bbhm5ol2l6skgl167m1s333.jpg
+       07. сщмч. Николая Мезенцева, пресвитера (1938)
+       https://azbyka.ru/days/sv-nikolaj-mezencev
+       Найдено: житие
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [15/28] 2026-02-15 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-15: CREATE 5
+  Источник: https://azbyka.ru/days/2026-02-15
+  - gospel: Лк.2:25–32 (зач. 8) (order=10)
+  - apostle: 1Кор.8:8–9:2 (зач. 140) (order=20)
+  - gospel: Мф.25:31–46 (зач. 106) (order=30)
+  - apostle [Сретения]: Евр.7:7–17 (зач. 316) (order=40)
+  - gospel [Сретения]: Лк.2:22–40 (зач. 7) (order=50)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-15. Сейчас привязано памятей: 2. Azbyka даёт памятей: 2. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [540] Сказание о Сретении Господнем
+  - [541] Сретение Господа Бога и Спаса нашего Иисуса Христа
+
+Новый набор Azbyka:
+       01. Сретение Господа Бога и Спаса нашего Иисуса Христа
+       https://azbyka.ru/days/prazdnik-sretenie-gospoda-boga-i-spasa-nashego-iisusa-hrista
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-holidays/8/p1b8guh3i4h051e22tmo11e39j8.jpg
+  MAIN 02. Собор святых Пермской митрополии (переходящее празднование в 1-е воскресенье после 11 февраля)
+       https://azbyka.ru/days/sv-sobor-svjatyh-permskoj-mitropolii
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/89/6391b41d8b588108344966.jpg
+       Тексты дня: Собору святых Пермской митрополии (совпадение 1.00)
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [16/28] 2026-02-16 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-16: CREATE 4
+  Источник: https://azbyka.ru/days/2026-02-16
+  - apostle: 3Ин.1:1–15 (зач. 76) (order=10)
+  - gospel: Лк.19:29–40,22:7–39 (зач. 96) (order=20)
+  - apostle [Прав.]: Евр.9:11–14 (зач. 321 от полу́) (order=30)
+  - gospel [Прав.]: Лк.2:25–38 (зач. 8) (order=40)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-16. Сейчас привязано памятей: 8. Azbyka даёт памятей: 11. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [542] Житие святаго благоверного князя Романа, Угличского чудотворца
+  - [543] Память святаго и праведного Симеона Богоприимца
+  - [544] Память святаго мученика Власия
+  - [545] Память святаго пророка Азарии
+  - [546] Память святой Анны пророчицы
+  - [547] Память святых мучеников Адриана и Еввула
+  - [548] Святаго и праведнаго Симеона богоприимца, и Анны пророчицы
+  - [549] Страдание святых мучеников Папия, Диодора и Клавдиана
+
+Новый набор Azbyka:
+       01. Попразднство Сретения Господня
+       https://azbyka.ru/days/prazdnik-sretenie-gospoda-boga-i-spasa-nashego-iisusa-hrista
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-holidays/8/p1b8guh3i4h051e22tmo11e39j8.jpg
+       02. Правв. Симеона Богоприимца и Анны Пророчицы
+       https://azbyka.ru/days/sv-simeon-bogopriimec
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4565/p1b8h1344u18h713vfi351qhpgae8.jpg
+       Тексты дня: Праведному Симеону Богоприимцу (совпадение 0.89)
+  MAIN 03. равноап. Николая (Касаткина), архиепископа Японского (1912)
+       https://azbyka.ru/days/sv-nikolaj-japonskij-kasatkin
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/5136/p1b8h00i3ilee6bbtr6d3guo3.jpg
+       Тексты дня: Равноапостольному Николаю, архиепископу Японскому (совпадение 0.86)
+       04. Блгв. кн. Романа Угличского (1285)
+       https://azbyka.ru/days/sv-roman-uglichskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2927/p1b8h1nktqpea1hr2no0hedk795.jpg
+       05. свт. Симеона, епископа Полоцкого и Тверского (1289)
+       https://azbyka.ru/days/sv-simeon-polockij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/984/p1dqrbfi6im98s6a1mp9p15v4o3.jpg
+       Тексты дня: Святителю Симеону, епископу Полоцкому и Тверскому (совпадение 0.96)
+       06. свт. Игнатия Мариупольского, митрополита (1786)
+       https://azbyka.ru/days/sv-ignatij-mariupolskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/7006/p1c0b7gqvl1ck9nf5rv416g9hla3.jpg
+       07. прор. Азарии (X в. до Р. Х.)
+       https://azbyka.ru/days/sv-azarija
+       Найдено: житие
+       08. мчч. Папия, Диодора и Клавдиана (250)
+       https://azbyka.ru/days/svv-papij-pergijskij-pamfilijskij-diodor-pergijskij-pamfilijskij-klavdian-pergijskij-pamfilijskij
+       Найдено: житие
+       09. мчч. Адриана и Еввула (ок. 308–309)
+       https://azbyka.ru/days/svv-adrian-vanejskij-evvul-vanejskij
+       Найдено: житие
+       10. мч. Власия (Вукола) Кесарийского (Каппадокийского) (III)
+       https://azbyka.ru/days/sv-vlasij-vukol-kesarijskij-kappadokijskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1168/p1dqrc6q9c1okh1sfjtpkfqa7gq3.jpg
+       11. Сщмчч. Иоанна Томилова, Тимофея Изотова, Адриана Троицкого, Василия Залесского, пресвитеров, прмч. Владимира (Загребы), иеромонаха и мч. Михаила Агаева (1938)
+       https://azbyka.ru/days/sv-ioann-tomilov
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2059/620e1d87cbb29374296032.jpg
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [17/28] 2026-02-17 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-17: CREATE 2
+  Источник: https://azbyka.ru/days/2026-02-17
+  - apostle: Иуд.1:1–10 (зач. 77) (order=10)
+  - gospel: Лк.22:39–42,45–23:1 (зач. 109) (order=20)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-17. Сейчас привязано памятей: 7. Azbyka даёт памятей: 10. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [550] Житие преподобного отца нашего Николая исповедника, игумена Студийского
+  - [551] Память преподобного Кирилла, Новоезерского чудотворца
+  - [552] Память преподобного отца нашего Исидора Пилусиотского
+  - [553] Память святаго священномученика Аврамия, епископа Арвильскаго
+  - [554] Преподобнаго отца нашего Кирилла, новоезерскаго чудотворца
+  - [555] Преподобнаго отца нашего, Исидора Пилусиотскаго
+  - [556] Святаго благовернаго великаго князя Георгиа
+
+Новый набор Azbyka:
+  MAIN 01. Попразднство Сретения Господня
+       https://azbyka.ru/days/prazdnik-sretenie-gospoda-boga-i-spasa-nashego-iisusa-hrista
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-holidays/8/p1b8guh3i4h051e22tmo11e39j8.jpg
+       02. Прп. Исидора Пелусиотского (ок. 436–440)
+       https://azbyka.ru/days/sv-isidor-pelusiot
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/96/p1b8jgqobb1gb4171ro6ldg87f3.jpg
+       Тексты дня: Преподобному Исидору Пелусиоту (совпадение 1.00)
+       03. блгв. вел. кн. Георгия (Юрия) Всеволодовича Владимирского (1238)
+       https://azbyka.ru/days/sv-georgij-jurij-vsevolodovich-vladimirskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4839/p1b8jgcvsibu2kc9192lb51u1g3.jpg
+       Тексты дня: Благоверному князю Георгию (Юрию) Всеволодовичу Владимирскому (совпадение 0.87)
+       04. прп. Кирилла Новоезерского (Новгородского) (1532)
+       https://azbyka.ru/days/sv-kirill-novoezerskij-novgorodskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/182/p1b1m3bivtocsf4b1klsi59j14.png
+       Тексты дня: Преподобному Кириллу Новоезерскому (Новгородскому) чудотворцу (совпадение 0.92)
+       05. Прпп. Авраамия и Коприя Печенгских, Вологодских (XV)
+       https://azbyka.ru/days/svv-avraamij-pechengskij-koprij-pechengskij
+       Найдено: житие
+       06. мч. Иадора (III)
+       https://azbyka.ru/days/sv-iador
+       Найдено: житие
+       07. сщмч. Авраамия, епископа Арвильского (ок. 344–347)
+       https://azbyka.ru/days/sv-avraamij-arvilskij
+       Найдено: житие
+       08. прп. Николая исп., игумена Студийского (868)
+       https://azbyka.ru/days/sv-nikolaj-studijskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/569/p1b8jhb0351cch1p4csp1tvv12s63.jpg
+       09. Сщмч. Мефодия (Красноперова), епископа Петропавловского (1921)
+       https://azbyka.ru/days/sv-mefodij-krasnoperov
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/5424/p1dv4ee4bg11701o7r8401enh17jb3.jpg
+       10. сщмчч. Евстафия Сокольского, Иоанна Артоболевского, Александра Минервина, Сергия Соловьева, Иоанна Алешковского, Александра Соколова, Николая Кандаурова, Алексия Княжеского, Николая Голышева, Алексия Шарова, Александра Покровского, Аркадия Лобцова, Бориса Назарова, Михаила Рыбина, Николая Поспелова, Алексия Лебедева, Андрея Беднова, Димитрия Кедроливанского, Иоанна Тихомирова, Петра Соколова, пресвитеров, прмчч. Серафима (Вавилова), архидиакона, Феодосия (Бобкова), иеромонаха, прмцц. Рафаилы (Вишняковой), схимонахини, Анны Ефремовой, Марии Виноградовой, Екатерины Декалиной, послушниц и мчч. Иоанна Шувалова, Василия Иванова, Димитрия Ильинского, Феодора Пальшкова и Димитрия Казамацкого (1938)
+       https://azbyka.ru/days/sv-evstafij-sokolskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4047/p1e9ggrkko1mio18h7159t1mck1u413.jpg
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [18/28] 2026-02-18 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-18: CREATE 2
+  Источник: https://azbyka.ru/days/2026-02-18
+  - old_testament [На 6-м часе]: Иоил.2:12–26 (order=10)
+  - old_testament [На веч.]: Иоил.3:12–21 (order=20)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-18. Сейчас привязано памятей: 4. Azbyka даёт памятей: 8. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [557] Святыя мученицы Агафии
+  - [558] Страдание святой мученицы Агафии
+  - [559] Страдание святой мученицы Феодулии
+  - [560] святаго отца нашего Феодосия, архиепископа Черниговского
+
+Новый набор Azbyka:
+       01. Попразднство Сретения Господня
+       https://azbyka.ru/days/prazdnik-sretenie-gospoda-boga-i-spasa-nashego-iisusa-hrista
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-holidays/8/p1b8guh3i4h051e22tmo11e39j8.jpg
+       02. Мц. Агафии Панормской (Палермской) (251)
+       https://azbyka.ru/days/sv-agafija-panormskaja-palermskaja
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/5907/p1b8regk61eig0f139vinu7pr3.jpg
+       Тексты дня: Мученице Агафии Панормской (Палермской) (совпадение 0.88)
+  MAIN 03. свт. Феодосия, архиепископа Черниговского (1696)
+       https://azbyka.ru/days/sv-feodosij-chernigovskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/3528/p1b8rfe414upo1hlr6p36el1g4q3.jpg
+       Тексты дня: Святителю Феодосию, архиепископу Черниговскому (совпадение 1.00)
+       04. Мц. Феодулии и мчч. Елладия, Макария и Евагрия (ок. 304)
+       https://azbyka.ru/days/svv-makarij-anazarvskij-elladij-anazarvskij-evagrij-anazarvskij-feodulija-anazarvskaja
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1680/p1dr58oq7ct5nj0t9cb7a174i3.jpg
+       05. Прмч. Николая (Цикуры), послушника (1918), прмц. Александры Каспаровой, послушницы, мч. Михаила Амелюшкина (1942)
+       https://azbyka.ru/days/sv-nikolaj-cikura
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1892/p1dr597am2q15d4jqotnu1a1g3.jpg
+       06. Иконы Божией Матери: Елецкая-Черниговская (1060)
+       https://azbyka.ru/days/ikona-eleckaja-chernigovskaja
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-our-lady/31/p1b93qf3o5c4asp42m8j2k1mka3.jpg
+       07. Дивногорская-Сицилийская (1092)
+       https://azbyka.ru/days/ikona-divnogorskaja-sicilijskaja
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-our-lady/236/p1b8rgl58q1aedof818691d3t1tes7.jpg
+       08. Взыскание погибших
+       https://azbyka.ru/days/ikona-vzyskanie-pogibshih
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-our-lady/189/p1b8rg7ci51er1ipa1d8g1q70ofu3.jpg
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [19/28] 2026-02-19 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-19: CREATE 2
+  Источник: https://azbyka.ru/days/2026-02-19
+  - apostle: Иуд.1:11–25 (зач. 78) (order=10)
+  - gospel: Лк.23:1–34,44–56 (зач. 110) (order=20)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-19. Сейчас привязано памятей: 6. Azbyka даёт памятей: 12. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [561] Память святаго Вукола, епископа Смирнского
+  - [562] Память святаго мученика Иулиана
+  - [563] Память святых мучениц Марфы и Марии и брата их святаго мученика Ликариона отрока
+  - [564] Преподобнаго отца нашего Вукола епископа Смирнскаго
+  - [565] Страдание святой мученицы Дорофеи и с нею Христины, Каллисты и Феофила
+  - [566] Страдание святой мученицы Фавсты девицы и с нею Евиласия и Максима
+
+Новый набор Azbyka:
+  MAIN 01. Отдание праздника Сретения Господня
+       https://azbyka.ru/days/prazdnik-sretenie-gospoda-boga-i-spasa-nashego-iisusa-hrista
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-holidays/8/p1b8guh3i4h051e22tmo11e39j8.jpg
+       02. Прп. Вукола, епископа Смирнского (ок. 100)
+       https://azbyka.ru/days/sv-vukol-smirnskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1370/p1b8s3kkkmv9cnot1svpsg6qh3.jpg
+       Тексты дня: Преподобному Вуколу, епископу Смирнскому (совпадение 1.00)
+       03. Прпп. Варсонофия Великого и Иоанна Пророка (VI)
+       https://azbyka.ru/days/svv-varsonofij-velikij-ioann-prorok
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1958/p1b8s48jnh1dg76eo177o1llk19k85.jpg
+       04. свт. Фотия, патриарха Константинопольского (891)
+       https://azbyka.ru/days/sv-fotij-konstantinopolskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/3380/p1b8s51vjh7lv5hklsrugf1edv3.jpg
+       Тексты дня: Святителю Фотию Константинопольскому (совпадение 0.92)
+       05. мцц. Дорофеи, Христины, Каллисты и мч. Феофила (288–300)
+       https://azbyka.ru/days/svv-dorofeja-kesarijskaja-kappadokijskaja-hristina-kesarijskaja-kappadokijskaja-kallista-kesarijskaja
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/6039/p1b8s4q5no1jk21j4g12tnpdarvg3.jpg
+       06. мч. Иулиана Эмесского (Емисского) (312)
+       https://azbyka.ru/days/sv-iulian-emesskij-emisskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1280/6214bd1b431f3455461942.jpg
+       07. мц. Фавсты (Фаусты) и мчч. Евиласия и Максима (305–311)
+       https://azbyka.ru/days/svv-favsta-fausta-kizicheskaja-evilasij-kizicheskij-maksim-kizicheskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2060/p1dr5bogri1dmfqhfgrh1bq81h5g3.jpg
+       08. мцц. Марфы, Марии и брата их прмч. Ликариона отрока
+       https://azbyka.ru/days/svv-marfa-azijskaja-marija-azijskaja-likarion-azijskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/147/63fcb28dcbe66867091207.jpg
+       09. прп. Шио Мгвимского (VI) (Груз.) (переходящее празднование в четверг сырной седмицы)
+       https://azbyka.ru/days/sv-shio-simeon-mgvimskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/3972/p1b9394e46nf4j28rgs1gtpavv5.jpg
+       10. Сщмч. Димитрия Рождественского, пресвитера и мч. Анатолия Рождественского (1921)
+       https://azbyka.ru/days/svv-dimitrij-rozhdestvenskij-anatolij-rozhdestvenskij
+       Найдено: житие
+       11. сщмч. Василия Надеждина, пресвитера (1930)
+       https://azbyka.ru/days/sv-vasilij-nadezhdin
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2572/p1b8tva7m0161n1u6o1u9o364pb03.jpg
+       Тексты дня: Священномученику Василию Надеждину (совпадение 0.92)
+       12. сщмч. Александра Телемакова, пресвитера (1938)
+       https://azbyka.ru/days/sv-aleksandr-telemakov
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2825/p1b8tv0p2j84716nl1beq17pq1h1l3.jpg
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [20/28] 2026-02-20 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-20: CREATE 2
+  Источник: https://azbyka.ru/days/2026-02-20
+  - old_testament [На 6-м часе]: Зах.8:7–17 (order=10)
+  - old_testament [На веч.]: Зах.8:19–23 (order=20)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-20. Сейчас привязано памятей: 5. Azbyka даёт памятей: 4. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [567] Житие преподобного отца нашего Луки Елладского
+  - [568] Житие святаго отца нашего Парфения, епископа Лампсакийского
+  - [569] Память святых мучеников тысячи и трех, в Никомидии пострадавших
+  - [570] Преподобнаго отца нашего Луки, иже во Елладе
+  - [571] Преподобнаго отца нашего Парфениа, епископа Лампсакийскаго
+
+Новый набор Azbyka:
+  MAIN 01. Прп. Парфения, епископа Лампсакийского (IV), прп. Луки Елладского (X)
+       https://azbyka.ru/days/sv-parfenij-lampsakijskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/3016/p1cm000k1j49h1d7irav1qdouot3.jpg
+       02. Мучеников 1003 Никомидийских (303)
+       https://azbyka.ru/days/sv-sobor-svjatye-mucheniki-1003-v-nikomidii-postradavshie
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/9/6214bf15cd097784874498.png
+       03. Сщмч. Александра Талызина, пресвитера (1938)
+       https://azbyka.ru/days/sv-aleksandr-talyzin
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1434/p1b8u17mr3fu72nionl3j11oou3.jpg
+       04. сщмч. Алексия Троицкого, пресвитера (1942)
+       https://azbyka.ru/days/sv-aleksij-troickij
+       Найдено: житие
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [21/28] 2026-02-21 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-21: CREATE 4
+  Источник: https://azbyka.ru/days/2026-02-21
+  - apostle: Рим.14:19–26 (зач. 115) (order=10)
+  - gospel: Мф.6:1–13 (зач. 16) (order=20)
+  - apostle [Прпп.]: Гал.5:22–6:2 (зач. 213) (order=30)
+  - gospel [Прпп.]: Мф.11:27–30 (зач. 43) (order=40)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-21. Сейчас привязано памятей: 3. Azbyka даёт памятей: 6. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [572] Святаго великомученика Феодора Стратилата
+  - [573] Святаго пророка Захарии Серповидца
+  - [574] Страдание святаго великомученика Феодора Стратилата
+
+Новый набор Azbyka:
+  MAIN 01. Собор всех преподобных отцов, в подвиге просиявших (переходящее празднование в субботу сырной седмицы)
+       https://azbyka.ru/days/sv-sobor-vseh-prepodobnyh-otcov-v-podvige-prosijavshih
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/13/66f1608641d15391838631.jpg
+       02. Вмч. Феодора Стратилата (319)
+       https://azbyka.ru/days/sv-feodor-stratilat
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/3392/p1b90s8dgo1p9b1nh97gtcbq35r3.png
+       03. прор. Захарии Серповидца, из 12-ти (ок. 520 г. до Р. Х.)
+       https://azbyka.ru/days/sv-zaharija-serpovidec
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/3335/p1b90mjernlfm12f87eq9r01156.png
+       Тексты дня: Пророку Захарии Серповидцу (совпадение 0.92)
+       04. Свт. Саввы II, архиепископа Сербского (1271)
+       https://azbyka.ru/days/sv-savva-ii-serbskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2578/p1b90tdiq61dhmjqcccf3jd15th3.png
+       Тексты дня: Святителю Савве II, архиепископу Сербскому (совпадение 1.00)
+       05. Сщмчч. Симеона Кульгавца, Андрея Добрынина, Сергия Любомудрова и Петра Маркова, пресвитеров (1938)
+       https://azbyka.ru/days/sv-simeon-kulgavec
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/148/6214c95b2fa36830948152.jpg
+       06. сщмч. Александра Абиссова, пресвитера (1942)
+       https://azbyka.ru/days/sv-aleksandr-abissov
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4520/p1dr6g8r231uu01e2fm3l1rae1t3j3.jpg
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [22/28] 2026-02-22 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-22: CREATE 6
+  Источник: https://azbyka.ru/days/2026-02-22
+  - gospel: Лк.24:1–12 (зач. 112) (order=10)
+  - apostle: Рим.13:11–14:4 (зач. 112) (order=20)
+  - gospel: Мф.6:14–21 (зач. 17) (order=30)
+  - apostle [чтения дня и святителя]: Евр.7:26–8:2 (зач. 318) (order=40)
+  - apostle [чтения дня и святителя]: Еф.6:10–17 (order=50)
+  - gospel [чтения дня и святителя]: Ин.10:9–16 (зач. 36) (order=60)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+WARN: Azbyka выделила несколько главных памятей; используем первую выделенную.
+Дата: 2026-02-22. Сейчас привязано памятей: 4. Azbyka даёт памятей: 8. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [575] Отдается праздник Сретения Господня
+  - [576] Память святых священномучеников Маркелла, епископа Сицилийского, Филагрия, епископа Кипрского
+  - [577] Святаго мученика Никифора
+  - [578] Страдание святаго мученика Никифора
+
+Новый набор Azbyka:
+       01. Мч. Никифора, из Антиохии Сирской (ок. 257)
+       https://azbyka.ru/days/sv-nikifor-antiohijskij-sirskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2522/p1dr7q0tr724i19c0lfpmoi1sce3.jpg
+       Тексты дня: Мученику Никифору, из Антиохии Сирской (совпадение 1.00)
+  MAIN 02. Обретение мощей свт. Иннокентия (Кульчицкого), епископа Иркутского (1805)
+       https://azbyka.ru/days/sv-innokentij-kulchickij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/492/p1b931rufjf811t2lp56ifmm73.jpg
+       Тексты дня: Святителю Иннокентию, епископу Иркутскому (совпадение 0.92)
+       03. Обретение мощей свт. Тихона (Беллавина), патриарха Московского и всея Руси (1992)
+       https://azbyka.ru/days/sv-tihon-belavin
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/682/p1afisn50i8tfq51iuc1c1j2g57.jpg
+       04. Прп. Панкратия Печерского, в Дальних пещерах (XIII)
+       https://azbyka.ru/days/sv-pankratij-pecherskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1950/p1b934dje748i16u41c6q1eqr1tus3.jpg
+       Тексты дня: Преподобному Панкратию Печерскому, в Дальних пещерах (совпадение 1.00)
+       05. прпп. Никифора (1557) и Геннадия (ок. 1516), Важеозерских
+       https://azbyka.ru/days/svv-nikifor-vazheozerskij-gennadij-vazheozerskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/149/63fcaf754648b734589947.jpg
+       Тексты дня: Преподобным Геннадию и Никифору Важеозерским (совпадение 0.97)
+       06. сщмчч. Маркиана (Маркелла), епископа Сикелийского, Филагрия, епископа Кипрского, и Панкратия, епископа Тавроменийского (I)
+       https://azbyka.ru/days/sv-markian-sirakuzskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/390/685bc88e6dec3376519769.jpg
+       07. Сщмч. Василия Измайлова, пресвитера (1930)
+       https://azbyka.ru/days/sv-vasilij-izmajlov
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2268/p1dr7recdgl27s0oee6109k1log3.jpg
+       08. сщмч. Иоанна Фрязинова, пресвитера (1938)
+       https://azbyka.ru/days/sv-ioann-frjazinov
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2256/p1b934q79r14fd1nvqvo87pulvf3.jpg
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [23/28] 2026-02-23 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-23: CREATE 3
+  Источник: https://azbyka.ru/days/2026-02-23
+  - old_testament [На 6-м часе]: Ис.1:1–20 (order=10)
+  - old_testament [На веч.]: Быт.1:1–13 (order=20)
+  - old_testament [На веч.]: Притч.1:1–20 (order=30)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-23. Сейчас привязано памятей: 4. Azbyka даёт памятей: 9. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [579] Житие преподобного Прохора, Печерского чудотворца
+  - [580] Память святых Еннафы, Валентины и Павлы
+  - [581] Святаго мученика Харалампиа
+  - [582] Страдание святаго священномученика Харалампия, епископа Магнезийского, и с ним мучеников Порфирия и Ваптоса и трех мучениц жен
+
+Новый набор Azbyka:
+  MAIN 01. Сщмч. Харалампия, епископа Магнезийского и с ним мчч. Порфирия, Ваптоса и трех мучениц (202)
+       https://azbyka.ru/days/svv-haralampij-magnezijskij-porfirij-antiohijskij-pisidijskij-vaptos-antiohijskij-pisidijskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2659/p1b936b8v3u0lajn1fvme9p1uhi3.jpg
+       Тексты дня: Священномученику Харалампию, епископу Магнезийскому (совпадение 0.92)
+       02. Блгв. кн. Анны Новгородской (XI)
+       https://azbyka.ru/days/sv-anna-novgorodskaja
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/6091/p1b936p32oslp149ql9g1mtk1v0a4.jpg
+       03. прп. Прохора Печерского, в Ближних пещерах (1107)
+       https://azbyka.ru/days/sv-prohor-pecherskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1676/p1b938j7hf12hip1i1l7h1dph1prp3.jpg
+       04. прп. Лонгина Коряжемского, иеромонаха (1540)
+       https://azbyka.ru/days/sv-longin-korjazhemskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/456/p1b9387d5r4cg1hd481c134m13n47.jpg
+       Тексты дня: Преподобному Лонгину Коряжемскому (совпадение 0.92)
+       05. прав. Галины (III)
+       https://azbyka.ru/days/sv-galina
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/6301/p1drae25sh22210mj1h2s9jtamh3.jpg
+       06. мцц. дев Еннафы, Валентины и Павлы (308)
+       https://azbyka.ru/days/svv-ennafa-gazskaja-valentina-kesarijskaja-palestinskaja-pavla-kesarijskaja-palestinskaja
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/5717/p1drac9i031s4t40vn2qas12bh3.jpg
+       07. Сщмч. Константина Верецкого, пресвитера (1918)
+       https://azbyka.ru/days/sv-konstantin-vereckij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/7066/p1dojqtsip11m01e05126b174u1qdi3.jpg
+       08. сщмчч. Петра Грудинского и Валериана Новицкого, пресвитеров (1930)
+       https://azbyka.ru/days/sv-petr-grudinskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1767/p1drabotsht8qp8cbt64ef1fe63.jpg
+       09. Иконы Божией Матери: Огневидная
+       https://azbyka.ru/days/ikona-ognevidnaja
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-our-lady/305/p1b93gduiodq742315lu547144g3.jpg
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [24/28] 2026-02-24 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-24: CREATE 3
+  Источник: https://azbyka.ru/days/2026-02-24
+  - old_testament [На 6-м часе]: Ис.1:19–2:3 (order=10)
+  - old_testament [На веч.]: Быт.1:14–23 (order=20)
+  - old_testament [На веч.]: Притч.1:20–33 (order=30)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-24. Сейчас привязано памятей: 7. Azbyka даёт памятей: 5. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [583] Житие и страдание святаго священномученика Власия, епископа Севастийского, и других, пострадавших с ним
+  - [584] Память преподобного Димитрия Прилукского, Вологодского чудотворца
+  - [585] Память святаго благоверного князя Всеволода, нареченного во святом крещении Гавриилом
+  - [586] Память святой царицы Феодоры
+  - [587] Преподобнаго отца нашего Димитриа Прилуцкаго чудотворца
+  - [588] Преставление святаго благовернаго великаго князя Всеволода, нареченнаго во святом
+                крещении Гавриила, Псковскаго чудотворца
+  - [589] Святаго священномученика Власиа
+
+Новый набор Azbyka:
+       01. Сщмч. Власия, епископа Севастийского (ок. 316)
+       https://azbyka.ru/days/sv-vlasij-sevastijskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/815/p1b95iiois1m27q7neitp0koqn6.jpg
+       Тексты дня: Священномученику Власию, епископу Севастийскому (совпадение 1.00)
+       02. блгв. кн. Всеволода, во Святом Крещении Гавриила, Новгородского, Псковского (1138)
+       https://azbyka.ru/days/sv-vsevolod-v-kreshchenii-gavriil-novgorodskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/129/p1ahqmb7e3135scf21blotmclvm4.jpg
+  MAIN 03. прп. Димитрия Прилуцкого, игумена Вологодского (1392)
+       https://azbyka.ru/days/sv-dimitrij-priluckij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4583/p1b95jodkd1r9t1qm01qai1ukf1p8k4.jpg
+       04. прп. Кассиана Босого, Волоколамского (1532)
+       https://azbyka.ru/days/sv-kassian-bosoj-volokolamskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2988/62189c07596ad807718495.jpg
+       05. Прав. Феодоры, царицы Греческой, восстановившей почитание святых икон (ок. 867)
+       https://azbyka.ru/days/sv-feodora-grecheskaja
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/6184/p1b95kcjum1j0o1550e3u1pfl1cr24.jpg
+       Тексты дня: Праведной Феодоре, царице Греческой (совпадение 0.92)
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [25/28] 2026-02-25 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-25: CREATE 3
+  Источник: https://azbyka.ru/days/2026-02-25
+  - old_testament [На 6-м часе]: Ис.2:3–11 (order=10)
+  - old_testament [На веч.]: Быт.1:24–2:3 (order=20)
+  - old_testament [На веч.]: Притч.2:1–22 (order=30)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-25. Сейчас привязано памятей: 5. Azbyka даёт памятей: 7. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [590] Житие преподобной Марии, подвизавшейся в мужском образе под именем Марина, и отца ее преподобного Евгения
+  - [591] Житие святаго отца нашего Алексия, митрополита Московского и всея России чудотворца
+  - [592] Житие святаго отца нашего Мелетия, архиепископа Антиохийского
+  - [593] Иже во святых отца нашего Алексиа митрополита, всея России чудотворца
+  - [594] Иже во святых отца нашего Мелетиа, архиепископа Антиохии великия
+
+Новый набор Azbyka:
+       01. Иверской иконы Божией Матери
+       https://azbyka.ru/days/prazdnik-iverskoj-ikony-bozhiej-materi
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-holidays/66/p1b95nk7461bqd1i201g151vg21a115.jpg
+       02. Свт. Мелетия, архиепископа Антиохийского (381)
+       https://azbyka.ru/days/sv-meletij-antiohijskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1726/p1b95l279h7smvj1v7h16r0b6j4.png
+       Тексты дня: Святителю Мелетию, архиепископу Антиохийскому (совпадение 1.00)
+  MAIN 03. свт. Алексия Московского, митрополита Киевского и всея Руси, чудотворца (1378)
+       https://azbyka.ru/days/sv-aleksij-moskovskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/872/p19053mn6l5h3nc4m4h1o045hl4.jpg
+       Тексты дня: Святителю Алексию, митрополиту Киевскому и всея Руси (совпадение 0.92)
+       04. свт. Мелетия (Леонтовича), архиепископа Харьковского (1840)
+       https://azbyka.ru/days/sv-meletij-leontovich
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1833/p1b95lil4jgpj1g671u9v1b5l1bmg3.png
+       Тексты дня: Святителю Мелетию, архиепископу Харьковскому (совпадение 1.00)
+       05. Прпп. Марии, именовавшейся Марином, и отца ее Евгения (VI)
+       https://azbyka.ru/days/svv-marija-vifinskaja-evgenij-vifinskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/5604/p1b95mcfhetuk1delpa3g8h195l4.jpg
+       06. свт. Антония, патриарха Константинопольского (895)
+       https://azbyka.ru/days/sv-antonij-konstantinopolskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/236/621e2ad61a775829121958.jpg
+       07. прп. Мелетия Ипсенийского (XIX)
+       https://azbyka.ru/days/sv-meletij-ipsenijskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/6625/p1b95n91881mlt1t7f1f6d3pq4q03.png
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [26/28] 2026-02-26 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-26: CREATE 3
+  Источник: https://azbyka.ru/days/2026-02-26
+  - old_testament [На 6-м часе]: Ис.2:11–21 (order=10)
+  - old_testament [На веч.]: Быт.2:4–19 (order=20)
+  - old_testament [На веч.]: Притч.3:1–18 (order=30)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+WARN: Azbyka выделила несколько главных памятей; используем первую выделенную.
+Дата: 2026-02-26. Сейчас привязано памятей: 4. Azbyka даёт памятей: 8. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [595] Житие преподобного отца нашего Мартиниана и память святых жен Зои и Фотинии
+  - [596] Память преподобного Симеона Мироточивого, царя Сербского
+  - [597] Память святаго Евлогия, архиепископа Александрийского
+  - [598] Преподобнаго отца нашего Мартиниана
+
+Новый набор Azbyka:
+       01. Прп. Мартиниана Кесарийского (Палестинского) (V)
+       https://azbyka.ru/days/sv-martinian-kesarijskij-palestinskij
+       Найдено: тропарь, кондак, житие
+       Тексты дня: Преподобному Мартиниану Кесарийскому (Палестинскому) (совпадение 1.00)
+  MAIN 02. свт. Серафима (Соболева), архиепископа Богучарского (1950)
+       https://azbyka.ru/days/sv-serafim-sobolev-bogucharskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/6902/p1bren29odes518ol2rejbou5a4.jpg
+       Тексты дня: Святителю Серафиму, архиепископу Богучарскому (совпадение 1.00)
+       03. Прпп. Зои и Фотинии (Светланы) (V)
+       https://azbyka.ru/days/svv-zoja-vifleemskaja-fotinija-svetlana-palestinskaja
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/6316/p1b9e4u4uv38qrn1t3v1h7s18a73.jpg
+       04. прп. Евлогия, архиепископа Александрийского (607–608)
+       https://azbyka.ru/days/sv-evlogij-aleksandrijskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2889/p1907aidhpct9176d16jl98d1jvt3.jpg
+       05. прп. Симеона Мироточивого, в миру Стефана Неманя, царя Сербского (1200)
+       https://azbyka.ru/days/sv-simeon-mirotochivyj-v-miru-stefan-nemanja
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/354/p1b9e57pg3e531vh3qp311961tl94.jpg
+       06. Собор святых Омской митрополии
+       https://azbyka.ru/days/sv-sobor-svjatyh-omskoj-mitropolii
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/6954/p1cf7mv3vm1b601ou11regoacdl23.jpg
+       07. Сщмчч. Василия Триумфова и Гавриила Преображенского, пресвитеров (1919)
+       https://azbyka.ru/days/sv-vasilij-triumfov
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1373/621f3b917a911857351501.png
+       08. сщмчч. Зосимы Трубачева, Николая Добролюбова, Василия Горбачева, Иоанна Покровского, Леонтия Гримальского, Владимира Покровского, Парфения Грузинова, Иоанна Калабухова, Иоанна Косинского, Михаила Попова, пресвитеров и Евгения Никольского, диакона, прмцц. Анны Корнеевой, Веры Морозовой и Ирины Хвостовой послушниц, мч. Павла Соколова (1938)
+       https://azbyka.ru/days/sv-zosima-trubachev
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/5535/p1draglu7lvqq1eon1cbg5te122k3.jpg
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [27/28] 2026-02-27 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-27: CREATE 3
+  Источник: https://azbyka.ru/days/2026-02-27
+  - old_testament [На 6-м часе]: Ис.3:1–14 (order=10)
+  - old_testament [На веч.]: Быт.2:20–3:20 (order=20)
+  - old_testament [На веч.]: Притч.3:19–34 (order=30)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-27. Сейчас привязано памятей: 6. Azbyka даёт памятей: 11. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [599] Житие преподобного Исаакия, затворника Печерского
+  - [600] Житие преподобного отца нашего Авксентия
+  - [601] Память преподобного Марона
+  - [602] Память святаго Авраама, епископа Каррийского
+  - [603] Преподобнаго отца нашего Авксентиа
+  - [604] Преподобнаго отца нашего Константина философа, во мнисех Кирилла, учителя
+                словенскаго
+
+Новый набор Azbyka:
+       01. Прп. Авксентия Вифинского (ок. 470)
+       https://azbyka.ru/days/sv-avksentij-vifinskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4646/p1epj6a61k1a8n1lj01v5eur8guu3.png
+       Тексты дня: Преподобному Авксентию Вифинскому (совпадение 1.00)
+  MAIN 02. равноап. Кирилла, учителя Словенского (869)
+       https://azbyka.ru/days/sv-kirill-konstantin-filosof
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/3709/p1b9fqq4dm129u1tjgljijpfjg93.png
+       03. Прп. Исаакия, затворника Печерского, в Ближних пещерах (ок. 1090)
+       https://azbyka.ru/days/sv-isaakij-pecherskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1374/p1epj6bqgijifot51kr41rqc12os3.png
+       Тексты дня: Преподобному Исаакию, затворнику Печерскому, в Ближних пещерах (совпадение 1.00)
+       04. 12-ти греков, строителей соборной Успенской церкви Киево-Печерской Лавры (XI)
+       https://azbyka.ru/days/sv-sobor-12-ti-grekov-stroitelej-sobornoj-uspenskoj-cerkvi-kievo-pecherskoj-lavry
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/10/p1epj67pp41j3a10h11e2jhu31qks3.png
+       Тексты дня: 12-ти грекам, строителям соборной Успенской церкви Киево-Печерской Лавры (совпадение 0.96)
+       05. перенесение мощей блгв. кн. Михаила Черниговского и боярина его мч. Феодора (1578)
+       https://azbyka.ru/days/svv-mihail-chernigovskij-feodor-chernigovskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/393/63ecef55084e1544016019.jpg
+       06. прп. Марона, пустынника Сирийского (IV)
+       https://azbyka.ru/days/sv-maron-sirijskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/317/p1epj6digt1n47p8orvb1q57m473.png
+       Тексты дня: Преподобному Марону, пустыннику Сирийскому (совпадение 1.00)
+       07. свт. Авраамия, епископа Каррийского (V)
+       https://azbyka.ru/days/sv-avraamij-karrijskij
+       Найдено: житие
+       08. прп. Илариона Грузина, Святогорца, иеросхимонаха (1864) (Груз.)
+       https://azbyka.ru/days/sv-ilarion-gruzin-svjatogorec
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/6748/p1epj6fjoosok4v41cveph7m1c3.png
+       09. Сщмч. Павла Дернова, пресвитера и сыновей его мчч. Бориса, Григория и Симеона (1918)
+       https://azbyka.ru/days/svv-pavel-dernov-boris-dernov-grigorij-dernov-simeon-dernov
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/saints-group/155/63fcad232d61f650138871.jpg
+       10. сщмч. Онисима (Пылаева), епископа Тульского (1938)
+       https://azbyka.ru/days/sv-onisim-pylaev
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4582/p1epj6l36h1l7p11nu1lvd1ujeokj3.png
+       11. сщмч. Трифона Радонежского, диакона (1938)
+       https://azbyka.ru/days/sv-trifon-rodonezhskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/622/640485915d628883766918.jpg
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+===== [28/28] 2026-02-28 =====
+
+---- ЧТЕНИЯ ----
+Дат: 1. Режим: DRY-RUN. Overwrite: да.
+[1/1] 2026-02-28: CREATE 10
+  Источник: https://azbyka.ru/days/2026-02-28
+  - gospel [Богородицы]: Лк.1:39–49,56 (зач. 4) (order=10)
+  - gospel [или свт.]: Ин.10:9–16 (зач. 36) (order=20)
+  - apostle [или свт.]: Евр.1:1–12 (зач. 303) (order=30)
+  - gospel [или свт.]: Мк.2:23–3:5 (зач. 10) (order=40)
+  - apostle [Вмч. (под зачало)]: 2Тим.2:1–10 (зач. 292) (order=50)
+  - gospel [Вмч. (под зачало)]: Ин.15:17–16:2 (зач. 52) (order=60)
+  - apostle [Богородицы]: Флп.2:5–11 (зач. 240) (order=70)
+  - gospel [Богородицы]: Лк.10:38–42,11:27–28 (зач. 54) (order=80)
+  - apostle [или свт.]: Евр.13:17–21 (зач. 335) (order=90)
+  - gospel [или свт.]: Лк.6:17–23 (зач. 24) (order=100)
+
+Итог:
+  Новых дней с чтениями: 0
+  Заменено дней: 0
+  Пропущено заполненных: 0
+  Нет CalendarDay: 0
+  Ошибок парсинга/сети: 0
+DRY-RUN: локальная база не изменена.
+
+---- СВЯТЫЕ / ПРАЗДНИКИ ----
+Дата: 2026-02-28. Сейчас привязано памятей: 2. Azbyka даёт памятей: 10. Режим: DRY-RUN. Стратегия: заменить набор дня по Azbyka.
+
+Старые связи дня будут отвязаны:
+  - [605] Житие и страдание святаго апостола Онисима, одного из лика семидесяти
+  - [606] Святаго апостола Онисима
+
+Новый набор Azbyka:
+  MAIN 01. Вмч. Феодора Тирона (ок. 306) (переходящее празднование в субботу 1-й седмицы Великого поста)
+       https://azbyka.ru/days/sv-feodor-tiron
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/3864/p1b9koeung1s128q13hj189c1qmq6.png
+       02. Ап. от 70-ти Онисима (ок. 109)
+       https://azbyka.ru/days/sv-onisim
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/5045/p1b9imvran645jsf1nip1j561qbv3.jpg
+       Тексты дня: Апостолу от 70-ти Онисиму (совпадение 1.00)
+       03. Прп. Пафнутия, затворника Печерского, в Дальних пещерах (XIII)
+       https://azbyka.ru/days/sv-pafnutij-pecherskij
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/4920/p1dre4gg0c1h3s1m1uv3dnqkmio3.jpg
+       Тексты дня: Преподобному Пафнутию, затворнику Печерскому (совпадение 0.92)
+       04. прп. Пафнутия и дочери его, Евфросинии Александрийской (V)
+       https://azbyka.ru/days/sv-pafnutij-aleksandrijskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1322/p1b9inkb8cn1ak3a1gu5dgtesl3.jpg
+       05. прп. Евсевия, пустынника Сирийского (V)
+       https://azbyka.ru/days/sv-evsevij-sirijskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2746/p1dre4pf1p17o8m1v6li7dap43.jpg
+       06. прп. Анфима Хиосского (1960)
+       https://azbyka.ru/days/sv-anfim-hiosskij
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/7042/p1d3jfpnt4qrch1n3rv10g7n0u3.jpg
+       07. Сщмчч. Михаила Пятаева и Иоанна Куминова, пресвитеров (1930)
+       https://azbyka.ru/days/svv-mihail-pjataev-ioann-kuminov
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/2738/p1b9iov9iv1tor18517dd56ph2a3.jpg
+       08. сщмчч. Николая Морковина, Алексия Никитского, Алексия Смирнова, пресвитеров, Симеона Кулямина, диакона, прмч. Павла (Козлова), иеромонаха и прмц. Софии Селиверстовой, послушницы (1938)
+       https://azbyka.ru/days/sv-nikolaj-morkovin
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-saints/1951/p1dre53f482q7t9i2nkt5gcee3.jpg
+       09. Иконы Божией Матери: Виленская (1495)
+       https://azbyka.ru/days/ikona-vilenskaja
+       Найдено: тропарь, кондак, житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-our-lady/152/66335cef9ada7021085048.png
+       10. Далматская (1646)
+       https://azbyka.ru/days/ikona-dalmatskaja
+       Найдено: житие, икона
+       Икона Azbyka: https://azbyka.ru/days/cache/200x160/storage/images/icons-of-our-lady/277/p1b9isokdfs5h1mu11c3djjtnth3.png
+
+DRY-RUN: старые связи не отвязаны, новые карточки не созданы.
+
+DRY-RUN завершён. Проверено дней: 28. Локальная база не изменена.

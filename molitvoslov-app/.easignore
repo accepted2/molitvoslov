@@ -20,4 +20,25 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-.git/
+.git/.idea/
+.vscode/
+.claude/
+.cache/
+.metro-health-check*
+coverage/
+tmp/
+temp/
+android/app/.externalNativeBuild/
+android/app/release/
+android/app/debug/
+*.zip
+*.7z
+*.rar
+*.log
+*.bak
+*.backup
+*.tmp
+
+.easignore.backup
+
+app.json.backup

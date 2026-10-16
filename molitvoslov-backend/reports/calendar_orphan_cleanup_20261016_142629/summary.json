@@ -1,0 +1,13 @@
+{
+  "db": "C:\\m\\repo\\molitvoslov-backend\\db.sqlite3",
+  "db_bytes_before": 57962496,
+  "days_total": 516,
+  "cards_total": 6150,
+  "used_2026": 3056,
+  "used_other_years_only": 722,
+  "used_any_year": 3778,
+  "orphan_count": 2372,
+  "links_sha256_before": "608517c9ef81f78d2a5d58a3cac3552fbb23495e76e1939ecf278792e17b6515",
+  "mode": "PREVIEW",
+  "warning": "Кандидаты не связаны ни с одним CalendarDay; проверьте внешние не-Django ID и JSON до очистки."
+}

@@ -46,3 +46,8 @@ yarn-error.*
 # Windows / macOS
 Thumbs.db
 .DS_Store
+
+# Temporary Git backups
+backup_*.patch
+backup_status.txt
+untracked_files.txt
