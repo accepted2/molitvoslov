@@ -19,6 +19,7 @@ import {useLanguage} from '../context/LanguageContext';
 import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {subscribeToContentUpdates} from '../services/contentStore';
 import {addSearchHistory, clearSearchHistory, getSearchHistory} from '../services/searchHistory';
+import {isPersistentSearchReady, searchPersistent} from '../services/persistentSearch';
 import {
   SEARCH_GROUPS,
   SEARCH_GROUP_OPTIONS,
@@ -117,6 +118,7 @@ export const SearchScreen = ({navigation}) => {
   const [query, setQuery] = useState('');
   const [activeGroup, setActiveGroup] = useState(SEARCH_GROUPS.ALL);
   const [index, setIndex] = useState(null);
+  const [persistentReady, setPersistentReady] = useState(false);
   const [indexLoading, setIndexLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
@@ -143,6 +145,15 @@ export const SearchScreen = ({navigation}) => {
   useEffect(() => {
     let active = true;
     setIndexLoading(true);
+    setPersistentReady(false);
+
+    isPersistentSearchReady(language).then((ready) => {
+      if (active && ready) {
+        setPersistentReady(true);
+        setIndexLoading(false);
+        cancelTask();
+      }
+    }).catch(() => {});
 
     // Build in batches so navigation and typing remain responsive.
     // Publish partial results as soon as entries become searchable.
@@ -187,7 +198,7 @@ export const SearchScreen = ({navigation}) => {
     let cancelled = false;
     const trimmed = searchQuery.trim();
 
-    if (!index || trimmed.length < 2) {
+    if ((!index && !persistentReady) || trimmed.length < 2) {
       setSearchLoading(false);
       setResult({
         items: [],
@@ -200,11 +211,11 @@ export const SearchScreen = ({navigation}) => {
 
     setSearchLoading(true);
 
-    searchIndexAsync(index, searchQuery, {
+    (persistentReady ? searchPersistent(language, searchQuery, activeGroup, 120) : searchIndexAsync(index, searchQuery, {
       group: activeGroup,
       limit: 120,
       isCancelled: () => cancelled,
-    })
+    }))
       .then((nextResult) => {
         if (!cancelled && nextResult) {
           setResult(nextResult);
@@ -219,7 +230,7 @@ export const SearchScreen = ({navigation}) => {
     return () => {
       cancelled = true;
     };
-  }, [index, searchQuery, activeGroup]);
+  }, [index, persistentReady, language, searchQuery, activeGroup]);
 
   const suggestionIndex = useMemo(
     () => (index || []).filter((entry) => !!entry.titleNormalized),
