@@ -310,7 +310,7 @@ let cachedBibleCorpus = null;
 let cachedBibleCorpusKey = '';
 let pendingBibleCorpus = null;
 
-export const buildSearchIndex = (language = 'ru') => {
+const buildSearchIndexIterator = function* (language = 'ru') {
   const content = getCurrentContent() || {};
   const bible = getCurrentBibleContent('rst') || {};
   const cacheKey = [
@@ -326,7 +326,8 @@ export const buildSearchIndex = (language = 'ru') => {
   const entries = [];
   const structuredTextIds = collectStructuredTextIds(content);
 
-  (content?.prayer_rules?.list || []).forEach((rule) => {
+  for (const rule of (content?.prayer_rules?.list || [])) {
+    ((rule) => {
     const ruleTitle =
       localized(rule, 'name', language) ||
       clean(rule.name) ||
@@ -398,9 +399,11 @@ export const buildSearchIndex = (language = 'ru') => {
         })
       );
     });
-  });
+    })(rule);
+    yield entries;
 
-  Object.values(content?.texts || {}).forEach((text) => {
+  for (const text of Object.values(content?.texts || {})) {
+    ((text) => {
     if (!text?.id || structuredTextIds.has(Number(text.id))) {
       return;
     }
@@ -444,9 +447,11 @@ export const buildSearchIndex = (language = 'ru') => {
             : clean(text.translation) || clean(text.content),
       })
     );
-  });
+    })(text);
+    yield entries;
 
-  Object.values(content?.akathists?.by_slug || {}).forEach((akathist) => {
+  for (const akathist of Object.values(content?.akathists?.by_slug || {})) {
+    ((akathist) => {
     if (!akathist?.id) {
       return;
     }
@@ -552,9 +557,11 @@ export const buildSearchIndex = (language = 'ru') => {
         })
       );
     });
-  });
+    })(akathist);
+    yield entries;
 
-  Object.values(content?.canons?.by_slug || {}).forEach((canon) => {
+  for (const canon of Object.values(content?.canons?.by_slug || {})) {
+    ((canon) => {
     if (!canon?.id) {
       return;
     }
@@ -621,7 +628,8 @@ export const buildSearchIndex = (language = 'ru') => {
         })
       );
     });
-  });
+    })(canon);
+    yield entries;
 
   const psalter = (content?.psalters?.list || [])[0] || null;
 
@@ -655,7 +663,8 @@ export const buildSearchIndex = (language = 'ru') => {
     );
   }
 
-  Object.values(content?.kathismas?.by_number || {}).forEach((kathisma) => {
+  for (const kathisma of Object.values(content?.kathismas?.by_number || {})) {
+    ((kathisma) => {
     const kathismaNumber = Number(kathisma?.number || 0);
 
     if (!kathismaNumber) {
@@ -797,9 +806,11 @@ export const buildSearchIndex = (language = 'ru') => {
         );
       });
     });
-  });
+    })(kathisma);
+    yield entries;
 
-  (bible?.books || []).forEach((book) => {
+  for (const book of (bible?.books || [])) {
+    ((book) => {
     const displayName = bibleContent.getDisplayName(book);
     const sectionLabel = bibleSectionLabel(book.section);
     const firstChapter = (book.chapters || [])[0];
@@ -865,7 +876,8 @@ export const buildSearchIndex = (language = 'ru') => {
         })
       );
     });
-  });
+    })(book);
+    yield entries;
 
   if (cachedIndexes.size >= 4) {
     cachedIndexes.clear();
@@ -874,6 +886,57 @@ export const buildSearchIndex = (language = 'ru') => {
   cachedIndexes.set(cacheKey, entries);
 
   return entries;
+};
+
+
+/**
+ * Cooperative index building. Each yield follows one source item (a prayer,
+ * akathist, canon, kathisma or Bible book). Work is distributed across frames;
+ * the initial search screen never performs the whole indexing pass at once.
+ */
+export const buildSearchIndexAsync = async (
+  language = 'ru',
+  {onProgress = () => {}, isCancelled = () => false, batchSize = 3} = {}
+) => {
+  const iterator = buildSearchIndexIterator(language);
+  let step;
+  let processed = 0;
+  let lastPublished = 0;
+  let latestEntries = [];
+
+  while (!(step = iterator.next()).done) {
+    if (isCancelled()) {
+      iterator.return();
+      return null;
+    }
+    latestEntries = step.value;
+    processed += 1;
+    if (processed % batchSize === 0) {
+      if (latestEntries.length !== lastPublished) {
+        lastPublished = latestEntries.length;
+        onProgress(latestEntries.slice());
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  }
+
+  if (isCancelled()) {
+    return null;
+  }
+
+  const entries = step.value || latestEntries;
+  onProgress(entries.slice());
+  return entries;
+};
+
+// Retained for existing synchronous callers; SearchScreen uses the async path.
+export const buildSearchIndex = (language = 'ru') => {
+  const iterator = buildSearchIndexIterator(language);
+  let step = iterator.next();
+  while (!step.done) {
+    step = iterator.next();
+  }
+  return step.value;
 };
 
 const hasWholeToken = (value, token) => {
