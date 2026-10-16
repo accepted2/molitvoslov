@@ -1237,9 +1237,9 @@ const searchBibleVersesAsync = async ({
   chunkSize = 1400,
   onProgress = () => {},
 }) => {
-  const corpus = await prepareBibleSearchCorpus({
-    isCancelled,
-  });
+  // Build the shared Bible corpus independently of individual queries.
+  // Changing a tab or typing another letter must not discard all preparation.
+  const corpus = await prepareBibleSearchCorpus();
 
   if (!corpus || isCancelled()) {
     return null;
