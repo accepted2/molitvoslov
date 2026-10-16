@@ -1,7 +1,7 @@
 import React, {useMemo, useState} from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
-import preview2027 from '../data/lectionaryPreview2027.json';
-import {getCurrentBibleContent} from '../services/bibleStore';
+import preview2027 from '../../data/lectionaryPreview2027.json';
+import {getCurrentBibleContent} from '../../services/bibleStore';
 
 // Preview only. This module never modifies the calendar API, SQLite, or Supabase.
 const BOOK_CODES = {
@@ -15,7 +15,6 @@ const BOOK_CODES = {
 };
 
 const KINDS = {gospel: 'Евангелие', apostle: 'Апостол', old_testament: 'Ветхий Завет'};
-const pad = (n) => String(n).padStart(2, '0');
 
 function findOpening(bible, segment) {
   if (!bible || !segment) return null;
