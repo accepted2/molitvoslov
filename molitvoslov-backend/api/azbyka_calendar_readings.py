@@ -199,6 +199,8 @@ def _clean_label(value):
     lowered = value.lower()
     if lowered in replacements:
         return replacements[lowered]
+    if lowered == "рядовое":
+        return "Ряд."
 
     return value
 
@@ -208,6 +210,15 @@ def _new_label_from_prefix(prefix):
     prefix = prefix.strip()
 
     if not prefix:
+        return None
+
+    # Azbyka often prints "Рядовое: Лит. – Ап.: ... . Ев.: ... . Веч. – ...".
+    # "Ап." and "Ев." are column labels, not separate liturgical rubrics.
+    if re.search(r"(?:^|[.;])\\s*(?:Веч\\.?|На вечерне)\\s*[–—-]?\\s*$", prefix, re.I):
+        return "Веч."
+    prefix = re.sub(r"(?:Лит\\.?\\s*[–—-]\\s*)?(?:Ап|Ев)\\.?\\s*:\\s*$", "", prefix, flags=re.I)
+    prefix = normalize_space(prefix)
+    if not prefix.strip(" .;"):
         return None
 
     # Отдельный маркер утрени перед первым воскресным Евангелием.
