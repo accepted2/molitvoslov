@@ -6,6 +6,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import connections, transaction
 
 from api.calendar_models import CalendarDay, CalendarFeast, CalendarFastType, CalendarReading
+from api.calendar_reading_identity import normalized_reading_key
 
 
 REMOTE_ALIAS = "supabase_sync"
@@ -143,6 +144,15 @@ class Command(BaseCommand):
             nargs=2,
             metavar=("START", "END"),
             help="Диапазон дат включительно.",
+        )
+
+        parser.add_argument(
+            "--allow-reading-deletes",
+            action="store_true",
+            help=(
+                "Явно разрешить удаление удалённых чтений, отсутствующих локально. "
+                "По умолчанию --apply блокируется при наличии Reading DELETE."
+            ),
         )
 
         mode = parser.add_mutually_exclusive_group(required=True)
@@ -319,6 +329,7 @@ class Command(BaseCommand):
 
             feast_preview = self._preview_day_feasts_only(days, feasts)
             reading_preview = self._preview_readings_only(days)
+            self._guard_reading_deletions(reading_preview, options)
             self._print_azbyka_day_preview(
                 feast_preview,
                 reading_preview,
@@ -477,6 +488,7 @@ class Command(BaseCommand):
         if readings_only:
             preview = self._preview_readings_only(days)
             self._print_readings_only_preview(preview, days)
+            self._guard_reading_deletions(preview, options)
 
             if options["dry_run"]:
                 self.stdout.write(self.style.WARNING("DRY-RUN: Supabase не изменён."))
@@ -528,6 +540,7 @@ class Command(BaseCommand):
 
         preview = self._preview(days, feasts, fast_types)
         self._print_preview(preview, days, feasts, fast_types)
+        self._guard_reading_deletions(preview, options)
 
         if options["dry_run"]:
             self.stdout.write(self.style.WARNING("DRY-RUN: Supabase не изменён."))
@@ -713,20 +726,64 @@ class Command(BaseCommand):
     def _reading_values(self, reading):
         return {field: getattr(reading, field) for field in READING_FIELDS}
 
-    def _find_remote_reading(self, remote_day, reading):
+    def _find_remote_reading(self, remote_day, reading, exclude_remote_ids=None):
+        """Resolve existing remote reading even if local title includes a zachalo.
+
+        Existing Supabase rows can predate the newer parser and lack "(зач. N)"
+        or use different dashes/whitespace. Match the book/verse range and
+        *service* rather than treating those as different Scripture readings.
+        Do not reuse one remote row for two distinct local rows.
+        """
+        excluded = exclude_remote_ids or set()
         qs = CalendarReading.objects.using(REMOTE_ALIAS).filter(day=remote_day)
+        rows = [row for row in qs if row.pk not in excluded]
 
-        remote = qs.filter(sync_uid=reading.sync_uid).first()
-        if remote:
-            return remote
+        # Sync UUID has priority when still attached to this exact day.
+        for row in rows:
+            if row.sync_uid == reading.sync_uid:
+                return row
 
-        # Fallback для случая, когда день был импортирован в обе базы отдельно
-        # до первой синхронизации и UUID чтения успели отличиться.
-        return qs.filter(
-            kind=reading.kind,
-            order=reading.order,
-            title=reading.title,
-        ).first()
+        target = normalized_reading_key(reading)
+        candidates = [
+            row for row in rows if normalized_reading_key(row) == target
+        ]
+        if candidates:
+            # Prefer exactly matching labels and orders when the same Bible
+            # range has multiple differently annotated appointments.
+            label = str(reading.label or "").casefold().strip()
+            candidates.sort(
+                key=lambda row: (
+                    str(row.label or "").casefold().strip() != label,
+                    row.order != reading.order,
+                    row.pk,
+                )
+            )
+            return candidates[0]
+
+        # Legacy fallback for unusual unrecognized titles. Require all
+        # explicit fields, and never consume a row already used this day.
+        for row in rows:
+            if (
+                row.kind == reading.kind
+                and row.order == reading.order
+                and row.title == reading.title
+            ):
+                return row
+        return None
+
+    def _guard_reading_deletions(self, preview, options):
+        if not options["apply"] or options["allow_reading_deletes"]:
+            return
+        deletions = preview.get("reading_delete", [])
+        if deletions:
+            examples = "; ".join(deletions[:4])
+            raise CommandError(
+                f"Безопасность синхронизации: запланировано удаление "
+                f"{len(deletions)} чтений Supabase: {examples}. "
+                "Остановлено до каких-либо записей. Сверьте даты и "
+                "при действительно необходимых удалениях повторите команду "
+                "с --allow-reading-deletes."
+            )
 
     def _find_remote_fast(self, fast):
         remote = CalendarFastType.objects.using(REMOTE_ALIAS).filter(sync_uid=fast.sync_uid).first()
@@ -1139,7 +1196,7 @@ class Command(BaseCommand):
             matched_remote_ids = set()
 
             for reading in day.readings.all():
-                remote_reading = self._find_remote_reading(remote, reading)
+                remote_reading = self._find_remote_reading(remote, reading, matched_remote_ids)
                 label = (
                     f"{day.date_gregorian.isoformat()} "
                     f"{reading.get_kind_display()}: {reading.title}"
@@ -1339,7 +1396,7 @@ class Command(BaseCommand):
             matched_remote_ids = set()
 
             for reading in day.readings.all():
-                remote_reading = self._find_remote_reading(remote, reading)
+                remote_reading = self._find_remote_reading(remote, reading, matched_remote_ids)
                 label = (
                     f"{day.date_gregorian.isoformat()} "
                     f"{reading.get_kind_display()}: {reading.title}"
@@ -1516,7 +1573,7 @@ class Command(BaseCommand):
             matched_remote_ids = set()
 
             for reading in day.readings.all():
-                remote = self._find_remote_reading(remote_day, reading)
+                remote = self._find_remote_reading(remote_day, reading, matched_remote_ids)
                 values = self._reading_values(reading)
                 values["sync_uid"] = reading.sync_uid
 
