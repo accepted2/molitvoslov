@@ -483,3 +483,90 @@ class CalendarReadingDeduplicationTests(SimpleTestCase):
         second = readings_to_add(already + first, source)
         self.assertEqual(first, [])
         self.assertEqual(second, [])
+
+
+class VerifiedGreatCanon2027FallbackTests(SimpleTestCase):
+    def _session(self, html):
+        from unittest.mock import Mock
+        response = Mock()
+        response.text = html
+        response.raise_for_status.return_value = None
+        session = Mock()
+        session.get.return_value = response
+        return session
+
+    def _great_canon_html(self):
+        return (
+            "<h2>Чтения <a>Священного Писания</a></h2>"
+            "<p><a>Великий канон Андрея Критского</a></p>"
+            "<ul><li>Богослужебные чтения дня</li></ul>"
+            "<h2>Богослужения</h2>"
+        )
+
+    def test_each_of_five_dates_has_three_sourced_old_testament_readings(self):
+        from api.azbyka_calendar_readings import fetch_day_readings
+        dates = (
+            date(2027, 3, 15), date(2027, 3, 16),
+            date(2027, 3, 17), date(2027, 3, 18),
+            date(2027, 4, 14),
+        )
+        for target_day in dates:
+            with self.subTest(date=target_day):
+                fetched = fetch_day_readings(target_day, session=self._session(self._great_canon_html()))
+                self.assertEqual(len(fetched.readings), 3)
+                self.assertTrue(all(r.kind == "old_testament" for r in fetched.readings))
+                self.assertEqual(
+                    [r.label for r in fetched.readings],
+                    ["На 6-м часе", "На веч.", "На веч."],
+                )
+                self.assertIn("/readings/slavic/julian/", fetched.url)
+
+    def test_fallback_scripture_ranges_for_the_five_dates(self):
+        from api.verified_lectionary_2027_special import get_verified_special_readings
+        expected = {
+            date(2027, 3, 15): ["Ис.1:1–20", "Быт.1:1–13", "Притч.1:1–20"],
+            date(2027, 3, 16): ["Ис.1:19–2:3", "Быт.1:14–23", "Притч.1:20–33"],
+            date(2027, 3, 17): ["Ис.2:3–11", "Быт.1:24–2:3", "Притч.2:1–22"],
+            date(2027, 3, 18): ["Ис.2:11–21", "Быт.2:4–19", "Притч.3:1–18"],
+            date(2027, 4, 14): ["Ис.41:4–14", "Быт.17:1–9", "Притч.15:20–16:9"],
+        }
+        for target_day, titles in expected.items():
+            with self.subTest(date=target_day):
+                source, readings = get_verified_special_readings(target_day)
+                self.assertEqual([r.title for r in readings], titles)
+                self.assertEqual(source, (
+                    f"https://orthocal.info/readings/slavic/julian/"
+                    f"{target_day.year}/{target_day.month}/{target_day.day}/"
+                ))
+
+    def test_priority_azbyka_if_it_later_publishes_bible_references(self):
+        from api.azbyka_calendar_readings import fetch_day_readings
+        html = (
+            "<h2>Чтения Священного Писания</h2>"
+            "<p>На 6-м часе: Ис.1:1–20. На веч.: Быт.1:1–13. Притч.1:1–20.</p>"
+            "<h2>Богослужения</h2>"
+        )
+        found = fetch_day_readings(date(2027, 3, 15), session=self._session(html))
+        self.assertEqual(len(found.readings), 3)
+        self.assertEqual(found.url, "https://azbyka.ru/days/2027-03-15")
+
+    def test_no_fallback_for_an_unverified_date(self):
+        from api.azbyka_calendar_readings import (
+            AzbykaReadingsError, fetch_day_readings,
+        )
+        with self.assertRaises(AzbykaReadingsError):
+            fetch_day_readings(
+                date(2027, 3, 19), session=self._session(self._great_canon_html()),
+            )
+
+    def test_no_fallback_when_azbyka_does_not_mention_the_great_canon(self):
+        from api.azbyka_calendar_readings import (
+            AzbykaReadingsError, fetch_day_readings,
+        )
+        html = (
+            "<h2>Чтения Священного Писания</h2><p>Другой праздник без чтений.</p>"
+            "<h2>Богослужения</h2>"
+        )
+        with self.assertRaises(AzbykaReadingsError):
+            fetch_day_readings(date(2027, 3, 15), session=self._session(html))
+
