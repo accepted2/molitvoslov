@@ -3,7 +3,7 @@ import {getCurrentContent} from './contentStore';
 import {getCurrentBibleContent} from './bibleStore';
 import {buildSearchIndexAsync, normalizeSearchText, SEARCH_GROUPS} from './searchIndex';
 
-const SCHEMA = '3';
+const SCHEMA = '4';
 let initialization = null;
 const buildsByLanguage = new Map();
 let enabled = null;
@@ -48,9 +48,9 @@ export const preparePersistentSearch = async () => {
   return initialization;
 };
 
-export const isPersistentSearchReady = async (language = 'ru') => {
+export const isPersistentSearchReady = async (language = 'ru', database = null) => {
   if (!(await preparePersistentSearch())) return false;
-  const db = await getDatabase();
+  const db = database || await getDatabase();
   const row = await db.getFirstAsync('SELECT version FROM search_metadata WHERE language = ?', [language]);
   return row?.version === versionFor(language);
 };
@@ -59,10 +59,10 @@ const ftsTokens = (query) => normalizeSearchText(query).split(' ').filter((word)
 // Parameterized FTS5 syntax: each token is quoted and matched by prefix.
 const ftsQuery = (query) => ftsTokens(query).map((word) => '"' + word.replace(/"/g, '""') + '"*').join(' AND ');
 
-export const searchPersistent = async (language, query, group = SEARCH_GROUPS.ALL, limit = 120) => {
-  if (!(await isPersistentSearchReady(language))) return null;
+export const searchPersistent = async (language, query, group = SEARCH_GROUPS.ALL, limit = 120, database = null) => {
+  if (!(await isPersistentSearchReady(language, database))) return null;
   if (!ftsQuery(query)) return {items: [], total: 0};
-  const db = await getDatabase();
+  const db = database || await getDatabase();
   const where = group === SEARCH_GROUPS.ALL
     ? 'language = ? AND search_documents MATCH ?'
     : 'language = ? AND group_key = ? AND search_documents MATCH ?';
