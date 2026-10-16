@@ -202,6 +202,8 @@ class Command(BaseCommand):
 
         try:
             for index, target_date in enumerate(dates, start=1):
+                if delay and index > 1:
+                    time.sleep(delay)
                 day = (
                     CalendarDay.objects.prefetch_related("readings")
                     .filter(date_gregorian=target_date)
@@ -290,8 +292,6 @@ class Command(BaseCommand):
                     )
 
                 if not apply_changes:
-                    if delay and index < len(dates):
-                        time.sleep(delay)
                     continue
 
                 if not backup_done:
@@ -339,8 +339,6 @@ class Command(BaseCommand):
                 else:
                     created += 1
 
-                if delay and index < len(dates):
-                    time.sleep(delay)
         finally:
             session.close()
 
