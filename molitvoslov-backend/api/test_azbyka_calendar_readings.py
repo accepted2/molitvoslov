@@ -181,6 +181,20 @@ class AzbykaCalendarReadingsParserTests(SimpleTestCase):
         )
         self.assertEqual([r.order for r in readings], [10, 20, 30, 40, 50, 60])
 
+    def test_2027_january_16_merge_adds_four_missing_readings(self):
+        from api.calendar_reading_identity import readings_to_add
+        html = """
+        <h2>Чтения Священного Писания</h2>
+        <p>Субботы: Лит. – Ап.: 1Тим.3:14-4:5. Ев.: Мф.3:1-11.</p>
+        <p>Мч.: Лит. – Ап.: 2Тим.2:1-10. Ев.: Мф.10:16-22.</p>
+        <p>Рядовое: Лит. – Ап.: 1Сол.5:14-23. Ев.: Лк.17:3-10.</p>
+        <h2>Богослужения</h2>
+        """
+        six = parse_readings_text(extract_readings_text(html))
+        self.assertEqual(len(six), 6)
+        self.assertEqual(readings_to_add(six[:2], six), six[2:])
+        self.assertEqual(readings_to_add(six, six), [])
+
     def test_day_readings_in_list_items_not_doubled_by_nested_paragraphs(self):
         html = """
         <h2>Чтения Священного Писания</h2>
