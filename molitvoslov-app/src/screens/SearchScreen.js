@@ -350,6 +350,13 @@ export const SearchScreen = ({navigation}) => {
   const trimmedQuery = query.trim();
   const waitingForQuery = !trimmedQuery;
   const queryTooShort = !!trimmedQuery && trimmedQuery.length < 2;
+  const visibleResults = useMemo(
+    () => activeGroup === SEARCH_GROUPS.ALL
+      ? result.items
+      : result.items.filter((item) => item.group === activeGroup),
+    [result.items, activeGroup]
+  );
+
   const showEmpty =
     !indexLoading && !searchLoading && !waitingForQuery && !queryTooShort && result.total === 0;
 
@@ -405,7 +412,12 @@ export const SearchScreen = ({navigation}) => {
               return (
                 <Pressable
                   key={tab.key}
-                  onPress={() => setActiveGroup(tab.key)}
+                  onPress={() => {
+                    if (tab.key !== activeGroup) {
+                      setResult({items: [], total: 0});
+                      setActiveGroup(tab.key);
+                    }
+                  }}
                   style={({pressed}) => [
                     styles.tab,
                     active && styles.tabActive,
@@ -503,7 +515,7 @@ export const SearchScreen = ({navigation}) => {
           </View>
         ) : (
           <FlatList
-            data={result.items}
+            data={visibleResults}
             keyExtractor={(item) => item.id}
             renderItem={renderResult}
             keyboardShouldPersistTaps="handled"
