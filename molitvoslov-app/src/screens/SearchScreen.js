@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import {StatusBar} from 'expo-status-bar';
+import {SQLiteProvider, useSQLiteContext} from 'expo-sqlite';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
@@ -19,6 +20,7 @@ import {useLanguage} from '../context/LanguageContext';
 import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {subscribeToContentUpdates} from '../services/contentStore';
 import {addSearchHistory, clearSearchHistory, getSearchHistory} from '../services/searchHistory';
+import {isPersistentSearchReady, searchPersistent} from '../services/persistentSearch';
 import {
   SEARCH_GROUPS,
   SEARCH_GROUP_OPTIONS,
@@ -107,7 +109,9 @@ const scheduleIdleTask = (callback) => {
   return () => clearTimeout(timeoutId);
 };
 
-export const SearchScreen = ({navigation}) => {
+const SearchContent = ({navigation}) => {
+  const seedDb = useSQLiteContext();
+  const [seedReady, setSeedReady] = useState(false);
   const {language} = useLanguage();
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + 56;
@@ -142,6 +146,19 @@ export const SearchScreen = ({navigation}) => {
   }, []);
 
   useEffect(() => {
+    let active = true;
+    setSeedReady(false);
+    isPersistentSearchReady(language, seedDb)
+      .then((ready) => { if (active) setSeedReady(ready); })
+      .catch((error) => console.warn('Search seed unavailable:', error?.message || error));
+    return () => { active = false; };
+  }, [seedDb, language, publicGeneration, bibleGeneration]);
+
+  useEffect(() => {
+    if (seedReady) {
+      setIndexLoading(false);
+      return undefined;
+    }
     let active = true;
     let lastPartialUpdate = 0;
     setIndexLoading(true);
@@ -182,7 +199,7 @@ export const SearchScreen = ({navigation}) => {
       active = false;
       cancelTask();
     };
-  }, [language, publicGeneration, bibleGeneration]);
+  }, [language, publicGeneration, bibleGeneration, seedReady]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -196,7 +213,7 @@ export const SearchScreen = ({navigation}) => {
     let cancelled = false;
     const trimmed = searchQuery.trim();
 
-    if (!index || trimmed.length < 2) {
+    if ((!index && !seedReady) || trimmed.length < 2) {
       setSearchLoading(false);
       setResult((previous) =>
         previous.total === 0 && previous.items.length === 0
@@ -218,7 +235,9 @@ export const SearchScreen = ({navigation}) => {
     setSearchLoading(true);
     let lastProgressAt = 0;
 
-    searchIndexAsync(index, searchQuery, {
+    const executeSearch = seedReady
+      ? searchPersistent(language, searchQuery, activeGroup, 120, seedDb)
+      : searchIndexAsync(index, searchQuery, {
       group: activeGroup,
       limit: 120,
       isCancelled: () => cancelled,
@@ -229,7 +248,9 @@ export const SearchScreen = ({navigation}) => {
           setResult(partial);
         }
       },
-    })
+    });
+
+    executeSearch
       .then((nextResult) => {
         if (!cancelled && nextResult) {
           setResult(nextResult);
@@ -250,7 +271,7 @@ export const SearchScreen = ({navigation}) => {
     return () => {
       cancelled = true;
     };
-  }, [index, searchQuery, activeGroup, language]);
+  }, [index, searchQuery, activeGroup, language, seedReady, seedDb]);
 
   const suggestionIndex = useMemo(
     () => (index || []).filter((entry) => !!entry.titleNormalized),
@@ -892,3 +913,11 @@ const styles = StyleSheet.create({
     opacity: 0.68,
   },
 });
+
+// Expo copies the bundled seed into a separate search database on first use.
+// The main molitvoslov.db and user data are never overwritten.
+export const SearchScreen = (props) => (
+  <SQLiteProvider databaseName="molitvoslov_search_seed.db" assetSource={{assetId: require('../data/search_seed.db')}}>
+    <SearchContent {...props} />
+  </SQLiteProvider>
+);
