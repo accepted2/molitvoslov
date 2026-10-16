@@ -5,6 +5,8 @@ from datetime import date
 import requests
 from bs4 import BeautifulSoup
 
+from api.calendar_reading_identity import normalized_reading_key
+
 
 AZBYKA_DAY_URL = "https://azbyka.ru/days/{date}"
 
@@ -295,12 +297,10 @@ def parse_readings_text(text):
             order=index * 10,
         )
 
-        # Один и тот же отрывок может встречаться в разных группах —
-        # это разные чтения. Удаляем только точный дубль по содержанию.
+        # Same Scripture on the same service must appear only once, even
+        # when source rows differ in punctuation, order or a generic label.
         duplicate = any(
-            existing.kind == reading.kind
-            and existing.label == reading.label
-            and existing.title == reading.title
+            normalized_reading_key(existing) == normalized_reading_key(reading)
             for existing in result
         )
         if not duplicate:
