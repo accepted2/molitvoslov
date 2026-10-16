@@ -22,7 +22,7 @@ import {addSearchHistory, clearSearchHistory, getSearchHistory} from '../service
 import {
   SEARCH_GROUPS,
   SEARCH_GROUP_OPTIONS,
-  buildSearchIndex,
+  buildSearchIndexAsync,
   getHighlightSegments,
   getSearchSuggestions,
   searchIndexAsync,
@@ -144,18 +144,29 @@ export const SearchScreen = ({navigation}) => {
     let active = true;
     setIndexLoading(true);
 
+    // Build in batches so navigation and typing remain responsive.
+    // Publish partial results as soon as entries become searchable.
     const cancelTask = scheduleIdleTask(() => {
       if (!active) {
         return;
       }
 
-      try {
-        setIndex(buildSearchIndex(language));
-      } finally {
-        if (active) {
-          setIndexLoading(false);
-        }
-      }
+      buildSearchIndexAsync(language, {
+        isCancelled: () => !active,
+        onProgress: (partialIndex) => {
+          if (active) {
+            setIndex(partialIndex);
+          }
+        },
+      })
+        .catch((error) => {
+          console.warn('Search index preparation failed:', error);
+        })
+        .finally(() => {
+          if (active) {
+            setIndexLoading(false);
+          }
+        });
     });
 
     return () => {
@@ -176,7 +187,7 @@ export const SearchScreen = ({navigation}) => {
     let cancelled = false;
     const trimmed = searchQuery.trim();
 
-    if (indexLoading || !index || trimmed.length < 2) {
+    if (!index || trimmed.length < 2) {
       setSearchLoading(false);
       setResult({
         items: [],
@@ -208,7 +219,7 @@ export const SearchScreen = ({navigation}) => {
     return () => {
       cancelled = true;
     };
-  }, [index, indexLoading, searchQuery, activeGroup]);
+  }, [index, searchQuery, activeGroup]);
 
   const suggestionIndex = useMemo(
     () => (index || []).filter((entry) => !!entry.titleNormalized),
