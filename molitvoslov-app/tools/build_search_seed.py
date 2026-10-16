@@ -30,7 +30,7 @@ def main():
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.unlink(missing_ok=True)
     db = sqlite3.connect(OUT)
-    db.execute("CREATE VIRTUAL TABLE search_documents USING fts5(id UNINDEXED, language UNINDEXED, group_key UNINDEXED, payload UNINDEXED, normalized, tokenize='unicode61 remove_diacritics 2')")
+    db.execute("CREATE VIRTUAL TABLE search_documents USING fts5(id UNINDEXED, language UNINDEXED, group_key UNINDEXED, payload UNINDEXED, normalized, tokenize='unicode61 remove_diacritics 2', detail='none', columnsize=0)")
     db.execute("CREATE TABLE search_metadata (language TEXT PRIMARY KEY, version TEXT NOT NULL)")
     count = 0
 
@@ -172,6 +172,7 @@ def main():
     print("Integrity:", db.execute("PRAGMA integrity_check").fetchone()[0])
     db.execute("VACUUM")
     db.close()
+    print("Final size MiB:", round(OUT.stat().st_size / (1024 * 1024), 2))
 
 if __name__ == "__main__":
     main()
