@@ -153,12 +153,13 @@ export const SearchScreen = ({navigation}) => {
 
       buildSearchIndexAsync(language, {
         isCancelled: () => !active,
-        onProgress: (partialIndex) => {
-          if (active) {
-            setIndex(partialIndex);
-          }
-        },
+        // Avoid repeated state publications while a query is running.
+        // The completed index is published exactly once.
+        onProgress: () => {},
       })
+        .then((builtIndex) => {
+          if (active && builtIndex) setIndex(builtIndex);
+        })
         .catch((error) => {
           console.warn('Search index preparation failed:', error);
         })
@@ -189,10 +190,11 @@ export const SearchScreen = ({navigation}) => {
 
     if (!index || trimmed.length < 2) {
       setSearchLoading(false);
-      setResult({
-        items: [],
-        total: 0,
-      });
+      setResult((previous) =>
+        previous.total === 0 && previous.items.length === 0
+          ? previous
+          : {items: [], total: 0}
+      );
       return () => {
         cancelled = true;
       };
@@ -208,6 +210,12 @@ export const SearchScreen = ({navigation}) => {
       .then((nextResult) => {
         if (!cancelled && nextResult) {
           setResult(nextResult);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.warn('Search request failed:', error?.message || error);
+          setResult({items: [], total: 0});
         }
       })
       .finally(() => {
