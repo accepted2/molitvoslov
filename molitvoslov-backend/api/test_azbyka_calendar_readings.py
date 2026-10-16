@@ -153,6 +153,69 @@ class AzbykaCalendarReadingsParserTests(SimpleTestCase):
         self.assertEqual(len(readings), 2)
         self.assertNotEqual(readings[0].label, readings[1].label)
 
+
+    def test_2027_january_16_all_six_readings_from_three_paragraphs(self):
+        html = """
+        <html><body>
+          <h2>Чтения <a>Священного Писания</a></h2>
+          <p>Субботы: Лит. – Ап.: 1Тим.3:14-4:5. Ев.: Мф.3:1-11.</p>
+          <p>Мч.: Лит. – Ап.: 2Тим.2:1-10. Ев.: Мф.10:16-22.</p>
+          <p>Рядовое: Лит. – Ап.: 1Сол.5:14-23. Ев.: Лк.17:3-10.</p>
+          <ul><li>Богослужебные чтения дня</li></ul>
+          <h2>Богослужения</h2>
+          <p>Пояснение: Ин.1:1-17.</p>
+        </body></html>
+        """
+        extracted = extract_readings_text(html)
+        readings = parse_readings_text(extracted)
+        self.assertEqual(
+            [(r.kind, r.label, r.title) for r in readings],
+            [
+                ("apostle", "Субботы", "1Тим.3:14–4:5"),
+                ("gospel", "Субботы", "Мф.3:1–11"),
+                ("apostle", "Мч.", "2Тим.2:1–10"),
+                ("gospel", "Мч.", "Мф.10:16–22"),
+                ("apostle", "Ряд.", "1Сол.5:14–23"),
+                ("gospel", "Ряд.", "Лк.17:3–10"),
+            ],
+        )
+        self.assertEqual([r.order for r in readings], [10, 20, 30, 40, 50, 60])
+
+    def test_day_readings_in_list_items_not_doubled_by_nested_paragraphs(self):
+        html = """
+        <h2>Чтения Священного Писания</h2>
+        <ul>
+          <li><p>Субботы: 1Тим.3:14-4:5. Мф.3:1-11.</p></li>
+          <li><p>Мч.: 2Тим.2:1-10. Мф.10:16-22.</p></li>
+        </ul>
+        <h2>Богослужения</h2>
+        """
+        readings = parse_readings_text(extract_readings_text(html))
+        self.assertEqual(len(readings), 4)
+        self.assertEqual([r.label for r in readings], ["Субботы", "Субботы", "Мч.", "Мч."])
+
+    def test_explanatory_prose_after_readings_is_not_read_as_daily_service(self):
+        html = """
+        <h2>Чтения Священного Писания</h2>
+        <p>Субботы: 1Тим.3:14-4:5. Мф.3:1-11.</p>
+        <p>Если служба полиелейная, читается Ин.10:9-16.</p>
+        <h2>Богослужения</h2>
+        """
+        readings = parse_readings_text(extract_readings_text(html))
+        self.assertEqual(len(readings), 2)
+        self.assertFalse(any("Ин.10:9" in r.title for r in readings))
+
+    def test_first_paragraph_navigation_does_not_truncate_readings(self):
+        html = """
+        <h2>Чтения Священного Писания</h2>
+        <p>Богослужебные чтения дня</p>
+        <p>Субботы: 1Тим.3:14-4:5. Мф.3:1-11.</p>
+        <p>Мч.: 2Тим.2:1-10. Мф.10:16-22.</p>
+        <h2>Богослужения</h2>
+        """
+        readings = parse_readings_text(extract_readings_text(html))
+        self.assertEqual(len(readings), 4)
+
     def test_extracts_first_reading_paragraph_only(self):
         html = """
         <html><body>
