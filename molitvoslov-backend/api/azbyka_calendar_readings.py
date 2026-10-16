@@ -6,6 +6,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from api.calendar_reading_identity import normalized_reading_key
+from api.verified_lectionary_2027_special import get_verified_special_readings
 
 
 AZBYKA_DAY_URL = "https://azbyka.ru/days/{date}"
@@ -448,6 +449,27 @@ def extract_readings_text(html):
     raise AzbykaReadingsError("В блоке чтений не найдены поддерживаемые ссылки.")
 
 
+def _has_great_canon_readings_heading(html):
+    """Detect special-service page text ONLY inside the readings section."""
+    soup = BeautifulSoup(html, "lxml")
+    for heading in soup.find_all(re.compile(r"^h[1-6]$")):
+        heading_text = normalize_space(heading.get_text(" ", strip=True)).casefold()
+        if "чтения" not in heading_text or "священного писания" not in heading_text:
+            continue
+        heading_level = _heading_level(heading) or 2
+        for tag in heading.find_all_next():
+            level = _heading_level(tag)
+            if level is not None and level <= heading_level:
+                break
+            if tag.name not in {"a", "p", "li"}:
+                continue
+            text = normalize_space(tag.get_text(" ", strip=True)).casefold()
+            if "великий канон андрея критского" in text:
+                return True
+        return False
+    return False
+
+
 def fetch_day_readings(day, session=None, timeout=20):
     if not isinstance(day, date):
         raise TypeError("day должен быть datetime.date")
@@ -467,7 +489,23 @@ def fetch_day_readings(day, session=None, timeout=20):
             },
         )
         response.raise_for_status()
-        source_text = extract_readings_text(response.text)
+        try:
+            source_text = extract_readings_text(response.text)
+        except AzbykaReadingsError:
+            # A few Great Canon days link only the Great Canon and have no
+            # Bible ranges in their Azbyka reading blocks. Use the explicitly
+            # cross-checked Slavic/Julian lectionary for those exact 2027 dates.
+            # Never infer a fallback for unrelated or unpublished days.
+            fallback = get_verified_special_readings(day)
+            if fallback and _has_great_canon_readings_heading(response.text):
+                source_url, special_readings = fallback
+                return ParsedDayReadings(
+                    day=day,
+                    url=source_url,
+                    source_text="Slavic/Julian Orthodox Calendar — Great Canon readings",
+                    readings=special_readings,
+                )
+            raise
         readings = tuple(parse_readings_text(source_text))
 
         if not readings:
