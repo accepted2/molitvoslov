@@ -29,6 +29,7 @@ import {syncPrayerBooks} from './src/services/prayerBooks';
 import {hydratePublicContent} from './src/services/contentStore';
 import {syncPublicContent} from './src/services/contentSync';
 import {hydrateBibleContent} from './src/services/bibleStore';
+import {ensurePersistentSearch} from './src/services/persistentSearch';
 import {syncBibleContent} from './src/services/bibleSync';
 import {syncYearMarkers2026} from './src/services/calendarYearMarkers';
 
@@ -124,6 +125,19 @@ export default function App() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!databaseReady) return undefined;
+    // Never delay the splash screen or the first navigation for indexing.
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      for (const language of ['ru', 'uk']) {
+        if (cancelled) break;
+        await ensurePersistentSearch(language, {isCancelled: () => cancelled});
+      }
+    }, 5000);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [databaseReady]);
 
   useEffect(() => {
     if (!databaseReady) {
