@@ -401,6 +401,7 @@ const buildSearchIndexIterator = function* (language = 'ru') {
     });
     })(rule);
     yield entries;
+  }
 
   for (const text of Object.values(content?.texts || {})) {
     ((text) => {
@@ -449,6 +450,7 @@ const buildSearchIndexIterator = function* (language = 'ru') {
     );
     })(text);
     yield entries;
+  }
 
   for (const akathist of Object.values(content?.akathists?.by_slug || {})) {
     ((akathist) => {
@@ -559,6 +561,7 @@ const buildSearchIndexIterator = function* (language = 'ru') {
     });
     })(akathist);
     yield entries;
+  }
 
   for (const canon of Object.values(content?.canons?.by_slug || {})) {
     ((canon) => {
@@ -630,6 +633,7 @@ const buildSearchIndexIterator = function* (language = 'ru') {
     });
     })(canon);
     yield entries;
+  }
 
   const psalter = (content?.psalters?.list || [])[0] || null;
 
@@ -808,6 +812,7 @@ const buildSearchIndexIterator = function* (language = 'ru') {
     });
     })(kathisma);
     yield entries;
+  }
 
   for (const book of (bible?.books || [])) {
     ((book) => {
@@ -878,6 +883,7 @@ const buildSearchIndexIterator = function* (language = 'ru') {
     });
     })(book);
     yield entries;
+  }
 
   if (cachedIndexes.size >= 4) {
     cachedIndexes.clear();
