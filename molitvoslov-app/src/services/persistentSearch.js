@@ -3,7 +3,7 @@ import {getCurrentContent} from './contentStore';
 import {getCurrentBibleContent} from './bibleStore';
 import {buildSearchIndexAsync, normalizeSearchText, SEARCH_GROUPS} from './searchIndex';
 
-const SCHEMA = '4';
+const SCHEMA = '5';
 let initialization = null;
 const buildsByLanguage = new Map();
 let enabled = null;
@@ -83,19 +83,22 @@ export const searchPersistent = async (
   if (!(await isPersistentSearchReady(language, database))) return null;
   if (!ftsQuery(query)) return {items: [], total: 0};
   const db = database || (await getDatabase());
-  const where =
-    group === SEARCH_GROUPS.ALL
-      ? 'language = ? AND search_documents MATCH ?'
-      : 'language = ? AND group_key = ? AND search_documents MATCH ?';
-  const args =
-    group === SEARCH_GROUPS.ALL ? [language, ftsQuery(query)] : [language, group, ftsQuery(query)];
-  const count = await db.getFirstAsync(
-    'SELECT count(*) AS n FROM search_documents WHERE ' + where,
-    args
-  );
+  const seeded = !!database;
+  const table = seeded
+    ? 'search_documents JOIN search_payloads AS p ON p.rowid = search_documents.rowid'
+    : 'search_documents';
+  const langColumn = seeded ? 'p.language' : 'language';
+  const groupColumn = seeded ? 'p.group_key' : 'group_key';
+  const payloadColumn = seeded ? 'p.payload' : 'payload';
+  const where = group === SEARCH_GROUPS.ALL
+    ? langColumn + ' = ? AND search_documents MATCH ?'
+    : langColumn + ' = ? AND ' + groupColumn + ' = ? AND search_documents MATCH ?';
+  const args = group === SEARCH_GROUPS.ALL
+    ? [language, ftsQuery(query)]
+    : [language, group, ftsQuery(query)];
+  const count = await db.getFirstAsync('SELECT count(*) AS n FROM ' + table + ' WHERE ' + where, args);
   const rows = await db.getAllAsync(
-    'SELECT payload FROM search_documents WHERE ' +
-      where +
+    'SELECT ' + payloadColumn + ' AS payload FROM ' + table + ' WHERE ' + where +
       ' ORDER BY bm25(search_documents) LIMIT ?',
     [...args, limit]
   );
