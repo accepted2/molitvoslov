@@ -14,6 +14,7 @@ from api.azbyka_calendar_readings import (
     AzbykaReadingsError,
     fetch_day_readings,
 )
+from api.calendar_reading_identity import normalized_reading_key, readings_to_add
 from api.calendar_models import CalendarDay, CalendarReading
 from api.sqlite_backup import create_sqlite_backup
 
@@ -48,40 +49,6 @@ def deterministic_azbyka_reading_uid(target_date, reading):
         ]
     )
     return uuid.uuid5(AZBYKA_READING_NAMESPACE, identity)
-
-
-def normalized_reading_key(reading):
-    """Compare same liturgical appointment despite typographic variants.
-
-    The rubric/label is significant: a verse read on two services must not be merged.
-    Zachalo suffix is not the scriptural range itself.
-    """
-    import re
-    kind = str(reading.kind or "").lower().strip()
-    label = re.sub(r"\s+", " ", str(reading.label or "").lower().replace("ё", "е")).strip(" .;")
-    # Older records often have no label for the ordinary ("Ряд.") reading.
-    # Treat both as the same liturgical assignment, but preserve the existing
-    # label if it was manually entered.
-    if label in {"ряд", "рядовое", "лит", "литургия"}:
-        label = ""
-    title = str(reading.title or "").lower().replace("ё", "е")
-    title = re.sub(r"\(\s*зач\.?[^)]*\)", "", title)
-    title = re.sub(r"[–—−-]", "-", title)
-    title = re.sub(r"\s+", "", title).strip(" .;")
-    return kind, label, title
-
-
-def readings_to_add(existing, incoming):
-    """Preserve existing rows, add missing service+kind+Bible-range occurrences."""
-    seen = {normalized_reading_key(row) for row in existing}
-    result = []
-    for row in incoming:
-        key = normalized_reading_key(row)
-        if not key[-1] or key in seen:
-            continue
-        seen.add(key)
-        result.append(row)
-    return result
 
 
 def parse_iso_date(value, option_name):
