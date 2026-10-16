@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "src" / "data" / "search_seed.db"
 CONTENT = ROOT / "src" / "data" / "offlineContent.json"
 BIBLE = ROOT / "src" / "data" / "offlineBible.json"
-SCHEMA = "4"
+SCHEMA = "5"
 
 def fold(value):
     value = unicodedata.normalize("NFD", str(value or "").lower())
@@ -30,7 +30,9 @@ def main():
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.unlink(missing_ok=True)
     db = sqlite3.connect(OUT)
-    db.execute("CREATE VIRTUAL TABLE search_documents USING fts5(id UNINDEXED, language UNINDEXED, group_key UNINDEXED, payload UNINDEXED, normalized, tokenize='unicode61 remove_diacritics 2', detail='none', columnsize=0)")
+    db.execute("CREATE VIRTUAL TABLE search_documents USING fts5(normalized, content='', tokenize='unicode61 remove_diacritics 2', detail='none', columnsize=0)")
+    db.execute("CREATE TABLE search_payloads (rowid INTEGER PRIMARY KEY, language TEXT NOT NULL, group_key TEXT NOT NULL, payload TEXT NOT NULL)")
+    db.execute("CREATE INDEX search_payloads_group ON search_payloads(language, group_key)")
     db.execute("CREATE TABLE search_metadata (language TEXT PRIMARY KEY, version TEXT NOT NULL)")
     count = 0
 
@@ -45,9 +47,10 @@ def main():
                    "route": route, "matchedLanguageLabel": "",
                    "groupLabel": group, "score": 150}
         normalized = fold(" ".join([title, source] + texts))
-        db.execute("INSERT INTO search_documents VALUES (?, ?, ?, ?, ?)",
-                   (identifier, lang, group, json.dumps(payload, ensure_ascii=False, separators=(",", ":")), normalized))
         count += 1
+        db.execute("INSERT INTO search_documents(rowid, normalized) VALUES (?, ?)", (count, normalized))
+        db.execute("INSERT INTO search_payloads(rowid, language, group_key, payload) VALUES (?, ?, ?, ?)",
+                   (count, lang, group, json.dumps(payload, ensure_ascii=False, separators=(",", ":"))))
         if count % 1500 == 0:
             db.commit()
 
