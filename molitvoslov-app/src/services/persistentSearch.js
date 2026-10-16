@@ -90,15 +90,23 @@ export const searchPersistent = async (
   const langColumn = seeded ? 'p.language' : 'language';
   const groupColumn = seeded ? 'p.group_key' : 'group_key';
   const payloadColumn = seeded ? 'p.payload' : 'payload';
-  const where = group === SEARCH_GROUPS.ALL
-    ? langColumn + ' = ? AND search_documents MATCH ?'
-    : langColumn + ' = ? AND ' + groupColumn + ' = ? AND search_documents MATCH ?';
-  const args = group === SEARCH_GROUPS.ALL
-    ? [language, ftsQuery(query)]
-    : [language, group, ftsQuery(query)];
-  const count = await db.getFirstAsync('SELECT count(*) AS n FROM ' + table + ' WHERE ' + where, args);
+  const where =
+    group === SEARCH_GROUPS.ALL
+      ? langColumn + ' = ? AND search_documents MATCH ?'
+      : langColumn + ' = ? AND ' + groupColumn + ' = ? AND search_documents MATCH ?';
+  const args =
+    group === SEARCH_GROUPS.ALL ? [language, ftsQuery(query)] : [language, group, ftsQuery(query)];
+  const count = await db.getFirstAsync(
+    'SELECT count(*) AS n FROM ' + table + ' WHERE ' + where,
+    args
+  );
   const rows = await db.getAllAsync(
-    'SELECT ' + payloadColumn + ' AS payload FROM ' + table + ' WHERE ' + where +
+    'SELECT ' +
+      payloadColumn +
+      ' AS payload FROM ' +
+      table +
+      ' WHERE ' +
+      where +
       ' ORDER BY bm25(search_documents) LIMIT ?',
     [...args, limit]
   );
