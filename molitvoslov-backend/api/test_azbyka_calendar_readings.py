@@ -194,3 +194,37 @@ class AzbykaCalendarReadingSyncUidTests(SimpleTestCase):
         )
 
         self.assertNotEqual(first_day, second_day)
+
+
+class CalendarReadingsMergeTests(SimpleTestCase):
+    def _reading(self, kind, label, title, order=10):
+        return ParsedReading(kind=kind, label=label, title=title, order=order)
+
+    def test_matches_same_biblical_range_different_dashes_and_zachalo(self):
+        from api.management.commands.import_azbyka_calendar_readings import readings_to_add
+        current = [self._reading("gospel", "Ряд.", "Ин.1:1–17 (зач. 1)")]
+        incoming = [self._reading("gospel", "Ряд.", "Ин.1:1-17", 20)]
+        self.assertEqual(readings_to_add(current, incoming), [])
+
+    def test_adds_missing_apostle_without_removing_existing_gospel(self):
+        from api.management.commands.import_azbyka_calendar_readings import readings_to_add
+        original = self._reading("gospel", "", "Ин.1:1–17")
+        missing = self._reading("apostle", "", "Деян.1:1–8", 20)
+        self.assertEqual(readings_to_add([original], [original, missing]), [missing])
+
+    def test_keeps_distinct_services(self):
+        from api.management.commands.import_azbyka_calendar_readings import readings_to_add
+        liturgy = self._reading("gospel", "Лит.", "Ин.1:1–17")
+        evening = self._reading("gospel", "Веч.", "Ин.1:1–17")
+        self.assertEqual(readings_to_add([liturgy], [evening]), [evening])
+
+    def test_deduplicates_repeated_incoming_rows(self):
+        from api.management.commands.import_azbyka_calendar_readings import readings_to_add
+        reading = self._reading("gospel", "", "Мк.9:33–41")
+        self.assertEqual(readings_to_add([], [reading, reading]), [reading])
+
+    def test_different_boundaries_are_not_treated_as_same_reading(self):
+        from api.management.commands.import_azbyka_calendar_readings import readings_to_add
+        first = self._reading("gospel", "", "Лк.1:39–49,56")
+        second = self._reading("gospel", "", "Лк.1:39–49")
+        self.assertEqual(readings_to_add([first], [second]), [second])
