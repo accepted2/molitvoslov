@@ -121,6 +121,23 @@ class AzbykaCalendarReadingsParserTests(SimpleTestCase):
             ],
         )
 
+    def test_2027_pascha_readings_include_vespers_service(self):
+        readings = parse_readings_text(
+            "Рядовое: Лит. – Ап.: Деян.1:1-8 . "
+            "Ев.: Ин.1:1-17 . Веч. – Ин.20:19-25 ."
+        )
+        self.assertEqual(
+            [(r.kind, r.label) for r in readings],
+            [("apostle", "Ряд."), ("gospel", "Ряд."), ("gospel", "Веч.")],
+        )
+        self.assertEqual(readings[2].title, "Ин.20:19–25")
+
+    def test_2027_january_liturgy_colum_labels_not_rubrics(self):
+        readings = parse_readings_text(
+            "Рядовое: Лит. – Ап.: Евр.11:8,11-16 . Ев.: Мк.9:33-41 ."
+        )
+        self.assertEqual([r.label for r in readings], ["Ряд.", "Ряд."])
+
     def test_extracts_first_reading_paragraph_only(self):
         html = """
         <html><body>
