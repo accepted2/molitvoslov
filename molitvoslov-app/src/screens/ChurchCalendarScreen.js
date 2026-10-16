@@ -39,6 +39,7 @@ import {
 } from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {colors} from '../theme';
+import {LectionaryPreviewPanel} from '../components/calendar/LectionaryPreviewPanel';
 
 const buildCells = (year, month) => {
   const first = new Date(year, month - 1, 1);
@@ -459,6 +460,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const [selectedDate, setSelectedDate] = useState(toCalendarDate(initial));
   const [monthData, setMonthData] = useState(null);
   const [dayData, setDayData] = useState(null);
+  const [showLectionaryPreview, setShowLectionaryPreview] = useState(false);
   const [loadingMonth, setLoadingMonth] = useState(true);
   const [loadingDay, setLoadingDay] = useState(true);
   const [error, setError] = useState('');
@@ -976,6 +978,32 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
           },
         ]}
       >
+        {__DEV__ && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Переключить тестовый календарь чтений 2027 года"
+            onPress={() => {
+              if (!showLectionaryPreview) {
+                setVisibleYear(2027);
+                setVisibleMonth(5);
+                setSelectedDate('2027-05-02');
+              }
+              setShowLectionaryPreview((value) => !value);
+            }}
+            style={{backgroundColor: '#FFF0CC', borderRadius: 12, borderWidth: 1, borderColor: '#A77B40', marginBottom: 10, padding: 12}}
+          >
+            <Text style={{fontWeight: '700', color: '#684018'}}>
+              {showLectionaryPreview ? 'Скрыть предварительные чтения 2027' : 'Показать предварительные чтения 2027'}
+            </Text>
+            <Text style={{fontSize: 12, color: '#775731', marginTop: 3}}>
+              Только для разработки · не записывает ничего в календарную базу
+            </Text>
+          </Pressable>
+        )}
+        {__DEV__ && showLectionaryPreview && (
+          <LectionaryPreviewPanel selectedDate={selectedDate} navigation={navigation} />
+        )}
+
         {!!error && !dayData && (
           <View style={styles.errorBanner}>
             <Text style={styles.errorBannerText}>{error}</Text>
