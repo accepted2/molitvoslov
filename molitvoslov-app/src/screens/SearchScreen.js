@@ -208,11 +208,19 @@ export const SearchScreen = ({navigation}) => {
     }
 
     setSearchLoading(true);
+    let lastProgressAt = 0;
 
     searchIndexAsync(index, searchQuery, {
       group: activeGroup,
       limit: 120,
       isCancelled: () => cancelled,
+      onProgress: (partial) => {
+        const now = Date.now();
+        if (!cancelled && (now - lastProgressAt >= 400)) {
+          lastProgressAt = now;
+          setResult(partial);
+        }
+      },
     })
       .then((nextResult) => {
         if (!cancelled && nextResult) {
