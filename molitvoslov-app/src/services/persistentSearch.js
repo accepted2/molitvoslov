@@ -3,7 +3,7 @@ import {getCurrentContent} from './contentStore';
 import {getCurrentBibleContent} from './bibleStore';
 import {buildSearchIndexAsync, normalizeSearchText, SEARCH_GROUPS} from './searchIndex';
 
-const SCHEMA = '2';
+const SCHEMA = '3';
 let initialization = null;
 const buildsByLanguage = new Map();
 let enabled = null;
@@ -89,12 +89,10 @@ export const ensurePersistentSearch = async (language = 'ru', {isCancelled = () 
     if (!entries || isCancelled()) return false;
     const bible = getCurrentBibleContent('rst') || {};
     const db = await getDatabase();
-    // Invalidate the previous version before replacing documents.
-    // An interrupted build is never exposed as a ready index.
-    await db.withTransactionAsync(async () => {
-      await db.runAsync('DELETE FROM search_documents WHERE language = ?', [language]);
-      await db.runAsync('DELETE FROM search_metadata WHERE language = ?', [language]);
-    });
+    // Mark the version invalid before any replacement rows are visible.
+    // Recovery always rebuilds from scratch after interruption.
+    await db.runAsync('DELETE FROM search_metadata WHERE language = ?', [language]);
+    await db.runAsync('DELETE FROM search_documents WHERE language = ?', [language]);
     let batch = [];
     const flush = async () => {
       if (!batch.length) return;
