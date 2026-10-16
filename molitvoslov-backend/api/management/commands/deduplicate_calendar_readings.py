@@ -147,7 +147,7 @@ class Command(BaseCommand):
                 })
 
         output = Path(opts["report"] or (
-            Path(settings.BASE_DIR) / "reports" / f"calendar_reading_duplicates_{year}.json"
+            Path(settings.BASE_DIR) / "reports" / f"calendar_reading_coalesce_{year}.json"
         )).resolve()
         output.parent.mkdir(parents=True, exist_ok=True)
         report = {
