@@ -290,6 +290,8 @@ class Command(BaseCommand):
                     )
 
                 if not apply_changes:
+                    if delay and index < len(dates):
+                        time.sleep(delay)
                     continue
 
                 if not backup_done:
