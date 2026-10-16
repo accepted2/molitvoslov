@@ -255,3 +255,16 @@ cd C:\m\repo\molitvoslov-backend
 `DELETE` и массовых `CREATE` памятей по новому плану.
 
 `--allow-reading-deletes` не применять без отдельного аудита.
+
+## Проверка массового переноса памятей 2026
+
+Перед созданием 2752 карточек святых в Supabase выполните отдельную проверку только для чтения:
+
+```powershell
+& .\venv\Scripts\python.exe manage.py test api.test_calendar_feast_sync_audit api.test_calendar_sync_safety_2026
+& .\venv\Scripts\python.exe manage.py audit_calendar_feast_sync --year 2026
+```
+
+Отчёт: `reports/calendar_feast_sync_preflight_2026.json`. Его разделы показывают обнаруженные совпадения по UUID/source_id, совпадения названий в тот же день и совпадения названий в другие даты. Совпадение названия не доказывает, что это одна и та же память, и его следует проверять вручную.
+
+Полный перенос с `--apply` теперь требует явного `--confirm-mass-feast-create`, если планируется создать более 100 карточек памятей. Это подтверждение следует давать только после проверки отчёта. DRY-RUN ничего не записывает в Supabase.
