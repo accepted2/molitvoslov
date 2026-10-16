@@ -570,3 +570,29 @@ class VerifiedGreatCanon2027FallbackTests(SimpleTestCase):
         with self.assertRaises(AzbykaReadingsError):
             fetch_day_readings(date(2027, 3, 15), session=self._session(html))
 
+
+
+    def test_special_only_command_selects_five_dates_without_overwriting_year_report(self):
+        from unittest.mock import patch
+        from api.management.commands.fill_calendar_readings import Command
+
+        with patch("api.management.commands.fill_calendar_readings.call_command") as caller:
+            Command().handle(
+                year=2027, date="", month=None, special_2027=True,
+                apply_changes=False, apply=False, delay=0, report="",
+            )
+        forwarded = caller.call_args.args
+        dates = [
+            forwarded[index + 1]
+            for index, value in enumerate(forwarded[:-1])
+            if value == "--date"
+        ]
+        self.assertEqual(dates, [
+            "2027-03-15", "2027-03-16", "2027-03-17",
+            "2027-03-18", "2027-04-14",
+        ])
+        self.assertIn("--dry-run", forwarded)
+        self.assertIn("--merge", forwarded)
+        self.assertTrue(
+            any("calendar_readings_2027_special_5.json" in str(item) for item in forwarded)
+        )
