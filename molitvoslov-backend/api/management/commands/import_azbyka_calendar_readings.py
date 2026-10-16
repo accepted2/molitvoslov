@@ -59,6 +59,11 @@ def normalized_reading_key(reading):
     import re
     kind = str(reading.kind or "").lower().strip()
     label = re.sub(r"\s+", " ", str(reading.label or "").lower().replace("ё", "е")).strip(" .;")
+    # Older records often have no label for the ordinary ("Ряд.") reading.
+    # Treat both as the same liturgical assignment, but preserve the existing
+    # label if it was manually entered.
+    if label in {"ряд", "рядовое", "лит", "литургия"}:
+        label = ""
     title = str(reading.title or "").lower().replace("ё", "е")
     title = re.sub(r"\(\s*зач\.?[^)]*\)", "", title)
     title = re.sub(r"[–—−-]", "-", title)
