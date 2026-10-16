@@ -1344,7 +1344,13 @@ const searchBibleVersesAsync = async ({
 export const searchIndexAsync = async (
   index,
   query,
-  {group = SEARCH_GROUPS.ALL, limit = 100, chunkSize = 650, isCancelled = () => false, onProgress = () => {}} = {}
+  {
+    group = SEARCH_GROUPS.ALL,
+    limit = 100,
+    chunkSize = 650,
+    isCancelled = () => false,
+    onProgress = () => {},
+  } = {}
 ) => {
   const normalizedQuery = normalizeSearchText(query);
 
@@ -1401,7 +1407,8 @@ export const searchIndexAsync = async (
       normalizedQuery,
       tokens,
       isCancelled,
-      onProgress: (partialBible) => onProgress(sortSearchResults([...matches, ...partialBible], limit)),
+      onProgress: (partialBible) =>
+        onProgress(sortSearchResults([...matches, ...partialBible], limit)),
     });
 
     if (bibleMatches === null || isCancelled()) {

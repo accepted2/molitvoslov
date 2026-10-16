@@ -12,8 +12,12 @@ const delay = () => new Promise((resolve) => setTimeout(resolve, 0));
 const versionFor = (language) => {
   const content = getCurrentContent() || {};
   const bible = getCurrentBibleContent('rst') || {};
-  return [SCHEMA, language, content.content_version || content.generated_at || 'bundle-public',
-    bible.content_version || bible.generated_at || 'bundle-bible'].join(':');
+  return [
+    SCHEMA,
+    language,
+    content.content_version || content.generated_at || 'bundle-public',
+    bible.content_version || bible.generated_at || 'bundle-bible',
+  ].join(':');
 };
 
 export const preparePersistentSearch = async () => {
@@ -21,7 +25,9 @@ export const preparePersistentSearch = async () => {
   if (!initialization) {
     initialization = (async () => {
       const db = await getDatabase();
-      const available = await db.getFirstAsync('SELECT sqlite_compileoption_used(?) AS available', ['ENABLE_FTS5']);
+      const available = await db.getFirstAsync('SELECT sqlite_compileoption_used(?) AS available', [
+        'ENABLE_FTS5',
+      ]);
       // Expo SQLite generally includes FTS5. Fall back to the existing search if it does not.
       if (!available?.available) {
         enabled = false;
@@ -50,35 +56,56 @@ export const preparePersistentSearch = async () => {
 
 export const isPersistentSearchReady = async (language = 'ru', database = null) => {
   if (!(await preparePersistentSearch())) return false;
-  const db = database || await getDatabase();
-  const row = await db.getFirstAsync('SELECT version FROM search_metadata WHERE language = ?', [language]);
+  const db = database || (await getDatabase());
+  const row = await db.getFirstAsync('SELECT version FROM search_metadata WHERE language = ?', [
+    language,
+  ]);
   return row?.version === versionFor(language);
 };
 
-const ftsTokens = (query) => normalizeSearchText(query).split(' ').filter((word) => word.length >= 2);
+const ftsTokens = (query) =>
+  normalizeSearchText(query)
+    .split(' ')
+    .filter((word) => word.length >= 2);
 // Parameterized FTS5 syntax: each token is quoted and matched by prefix.
-const ftsQuery = (query) => ftsTokens(query).map((word) => '"' + word.replace(/"/g, '""') + '"*').join(' AND ');
+const ftsQuery = (query) =>
+  ftsTokens(query)
+    .map((word) => '"' + word.replace(/"/g, '""') + '"*')
+    .join(' AND ');
 
-export const searchPersistent = async (language, query, group = SEARCH_GROUPS.ALL, limit = 120, database = null) => {
+export const searchPersistent = async (
+  language,
+  query,
+  group = SEARCH_GROUPS.ALL,
+  limit = 120,
+  database = null
+) => {
   if (!(await isPersistentSearchReady(language, database))) return null;
   if (!ftsQuery(query)) return {items: [], total: 0};
-  const db = database || await getDatabase();
-  const where = group === SEARCH_GROUPS.ALL
-    ? 'language = ? AND search_documents MATCH ?'
-    : 'language = ? AND group_key = ? AND search_documents MATCH ?';
-  const args = group === SEARCH_GROUPS.ALL
-    ? [language, ftsQuery(query)]
-    : [language, group, ftsQuery(query)];
-  const count = await db.getFirstAsync('SELECT count(*) AS n FROM search_documents WHERE ' + where, args);
+  const db = database || (await getDatabase());
+  const where =
+    group === SEARCH_GROUPS.ALL
+      ? 'language = ? AND search_documents MATCH ?'
+      : 'language = ? AND group_key = ? AND search_documents MATCH ?';
+  const args =
+    group === SEARCH_GROUPS.ALL ? [language, ftsQuery(query)] : [language, group, ftsQuery(query)];
+  const count = await db.getFirstAsync(
+    'SELECT count(*) AS n FROM search_documents WHERE ' + where,
+    args
+  );
   const rows = await db.getAllAsync(
-    'SELECT payload FROM search_documents WHERE ' + where +
+    'SELECT payload FROM search_documents WHERE ' +
+      where +
       ' ORDER BY bm25(search_documents) LIMIT ?',
     [...args, limit]
   );
   return {items: rows.map((row) => JSON.parse(row.payload)), total: count?.n || 0};
 };
 
-export const ensurePersistentSearch = async (language = 'ru', {isCancelled = () => false, onProgress = () => {}} = {}) => {
+export const ensurePersistentSearch = async (
+  language = 'ru',
+  {isCancelled = () => false, onProgress = () => {}} = {}
+) => {
   if (!(await preparePersistentSearch())) return false;
   if (await isPersistentSearchReady(language)) return true;
   if (buildsByLanguage.has(language)) return buildsByLanguage.get(language);
@@ -112,10 +139,21 @@ export const ensurePersistentSearch = async (language = 'ru', {isCancelled = () 
     };
 
     const add = async (entry) => {
-      const searchable = [entry.titleNormalized, entry.sourceNormalized,
-        ...(entry.fields || []).map((f) => f.normalized)].filter(Boolean).join(' ');
+      const searchable = [
+        entry.titleNormalized,
+        entry.sourceNormalized,
+        ...(entry.fields || []).map((f) => f.normalized),
+      ]
+        .filter(Boolean)
+        .join(' ');
       const {fields, ...displayEntry} = entry;
-      batch.push([String(entry.id), language, entry.group, JSON.stringify(displayEntry), searchable]);
+      batch.push([
+        String(entry.id),
+        language,
+        entry.group,
+        JSON.stringify(displayEntry),
+        searchable,
+      ]);
       if (batch.length >= 150) await flush();
     };
 
@@ -135,17 +173,35 @@ export const ensurePersistentSearch = async (language = 'ru', {isCancelled = () 
           const entry = {
             id: 'bible:' + book.id + ':' + chapter.id + ':' + verse.id,
             group: SEARCH_GROUPS.SCRIPTURE,
-            kind: 'bible-verse', title,
-            source: 'Писание', snippet: text.slice(0, 190),
-            matchedLanguage: 'russian', matchedLanguageLabel: 'Рус.',
-            groupLabel: 'Писание', score: 150,
-            route: {name: 'BibleChapter', params: {
-              bookId: Number(book.id), chapterNumber: Number(chapter.number), resume: false,
-              focusTarget: {save_type: 'fragment', anchor_type: 'bible_verse',
-                anchor_id: Number(verse.id), start_offset: null, end_offset: null,
-                metadata: {book_id: Number(book.id), book_slug: book.slug,
-                  chapter_number: Number(chapter.number), verse_number: Number(verse.number)}}
-            }},
+            kind: 'bible-verse',
+            title,
+            source: 'Писание',
+            snippet: text.slice(0, 190),
+            matchedLanguage: 'russian',
+            matchedLanguageLabel: 'Рус.',
+            groupLabel: 'Писание',
+            score: 150,
+            route: {
+              name: 'BibleChapter',
+              params: {
+                bookId: Number(book.id),
+                chapterNumber: Number(chapter.number),
+                resume: false,
+                focusTarget: {
+                  save_type: 'fragment',
+                  anchor_type: 'bible_verse',
+                  anchor_id: Number(verse.id),
+                  start_offset: null,
+                  end_offset: null,
+                  metadata: {
+                    book_id: Number(book.id),
+                    book_slug: book.slug,
+                    chapter_number: Number(chapter.number),
+                    verse_number: Number(verse.number),
+                  },
+                },
+              },
+            },
             titleNormalized: normalizeSearchText(title),
             fields: [{normalized: normalizeSearchText(text)}],
           };
@@ -156,12 +212,19 @@ export const ensurePersistentSearch = async (language = 'ru', {isCancelled = () 
     }
     await flush();
     if (isCancelled() || version !== versionFor(language)) return false;
-    await db.runAsync('INSERT OR REPLACE INTO search_metadata(language, version) VALUES (?, ?)', [language, version]);
+    await db.runAsync('INSERT OR REPLACE INTO search_metadata(language, version) VALUES (?, ?)', [
+      language,
+      version,
+    ]);
     return true;
-  })().catch((error) => {
-    console.warn('Persistent search indexing failed:', error?.message || error);
-    return false;
-  }).finally(() => { buildsByLanguage.delete(language); });
+  })()
+    .catch((error) => {
+      console.warn('Persistent search indexing failed:', error?.message || error);
+      return false;
+    })
+    .finally(() => {
+      buildsByLanguage.delete(language);
+    });
 
   buildsByLanguage.set(language, building);
   return building;

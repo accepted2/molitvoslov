@@ -149,9 +149,13 @@ const SearchContent = ({navigation}) => {
     let active = true;
     setSeedReady(false);
     isPersistentSearchReady(language, seedDb)
-      .then((ready) => { if (active) setSeedReady(ready); })
+      .then((ready) => {
+        if (active) setSeedReady(ready);
+      })
       .catch((error) => console.warn('Search seed unavailable:', error?.message || error));
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [seedDb, language, publicGeneration, bibleGeneration]);
 
   useEffect(() => {
@@ -216,9 +220,7 @@ const SearchContent = ({navigation}) => {
     if ((!index && !seedReady) || trimmed.length < 2) {
       setSearchLoading(false);
       setResult((previous) =>
-        previous.total === 0 && previous.items.length === 0
-          ? previous
-          : {items: [], total: 0}
+        previous.total === 0 && previous.items.length === 0 ? previous : {items: [], total: 0}
       );
       return () => {
         cancelled = true;
@@ -238,17 +240,17 @@ const SearchContent = ({navigation}) => {
     const executeSearch = seedReady
       ? searchPersistent(language, searchQuery, activeGroup, 120, seedDb)
       : searchIndexAsync(index, searchQuery, {
-      group: activeGroup,
-      limit: 120,
-      isCancelled: () => cancelled,
-      onProgress: (partial) => {
-        const now = Date.now();
-        if (!cancelled && (now - lastProgressAt >= 400)) {
-          lastProgressAt = now;
-          setResult(partial);
-        }
-      },
-    });
+          group: activeGroup,
+          limit: 120,
+          isCancelled: () => cancelled,
+          onProgress: (partial) => {
+            const now = Date.now();
+            if (!cancelled && now - lastProgressAt >= 400) {
+              lastProgressAt = now;
+              setResult(partial);
+            }
+          },
+        });
 
     executeSearch
       .then((nextResult) => {
@@ -378,9 +380,10 @@ const SearchContent = ({navigation}) => {
   const waitingForQuery = !trimmedQuery;
   const queryTooShort = !!trimmedQuery && trimmedQuery.length < 2;
   const visibleResults = useMemo(
-    () => activeGroup === SEARCH_GROUPS.ALL
-      ? result.items
-      : result.items.filter((item) => item.group === activeGroup),
+    () =>
+      activeGroup === SEARCH_GROUPS.ALL
+        ? result.items
+        : result.items.filter((item) => item.group === activeGroup),
     [result.items, activeGroup]
   );
 
@@ -917,7 +920,10 @@ const styles = StyleSheet.create({
 // Expo copies the bundled seed into a separate search database on first use.
 // The main molitvoslov.db and user data are never overwritten.
 export const SearchScreen = (props) => (
-  <SQLiteProvider databaseName="molitvoslov_search_seed.db" assetSource={{assetId: require('../data/search_seed.db')}}>
+  <SQLiteProvider
+    databaseName="molitvoslov_search_seed.db"
+    assetSource={{assetId: require('../data/search_seed.db')}}
+  >
     <SearchContent {...props} />
   </SQLiteProvider>
 );
