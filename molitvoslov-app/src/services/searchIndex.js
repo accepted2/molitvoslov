@@ -902,6 +902,7 @@ export const buildSearchIndexAsync = async (
   let step;
   let processed = 0;
   let lastPublished = 0;
+  let lastPublishTime = 0;
   let latestEntries = [];
 
   while (!(step = iterator.next()).done) {
@@ -912,8 +913,10 @@ export const buildSearchIndexAsync = async (
     latestEntries = step.value;
     processed += 1;
     if (processed % batchSize === 0) {
-      if (latestEntries.length !== lastPublished) {
+      const now = Date.now();
+      if (latestEntries.length !== lastPublished && (lastPublishTime === 0 || now - lastPublishTime >= 160)) {
         lastPublished = latestEntries.length;
+        lastPublishTime = now;
         onProgress(latestEntries.slice());
       }
       await new Promise((resolve) => setTimeout(resolve, 0));
