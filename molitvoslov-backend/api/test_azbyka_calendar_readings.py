@@ -145,6 +145,14 @@ class AzbykaCalendarReadingsParserTests(SimpleTestCase):
         )
         self.assertEqual(len(readings), 2)
 
+    def test_same_passage_preserves_both_reasons_in_one_reading(self):
+        readings = parse_readings_text(
+            "Ряд.: Деян.1:1–8 (зач. 1). "
+            "Свт.: Деян.1:1-8 (зач. 1)."
+        )
+        self.assertEqual(len(readings), 1)
+        self.assertEqual(readings[0].label, "Ряд.; Свт.")
+
     def test_same_passage_is_allowed_in_separate_services(self):
         readings = parse_readings_text(
             "Утр. – Ин.20:1–10 (зач. 63). "
