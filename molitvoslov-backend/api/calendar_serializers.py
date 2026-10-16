@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from .calendar_reading_identity import normalized_reading_key
 from .calendar_localization import same_feast_identity
 from .calendar_models import CalendarDay, CalendarFeast, CalendarReading
 
@@ -182,7 +183,17 @@ class CalendarDaySerializer(serializers.ModelSerializer):
                 reading.pk,
             )
         )
-        return CalendarReadingSerializer(readings, many=True).data
+        # The database may still contain duplicate imports. Return each
+        # book/range once per service until the audit command cleans those rows.
+        seen = set()
+        distinct = []
+        for reading in readings:
+            key = normalized_reading_key(reading)
+            if key in seen:
+                continue
+            seen.add(key)
+            distinct.append(reading)
+        return CalendarReadingSerializer(distinct, many=True).data
 
     def get_date_str(self, obj):
         return obj.date_gregorian.isoformat()
