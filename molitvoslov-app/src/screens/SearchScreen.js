@@ -155,7 +155,9 @@ export const SearchScreen = ({navigation}) => {
         setIndexLoading(false);
         cancelTask();
       }
-    }).catch(() => {});
+    }).catch((error) => {
+      console.warn('Saved search index unavailable:', error?.message || error);
+    });
 
     // Build in batches so navigation and typing remain responsive.
     // Publish partial results as soon as entries become searchable.
@@ -165,9 +167,9 @@ export const SearchScreen = ({navigation}) => {
       }
 
       buildSearchIndexAsync(language, {
-        isCancelled: () => !active,
+        isCancelled: () => !active || useStoredIndex,
         onProgress: (partialIndex) => {
-          if (active) {
+          if (active && !useStoredIndex) {
             setIndex(partialIndex);
           }
         },
