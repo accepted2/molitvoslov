@@ -58,11 +58,11 @@ def normalized_reading_key(reading):
     """
     import re
     kind = str(reading.kind or "").lower().strip()
-    label = re.sub(r"\\s+", " ", str(reading.label or "").lower().replace("ё", "е")).strip(" .;")
+    label = re.sub(r"\s+", " ", str(reading.label or "").lower().replace("ё", "е")).strip(" .;")
     title = str(reading.title or "").lower().replace("ё", "е")
-    title = re.sub(r"\\(\\s*зач\\.?[^)]*\\)", "", title)
+    title = re.sub(r"\(\s*зач\.?[^)]*\)", "", title)
     title = re.sub(r"[–—−-]", "-", title)
-    title = re.sub(r"\\s+", "", title).strip(" .;")
+    title = re.sub(r"\s+", "", title).strip(" .;")
     return kind, label, title
 
 
