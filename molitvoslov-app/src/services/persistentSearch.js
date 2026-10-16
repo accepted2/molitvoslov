@@ -89,8 +89,8 @@ export const ensurePersistentSearch = async (language = 'ru', {isCancelled = () 
     if (!entries || isCancelled()) return false;
     const bible = getCurrentBibleContent('rst') || {};
     const db = await getDatabase();
-    // Only publish the new version after every record has been written.
-    // The previous successful index remains usable until this transaction commits.
+    // Invalidate the previous version before replacing documents.
+    // An interrupted build is never exposed as a ready index.
     await db.withTransactionAsync(async () => {
       await db.runAsync('DELETE FROM search_documents WHERE language = ?', [language]);
       await db.runAsync('DELETE FROM search_metadata WHERE language = ?', [language]);
@@ -116,7 +116,8 @@ export const ensurePersistentSearch = async (language = 'ru', {isCancelled = () 
     const add = async (entry) => {
       const searchable = [entry.titleNormalized, entry.sourceNormalized,
         ...(entry.fields || []).map((f) => f.normalized)].filter(Boolean).join(' ');
-      batch.push([String(entry.id), language, entry.group, JSON.stringify(entry), searchable]);
+      const {fields, ...displayEntry} = entry;
+      batch.push([String(entry.id), language, entry.group, JSON.stringify(displayEntry), searchable]);
       if (batch.length >= 150) await flush();
     };
 
