@@ -1235,6 +1235,7 @@ const searchBibleVersesAsync = async ({
   tokens,
   isCancelled,
   chunkSize = 1400,
+  onProgress = () => {},
 }) => {
   const corpus = await prepareBibleSearchCorpus({
     isCancelled,
@@ -1331,6 +1332,7 @@ const searchBibleVersesAsync = async ({
       });
     }
 
+    onProgress(matches.slice());
     if (end < corpus.length) {
       await yieldToSearchUI();
     }
@@ -1342,7 +1344,7 @@ const searchBibleVersesAsync = async ({
 export const searchIndexAsync = async (
   index,
   query,
-  {group = SEARCH_GROUPS.ALL, limit = 100, chunkSize = 650, isCancelled = () => false} = {}
+  {group = SEARCH_GROUPS.ALL, limit = 100, chunkSize = 650, isCancelled = () => false, onProgress = () => {}} = {}
 ) => {
   const normalizedQuery = normalizeSearchText(query);
 
@@ -1383,6 +1385,7 @@ export const searchIndexAsync = async (
       }
     }
 
+    onProgress(sortSearchResults([...matches], limit));
     if (end < entries.length) {
       await yieldToSearchUI();
     }
@@ -1398,6 +1401,7 @@ export const searchIndexAsync = async (
       normalizedQuery,
       tokens,
       isCancelled,
+      onProgress: (partialBible) => onProgress(sortSearchResults([...matches, ...partialBible], limit)),
     });
 
     if (bibleMatches === null || isCancelled()) {

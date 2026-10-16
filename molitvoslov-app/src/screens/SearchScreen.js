@@ -142,6 +142,7 @@ export const SearchScreen = ({navigation}) => {
 
   useEffect(() => {
     let active = true;
+    let lastPartialUpdate = 0;
     setIndexLoading(true);
 
     // Build in batches so navigation and typing remain responsive.
@@ -153,9 +154,15 @@ export const SearchScreen = ({navigation}) => {
 
       buildSearchIndexAsync(language, {
         isCancelled: () => !active,
-        // Avoid repeated state publications while a query is running.
-        // The completed index is published exactly once.
-        onProgress: () => {},
+        // Make already indexed documents searchable before the full build completes.
+        // Limit UI publications to prevent continuous re-render/search cycles.
+        onProgress: (partialIndex) => {
+          const now = Date.now();
+          if (active && partialIndex.length && now - lastPartialUpdate >= 1500) {
+            lastPartialUpdate = now;
+            setIndex(partialIndex);
+          }
+        },
       })
         .then((builtIndex) => {
           if (active && builtIndex) setIndex(builtIndex);
@@ -179,7 +186,7 @@ export const SearchScreen = ({navigation}) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearchQuery(query);
-    }, 110);
+    }, 320);
 
     return () => clearTimeout(timer);
   }, [query]);
@@ -201,11 +208,19 @@ export const SearchScreen = ({navigation}) => {
     }
 
     setSearchLoading(true);
+    let lastProgressAt = 0;
 
     searchIndexAsync(index, searchQuery, {
       group: activeGroup,
       limit: 120,
       isCancelled: () => cancelled,
+      onProgress: (partial) => {
+        const now = Date.now();
+        if (!cancelled && (now - lastProgressAt >= 400)) {
+          lastProgressAt = now;
+          setResult(partial);
+        }
+      },
     })
       .then((nextResult) => {
         if (!cancelled && nextResult) {
