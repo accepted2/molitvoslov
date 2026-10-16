@@ -297,14 +297,35 @@ def parse_readings_text(text):
             order=index * 10,
         )
 
-        # Same Scripture on the same service must appear only once, even
-        # when source rows differ in punctuation, order or a generic label.
-        duplicate = any(
-            normalized_reading_key(existing) == normalized_reading_key(reading)
-            for existing in result
+        # The same passage can be appointed for different commemorations
+        # at the SAME service. Keep one card, but retain both rubrics.
+        existing_index = next(
+            (
+                position
+                for position, previous in enumerate(result)
+                if normalized_reading_key(previous) == normalized_reading_key(reading)
+            ),
+            None,
         )
-        if not duplicate:
+        if existing_index is None:
             result.append(reading)
+        else:
+            previous = result[existing_index]
+            labels = []
+            for candidate in (previous.label, reading.label):
+                candidate = normalize_space(candidate)
+                if candidate and candidate.casefold() not in {
+                    item.casefold() for item in labels
+                }:
+                    labels.append(candidate)
+            merged_label = "; ".join(labels)
+            if len(merged_label) <= 255:
+                result[existing_index] = ParsedReading(
+                    kind=previous.kind,
+                    label=merged_label,
+                    title=previous.title,
+                    order=previous.order,
+                )
 
     return result
 
