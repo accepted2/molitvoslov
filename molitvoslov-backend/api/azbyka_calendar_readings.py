@@ -329,7 +329,7 @@ def _is_readings_paragraph(text):
     # The source uses paragraphs such as "Субботы: Лит. – Ап.: ...".
     # Short rubrics followed by a colon are day appointments; explanatory
     # sentences ("Если служба полиелейная, читается ...") are NOT.
-    if re.match(r"^(?:если|когда|в случае|примечани|см\\.)\\b", prefix, re.I):
+    if re.match(r"^(?:если|когда|в случае|примечани|см\.)\b", prefix, re.I):
         return False
 
     if ":" in prefix and len(prefix) <= 160:
@@ -337,9 +337,9 @@ def _is_readings_paragraph(text):
 
     # "Лит. – ..." / "Утр. – ..." / "На веч. – ..." formats may lack ":".
     if re.match(
-        r"^(?:лит\\.?|на литургии|утр\\.?|на утрени|веч\\.?|на веч\\.|"
-        r"на [1369]-?м часе|ряд\\.?|рядовое|субботы|недели|мч\\.|"
-        r"вмч\\.|свт\\.|сщмч\\.|богородицы)\\b",
+        r"^(?:лит\.?|на литургии|утр\.?|на утрени|веч\.?|на веч\.|"
+        r"на [1369]-?м часе|ряд\.?|рядовое|субботы|недели|мч\.|"
+        r"вмч\.|свт\.|сщмч\.|богородицы)\b",
         prefix, re.I,
     ):
         return True
