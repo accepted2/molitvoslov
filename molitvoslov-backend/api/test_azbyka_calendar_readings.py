@@ -223,6 +223,12 @@ class CalendarReadingsMergeTests(SimpleTestCase):
         incoming = [self._reading("gospel", "Ряд.", "Ин.1:1-17", 20)]
         self.assertEqual(readings_to_add(current, incoming), [])
 
+    def test_unlabelled_routine_is_same_as_ryad(self):
+        from api.management.commands.import_azbyka_calendar_readings import readings_to_add
+        previous = [self._reading("gospel", "", "Ин.1:1–17")]
+        source = [self._reading("gospel", "Ряд.", "Ин.1:1–17")]
+        self.assertEqual(readings_to_add(previous, source), [])
+
     def test_adds_missing_apostle_without_removing_existing_gospel(self):
         from api.management.commands.import_azbyka_calendar_readings import readings_to_add
         original = self._reading("gospel", "", "Ин.1:1–17")
