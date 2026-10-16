@@ -5,7 +5,7 @@ import {buildSearchIndexAsync, normalizeSearchText, SEARCH_GROUPS} from './searc
 
 const SCHEMA = '2';
 let initialization = null;
-let building = null;
+const buildsByLanguage = new Map();
 let enabled = null;
 
 const delay = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -81,9 +81,9 @@ export const searchPersistent = async (language, query, group = SEARCH_GROUPS.AL
 export const ensurePersistentSearch = async (language = 'ru', {isCancelled = () => false, onProgress = () => {}} = {}) => {
   if (!(await preparePersistentSearch())) return false;
   if (await isPersistentSearchReady(language)) return true;
-  if (building) return building;
+  if (buildsByLanguage.has(language)) return buildsByLanguage.get(language);
 
-  building = (async () => {
+  const building = (async () => {
     const version = versionFor(language);
     const entries = await buildSearchIndexAsync(language, {isCancelled, onProgress: () => {}});
     if (!entries || isCancelled()) return false;
@@ -162,7 +162,8 @@ export const ensurePersistentSearch = async (language = 'ru', {isCancelled = () 
   })().catch((error) => {
     console.warn('Persistent search indexing failed:', error?.message || error);
     return false;
-  }).finally(() => { building = null; });
+  }).finally(() => { buildsByLanguage.delete(language); });
 
+  buildsByLanguage.set(language, building);
   return building;
 };
