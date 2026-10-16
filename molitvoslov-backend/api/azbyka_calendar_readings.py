@@ -369,19 +369,21 @@ def extract_readings_text(html):
     chunks = []
     first_found = False
 
-    # A heading may contain navigation links (which are not readings).
-    # Look at every independent <p>/<li> until the NEXT same/higher heading.
-    # Avoid processing a wrapper <li> and its child <p> twice.
+    # The source has used <p>, <li>, table <tr> and nested <div>
+    # for separate sets of readings. Pick the most specific text-bearing
+    # container; never parse a wrapper and its children twice.
     for tag in heading.find_all_next():
         tag_level = _heading_level(tag)
         if tag_level is not None and tag_level <= level:
             break
 
-        if tag.name not in {"p", "li"}:
+        if tag.name not in {"p", "li", "tr", "div"}:
             continue
-        if tag.name == "li" and tag.find(["p", "li"]):
-            continue
-        if tag.name == "p" and tag.find_parent("li") and tag.find_parent("li").find("p") is None:
+        if tag.name in {"li", "tr", "div"} and any(
+            descendant.name in {"p", "li", "tr", "div"}
+            and REFERENCE_RE.search(normalize_space(descendant.get_text(" ", strip=True)))
+            for descendant in tag.find_all(["p", "li", "tr", "div"])
+        ):
             continue
 
         text = normalize_space(tag.get_text(" ", strip=True))
