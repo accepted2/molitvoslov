@@ -251,3 +251,59 @@ class CalendarReadingsMergeTests(SimpleTestCase):
         first = self._reading("gospel", "", "Лк.1:39–49,56")
         second = self._reading("gospel", "", "Лк.1:39–49")
         self.assertEqual(readings_to_add([first], [second]), [second])
+
+
+class CalendarReadingDeduplicationTests(SimpleTestCase):
+    def _row(self, kind, label, title, pk, order):
+        from types import SimpleNamespace
+        return SimpleNamespace(kind=kind, label=label, title=title, pk=pk, order=order)
+
+    def test_same_gospel_ordinary_vs_no_label_is_not_added(self):
+        from api.calendar_reading_identity import readings_to_add
+        existing = [self._row("gospel", "", "Ин. 1:1–17 (зач. 1)", 2, 10)]
+        incoming = [self._row("gospel", "Ряд.", "Ин.1:1-17 (зач. 1)", 5, 50)]
+        self.assertEqual(readings_to_add(existing, incoming), [])
+
+    def test_same_apostle_different_source_labels_is_not_added(self):
+        from api.calendar_reading_identity import readings_to_add
+        existing = [self._row("apostle", "Ряд.", "Деян.1:1–8", 2, 10)]
+        incoming = [self._row("apostle", "Свт.", "Деян. 1:1-8 (зач. 1)", 5, 30)]
+        self.assertEqual(readings_to_add(existing, incoming), [])
+
+    def test_two_services_are_distinct(self):
+        from api.calendar_reading_identity import normalized_reading_key, readings_to_add
+        first = self._row("gospel", "Утр.", "Ин. 1:1–17", 1, 10)
+        second = self._row("gospel", "На веч.", "Ин. 1:1–17", 2, 20)
+        self.assertNotEqual(normalized_reading_key(first), normalized_reading_key(second))
+        self.assertEqual(readings_to_add([first], [second]), [second])
+
+    def test_cleanup_removes_only_equivalent_duplicates(self):
+        from api.management.commands.deduplicate_calendar_readings import select_duplicate_cleanup
+        a = self._row("gospel", "", "Ин.1:1–17", 10, 10)
+        b = self._row("gospel", "Ряд.", "Ин. 1:1-17 (зач. 1)", 11, 20)
+        removal, ambiguous = select_duplicate_cleanup([a, b])
+        self.assertEqual([(keep.pk, [r.pk for r in extra]) for keep, extra in removal], [(10, [11])])
+        self.assertEqual(ambiguous, [])
+
+    def test_cleanup_preserves_different_feast_labels(self):
+        from api.management.commands.deduplicate_calendar_readings import select_duplicate_cleanup
+        a = self._row("gospel", "Ряд.", "Мф.1:1–8", 10, 10)
+        b = self._row("gospel", "Свт.", "Мф.1:1–8", 11, 20)
+        removal, ambiguous = select_duplicate_cleanup([a, b])
+        self.assertEqual(removal, [])
+        self.assertEqual([[r.pk for r in group] for group in ambiguous], [[10, 11]])
+
+    def test_bible_range_boundary_difference_is_not_duplicate(self):
+        from api.calendar_reading_identity import normalized_reading_key
+        a = self._row("gospel", "", "Лк.1:39–49,56", 1, 10)
+        b = self._row("gospel", "", "Лк.1:39–49", 2, 20)
+        self.assertNotEqual(normalized_reading_key(a), normalized_reading_key(b))
+
+    def test_rerunning_merge_is_idempotent(self):
+        from api.calendar_reading_identity import readings_to_add
+        already = [self._row("apostle", "", "Гал.2:16–20", 1, 10)]
+        source = [self._row("apostle", "Ряд.", "Гал.2:16-20", 2, 10)]
+        first = readings_to_add(already, source)
+        second = readings_to_add(already + first, source)
+        self.assertEqual(first, [])
+        self.assertEqual(second, [])
