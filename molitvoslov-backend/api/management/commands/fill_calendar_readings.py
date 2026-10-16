@@ -22,6 +22,11 @@ class Command(BaseCommand):
         parser.add_argument("--year", type=int, default=2027)
         parser.add_argument("--date", default="", help="Одна дата YYYY-MM-DD для проверки.")
         parser.add_argument("--month", type=int, default=None, help="Один месяц 1..12.")
+        parser.add_argument(
+            "--special-2027",
+            action="store_true",
+            help="Проверить только пять дат с Великим каноном: 15–18 марта и 14 апреля 2027.",
+        )
         parser.add_argument("--apply", action="store_true", help="Записать в локальную SQLite; иначе dry-run.")
         parser.add_argument("--delay", type=float, default=0.5, help="Пауза между запросами к источнику.")
         parser.add_argument("--report", default="", help="JSON-отчёт. По умолчанию backend/reports/.")
@@ -34,9 +39,15 @@ class Command(BaseCommand):
             raise CommandError("Месяц должен быть от 1 до 12.")
         if opts["date"] and opts["month"] is not None:
             raise CommandError("Используйте --date или --month, но не оба.")
+        if opts["special_2027"] and (year != 2027 or opts["date"] or opts["month"] is not None):
+            raise CommandError("--special-2027 используется только с --year 2027, без --date/--month.")
 
         args = []
-        if opts["date"]:
+        if opts["special_2027"]:
+            from api.verified_lectionary_2027_special import VERIFIED_SPECIAL_2027
+            for target_day in sorted(VERIFIED_SPECIAL_2027):
+                args.extend(["--date", target_day.isoformat()])
+        elif opts["date"]:
             try:
                 day = date.fromisoformat(opts["date"])
             except ValueError as exc:
@@ -52,7 +63,8 @@ class Command(BaseCommand):
             args.extend(["--year", str(year)])
 
         report = Path(opts["report"] or (
-            Path(settings.BASE_DIR) / "reports" / f"calendar_readings_{year}_fill.json"
+            Path(settings.BASE_DIR) / "reports"
+            / f"calendar_readings_{year}_{'special_5' if opts['special_2027'] else 'fill'}.json"
         ))
         args.extend([
             "--merge",
