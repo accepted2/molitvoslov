@@ -314,6 +314,53 @@ class CalendarReadingDeduplicationTests(SimpleTestCase):
         b = self._row("gospel", "", "Лк.1:39–49", 2, 20)
         self.assertNotEqual(normalized_reading_key(a), normalized_reading_key(b))
 
+    def test_coalesces_differently_labeled_same_scripture_and_preserves_reasons(self):
+        from api.management.commands.deduplicate_calendar_readings import plan_reading_coalescence
+        a = self._row("gospel", "Ряд.", "Ин.1:1–17 (зач. 1)", 10, 10)
+        b = self._row("gospel", "Свт.", "Ин. 1:1-17", 11, 20)
+        actions, review = plan_reading_coalescence([a, b])
+        self.assertEqual(review, [])
+        self.assertEqual(len(actions), 1)
+        keep, extras, label = actions[0]
+        self.assertEqual(keep.pk, 10)
+        self.assertEqual([r.pk for r in extras], [11])
+        self.assertEqual(label, "Ряд.; Свт.")
+
+    def test_coalesces_apostolic_with_three_distinct_labels(self):
+        from api.management.commands.deduplicate_calendar_readings import plan_reading_coalescence
+        a = self._row("apostle", "", "Гал.2:16–20", 1, 10)
+        b = self._row("apostle", "Ряд.", "Гал.2:16–20", 2, 20)
+        c = self._row("apostle", "Свт.", "Гал.2:16-20", 3, 30)
+        actions, review = plan_reading_coalescence([a, b, c])
+        self.assertEqual(review, [])
+        self.assertEqual(len(actions), 1)
+        self.assertEqual([r.pk for r in actions[0][1]], [2, 3])
+        self.assertEqual(actions[0][2], "Ряд.; Свт.")
+
+    def test_coalescence_does_not_combine_different_services(self):
+        from api.management.commands.deduplicate_calendar_readings import plan_reading_coalescence
+        a = self._row("gospel", "Утр.", "Ин.20:19–25", 1, 10)
+        b = self._row("gospel", "Веч.", "Ин.20:19–25", 2, 20)
+        actions, review = plan_reading_coalescence([a, b])
+        self.assertEqual(actions, [])
+        self.assertEqual(review, [])
+
+    def test_coalescence_rejects_oversized_combined_label(self):
+        from api.management.commands.deduplicate_calendar_readings import plan_reading_coalescence
+        a = self._row("gospel", "Святой " + "а" * 150, "Ин.1:1-17", 1, 10)
+        b = self._row("gospel", "Память " + "б" * 150, "Ин.1:1-17", 2, 20)
+        actions, review = plan_reading_coalescence([a, b])
+        self.assertEqual(actions, [])
+        self.assertEqual(len(review), 1)
+        self.assertEqual(review[0][1], "COMBINED_LABEL_TOO_LONG")
+
+    def test_coalescence_is_idempotent_on_clean_rows(self):
+        from api.management.commands.deduplicate_calendar_readings import plan_reading_coalescence
+        a = self._row("gospel", "Ряд.; Свт.", "Ин.1:1-17", 1, 10)
+        actions, review = plan_reading_coalescence([a])
+        self.assertEqual(actions, [])
+        self.assertEqual(review, [])
+
     def test_rerunning_merge_is_idempotent(self):
         from api.calendar_reading_identity import readings_to_add
         already = [self._row("apostle", "", "Гал.2:16–20", 1, 10)]
