@@ -635,10 +635,15 @@ export const MenuScreen = ({navigation}) => {
   const updateCalendarWidget = useCallback(
     async (day = calendarToday, language = calendarLanguage) => {
       try {
+        const today = new Date();
+        const month = await getOfflineCalendarMonth(
+          today.getFullYear(), today.getMonth() + 1, getCalendarDataLanguage(language)
+        );
         await requestWidgetUpdate({
           widgetName: 'ChurchCalendar',
           renderWidget: (widgetInfo) => (
             <ChurchCalendarWidget
+              monthDays={month?.days || []}
               day={day}
               language={language}
               width={widgetInfo.width}
