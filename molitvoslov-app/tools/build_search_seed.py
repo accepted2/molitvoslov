@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "src" / "data" / "search_seed.db"
 CONTENT = ROOT / "src" / "data" / "offlineContent.json"
 BIBLE = ROOT / "src" / "data" / "offlineBible.json"
-SCHEMA = "5"
+SCHEMA = "6"
 
 def fold(value):
     value = unicodedata.normalize("NFD", str(value or "").lower())
@@ -47,6 +47,11 @@ def main():
                    "route": route, "matchedLanguageLabel": "",
                    "groupLabel": group, "score": 150}
         normalized = fold(" ".join([title, source] + texts))
+        # Index adjacent word pairs. FTS5 detail=none cannot evaluate phrase positions.
+        # Keep pair tokens separate from the normal words to preserve legacy matching.
+        words = normalized.split()
+        phrase_tokens = ("zzphrase" + a + "zz" + b for a, b in zip(words, words[1:]))
+        normalized = normalized + " " + " ".join(phrase_tokens)
         count += 1
         db.execute("INSERT INTO search_documents(rowid, normalized) VALUES (?, ?)", (count, normalized))
         db.execute("INSERT INTO search_payloads(rowid, language, group_key, payload) VALUES (?, ?, ?, ?)",
