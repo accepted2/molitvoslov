@@ -10,7 +10,7 @@ import {
 import {useLanguage} from '../../context/LanguageContext';
 
 import SelectableDocumentReader from './SelectableDocumentReader';
-import { translate } from '../../i18n/translations';
+import {translate} from '../../i18n/translations';
 
 const normalizeText = (value) =>
   String(value || '')
@@ -313,10 +313,7 @@ export default function ExpandablePrayerBlock({
             size={20}
             color="#875627"
             style={{
-              transform: [
-                {translateX: isOpen ? 0 : 0},
-                {translateY: isOpen ? -0.3 : 1},
-              ],
+              transform: [{translateX: isOpen ? 0 : 0}, {translateY: isOpen ? -0.3 : 1}],
             }}
           />
         </View>
@@ -340,11 +337,7 @@ export default function ExpandablePrayerBlock({
             style={({pressed}) => [styles.collapseButton, pressed && styles.collapsePressed]}
             onPress={collapse}
           >
-            <Ionicons
-              name="chevron-up"
-              size={16}
-              color="#7A4F2D"
-            />
+            <Ionicons name="chevron-up" size={16} color="#7A4F2D" />
             <Text style={styles.collapseText}>{t('common.collapseOnly')}</Text>
           </Pressable>
         </View>

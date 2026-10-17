@@ -179,12 +179,14 @@ const SearchContent = ({navigation}) => {
     const trimmed = searchQuery.trim();
     if (paused || !seedReady || trimmed.length < 2) {
       if (!paused) setSearchLoading(false);
-      return () => { cancelled = true; };
+      return () => {
+        cancelled = true;
+      };
     }
 
     const scope = `${language}:${activeGroup}:${searchQuery}`;
     setSearchLoading(true);
-    searchPersistent(language, searchQuery, activeGroup, 120, seedDb)
+    searchPersistent(language, searchQuery, activeGroup, 120, 0, seedDb)
       .then((nextResult) => {
         if (!cancelled && nextResult) {
           setResult(nextResult);
@@ -198,8 +200,12 @@ const SearchContent = ({navigation}) => {
           setSearchScope(scope);
         }
       })
-      .finally(() => { if (!cancelled) setSearchLoading(false); });
-    return () => { cancelled = true; };
+      .finally(() => {
+        if (!cancelled) setSearchLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [searchQuery, activeGroup, language, seedReady, seedDb, paused]);
 
   const suggestionIndex = useMemo(
@@ -309,17 +315,22 @@ const SearchContent = ({navigation}) => {
   const displayScope = `${language}:${activeGroup}:${searchQuery}`;
   const resultsCurrent = (paused || searchQuery === query) && displayScope === searchScope;
   const visibleResults = useMemo(
-    () => resultsCurrent
-      ? (activeGroup === SEARCH_GROUPS.ALL
-        ? result.items
-        : result.items.filter((item) => item.group === activeGroup))
-      : [],
+    () =>
+      resultsCurrent
+        ? activeGroup === SEARCH_GROUPS.ALL
+          ? result.items
+          : result.items.filter((item) => item.group === activeGroup)
+        : [],
     [result.items, activeGroup, resultsCurrent]
   );
 
   const showEmpty =
-    resultsCurrent && !indexLoading && !searchLoading &&
-    !waitingForQuery && !queryTooShort && result.total === 0;
+    resultsCurrent &&
+    !indexLoading &&
+    !searchLoading &&
+    !waitingForQuery &&
+    !queryTooShort &&
+    result.total === 0;
 
   return (
     <AppBackground imageOpacity={0.42}>
@@ -340,7 +351,10 @@ const SearchContent = ({navigation}) => {
             <TextInput
               autoFocus
               value={query}
-              onChangeText={(value) => { setPaused(false); setQuery(value); }}
+              onChangeText={(value) => {
+                setPaused(false);
+                setQuery(value);
+              }}
               placeholder={copy.placeholder}
               placeholderTextColor="#9B806A"
               autoCorrect={false}
@@ -430,7 +444,10 @@ const SearchContent = ({navigation}) => {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Остановить поиск"
-                  onPress={() => { setPaused(true); setSearchLoading(false); }}
+                  onPress={() => {
+                    setPaused(true);
+                    setSearchLoading(false);
+                  }}
                   hitSlop={8}
                 >
                   <Text style={styles.countText}>Стоп</Text>
@@ -488,7 +505,10 @@ const SearchContent = ({navigation}) => {
         ) : (
           <FlatList
             data={visibleResults}
-            onScrollBeginDrag={() => { setPaused(true); setSearchLoading(false); }}
+            onScrollBeginDrag={() => {
+              setPaused(true);
+              setSearchLoading(false);
+            }}
             keyExtractor={(item) => item.id}
             renderItem={renderResult}
             keyboardShouldPersistTaps="handled"
@@ -864,7 +884,7 @@ const styles = StyleSheet.create({
 // The main molitvoslov.db and user data are never overwritten.
 export const SearchScreen = (props) => (
   <SQLiteProvider
-    databaseName="molitvoslov_search_seed_v7.db"
+    databaseName="molitvoslov_search_seed_v8.db"
     assetSource={{assetId: require('../data/search_seed.db')}}
   >
     <SearchContent {...props} />
