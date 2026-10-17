@@ -126,14 +126,11 @@ export const ensurePersistentSearch = async (
     if (!entries || isCancelled()) return false;
     const db = await getDatabase();
     await db.runAsync('DELETE FROM search_metadata WHERE language = ?', [language]);
-    const old = await db.getAllAsync('SELECT rowid FROM search_payloads WHERE language = ?', [language]);
-    // FTS5 contentless tables require the special delete command, not a normal DELETE.
-    await db.withTransactionAsync(async () => {
-      for (const row of old) {
-        await db.runAsync("INSERT INTO search_documents(search_documents,rowid) VALUES('delete',?)", [row.rowid]);
-      }
-      await db.runAsync('DELETE FROM search_payloads WHERE language = ?', [language]);
-    });
+    // A full rebuild is simpler and safe for a contentless FTS5 index.
+    // Never mix index versions or leave orphaned FTS rows.
+    await db.execAsync("INSERT INTO search_documents(search_documents) VALUES('delete-all');");
+    await db.runAsync('DELETE FROM search_payloads');
+    await db.runAsync('DELETE FROM search_metadata');
     let batch = [];
     const flush = async () => {
       const rows = batch; batch = [];
