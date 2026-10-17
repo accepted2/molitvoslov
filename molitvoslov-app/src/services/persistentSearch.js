@@ -3,7 +3,7 @@ import {getCurrentContent} from './contentStore';
 import {getCurrentBibleContent} from './bibleStore';
 import {buildSearchIndexAsync, normalizeSearchText, SEARCH_GROUPS} from './searchIndex';
 
-const SCHEMA = '5';
+const SCHEMA = '6';
 let initialization = null;
 const buildsByLanguage = new Map();
 let enabled = null;
@@ -90,26 +90,38 @@ export const searchPersistent = async (
   const langColumn = seeded ? 'p.language' : 'language';
   const groupColumn = seeded ? 'p.group_key' : 'group_key';
   const payloadColumn = seeded ? 'p.payload' : 'payload';
-  const where =
-    group === SEARCH_GROUPS.ALL
-      ? langColumn + ' = ? AND search_documents MATCH ?'
-      : langColumn + ' = ? AND ' + groupColumn + ' = ? AND search_documents MATCH ?';
-  const args =
-    group === SEARCH_GROUPS.ALL ? [language, ftsQuery(query)] : [language, group, ftsQuery(query)];
-  const count = await db.getFirstAsync(
-    'SELECT count(*) AS n FROM ' + table + ' WHERE ' + where,
-    args
-  );
-  const rows = await db.getAllAsync(
-    'SELECT ' +
-      payloadColumn +
-      ' AS payload FROM ' +
-      table +
-      ' WHERE ' +
-      where +
-      ' ORDER BY bm25(search_documents) LIMIT ?',
-    [...args, limit]
-  );
+  const where = group === SEARCH_GROUPS.ALL
+    ? langColumn + ' = ? AND search_documents MATCH ?'
+    : langColumn + ' = ? AND ' + groupColumn + ' = ? AND search_documents MATCH ?';
+  const baseArgs = group === SEARCH_GROUPS.ALL ? [language] : [language, group];
+  const tokens = ftsTokens(query);
+  const ordinaryQuery = ftsQuery(query);
+  const count = await db.getFirstAsync('SELECT count(*) AS n FROM ' + table + ' WHERE ' + where,
+    [...baseArgs, ordinaryQuery]);
+
+  const select = 'SELECT ' + payloadColumn + ' AS payload FROM ' + table + ' WHERE ' +
+    where + ' ORDER BY bm25(search_documents) LIMIT ?';
+  let rows = [];
+  // The compact bundled index stores synthetic adjacent-word tokens.
+  // Prioritize continuous word sequences, then append other AND matches.
+  if (seeded && tokens.length > 1) {
+    const pairs = tokens.slice(0, -1).map((word, i) =>
+      '"zzphrase' + word + 'zz' + tokens[i + 1] + '"*');
+    const phraseQuery = pairs.join(' AND ');
+    rows = await db.getAllAsync(select, [...baseArgs, phraseQuery, limit]);
+  }
+  if (rows.length < limit) {
+    const other = await db.getAllAsync(select, [...baseArgs, ordinaryQuery, limit]);
+    const seen = new Set(rows.map((row) => JSON.parse(row.payload).id));
+    for (const row of other) {
+      const id = JSON.parse(row.payload).id;
+      if (!seen.has(id)) {
+        rows.push(row);
+        seen.add(id);
+        if (rows.length >= limit) break;
+      }
+    }
+  }
   return {items: rows.map((row) => JSON.parse(row.payload)), total: count?.n || 0};
 };
 
