@@ -89,7 +89,7 @@ export const searchPersistent = async (
     found = await runMatch(db, language, group, buildAndQuery(words), limit, offset);
   }
   const sorted = found.rows.map((row) => ({
-    ...row, sortKey: row.rank / (row.boost || 1),
+    ...row, sortKey: row.rank * (row.boost || 1),
   })).sort((a, b) => a.sortKey - b.sortKey).slice(0, limit);
   return {items: sorted.map((row) => JSON.parse(row.payload)),
     total: found.total, hasMore: offset + sorted.length < found.total};
