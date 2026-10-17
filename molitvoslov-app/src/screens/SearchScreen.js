@@ -20,7 +20,7 @@ import {useLanguage} from '../context/LanguageContext';
 import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {subscribeToContentUpdates} from '../services/contentStore';
 import {addSearchHistory, clearSearchHistory, getSearchHistory} from '../services/searchHistory';
-import {isPersistentSearchReady, searchPersistent} from '../services/persistentSearch';
+import {isPersistentSearchReady, searchPersistent} from '../services/search/engine';
 import {
   SEARCH_GROUPS,
   SEARCH_GROUP_OPTIONS,
