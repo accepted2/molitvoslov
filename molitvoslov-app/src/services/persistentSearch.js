@@ -63,10 +63,11 @@ export const isPersistentSearchReady = async (language = 'ru', database = null) 
   return row?.version === versionFor(language);
 };
 
-const ftsTokens = (query) =>
-  normalizeSearchText(query).replace(/ё/g, 'е')
-    .split(' ')
-    .filter((word) => word.length >= 2);
+const ftsTokens = (query) => {
+  const words = normalizeSearchText(query).replace(/ё/g, 'е').split(' ').filter(Boolean);
+  // A trailing one-letter prefix is meaningful in a phrase: "все могу в".
+  return words.length > 1 ? words : words.filter((word) => word.length >= 2);
+};
 // Parameterized FTS5 syntax: each token is quoted and matched by prefix.
 const ftsQuery = (query) =>
   ftsTokens(query)
