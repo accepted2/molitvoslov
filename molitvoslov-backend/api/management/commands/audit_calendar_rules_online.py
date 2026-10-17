@@ -91,6 +91,12 @@ class Command(BaseCommand):
             "--output-dir", default="reports/calendar_rule_source_audit_2026_2028"
         )
         parser.add_argument(
+            "--catalog",
+            default="molitvoslov_calendar_database_v4_AUDITED.json",
+            help="JSON-каталог для сопоставления с предлагаемыми правилами; "
+                 "если файла нет, онлайн-сверка проводится без него.",
+        )
+        parser.add_argument(
             "--delay", type=float, default=0.5,
             help="Минимальная пауза между запросами Azbyka (0.5 сек).",
         )
@@ -110,6 +116,33 @@ class Command(BaseCommand):
         output.mkdir(parents=True, exist_ok=True)
 
         source = source_rules_2026()
+        catalog_path = Path(opts["catalog"])
+        if not catalog_path.is_absolute():
+            catalog_path = Path(settings.BASE_DIR) / catalog_path
+        catalog_rules = {}
+        if catalog_path.exists():
+            try:
+                raw = json.loads(catalog_path.read_text(encoding="utf-8-sig"))
+                catalog_rules = {
+                    int(item["local_id"]): item.get("date_rule")
+                    for item in raw["feasts"].values()
+                    if isinstance(item.get("local_id"), int)
+                }
+                if len(catalog_rules) != len(raw["feasts"]):
+                    raise ValueError(
+                        "Неуникальные / отсутствующие local_id в справочнике."
+                    )
+            except (KeyError, TypeError, ValueError, OSError) as e:
+                raise CommandError(f"Некорректный JSON-каталог: {e}") from e
+            self.stdout.write(
+                f"Каталог: {len(catalog_rules)} правил из {catalog_path}"
+            )
+        else:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"Каталог {catalog_path} не найден: сравнение с JSON пропущено."
+                )
+            )
         self.stdout.write(f"Эталон локальной SQLite: {len(source)} привязок за 2026 год.")
 
         session = requests.Session()
@@ -227,11 +260,17 @@ class Command(BaseCommand):
             else:
                 dates = [observed[y][0] for y in YEARS]
                 suggestion = inferred_rule(dates)
-                status = ("RULE_CONFIRMED" if suggestion is not None
+                status = ("SOURCE_RULE_CONFIRMED" if suggestion is not None
                           else "COMPLEX_WEEKDAY_OR_EXCEPTION")
                 if suggestion is not None:
+                    if memory.id in catalog_rules:
+                        status = (
+                            "RULE_CONFIRMED" if catalog_rules[memory.id] == suggestion
+                            else "CATALOG_RULE_DIFFERS"
+                        )
                     proposals[str(memory.id)] = {
                         "title": memory.title,
+                        "previous_catalog_rule": catalog_rules.get(memory.id),
                         "rule": suggestion,
                         "evidence": [
                             {"date": str(d), "day_url": SITE.format(date=str(d)),
@@ -255,6 +294,10 @@ class Command(BaseCommand):
                 "2028_observed": ",".join(map(str, observed[2028])),
                 "proposed_rule": json.dumps(suggestion, ensure_ascii=False)
                 if suggestion else "",
+                "catalog_rule": (
+                    json.dumps(catalog_rules.get(memory.id), ensure_ascii=False)
+                    if memory.id in catalog_rules else ""
+                ),
                 "match_note": match_error,
             })
 
@@ -262,16 +305,18 @@ class Command(BaseCommand):
             output / "all_3056_rules.csv", rows, [
                 "local_id", "title", "source_2026", "status", "match_score",
                 "source_saint_url", "2026_observed", "2027_observed",
-                "2028_observed", "proposed_rule", "match_note",
+                "2028_observed", "proposed_rule", "catalog_rule", "match_note",
             ]
         )
         _write_csv(
             output / "needs_review.csv",
-            [x for x in rows if x["status"] != "RULE_CONFIRMED"],
+            [x for x in rows if x["status"] not in (
+                "RULE_CONFIRMED", "SOURCE_RULE_CONFIRMED"
+            )],
             [
                 "local_id", "title", "source_2026", "status", "match_score",
                 "source_saint_url", "2026_observed", "2027_observed",
-                "2028_observed", "proposed_rule", "match_note",
+                "2028_observed", "proposed_rule", "catalog_rule", "match_note",
             ]
         )
         _dump_json(output / "rule_proposals.json", {
@@ -292,6 +337,8 @@ class Command(BaseCommand):
             "years": list(YEARS), "source_pages": all_days,
             "status": dict(stats),
             "proposals": len(proposals),
+            "json_rules_loaded": len(catalog_rules),
+            "rules_to_correct": stats["CATALOG_RULE_DIFFERS"],
             "sqlite_changed": False, "supabase_changed": False,
             "catalog_changed": False,
         })
