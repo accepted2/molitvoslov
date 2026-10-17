@@ -426,6 +426,17 @@ const SearchContent = ({navigation}) => {
               ) : result.total > 0 ? (
                 <Text style={styles.countText}>{copy.found(result.total)}</Text>
               ) : null}
+              {!paused && !indexLoading && !!query && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Остановить поиск"
+                  onPress={() => { setPaused(true); setSearchLoading(false); }}
+                  hitSlop={8}
+                >
+                  <Text style={styles.countText}>Стоп</Text>
+                </Pressable>
+              )}
+              {paused && <Text style={styles.countText}>Поиск остановлен</Text>}
             </View>
           )}
         </View>
