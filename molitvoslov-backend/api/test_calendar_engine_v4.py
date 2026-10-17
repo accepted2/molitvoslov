@@ -3,6 +3,9 @@ from django.test import SimpleTestCase
 from api.calendar_engine_v2 import Memorial
 from api.calendar_engine_v4 import (
     CONFIRMED_CORRECTIONS,
+    orthodox_pascha,
+    julian_month_day,
+    year_days,
     classify_v4,
     target_v4,
     main_priority_v4,
@@ -11,6 +14,13 @@ from api.calendar_engine_v4 import (
 
 
 class CalendarEngineV4Tests(SimpleTestCase):
+    def test_2028_leap_year_date_engine(self):
+        self.assertEqual(orthodox_pascha(2028), date(2028, 4, 16))
+        self.assertEqual(len(list(year_days(2028))), 366)
+        # February 29 Julian exists in 2028 and needs its own source
+        # commemoration; it is absent from the non-leap 2026 reference.
+        self.assertEqual(julian_month_day(date(2028, 3, 13)), (2, 29))
+
     def test_confirmed_rules_reproduce_reference_year(self):
         for c in CONFIRMED_CORRECTIONS:
             with self.subTest(c.feast_id):
