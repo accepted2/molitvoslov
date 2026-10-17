@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {API_BASE_URL} from './backendAuth';
+import {publishCalendarUpdate} from './calendarEvents';
 
 const PREFIX = '@molitvoslov/calendar-markers-v1:';
 const REFRESH_MS = 24 * 60 * 60 * 1000;
@@ -21,8 +22,9 @@ export const loadYearMarkers = async (year) => {
     const raw = await AsyncStorage.getItem(`${PREFIX}${key}`);
     const value = raw ? JSON.parse(raw) : {days: key === 2026 ? bundled2026() : {}};
     const days = value?.days && typeof value.days === 'object' ? value.days : {};
-    memory.set(key, days);
-    return days;
+    const merged = {...getBundledYearMarkers(key), ...days};
+    memory.set(key, merged);
+    return merged;
   } catch {
     return getBundledYearMarkers(key);
   }
@@ -33,7 +35,7 @@ export const applyYearMarkers = (day, markersByDate) => {
   if (!day?.date_gregorian) return day;
   const patch = markersByDate?.[day.date_gregorian];
   if (!patch?.calendar_markers) return day;
-  return {...day, ...patch};
+  return {...day, ...patch, calendar_markers: {...day.calendar_markers, ...patch.calendar_markers}};
 };
 
 export const applyYearMarkersToMonth = (month, markersByDate) =>
@@ -63,6 +65,7 @@ export const syncYearMarkers2026 = async () => {
     }
     await AsyncStorage.setItem(`${PREFIX}${year}`, JSON.stringify(payload));
     memory.set(year, payload.days);
+    publishCalendarUpdate({kind: 'markers', year});
     await AsyncStorage.setItem(stampKey, String(Date.now()));
     return {updated: true};
   })().finally(() => {
