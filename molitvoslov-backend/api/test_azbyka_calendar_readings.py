@@ -121,6 +121,152 @@ class AzbykaCalendarReadingsParserTests(SimpleTestCase):
             ],
         )
 
+    def test_2027_pascha_readings_include_vespers_service(self):
+        readings = parse_readings_text(
+            "Рядовое: Лит. – Ап.: Деян.1:1-8 . "
+            "Ев.: Ин.1:1-17 . Веч. – Ин.20:19-25 ."
+        )
+        self.assertEqual(
+            [(r.kind, r.label) for r in readings],
+            [("apostle", "Ряд."), ("gospel", "Ряд."), ("gospel", "Веч.")],
+        )
+        self.assertEqual(readings[2].title, "Ин.20:19–25")
+
+    def test_2027_january_liturgy_colum_labels_not_rubrics(self):
+        readings = parse_readings_text(
+            "Рядовое: Лит. – Ап.: Евр.11:8,11-16 . Ев.: Мк.9:33-41 ."
+        )
+        self.assertEqual([r.label for r in readings], ["Ряд.", "Ряд."])
+
+    def test_same_passage_is_not_twice_in_same_service(self):
+        readings = parse_readings_text(
+            "Ряд.: Деян.1:1–8 (зач. 1). Ин.1:1–17 (зач. 1). "
+            "Свт.: Деян. 1:1-8 (зач. 1). Ин. 1:1-17 (зач. 1)."
+        )
+        self.assertEqual(len(readings), 2)
+
+    def test_same_passage_preserves_both_reasons_in_one_reading(self):
+        readings = parse_readings_text(
+            "Ряд.: Деян.1:1–8 (зач. 1). "
+            "Свт.: Деян.1:1-8 (зач. 1)."
+        )
+        self.assertEqual(len(readings), 1)
+        self.assertEqual(readings[0].label, "Ряд.; Свт.")
+
+    def test_same_passage_is_allowed_in_separate_services(self):
+        readings = parse_readings_text(
+            "Утр. – Ин.20:1–10 (зач. 63). "
+            "Веч. – Ин.20:1–10 (зач. 63)."
+        )
+        self.assertEqual(len(readings), 2)
+        self.assertNotEqual(readings[0].label, readings[1].label)
+
+
+    def test_2027_january_16_all_six_readings_from_three_paragraphs(self):
+        html = """
+        <html><body>
+          <h2>Чтения <a>Священного Писания</a></h2>
+          <p>Субботы: Лит. – Ап.: 1Тим.3:14-4:5. Ев.: Мф.3:1-11.</p>
+          <p>Мч.: Лит. – Ап.: 2Тим.2:1-10. Ев.: Мф.10:16-22.</p>
+          <p>Рядовое: Лит. – Ап.: 1Сол.5:14-23. Ев.: Лк.17:3-10.</p>
+          <ul><li>Богослужебные чтения дня</li></ul>
+          <h2>Богослужения</h2>
+          <p>Пояснение: Ин.1:1-17.</p>
+        </body></html>
+        """
+        extracted = extract_readings_text(html)
+        readings = parse_readings_text(extracted)
+        self.assertEqual(
+            [(r.kind, r.label, r.title) for r in readings],
+            [
+                ("apostle", "Субботы", "1Тим.3:14–4:5"),
+                ("gospel", "Субботы", "Мф.3:1–11"),
+                ("apostle", "Мч.", "2Тим.2:1–10"),
+                ("gospel", "Мч.", "Мф.10:16–22"),
+                ("apostle", "Ряд.", "1Сол.5:14–23"),
+                ("gospel", "Ряд.", "Лк.17:3–10"),
+            ],
+        )
+        self.assertEqual([r.order for r in readings], [10, 20, 30, 40, 50, 60])
+
+    def test_2027_january_16_merge_adds_four_missing_readings(self):
+        from api.calendar_reading_identity import readings_to_add
+        html = """
+        <h2>Чтения Священного Писания</h2>
+        <p>Субботы: Лит. – Ап.: 1Тим.3:14-4:5. Ев.: Мф.3:1-11.</p>
+        <p>Мч.: Лит. – Ап.: 2Тим.2:1-10. Ев.: Мф.10:16-22.</p>
+        <p>Рядовое: Лит. – Ап.: 1Сол.5:14-23. Ев.: Лк.17:3-10.</p>
+        <h2>Богослужения</h2>
+        """
+        six = parse_readings_text(extract_readings_text(html))
+        self.assertEqual(len(six), 6)
+        self.assertEqual(readings_to_add(six[:2], six), six[2:])
+        self.assertEqual(readings_to_add(six, six), [])
+
+    def test_day_readings_in_list_items_not_doubled_by_nested_paragraphs(self):
+        html = """
+        <h2>Чтения Священного Писания</h2>
+        <ul>
+          <li><p>Субботы: 1Тим.3:14-4:5. Мф.3:1-11.</p></li>
+          <li><p>Мч.: 2Тим.2:1-10. Мф.10:16-22.</p></li>
+        </ul>
+        <h2>Богослужения</h2>
+        """
+        readings = parse_readings_text(extract_readings_text(html))
+        self.assertEqual(len(readings), 4)
+        self.assertEqual([r.label for r in readings], ["Субботы", "Субботы", "Мч.", "Мч."])
+
+
+    def test_three_reading_groups_in_nested_divs(self):
+        html = """
+        <h2>Чтения Священного Писания</h2>
+        <div class="readings">
+          <div>Субботы: 1Тим.3:14-4:5. Мф.3:1-11.</div>
+          <div>Мч.: 2Тим.2:1-10. Мф.10:16-22.</div>
+          <div>Рядовое: 1Сол.5:14-23. Лк.17:3-10.</div>
+        </div>
+        <h2>Богослужения</h2>
+        """
+        readings = parse_readings_text(extract_readings_text(html))
+        self.assertEqual(len(readings), 6)
+        self.assertEqual([r.label for r in readings], ["Субботы"] * 2 + ["Мч."] * 2 + ["Ряд."] * 2)
+
+    def test_three_reading_groups_in_table_rows(self):
+        html = """
+        <h2>Чтения Священного Писания</h2>
+        <table>
+          <tr><td>Субботы: 1Тим.3:14-4:5. Мф.3:1-11.</td></tr>
+          <tr><td>Мч.: 2Тим.2:1-10. Мф.10:16-22.</td></tr>
+          <tr><td>Рядовое: 1Сол.5:14-23. Лк.17:3-10.</td></tr>
+        </table>
+        <h2>Богослужения</h2>
+        """
+        readings = parse_readings_text(extract_readings_text(html))
+        self.assertEqual(len(readings), 6)
+        self.assertEqual([r.label for r in readings], ["Субботы"] * 2 + ["Мч."] * 2 + ["Ряд."] * 2)
+
+    def test_explanatory_prose_after_readings_is_not_read_as_daily_service(self):
+        html = """
+        <h2>Чтения Священного Писания</h2>
+        <p>Субботы: 1Тим.3:14-4:5. Мф.3:1-11.</p>
+        <p>Если служба полиелейная, читается Ин.10:9-16.</p>
+        <h2>Богослужения</h2>
+        """
+        readings = parse_readings_text(extract_readings_text(html))
+        self.assertEqual(len(readings), 2)
+        self.assertFalse(any("Ин.10:9" in r.title for r in readings))
+
+    def test_first_paragraph_navigation_does_not_truncate_readings(self):
+        html = """
+        <h2>Чтения Священного Писания</h2>
+        <p>Богослужебные чтения дня</p>
+        <p>Субботы: 1Тим.3:14-4:5. Мф.3:1-11.</p>
+        <p>Мч.: 2Тим.2:1-10. Мф.10:16-22.</p>
+        <h2>Богослужения</h2>
+        """
+        readings = parse_readings_text(extract_readings_text(html))
+        self.assertEqual(len(readings), 4)
+
     def test_extracts_first_reading_paragraph_only(self):
         html = """
         <html><body>
@@ -194,3 +340,259 @@ class AzbykaCalendarReadingSyncUidTests(SimpleTestCase):
         )
 
         self.assertNotEqual(first_day, second_day)
+
+
+class CalendarReadingsMergeTests(SimpleTestCase):
+    def _reading(self, kind, label, title, order=10):
+        return ParsedReading(kind=kind, label=label, title=title, order=order)
+
+    def test_matches_same_biblical_range_different_dashes_and_zachalo(self):
+        from api.management.commands.import_azbyka_calendar_readings import readings_to_add
+        current = [self._reading("gospel", "Ряд.", "Ин.1:1–17 (зач. 1)")]
+        incoming = [self._reading("gospel", "Ряд.", "Ин.1:1-17", 20)]
+        self.assertEqual(readings_to_add(current, incoming), [])
+
+    def test_unlabelled_routine_is_same_as_ryad(self):
+        from api.management.commands.import_azbyka_calendar_readings import readings_to_add
+        previous = [self._reading("gospel", "", "Ин.1:1–17")]
+        source = [self._reading("gospel", "Ряд.", "Ин.1:1–17")]
+        self.assertEqual(readings_to_add(previous, source), [])
+
+    def test_adds_missing_apostle_without_removing_existing_gospel(self):
+        from api.management.commands.import_azbyka_calendar_readings import readings_to_add
+        original = self._reading("gospel", "", "Ин.1:1–17")
+        missing = self._reading("apostle", "", "Деян.1:1–8", 20)
+        self.assertEqual(readings_to_add([original], [original, missing]), [missing])
+
+    def test_keeps_distinct_services(self):
+        from api.management.commands.import_azbyka_calendar_readings import readings_to_add
+        liturgy = self._reading("gospel", "Лит.", "Ин.1:1–17")
+        evening = self._reading("gospel", "Веч.", "Ин.1:1–17")
+        self.assertEqual(readings_to_add([liturgy], [evening]), [evening])
+
+    def test_deduplicates_repeated_incoming_rows(self):
+        from api.management.commands.import_azbyka_calendar_readings import readings_to_add
+        reading = self._reading("gospel", "", "Мк.9:33–41")
+        self.assertEqual(readings_to_add([], [reading, reading]), [reading])
+
+    def test_different_boundaries_are_not_treated_as_same_reading(self):
+        from api.management.commands.import_azbyka_calendar_readings import readings_to_add
+        first = self._reading("gospel", "", "Лк.1:39–49,56")
+        second = self._reading("gospel", "", "Лк.1:39–49")
+        self.assertEqual(readings_to_add([first], [second]), [second])
+
+
+class CalendarReadingDeduplicationTests(SimpleTestCase):
+    def _row(self, kind, label, title, pk, order):
+        from types import SimpleNamespace
+        return SimpleNamespace(kind=kind, label=label, title=title, pk=pk, order=order)
+
+    def test_same_gospel_ordinary_vs_no_label_is_not_added(self):
+        from api.calendar_reading_identity import readings_to_add
+        existing = [self._row("gospel", "", "Ин. 1:1–17 (зач. 1)", 2, 10)]
+        incoming = [self._row("gospel", "Ряд.", "Ин.1:1-17 (зач. 1)", 5, 50)]
+        self.assertEqual(readings_to_add(existing, incoming), [])
+
+    def test_same_apostle_different_source_labels_is_not_added(self):
+        from api.calendar_reading_identity import readings_to_add
+        existing = [self._row("apostle", "Ряд.", "Деян.1:1–8", 2, 10)]
+        incoming = [self._row("apostle", "Свт.", "Деян. 1:1-8 (зач. 1)", 5, 30)]
+        self.assertEqual(readings_to_add(existing, incoming), [])
+
+    def test_two_services_are_distinct(self):
+        from api.calendar_reading_identity import normalized_reading_key, readings_to_add
+        first = self._row("gospel", "Утр.", "Ин. 1:1–17", 1, 10)
+        second = self._row("gospel", "На веч.", "Ин. 1:1–17", 2, 20)
+        self.assertNotEqual(normalized_reading_key(first), normalized_reading_key(second))
+        self.assertEqual(readings_to_add([first], [second]), [second])
+
+    def test_cleanup_removes_only_equivalent_duplicates(self):
+        from api.management.commands.deduplicate_calendar_readings import select_duplicate_cleanup
+        a = self._row("gospel", "", "Ин.1:1–17", 10, 10)
+        b = self._row("gospel", "Ряд.", "Ин. 1:1-17 (зач. 1)", 11, 20)
+        removal, ambiguous = select_duplicate_cleanup([a, b])
+        self.assertEqual([(keep.pk, [r.pk for r in extra]) for keep, extra in removal], [(10, [11])])
+        self.assertEqual(ambiguous, [])
+
+    def test_cleanup_preserves_different_feast_labels(self):
+        from api.management.commands.deduplicate_calendar_readings import select_duplicate_cleanup
+        a = self._row("gospel", "Ряд.", "Мф.1:1–8", 10, 10)
+        b = self._row("gospel", "Свт.", "Мф.1:1–8", 11, 20)
+        removal, ambiguous = select_duplicate_cleanup([a, b])
+        self.assertEqual(removal, [])
+        self.assertEqual([[r.pk for r in group] for group in ambiguous], [[10, 11]])
+
+    def test_bible_range_boundary_difference_is_not_duplicate(self):
+        from api.calendar_reading_identity import normalized_reading_key
+        a = self._row("gospel", "", "Лк.1:39–49,56", 1, 10)
+        b = self._row("gospel", "", "Лк.1:39–49", 2, 20)
+        self.assertNotEqual(normalized_reading_key(a), normalized_reading_key(b))
+
+    def test_coalesces_differently_labeled_same_scripture_and_preserves_reasons(self):
+        from api.management.commands.deduplicate_calendar_readings import plan_reading_coalescence
+        a = self._row("gospel", "Ряд.", "Ин.1:1–17 (зач. 1)", 10, 10)
+        b = self._row("gospel", "Свт.", "Ин. 1:1-17", 11, 20)
+        actions, review = plan_reading_coalescence([a, b])
+        self.assertEqual(review, [])
+        self.assertEqual(len(actions), 1)
+        keep, extras, label = actions[0]
+        self.assertEqual(keep.pk, 10)
+        self.assertEqual([r.pk for r in extras], [11])
+        self.assertEqual(label, "Ряд.; Свт.")
+
+    def test_coalesces_apostolic_with_three_distinct_labels(self):
+        from api.management.commands.deduplicate_calendar_readings import plan_reading_coalescence
+        a = self._row("apostle", "", "Гал.2:16–20", 1, 10)
+        b = self._row("apostle", "Ряд.", "Гал.2:16–20", 2, 20)
+        c = self._row("apostle", "Свт.", "Гал.2:16-20", 3, 30)
+        actions, review = plan_reading_coalescence([a, b, c])
+        self.assertEqual(review, [])
+        self.assertEqual(len(actions), 1)
+        self.assertEqual([r.pk for r in actions[0][1]], [2, 3])
+        self.assertEqual(actions[0][2], "Ряд.; Свт.")
+
+    def test_coalescence_does_not_combine_different_services(self):
+        from api.management.commands.deduplicate_calendar_readings import plan_reading_coalescence
+        a = self._row("gospel", "Утр.", "Ин.20:19–25", 1, 10)
+        b = self._row("gospel", "Веч.", "Ин.20:19–25", 2, 20)
+        actions, review = plan_reading_coalescence([a, b])
+        self.assertEqual(actions, [])
+        self.assertEqual(review, [])
+
+    def test_coalescence_rejects_oversized_combined_label(self):
+        from api.management.commands.deduplicate_calendar_readings import plan_reading_coalescence
+        a = self._row("gospel", "Святой " + "а" * 150, "Ин.1:1-17", 1, 10)
+        b = self._row("gospel", "Память " + "б" * 150, "Ин.1:1-17", 2, 20)
+        actions, review = plan_reading_coalescence([a, b])
+        self.assertEqual(actions, [])
+        self.assertEqual(len(review), 1)
+        self.assertEqual(review[0][1], "COMBINED_LABEL_TOO_LONG")
+
+    def test_coalescence_is_idempotent_on_clean_rows(self):
+        from api.management.commands.deduplicate_calendar_readings import plan_reading_coalescence
+        a = self._row("gospel", "Ряд.; Свт.", "Ин.1:1-17", 1, 10)
+        actions, review = plan_reading_coalescence([a])
+        self.assertEqual(actions, [])
+        self.assertEqual(review, [])
+
+    def test_rerunning_merge_is_idempotent(self):
+        from api.calendar_reading_identity import readings_to_add
+        already = [self._row("apostle", "", "Гал.2:16–20", 1, 10)]
+        source = [self._row("apostle", "Ряд.", "Гал.2:16-20", 2, 10)]
+        first = readings_to_add(already, source)
+        second = readings_to_add(already + first, source)
+        self.assertEqual(first, [])
+        self.assertEqual(second, [])
+
+
+class VerifiedGreatCanon2027FallbackTests(SimpleTestCase):
+    def _session(self, html):
+        from unittest.mock import Mock
+        response = Mock()
+        response.text = html
+        response.raise_for_status.return_value = None
+        session = Mock()
+        session.get.return_value = response
+        return session
+
+    def _great_canon_html(self):
+        return (
+            "<h2>Чтения <a>Священного Писания</a></h2>"
+            "<p><a>Великий канон Андрея Критского</a></p>"
+            "<ul><li>Богослужебные чтения дня</li></ul>"
+            "<h2>Богослужения</h2>"
+        )
+
+    def test_each_of_five_dates_has_three_sourced_old_testament_readings(self):
+        from api.azbyka_calendar_readings import fetch_day_readings
+        dates = (
+            date(2027, 3, 15), date(2027, 3, 16),
+            date(2027, 3, 17), date(2027, 3, 18),
+            date(2027, 4, 14),
+        )
+        for target_day in dates:
+            with self.subTest(date=target_day):
+                fetched = fetch_day_readings(target_day, session=self._session(self._great_canon_html()))
+                self.assertEqual(len(fetched.readings), 3)
+                self.assertTrue(all(r.kind == "old_testament" for r in fetched.readings))
+                self.assertEqual(
+                    [r.label for r in fetched.readings],
+                    ["На 6-м часе", "На веч.", "На веч."],
+                )
+                self.assertIn("/readings/slavic/julian/", fetched.url)
+
+    def test_fallback_scripture_ranges_for_the_five_dates(self):
+        from api.verified_lectionary_2027_special import get_verified_special_readings
+        expected = {
+            date(2027, 3, 15): ["Ис.1:1–20", "Быт.1:1–13", "Притч.1:1–20"],
+            date(2027, 3, 16): ["Ис.1:19–2:3", "Быт.1:14–23", "Притч.1:20–33"],
+            date(2027, 3, 17): ["Ис.2:3–11", "Быт.1:24–2:3", "Притч.2:1–22"],
+            date(2027, 3, 18): ["Ис.2:11–21", "Быт.2:4–19", "Притч.3:1–18"],
+            date(2027, 4, 14): ["Ис.41:4–14", "Быт.17:1–9", "Притч.15:20–16:9"],
+        }
+        for target_day, titles in expected.items():
+            with self.subTest(date=target_day):
+                source, readings = get_verified_special_readings(target_day)
+                self.assertEqual([r.title for r in readings], titles)
+                self.assertEqual(source, (
+                    f"https://orthocal.info/readings/slavic/julian/"
+                    f"{target_day.year}/{target_day.month}/{target_day.day}/"
+                ))
+
+    def test_priority_azbyka_if_it_later_publishes_bible_references(self):
+        from api.azbyka_calendar_readings import fetch_day_readings
+        html = (
+            "<h2>Чтения Священного Писания</h2>"
+            "<p>На 6-м часе: Ис.1:1–20. На веч.: Быт.1:1–13. Притч.1:1–20.</p>"
+            "<h2>Богослужения</h2>"
+        )
+        found = fetch_day_readings(date(2027, 3, 15), session=self._session(html))
+        self.assertEqual(len(found.readings), 3)
+        self.assertEqual(found.url, "https://azbyka.ru/days/2027-03-15")
+
+    def test_no_fallback_for_an_unverified_date(self):
+        from api.azbyka_calendar_readings import (
+            AzbykaReadingsError, fetch_day_readings,
+        )
+        with self.assertRaises(AzbykaReadingsError):
+            fetch_day_readings(
+                date(2027, 3, 19), session=self._session(self._great_canon_html()),
+            )
+
+    def test_no_fallback_when_azbyka_does_not_mention_the_great_canon(self):
+        from api.azbyka_calendar_readings import (
+            AzbykaReadingsError, fetch_day_readings,
+        )
+        html = (
+            "<h2>Чтения Священного Писания</h2><p>Другой праздник без чтений.</p>"
+            "<h2>Богослужения</h2>"
+        )
+        with self.assertRaises(AzbykaReadingsError):
+            fetch_day_readings(date(2027, 3, 15), session=self._session(html))
+
+
+
+    def test_special_only_command_selects_five_dates_without_overwriting_year_report(self):
+        from unittest.mock import patch
+        from api.management.commands.fill_calendar_readings import Command
+
+        with patch("api.management.commands.fill_calendar_readings.call_command") as caller:
+            Command().handle(
+                year=2027, date="", month=None, special_2027=True,
+                apply_changes=False, apply=False, delay=0, report="",
+            )
+        forwarded = caller.call_args.args
+        dates = [
+            forwarded[index + 1]
+            for index, value in enumerate(forwarded[:-1])
+            if value == "--date"
+        ]
+        self.assertEqual(dates, [
+            "2027-03-15", "2027-03-16", "2027-03-17",
+            "2027-03-18", "2027-04-14",
+        ])
+        self.assertIn("--dry-run", forwarded)
+        self.assertIn("--merge", forwarded)
+        self.assertTrue(
+            any("calendar_readings_2027_special_5.json" in str(item) for item in forwarded)
+        )

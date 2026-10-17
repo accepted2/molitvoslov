@@ -380,18 +380,16 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
 };
 
 const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout}) => {
-  const [showAll, setShowAll] = useState(false);
-
   if (!readings.length) {
     return null;
   }
 
-  const visibleReadings = showAll ? readings : readings.slice(0, 2);
-  const hiddenCount = Math.max(0, readings.length - visibleReadings.length);
-
+  // Show every appointed reading in the EXISTING day section.
+  // A hard-coded slice(0, 2) used to hide the third Gospel/Apostle
+  // on days with ordinary, feast and Saturday readings.
   return (
     <View onLayout={onLayout}>
-      {visibleReadings.map((reading, index) => (
+      {readings.map((reading, index) => (
         <ReadingLink
           key={reading.id || reading.sync_uid || `${kind}-${index}-${reading.title}`}
           kind={kind}
@@ -403,20 +401,6 @@ const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout}) =>
           language={language}
         />
       ))}
-
-      {readings.length > 2 && (
-        <Pressable
-          onPress={() => setShowAll((value) => !value)}
-          style={({pressed}) => [styles.readingMore, pressed && styles.pressed]}
-        >
-          <Text style={styles.readingMoreText}>
-            {showAll
-              ? copy.hideExtraReadings
-              : copy.moreReadings.replace('{count}', String(hiddenCount))}
-          </Text>
-          <SoftChevron expanded={showAll} />
-        </Pressable>
-      )}
     </View>
   );
 };

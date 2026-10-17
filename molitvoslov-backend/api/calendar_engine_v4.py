@@ -90,6 +90,27 @@ CONFIRMED_CORRECTIONS = (
         "SUN_AFTER_JUL12",
         "Первое воскресенье после 12 июля",
     ),
+    Correction(3800, "2026-02-21", "Собор всех преподобных отцов, в подвиге просиявших", "pascha", -50, "Azbyka календарные списки 2026, 2027, 2028: Пасха -50"),
+    Correction(3919, "2026-03-08", "Собор всех преподобных отцов Киево-Печерских", "pascha", -35, "Azbyka календарные списки 2026, 2027, 2028: Пасха -35"),
+    Correction(4189, "2026-04-14", "Мученики Христодул и Анастасия Патрские, убиенные в Ахаии", "pascha", 2, "Azbyka календарные списки 2026, 2027, 2028: Пасха +2"),
+    Correction(4190, "2026-04-14", "Преподобномученики отцы Давидо-Гареджийские", "pascha", 2, "Azbyka календарные списки 2026, 2027, 2028: Пасха +2"),
+    Correction(4196, "2026-04-15", "Собор преподобных отцов, на Богошественной Горе Синай подвизавшихся", "pascha", 3, "Azbyka календарные списки 2026, 2027, 2028: Пасха +3"),
+    Correction(4389, "2026-05-09", "Собор новомучеников, в Бутове пострадавших", "pascha", 27, "Azbyka календарные списки 2026, 2027, 2028: Пасха +27"),
+    Correction(4477, "2026-05-21", "Мученики, в долине Ферейдан", "pascha", 39, "Azbyka календарные списки 2026, 2027, 2028: Пасха +39"),
+    Correction(4546, "2026-05-28", "Преподобный Давид Гареджийский", "pascha", 46, "Azbyka календарные списки 2026, 2027, 2028: Пасха +46"),
+    Correction(4749, "2026-06-21", "Собор святых Санкт-Петербургской митрополии", "pascha", 70, "Azbyka календарные списки 2026, 2027, 2028: Пасха +70"),
+    Correction(4750, "2026-06-21", "Собор святых Удмуртской земли", "pascha", 70, "Azbyka календарные списки 2026, 2027, 2028: Пасха +70"),
+    Correction(4752, "2026-06-21", "Собор святых Чувашской митрополии", "pascha", 70, "Azbyka календарные списки 2026, 2027, 2028: Пасха +70"),
+    Correction(3943, "2026-03-13", "Преподобный Кассиан (Иоанн Кассиан) Римлянин, иеромонах", "julian_feb_last_day", None, "Azbyka 2026-03-13, 2027-03-13, 2028-03-13: последний день февраля ст. ст."),
+    Correction(3948, "2026-03-13", "Преподобный Иоанн (Варсонофий) Нитрийский, епископ Дамасский, отшельник", "julian_feb_last_day", None, "Azbyka 2026-03-13, 2027-03-13, 2028-03-13: последний день февраля ст. ст."),
+    Correction(3949, "2026-03-13", "Исповедник Феоктирист (Феостирикт) Медикийский", "julian_feb_last_day", None, "Azbyka 2026-03-13, 2027-03-13, 2028-03-13: последний день февраля ст. ст."),
+    Correction(3950, "2026-03-13", "Икона Богородицы Девпетерувская", "julian_feb_last_day", None, "Azbyka 2026-03-13, 2027-03-13, 2028-03-13: последний день февраля ст. ст."),
+    Correction(3792, "2026-02-19", "Преподобный Шио (Симеон) Мгвимский", "pascha", -52, "Три года Azbyka: отдельно отмеченная переходящая память на общей странице святого"),
+    Correction(3912, "2026-03-08", "Святитель Григорий Палама, архиепископ Солунский (Фессалоникийский)", "pascha", -35, "Три года Azbyka: отдельно отмеченная переходящая память на общей странице святого"),
+    Correction(4069, "2026-03-29", "Преподобная Мария Египетская", "pascha", -14, "Три года Azbyka: отдельно отмеченная переходящая память на общей странице святого"),
+    Correction(4273, "2026-04-26", "Святых жен-мироносиц: Марии Магдалины, Марии Клеоповой, Саломии, Иоанны, Марфы и Марии, Сусанны и иных; правв. Иосифа Аримафейского и Никодима (переходящее празднование в Неделю 3-ю по Пасхе)", "pascha", 14, "Три года Azbyka: отдельно отмеченная переходящая память на общей странице святого"),
+    Correction(4338, "2026-05-03", "Праведная Тавифа Иоппийская", "pascha", 21, "Три года Azbyka: отдельно отмеченная переходящая память на общей странице святого"),
+    Correction(4673, "2026-06-12", "Преподобный Варлаам Хутынский", "pascha", 61, "Три года Azbyka: отдельно отмеченная переходящая память на общей странице святого"),
 )
 CORRECTIONS_BY_ID = {c.feast_id: c for c in CONFIRMED_CORRECTIONS}
 
@@ -120,6 +141,13 @@ def classify_v4(memory: Memorial) -> DateRule:
 
 
 def target_v4(rule: DateRule, year: int):
+    if rule.kind == "julian_feb_last_day":
+        # In the supported range 1900..2099 the Julian/Gregorian gap is
+        # 13 days. The last Julian February day is Feb 28 (ordinary) or
+        # Feb 29 (Julian leap); both map to March 13 civil.
+        if not 1900 <= year <= 2099:
+            raise ValueError("Последний день февраля по юлианскому стилю: 1900–2099")
+        return date(year, 3, 13)
     if rule.kind == "weekday" and rule.anchor == "SUN_AFTER_JUN1":
         june1 = date(year, 6, 1)
         return june1 + timedelta(days=(6 - june1.weekday()) % 7 or 7)
@@ -172,6 +200,10 @@ def main_priority_v4(rule: DateRule) -> int:
         )
     ):
         return 1000
+    # Great observances outside the twelve: below Pascha / the Twelve,
+    # but above ordinary saints and inherited reference-year main flags.
+    if "покров пресвятой богородицы" in title:
+        return 900
     if "собор новомучеников и исповедников церкви русской" in title:
         return 850
     if "димитриевская родительская суббота" in title:
@@ -188,14 +220,27 @@ def main_priority_v4(rule: DateRule) -> int:
 
 
 def choose_main_v4(rules):
-    """Return (main_id, ambiguous_main_ids). Never break priority ties by PK."""
+    """Choose the day banner by verified high feast rank, then 2026 main.
+
+    A Great Feast is never displaced by an unrelated reference-year saint.
+    The 2026 main assignment is a *fallback*, not a veto against a feast
+    of known higher rank. Equal-priority contenders remain review blockers:
+    no arbitrary smallest-PK winner is possible.
+    """
     if not rules:
         return None, []
-    candidates = [r for r in rules if r.is_reference_main]
-    if not candidates:
-        # The only case without an explicitly reference-main card: unique
-        # highest rule score or else hard blocker, not guessed ID selection.
-        candidates = list(rules)
+
+    highest_score = max(main_priority_v4(r) for r in rules)
+    if highest_score >= 650:
+        # Explicit liturgical observances (Pascha, Twelve, great feast,
+        # known movable days) outrank inherited reference-year main flags.
+        candidates = [r for r in rules if main_priority_v4(r) == highest_score]
+    else:
+        # For ordinary saints, preserve the 2026 reference main whenever
+        # it still occurs on the new day. It may not, when a movable feast
+        # shifts to another date.
+        candidates = [r for r in rules if r.is_reference_main] or list(rules)
+
     maxscore = max(main_priority_v4(r) for r in candidates)
     leaders = sorted({r.feast_id for r in candidates if main_priority_v4(r) == maxscore})
     if len(leaders) > 1:

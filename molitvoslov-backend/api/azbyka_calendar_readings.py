@@ -5,6 +5,9 @@ from datetime import date
 import requests
 from bs4 import BeautifulSoup
 
+from api.calendar_reading_identity import normalized_reading_key
+from api.verified_lectionary_2027_special import get_verified_special_readings
+
 
 AZBYKA_DAY_URL = "https://azbyka.ru/days/{date}"
 
@@ -199,6 +202,8 @@ def _clean_label(value):
     lowered = value.lower()
     if lowered in replacements:
         return replacements[lowered]
+    if lowered == "рядовое":
+        return "Ряд."
 
     return value
 
@@ -208,6 +213,15 @@ def _new_label_from_prefix(prefix):
     prefix = prefix.strip()
 
     if not prefix:
+        return None
+
+    # Azbyka often prints "Рядовое: Лит. – Ап.: ... . Ев.: ... . Веч. – ...".
+    # "Ап." and "Ев." are column labels, not separate liturgical rubrics.
+    if re.search(r"(?:^|[.;])\s*(?:Веч\.?|На вечерне)\s*[–—-]?\s*$", prefix, re.I):
+        return "Веч."
+    prefix = re.sub(r"(?:Лит\.?\s*[–—-]\s*)?(?:Ап|Ев)\.?\s*:\s*$", "", prefix, flags=re.I)
+    prefix = normalize_space(prefix)
+    if not prefix.strip(" .;"):
         return None
 
     # Отдельный маркер утрени перед первым воскресным Евангелием.
@@ -284,16 +298,35 @@ def parse_readings_text(text):
             order=index * 10,
         )
 
-        # Один и тот же отрывок может встречаться в разных группах —
-        # это разные чтения. Удаляем только точный дубль по содержанию.
-        duplicate = any(
-            existing.kind == reading.kind
-            and existing.label == reading.label
-            and existing.title == reading.title
-            for existing in result
+        # The same passage can be appointed for different commemorations
+        # at the SAME service. Keep one card, but retain both rubrics.
+        existing_index = next(
+            (
+                position
+                for position, previous in enumerate(result)
+                if normalized_reading_key(previous) == normalized_reading_key(reading)
+            ),
+            None,
         )
-        if not duplicate:
+        if existing_index is None:
             result.append(reading)
+        else:
+            previous = result[existing_index]
+            labels = []
+            for candidate in (previous.label, reading.label):
+                candidate = normalize_space(candidate)
+                if candidate and candidate.casefold() not in {
+                    item.casefold() for item in labels
+                }:
+                    labels.append(candidate)
+            merged_label = "; ".join(labels)
+            if len(merged_label) <= 255:
+                result[existing_index] = ParsedReading(
+                    kind=previous.kind,
+                    label=merged_label,
+                    title=previous.title,
+                    order=previous.order,
+                )
 
     return result
 
@@ -304,7 +337,44 @@ def _heading_level(tag):
     return int(tag.name[1])
 
 
+def _is_readings_paragraph(text):
+    """Accept tabulated services, not later conditional prose with Bible quotes."""
+    text = normalize_space(text)
+    match = REFERENCE_RE.search(text)
+    if not match:
+        return False
+
+    prefix = text[:match.start()].strip(" •*–—-")
+    if not prefix:
+        return True  # A bare Bible reference (or pair of references).
+
+    # The source uses paragraphs such as "Субботы: Лит. – Ап.: ...".
+    # Short rubrics followed by a colon are day appointments; explanatory
+    # sentences ("Если служба полиелейная, читается ...") are NOT.
+    if re.match(r"^(?:если|когда|в случае|примечани|см\.)\b", prefix, re.I):
+        return False
+
+    if ":" in prefix and len(prefix) <= 160:
+        return True
+
+    # "Лит. – ..." / "Утр. – ..." / "На веч. – ..." formats may lack ":".
+    if re.match(
+        r"^(?:лит\.?|на литургии|утр\.?|на утрени|веч\.?|на веч\.|"
+        r"на [1369]-?м часе|ряд\.?|рядовое|субботы|недели|мч\.|"
+        r"вмч\.|свт\.|сщмч\.|богородицы)\b",
+        prefix, re.I,
+    ):
+        return True
+
+    return False
+
+
 def extract_readings_text(html):
+    """Extract ALL scripture reading groups belonging to the day section.
+
+    Older implementation returned the FIRST <p> only, silently losing e.g.
+    martyr and ordinary readings on 2027-01-16.
+    """
     soup = BeautifulSoup(html, "lxml")
 
     heading = None
@@ -318,52 +388,86 @@ def extract_readings_text(html):
         raise AzbykaReadingsError('Не найден блок "Чтения Священного Писания".')
 
     level = _heading_level(heading) or 2
+    chunks = []
+    first_found = False
 
-    # Берём первый абзац после заголовка, в котором есть
-    # поддерживаемая ссылка на Писание. Пояснительные примечания ниже не импортируем
-    # как отдельные чтения.
+    # The source has used <p>, <li>, table <tr> and nested <div>
+    # for separate sets of readings. Pick the most specific text-bearing
+    # container; never parse a wrapper and its children twice.
     for tag in heading.find_all_next():
         tag_level = _heading_level(tag)
         if tag_level is not None and tag_level <= level:
             break
 
-        if tag.name not in {"p", "li"}:
+        if tag.name not in {"p", "li", "tr", "div"}:
+            continue
+        if tag.name in {"li", "tr", "div"} and any(
+            descendant.name in {"p", "li", "tr", "div"}
+            and REFERENCE_RE.search(normalize_space(descendant.get_text(" ", strip=True)))
+            for descendant in tag.find_all(["p", "li", "tr", "div"])
+        ):
             continue
 
         text = normalize_space(tag.get_text(" ", strip=True))
-        lowered = text.lower()
+        if not text:
+            continue
+        lower = text.lower()
+        if lower in STOP_TEXTS:
+            if first_found:
+                break
+            continue
 
-        if any(stop in lowered for stop in STOP_TEXTS):
-            break
+        if _is_readings_paragraph(text):
+            chunks.append(text)
+            first_found = True
+            continue
 
-        if REFERENCE_RE.search(text):
-            return text
+        if first_found:
+            # Finish at the first paragraph of explanatory prose. It may
+            # itself quote Scripture but must not become a new day's reading.
+            if REFERENCE_RE.search(text):
+                break
+            # Ignore empty controls and short navigation text between groups.
+            if len(text) > 120:
+                break
 
-    # Fallback для страниц, где чтения завернуты не в <p>.
-    chunks = []
+    if chunks:
+        return " ".join(chunks)
+
+    # Fallback: alternative markup with <div> instead of separate paragraphs.
+    # Take one complete div, not nested duplicates of the same content.
     for tag in heading.find_all_next():
         tag_level = _heading_level(tag)
         if tag_level is not None and tag_level <= level:
             break
-
-        if tag.name in {"script", "style", "noscript"}:
+        if tag.name != "div":
             continue
-
-        if tag.name in {"a", "button"}:
-            text = normalize_space(tag.get_text(" ", strip=True))
-            if text.lower() in STOP_TEXTS:
-                break
-
-        if tag.name == "div":
-            text = normalize_space(tag.get_text(" ", strip=True))
-            if REFERENCE_RE.search(text):
-                chunks.append(text)
-                break
-
-    if chunks:
-        return chunks[0]
+        text = normalize_space(tag.get_text(" ", strip=True))
+        if _is_readings_paragraph(text):
+            return text
 
     raise AzbykaReadingsError("В блоке чтений не найдены поддерживаемые ссылки.")
+
+
+def _has_great_canon_readings_heading(html):
+    """Detect special-service page text ONLY inside the readings section."""
+    soup = BeautifulSoup(html, "lxml")
+    for heading in soup.find_all(re.compile(r"^h[1-6]$")):
+        heading_text = normalize_space(heading.get_text(" ", strip=True)).casefold()
+        if "чтения" not in heading_text or "священного писания" not in heading_text:
+            continue
+        heading_level = _heading_level(heading) or 2
+        for tag in heading.find_all_next():
+            level = _heading_level(tag)
+            if level is not None and level <= heading_level:
+                break
+            if tag.name not in {"a", "p", "li"}:
+                continue
+            text = normalize_space(tag.get_text(" ", strip=True)).casefold()
+            if "великий канон андрея критского" in text:
+                return True
+        return False
+    return False
 
 
 def fetch_day_readings(day, session=None, timeout=20):
@@ -385,7 +489,23 @@ def fetch_day_readings(day, session=None, timeout=20):
             },
         )
         response.raise_for_status()
-        source_text = extract_readings_text(response.text)
+        try:
+            source_text = extract_readings_text(response.text)
+        except AzbykaReadingsError:
+            # A few Great Canon days link only the Great Canon and have no
+            # Bible ranges in their Azbyka reading blocks. Use the explicitly
+            # cross-checked Slavic/Julian lectionary for those exact 2027 dates.
+            # Never infer a fallback for unrelated or unpublished days.
+            fallback = get_verified_special_readings(day)
+            if fallback and _has_great_canon_readings_heading(response.text):
+                source_url, special_readings = fallback
+                return ParsedDayReadings(
+                    day=day,
+                    url=source_url,
+                    source_text="Slavic/Julian Orthodox Calendar — Great Canon readings",
+                    readings=special_readings,
+                )
+            raise
         readings = tuple(parse_readings_text(source_text))
 
         if not readings:

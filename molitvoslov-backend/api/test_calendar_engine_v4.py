@@ -3,6 +3,9 @@ from django.test import SimpleTestCase
 from api.calendar_engine_v2 import Memorial
 from api.calendar_engine_v4 import (
     CONFIRMED_CORRECTIONS,
+    orthodox_pascha,
+    julian_month_day,
+    year_days,
     classify_v4,
     target_v4,
     main_priority_v4,
@@ -11,6 +14,13 @@ from api.calendar_engine_v4 import (
 
 
 class CalendarEngineV4Tests(SimpleTestCase):
+    def test_2028_leap_year_date_engine(self):
+        self.assertEqual(orthodox_pascha(2028), date(2028, 4, 16))
+        self.assertEqual(len(list(year_days(2028))), 366)
+        # February 29 Julian exists in 2028 and needs its own source
+        # commemoration; it is absent from the non-leap 2026 reference.
+        self.assertEqual(julian_month_day(date(2028, 3, 13)), (2, 29))
+
     def test_confirmed_rules_reproduce_reference_year(self):
         for c in CONFIRMED_CORRECTIONS:
             with self.subTest(c.feast_id):
@@ -27,11 +37,56 @@ class CalendarEngineV4Tests(SimpleTestCase):
             4818: date(2027, 7, 18),
             4992: date(2027, 7, 18),
             4993: date(2027, 7, 18),
+            3800: date(2027, 3, 13),
+            3919: date(2027, 3, 28),
+            4189: date(2027, 5, 4),
+            4190: date(2027, 5, 4),
+            4196: date(2027, 5, 5),
+            4389: date(2027, 5, 29),
+            4477: date(2027, 6, 10),
+            4546: date(2027, 6, 17),
+            4749: date(2027, 7, 11),
+            4750: date(2027, 7, 11),
+            4752: date(2027, 7, 11),
+            3943: date(2027, 3, 13),
+            3948: date(2027, 3, 13),
+            3949: date(2027, 3, 13),
+            3950: date(2027, 3, 13),
+            3792: date(2027, 3, 11),
+            3912: date(2027, 3, 28),
+            4069: date(2027, 4, 18),
+            4273: date(2027, 5, 16),
+            4338: date(2027, 5, 23),
+            4673: date(2027, 7, 2),
         }
         for c in CONFIRMED_CORRECTIONS:
             with self.subTest(c.feast_id):
                 m = Memorial(c.feast_id, c.title, date.fromisoformat(c.source_date))
                 self.assertEqual(target_v4(classify_v4(m), 2027), expected[c.feast_id])
+
+    def test_2028_leap_year_end_of_julian_february(self):
+        for id_, title in (
+            (3943, "Преподобный Кассиан (Иоанн Кассиан) Римлянин, иеромонах"),
+            (3948, "Преподобный Иоанн (Варсонофий) Нитрийский, епископ Дамасский, отшельник"),
+            (3949, "Исповедник Феоктирист (Феостирикт) Медикийский"),
+            (3950, "Икона Богородицы Девпетерувская"),
+        ):
+            with self.subTest(id_):
+                rule = classify_v4(Memorial(id_, title, date(2026, 3, 13)))
+                self.assertEqual(target_v4(rule, 2027), date(2027, 3, 13))
+                self.assertEqual(target_v4(rule, 2028), date(2028, 3, 13))
+
+    def test_2028_newly_confirmed_paschal_offsets(self):
+        samples = {
+            3800: ("Собор всех преподобных отцов, в подвиге просиявших", date(2026, 2, 21), date(2028, 2, 26)),
+            3919: ("Собор всех преподобных отцов Киево-Печерских", date(2026, 3, 8), date(2028, 3, 12)),
+            4190: ("Преподобномученики отцы Давидо-Гареджийские", date(2026, 4, 14), date(2028, 4, 18)),
+            4389: ("Собор новомучеников, в Бутове пострадавших", date(2026, 5, 9), date(2028, 5, 13)),
+        }
+        for id_, (title, source_date, expected) in samples.items():
+            with self.subTest(id_):
+                rule = classify_v4(Memorial(id_, title, source_date))
+                self.assertEqual(target_v4(rule, 2028), expected)
 
     def test_wrong_feast_identity_is_blocked(self):
         with self.assertRaises(ValueError):
@@ -52,6 +107,67 @@ class CalendarEngineV4Tests(SimpleTestCase):
         two = Memorial(5723, "Димитриевская родительская суббота", date(2026, 11, 7), True)
         chosen, tie = choose_main_v4([classify_v4(one), classify_v4(two)])
         self.assertEqual((chosen, tie), (5723, []))
+
+    def test_pascha_always_overrides_reference_main_saint(self):
+        pascha = Memorial(
+            701, "Светлое Христово Воскресение", date(2026, 4, 12), False
+        )
+        saint = Memorial(702, "Преподобный старец", date(2026, 4, 12), True)
+        chosen, conflicts = choose_main_v4([
+            classify_v4(saint), classify_v4(pascha)
+        ])
+        self.assertEqual((chosen, conflicts), (701, []))
+
+    def test_twelve_feast_overrides_reference_main_saint(self):
+        feast = Memorial(
+            703, "Преображение Господне", date(2026, 8, 19), False
+        )
+        saint = Memorial(
+            704, "Святитель значимый", date(2026, 8, 19), True
+        )
+        chosen, conflicts = choose_main_v4([
+            classify_v4(saint), classify_v4(feast)
+        ])
+        self.assertEqual((chosen, conflicts), (703, []))
+
+    def test_pokrov_great_feast_overrides_ordinary_main(self):
+        pokrov = Memorial(
+            705, "Покров Пресвятой Богородицы", date(2026, 10, 14), False
+        )
+        saint = Memorial(
+            706, "Преподобный старец", date(2026, 10, 14), True
+        )
+        chosen, conflicts = choose_main_v4([
+            classify_v4(saint), classify_v4(pokrov)
+        ])
+        self.assertEqual((chosen, conflicts), (705, []))
+
+    def test_inherited_main_preserved_for_ordinary_saints(self):
+        reference = Memorial(
+            707, "Преподобный", date(2026, 10, 15), True
+        )
+        ordinary = Memorial(
+            708, "Другой святой", date(2026, 10, 15), False
+        )
+        chosen, conflicts = choose_main_v4([
+            classify_v4(reference), classify_v4(ordinary)
+        ])
+        self.assertEqual((chosen, conflicts), (707, []))
+
+    def test_no_unjustified_tie_between_two_great_feasts(self):
+        feast1 = Memorial(
+            709, "Благовещение Пресвятой Богородицы",
+            date(2026, 4, 7), True,
+        )
+        feast2 = Memorial(
+            710, "Вход Господень в Иерусалим",
+            date(2026, 4, 5), False,
+        )
+        chosen, conflicts = choose_main_v4([
+            classify_v4(feast1), classify_v4(feast2)
+        ])
+        self.assertIsNone(chosen)
+        self.assertEqual(conflicts, [709, 710])
 
     def test_no_unverified_tie_break_by_id(self):
         one = Memorial(51, "Первый святой", date(2026, 10, 2), True)

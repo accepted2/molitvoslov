@@ -40,6 +40,45 @@ export const toCalendarDate = (value) => {
   return [date.getFullYear(), pad(date.getMonth() + 1), pad(date.getDate())].join('-');
 };
 
+// Identity is intentionally independent of the display label and record ID.
+// The same passage during Matins and Vespers must remain separate appointments.
+const readingServiceIdentity = (label) => {
+  const value = String(label || '').toLowerCase().replace(/ё/g, 'е');
+  if (/утр/.test(value)) return 'matins';
+  if (/веч/.test(value)) return 'vespers';
+  if (/6[\s-]*(?:м|ом)\s+часе|шестом\s+часе/.test(value)) return 'sixth_hour';
+  if (/1[\s-]*(?:м|ом)\s+часе|первом\s+часе/.test(value)) return 'first_hour';
+  if (/3[\s-]*(?:м|ем)\s+часе|третьем\s+часе/.test(value)) return 'third_hour';
+  if (/9[\s-]*(?:м|ом)\s+часе|девятом\s+часе/.test(value)) return 'ninth_hour';
+  return 'liturgy';
+};
+
+const readingPassageIdentity = (title) =>
+  String(title || '')
+    .toLowerCase()
+    .replace(/ё/g, 'е')
+    .replace(/\u0301/g, '')
+    .replace(/[–—−‐‑‒]/g, '-')
+    .replace(/\(\s*зач(?:ало)?\.?[^)]*\)/g, '')
+    .replace(/зач(?:ало)?\.?\s*\d+/g, '')
+    .replace(/[.\s\u00a0]+/g, '')
+    .replace(/^([12])сол(?=\d|:)/, '$1фес')
+    .replace(/^[,;:-]+|[,;:-]+$/g, '');
+
+const distinctCalendarReadings = (readings) => {
+  const keys = new Set();
+  return readings.filter((reading) => {
+    const key = [
+      reading.kind,
+      readingServiceIdentity(reading.label),
+      readingPassageIdentity(reading.title),
+    ].join('|');
+    if (keys.has(key)) return false;
+    keys.add(key);
+    return true;
+  });
+};
+
 export const getCalendarReadingItems = (day, kind) => {
   const normalizedKind = ['gospel', 'apostle', 'old_testament'].includes(kind) ? kind : 'gospel';
   const structured = Array.isArray(day?.readings)
@@ -54,7 +93,8 @@ export const getCalendarReadingItems = (day, kind) => {
     : [];
 
   if (structured.length) {
-    return structured;
+    // Covers stale AsyncStorage and offline bundles created before DB cleanup.
+    return distinctCalendarReadings(structured);
   }
 
   const legacyTitle =
