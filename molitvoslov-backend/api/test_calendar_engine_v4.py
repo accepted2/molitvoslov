@@ -37,11 +37,50 @@ class CalendarEngineV4Tests(SimpleTestCase):
             4818: date(2027, 7, 18),
             4992: date(2027, 7, 18),
             4993: date(2027, 7, 18),
+            3800: date(2027, 3, 13),
+            3919: date(2027, 3, 28),
+            4189: date(2027, 5, 4),
+            4190: date(2027, 5, 4),
+            4196: date(2027, 5, 5),
+            4389: date(2027, 5, 29),
+            4477: date(2027, 6, 10),
+            4546: date(2027, 6, 17),
+            4749: date(2027, 7, 11),
+            4750: date(2027, 7, 11),
+            4752: date(2027, 7, 11),
+            3943: date(2027, 3, 13),
+            3948: date(2027, 3, 13),
+            3949: date(2027, 3, 13),
+            3950: date(2027, 3, 13),
         }
         for c in CONFIRMED_CORRECTIONS:
             with self.subTest(c.feast_id):
                 m = Memorial(c.feast_id, c.title, date.fromisoformat(c.source_date))
                 self.assertEqual(target_v4(classify_v4(m), 2027), expected[c.feast_id])
+
+    def test_2028_leap_year_end_of_julian_february(self):
+        for id_, title in (
+            (3943, "Преподобный Кассиан (Иоанн Кассиан) Римлянин, иеромонах"),
+            (3948, "Преподобный Иоанн (Варсонофий) Нитрийский, епископ Дамасский, отшельник"),
+            (3949, "Исповедник Феоктирист (Феостирикт) Медикийский"),
+            (3950, "Икона Богородицы Девпетерувская"),
+        ):
+            with self.subTest(id_):
+                rule = classify_v4(Memorial(id_, title, date(2026, 3, 13)))
+                self.assertEqual(target_v4(rule, 2027), date(2027, 3, 13))
+                self.assertEqual(target_v4(rule, 2028), date(2028, 3, 13))
+
+    def test_2028_newly_confirmed_paschal_offsets(self):
+        samples = {
+            3800: ("Собор всех преподобных отцов, в подвиге просиявших", date(2026, 2, 21), date(2028, 2, 26)),
+            3919: ("Собор всех преподобных отцов Киево-Печерских", date(2026, 3, 8), date(2028, 3, 12)),
+            4190: ("Преподобномученики отцы Давидо-Гареджийские", date(2026, 4, 14), date(2028, 4, 18)),
+            4389: ("Собор новомучеников, в Бутове пострадавших", date(2026, 5, 9), date(2028, 5, 13)),
+        }
+        for id_, (title, source_date, expected) in samples.items():
+            with self.subTest(id_):
+                rule = classify_v4(Memorial(id_, title, source_date))
+                self.assertEqual(target_v4(rule, 2028), expected)
 
     def test_wrong_feast_identity_is_blocked(self):
         with self.assertRaises(ValueError):
