@@ -231,7 +231,8 @@ const SearchContent = ({navigation}) => {
     // Clear only on a real query or category change.
     const scope = `${language}:${activeGroup}:${searchQuery}`;
     if (scope !== searchScope) {
-      setResult({items: [], total: 0});
+      // Keep current visible matches while the next SQLite query is pending.
+      // They are replaced atomically once the new results have arrived.
       setSearchScope(scope);
     }
     setSearchLoading(true);
