@@ -4,7 +4,7 @@ import React from 'react';
 import {FlexWidget, ImageWidget, OverlapWidget, TextWidget} from 'react-native-android-widget';
 
 import {CALENDAR_MONTHS, calendarText} from '../services/calendarPreferences';
-import {formatFast} from '../services/churchCalendar';
+import {formatFast, getCalendarDayAppearance} from '../services/churchCalendar';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -63,6 +63,7 @@ export const ChurchCalendarWidget = ({
   width = 320,
   height = 150,
   displayDate,
+  monthDays = [],
 }) => {
   const lang = language === 'uk' ? 'uk' : 'ru';
   const copy = calendarText(lang);
@@ -81,7 +82,11 @@ export const ChurchCalendarWidget = ({
 
   const previousMonth = shiftMonth(shownDate, -1);
   const nextMonth = shiftMonth(shownDate, 1);
-  const cells = buildMonthCells(shownDate, today, selectedDate);
+  const markerMap = new Map(monthDays.map((item) => [item.date_gregorian, item]));
+  const cells = buildMonthCells(shownDate, today, selectedDate).map((cell) => ({
+    ...cell,
+    appearance: cell.date ? getCalendarDayAppearance(markerMap.get(cell.date)) : null,
+  }));
   const weeks = chunk(cells, 7);
 
   const widgetWidth = Number(width) || 320;
@@ -120,7 +125,8 @@ export const ChurchCalendarWidget = ({
     widgetHeight - outerPadding * 2 - monthHeaderHeight - weekdayHeight - 8
   );
   const rowHeight = Math.max(tiny ? 11 : 14, Math.floor(availableRowsHeight / weeks.length));
-  const dayBubbleSize = Math.min(cellWidth, rowHeight, large ? 24 : 20);
+  // Leave a visible gutter even when many consecutive days have a fasting marker.
+  const dayBubbleSize = Math.max(9, Math.min(cellWidth - 4, rowHeight - 3, large ? 24 : 20));
 
   const titleSize = tiny ? 8 : large ? 11 : 10;
 
@@ -564,9 +570,9 @@ export const ChurchCalendarWidget = ({
                     allowFontScaling={false}
                     maxLines={1}
                     style={{
-                      width: cell.selected || cell.today ? dayBubbleSize : cellWidth,
+                      width: cell.selected || cell.today || cell.appearance ? dayBubbleSize : cellWidth,
 
-                      height: cell.selected || cell.today ? dayBubbleSize : rowHeight,
+                      height: cell.selected || cell.today || cell.appearance ? dayBubbleSize : rowHeight,
 
                       color: cell.selected
                         ? '#FFF8EA'
@@ -576,18 +582,26 @@ export const ChurchCalendarWidget = ({
                             ? '#A24C40'
                             : '#493225',
 
-                      backgroundColor: cell.selected ? '#B97A32' : '#00000000',
+                      backgroundColor: cell.selected
+                        ? '#B97A32'
+                        : cell.appearance === 'fast'
+                          ? '#A78AB9'
+                          : cell.appearance === 'feast' || cell.appearance === 'easter'
+                            ? '#ECD2A2'
+                            : cell.appearance === 'solid'
+                              ? '#DEE4CB'
+                              : '#00000000',
 
                       borderWidth: cell.today && !cell.selected ? 1 : 0,
 
                       borderColor: '#B97A32',
 
-                      borderRadius: cell.selected || cell.today ? dayBubbleSize / 2 : 0,
+                      borderRadius: cell.selected || cell.today || cell.appearance ? dayBubbleSize / 2 : 0,
 
                       fontFamily: 'Ponomar-Regular',
                       fontSize: numberSize,
 
-                      lineHeight: cell.selected || cell.today ? dayBubbleSize : rowHeight,
+                      lineHeight: cell.selected || cell.today || cell.appearance ? dayBubbleSize : rowHeight,
 
                       textAlign: 'center',
 

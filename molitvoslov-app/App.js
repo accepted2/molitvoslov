@@ -30,7 +30,7 @@ import {hydratePublicContent} from './src/services/contentStore';
 import {syncPublicContent} from './src/services/contentSync';
 import {hydrateBibleContent} from './src/services/bibleStore';
 import {syncBibleContent} from './src/services/bibleSync';
-import {syncYearMarkers2026} from './src/services/calendarYearMarkers';
+import {syncCalendarWindow} from './src/services/calendarSync';
 
 const ONBOARDING_STORAGE_KEY = '@molitvoslov/onboarding-version';
 const ONBOARDING_VERSION = 5;
@@ -135,8 +135,8 @@ export default function App() {
     const runSync = async (reason) => {
       try {
         // Calendar markers are light-weight and independent of bulky saint records.
-        syncYearMarkers2026().catch((error) =>
-          console.log('Calendar markers sync отложен:', error?.message || error)
+        syncCalendarWindow({neighbors: reason === 'startup'}).catch((error) =>
+          console.log('Calendar sync отложен:', error?.message || error)
         );
         const [
           publicContentResult,
@@ -217,6 +217,9 @@ export default function App() {
         return;
       }
 
+      syncCalendarWindow().catch((error) =>
+        console.log('Periodic calendar sync отложен:', error?.message || error)
+      );
       const [publicResult, bibleResult] = await Promise.all([
         syncPublicContent(),
         syncBibleContent('rst'),
