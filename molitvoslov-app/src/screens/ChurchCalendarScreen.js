@@ -207,7 +207,7 @@ const FeastImage = ({feast}) => {
   return (
     <Image
       source={source}
-      resizeMode="cover"
+      resizeMode="contain"
       onLoad={(event) => {
         const {width, height} = event.nativeEvent.source || {};
 
@@ -828,7 +828,12 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             accessibilityRole="button"
           >
             <View style={styles.otherSaintDot} />
-            <Text style={styles.otherSaintText}>{displayTitle(feast, copy)} ›</Text>
+
+            <Text style={styles.otherSaintText}>
+              {displayTitle(feast, copy)}
+            </Text>
+
+            <Text style={styles.otherSaintArrow}>›</Text>
           </Pressable>
         ))
       ) : (
@@ -1146,7 +1151,7 @@ const styles = StyleSheet.create({
   otherSaintRow: {
     marginTop: 9,
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   otherSaintDot: {
     width: 5,
@@ -1156,12 +1161,24 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: '#A66B32',
   },
+
   otherSaintText: {
     flex: 1,
     color: '#503524',
     fontFamily: 'serif',
     fontSize: 13,
     lineHeight: 18,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(123, 79, 36, 0.25)',
+  },
+  otherSaintArrow: {
+    marginLeft: 5,
+    marginRight: 2,
+    color: '#875627',
+    fontSize: 20,
+    lineHeight: 16,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   otherSaintEmpty: {
     marginTop: 8,
@@ -1202,7 +1219,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(123,79,36,0.19)',
   },
   feastImageWrap: {
-    width: '98',
+    width: 98,
     // maxWidth: '120',
     // height: 142,
     alignSelf: 'center',

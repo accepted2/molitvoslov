@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useState} from 'react';
-
+import Ionicons from '@expo/vector-icons/Ionicons';
 import {Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-native';
 
 import {getSavedItems} from '../../services/savedItems';
@@ -10,6 +10,7 @@ import {
 import {useLanguage} from '../../context/LanguageContext';
 
 import SelectableDocumentReader from './SelectableDocumentReader';
+import { translate } from '../../i18n/translations';
 
 const normalizeText = (value) =>
   String(value || '')
@@ -306,8 +307,19 @@ export default function ExpandablePrayerBlock({
             </Text>
           )}
         </View>
-
-        <Text style={styles.arrow}>{isOpen ? '▴' : '▾'}</Text>
+        <View style={styles.arrow}>
+          <Ionicons
+            name={isOpen ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color="#875627"
+            style={{
+              transform: [
+                {translateX: isOpen ? 0 : 0},
+                {translateY: isOpen ? -0.3 : 1},
+              ],
+            }}
+          />
+        </View>
       </Pressable>
 
       {isOpen && (
@@ -328,7 +340,11 @@ export default function ExpandablePrayerBlock({
             style={({pressed}) => [styles.collapseButton, pressed && styles.collapsePressed]}
             onPress={collapse}
           >
-            <Text style={styles.collapseIcon}>▴</Text>
+            <Ionicons
+              name="chevron-up"
+              size={16}
+              color="#7A4F2D"
+            />
             <Text style={styles.collapseText}>{t('common.collapseOnly')}</Text>
           </Pressable>
         </View>
@@ -380,14 +396,13 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    borderWidth: 1,
-    borderColor: 'rgba(123, 79, 36, 0.20)',
-    backgroundColor: '#EEDCC0',
-    color: '#7A4F2D',
-    fontSize: 17,
-    lineHeight: 27,
-    textAlign: 'center',
-    fontWeight: '700',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 250, 242, 0.92)',
+    shadowColor: '#5A321B',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
   },
 
   content: {

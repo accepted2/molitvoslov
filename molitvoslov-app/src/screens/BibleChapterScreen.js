@@ -3,7 +3,7 @@ import {ActivityIndicator, Pressable, StyleSheet, Text, View} from 'react-native
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
-
+import Ionicons from '@expo/vector-icons/Ionicons';
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 import {ReaderBookmarkMenu} from '../components/reader/ReaderBookmarkMenu';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
@@ -748,11 +748,11 @@ export const BibleChapterScreen = ({route, navigation}) => {
           onPress={addCurrentBookmark}
           style={({pressed}) => [styles.toolbarIconButton, pressed && styles.toolbarPressed]}
         >
-          <Text
-            style={[styles.bookmarkIcon, readerTheme === 'night' && styles.toolbarIconTextNight]}
-          >
-            ⌑
-          </Text>
+          <Ionicons
+            name="bookmark-outline"
+            size={20}
+            color={readerTheme === 'night' ? '#E0C39B' : '#55351F'}
+          />
         </Pressable>
 
         <Pressable
@@ -780,11 +780,11 @@ export const BibleChapterScreen = ({route, navigation}) => {
             pressed && styles.toolbarPressed,
           ]}
         >
-          <Text
-            style={[styles.toolbarMoon, readerTheme === 'night' && styles.toolbarIconTextNight]}
-          >
-            ◔
-          </Text>
+          <Ionicons
+            name={readerTheme === 'night' ? 'sunny-outline' : 'moon-outline'}
+            size={20}
+            color={readerTheme === 'night' ? '#E0C39B' : '#55351F'}
+          />
         </Pressable>
 
         <View style={styles.toolbarDivider} />
