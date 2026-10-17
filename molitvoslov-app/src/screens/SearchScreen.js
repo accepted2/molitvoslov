@@ -426,7 +426,7 @@ const SearchContent = ({navigation}) => {
               ) : result.total > 0 ? (
                 <Text style={styles.countText}>{copy.found(result.total)}</Text>
               ) : null}
-              {!paused && !indexLoading && !!query && (
+              {!paused && !!query && (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Остановить поиск"
