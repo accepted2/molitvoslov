@@ -112,6 +112,7 @@ const scheduleIdleTask = (callback) => {
 const SearchContent = ({navigation}) => {
   const seedDb = useSQLiteContext();
   const [seedReady, setSeedReady] = useState(false);
+  const [paused, setPaused] = useState(false);
   const {language} = useLanguage();
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + 56;
@@ -158,99 +159,32 @@ const SearchContent = ({navigation}) => {
     };
   }, [seedDb, language, publicGeneration, bibleGeneration]);
 
+  // The bundled FTS index is authoritative for exact phrase search.
+  // Do not start the legacy broad word-by-word JS scan while the seed opens.
   useEffect(() => {
-    if (seedReady) {
-      setIndexLoading(false);
-      return undefined;
-    }
-    let active = true;
-    let lastPartialUpdate = 0;
-    setIndexLoading(true);
-
-    // Build in batches so navigation and typing remain responsive.
-    // Publish partial results as soon as entries become searchable.
-    const cancelTask = scheduleIdleTask(() => {
-      if (!active) {
-        return;
-      }
-
-      buildSearchIndexAsync(language, {
-        isCancelled: () => !active,
-        // Make already indexed documents searchable before the full build completes.
-        // Limit UI publications to prevent continuous re-render/search cycles.
-        onProgress: (partialIndex) => {
-          const now = Date.now();
-          if (active && partialIndex.length && now - lastPartialUpdate >= 1500) {
-            lastPartialUpdate = now;
-            setIndex(partialIndex);
-          }
-        },
-      })
-        .then((builtIndex) => {
-          if (active && builtIndex) setIndex(builtIndex);
-        })
-        .catch((error) => {
-          console.warn('Search index preparation failed:', error);
-        })
-        .finally(() => {
-          if (active) {
-            setIndexLoading(false);
-          }
-        });
-    });
-
-    return () => {
-      active = false;
-      cancelTask();
-    };
-  }, [language, publicGeneration, bibleGeneration, seedReady]);
+    setIndexLoading(!seedReady);
+  }, [seedReady]);
 
   useEffect(() => {
+    if (paused) return undefined;
     const timer = setTimeout(() => {
       setSearchQuery(query);
     }, 320);
 
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, paused]);
 
   useEffect(() => {
     let cancelled = false;
     const trimmed = searchQuery.trim();
-
-    if ((!index && !seedReady) || trimmed.length < 2) {
-      setSearchLoading(false);
-      setResult((previous) =>
-        previous.total === 0 && previous.items.length === 0 ? previous : {items: [], total: 0}
-      );
-      return () => {
-        cancelled = true;
-      };
+    if (paused || !seedReady || trimmed.length < 2) {
+      if (!paused) setSearchLoading(false);
+      return () => { cancelled = true; };
     }
 
-    // Keep previous matches for the same query/category while the index grows.
-    // Clear only on a real query or category change.
     const scope = `${language}:${activeGroup}:${searchQuery}`;
-
     setSearchLoading(true);
-    let lastProgressAt = 0;
-
-    const executeSearch = seedReady
-      ? searchPersistent(language, searchQuery, activeGroup, 120, seedDb)
-      : searchIndexAsync(index, searchQuery, {
-          group: activeGroup,
-          limit: 120,
-          isCancelled: () => cancelled,
-          onProgress: (partial) => {
-            const now = Date.now();
-            if (!cancelled && now - lastProgressAt >= 400) {
-              lastProgressAt = now;
-              setResult(partial);
-              setSearchScope(scope);
-            }
-          },
-        });
-
-    executeSearch
+    searchPersistent(language, searchQuery, activeGroup, 120, seedDb)
       .then((nextResult) => {
         if (!cancelled && nextResult) {
           setResult(nextResult);
@@ -259,20 +193,14 @@ const SearchContent = ({navigation}) => {
       })
       .catch((error) => {
         if (!cancelled) {
-          console.warn('Search request failed:', error?.message || error);
+          console.warn('Exact phrase search failed:', error?.message || error);
           setResult({items: [], total: 0});
+          setSearchScope(scope);
         }
       })
-      .finally(() => {
-        if (!cancelled) {
-          setSearchLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [index, searchQuery, activeGroup, language, seedReady, seedDb]);
+      .finally(() => { if (!cancelled) setSearchLoading(false); });
+    return () => { cancelled = true; };
+  }, [searchQuery, activeGroup, language, seedReady, seedDb, paused]);
 
   const suggestionIndex = useMemo(
     () => (index || []).filter((entry) => !!entry.titleNormalized),
@@ -379,7 +307,7 @@ const SearchContent = ({navigation}) => {
   const waitingForQuery = !trimmedQuery;
   const queryTooShort = !!trimmedQuery && trimmedQuery.length < 2;
   const displayScope = `${language}:${activeGroup}:${searchQuery}`;
-  const resultsCurrent = searchQuery === query && displayScope === searchScope;
+  const resultsCurrent = (paused || searchQuery === query) && displayScope === searchScope;
   const visibleResults = useMemo(
     () => resultsCurrent
       ? (activeGroup === SEARCH_GROUPS.ALL
@@ -412,7 +340,7 @@ const SearchContent = ({navigation}) => {
             <TextInput
               autoFocus
               value={query}
-              onChangeText={setQuery}
+              onChangeText={(value) => { setPaused(false); setQuery(value); }}
               placeholder={copy.placeholder}
               placeholderTextColor="#9B806A"
               autoCorrect={false}
@@ -490,7 +418,7 @@ const SearchContent = ({navigation}) => {
 
           {!waitingForQuery && !queryTooShort && (
             <View style={styles.countRow}>
-              {indexLoading || searchLoading || !resultsCurrent ? (
+              {indexLoading || (searchLoading && !paused) || (!resultsCurrent && !paused) ? (
                 <>
                   <ActivityIndicator size="small" color="#A16E35" />
                   <Text style={styles.countText}>Ищем…</Text>
@@ -549,6 +477,7 @@ const SearchContent = ({navigation}) => {
         ) : (
           <FlatList
             data={visibleResults}
+            onScrollBeginDrag={() => { setPaused(true); setSearchLoading(false); }}
             keyExtractor={(item) => item.id}
             renderItem={renderResult}
             keyboardShouldPersistTaps="handled"
@@ -924,7 +853,7 @@ const styles = StyleSheet.create({
 // The main molitvoslov.db and user data are never overwritten.
 export const SearchScreen = (props) => (
   <SQLiteProvider
-    databaseName="molitvoslov_search_seed.db"
+    databaseName="molitvoslov_search_seed_v7.db"
     assetSource={{assetId: require('../data/search_seed.db')}}
   >
     <SearchContent {...props} />
