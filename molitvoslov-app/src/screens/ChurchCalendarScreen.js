@@ -38,6 +38,8 @@ import {
   getOfflineCalendarMonth,
 } from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
+import {subscribeCalendarUpdates} from '../services/calendarEvents';
+import {peekCalendarMonth, peekCalendarDay} from '../services/churchCalendar';
 import {colors} from '../theme';
 
 const buildCells = (year, month) => {
@@ -463,6 +465,29 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const [loadingDay, setLoadingDay] = useState(true);
   const [error, setError] = useState('');
   const [refreshVersion, setRefreshVersion] = useState(0);
+
+  // A background update should refresh the visible month/day without navigation.
+  useEffect(() => subscribeCalendarUpdates((change) => {
+    if (change.language && change.language !== dataLanguage) return;
+    if (change.kind === 'month' && change.year === visibleYear && change.month === visibleMonth) {
+      const updated = peekCalendarMonth(visibleYear, visibleMonth, dataLanguage);
+      if (updated) setMonthData(updated);
+    }
+    if (change.kind === 'day' && change.date === selectedDate) {
+      const updated = peekCalendarDay(selectedDate, dataLanguage);
+      if (updated) setDayData(updated);
+    }
+    if (change.kind === 'markers' && change.year === visibleYear) {
+      // Re-read local data to apply the updated fasting markers across the month.
+      getOfflineCalendarMonth(visibleYear, visibleMonth, dataLanguage)
+        .then((month) => { if (month) setMonthData(month); })
+        .catch(() => {});
+      getOfflineCalendarDay(selectedDate, dataLanguage)
+        .then((day) => { if (day) setDayData(day); })
+        .catch(() => {});
+    }
+  }), [dataLanguage, visibleYear, visibleMonth, selectedDate]);
+
 
   useEffect(() => {
     const raw = route.params?.date;
