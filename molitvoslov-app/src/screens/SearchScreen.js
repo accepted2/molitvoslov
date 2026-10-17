@@ -186,7 +186,7 @@ const SearchContent = ({navigation}) => {
 
     const scope = `${language}:${activeGroup}:${searchQuery}`;
     setSearchLoading(true);
-    searchPersistent(language, searchQuery, activeGroup, 120, seedDb)
+    searchPersistent(language, searchQuery, activeGroup, 120, 0, seedDb)
       .then((nextResult) => {
         if (!cancelled && nextResult) {
           setResult(nextResult);
@@ -884,7 +884,7 @@ const styles = StyleSheet.create({
 // The main molitvoslov.db and user data are never overwritten.
 export const SearchScreen = (props) => (
   <SQLiteProvider
-    databaseName="molitvoslov_search_seed_v7.db"
+    databaseName="molitvoslov_search_seed_v8.db"
     assetSource={{assetId: require('../data/search_seed.db')}}
   >
     <SearchContent {...props} />
