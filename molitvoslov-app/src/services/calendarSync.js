@@ -1,5 +1,5 @@
-import {getCalendarMonth, getCalendarDay} from './churchCalendar';
-import {syncYearMarkers2026} from './calendarYearMarkers';
+import {getCalendarMonth} from './churchCalendar';
+import {syncYearMarkers} from './calendarYearMarkers';
 
 // Shared foreground synchronizer. Network failures never clear the offline calendar.
 let running = null;
@@ -27,8 +27,8 @@ export const syncCalendarWindow = ({date = new Date(), neighbors = false, force 
         jobs.push(refreshMonth(year, month, language, force));
       }
     }
-    if (date.getFullYear() === 2026) {
-      jobs.push(syncYearMarkers2026());
+    for (const year of new Set(targets.map((target) => target.year))) {
+      jobs.push(syncYearMarkers(year));
     }
     const results = await Promise.allSettled(jobs);
     const rejected = results.filter((item) => item.status === 'rejected');
