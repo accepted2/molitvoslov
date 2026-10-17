@@ -612,6 +612,26 @@ export const MenuScreen = ({navigation}) => {
     }, [loadProgress, dailyQuote?.id, updateQuoteWidget, calendarLanguage])
   );
 
+  useEffect(() => subscribeCalendarUpdates((change) => {
+    const language = getCalendarDataLanguage(calendarLanguage);
+    if (change.language && change.language !== language) return;
+    if (change.kind === 'day' && change.date === toCalendarDate(calendarSelectedDate)) {
+      getOfflineCalendarDay(change.date, language).then((day) => {
+        if (day) setCalendarToday(day);
+      }).catch(() => {});
+    }
+    if (change.kind === 'month' &&
+      change.year === calendarSelectedDate.getFullYear() &&
+      change.month === calendarSelectedDate.getMonth() + 1) {
+      getOfflineCalendarDay(toCalendarDate(calendarSelectedDate), language)
+        .then((day) => { if (day) setCalendarToday(day); }).catch(() => {});
+    }
+    if (change.kind === 'markers' && change.year === calendarSelectedDate.getFullYear()) {
+      getOfflineCalendarDay(toCalendarDate(calendarSelectedDate), language)
+        .then((day) => { if (day) setCalendarToday(day); }).catch(() => {});
+    }
+  }), [calendarLanguage, calendarSelectedDate]);
+
   const updateCalendarWidget = useCallback(
     async (day = calendarToday, language = calendarLanguage) => {
       try {
