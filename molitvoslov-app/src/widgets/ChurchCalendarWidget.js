@@ -125,7 +125,8 @@ export const ChurchCalendarWidget = ({
     widgetHeight - outerPadding * 2 - monthHeaderHeight - weekdayHeight - 8
   );
   const rowHeight = Math.max(tiny ? 11 : 14, Math.floor(availableRowsHeight / weeks.length));
-  const dayBubbleSize = Math.min(cellWidth, rowHeight, large ? 24 : 20);
+  // Leave a visible gutter even when many consecutive days have a fasting marker.
+  const dayBubbleSize = Math.max(9, Math.min(cellWidth - 4, rowHeight - 3, large ? 24 : 20));
 
   const titleSize = tiny ? 8 : large ? 11 : 10;
 
@@ -569,9 +570,9 @@ export const ChurchCalendarWidget = ({
                     allowFontScaling={false}
                     maxLines={1}
                     style={{
-                      width: cell.selected || cell.today ? dayBubbleSize : cellWidth,
+                      width: cell.selected || cell.today || cell.appearance ? dayBubbleSize : cellWidth,
 
-                      height: cell.selected || cell.today ? dayBubbleSize : rowHeight,
+                      height: cell.selected || cell.today || cell.appearance ? dayBubbleSize : rowHeight,
 
                       color: cell.selected
                         ? '#FFF8EA'
@@ -595,12 +596,12 @@ export const ChurchCalendarWidget = ({
 
                       borderColor: '#B97A32',
 
-                      borderRadius: cell.selected || cell.today ? dayBubbleSize / 2 : 0,
+                      borderRadius: cell.selected || cell.today || cell.appearance ? dayBubbleSize / 2 : 0,
 
                       fontFamily: 'Ponomar-Regular',
                       fontSize: numberSize,
 
-                      lineHeight: cell.selected || cell.today ? dayBubbleSize : rowHeight,
+                      lineHeight: cell.selected || cell.today || cell.appearance ? dayBubbleSize : rowHeight,
 
                       textAlign: 'center',
 
