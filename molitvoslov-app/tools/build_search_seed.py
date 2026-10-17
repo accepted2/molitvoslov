@@ -20,7 +20,7 @@ KIND_BOOST = {"psalm-verse":1.20,"bible-verse":1.15,"psalm":1.10,"text":1.10,"pr
 def fold(value):
     value = unicodedata.normalize("NFD", str(value or "").lower().replace("ё", "е"))
     value = "".join(ch for ch in value if unicodedata.category(ch) != "Mn")
-    return re.sub(r"\s+", " ", re.sub(r"[^\w]+", " ", value, flags=re.UNICODE)).strip()
+    return re.sub(r"\s+", " ", "".join(ch if ch.isalnum() else " " for ch in value)).strip()
 
 def compact(value):
     return re.sub(r"\s+", " ", str(value or "")).strip()
