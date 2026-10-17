@@ -52,6 +52,12 @@ class CalendarEngineV4Tests(SimpleTestCase):
             3948: date(2027, 3, 13),
             3949: date(2027, 3, 13),
             3950: date(2027, 3, 13),
+            3792: date(2027, 3, 11),
+            3912: date(2027, 3, 28),
+            4069: date(2027, 4, 18),
+            4273: date(2027, 5, 16),
+            4338: date(2027, 5, 23),
+            4673: date(2027, 7, 2),
         }
         for c in CONFIRMED_CORRECTIONS:
             with self.subTest(c.feast_id):
