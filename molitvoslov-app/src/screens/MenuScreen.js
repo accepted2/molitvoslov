@@ -636,6 +636,10 @@ export const MenuScreen = ({navigation}) => {
     async (day = calendarToday, language = calendarLanguage) => {
       try {
         const today = new Date();
+        const todayKey = toCalendarDate(today);
+        const widgetDay = day?.date_gregorian === todayKey
+          ? day
+          : await getOfflineCalendarDay(todayKey, getCalendarDataLanguage(language));
         const month = await getOfflineCalendarMonth(
           today.getFullYear(), today.getMonth() + 1, getCalendarDataLanguage(language)
         );
@@ -644,7 +648,7 @@ export const MenuScreen = ({navigation}) => {
           renderWidget: (widgetInfo) => (
             <ChurchCalendarWidget
               monthDays={month?.days || []}
-              day={day}
+              day={widgetDay || day}
               language={language}
               width={widgetInfo.width}
               height={widgetInfo.height}
