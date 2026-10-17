@@ -14,10 +14,10 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "src" / "data" / "search_seed.db"
 CONTENT = ROOT / "src" / "data" / "offlineContent.json"
 BIBLE = ROOT / "src" / "data" / "offlineBible.json"
-SCHEMA = "5"
+SCHEMA = "7"
 
 def fold(value):
-    value = unicodedata.normalize("NFD", str(value or "").lower())
+    value = unicodedata.normalize("NFD", str(value or "").lower().replace("ё", "е"))
     value = "".join(ch for ch in value if unicodedata.category(ch) != "Mn")
     return re.sub(r"\s+", " ", re.sub(r"[^\w]+", " ", value, flags=re.UNICODE)).strip()
 
@@ -30,7 +30,7 @@ def main():
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.unlink(missing_ok=True)
     db = sqlite3.connect(OUT)
-    db.execute("CREATE VIRTUAL TABLE search_documents USING fts5(normalized, content='', tokenize='unicode61 remove_diacritics 2', detail='none', columnsize=0)")
+    db.execute("CREATE VIRTUAL TABLE search_documents USING fts5(normalized, content='', tokenize='unicode61 remove_diacritics 2', detail='full', columnsize=0)")
     db.execute("CREATE TABLE search_payloads (rowid INTEGER PRIMARY KEY, language TEXT NOT NULL, group_key TEXT NOT NULL, payload TEXT NOT NULL)")
     db.execute("CREATE INDEX search_payloads_group ON search_payloads(language, group_key)")
     db.execute("CREATE TABLE search_metadata (language TEXT PRIMARY KEY, version TEXT NOT NULL)")

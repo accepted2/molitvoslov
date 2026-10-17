@@ -2154,7 +2154,7 @@ const styles = StyleSheet.create({
   calendarMainRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    gap: 5,
+    gap: 3,
     marginTop: 8,
     paddingTop: 8,
 
@@ -2310,7 +2310,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     alignSelf: 'stretch',
-    padding: 6,
+    padding: 3,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(255, 251, 242, 0.72)',
@@ -2321,7 +2321,7 @@ const styles = StyleSheet.create({
     height: 21,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 2,
+    marginBottom: 3,
   },
 
   miniCalendarArrowButton: {
@@ -2394,8 +2394,8 @@ const styles = StyleSheet.create({
   },
 
   miniCalendarDayBubble: {
-    width: 24,
-    height: 24,
+    width: 23,
+    height: 23,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,

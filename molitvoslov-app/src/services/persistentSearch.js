@@ -3,7 +3,7 @@ import {getCurrentContent} from './contentStore';
 import {getCurrentBibleContent} from './bibleStore';
 import {buildSearchIndexAsync, normalizeSearchText, SEARCH_GROUPS} from './searchIndex';
 
-const SCHEMA = '5';
+const SCHEMA = '7';
 let initialization = null;
 const buildsByLanguage = new Map();
 let enabled = null;
@@ -63,10 +63,11 @@ export const isPersistentSearchReady = async (language = 'ru', database = null) 
   return row?.version === versionFor(language);
 };
 
-const ftsTokens = (query) =>
-  normalizeSearchText(query)
-    .split(' ')
-    .filter((word) => word.length >= 2);
+const ftsTokens = (query) => {
+  const words = normalizeSearchText(query).replace(/ё/g, 'е').split(' ').filter(Boolean);
+  // A trailing one-letter prefix is meaningful in a phrase: "все могу в".
+  return words.length > 1 ? words : words.filter((word) => word.length >= 2);
+};
 // Parameterized FTS5 syntax: each token is quoted and matched by prefix.
 const ftsQuery = (query) =>
   ftsTokens(query)
@@ -90,23 +91,22 @@ export const searchPersistent = async (
   const langColumn = seeded ? 'p.language' : 'language';
   const groupColumn = seeded ? 'p.group_key' : 'group_key';
   const payloadColumn = seeded ? 'p.payload' : 'payload';
-  const where =
-    group === SEARCH_GROUPS.ALL
-      ? langColumn + ' = ? AND search_documents MATCH ?'
-      : langColumn + ' = ? AND ' + groupColumn + ' = ? AND search_documents MATCH ?';
-  const args =
-    group === SEARCH_GROUPS.ALL ? [language, ftsQuery(query)] : [language, group, ftsQuery(query)];
+  const tokens = ftsTokens(query);
+  if (!tokens.length) return {items: [], total: 0};
+  // Match the words as one uninterrupted phrase in their original order.
+  // Only the final, possibly unfinished word is treated as a prefix.
+  const phrase = '"' + tokens.map((word) => word.replace(/"/g, '""')).join(' ') + '"*';
+  const where = group === SEARCH_GROUPS.ALL
+    ? langColumn + ' = ? AND search_documents MATCH ?'
+    : langColumn + ' = ? AND ' + groupColumn + ' = ? AND search_documents MATCH ?';
+  const args = group === SEARCH_GROUPS.ALL
+    ? [language, phrase]
+    : [language, group, phrase];
   const count = await db.getFirstAsync(
-    'SELECT count(*) AS n FROM ' + table + ' WHERE ' + where,
-    args
+    'SELECT count(*) AS n FROM ' + table + ' WHERE ' + where, args
   );
   const rows = await db.getAllAsync(
-    'SELECT ' +
-      payloadColumn +
-      ' AS payload FROM ' +
-      table +
-      ' WHERE ' +
-      where +
+    'SELECT ' + payloadColumn + ' AS payload FROM ' + table + ' WHERE ' + where +
       ' ORDER BY bm25(search_documents) LIMIT ?',
     [...args, limit]
   );

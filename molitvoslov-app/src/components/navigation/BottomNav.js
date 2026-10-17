@@ -3,7 +3,8 @@ import {Pressable, StyleSheet, Text, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useLanguage} from '../../context/LanguageContext';
-
+import Feather from '@expo/vector-icons/Feather';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 const ITEMS = [
   {key: 'home', route: 'Menu', labelKey: 'nav.home', icon: 'home'},
   {key: 'favorites', route: 'Favorites', labelKey: 'nav.favorites', icon: 'favorite'},
@@ -12,44 +13,36 @@ const ITEMS = [
   {key: 'account', route: 'Account', labelKey: 'nav.account', icon: 'account'},
 ];
 
+
 const NavIcon = ({type, active}) => {
   const color = active ? '#2C170B' : '#E3C692';
 
-  if (type === 'book') {
-    return (
-      <View style={styles.iconBox}>
-        <View style={[styles.bookIcon, {borderColor: color}]}>
-          <View style={[styles.bookSpine, {backgroundColor: color}]} />
-        </View>
-      </View>
-    );
-  }
+  const iconNames = {
+    home: 'home',
+    favorite: 'heart',
+    book: 'book-open',
+    account: 'user',
+  };
 
   if (type === 'candle') {
     return (
-      <View style={styles.iconBox}>
-        <View style={[styles.candleFlame, {backgroundColor: color}]} />
-        <View style={[styles.candleBody, {borderColor: color}]} />
-        <View style={[styles.candleBase, {backgroundColor: color}]} />
-      </View>
-    );
-  }
-
-  if (type === 'account') {
-    return (
-      <View style={styles.iconBox}>
-        <View style={[styles.accountHead, {borderColor: color}]} />
-        <View style={[styles.accountShoulders, {borderColor: color}]} />
-      </View>
+      <MaterialCommunityIcons
+        name="candle"
+        size={17}
+        color={color}
+      />
     );
   }
 
   return (
-    <Text style={[styles.symbol, active && styles.symbolActive]}>
-      {type === 'favorite' ? '♡' : '⌂'}
-    </Text>
+    <Feather
+      name={iconNames[type] || 'circle'}
+      size={17}
+      color={color}
+    />
   );
 };
+
 
 export const BottomNav = ({navigation, active}) => {
   const insets = useSafeAreaInsets();
@@ -88,10 +81,21 @@ export const BottomNav = ({navigation, active}) => {
                   pressed && styles.pressed,
                 ]}
               >
-                <NavIcon type={item.icon} active={isActive} />
-                <Text style={[styles.label, isActive && styles.labelActive]}>
-                  {t(item.labelKey)}
-                </Text>
+                <View style={styles.itemContent}>
+                  <View style={styles.navIconWrap}>
+                    <NavIcon type={item.icon} active={isActive} />
+                  </View>
+
+                  <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
+
+                    style={[styles.label, isActive && styles.labelActive]}
+                  >
+                    {t(item.labelKey)}
+                  </Text>
+                </View>
               </Pressable>
             );
           })}
@@ -123,32 +127,44 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.28,
     shadowRadius: 12,
     elevation: 8,
+
   },
 
   itemsRow: {
-    flexDirection: 'row',
-    gap: 1,
-    width: 382,
-    maxWidth: '100%',
-    alignSelf: 'center',
+    width: '100%',
     height: 46,
+    flexDirection: 'row',
     alignItems: 'center',
+  },
+  itemContent: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  navIconWrap: {
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   item: {
     flex: 1,
+    minWidth: 0,
     height: 41,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 0,
     paddingVertical: 2,
-    borderRadius: 15,
+    borderRadius: 12,
   },
 
   itemActive: {
     backgroundColor: 'rgb(244, 220, 168)',
     borderWidth: 1,
     borderColor: 'rgba(239, 199, 127, 0.14)',
+    paddingHorizontal: 1,
   },
 
   pressed: {
@@ -235,16 +251,20 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    marginTop: 0,
+    marginTop: 2,
     color: '#E7D2AB',
     fontFamily: 'serif',
-    fontSize: 9,
-    lineHeight: 11,
+    paddingHorizontal: 1,
+    fontSize: 10,
+    lineHeight: 12,
     fontWeight: '600',
+    textAlign: 'center',
+    includeFontPadding: false,
   },
 
   labelActive: {
     color: '#2C170B',
-    fontWeight: '800',
+    // fontWeight: '800',
+    // paddingHorizontal: 1,
   },
 });

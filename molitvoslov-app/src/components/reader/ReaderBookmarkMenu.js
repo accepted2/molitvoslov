@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {ActivityIndicator, Modal, Pressable, StyleSheet, Text, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-
+import Ionicons from '@expo/vector-icons/Ionicons';
 import {saveReadingBookmark} from '../../services/readerBookmarks';
 import {colors, radius, spacing} from '../../theme';
 import {useLanguage} from '../../context/LanguageContext';
@@ -120,7 +120,11 @@ export const ReaderBookmarkMenu = ({
               {saving ? (
                 <ActivityIndicator size="small" color={colors.accent} />
               ) : (
-                <Text style={styles.icon}>⌑</Text>
+                <Ionicons
+                  name="bookmark-outline"
+                  size={22}
+                  color={colors.accent}
+                />
               )}
             </View>
 
