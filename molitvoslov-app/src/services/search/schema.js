@@ -1,7 +1,11 @@
 export const SEARCH_SCHEMA_VERSION = '8';
 export const SEARCH_GROUPS = Object.freeze({
-  ALL: 'all', PRAYERS: 'prayers', SCRIPTURE: 'scripture',
-  PSALTER: 'psalter', AKATHISTS: 'akathists', CANONS: 'canons',
+  ALL: 'all',
+  PRAYERS: 'prayers',
+  SCRIPTURE: 'scripture',
+  PSALTER: 'psalter',
+  AKATHISTS: 'akathists',
+  CANONS: 'canons',
 });
 export const CREATE_SCHEMA_SQL = `
 CREATE VIRTUAL TABLE IF NOT EXISTS search_documents USING fts5(
