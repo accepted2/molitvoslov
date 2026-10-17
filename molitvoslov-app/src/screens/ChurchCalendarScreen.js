@@ -471,7 +471,11 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
     if (change.language && change.language !== dataLanguage) return;
     if (change.kind === 'month' && change.year === visibleYear && change.month === visibleMonth) {
       const updated = peekCalendarMonth(visibleYear, visibleMonth, dataLanguage);
-      if (updated) setMonthData(updated);
+      if (updated) {
+        setMonthData(updated);
+        const selected = updated.days?.find((day) => day.date_gregorian === selectedDate);
+        if (selected) setDayData(selected);
+      }
     }
     if (change.kind === 'day' && change.date === selectedDate) {
       const updated = peekCalendarDay(selectedDate, dataLanguage);
