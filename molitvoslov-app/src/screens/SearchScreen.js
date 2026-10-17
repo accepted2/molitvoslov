@@ -230,11 +230,7 @@ const SearchContent = ({navigation}) => {
     // Keep previous matches for the same query/category while the index grows.
     // Clear only on a real query or category change.
     const scope = `${language}:${activeGroup}:${searchQuery}`;
-    if (scope !== searchScope) {
-      // Keep current visible matches while the next SQLite query is pending.
-      // They are replaced atomically once the new results have arrived.
-      setSearchScope(scope);
-    }
+
     setSearchLoading(true);
     let lastProgressAt = 0;
 
@@ -249,6 +245,7 @@ const SearchContent = ({navigation}) => {
             if (!cancelled && now - lastProgressAt >= 400) {
               lastProgressAt = now;
               setResult(partial);
+              setSearchScope(scope);
             }
           },
         });
@@ -257,6 +254,7 @@ const SearchContent = ({navigation}) => {
       .then((nextResult) => {
         if (!cancelled && nextResult) {
           setResult(nextResult);
+          setSearchScope(scope);
         }
       })
       .catch((error) => {
@@ -380,16 +378,20 @@ const SearchContent = ({navigation}) => {
   const trimmedQuery = query.trim();
   const waitingForQuery = !trimmedQuery;
   const queryTooShort = !!trimmedQuery && trimmedQuery.length < 2;
+  const displayScope = `${language}:${activeGroup}:${searchQuery}`;
+  const resultsCurrent = searchQuery === query && displayScope === searchScope;
   const visibleResults = useMemo(
-    () =>
-      activeGroup === SEARCH_GROUPS.ALL
+    () => resultsCurrent
+      ? (activeGroup === SEARCH_GROUPS.ALL
         ? result.items
-        : result.items.filter((item) => item.group === activeGroup),
-    [result.items, activeGroup]
+        : result.items.filter((item) => item.group === activeGroup))
+      : [],
+    [result.items, activeGroup, resultsCurrent]
   );
 
   const showEmpty =
-    !indexLoading && !searchLoading && !waitingForQuery && !queryTooShort && result.total === 0;
+    resultsCurrent && !indexLoading && !searchLoading &&
+    !waitingForQuery && !queryTooShort && result.total === 0;
 
   return (
     <AppBackground imageOpacity={0.42}>
@@ -488,7 +490,7 @@ const SearchContent = ({navigation}) => {
 
           {!waitingForQuery && !queryTooShort && (
             <View style={styles.countRow}>
-              {indexLoading || searchLoading ? (
+              {indexLoading || searchLoading || !resultsCurrent ? (
                 <>
                   <ActivityIndicator size="small" color="#A16E35" />
                   <Text style={styles.countText}>Ищем…</Text>
@@ -558,7 +560,7 @@ const SearchContent = ({navigation}) => {
               },
             ]}
             ListFooterComponent={
-              result.total > result.items.length ? (
+              resultsCurrent && result.total > result.items.length ? (
                 <Text style={styles.moreText}>{copy.more}</Text>
               ) : null
             }
