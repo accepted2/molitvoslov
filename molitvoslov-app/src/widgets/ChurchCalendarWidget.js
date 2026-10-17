@@ -4,7 +4,7 @@ import React from 'react';
 import {FlexWidget, ImageWidget, OverlapWidget, TextWidget} from 'react-native-android-widget';
 
 import {CALENDAR_MONTHS, calendarText} from '../services/calendarPreferences';
-import {formatFast} from '../services/churchCalendar';
+import {formatFast, getCalendarDayAppearance} from '../services/churchCalendar';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -63,6 +63,7 @@ export const ChurchCalendarWidget = ({
   width = 320,
   height = 150,
   displayDate,
+  monthDays = [],
 }) => {
   const lang = language === 'uk' ? 'uk' : 'ru';
   const copy = calendarText(lang);
@@ -81,7 +82,11 @@ export const ChurchCalendarWidget = ({
 
   const previousMonth = shiftMonth(shownDate, -1);
   const nextMonth = shiftMonth(shownDate, 1);
-  const cells = buildMonthCells(shownDate, today, selectedDate);
+  const markerMap = new Map(monthDays.map((item) => [item.date_gregorian, item]));
+  const cells = buildMonthCells(shownDate, today, selectedDate).map((cell) => ({
+    ...cell,
+    appearance: cell.date ? getCalendarDayAppearance(markerMap.get(cell.date)) : null,
+  }));
   const weeks = chunk(cells, 7);
 
   const widgetWidth = Number(width) || 320;
@@ -576,7 +581,15 @@ export const ChurchCalendarWidget = ({
                             ? '#A24C40'
                             : '#493225',
 
-                      backgroundColor: cell.selected ? '#B97A32' : '#00000000',
+                      backgroundColor: cell.selected
+                        ? '#B97A32'
+                        : cell.appearance === 'fast'
+                          ? '#A78AB9'
+                          : cell.appearance === 'feast' || cell.appearance === 'easter'
+                            ? '#ECD2A2'
+                            : cell.appearance === 'solid'
+                              ? '#DEE4CB'
+                              : '#00000000',
 
                       borderWidth: cell.today && !cell.selected ? 1 : 0,
 
