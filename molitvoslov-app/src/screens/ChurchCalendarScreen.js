@@ -829,9 +829,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
           >
             <View style={styles.otherSaintDot} />
 
-            <Text style={styles.otherSaintText}>
-              {displayTitle(feast, copy)}
-            </Text>
+            <Text style={styles.otherSaintText}>{displayTitle(feast, copy)}</Text>
 
             <Text style={styles.otherSaintArrow}>›</Text>
           </Pressable>

@@ -96,17 +96,22 @@ export const searchPersistent = async (
   // Match the words as one uninterrupted phrase in their original order.
   // Only the final, possibly unfinished word is treated as a prefix.
   const phrase = '"' + tokens.map((word) => word.replace(/"/g, '""')).join(' ') + '"*';
-  const where = group === SEARCH_GROUPS.ALL
-    ? langColumn + ' = ? AND search_documents MATCH ?'
-    : langColumn + ' = ? AND ' + groupColumn + ' = ? AND search_documents MATCH ?';
-  const args = group === SEARCH_GROUPS.ALL
-    ? [language, phrase]
-    : [language, group, phrase];
+  const where =
+    group === SEARCH_GROUPS.ALL
+      ? langColumn + ' = ? AND search_documents MATCH ?'
+      : langColumn + ' = ? AND ' + groupColumn + ' = ? AND search_documents MATCH ?';
+  const args = group === SEARCH_GROUPS.ALL ? [language, phrase] : [language, group, phrase];
   const count = await db.getFirstAsync(
-    'SELECT count(*) AS n FROM ' + table + ' WHERE ' + where, args
+    'SELECT count(*) AS n FROM ' + table + ' WHERE ' + where,
+    args
   );
   const rows = await db.getAllAsync(
-    'SELECT ' + payloadColumn + ' AS payload FROM ' + table + ' WHERE ' + where +
+    'SELECT ' +
+      payloadColumn +
+      ' AS payload FROM ' +
+      table +
+      ' WHERE ' +
+      where +
       ' ORDER BY bm25(search_documents) LIMIT ?',
     [...args, limit]
   );

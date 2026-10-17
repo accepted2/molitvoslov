@@ -13,7 +13,6 @@ const ITEMS = [
   {key: 'account', route: 'Account', labelKey: 'nav.account', icon: 'account'},
 ];
 
-
 const NavIcon = ({type, active}) => {
   const color = active ? '#2C170B' : '#E3C692';
 
@@ -25,24 +24,11 @@ const NavIcon = ({type, active}) => {
   };
 
   if (type === 'candle') {
-    return (
-      <MaterialCommunityIcons
-        name="candle"
-        size={17}
-        color={color}
-      />
-    );
+    return <MaterialCommunityIcons name="candle" size={17} color={color} />;
   }
 
-  return (
-    <Feather
-      name={iconNames[type] || 'circle'}
-      size={17}
-      color={color}
-    />
-  );
+  return <Feather name={iconNames[type] || 'circle'} size={17} color={color} />;
 };
-
 
 export const BottomNav = ({navigation, active}) => {
   const insets = useSafeAreaInsets();
@@ -90,7 +76,6 @@ export const BottomNav = ({navigation, active}) => {
                     numberOfLines={1}
                     adjustsFontSizeToFit
                     minimumFontScale={0.8}
-
                     style={[styles.label, isActive && styles.labelActive]}
                   >
                     {t(item.labelKey)}
@@ -127,7 +112,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.28,
     shadowRadius: 12,
     elevation: 8,
-
   },
 
   itemsRow: {

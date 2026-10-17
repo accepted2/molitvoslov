@@ -120,11 +120,7 @@ export const ReaderBookmarkMenu = ({
               {saving ? (
                 <ActivityIndicator size="small" color={colors.accent} />
               ) : (
-                <Ionicons
-                  name="bookmark-outline"
-                  size={22}
-                  color={colors.accent}
-                />
+                <Ionicons name="bookmark-outline" size={22} color={colors.accent} />
               )}
             </View>
 
