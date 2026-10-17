@@ -172,6 +172,10 @@ def main_priority_v4(rule: DateRule) -> int:
         )
     ):
         return 1000
+    # Great observances outside the twelve: below Pascha / the Twelve,
+    # but above ordinary saints and inherited reference-year main flags.
+    if "покров пресвятой богородицы" in title:
+        return 900
     if "собор новомучеников и исповедников церкви русской" in title:
         return 850
     if "димитриевская родительская суббота" in title:
@@ -188,14 +192,27 @@ def main_priority_v4(rule: DateRule) -> int:
 
 
 def choose_main_v4(rules):
-    """Return (main_id, ambiguous_main_ids). Never break priority ties by PK."""
+    """Choose the day banner by verified high feast rank, then 2026 main.
+
+    A Great Feast is never displaced by an unrelated reference-year saint.
+    The 2026 main assignment is a *fallback*, not a veto against a feast
+    of known higher rank. Equal-priority contenders remain review blockers:
+    no arbitrary smallest-PK winner is possible.
+    """
     if not rules:
         return None, []
-    candidates = [r for r in rules if r.is_reference_main]
-    if not candidates:
-        # The only case without an explicitly reference-main card: unique
-        # highest rule score or else hard blocker, not guessed ID selection.
-        candidates = list(rules)
+
+    highest_score = max(main_priority_v4(r) for r in rules)
+    if highest_score >= 650:
+        # Explicit liturgical observances (Pascha, Twelve, great feast,
+        # known movable days) outrank inherited reference-year main flags.
+        candidates = [r for r in rules if main_priority_v4(r) == highest_score]
+    else:
+        # For ordinary saints, preserve the 2026 reference main whenever
+        # it still occurs on the new day. It may not, when a movable feast
+        # shifts to another date.
+        candidates = [r for r in rules if r.is_reference_main] or list(rules)
+
     maxscore = max(main_priority_v4(r) for r in candidates)
     leaders = sorted({r.feast_id for r in candidates if main_priority_v4(r) == maxscore})
     if len(leaders) > 1:
