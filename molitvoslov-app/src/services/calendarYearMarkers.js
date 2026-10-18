@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {API_BASE_URL} from './backendAuth';
+import {publishCalendarUpdate} from './calendarEvents';
 
 const PREFIX = '@molitvoslov/calendar-markers-v1:';
 const REFRESH_MS = 24 * 60 * 60 * 1000;
@@ -21,8 +22,9 @@ export const loadYearMarkers = async (year) => {
     const raw = await AsyncStorage.getItem(`${PREFIX}${key}`);
     const value = raw ? JSON.parse(raw) : {days: key === 2026 ? bundled2026() : {}};
     const days = value?.days && typeof value.days === 'object' ? value.days : {};
-    memory.set(key, days);
-    return days;
+    const merged = {...getBundledYearMarkers(key), ...days};
+    memory.set(key, merged);
+    return merged;
   } catch {
     return getBundledYearMarkers(key);
   }
@@ -33,7 +35,7 @@ export const applyYearMarkers = (day, markersByDate) => {
   if (!day?.date_gregorian) return day;
   const patch = markersByDate?.[day.date_gregorian];
   if (!patch?.calendar_markers) return day;
-  return {...day, ...patch};
+  return {...day, ...patch, calendar_markers: {...day.calendar_markers, ...patch.calendar_markers}};
 };
 
 export const applyYearMarkersToMonth = (month, markersByDate) =>
@@ -41,10 +43,14 @@ export const applyYearMarkersToMonth = (month, markersByDate) =>
     ? {...month, days: (month.days || []).map((day) => applyYearMarkers(day, markersByDate))}
     : month;
 
-export const syncYearMarkers2026 = async () => {
-  if (pending) return pending;
-  pending = (async () => {
-    const year = 2026;
+const pendingByYear = new Map();
+
+export const syncYearMarkers = async (targetYear) => {
+  const year = Number(targetYear);
+  if (!Number.isInteger(year) || year < 1900 || year > 2200) return {updated: false};
+  if (pendingByYear.has(year)) return pendingByYear.get(year);
+
+  const task = (async () => {
     const stampKey = `${PREFIX}${year}:checked`;
     const checked = Number((await AsyncStorage.getItem(stampKey)) || 0);
     if (Date.now() - checked < REFRESH_MS) return {updated: false};
@@ -52,21 +58,25 @@ export const syncYearMarkers2026 = async () => {
     const response = await fetch(`${API_BASE_URL}/api/calendar/year-markers/?year=${year}`);
     if (!response.ok) throw new Error(`Calendar markers HTTP ${response.status}`);
     const payload = await response.json();
-    // Prevent accidentally replacing a complete cache with an empty or partial year.
+    const expectedDays = (new Date(year, 1, 29).getMonth() === 1) ? 366 : 365;
     if (
-      payload?.year !== year ||
-      payload?.total_days !== 365 ||
+      Number(payload?.year) !== year ||
+      payload?.total_days !== expectedDays ||
       !payload?.days ||
-      Object.keys(payload.days).length !== 365
+      Object.keys(payload.days).length !== expectedDays
     ) {
-      throw new Error('Calendar markers: incomplete 2026 year; keeping local data');
+      throw new Error(`Calendar markers: incomplete ${year} year; keeping local data`);
     }
+
     await AsyncStorage.setItem(`${PREFIX}${year}`, JSON.stringify(payload));
-    memory.set(year, payload.days);
+    memory.set(year, {...getBundledYearMarkers(year), ...payload.days});
     await AsyncStorage.setItem(stampKey, String(Date.now()));
+    publishCalendarUpdate({kind: 'markers', year});
     return {updated: true};
-  })().finally(() => {
-    pending = null;
-  });
-  return pending;
+  })().finally(() => { pendingByYear.delete(year); });
+
+  pendingByYear.set(year, task);
+  return task;
 };
+
+export const syncYearMarkers2026 = () => syncYearMarkers(2026);
