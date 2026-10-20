@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+﻿import React, {useEffect, useMemo, useRef, useState} from 'react';
 
 import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
 
@@ -77,12 +77,12 @@ export const ReaderScreen = ({route, navigation}) => {
         setSavedItems(saved);
       } catch (savedError) {
         console.log(
-          'Ошибка загрузки сохранений текста:',
+          'РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё СЃРѕС…СЂР°РЅРµРЅРёР№ С‚РµРєСЃС‚Р°:',
           savedError.response?.data || savedError.message
         );
       }
     } catch (loadError) {
-      console.log('Ошибка загрузки текста:', loadError.response?.data || loadError.message);
+      console.log('РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё С‚РµРєСЃС‚Р°:', loadError.response?.data || loadError.message);
 
       setError(t('common.textNotFound'));
     } finally {
@@ -99,13 +99,46 @@ export const ReaderScreen = ({route, navigation}) => {
       return;
     }
 
-    setViewMode(
-      getReaderModeForAppLanguage(language, {
-        hasRussian: hasRussianTranslation,
-        hasUkrainian: hasUkrainianTranslation,
-      })
+    let nextMode = getReaderModeForAppLanguage(language, {
+      hasRussian: hasRussianTranslation,
+      hasUkrainian: hasUkrainianTranslation,
+    });
+
+    const preferred = focusTarget?.preferredLanguage;
+
+    console.error(
+      '[reader] preferred =', preferred,
+      '| hasRussian =', hasRussianTranslation,
+      '| hasUkrainian =', hasUkrainianTranslation,
+      '| initial =', nextMode
     );
-  }, [language, text, hasRussianTranslation, hasUkrainianTranslation]);
+
+    if (preferred === 'russian') {
+      nextMode = hasRussianTranslation
+        ? READER_LANGUAGE_MODES.RUSSIAN
+        : READER_LANGUAGE_MODES.CHURCH;
+    } else if (preferred === 'ukrainian') {
+      nextMode = hasUkrainianTranslation
+        ? READER_LANGUAGE_MODES.UKRAINIAN
+        : READER_LANGUAGE_MODES.CHURCH;
+    } else if (preferred === 'church') {
+      nextMode = READER_LANGUAGE_MODES.CHURCH;
+    } else if (preferred === 'traditional') {
+      nextMode = hasTraditionalTranslation
+        ? READER_LANGUAGE_MODES.TRADITIONAL
+        : READER_LANGUAGE_MODES.CHURCH;
+    }
+
+    setViewMode(nextMode);
+    console.error('[reader] final mode =', nextMode);
+  }, [
+    language,
+    text,
+    hasRussianTranslation,
+    hasUkrainianTranslation,
+    hasTraditionalTranslation,
+    focusTarget,
+  ]);
 
   const handleAction = async (actionKey) => {
     if (!text || actionKey !== `text:${text.id}`) {

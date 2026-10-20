@@ -32,6 +32,8 @@ import {hydrateBibleContent} from './src/services/bibleStore';
 import {syncBibleContent} from './src/services/bibleSync';
 import {syncYearMarkers2026} from './src/services/calendarYearMarkers';
 
+
+
 const ONBOARDING_STORAGE_KEY = '@molitvoslov/onboarding-version';
 const ONBOARDING_VERSION = 5;
 

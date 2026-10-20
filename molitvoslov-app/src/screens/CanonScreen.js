@@ -324,13 +324,40 @@ export const CanonScreen = ({route, navigation}) => {
       return;
     }
 
-    setViewMode(
-      getReaderModeForAppLanguage(language, {
-        hasRussian: hasRussianTranslation,
-        hasUkrainian: hasUkrainianTranslation,
-      })
+    let nextMode = getReaderModeForAppLanguage(language, {
+      hasRussian: hasRussianTranslation,
+      hasUkrainian: hasUkrainianTranslation,
+    });
+
+    const preferred = focusTarget?.preferredLanguage;
+
+    console.error(
+      '[akathist] preferred =', preferred,
+      '| hasRussian =', hasRussianTranslation,
+      '| initial =', nextMode,
+      '| MODE_RUSSIAN =', MODE_RUSSIAN
     );
-  }, [language, canon, hasRussianTranslation, hasUkrainianTranslation]);
+
+    if (preferred === 'russian') {
+      nextMode = hasRussianTranslation ? MODE_RUSSIAN : MODE_CHURCH;
+    } else if (preferred === 'ukrainian') {
+      nextMode = hasUkrainianTranslation ? MODE_UKRAINIAN : MODE_CHURCH;
+    } else if (preferred === 'church') {
+      nextMode = MODE_CHURCH;
+    } else if (preferred === 'traditional') {
+      nextMode = hasTraditionalTranslation ? MODE_TRADITIONAL : MODE_CHURCH;
+    }
+
+    setViewMode(nextMode);
+    console.error('[akathist] final mode =', nextMode);
+  }, [
+    language,
+    canon,
+    hasRussianTranslation,
+    hasUkrainianTranslation,
+    hasTraditionalTranslation,
+    focusTarget,
+  ]);
 
   const handleAction = async (actionKey) => {
     if (!canon || actionKey !== `canon:${canon.id}`) {

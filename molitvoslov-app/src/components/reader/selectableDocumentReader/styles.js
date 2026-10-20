@@ -992,10 +992,29 @@ export const READER_STYLES = String.raw`
     .saved-highlight.active-highlight {
       background: rgba(161, 110, 53, 0.30);
     }
+    .search-focus { background: rgba(161, 110, 53, 0.08); }
+  mark.search-hit {
+    background: rgba(161, 110, 53, 0.28);
+    color: #963D34;
+    padding: 0 1px;
+    border-radius: 3px;
+}
+.search-hit {
+ background: rgba(201, 166, 88, 0.55);
+  color: #6B2A21;
+  border-radius: 3px;
+  padding: 0 2px;
+  outline: 2px solid rgba(161, 110, 53, 0.75);
+  outline-offset: 1px;
+}
+
+.book-mode .search-hit {
+   background: rgba(201, 166, 88, 0.65);
+  outline-color: rgba(161, 110, 53, 0.85);
+}
     .reader-text.focus-target {
-      outline: 2px solid rgba(161, 110, 53, 0.45);
-      outline-offset: 5px;
-      border-radius: 5px;
+    /* Убрано: обводка вокруг всего блока только отвлекает.
+     Подсветка искомого слова — через .search-hit. */
     }
     .footnotes {
       margin-top: 12px;

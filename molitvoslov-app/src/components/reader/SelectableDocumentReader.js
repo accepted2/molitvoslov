@@ -94,25 +94,17 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     return result;
   }, [documentData.sections]);
 
-  const html = useMemo(
-    () =>
-      buildHtml({
-        documentData,
-        savedProgress,
-        focusTarget,
-        topContentInset,
-        bottomContentInset,
-        ponomarFontDataUri,
-      }),
-    [
+  const html = useMemo(() => {
+    console.warn('[reader] incoming FT =', JSON.stringify(focusTarget));
+    return buildHtml({
       documentData,
       savedProgress,
       focusTarget,
       topContentInset,
       bottomContentInset,
       ponomarFontDataUri,
-    ]
-  );
+    });
+  }, [documentData, savedProgress, focusTarget, topContentInset, bottomContentInset, ponomarFontDataUri]);
 
   const inject = (script) => {
     webViewRef.current?.injectJavaScript(script + '; true;');
@@ -350,6 +342,12 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         onMessage={handleMessage}
         onLoadEnd={onReady}
         style={[styles.webView, {backgroundColor}]}
+        onConsoleMessage={(event) => {
+          const { message, lineNumber } = event.nativeEvent;
+          if (message && (message.includes('[runtime]') || message.includes('[reader]') || message.includes('Error'))) {
+            console.warn('[webview]', message, '@', lineNumber);
+          }
+        }}
       />
 
       {documentData.readerMode !== 'book' && (

@@ -621,6 +621,7 @@ const buildSearchIndexIterator = function* (language = 'ru') {
                 slug: canon.slug,
                 title: canonTitle,
                 focusTarget: {
+                  save_type: 'fragment',
                   anchor_type: 'canon_section',
                   anchor_id: Number(section.id),
                   start_offset: null,

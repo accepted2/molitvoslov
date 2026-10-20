@@ -31,3 +31,7 @@ media/
 
 # Windows
 Thumbs.db
+keystore.properties
+credentials.json
+*.jks
+*.p12

@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import {StatusBar} from 'expo-status-bar';
-import {SQLiteProvider, useSQLiteContext} from 'expo-sqlite';
+import {SQLiteProvider} from 'expo-sqlite';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
@@ -24,54 +24,77 @@ import {isPersistentSearchReady, searchPersistent} from '../services/search/engi
 import {
   SEARCH_GROUPS,
   SEARCH_GROUP_OPTIONS,
-  buildSearchIndexAsync,
   getHighlightSegments,
   getSearchSuggestions,
-  searchIndexAsync,
 } from '../services/searchIndex';
 
 const copyForLanguage = (language) =>
   language === 'uk'
     ? {
-        title: 'Пошук',
-        placeholder: 'Назва або слова з тексту…',
-        hint: 'Пошук не враховує наголоси та надрядкові знаки.',
-        start: 'Почніть вводити назву молитви, акафіста, псалма або слова з тексту.',
-        short: 'Введіть щонайменше 2 символи.',
-        empty: 'Нічого не знайдено.',
-        found: (count) => `Знайдено: ${count}`,
-        more: 'Показано перші результати. Уточніть запит, щоб звузити пошук.',
-        recent: 'Недавні пошуки',
-        clearRecent: 'Очистити',
-        tabs: {
-          all: 'Усе',
-          prayers: 'Молитви',
-          akathists: 'Акафісти',
-          psalter: 'Псалтир',
-          canons: 'Канони',
-          scripture: 'Писання',
-        },
-      }
+      title: 'Пошук',
+      placeholder: 'Назва або слова з тексту…',
+      hint: 'Пошук не враховує наголоси та надрядкові знаки.',
+      start: 'Почніть вводити назву молитви, акафіста, псалма або слова з тексту.',
+      short: 'Введіть щонайменше 2 символи.',
+      empty: 'Нічого не знайдено.',
+      found: (count) => `Знайдено: ${count}`,
+      more: 'Показано перші результати. Уточніть запит, щоб звузити пошук.',
+      recent: 'Недавні пошуки',
+      clearRecent: 'Очистити',
+      tabs: {
+        all: 'Усе',
+        prayers: 'Молитви',
+        akathists: 'Акафісти',
+        psalter: 'Псалтир',
+        canons: 'Канони',
+        scripture: 'Писання',
+      },
+    }
     : {
-        title: 'Поиск',
-        placeholder: 'Название или слова из текста…',
-        hint: 'Поиск не учитывает ударения и надстрочные знаки.',
-        start: 'Начните вводить название молитвы, акафиста, псалма или слова из текста.',
-        short: 'Введите хотя бы 2 символа.',
-        empty: 'Ничего не найдено.',
-        found: (count) => `Найдено: ${count}`,
-        more: 'Показаны первые результаты. Уточните запрос, чтобы сузить поиск.',
-        recent: 'Недавние запросы',
-        clearRecent: 'Очистить',
-        tabs: {
-          all: 'Все',
-          prayers: 'Молитвы',
-          akathists: 'Акафисты',
-          psalter: 'Псалтирь',
-          canons: 'Каноны',
-          scripture: 'Писание',
-        },
-      };
+      title: 'Поиск',
+      placeholder: 'Название или слова из текста…',
+      hint: 'Поиск не учитывает ударения и надстрочные знаки.',
+      start: 'Начните вводить название молитвы, акафиста, псалма или слова из текста.',
+      short: 'Введите хотя бы 2 символа.',
+      empty: 'Ничего не найдено.',
+      found: (count) => `Найдено: ${count}`,
+      more: 'Показаны первые результаты. Уточните запрос, чтобы сузить поиск.',
+      recent: 'Недавние запросы',
+      clearRecent: 'Очистить',
+      tabs: {
+        all: 'Все',
+        prayers: 'Молитвы',
+        akathists: 'Акафисты',
+        psalter: 'Псалтирь',
+        canons: 'Каноны',
+        scripture: 'Писание',
+      },
+    };
+
+// Вырезает предложение вокруг совпадения (поиска) из snippet
+const extractSentence = (snippet, query) => {
+  const text = (snippet || '').trim();
+  if (!text) return '';
+  const q = (query || '').toLowerCase().trim();
+  if (!q) return text;
+
+  const lower = text.toLowerCase();
+  const idx = lower.indexOf(q);
+  if (idx < 0) return text;
+
+  // Начало предложения: последняя точка/!/?/… до совпадения
+  const before = text.slice(0, idx);
+  const startMatch = before.match(/[.!?…]\s+([^.!?…]*)$/);
+  const start = startMatch ? before.length - startMatch[1].length : 0;
+
+  // Конец предложения: первая точка/!/?/… после совпадения
+  const after = text.slice(idx);
+  const endMatch = after.match(/[.!?…]/);
+  const end = endMatch ? idx + endMatch.index + 1 : text.length;
+
+  const sentence = text.slice(start, end).trim();
+  return sentence || text;
+};
 
 const HighlightedText = ({text, query, style, highlightStyle, numberOfLines}) => {
   const segments = useMemo(() => getHighlightSegments(text, query), [text, query]);
@@ -93,27 +116,10 @@ const SearchIcon = () => (
   </View>
 );
 
-const scheduleIdleTask = (callback) => {
-  if (typeof globalThis.requestIdleCallback === 'function') {
-    const taskId = globalThis.requestIdleCallback(callback, {timeout: 500});
-
-    return () => {
-      if (typeof globalThis.cancelIdleCallback === 'function') {
-        globalThis.cancelIdleCallback(taskId);
-      }
-    };
-  }
-
-  const timeoutId = setTimeout(callback, 0);
-
-  return () => clearTimeout(timeoutId);
-};
-
 const SearchContent = ({navigation}) => {
-  const seedDb = useSQLiteContext();
   const [seedReady, setSeedReady] = useState(false);
   const [paused, setPaused] = useState(false);
-  const {language} = useLanguage();
+  const { language } = useLanguage();
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + 56;
   const bibleGeneration = useBibleContentGeneration();
@@ -126,11 +132,13 @@ const SearchContent = ({navigation}) => {
   const [searchScope, setSearchScope] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
-  const [result, setResult] = useState({
-    items: [],
-    total: 0,
-  });
+  const [result, setResult] = useState({ items: [], total: 0 });
   const [history, setHistory] = useState([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+
+  const resultCache = useRef(new Map())
 
   const copy = useMemo(() => copyForLanguage(language), [language]);
 
@@ -149,7 +157,7 @@ const SearchContent = ({navigation}) => {
   useEffect(() => {
     let active = true;
     setSeedReady(false);
-    isPersistentSearchReady(language, seedDb)
+    isPersistentSearchReady(language)
       .then((ready) => {
         if (active) setSeedReady(ready);
       })
@@ -157,10 +165,8 @@ const SearchContent = ({navigation}) => {
     return () => {
       active = false;
     };
-  }, [seedDb, language, publicGeneration, bibleGeneration]);
+  }, [language, publicGeneration, bibleGeneration]);
 
-  // The bundled FTS index is authoritative for exact phrase search.
-  // Do not start the legacy broad word-by-word JS scan while the seed opens.
   useEffect(() => {
     setIndexLoading(!seedReady);
   }, [seedReady]);
@@ -170,7 +176,6 @@ const SearchContent = ({navigation}) => {
     const timer = setTimeout(() => {
       setSearchQuery(query);
     }, 320);
-
     return () => clearTimeout(timer);
   }, [query, paused]);
 
@@ -185,18 +190,36 @@ const SearchContent = ({navigation}) => {
     }
 
     const scope = `${language}:${activeGroup}:${searchQuery}`;
+
+    if (resultCache.current.has(scope)) {
+      const cached = resultCache.current.get(scope);
+      setResult(cached);
+      setSearchScope(scope);
+      setHasMore(cached.hasMore ?? false);
+      setSearchLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
     setSearchLoading(true);
-    searchPersistent(language, searchQuery, activeGroup, 120, 0, seedDb)
+    searchPersistent(language, searchQuery, activeGroup, 120, 0)
       .then((nextResult) => {
         if (!cancelled && nextResult) {
+          if (resultCache.current.size >= 30) {
+            const firstKey = resultCache.current.keys().next().value;
+            resultCache.current.delete(firstKey);
+          }
+          resultCache.current.set(scope, nextResult);
           setResult(nextResult);
           setSearchScope(scope);
+          setHasMore(nextResult.hasMore);
         }
       })
       .catch((error) => {
         if (!cancelled) {
           console.warn('Exact phrase search failed:', error?.message || error);
-          setResult({items: [], total: 0});
+          setResult({ items: [], total: 0 });
           setSearchScope(scope);
         }
       })
@@ -206,7 +229,27 @@ const SearchContent = ({navigation}) => {
     return () => {
       cancelled = true;
     };
-  }, [searchQuery, activeGroup, language, seedReady, seedDb, paused]);
+  }, [searchQuery, activeGroup, language, seedReady, paused]);
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore || paused || !seedReady) return;
+    setLoadingMore(true);
+    try {
+      const nextOffset = result.items.length;
+      const next = await searchPersistent(
+        language, searchQuery, activeGroup, 120, nextOffset
+      );
+      if (next) {
+        setResult((prev) => ({
+          items: [...prev.items, ...next.items],
+          total: Math.max(prev.total, next.total),
+        }));
+        setHasMore(next.hasMore);
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const suggestionIndex = useMemo(
     () => (index || []).filter((entry) => !!entry.titleNormalized),
@@ -233,21 +276,13 @@ const SearchContent = ({navigation}) => {
 
   const rememberQuery = async (value = query) => {
     const clean = String(value || '').trim();
-
-    if (clean.length < 2) {
-      return;
-    }
-
+    if (clean.length < 2) return;
     setHistory(await addSearchHistory(clean));
   };
 
   const openResult = (item) => {
     Keyboard.dismiss();
-
-    if (!item?.route?.name) {
-      return;
-    }
-
+    if (!item?.route?.name) return;
     rememberQuery();
     navigation.navigate(item.route.name, item.route.params || {});
   };
@@ -262,16 +297,17 @@ const SearchContent = ({navigation}) => {
     setHistory([]);
   };
 
-  const renderResult = ({item}) => (
+  const renderResult = ({ item }) => {
+    console.error('[search-ui] renderResult:', 'title =', item.title, '| snippet_len =', (item.snippet || '').length);
+    return (
     <Pressable
       onPress={() => openResult(item)}
-      style={({pressed}) => [styles.resultCard, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.resultCard, pressed && styles.pressed]}
     >
       <View style={styles.resultTopLine}>
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{copy.tabs[item.group] || item.groupLabel}</Text>
         </View>
-
         {!!item.matchedLanguageLabel && (
           <Text style={styles.languageLabel}>{item.matchedLanguageLabel}</Text>
         )}
@@ -297,32 +333,44 @@ const SearchContent = ({navigation}) => {
 
       {!!item.snippet && (
         <HighlightedText
-          text={item.snippet}
+          text={extractSentence(
+            (item.snippet || '')
+              .replace(/\[([^\]]+)\]/g, '$1')
+              .replace(
+                new RegExp('^' + (item.title || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*', 'i'),
+                ''
+              ),
+            searchQuery
+          )}
           query={searchQuery}
           style={styles.resultSnippet}
           highlightStyle={styles.highlightSnippet}
-          numberOfLines={3}
+          numberOfLines={4}
         />
       )}
 
       <Text style={styles.resultArrow}>›</Text>
     </Pressable>
-  );
+  )
+}
 
   const trimmedQuery = query.trim();
   const waitingForQuery = !trimmedQuery;
   const queryTooShort = !!trimmedQuery && trimmedQuery.length < 2;
   const displayScope = `${language}:${activeGroup}:${searchQuery}`;
   const resultsCurrent = (paused || searchQuery === query) && displayScope === searchScope;
-  const visibleResults = useMemo(
-    () =>
-      resultsCurrent
-        ? activeGroup === SEARCH_GROUPS.ALL
-          ? result.items
-          : result.items.filter((item) => item.group === activeGroup)
-        : [],
-    [result.items, activeGroup, resultsCurrent]
-  );
+  const visibleResults = useMemo(() => {
+    const filtered = resultsCurrent
+      ? activeGroup === SEARCH_GROUPS.ALL
+        ? result.items
+        : result.items.filter((item) => item.group === activeGroup)
+      : [];
+    if (activeGroup !== SEARCH_GROUPS.ALL && result.items.length > 0) {
+      const groups = [...new Set(result.items.map((i) => i.group))];
+      console.error('[search-ui] visibleResults: activeGroup =', activeGroup, '| groups in result.items =', groups, '| filtered =', filtered.length);
+    }
+    return filtered;
+  }, [result.items, activeGroup, resultsCurrent]);
 
   const showEmpty =
     resultsCurrent &&
@@ -337,22 +385,16 @@ const SearchContent = ({navigation}) => {
       <View style={styles.screen}>
         <StatusBar style="dark" translucent backgroundColor="transparent" />
 
-        <View
-          style={[
-            styles.searchPanel,
-            {
-              paddingTop: headerHeight + 8,
-            },
-          ]}
-        >
+        <View style={[styles.searchPanel, {paddingTop: headerHeight + 8}]}>
           <View style={styles.inputWrap}>
             <SearchIcon />
-
             <TextInput
               autoFocus
               value={query}
               onChangeText={(value) => {
                 setPaused(false);
+                setHasMore(false)
+                setResult({items: [], total: 0})
                 setQuery(value);
               }}
               placeholder={copy.placeholder}
@@ -364,7 +406,6 @@ const SearchContent = ({navigation}) => {
               selectionColor="#A16E35"
               style={styles.input}
             />
-
             {!!query && (
               <Pressable
                 accessibilityRole="button"
@@ -383,12 +424,14 @@ const SearchContent = ({navigation}) => {
           <View style={styles.tabsContent}>
             {tabs.map((tab) => {
               const active = tab.key === activeGroup;
-
               return (
                 <Pressable
                   key={tab.key}
                   onPress={() => {
                     if (tab.key !== activeGroup) {
+                      // setResult({items: [], total: 0});
+                      setPaused(false);
+                      setHasMore(false);
                       setResult({items: [], total: 0});
                       setActiveGroup(tab.key);
                     }
@@ -438,7 +481,15 @@ const SearchContent = ({navigation}) => {
                   <Text style={styles.countText}>Ищем…</Text>
                 </>
               ) : result.total > 0 ? (
-                <Text style={styles.countText}>{copy.found(result.total)}</Text>
+                <Text style={styles.countText}>
+                  {copy.found(
+                    hasMore
+                      ? `${result.total}+`
+                      : result.total >= 500
+                        ? '500+'
+                        : result.total
+                  )}
+                </Text>
               ) : null}
               {!paused && !!query && (
                 <Pressable
@@ -464,7 +515,6 @@ const SearchContent = ({navigation}) => {
               <View style={styles.historyCard}>
                 <View style={styles.historyHeader}>
                   <Text style={styles.historyTitle}>{copy.recent}</Text>
-
                   <Pressable
                     onPress={clearHistory}
                     hitSlop={8}
@@ -505,22 +555,21 @@ const SearchContent = ({navigation}) => {
         ) : (
           <FlatList
             data={visibleResults}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.5}
             onScrollBeginDrag={() => {
-              setPaused(true);
+              // setPaused(true);
               setSearchLoading(false);
             }}
             keyExtractor={(item) => item.id}
             renderItem={renderResult}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
-            contentContainerStyle={[
-              styles.results,
-              {
-                paddingBottom: 28 + insets.bottom,
-              },
-            ]}
+            contentContainerStyle={[styles.results, {paddingBottom: 28 + insets.bottom}]}
             ListFooterComponent={
-              resultsCurrent && result.total > result.items.length ? (
+              loadingMore ? (
+                <ActivityIndicator size="small" color="#A16E35" />
+              ) : hasMore ? (
                 <Text style={styles.moreText}>{copy.more}</Text>
               ) : null
             }
@@ -534,11 +583,7 @@ const SearchContent = ({navigation}) => {
 };
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 244, 222, 0.64)',
-  },
-
+  screen: {flex: 1, backgroundColor: 'rgba(255, 244, 222, 0.64)'},
   searchPanel: {
     paddingHorizontal: 12,
     paddingBottom: 8,
@@ -546,7 +591,6 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(123, 79, 36, 0.16)',
     backgroundColor: 'rgba(255, 244, 222, 0.88)',
   },
-
   inputWrap: {
     height: 48,
     flexDirection: 'row',
@@ -557,7 +601,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#F8E9CF',
   },
-
   input: {
     flex: 1,
     minWidth: 0,
@@ -568,15 +611,7 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
     fontSize: 16,
   },
-
-  searchIcon: {
-    width: 16,
-    height: 16,
-    borderWidth: 2,
-    borderColor: '#7A4F2D',
-    borderRadius: 9,
-  },
-
+  searchIcon: {width: 16, height: 16, borderWidth: 2, borderColor: '#7A4F2D', borderRadius: 9},
   searchIconHandle: {
     position: 'absolute',
     right: -5,
@@ -587,36 +622,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#7A4F2D',
     transform: [{rotate: '45deg'}],
   },
-
-  clearButton: {
-    width: 34,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  clearText: {
-    marginTop: -2,
-    color: '#765238',
-    fontSize: 26,
-    lineHeight: 30,
-  },
-
-  searchHint: {
-    marginTop: 6,
-    marginHorizontal: 3,
-    color: '#8A6B53',
-    fontSize: 11,
-    lineHeight: 15,
-  },
-
-  tabsContent: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 7,
-    paddingTop: 9,
-  },
-
+  clearButton: {width: 34, height: 34, alignItems: 'center', justifyContent: 'center'},
+  clearText: {marginTop: -2, color: '#765238', fontSize: 26, lineHeight: 30},
+  searchHint: {marginTop: 6, marginHorizontal: 3, color: '#8A6B53', fontSize: 11, lineHeight: 15},
+  tabsContent: {flexDirection: 'row', flexWrap: 'wrap', gap: 7, paddingTop: 9},
   tab: {
     minHeight: 34,
     paddingHorizontal: 13,
@@ -627,28 +636,10 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     backgroundColor: 'rgba(248, 233, 207, 0.72)',
   },
-
-  tabActive: {
-    borderColor: '#7A4F2D',
-    backgroundColor: '#7A4F2D',
-  },
-
-  tabText: {
-    color: '#765238',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-
-  tabTextActive: {
-    color: '#FFF8EA',
-  },
-
-  suggestionsContent: {
-    gap: 7,
-    paddingTop: 8,
-    paddingRight: 12,
-  },
-
+  tabActive: {borderColor: '#7A4F2D', backgroundColor: '#7A4F2D'},
+  tabText: {color: '#765238', fontSize: 12, fontWeight: '700'},
+  tabTextActive: {color: '#FFF8EA'},
+  suggestionsContent: {gap: 7, paddingTop: 8, paddingRight: 12},
   suggestion: {
     maxWidth: 260,
     minHeight: 30,
@@ -658,17 +649,8 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     backgroundColor: 'rgba(161, 110, 53, 0.10)',
   },
-
-  suggestionText: {
-    color: '#68452F',
-    fontSize: 12,
-  },
-
-  suggestionHighlight: {
-    color: '#8E342D',
-    fontWeight: '800',
-  },
-
+  suggestionText: {color: '#68452F', fontSize: 12},
+  suggestionHighlight: {color: '#8E342D', fontWeight: '800'},
   countRow: {
     minHeight: 22,
     flexDirection: 'row',
@@ -677,18 +659,8 @@ const styles = StyleSheet.create({
     marginTop: 7,
     marginHorizontal: 3,
   },
-
-  countText: {
-    color: '#8A6B53',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-
-  results: {
-    paddingHorizontal: 10,
-    paddingTop: 8,
-  },
-
+  countText: {color: '#8A6B53', fontSize: 11, fontWeight: '600'},
+  results: {paddingHorizontal: 10, paddingTop: 8},
   resultCard: {
     position: 'relative',
     marginBottom: 8,
@@ -701,21 +673,8 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     backgroundColor: '#F8E9CF',
   },
-
-  resultTopLine: {
-    minHeight: 23,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    backgroundColor: 'rgba(155, 59, 50, 0.10)',
-  },
-
+  resultTopLine: {minHeight: 23, flexDirection: 'row', alignItems: 'center', marginBottom: 5},
+  badge: {paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, backgroundColor: 'rgba(155, 59, 50, 0.10)'},
   badgeText: {
     color: '#8F4539',
     fontSize: 10,
@@ -724,54 +683,13 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.25,
   },
-
-  languageLabel: {
-    marginLeft: 7,
-    color: '#9B806A',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-
-  resultTitle: {
-    color: '#3E2A1D',
-    fontFamily: 'serif',
-    fontSize: 17,
-    lineHeight: 22,
-    fontWeight: '700',
-  },
-
-  highlightTitle: {
-    color: '#963D34',
-    backgroundColor: 'rgba(161, 110, 53, 0.12)',
-  },
-
-  resultSource: {
-    marginTop: 3,
-    color: '#8A6549',
-    fontSize: 11,
-    lineHeight: 15,
-    fontWeight: '600',
-  },
-
-  highlightSource: {
-    color: '#963D34',
-    fontWeight: '800',
-  },
-
-  resultSnippet: {
-    marginTop: 7,
-    color: '#684E3B',
-    fontFamily: 'serif',
-    fontSize: 13,
-    lineHeight: 19,
-  },
-
-  highlightSnippet: {
-    color: '#963D34',
-    fontWeight: '800',
-    backgroundColor: 'rgba(161, 110, 53, 0.12)',
-  },
-
+  languageLabel: {marginLeft: 7, color: '#9B806A', fontSize: 10, fontWeight: '700'},
+  resultTitle: {color: '#3E2A1D', fontFamily: 'serif', fontSize: 17, lineHeight: 22, fontWeight: '700'},
+  highlightTitle: {color: '#963D34', backgroundColor: 'rgba(161, 110, 53, 0.12)'},
+  resultSource: {marginTop: 3, color: '#8A6549', fontSize: 11, lineHeight: 15, fontWeight: '600'},
+  highlightSource: {color: '#963D34', fontWeight: '800'},
+  resultSnippet: {marginTop: 7, color: '#684E3B', fontFamily: 'serif', fontSize: 13, lineHeight: 19},
+  highlightSnippet: {color: '#963D34', fontWeight: '800', backgroundColor: 'rgba(161, 110, 53, 0.12)'},
   resultArrow: {
     position: 'absolute',
     right: 12,
@@ -781,13 +699,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     lineHeight: 28,
   },
-
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 18,
-  },
-
+  emptyState: {flex: 1, justifyContent: 'center', paddingHorizontal: 18},
   historyCard: {
     padding: 16,
     borderWidth: 1,
@@ -795,38 +707,16 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: 'rgba(255, 244, 222, 0.88)',
   },
-
   historyHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 11,
   },
-
-  historyTitle: {
-    color: '#4A3121',
-    fontFamily: 'serif',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-
-  historyClear: {
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-  },
-
-  historyClearText: {
-    color: '#9B6D46',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-
-  historyChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-
+  historyTitle: {color: '#4A3121', fontFamily: 'serif', fontSize: 17, fontWeight: '700'},
+  historyClear: {paddingVertical: 4, paddingHorizontal: 4},
+  historyClearText: {color: '#9B6D46', fontSize: 11, fontWeight: '700'},
+  historyChips: {flexDirection: 'row', flexWrap: 'wrap', gap: 8},
   historyChip: {
     minHeight: 34,
     justifyContent: 'center',
@@ -836,36 +726,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(123, 79, 36, 0.13)',
   },
-
-  historyChipText: {
-    maxWidth: 250,
-    color: '#68452F',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 34,
-  },
-
-  centerText: {
-    marginTop: 10,
-    color: '#765238',
-    fontFamily: 'serif',
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
-
-  emptyGlyph: {
-    color: '#A16E35',
-    fontSize: 34,
-    lineHeight: 38,
-  },
-
+  historyChipText: {maxWidth: 250, color: '#68452F', fontSize: 12, fontWeight: '600'},
+  center: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 34},
+  centerText: {marginTop: 10, color: '#765238', fontFamily: 'serif', fontSize: 15, lineHeight: 22, textAlign: 'center'},
+  emptyGlyph: {color: '#A16E35', fontSize: 34, lineHeight: 38},
   moreText: {
     paddingVertical: 12,
     paddingHorizontal: 12,
@@ -874,17 +738,12 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     textAlign: 'center',
   },
-
-  pressed: {
-    opacity: 0.68,
-  },
+  pressed: {opacity: 0.68},
 });
 
-// Expo copies the bundled seed into a separate search database on first use.
-// The main molitvoslov.db and user data are never overwritten.
 export const SearchScreen = (props) => (
   <SQLiteProvider
-    databaseName="molitvoslov_search_seed_v8.db"
+    databaseName="molitvoslov_search_seed_v10.db"
     assetSource={{assetId: require('../data/search_seed.db')}}
   >
     <SearchContent {...props} />

@@ -438,6 +438,7 @@ export const READER_RUNTIME = String.raw`
         .filter(Boolean)
         .join('\n');
     };
+
     const normalizedAkathistTextWithIndex = value => {
         const source = String( value || '' );
         const chars = [];
@@ -463,6 +464,152 @@ export const READER_RUNTIME = String.raw`
         return {
           normalized: chars.join(''), originalIndex, };
       };
+      const HIGHLIGHT_COMBINING = /[\u0300-\u036f\u0483-\u0489\ufe20-\ufe2f]/u;
+const HIGHLIGHT_LETTER_OR_DIGIT = /[\\p{L}\\p{N}]/u;
+
+const foldForHighlight = value => {
+  const source = String(value || '');
+  const chars = [];
+  const map = [];
+  let previousWasSpace = true;
+
+  for (let sourceIndex = 0; sourceIndex < source.length; ) {
+    const codePoint = source.codePointAt(sourceIndex);
+    const originalChar = String.fromCodePoint(codePoint);
+
+    if (HIGHLIGHT_COMBINING.test(originalChar)) {
+      sourceIndex += originalChar.length;
+      continue;
+    }
+
+    const decomposed = originalChar.normalize('NFD').toLowerCase();
+    let addedCharacter = false;
+
+    for (const char of decomposed) {
+      if (HIGHLIGHT_COMBINING.test(char)) continue;
+      if (HIGHLIGHT_LETTER_OR_DIGIT.test(char)) {
+        chars.push(char);
+        map.push(sourceIndex);
+        previousWasSpace = false;
+        addedCharacter = true;
+      } else if (!previousWasSpace) {
+        chars.push(' ');
+        map.push(sourceIndex);
+        previousWasSpace = true;
+      }
+    }
+
+    if (!addedCharacter && !previousWasSpace) {
+      chars.push(' ');
+      map.push(sourceIndex);
+      previousWasSpace = true;
+    }
+
+    sourceIndex += originalChar.length;
+  }
+
+  while (chars.length && chars[chars.length - 1] === ' ') {
+    chars.pop();
+    map.pop();
+  }
+
+  return { value: chars.join(''), map };
+};
+
+const findHighlightRanges = (text, query) => {
+  const source = String(text || '');
+  if (!source) return [];
+
+  const folded = foldForHighlight(source);
+  const foldedQuery = foldForHighlight(query).value;
+  if (!foldedQuery) return [];
+
+  const tokens = Array.from(
+    new Set(foldedQuery.split(' ').filter(token => token.length >= 2))
+  );
+  if (!tokens.length) return [];
+
+  const ranges = [];
+
+  tokens.forEach(token => {
+    let offset = 0;
+    while (offset < folded.value.length) {
+      const found = folded.value.indexOf(token, offset);
+      if (found < 0) break;
+
+      const start = folded.map[found];
+      const mappedEnd = folded.map[Math.min(folded.map.length - 1, found + token.length - 1)];
+      let end = Math.min(source.length, Number(mappedEnd ?? start) + 1);
+
+      while (end < source.length && HIGHLIGHT_COMBINING.test(source[end])) {
+        end += 1;
+      }
+
+      if (Number.isFinite(start) && end > start) {
+        ranges.push({ start, end });
+      }
+
+      offset = found + Math.max(1, token.length);
+    }
+  });
+
+  if (!ranges.length) return [];
+
+  ranges.sort((a, b) => a.start - b.start || a.end - b.end);
+
+  const merged = [];
+  ranges.forEach(range => {
+    const previous = merged[merged.length - 1];
+    if (previous && range.start <= previous.end) {
+      previous.end = Math.max(previous.end, range.end);
+    } else {
+      merged.push({ ...range });
+    }
+  });
+
+  return merged;
+};
+
+const highlightRangesByItem = new Map();
+
+const computeFocusHighlightRanges = () => {
+  highlightRangesByItem.clear();
+
+  const target = DATA.focusTarget;
+  console.error('[runtime] computeFocus target =', JSON.stringify(target));
+  if (!target) return;
+
+  const highlightQuery = target.highlightQuery;
+  if (!highlightQuery) { console.error('[runtime] NO highlightQuery'); return; }
+
+  const anchorType = target.anchor_type || target.anchorType;
+  const anchorId = Number(target.anchor_id ?? target.anchorId);
+  const hasSpecificAnchor = !!anchorType && Number.isFinite(anchorId);
+    let hits = 0;
+
+  itemConfigMap.forEach((config, itemId) => {
+    let shouldHighlight = false;
+
+    if (hasSpecificAnchor) {
+      shouldHighlight =
+        config.anchorType === anchorType &&
+        Number(config.anchorId) === anchorId;
+    } else {
+      // Корневая запись без anchor_id — подсвечиваем всё, что совпало.
+      shouldHighlight = true;
+    }
+
+    if (!shouldHighlight) return;
+
+    const text = itemTextMap.get(itemId) || '';
+    const ranges = findHighlightRanges(text, highlightQuery);
+    if (ranges.length) {
+      highlightRangesByItem.set(itemId, ranges);
+       hits += 1;
+    }
+  });
+   console.error('[runtime] highlighted items =', hits);
+};
     const collectAkathistJoyBreaks = value => {
         const {
           normalized, originalIndex, } = normalizedAkathistTextWithIndex( value );
@@ -1176,6 +1323,7 @@ const collectPsalterRubricRanges = value => {
 
     const renderTextItem = itemId => {
         const root = document.querySelector( '.reader-text[data-item-id="' + itemId + '"]' );
+        const highlightRanges = highlightRangesByItem.get(Number(itemId)) || [];
         if (!root) {
           return;
         }
@@ -1282,7 +1430,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
               boundaries.add(range.start);
               boundaries.add(range.end);
 });
-    
+
         psalterPrayerAccentRanges.forEach( range => {
             boundaries.add( range.start );
             boundaries.add( range.end );
@@ -1309,9 +1457,14 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
             boundaries.add( range.end );
           }
         );
-        if (active) {
-          boundaries.add( active.start );
-          boundaries.add( active.end );
+        highlightRanges.forEach( range => {
+            boundaries.add( range.start );
+            boundaries.add( range.end );
+          }
+        );
+        if ( active ) {
+            boundaries.add( active.start );
+            boundaries.add( active.end );
         }
 
         /*
@@ -1410,6 +1563,12 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           if (isActive) {
             span.classList.add( 'active-highlight' );
           }
+          const isSearchHit = highlightRanges.some(
+  range => midpoint >= range.start && midpoint < range.end
+);
+if (isSearchHit) {
+  span.classList.add('search-hit');
+}
           const isAkathistInitial = isAkathist && akathistInitialRanges.some( range => midpoint >=
                   range.start && midpoint <
                   range.end );
@@ -1603,7 +1762,7 @@ appendStyledSegment(
   highlightLiturgicalPhrases,
   isCanonChurch && start === 0
 );
- 
+
 const psalterPrayerAccentText =
   isPsalterPrayerAccent
     ? text.slice(start, end).trim()
@@ -1691,7 +1850,7 @@ if (
     document.createElement('br')
   );
 }
-         
+
         }
         root.replaceChildren( fragment );
         hideKnownEditorialMarkers( root );
@@ -2874,6 +3033,9 @@ if (
                   metadata.chunk_index ) ) {
               score += 6;
             }
+             if ( highlightRangesByItem.has( itemId ) ) {
+              score += 20;
+            }
             candidates.push({
               itemId, score, });
           }
@@ -2886,6 +3048,7 @@ if (
       };
     const focusSavedTarget = () => {
         const target = DATA.focusTarget;
+         console.warn('[runtime] focusSavedTarget target =', JSON.stringify(target));
         if (!target) {
           return false;
         }
@@ -2955,9 +3118,19 @@ if (
           } else if (bookMode) {
             applyBookPage( pageForElement( root ), false );
           } else {
-            const rootRect = root.getBoundingClientRect();
-            window.scrollTo( 0, Math.max( 0, window.scrollY + rootRect.top - 18 ) );
-          }
+  // 1) Если в блоке есть .search-hit — центрируем по первому совпадению
+  const hit = root.querySelector( '.search-hit' );
+  if ( hit ) {
+    const hitRect = hit.getBoundingClientRect();
+    const targetY = window.scrollY + hitRect.top + ( hitRect.height / 2 ) - ( window.innerHeight / 2 );
+    window.scrollTo( 0, Math.max( 0, targetY ) );
+  } else {
+    // 2) Иначе — центрируем весь блок
+    const rootRect = root.getBoundingClientRect();
+    const targetY = window.scrollY + rootRect.top + ( rootRect.height / 2 ) - ( window.innerHeight / 2 );
+    window.scrollTo( 0, Math.max( 0, targetY ) );
+  }
+}
           root.classList.add( 'focus-target' );
           setTimeout( () => root.classList.remove( 'focus-target' ), 1400 );
           return true;
@@ -2981,7 +3154,18 @@ if (
           window.scrollTo( 0, 0 );
           return true;
         }
+                const firstHit = document.querySelector( '.search-hit' );
+        if ( firstHit ) {
+          if ( bookMode ) {
+            applyBookPage( pageForElement( firstHit ), false );
+          } else {
+            const hitRect = firstHit.getBoundingClientRect();
+            window.scrollTo( 0, Math.max( 0, window.scrollY + hitRect.top - 18 ) );
+          }
+          return true;
+        }
         return false;
+
       };
     const goToProgress = progress => {
         if (!progress) {
@@ -3169,6 +3353,7 @@ if (
         }, };
     renderDocument();
     loadSavedRanges();
+    computeFocusHighlightRanges();
     itemTextMap.forEach( ( _text, itemId ) => renderTextItem( itemId ) );
     requestAnimationFrame( () => {
         if (bookMode) {
