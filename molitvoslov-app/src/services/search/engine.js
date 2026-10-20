@@ -184,12 +184,12 @@ const detectLanguageFromQuery = (query) => {
   return 'russian';
 };
 
-const withHighlight = (route, query, snippet) => {
+const withHighlight = (route, query, snippet, matchedTextLanguage = null) => {
   if (!route?.name || !query) return route;
   const params = route.params || {};
   const existingFocus = params.focusTarget;
 
-  const preferredLanguage =
+  const preferredLanguage = matchedTextLanguage ||
     detectLanguageFromSnippet(snippet) ||
     detectLanguageFromQuery(query);
 
@@ -198,7 +198,7 @@ const withHighlight = (route, query, snippet) => {
       ...existingFocus,
       save_type: existingFocus.save_type || existingFocus.saveType || 'fragment',
       highlightQuery: query,
-      preferredLanguage: existingFocus.preferredLanguage || preferredLanguage,
+      preferredLanguage,
     }
     : {
       save_type: 'fragment',
@@ -232,7 +232,7 @@ export const searchPersistent = async (
     const first = found.rows[0];
     if (first) {
       const p = JSON.parse(first.payload);
-      const ft = withHighlight(p.route, query, p.snippet).params?.focusTarget;
+      const ft = withHighlight(p.route, query, p.snippet, p.matchedTextLanguage).params?.focusTarget;
       console.warn('[search] FT(single) =', JSON.stringify(ft));
     }
     return {
@@ -242,7 +242,7 @@ export const searchPersistent = async (
         return {
           ...p,
           snippet: row.snippet || p.snippet,
-          route: withHighlight(p.route, query, snippet),
+          route: withHighlight(p.route, query, snippet, p.matchedTextLanguage),
         };
       }),
       total: found.total,
@@ -274,7 +274,7 @@ export const searchPersistent = async (
   const total = Math.max(phrase.total, andTotal);
   if (combined[0]) {
     const p = JSON.parse(combined[0].payload);
-    const ft = withHighlight(p.route, query, p.snippet).params?.focusTarget;
+    const ft = withHighlight(p.route, query, p.snippet, p.matchedTextLanguage).params?.focusTarget;
     console.warn('[search] FT(multi) =', JSON.stringify(ft));
   }
   return {
@@ -284,7 +284,7 @@ export const searchPersistent = async (
       return {
         ...p,
         snippet: row.snippet || p.snippet,
-        route: withHighlight(p.route, query, snippet)
+        route: withHighlight(p.route, query, snippet, p.matchedTextLanguage)
       };
     }),
     total,
