@@ -993,7 +993,13 @@ export const READER_STYLES = String.raw`
       background: rgba(161, 110, 53, 0.30);
     }
     .search-focus { background: rgba(161, 110, 53, 0.08); }
-  mark.search-hit {
+  mark.search-hit-fade {
+  background: transparent !important;
+  outline-color: transparent !important;
+  color: inherit !important;
+}
+.search-hit {
+  transition: background-color 420ms ease-out, outline-color 420ms ease-out, color 420ms ease-out;
     background: rgba(161, 110, 53, 0.28);
     color: #963D34;
     padding: 0 1px;
