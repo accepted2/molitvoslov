@@ -3372,6 +3372,12 @@ if (
     loadSavedRanges();
     computeFocusHighlightRanges();
     itemTextMap.forEach( ( _text, itemId ) => renderTextItem( itemId ) );
+    if (DATA.focusTarget?.highlightQuery) {
+      setTimeout(() => {
+        highlightRangesByItem.clear();
+        document.querySelectorAll('.search-hit').forEach(node => node.classList.remove('search-hit'));
+      }, 1500);
+    }
     requestAnimationFrame( () => {
         if (bookMode) {
           paginateBookContent();
