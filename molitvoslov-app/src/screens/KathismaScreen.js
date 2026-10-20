@@ -476,8 +476,11 @@ export default function KathismaScreen({route, navigation}) {
           ...focusTarget,
           anchor_type: 'psalm_text',
           anchor_id: Number(psalm.id),
-          start_offset: legacyStart === null ? null : range.contentStart + legacyStart,
-          end_offset: legacyEnd === null ? null : range.contentStart + legacyEnd,
+          // Keep the exact verse boundaries so search cannot jump to another
+          // occurrence of the word elsewhere in this multi-verse chunk.
+          start_offset: legacyStart === null ? range.contentStart : range.contentStart + legacyStart,
+          end_offset: legacyEnd === null ? range.contentEnd : range.contentStart + legacyEnd,
+          highlightVerse: true,
           metadata: {
             ...metadata,
             psalm_id: Number(psalm.id),
