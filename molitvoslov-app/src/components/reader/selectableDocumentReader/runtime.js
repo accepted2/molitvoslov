@@ -600,6 +600,12 @@ const computeFocusHighlightRanges = () => {
     }
 
     if (!shouldHighlight) return;
+    const desiredLanguage = target.metadata?.language || target.preferredLanguage;
+    if (desiredLanguage && config.metadata?.language &&
+        desiredLanguage !== config.metadata.language) return;
+    if (target.metadata?.chunk_index !== undefined &&
+        config.metadata?.chunk_index !== undefined &&
+        Number(target.metadata.chunk_index) !== Number(config.metadata.chunk_index)) return;
 
     const text = itemTextMap.get(itemId) || '';
     const verseStart = target.highlightVerse ? Number(target.start_offset) : NaN;
