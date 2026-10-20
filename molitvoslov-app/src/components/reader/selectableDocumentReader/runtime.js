@@ -620,7 +620,7 @@ const computeFocusHighlightRanges = () => {
         start = Math.max(start, hit.start - 100);
         end = Math.min(end, hit.end + 180);
       }
-      while (start < hit.start && /\\s/.test(text[start])) start++;
+      while (start < hit.start && /\s/.test(text[start])) start++;
       highlightRangesByItem.set(itemId, [{start, end}]);
        hits += 1;
     }
