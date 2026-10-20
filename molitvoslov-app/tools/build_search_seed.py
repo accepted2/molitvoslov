@@ -176,12 +176,19 @@ def main():
                                               "anchor_id": verse.get("id"), "start_offset": None, "end_offset": None,
                                               "metadata": {"psalm_id": psalm.get("id"), "psalm_number": pnum,
                                                            "verse_number": vnum}}
-                    add(lang, "psalter", f"psalm:{psalm.get('id')}:verse:{verse.get('id')}",
-                        f"Псалом {pnum}:{vnum}", ktitle,
-                        [verse.get("russian"), verse.get("church_slavonic"),
-                         verse.get("church_slavonic_traditional"), verse.get("ukrainian")],
-                        {"name": "Kathisma", "params": vparams}, "psalm-verse",
-                        verse.get("russian") or verse.get("church_slavonic") or "")
+                    for text_language, field in (
+                        ("church", "church_slavonic"),
+                        ("russian", "russian"),
+                        ("ukrainian", "ukrainian"),
+                        ("traditional", "church_slavonic_traditional")):
+                        body = verse.get(field)
+                        if not body:
+                            continue
+                        add(lang, "psalter",
+                            f"psalm:{psalm.get('id')}:verse:{verse.get('id')}:{text_language}",
+                            f"Псалом {pnum}:{vnum}", ktitle, [body],
+                            {"name": "Kathisma", "params": vparams}, "psalm-verse",
+                            preview=body, text_language=text_language)
         for book in books:
             book_id = book.get("id")
             display = book.get("name") or book.get("short_name") or "Библия"
