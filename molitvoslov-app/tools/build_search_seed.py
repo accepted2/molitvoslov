@@ -85,6 +85,19 @@ def main():
                 continue
             title = txt.get("title_uk") if lang == "uk" else txt.get("title")
             title = title or txt.get("title") or txt.get("traditional_title") or "Молитва"
+            categories = [category for category in (txt.get("categories") or [])
+                          if isinstance(category, dict) and category.get("id") and category.get("slug")]
+            category = categories[0] if categories else None
+            if category:
+                route = {"name": "Book", "params": {
+                    "categoryId": category["id"], "categorySlug": category["slug"],
+                    "categoryName": (category.get("name_uk") if lang == "uk" else category.get("name"))
+                                    or category.get("name") or "Молитвы",
+                    "focusTarget": {"anchor_type": "category_text",
+                                    "text_id": txt.get("id"),
+                                    "start_offset": None, "end_offset": None}}}
+            else:
+                route = {"name": "Reader", "params": {"slug": txt.get("slug")}}
             for text_language, field in (("church", "content"), ("russian", "translation"),
                                          ("ukrainian", "translation_uk"), ("traditional", "traditional_content")):
                 body = txt.get(field)
@@ -92,8 +105,7 @@ def main():
                     continue
                 add(lang, "prayers", "text:" + str(txt.get("id")) + ":" + text_language,
                     title, "Молитвы", [body],
-                    {"name": "Reader", "params": {"slug": txt.get("slug")}},
-                    preview=body, text_language=text_language)
+                    route, preview=body, text_language=text_language)
         for group, key, route_name in (("akathists", "akathists", "Akathist"),
                                        ("canons", "canons", "Canon")):
             items = content.get(key, {}).get("by_slug", {})
