@@ -52,7 +52,7 @@ def main():
     db.execute("CREATE TABLE search_metadata (language TEXT PRIMARY KEY, version TEXT NOT NULL)")
     count = 0
 
-    def add(lang, group, identifier, title, source, texts, route, kind="text", preview=""):
+    def add(lang, group, identifier, title, source, texts, route, kind="text", preview="", text_language=None):
         nonlocal count
         texts = [compact(x) for x in texts if x]
         title = compact(title)
@@ -61,7 +61,7 @@ def main():
         payload = {"id": identifier, "group": group, "kind": kind, "title": title,
                    "source": source, "snippet": compact(preview)[:190],
                    "route": route, "matchedLanguageLabel": "",
-                   "groupLabel": group, "score": 150}
+                   "groupLabel": group, "score": 150, "matchedTextLanguage": text_language}
         normalized = fold(" ".join(texts))
         count += 1
         # Оригинал (для snippet()) — в search_documents_content.
@@ -85,11 +85,15 @@ def main():
                 continue
             title = txt.get("title_uk") if lang == "uk" else txt.get("title")
             title = title or txt.get("title") or txt.get("traditional_title") or "Молитва"
-            texts = [txt.get(k) for k in ("title", "title_uk", "traditional_title", "description", "description_uk",
-                                          "content", "traditional_content", "translation", "translation_uk")]
-            add(lang, "prayers", "text:" + str(txt.get("id")), title, "Молитвы", texts,
-                {"name": "Reader", "params": {"slug": txt.get("slug")}},
-                preview=txt.get("translation") or txt.get("content") or txt.get("traditional_content") or "")
+            for text_language, field in (("church", "content"), ("russian", "translation"),
+                                         ("ukrainian", "translation_uk"), ("traditional", "traditional_content")):
+                body = txt.get(field)
+                if not body:
+                    continue
+                add(lang, "prayers", "text:" + str(txt.get("id")) + ":" + text_language,
+                    title, "Молитвы", [body],
+                    {"name": "Reader", "params": {"slug": txt.get("slug")}},
+                    preview=body, text_language=text_language)
         for group, key, route_name in (("akathists", "akathists", "Akathist"),
                                        ("canons", "canons", "Canon")):
             items = content.get(key, {}).get("by_slug", {})
@@ -103,14 +107,20 @@ def main():
                 for section in item.get("sections", []):
                     st = section.get("text") or {}
                     sid = section.get("id")
-                    texts = [st.get(k) for k in ("title", "title_uk", "content", "traditional_content",
-                                                 "translation", "translation_uk")]
                     section_params = dict(params)
-                    section_params["focusTarget"] = {"anchor_type": "akathist_section" if group == "akathists" else "canon_section",
-                                                     "anchor_id": sid, "start_offset": None, "end_offset": None}
-                    add(lang, group, group + ":section:" + str(sid), st.get("title") or title,
-                        title, texts, {"name": route_name, "params": section_params}, kind=group + "-section",
-                        preview=st.get("content") or st.get("translation") or st.get("traditional_content") or "")
+                    section_params["focusTarget"] = {
+                        "anchor_type": "akathist_section" if group == "akathists" else "canon_section",
+                        "anchor_id": sid, "start_offset": None, "end_offset": None}
+                    for text_language, field in (("church", "content"), ("russian", "translation"),
+                                                 ("ukrainian", "translation_uk"),
+                                                 ("traditional", "traditional_content")):
+                        body = st.get(field)
+                        if not body:
+                            continue
+                        add(lang, group, group + ":section:" + str(sid) + ":" + text_language,
+                            st.get("title") or title, title, [body],
+                            {"name": route_name, "params": section_params}, kind=group + "-section",
+                            preview=body, text_language=text_language)
         for rule in content.get("prayer_rules", {}).get("list", []):
             rule_title = (rule.get("name_uk") if lang == "uk" else rule.get("name")) or rule.get("name") or "Молитвенное правило"
             add(lang, "prayers", f"prayer-rule:{rule.get('id')}", rule_title, "Молитвенное правило",
@@ -119,15 +129,20 @@ def main():
             for item in rule.get("items", []):
                 title = item.get("title") or (item.get("text") or {}).get("title") or rule_title
                 st = item.get("text") or {}
-                values = [item.get("content"), item.get("content_uk"), item.get("note"),
-                          st.get("title"), st.get("content"), st.get("traditional_content"),
-                          st.get("translation"), st.get("translation_uk")]
-                add(lang, "prayers", f"prayer-rule:{rule.get('id')}:item:{item.get('id')}",
-                    title, rule_title, values, {"name": "PrayerRule", "params": {
-                        "slug": rule.get("slug"), "focusTarget": {
-                            "anchor_type": "prayer_rule_item", "anchor_id": item.get("id"),
-                            "start_offset": None, "end_offset": None}}}, "prayer",
-                    preview=st.get("content") or st.get("translation") or item.get("content") or "")
+                for text_language, body in (
+                    ("church", st.get("content") or item.get("content")),
+                    ("russian", st.get("translation")),
+                    ("ukrainian", st.get("translation_uk") or item.get("content_uk")),
+                    ("traditional", st.get("traditional_content"))):
+                    if not body:
+                        continue
+                    add(lang, "prayers",
+                        f"prayer-rule:{rule.get('id')}:item:{item.get('id')}:{text_language}",
+                        title, rule_title, [body], {"name": "PrayerRule", "params": {
+                            "slug": rule.get("slug"), "focusTarget": {
+                                "anchor_type": "prayer_rule_item", "anchor_id": item.get("id"),
+                                "start_offset": None, "end_offset": None}}}, "prayer",
+                        preview=body, text_language=text_language)
         for psalter in content.get("psalters", {}).get("list", [])[:1]:
             add(lang, "psalter", f"psalter:{psalter.get('id')}", psalter.get("name") or "Псалтирь",
                 "Псалтирь", [psalter.get("description"), psalter.get("prayers_before"),
