@@ -602,7 +602,14 @@ const computeFocusHighlightRanges = () => {
     if (!shouldHighlight) return;
 
     const text = itemTextMap.get(itemId) || '';
-    const ranges = findHighlightRanges(text, highlightQuery);
+    const verseStart = target.highlightVerse ? Number(target.start_offset) : NaN;
+    const verseEnd = target.highlightVerse ? Number(target.end_offset) : NaN;
+    const restricted = Number.isFinite(verseStart) && Number.isFinite(verseEnd) &&
+      verseEnd > verseStart && verseStart >= 0 && verseEnd <= text.length;
+    const ranges = (restricted
+      ? findHighlightRanges(text.slice(verseStart, verseEnd), highlightQuery)
+          .map(range => ({start: range.start + verseStart, end: range.end + verseStart}))
+      : findHighlightRanges(text, highlightQuery));
     if (ranges.length) {
       // A search result focuses on one sentence, not every match in the ikos.
       const hit = ranges[0];
@@ -615,6 +622,10 @@ const computeFocusHighlightRanges = () => {
       const followingPunctuation = after.search(/[.!?…]/);
       let start = previousPunctuation < 0 ? 0 : previousPunctuation + 1;
       let end = followingPunctuation < 0 ? text.length : hit.end + followingPunctuation + 1;
+      if (restricted) {
+        start = Math.max(start, verseStart);
+        end = Math.min(end, verseEnd);
+      }
       // For texts lacking punctuation, never mark the entire long ikos.
       if (end - start > 500) {
         start = Math.max(start, hit.start - 100);
@@ -3375,7 +3386,7 @@ if (
     if (DATA.focusTarget?.highlightQuery) {
       setTimeout(() => {
         highlightRangesByItem.clear();
-        document.querySelectorAll('.search-hit').forEach(node => node.classList.remove('search-hit'));
+        document.querySelectorAll('.search-hit').forEach(node => node.classList.add('search-hit-fade'));
       }, 1500);
     }
     requestAnimationFrame( () => {
