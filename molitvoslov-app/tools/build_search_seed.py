@@ -76,6 +76,18 @@ def main():
             db.commit()
 
     books = bible.get("books", [])
+    category_data = content.get("categories") or {}
+    if isinstance(category_data, list):
+        category_list = category_data
+    elif isinstance(category_data, dict):
+        category_list = category_data.get("list") or category_data.get("items") or list(category_data.values())
+    else:
+        category_list = []
+    category_by_id = {
+        str(category["id"]): category
+        for category in category_list
+        if isinstance(category, dict) and category.get("id")
+    }
     text_objs = content.get("texts", {})
     if isinstance(text_objs, dict):
         text_objs = list(text_objs.values())
@@ -85,8 +97,16 @@ def main():
                 continue
             title = txt.get("title_uk") if lang == "uk" else txt.get("title")
             title = title or txt.get("title") or txt.get("traditional_title") or "Молитва"
-            categories = [category for category in (txt.get("categories") or [])
-                          if isinstance(category, dict) and category.get("id") and category.get("slug")]
+            categories = []
+            for raw_category in txt.get("categories") or []:
+                if isinstance(raw_category, dict):
+                    resolved = category_by_id.get(str(raw_category.get("id")), raw_category)
+                    if not resolved.get("slug") and raw_category.get("slug"):
+                        resolved = raw_category
+                else:
+                    resolved = category_by_id.get(str(raw_category))
+                if isinstance(resolved, dict) and resolved.get("id") and resolved.get("slug"):
+                    categories.append(resolved)
             category = categories[0] if categories else None
             if category:
                 route = {"name": "Book", "params": {
