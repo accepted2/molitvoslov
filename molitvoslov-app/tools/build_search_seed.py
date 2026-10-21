@@ -99,6 +99,23 @@ def main():
     if isinstance(text_objs, dict):
         text_objs = list(text_objs.values())
     for lang in ("ru", "uk"):
+        # Collect canonical prayers before indexing. A titled prayer gets a single
+        # result even if copied into several categories or multiple prayer rules.
+        prayer_candidates = {}
+        def queue_prayer(title, identifier, route, variants, source, priority):
+            candidates = [(language, compact(body)) for language, body in variants
+                          if body and meaningful_prayer(title, body)]
+            if not candidates:
+                return
+            main_text = next((body for language, body in candidates if language == "church"),
+                             candidates[0][1])
+            # Generic "Молитва" titles are distinct only when the prayer text differs.
+            key = (fold(title), fold(main_text) if generic_prayer(title) else "")
+            candidate = (priority, title, identifier, route, candidates, source)
+            current = prayer_candidates.get(key)
+            if current is None or priority < current[0]:
+                prayer_candidates[key] = candidate
+
         for txt in text_objs:
             if not isinstance(txt, dict):
                 continue
@@ -115,7 +132,6 @@ def main():
                 if isinstance(resolved, dict) and resolved.get("id") and resolved.get("slug"):
                     categories.append(resolved)
             category = categories[0] if categories else None
-            # Generic labels only qualify as independent prayer results at 40+ words.
             if category:
                 route = {"name": "Book", "params": {
                     "categoryId": category["id"], "categorySlug": category["slug"],
@@ -126,14 +142,11 @@ def main():
                                     "start_offset": None, "end_offset": None}}}
             else:
                 route = {"name": "Reader", "params": {"slug": txt.get("slug")}}
-            for text_language, field in (("church", "content"), ("russian", "translation"),
-                                         ("ukrainian", "translation_uk"), ("traditional", "traditional_content")):
-                body = txt.get(field)
-                if not body or not meaningful_prayer(title, body):
-                    continue
-                add(lang, "prayers", "text:" + str(txt.get("id")) + ":" + text_language,
-                    title, "Молитвы", [body],
-                    route, preview=body, text_language=text_language)
+            queue_prayer(title, "text:" + str(txt.get("id")), route, (
+                ("church", txt.get("content")), ("russian", txt.get("translation")),
+                ("ukrainian", txt.get("translation_uk")),
+                ("traditional", txt.get("traditional_content"))),
+                "Молитвы", 30 if category else 50)
         for group, key, route_name in (("akathists", "akathists", "Akathist"),
                                        ("canons", "canons", "Canon")):
             items = content.get(key, {}).get("by_slug", {})
@@ -166,30 +179,33 @@ def main():
             add(lang, "prayers", f"prayer-rule:{rule.get('id')}", rule_title, "Молитвенное правило",
                 [rule.get("name"), rule.get("name_uk"), rule.get("traditional_name"), rule.get("description")],
                 {"name": "PrayerRule", "params": {"slug": rule.get("slug")}}, "prayer-rule")
-            seen_rule_fragments = set()
             for item in rule.get("items", []):
                 st = item.get("text") or {}
-                title = item.get("title") or st.get("title") or rule_title
-                variants = (
-                    ("church", st.get("content") or item.get("content")),
-                    ("russian", st.get("translation")),
-                    ("ukrainian", st.get("translation_uk") or item.get("content_uk")),
-                    ("traditional", st.get("traditional_content")))
-                # Prefer the Church Slavonic presentation for repeated fragments.
-                for text_language, body in variants:
-                    if not body or not meaningful_prayer(title, body):
-                        continue
-                    fingerprint = (fold(title), fold(body))
-                    if fingerprint in seen_rule_fragments:
-                        continue
-                    seen_rule_fragments.add(fingerprint)
-                    add(lang, "prayers",
-                        f"prayer-rule:{rule.get('id')}:item:{item.get('id')}:{text_language}",
-                        title, rule_title, [body], {"name": "PrayerRule", "params": {
-                            "slug": rule.get("slug"), "focusTarget": {
-                                "anchor_type": "prayer_rule_item", "anchor_id": item.get("id"),
-                                "start_offset": None, "end_offset": None}}}, "prayer",
-                        preview=body, text_language=text_language)
+                # Never invent an item title from its parent prayer-rule name.
+                title = item.get("title") or st.get("title")
+                if not title:
+                    continue
+                route = {"name": "PrayerRule", "params": {
+                    "slug": rule.get("slug"), "focusTarget": {
+                        "anchor_type": "prayer_rule_item", "anchor_id": item.get("id"),
+                        "start_offset": None, "end_offset": None}}}
+                priority = 0 if "utren" in str(rule.get("slug") or "").lower() else 10
+                queue_prayer(title,
+                    f"prayer-rule:{rule.get('id')}:item:{item.get('id')}",
+                    route, (("church", st.get("content") or item.get("content")),
+                            ("russian", st.get("translation")),
+                            ("ukrainian", st.get("translation_uk") or item.get("content_uk")),
+                            ("traditional", st.get("traditional_content"))),
+                    rule_title, priority)
+
+        for priority, title, identifier, route, variants, source in prayer_candidates.values():
+            # One index row per prayer; search all available translations while
+            # opening the canonical text in the Church Slavonic reader mode.
+            chosen = next(((language, body) for language, body in variants
+                           if language == "church"), variants[0])
+            add(lang, "prayers", identifier, title, source,
+                [body for _, body in variants], route, kind="prayer",
+                preview=chosen[1], text_language=chosen[0])
         for psalter in content.get("psalters", {}).get("list", [])[:1]:
             add(lang, "psalter", f"psalter:{psalter.get('id')}", psalter.get("name") or "Псалтирь",
                 "Псалтирь", [psalter.get("description"), psalter.get("prayers_before"),
