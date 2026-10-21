@@ -71,29 +71,33 @@ const copyForLanguage = (language) =>
       },
     };
 
-// Вырезает предложение вокруг совпадения (поиска) из snippet
-const extractSentence = (snippet, query) => {
-  const text = (snippet || '').trim();
-  if (!text) return '';
-  const q = (query || '').toLowerCase().trim();
-  if (!q) return text;
-
-  const lower = text.toLowerCase();
-  const idx = lower.indexOf(q);
-  if (idx < 0) return text;
-
-  // Начало предложения: последняя точка/!/?/… до совпадения
-  const before = text.slice(0, idx);
-  const startMatch = before.match(/[.!?…]\s+([^.!?…]*)$/);
-  const start = startMatch ? before.length - startMatch[1].length : 0;
-
-  // Конец предложения: первая точка/!/?/… после совпадения
-  const after = text.slice(idx);
-  const endMatch = after.match(/[.!?…]/);
-  const end = endMatch ? idx + endMatch.index + 1 : text.length;
-
-  const sentence = text.slice(start, end).trim();
-  return sentence || text;
+// FTS5 encloses actual matched tokens in brackets. Select the context around
+// these hits instead of looking for the literal user query (which may include
+// several words, inflections or removed accent marks).
+const extractSentence = (snippet) => {
+  const raw = String(snippet || '').trim();
+  if (!raw) return '';
+  const hits = [...raw.matchAll(/\\[([^\\]]+)\\]/g)];
+  if (!hits.length) return '';
+  const clean = raw.replace(/\\[([^\\]]+)\\]/g, '$1');
+  const first = hits[0];
+  const at = raw.slice(0, first.index).replace(/\\[([^\\]]+)\\]/g, '$1').length;
+  const prev = clean.slice(0, at);
+  const next = clean.slice(at);
+  const boundary = Math.max(prev.lastIndexOf('. '), prev.lastIndexOf('! '), prev.lastIndexOf('? '), prev.lastIndexOf('… '));
+  let start = boundary < 0 ? 0 : boundary + 2;
+  const nextBoundary = next.search(/[.!?…](?:\\s|$)/);
+  let end = nextBoundary < 0 ? clean.length : at + nextBoundary + 1;
+  // Keep at least the matched span visible when the query has several tokens.
+  const last = hits[hits.length - 1];
+  const lastEnd = raw.slice(0, last.index + last[0].length)
+    .replace(/\\[([^\\]]+)\\]/g, '$1').length;
+  end = Math.max(end, lastEnd);
+  if (end - start > 250) {
+    start = Math.max(0, at - 65);
+    end = Math.min(clean.length, Math.max(lastEnd + 55, at + 160));
+  }
+  return (start ? '…' : '') + clean.slice(start, end).trim() + (end < clean.length ? '…' : '');
 };
 
 const HighlightedText = ({text, query, style, highlightStyle, numberOfLines}) => {
@@ -267,7 +271,7 @@ const SearchContent = ({navigation}) => {
 
   const tabs = useMemo(
     () =>
-      SEARCH_GROUP_OPTIONS.map((item) => ({
+      SEARCH_GROUP_OPTIONS.filter((item) => item.key !== 'prayers').map((item) => ({
         ...item,
         label: copy.tabs[item.key] || item.label,
       })),
@@ -306,7 +310,7 @@ const SearchContent = ({navigation}) => {
     >
       <View style={styles.resultTopLine}>
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>{copy.tabs[item.group] || item.groupLabel}</Text>
+          <Text style={styles.badgeText}>{copy.tabs[item.group] || item.groupLabel || item.group}</Text>
         </View>
         {!!item.matchedLanguageLabel && (
           <Text style={styles.languageLabel}>{item.matchedLanguageLabel}</Text>
@@ -323,7 +327,7 @@ const SearchContent = ({navigation}) => {
 
       {!!item.source && (
         <HighlightedText
-          text={item.source}
+          text={copy.tabs[item.source] || item.source}
           query={searchQuery}
           style={styles.resultSource}
           highlightStyle={styles.highlightSource}
@@ -331,17 +335,9 @@ const SearchContent = ({navigation}) => {
         />
       )}
 
-      {!!item.snippet && (
+      {!!item.snippet && extractSentence(item.snippet) && (
         <HighlightedText
-          text={extractSentence(
-            (item.snippet || '')
-              .replace(/\[([^\]]+)\]/g, '$1')
-              .replace(
-                new RegExp('^' + (item.title || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*', 'i'),
-                ''
-              ),
-            searchQuery
-          )}
+          text={extractSentence(item.snippet)}
           query={searchQuery}
           style={styles.resultSnippet}
           highlightStyle={styles.highlightSnippet}
