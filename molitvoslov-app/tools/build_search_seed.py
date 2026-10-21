@@ -25,6 +25,12 @@ def fold(value):
 def compact(value):
     return re.sub(r"\s+", " ", str(value or "")).strip()
 
+def generic_prayer(title):
+    return fold(title) in {"молитва", "молитвы", "молитви"}
+
+def meaningful_prayer(title, body):
+    return not generic_prayer(title) or len(fold(body).split()) >= 40
+
 def main():
     content = json.loads(CONTENT.read_text(encoding="utf-8-sig"))
     bible = json.loads(BIBLE.read_text(encoding="utf-8-sig"))
@@ -109,10 +115,7 @@ def main():
                 if isinstance(resolved, dict) and resolved.get("id") and resolved.get("slug"):
                     categories.append(resolved)
             category = categories[0] if categories else None
-            # Standalone fragments with a default label are not prayer titles.
-            # Without a category we cannot route them to their real section.
-            if not category and fold(title) in {"молитва", "молитвы", "молитви"}:
-                continue
+            # Generic labels only qualify as independent prayer results at 40+ words.
             if category:
                 route = {"name": "Book", "params": {
                     "categoryId": category["id"], "categorySlug": category["slug"],
@@ -126,7 +129,7 @@ def main():
             for text_language, field in (("church", "content"), ("russian", "translation"),
                                          ("ukrainian", "translation_uk"), ("traditional", "traditional_content")):
                 body = txt.get(field)
-                if not body:
+                if not body or not meaningful_prayer(title, body):
                     continue
                 add(lang, "prayers", "text:" + str(txt.get("id")) + ":" + text_language,
                     title, "Молитвы", [body],
@@ -163,16 +166,23 @@ def main():
             add(lang, "prayers", f"prayer-rule:{rule.get('id')}", rule_title, "Молитвенное правило",
                 [rule.get("name"), rule.get("name_uk"), rule.get("traditional_name"), rule.get("description")],
                 {"name": "PrayerRule", "params": {"slug": rule.get("slug")}}, "prayer-rule")
+            seen_rule_fragments = set()
             for item in rule.get("items", []):
-                title = item.get("title") or (item.get("text") or {}).get("title") or rule_title
                 st = item.get("text") or {}
-                for text_language, body in (
+                title = item.get("title") or st.get("title") or rule_title
+                variants = (
                     ("church", st.get("content") or item.get("content")),
                     ("russian", st.get("translation")),
                     ("ukrainian", st.get("translation_uk") or item.get("content_uk")),
-                    ("traditional", st.get("traditional_content"))):
-                    if not body:
+                    ("traditional", st.get("traditional_content")))
+                # Prefer the Church Slavonic presentation for repeated fragments.
+                for text_language, body in variants:
+                    if not body or not meaningful_prayer(title, body):
                         continue
+                    fingerprint = (fold(title), fold(body))
+                    if fingerprint in seen_rule_fragments:
+                        continue
+                    seen_rule_fragments.add(fingerprint)
                     add(lang, "prayers",
                         f"prayer-rule:{rule.get('id')}:item:{item.get('id')}:{text_language}",
                         title, rule_title, [body], {"name": "PrayerRule", "params": {
