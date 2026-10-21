@@ -104,8 +104,8 @@ const runMatch = async (db, language, group, match, limit, offset, titleMatch = 
   // Hide short, generically titled fragments only for searches like "молитва".
   // They remain fully searchable by their actual words and longer queries.
   if (genericPrayerQuery) {
-    where += " AND NOT (p.kind IN ('text','prayer') " +
-      "AND lower(trim(json_extract(p.payload, '$.title'))) IN ('молитва','молитвы'))";
+    where += " AND lower(trim(json_extract(p.payload, '$.title'), ' .:;!?')) " +
+      "NOT IN ('молитва','молитвы','молитви')";
   }
   const args = group === SEARCH_GROUPS.ALL ? [language, match] : [language, group, match];
 
