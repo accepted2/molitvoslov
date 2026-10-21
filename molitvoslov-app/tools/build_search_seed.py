@@ -104,13 +104,13 @@ def main():
         prayer_candidates = {}
         def queue_prayer(title, identifier, route, variants, source, priority):
             candidates = [(language, compact(body)) for language, body in variants
-                          if body and meaningful_prayer(title, body)]
+                          if language == "church" and body and meaningful_prayer(title, body)]
             if not candidates:
                 return
-            main_text = next((body for language, body in candidates if language == "church"),
-                             candidates[0][1])
-            # Generic "Молитва" titles are distinct only when the prayer text differs.
-            key = (fold(title), fold(main_text) if generic_prayer(title) else "")
+            church_text = candidates[0][1]
+            # A prayer is identified by its actual Slavonic text, not its label.
+            # Do not collapse distinct prayers merely because both say "Молитва".
+            key = fold(church_text)
             candidate = (priority, title, identifier, route, candidates, source)
             current = prayer_candidates.get(key)
             if current is None or priority < current[0]:
@@ -204,8 +204,8 @@ def main():
             chosen = next(((language, body) for language, body in variants
                            if language == "church"), variants[0])
             add(lang, "prayers", identifier, title, source,
-                [body for _, body in variants], route, kind="prayer",
-                preview=chosen[1], text_language=chosen[0])
+                [chosen[1]], route, kind="prayer",
+                preview=chosen[1], text_language="church")
         for psalter in content.get("psalters", {}).get("list", [])[:1]:
             add(lang, "psalter", f"psalter:{psalter.get('id')}", psalter.get("name") or "Псалтирь",
                 "Псалтирь", [psalter.get("description"), psalter.get("prayers_before"),
