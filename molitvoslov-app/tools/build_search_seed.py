@@ -142,6 +142,9 @@ def main():
                                     "start_offset": None, "end_offset": None}}}
             else:
                 route = {"name": "Reader", "params": {"slug": txt.get("slug")}}
+            # Standalone Reader snippets have no source section to navigate to.
+            if not category:
+                continue
             queue_prayer(title, "text:" + str(txt.get("id")), route, (
                 ("church", txt.get("content")), ("russian", txt.get("translation")),
                 ("ukrainian", txt.get("translation_uk")),
@@ -184,6 +187,11 @@ def main():
                 # Never invent an item title from its parent prayer-rule name.
                 title = item.get("title") or st.get("title")
                 if not title:
+                    continue
+                # Section captions and instructions are not independent prayers.
+                lowered_title = fold(title)
+                if not ("молитв" in lowered_title or lowered_title in
+                        {"отче наш", "молитва мытаря", "богородице дево радуйся"}):
                     continue
                 route = {"name": "PrayerRule", "params": {
                     "slug": rule.get("slug"), "focusTarget": {
