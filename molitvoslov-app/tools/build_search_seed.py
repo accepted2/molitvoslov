@@ -109,6 +109,10 @@ def main():
                 if isinstance(resolved, dict) and resolved.get("id") and resolved.get("slug"):
                     categories.append(resolved)
             category = categories[0] if categories else None
+            # Standalone fragments with a default label are not prayer titles.
+            # Without a category we cannot route them to their real section.
+            if not category and fold(title) in {"молитва", "молитвы", "молитви"}:
+                continue
             if category:
                 route = {"name": "Book", "params": {
                     "categoryId": category["id"], "categorySlug": category["slug"],
