@@ -93,6 +93,9 @@ const extractSentence = (snippet) => {
   const lastEnd = raw.slice(0, last.index + last[0].length)
     .replace(/\[([^\]]+)\]/g, '$1').length;
   end = Math.max(end, lastEnd);
+  // The bundled Bible index includes book/chapter metadata before verse text.
+  // Discard remote metadata when it is far from the actual matched word.
+  if (at - start > 85) start = Math.max(start, at - 65);
   if (end - start > 250) {
     start = Math.max(0, at - 65);
     end = Math.min(clean.length, Math.max(lastEnd + 55, at + 160));
@@ -325,7 +328,8 @@ const SearchContent = ({navigation}) => {
         numberOfLines={2}
       />
 
-      {!!item.source && (
+      {!item.titleMatched && !!item.source && !['scripture', 'psalter', 'akathists', 'canons', 'prayers'].includes(item.source) &&
+        item.source !== item.title && (
         <HighlightedText
           text={copy.tabs[item.source] || item.source}
           query={searchQuery}
@@ -335,7 +339,7 @@ const SearchContent = ({navigation}) => {
         />
       )}
 
-      {!!item.snippet && extractSentence(item.snippet) && (
+      {!item.titleMatched && !!item.snippet && extractSentence(item.snippet) && (
         <HighlightedText
           text={extractSentence(item.snippet)}
           query={searchQuery}
