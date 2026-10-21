@@ -328,7 +328,7 @@ const SearchContent = ({navigation}) => {
         numberOfLines={2}
       />
 
-      {!item.titleMatched && !!item.source && !['scripture', 'psalter', 'akathists', 'canons', 'prayers', 'Писание', 'Псалтирь', 'Акафисты', 'Каноны', 'Молитвы', 'Акафист', 'Канон'].includes(item.source) &&
+      {!!item.source && (item.group === 'prayers' || !item.titleMatched) && !['scripture', 'psalter', 'akathists', 'canons', 'prayers', 'Писание', 'Псалтирь', 'Акафисты', 'Каноны', 'Молитвы', 'Акафист', 'Канон'].includes(item.source) &&
         item.source !== item.title && (
         <HighlightedText
           text={copy.tabs[item.source] || item.source}
