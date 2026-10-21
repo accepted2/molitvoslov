@@ -105,8 +105,7 @@ const runMatch = async (db, language, group, match, limit, offset, titleMatch = 
   // They remain fully searchable by their actual words and longer queries.
   if (genericPrayerQuery) {
     where += " AND NOT (p.kind IN ('text','prayer') " +
-      "AND lower(trim(json_extract(p.payload, '$.title'))) IN ('молитва','молитвы') " +
-      "AND CAST(coalesce(json_extract(p.payload, '$.bodyWordCount'), 0) AS INTEGER) < 55)";
+      "AND lower(trim(json_extract(p.payload, '$.title'))) IN ('молитва','молитвы'))";
   }
   const args = group === SEARCH_GROUPS.ALL ? [language, match] : [language, group, match];
 
