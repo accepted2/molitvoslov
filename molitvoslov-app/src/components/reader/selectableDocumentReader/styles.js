@@ -993,31 +993,25 @@ export const READER_STYLES = String.raw`
       background: rgba(161, 110, 53, 0.30);
     }
     .search-focus { background: rgba(161, 110, 53, 0.08); }
-  mark.search-hit-fade {
-  background: transparent !important;
-  outline-color: transparent !important;
-  color: inherit !important;
-}
-.search-hit {
-  transition: background-color 420ms ease-out, outline-color 420ms ease-out, color 420ms ease-out;
-    background: rgba(161, 110, 53, 0.28);
-    color: #963D34;
-    padding: 0 1px;
-    border-radius: 3px;
-}
-.search-hit {
- background: rgba(201, 166, 88, 0.55);
-  color: #6B2A21;
-  border-radius: 3px;
-  padding: 0 2px;
-  outline: 2px solid rgba(161, 110, 53, 0.75);
-  outline-offset: 1px;
-}
-
-.book-mode .search-hit {
-   background: rgba(201, 166, 88, 0.65);
-  outline-color: rgba(161, 110, 53, 0.85);
-}
+    /* Highlight the sentence with one continuous translucent background,
+       without the double outline on each wrapped line. */
+    .search-hit,
+    mark.search-hit {
+      background: rgba(201, 166, 88, 0.32);
+      color: inherit;
+      border-radius: 2px;
+      padding: 0;
+      outline: none;
+      transition: background-color 420ms ease-out;
+    }
+    .book-mode .search-hit {
+      background: rgba(201, 166, 88, 0.32);
+    }
+    .search-hit.search-hit-fade,
+    mark.search-hit.search-hit-fade,
+    .book-mode .search-hit.search-hit-fade {
+      background-color: transparent;
+    }
     .reader-text.focus-target {
     /* Убрано: обводка вокруг всего блока только отвлекает.
      Подсветка искомого слова — через .search-hit. */
