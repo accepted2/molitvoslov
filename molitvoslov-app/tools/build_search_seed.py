@@ -18,9 +18,18 @@ SCHEMA = "8"
 KIND_BOOST = {"psalm-verse":1.20,"bible-verse":1.15,"psalm":1.10,"text":1.10,"prayer":1.10,"bible-chapter":1.0,"akathist":1.0,"canon":1.0,"psalter":1.0,"akathist-section":0.95,"canon-section":0.95,"prayer-rule":0.90,"kathisma":0.90,"bible-book":0.90}
 
 def fold(value):
-    value = unicodedata.normalize("NFD", str(value or "").lower().replace("ё", "е"))
+    # Normalize Slavonic letters to modern Russian spelling so Russian-keyboard
+    # queries match the canonical Church Slavonic text.
+    value = str(value or "").lower().replace("ё", "е")
+    value = value.translate(str.maketrans({
+        "ѣ": "е", "і": "и", "ѳ": "ф", "ѵ": "и", "ѡ": "о",
+        "ѧ": "я", "ѫ": "у", "ѕ": "з", "ѯ": "кс", "ѱ": "пс",
+        "ѻ": "о", "ѿ": "от", "ꙋ": "у", "ѹ": "у",
+    }))
+    value = unicodedata.normalize("NFD", value)
     value = "".join(ch for ch in value if unicodedata.category(ch) != "Mn")
-    return re.sub(r"\s+", " ", "".join(ch if ch.isalnum() else " " for ch in value)).strip()
+    value = re.sub(r"\\s+", " ", "".join(ch if ch.isalnum() else " " for ch in value)).strip()
+    return re.sub(r"ъ(?=\\s|$)", "", value)
 
 def compact(value):
     return re.sub(r"\s+", " ", str(value or "")).strip()
@@ -190,8 +199,15 @@ def main():
                     continue
                 # Section captions and instructions are not independent prayers.
                 lowered_title = fold(title)
-                if not ("молитв" in lowered_title or lowered_title in
-                        {"отче наш", "молитва мытаря", "богородице дево радуйся"}):
+                known_short_prayers = {
+                    "отче наш", "молитва мытаря", "богородице дево радуйся",
+                    "царю небесный", "достойно есть", "символ веры",
+                }
+                church_body = st.get("content") or item.get("content") or ""
+                if (lowered_title.startswith("ясть человече") or
+                    (not ("молитв" in lowered_title or
+                          lowered_title in known_short_prayers) and
+                     len(fold(church_body).split()) < 40)):
                     continue
                 route = {"name": "PrayerRule", "params": {
                     "slug": rule.get("slug"), "focusTarget": {
