@@ -28,8 +28,8 @@ def fold(value):
     }))
     value = unicodedata.normalize("NFD", value)
     value = "".join(ch for ch in value if unicodedata.category(ch) != "Mn")
-    value = re.sub(r"\\s+", " ", "".join(ch if ch.isalnum() else " " for ch in value)).strip()
-    return re.sub(r"ъ(?=\\s|$)", "", value)
+    value = re.sub(r"\s+", " ", "".join(ch if ch.isalnum() else " " for ch in value)).strip()
+    return re.sub(r"ъ(?=\s|$)", "", value)
 
 def compact(value):
     return re.sub(r"\s+", " ", str(value or "")).strip()
