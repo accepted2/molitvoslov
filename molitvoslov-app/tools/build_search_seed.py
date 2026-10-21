@@ -61,7 +61,8 @@ def main():
         payload = {"id": identifier, "group": group, "kind": kind, "title": title,
                    "source": source, "snippet": compact(preview)[:190],
                    "route": route, "matchedLanguageLabel": "",
-                   "groupLabel": group, "score": 150, "matchedTextLanguage": text_language}
+                   "groupLabel": group, "score": 150, "matchedTextLanguage": text_language,
+                   "bodyWordCount": len(fold(" ".join(texts)).split())}
         normalized = fold(" ".join(texts))
         count += 1
         # Оригинал (для snippet()) — в search_documents_content.
