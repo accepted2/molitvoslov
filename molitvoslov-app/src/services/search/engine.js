@@ -148,12 +148,16 @@ const runMatch = async (db, language, group, match, limit, offset) => {
   // 2) Snippet отдельно по rowid (FTS без JOIN — snippet вокруг совпадения)
   if (rows.length) {
     const snippets = await db.getAllAsync(
-      'SELECT rowid, snippet(search_documents, -1, "[", "]", "...", 30) AS snippet ' +
+      'SELECT rowid, snippet(search_documents, 2, "[", "]", "...", 38) AS snippet ' +
       'FROM search_documents WHERE search_documents MATCH ?',
       [match]
     );
     const snippetByRowid = new Map(snippets.map((s) => [s.rowid, s.snippet]));
-    rows.forEach((r) => { r.snippet = snippetByRowid.get(r.rowid) || null; });
+    rows.forEach((r) => {
+      const fragment = snippetByRowid.get(r.rowid) || '';
+      // Title/source-only matches have no body hit; do not show a misleading preview.
+      r.snippet = /\\[[^\\]]+\\]/.test(fragment) ? fragment : null;
+    });
   }
   console.error('[search] timing: group =', group, '| rows =', Date.now() - t1, 'ms | rows =', rows.length);
   console.error('[search] runMatch:', 'group =', group, '| row0_snippet_len =', rows[0]?.snippet?.length, '| row0_snippet =', (rows[0]?.snippet || '').slice(0, 80));
@@ -241,7 +245,7 @@ export const searchPersistent = async (
         const snippet = row.snippet || p.snippet;
         return {
           ...p,
-          snippet: row.snippet || p.snippet,
+          snippet: row.snippet || '',
           route: withHighlight(p.route, query, snippet, p.matchedTextLanguage),
         };
       }),
