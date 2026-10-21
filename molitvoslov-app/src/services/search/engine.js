@@ -156,7 +156,7 @@ const runMatch = async (db, language, group, match, limit, offset) => {
     rows.forEach((r) => {
       const fragment = snippetByRowid.get(r.rowid) || '';
       // Title/source-only matches have no body hit; do not show a misleading preview.
-      r.snippet = /\\[[^\\]]+\\]/.test(fragment) ? fragment : null;
+      r.snippet = /\[[^\]]+\]/.test(fragment) ? fragment : null;
     });
   }
   console.error('[search] timing: group =', group, '| rows =', Date.now() - t1, 'ms | rows =', rows.length);
