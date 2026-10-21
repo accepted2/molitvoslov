@@ -180,7 +180,7 @@ def main():
                                                  ("ukrainian", "translation_uk"),
                                                  ("traditional", "traditional_content")):
                         body = st.get(field)
-                        if not body:
+                        if text_language != "church" or not body:
                             continue
                         add(lang, group, group + ":section:" + str(sid) + ":" + text_language,
                             st.get("title") or title, title, [body],
@@ -269,7 +269,7 @@ def main():
                         ("ukrainian", "ukrainian"),
                         ("traditional", "church_slavonic_traditional")):
                         body = verse.get(field)
-                        if not body:
+                        if text_language != "church" or not body:
                             continue
                         add(lang, "psalter",
                             f"psalm:{psalm.get('id')}:verse:{verse.get('id')}:{text_language}",
