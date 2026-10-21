@@ -245,7 +245,7 @@ def main():
                             "metadata": {"book_id": book_id, "book_slug": book.get("slug"),
                                          "chapter_number": number, "verse_number": verse_no}}}}
                     add(lang, "scripture", f"bible:{book_id}:{chapter.get('id')}:{verse_id}",
-                        title, "Писание", [title, f"{book.get('short_name') or display} {number}:{verse_no}", verse.get("text")],
+                        title, "Писание", [verse.get("text")],
                         route, "bible-verse", verse.get("text") or "")
         public_ver = content.get("content_version") or content.get("generated_at") or "bundle-public"
         bible_ver = bible.get("content_version") or bible.get("generated_at") or "bundle-bible"
