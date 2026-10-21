@@ -77,21 +77,21 @@ const copyForLanguage = (language) =>
 const extractSentence = (snippet) => {
   const raw = String(snippet || '').trim();
   if (!raw) return '';
-  const hits = [...raw.matchAll(/\\[([^\\]]+)\\]/g)];
+  const hits = [...raw.matchAll(/\[([^\]]+)\]/g)];
   if (!hits.length) return '';
-  const clean = raw.replace(/\\[([^\\]]+)\\]/g, '$1');
+  const clean = raw.replace(/\[([^\]]+)\]/g, '$1');
   const first = hits[0];
-  const at = raw.slice(0, first.index).replace(/\\[([^\\]]+)\\]/g, '$1').length;
+  const at = raw.slice(0, first.index).replace(/\[([^\]]+)\]/g, '$1').length;
   const prev = clean.slice(0, at);
   const next = clean.slice(at);
   const boundary = Math.max(prev.lastIndexOf('. '), prev.lastIndexOf('! '), prev.lastIndexOf('? '), prev.lastIndexOf('… '));
   let start = boundary < 0 ? 0 : boundary + 2;
-  const nextBoundary = next.search(/[.!?…](?:\\s|$)/);
+  const nextBoundary = next.search(/[.!?…](?:\s|$)/);
   let end = nextBoundary < 0 ? clean.length : at + nextBoundary + 1;
   // Keep at least the matched span visible when the query has several tokens.
   const last = hits[hits.length - 1];
   const lastEnd = raw.slice(0, last.index + last[0].length)
-    .replace(/\\[([^\\]]+)\\]/g, '$1').length;
+    .replace(/\[([^\]]+)\]/g, '$1').length;
   end = Math.max(end, lastEnd);
   if (end - start > 250) {
     start = Math.max(0, at - 65);
