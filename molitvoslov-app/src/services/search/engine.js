@@ -96,11 +96,18 @@ export const isPersistentSearchReady = async (language = 'ru', database = null) 
   }
 };
 
-const runMatch = async (db, language, group, match, limit, offset, titleMatch = null) => {
-  const where =
+const runMatch = async (db, language, group, match, limit, offset, titleMatch = null, genericPrayerQuery = false) => {
+  let where =
     group === SEARCH_GROUPS.ALL
       ? 'p.language = ? AND search_documents MATCH ?'
       : 'p.language = ? AND p.group_key = ? AND search_documents MATCH ?';
+  // Hide short, generically titled fragments only for searches like "молитва".
+  // They remain fully searchable by their actual words and longer queries.
+  if (genericPrayerQuery) {
+    where += " AND NOT (p.kind IN ('text','prayer') " +
+      "AND lower(trim(json_extract(p.payload, '$.title'))) IN ('молитва','молитвы') " +
+      "AND CAST(coalesce(json_extract(p.payload, '$.bodyWordCount'), 0) AS INTEGER) < 55)";
+  }
   const args = group === SEARCH_GROUPS.ALL ? [language, match] : [language, group, match];
 
   let total = null;
@@ -237,9 +244,11 @@ export const searchPersistent = async (
   const db = database || (await getSearchDb());
   // FTS title hits are always ranked ahead of body-only matches.
   const titleMatch = 'title : (' + buildAndQuery(words) + ')';
+  const genericPrayerQuery = words.length === 1 &&
+    ['молитва', 'молитвы', 'молитву', 'молитве', 'молитви', 'молитву'].includes(words[0]);
 
   if (words.length === 1) {
-    const found = await runMatch(db, language, group, buildPhraseQuery(words), limit, offset, titleMatch);
+    const found = await runMatch(db, language, group, buildPhraseQuery(words), limit, offset, titleMatch, genericPrayerQuery);
     const first = found.rows[0];
     if (first) {
       const p = JSON.parse(first.payload);
@@ -264,7 +273,7 @@ export const searchPersistent = async (
 
   const phraseLimit = Math.max(limit, 120);
   const phrase = await runMatch(
-    db, language, group, buildPhraseQuery(words), phraseLimit, offset, titleMatch
+    db, language, group, buildPhraseQuery(words), phraseLimit, offset, titleMatch, genericPrayerQuery
   );
 
   const phraseIds = new Set(phrase.rows.map((r) => JSON.parse(r.payload).id));
@@ -273,7 +282,7 @@ export const searchPersistent = async (
   let andTotal = 0;
   if (needMore) {
     const and = await runMatch(
-      db, language, group, buildAndQuery(words), limit, 0, titleMatch
+      db, language, group, buildAndQuery(words), limit, 0, titleMatch, genericPrayerQuery
     );
     andTotal = and.total;
     andRows = and.rows.filter((r) => {
