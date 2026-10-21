@@ -262,7 +262,7 @@ export const searchPersistent = async (
         return {
           ...p,
           titleMatched: !!row.title_hit,
-          snippet: row.snippet || '',
+          snippet: p.group === 'prayers' ? (p.snippet || '') : (row.snippet || ''),
           route: withHighlight(p.route, query, snippet, p.matchedTextLanguage),
         };
       }),
@@ -307,7 +307,7 @@ export const searchPersistent = async (
       return {
         ...p,
         titleMatched: !!row.title_hit,
-        snippet: row.snippet || '',
+        snippet: p.group === 'prayers' ? (p.snippet || '') : (row.snippet || ''),
         route: withHighlight(p.route, query, snippet, p.matchedTextLanguage)
       };
     }),
