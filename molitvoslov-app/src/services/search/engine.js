@@ -104,8 +104,9 @@ const runMatch = async (db, language, group, match, limit, offset, titleMatch = 
   // Exclude generic labels from a broad "молитва" query regardless of
   // record kind or length. Specific text queries remain unchanged.
   if (genericPrayerQuery) {
-    where += " AND lower(trim(json_extract(p.payload, '$.title'), ' .:;!?')) " +
-      "NOT IN ('молитва','молитвы','молитви')";
+    where += " AND NOT (lower(trim(json_extract(p.payload, '$.title'), ' .:;!?')) " +
+      "IN ('молитва','молитвы','молитви') AND " +
+      "CAST(coalesce(json_extract(p.payload, '$.bodyWordCount'), 0) AS INTEGER) < 40)";
   }
   const args = group === SEARCH_GROUPS.ALL ? [language, match] : [language, group, match];
 
