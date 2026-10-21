@@ -6128,9 +6128,8 @@ const HTML_TEMPLATE = String.raw`
             0,
             Math.max(
               0,
-              window.scrollY +
-              rootRect.top -
-              18
+              window.scrollY + rootRect.top + Math.min(rootRect.height / 2, 44) -
+              (window.innerHeight / 2)
             )
           );
         }
