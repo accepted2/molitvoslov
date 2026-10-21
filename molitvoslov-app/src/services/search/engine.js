@@ -96,7 +96,7 @@ export const isPersistentSearchReady = async (language = 'ru', database = null) 
   }
 };
 
-const runMatch = async (db, language, group, match, limit, offset) => {
+const runMatch = async (db, language, group, match, limit, offset, titleMatch = null) => {
   const where =
     group === SEARCH_GROUPS.ALL
       ? 'p.language = ? AND search_documents MATCH ?'
@@ -141,8 +141,12 @@ const runMatch = async (db, language, group, match, limit, offset) => {
     'search_documents.rowid AS rowid ' +
     'FROM search_documents JOIN search_payloads AS p ' +
     'ON p.rowid = search_documents.rowid WHERE ' + where +
-    ' ORDER BY rank ASC LIMIT ? OFFSET ?',
-    [...args, Math.min(limit, 500), offset]
+    (titleMatch
+      ? ' ORDER BY CASE WHEN search_documents.rowid IN ' +
+        '(SELECT rowid FROM search_documents WHERE search_documents MATCH ?) THEN 0 ELSE 1 END, rank ASC'
+      : ' ORDER BY rank ASC') +
+    ' LIMIT ? OFFSET ?',
+    [...args, ...(titleMatch ? [titleMatch] : []), Math.min(limit, 500), offset]
   );
 
   // 2) Snippet отдельно по rowid (FTS без JOIN — snippet вокруг совпадения)
@@ -230,9 +234,11 @@ export const searchPersistent = async (
     return { items: [], total: 0, hasMore: false, unavailable: true };
   }
   const db = database || (await getSearchDb());
+  // FTS title hits are always ranked ahead of body-only matches.
+  const titleMatch = 'title : (' + buildAndQuery(words) + ')';
 
   if (words.length === 1) {
-    const found = await runMatch(db, language, group, buildPhraseQuery(words), limit, offset);
+    const found = await runMatch(db, language, group, buildPhraseQuery(words), limit, offset, titleMatch);
     const first = found.rows[0];
     if (first) {
       const p = JSON.parse(first.payload);
@@ -256,7 +262,7 @@ export const searchPersistent = async (
 
   const phraseLimit = Math.max(limit, 120);
   const phrase = await runMatch(
-    db, language, group, buildPhraseQuery(words), phraseLimit, offset
+    db, language, group, buildPhraseQuery(words), phraseLimit, offset, titleMatch
   );
 
   const phraseIds = new Set(phrase.rows.map((r) => JSON.parse(r.payload).id));
@@ -265,7 +271,7 @@ export const searchPersistent = async (
   let andTotal = 0;
   if (needMore) {
     const and = await runMatch(
-      db, language, group, buildAndQuery(words), limit, 0
+      db, language, group, buildAndQuery(words), limit, 0, titleMatch
     );
     andTotal = and.total;
     andRows = and.rows.filter((r) => {
