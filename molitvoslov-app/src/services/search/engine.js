@@ -138,15 +138,16 @@ const runMatch = async (db, language, group, match, limit, offset, titleMatch = 
   const rows = await db.getAllAsync(
     'SELECT p.payload AS payload, p.boost AS boost, ' +
     'bm25(search_documents, ' + BM25_WEIGHTS + ') AS rank, ' +
+    (titleMatch
+      ? 'CASE WHEN search_documents.rowid IN ' +
+        '(SELECT rowid FROM search_documents WHERE search_documents MATCH ?) THEN 1 ELSE 0 END AS title_hit, '
+      : '0 AS title_hit, ') +
     'search_documents.rowid AS rowid ' +
     'FROM search_documents JOIN search_payloads AS p ' +
     'ON p.rowid = search_documents.rowid WHERE ' + where +
-    (titleMatch
-      ? ' ORDER BY CASE WHEN search_documents.rowid IN ' +
-        '(SELECT rowid FROM search_documents WHERE search_documents MATCH ?) THEN 0 ELSE 1 END, rank ASC'
-      : ' ORDER BY rank ASC') +
+    ' ORDER BY title_hit DESC, rank ASC' +
     ' LIMIT ? OFFSET ?',
-    [...args, ...(titleMatch ? [titleMatch] : []), Math.min(limit, 500), offset]
+    [...(titleMatch ? [titleMatch] : []), ...args, Math.min(limit, 500), offset]
   );
 
   // 2) Snippet отдельно по rowid (FTS без JOIN — snippet вокруг совпадения)
@@ -251,6 +252,7 @@ export const searchPersistent = async (
         const snippet = row.snippet || p.snippet;
         return {
           ...p,
+          titleMatched: !!row.title_hit,
           snippet: row.snippet || '',
           route: withHighlight(p.route, query, snippet, p.matchedTextLanguage),
         };
@@ -280,7 +282,9 @@ export const searchPersistent = async (
     });
   }
 
-  const combined = [...phrase.rows, ...andRows].slice(0, limit);
+  const combined = [...phrase.rows, ...andRows]
+    .sort((a, b) => Number(b.title_hit || 0) - Number(a.title_hit || 0))
+    .slice(0, limit);
   const total = Math.max(phrase.total, andTotal);
   if (combined[0]) {
     const p = JSON.parse(combined[0].payload);
@@ -293,7 +297,8 @@ export const searchPersistent = async (
       const snippet = row.snippet || p.snippet;
       return {
         ...p,
-        snippet: row.snippet || p.snippet,
+        titleMatched: !!row.title_hit,
+        snippet: row.snippet || '',
         route: withHighlight(p.route, query, snippet, p.matchedTextLanguage)
       };
     }),
