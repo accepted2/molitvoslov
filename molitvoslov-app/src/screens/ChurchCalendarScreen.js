@@ -3,12 +3,12 @@ import {
   AppState,
   Image,
   ScrollView,
+  Pressable,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
 } from 'react-native';
-import {FadePressable as Pressable} from '../components/feedback/FadePressable';
 import {StatusBar} from 'expo-status-bar';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
