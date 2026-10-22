@@ -678,17 +678,8 @@ export const MenuScreen = ({navigation}) => {
   };
 
   const openCalendarQuickReading = (kind, readings) => {
-    if (!readings.length) {
-      return;
-    }
-
-    const first = readings[0];
-
-    if (resolveBibleReference(first.title)) {
-      openCalendarBibleReference(navigation, first.title);
-      return;
-    }
-
+    if (!readings.length) return;
+    // Open the expandable reading in the calendar, not the Bible reader.
     openFullCalendar(kind === 'gospel' ? 'gospel' : 'apostle');
   };
 
