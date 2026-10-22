@@ -120,7 +120,9 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     });
     // Preserve separate pagination and per-book themes for Bible/book readers.
     if (documentData.readerMode === 'book') return markup;
-    const palette = PALETTE_COLORS[readingSettings.palette] || PALETTE_COLORS.parchment;
+    const palette = readingSettings.palette === 'custom'
+      ? {background: readingSettings.customBackground, text: readingSettings.customText, surface: readingSettings.customBackground}
+      : (PALETTE_COLORS[readingSettings.palette] || PALETTE_COLORS.parchment);
     const size = Math.max(14, Math.min(28, Number(readingSettings.fontSize) || 17));
     const css = `body:not(.book-mode) {--background: ${palette.background}; --surface: ${palette.surface}; --text: ${palette.text};} body:not(.book-mode) .reader-text {font-size: ${size}px !important; line-height: ${Math.round(size * 1.7)}px !important;}`;
     return markup.replace('</style>', `${css}</style>`);
@@ -361,7 +363,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         textZoom={100}
         onMessage={handleMessage}
         onLoadEnd={onReady}
-        style={[styles.webView, {backgroundColor: documentData.readerMode === 'book' ? backgroundColor : (PALETTE_COLORS[readingSettings.palette]?.background || backgroundColor)}]}
+        style={[styles.webView, {backgroundColor: documentData.readerMode === 'book' ? backgroundColor : (readingSettings.palette === 'custom' ? readingSettings.customBackground : (PALETTE_COLORS[readingSettings.palette]?.background || backgroundColor))}]}
         onConsoleMessage={(event) => {
           const { message, lineNumber } = event.nativeEvent;
           if (message && (message.includes('[runtime]') || message.includes('[reader]') || message.includes('Error'))) {
