@@ -564,134 +564,45 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
   useEffect(() => {
     let active = true;
-    let refreshTimer = null;
-    const controller = new AbortController();
-    const bundled = getBundledCalendarMonth(visibleYear, visibleMonth, dataLanguage);
-    let hasOfflineData = Boolean(bundled);
-
-    if (bundled) {
-      setMonthData(bundled);
-      setError('');
-      setLoadingMonth(false);
-    } else {
-      setLoadingMonth(true);
-    }
-
-    const refreshFromNetwork = async () => {
+    setMonthData(null);
+    setLoadingMonth(true);
+    const loadLocalMonth = async () => {
       try {
-        const fresh = await getCalendarMonth(visibleYear, visibleMonth, {
-          language: dataLanguage,
-          force: true,
-          skipOffline: true,
-          signal: controller.signal,
-        });
-
-        if (!active || controller.signal.aborted) return;
-
-        setMonthData(fresh);
-        setError('');
-      } catch (err) {
-        if (!active || controller.signal.aborted || err?.name === 'AbortError' || hasOfflineData) {
-          return;
-        }
-
-        setError(err?.message || copy.loadCalendarError);
+        const month = await getOfflineCalendarMonth(visibleYear, visibleMonth, dataLanguage);
+        if (!active) return;
+        setMonthData(month);
+        setError(month ? '' : copy.loadCalendarError);
+      } catch (error) {
+        if (active) setError(error?.message || copy.loadCalendarError);
       } finally {
-        if (active) {
-          setLoadingMonth(false);
-        }
+        if (active) setLoadingMonth(false);
       }
     };
-
-    const loadMonth = async () => {
-      try {
-        const offline = await getOfflineCalendarMonth(visibleYear, visibleMonth, dataLanguage);
-
-        if (!active) return;
-
-        if (offline) {
-          hasOfflineData = true;
-          setMonthData(offline);
-          setError('');
-          setLoadingMonth(false);
-        }
-
-        /*
-         * Не запускаем HTTP-запрос на каждый промежуточный месяц,
-         * если пользователь быстро листает стрелками.
-         */
-        refreshTimer = setTimeout(refreshFromNetwork, 180);
-      } catch (err) {
-        if (!active) return;
-
-        if (!hasOfflineData) {
-          setError(err?.message || copy.loadCalendarError);
-          setLoadingMonth(false);
-        }
-      }
-    };
-
-    loadMonth();
-
-    return () => {
-      active = false;
-      controller.abort();
-
-      if (refreshTimer) {
-        clearTimeout(refreshTimer);
-      }
-    };
+    loadLocalMonth();
+    return () => { active = false; };
   }, [dataLanguage, refreshVersion, visibleMonth, visibleYear]);
 
   useEffect(() => {
     let active = true;
-    const controller = new AbortController();
-
-    const loadDay = async () => {
-      setLoadingDay(true);
-      let hasOfflineData = false;
-
+    setDayData(null);
+    setLoadingDay(true);
+    const loadLocalDay = async () => {
       try {
-        const offline = await getOfflineCalendarDay(selectedDate, dataLanguage);
-
-        if (active && offline) {
-          hasOfflineData = true;
-          setDayData(offline);
-          setError('');
-          setLoadingDay(false);
-        }
-
-        const fresh = await getCalendarDay(selectedDate, {
-          language: dataLanguage,
-          force: true,
-          skipOffline: true,
-          signal: controller.signal,
-        });
-
-        if (!active || controller.signal.aborted) return;
-
-        setDayData(fresh);
-        setError('');
-      } catch (err) {
-        if (!active || controller.signal.aborted || err?.name === 'AbortError' || hasOfflineData) {
-          return;
-        }
-
-        setDayData(null);
-        setError(err?.message || copy.loadDayError);
-      } finally {
+        const day = await getOfflineCalendarDay(selectedDate, dataLanguage);
+        if (!active) return;
+        setDayData(day);
+        setError(day ? '' : copy.loadDayError);
+      } catch (error) {
         if (active) {
-          setLoadingDay(false);
+          setDayData(null);
+          setError(error?.message || copy.loadDayError);
         }
+      } finally {
+        if (active) setLoadingDay(false);
       }
     };
-
-    loadDay();
-
-    return () => {
-      active = false;
-      controller.abort();
-    };
+    loadLocalDay();
+    return () => { active = false; };
   }, [dataLanguage, refreshVersion, selectedDate]);
 
   const daysMap = useMemo(
