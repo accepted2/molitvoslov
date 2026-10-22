@@ -39,7 +39,6 @@ import bundledBible from '../../data/offlineBible.json';
 export const versionFor = (language) => {
   return [
     SEARCH_SCHEMA_VERSION,
-    'calendar-saints-v1',
     language,
     bundledContent.content_version || bundledContent.generated_at || 'bundle-public',
     bundledBible.content_version || bundledBible.generated_at || 'bundle-bible',
