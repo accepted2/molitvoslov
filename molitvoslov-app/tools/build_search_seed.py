@@ -172,7 +172,7 @@ def main():
     for lang in ("ru", "uk"):
         for kind, title, entity, body, route, original_title, short_title in calendar_entries[lang]:
             add(lang, "calendar", "calendar:" + kind + ":" + str(len(entity)) + ":" +
-                str(len(body)) + ":" + str(len(route["params"]["feast"].get("source_id") or "")) +
+                str(len(body)) + ":" + str(route["params"]["feast"].get("source_id") or "") +
                 ":" + fold(entity)[:60], title, entity,
                 [body, short_title, original_title, saint_name_forms(entity), saint_name_forms(short_title)], route, kind=kind,
                 preview=body, text_language="church")
