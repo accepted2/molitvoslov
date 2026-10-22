@@ -73,17 +73,19 @@ const Accordion = ({
         <View style={styles.expandedWrap}>
           {innerScroll ? (
             <View style={styles.lifeInset}>
-              <View style={[styles.lifeScrollFrame, {height}]}>
+              <View style={[styles.lifeScrollFrame, {maxHeight: height}]}>
                 <ScrollView
                   nestedScrollEnabled
-                  showsVerticalScrollIndicator={false}
+                  showsVerticalScrollIndicator
+                  persistentScrollbar
+                  scrollEnabled={hasMoreText}
                   scrollEventThrottle={32}
                   onLayout={(event) => {
                     const viewport = event.nativeEvent.layout.height;
                     setScrollMetrics((old) => ({...old, viewport}));
                   }}
                   onContentSizeChange={(_width, contentHeight) => {
-                    setHasMoreText(contentHeight > height + 4);
+                    setHasMoreText(contentHeight > scrollMetrics.viewport + 2);
                     setScrollMetrics((old) => ({...old, content: contentHeight}));
                   }}
                   onScroll={({nativeEvent}) => {
@@ -139,7 +141,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const prayer = (uk && feast?.prayer_content_uk) || feast?.prayer_content;
   const large = width >= 560;
   const heroImageWidth = large ? 180 : Math.min(132, width * 0.34);
-  const lifeHeight = Math.max(500, Math.min(height * 0.78, 720));
+  const lifeHeight = Math.min(420, height * 0.78);
 
   return (
     <View style={styles.screen}>
@@ -303,7 +305,7 @@ const styles = StyleSheet.create({
   readingContent: {paddingHorizontal: 15, paddingTop: 14, paddingBottom: 16},
   lifeInset: {marginHorizontal: 10, marginTop: 10, marginBottom: 12,
     borderRadius: 13, borderWidth: 1, borderColor: '#E7D6B6', backgroundColor: '#FFF8EB', overflow: 'hidden'},
-  lifeScrollContent: {flexGrow: 1, paddingHorizontal: 9},
+  lifeScrollContent: {paddingHorizontal: 9, paddingBottom: 38},
   lifeScrollFrame: {position: 'relative'},
   lifeScrollTrack: {position: 'absolute', right: 3, top: 5, bottom: 5,
     width: 2, backgroundColor: 'rgba(122,79,45,0.10)', borderRadius: 2},
