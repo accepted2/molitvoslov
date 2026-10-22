@@ -1,6 +1,7 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   Image,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -35,6 +36,7 @@ const Accordion = ({
   height = 320,
 }) => {
   const [open, setOpen] = useState(initialOpen || focusHighlight);
+  useEffect(() => { if (focusHighlight) setOpen(true); }, [focusHighlight]);
   if (!text) return null;
   return (
     <View style={[styles.accordion, focusHighlight && {borderColor: "#C49A46", borderWidth: 2}]}>
@@ -60,7 +62,7 @@ const Accordion = ({
             </Text>
           )}
         </View>
-        <Text style={styles.chevron}>{open ? '⌃' : '⌄'}</Text>
+        <View style={[styles.chevron, open && styles.chevronOpen]} />
       </Pressable>
       {open && (
         <>
@@ -90,6 +92,7 @@ const Accordion = ({
 export const SaintDetailScreen = ({route, navigation}) => {
   const {language} = useLanguage();
   const {feast, date, focusSection} = route.params || {};
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const {width, height} = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const uk = language === 'uk';
@@ -113,11 +116,13 @@ export const SaintDetailScreen = ({route, navigation}) => {
       >
         <View style={[styles.heroCard, large && styles.heroCardWide]}>
           {!!image && (
-            <Image
-              source={image}
-              style={[styles.image, {width: heroImageWidth, height: heroImageWidth * 1.24}]}
-              resizeMode="contain"
-            />
+            <Pressable onPress={() => setImageViewerOpen(true)} accessibilityRole="button"
+              accessibilityLabel={uk ? 'Збільшити ікону' : 'Увеличить икону'}>
+              <Image source={image}
+                style={[styles.image, {width: heroImageWidth, height: heroImageWidth * 1.24}]}
+                resizeMode="contain" />
+              <Text style={styles.imageHint}>{uk ? 'Збільшити' : 'Увеличить'} ↗</Text>
+            </Pressable>
           )}
           <View style={styles.heroText}>
             <Text style={styles.eyebrow}>
@@ -133,31 +138,31 @@ export const SaintDetailScreen = ({route, navigation}) => {
 
         <Accordion
           title={uk ? 'Житіє' : 'Житие'}
-          icon="▤"
+          icon="✦"
           text={life}
-          initialOpen={!focusSection || focusSection === "life"}
+          initialOpen={focusSection === "life"}
           focusHighlight={focusSection === "life"}
-          innerScroll={String(life || '').length > 550}
+          innerScroll
           height={lifeHeight}
         />
         <Accordion
           title={uk ? 'Тропар' : 'Тропарь'}
           focusHighlight={focusSection === 'troparion'}
-          icon="♫"
+          icon="♪"
           text={troparion}
           subtitle={feast?.troparion_echo ? 'Глас ' + feast.troparion_echo : feast?.troparion_title}
         />
         <Accordion
           title="Кондак"
           focusHighlight={focusSection === "kontakion"}
-          icon="▦"
+          icon="✧"
           text={kontakion}
           subtitle={feast?.kontakion_echo ? 'Глас ' + feast.kontakion_echo : feast?.kontakion_title}
         />
-        {!!prayer && <Accordion title={uk ? 'Молитва' : 'Молитва'} icon="☦" text={prayer} />}
+        {!!prayer && <Accordion title={uk ? 'Молитва' : 'Молитва'} icon="✝" text={prayer} />}
         {!!date && (
           <View style={styles.dateCard}>
-            <Text style={styles.dateIcon}>▣</Text>
+            <Text style={styles.dateIcon}>☦</Text>
             <View style={{flex: 1}}>
               <Text style={styles.dateTitle}>{uk ? 'Дата вшанування' : 'Дата празднования'}</Text>
               <Text style={styles.dateSubtitle}>{formatDate(date, language)}</Text>
@@ -176,11 +181,21 @@ export const SaintDetailScreen = ({route, navigation}) => {
           accessibilityRole="button"
           onPress={() => navigation.navigate('ChurchCalendar', date ? {date} : {})}
         >
-          <Text style={styles.bottomButtonText}>
-            ▣ {uk ? 'Перейти до календаря' : 'Перейти в календарь'} ›
-          </Text>
+          <Text style={styles.bottomButtonIcon}>☷</Text>
+          <Text style={styles.bottomButtonText}>{uk ? 'Перейти до календаря' : 'Перейти в календарь'}</Text>
+          <Text style={styles.bottomButtonArrow}>›</Text>
         </Pressable>
       </View>
+      <Modal visible={imageViewerOpen} transparent animationType="fade"
+        onRequestClose={() => setImageViewerOpen(false)} statusBarTranslucent>
+        <View style={styles.imageViewer}>
+          <Pressable style={[styles.imageClose, {top: Math.max(insets.top, 20)}]}
+            onPress={() => setImageViewerOpen(false)} accessibilityLabel={uk ? 'Закрити' : 'Закрыть'}>
+            <Text style={styles.imageCloseText}>✕</Text>
+          </Pressable>
+          {!!image && <Image source={image} resizeMode="contain" style={styles.fullscreenImage} />}
+        </View>
+      </Modal>
       <FixedSectionHeader
         title={uk ? 'Святий дня' : 'Святой дня'}
         navigation={navigation}
@@ -208,7 +223,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   heroCardWide: {padding: 20, gap: 20},
-  image: {borderRadius: 7, backgroundColor: '#F5E4C6'},
+  image: {borderRadius: 9, backgroundColor: '#F5E4C6'},
+  imageHint: {textAlign: 'center', color: '#765238', fontSize: 11, marginTop: 5},
   heroText: {flex: 1, minWidth: 0},
   eyebrow: {fontSize: 10, letterSpacing: 0.5, color: '#9A6B37', fontWeight: '800'},
   saintTitle: {
@@ -253,14 +269,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3E4C9',
     marginRight: 12,
   },
-  accordionIconText: {fontSize: 23, color: '#7B5028'},
+  accordionIconText: {fontSize: 19, color: '#7A4F2D', fontWeight: '700'},
   accordionHeading: {flex: 1},
   accordionTitle: {fontFamily: 'serif', fontWeight: '700', fontSize: 20, color: '#3D221A'},
   preview: {marginTop: 3, color: '#7A6653', fontSize: 12},
-  chevron: {fontSize: 24, color: '#8B5F32', paddingHorizontal: 5},
+  chevron: {width: 10, height: 10, borderRightWidth: 2, borderBottomWidth: 2,
+    borderColor: '#765238', transform: [{rotate: '45deg'}], marginHorizontal: 10, marginTop: -5},
+  chevronOpen: {transform: [{rotate: '225deg'}], marginTop: 5},
   subtitle: {fontFamily: 'serif', color: '#916A46', fontSize: 13, marginTop: 8},
-  lifeScroll: {marginTop: 10, borderRadius: 13, backgroundColor: '#FFFCF6'},
-  lifeScrollContent: {paddingHorizontal: 12, paddingBottom: 16},
+  lifeScroll: {marginTop: 10, borderRadius: 13, backgroundColor: '#FFFCF6',
+    borderWidth: 1, borderColor: 'rgba(123,79,45,0.12)'},
+  lifeScrollContent: {paddingHorizontal: 12, paddingBottom: 16, paddingRight: 18},
   body: {
     fontFamily: 'serif',
     color: '#422F24',
@@ -284,11 +303,21 @@ const styles = StyleSheet.create({
   empty: {textAlign: 'center', marginTop: 14, color: '#8A6847'},
   bottomBar: {paddingHorizontal: 13, paddingTop: 9, backgroundColor: '#F0DFC1'},
   bottomButton: {
+    flexDirection: 'row',
+    gap: 12,
     minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#70441F',
     borderRadius: 26,
   },
-  bottomButtonText: {fontFamily: 'serif', fontSize: 17, color: '#FFF5E6', fontWeight: '700'},
+  bottomButtonText: {fontFamily: 'serif', fontSize: 16, color: '#FFF5E6', fontWeight: '700'},
+  bottomButtonIcon: {fontSize: 23, fontWeight: '600', color: '#FFF5E6'},
+  bottomButtonArrow: {fontSize: 25, color: '#FFF5E6'},
+  imageViewer: {flex: 1, backgroundColor: 'rgba(14, 12, 10, 0.97)',
+    alignItems: 'center', justifyContent: 'center'},
+  fullscreenImage: {width: '96%', height: '86%'},
+  imageClose: {position: 'absolute', right: 18, zIndex: 10, width: 44, height: 44,
+    borderRadius: 22, backgroundColor: '#3E3630', alignItems: 'center', justifyContent: 'center'},
+  imageCloseText: {fontSize: 24, color: '#FFFFFF'},
 });
