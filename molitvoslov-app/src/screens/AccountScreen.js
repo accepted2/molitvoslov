@@ -1,10 +1,10 @@
 import React, {useEffect, useState} from 'react';
 
-import {ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import {getCurrentBackendUser} from '../services/backendAuth';
+import {getCurrentBackendUser, deleteBackendAccount} from '../services/backendAuth';
 
 import {signInWithGoogle, signOutFromGoogle} from '../services/googleAuth';
 
@@ -54,6 +54,21 @@ export const AccountScreen = ({navigation}) => {
   const [googleLoading, setGoogleLoading] = useState(false);
 
   const [googleError, setGoogleError] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const deleteAccount = () => Alert.alert(
+    'Удалить аккаунт?',
+    'Серверный аккаунт, избранное, прогресс чтения, помянники и личные молитвословы будут удалены без возможности восстановления. Локальные данные на устройстве могут сохраниться.',
+    [{text: 'Отмена', style: 'cancel'}, {text: 'Удалить навсегда', style: 'destructive', onPress: async () => {
+      setDeletingAccount(true);
+      try {
+        await deleteBackendAccount();
+        setGoogleUser(null);
+        Alert.alert('Аккаунт удалён', 'Серверный аккаунт и связанные с ним данные удалены.');
+      } catch (error) {
+        Alert.alert('Ошибка удаления', error.message || 'Проверьте подключение к интернету.');
+      } finally { setDeletingAccount(false); }
+    }}]
+  );
 
   useEffect(() => {
     const loadUser = async () => {
@@ -196,6 +211,9 @@ export const AccountScreen = ({navigation}) => {
 
               {!!googleUser.email && <Text style={styles.googleEmail}>{googleUser.email}</Text>}
 
+              <Pressable disabled={deletingAccount} onPress={deleteAccount} style={{paddingVertical: 12, marginTop: 14}}>
+                <Text style={{color: '#A33A32', fontWeight: '700'}}>Удалить аккаунт и облачные данные</Text>
+              </Pressable>
               <Pressable
                 onPress={googleLogout}
                 style={({pressed}) => [styles.button, pressed && styles.pressed]}
