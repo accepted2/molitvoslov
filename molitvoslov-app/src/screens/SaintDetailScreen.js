@@ -101,7 +101,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const prayer = (uk && feast?.prayer_content_uk) || feast?.prayer_content;
   const large = width >= 560;
   const heroImageWidth = large ? 180 : Math.min(132, width * 0.34);
-  const lifeHeight = Math.max(235, Math.min(390, height * 0.39));
+  const lifeHeight = Math.max(500, Math.min(height * 0.78, 720));
 
   return (
     <View style={styles.screen}>
@@ -135,7 +135,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
           icon="▤"
           text={life}
           initialOpen
-          innerScroll={String(life || '').length > 550}
+          innerScroll
           height={lifeHeight}
         />
         <Accordion
