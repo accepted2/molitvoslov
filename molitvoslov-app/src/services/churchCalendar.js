@@ -100,6 +100,10 @@ export const getCalendarDay = async (
   }
 
   const offline = skipOffline ? null : await getOfflineCalendarDay(dateKey, lang);
+  if (!force && offline) {
+    dayCache.set(key, offline);
+    return offline;
+  }
   const online = await canReachNetwork();
 
   if (!online && offline) {
@@ -120,8 +124,8 @@ export const getCalendarDay = async (
     }
 
     const enriched = applyYearMarkers(data, await loadYearMarkers(Number(dateKey.slice(0, 4))));
-    dayCache.set(key, enriched);
     await storeCalendarDay(dateKey, lang, enriched);
+    dayCache.set(key, enriched);
 
     return enriched;
   } catch (error) {
@@ -151,6 +155,13 @@ export const getCalendarMonth = async (
   }
 
   const offline = skipOffline ? null : await getOfflineCalendarMonth(year, month, lang);
+  if (!force && offline) {
+    monthCache.set(key, offline);
+    (offline.days || []).forEach((day) => {
+      if (day?.date_gregorian) dayCache.set(`${lang}:${day.date_gregorian}`, day);
+    });
+    return offline;
+  }
   const online = await canReachNetwork();
 
   if (!online && offline) {
@@ -178,8 +189,8 @@ export const getCalendarMonth = async (
     }
 
     const enriched = applyYearMarkersToMonth(data, await loadYearMarkers(year));
-    monthCache.set(key, enriched);
     await storeCalendarMonth(enriched, lang);
+    monthCache.set(key, enriched);
 
     (enriched?.days || []).forEach((day) => {
       if (day?.date_gregorian) {
