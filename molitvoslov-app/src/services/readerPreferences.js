@@ -75,3 +75,9 @@ export const saveReadingSettings = async (settings) => {
   setDefaultReaderMode(result.defaultMode);
   return result;
 };
+
+export const resetReadingSettings = async () => {
+  await AsyncStorage.removeItem(GLOBAL_PREFERENCES_KEY);
+  setDefaultReaderMode(DEFAULT_READING_SETTINGS.defaultMode);
+  return {...DEFAULT_READING_SETTINGS};
+};
