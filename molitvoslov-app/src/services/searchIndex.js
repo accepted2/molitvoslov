@@ -348,6 +348,9 @@ const buildSearchIndexIterator = function* (language = 'ru') {
         const fields = [
           field(feast.title, '', 'title', 540),
           field(feast.title_uk, 'ukrainian', 'title', 520),
+          // The memorial title is often genitive: Николая / Николаю.
+          // Also index the nominative form for ordinary name searches.
+          field(/никола[яюи]/i.test(feast.title || '') ? 'Николай' : '', '', 'title', 450),
           field(feast.life_title, '', 'title', 440),
           field(feast.life_content, 'russian', 'content', 100),
           field(feast.life_content_uk, 'ukrainian', 'content', 100),
