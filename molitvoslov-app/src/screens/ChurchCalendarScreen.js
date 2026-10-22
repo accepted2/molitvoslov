@@ -292,8 +292,8 @@ const ExpandableTextBlock = ({title, subtitle, text}) => {
   );
 };
 
-const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, onLayout}) => {
-  const [expanded, setExpanded] = useState(false);
+const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, onLayout, initiallyExpanded = false}) => {
+  const [expanded, setExpanded] = useState(initiallyExpanded);
 
   if (!title) return null;
 
@@ -379,7 +379,7 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
   );
 };
 
-const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout}) => {
+const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout, expandFirst = false}) => {
   const [showAll, setShowAll] = useState(false);
 
   if (!readings.length) {
@@ -395,6 +395,7 @@ const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout}) =>
         <ReadingLink
           key={reading.id || reading.sync_uid || `${kind}-${index}-${reading.title}`}
           kind={kind}
+          initiallyExpanded={expandFirst && index === 0}
           title={reading.title}
           label={reading.label}
           sequence={readings.length > 1 ? `${index + 1}/${readings.length}` : ''}
@@ -840,6 +841,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
             <ReadingGroup
               kind="gospel"
+              expandFirst={route.params?.section === "gospel"}
               readings={gospelReadings}
               navigation={navigation}
               copy={copy}
@@ -849,6 +851,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
             <ReadingGroup
               kind="apostle"
+              expandFirst={route.params?.section === "apostle"}
               readings={apostleReadings}
               navigation={navigation}
               copy={copy}
