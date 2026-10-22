@@ -192,7 +192,7 @@ export const AccountScreen = ({navigation}) => {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.screen}>
-        <ScrollView style={{flex: 1}} contentContainerStyle={[styles.content, {paddingBottom: 110}]}>
+        <ScrollView style={{flex: 1}} contentContainerStyle={[styles.content, {flex: undefined, flexGrow: 1, paddingBottom: 110}]}>
           <Text style={styles.title}>Аккаунт</Text>
 
           {loading ? (
