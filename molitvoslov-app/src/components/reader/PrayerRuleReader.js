@@ -6539,6 +6539,7 @@ export default function PrayerRuleReader({
     [language, t]
   );
 
+  const readerBg = readingSettings.palette === 'custom' ? readingSettings.customBackground : ({night:'#29231F',warm:'#DEBE94',ivory:'#FFFDF3'}[readingSettings.palette] || '#FFF4DE');
   const html = useMemo(
     () => {
       const markup = buildHtml({
@@ -6822,6 +6823,7 @@ export default function PrayerRuleReader({
         styles.container,
         {
           paddingBottom: Math.max(insets.bottom, 8),
+          backgroundColor: readerBg,
         },
       ]}
     >
@@ -6841,12 +6843,12 @@ export default function PrayerRuleReader({
         overScrollMode="never"
         textZoom={100}
         onMessage={handleMessage}
-        style={[styles.webView, {backgroundColor: readingSettings.palette === 'night' ? '#29231F' : readingSettings.palette === 'custom' ? readingSettings.customBackground : readingSettings.palette === 'warm' ? '#DEBE94' : readingSettings.palette === 'ivory' ? '#FFFDF3' : '#FFF4DE'}]}
+        style={[styles.webView, {backgroundColor: readerBg}]}
       />
 
       <LinearGradient
         pointerEvents="none"
-        colors={['rgba(255, 244, 222, 0)', 'rgba(255, 244, 222, 0.72)', '#FFF4DE']}
+        colors={['transparent', readerBg + 'BB', readerBg]}
         locations={[0, 0.58, 1]}
         style={[
           styles.bottomFade,
