@@ -10,6 +10,7 @@ import {
 import {useLanguage} from '../../context/LanguageContext';
 
 import SelectableDocumentReader from './SelectableDocumentReader';
+import {getReadingSettings} from '../../services/readerPreferences';
 import {translate} from '../../i18n/translations';
 
 const normalizeText = (value) =>
@@ -91,6 +92,18 @@ export default function ExpandablePrayerBlock({
   ]);
 
   const [viewMode, setViewMode] = useState(READER_LANGUAGE_MODES.CHURCH);
+  useEffect(() => {
+    let active = true;
+    getReadingSettings().then((settings) => {
+      if (!active) return;
+      const requested = settings.defaultMode;
+      const available = requested === READER_LANGUAGE_MODES.RUSSIAN || requested === READER_LANGUAGE_MODES.BOTH
+        ? !!normalizedSecondaryText : requested === READER_LANGUAGE_MODES.TRADITIONAL
+          ? !!normalizedTraditionalText : true;
+      setViewMode(available ? requested : READER_LANGUAGE_MODES.CHURCH);
+    }).catch(console.warn);
+    return () => { active = false; };
+  }, [normalizedSecondaryText, normalizedTraditionalText]);
 
   const loadSaved = async () => {
     try {
