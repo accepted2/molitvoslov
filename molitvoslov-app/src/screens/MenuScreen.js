@@ -7,6 +7,7 @@ import {
   ImageBackground,
   InteractionManager,
   ScrollView,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -17,7 +18,6 @@ import {getDailyQuote} from '../services/dailyQuote';
 import {QuoteOfDayWidget} from '../widgets/QuoteOfDayWidget';
 import {useFocusEffect} from '@react-navigation/native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
-import {FadePressable as Pressable} from '../components/feedback/FadePressable';
 import {StatusBar} from 'expo-status-bar';
 
 import {BottomNav} from '../components/navigation/BottomNav';
