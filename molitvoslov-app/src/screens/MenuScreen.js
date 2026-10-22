@@ -2,12 +2,10 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {LinearGradient} from 'expo-linear-gradient';
 import {
   ActivityIndicator,
-  Animated,
   Alert,
   Image,
   ImageBackground,
   InteractionManager,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -19,6 +17,7 @@ import {getDailyQuote} from '../services/dailyQuote';
 import {QuoteOfDayWidget} from '../widgets/QuoteOfDayWidget';
 import {useFocusEffect} from '@react-navigation/native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
+import {FadePressable as Pressable} from '../components/feedback/FadePressable';
 import {StatusBar} from 'expo-status-bar';
 
 import {BottomNav} from '../components/navigation/BottomNav';
@@ -214,19 +213,9 @@ const BellGlyph = () => (
 );
 
 const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress}) => {
-  const fade = useRef(new Animated.Value(0)).current;
-  const animatePress = (toValue) => {
-    Animated.timing(fade, {
-      toValue,
-      duration: toValue ? 140 : 210,
-      useNativeDriver: true,
-    }).start();
-  };
   return (
   <Pressable
     onPress={onPress}
-    onPressIn={() => animatePress(1)}
-    onPressOut={() => animatePress(0)}
     style={styles.libraryCard}
   >
     <ImageBackground
@@ -288,8 +277,6 @@ const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress})
     <View style={styles.libraryChevron}>
       <Text style={styles.libraryChevronText}>›</Text>
     </View>
-    <Animated.View pointerEvents="none"
-      style={[StyleSheet.absoluteFillObject, styles.libraryPressFade, {opacity: fade.interpolate({inputRange: [0, 1], outputRange: [0, 0.11]})}]} />
   </Pressable>
   );
 };
@@ -2624,7 +2611,6 @@ const styles = StyleSheet.create({
     marginTop: 11,
     gap: 8,
   },
-  libraryPressFade: {backgroundColor: '#70441F', borderRadius: 17},
   libraryCard: {
     position: 'relative',
     minHeight: 80,
