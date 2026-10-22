@@ -15,6 +15,9 @@ const tokenMatch = (title, query) => {
   const words = searchTokens(title);
   return searchTokens(query).every((token) => words.some((word) => relatedToken(word, token)));
 };
+const isIcon = (title) => /икон[аыуе]?|богородиц[аы]|образ[ауы]?|знамени[ея]/i.test(title) && /икон|образ|знамен/i.test(title);
+const isFeast = (title) => /рождеств|крещени|богоявлени|сретени|преображени|воздвижени|успени|введени|покров|вход господ|вознесени|троиц|пятидесятниц|пасх|воскресени христ|благовещени|обрезани господ/i.test(title);
+const storyLabel = (title, lang) => isIcon(title) ? (lang === 'uk' ? 'Історія ікони' : 'История иконы') : isFeast(title) ? (lang === 'uk' ? 'Історія свята' : 'История праздника') : (lang === 'uk' ? 'Житіє' : 'Житие');
 const completeness = (r) => Number(r.hasLife) * 20 + Number(r.hasIcon) * 8 +
   Number(r.hasTroparion) * 4 + Number(r.hasKontakion) * 2;
 const buildCatalog = async () => {
@@ -42,7 +45,7 @@ const buildCatalog = async () => {
   }
   return [...seen.values()];
 };
-export const searchCalendarNames = async (query, language = 'ru') => {
+export const searchCalendarNames = async (query, language = 'ru', section = 'all') => {
   const text = normalized(query);
   if (text.length < 3) return [];
   if (!catalogPromise) catalogPromise = buildCatalog().catch((error) => {
@@ -52,7 +55,8 @@ export const searchCalendarNames = async (query, language = 'ru') => {
   const catalog = await catalogPromise;
   const isLifeQuery = /^(?:житие|житие святого|житие святителя)\s+/.test(text);
   const needle = isLifeQuery ? text.replace(/^житие(?: святого| святителя)?\s+/, '') : text;
-  const matched = catalog.filter((r) => {
+  const matched = catalog.filter((r) => (section !== 'stories' || r.hasLife) &&
+    (section !== 'hymns' || r.hasTroparion || r.hasKontakion)).filter((r) => {
     const title = language === 'uk' ? r.title_uk || r.title : r.title;
     return tokenMatch(title, needle) || tokenMatch(r.title, needle) ||
       tokenMatch(r.feast.life_title, needle);
@@ -68,14 +72,17 @@ export const searchCalendarNames = async (query, language = 'ru') => {
   return matched.flatMap((r) => {
     const title = language === 'uk' ? r.title_uk || r.title : r.title;
     const base = {feast: r.feast, date: r.date};
-    const results = [{
+    const label = storyLabel(r.title, language);
+    const includeStory = !!r.hasLife && section !== 'hymns';
+    const includeHymns = section !== 'stories';
+    const results = includeStory ? [{
       id: 'calendar-name:' + r.date + ':' + titleKey(r.title),
       group: 'calendar', kind: 'calendar-saint',
-      title: (r.hasLife ? (language === 'uk' ? 'Житіє — ' : 'Житие — ') : '') + title,
+      title: label + ' — ' + title,
       snippet: '', route: {name: 'SaintDetail',
         params: {...base, focusSection: r.hasLife ? 'life' : undefined}},
-    }];
-    if (!isLifeQuery) {
+    }] : [];
+    if (!isLifeQuery && includeHymns) {
       for (const [kind, label, text] of [
         ['troparion', language === 'uk' ? 'Тропар' : 'Тропарь', r.feast.troparion_content],
         ['kontakion', 'Кондак', r.feast.kontakion_content],
