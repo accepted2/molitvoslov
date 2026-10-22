@@ -113,9 +113,11 @@ const sourceForSearchResult = (item) => {
   return source === item?.title ? '' : source;
 };
 
-const isGenericSectionHeading = (title) =>
-  /^(?:молитва|молитвы|молитви|тропарь|тропар[ьи]|кондак|кондаки)(?:\s*(?:№\s*)?\d+|\s+[ivxlcdm]+)?$/i
-    .test(String(title || '').trim().replace(/[.:;!?]+$/, ''));
+const isGenericSectionHeading = (title) => {
+  const value = String(title || '').trim().replace(/[.:;!?]+$/, '');
+  return /^(?:молитва|молитвы|молитви|тропарь|тропар[ьи]|кондак|кондаки)(?:\s*(?:№\s*)?\d+|\s+[ivxlcdm]+)?$/i.test(value) ||
+    /^песнь\s+\d+\s*[—-]\s*тропар[ьи]$/i.test(value);
+};
 
 const HighlightedText = ({text, query, style, highlightStyle, numberOfLines}) => {
   const segments = useMemo(() => getHighlightSegments(text, query), [text, query]);
