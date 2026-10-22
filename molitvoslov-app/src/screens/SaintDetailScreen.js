@@ -17,6 +17,7 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {useLanguage} from '../context/LanguageContext';
 import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
+import {getCalendarDay} from '../services/churchCalendar';
 
 const formatDate = (value, language) => {
   if (!value) return '';
@@ -133,19 +134,44 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const [calendarFeast, setCalendarFeast] = useState(feast || null);
   useEffect(() => {
     let active = true;
+    setCalendarFeast(feast || null);
     if (!date) return undefined;
-    getOfflineCalendarDay(date, language).then((day) => {
-      if (!active || !day) return;
-      const list = [day.main_feast, ...(day.all_feasts || [])].filter(Boolean);
-      const matched = list.find((entry) =>
-        (feastUid && String(entry.sync_uid) === String(feastUid)) ||
-        (feastId != null && String(entry.id) === String(feastId)) ||
-        (feast?.sync_uid && String(entry.sync_uid) === String(feast.sync_uid)) ||
-        (feast?.id != null && String(entry.id) === String(feast.id)) ||
-        ((feastTitle || feast?.title) && entry.title === (feastTitle || feast?.title))
+    const findFeast = (day) => {
+      const list = [day?.main_feast, ...(day?.all_feasts || [])].filter(Boolean);
+      const identity = feastUid || feast?.sync_uid;
+      const id = feastId ?? feast?.id;
+      const name = feastTitle || feast?.title;
+      const candidates = list.filter((entry) =>
+        (identity && String(entry.sync_uid) === String(identity)) ||
+        (id != null && String(entry.id) === String(id)) ||
+        (name && entry.title === name)
       );
-      if (matched) setCalendarFeast(matched);
-    }).catch((error) => console.warn('Saint card:', error?.message || error));
+      const fullness = (entry) =>
+        Number(Boolean(entry.life_content || entry.life_content_uk)) * 8 +
+        Number(Boolean(entry.icon_url)) * 4 +
+        Number(Boolean(entry.troparion_content)) * 2 +
+        Number(Boolean(entry.kontakion_content));
+      return candidates.sort((a, b) => fullness(b) - fullness(a))[0] || null;
+    };
+    const update = (day) => {
+      if (!active || !day) return;
+      const matched = findFeast(day);
+      if (matched) setCalendarFeast((previous) => {
+        const merged = {...(feast || {}), ...(previous || {})};
+        for (const [key, value] of Object.entries(matched)) {
+          if (value !== null && value !== undefined && value !== '') merged[key] = value;
+        }
+        return merged;
+      });
+    };
+    getOfflineCalendarDay(date, language).then(update).catch((error) =>
+      console.warn('Saint card offline:', error?.message || error)
+    );
+    // Search and calendar must resolve against the same latest day payload;
+    // an offline search record may contain only the troparion and kontakion.
+    getCalendarDay(date, {language, force: true, skipOffline: true})
+      .then(update)
+      .catch((error) => console.warn('Saint card refresh:', error?.message || error));
     return () => {active = false;};
   }, [date, feastId, feastUid, feastTitle, language, feast]);
   const resolvedFeast = calendarFeast || feast || {};
