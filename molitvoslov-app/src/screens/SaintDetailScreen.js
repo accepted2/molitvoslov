@@ -17,7 +17,6 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {useLanguage} from '../context/LanguageContext';
 import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
-import {getCalendarDay} from '../services/churchCalendar';
 
 const formatDate = (value, language) => {
   if (!value) return '';
@@ -167,11 +166,8 @@ export const SaintDetailScreen = ({route, navigation}) => {
     if (!feast) getOfflineCalendarDay(date, language).then(update).catch((error) =>
       console.warn('Saint card offline:', error?.message || error)
     );
-    // Search and calendar must resolve against the same latest day payload;
-    // an offline search record may contain only the troparion and kontakion.
-    if (!feast || !feast.life_content || !feast.icon_url) getCalendarDay(date, {language, force: true, skipOffline: true})
-      .then(update)
-      .catch((error) => console.warn('Saint card refresh:', error?.message || error));
+    // The search result already passes its complete calendar card. Do not
+    // overwrite it with a second, potentially older server record.
     return () => {active = false;};
   }, [date, feastId, feastUid, feastTitle, language, feast]);
   const resolvedFeast = calendarFeast || feast || {};
