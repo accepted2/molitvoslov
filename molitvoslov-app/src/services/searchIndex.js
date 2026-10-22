@@ -1,8 +1,6 @@
 import {bibleContent} from './bibleContent';
 import {getCurrentBibleContent} from './bibleStore';
 import {getCurrentContent} from './contentStore';
-import {getBundledCalendarMonth} from './calendarOfflineStore';
-
 
 export const SEARCH_GROUPS = {
   ALL: 'all',
@@ -328,68 +326,6 @@ const buildSearchIndexIterator = function* (language = 'ru') {
 
   const entries = [];
   const structuredTextIds = collectStructuredTextIds(content);
-
-  // Calendar saints live in a separate offline bundle, not in public-content.
-  // Index actual feast objects so opening search results never creates
-  // synthetic saint cards without their icon, life, troparion or kontakion.
-  const seenCalendar = new Set();
-  for (let month = 1; month <= 12; month += 1) {
-    const calendar = getBundledCalendarMonth(2026, month, language);
-    for (const day of calendar?.days || []) {
-      const date = day.date_gregorian;
-      for (const feast of day.all_feasts || (day.main_feast ? [day.main_feast] : [])) {
-        const saintTitle = localized(feast, 'title', language);
-        if (!saintTitle || !date) continue;
-        const identity = String(feast.sync_uid || feast.id || saintTitle);
-        const dedupKey = identity + ':' + language;
-        if (seenCalendar.has(dedupKey)) continue;
-        seenCalendar.add(dedupKey);
-        const base = {name: 'SaintDetail', params: {feast, date}};
-        const fields = [
-          field(feast.title, '', 'title', 540),
-          field(feast.title_uk, 'ukrainian', 'title', 520),
-          // The memorial title is often genitive: Николая / Николаю.
-          // Also index the nominative form for ordinary name searches.
-          field(/никола[яюи]/i.test(feast.title || '') ? 'Николай' : '', '', 'title', 450),
-          field(feast.life_title, '', 'title', 440),
-          field(feast.life_content, 'russian', 'content', 100),
-          field(feast.life_content_uk, 'ukrainian', 'content', 100),
-        ];
-        entries.push(makeEntry({
-          id: 'calendar:' + identity,
-          group: SEARCH_GROUPS.CALENDAR,
-          kind: 'calendar-saint',
-          title: saintTitle,
-          source: 'Календарь',
-          fields,
-          route: {...base, params: {...base.params, focusSection: feast.life_content ? 'life' : undefined}},
-          preview: feast.life_content || '',
-        }));
-        for (const [kind, label, text, textUk] of [
-          ['troparion', 'Тропарь', feast.troparion_content, feast.troparion_content_uk],
-          ['kontakion', 'Кондак', feast.kontakion_content, feast.kontakion_content_uk],
-        ]) {
-          if (!text && !textUk) continue;
-          entries.push(makeEntry({
-            id: 'calendar:' + identity + ':' + kind,
-            group: SEARCH_GROUPS.CALENDAR,
-            kind: 'calendar-' + kind,
-            title: label + ' — ' + saintTitle,
-            source: saintTitle,
-            fields: [
-              field(saintTitle, '', 'title', 410),
-              field(text, 'russian', 'content', 125),
-              field(textUk, 'ukrainian', 'content', 125),
-            ],
-            route: {...base, params: {...base.params, focusSection: kind}},
-            preview: language === 'uk' ? (textUk || text) : text,
-          }));
-        }
-      }
-    }
-    yield entries;
-  }
-
 
   for (const rule of content?.prayer_rules?.list || []) {
     ((rule) => {
