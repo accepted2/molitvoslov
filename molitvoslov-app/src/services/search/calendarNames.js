@@ -4,9 +4,9 @@ import {normalizeSearchText} from './normalize';
 // A compact, cached index of names only. No changes to the existing FTS index.
 let catalogPromise = null;
 const normalized = (text) => normalizeSearchText(text)
-  .replace(/никола[яюи](?=\\s|$)/g, 'николай')
-  .replace(/мир\\s+ликийских|мирликийских|мирликийский|мирликийского/g, 'мирликийск');
-const titleKey = (title) => normalized(title).replace(/^(?:житие|житие во святых|святитель|свт|св)\\s+/g, '');
+  .replace(/никола[яюи](?=\s|$)/g, 'николай')
+  .replace(/мир\s+ликийских|мирликийских|мирликийский|мирликийского/g, 'мирликийск');
+const titleKey = (title) => normalized(title).replace(/^(?:житие|житие во святых|святитель|свт|св)\s+/g, '');
 const completeness = (r) => Number(r.hasLife) * 20 + Number(r.hasIcon) * 8 +
   Number(r.hasTroparion) * 4 + Number(r.hasKontakion) * 2;
 const buildCatalog = async () => {
@@ -42,8 +42,8 @@ export const searchCalendarNames = async (query, language = 'ru') => {
     throw error;
   });
   const catalog = await catalogPromise;
-  const isLifeQuery = /^(?:житие|житие святого|житие святителя)\\s+/.test(text);
-  const needle = isLifeQuery ? text.replace(/^житие(?: святого| святителя)?\\s+/, '') : text;
+  const isLifeQuery = /^(?:житие|житие святого|житие святителя)\s+/.test(text);
+  const needle = isLifeQuery ? text.replace(/^житие(?: святого| святителя)?\s+/, '') : text;
   const matched = catalog.filter((r) => {
     const title = language === 'uk' ? r.title_uk || r.title : r.title;
     return normalized(title).includes(needle) || normalized(r.title).includes(needle) ||
