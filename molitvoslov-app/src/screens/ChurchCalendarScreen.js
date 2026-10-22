@@ -271,6 +271,8 @@ const FormattedCalendarText = ({text}) => {
 
 const ExpandableTextBlock = ({title, subtitle, text, life = false}) => {
   const [expanded, setExpanded] = useState(false);
+  const {height: windowHeight} = useWindowDimensions();
+  const readerHeight = Math.max(500, Math.min(windowHeight * 0.78, 720));
 
   if (!text) return null;
 
@@ -289,7 +291,7 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false}) => {
 
       {expanded && (life ? (
         <View style={styles.calendarLifeInset}>
-          <View style={styles.calendarLifeScrollFrame}>
+          <View style={[styles.calendarLifeScrollFrame, {height: readerHeight}]}>
             <ScrollView
               nestedScrollEnabled
               showsVerticalScrollIndicator
