@@ -705,7 +705,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
                   style={[
                     styles.dayBubble,
                     appearance && styles[`dayBubble_${appearance}`],
-                    isToday && styles.dayBubbleToday,
+                    selected && styles.dayBubbleSelected,
                   ]}
                 >
                   <Text
@@ -1019,15 +1019,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 10,
   },
-  dayCellSelected: {
-    backgroundColor: 'rgba(184,123,56,0.11)',
-  },
+  dayCellSelected: {},
   dayBubble: {
     width: 32,
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 16,
+    backgroundColor: 'rgba(139, 94, 49, 0.08)',
   },
   dayBubble_fast: {backgroundColor: '#A78AB9'},
   dayBubble_solid: {backgroundColor: '#E0B65C'},
@@ -1035,9 +1034,9 @@ const styles = StyleSheet.create({
   dayBubble_easter: {backgroundColor: '#C99535'},
   dayBubble_memorial: {backgroundColor: '#A69A86'},
   dayNumberMarked: {fontWeight: '700', color: '#6A4B3B'},
-  dayBubbleToday: {
+  dayBubbleSelected: {
     borderWidth: 2,
-    borderColor: '#9A642E',
+    borderColor: '#78441D',
   },
   dayNumber: {
     color: '#493225',
