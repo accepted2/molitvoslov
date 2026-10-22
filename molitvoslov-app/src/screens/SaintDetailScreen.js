@@ -30,13 +30,14 @@ const Accordion = ({
   text,
   icon,
   initialOpen = false,
+  focusHighlight = false,
   innerScroll = false,
   height = 320,
 }) => {
-  const [open, setOpen] = useState(initialOpen);
+  const [open, setOpen] = useState(initialOpen || focusHighlight);
   if (!text) return null;
   return (
-    <View style={styles.accordion}>
+    <View style={[styles.accordion, focusHighlight && {borderColor: "#C49A46", borderWidth: 2}]}>
       <Pressable
         onPress={() => setOpen((value) => !value)}
         accessibilityRole="button"
@@ -88,7 +89,7 @@ const Accordion = ({
 
 export const SaintDetailScreen = ({route, navigation}) => {
   const {language} = useLanguage();
-  const {feast, date} = route.params || {};
+  const {feast, date, focusSection} = route.params || {};
   const {width, height} = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const uk = language === 'uk';
@@ -134,18 +135,21 @@ export const SaintDetailScreen = ({route, navigation}) => {
           title={uk ? 'Житіє' : 'Житие'}
           icon="▤"
           text={life}
-          initialOpen
+          initialOpen={!focusSection || focusSection === "life"}
+          focusHighlight={focusSection === "life"}
           innerScroll={String(life || '').length > 550}
           height={lifeHeight}
         />
         <Accordion
           title={uk ? 'Тропар' : 'Тропарь'}
+          focusHighlight={focusSection === 'troparion'}
           icon="♫"
           text={troparion}
           subtitle={feast?.troparion_echo ? 'Глас ' + feast.troparion_echo : feast?.troparion_title}
         />
         <Accordion
           title="Кондак"
+          focusHighlight={focusSection === "kontakion"}
           icon="▦"
           text={kontakion}
           subtitle={feast?.kontakion_echo ? 'Глас ' + feast.kontakion_echo : feast?.kontakion_title}
