@@ -40,8 +40,11 @@ export const DEFAULT_READING_SETTINGS = {
   defaultMode: READER_LANGUAGE_MODES.RUSSIAN,
   fontSize: 17,
   palette: 'parchment',
+  customBackground: '#FFF4DE',
+  customText: '#3E2A1D',
 };
-const PALETTES = new Set(['parchment', 'warm', 'ivory', 'night']);
+const PALETTES = new Set(['parchment', 'warm', 'ivory', 'night', 'custom']);
+const safeHex = (value, fallback) => /^#[0-9a-fA-F]{6}$/.test(String(value)) ? value : fallback;
 export const getReadingSettings = async () => {
   try {
     const raw = await AsyncStorage.getItem(GLOBAL_PREFERENCES_KEY);
@@ -50,6 +53,8 @@ export const getReadingSettings = async () => {
       defaultMode: SUPPORTED_MODES.has(data.defaultMode) ? data.defaultMode : DEFAULT_READING_SETTINGS.defaultMode,
       fontSize: Number.isFinite(Number(data.fontSize)) ? Math.max(14, Math.min(28, Number(data.fontSize))) : 17,
       palette: PALETTES.has(data.palette) ? data.palette : 'parchment',
+      customBackground: safeHex(data.customBackground, '#FFF4DE'),
+      customText: safeHex(data.customText, '#3E2A1D'),
     };
     setDefaultReaderMode(result.defaultMode);
     return result;
@@ -63,6 +68,8 @@ export const saveReadingSettings = async (settings) => {
     defaultMode: SUPPORTED_MODES.has(merged.defaultMode) ? merged.defaultMode : DEFAULT_READING_SETTINGS.defaultMode,
     fontSize: Math.max(14, Math.min(28, Number(merged.fontSize) || 17)),
     palette: PALETTES.has(merged.palette) ? merged.palette : 'parchment',
+    customBackground: safeHex(merged.customBackground, '#FFF4DE'),
+    customText: safeHex(merged.customText, '#3E2A1D'),
   };
   await AsyncStorage.setItem(GLOBAL_PREFERENCES_KEY, JSON.stringify(result));
   setDefaultReaderMode(result.defaultMode);
