@@ -216,7 +216,7 @@ const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress})
   return (
   <Pressable
     onPress={onPress}
-    style={styles.libraryCard}
+    style={({pressed}) => [styles.libraryCard, pressed && styles.pressed]}
   >
     <ImageBackground
       source={artwork}
