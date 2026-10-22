@@ -28,6 +28,17 @@ const formatDate = (value, language) => {
   );
 };
 
+const getStoryHeading = (title, uk) => {
+  const name = String(title || '');
+  if (/(?:икон|образ|знамени)/i.test(name) && /(?:богородиц|икон|образ|знамени)/i.test(name)) {
+    return uk ? 'Історія ікони' : 'История иконы';
+  }
+  if (/рождеств|крещени|богоявлени|сретени|преображени|воздвижени|успени|введени|покров|вход господ|вознесени|пятидесятниц|пасх|воскресени христ|благовещени|обрезани господ/i.test(name)) {
+    return uk ? 'Історія свята' : 'История праздника';
+  }
+  return uk ? 'Житіє' : 'Житие';
+};
+
 const Accordion = ({
   title,
   subtitle,
@@ -215,7 +226,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
         </View>
 
         <Accordion
-          title={uk ? 'Житіє' : 'Житие'}
+          title={getStoryHeading(title, uk)}
           icon="life"
           text={life}
           initialOpen={focusSection === "life"}
