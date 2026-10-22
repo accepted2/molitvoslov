@@ -103,20 +103,19 @@ const extractSentence = (snippet) => {
   return (start ? '…' : '') + clean.slice(start, end).trim() + (end < clean.length ? '…' : '');
 };
 
-// Only generic prayer headings need source context; specific titles remain unchanged.
-const displaySearchTitle = (item) => {
-  const title = String(item?.title || '').trim();
-  const normalized = title.toLowerCase().replace(/ё/g, 'е').replace(/[.:;!?]+$/, '').trim();
-  const generic = /^(?:молитва|молитвы|молитви)(?:\\s+[0-9ivxlcdm]+)?$/i.test(normalized);
-  if (!generic) return title;
-  const origin = String(item?.source || '').trim();
-  const originNormalized = origin.toLowerCase().replace(/ё/g, 'е');
-  if (!origin || originNormalized === normalized ||
-      ['молитвы', 'молитва', 'prayers', 'akathists', 'canons'].includes(originNormalized)) {
-    return title;
-  }
-  return origin + ' — ' + title;
+// Resolve parent title without changing the real section heading or its route.
+const sourceForSearchResult = (item) => {
+  const parent = item?.route?.params?.title || item?.source || '';
+  const source = String(parent).trim();
+  const lowered = source.toLowerCase();
+  if (!source || ['akathists', 'canons', 'prayers', 'акафисты', 'каноны', 'молитвы',
+    'писание', 'псалтирь', 'акaфист', 'канон'].includes(lowered)) return '';
+  return source === item?.title ? '' : source;
 };
+
+const isGenericSectionHeading = (title) =>
+  /^(?:молитва|молитвы|молитви|тропарь|тропар[ьи]|кондак|кондаки)(?:\\s*(?:№\\s*)?\\d+|\\s+[ivxlcdm]+)?$/i
+    .test(String(title || '').trim().replace(/[.:;!?]+$/, ''));
 
 const HighlightedText = ({text, query, style, highlightStyle, numberOfLines}) => {
   const segments = useMemo(() => getHighlightSegments(text, query), [text, query]);
@@ -336,22 +335,18 @@ const SearchContent = ({navigation}) => {
       </View>
 
       <HighlightedText
-        text={displaySearchTitle(item)}
+        text={item.title}
         query={searchQuery}
         style={styles.resultTitle}
         highlightStyle={styles.highlightTitle}
         numberOfLines={3}
       />
 
-      {!!item.source && displaySearchTitle(item) === item.title && (item.group === 'prayers' || !item.titleMatched) && !['scripture', 'psalter', 'akathists', 'canons', 'prayers', 'Писание', 'Псалтирь', 'Акафисты', 'Каноны', 'Молитвы', 'Акафист', 'Канон'].includes(item.source) &&
-        item.source !== item.title && (
-        <HighlightedText
-          text={copy.tabs[item.source] || item.source}
-          query={searchQuery}
-          style={styles.resultSource}
-          highlightStyle={styles.highlightSource}
-          numberOfLines={2}
-        />
+      {!!sourceForSearchResult(item) && (isGenericSectionHeading(item.title) ||
+        (item.group === 'prayers' && !item.titleMatched)) && (
+        <Text style={styles.resultSource} numberOfLines={3}>
+          {sourceForSearchResult(item)}
+        </Text>
       )}
 
       {!!item.snippet && (item.group === 'prayers' || (!item.titleMatched && extractSentence(item.snippet))) && (
