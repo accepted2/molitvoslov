@@ -1394,9 +1394,9 @@ export const MenuScreen = ({navigation}) => {
                               style={[
                                 styles.miniCalendarDayBubble,
                                 appearance && styles[`miniCalendarDayBubble_${appearance}`],
-                                cell.selected &&
-                                  // !cell.today &&
-                                  styles.miniCalendarDayBubbleSelected,
+                                cell.today && styles.miniCalendarDayBubbleToday,
+                                cell.selected && styles.miniCalendarDayBubbleSelected,
+                                cell.today && cell.selected && styles.miniCalendarDayBubbleTodaySelected,
                               ]}
                             >
                               <Text
@@ -2366,17 +2366,19 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(139, 94, 49, 0.08)',
   },
 
-  miniCalendarDayBubble_fast: {backgroundColor: '#A78AB9'},
-  miniCalendarDayBubble_solid: {backgroundColor: '#E0B65C'},
-  miniCalendarDayBubble_feast: {backgroundColor: '#C98275'},
-  miniCalendarDayBubble_easter: {backgroundColor: '#C99535'},
-  miniCalendarDayBubble_memorial: {backgroundColor: '#A69A86'},
+  miniCalendarDayBubble_fast: {backgroundColor: '#D4C2E2'},
+  miniCalendarDayBubble_solid: {backgroundColor: '#F0DBA0'},
+  miniCalendarDayBubble_feast: {backgroundColor: '#E6B7A8'},
+  miniCalendarDayBubble_easter: {backgroundColor: '#EAD18B'},
+  miniCalendarDayBubble_memorial: {backgroundColor: '#D0C7BB'},
   miniCalendarDayMarked: {color: '#6A4B3B', fontWeight: '700'},
+  miniCalendarDayBubbleToday: {backgroundColor: '#35564B'},
   miniCalendarDayBubbleSelected: {
-    borderWidth: 1.5,
-    borderColor: '#B97A32',
+    borderWidth: 2,
+    borderColor: '#452A1B',
     borderRadius: 12,
   },
+  miniCalendarDayBubbleTodaySelected: {borderColor: '#FDF6E7'},
 
   miniCalendarDayText: {
     color: '#473226',
@@ -2394,14 +2396,11 @@ const styles = StyleSheet.create({
   },
 
   miniCalendarDayToday: {
-    color: '#FFF7E7',
-    fontWeight: '700',
-  },
-
-  miniCalendarDaySelected: {
-    color: '#7B4D25',
+    color: '#FFFFFF',
     fontWeight: '800',
   },
+
+  miniCalendarDaySelected: {fontWeight: '800'},
 
   calendarQuickRow: {
     flexDirection: 'row',
