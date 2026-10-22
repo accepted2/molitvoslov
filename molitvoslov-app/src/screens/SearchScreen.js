@@ -403,7 +403,9 @@ const SearchContent = ({navigation}) => {
       console.error('[search-ui] visibleResults: activeGroup =', activeGroup, '| groups in result.items =', groups, '| filtered =', filtered.length);
     }
     const extras = (activeGroup === SEARCH_GROUPS.ALL || calendarOnly) && resultsCurrent ? calendarResults : [];
-    return calendarOnly ? extras : [...extras, ...filtered];
+    // In “Все”, retain the established fast full-text ranking; calendar
+    // entries are available in their own dedicated tabs.
+    return calendarOnly ? extras : [...filtered, ...extras];
   }, [result.items, activeGroup, resultsCurrent, calendarResults, calendarOnly]);
 
   const showEmpty =
