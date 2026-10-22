@@ -327,16 +327,14 @@ const SearchContent = ({navigation}) => {
       onPress={() => openResult(item)}
       style={({ pressed }) => [styles.resultCard, pressed && styles.pressed]}
     >
-      {!(item.kind === 'calendar-troparion' || item.kind === 'calendar-kontakion') && (
-        <View style={styles.resultTopLine}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{copy.tabs[item.group] || item.groupLabel || item.group}</Text>
-          </View>
-          {!!item.matchedLanguageLabel && (
-            <Text style={styles.languageLabel}>{item.matchedLanguageLabel}</Text>
-          )}
+      <View style={styles.resultTopLine}>
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{copy.tabs[item.group] || item.groupLabel || item.group}</Text>
         </View>
-      )}
+        {!!item.matchedLanguageLabel && (
+          <Text style={styles.languageLabel}>{item.matchedLanguageLabel}</Text>
+        )}
+      </View>
 
       <HighlightedText
         text={item.title}
