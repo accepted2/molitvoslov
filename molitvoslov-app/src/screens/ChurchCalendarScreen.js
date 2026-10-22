@@ -271,13 +271,6 @@ const FormattedCalendarText = ({text}) => {
 
 const ExpandableTextBlock = ({title, subtitle, text, life = false}) => {
   const [expanded, setExpanded] = useState(false);
-  const [metrics, setMetrics] = useState({content: 0, viewport: 320, y: 0});
-  const lifeScrollable = life && metrics.content > metrics.viewport + 4;
-  const thumbHeight = Math.max(22, metrics.viewport * metrics.viewport /
-    Math.max(metrics.content, metrics.viewport));
-  const thumbY = Math.max(0, metrics.y) *
-    Math.max(0, metrics.viewport - thumbHeight) /
-    Math.max(1, metrics.content - metrics.viewport);
 
   if (!text) return null;
 
@@ -297,32 +290,17 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false}) => {
       {expanded && (life ? (
         <View style={styles.calendarLifeInset}>
           <View style={styles.calendarLifeScrollFrame}>
-            <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false}
-              scrollEventThrottle={32}
-              onLayout={(event) => setMetrics((old) => ({
-                ...old, viewport: event.nativeEvent.layout.height,
-              }))}
-              onContentSizeChange={(_width, content) => setMetrics((old) => ({...old, content}))}
-              onScroll={({nativeEvent}) => setMetrics({
-                y: nativeEvent.contentOffset.y,
-                content: nativeEvent.contentSize.height,
-                viewport: nativeEvent.layoutMeasurement.height,
-              })}>
+            <ScrollView
+              nestedScrollEnabled
+              showsVerticalScrollIndicator
+              persistentScrollbar
+              contentContainerStyle={styles.calendarLifeScrollContent}
+            >
               <FormattedCalendarText text={text} />
             </ScrollView>
-            {lifeScrollable && (
-              <View pointerEvents="none" style={styles.calendarLifeScrollTrack}>
-                <View style={[styles.calendarLifeScrollThumb, {
-                  height: thumbHeight,
-                  transform: [{translateY: thumbY}],
-                }]} />
-              </View>
-            )}
-            {lifeScrollable && metrics.y + metrics.viewport < metrics.content - 14 && (
-              <LinearGradient pointerEvents="none"
-                colors={['rgba(255,248,235,0)', 'rgba(255,248,235,0.90)', '#FFF8EB']}
-                style={styles.calendarLifeFade} />
-            )}
+            <LinearGradient pointerEvents="none"
+              colors={['rgba(255,248,235,0)', 'rgba(255,248,235,0.86)', '#FFF8EB']}
+              style={styles.calendarLifeFade} />
           </View>
         </View>
       ) : <FormattedCalendarText text={text} />)}
@@ -1265,6 +1243,7 @@ const styles = StyleSheet.create({
     borderRadius: 13, borderWidth: 1, borderColor: '#E7D6B6',
     backgroundColor: '#FFF8EB', overflow: 'hidden'},
   calendarLifeScrollFrame: {height: 330, position: 'relative'},
+  calendarLifeScrollContent: {flexGrow: 1},
   calendarLifeScrollTrack: {position: 'absolute', right: 3, top: 5, bottom: 5,
     width: 2, borderRadius: 2, backgroundColor: 'rgba(122,79,45,0.10)'},
   calendarLifeScrollThumb: {width: 2, borderRadius: 2, backgroundColor: 'rgba(122,79,45,0.60)'},
