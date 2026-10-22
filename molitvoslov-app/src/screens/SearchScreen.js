@@ -105,7 +105,7 @@ const extractSentence = (snippet) => {
 
 // Resolve parent title without changing the real section heading or its route.
 const sourceForSearchResult = (item) => {
-  const parent = item?.route?.params?.title || item?.source || '';
+  const parent = item?.route?.params?.parentTitle || item?.route?.params?.title || item?.source || '';
   const source = String(parent).trim();
   const lowered = source.toLowerCase();
   if (!source || ['akathists', 'canons', 'prayers', 'акафисты', 'каноны', 'молитвы',
@@ -114,7 +114,7 @@ const sourceForSearchResult = (item) => {
 };
 
 const isGenericSectionHeading = (title) =>
-  /^(?:молитва|молитвы|молитви|тропарь|тропар[ьи]|кондак|кондаки)(?:\\s*(?:№\\s*)?\\d+|\\s+[ivxlcdm]+)?$/i
+  /^(?:молитва|молитвы|молитви|тропарь|тропар[ьи]|кондак|кондаки)(?:\s*(?:№\s*)?\d+|\s+[ivxlcdm]+)?$/i
     .test(String(title || '').trim().replace(/[.:;!?]+$/, ''));
 
 const HighlightedText = ({text, query, style, highlightStyle, numberOfLines}) => {
