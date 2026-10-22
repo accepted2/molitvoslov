@@ -21,6 +21,7 @@ import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {subscribeToContentUpdates} from '../services/contentStore';
 import {addSearchHistory, clearSearchHistory, getSearchHistory} from '../services/searchHistory';
 import {isPersistentSearchReady, searchPersistent} from '../services/search/engine';
+import {searchCalendarNames} from '../services/search/calendarNames';
 import {
   SEARCH_GROUPS,
   SEARCH_GROUP_OPTIONS,
@@ -156,6 +157,7 @@ const SearchContent = ({navigation}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [result, setResult] = useState({ items: [], total: 0 });
+  const [calendarResults, setCalendarResults] = useState([]);
   const [history, setHistory] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -254,6 +256,18 @@ const SearchContent = ({navigation}) => {
     };
   }, [searchQuery, activeGroup, language, seedReady, paused]);
 
+  useEffect(() => {
+    let active = true;
+    setCalendarResults([]);
+    const text = searchQuery.trim();
+    if (!paused && text.length >= 3 && activeGroup === SEARCH_GROUPS.ALL) {
+      searchCalendarNames(text, language)
+        .then((items) => {if (active) setCalendarResults(items);})
+        .catch((error) => console.warn('Calendar name search:', error?.message || error));
+    }
+    return () => {active = false;};
+  }, [searchQuery, language, activeGroup, paused]);
+
   const loadMore = async () => {
     if (loadingMore || !hasMore || paused || !seedReady) return;
     setLoadingMore(true);
@@ -327,14 +341,14 @@ const SearchContent = ({navigation}) => {
       onPress={() => openResult(item)}
       style={({ pressed }) => [styles.resultCard, pressed && styles.pressed]}
     >
-      <View style={styles.resultTopLine}>
+      {!(item.kind === 'calendar-troparion' || item.kind === 'calendar-kontakion') && <View style={styles.resultTopLine}>
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{copy.tabs[item.group] || item.groupLabel || item.group}</Text>
         </View>
         {!!item.matchedLanguageLabel && (
           <Text style={styles.languageLabel}>{item.matchedLanguageLabel}</Text>
         )}
-      </View>
+      </View>}
 
       <HighlightedText
         text={item.title}
@@ -381,8 +395,9 @@ const SearchContent = ({navigation}) => {
       const groups = [...new Set(result.items.map((i) => i.group))];
       console.error('[search-ui] visibleResults: activeGroup =', activeGroup, '| groups in result.items =', groups, '| filtered =', filtered.length);
     }
-    return filtered;
-  }, [result.items, activeGroup, resultsCurrent]);
+    const extras = activeGroup === SEARCH_GROUPS.ALL && resultsCurrent ? calendarResults : [];
+    return [...filtered, ...extras];
+  }, [result.items, activeGroup, resultsCurrent, calendarResults]);
 
   const showEmpty =
     resultsCurrent &&
@@ -390,7 +405,7 @@ const SearchContent = ({navigation}) => {
     !searchLoading &&
     !waitingForQuery &&
     !queryTooShort &&
-    result.total === 0;
+    result.total === 0 && calendarResults.length === 0;
 
   return (
     <AppBackground imageOpacity={0.42}>
