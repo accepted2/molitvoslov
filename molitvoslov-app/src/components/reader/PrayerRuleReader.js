@@ -6,6 +6,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 
 import {deleteSavedItem, saveItem} from '../../services/savedItems';
 import {useLanguage} from '../../context/LanguageContext';
+import {getReadingSettings, DEFAULT_READING_SETTINGS} from '../../services/readerPreferences';
 import {getCachedPonomarFontDataUri, loadPonomarFontDataUri} from '../../services/ponomarFont';
 
 const scriptSafeJson = (value) =>
@@ -6476,6 +6477,12 @@ export default function PrayerRuleReader({
 }) {
   const insets = useSafeAreaInsets();
   const {language, t} = useLanguage();
+  const [readingSettings, setReadingSettings] = useState(DEFAULT_READING_SETTINGS);
+  useEffect(() => {
+    let active = true;
+    getReadingSettings().then((settings) => {if (active) setReadingSettings(settings);}).catch(console.warn);
+    return () => {active = false;};
+  }, []);
 
   const webViewRef = useRef(null);
   const progressSourceRef = useRef(null);
@@ -6533,8 +6540,8 @@ export default function PrayerRuleReader({
   );
 
   const html = useMemo(
-    () =>
-      buildHtml({
+    () => {
+      const markup = buildHtml({
         rule,
         savedItems,
         savedProgress,
@@ -6546,7 +6553,20 @@ export default function PrayerRuleReader({
         memorialEnabled,
         ui,
         ponomarFontDataUri,
-      }),
+      });
+      const palettes = {
+        parchment: ['#FFF4DE', '#F8E9CF', '#3E2A1D'],
+        warm: ['#DEBE94', '#E8CDA8', '#3B281A'],
+        ivory: ['#FFFDF3', '#F5EFE0', '#352D26'],
+        night: ['#29231F', '#413831', '#F4E7D2'],
+      };
+      const [bg, surface, fg] = readingSettings.palette === 'custom'
+        ? [readingSettings.customBackground, readingSettings.customBackground, readingSettings.customText]
+        : (palettes[readingSettings.palette] || palettes.parchment);
+      const size = Math.max(14, Math.min(28, Number(readingSettings.fontSize) || 17));
+      const css = `:root {--background:${bg}; --surface:${surface}; --text:${fg};} .reader-text {font-size:${size}px !important;line-height:${Math.round(size*1.7)}px !important;}`;
+      return markup.replace('</style>', `${css}</style>`);
+    },
     [
       rule,
       savedItems,
@@ -6558,6 +6578,7 @@ export default function PrayerRuleReader({
       memorialEnabled,
       ui,
       ponomarFontDataUri,
+      readingSettings,
     ]
   );
 
@@ -6820,7 +6841,7 @@ export default function PrayerRuleReader({
         overScrollMode="never"
         textZoom={100}
         onMessage={handleMessage}
-        style={styles.webView}
+        style={[styles.webView, {backgroundColor: readingSettings.palette === 'night' ? '#29231F' : readingSettings.palette === 'custom' ? readingSettings.customBackground : readingSettings.palette === 'warm' ? '#DEBE94' : readingSettings.palette === 'ivory' ? '#FFFDF3' : '#FFF4DE'}]}
       />
 
       <LinearGradient
