@@ -43,7 +43,6 @@ const copyForLanguage = (language) =>
       clearRecent: 'Очистити',
       tabs: {
         all: 'Усе',
-        calendar: 'Календар',
         prayers: 'Молитви',
         akathists: 'Акафісти',
         psalter: 'Псалтир',
@@ -64,7 +63,6 @@ const copyForLanguage = (language) =>
       clearRecent: 'Очистить',
       tabs: {
         all: 'Все',
-        calendar: 'Календарь',
         prayers: 'Молитвы',
         akathists: 'Акафисты',
         psalter: 'Псалтирь',
@@ -356,7 +354,7 @@ const SearchContent = ({navigation}) => {
       {!!item.snippet && (item.group === 'prayers' || item.group === 'calendar' || (!item.titleMatched && extractSentence(item.snippet))) && (
         <HighlightedText
           text={(item.group === 'prayers' || item.group === 'calendar') ? item.snippet.replace(/\\[[^\\]]+\\]/g, (match) => match.slice(1, -1)).slice(0, 190) : extractSentence(item.snippet)}
-          query={searchQuery}
+          query={item.group === 'calendar' && item.titleMatched ? '' : searchQuery}
           style={styles.resultSnippet}
           highlightStyle={styles.highlightSnippet}
           numberOfLines={4}
@@ -515,7 +513,7 @@ const SearchContent = ({navigation}) => {
                   }}
                   hitSlop={8}
                 >
-                  <Text style={styles.countText}>Стоп</Text>
+                  <Text style={styles.stopText}>Остановить поиск</Text>
                 </Pressable>
               )}
               {paused && <Text style={styles.countText}>Поиск остановлен</Text>}
@@ -672,7 +670,9 @@ const styles = StyleSheet.create({
     gap: 7,
     marginTop: 7,
     marginHorizontal: 3,
+    justifyContent: 'space-between',
   },
+  stopText: {color: '#765238', fontSize: 11, fontWeight: '700'},
   countText: {color: '#8A6B53', fontSize: 11, fontWeight: '600'},
   results: {paddingHorizontal: 10, paddingTop: 8},
   resultCard: {
