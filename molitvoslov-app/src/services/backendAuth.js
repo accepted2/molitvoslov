@@ -185,3 +185,17 @@ export const logoutFromBackend = async () => {
     await SecureStore.deleteItemAsync(API_TOKEN_KEY);
   }
 };
+
+
+export const deleteBackendAccount = async () => {
+  const response = await authenticatedFetch('/api/auth/delete-account/', {
+    method: 'POST',
+    body: JSON.stringify({confirmation: 'DELETE'}),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || `Не удалось удалить аккаунт (${response.status})`);
+  }
+  await SecureStore.deleteItemAsync(API_TOKEN_KEY);
+  await SecureStore.deleteItemAsync(API_USER_KEY);
+};
