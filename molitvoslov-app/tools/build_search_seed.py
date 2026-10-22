@@ -284,16 +284,22 @@ def main():
         for book in books:
             book_id = book.get("id")
             display = book.get("name") or book.get("short_name") or "Библия"
+            chapters = book.get("chapters", [])
+            single_chapter = len(chapters) == 1
+            book_route = ({"name": "BibleChapter", "params": {
+                "bookId": book_id, "chapterNumber": chapters[0].get("number"),
+                "resume": False}} if single_chapter else
+                {"name": "BibleBook", "params": {"bookId": book_id}})
             add(lang, "scripture", "bible-book:" + str(book_id), display, "Писание",
-                [display, book.get("short_name")],
-                {"name": "BibleBook", "params": {"bookId": book_id}}, "bible-book")
-            for chapter in book.get("chapters", []):
+                [display, book.get("short_name")], book_route, "bible-book")
+            for chapter in chapters:
                 number = chapter.get("number")
                 chapter_title = f"{display} {number}"
-                add(lang, "scripture", f"bible-chapter:{book_id}:{chapter.get('id')}", chapter_title, "Писание",
-                    [chapter_title, f"{book.get('short_name') or display} {number}"],
-                    {"name": "BibleChapter", "params": {"bookId": book_id, "chapterNumber": number, "resume": False}},
-                    "bible-chapter")
+                if not single_chapter:
+                    add(lang, "scripture", f"bible-chapter:{book_id}:{chapter.get('id')}", chapter_title, "Писание",
+                        [chapter_title, f"{book.get('short_name') or display} {number}"],
+                        {"name": "BibleChapter", "params": {"bookId": book_id, "chapterNumber": number, "resume": False}},
+                        "bible-chapter")
                 for verse in chapter.get("verses", []):
                     verse_id = verse.get("id")
                     verse_no = verse.get("number")
