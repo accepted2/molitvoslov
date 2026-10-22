@@ -341,7 +341,7 @@ const SearchContent = ({navigation}) => {
       onPress={() => openResult(item)}
       style={({ pressed }) => [styles.resultCard, pressed && styles.pressed]}
     >
-      {!(item.kind === 'calendar-troparion' || item.kind === 'calendar-kontakion') && <View style={styles.resultTopLine}>
+      {item.group !== 'calendar' && <View style={styles.resultTopLine}>
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{copy.tabs[item.group] || item.groupLabel || item.group}</Text>
         </View>
@@ -396,7 +396,7 @@ const SearchContent = ({navigation}) => {
       console.error('[search-ui] visibleResults: activeGroup =', activeGroup, '| groups in result.items =', groups, '| filtered =', filtered.length);
     }
     const extras = activeGroup === SEARCH_GROUPS.ALL && resultsCurrent ? calendarResults : [];
-    return [...filtered, ...extras];
+    return [...extras, ...filtered];
   }, [result.items, activeGroup, resultsCurrent, calendarResults]);
 
   const showEmpty =
