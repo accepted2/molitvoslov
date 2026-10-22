@@ -269,7 +269,7 @@ const FormattedCalendarText = ({text}) => {
   );
 };
 
-const ExpandableTextBlock = ({title, subtitle, text, life = false}) => {
+const ExpandableTextBlock = ({title, subtitle, text, life = false, onLifeTouchChange}) => {
   const [expanded, setExpanded] = useState(false);
 
   if (!text) return null;
@@ -291,13 +291,19 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false}) => {
         <View style={styles.calendarLifeInset}>
           <View style={styles.calendarLifeScrollFrame}>
             <ScrollView
-              nestedScrollEnabled
+              nestedScrollEnabled={false}
+              onTouchStart={() => onLifeTouchChange?.(true)}
+              onTouchEnd={() => onLifeTouchChange?.(false)}
+              onTouchCancel={() => onLifeTouchChange?.(false)}
               showsVerticalScrollIndicator
               persistentScrollbar
               contentContainerStyle={styles.calendarLifeScrollContent}
             >
               <FormattedCalendarText text={text} />
             </ScrollView>
+            <LinearGradient pointerEvents="none"
+              colors={['#FFF8EB', 'rgba(255,248,235,0.77)', 'rgba(255,248,235,0)']}
+              style={styles.calendarLifeFadeTop} />
             <LinearGradient pointerEvents="none"
               colors={['rgba(255,248,235,0)', 'rgba(255,248,235,0.86)', '#FFF8EB']}
               style={styles.calendarLifeFade} />
@@ -483,6 +489,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const [loadingDay, setLoadingDay] = useState(true);
   const [error, setError] = useState('');
   const [refreshVersion, setRefreshVersion] = useState(0);
+  const [lifeTouchActive, setLifeTouchActive] = useState(false);
 
   useEffect(() => {
     const raw = route.params?.date;
@@ -827,6 +834,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
               title={copy.life}
               subtitle={mainFeast.life_title}
               text={mainFeast.life_content}
+              onLifeTouchChange={setLifeTouchActive}
               life
             />
           )}
@@ -906,6 +914,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
       <ScrollView
         ref={scrollRef}
+        scrollEnabled={!lifeTouchActive}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.content,
@@ -1239,15 +1248,16 @@ const styles = StyleSheet.create({
     color: '#8A6547',
     fontSize: 11,
   },
-  calendarLifeInset: {marginHorizontal: 10, marginTop: 10, marginBottom: 12,
+  calendarLifeInset: {marginHorizontal: 4, marginTop: 5, marginBottom: 6,
     borderRadius: 13, borderWidth: 1, borderColor: '#E7D6B6',
     backgroundColor: '#FFF8EB', overflow: 'hidden'},
-  calendarLifeScrollFrame: {height: 330, position: 'relative'},
+  calendarLifeScrollFrame: {height: 495, position: 'relative'},
   calendarLifeScrollContent: {flexGrow: 1},
   calendarLifeScrollTrack: {position: 'absolute', right: 3, top: 5, bottom: 5,
     width: 2, borderRadius: 2, backgroundColor: 'rgba(122,79,45,0.10)'},
   calendarLifeScrollThumb: {width: 2, borderRadius: 2, backgroundColor: 'rgba(122,79,45,0.60)'},
   calendarLifeFade: {position: 'absolute', left: 0, right: 0, bottom: 0, height: 46},
+  calendarLifeFadeTop: {position: 'absolute', left: 0, right: 0, top: 0, height: 30},
   textBlockContent: {
     paddingHorizontal: 16,
     paddingTop: 15,
