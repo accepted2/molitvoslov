@@ -33,6 +33,7 @@ from .auth_views import (
     GoogleAuthView,
     CurrentUserView,
     LogoutView,
+    DeleteAccountView,
 )
 from .mobile_content import MobileContentView
 from .bible_content import BibleContentView
@@ -101,6 +102,7 @@ urlpatterns = [
         CurrentUserView.as_view(),
         name="current-user",
     ),
+    path("auth/delete-account/", DeleteAccountView.as_view(), name="delete-account"),
     path(
         "auth/logout/",
         LogoutView.as_view(),
