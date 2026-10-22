@@ -289,7 +289,7 @@ const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress})
       <Text style={styles.libraryChevronText}>›</Text>
     </View>
     <Animated.View pointerEvents="none"
-      style={[StyleSheet.absoluteFillObject, styles.libraryPressFade, {opacity: fade}]} />
+      style={[StyleSheet.absoluteFillObject, styles.libraryPressFade, {opacity: fade.interpolate({inputRange: [0, 1], outputRange: [0, 0.11]})}]} />
   </Pressable>
   );
 };
