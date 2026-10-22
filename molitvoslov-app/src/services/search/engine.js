@@ -269,7 +269,7 @@ export const searchPersistent = async (
           ...p,
           titleMatched: !!row.title_hit,
           snippet: p.group === 'prayers' ? (p.snippet || '') : (row.snippet || ''),
-          route: withHighlight(p.route, query, snippet, p.matchedTextLanguage, !!row.title_hit && ['akathists', 'canons', 'prayers'].includes(p.group)),
+          route: withHighlight(p.route, query, snippet, p.matchedTextLanguage, (p.group === 'psalter' || (!!row.title_hit && ['akathists', 'canons', 'prayers'].includes(p.group)))),
         };
       }),
       total: found.total,
