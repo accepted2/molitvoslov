@@ -69,7 +69,13 @@ export const searchCalendarNames = async (query, language = 'ru', section = 'all
     };
     return score(b)-score(a) || a.title.localeCompare(b.title, 'ru');
   });
-  return matched.flatMap((r) => {
+  const paschaMatch = /^(?:пасха|пасхи|пасху|пасхальн|воскресение христово|светлое христово воскресение)/.test(text);
+  const paschaRow = paschaMatch && section !== 'hymns' ? [{
+    id: 'calendar-pascha-2026', group: 'calendar', kind: 'calendar-feast',
+    title: language === 'uk' ? 'Історія свята — Пасха Христова' : 'История праздника — Пасха Христова',
+    snippet: '', route: {name: 'ChurchCalendar', params: {date: '2026-04-12'}},
+  }] : [];
+  return [...paschaRow, ...matched.flatMap((r) => {
     const title = language === 'uk' ? r.title_uk || r.title : r.title;
     const base = {feast: r.feast, date: r.date};
     const label = storyLabel(r.title, language);
@@ -97,5 +103,5 @@ export const searchCalendarNames = async (query, language = 'ru', section = 'all
       }
     }
     return results;
-  });
+  })];
 };
