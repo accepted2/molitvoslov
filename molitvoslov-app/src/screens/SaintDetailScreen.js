@@ -38,7 +38,7 @@ const Accordion = ({
   const [open, setOpen] = useState(initialOpen || focusHighlight);
   useEffect(() => { if (focusHighlight) setOpen(true); }, [focusHighlight]);
   if (!text) return null;
-  const paragraphs = String(text).replace(/\\r\\n?/g, '\\n').split(/\\n\\s*\\n/).map((part) => part.trim()).filter(Boolean);
+  const paragraphs = String(text).replace(/\r\n?/g, '\n').split(/\n\s*\n/).map((part) => part.trim()).filter(Boolean);
   const content = (
     <View style={styles.readingContent}>
       {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
