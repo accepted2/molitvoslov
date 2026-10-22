@@ -2,6 +2,7 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {LinearGradient} from 'expo-linear-gradient';
 import {
   ActivityIndicator,
+  Animated,
   Alert,
   Image,
   ImageBackground,
@@ -212,10 +213,21 @@ const BellGlyph = () => (
   </View>
 );
 
-const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress}) => (
+const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress}) => {
+  const fade = useRef(new Animated.Value(0)).current;
+  const animatePress = (toValue) => {
+    Animated.timing(fade, {
+      toValue,
+      duration: toValue ? 140 : 210,
+      useNativeDriver: true,
+    }).start();
+  };
+  return (
   <Pressable
     onPress={onPress}
-    style={({pressed}) => [styles.libraryCard, pressed && styles.pressed]}
+    onPressIn={() => animatePress(1)}
+    onPressOut={() => animatePress(0)}
+    style={styles.libraryCard}
   >
     <ImageBackground
       source={artwork}
@@ -276,8 +288,11 @@ const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress})
     <View style={styles.libraryChevron}>
       <Text style={styles.libraryChevronText}>›</Text>
     </View>
+    <Animated.View pointerEvents="none"
+      style={[StyleSheet.absoluteFillObject, styles.libraryPressFade, {opacity: fade}]} />
   </Pressable>
-);
+  );
+};
 
 const CalendarReadingText = ({readings, style}) => {
   const first = readings[0];
@@ -2609,6 +2624,7 @@ const styles = StyleSheet.create({
     marginTop: 11,
     gap: 8,
   },
+  libraryPressFade: {backgroundColor: '#70441F', borderRadius: 17},
   libraryCard: {
     position: 'relative',
     minHeight: 80,
