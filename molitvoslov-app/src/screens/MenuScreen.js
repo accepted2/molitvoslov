@@ -390,12 +390,12 @@ export const MenuScreen = ({navigation}) => {
 
     const calculatedHeight = width * (sourceHeight / sourceWidth);
 
-    const height = Math.max(54, Math.min(86, calculatedHeight));
+    const height = Math.max(54, Math.min(105, calculatedHeight));
 
     return (
       <Image
         source={source}
-        resizeMode="cover"
+        resizeMode="contain"
         style={[
           styles.calendarSaintImage,
           {
@@ -684,7 +684,7 @@ export const MenuScreen = ({navigation}) => {
 
     const first = readings[0];
 
-    if (readings.length === 1 && resolveBibleReference(first.title)) {
+    if (resolveBibleReference(first.title)) {
       openCalendarBibleReference(navigation, first.title);
       return;
     }
@@ -1256,8 +1256,8 @@ export const MenuScreen = ({navigation}) => {
                         <Text style={styles.calendarFeastLabel}>{t('calendar.memory')}</Text>
 
                         <Text style={styles.calendarFeastTitle} numberOfLines={6}>
-                          {calendarToday?.main_feast?.short_title ||
-                            calendarToday?.main_feast?.title ||
+                          {calendarToday?.main_feast?.title ||
+                            calendarToday?.main_feast?.short_title ||
                             (calendarLoading
                               ? calendarCopy.loadingMemory
                               : calendarCopy.saintMemory)}
