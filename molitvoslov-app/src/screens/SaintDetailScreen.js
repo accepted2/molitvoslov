@@ -10,6 +10,8 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import {StatusBar} from 'expo-status-bar';
+import {LinearGradient} from 'expo-linear-gradient';
+import {Feather} from '@expo/vector-icons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
@@ -36,6 +38,8 @@ const Accordion = ({
   height = 320,
 }) => {
   const [open, setOpen] = useState(initialOpen || focusHighlight);
+  const [hasMoreText, setHasMoreText] = useState(false);
+  const [atBottom, setAtBottom] = useState(false);
   useEffect(() => { if (focusHighlight) setOpen(true); }, [focusHighlight]);
   if (!text) return null;
   const paragraphs = String(text).replace(/\r\n?/g, '\n').split(/\n\s*\n/).map((part) => part.trim()).filter(Boolean);
@@ -56,7 +60,7 @@ const Accordion = ({
         style={styles.accordionHeader}
       >
         <View style={styles.accordionIcon}>
-          <Text style={styles.accordionIconText}>{icon}</Text>
+          {icon === 'life' ? <Feather name="book-open" size={22} color="#7A4F2D" /> : <Text style={styles.accordionIconText}>{icon}</Text>}
         </View>
         <View style={styles.accordionHeading}>
           <Text style={styles.accordionTitle}>{title}</Text>
@@ -67,11 +71,29 @@ const Accordion = ({
       {open && (
         <View style={styles.expandedWrap}>
           {innerScroll ? (
-            <ScrollView nestedScrollEnabled showsVerticalScrollIndicator
-              persistentScrollbar style={{maxHeight: height}}
-              contentContainerStyle={styles.lifeScrollContent}>
-              {content}
-            </ScrollView>
+            <View style={[styles.lifeScrollFrame, {height}]}>
+              <ScrollView
+                nestedScrollEnabled
+                showsVerticalScrollIndicator
+                persistentScrollbar
+                scrollEventThrottle={32}
+                onContentSizeChange={(_width, contentHeight) => {
+                  setHasMoreText(contentHeight > height + 4);
+                }}
+                onScroll={({nativeEvent}) => {
+                  const {contentOffset, contentSize, layoutMeasurement} = nativeEvent;
+                  setAtBottom(contentOffset.y + layoutMeasurement.height >= contentSize.height - 14);
+                }}
+                contentContainerStyle={styles.lifeScrollContent}
+              >
+                {content}
+              </ScrollView>
+              {hasMoreText && !atBottom && (
+                <LinearGradient pointerEvents="none"
+                  colors={['rgba(255,244,222,0)', 'rgba(255,244,222,0.93)', '#FFF4DE']}
+                  style={styles.lifeScrollFade} />
+              )}
+            </View>
           ) : content}
         </View>
       )}
@@ -128,7 +150,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
 
         <Accordion
           title={uk ? 'Житіє' : 'Житие'}
-          icon="✦"
+          icon="life"
           text={life}
           initialOpen={focusSection === "life"}
           focusHighlight={focusSection === "life"}
@@ -258,6 +280,8 @@ const styles = StyleSheet.create({
   },
   readingContent: {paddingHorizontal: 15, paddingTop: 14, paddingBottom: 16},
   lifeScrollContent: {flexGrow: 1},
+  lifeScrollFrame: {position: 'relative'},
+  lifeScrollFade: {position: 'absolute', left: 0, right: 0, bottom: 0, height: 46},
   subtitle: {
     fontFamily: 'serif', color: '#7A4F2D', fontSize: 14, lineHeight: 21,
     fontWeight: '700', marginBottom: 10,
