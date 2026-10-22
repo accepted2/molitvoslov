@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 
-import {ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
 
 import {SafeAreaView} from 'react-native-safe-area-context';
 
@@ -35,6 +35,7 @@ const PALETTES = [
   {value: 'warm', label: 'Тёплый коричневый', color: '#DEBE94'},
   {value: 'ivory', label: 'Слоновая кость', color: '#FFFDF3'},
   {value: 'night', label: 'Ночная', color: '#29231F'},
+  {value: 'custom', label: 'Своя', color: '#E5D6C1'},
 ];
 
 export const AccountScreen = ({navigation}) => {
@@ -280,6 +281,15 @@ export const AccountScreen = ({navigation}) => {
             <View style={styles.optionRow}>
               {PALETTES.map((option) => <Pressable key={option.value} accessibilityLabel={option.label} onPress={() => changeReadingSettings({palette: option.value})} style={[styles.paletteCircle, {backgroundColor: option.color}, readingSettings.palette === option.value && styles.paletteSelected]} />)}
             </View>
+            {readingSettings.palette === 'custom' && (
+              <View style={{gap: 8}}>
+                <Text style={styles.settingHint}>Свои цвета в формате HEX (#RRGGBB). Применяются к области чтения.</Text>
+                <Text style={styles.settingCaption}>Цвет фона</Text>
+                <TextInput autoCapitalize="characters" maxLength={7} value={readingSettings.customBackground} onChangeText={(value) => setReadingSettings((old) => ({...old, customBackground: value}))} onEndEditing={() => changeReadingSettings({customBackground: readingSettings.customBackground})} style={styles.hexInput} />
+                <Text style={styles.settingCaption}>Цвет текста</Text>
+                <TextInput autoCapitalize="characters" maxLength={7} value={readingSettings.customText} onChangeText={(value) => setReadingSettings((old) => ({...old, customText: value}))} onEndEditing={() => changeReadingSettings({customText: readingSettings.customText})} style={styles.hexInput} />
+              </View>
+            )}
             <Text style={styles.settingHint}>Настройки сохраняются на устройстве. Применение палитры и размера ко всем видам чтения, а также синхронизация через аккаунт требуют отдельного подключения.</Text>
           </View>
         </ScrollView>
@@ -291,6 +301,7 @@ export const AccountScreen = ({navigation}) => {
 };
 
 const styles = StyleSheet.create({
+  hexInput: {borderWidth: 1, borderColor: '#D6BC94', borderRadius: 10, backgroundColor: '#FFF8EB', padding: 10, color: '#3E2A1D'},
   sectionTitle: {fontSize: 20, fontWeight: '700', color: '#503524'},
   settingCaption: {fontSize: 15, fontWeight: '700', color: '#684229'},
   settingText: {fontSize: 14, color: '#503524'},
