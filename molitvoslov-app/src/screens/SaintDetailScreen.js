@@ -40,6 +40,7 @@ const Accordion = ({
   const [open, setOpen] = useState(initialOpen || focusHighlight);
   const [hasMoreText, setHasMoreText] = useState(false);
   const [atBottom, setAtBottom] = useState(false);
+  const [scrollMetrics, setScrollMetrics] = useState({content: 0, viewport: height, y: 0});
   useEffect(() => { if (focusHighlight) setOpen(true); }, [focusHighlight]);
   if (!text) return null;
   const paragraphs = String(text).replace(/\r\n?/g, '\n').split(/\n\s*\n/).map((part) => part.trim()).filter(Boolean);
@@ -71,28 +72,49 @@ const Accordion = ({
       {open && (
         <View style={styles.expandedWrap}>
           {innerScroll ? (
-            <View style={[styles.lifeScrollFrame, {height}]}>
-              <ScrollView
-                nestedScrollEnabled
-                showsVerticalScrollIndicator
-                persistentScrollbar
-                scrollEventThrottle={32}
-                onContentSizeChange={(_width, contentHeight) => {
-                  setHasMoreText(contentHeight > height + 4);
-                }}
-                onScroll={({nativeEvent}) => {
-                  const {contentOffset, contentSize, layoutMeasurement} = nativeEvent;
-                  setAtBottom(contentOffset.y + layoutMeasurement.height >= contentSize.height - 14);
-                }}
-                contentContainerStyle={styles.lifeScrollContent}
-              >
-                {content}
-              </ScrollView>
-              {hasMoreText && !atBottom && (
-                <LinearGradient pointerEvents="none"
-                  colors={['rgba(255,244,222,0)', 'rgba(255,244,222,0.93)', '#FFF4DE']}
-                  style={styles.lifeScrollFade} />
-              )}
+            <View style={styles.lifeInset}>
+              <View style={[styles.lifeScrollFrame, {height}]}>
+                <ScrollView
+                  nestedScrollEnabled
+                  showsVerticalScrollIndicator={false}
+                  scrollEventThrottle={32}
+                  onLayout={(event) => {
+                    const viewport = event.nativeEvent.layout.height;
+                    setScrollMetrics((old) => ({...old, viewport}));
+                  }}
+                  onContentSizeChange={(_width, contentHeight) => {
+                    setHasMoreText(contentHeight > height + 4);
+                    setScrollMetrics((old) => ({...old, content: contentHeight}));
+                  }}
+                  onScroll={({nativeEvent}) => {
+                    const {contentOffset, contentSize, layoutMeasurement} = nativeEvent;
+                    setAtBottom(contentOffset.y + layoutMeasurement.height >= contentSize.height - 14);
+                    setScrollMetrics({y: contentOffset.y, content: contentSize.height,
+                      viewport: layoutMeasurement.height});
+                  }}
+                  contentContainerStyle={styles.lifeScrollContent}
+                >
+                  {content}
+                </ScrollView>
+                {hasMoreText && (
+                  <View pointerEvents="none" style={styles.lifeScrollTrack}>
+                    <View style={[styles.lifeScrollThumb, {
+                      height: Math.max(22, scrollMetrics.viewport * scrollMetrics.viewport /
+                        Math.max(scrollMetrics.content, scrollMetrics.viewport)),
+                      transform: [{translateY: Math.max(0, scrollMetrics.y) *
+                        Math.max(0, scrollMetrics.viewport - Math.max(22,
+                          scrollMetrics.viewport * scrollMetrics.viewport /
+                          Math.max(scrollMetrics.content, scrollMetrics.viewport))) /
+                        Math.max(1, scrollMetrics.content - scrollMetrics.viewport)}],
+                    }]} />
+                  </View>
+                )}
+                {hasMoreText && !atBottom && (
+                  <LinearGradient pointerEvents="none"
+                    colors={['rgba(255,248,235,0)', 'rgba(255,248,235,0.90)', '#FFF8EB']}
+                    style={styles.lifeScrollFade} />
+                )}
+              </View>
             </View>
           ) : content}
         </View>
@@ -279,8 +301,13 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(123,79,36,0.16)', backgroundColor: '#FFF4DE',
   },
   readingContent: {paddingHorizontal: 15, paddingTop: 14, paddingBottom: 16},
-  lifeScrollContent: {flexGrow: 1},
+  lifeInset: {marginHorizontal: 10, marginTop: 10, marginBottom: 12,
+    borderRadius: 13, borderWidth: 1, borderColor: '#E7D6B6', backgroundColor: '#FFF8EB', overflow: 'hidden'},
+  lifeScrollContent: {flexGrow: 1, paddingHorizontal: 9},
   lifeScrollFrame: {position: 'relative'},
+  lifeScrollTrack: {position: 'absolute', right: 3, top: 5, bottom: 5,
+    width: 2, backgroundColor: 'rgba(122,79,45,0.10)', borderRadius: 2},
+  lifeScrollThumb: {width: 2, borderRadius: 2, backgroundColor: 'rgba(122,79,45,0.60)'},
   lifeScrollFade: {position: 'absolute', left: 0, right: 0, bottom: 0, height: 46},
   subtitle: {
     fontFamily: 'serif', color: '#7A4F2D', fontSize: 14, lineHeight: 21,
