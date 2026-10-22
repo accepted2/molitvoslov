@@ -49,6 +49,8 @@ const copyForLanguage = (language) =>
         psalter: 'Псалтир',
         canons: 'Канони',
         scripture: 'Писання',
+        calendar_stories: 'Житія та історії',
+        calendar_hymns: 'Тропарі та кондаки',
       },
     }
     : {
@@ -69,6 +71,8 @@ const copyForLanguage = (language) =>
         psalter: 'Псалтирь',
         canons: 'Каноны',
         scripture: 'Писание',
+        calendar_stories: 'Жития и истории',
+        calendar_hymns: 'Тропари и кондаки',
       },
     };
 
@@ -207,7 +211,7 @@ const SearchContent = ({navigation}) => {
   useEffect(() => {
     let cancelled = false;
     const trimmed = searchQuery.trim();
-    if (paused || !seedReady || trimmed.length < 2) {
+    if (paused || !seedReady || trimmed.length < 2 || activeGroup.startsWith('calendar_')) {
       if (!paused) setSearchLoading(false);
       return () => {
         cancelled = true;
@@ -260,8 +264,8 @@ const SearchContent = ({navigation}) => {
     let active = true;
     setCalendarResults([]);
     const text = searchQuery.trim();
-    if (!paused && text.length >= 3 && activeGroup === SEARCH_GROUPS.ALL) {
-      searchCalendarNames(text, language)
+    if (!paused && text.length >= 3 && (activeGroup === SEARCH_GROUPS.ALL || activeGroup.startsWith('calendar_'))) {
+      searchCalendarNames(text, language, activeGroup === 'calendar_stories' ? 'stories' : activeGroup === 'calendar_hymns' ? 'hymns' : 'all')
         .then((items) => {if (active) setCalendarResults(items);})
         .catch((error) => console.warn('Calendar name search:', error?.message || error));
     }
@@ -269,7 +273,7 @@ const SearchContent = ({navigation}) => {
   }, [searchQuery, language, activeGroup, paused]);
 
   const loadMore = async () => {
-    if (loadingMore || !hasMore || paused || !seedReady) return;
+    if (calendarOnly || loadingMore || !hasMore || paused || !seedReady) return;
     setLoadingMore(true);
     try {
       const nextOffset = result.items.length;
@@ -304,7 +308,9 @@ const SearchContent = ({navigation}) => {
 
   const tabs = useMemo(
     () =>
-      SEARCH_GROUP_OPTIONS.filter((item) => item.key !== 'prayers').map((item) => ({
+      [...SEARCH_GROUP_OPTIONS.filter((item) => item.key !== 'prayers'),
+        {key: 'calendar_stories', label: copy.tabs.calendar_stories},
+        {key: 'calendar_hymns', label: copy.tabs.calendar_hymns}].map((item) => ({
         ...item,
         label: copy.tabs[item.key] || item.label,
       })),
@@ -384,7 +390,8 @@ const SearchContent = ({navigation}) => {
   const waitingForQuery = !trimmedQuery;
   const queryTooShort = !!trimmedQuery && trimmedQuery.length < 2;
   const displayScope = `${language}:${activeGroup}:${searchQuery}`;
-  const resultsCurrent = (paused || searchQuery === query) && displayScope === searchScope;
+  const calendarOnly = activeGroup === 'calendar_stories' || activeGroup === 'calendar_hymns';
+  const resultsCurrent = calendarOnly ? (paused || searchQuery === query) : (paused || searchQuery === query) && displayScope === searchScope;
   const visibleResults = useMemo(() => {
     const filtered = resultsCurrent
       ? activeGroup === SEARCH_GROUPS.ALL
@@ -395,17 +402,17 @@ const SearchContent = ({navigation}) => {
       const groups = [...new Set(result.items.map((i) => i.group))];
       console.error('[search-ui] visibleResults: activeGroup =', activeGroup, '| groups in result.items =', groups, '| filtered =', filtered.length);
     }
-    const extras = activeGroup === SEARCH_GROUPS.ALL && resultsCurrent ? calendarResults : [];
-    return [...extras, ...filtered];
-  }, [result.items, activeGroup, resultsCurrent, calendarResults]);
+    const extras = (activeGroup === SEARCH_GROUPS.ALL || calendarOnly) && resultsCurrent ? calendarResults : [];
+    return calendarOnly ? extras : [...extras, ...filtered];
+  }, [result.items, activeGroup, resultsCurrent, calendarResults, calendarOnly]);
 
   const showEmpty =
     resultsCurrent &&
-    !indexLoading &&
-    !searchLoading &&
+    (calendarOnly || !indexLoading) &&
+    (calendarOnly || !searchLoading) &&
     !waitingForQuery &&
     !queryTooShort &&
-    result.total === 0 && calendarResults.length === 0;
+    (calendarOnly || result.total === 0) && calendarResults.length === 0;
 
   return (
     <AppBackground imageOpacity={0.42}>
@@ -510,11 +517,11 @@ const SearchContent = ({navigation}) => {
               ) : visibleResults.length > 0 ? (
                 <Text style={styles.countText}>
                   {copy.found(
-                    hasMore
+                    hasMore && !calendarOnly
                       ? `${result.total + calendarResults.length}+`
-                      : result.total >= 500
+                      : result.total >= 500 && !calendarOnly
                         ? '500+'
-                        : result.total + calendarResults.length
+                        : (calendarOnly ? calendarResults.length : result.total + calendarResults.length)
                   )}
                 </Text>
               ) : null}
