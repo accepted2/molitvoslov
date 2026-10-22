@@ -155,7 +155,7 @@ const runMatch = async (db, language, group, match, limit, offset, titleMatch = 
     'search_documents.rowid AS rowid ' +
     'FROM search_documents JOIN search_payloads AS p ' +
     'ON p.rowid = search_documents.rowid WHERE ' + where +
-    ' ORDER BY title_hit DESC, rank ASC' +
+    ' ORDER BY title_hit DESC, CASE WHEN p.group_key = \'calendar\' THEN 0 ELSE 1 END, rank ASC' +
     ' LIMIT ? OFFSET ?',
     [...(titleMatch ? [titleMatch] : []), ...args, Math.min(limit, 500), offset]
   );
@@ -298,7 +298,7 @@ export const searchPersistent = async (
   }
 
   const combined = [...phrase.rows, ...andRows]
-    .sort((a, b) => Number(b.title_hit || 0) - Number(a.title_hit || 0))
+    .sort((a, b) => Number(b.title_hit || 0) - Number(a.title_hit || 0) || Number(JSON.parse(b.payload).group === 'calendar') - Number(JSON.parse(a.payload).group === 'calendar'))
     .slice(0, limit);
   const total = Math.max(phrase.total, andTotal);
   if (combined[0]) {
