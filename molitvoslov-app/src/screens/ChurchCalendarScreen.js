@@ -294,6 +294,9 @@ const ExpandableTextBlock = ({title, subtitle, text}) => {
 
 const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, onLayout, initiallyExpanded = false}) => {
   const [expanded, setExpanded] = useState(initiallyExpanded);
+  useEffect(() => {
+    if (initiallyExpanded) setExpanded(true);
+  }, [initiallyExpanded, title]);
 
   if (!title) return null;
 
