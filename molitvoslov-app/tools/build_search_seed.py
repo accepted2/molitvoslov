@@ -84,8 +84,13 @@ def main():
         db.execute("INSERT INTO search_documents_content(rowid, title, source, body) VALUES (?, ?, ?, ?)",
                    (count, title, source, normalized))
         # Нормализованный (для поиска) — в FTS5.
+        indexed_title = fold(title)
+        # Verse titles are displayed with the book name, but this must not make
+        # every verse match a search for that book's name.
+        if kind == "bible-verse":
+            indexed_title = ""
         db.execute("INSERT INTO search_documents(rowid, title, source, body) VALUES (?, ?, ?, ?)",
-                   (count, fold(title), fold(source), normalized))
+                   (count, indexed_title, fold(source), normalized))
         db.execute("INSERT INTO search_payloads(rowid, language, group_key, kind, boost, payload) VALUES (?, ?, ?, ?, ?, ?)",
                    (count, lang, group, kind, KIND_BOOST.get(kind, 1.0), json.dumps(payload, ensure_ascii=False, separators=(",", ":"))))
         if count % 1500 == 0:
