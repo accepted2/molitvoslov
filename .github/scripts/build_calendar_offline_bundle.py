@@ -20,8 +20,8 @@ ASSET_DIR = ROOT / "molitvoslov-app" / "assets" / "calendar-icons"
 ICON_MODULE = ROOT / "molitvoslov-app" / "src" / "data" / "calendarIconAssets.js"
 
 YEAR = 2026
-ICON_MAX_SIZE = (256, 384)
-ICON_QUALITY = 80
+ICON_MAX_SIZE = (768, 1152)
+ICON_QUALITY = 90
 USER_AGENT = "MolitvoslovOfflineCalendar/1.0"
 IDENTITY_SIMILARITY_THRESHOLD = 0.50
 
@@ -309,7 +309,7 @@ def build_icon_bundle(data: dict) -> None:
 
     for index, feast in enumerate(feasts, start=1):
         url = feast["url"]
-        digest = hashlib.sha256(url.encode("utf-8")).hexdigest()[:20]
+        digest = hashlib.sha256((url + f"|{ICON_MAX_SIZE}|{ICON_QUALITY}|v2").encode("utf-8")).hexdigest()[:20]
         filename = f"{digest}.webp"
         target = ASSET_DIR / filename
 
