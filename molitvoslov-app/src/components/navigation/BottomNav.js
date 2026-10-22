@@ -1,5 +1,6 @@
 import React from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {CommonActions} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useLanguage} from '../../context/LanguageContext';
@@ -34,6 +35,13 @@ export const BottomNav = ({navigation, active}) => {
   const insets = useSafeAreaInsets();
   const {t} = useLanguage();
 
+  const openRootTab = (route) => {
+    navigation.dispatch(CommonActions.reset({
+      index: route === 'Menu' ? 0 : 1,
+      routes: route === 'Menu' ? [{name: 'Menu'}] : [{name: 'Menu'}, {name: route}],
+    }));
+  };
+
   return (
     <View
       pointerEvents="box-none"
@@ -60,7 +68,7 @@ export const BottomNav = ({navigation, active}) => {
                 accessibilityRole="button"
                 accessibilityState={{selected: isActive}}
                 accessibilityLabel={t(item.labelKey)}
-                onPress={() => navigation.navigate(item.route)}
+                onPress={() => openRootTab(item.route)}
                 style={({pressed}) => [
                   styles.item,
                   isActive && styles.itemActive,
