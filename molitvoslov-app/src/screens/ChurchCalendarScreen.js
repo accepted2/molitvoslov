@@ -289,15 +289,18 @@ const ExpandableTextBlock = ({title, subtitle, text, scrollable = false}) => {
         <SoftChevron expanded={expanded} />
       </Pressable>
 
-      {expanded && (scrollable ? (
-        <ScrollView
-          nestedScrollEnabled
-          showsVerticalScrollIndicator
-          style={{height: readerHeight}}
-        >
+      {expanded &&
+        (scrollable ? (
+          <ScrollView
+            nestedScrollEnabled
+            showsVerticalScrollIndicator
+            style={{height: readerHeight}}
+          >
+            <FormattedCalendarText text={text} />
+          </ScrollView>
+        ) : (
           <FormattedCalendarText text={text} />
-        </ScrollView>
-      ) : <FormattedCalendarText text={text} />)}
+        ))}
     </View>
   );
 };
