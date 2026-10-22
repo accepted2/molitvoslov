@@ -6,7 +6,12 @@ let catalogPromise = null;
 const normalized = (text) => normalizeSearchText(text)
   .replace(/никола[яюи](?=\s|$)/g, 'николай')
   .replace(/мир\s+ликийских|мирликийских|мирликийский|мирликийского/g, 'мирликийск');
-const titleKey = (title) => normalized(title).replace(/^(?:житие|житие во святых|святитель|свт|св)\s+/g, '');
+const titleKey = (title) => {
+  const value = normalized(title).replace(/^(?:житие|житие во святых|святитель|свт|св)\s+/g, '');
+  // Equivalent calendar entries use different old/new spellings of Nicholas of Myra.
+  return /николай/.test(value) && /мирликийск/.test(value) && /чудотвор/.test(value)
+    ? 'николай мирликийский чудотворец' : value;
+};
 const completeness = (r) => Number(r.hasLife) * 20 + Number(r.hasIcon) * 8 +
   Number(r.hasTroparion) * 4 + Number(r.hasKontakion) * 2;
 const buildCatalog = async () => {
@@ -64,7 +69,7 @@ export const searchCalendarNames = async (query, language = 'ru') => {
     const results = [{
       id: 'calendar-name:' + r.date + ':' + titleKey(r.title),
       group: 'calendar', kind: 'calendar-saint',
-      title: (isLifeQuery && r.hasLife ? (language === 'uk' ? 'Житіє — ' : 'Житие — ') : '') + title,
+      title: (r.hasLife ? (language === 'uk' ? 'Житіє — ' : 'Житие — ') : '') + title,
       snippet: '', route: {name: 'SaintDetail',
         params: {...base, focusSection: r.hasLife ? 'life' : undefined}},
     }];
