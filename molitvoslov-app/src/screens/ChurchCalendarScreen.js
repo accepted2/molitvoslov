@@ -705,7 +705,9 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
                   style={[
                     styles.dayBubble,
                     appearance && styles[`dayBubble_${appearance}`],
+                    isToday && styles.dayBubbleToday,
                     selected && styles.dayBubbleSelected,
+                    isToday && selected && styles.dayBubbleTodaySelected,
                   ]}
                 >
                   <Text
