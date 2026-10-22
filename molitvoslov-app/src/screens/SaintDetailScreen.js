@@ -25,7 +25,7 @@ const formatDate = (value, language) => {
   if (!match) return String(value);
   return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])).toLocaleDateString(
     language === 'uk' ? 'uk-UA' : 'ru-RU',
-    {day: 'numeric', month: 'long', year: 'numeric'}
+    {day: 'numeric', month: 'long'}
   );
 };
 
@@ -164,12 +164,12 @@ export const SaintDetailScreen = ({route, navigation}) => {
         return merged;
       });
     };
-    getOfflineCalendarDay(date, language).then(update).catch((error) =>
+    if (!feast) getOfflineCalendarDay(date, language).then(update).catch((error) =>
       console.warn('Saint card offline:', error?.message || error)
     );
     // Search and calendar must resolve against the same latest day payload;
     // an offline search record may contain only the troparion and kontakion.
-    getCalendarDay(date, {language, force: true, skipOffline: true})
+    if (!feast) getCalendarDay(date, {language, force: true, skipOffline: true})
       .then(update)
       .catch((error) => console.warn('Saint card refresh:', error?.message || error));
     return () => {active = false;};
