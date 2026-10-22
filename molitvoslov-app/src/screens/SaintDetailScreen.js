@@ -83,6 +83,7 @@ const Accordion = ({
                   onLayout={(event) => {
                     const viewport = event.nativeEvent.layout.height;
                     setScrollMetrics((old) => ({...old, viewport}));
+                    setHasMoreText(scrollMetrics.content > viewport + 2);
                   }}
                   onContentSizeChange={(_width, contentHeight) => {
                     setHasMoreText(contentHeight > scrollMetrics.viewport + 2);
