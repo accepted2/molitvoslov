@@ -616,6 +616,20 @@ const computeFocusHighlightRanges = () => {
       ? findHighlightRanges(text.slice(verseStart, verseEnd), highlightQuery)
           .map(range => ({start: range.start + verseStart, end: range.end + verseStart}))
       : findHighlightRanges(text, highlightQuery));
+    // A title-only match (e.g. "Кондак 2") has no matching word in
+    // the prayer body. Emphasize the opening sentence of the target section.
+    if (!ranges.length && target.highlightSectionStart && hasSpecificAnchor && text.trim()) {
+      const initial = text.search(/\S/);
+      const tail = text.slice(initial);
+      const punctuation = tail.search(/[.!?…](?:\s|$)/);
+      const end = punctuation < 0 ? Math.min(text.length, initial + 200)
+        : Math.min(text.length, initial + Math.min(200, punctuation + 1));
+      if (end > initial) {
+        highlightRangesByItem.set(itemId, [{start: initial, end}]);
+        hits += 1;
+      }
+      return;
+    }
     if (ranges.length) {
       // A search result focuses on one sentence, not every match in the ikos.
       const hit = ranges[0];
