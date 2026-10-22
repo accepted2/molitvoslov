@@ -1,69 +1,87 @@
 import {getBundledCalendarMonth} from '../calendarOfflineStore';
 import {normalizeSearchText} from './normalize';
 
-// Search only short memorial titles; never index long lives or hymn bodies.
+// A compact, cached index of names only. No changes to the existing FTS index.
 let catalogPromise = null;
-const canonical = (title) => normalizeSearchText(title).replace(/никола[яюи]\b/g, 'николай');
+const normalized = (text) => normalizeSearchText(text)
+  .replace(/никола[яюи](?=\\s|$)/g, 'николай')
+  .replace(/мир\\s+ликийских|мирликийских|мирликийский|мирликийского/g, 'мирликийск');
+const titleKey = (title) => normalized(title).replace(/^(?:житие|житие во святых|святитель|свт|св)\\s+/g, '');
+const completeness = (r) => Number(r.hasLife) * 20 + Number(r.hasIcon) * 8 +
+  Number(r.hasTroparion) * 4 + Number(r.hasKontakion) * 2;
 const buildCatalog = async () => {
-  const result = [];
   const seen = new Map();
   for (let month = 1; month <= 12; month += 1) {
     const payload = getBundledCalendarMonth(2026, month, 'ru');
     for (const day of payload?.days || []) {
       const date = day.date_gregorian;
-      for (const feast of day.all_feasts || (day.main_feast ? [day.main_feast] : [])) {
+      for (const feast of [day.main_feast, ...(day.all_feasts || [])].filter(Boolean)) {
         if (!date || !feast?.title) continue;
-        const identity = String(feast.sync_uid || feast.id || feast.title);
+        const title = feast.title;
         const record = {
-          identity, date, id: feast.id, sync_uid: feast.sync_uid,
-          title: feast.title, title_uk: feast.title_uk || '',
-          hasLife: !!feast.life_content, hasTroparion: !!feast.troparion_content,
-          hasKontakion: !!feast.kontakion_content,
-          hasIcon: !!feast.icon_url || !!feast.icon,
+          date, feast, title, title_uk: feast.title_uk || '',
+          hasLife: !!(feast.life_content || feast.life_content_uk),
+          hasTroparion: !!(feast.troparion_content || feast.troparion_content_uk),
+          hasKontakion: !!(feast.kontakion_content || feast.kontakion_content_uk),
+          hasIcon: !!(feast.icon_url || feast.icon),
         };
-        const previous = seen.get(identity);
-        const score = (item) => Number(item.hasLife) * 4 + Number(item.hasIcon) * 2 + Number(item.hasTroparion) + Number(item.hasKontakion);
-        if (!previous || score(record) > score(previous)) seen.set(identity, record);
+        const key = titleKey(title);
+        const prev = seen.get(key);
+        if (!prev || completeness(record) > completeness(prev)) seen.set(key, record);
       }
     }
-    // Allow the main search interface to continue rendering between months.
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
-  result.push(...seen.values());
-  return result;
+  return [...seen.values()];
 };
 export const searchCalendarNames = async (query, language = 'ru') => {
-  const key = canonical(query);
-  if (key.length < 3) return [];
+  const text = normalized(query);
+  if (text.length < 3) return [];
   if (!catalogPromise) catalogPromise = buildCatalog().catch((error) => {
     catalogPromise = null;
     throw error;
   });
   const catalog = await catalogPromise;
-  const matches = catalog.filter((record) => {
-    const title = language === 'uk' ? (record.title_uk || record.title) : record.title;
-    return canonical(title).includes(key) || canonical(record.title).includes(key);
-  }).slice(0, 24);
-  return matches.flatMap((record) => {
-    const name = language === 'uk' ? (record.title_uk || record.title) : record.title;
-    const base = {date: record.date, feastId: record.id, feastUid: record.sync_uid, feastTitle: record.title};
-    const rows = [{
-      id: 'calendar-name:' + record.identity,
-      group: 'calendar', kind: 'calendar-saint', title: name, snippet: '',
-      route: {name: 'SaintDetail', params: {...base, focusSection: record.hasLife ? 'life' : undefined}},
+  const isLifeQuery = /^(?:житие|житие святого|житие святителя)\\s+/.test(text);
+  const needle = isLifeQuery ? text.replace(/^житие(?: святого| святителя)?\\s+/, '') : text;
+  const matched = catalog.filter((r) => {
+    const title = language === 'uk' ? r.title_uk || r.title : r.title;
+    return normalized(title).includes(needle) || normalized(r.title).includes(needle) ||
+      normalized(r.feast.life_title).includes(needle);
+  }).sort((a, b) => {
+    const score = (r) => {
+      const title = normalized(r.title);
+      const starts = title.startsWith(needle) || title.startsWith('свт ' + needle);
+      const nikolai = /николай/.test(needle) && /мирликийск/.test(title) && /чудотвор/.test(title);
+      return Number(nikolai)*1000 + Number(starts)*80 + Number(r.hasLife)*25 +
+        Number(r.hasIcon)*10 + completeness(r)/10;
+    };
+    return score(b)-score(a) || a.title.localeCompare(b.title, 'ru');
+  }).slice(0, 35);
+  return matched.flatMap((r) => {
+    const title = language === 'uk' ? r.title_uk || r.title : r.title;
+    const base = {feast: r.feast, date: r.date};
+    const results = [{
+      id: 'calendar-name:' + r.date + ':' + titleKey(r.title),
+      group: 'calendar', kind: 'calendar-saint',
+      title: (isLifeQuery && r.hasLife ? (language === 'uk' ? 'Житіє — ' : 'Житие — ') : '') + title,
+      snippet: '', route: {name: 'SaintDetail',
+        params: {...base, focusSection: r.hasLife ? 'life' : undefined}},
     }];
-    for (const [kind, label, has] of [
-      ['troparion', language === 'uk' ? 'Тропар' : 'Тропарь', record.hasTroparion],
-      ['kontakion', language === 'uk' ? 'Кондак' : 'Кондак', record.hasKontakion],
-    ]) {
-      if (!has) continue;
-      rows.push({
-        id: 'calendar-name:' + record.identity + ':' + kind,
-        group: 'calendar', kind: 'calendar-' + kind,
-        title: label + ' — ' + name, snippet: '',
-        route: {name: 'SaintDetail', params: {...base, focusSection: kind}},
-      });
+    if (!isLifeQuery) {
+      for (const [kind, label, text] of [
+        ['troparion', language === 'uk' ? 'Тропар' : 'Тропарь', r.feast.troparion_content],
+        ['kontakion', 'Кондак', r.feast.kontakion_content],
+      ]) {
+        if (!text) continue;
+        results.push({
+          id: 'calendar-name:' + r.date + ':' + titleKey(r.title) + ':' + kind,
+          group: 'calendar', kind: 'calendar-' + kind,
+          title: label + ' — ' + title,
+          snippet: '', route: {name: 'SaintDetail', params: {...base, focusSection: kind}},
+        });
+      }
     }
-    return rows;
+    return results;
   });
 };
