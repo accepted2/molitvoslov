@@ -16,6 +16,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {useLanguage} from '../context/LanguageContext';
+import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
 
 const formatDate = (value, language) => {
   if (!value) return '';
@@ -128,18 +129,37 @@ const Accordion = ({
 
 export const SaintDetailScreen = ({route, navigation}) => {
   const {language} = useLanguage();
-  const {feast, date, focusSection} = route.params || {};
+  const {feast, date, focusSection, feastId, feastUid, feastTitle} = route.params || {};
+  const [calendarFeast, setCalendarFeast] = useState(feast || null);
+  useEffect(() => {
+    let active = true;
+    if (!date) return undefined;
+    getOfflineCalendarDay(date, language).then((day) => {
+      if (!active || !day) return;
+      const list = day.all_feasts || (day.main_feast ? [day.main_feast] : []);
+      const matched = list.find((entry) =>
+        (feastUid && String(entry.sync_uid) === String(feastUid)) ||
+        (feastId != null && String(entry.id) === String(feastId)) ||
+        (feast?.sync_uid && String(entry.sync_uid) === String(feast.sync_uid)) ||
+        (feast?.id != null && String(entry.id) === String(feast.id)) ||
+        ((feastTitle || feast?.title) && entry.title === (feastTitle || feast?.title))
+      );
+      if (matched) setCalendarFeast(matched);
+    }).catch((error) => console.warn('Saint card:', error?.message || error));
+    return () => {active = false;};
+  }, [date, feastId, feastUid, feastTitle, language, feast]);
+  const resolvedFeast = calendarFeast || feast || {};
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const {width, height} = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const uk = language === 'uk';
-  const title = (uk && feast?.title_uk) || feast?.title || '';
-  const bundled = getBundledCalendarIconSource(feast);
-  const image = bundled || (feast?.icon_url ? {uri: feast.icon_url} : null);
-  const life = (uk && feast?.life_content_uk) || feast?.life_content;
-  const troparion = (uk && feast?.troparion_content_uk) || feast?.troparion_content;
-  const kontakion = (uk && feast?.kontakion_content_uk) || feast?.kontakion_content;
-  const prayer = (uk && feast?.prayer_content_uk) || feast?.prayer_content;
+  const title = (uk && resolvedFeast?.title_uk) || resolvedFeast?.title || '';
+  const bundled = getBundledCalendarIconSource(resolvedFeast);
+  const image = bundled || (resolvedFeast?.icon_url ? {uri: resolvedFeast.icon_url} : null);
+  const life = (uk && resolvedFeast?.life_content_uk) || resolvedFeast?.life_content;
+  const troparion = (uk && resolvedFeast?.troparion_content_uk) || resolvedFeast?.troparion_content;
+  const kontakion = (uk && resolvedFeast?.kontakion_content_uk) || resolvedFeast?.kontakion_content;
+  const prayer = (uk && resolvedFeast?.prayer_content_uk) || resolvedFeast?.prayer_content;
   const large = width >= 560;
   const heroImageWidth = large ? 180 : Math.min(132, width * 0.34);
   const lifeHeight = Math.min(420, height * 0.78);
@@ -187,14 +207,14 @@ export const SaintDetailScreen = ({route, navigation}) => {
           focusHighlight={focusSection === 'troparion'}
           icon="♪"
           text={troparion}
-          subtitle={feast?.troparion_echo ? 'Глас ' + feast.troparion_echo : feast?.troparion_title}
+          subtitle={resolvedFeast?.troparion_echo ? 'Глас ' + resolvedFeast.troparion_echo : resolvedFeast?.troparion_title}
         />
         <Accordion
           title="Кондак"
           focusHighlight={focusSection === "kontakion"}
           icon="✧"
           text={kontakion}
-          subtitle={feast?.kontakion_echo ? 'Глас ' + feast.kontakion_echo : feast?.kontakion_title}
+          subtitle={resolvedFeast?.kontakion_echo ? 'Глас ' + resolvedFeast.kontakion_echo : resolvedFeast?.kontakion_title}
         />
         {!!prayer && <Accordion title={uk ? 'Молитва' : 'Молитва'} icon="✝" text={prayer} />}
         {!life && !troparion && !kontakion && !prayer && (
