@@ -43,6 +43,7 @@ const copyForLanguage = (language) =>
       clearRecent: 'Очистити',
       tabs: {
         all: 'Усе',
+        calendar: 'Календар',
         prayers: 'Молитви',
         akathists: 'Акафісти',
         psalter: 'Псалтир',
@@ -63,6 +64,7 @@ const copyForLanguage = (language) =>
       clearRecent: 'Очистить',
       tabs: {
         all: 'Все',
+        calendar: 'Календарь',
         prayers: 'Молитвы',
         akathists: 'Акафисты',
         psalter: 'Псалтирь',
