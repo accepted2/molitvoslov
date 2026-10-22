@@ -3,14 +3,17 @@ import {normalizeSearchText} from './normalize';
 
 // A compact, cached index of names only. No changes to the existing FTS index.
 let catalogPromise = null;
-const normalized = (text) => normalizeSearchText(text)
-  .replace(/никола[яюи](?=\s|$)/g, 'николай')
-  .replace(/мир\s+ликийских|мирликийских|мирликийский|мирликийского/g, 'мирликийск');
-const titleKey = (title) => {
-  const value = normalized(title).replace(/^(?:житие|житие во святых|святитель|свт|св)\s+/g, '');
-  // Equivalent calendar entries use different old/new spellings of Nicholas of Myra.
-  return /николай/.test(value) && /мирликийск/.test(value) && /чудотвор/.test(value)
-    ? 'николай мирликийский чудотворец' : value;
+const normalized = (text) => normalizeSearchText(text);
+const titleKey = (title) => normalized(title)
+  .replace(/^(?:житие(?: во святых)?|святитель|свт|св|память)\s+/g, '')
+  .replace(/\s+/g, ' ').trim();
+const searchTokens = (value) => normalized(value).split(' ').filter(Boolean);
+const relatedToken = (word, token) =>
+  word === token || word.startsWith(token) || token.startsWith(word) ||
+  (word.length >= 5 && token.length >= 5 && word.slice(0, 5) === token.slice(0, 5));
+const tokenMatch = (title, query) => {
+  const words = searchTokens(title);
+  return searchTokens(query).every((token) => words.some((word) => relatedToken(word, token)));
 };
 const completeness = (r) => Number(r.hasLife) * 20 + Number(r.hasIcon) * 8 +
   Number(r.hasTroparion) * 4 + Number(r.hasKontakion) * 2;
@@ -51,18 +54,17 @@ export const searchCalendarNames = async (query, language = 'ru') => {
   const needle = isLifeQuery ? text.replace(/^житие(?: святого| святителя)?\s+/, '') : text;
   const matched = catalog.filter((r) => {
     const title = language === 'uk' ? r.title_uk || r.title : r.title;
-    return normalized(title).includes(needle) || normalized(r.title).includes(needle) ||
-      normalized(r.feast.life_title).includes(needle);
+    return tokenMatch(title, needle) || tokenMatch(r.title, needle) ||
+      tokenMatch(r.feast.life_title, needle);
   }).sort((a, b) => {
     const score = (r) => {
       const title = normalized(r.title);
       const starts = title.startsWith(needle) || title.startsWith('свт ' + needle);
-      const nikolai = /николай/.test(needle) && /мирликийск/.test(title) && /чудотвор/.test(title);
-      return Number(nikolai)*1000 + Number(starts)*80 + Number(r.hasLife)*25 +
+      return Number(starts)*80 + Number(r.hasLife)*25 +
         Number(r.hasIcon)*10 + completeness(r)/10;
     };
     return score(b)-score(a) || a.title.localeCompare(b.title, 'ru');
-  }).slice(0, 35);
+  });
   return matched.flatMap((r) => {
     const title = language === 'uk' ? r.title_uk || r.title : r.title;
     const base = {feast: r.feast, date: r.date};
