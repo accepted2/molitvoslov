@@ -139,7 +139,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const prayer = (uk && feast?.prayer_content_uk) || feast?.prayer_content;
   const large = width >= 560;
   const heroImageWidth = large ? 180 : Math.min(132, width * 0.34);
-  const lifeHeight = Math.max(495, Math.min(height * 0.78, 720));
+  const lifeHeight = Math.max(500, Math.min(height * 0.78, 720));
 
   return (
     <View style={styles.screen}>
