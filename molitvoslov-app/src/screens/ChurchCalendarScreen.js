@@ -268,10 +268,8 @@ const FormattedCalendarText = ({text}) => {
   );
 };
 
-const ExpandableTextBlock = ({title, subtitle, text, scrollable = false}) => {
+const ExpandableTextBlock = ({title, subtitle, text}) => {
   const [expanded, setExpanded] = useState(false);
-  const {height: windowHeight} = useWindowDimensions();
-  const readerHeight = Math.max(500, Math.min(windowHeight * 0.78, 720));
 
   if (!text) return null;
 
@@ -289,18 +287,7 @@ const ExpandableTextBlock = ({title, subtitle, text, scrollable = false}) => {
         <SoftChevron expanded={expanded} />
       </Pressable>
 
-      {expanded &&
-        (scrollable ? (
-          <ScrollView
-            nestedScrollEnabled
-            showsVerticalScrollIndicator
-            style={{height: readerHeight}}
-          >
-            <FormattedCalendarText text={text} />
-          </ScrollView>
-        ) : (
-          <FormattedCalendarText text={text} />
-        ))}
+      {expanded && <FormattedCalendarText text={text} />}
     </View>
   );
 };
@@ -905,7 +892,6 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
           {!!mainFeast?.life_content && (
             <ExpandableTextBlock
               title={copy.life}
-              scrollable
               subtitle={mainFeast.life_title}
               text={mainFeast.life_content}
             />
