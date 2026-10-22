@@ -203,7 +203,7 @@ const detectLanguageFromQuery = (query) => {
   return 'russian';
 };
 
-const withHighlight = (route, query, snippet, matchedTextLanguage = null) => {
+const withHighlight = (route, query, snippet, matchedTextLanguage = null, highlightSectionStart = false) => {
   if (!route?.name || !query) return route;
   const params = route.params || {};
   const existingFocus = params.focusTarget;
@@ -217,11 +217,13 @@ const withHighlight = (route, query, snippet, matchedTextLanguage = null) => {
       ...existingFocus,
       save_type: existingFocus.save_type || existingFocus.saveType || 'fragment',
       highlightQuery: query,
+      highlightSectionStart,
       preferredLanguage,
     }
     : {
       save_type: 'fragment',
       highlightQuery: query,
+      highlightSectionStart,
       preferredLanguage,
     };
 
@@ -267,7 +269,7 @@ export const searchPersistent = async (
           ...p,
           titleMatched: !!row.title_hit,
           snippet: p.group === 'prayers' ? (p.snippet || '') : (row.snippet || ''),
-          route: withHighlight(p.route, query, snippet, p.matchedTextLanguage),
+          route: withHighlight(p.route, query, snippet, p.matchedTextLanguage, !!row.title_hit && ['akathists', 'canons', 'prayers'].includes(p.group)),
         };
       }),
       total: found.total,
