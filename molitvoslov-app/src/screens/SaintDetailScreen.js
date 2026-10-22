@@ -38,8 +38,17 @@ const Accordion = ({
   const [open, setOpen] = useState(initialOpen || focusHighlight);
   useEffect(() => { if (focusHighlight) setOpen(true); }, [focusHighlight]);
   if (!text) return null;
+  const paragraphs = String(text).replace(/\\r\\n?/g, '\\n').split(/\\n\\s*\\n/).map((part) => part.trim()).filter(Boolean);
+  const content = (
+    <View style={styles.readingContent}>
+      {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+      {paragraphs.map((paragraph, index) => (
+        <Text key={index} selectable style={styles.body}>{paragraph}</Text>
+      ))}
+    </View>
+  );
   return (
-    <View style={[styles.accordion, focusHighlight && {borderColor: "#C49A46", borderWidth: 2}]}>
+    <View style={[styles.accordion, focusHighlight && styles.accordionFocused]}>
       <Pressable
         onPress={() => setOpen((value) => !value)}
         accessibilityRole="button"
@@ -51,39 +60,20 @@ const Accordion = ({
         </View>
         <View style={styles.accordionHeading}>
           <Text style={styles.accordionTitle}>{title}</Text>
-          {!open && !!subtitle && (
-            <Text style={styles.preview} numberOfLines={1}>
-              {subtitle}
-            </Text>
-          )}
-          {!open && !subtitle && (
-            <Text style={styles.preview} numberOfLines={1}>
-              {text}
-            </Text>
-          )}
+          {!open && !!subtitle && <Text style={styles.preview} numberOfLines={1}>{subtitle}</Text>}
         </View>
         <View style={[styles.chevron, open && styles.chevronOpen]} />
       </Pressable>
       {open && (
-        <>
-          {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+        <View style={styles.expandedWrap}>
           {innerScroll ? (
-            <ScrollView
-              nestedScrollEnabled
-              showsVerticalScrollIndicator
-              style={[styles.lifeScroll, {height}]}
-              contentContainerStyle={styles.lifeScrollContent}
-            >
-              <Text selectable style={styles.body}>
-                {text}
-              </Text>
+            <ScrollView nestedScrollEnabled showsVerticalScrollIndicator
+              persistentScrollbar style={{maxHeight: height}}
+              contentContainerStyle={styles.lifeScrollContent}>
+              {content}
             </ScrollView>
-          ) : (
-            <Text selectable style={styles.body}>
-              {text}
-            </Text>
-          )}
-        </>
+          ) : content}
+        </View>
       )}
     </View>
   );
@@ -160,15 +150,6 @@ export const SaintDetailScreen = ({route, navigation}) => {
           subtitle={feast?.kontakion_echo ? 'Глас ' + feast.kontakion_echo : feast?.kontakion_title}
         />
         {!!prayer && <Accordion title={uk ? 'Молитва' : 'Молитва'} icon="✝" text={prayer} />}
-        {!!date && (
-          <View style={styles.dateCard}>
-            <Text style={styles.dateIcon}>☦</Text>
-            <View style={{flex: 1}}>
-              <Text style={styles.dateTitle}>{uk ? 'Дата вшанування' : 'Дата празднования'}</Text>
-              <Text style={styles.dateSubtitle}>{formatDate(date, language)}</Text>
-            </View>
-          </View>
-        )}
         {!life && !troparion && !kontakion && !prayer && (
           <Text style={styles.empty}>
             {uk ? 'Додаткових текстів поки немає.' : 'Дополнительных текстов пока нет.'}
@@ -249,57 +230,42 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   accordion: {
-    backgroundColor: '#FFF8EB',
-    borderRadius: 19,
-    padding: 13,
-    borderWidth: 1,
-    borderColor: '#E8D5B4',
-    shadowColor: '#5C391B',
-    shadowOpacity: 0.06,
-    shadowRadius: 7,
-    elevation: 1,
+    borderRadius: 14, borderWidth: 1, borderColor: '#D3B68B',
+    backgroundColor: '#EAD7B8', overflow: 'hidden',
   },
-  accordionHeader: {flexDirection: 'row', alignItems: 'center', minHeight: 44},
+  accordionFocused: {borderColor: '#A16E35', borderWidth: 2},
+  accordionHeader: {
+    minHeight: 65, padding: 12, flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#EAD7B8',
+  },
   accordionIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F3E4C9',
-    marginRight: 12,
+    width: 40, height: 40, borderRadius: 11, marginRight: 10,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5E2C4',
   },
   accordionIconText: {fontSize: 19, color: '#7A4F2D', fontWeight: '700'},
-  accordionHeading: {flex: 1},
-  accordionTitle: {fontFamily: 'serif', fontWeight: '700', fontSize: 20, color: '#3D221A'},
-  preview: {marginTop: 3, color: '#7A6653', fontSize: 12},
-  chevron: {width: 10, height: 10, borderRightWidth: 2, borderBottomWidth: 2,
-    borderColor: '#765238', transform: [{rotate: '45deg'}], marginHorizontal: 10, marginTop: -5},
+  accordionHeading: {flex: 1, minWidth: 0},
+  accordionTitle: {fontFamily: 'serif', fontSize: 17, lineHeight: 22, color: '#4A3020', fontWeight: '700'},
+  preview: {marginTop: 2, color: '#76543A', fontSize: 12},
+  chevron: {
+    width: 10, height: 10, marginHorizontal: 10, marginTop: -5,
+    borderRightWidth: 2, borderBottomWidth: 2, borderColor: '#765238',
+    transform: [{rotate: '45deg'}],
+  },
   chevronOpen: {transform: [{rotate: '225deg'}], marginTop: 5},
-  subtitle: {fontFamily: 'serif', color: '#916A46', fontSize: 13, marginTop: 8},
-  lifeScroll: {marginTop: 10, borderRadius: 13, backgroundColor: '#FFFCF6',
-    borderWidth: 1, borderColor: 'rgba(123,79,45,0.12)'},
-  lifeScrollContent: {paddingHorizontal: 12, paddingBottom: 16, paddingRight: 18},
+  expandedWrap: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(123,79,36,0.16)', backgroundColor: '#FFF4DE',
+  },
+  readingContent: {paddingHorizontal: 15, paddingTop: 14, paddingBottom: 16},
+  lifeScrollContent: {flexGrow: 1},
+  subtitle: {
+    fontFamily: 'serif', color: '#7A4F2D', fontSize: 14, lineHeight: 21,
+    fontWeight: '700', marginBottom: 10,
+  },
   body: {
-    fontFamily: 'serif',
-    color: '#422F24',
-    fontSize: 16,
-    lineHeight: 26,
-    marginTop: 10,
-    textAlign: 'left',
+    fontFamily: 'serif', color: '#3E2A1D', fontSize: 17, lineHeight: 29,
+    textAlign: 'justify', marginBottom: 12,
   },
-  dateCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 19,
-    padding: 15,
-    backgroundColor: '#FFF8EB',
-    borderWidth: 1,
-    borderColor: '#E8D5B4',
-  },
-  dateIcon: {fontSize: 28, color: '#7B5028', marginRight: 16},
-  dateTitle: {fontFamily: 'serif', fontSize: 18, fontWeight: '700', color: '#3D221A'},
-  dateSubtitle: {fontSize: 13, color: '#8A6847', marginTop: 5},
   empty: {textAlign: 'center', marginTop: 14, color: '#8A6847'},
   bottomBar: {paddingHorizontal: 13, paddingTop: 9, backgroundColor: '#F0DFC1'},
   bottomButton: {
