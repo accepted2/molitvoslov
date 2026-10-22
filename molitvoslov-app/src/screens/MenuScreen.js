@@ -1055,28 +1055,6 @@ export const MenuScreen = ({navigation}) => {
               />
 
               <View style={styles.heroTopActions}>
-                <View style={styles.appLanguageSwitch}>
-                  {LANGUAGE_OPTIONS.map((item) => {
-                    const active = calendarLanguage === item.value;
-
-                    return (
-                      <Pressable
-                        key={item.value}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${t('common.language')}: ${item.label}`}
-                        onPress={() => changeAppLanguage(item.value)}
-                        style={[styles.appLanguageButton, active && styles.appLanguageButtonActive]}
-                      >
-                        <Text
-                          style={[styles.appLanguageText, active && styles.appLanguageTextActive]}
-                        >
-                          {item.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t('menu.search')}
