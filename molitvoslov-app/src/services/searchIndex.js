@@ -14,7 +14,6 @@ export const SEARCH_GROUPS = {
 
 export const SEARCH_GROUP_OPTIONS = [
   {key: SEARCH_GROUPS.ALL, label: 'Все'},
-  {key: SEARCH_GROUPS.CALENDAR, label: 'Календарь'},
   {key: SEARCH_GROUPS.PRAYERS, label: 'Молитвы'},
   {key: SEARCH_GROUPS.AKATHISTS, label: 'Акафисты'},
   {key: SEARCH_GROUPS.PSALTER, label: 'Псалтирь'},
