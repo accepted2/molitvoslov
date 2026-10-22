@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "src" / "data" / "search_seed.db"
 CONTENT = ROOT / "src" / "data" / "offlineContent.json"
 BIBLE = ROOT / "src" / "data" / "offlineBible.json"
-SCHEMA = "8"
+SCHEMA = "9"
 KIND_BOOST = {"psalm-verse":1.20,"bible-verse":1.15,"psalm":1.10,"text":1.10,"prayer":1.10,"bible-chapter":1.0,"akathist":1.0,"canon":1.0,"psalter":1.0,"akathist-section":0.95,"canon-section":0.95,"prayer-rule":0.90,"kathisma":0.90,"bible-book":0.90}
 
 def fold(value):
@@ -96,6 +96,43 @@ def main():
         if count % 1500 == 0:
             db.commit()
 
+    # Feast-level calendar texts: no day-card headings and no date in search titles.
+    # De-duplicate recurring commemorations by source identity and text.
+    calendar_entries = {"ru": [], "uk": []}
+    seen_calendar = {"ru": set(), "uk": set()}
+    for month_file in sorted((ROOT / "src" / "data" / "calendar").glob("*.json")):
+        month_payload = json.loads(month_file.read_text(encoding="utf-8-sig"))
+        for date, versions in (month_payload.get("days") or {}).items():
+            for language in ("ru", "uk"):
+                day = (versions or {}).get(language) or (versions or {}).get("ru") or {}
+                for feast in [day.get("main_feast"), *(day.get("all_feasts") or [])]:
+                    if not isinstance(feast, dict):
+                        continue
+                    entity = compact(feast.get("title") or feast.get("short_title"))
+                    if not entity:
+                        continue
+                    for kind, label, field in (
+                        ("calendar-life", "Житие", "life_content"),
+                        ("calendar-troparion", "Тропарь", "troparion_content"),
+                        ("calendar-kontakion", "Кондак", "kontakion_content"),
+                    ):
+                        body = compact(feast.get(field))
+                        if not body:
+                            continue
+                        signature = (kind, fold(entity), fold(body))
+                        if signature in seen_calendar[language]:
+                            continue
+                        seen_calendar[language].add(signature)
+                        # Route reuses the existing SaintDetail interface. Keep the
+                        # original feast; display-only titles remain unmodified.
+                        route = {"name": "SaintDetail", "params": {
+                            "feast": feast, "focusSection": kind.split("-")[1]}}
+                        calendar_entries[language].append((
+                            kind, label + " — " + entity, entity,
+                            body, route, feast.get(field.replace("_content", "_title")) or "",
+                            feast.get("short_title") or "",
+                        ))
+
     books = bible.get("books", [])
     category_data = content.get("categories") or {}
     if isinstance(category_data, list):
@@ -113,6 +150,12 @@ def main():
     if isinstance(text_objs, dict):
         text_objs = list(text_objs.values())
     for lang in ("ru", "uk"):
+        for kind, title, entity, body, route, original_title, short_title in calendar_entries[lang]:
+            add(lang, "calendar", "calendar:" + kind + ":" + str(len(entity)) + ":" +
+                str(len(body)) + ":" + str(len(route["params"]["feast"].get("source_id") or "")) +
+                ":" + fold(entity)[:60], title, entity,
+                [body, short_title, original_title], route, kind=kind,
+                preview=body, text_language="church")
         # Collect canonical prayers before indexing. A titled prayer gets a single
         # result even if copied into several categories or multiple prayer rules.
         prayer_candidates = {}
