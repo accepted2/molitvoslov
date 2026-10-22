@@ -12,6 +12,14 @@ import {deleteSavedItem, saveItem} from '../../services/savedItems';
 import {getCachedPonomarFontDataUri, loadPonomarFontDataUri} from '../../services/ponomarFont';
 
 import {buildHtml, scriptSafeJson} from './selectableDocumentReader/buildHtml';
+import {getReadingSettings, DEFAULT_READING_SETTINGS} from '../../services/readerPreferences';
+
+const PALETTE_COLORS = {
+  parchment: {background: '#FFF4DE', surface: '#F8E9CF', text: '#3E2A1D'},
+  warm: {background: '#DEBE94', surface: '#E8CDA8', text: '#3B281A'},
+  ivory: {background: '#FFFDF3', surface: '#F5EFE0', text: '#352D26'},
+  night: {background: '#29231F', surface: '#413831', text: '#F4E7D2'},
+};
 
 const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
   {
@@ -33,6 +41,12 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
   ref
 ) {
   const insets = useSafeAreaInsets();
+  const [readingSettings, setReadingSettings] = useState(DEFAULT_READING_SETTINGS);
+  useEffect(() => {
+    let active = true;
+    getReadingSettings().then((settings) => { if (active) setReadingSettings(settings); }).catch(console.warn);
+    return () => { active = false; };
+  }, []);
 
   const webViewRef = useRef(null);
 
@@ -96,7 +110,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
 
   const html = useMemo(() => {
     console.warn('[reader] incoming FT =', JSON.stringify(focusTarget));
-    return buildHtml({
+    const markup = buildHtml({
       documentData,
       savedProgress,
       focusTarget,
@@ -104,7 +118,13 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       bottomContentInset,
       ponomarFontDataUri,
     });
-  }, [documentData, savedProgress, focusTarget, topContentInset, bottomContentInset, ponomarFontDataUri]);
+    // Preserve separate pagination and per-book themes for Bible/book readers.
+    if (documentData.readerMode === 'book') return markup;
+    const palette = PALETTE_COLORS[readingSettings.palette] || PALETTE_COLORS.parchment;
+    const size = Math.max(14, Math.min(28, Number(readingSettings.fontSize) || 17));
+    const css = `body:not(.book-mode) {--background: ${palette.background}; --surface: ${palette.surface}; --text: ${palette.text};} body:not(.book-mode) .reader-text {font-size: ${size}px !important; line-height: ${Math.round(size * 1.7)}px !important;}`;
+    return markup.replace('</style>', `${css}</style>`);
+  }, [documentData, savedProgress, focusTarget, topContentInset, bottomContentInset, ponomarFontDataUri, readingSettings]);
 
   const inject = (script) => {
     webViewRef.current?.injectJavaScript(script + '; true;');
@@ -341,7 +361,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         textZoom={100}
         onMessage={handleMessage}
         onLoadEnd={onReady}
-        style={[styles.webView, {backgroundColor}]}
+        style={[styles.webView, {backgroundColor: documentData.readerMode === 'book' ? backgroundColor : (PALETTE_COLORS[readingSettings.palette]?.background || backgroundColor)}]}
         onConsoleMessage={(event) => {
           const { message, lineNumber } = event.nativeEvent;
           if (message && (message.includes('[runtime]') || message.includes('[reader]') || message.includes('Error'))) {
