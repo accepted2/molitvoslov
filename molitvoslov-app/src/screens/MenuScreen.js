@@ -44,7 +44,7 @@ import {useLanguage} from '../context/LanguageContext';
 import {LANGUAGE_OPTIONS, getCalendarDataLanguage} from '../services/languagePreferences';
 import {getLocalizedField} from '../services/localizedContent';
 import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
-import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
+import {getOfflineCalendarDay, getOfflineCalendarMonth} from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {subscribeToContentUpdates} from '../services/contentStore';
 import {colors, spacing} from '../theme';
@@ -476,17 +476,6 @@ export const MenuScreen = ({navigation}) => {
           setCalendarLoading(false);
         }
 
-        const fresh = await getCalendarDay(targetDate, {
-          language: dataLanguage,
-          force: true,
-          skipOffline: true,
-        });
-
-        if (requestId !== calendarRequestRef.current) {
-          return;
-        }
-
-        setCalendarToday(fresh);
       } catch (err) {
         if (requestId === calendarRequestRef.current) {
           console.log('Фоновое обновление церковного календаря:', err?.message || err);
@@ -502,27 +491,18 @@ export const MenuScreen = ({navigation}) => {
 
   useEffect(() => {
     let active = true;
-    const controller = new AbortController();
     const year = calendarVisibleMonth.getFullYear();
     const month = calendarVisibleMonth.getMonth() + 1;
     const language = getCalendarDataLanguage(calendarLanguage);
-    getCalendarMonth(year, month, {
-      language,
-      force: true,
-      skipOffline: true,
-      signal: controller.signal,
-    })
+    getOfflineCalendarMonth(year, month, language)
       .then((data) => {
         if (active) setCalendarMonthDays(data?.days || []);
       })
       .catch((error) => {
-        if (active && error?.name !== 'AbortError') {
-          console.log('Фоновое обновление мини-календаря:', error?.message || error);
-        }
+        if (active) console.log('Локальный мини-календарь:', error?.message || error);
       });
     return () => {
       active = false;
-      controller.abort();
     };
   }, [calendarVisibleMonth, calendarLanguage]);
 
@@ -642,10 +622,7 @@ export const MenuScreen = ({navigation}) => {
     const dataLanguage = getCalendarDataLanguage(next);
 
     try {
-      const day = await getCalendarDay(calendarSelectedDate, {
-        language: dataLanguage,
-        force: true,
-      });
+      const day = await getOfflineCalendarDay(calendarSelectedDate, dataLanguage);
       setCalendarToday(day);
 
       const todayKey = toCalendarDate(new Date());
@@ -653,10 +630,7 @@ export const MenuScreen = ({navigation}) => {
       const widgetDay =
         selectedKey === todayKey
           ? day
-          : await getCalendarDay(new Date(), {
-              language: dataLanguage,
-              force: true,
-            });
+          : await getOfflineCalendarDay(new Date(), dataLanguage);
 
       await updateCalendarWidget(widgetDay, next);
     } catch (error) {
