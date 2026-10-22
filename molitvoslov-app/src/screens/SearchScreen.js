@@ -353,9 +353,9 @@ const SearchContent = ({navigation}) => {
         </Text>
       )}
 
-      {!!item.snippet && (item.group === 'prayers' || (!item.titleMatched && extractSentence(item.snippet))) && (
+      {!!item.snippet && (item.group === 'prayers' || item.group === 'calendar' || (!item.titleMatched && extractSentence(item.snippet))) && (
         <HighlightedText
-          text={item.group === 'prayers' ? item.snippet.replace(/\\[[^\\]]+\\]/g, (match) => match.slice(1, -1)).slice(0, 190) : extractSentence(item.snippet)}
+          text={(item.group === 'prayers' || item.group === 'calendar') ? item.snippet.replace(/\\[[^\\]]+\\]/g, (match) => match.slice(1, -1)).slice(0, 190) : extractSentence(item.snippet)}
           query={searchQuery}
           style={styles.resultSnippet}
           highlightStyle={styles.highlightSnippet}
