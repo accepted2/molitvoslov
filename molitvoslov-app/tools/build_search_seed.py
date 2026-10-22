@@ -31,6 +31,26 @@ def fold(value):
     value = re.sub(r"\s+", " ", "".join(ch if ch.isalnum() else " " for ch in value)).strip()
     return re.sub(r"ъ(?=\s|$)", "", value)
 
+def saint_name_forms(value):
+    """Small additional lookup forms for Russian saint names (Иаков/Иакова).
+    Never replace the original name; these are extra search tokens only."""
+    words = fold(value).split()
+    extra = []
+    for word in words:
+        if len(word) < 4:
+            continue
+        if word.endswith("ий"):
+            extra.append(word[:-2] + "ия")
+        elif word.endswith("й"):
+            extra.append(word[:-1] + "я")
+        elif word.endswith("а"):
+            extra.append(word[:-1] + "ы")
+        elif word.endswith("я"):
+            extra.append(word[:-1] + "и")
+        elif word[-1] in "бвгджзклмнпрстфхцчшщ":
+            extra.append(word + "а")
+    return " ".join(extra)
+
 def compact(value):
     return re.sub(r"\s+", " ", str(value or "")).strip()
 
@@ -154,7 +174,7 @@ def main():
             add(lang, "calendar", "calendar:" + kind + ":" + str(len(entity)) + ":" +
                 str(len(body)) + ":" + str(len(route["params"]["feast"].get("source_id") or "")) +
                 ":" + fold(entity)[:60], title, entity,
-                [body, short_title, original_title], route, kind=kind,
+                [body, short_title, original_title, saint_name_forms(entity), saint_name_forms(short_title)], route, kind=kind,
                 preview=body, text_language="church")
         # Collect canonical prayers before indexing. A titled prayer gets a single
         # result even if copied into several categories or multiple prayer rules.
