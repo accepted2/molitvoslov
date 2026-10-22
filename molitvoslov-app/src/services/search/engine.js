@@ -96,7 +96,7 @@ export const isPersistentSearchReady = async (language = 'ru', database = null) 
   }
 };
 
-const runMatch = async (db, language, group, match, limit, offset, titleMatch = null, genericPrayerQuery = false) => {
+const runMatch = async (db, language, group, match, limit, offset, titleMatch = null, genericPrayerQuery = false, bookOnlyQuery = false) => {
   let where =
     group === SEARCH_GROUPS.ALL
       ? 'p.language = ? AND search_documents MATCH ?'
@@ -107,6 +107,9 @@ const runMatch = async (db, language, group, match, limit, offset, titleMatch = 
     where += " AND NOT (lower(trim(json_extract(p.payload, '$.title'), ' .:;!?')) " +
       "IN ('молитва','молитвы','молитви') AND " +
       "CAST(coalesce(json_extract(p.payload, '$.bodyWordCount'), 0) AS INTEGER) < 40)";
+  }
+  if (bookOnlyQuery) {
+    where += " AND (p.group_key != 'scripture' OR p.kind = 'bible-book')";
   }
   const args = group === SEARCH_GROUPS.ALL ? [language, match] : [language, group, match];
 
@@ -244,11 +247,12 @@ export const searchPersistent = async (
   const db = database || (await getSearchDb());
   // FTS title hits are always ranked ahead of body-only matches.
   const titleMatch = 'title : (' + buildAndQuery(words) + ')';
+  const bookOnlyQuery = words.length === 1 && ['книга', 'книги', 'книгу', 'книге'].includes(words[0]);
   const genericPrayerQuery = words.length === 1 &&
     ['молитва', 'молитвы', 'молитву', 'молитве', 'молитви', 'молитву'].includes(words[0]);
 
   if (words.length === 1) {
-    const found = await runMatch(db, language, group, buildPhraseQuery(words), limit, offset, titleMatch, genericPrayerQuery);
+    const found = await runMatch(db, language, group, buildPhraseQuery(words), limit, offset, titleMatch, genericPrayerQuery, bookOnlyQuery);
     const first = found.rows[0];
     if (first) {
       const p = JSON.parse(first.payload);
@@ -273,7 +277,7 @@ export const searchPersistent = async (
 
   const phraseLimit = Math.max(limit, 120);
   const phrase = await runMatch(
-    db, language, group, buildPhraseQuery(words), phraseLimit, offset, titleMatch, genericPrayerQuery
+    db, language, group, buildPhraseQuery(words), phraseLimit, offset, titleMatch, genericPrayerQuery, bookOnlyQuery
   );
 
   const phraseIds = new Set(phrase.rows.map((r) => JSON.parse(r.payload).id));
@@ -282,7 +286,7 @@ export const searchPersistent = async (
   let andTotal = 0;
   if (needMore) {
     const and = await runMatch(
-      db, language, group, buildAndQuery(words), limit, 0, titleMatch, genericPrayerQuery
+      db, language, group, buildAndQuery(words), limit, 0, titleMatch, genericPrayerQuery, bookOnlyQuery
     );
     andTotal = and.total;
     andRows = and.rows.filter((r) => {
