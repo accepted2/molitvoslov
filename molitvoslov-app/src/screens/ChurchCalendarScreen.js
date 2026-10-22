@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import {StatusBar} from 'expo-status-bar';
+import {LinearGradient} from 'expo-linear-gradient';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 
@@ -268,8 +269,15 @@ const FormattedCalendarText = ({text}) => {
   );
 };
 
-const ExpandableTextBlock = ({title, subtitle, text}) => {
+const ExpandableTextBlock = ({title, subtitle, text, life = false}) => {
   const [expanded, setExpanded] = useState(false);
+  const [metrics, setMetrics] = useState({content: 0, viewport: 320, y: 0});
+  const lifeScrollable = life && metrics.content > metrics.viewport + 4;
+  const thumbHeight = Math.max(22, metrics.viewport * metrics.viewport /
+    Math.max(metrics.content, metrics.viewport));
+  const thumbY = Math.max(0, metrics.y) *
+    Math.max(0, metrics.viewport - thumbHeight) /
+    Math.max(1, metrics.content - metrics.viewport);
 
   if (!text) return null;
 
@@ -283,11 +291,41 @@ const ExpandableTextBlock = ({title, subtitle, text}) => {
           <Text style={styles.textBlockTitle}>{title}</Text>
           {!!subtitle && <Text style={styles.textBlockSubtitle}>{subtitle}</Text>}
         </View>
-
         <SoftChevron expanded={expanded} />
       </Pressable>
 
-      {expanded && <FormattedCalendarText text={text} />}
+      {expanded && (life ? (
+        <View style={styles.calendarLifeInset}>
+          <View style={styles.calendarLifeScrollFrame}>
+            <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false}
+              scrollEventThrottle={32}
+              onLayout={(event) => setMetrics((old) => ({
+                ...old, viewport: event.nativeEvent.layout.height,
+              }))}
+              onContentSizeChange={(_width, content) => setMetrics((old) => ({...old, content}))}
+              onScroll={({nativeEvent}) => setMetrics({
+                y: nativeEvent.contentOffset.y,
+                content: nativeEvent.contentSize.height,
+                viewport: nativeEvent.layoutMeasurement.height,
+              })}>
+              <FormattedCalendarText text={text} />
+            </ScrollView>
+            {lifeScrollable && (
+              <View pointerEvents="none" style={styles.calendarLifeScrollTrack}>
+                <View style={[styles.calendarLifeScrollThumb, {
+                  height: thumbHeight,
+                  transform: [{translateY: thumbY}],
+                }]} />
+              </View>
+            )}
+            {lifeScrollable && metrics.y + metrics.viewport < metrics.content - 14 && (
+              <LinearGradient pointerEvents="none"
+                colors={['rgba(255,248,235,0)', 'rgba(255,248,235,0.90)', '#FFF8EB']}
+                style={styles.calendarLifeFade} />
+            )}
+          </View>
+        </View>
+      ) : <FormattedCalendarText text={text} />)}
     </View>
   );
 };
@@ -811,6 +849,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
               title={copy.life}
               subtitle={mainFeast.life_title}
               text={mainFeast.life_content}
+              life
             />
           )}
 
@@ -1222,6 +1261,14 @@ const styles = StyleSheet.create({
     color: '#8A6547',
     fontSize: 11,
   },
+  calendarLifeInset: {marginHorizontal: 10, marginTop: 10, marginBottom: 12,
+    borderRadius: 13, borderWidth: 1, borderColor: '#E7D6B6',
+    backgroundColor: '#FFF8EB', overflow: 'hidden'},
+  calendarLifeScrollFrame: {height: 330, position: 'relative'},
+  calendarLifeScrollTrack: {position: 'absolute', right: 3, top: 5, bottom: 5,
+    width: 2, borderRadius: 2, backgroundColor: 'rgba(122,79,45,0.10)'},
+  calendarLifeScrollThumb: {width: 2, borderRadius: 2, backgroundColor: 'rgba(122,79,45,0.60)'},
+  calendarLifeFade: {position: 'absolute', left: 0, right: 0, bottom: 0, height: 46},
   textBlockContent: {
     paddingHorizontal: 16,
     paddingTop: 15,
