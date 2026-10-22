@@ -169,7 +169,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
     );
     // Search and calendar must resolve against the same latest day payload;
     // an offline search record may contain only the troparion and kontakion.
-    if (!feast) getCalendarDay(date, {language, force: true, skipOffline: true})
+    if (!feast || !feast.life_content || !feast.icon_url) getCalendarDay(date, {language, force: true, skipOffline: true})
       .then(update)
       .catch((error) => console.warn('Saint card refresh:', error?.message || error));
     return () => {active = false;};
