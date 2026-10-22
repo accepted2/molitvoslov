@@ -37,7 +37,7 @@ export const saveReaderLanguageModePreference = async ({sourceType, sourceId, mo
 
 const GLOBAL_PREFERENCES_KEY = '@molitvoslov/reading-settings/v1';
 export const DEFAULT_READING_SETTINGS = {
-  defaultMode: READER_LANGUAGE_MODES.RUSSIAN,
+  defaultMode: READER_LANGUAGE_MODES.CHURCH,
   fontSize: 17,
   palette: 'parchment',
   customBackground: '#FFF4DE',
