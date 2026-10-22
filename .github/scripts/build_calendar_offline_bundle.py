@@ -248,30 +248,22 @@ def visible_feasts(data: dict) -> list[dict]:
             if not isinstance(language_data, dict):
                 continue
 
-            feast = language_data.get("main_feast")
-            if not feast:
-                all_feasts = language_data.get("all_feasts") or []
-                feast = all_feasts[0] if all_feasts else None
+            # Bundle every saint/feast card, not only the main icon of a day.
+            for feast in [language_data.get("main_feast"), *(language_data.get("all_feasts") or [])]:
+                if not isinstance(feast, dict):
+                    continue
 
-            if not isinstance(feast, dict):
-                continue
+                url = str(feast.get("icon_url") or "").strip()
+                if not url.startswith(("http://", "https://")):
+                    continue
 
-            url = str(feast.get("icon_url") or "").strip()
-            if not url.startswith(("http://", "https://")):
-                continue
+                source_id = feast.get("source_id")
+                key = (str(source_id) if source_id is not None else "", url)
+                if key in seen:
+                    continue
 
-            source_id = feast.get("source_id")
-            key = (str(source_id) if source_id is not None else "", url)
-            if key in seen:
-                continue
-
-            seen.add(key)
-            result.append(
-                {
-                    "source_id": source_id,
-                    "url": url,
-                }
-            )
+                seen.add(key)
+                result.append({"source_id": source_id, "url": url})
 
     return result
 
