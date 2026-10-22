@@ -3,12 +3,12 @@ import {
   Image,
   Modal,
   ScrollView,
+  Pressable,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
 } from 'react-native';
-import {FadePressable as Pressable} from '../components/feedback/FadePressable';
 import {StatusBar} from 'expo-status-bar';
 import {LinearGradient} from 'expo-linear-gradient';
 import {Feather} from '@expo/vector-icons';
