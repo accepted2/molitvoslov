@@ -272,7 +272,9 @@ const FormattedCalendarText = ({text}) => {
 const ExpandableTextBlock = ({title, subtitle, text, life = false}) => {
   const [expanded, setExpanded] = useState(false);
   const {height: windowHeight} = useWindowDimensions();
-  const readerHeight = Math.max(500, Math.min(windowHeight * 0.78, 720));
+  const readerHeight = Math.min(420, windowHeight * 0.78);
+  const [lifeOverflows, setLifeOverflows] = useState(false);
+  const [lifeViewport, setLifeViewport] = useState(0);
 
   if (!text) return null;
 
@@ -291,21 +293,26 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false}) => {
 
       {expanded && (life ? (
         <View style={styles.calendarLifeInset}>
-          <View style={[styles.calendarLifeScrollFrame, {height: readerHeight}]}>
+          <View style={[styles.calendarLifeScrollFrame, {maxHeight: readerHeight}]}>
             <ScrollView
               nestedScrollEnabled
               showsVerticalScrollIndicator
               persistentScrollbar
+              scrollEnabled={lifeOverflows}
+              onLayout={(event) => setLifeViewport(event.nativeEvent.layout.height)}
+              onContentSizeChange={(_width, contentHeight) =>
+                setLifeOverflows(contentHeight > lifeViewport + 2)
+              }
               contentContainerStyle={styles.calendarLifeScrollContent}
             >
               <FormattedCalendarText text={text} />
             </ScrollView>
-            <LinearGradient pointerEvents="none"
+            {lifeOverflows && <LinearGradient pointerEvents="none"
               colors={['#FFF8EB', 'rgba(255,248,235,0.77)', 'rgba(255,248,235,0)']}
-              style={styles.calendarLifeFadeTop} />
-            <LinearGradient pointerEvents="none"
+              style={styles.calendarLifeFadeTop} />}
+            {lifeOverflows && <LinearGradient pointerEvents="none"
               colors={['rgba(255,248,235,0)', 'rgba(255,248,235,0.86)', '#FFF8EB']}
-              style={styles.calendarLifeFade} />
+              style={styles.calendarLifeFade} />}
           </View>
         </View>
       ) : <FormattedCalendarText text={text} />)}
@@ -1247,8 +1254,8 @@ const styles = StyleSheet.create({
   calendarLifeInset: {marginHorizontal: 4, marginTop: 5, marginBottom: 6,
     borderRadius: 13, borderWidth: 1, borderColor: '#E7D6B6',
     backgroundColor: '#FFF8EB', overflow: 'hidden'},
-  calendarLifeScrollFrame: {height: 495, position: 'relative'},
-  calendarLifeScrollContent: {flexGrow: 1},
+  calendarLifeScrollFrame: {position: 'relative'},
+  calendarLifeScrollContent: {paddingBottom: 38},
   calendarLifeScrollTrack: {position: 'absolute', right: 3, top: 5, bottom: 5,
     width: 2, borderRadius: 2, backgroundColor: 'rgba(122,79,45,0.10)'},
   calendarLifeScrollThumb: {width: 2, borderRadius: 2, backgroundColor: 'rgba(122,79,45,0.60)'},
