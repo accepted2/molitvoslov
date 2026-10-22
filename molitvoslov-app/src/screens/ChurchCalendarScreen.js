@@ -269,7 +269,7 @@ const FormattedCalendarText = ({text}) => {
   );
 };
 
-const ExpandableTextBlock = ({title, subtitle, text, life = false, onLifeTouchChange}) => {
+const ExpandableTextBlock = ({title, subtitle, text, life = false}) => {
   const [expanded, setExpanded] = useState(false);
 
   if (!text) return null;
@@ -291,10 +291,7 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, onLifeTouchCh
         <View style={styles.calendarLifeInset}>
           <View style={styles.calendarLifeScrollFrame}>
             <ScrollView
-              nestedScrollEnabled={false}
-              onTouchStart={() => onLifeTouchChange?.(true)}
-              onTouchEnd={() => onLifeTouchChange?.(false)}
-              onTouchCancel={() => onLifeTouchChange?.(false)}
+              nestedScrollEnabled
               showsVerticalScrollIndicator
               persistentScrollbar
               contentContainerStyle={styles.calendarLifeScrollContent}
@@ -489,7 +486,6 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const [loadingDay, setLoadingDay] = useState(true);
   const [error, setError] = useState('');
   const [refreshVersion, setRefreshVersion] = useState(0);
-  const [lifeTouchActive, setLifeTouchActive] = useState(false);
 
   useEffect(() => {
     const raw = route.params?.date;
@@ -834,7 +830,6 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
               title={copy.life}
               subtitle={mainFeast.life_title}
               text={mainFeast.life_content}
-              onLifeTouchChange={setLifeTouchActive}
               life
             />
           )}
@@ -914,7 +909,6 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
       <ScrollView
         ref={scrollRef}
-        scrollEnabled={!lifeTouchActive}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.content,
