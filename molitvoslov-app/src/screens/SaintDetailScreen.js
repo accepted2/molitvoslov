@@ -2,13 +2,13 @@ import React, {useEffect, useState} from 'react';
 import {
   Image,
   Modal,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
 } from 'react-native';
+import {FadePressable as Pressable} from '../components/feedback/FadePressable';
 import {StatusBar} from 'expo-status-bar';
 import {LinearGradient} from 'expo-linear-gradient';
 import {Feather} from '@expo/vector-icons';
