@@ -31,6 +31,7 @@ import {syncPublicContent} from './src/services/contentSync';
 import {hydrateBibleContent} from './src/services/bibleStore';
 import {syncBibleContent} from './src/services/bibleSync';
 import {syncYearMarkers2026} from './src/services/calendarYearMarkers';
+import {getCalendarMonth} from './src/services/churchCalendar';
 
 
 
@@ -94,6 +95,67 @@ export default function App() {
     };
 
     prepareDatabase();
+  }, []);
+
+  // Foreground-only calendar synchronization. Readers always use the local
+  // month/day store first; this job quietly refreshes that store for all views.
+  useEffect(() => {
+    let foreground = AppState.currentState === 'active';
+    let syncing = false;
+    let fullSyncing = false;
+    const year = 2026;
+    const fullKey = '@molitvoslov/calendar-full-sync-2026-v1';
+    const refresh = async () => {
+      if (!foreground || syncing) return;
+      syncing = true;
+      try {
+        const today = new Date();
+        if (today.getFullYear() === year) {
+          const month = today.getMonth() + 1;
+          await Promise.allSettled(['ru', 'uk'].map((language) =>
+            getCalendarMonth(year, month, {language, force: true, skipOffline: true})
+          ));
+        }
+        const last = Number((await AsyncStorage.getItem(fullKey)) || 0);
+        if (!fullSyncing && Date.now() - last > 24 * 60 * 60 * 1000) {
+          fullSyncing = true;
+          let complete = true;
+          for (let month = 1; month <= 12 && foreground; month += 1) {
+            for (const language of ['ru', 'uk']) {
+              try {
+                const response = await getCalendarMonth(year, month, {
+                  language, force: true, skipOffline: true,
+                });
+                const expected = new Date(year, month, 0).getDate();
+                if ((response?.days || []).length !== expected) complete = false;
+              } catch (error) {
+                complete = false;
+                console.log('Calendar background sync:', month, language, error?.message || error);
+              }
+            }
+          }
+          if (complete && foreground) await AsyncStorage.setItem(fullKey, String(Date.now()));
+          fullSyncing = false;
+        }
+      } catch (error) {
+        console.log('Calendar refresh delayed:', error?.message || error);
+      } finally {
+        syncing = false;
+      }
+    };
+    // Do not delay application startup or calendar rendering.
+    const startup = setTimeout(refresh, 3000);
+    const timer = setInterval(refresh, 60 * 1000);
+    const sub = AppState.addEventListener('change', (state) => {
+      foreground = state === 'active';
+      if (foreground) refresh();
+    });
+    return () => {
+      foreground = false;
+      clearTimeout(startup);
+      clearInterval(timer);
+      sub.remove();
+    };
   }, []);
 
   useEffect(() => {
