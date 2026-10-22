@@ -186,9 +186,8 @@ export const SaintDetailScreen = ({route, navigation}) => {
               {uk ? 'ПАМ’ЯТЬ СВЯТОГО / СВЯТО' : 'ПАМЯТЬ СВЯТОГО / ПРАЗДНИК'}
             </Text>
             <Text style={[styles.saintTitle, large && styles.saintTitleWide]}>{title}</Text>
-            {!!date && <Text style={styles.date}>{formatDate(date, language)}</Text>}
             <View style={styles.chips}>
-              <Text style={styles.chip}>☦ {uk ? 'День пам’яті' : 'День памяти'}</Text>
+              <Text style={styles.chip}>☦ {uk ? 'День пам’яті' : 'День памяти'}{date ? ` · ${formatDate(date, language)}` : ''}</Text>
             </View>
           </View>
         </View>
