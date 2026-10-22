@@ -507,14 +507,14 @@ const SearchContent = ({navigation}) => {
                   <ActivityIndicator size="small" color="#A16E35" />
                   <Text style={styles.countText}>Ищем…</Text>
                 </>
-              ) : result.total > 0 ? (
+              ) : visibleResults.length > 0 ? (
                 <Text style={styles.countText}>
                   {copy.found(
                     hasMore
-                      ? `${result.total}+`
+                      ? `${result.total + calendarResults.length}+`
                       : result.total >= 500
                         ? '500+'
-                        : result.total
+                        : result.total + calendarResults.length
                   )}
                 </Text>
               ) : null}
