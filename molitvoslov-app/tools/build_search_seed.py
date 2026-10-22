@@ -269,20 +269,25 @@ def main():
                                               "anchor_id": verse.get("id"), "start_offset": None, "end_offset": None,
                                               "metadata": {"psalm_id": psalm.get("id"), "psalm_number": pnum,
                                                            "verse_number": vnum}}
-                    for text_language, field in (
-                        ("church", "church_slavonic"),
-                        ("russian", "russian"),
-                        ("ukrainian", "ukrainian"),
-                        ("traditional", "church_slavonic_traditional")):
-                        body = verse.get(field)
-                        if text_language != "church" or not body:
-                            continue
-                        add(lang, "psalter",
-                            f"psalm:{psalm.get('id')}:verse:{verse.get('id')}:{text_language}",
-                            f"Псалом {pnum}:{vnum}", ktitle, [body],
-                            {"name": "Kathisma", "params": vparams}, "psalm-verse",
-                            preview=body, text_language=text_language)
+                    church = verse.get("church_slavonic")
+                    russian = verse.get("russian")
+                    if not church:
+                        continue
+                    # Search both language wordings, but show and open one
+                    # canonical Church Slavonic Psalter result.
+                    add(lang, "psalter",
+                        f"psalm:{psalm.get('id')}:verse:{verse.get('id')}:church",
+                        f"Псалом {pnum}:{vnum}", ktitle,
+                        [church, russian], {"name": "Kathisma", "params": vparams},
+                        "psalm-verse", preview=church, text_language="church")
         for book in books:
+            # Canonical Psalter is indexed above, with both Slavonic and
+            # Russian wording. Avoid a second copy of its verses in Scripture.
+            book_name = fold(book.get("name") or book.get("short_name"))
+            book_slug = str(book.get("slug") or "").lower()
+            if (book_name in {"псалтирь", "псалтырь", "книга псалмов"} or
+                book_slug in {"psalms", "psalter", "psaltery"}):
+                continue
             book_id = book.get("id")
             display = book.get("name") or book.get("short_name") or "Библия"
             chapters = book.get("chapters", [])
