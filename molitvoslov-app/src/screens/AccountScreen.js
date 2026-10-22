@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 
-import {ActivityIndicator, Pressable, StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 
 import {SafeAreaView} from 'react-native-safe-area-context';
 
@@ -20,8 +20,33 @@ import {colors, radius, spacing} from '../theme';
 import {adoptAnonymousLocalData} from '../services/localDataOwnership';
 
 import {BottomNav} from '../components/navigation/BottomNav';
+import {useLanguage} from '../context/LanguageContext';
+import {getReadingSettings, saveReadingSettings, DEFAULT_READING_SETTINGS} from '../services/readerPreferences';
+import {READER_LANGUAGE_MODES} from '../services/readerLanguageModes';
+
+const MODE_CHOICES = [
+  {value: READER_LANGUAGE_MODES.CHURCH, label: 'Церковнославянский'},
+  {value: READER_LANGUAGE_MODES.RUSSIAN, label: 'Русский'},
+  {value: READER_LANGUAGE_MODES.BOTH, label: 'Церковнославянский + русский'},
+  {value: READER_LANGUAGE_MODES.TRADITIONAL, label: 'Церковнославянский традиционный'},
+];
+const PALETTES = [
+  {value: 'parchment', label: 'Пергамент', color: '#FFF4DE'},
+  {value: 'warm', label: 'Тёплый коричневый', color: '#DEBE94'},
+  {value: 'ivory', label: 'Слоновая кость', color: '#FFFDF3'},
+  {value: 'night', label: 'Ночная', color: '#29231F'},
+];
 
 export const AccountScreen = ({navigation}) => {
+  const {language, setLanguage} = useLanguage();
+  const [readingSettings, setReadingSettings] = useState(DEFAULT_READING_SETTINGS);
+  useEffect(() => { getReadingSettings().then(setReadingSettings).catch(console.warn); }, []);
+  const changeReadingSettings = async (patch) => {
+    const next = {...readingSettings, ...patch};
+    setReadingSettings(next);
+    try { await saveReadingSettings(next); }
+    catch (error) { console.warn('Reading settings:', error); }
+  };
   const [googleUser, setGoogleUser] = useState(null);
 
   const [loading, setLoading] = useState(true);
@@ -152,7 +177,7 @@ export const AccountScreen = ({navigation}) => {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.screen}>
-        <View style={styles.content}>
+        <ScrollView style={{flex: 1}} contentContainerStyle={[styles.content, {paddingBottom: 110}]}>
           <Text style={styles.title}>Аккаунт</Text>
 
           {loading ? (
@@ -210,7 +235,36 @@ export const AccountScreen = ({navigation}) => {
               </Pressable>
             </View>
           )}
-        </View>
+          <View style={[styles.card, {marginTop: 16, gap: 12}]}>
+            <Text style={styles.sectionTitle}>Настройки приложения</Text>
+            <Text style={styles.settingCaption}>Язык интерфейса</Text>
+            <View style={styles.optionRow}>
+              {[{value: 'ru', label: 'Русский'}, {value: 'uk', label: 'Українська'}].map((option) => (
+                <Pressable key={option.value} onPress={() => setLanguage(option.value)} style={[styles.settingOption, language === option.value && styles.optionSelected]}>
+                  <Text style={styles.settingText}>{option.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text style={styles.settingCaption}>Язык чтения по умолчанию</Text>
+            {MODE_CHOICES.map((option) => (
+              <Pressable key={option.value} onPress={() => changeReadingSettings({defaultMode: option.value})} style={[styles.settingOption, readingSettings.defaultMode === option.value && styles.optionSelected]}>
+                <Text style={styles.settingText}>{readingSettings.defaultMode === option.value ? '●  ' : '○  '}{option.label}</Text>
+              </Pressable>
+            ))}
+            <Text style={styles.settingHint}>Если выбранный перевод отсутствует, будет показан доступный текст. Индивидуально сохранённый режим книги имеет приоритет.</Text>
+            <Text style={styles.settingCaption}>Размер текста по умолчанию</Text>
+            <View style={styles.optionRow}>
+              <Pressable style={styles.settingOption} onPress={() => changeReadingSettings({fontSize: readingSettings.fontSize - 1})}><Text style={styles.settingText}>A−</Text></Pressable>
+              <Text style={styles.settingText}>{readingSettings.fontSize}</Text>
+              <Pressable style={styles.settingOption} onPress={() => changeReadingSettings({fontSize: readingSettings.fontSize + 1})}><Text style={styles.settingText}>A+</Text></Pressable>
+            </View>
+            <Text style={styles.settingCaption}>Цветовая палитра чтения</Text>
+            <View style={styles.optionRow}>
+              {PALETTES.map((option) => <Pressable key={option.value} accessibilityLabel={option.label} onPress={() => changeReadingSettings({palette: option.value})} style={[styles.paletteCircle, {backgroundColor: option.color}, readingSettings.palette === option.value && styles.paletteSelected]} />)}
+            </View>
+            <Text style={styles.settingHint}>Настройки сохраняются на устройстве. Применение палитры и размера ко всем видам чтения, а также синхронизация через аккаунт требуют отдельного подключения.</Text>
+          </View>
+        </ScrollView>
 
         <BottomNav navigation={navigation} active="account" />
       </View>
@@ -219,6 +273,15 @@ export const AccountScreen = ({navigation}) => {
 };
 
 const styles = StyleSheet.create({
+  sectionTitle: {fontSize: 20, fontWeight: '700', color: '#503524'},
+  settingCaption: {fontSize: 15, fontWeight: '700', color: '#684229'},
+  settingText: {fontSize: 14, color: '#503524'},
+  settingHint: {fontSize: 12, lineHeight: 19, color: '#836A52'},
+  optionRow: {flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap'},
+  settingOption: {paddingHorizontal: 12, paddingVertical: 10, borderRadius: 11, backgroundColor: '#F7E8CF', borderWidth: 1, borderColor: '#E2CCAA'},
+  optionSelected: {backgroundColor: '#E8CDA4', borderColor: '#875627'},
+  paletteCircle: {width: 38, height: 38, borderRadius: 19, borderWidth: 1, borderColor: '#AD9679'},
+  paletteSelected: {borderWidth: 3, borderColor: '#875627'},
   safeArea: {
     flex: 1,
 
