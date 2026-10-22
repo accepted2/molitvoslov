@@ -136,7 +136,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
     if (!date) return undefined;
     getOfflineCalendarDay(date, language).then((day) => {
       if (!active || !day) return;
-      const list = day.all_feasts || (day.main_feast ? [day.main_feast] : []);
+      const list = [day.main_feast, ...(day.all_feasts || [])].filter(Boolean);
       const matched = list.find((entry) =>
         (feastUid && String(entry.sync_uid) === String(feastUid)) ||
         (feastId != null && String(entry.id) === String(feastId)) ||
