@@ -21,8 +21,9 @@ import {adoptAnonymousLocalData} from '../services/localDataOwnership';
 
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useLanguage} from '../context/LanguageContext';
-import {getReadingSettings, saveReadingSettings, DEFAULT_READING_SETTINGS} from '../services/readerPreferences';
+import {getReadingSettings, saveReadingSettings, resetReadingSettings, DEFAULT_READING_SETTINGS} from '../services/readerPreferences';
 import {READER_LANGUAGE_MODES} from '../services/readerLanguageModes';
+import ColorPalettePicker from '../components/settings/ColorPalettePicker';
 
 const MODE_CHOICES = [
   {value: READER_LANGUAGE_MODES.CHURCH, label: 'Церковнославянский'},
@@ -282,14 +283,17 @@ export const AccountScreen = ({navigation}) => {
               {PALETTES.map((option) => <Pressable key={option.value} accessibilityLabel={option.label} onPress={() => changeReadingSettings({palette: option.value})} style={[styles.paletteCircle, {backgroundColor: option.color}, readingSettings.palette === option.value && styles.paletteSelected]} />)}
             </View>
             {readingSettings.palette === 'custom' && (
-              <View style={{gap: 8}}>
-                <Text style={styles.settingHint}>Свои цвета в формате HEX (#RRGGBB). Применяются к области чтения.</Text>
-                <Text style={styles.settingCaption}>Цвет фона</Text>
-                <TextInput autoCapitalize="characters" maxLength={7} value={readingSettings.customBackground} onChangeText={(value) => setReadingSettings((old) => ({...old, customBackground: value}))} onEndEditing={() => changeReadingSettings({customBackground: readingSettings.customBackground})} style={styles.hexInput} />
-                <Text style={styles.settingCaption}>Цвет текста</Text>
-                <TextInput autoCapitalize="characters" maxLength={7} value={readingSettings.customText} onChangeText={(value) => setReadingSettings((old) => ({...old, customText: value}))} onEndEditing={() => changeReadingSettings({customText: readingSettings.customText})} style={styles.hexInput} />
+              <View style={{gap: 12}}>
+                <ColorPalettePicker title="Цвет фона" color={readingSettings.customBackground} onChange={(color) => changeReadingSettings({customBackground: color})} />
+                <ColorPalettePicker title="Цвет текста" color={readingSettings.customText} onChange={(color) => changeReadingSettings({customText: color})} />
               </View>
             )}
+            <View style={[styles.readerPreview, {backgroundColor: readingSettings.palette === 'custom' ? readingSettings.customBackground : (PALETTES.find((x) => x.value === readingSettings.palette)?.color || '#FFF4DE')}] }>
+              <Text style={{fontFamily: 'serif', fontSize: readingSettings.fontSize, lineHeight: readingSettings.fontSize * 1.65, color: readingSettings.palette === 'custom' ? readingSettings.customText : readingSettings.palette === 'night' ? '#F4E7D2' : '#3E2A1D'}}>Господи, научи меня творить волю Твою. Образец текста для чтения.</Text>
+            </View>
+            <Pressable style={styles.settingOption} onPress={() => Alert.alert('Сбросить настройки?', 'Будет восстановлен русский язык интерфейса, церковнославянский текст и исходное оформление чтения.', [{text: 'Отмена', style: 'cancel'}, {text: 'Сбросить', onPress: async () => {await setLanguage('ru'); const settings = await resetReadingSettings(); await saveReadingSettings({...settings, defaultMode: 'church'}); setReadingSettings({...settings, defaultMode: 'church'});}}])}>
+              <Text style={styles.settingText}>Сбросить настройки чтения и языка</Text>
+            </Pressable>
             <Text style={styles.settingHint}>Настройки сохраняются на устройстве. Применение палитры и размера ко всем видам чтения, а также синхронизация через аккаунт требуют отдельного подключения.</Text>
           </View>
         </ScrollView>
@@ -301,6 +305,7 @@ export const AccountScreen = ({navigation}) => {
 };
 
 const styles = StyleSheet.create({
+  readerPreview: {padding: 18, borderRadius: 13, minHeight: 100, borderWidth: 1, borderColor: '#AE9070'},
   hexInput: {borderWidth: 1, borderColor: '#D6BC94', borderRadius: 10, backgroundColor: '#FFF8EB', padding: 10, color: '#3E2A1D'},
   sectionTitle: {fontSize: 20, fontWeight: '700', color: '#503524'},
   settingCaption: {fontSize: 15, fontWeight: '700', color: '#684229'},
