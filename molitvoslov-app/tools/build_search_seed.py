@@ -178,6 +178,7 @@ def main():
                     st = section.get("text") or {}
                     sid = section.get("id")
                     section_params = dict(params)
+                    section_params["parentTitle"] = title
                     section_params["focusTarget"] = {
                         "anchor_type": "akathist_section" if group == "akathists" else "canon_section",
                         "anchor_id": sid, "start_offset": None, "end_offset": None}
