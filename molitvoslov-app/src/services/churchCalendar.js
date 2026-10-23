@@ -595,13 +595,23 @@ export const formatFast = (day, language = 'ru') => {
   const solid = uk ? 'Суцільний тиждень' : 'Сплошная седмица';
   const fasting = uk ? 'Пісний день' : 'Постный день';
 
-  // A confirmed Azbyka marker takes precedence over outdated food rules.
-  if (markers?.is_solid_week) return solid;
-  if (markers?.is_fasting_day === false) return noFast;
+  // Lenacom imports carry the final dietary restriction for this date.
+  // Do not let older Azbyka fasting markers override verified imported values.
+  const imported = day?.source_payload?.lenacom_fasting || day?.source_payload?.lenacom_fasts ||
+    day?.source_payload?.lenacom_fasting_2025_2027 ||
+    day?.fast_source === 'lenacom' ||
+    ['no-fast', 'fish', 'oil', 'no-oil', 'dry', 'cheese', 'no-food', 'caviar',
+      'fast_fish', 'fast_oil', 'fast_no_oil', 'fast_dry', 'fast_no_meat', 'fast_no_meal'].includes(day.fast_type_code);
+  if (!imported) {
+    if (markers?.is_solid_week) return solid;
+    if (markers?.is_fasting_day === false) return noFast;
+  }
 
-  const name = day.fast_name || markers?.fast_period_name || '';
+  const name = day.fast_name || (!imported ? markers?.fast_period_name : '') || '';
   const type = day.fast_type_title || '';
-  if (name && type && type !== fasting && type !== 'Постный день') {
+  if (imported && (day.fast_type_code === 'no-fast' || (name === 'Нет поста' && !type))) return noFast;
+  if (name && type && !['Нет поста', 'Поста нет', type].includes(name) &&
+      type !== fasting && type !== 'Постный день') {
     return `${name} — ${type}`;
   }
   if (name) return name;
