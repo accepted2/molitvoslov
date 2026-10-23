@@ -44,6 +44,20 @@ class AzbykaCompletenessTests(SimpleTestCase):
             "1Сол.4:13–17. Ин.5:24–30.")
         self.assertEqual([p.label for p in parsed],["За упокой"]*4)
 
+    def test_explicit_html_groups_do_not_bleed_labels(self):
+        html = '''<div class="readings-text"><div class="readings-groups">
+        <p><i>Рядовое:</i> Лит. – Ап.: Гал.3:8–12. Ев.: Лк.13:18–29.</p>
+        <p><i>Сщмч.:</i> Лит. – Ап.: Евр.4:14–5:6. Ев.: Мк.9:33–41.</p>
+        <p><i>Прав.:</i> Утр. – Мф.6:1–13. Лит. – Ап.: Евр.4:14–5:6. Ев.: Мф.5:14–19.</p>
+        <p><i>Рядовое:</i> Лит. – Ап.: Еф.5:1–8. Ев.: Лк.14:1–11.</p>
+        </div></div>'''
+        parsed = parse_readings_text(extract_readings_text(html))
+        self.assertEqual(
+            [p.label for p in parsed],
+            ["Ряд.", "Ряд.", "Сщмч.", "Сщмч.", "Прав.", "Прав.", "Прав.", "Ряд.", "Ряд."],
+        )
+        self.assertEqual(len(parsed), 9)
+
     def test_repeated_assignment_retained(self):
         parsed=parse_readings_text("Ряд.: Лк.6:17–23 (зач. 24). Свт.: Лк.6:17–23 (зач. 24).")
         self.assertEqual(len(parsed),2)
