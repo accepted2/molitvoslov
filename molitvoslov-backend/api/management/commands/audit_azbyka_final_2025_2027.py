@@ -86,7 +86,7 @@ def report_day(day, existing, html):
             status="CONFIRMED_LOCAL"
         reasons.append("User-confirmed local readings; no automatic overwrite")
     duplicate_refs=sum(v-1 for v in db_keys.values() if v>1)
-    return dict(date=day,status=status,existing=len(existing),source=len(source.elements()),
+    return dict(date=day,status=status,existing=len(existing),source=sum(source.values()),
                 parsed=len(parsed),db_missing=db_missing,db_extra=db_extra,
                 parser_missing=parsed_missing,parser_extra=parsed_excess,
                 extraction_missing=dom_missing,extraction_extra=dom_excess,
