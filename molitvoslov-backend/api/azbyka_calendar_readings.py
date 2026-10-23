@@ -218,6 +218,30 @@ def _new_label_from_prefix(prefix):
     if re.search(r"(?:^|[.;])\s*Лит\.?\s*[–—-]?\s*$", prefix, re.I):
         return ""
 
+    # Service-kind markers (Ап.: / Ев.:) are not service names.
+    # When they follow a group heading, preserve that group's name.
+    # Example: "Субботы: Лит. – Ап.:" -> "Субботы".
+    marker = re.search(
+        r"(?:^|[.;]\\s*|\\s+)(?:Ап\\.?|Ев\\.?|Евангелие|Апостол)\\s*:\\s*$",
+        prefix, flags=re.I,
+    )
+    if marker:
+        lead = prefix[:marker.start()].strip()
+        lead = re.sub(r"(?:Лит\\.?|На литургии|Утр\\.?|На утрени)\\s*[–—-]?\\s*$", "", lead, flags=re.I).strip()
+        group = re.search(r"(?:^|[.;]\\s*)([^;:.]{2,75})\\s*:\\s*$", lead)
+        if group:
+            label = _clean_label(group.group(1))
+            if label.lower() in {"рядовое", "рядовые"}:
+                return "Ряд."
+            if label and not label.lower().startswith(("в служебных", "если ")):
+                return label
+        # No explicit group in the prefix: carry current label for paired Gospel.
+        return None
+
+    # Azbyka's explanatory note is a genuine reading alternate, not a heading.
+    if re.search(r"в служебных апостоле и евангелии.*чтения за упокой", prefix, flags=re.I):
+        return "За упокой"
+
     if ":" not in prefix:
         return None
 
