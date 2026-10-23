@@ -113,7 +113,7 @@ def calc(d):
             code="oil"
     if code not in REGIMES:raise ValueError("Unsupported diet code")
     title,description=REGIMES[code]
-    return {"date":d.isoformat(),"code":code,"diet":title,"name":season or "Нет поста",
+    return {"date":d.isoformat(),"code":code,"diet":title,"name":season or ("Нет поста" if code=="no-fast" else "Постный день"),
             "description":description,"note":note,"source_url":SOURCE}
 
 class Command(BaseCommand):
@@ -159,6 +159,7 @@ class Command(BaseCommand):
         if opts["dry_run"]:
             self.stdout.write("DRY RUN: no database changes")
             return
+        raise CommandError("2025 source calendar cells have not been independently verified. APPLY DISABLED to prevent writing inferred rules.")
         from api.sqlite_backup import create_sqlite_backup
         backup,digest=create_sqlite_backup(Path(settings.DATABASES["default"]["NAME"]),
                         Path(settings.BASE_DIR)/"backups"/"sqlite")
