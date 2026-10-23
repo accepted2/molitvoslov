@@ -307,6 +307,23 @@ def _heading_level(tag):
 def extract_readings_text(html):
     soup = BeautifulSoup(html, "lxml")
 
+    # Prefer Azbyka's dedicated readings block. It contains every group
+    # (daily, Theotokos, saints), possibly split among several paragraphs.
+    groups = soup.select_one(".readings-text .readings-groups")
+    if groups is not None:
+        paragraphs = groups.find_all(["p", "li"])
+        # Some page variants use nested divs rather than paragraphs.
+        if paragraphs:
+            chunks = [normalize_space(p.get_text(" ", strip=True)) for p in paragraphs]
+            chunks = [chunk for chunk in chunks if REFERENCE_RE.search(chunk)]
+            if chunks:
+                return " ; ".join(chunks)
+        group_text = normalize_space(groups.get_text(" ", strip=True))
+        if REFERENCE_RE.search(group_text):
+            return group_text
+        raise AzbykaReadingsError('В .readings-groups нет распознанных ссылок на Писание.')
+
+
     heading = None
     for candidate in soup.find_all(re.compile(r"^h[1-6]$")):
         text = normalize_space(candidate.get_text(" ", strip=True)).lower()
