@@ -615,6 +615,8 @@ export const formatFast = (day, language = 'ru') => {
 
   const name = day.fast_name || (!imported ? markers?.fast_period_name : '') || '';
   const type = day.fast_type_title || '';
+  // Solid weeks must remain distinguishable from ordinary days without fasting.
+  if (markers?.is_solid_week && day.fast_type_code === 'no-fast') return solid;
   if (imported && (day.fast_type_code === 'no-fast' || (name === 'Нет поста' && !type))) return noFast;
   if (name && type && !['Нет поста', 'Поста нет', type].includes(name) &&
       type !== fasting && type !== 'Постный день') {
