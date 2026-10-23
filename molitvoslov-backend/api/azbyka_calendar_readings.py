@@ -219,7 +219,7 @@ def _new_label_from_prefix(prefix):
         prefix, re.I,
     )
     if grouped:
-        candidate = _clean_label(grouped.group(1))
+        candidate = _clean_label(grouped.group(1).rsplit(" – ", 1)[-1])
         if candidate.lower() in {"ап.", "ев.", "ап", "ев", "евангелие", "апостол"}:
             return None
         if candidate.lower() in {"рядовое", "рядовые"}:
