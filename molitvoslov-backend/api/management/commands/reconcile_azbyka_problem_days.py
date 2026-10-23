@@ -24,7 +24,7 @@ from api.calendar_models import CalendarDay, CalendarReading
 from api.sqlite_backup import create_sqlite_backup
 
 
-PROTECTED_DATES = {"2026-07-24", "2027-12-04", "2026-06-22"}
+PROTECTED_DATES = {"2026-07-24", "2027-12-04", "2026-06-22", "2027-03-06", "2027-06-20"}
 # These dates require curated, explicitly separated service assignments.
 # Do not flatten them by trusting a simple count of biblical references.
 COMPLEX_SERVICE_DATES = {"2027-04-30"}
