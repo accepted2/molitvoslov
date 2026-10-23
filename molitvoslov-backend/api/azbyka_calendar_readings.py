@@ -363,20 +363,9 @@ def extract_readings_text(html):
     if chunks:
         return chunks[0]
 
-    # Some special-day pages put the readings directly in a section container,
-    # not inside a paragraph or div. Limit fallback to the heading's section.
-    for parent in list(heading.parents)[:4]:
-        if parent.name not in {"section", "article", "div"}:
-            continue
-        candidate = normalize_space(parent.get_text(" ", strip=True))
-        if len(candidate) > 12000:
-            continue
-        pos = candidate.lower().find("чтения священного писания")
-        if pos < 0:
-            continue
-        candidate = candidate[pos + len("чтения священного писания"):]
-        if REFERENCE_RE.search(candidate):
-            return candidate
+    # Do not crawl ancestor containers: these may include unrelated Bible
+    # references and produce confidently wrong results on exceptional days.
+    # If this page has no static passage text, fail closed.
     raise AzbykaReadingsError("В блоке чтений не найдены поддерживаемые ссылки.")
 
 
