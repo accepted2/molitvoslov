@@ -579,6 +579,13 @@ export const getCalendarDayAppearance = (day) => {
   if (!markers) return null;
   if (markers.is_easter) return 'easter';
   if (markers.is_major_feast) return 'feast';
+  const code = day?.fast_type_code || '';
+  const lenacomCodes = ['no-fast', 'fish', 'oil', 'no-oil', 'dry', 'cheese', 'no-food',
+    'caviar', 'fast_fish', 'fast_oil', 'fast_no_oil', 'fast_dry', 'fast_no_meat', 'fast_no_meal'];
+  if (lenacomCodes.includes(code)) {
+    if (code === 'no-fast' && markers.is_solid_week) return 'solid';
+    return code === 'no-fast' ? null : code === 'cheese' || code === 'fast_no_meat' ? 'solid' : 'fast';
+  }
   if (markers.is_solid_week) return 'solid';
   if (markers.is_fasting_day) return 'fast';
   if (markers.is_memorial_day) return 'memorial';
