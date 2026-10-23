@@ -598,6 +598,7 @@ export const formatFast = (day, language = 'ru') => {
   const uk = language === 'uk';
   const cu = language === 'cu';
   const noFast = uk ? 'Посту немає' : cu ? 'Поста нѣсть' : 'Поста нет';
+  const solid = uk ? 'Суцільний тиждень' : 'Сплошная седмица';
   const fasting = uk ? 'Пісний день' : 'Постный день';
 
   // Lenacom imports carry the final dietary restriction for this date.
@@ -607,7 +608,10 @@ export const formatFast = (day, language = 'ru') => {
     day?.fast_source === 'lenacom' ||
     ['no-fast', 'fish', 'oil', 'no-oil', 'dry', 'cheese', 'no-food', 'caviar',
       'fast_fish', 'fast_oil', 'fast_no_oil', 'fast_dry', 'fast_no_meat', 'fast_no_meal'].includes(day.fast_type_code);
-  if (!imported && (markers?.is_solid_week || markers?.is_fasting_day === false)) return noFast;
+  if (!imported) {
+    if (markers?.is_solid_week) return solid;
+    if (markers?.is_fasting_day === false) return noFast;
+  }
 
   const name = day.fast_name || (!imported ? markers?.fast_period_name : '') || '';
   const type = day.fast_type_title || '';
