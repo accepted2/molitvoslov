@@ -377,6 +377,14 @@ export const MenuScreen = ({navigation}) => {
     () => getCalendarReadingItems(calendarToday, 'apostle'),
     [calendarToday]
   );
+  const calendarOldTestamentReadings = useMemo(
+    () => getCalendarReadingItems(calendarToday, 'old_testament'),
+    [calendarToday]
+  );
+  const showCalendarOldTestament =
+    !calendarGospelReadings.length &&
+    !calendarApostleReadings.length &&
+    calendarOldTestamentReadings.length > 0;
   const calendarSaintSource = useMemo(
     () => getBundledCalendarIconSource(calendarToday?.main_feast),
     [calendarToday?.main_feast]
@@ -1253,6 +1261,26 @@ export const MenuScreen = ({navigation}) => {
                         )}
                       </Pressable>
 
+                      {showCalendarOldTestament ? (
+                        <Pressable
+                          onPress={() => openFullCalendar()}
+                          style={({pressed}) => [
+                            styles.calendarQuickItem,
+                            styles.calendarQuickItemBorderTop,
+                            pressed && styles.pressed,
+                          ]}
+                        >
+                          <Text style={styles.calendarQuickLabel}>
+                            {calendarLanguage === 'uk' ? 'СТАРОЗАВІТНІ ЧИТАННЯ' : 'ВЕТХОЗАВЕТНЫЕ ЧТЕНИЯ'}
+                          </Text>
+                          <CalendarReadingText
+                            key={`old-testament-${toCalendarDate(calendarSelectedDate)}`}
+                            readings={calendarOldTestamentReadings}
+                            style={[styles.calendarQuickText, styles.calendarBibleLink]}
+                          />
+                        </Pressable>
+                      ) : (
+                        <>
                       <Pressable
                         disabled={!calendarGospelReadings.length}
                         onPress={() => openCalendarQuickReading('gospel', calendarGospelReadings)}
@@ -1296,6 +1324,8 @@ export const MenuScreen = ({navigation}) => {
                           ]}
                         />
                       </Pressable>
+                        </>
+                      )}
                     </View>
                   </View>
 
