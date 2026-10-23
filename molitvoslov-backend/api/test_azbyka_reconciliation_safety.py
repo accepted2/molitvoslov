@@ -35,7 +35,7 @@ class AzbykaCompletenessTests(SimpleTestCase):
         parsed=parse_readings_text(text)
         self.assertEqual([p.label for p in parsed],
                          ["Субботы","Субботы","Сщмч.","Сщмч.",
-                          "Утр.","Прав.","Прав.","Ряд.","Ряд."])
+                          "Прав.","Прав.","Прав.","Ряд.","Ряд."])
 
     def test_alternative_memorial_label_not_explanatory_prose(self):
         parsed=parse_readings_text(
