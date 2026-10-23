@@ -1226,9 +1226,9 @@ export const MenuScreen = ({navigation}) => {
                       <View style={styles.calendarFeastTextWrap}>
                         <Text style={styles.calendarFeastLabel}>{t('calendar.memory')}</Text>
 
-                        <Text style={styles.calendarFeastTitle} numberOfLines={4} ellipsizeMode="tail">
-                          {calendarToday?.main_feast?.short_title ||
-                            calendarToday?.main_feast?.title ||
+                        <Text style={styles.calendarFeastTitle} numberOfLines={6}>
+                          {calendarToday?.main_feast?.title ||
+                            calendarToday?.main_feast?.short_title ||
                             (calendarLoading
                               ? calendarCopy.loadingMemory
                               : calendarCopy.saintMemory)}
