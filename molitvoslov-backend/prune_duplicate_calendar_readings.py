@@ -14,7 +14,7 @@ from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 import django
 django.setup()
 from django.conf import settings
