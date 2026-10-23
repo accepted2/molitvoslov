@@ -27,6 +27,23 @@ class AzbykaCompletenessTests(SimpleTestCase):
         self.assertEqual(len(parsed),2)
         self.assertEqual(parsed[1].title,"Ин.10:9–16 (зач. 36)")
 
+    def test_service_labels_preserved_between_apostle_and_gospel(self):
+        text=("Субботы: Лит. – Ап.: Гал.3:8–12. Ев.: Лк.13:18–29. "
+              "Сщмч.: Лит. – Ап.: Евр.4:14–5:6. Ев.: Мк.9:33–41. "
+              "Прав.: Утр. – Мф.6:1–13. Лит. – Ап.: Евр.4:14–5:6. Ев.: Мф.5:14–19. "
+              "Рядовое: Лит. – Ап.: Еф.5:1–8. Ев.: Лк.14:1–11.")
+        parsed=parse_readings_text(text)
+        self.assertEqual([p.label for p in parsed],
+                         ["Субботы","Субботы","Сщмч.","Сщмч.",
+                          "Утр.","Прав.","Прав.","Ряд.","Ряд."])
+
+    def test_alternative_memorial_label_not_explanatory_prose(self):
+        parsed=parse_readings_text(
+            "За упокой: 1Кор.15:47–57. Ин.6:35–39. "
+            "В служебных Апостоле и Евангелии указаны другие чтения за упокой для Троицкой родительской субботы: "
+            "1Сол.4:13–17. Ин.5:24–30.")
+        self.assertEqual([p.label for p in parsed],["За упокой"]*4)
+
     def test_repeated_assignment_retained(self):
         parsed=parse_readings_text("Ряд.: Лк.6:17–23 (зач. 24). Свт.: Лк.6:17–23 (зач. 24).")
         self.assertEqual(len(parsed),2)
