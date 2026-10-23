@@ -319,25 +319,28 @@ def extract_readings_text(html):
 
     level = _heading_level(heading) or 2
 
-    # Берём первый абзац после заголовка, в котором есть
-    # поддерживаемая ссылка на Писание. Пояснительные примечания ниже не импортируем
-    # как отдельные чтения.
+    # All consecutive Scripture paragraphs belong to the same reading section.
+    # Previously we returned after the first paragraph, dropping subsequent
+    # assignments (e.g. Theotokos and martyrs on 2026-11-06).
+    chunks = []
     for tag in heading.find_all_next():
         tag_level = _heading_level(tag)
         if tag_level is not None and tag_level <= level:
             break
-
         if tag.name not in {"p", "li"}:
             continue
-
         text = normalize_space(tag.get_text(" ", strip=True))
         lowered = text.lower()
-
         if any(stop in lowered for stop in STOP_TEXTS):
             break
-
         if REFERENCE_RE.search(text):
-            return text
+            chunks.append(text)
+        elif chunks:
+            # Explanatory text after readings is not another assignment.
+            break
+
+    if chunks:
+        return " ; ".join(chunks)
 
     # Fallback для страниц, где чтения завернуты не в <p>.
     chunks = []
