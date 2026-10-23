@@ -24,6 +24,36 @@ from api.calendar_models import CalendarDay, CalendarReading
 from api.sqlite_backup import create_sqlite_backup
 
 
+PROTECTED_DATES = {"2026-07-24", "2027-12-04"}
+
+def unsafe_label(label):
+    # This parser sometimes captures prose/quoted passages instead of a group.
+    return (len(label) > 75
+            or "«" in label or "»" in label
+            or "..." in label or "…" in label
+            or label.startswith(":")
+            or bool(re.search(r"\\b(?:бысть|преступи|зач\\.,?\\s*\\d+.*конец)\\b", label, re.I)))
+
+def guard_day(day, previous, proposed):
+    if day in PROTECTED_DATES:
+        return "Protected complex/ambiguous readings; manual reconciliation required"
+    bad=[r["label"] for r in proposed if unsafe_label(r["label"])]
+    if bad:
+        return "Unreliable labels: "+repr(bad[:3])
+    old_by_title=Counter((r["kind"],r["title"]) for r in previous)
+    new_by_title=Counter((r["kind"],r["title"]) for r in proposed)
+    lost=list((old_by_title-new_by_title).elements())
+    if lost:
+        return "Existing passages would disappear: "+repr(lost[:8])
+    # All labeled assignments must stay labeled unless exact assignment survives elsewhere.
+    old_labelled={(r["kind"],r["title"],r["label"]) for r in previous if r["label"]}
+    proposed_keys={(r["kind"],r["title"],r["label"]) for r in proposed}
+    flattened={(r["kind"],r["title"]) for r in proposed if not r["label"]}
+    lost_labels=[x for x in old_labelled if x not in proposed_keys and (x[0],x[1]) in flattened]
+    if lost_labels:
+        return "Existing service labels would be lost: "+repr(lost_labels[:6])
+    return ""
+
 def keys(text):
     return Counter(
         (m.group("book").replace(" ", ""),m.group("verses").replace("-", "–").replace("—", "–"))
@@ -131,6 +161,9 @@ class Command(BaseCommand):
                     proposed=[dict(kind=p.kind,label=p.label,title=p.title,order=p.order) for p in parsed]
                     if not proposed:
                         raise ValueError("No readings, refusing overwrite")
+                    warning=guard_day(ds,old_by[ds],proposed)
+                    if warning:
+                        raise ValueError(warning)
                     proposal[ds]=proposed
                     old_keys=Counter((r["kind"],r["label"],r["title"]) for r in old_by[ds])
                     new_keys=Counter((r["kind"],r["label"],r["title"]) for r in proposed)
@@ -141,21 +174,21 @@ class Command(BaseCommand):
                 except Exception as exc:
                     errors.append(dict(date=ds,error=str(exc)))
                     self.stderr.write(f"BLOCK {ds}: {exc}")
-        plan=dict(version=1,selected=selected,excluded_source_errors=excluded,
+        plan=dict(version=2,selected=selected,excluded_source_errors=excluded,
                   prepared=proposal,checks=checks,errors=errors,
                   baseline_sha256=sha(old),baseline_rows=old)
         opts["plan"].parent.mkdir(parents=True,exist_ok=True)
         opts["plan"].write_text(json.dumps(plan,ensure_ascii=False,indent=2),encoding="utf8")
         self.stdout.write(f"PLAN: {opts['plan'].resolve()}")
         self.stdout.write(f"READY: {len(proposal)} / {len(selected)} dates; BLOCKED={len(errors)}; preexisting source errors skipped={len(excluded)}")
-        self.stdout.write("No changes. Review the plan, then --apply --accept-removals.")
+        self.stdout.write("No changes. Blocked dates require parser correction, not forced overwrite.")
 
     def apply(self,opts):
         path=opts["plan"]
         if not path.is_file():
             raise CommandError("No plan: "+str(path))
         plan=json.loads(path.read_text(encoding="utf8"))
-        if plan.get("version")!=1 or plan.get("errors"):
+        if plan.get("version")!=2 or plan.get("errors"):
             raise CommandError("Plan has errors; no writes. Fix blocked dates and prepare again.")
         selected=plan["selected"]
         proposed=plan["prepared"]
@@ -163,6 +196,13 @@ class Command(BaseCommand):
             raise CommandError("Incomplete plan; no writes")
         if not opts["accept_removals"] and any(c["remove"] for c in plan["checks"]):
             raise CommandError("Existing readings will be removed; review checks in plan and specify --accept-removals")
+        previous_by=defaultdict(list)
+        for row in plan["baseline_rows"]:
+            previous_by[row["date"]].append(row)
+        for ds in selected:
+            issue=guard_day(ds,previous_by[ds],proposed[ds])
+            if issue:
+                raise CommandError(f"Protected date {ds}: {issue}")
         dates=[date.fromisoformat(s) for s in selected]
         current=snapshot(dates)
         if sha(current)!=plan["baseline_sha256"]:
