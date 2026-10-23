@@ -24,7 +24,11 @@ from api.calendar_models import CalendarDay, CalendarReading
 from api.sqlite_backup import create_sqlite_backup
 
 
-PROTECTED_DATES = {"2026-07-24", "2027-12-04"}
+PROTECTED_DATES = {"2026-07-24", "2027-12-04", "2026-06-22"}
+# These dates require curated, explicitly separated service assignments.
+# Do not flatten them by trusting a simple count of biblical references.
+COMPLEX_SERVICE_DATES = {"2027-04-30"}
+
 
 def unsafe_label(label):
     # This parser sometimes captures prose/quoted passages instead of a group.
@@ -37,6 +41,18 @@ def unsafe_label(label):
 def guard_day(day, previous, proposed):
     if day in PROTECTED_DATES:
         return "Protected complex/ambiguous readings; manual reconciliation required"
+    if day in COMPLEX_SERVICE_DATES:
+        return "Multiple special liturgical services require manual source mapping"
+    # Reject an all-ordinary assignment for a large multi-service day.
+    if len(proposed) >= 15 and len({r["label"] for r in proposed}) == 1 and proposed[0]["label"] in {"Ряд.", "Рядовое", ""}:
+        return "Suspicious flattened special services"
+    # Stand-alone inline Scripture quotes without a lectionary assignment can
+    # look like valid extracted readings. Never silently import bare single-verse
+    # additions without review.
+    old_passages={(r["kind"],r["title"]) for r in previous}
+    for r in proposed:
+        if (r["kind"],r["title"]) not in old_passages and re.search(r"^[1-3]?[А-Яа-яЁё]+\\.\\d+:\\d+$",r["title"]):
+            return "New isolated Scripture verse requires manual classification: "+r["title"]
     bad=[r["label"] for r in proposed if unsafe_label(r["label"])]
     if bad:
         return "Unreliable labels: "+repr(bad[:3])
