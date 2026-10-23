@@ -210,13 +210,37 @@ def _new_label_from_prefix(prefix):
     if not prefix:
         return None
 
+    # New Azbyka layout: a service heading precedes Liturgy / Apostle / Gospel
+    # within a <p>. Respect headings even when previous references precede ";".
+    grouped = re.search(
+        r"(?:^|;\s*)([^;:]{2,75}):\s*"
+        r"(?:(?:Лит\.?|На литургии)\s*[–—-]?\s*)?"
+        r"(?:(?:Ап\.?|Ев\.?|Евангелие|Апостол)\s*:\s*)?$",
+        prefix, re.I,
+    )
+    if grouped:
+        candidate = _clean_label(grouped.group(1))
+        if candidate.lower() in {"рядовое", "рядовые"}:
+            return "Ряд."
+        if candidate and not candidate.lower().startswith(("в служебных", "если ")):
+            return candidate
+
+    # The old Azbyka layout can place "Утр. – Страстотерпцев:"
+    # immediately before the first passage.
+    morning_group = re.search(
+        r"(?:^|[.;]\s*)(?:Утр\.?|На утрени)\s*[–—-]\s*"
+        r"([^;:]{2,75}):\s*$", prefix, re.I,
+    )
+    if morning_group:
+        return _clean_label(morning_group.group(1))
+
     # Отдельный маркер утрени перед первым воскресным Евангелием.
     if re.search(r"(?:^|[.;])\s*(?:Утр\.?|На утрени)\s*[–—-]?\s*$", prefix, re.I):
         return "Утр."
 
-    # "Лит. –" само по себе не является подписью группы.
+    # "Лит. –" alone does not change a saint/service group.
     if re.search(r"(?:^|[.;])\s*Лит\.?\s*[–—-]?\s*$", prefix, re.I):
-        return ""
+        return None
 
     # Ап.: / Ев.: designate the type of reading, never its group label.
     marker = re.search(r"(?:Ап\.?|Ев\.?|Евангелие|Апостол)\s*:\s*$", prefix, re.I)
