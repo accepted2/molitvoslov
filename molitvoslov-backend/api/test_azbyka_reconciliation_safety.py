@@ -70,6 +70,21 @@ class GuardTests(SimpleTestCase):
     def test_24_july_protected(self):
         self.assertIn("Protected",guard_day("2026-07-24",[],[]))
 
+    def test_great_friday_special_services_protected(self):
+        self.assertIn("special liturgical", guard_day("2027-04-30", [], []))
+
+    def test_inline_biblical_quotation_not_imported(self):
+        old = [dict(kind="gospel", label="Свт.", title="Мф.5:14–19 (зач. 11)")]
+        new = old + [dict(kind="gospel", label="Свт.", title="Ин.14:18")]
+        self.assertIn("isolated Scripture", guard_day("2026-06-23", old, new))
+
+    def test_22_june_excluded_from_automatic_overwrite(self):
+        self.assertIn("Protected", guard_day("2026-06-22", [], []))
+
+    def test_many_flattened_service_labels_blocked(self):
+        new = [dict(kind="gospel", label="Ряд.", title="Ин.1:1–10")] * 17
+        self.assertIn("flattened", guard_day("2025-01-05", [], new))
+
     def test_loss_of_passage_blocked(self):
         old=[dict(kind="gospel",label="",title="Мф.27:55–61")]
         new=[dict(kind="gospel",label="",title="Мф.27:55–60")]
