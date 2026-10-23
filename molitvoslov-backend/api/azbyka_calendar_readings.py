@@ -289,7 +289,22 @@ def _new_label_from_prefix(prefix):
     return candidate
 
 
+GROUP_BOUNDARY_RE = re.compile(r"\[\[AZBYKA_GROUP:([^\]]+)\]\]")
+
+
 def parse_readings_text(text):
+    # Explicit DOM group boundaries override heuristic label extraction.
+    # This preserves repeated readings from different services separately.
+    if GROUP_BOUNDARY_RE.search(text):
+        parts = GROUP_BOUNDARY_RE.split(text)
+        result = []
+        for i in range(1, len(parts), 2):
+            label = _clean_label(parts[i])
+            section = parts[i + 1] if i + 1 < len(parts) else ""
+            for item in parse_readings_text(section):
+                result.append(ParsedReading(kind=item.kind, label=label,
+                                            title=item.title, order=(len(result) + 1) * 10))
+        return result
     text = normalize_space(text)
     matches = list(REFERENCE_RE.finditer(text))
 
@@ -375,7 +390,7 @@ def extract_readings_text(html):
                             r"^(?:(?:Лит\\.?|На литургии|Утр\\.?|На утрени)\\s*[–—-]?\\s*)?"
                             r"(?:(?:Ап\\.?|Ев\\.?|Апостол|Евангелие)\\s*:\\s*)?",
                             "", text, flags=re.I)
-                        text = f"{name}: {text}"
+                        text = f"[[AZBYKA_GROUP:{name}]] {text}"
                 parts.append(text)
         text = " ; ".join(parts)
         if REFERENCE_RE.search(text):
