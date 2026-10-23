@@ -349,12 +349,37 @@ def extract_readings_text(html):
     # (daily, Theotokos, saints), possibly split among several paragraphs.
     groups = soup.select(".readings-text .readings-groups")
     if groups:
-        # Full DOM text includes nested <div> references outside <p>/<li>.
-        parts = [normalize_space(g.get_text(" ", strip=True)) for g in groups]
-        text = " ; ".join(part for part in parts if part)
+        parts = []
+        for group in groups:
+            # Each <p> is a separate service, usually introduced by <i>name:</i>.
+            # Flattening the whole container previously lost the first label and
+            # carried the previous label into the next service.
+            paragraphs = group.find_all(["p", "li"], recursive=True)
+            if not paragraphs:
+                paragraphs = [group]
+            for paragraph in paragraphs:
+                text = normalize_space(paragraph.get_text(" ", strip=True))
+                if not REFERENCE_RE.search(text):
+                    continue
+                heading = paragraph.find("i")
+                if heading and not heading.find_parent(["span"]):
+                    name = normalize_space(heading.get_text(" ", strip=True)).rstrip(":").strip()
+                    if name:
+                        if name.lower() in {"рядовое", "рядовые"}:
+                            name = "Ряд."
+                        # Remove the source header and the first service/type
+                        # marker; the remaining Ев./Ап. markers denote types,
+                        # not changes to the service assignment.
+                        text = text[len(normalize_space(heading.get_text(" ", strip=True))):].strip()
+                        text = re.sub(
+                            r"^(?:(?:Лит\\.?|На литургии|Утр\\.?|На утрени)\\s*[–—-]?\\s*)?"
+                            r"(?:(?:Ап\\.?|Ев\\.?|Апостол|Евангелие)\\s*:\\s*)?",
+                            "", text, flags=re.I)
+                        text = f"{name}: {text}"
+                parts.append(text)
+        text = " ; ".join(parts)
         if REFERENCE_RE.search(text):
             return text
-        # Fallback to heading only when grouped text contains no references.
 
     heading = None
     for candidate in soup.find_all(re.compile(r"^h[1-6]$")):
