@@ -109,6 +109,7 @@ class Command(BaseCommand):
         parser.add_argument("--include-errors",action="store_true",
                             help="Attempt source-error dates as well; failures are still blocked")
         parser.add_argument("--accept-removals",action="store_true")
+        parser.add_argument("--exclude-blocked",action="store_true",help="Plan passing dates only and keep blocked dates unchanged")
 
     def handle(self,*args,**opts):
         if connections["default"].vendor!="sqlite":
@@ -174,21 +175,29 @@ class Command(BaseCommand):
                 except Exception as exc:
                     errors.append(dict(date=ds,error=str(exc)))
                     self.stderr.write(f"BLOCK {ds}: {exc}")
-        plan=dict(version=2,selected=selected,excluded_source_errors=excluded,
+        skipped_blocked = list(errors) if opts["exclude_blocked"] else []
+        if opts["exclude_blocked"]:
+            selected = sorted(proposal)
+            checks = [c for c in checks if c["date"] in proposal]
+            old = [r for r in old if r["date"] in proposal]
+            errors = []
+        plan=dict(version=3,selected=selected,excluded_source_errors=excluded,
+                  excluded_blocked=skipped_blocked,
                   prepared=proposal,checks=checks,errors=errors,
                   baseline_sha256=sha(old),baseline_rows=old)
         opts["plan"].parent.mkdir(parents=True,exist_ok=True)
         opts["plan"].write_text(json.dumps(plan,ensure_ascii=False,indent=2),encoding="utf8")
         self.stdout.write(f"PLAN: {opts['plan'].resolve()}")
         self.stdout.write(f"READY: {len(proposal)} / {len(selected)} dates; BLOCKED={len(errors)}; preexisting source errors skipped={len(excluded)}")
-        self.stdout.write("No changes. Blocked dates require parser correction, not forced overwrite.")
+        self.stdout.write(f"SKIPPED BLOCKED: {skipped_blocked}")
+        self.stdout.write("No changes. Review the plan before --apply.")
 
     def apply(self,opts):
         path=opts["plan"]
         if not path.is_file():
             raise CommandError("No plan: "+str(path))
         plan=json.loads(path.read_text(encoding="utf8"))
-        if plan.get("version")!=2 or plan.get("errors"):
+        if plan.get("version")!=3 or plan.get("errors"):
             raise CommandError("Plan has errors; no writes. Fix blocked dates and prepare again.")
         selected=plan["selected"]
         proposed=plan["prepared"]
@@ -228,13 +237,7 @@ class Command(BaseCommand):
                 raise CommandError("Concurrent change; rollback")
             CalendarReading.objects.filter(day__date_gregorian__in=dates).delete()
             CalendarReading.objects.bulk_create(replacement,batch_size=500)
-            for ds in selected:
-                reading=proposed[ds]
-                gospel=next((r["title"] for r in reading if r["kind"]=="gospel"),"")
-                apostle=next((r["title"] for r in reading if r["kind"]=="apostle"),"")
-                CalendarDay.objects.filter(pk=day_ids[date.fromisoformat(ds)]).update(
-                    gospel_title=gospel,gospel_title_uk=gospel,
-                    apostolic_title=apostle,apostolic_title_uk=apostle)
+            # Preserve independently curated CalendarDay titles and translations.
             actual=defaultdict(list)
             for r in CalendarReading.objects.filter(day__date_gregorian__in=dates).select_related("day"):
                 actual[r.day.date_gregorian.isoformat()].append((r.kind,r.label,r.title,r.order))
