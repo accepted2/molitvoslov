@@ -488,6 +488,16 @@ export const MenuScreen = ({navigation}) => {
           setCalendarToday(offline);
           setCalendarLoading(false);
         }
+        const fresh = await getCalendarDay(targetDate, {
+          language: dataLanguage,
+          force: true,
+          skipOffline: false,
+        });
+
+        if (requestId === calendarRequestRef.current && fresh) {
+          setCalendarToday(fresh);
+        }
+
 
       } catch (err) {
         if (requestId === calendarRequestRef.current) {
@@ -1264,7 +1274,7 @@ export const MenuScreen = ({navigation}) => {
                       >
                         <Text style={styles.calendarQuickLabel}>{t('calendar.fast')}</Text>
 
-                        <Text style={styles.calendarQuickText} numberOfLines={2}>
+                        <Text style={styles.calendarQuickText} >
                           {formatFast(calendarToday, calendarLanguage) || calendarCopy.noFastData}
                         </Text>
                         {!!formatMemorialDay(calendarToday, calendarLanguage) && (
@@ -2141,10 +2151,9 @@ const styles = StyleSheet.create({
   calendarMainRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    gap: 3,
+    gap: 2,
     marginTop: 8,
     paddingTop: 8,
-
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(139, 94, 49, 0.18)',
   },
@@ -2170,9 +2179,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     fontWeight: '700',
     width: '100%',
-
     justifyContent: 'space-between',
-
     flexDirection: 'row',
     alignItems: 'center',
 
@@ -2202,7 +2209,6 @@ const styles = StyleSheet.create({
     marginTop: 1,
     color: '#6F5541',
     fontFamily: 'serif',
-
     fontSize: 10,
     lineHeight: 12,
     textTransform: 'lowercase',
@@ -2229,16 +2235,7 @@ const styles = StyleSheet.create({
   },
 
   calendarSaintImage: {
-    // width: 46,
-    // // MaxWidth: 56,
-    // height: 79,
-    // // maxHeight: '100%',
-    // // marginTop: 5,
-    // borderRadius: 8,
-    // width: 98,
-    // // aspectRatio,
-    // minHeight: 105,
-    // maxHeight: 170,
+
     alignSelf: 'center',
 
     backgroundColor: '#F0D6A5',
@@ -2285,7 +2282,7 @@ const styles = StyleSheet.create({
   },
 
   calendarQuickColumn: {
-    marginTop: 6,
+    marginTop: 3,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: 'rgba(139, 94, 49, 0.13)',
@@ -2462,7 +2459,7 @@ const styles = StyleSheet.create({
   },
 
   calendarQuickText: {
-    marginTop: 2,
+    marginTop: 3,
     color: '#624936',
     fontFamily: 'serif',
     fontSize: 12,
