@@ -284,16 +284,9 @@ def parse_readings_text(text):
             order=index * 10,
         )
 
-        # Один и тот же отрывок может встречаться в разных группах —
-        # это разные чтения. Удаляем только точный дубль по содержанию.
-        duplicate = any(
-            existing.kind == reading.kind
-            and existing.label == reading.label
-            and existing.title == reading.title
-            for existing in result
-        )
-        if not duplicate:
-            result.append(reading)
+        # Keep repeated assignments, including identical texts and labels.
+        # Different services can legitimately cite the same Scripture passage.
+        result.append(reading)
 
     return result
 
@@ -309,20 +302,14 @@ def extract_readings_text(html):
 
     # Prefer Azbyka's dedicated readings block. It contains every group
     # (daily, Theotokos, saints), possibly split among several paragraphs.
-    groups = soup.select_one(".readings-text .readings-groups")
-    if groups is not None:
-        paragraphs = groups.find_all(["p", "li"])
-        # Some page variants use nested divs rather than paragraphs.
-        if paragraphs:
-            chunks = [normalize_space(p.get_text(" ", strip=True)) for p in paragraphs]
-            chunks = [chunk for chunk in chunks if REFERENCE_RE.search(chunk)]
-            if chunks:
-                return " ; ".join(chunks)
-        group_text = normalize_space(groups.get_text(" ", strip=True))
-        if REFERENCE_RE.search(group_text):
-            return group_text
-        raise AzbykaReadingsError('В .readings-groups нет распознанных ссылок на Писание.')
-
+    groups = soup.select(".readings-text .readings-groups")
+    if groups:
+        # Full DOM text includes nested <div> references outside <p>/<li>.
+        parts = [normalize_space(g.get_text(" ", strip=True)) for g in groups]
+        text = " ; ".join(part for part in parts if part)
+        if REFERENCE_RE.search(text):
+            return text
+        # Fallback to heading only when grouped text contains no references.
 
     heading = None
     for candidate in soup.find_all(re.compile(r"^h[1-6]$")):
@@ -352,9 +339,8 @@ def extract_readings_text(html):
             break
         if REFERENCE_RE.search(text):
             chunks.append(text)
-        elif chunks:
-            # Explanatory text after readings is not another assignment.
-            break
+        # Non-reference paragraphs can separate normal and optional services.
+        # Continue collecting until the next same/higher-level section heading.
 
     if chunks:
         return " ; ".join(chunks)
