@@ -609,6 +609,11 @@ export const formatFast = (day, language = 'ru') => {
     ['no-fast', 'fish', 'oil', 'no-oil', 'dry', 'cheese', 'no-food', 'caviar',
       'fast_fish', 'fast_oil', 'fast_no_oil', 'fast_dry', 'fast_no_meat', 'fast_no_meal'].includes(day.fast_type_code);
   if (markers?.is_solid_week && (!imported || day.fast_type_code === 'no-fast')) {
+    const dateKey = typeof day?.date_gregorian === 'string' ? day.date_gregorian.slice(5, 10) : '';
+    // Святки: 7–17 января, до Крещенского сочельника (18 января).
+    if (dateKey >= '01-07' && dateKey <= '01-17') {
+      return `${noFast} — Святки`;
+    }
     return `${noFast} — ${solid.toLowerCase()}`;
   }
   if (!imported && markers?.is_fasting_day === false) return noFast;
