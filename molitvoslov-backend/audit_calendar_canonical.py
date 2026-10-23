@@ -55,6 +55,31 @@ def main():
         f = by_id[pk]
         canonical_2026[clean(f.title)].append(f)
 
+    # Snapshot exactly the canonical set before any cleanup or relinking.
+    # Includes both main_feast and the many-to-many day.feasts relation.
+    canonical_rows = []
+    noncanonical_rows = []
+    for pk, f in sorted(by_id.items()):
+        years = sorted({d.year for d in day_dates[pk]})
+        row = {
+            "id": pk, "sync_uid": str(f.sync_uid or ""),
+            "source_id": f.source_id if f.source_id is not None else "",
+            "title": f.title, "years": ",".join(str(y) for y in years),
+            "life_length": len(f.life_content or ""),
+            "troparion_length": len(f.troparion_content or ""),
+            "kontakion_length": len(f.kontakion_content or ""),
+            "has_icon": bool(f.icon_url),
+        }
+        (canonical_rows if pk in canonical_ids else noncanonical_rows).append(row)
+    snapshot_headers = [
+        "id", "sync_uid", "source_id", "title", "years", "life_length",
+        "troparion_length", "kontakion_length", "has_icon",
+    ]
+    rows_to_csv(output / "KEEP_2026_CANONICAL.csv", canonical_rows, snapshot_headers)
+    rows_to_csv(output / "REVIEW_NOT_IN_2026.csv", noncanonical_rows, snapshot_headers)
+    without_uid = [row for row in canonical_rows if not row["sync_uid"]]
+    rows_to_csv(output / "CHECK_2026_MISSING_SYNC_UID.csv", without_uid, snapshot_headers)
+
     inventory = []
     proposals = []
     for pk, f in sorted(by_id.items()):
@@ -92,6 +117,8 @@ def main():
         "candidate_sync_uids", "status", "notice"])
     print("READ ONLY — никакие карточки, связи и даты не изменены.")
     print("Карточек всего:", len(by_id))
+    print("Сохранить (привязаны к 2026):", len(canonical_rows))
+    print("Проверить (не привязаны к 2026):", len(noncanonical_rows))
     print("Используются в календаре 2026:", len(canonical_ids))
     print("Карточек 2026 без sync_uid:", sum(not by_id[pk].sync_uid for pk in canonical_ids))
     print("Непривязанных карточек:", sum(not dates_ for dates_ in day_dates.values()) + sum(pk not in day_dates for pk in by_id))
