@@ -220,6 +220,8 @@ def _new_label_from_prefix(prefix):
     )
     if grouped:
         candidate = _clean_label(grouped.group(1))
+        if candidate.lower() in {"ап.", "ев.", "ап", "ев", "евангелие", "апостол"}:
+            return None
         if candidate.lower() in {"рядовое", "рядовые"}:
             return "Ряд."
         if candidate and not candidate.lower().startswith(("в служебных", "если ")):
