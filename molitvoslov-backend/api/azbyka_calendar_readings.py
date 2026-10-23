@@ -228,7 +228,7 @@ def _new_label_from_prefix(prefix):
     if marker:
         lead = prefix[:marker.start()].strip()
         lead = re.sub(r"(?:Лит\\.?|На литургии|Утр\\.?|На утрени)\\s*[–—-]?\\s*$", "", lead, flags=re.I).strip()
-        group = re.search(r"(?:^|[.;]\\s*)([^;:.]{2,75})\\s*:\\s*$", lead)
+        group = re.search(r"(?:^|[;]\\s*)([^;:]{2,75})\\s*:\\s*$", lead)
         if group:
             label = _clean_label(group.group(1))
             if label.lower() in {"рядовое", "рядовые"}:
