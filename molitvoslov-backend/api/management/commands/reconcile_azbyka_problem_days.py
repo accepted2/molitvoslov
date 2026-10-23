@@ -51,7 +51,7 @@ def guard_day(day, previous, proposed):
     # additions without review.
     old_passages={(r["kind"],r["title"]) for r in previous}
     for r in proposed:
-        if (r["kind"],r["title"]) not in old_passages and re.search(r"^[1-3]?[А-Яа-яЁё]+\\.\\d+:\\d+$",r["title"]):
+        if (r["kind"],r["title"]) not in old_passages and re.search(r"^[1-3]?[А-Яа-яЁё]+\.\d+:\d+$",r["title"]):
             return "New isolated Scripture verse requires manual classification: "+r["title"]
     bad=[r["label"] for r in proposed if unsafe_label(r["label"])]
     if bad:
