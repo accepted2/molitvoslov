@@ -327,6 +327,7 @@ export const CanonScreen = ({route, navigation}) => {
     let nextMode = getReaderModeForAppLanguage(language, {
       hasRussian: hasRussianTranslation,
       hasUkrainian: hasUkrainianTranslation,
+      hasTraditional: hasTraditionalTranslation,
     });
 
     const preferred = focusTarget?.preferredLanguage;

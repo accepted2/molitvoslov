@@ -370,7 +370,7 @@ export default function KathismaScreen({route, navigation}) {
           psalm_id: Number(firstPsalm.id),
           psalm_number: Number(firstPsalm.number),
           chunk_index: 0,
-          language: metadata.language || 'church',
+          language: metadata.language || focusTarget.preferredLanguage || 'church',
         },
       };
     }
@@ -405,12 +405,13 @@ export default function KathismaScreen({route, navigation}) {
 
     if (anchorType === 'psalm_verse') {
       const verseId = Number(focusTarget.anchor_id || focusTarget.anchorId);
+      const preferred = focusTarget.preferredLanguage;
       const savedLanguage =
-        metadata.language === 'ukrainian'
+        (metadata.language || preferred) === 'ukrainian'
           ? 'ukrainian'
-          : metadata.language === 'russian'
+          : (metadata.language || preferred) === 'russian'
             ? 'russian'
-            : metadata.language === 'traditional'
+            : (metadata.language || preferred) === 'traditional'
               ? 'traditional'
               : 'church';
       const field =
@@ -475,8 +476,11 @@ export default function KathismaScreen({route, navigation}) {
           ...focusTarget,
           anchor_type: 'psalm_text',
           anchor_id: Number(psalm.id),
-          start_offset: legacyStart === null ? null : range.contentStart + legacyStart,
-          end_offset: legacyEnd === null ? null : range.contentStart + legacyEnd,
+          // Keep the exact verse boundaries so search cannot jump to another
+          // occurrence of the word elsewhere in this multi-verse chunk.
+          start_offset: legacyStart === null ? range.contentStart : range.contentStart + legacyStart,
+          end_offset: legacyEnd === null ? range.contentEnd : range.contentStart + legacyEnd,
+          highlightVerse: true,
           metadata: {
             ...metadata,
             psalm_id: Number(psalm.id),
@@ -523,13 +527,18 @@ export default function KathismaScreen({route, navigation}) {
       return;
     }
 
+    const preferred = focusTarget?.preferredLanguage;
+    const initial = getReaderModeForAppLanguage(language, {
+      hasRussian: hasRussianTranslation,
+      hasUkrainian: hasUkrainianTranslation,
+    });
     setViewMode(
-      getReaderModeForAppLanguage(language, {
-        hasRussian: hasRussianTranslation,
-        hasUkrainian: hasUkrainianTranslation,
-      })
+      preferred === 'russian' ? (hasRussianTranslation ? READER_LANGUAGE_MODES.RUSSIAN : initial) :
+      preferred === 'ukrainian' ? (hasUkrainianTranslation ? READER_LANGUAGE_MODES.UKRAINIAN : initial) :
+      preferred === 'traditional' ? (hasTraditionalTranslation ? READER_LANGUAGE_MODES.TRADITIONAL : initial) :
+      preferred === 'church' ? READER_LANGUAGE_MODES.CHURCH : initial
     );
-  }, [language, kathisma, hasRussianTranslation, hasUkrainianTranslation]);
+  }, [language, kathisma, hasRussianTranslation, hasUkrainianTranslation, hasTraditionalTranslation, focusTarget]);
 
   const documentData = useMemo(() => {
     if (!kathisma) {

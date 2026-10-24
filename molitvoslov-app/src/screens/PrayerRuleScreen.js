@@ -124,7 +124,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         }
 
         setViewMode(
-          resolveAvailableViewMode(savedMode, {
+          focusTarget?.highlightQuery ? MODE_CHURCH : resolveAvailableViewMode(savedMode, {
             hasRussian: hasRussianTranslation,
             hasTraditional: hasTraditionalTranslation,
           })
@@ -149,7 +149,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     return () => {
       active = false;
     };
-  }, [rule, slug, hasRussianTranslation, hasTraditionalTranslation]);
+  }, [rule, slug, hasRussianTranslation, hasTraditionalTranslation, focusTarget]);
 
   const handleViewModeChange = useCallback(
     (nextMode) => {

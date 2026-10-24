@@ -6,8 +6,8 @@ import {
   Image,
   ImageBackground,
   InteractionManager,
-  Pressable,
   ScrollView,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -34,6 +34,7 @@ import {
   getCalendarDayAppearance,
   getCalendarDay,
   getCalendarMonth,
+  refreshCalendarMonthIfStale,
   getCalendarReadingItems,
   openCalendarBibleReference,
   resolveBibleReference,
@@ -44,7 +45,7 @@ import {useLanguage} from '../context/LanguageContext';
 import {LANGUAGE_OPTIONS, getCalendarDataLanguage} from '../services/languagePreferences';
 import {getLocalizedField} from '../services/localizedContent';
 import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
-import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
+import {getOfflineCalendarDay, getOfflineCalendarMonth} from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {subscribeToContentUpdates} from '../services/contentStore';
 import {colors, spacing} from '../theme';
@@ -212,7 +213,8 @@ const BellGlyph = () => (
   </View>
 );
 
-const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress}) => (
+const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress}) => {
+  return (
   <Pressable
     onPress={onPress}
     style={({pressed}) => [styles.libraryCard, pressed && styles.pressed]}
@@ -277,7 +279,8 @@ const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress})
       <Text style={styles.libraryChevronText}>›</Text>
     </View>
   </Pressable>
-);
+  );
+};
 
 const CalendarReadingText = ({readings, style}) => {
   const first = readings[0];
@@ -358,6 +361,8 @@ export const MenuScreen = ({navigation}) => {
 
   const insets = useSafeAreaInsets();
   const calendarRequestRef = useRef(0);
+  const selectedCalendarDateRef = useRef(calendarSelectedDate);
+  selectedCalendarDateRef.current = calendarSelectedDate;
   const calendarSnapshot = useMemo(
     () => createCalendarSnapshot(calendarVisibleMonth, calendarSelectedDate, calendarLanguage),
     [calendarVisibleMonth, calendarSelectedDate, calendarLanguage]
@@ -375,6 +380,14 @@ export const MenuScreen = ({navigation}) => {
     () => getCalendarReadingItems(calendarToday, 'apostle'),
     [calendarToday]
   );
+  const calendarOldTestamentReadings = useMemo(
+    () => getCalendarReadingItems(calendarToday, 'old_testament'),
+    [calendarToday]
+  );
+  const showCalendarOldTestament =
+    !calendarGospelReadings.length &&
+    !calendarApostleReadings.length &&
+    calendarOldTestamentReadings.length > 0;
   const calendarSaintSource = useMemo(
     () => getBundledCalendarIconSource(calendarToday?.main_feast),
     [calendarToday?.main_feast]
@@ -390,12 +403,12 @@ export const MenuScreen = ({navigation}) => {
 
     const calculatedHeight = width * (sourceHeight / sourceWidth);
 
-    const height = Math.max(54, Math.min(86, calculatedHeight));
+    const height = Math.max(54, Math.min(105, calculatedHeight));
 
     return (
       <Image
         source={source}
-        resizeMode="cover"
+        resizeMode="contain"
         style={[
           styles.calendarSaintImage,
           {
@@ -475,18 +488,17 @@ export const MenuScreen = ({navigation}) => {
           setCalendarToday(offline);
           setCalendarLoading(false);
         }
-
         const fresh = await getCalendarDay(targetDate, {
           language: dataLanguage,
           force: true,
-          skipOffline: true,
+          skipOffline: false,
         });
 
-        if (requestId !== calendarRequestRef.current) {
-          return;
+        if (requestId === calendarRequestRef.current && fresh) {
+          setCalendarToday(fresh);
         }
 
-        setCalendarToday(fresh);
+
       } catch (err) {
         if (requestId === calendarRequestRef.current) {
           console.log('Фоновое обновление церковного календаря:', err?.message || err);
@@ -502,27 +514,28 @@ export const MenuScreen = ({navigation}) => {
 
   useEffect(() => {
     let active = true;
-    const controller = new AbortController();
     const year = calendarVisibleMonth.getFullYear();
     const month = calendarVisibleMonth.getMonth() + 1;
     const language = getCalendarDataLanguage(calendarLanguage);
-    getCalendarMonth(year, month, {
-      language,
-      force: true,
-      skipOffline: true,
-      signal: controller.signal,
-    })
+    getOfflineCalendarMonth(year, month, language)
       .then((data) => {
         if (active) setCalendarMonthDays(data?.days || []);
       })
       .catch((error) => {
-        if (active && error?.name !== 'AbortError') {
-          console.log('Фоновое обновление мини-календаря:', error?.message || error);
-        }
+        if (active) console.log('Локальный мини-календарь:', error?.message || error);
       });
+    refreshCalendarMonthIfStale(year, month, language).then((fresh) => {
+      if (active && fresh) {
+        setCalendarMonthDays(fresh.days || []);
+        const selectedKey = toCalendarDate(selectedCalendarDateRef.current);
+        const freshDay = fresh.days?.find((day) => day?.date_gregorian === selectedKey);
+        if (freshDay) setCalendarToday((previous) =>
+          previous?.date_gregorian === selectedKey ? freshDay : previous
+        );
+      }
+    });
     return () => {
       active = false;
-      controller.abort();
     };
   }, [calendarVisibleMonth, calendarLanguage]);
 
@@ -642,10 +655,7 @@ export const MenuScreen = ({navigation}) => {
     const dataLanguage = getCalendarDataLanguage(next);
 
     try {
-      const day = await getCalendarDay(calendarSelectedDate, {
-        language: dataLanguage,
-        force: true,
-      });
+      const day = await getOfflineCalendarDay(calendarSelectedDate, dataLanguage);
       setCalendarToday(day);
 
       const todayKey = toCalendarDate(new Date());
@@ -653,10 +663,7 @@ export const MenuScreen = ({navigation}) => {
       const widgetDay =
         selectedKey === todayKey
           ? day
-          : await getCalendarDay(new Date(), {
-              language: dataLanguage,
-              force: true,
-            });
+          : await getOfflineCalendarDay(new Date(), dataLanguage);
 
       await updateCalendarWidget(widgetDay, next);
     } catch (error) {
@@ -704,17 +711,8 @@ export const MenuScreen = ({navigation}) => {
   };
 
   const openCalendarQuickReading = (kind, readings) => {
-    if (!readings.length) {
-      return;
-    }
-
-    const first = readings[0];
-
-    if (readings.length === 1 && resolveBibleReference(first.title)) {
-      openCalendarBibleReference(navigation, first.title);
-      return;
-    }
-
+    if (!readings.length) return;
+    // Open the expandable reading in the calendar, not the Bible reader.
     openFullCalendar(kind === 'gospel' ? 'gospel' : 'apostle');
   };
 
@@ -1088,28 +1086,6 @@ export const MenuScreen = ({navigation}) => {
               />
 
               <View style={styles.heroTopActions}>
-                <View style={styles.appLanguageSwitch}>
-                  {LANGUAGE_OPTIONS.map((item) => {
-                    const active = calendarLanguage === item.value;
-
-                    return (
-                      <Pressable
-                        key={item.value}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${t('common.language')}: ${item.label}`}
-                        onPress={() => changeAppLanguage(item.value)}
-                        style={[styles.appLanguageButton, active && styles.appLanguageButtonActive]}
-                      >
-                        <Text
-                          style={[styles.appLanguageText, active && styles.appLanguageTextActive]}
-                        >
-                          {item.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t('menu.search')}
@@ -1282,8 +1258,8 @@ export const MenuScreen = ({navigation}) => {
                         <Text style={styles.calendarFeastLabel}>{t('calendar.memory')}</Text>
 
                         <Text style={styles.calendarFeastTitle} numberOfLines={6}>
-                          {calendarToday?.main_feast?.short_title ||
-                            calendarToday?.main_feast?.title ||
+                          {calendarToday?.main_feast?.title ||
+                            calendarToday?.main_feast?.short_title ||
                             (calendarLoading
                               ? calendarCopy.loadingMemory
                               : calendarCopy.saintMemory)}
@@ -1298,7 +1274,7 @@ export const MenuScreen = ({navigation}) => {
                       >
                         <Text style={styles.calendarQuickLabel}>{t('calendar.fast')}</Text>
 
-                        <Text style={styles.calendarQuickText} numberOfLines={2}>
+                        <Text style={styles.calendarQuickText} >
                           {formatFast(calendarToday, calendarLanguage) || calendarCopy.noFastData}
                         </Text>
                         {!!formatMemorialDay(calendarToday, calendarLanguage) && (
@@ -1308,6 +1284,26 @@ export const MenuScreen = ({navigation}) => {
                         )}
                       </Pressable>
 
+                      {showCalendarOldTestament ? (
+                        <Pressable
+                          onPress={() => openFullCalendar()}
+                          style={({pressed}) => [
+                            styles.calendarQuickItem,
+                            styles.calendarQuickItemBorderTop,
+                            pressed && styles.pressed,
+                          ]}
+                        >
+                          <Text style={styles.calendarQuickLabel}>
+                            {calendarLanguage === 'uk' ? 'СТАРОЗАВІТНІ ЧИТАННЯ' : 'ВЕТХОЗАВЕТНЫЕ ЧТЕНИЯ'}
+                          </Text>
+                          <CalendarReadingText
+                            key={`old-testament-${toCalendarDate(calendarSelectedDate)}`}
+                            readings={calendarOldTestamentReadings}
+                            style={[styles.calendarQuickText, styles.calendarBibleLink]}
+                          />
+                        </Pressable>
+                      ) : (
+                        <>
                       <Pressable
                         disabled={!calendarGospelReadings.length}
                         onPress={() => openCalendarQuickReading('gospel', calendarGospelReadings)}
@@ -1351,6 +1347,8 @@ export const MenuScreen = ({navigation}) => {
                           ]}
                         />
                       </Pressable>
+                        </>
+                      )}
                     </View>
                   </View>
 
@@ -1430,9 +1428,8 @@ export const MenuScreen = ({navigation}) => {
                                 styles.miniCalendarDayBubble,
                                 appearance && styles[`miniCalendarDayBubble_${appearance}`],
                                 cell.today && styles.miniCalendarDayBubbleToday,
-                                cell.selected &&
-                                  // !cell.today &&
-                                  styles.miniCalendarDayBubbleSelected,
+                                cell.selected && styles.miniCalendarDayBubbleSelected,
+                                cell.today && cell.selected && styles.miniCalendarDayBubbleTodaySelected,
                               ]}
                             >
                               <Text
@@ -2154,10 +2151,9 @@ const styles = StyleSheet.create({
   calendarMainRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    gap: 3,
+    gap: 2,
     marginTop: 8,
     paddingTop: 8,
-
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(139, 94, 49, 0.18)',
   },
@@ -2171,7 +2167,7 @@ const styles = StyleSheet.create({
     width: '44%',
     alignSelf: 'flex-start',
     borderColor: 'rgba(255, 251, 242, 0.72)',
-    backgroundColor: 'rgba(139, 94, 49, 0.13)',
+    backgroundColor: 'rgb(152 138 124 / 0.13)',
   },
 
   calendarTodayDate: {
@@ -2183,9 +2179,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     fontWeight: '700',
     width: '100%',
-
     justifyContent: 'space-between',
-
     flexDirection: 'row',
     alignItems: 'center',
 
@@ -2215,7 +2209,6 @@ const styles = StyleSheet.create({
     marginTop: 1,
     color: '#6F5541',
     fontFamily: 'serif',
-
     fontSize: 10,
     lineHeight: 12,
     textTransform: 'lowercase',
@@ -2242,16 +2235,7 @@ const styles = StyleSheet.create({
   },
 
   calendarSaintImage: {
-    // width: 46,
-    // // MaxWidth: 56,
-    // height: 79,
-    // // maxHeight: '100%',
-    // // marginTop: 5,
-    // borderRadius: 8,
-    // width: 98,
-    // // aspectRatio,
-    // minHeight: 105,
-    // maxHeight: 170,
+
     alignSelf: 'center',
 
     backgroundColor: '#F0D6A5',
@@ -2298,7 +2282,7 @@ const styles = StyleSheet.create({
   },
 
   calendarQuickColumn: {
-    marginTop: 6,
+    marginTop: 3,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: 'rgba(139, 94, 49, 0.13)',
@@ -2313,8 +2297,9 @@ const styles = StyleSheet.create({
     padding: 3,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 251, 242, 0.72)',
-    backgroundColor: 'rgba(139, 94, 49, 0.13)',
+    borderColor: 'rgba(139, 94, 49, 0.13)',
+    backgroundColor:  'rgba(255, 251, 242, 0.72)',
+
   },
 
   miniCalendarHeader: {
@@ -2399,24 +2384,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
+    backgroundColor: 'rgba(139, 94, 49, 0.08)',
   },
 
-  miniCalendarDayBubble_fast: {backgroundColor: '#A78AB9'},
-  miniCalendarDayBubble_solid: {backgroundColor: '#E0B65C'},
-  miniCalendarDayBubble_feast: {backgroundColor: '#C98275'},
-  miniCalendarDayBubble_easter: {backgroundColor: '#C99535'},
-  miniCalendarDayBubble_memorial: {backgroundColor: '#A69A86'},
+  miniCalendarDayBubble_fast: {backgroundColor: '#D4C2E2'},
+  miniCalendarDayBubble_solid: {backgroundColor: '#F0DBA0'},
+  miniCalendarDayBubble_feast: {backgroundColor: '#E6B7A8'},
+  miniCalendarDayBubble_easter: {backgroundColor: '#EAD18B'},
+  miniCalendarDayBubble_memorial: {backgroundColor: '#D0C7BB'},
   miniCalendarDayMarked: {color: '#6A4B3B', fontWeight: '700'},
   miniCalendarDayBubbleToday: {
-    backgroundColor: '#B97A32',
-  },
+    // backgroundColor: 'transparent',
+  borderWidth: 1.5,
+  borderColor: '#35564B',
 
-  miniCalendarDayBubbleSelected: {
-    borderWidth: 1.5,
-    borderColor: '#B97A32',
-    borderRadius: 10,
-    // backgroundColor: 'rgba(185,122,50,0.10)',
   },
+  miniCalendarDayBubbleSelected: {
+    borderWidth: 2,
+    borderColor: '#489a35',
+    borderRadius: 12,
+  },
+  miniCalendarDayBubbleTodaySelected: {borderColor: '#489a35'},
 
   miniCalendarDayText: {
     color: '#473226',
@@ -2434,14 +2422,11 @@ const styles = StyleSheet.create({
   },
 
   miniCalendarDayToday: {
-    color: '#FFF7E7',
-    fontWeight: '700',
-  },
-
-  miniCalendarDaySelected: {
-    color: '#7B4D25',
+    color: '#35564B',
     fontWeight: '800',
   },
+
+  miniCalendarDaySelected: {fontWeight: '800'},
 
   calendarQuickRow: {
     flexDirection: 'row',
@@ -2480,7 +2465,7 @@ const styles = StyleSheet.create({
   },
 
   calendarQuickText: {
-    marginTop: 2,
+    marginTop: 3,
     color: '#624936',
     fontFamily: 'serif',
     fontSize: 12,

@@ -159,3 +159,16 @@ class LogoutView(APIView):
     def post(self, request):
         Token.objects.filter(user=request.user).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class DeleteAccountView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if request.data.get("confirmation") != "DELETE":
+            return Response(
+                {"detail": "Подтвердите удаление аккаунта."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        request.user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

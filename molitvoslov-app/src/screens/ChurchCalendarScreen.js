@@ -2,14 +2,15 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   AppState,
   Image,
-  Pressable,
   ScrollView,
+  Pressable,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
 } from 'react-native';
 import {StatusBar} from 'expo-status-bar';
+import {LinearGradient} from 'expo-linear-gradient';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 
@@ -25,6 +26,7 @@ import {
   getCalendarDay,
   getCalendarReadingItems,
   getCalendarMonth,
+  refreshCalendarMonthIfStale,
   openCalendarBibleReference,
   resolveBibleReference,
   toCalendarDate,
@@ -268,8 +270,12 @@ const FormattedCalendarText = ({text}) => {
   );
 };
 
-const ExpandableTextBlock = ({title, subtitle, text}) => {
+const ExpandableTextBlock = ({title, subtitle, text, life = false}) => {
   const [expanded, setExpanded] = useState(false);
+  const {height: windowHeight} = useWindowDimensions();
+  const readerHeight = Math.min(420, windowHeight * 0.78);
+  const [lifeOverflows, setLifeOverflows] = useState(false);
+  const [lifeViewport, setLifeViewport] = useState(0);
 
   if (!text) return null;
 
@@ -283,17 +289,43 @@ const ExpandableTextBlock = ({title, subtitle, text}) => {
           <Text style={styles.textBlockTitle}>{title}</Text>
           {!!subtitle && <Text style={styles.textBlockSubtitle}>{subtitle}</Text>}
         </View>
-
         <SoftChevron expanded={expanded} />
       </Pressable>
 
-      {expanded && <FormattedCalendarText text={text} />}
+      {expanded && (life ? (
+        <View style={styles.calendarLifeInset}>
+          <View style={[styles.calendarLifeScrollFrame, {maxHeight: readerHeight}]}>
+            <ScrollView
+              nestedScrollEnabled
+              showsVerticalScrollIndicator
+              persistentScrollbar
+              scrollEnabled={lifeOverflows}
+              onLayout={(event) => setLifeViewport(event.nativeEvent.layout.height)}
+              onContentSizeChange={(_width, contentHeight) =>
+                setLifeOverflows(contentHeight > lifeViewport + 2)
+              }
+              contentContainerStyle={styles.calendarLifeScrollContent}
+            >
+              <FormattedCalendarText text={text} />
+            </ScrollView>
+            {lifeOverflows && <LinearGradient pointerEvents="none"
+              colors={['#FFF8EB', 'rgba(255,248,235,0.77)', 'rgba(255,248,235,0)']}
+              style={styles.calendarLifeFadeTop} />}
+            {lifeOverflows && <LinearGradient pointerEvents="none"
+              colors={['rgba(255,248,235,0)', 'rgba(255,248,235,0.86)', '#FFF8EB']}
+              style={styles.calendarLifeFade} />}
+          </View>
+        </View>
+      ) : <FormattedCalendarText text={text} />)}
     </View>
   );
 };
 
-const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, onLayout}) => {
-  const [expanded, setExpanded] = useState(false);
+const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, onLayout, initiallyExpanded = false}) => {
+  const [expanded, setExpanded] = useState(initiallyExpanded);
+  useEffect(() => {
+    if (initiallyExpanded) setExpanded(true);
+  }, [initiallyExpanded, title]);
 
   if (!title) return null;
 
@@ -379,7 +411,7 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
   );
 };
 
-const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout}) => {
+const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout, expandFirst = false}) => {
   const [showAll, setShowAll] = useState(false);
 
   if (!readings.length) {
@@ -395,6 +427,7 @@ const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout}) =>
         <ReadingLink
           key={reading.id || reading.sync_uid || `${kind}-${index}-${reading.title}`}
           kind={kind}
+          initiallyExpanded={expandFirst && index === 0}
           title={reading.title}
           label={reading.label}
           sequence={readings.length > 1 ? `${index + 1}/${readings.length}` : ''}
@@ -564,135 +597,57 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
   useEffect(() => {
     let active = true;
-    let refreshTimer = null;
-    const controller = new AbortController();
-    const bundled = getBundledCalendarMonth(visibleYear, visibleMonth, dataLanguage);
-    let hasOfflineData = Boolean(bundled);
-
-    if (bundled) {
-      setMonthData(bundled);
-      setError('');
-      setLoadingMonth(false);
-    } else {
-      setLoadingMonth(true);
-    }
-
-    const refreshFromNetwork = async () => {
+    setMonthData(null);
+    setLoadingMonth(true);
+    const loadLocalMonth = async () => {
       try {
-        const fresh = await getCalendarMonth(visibleYear, visibleMonth, {
-          language: dataLanguage,
-          force: true,
-          skipOffline: true,
-          signal: controller.signal,
-        });
-
-        if (!active || controller.signal.aborted) return;
-
-        setMonthData(fresh);
-        setError('');
-      } catch (err) {
-        if (!active || controller.signal.aborted || err?.name === 'AbortError' || hasOfflineData) {
-          return;
-        }
-
-        setError(err?.message || copy.loadCalendarError);
+        const month = await getOfflineCalendarMonth(visibleYear, visibleMonth, dataLanguage);
+        if (!active) return;
+        setMonthData(month);
+        setError(month ? '' : copy.loadCalendarError);
+      } catch (error) {
+        if (active) setError(error?.message || copy.loadCalendarError);
       } finally {
-        if (active) {
-          setLoadingMonth(false);
-        }
+        if (active) setLoadingMonth(false);
       }
     };
-
-    const loadMonth = async () => {
-      try {
-        const offline = await getOfflineCalendarMonth(visibleYear, visibleMonth, dataLanguage);
-
-        if (!active) return;
-
-        if (offline) {
-          hasOfflineData = true;
-          setMonthData(offline);
-          setError('');
-          setLoadingMonth(false);
-        }
-
-        /*
-         * Не запускаем HTTP-запрос на каждый промежуточный месяц,
-         * если пользователь быстро листает стрелками.
-         */
-        refreshTimer = setTimeout(refreshFromNetwork, 180);
-      } catch (err) {
-        if (!active) return;
-
-        if (!hasOfflineData) {
-          setError(err?.message || copy.loadCalendarError);
-          setLoadingMonth(false);
-        }
-      }
-    };
-
-    loadMonth();
-
-    return () => {
-      active = false;
-      controller.abort();
-
-      if (refreshTimer) {
-        clearTimeout(refreshTimer);
-      }
-    };
+    loadLocalMonth();
+    // Show bundled/cached data immediately, refresh the viewed month quietly.
+    refreshCalendarMonthIfStale(visibleYear, visibleMonth, dataLanguage)
+      .then((fresh) => {
+        if (active && fresh) setMonthData(fresh);
+      });
+    return () => { active = false; };
   }, [dataLanguage, refreshVersion, visibleMonth, visibleYear]);
 
   useEffect(() => {
     let active = true;
-    const controller = new AbortController();
-
-    const loadDay = async () => {
-      setLoadingDay(true);
-      let hasOfflineData = false;
-
+    setDayData(null);
+    setLoadingDay(true);
+    const loadLocalDay = async () => {
       try {
-        const offline = await getOfflineCalendarDay(selectedDate, dataLanguage);
-
-        if (active && offline) {
-          hasOfflineData = true;
-          setDayData(offline);
-          setError('');
-          setLoadingDay(false);
-        }
-
-        const fresh = await getCalendarDay(selectedDate, {
-          language: dataLanguage,
-          force: true,
-          skipOffline: true,
-          signal: controller.signal,
-        });
-
-        if (!active || controller.signal.aborted) return;
-
-        setDayData(fresh);
-        setError('');
-      } catch (err) {
-        if (!active || controller.signal.aborted || err?.name === 'AbortError' || hasOfflineData) {
-          return;
-        }
-
-        setDayData(null);
-        setError(err?.message || copy.loadDayError);
-      } finally {
+        const day = await getOfflineCalendarDay(selectedDate, dataLanguage);
+        if (!active) return;
+        setDayData(day);
+        setError(day ? '' : copy.loadDayError);
+      } catch (error) {
         if (active) {
-          setLoadingDay(false);
+          setDayData(null);
+          setError(error?.message || copy.loadDayError);
         }
+      } finally {
+        if (active) setLoadingDay(false);
       }
     };
-
-    loadDay();
-
-    return () => {
-      active = false;
-      controller.abort();
-    };
+    loadLocalDay();
+    return () => { active = false; };
   }, [dataLanguage, refreshVersion, selectedDate]);
+
+  // When the current month refreshes, also replace the selected day's details.
+  useEffect(() => {
+    const refreshed = monthData?.days?.find((day) => day?.date_gregorian === selectedDate);
+    if (refreshed) setDayData(refreshed);
+  }, [monthData, selectedDate]);
 
   const daysMap = useMemo(
     () => new Map((monthData?.days || []).map((day) => [day.date_gregorian, day])),
@@ -791,6 +746,8 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
                     styles.dayBubble,
                     appearance && styles[`dayBubble_${appearance}`],
                     isToday && styles.dayBubbleToday,
+                    selected && styles.dayBubbleSelected,
+                    isToday && selected && styles.dayBubbleTodaySelected,
                   ]}
                 >
                   <Text
@@ -894,6 +851,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
               title={copy.life}
               subtitle={mainFeast.life_title}
               text={mainFeast.life_content}
+              life
             />
           )}
 
@@ -929,6 +887,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
             <ReadingGroup
               kind="gospel"
+              expandFirst={route.params?.section === "gospel"}
               readings={gospelReadings}
               navigation={navigation}
               copy={copy}
@@ -938,6 +897,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
             <ReadingGroup
               kind="apostle"
+              expandFirst={route.params?.section === "apostle"}
               readings={apostleReadings}
               navigation={navigation}
               copy={copy}
@@ -1102,31 +1062,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 10,
   },
-  dayCellSelected: {
-    backgroundColor: 'rgba(184,123,56,0.11)',
-  },
+  dayCellSelected: {},
   dayBubble: {
     width: 32,
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 16,
+    backgroundColor: 'rgba(139, 94, 49, 0.08)',
   },
-  dayBubble_fast: {backgroundColor: '#A78AB9'},
-  dayBubble_solid: {backgroundColor: '#E0B65C'},
-  dayBubble_feast: {backgroundColor: '#C98275'},
-  dayBubble_easter: {backgroundColor: '#C99535'},
-  dayBubble_memorial: {backgroundColor: '#A69A86'},
+  dayBubble_fast: {backgroundColor: '#D4C2E2'},
+  dayBubble_solid: {backgroundColor: '#F0DBA0'},
+  dayBubble_feast: {backgroundColor: '#E6B7A8'},
+  dayBubble_easter: {backgroundColor: '#EAD18B'},
+  dayBubble_memorial: {backgroundColor: '#D0C7BB'},
   dayNumberMarked: {fontWeight: '700', color: '#6A4B3B'},
-  dayBubbleToday: {
-    borderWidth: 2,
-    borderColor: '#9A642E',
+  dayBubbleToday: {backgroundColor: '#35564B'},
+  dayBubbleSelected: {
+    borderWidth: 2.5,
+    borderColor: '#452A1B',
   },
+  dayBubbleTodaySelected: {borderColor: '#FDF6E7'},
   dayNumber: {
     color: '#493225',
     fontSize: 13,
   },
   dayNumberToday: {
+    color: '#FFFFFF',
     fontWeight: '800',
   },
   dayOutside: {
@@ -1154,7 +1116,7 @@ const styles = StyleSheet.create({
   otherSaintDot: {
     width: 5,
     height: 5,
-    marginTop: 7,
+    // marginTop: 7,
     marginRight: 8,
     borderRadius: 3,
     backgroundColor: '#A66B32',
@@ -1174,7 +1136,8 @@ const styles = StyleSheet.create({
     marginRight: 2,
     color: '#875627',
     fontSize: 20,
-    lineHeight: 16,
+    lineHeight: 20,
+
     textAlign: 'center',
     includeFontPadding: false,
   },
@@ -1301,6 +1264,16 @@ const styles = StyleSheet.create({
     color: '#8A6547',
     fontSize: 11,
   },
+  calendarLifeInset: {marginHorizontal: 4, marginTop: 5, marginBottom: 6,
+    borderRadius: 13, borderWidth: 1, borderColor: '#E7D6B6',
+    backgroundColor: '#FFF8EB', overflow: 'hidden'},
+  calendarLifeScrollFrame: {position: 'relative'},
+  calendarLifeScrollContent: {paddingBottom: 38},
+  calendarLifeScrollTrack: {position: 'absolute', right: 3, top: 5, bottom: 5,
+    width: 2, borderRadius: 2, backgroundColor: 'rgba(122,79,45,0.10)'},
+  calendarLifeScrollThumb: {width: 2, borderRadius: 2, backgroundColor: 'rgba(122,79,45,0.60)'},
+  calendarLifeFade: {position: 'absolute', left: 0, right: 0, bottom: 0, height: 46},
+  calendarLifeFadeTop: {position: 'absolute', left: 0, right: 0, top: 0, height: 30},
   textBlockContent: {
     paddingHorizontal: 16,
     paddingTop: 15,

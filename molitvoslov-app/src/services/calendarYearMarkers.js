@@ -33,7 +33,9 @@ export const applyYearMarkers = (day, markersByDate) => {
   if (!day?.date_gregorian) return day;
   const patch = markersByDate?.[day.date_gregorian];
   if (!patch?.calendar_markers) return day;
-  return {...day, ...patch};
+  // Keep current API fasting fields instead of overwriting them with an
+  // older bundled/cached 2026 marker snapshot. Only merge marker metadata.
+  return {...day, calendar_markers: patch.calendar_markers};
 };
 
 export const applyYearMarkersToMonth = (month, markersByDate) =>

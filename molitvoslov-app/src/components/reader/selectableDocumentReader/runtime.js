@@ -465,7 +465,7 @@ export const READER_RUNTIME = String.raw`
           normalized: chars.join(''), originalIndex, };
       };
       const HIGHLIGHT_COMBINING = /[\u0300-\u036f\u0483-\u0489\ufe20-\ufe2f]/u;
-const HIGHLIGHT_LETTER_OR_DIGIT = /[\\p{L}\\p{N}]/u;
+const HIGHLIGHT_LETTER_OR_DIGIT = /[\p{L}\p{N}]/u;
 
 const foldForHighlight = value => {
   const source = String(value || '');
@@ -600,11 +600,59 @@ const computeFocusHighlightRanges = () => {
     }
 
     if (!shouldHighlight) return;
+    const desiredLanguage = target.metadata?.language || target.preferredLanguage;
+    if (desiredLanguage && config.metadata?.language &&
+        desiredLanguage !== config.metadata.language) return;
+    if (target.metadata?.chunk_index !== undefined &&
+        config.metadata?.chunk_index !== undefined &&
+        Number(target.metadata.chunk_index) !== Number(config.metadata.chunk_index)) return;
 
     const text = itemTextMap.get(itemId) || '';
-    const ranges = findHighlightRanges(text, highlightQuery);
+    const verseStart = target.highlightVerse ? Number(target.start_offset) : NaN;
+    const verseEnd = target.highlightVerse ? Number(target.end_offset) : NaN;
+    const restricted = Number.isFinite(verseStart) && Number.isFinite(verseEnd) &&
+      verseEnd > verseStart && verseStart >= 0 && verseEnd <= text.length;
+    const ranges = (restricted
+      ? findHighlightRanges(text.slice(verseStart, verseEnd), highlightQuery)
+          .map(range => ({start: range.start + verseStart, end: range.end + verseStart}))
+      : findHighlightRanges(text, highlightQuery));
+    // A title-only match (e.g. "Кондак 2") has no matching word in
+    // the prayer body. Emphasize the opening sentence of the target section.
+    if (!ranges.length && target.highlightSectionStart && hasSpecificAnchor && text.trim()) {
+      const initial = text.search(/\S/);
+      const tail = text.slice(initial);
+      const punctuation = tail.search(/[.!?…](?:\s|$)/);
+      const end = punctuation < 0 ? Math.min(text.length, initial + 200)
+        : Math.min(text.length, initial + Math.min(200, punctuation + 1));
+      if (end > initial) {
+        highlightRangesByItem.set(itemId, [{start: initial, end}]);
+        hits += 1;
+      }
+      return;
+    }
     if (ranges.length) {
-      highlightRangesByItem.set(itemId, ranges);
+      // A search result focuses on one sentence, not every match in the ikos.
+      const hit = ranges[0];
+      const before = text.slice(0, hit.start);
+      const after = text.slice(hit.end);
+      const previousPunctuation = Math.max(
+        before.lastIndexOf('.'), before.lastIndexOf('!'),
+        before.lastIndexOf('?'), before.lastIndexOf('…')
+      );
+      const followingPunctuation = after.search(/[.!?…]/);
+      let start = previousPunctuation < 0 ? 0 : previousPunctuation + 1;
+      let end = followingPunctuation < 0 ? text.length : hit.end + followingPunctuation + 1;
+      if (restricted) {
+        start = Math.max(start, verseStart);
+        end = Math.min(end, verseEnd);
+      }
+      // For texts lacking punctuation, never mark the entire long ikos.
+      if (end - start > 500) {
+        start = Math.max(start, hit.start - 100);
+        end = Math.min(end, hit.end + 180);
+      }
+      while (start < hit.start && /\s/.test(text[start])) start++;
+      highlightRangesByItem.set(itemId, [{start, end}]);
        hits += 1;
     }
   });
@@ -3355,6 +3403,12 @@ if (
     loadSavedRanges();
     computeFocusHighlightRanges();
     itemTextMap.forEach( ( _text, itemId ) => renderTextItem( itemId ) );
+    if (DATA.focusTarget?.highlightQuery) {
+      setTimeout(() => {
+        highlightRangesByItem.clear();
+        document.querySelectorAll('.search-hit').forEach(node => node.classList.add('search-hit-fade'));
+      }, 1500);
+    }
     requestAnimationFrame( () => {
         if (bookMode) {
           paginateBookContent();

@@ -20,8 +20,8 @@ ASSET_DIR = ROOT / "molitvoslov-app" / "assets" / "calendar-icons"
 ICON_MODULE = ROOT / "molitvoslov-app" / "src" / "data" / "calendarIconAssets.js"
 
 YEAR = 2026
-ICON_MAX_SIZE = (256, 384)
-ICON_QUALITY = 80
+ICON_MAX_SIZE = (768, 1152)
+ICON_QUALITY = 90
 USER_AGENT = "MolitvoslovOfflineCalendar/1.0"
 IDENTITY_SIMILARITY_THRESHOLD = 0.50
 
@@ -248,30 +248,22 @@ def visible_feasts(data: dict) -> list[dict]:
             if not isinstance(language_data, dict):
                 continue
 
-            feast = language_data.get("main_feast")
-            if not feast:
-                all_feasts = language_data.get("all_feasts") or []
-                feast = all_feasts[0] if all_feasts else None
+            # Bundle every saint/feast card, not only the main icon of a day.
+            for feast in [language_data.get("main_feast"), *(language_data.get("all_feasts") or [])]:
+                if not isinstance(feast, dict):
+                    continue
 
-            if not isinstance(feast, dict):
-                continue
+                url = str(feast.get("icon_url") or "").strip()
+                if not url.startswith(("http://", "https://")):
+                    continue
 
-            url = str(feast.get("icon_url") or "").strip()
-            if not url.startswith(("http://", "https://")):
-                continue
+                source_id = feast.get("source_id")
+                key = (str(source_id) if source_id is not None else "", url)
+                if key in seen:
+                    continue
 
-            source_id = feast.get("source_id")
-            key = (str(source_id) if source_id is not None else "", url)
-            if key in seen:
-                continue
-
-            seen.add(key)
-            result.append(
-                {
-                    "source_id": source_id,
-                    "url": url,
-                }
-            )
+                seen.add(key)
+                result.append({"source_id": source_id, "url": url})
 
     return result
 
@@ -317,7 +309,7 @@ def build_icon_bundle(data: dict) -> None:
 
     for index, feast in enumerate(feasts, start=1):
         url = feast["url"]
-        digest = hashlib.sha256(url.encode("utf-8")).hexdigest()[:20]
+        digest = hashlib.sha256((url + f"|{ICON_MAX_SIZE}|{ICON_QUALITY}|v2").encode("utf-8")).hexdigest()[:20]
         filename = f"{digest}.webp"
         target = ASSET_DIR / filename
 
