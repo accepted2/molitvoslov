@@ -26,6 +26,7 @@ import {
   getCalendarDay,
   getCalendarReadingItems,
   getCalendarMonth,
+  refreshCalendarMonthIfStale,
   openCalendarBibleReference,
   resolveBibleReference,
   toCalendarDate,
@@ -611,6 +612,11 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
       }
     };
     loadLocalMonth();
+    // Show bundled/cached data immediately, refresh the viewed month quietly.
+    refreshCalendarMonthIfStale(visibleYear, visibleMonth, dataLanguage)
+      .then((fresh) => {
+        if (active && fresh) setMonthData(fresh);
+      });
     return () => { active = false; };
   }, [dataLanguage, refreshVersion, visibleMonth, visibleYear]);
 
@@ -636,6 +642,12 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
     loadLocalDay();
     return () => { active = false; };
   }, [dataLanguage, refreshVersion, selectedDate]);
+
+  // When the current month refreshes, also replace the selected day's details.
+  useEffect(() => {
+    const refreshed = monthData?.days?.find((day) => day?.date_gregorian === selectedDate);
+    if (refreshed) setDayData(refreshed);
+  }, [monthData, selectedDate]);
 
   const daysMap = useMemo(
     () => new Map((monthData?.days || []).map((day) => [day.date_gregorian, day])),
