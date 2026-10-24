@@ -2167,7 +2167,7 @@ const styles = StyleSheet.create({
     width: '44%',
     alignSelf: 'flex-start',
     borderColor: 'rgba(255, 251, 242, 0.72)',
-    backgroundColor: 'rgba(139, 94, 49, 0.13)',
+    backgroundColor: 'rgb(152 138 124 / 0.13)',
   },
 
   calendarTodayDate: {
@@ -2297,8 +2297,9 @@ const styles = StyleSheet.create({
     padding: 3,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 251, 242, 0.72)',
-    backgroundColor: 'rgba(139, 94, 49, 0.13)',
+    borderColor: 'rgba(139, 94, 49, 0.13)',
+    backgroundColor:  'rgba(255, 251, 242, 0.72)',
+
   },
 
   miniCalendarHeader: {
@@ -2392,13 +2393,18 @@ const styles = StyleSheet.create({
   miniCalendarDayBubble_easter: {backgroundColor: '#EAD18B'},
   miniCalendarDayBubble_memorial: {backgroundColor: '#D0C7BB'},
   miniCalendarDayMarked: {color: '#6A4B3B', fontWeight: '700'},
-  miniCalendarDayBubbleToday: {backgroundColor: '#35564B'},
+  miniCalendarDayBubbleToday: {
+    // backgroundColor: 'transparent',
+  borderWidth: 1.5,
+  borderColor: '#35564B',
+
+  },
   miniCalendarDayBubbleSelected: {
     borderWidth: 2,
-    borderColor: '#452A1B',
+    borderColor: '#489a35',
     borderRadius: 12,
   },
-  miniCalendarDayBubbleTodaySelected: {borderColor: '#FDF6E7'},
+  miniCalendarDayBubbleTodaySelected: {borderColor: '#489a35'},
 
   miniCalendarDayText: {
     color: '#473226',
@@ -2416,7 +2422,7 @@ const styles = StyleSheet.create({
   },
 
   miniCalendarDayToday: {
-    color: '#FFFFFF',
+    color: '#35564B',
     fontWeight: '800',
   },
 

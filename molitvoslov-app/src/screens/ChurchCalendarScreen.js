@@ -1116,7 +1116,7 @@ const styles = StyleSheet.create({
   otherSaintDot: {
     width: 5,
     height: 5,
-    marginTop: 7,
+    // marginTop: 7,
     marginRight: 8,
     borderRadius: 3,
     backgroundColor: '#A66B32',
@@ -1136,7 +1136,8 @@ const styles = StyleSheet.create({
     marginRight: 2,
     color: '#875627',
     fontSize: 20,
-    lineHeight: 16,
+    lineHeight: 20,
+
     textAlign: 'center',
     includeFontPadding: false,
   },

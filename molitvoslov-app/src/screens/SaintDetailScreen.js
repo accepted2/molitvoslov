@@ -88,8 +88,9 @@ const Accordion = ({
               <View style={[styles.lifeScrollFrame, {maxHeight: height}]}>
                 <ScrollView
                   nestedScrollEnabled
-                  showsVerticalScrollIndicator
-                  persistentScrollbar
+                  // showsVerticalScrollIndicator
+                  // persistentScrollbar
+                  showsVerticalScrollIndicator={false}
                   scrollEnabled={hasMoreText}
                   scrollEventThrottle={32}
                   onLayout={(event) => {
@@ -211,7 +212,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
               <Image source={image}
                 style={[styles.image, {width: heroImageWidth, height: heroImageWidth * 1.24}]}
                 resizeMode="contain" />
-              <Text style={styles.imageHint}>{uk ? 'Збільшити' : 'Увеличить'} ↗</Text>
+
             </Pressable>
           )}
           <View style={styles.heroText}>
@@ -356,13 +357,33 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(123,79,36,0.16)', backgroundColor: '#FFF4DE',
   },
   readingContent: {paddingHorizontal: 15, paddingTop: 14, paddingBottom: 16},
-  lifeInset: {marginHorizontal: 10, marginTop: 10, marginBottom: 12,
-    borderRadius: 13, borderWidth: 1, borderColor: '#E7D6B6', backgroundColor: '#FFF8EB', overflow: 'hidden'},
-  lifeScrollContent: {paddingHorizontal: 9, paddingBottom: 38},
-  lifeScrollFrame: {position: 'relative'},
-  lifeScrollTrack: {position: 'absolute', right: 3, top: 5, bottom: 5,
-    width: 2, backgroundColor: 'rgba(122,79,45,0.10)', borderRadius: 2},
-  lifeScrollThumb: {width: 2, borderRadius: 2, backgroundColor: 'rgba(122,79,45,0.60)'},
+  lifeInset: {marginHorizontal: 5, marginTop: 8, marginBottom: 12,
+    borderRadius: 13, borderWidth: 1, borderColor: '#E7D6B6', backgroundColor: '#FFF4DE', overflow: 'hidden'},
+  lifeScrollContent: {
+    paddingHorizontal: 2,
+    paddingTop:0,
+    paddingBottom: 38,
+  },
+
+  lifeScrollFrame: {
+    position: 'relative',
+  },
+
+  lifeScrollTrack: {
+    position: 'absolute',
+    right: 5,
+    top: 12,
+    bottom: 12,
+    width: 3,
+    borderRadius: 3,
+    backgroundColor: 'rgba(122,79,45,0.10)',
+  },
+
+  lifeScrollThumb: {
+    width: 3,
+    borderRadius: 3,
+    backgroundColor: 'rgba(122,79,45,0.60)',
+  },
   lifeScrollFade: {position: 'absolute', left: 0, right: 0, bottom: 0, height: 46},
   subtitle: {
     fontFamily: 'serif', color: '#7A4F2D', fontSize: 14, lineHeight: 21,
@@ -382,9 +403,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#70441F',
     borderRadius: 26,
+    marginBottom: 30,
   },
   bottomButtonText: {fontFamily: 'serif', fontSize: 16, color: '#FFF5E6', fontWeight: '700'},
-  bottomButtonIcon: {fontSize: 23, fontWeight: '600', color: '#FFF5E6'},
+  bottomButtonIcon: {fontSize: 23, fontWeight: '600', color: '#FFF5E6',},
   bottomButtonArrow: {fontSize: 25, color: '#FFF5E6'},
   imageViewer: {flex: 1, backgroundColor: 'rgba(14, 12, 10, 0.97)',
     alignItems: 'center', justifyContent: 'center'},
