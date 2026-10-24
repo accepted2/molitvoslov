@@ -29,7 +29,8 @@ class Command(BaseCommand):
                 raise CommandError(f"{year}: missing dates ({len(days)}/{expected}); audit stopped")
             reference[year] = {
                 day.date_gregorian.isoformat(): list(
-                    day.readings.values("kind", "label", "title", "order")
+                    {"kind": reading.kind, "label": reading.label, "title": reading.title, "order": reading.order}
+                    for reading in day.readings.all()
                 ) for day in days
             }
         result = audit_observations(reference)
