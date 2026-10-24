@@ -56,7 +56,12 @@ export const refreshCalendarMonthIfStale = (year, month, language = 'ru') => {
       const response = await fetchCalendarJson(
         `/api/calendar/month/?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}&lang=${lang}`
       );
-      if (!Array.isArray(response?.days) || response.days.length === 0) return null;
+      const expectedDays = new Date(Number(year), Number(month), 0).getDate();
+      if (!Array.isArray(response?.days) || response.days.length !== expectedDays ||
+          new Set(response.days.map((day) => day?.date_gregorian)).size !== expectedDays ||
+          response.days.some((day) =>
+            !day?.date_gregorian?.startsWith(`${year}-${String(month).padStart(2, '0')}-`)
+          )) return null;
       const enriched = applyYearMarkersToMonth(response, await loadYearMarkers(year));
       await storeCalendarMonth(enriched, lang);
       monthCache.set(`${lang}:${year}-${month}`, enriched);
