@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import {applyYearMarkers, applyYearMarkersToMonth, loadYearMarkers} from './calendarYearMarkers';
 
@@ -33,6 +34,46 @@ const monthCache = new Map();
 const dayCache = new Map();
 
 const pad = (value) => String(value).padStart(2, '0');
+
+// Refresh one viewed calendar month at most once per 24 hours.
+// A failed request does not mark the month as refreshed.
+const monthRefreshRequests = new Map();
+const MONTH_REFRESH_MS = 24 * 60 * 60 * 1000;
+
+export const refreshCalendarMonthIfStale = (year, month, language = 'ru') => {
+  const lang = language === 'uk' ? 'uk' : 'ru';
+  const key = `calendar-month-refreshed-v1:${lang}:${year}-${String(month).padStart(2, '0')}`;
+  if (monthRefreshRequests.has(key)) return monthRefreshRequests.get(key);
+
+  const request = (async () => {
+    try {
+      const lastRefresh = Number(await AsyncStorage.getItem(key) || 0);
+      if (lastRefresh && Date.now() - lastRefresh < MONTH_REFRESH_MS) return null;
+
+      // Do not stamp failed/offline requests as successful.
+      const network = await NetInfo.fetch();
+      if (network.isConnected === false || network.isInternetReachable === false) return null;
+      const response = await fetchCalendarJson(
+        `/api/calendar/month/?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}&lang=${lang}`
+      );
+      if (!Array.isArray(response?.days) || response.days.length === 0) return null;
+      const enriched = applyYearMarkersToMonth(response, await loadYearMarkers(year));
+      await storeCalendarMonth(enriched, lang);
+      monthCache.set(`${lang}:${year}-${month}`, enriched);
+      for (const day of enriched.days) {
+        if (day?.date_gregorian) dayCache.set(`${lang}:${day.date_gregorian}`, day);
+      }
+      await AsyncStorage.setItem(key, String(Date.now()));
+      return enriched;
+    } catch (error) {
+      console.log('Обновление календаря:', error?.message || error);
+      return null;
+    }
+  })().finally(() => monthRefreshRequests.delete(key));
+  monthRefreshRequests.set(key, request);
+  return request;
+};
+
 
 export const toCalendarDate = (value) => {
   const date = value instanceof Date ? value : new Date(value);
