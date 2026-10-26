@@ -6,9 +6,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import * as Crypto from 'expo-crypto';
 import {API_BASE_URL} from './backendAuth';
-import {getCurrentContent, saveSyncedPublicContent} from './contentStore';
-import {getCurrentBibleContent, saveSyncedBibleContent} from './bibleStore';
-import {getOfflineCalendarDay, storeCalendarDay} from './calendarOfflineStore';
+import {getCurrentContent, activateCommittedPublicContent} from './contentStore';
+import {getCurrentBibleContent, activateCommittedBibleContent} from './bibleStore';
+import {getOfflineCalendarDay} from './calendarOfflineStore';
+import {getDatabase} from '../db/database';
 import {invalidateCalendarCache} from './churchCalendar';
 
 const CURSOR_KEY = '@molitvoslov/offline-content-cursor-v1';
@@ -197,17 +198,46 @@ const applyPage = async (changes, cursor) => {
     } else throw new Error('Unknown content delta section');
   }
 
-  // Idempotent replay on process interruption is safe: cursor is saved last.
-  if (publicPayload) await saveSyncedPublicContent(publicPayload, 'delta-' + cursor);
-  if (biblePayload) await saveSyncedBibleContent(biblePayload, 'delta-' + cursor);
-  for (const [key, data] of calendarStaged) {
+  // All three content families and the applied cursor share ONE SQLite transaction.
+  // A killed process either commits everything or rolls everything back.
+  const db = await getDatabase();
+  await db.withExclusiveTransactionAsync(async (tx) => {
+    const now = new Date().toISOString();
+    if (publicPayload) await tx.runAsync(
+      `INSERT INTO public_content_cache (cache_key, version, payload, updated_at)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(cache_key) DO UPDATE SET
+         version=excluded.version, payload=excluded.payload, updated_at=excluded.updated_at`,
+      ['public-content-v1', 'delta-' + cursor, JSON.stringify(publicPayload), now]
+    );
+    if (biblePayload) await tx.runAsync(
+      `INSERT INTO public_content_cache (cache_key, version, payload, updated_at)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(cache_key) DO UPDATE SET
+         version=excluded.version, payload=excluded.payload, updated_at=excluded.updated_at`,
+      ['bible-content-v1:rst', 'delta-' + cursor, JSON.stringify(biblePayload), now]
+    );
+    for (const [key, data] of calendarStaged) {
+      const [date, language] = key.split(':');
+      await tx.runAsync(
+        `INSERT INTO content_delta_calendar (date, language, payload) VALUES (?, ?, ?)
+         ON CONFLICT(date, language) DO UPDATE SET payload=excluded.payload`,
+        [date, language, JSON.stringify({...data, _content_delta: true})]
+      );
+    }
+    await tx.runAsync(
+      `INSERT INTO content_delta_state (id, cursor) VALUES (1, ?)
+       ON CONFLICT(id) DO UPDATE SET cursor=excluded.cursor`,
+      [cursor]
+    );
+  });
+  // Notify screens only after commit. On restart, stores hydrate committed rows.
+  if (publicPayload) activateCommittedPublicContent(publicPayload, 'delta-' + cursor);
+  if (biblePayload) activateCommittedBibleContent(biblePayload, 'delta-' + cursor);
+  for (const key of calendarStaged.keys()) {
     const [date, language] = key.split(':');
-    // A published day must take precedence over old separate year-marker caches.
-    const ok = await storeCalendarDay(date, language, {...data, _content_delta: true});
-    if (!ok) throw new Error('Failed to persist a calendar delta');
     invalidateCalendarCache(date, language);
   }
-  await AsyncStorage.setItem(CURSOR_KEY, String(cursor));
 };
 
 const doSync = async ({force = false} = {}) => {
@@ -223,8 +253,18 @@ const doSync = async ({force = false} = {}) => {
   if (network.isConnected === false || network.isInternetReachable === false) {
     return {updated: false, offline: true};
   }
-  let cursor = Number(await AsyncStorage.getItem(CURSOR_KEY) || 0);
-  if (!Number.isSafeInteger(cursor) || cursor < 0) cursor = 0;
+  const db = await getDatabase();
+  // One-time migration of legacy cursor: never advance past a snapshot that
+  // was saved in the old non-atomic format.
+  const legacyCursor = Number(await AsyncStorage.getItem(CURSOR_KEY) || 0);
+  let row = await db.getFirstAsync('SELECT cursor FROM content_delta_state WHERE id = 1');
+  if (!row) {
+    const initial = Number.isSafeInteger(legacyCursor) && legacyCursor >= 0 ? legacyCursor : 0;
+    await db.runAsync('INSERT OR IGNORE INTO content_delta_state (id, cursor) VALUES (1, ?)', [initial]);
+    row = await db.getFirstAsync('SELECT cursor FROM content_delta_state WHERE id = 1');
+  }
+  let cursor = Number(row?.cursor || 0);
+  if (!Number.isSafeInteger(cursor) || cursor < 0) throw new Error('Corrupt content revision');
   // Most checks finish here with one cheap revision lookup and no delta payload.
   const manifestResponse = await fetch(
     API_BASE_URL + '/api/content-updates/manifest/',
