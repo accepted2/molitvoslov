@@ -37,6 +37,7 @@ from .auth_views import (
 )
 from .mobile_content import MobileContentView
 from .bible_content import BibleContentView
+from .content_delta_views import ContentRevisionView, ContentChangesView
 from .content_updates import OfflineContentUpdatesView, OfflineContentObjectView
 
 router = DefaultRouter()
@@ -90,6 +91,8 @@ router.register(
 )
 
 urlpatterns = [
+    path('content-revision/', ContentRevisionView.as_view(), name='content-revision'),
+    path('content-changes/', ContentChangesView.as_view(), name='content-changes'),
     path("mobile-content/", MobileContentView.as_view(), name="mobile-content"),
     path("content-updates/", OfflineContentUpdatesView.as_view(), name="content-updates"),
     path("content-updates/item/", OfflineContentObjectView.as_view(), name="content-update-item"),
