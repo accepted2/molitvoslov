@@ -19,6 +19,10 @@ class OfflineContentUpdatesView(APIView):
         if since < 0:
             return JsonResponse({"detail": "Invalid since cursor"}, status=400)
 
+        latest = OfflineContentChange.objects.aggregate(last=Max("id"))["last"] or 0
+        if since > latest:
+            return JsonResponse({"detail": "Cursor is ahead of published revisions", "reset_required": True}, status=409)
+
         # Bounded response: users with very old builds receive incremental pages.
         batch = list(
             OfflineContentChange.objects.filter(id__gt=since)
@@ -28,7 +32,6 @@ class OfflineContentUpdatesView(APIView):
         has_more = len(batch) > 100
         changes = batch[:100]
         cursor = changes[-1]["id"] if changes else since
-        latest = OfflineContentChange.objects.aggregate(last=Max("id"))["last"] or 0
         response = JsonResponse({
             "schema_version": 1,
             "latest_revision": latest,
