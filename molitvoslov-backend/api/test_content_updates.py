@@ -51,6 +51,8 @@ class OfflineContentChangeFeedTests(TestCase):
         self.assertFalse(page2["has_more"])
         self.assertEqual(self.view(self.factory.get("/api/content-updates/?since=-1")).status_code, 400)
         self.assertEqual(self.view(self.factory.get("/api/content-updates/?since=abc")).status_code, 400)
+        # A cursor from a reset/replaced database must not look up-to-date.
+        self.assertEqual(self.view(self.factory.get("/api/content-updates/?since=999999")).status_code, 409)
 
 
 class DeltaPatchSerializationTests(TestCase):
@@ -76,3 +78,26 @@ class DeltaPatchSerializationTests(TestCase):
         from .management.commands.publish_offline_content_updates import field_changes
         self.assertEqual(field_changes(None, {"slug": "new-akathist", "sections": []}),
                          [{"op": "set", "path": [], "value": {"slug": "new-akathist", "sections": []}}])
+
+
+class PublicationScopeTests(TestCase):
+    def test_partial_year_publication_preserves_other_years(self):
+        from unittest.mock import patch
+        from django.core.management import call_command
+        from .content_update_models import OfflineContentSnapshot
+
+        OfflineContentSnapshot.objects.create(
+            section="calendar", object_key="2025-01-01/ru",
+            checksum="old2025", payload={"date_gregorian": "2025-01-01"}
+        )
+        OfflineContentSnapshot.objects.create(
+            section="calendar", object_key="2026-01-01/ru",
+            checksum="old2026", payload={"date_gregorian": "2026-01-01"}
+        )
+        with patch(
+            "api.management.commands.publish_offline_content_updates.published_objects",
+            return_value=iter([("calendar", "2026-01-01/ru", {"date_gregorian": "2026-01-01"})])
+        ):
+            call_command("publish_offline_content_updates", years=[2026])
+        self.assertTrue(OfflineContentSnapshot.objects.filter(object_key="2025-01-01/ru").exists())
+        self.assertTrue(OfflineContentSnapshot.objects.filter(object_key="2026-01-01/ru").exists())
