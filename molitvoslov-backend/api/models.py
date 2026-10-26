@@ -1679,3 +1679,6 @@ class GoogleAccount(models.Model):
 
 # Церковный календарь, перенесённый из Church Site.
 from .calendar_models import CalendarFeast, CalendarDay
+
+# Public offline-content publication feed.
+from .content_update_models import OfflineContentSnapshot, OfflineContentChange
