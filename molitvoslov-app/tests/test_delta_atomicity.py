@@ -70,7 +70,7 @@ class AtomicContentDeltaTests(unittest.TestCase):
             )
             db.execute(
                 "INSERT INTO content_delta_calendar VALUES (?, ?, ?)",
-                ("2026-10-26", "ru", '{"day":1}"),
+                ("2026-10-26", "ru", '{"day":1}'),
             )
 
     def tearDown(self):
