@@ -225,6 +225,28 @@ const doSync = async ({force = false} = {}) => {
   }
   let cursor = Number(await AsyncStorage.getItem(CURSOR_KEY) || 0);
   if (!Number.isSafeInteger(cursor) || cursor < 0) cursor = 0;
+  // Most checks finish here with one cheap revision lookup and no delta payload.
+  const manifestResponse = await fetch(
+    API_BASE_URL + '/api/content-updates/manifest/',
+    {headers: {Accept: 'application/json'}}
+  );
+  if (!manifestResponse.ok) throw new Error('Content manifest HTTP ' + manifestResponse.status);
+  const manifest = await manifestResponse.json();
+  const latestRevision = Number(manifest?.latest_revision);
+  if (manifest?.schema_version !== 1 ||
+      !Number.isSafeInteger(latestRevision) || latestRevision < 0) {
+    throw new Error('Unsupported content manifest');
+  }
+  if (cursor > latestRevision) {
+    throw new Error('Local content cursor is ahead of server; reset required');
+  }
+  if (cursor === latestRevision) {
+    await AsyncStorage.multiSet([
+      [CHECK_KEY, String(Date.now())],
+      [FAILURE_KEY, '0'],
+    ]);
+    return {updated: false, changes: 0, cursor};
+  }
   let changed = 0;
   for (let page = 0; page < 1000; page += 1) {
     const response = await fetch(
