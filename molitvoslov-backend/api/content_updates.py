@@ -7,6 +7,18 @@ from rest_framework.views import APIView
 from .content_update_models import OfflineContentChange, OfflineContentSnapshot
 
 
+class OfflineContentManifestView(APIView):
+    """Read only the small append-only revision index, never content tables."""
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        latest = OfflineContentChange.objects.aggregate(last=Max("id"))["last"] or 0
+        response = JsonResponse({"schema_version": 1, "latest_revision": latest})
+        response["Cache-Control"] = "private, no-store"
+        return response
+
+
 class OfflineContentUpdatesView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
