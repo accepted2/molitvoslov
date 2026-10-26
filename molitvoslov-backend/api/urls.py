@@ -37,6 +37,7 @@ from .auth_views import (
 )
 from .mobile_content import MobileContentView
 from .bible_content import BibleContentView
+from .content_updates import OfflineContentUpdatesView
 
 router = DefaultRouter()
 
@@ -90,6 +91,7 @@ router.register(
 
 urlpatterns = [
     path("mobile-content/", MobileContentView.as_view(), name="mobile-content"),
+    path("content-updates/", OfflineContentUpdatesView.as_view(), name="content-updates"),
     path("bible-content/", BibleContentView.as_view(), name="bible-content"),
     path("calendar/", include("api.calendar_urls")),
     path(
