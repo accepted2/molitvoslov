@@ -51,3 +51,27 @@ class OfflineContentChangeFeedTests(TestCase):
         self.assertFalse(page2["has_more"])
         self.assertEqual(self.view(self.factory.get("/api/content-updates/?since=-1")).status_code, 400)
         self.assertEqual(self.view(self.factory.get("/api/content-updates/?since=abc")).status_code, 400)
+
+
+class DeltaPatchSerializationTests(TestCase):
+    def test_single_verse_fix_uses_narrow_patch(self):
+        from .management.commands.publish_offline_content_updates import field_changes, delivery_payload
+        from .content_update_models import OfflineContentSnapshot
+        before = {"number": 3, "verses": [{"number": 1, "text": "old"}, {"number": 2, "text": "same"}]}
+        after = {"number": 3, "verses": [{"number": 1, "text": "fixed"}, {"number": 2, "text": "same"}]}
+        operations = field_changes(before, after)
+        self.assertEqual(operations, [{"op": "set", "path": ["verses", 0, "text"], "value": "fixed"}])
+        old = OfflineContentSnapshot(section="bible", object_key="rst/chapter/JHN/3", checksum="previous", payload=before)
+        delivery = delivery_payload(old, after, "new")
+        self.assertEqual(delivery["kind"], "patch")
+        self.assertEqual(delivery["operations"], operations)
+
+    def test_deleted_field_generates_remove(self):
+        from .management.commands.publish_offline_content_updates import field_changes
+        self.assertEqual(field_changes({"title": "prayer", "draft": True}, {"title": "prayer"}),
+                         [{"op": "remove", "path": ["draft"]}])
+
+    def test_added_akathist_does_not_require_empty_placeholder(self):
+        from .management.commands.publish_offline_content_updates import field_changes
+        self.assertEqual(field_changes(None, {"slug": "new-akathist", "sections": []}),
+                         [{"op": "set", "path": [], "value": {"slug": "new-akathist", "sections": []}}])
