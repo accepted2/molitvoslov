@@ -33,3 +33,22 @@ jobs:
       - name: Test change feed and cached content
         working-directory: molitvoslov-backend
         run: python manage.py test api.test_content_updates api.test_content_cache --verbosity 2
+
+  expo-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.21.0"
+          cache: npm
+          cache-dependency-path: molitvoslov-app/package-lock.json
+      - name: Install client dependencies
+        working-directory: molitvoslov-app
+        run: npm ci
+      - name: Verify production Android JS bundle
+        working-directory: molitvoslov-app
+        env:
+          NODE_ENV: production
+          CI: "1"
+        run: npx expo export --platform android --output-dir dist/offline-delta-check
