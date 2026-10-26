@@ -123,7 +123,7 @@ class Command(BaseCommand):
         years = options["years"]
         if not years or any(year < 2000 or year > 2100 for year in years):
             raise CommandError("Invalid calendar years")
-        if baseline and OfflineContentSnapshot.objects.exists():
+        if baseline and (OfflineContentSnapshot.objects.exists() or OfflineContentChange.objects.exists()):
             raise CommandError("Baseline already exists; refusing to reset subscribers' cursors")
         if not baseline and not OfflineContentSnapshot.objects.exists():
             raise CommandError("First publish requires --baseline and a matching bundled APK dataset")
@@ -158,6 +158,14 @@ class Command(BaseCommand):
                     ))
             for old in current.values():
                 if old.section == "calendar":
+                    # --years is a publication filter, not a delete request.
+                    # Preserve snapshots for years omitted from this run.
+                    try:
+                        year = int(old.object_key[:4])
+                    except (TypeError, ValueError):
+                        raise CommandError(f"Invalid calendar snapshot key: {old.object_key}")
+                    if year not in years:
+                        continue
                     raise CommandError("Cannot delete calendar days through delta feed; publish a valid day replacement")
                 to_delete.append(old.pk)
                 if not baseline:
