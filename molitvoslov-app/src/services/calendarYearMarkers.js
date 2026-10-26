@@ -30,7 +30,7 @@ export const loadYearMarkers = async (year) => {
 
 // The marker cache overlays only fasting-related fields; saint content remains untouched.
 export const applyYearMarkers = (day, markersByDate) => {
-  if (!day?.date_gregorian) return day;
+  if (!day?.date_gregorian || day._content_delta === true) return day;
   const patch = markersByDate?.[day.date_gregorian];
   if (!patch?.calendar_markers) return day;
   // Keep current API fasting fields instead of overwriting them with an
