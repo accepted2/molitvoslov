@@ -140,10 +140,24 @@ const applyPage = async (changes, cursor) => {
       } else if (name.startsWith('book/')) {
         const code = name.slice(5);
         const previous = biblePayload.books.find((book) => book.code === code);
-        const next = change.operation === 'upsert' ? await resolveUpdate(change, previous) : null;
+        const previousMeta = previous && Object.fromEntries(
+          Object.entries(previous).filter(([key]) => key !== 'chapters')
+        );
+        const next = change.operation === 'upsert' ? await resolveUpdate(change, previousMeta) : null;
         biblePayload.books = biblePayload.books.filter((book) => book.code !== code);
-        if (next) biblePayload.books.push(next);
+        if (next) biblePayload.books.push({...next, chapters: previous?.chapters || []});
         biblePayload.books.sort((a, b) => Number(a.canonical_order) - Number(b.canonical_order));
+      } else if (name.startsWith('chapter/')) {
+        const match = name.match(/^chapter\/([^/]+)\/(\d+)$/);
+        if (!match) throw new Error('Invalid Bible chapter key');
+        const [, code, chapterNumber] = match;
+        const book = biblePayload.books.find((item) => item.code === code);
+        if (!book) throw new Error('Bible book missing for changed chapter: ' + code);
+        const previous = (book.chapters || []).find((chapter) => String(chapter.number) === chapterNumber);
+        const next = change.operation === 'upsert' ? await resolveUpdate(change, previous) : null;
+        book.chapters = (book.chapters || []).filter((chapter) => String(chapter.number) !== chapterNumber);
+        if (next) book.chapters.push(next);
+        book.chapters.sort((a, b) => Number(a.number) - Number(b.number));
       } else throw new Error('Unknown Bible delta');
     } else if (change.section === 'calendar') {
       const match = String(change.object_key).match(/^(\d{4}-\d{2}-\d{2})\/(ru|uk)$/);
