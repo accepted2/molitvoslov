@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="OfflineContentSnapshot",
             fields=[
-                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False)),
                 ("section", models.CharField(max_length=24)),
                 ("object_key", models.CharField(max_length=200)),
                 ("checksum", models.CharField(max_length=64)),
