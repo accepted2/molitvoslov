@@ -13,6 +13,17 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from contextlib import contextmanager
+
+
+@contextmanager
+def open_db(path):
+    db = sqlite3.connect(path)
+    try:
+        with db:
+            yield db
+    finally:
+        db.close()
 
 
 SCHEMA = """
@@ -55,7 +66,7 @@ class AtomicContentDeltaTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.path = str(Path(self.temp.name) / "app.sqlite")
-        with sqlite3.connect(self.path) as db:
+        with open_db(self.path) as db:
             db.execute("PRAGMA journal_mode = WAL")
             db.executescript(SCHEMA)
             db.execute("INSERT INTO saved_items VALUES (1, 'private bookmark', 'pending')")
@@ -77,7 +88,7 @@ class AtomicContentDeltaTests(unittest.TestCase):
         self.temp.cleanup()
 
     def snapshot(self):
-        with sqlite3.connect(self.path) as db:
+        with open_db(self.path) as db:
             return (
                 db.execute("SELECT cursor FROM content_delta_state").fetchall(),
                 db.execute(
@@ -91,7 +102,7 @@ class AtomicContentDeltaTests(unittest.TestCase):
         original = self.snapshot()
         for step in range(4):
             with self.assertRaises(RuntimeError):
-                with sqlite3.connect(self.path) as db:
+                with open_db(self.path) as db:
                     apply_batch(db, 2, fail_at=step)
             self.assertEqual(self.snapshot(), original)
 
@@ -109,7 +120,7 @@ os._exit(17)
         result = subprocess.run([sys.executable, "-c", program, self.path], check=False)
         self.assertEqual(result.returncode, 17)
         self.assertEqual(self.snapshot(), original)
-        with sqlite3.connect(self.path) as db:
+        with open_db(self.path) as db:
             apply_batch(db, 2)
             apply_batch(db, 2)
         cursor, content, calendar, private = self.snapshot()
