@@ -34,7 +34,6 @@ import {
   getCalendarDayAppearance,
   getCalendarDay,
   getCalendarMonth,
-  refreshCalendarMonthIfStale,
   getCalendarReadingItems,
   openCalendarBibleReference,
   resolveBibleReference,
@@ -490,7 +489,7 @@ export const MenuScreen = ({navigation}) => {
         }
         const fresh = await getCalendarDay(targetDate, {
           language: dataLanguage,
-          force: true,
+          force: false,
           skipOffline: false,
         });
 
@@ -524,16 +523,6 @@ export const MenuScreen = ({navigation}) => {
       .catch((error) => {
         if (active) console.log('Локальный мини-календарь:', error?.message || error);
       });
-    refreshCalendarMonthIfStale(year, month, language).then((fresh) => {
-      if (active && fresh) {
-        setCalendarMonthDays(fresh.days || []);
-        const selectedKey = toCalendarDate(selectedCalendarDateRef.current);
-        const freshDay = fresh.days?.find((day) => day?.date_gregorian === selectedKey);
-        if (freshDay) setCalendarToday((previous) =>
-          previous?.date_gregorian === selectedKey ? freshDay : previous
-        );
-      }
-    });
     return () => {
       active = false;
     };
