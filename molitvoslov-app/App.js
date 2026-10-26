@@ -27,10 +27,8 @@ import {syncMemorials} from './src/services/memorials';
 
 import {syncPrayerBooks} from './src/services/prayerBooks';
 import {hydratePublicContent} from './src/services/contentStore';
-import {syncPublicContent} from './src/services/contentSync';
+import {syncContentDeltas} from './src/services/contentDeltaSync';
 import {hydrateBibleContent} from './src/services/bibleStore';
-import {syncBibleContent} from './src/services/bibleSync';
-import {syncYearMarkers2026} from './src/services/calendarYearMarkers';
 
 
 
@@ -38,8 +36,6 @@ const ONBOARDING_STORAGE_KEY = '@molitvoslov/onboarding-version';
 const ONBOARDING_VERSION = 5;
 
 const MIN_STARTUP_MS = 650;
-const CONTENT_REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000;
-const CONTENT_LAST_CHECK_KEY = '@molitvoslov/content-last-check-v2';
 
 const StartupLoadingScreen = () => (
   <ImageBackground
@@ -139,24 +135,12 @@ export default function App() {
 
     let previousOnline = null;
 
-    const checkPublicUpdates = async () => {
-      const last = Number(await AsyncStorage.getItem(CONTENT_LAST_CHECK_KEY) || 0);
-      if (last && Date.now() - last < CONTENT_REFRESH_INTERVAL_MS) return;
-      const [publicResult, bibleResult] = await Promise.all([
-        syncPublicContent(), syncBibleContent('rst'),
-      ]);
-      if (publicResult?.success && bibleResult?.success) {
-        await AsyncStorage.setItem(CONTENT_LAST_CHECK_KEY, String(Date.now()));
-      }
-    };
-
     const runSync = async (reason) => {
       try {
-        // Calendar markers are light-weight and independent of bulky saint records.
-        syncYearMarkers2026().catch((error) =>
-          console.log('Calendar markers sync отложен:', error?.message || error)
+        // Read a small published change feed; never request full Bible or calendar here.
+        syncContentDeltas().catch((error) =>
+          console.log('Offline content delta sync:', error?.message || error)
         );
-        await checkPublicUpdates();
         const [savedItemsResult, readingProgressResult, memorialsResult, prayerBooksResult] = await Promise.all([
           syncSavedItems(), syncReadingProgress(), syncMemorials(), syncPrayerBooks(),
         ]);
