@@ -91,7 +91,10 @@ def published_objects(years):
     if bible:
         yield "bible", "rst/translation", normalized_json(bible["translation"])
         for book in bible.get("books", []):
-            yield "bible", f"rst/book/{book['code']}", normalized_json(book)
+            book_meta = {key: value for key, value in book.items() if key != "chapters"}
+            yield "bible", f"rst/book/{book['code']}", normalized_json(book_meta)
+            for chapter in book.get("chapters", []):
+                yield "bible", f"rst/chapter/{book['code']}/{chapter['number']}", normalized_json(chapter)
 
     dates = CalendarDay.objects.filter(
         date_gregorian__year__in=years
