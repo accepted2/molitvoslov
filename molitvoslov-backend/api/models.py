@@ -1683,6 +1683,3 @@ from .calendar_models import CalendarFeast, CalendarDay
 # Public offline-content publication feed.
 from .content_update_models import OfflineContentSnapshot, OfflineContentChange
 
-
-# Published immutable snapshots and change journal for offline clients.
-from .content_delta_models import PublishedContentItem, PublishedContentChange  # noqa: E402,F401
