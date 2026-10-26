@@ -34,6 +34,42 @@ def signature(value):
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
 
 
+
+def field_changes(before, after, path=()):
+    """Minimal path-based JSON changes; equal-length lists preserve item identity."""
+    if before == after:
+        return []
+    if isinstance(before, dict) and isinstance(after, dict):
+        changes = []
+        for key in sorted(before.keys() - after.keys()):
+            changes.append({"op": "remove", "path": [*path, key]})
+        for key in sorted(after.keys() - before.keys()):
+            changes.append({"op": "set", "path": [*path, key], "value": after[key]})
+        for key in sorted(before.keys() & after.keys()):
+            changes.extend(field_changes(before[key], after[key], (*path, key)))
+        return changes
+    if isinstance(before, list) and isinstance(after, list) and len(before) == len(after):
+        changes = []
+        for index, (old_item, new_item) in enumerate(zip(before, after)):
+            changes.extend(field_changes(old_item, new_item, (*path, index)))
+        return changes
+    return [{"op": "set", "path": list(path), "value": after}]
+
+
+def delivery_payload(old, value, checksum):
+    full = {"kind": "full", "value": value, "checksum": checksum}
+    if old is None:
+        return full
+    patch = {
+        "kind": "patch",
+        "base_checksum": old.checksum,
+        "checksum": checksum,
+        "operations": field_changes(old.payload, value),
+    }
+    if len(json.dumps(patch, ensure_ascii=False)) < len(json.dumps(full, ensure_ascii=False)):
+        return patch
+    return full
+
 def published_objects(years):
     public = build_mobile_content_payload()
     # The public package contains duplicates for fast lookup; keep its exact shape
@@ -102,6 +138,7 @@ class Command(BaseCommand):
             to_create, to_update, to_delete, changes = [], [], [], []
             for (section, key), (checksum, data) in incoming.items():
                 old = current.pop((section, key), None)
+                delivery = delivery_payload(old, data, checksum)
                 if old is None:
                     to_create.append(OfflineContentSnapshot(
                         section=section, object_key=key, checksum=checksum, payload=data
@@ -114,9 +151,11 @@ class Command(BaseCommand):
                     continue
                 if not baseline:
                     changes.append(OfflineContentChange(
-                        section=section, object_key=key, operation="upsert", payload=data
+                        section=section, object_key=key, operation="upsert", payload=delivery
                     ))
             for old in current.values():
+                if old.section == "calendar":
+                    raise CommandError("Cannot delete calendar days through delta feed; publish a valid day replacement")
                 to_delete.append(old.pk)
                 if not baseline:
                     changes.append(OfflineContentChange(
