@@ -125,3 +125,52 @@ class OfflineContentManifestTests(TestCase):
                                             operation="upsert", payload={"kind": "full", "value": {}})
         response = OfflineContentManifestView.as_view()(APIRequestFactory().get("/api/content-updates/manifest/"))
         self.assertEqual(json.loads(response.content)["latest_revision"], 1)
+
+
+class PublicationLifecycleTests(TestCase):
+    def test_publish_only_changed_object_and_idempotent_rerun(self):
+        from unittest.mock import patch
+        from django.core.management import call_command
+        from .content_update_models import OfflineContentSnapshot
+        command_path = "api.management.commands.publish_offline_content_updates.published_objects"
+        payload = [("public", "texts/example", {"title": "first"})]
+        with patch(command_path, side_effect=lambda years: iter(payload)):
+            call_command("publish_offline_content_updates", baseline=True)
+            self.assertEqual(OfflineContentChange.objects.count(), 0)
+            call_command("publish_offline_content_updates")
+            self.assertEqual(OfflineContentChange.objects.count(), 0)
+            payload = [("public", "texts/example", {"title": "revised"})]
+            call_command("publish_offline_content_updates")
+            self.assertEqual(OfflineContentChange.objects.count(), 1)
+            self.assertEqual(OfflineContentSnapshot.objects.get(object_key="texts/example").payload["title"], "revised")
+            call_command("publish_offline_content_updates")
+            self.assertEqual(OfflineContentChange.objects.count(), 1)
+
+    def test_removed_published_object_creates_tombstone(self):
+        from unittest.mock import patch
+        from django.core.management import call_command
+        from .content_update_models import OfflineContentSnapshot
+        command_path = "api.management.commands.publish_offline_content_updates.published_objects"
+        with patch(command_path, side_effect=lambda years: iter([("public", "texts/deleted", {"title": "old"})])):
+            call_command("publish_offline_content_updates", baseline=True)
+        with patch(command_path, side_effect=lambda years: iter([])):
+            call_command("publish_offline_content_updates")
+        self.assertFalse(OfflineContentSnapshot.objects.filter(object_key="texts/deleted").exists())
+        event = OfflineContentChange.objects.get(object_key="texts/deleted")
+        self.assertEqual(event.operation, "delete")
+        self.assertIsNone(event.payload)
+
+    def test_calendar_deletion_rolls_back_entire_publication(self):
+        from unittest.mock import patch
+        from django.core.management import call_command, CommandError
+        from .content_update_models import OfflineContentSnapshot
+        OfflineContentSnapshot.objects.create(
+            section="calendar", object_key="2026-02-01/ru",
+            checksum="base", payload={"date_gregorian": "2026-02-01"}
+        )
+        path = "api.management.commands.publish_offline_content_updates.published_objects"
+        with patch(path, return_value=iter([("public", "texts/valid", {"title": "new"})])):
+            with self.assertRaises(CommandError):
+                call_command("publish_offline_content_updates", years=[2026])
+        self.assertFalse(OfflineContentSnapshot.objects.filter(object_key="texts/valid").exists())
+        self.assertEqual(OfflineContentChange.objects.count(), 0)
