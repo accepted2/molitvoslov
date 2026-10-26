@@ -33,6 +33,14 @@ const fetchCalendarJson = async (path, {signal} = {}) => {
 const monthCache = new Map();
 const dayCache = new Map();
 
+// Invalidate in-memory readers when a published server delta changes one day.
+export const invalidateCalendarCache = (date, language = 'ru') => {
+  const lang = language === 'uk' ? 'uk' : 'ru';
+  dayCache.delete(`${lang}:${date}`);
+  const parts = String(date).split('-');
+  if (parts.length === 3) monthCache.delete(`${lang}:${Number(parts[0])}-${Number(parts[1])}`);
+};
+
 const pad = (value) => String(value).padStart(2, '0');
 
 // Refresh one viewed calendar month at most once per 24 hours.
