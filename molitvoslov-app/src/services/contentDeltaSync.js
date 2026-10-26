@@ -64,7 +64,11 @@ const applyFieldOperations = (previous, operations) => {
   let result = deepClone(previous);
   for (const operation of operations) {
     const path = operation.path;
-    if (!Array.isArray(path) || path.some((key) => ['__proto__', 'prototype', 'constructor'].includes(key)) ||
+    if (!Array.isArray(path) || path.some((key) =>
+      (typeof key !== 'string' && !Number.isSafeInteger(key)) ||
+      ['__proto__', 'prototype', 'constructor'].includes(key) ||
+      (typeof key === 'number' && key < 0)
+    ) ||
         !['set', 'remove'].includes(operation.op)) {
       throw new Error('Unsupported field delta');
     }
@@ -82,7 +86,13 @@ const applyFieldOperations = (previous, operations) => {
     }
     const last = path[path.length - 1];
     if (!parent || typeof parent !== 'object') throw new Error('Invalid field target');
-    if (operation.op === 'remove') delete parent[last];
+    if (Array.isArray(parent) && (!Number.isInteger(last) || last < 0 || last >= parent.length)) {
+      throw new Error('Invalid array delta index');
+    }
+    if (operation.op === 'remove') {
+      if (Array.isArray(parent)) throw new Error('Cannot remove array element by index');
+      delete parent[last];
+    }
     else parent[last] = operation.value;
   }
   return result;
@@ -94,14 +104,22 @@ const fetchPublishedObject = async (section, key) => {
   const response = await fetch(url);
   if (!response.ok) throw new Error('Published object HTTP ' + response.status);
   const data = await response.json();
-  if (!data || !data.payload || !data.checksum) throw new Error('Invalid published object');
+  if (!data || data.payload == null || !data.checksum) throw new Error('Invalid published object');
+  if (await checksumOf(data.payload) !== data.checksum) {
+    throw new Error('Published object checksum mismatch');
+  }
   return data.payload;
 };
 
 const resolveUpdate = async (change, previous) => {
   const delivery = change.payload;
   if (!delivery || typeof delivery !== 'object') throw new Error('Missing content delta');
-  if (delivery.kind === 'full') return delivery.value;
+  if (delivery.kind === 'full') {
+    if (delivery.value == null || await checksumOf(delivery.value) !== delivery.checksum) {
+      throw new Error('Full content delta checksum mismatch');
+    }
+    return delivery.value;
+  }
   if (delivery.kind !== 'patch' || !Array.isArray(delivery.operations)) {
     throw new Error('Unsupported content delta');
   }
