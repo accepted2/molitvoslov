@@ -62,7 +62,8 @@ const applyFieldOperations = (previous, operations) => {
   let result = deepClone(previous);
   for (const operation of operations) {
     const path = operation.path;
-    if (!Array.isArray(path) || !['set', 'remove'].includes(operation.op)) {
+    if (!Array.isArray(path) || path.some((key) => ['__proto__', 'prototype', 'constructor'].includes(key)) ||
+        !['set', 'remove'].includes(operation.op)) {
       throw new Error('Unsupported field delta');
     }
     if (!path.length) {
