@@ -38,7 +38,8 @@ const ONBOARDING_STORAGE_KEY = '@molitvoslov/onboarding-version';
 const ONBOARDING_VERSION = 5;
 
 const MIN_STARTUP_MS = 650;
-const CONTENT_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+const CONTENT_REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const CONTENT_LAST_CHECK_KEY = '@molitvoslov/content-last-check-v2';
 
 const StartupLoadingScreen = () => (
   <ImageBackground
@@ -138,45 +139,27 @@ export default function App() {
 
     let previousOnline = null;
 
+    const checkPublicUpdates = async () => {
+      const last = Number(await AsyncStorage.getItem(CONTENT_LAST_CHECK_KEY) || 0);
+      if (last && Date.now() - last < CONTENT_REFRESH_INTERVAL_MS) return;
+      const [publicResult, bibleResult] = await Promise.all([
+        syncPublicContent(), syncBibleContent('rst'),
+      ]);
+      if (publicResult?.success && bibleResult?.success) {
+        await AsyncStorage.setItem(CONTENT_LAST_CHECK_KEY, String(Date.now()));
+      }
+    };
+
     const runSync = async (reason) => {
       try {
         // Calendar markers are light-weight and independent of bulky saint records.
         syncYearMarkers2026().catch((error) =>
           console.log('Calendar markers sync отложен:', error?.message || error)
         );
-        const [
-          publicContentResult,
-          bibleContentResult,
-          savedItemsResult,
-          readingProgressResult,
-          memorialsResult,
-          prayerBooksResult,
-        ] = await Promise.all([
-          syncPublicContent(),
-          syncBibleContent('rst'),
-          syncSavedItems(),
-          syncReadingProgress(),
-          syncMemorials(),
-          syncPrayerBooks(),
+        await checkPublicUpdates();
+        const [savedItemsResult, readingProgressResult, memorialsResult, prayerBooksResult] = await Promise.all([
+          syncSavedItems(), syncReadingProgress(), syncMemorials(), syncPrayerBooks(),
         ]);
-
-        if (publicContentResult?.updated) {
-          console.log(`Public content updated: ${reason}`);
-        } else if (!publicContentResult?.success && publicContentResult?.error) {
-          console.log(
-            `Public content sync отложен: ${reason}`,
-            publicContentResult.error?.message || publicContentResult.error
-          );
-        }
-
-        if (bibleContentResult?.updated) {
-          console.log(`Bible content updated: ${reason}`);
-        } else if (!bibleContentResult?.success && bibleContentResult?.error) {
-          console.log(
-            `Bible content sync отложен: ${reason}`,
-            bibleContentResult.error?.message || bibleContentResult.error
-          );
-        }
 
         const noUser =
           savedItemsResult?.reason === 'no-user' &&
@@ -215,27 +198,7 @@ export default function App() {
 
     runSync('startup');
 
-    // Keep the RU/UK offline content fresh without blocking language switches.
-    // Conditional requests (ETag / 304) avoid downloading unchanged bundles.
     let isForeground = true;
-    const contentRefreshTimer = setInterval(async () => {
-      if (!isForeground) {
-        return;
-      }
-
-      const [publicResult, bibleResult] = await Promise.all([
-        syncPublicContent(),
-        syncBibleContent('rst'),
-      ]);
-
-      if (!publicResult?.success && publicResult?.error) {
-        console.log(
-          'Periodic public content sync отложен:',
-          publicResult.error?.message || publicResult.error
-        );
-      }
-    }, CONTENT_REFRESH_INTERVAL_MS);
-
     const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
       const online = Boolean(state.isConnected) && state.isInternetReachable !== false;
 
@@ -254,7 +217,6 @@ export default function App() {
     });
 
     return () => {
-      clearInterval(contentRefreshTimer);
       unsubscribeNetInfo();
 
       appStateSubscription.remove();
