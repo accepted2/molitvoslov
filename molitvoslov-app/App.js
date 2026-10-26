@@ -138,6 +138,7 @@ export default function App() {
     let personalSyncing = false;
 
     const runSync = async (reason) => {
+      let ownsPersonalSync = false;
       try {
         // Read a small published change feed; never request full Bible or calendar here.
         syncContentDeltas().catch((error) =>
@@ -151,6 +152,7 @@ export default function App() {
           if (last && Date.now() - last < 24 * 60 * 60 * 1000) return;
         }
         personalSyncing = true;
+        ownsPersonalSync = true;
         const [savedItemsResult, readingProgressResult, memorialsResult, prayerBooksResult] = await Promise.all([
           syncSavedItems(), syncReadingProgress(), syncMemorials(), syncPrayerBooks(),
         ]);
@@ -189,7 +191,7 @@ export default function App() {
       } catch (error) {
         console.log(`Cloud sync ошибка: ${reason}`, error?.message || error);
       } finally {
-        personalSyncing = false;
+        if (ownsPersonalSync) personalSyncing = false;
       }
     };
 
