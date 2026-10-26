@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
-from .content_update_models import OfflineContentChange
+from .content_update_models import OfflineContentChange, OfflineContentSnapshot
 
 
 class OfflineContentUpdatesView(APIView):
@@ -36,5 +36,29 @@ class OfflineContentUpdatesView(APIView):
             "has_more": has_more,
             "changes": changes,
         }, json_dumps_params={"ensure_ascii": False})
+        response["Cache-Control"] = "private, no-store"
+        return response
+
+
+
+class OfflineContentObjectView(APIView):
+    """Fetch exactly one published object when a client's bundled baseline differs."""
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        section = str(request.query_params.get("section") or "")
+        key = str(request.query_params.get("key") or "")
+        if section not in {"public", "bible", "calendar"} or not key or len(key) > 200:
+            return JsonResponse({"detail": "Invalid published object"}, status=400)
+        row = OfflineContentSnapshot.objects.filter(
+            section=section, object_key=key
+        ).values("checksum", "payload").first()
+        if not row:
+            return JsonResponse({"detail": "Published object not found"}, status=404)
+        response = JsonResponse(
+            {"checksum": row["checksum"], "payload": row["payload"]},
+            json_dumps_params={"ensure_ascii": False},
+        )
         response["Cache-Control"] = "private, no-store"
         return response
