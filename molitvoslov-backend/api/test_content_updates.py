@@ -101,3 +101,27 @@ class PublicationScopeTests(TestCase):
             call_command("publish_offline_content_updates", years=[2026])
         self.assertTrue(OfflineContentSnapshot.objects.filter(object_key="2025-01-01/ru").exists())
         self.assertTrue(OfflineContentSnapshot.objects.filter(object_key="2026-01-01/ru").exists())
+
+
+class OfflineContentManifestTests(TestCase):
+    def test_manifest_only_reads_change_journal(self):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        from .content_updates import OfflineContentManifestView
+        view = OfflineContentManifestView.as_view()
+        factory = APIRequestFactory()
+        with CaptureQueriesContext(connection) as queries:
+            response = view(factory.get("/api/content-updates/manifest/"))
+        import json
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(json.loads(response.content)["latest_revision"], 0)
+        self.assertEqual(len(queries), 1)
+        self.assertIn("offlinecontentchange", queries[0]["sql"].lower().replace("_", ""))
+
+    def test_manifest_revision_increases(self):
+        from .content_updates import OfflineContentManifestView
+        import json
+        OfflineContentChange.objects.create(section="public", object_key="texts/sample",
+                                            operation="upsert", payload={"kind": "full", "value": {}})
+        response = OfflineContentManifestView.as_view()(APIRequestFactory().get("/api/content-updates/manifest/"))
+        self.assertEqual(json.loads(response.content)["latest_revision"], 1)
