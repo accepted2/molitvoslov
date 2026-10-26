@@ -57,8 +57,9 @@ class DeltaPatchSerializationTests(TestCase):
     def test_single_verse_fix_uses_narrow_patch(self):
         from .management.commands.publish_offline_content_updates import field_changes, delivery_payload
         from .content_update_models import OfflineContentSnapshot
-        before = {"number": 3, "verses": [{"number": 1, "text": "old"}, {"number": 2, "text": "same"}]}
-        after = {"number": 3, "verses": [{"number": 1, "text": "fixed"}, {"number": 2, "text": "same"}]}
+        before = {"number": 3, "verses": [{"number": i, "text": "unchanged text " * 20} for i in range(1, 31)]}
+        after = {"number": 3, "verses": [dict(verse) for verse in before["verses"]]}
+        after["verses"][0]["text"] = "fixed"
         operations = field_changes(before, after)
         self.assertEqual(operations, [{"op": "set", "path": ["verses", 0, "text"], "value": "fixed"}])
         old = OfflineContentSnapshot(section="bible", object_key="rst/chapter/JHN/3", checksum="previous", payload=before)
