@@ -237,7 +237,24 @@ const doSync = async ({force = false} = {}) => {
       throw new Error('Unsupported content update format');
     }
     const next = Number(body.cursor);
-    if (!Number.isSafeInteger(next) || next < cursor) throw new Error('Invalid delta cursor');
+    const latest = Number(body.latest_revision);
+    if (!Number.isSafeInteger(next) || next < cursor ||
+        !Number.isSafeInteger(latest) || latest < next) {
+      throw new Error('Invalid delta cursor');
+    }
+    let previousId = cursor;
+    for (const change of body.changes) {
+      const id = Number(change?.id);
+      if (!Number.isSafeInteger(id) || id <= previousId || id > next) {
+        throw new Error('Out-of-order content delta');
+      }
+      previousId = id;
+    }
+    if ((body.changes.length && previousId !== next) ||
+        (!body.changes.length && next !== cursor) ||
+        (body.has_more && next >= latest)) {
+      throw new Error('Inconsistent content delta page');
+    }
     if (body.changes.length) {
       if (next === cursor) throw new Error('Non-advancing delta cursor');
       await applyPage(body.changes, next);
