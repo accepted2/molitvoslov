@@ -19,7 +19,7 @@ class OfflineContentSnapshot(models.Model):
                 fields=["section", "object_key"], name="unique_offline_content_object"
             )
         ]
-        indexes = [models.Index(fields=["section", "object_key"])]
+        indexes = [models.Index(fields=["section", "object_key"], name="api_oc_snap_section_idx")]
 
     def __str__(self):
         return f"{self.section}/{self.object_key}"
@@ -34,5 +34,5 @@ class OfflineContentChange(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        indexes = [models.Index(fields=["section", "object_key"])]
+        indexes = [models.Index(fields=["section", "object_key"], name="api_oc_change_section_idx")]
         ordering = ["id"]
