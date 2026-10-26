@@ -28,6 +28,7 @@ import {syncMemorials} from './src/services/memorials';
 import {syncPrayerBooks} from './src/services/prayerBooks';
 import {hydratePublicContent} from './src/services/contentStore';
 import {syncContentDeltas} from './src/services/contentDeltaSync';
+import {getCachedBackendUser} from './src/services/backendAuth';
 import {hydrateBibleContent} from './src/services/bibleStore';
 
 
@@ -134,6 +135,7 @@ export default function App() {
     }
 
     let previousOnline = null;
+    let personalSyncing = false;
 
     const runSync = async (reason) => {
       try {
@@ -141,6 +143,14 @@ export default function App() {
         syncContentDeltas().catch((error) =>
           console.log('Offline content delta sync:', error?.message || error)
         );
+        const user = await getCachedBackendUser();
+        if (!user?.id || personalSyncing) return;
+        const stampKey = '@molitvoslov/personal-last-pull-v1:' + String(user.id);
+        if (reason === 'foreground') {
+          const last = Number(await AsyncStorage.getItem(stampKey) || 0);
+          if (last && Date.now() - last < 24 * 60 * 60 * 1000) return;
+        }
+        personalSyncing = true;
         const [savedItemsResult, readingProgressResult, memorialsResult, prayerBooksResult] = await Promise.all([
           syncSavedItems(), syncReadingProgress(), syncMemorials(), syncPrayerBooks(),
         ]);
@@ -161,6 +171,7 @@ export default function App() {
           memorialsResult?.success &&
           prayerBooksResult?.success
         ) {
+          await AsyncStorage.setItem(stampKey, String(Date.now()));
           console.log(`Cloud sync OK: ${reason}`);
 
           return;
@@ -177,12 +188,13 @@ export default function App() {
         }
       } catch (error) {
         console.log(`Cloud sync ошибка: ${reason}`, error?.message || error);
+      } finally {
+        personalSyncing = false;
       }
     };
 
     runSync('startup');
 
-    let isForeground = true;
     const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
       const online = Boolean(state.isConnected) && state.isInternetReachable !== false;
 
@@ -194,7 +206,6 @@ export default function App() {
     });
 
     const appStateSubscription = AppState.addEventListener('change', (nextState) => {
-      isForeground = nextState === 'active';
       if (nextState === 'active') {
         runSync('foreground');
       }
