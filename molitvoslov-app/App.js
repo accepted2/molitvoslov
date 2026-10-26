@@ -147,7 +147,9 @@ export default function App() {
         const user = await getCachedBackendUser();
         if (!user?.id || personalSyncing) return;
         const stampKey = '@molitvoslov/personal-last-pull-v1:' + String(user.id);
-        if (reason === 'foreground') {
+        // Avoid pulling every private list again on each app launch.
+        // Network reconnection can still push unsent offline edits immediately.
+        if (reason !== 'network') {
           const last = Number(await AsyncStorage.getItem(stampKey) || 0);
           if (last && Date.now() - last < 24 * 60 * 60 * 1000) return;
         }
