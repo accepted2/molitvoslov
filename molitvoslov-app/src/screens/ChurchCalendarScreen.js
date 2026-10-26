@@ -26,7 +26,6 @@ import {
   getCalendarDay,
   getCalendarReadingItems,
   getCalendarMonth,
-  refreshCalendarMonthIfStale,
   openCalendarBibleReference,
   resolveBibleReference,
   toCalendarDate,
@@ -612,11 +611,6 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
       }
     };
     loadLocalMonth();
-    // Show bundled/cached data immediately, refresh the viewed month quietly.
-    refreshCalendarMonthIfStale(visibleYear, visibleMonth, dataLanguage)
-      .then((fresh) => {
-        if (active && fresh) setMonthData(fresh);
-      });
     return () => { active = false; };
   }, [dataLanguage, refreshVersion, visibleMonth, visibleYear]);
 
