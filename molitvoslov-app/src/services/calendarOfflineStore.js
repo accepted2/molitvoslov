@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {getDatabase} from '../db/database';
 import {
   applyYearMarkers,
   applyYearMarkersToMonth,
@@ -135,6 +136,13 @@ export const getStoredCalendarDay = async (date, language = 'ru') => {
   }
 
   try {
+    // Delta days are committed atomically with public/Bible snapshots in SQLite.
+    const db = await getDatabase();
+    const row = await db.getFirstAsync(
+      'SELECT payload FROM content_delta_calendar WHERE date = ? AND language = ?',
+      [normalizeDate(date), normalizeLanguage(language)]
+    );
+    if (row?.payload) return JSON.parse(row.payload);
     const raw = await AsyncStorage.getItem(key);
 
     if (!raw) {
@@ -248,6 +256,18 @@ export const getOfflineCalendarMonth = async (year, month, language = 'ru') => {
     );
   } catch (error) {
     console.log('Ошибка чтения calendar month cache:', error?.message || error);
+  }
+
+  // Atomic SQLite overrides take precedence over the older AsyncStorage cache.
+  try {
+    const db = await getDatabase();
+    const rows = await db.getAllAsync(
+      'SELECT date, payload FROM content_delta_calendar WHERE date >= ? AND date <= ? AND language = ?',
+      [dateKeys[0], dateKeys[dateKeys.length - 1], lang]
+    );
+    for (const row of rows) storedByDate.set(row.date, JSON.parse(row.payload));
+  } catch (error) {
+    console.log('Ошибка чтения атомарного calendar cache:', error?.message || error);
   }
 
   const bundledMonth = getBundledMonthPayload(year, month);
