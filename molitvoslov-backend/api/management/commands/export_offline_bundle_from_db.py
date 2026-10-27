@@ -70,7 +70,12 @@ class Command(BaseCommand):
                 path = calendar_dir / f"{month}.json"
                 if not path.is_file():
                     raise CommandError(f"Existing bundled month file absent: {path}")
-                targets[path] = payload
+                with path.open(encoding="utf-8") as existing_file:
+                    existing = json.load(existing_file)
+                if not isinstance(existing, dict) or not isinstance(existing.get("days"), dict):
+                    raise CommandError(f"Unexpected month asset structure: {path}")
+                existing["days"] = payload["days"]
+                targets[path] = existing
 
         self.stdout.write(f"Prepared {len(targets)} files (public, Bible, {len(months)} calendar months); days={day_count}")
         if not options["apply"]:
