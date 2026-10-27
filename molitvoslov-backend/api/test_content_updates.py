@@ -121,10 +121,10 @@ class OfflineContentManifestTests(TestCase):
     def test_manifest_revision_increases(self):
         from .content_updates import OfflineContentManifestView
         import json
-        OfflineContentChange.objects.create(section="public", object_key="texts/sample",
+        event = OfflineContentChange.objects.create(section="public", object_key="texts/sample",
                                             operation="upsert", payload={"kind": "full", "value": {}})
         response = OfflineContentManifestView.as_view()(APIRequestFactory().get("/api/content-updates/manifest/"))
-        self.assertEqual(json.loads(response.content)["latest_revision"], 1)
+        self.assertEqual(json.loads(response.content)["latest_revision"], event.pk)
 
 
 class PublicationLifecycleTests(TestCase):
