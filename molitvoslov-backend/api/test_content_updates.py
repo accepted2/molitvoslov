@@ -220,3 +220,27 @@ class PublicationBootstrapTests(TestCase):
         from .content_update_models import OfflineContentSnapshot
         self.assertEqual(OfflineContentSnapshot.objects.count(), 0)
         self.assertEqual(OfflineContentChange.objects.count(), 0)
+
+
+class PublicAppAssetTests(TestCase):
+    def test_banner_is_exposed_through_mobile_payload(self):
+        from .models import PublicAppAsset
+        from .mobile_content import build_mobile_content_payload
+        PublicAppAsset.objects.create(
+            key="home_banner", image_url="https://example.com/banner.webp",
+            title="Главный баннер", enabled=True)
+        result = build_mobile_content_payload()
+        self.assertEqual(result["app_assets"]["home_banner"]["image_url"],
+                         "https://example.com/banner.webp")
+
+    def test_asset_is_published_as_individual_object(self):
+        from unittest.mock import patch
+        from .management.commands.publish_offline_content_updates import published_objects
+        with patch("api.management.commands.publish_offline_content_updates.build_mobile_content_payload",
+                   return_value={"app_assets": {"home_banner": {
+                       "image_url": "https://example.com/banner.webp", "enabled": True}}}), \
+             patch("api.management.commands.publish_offline_content_updates.build_bible_content_payload",
+                   return_value=None):
+            records = list(published_objects([]))
+        self.assertIn(("public", "app_assets/home_banner",
+                       {"image_url": "https://example.com/banner.webp", "enabled": True}), records)
