@@ -79,8 +79,6 @@ def published_objects(years):
         yield "public", name, normalized_json(public.get(name, []))
     for key, value in public.get("app_assets", {}).items():
         yield "public", f"app_assets/{key}", normalized_json(value)
-    for name in ():
-        yield "public", name, normalized_json(public.get(name, []))
     for group in ("category_texts", "texts"):
         for key, value in public.get(group, {}).items():
             yield "public", f"{group}/{key}", normalized_json(value)
