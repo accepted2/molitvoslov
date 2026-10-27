@@ -284,7 +284,7 @@ def scoped_objects(scope, value):
     if scope in ("bible_book", "bible_chapter"):
         parts = value.split("/")
         code = parts[0].lower()
-        book = BibleBook.objects.filter(code=code, translation__code="rst", translation__is_visible=True).first()
+        book = BibleBook.objects.filter(code__iexact=code, translation__code="rst", translation__is_visible=True).first()
         if book is None:
             raise CommandError(f"Visible RST Bible book not found: {code}")
         book_data = {
