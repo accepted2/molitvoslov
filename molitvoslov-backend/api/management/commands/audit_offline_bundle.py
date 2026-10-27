@@ -58,12 +58,18 @@ class Command(BaseCommand):
         calendar_root = APP_DATA / "calendar"
         calendar_mismatches = 0
         calendar_checked = 0
+        days_by_date = {
+            day.date_gregorian.isoformat(): day
+            for day in CalendarDay.objects.select_related(
+                "main_feast", "fast_type"
+            ).prefetch_related("feasts", "readings")
+        }
         for month_file in sorted(calendar_root.glob("????-??.json")):
             with month_file.open(encoding="utf-8") as handle:
                 payload = json.load(handle)
             dates = payload.get("days", {})
             for date, languages in dates.items():
-                day = CalendarDay.objects.filter(date_gregorian=date).first()
+                day = days_by_date.get(date)
                 if day is None:
                     calendar_mismatches += 1
                     continue
@@ -76,6 +82,8 @@ class Command(BaseCommand):
                         calendar_mismatches += 1
                         if calendar_mismatches <= 10:
                             self.stdout.write(self.style.WARNING(f"DIFF: calendar {date}/{lang}"))
+        if len(days_by_date) * 2 != calendar_checked:
+            differences.append(f"calendar coverage (database days={len(days_by_date)}, bundled translations={calendar_checked})")
         if calendar_checked == 0 or calendar_mismatches:
             differences.append(f"calendar ({calendar_mismatches} mismatches / {calendar_checked} checked)")
         self.stdout.write(f"Calendar: checked={calendar_checked}, mismatches={calendar_mismatches}")
