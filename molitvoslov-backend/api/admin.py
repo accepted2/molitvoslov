@@ -1674,3 +1674,13 @@ class BibleTranslationAdmin(admin.ModelAdmin):
         "source_url",
     ]
     list_editable = ["is_visible"]
+
+
+from .models import PublicAppAsset
+
+@admin.register(PublicAppAsset)
+class PublicAppAssetAdmin(admin.ModelAdmin):
+    list_display = ("key", "title", "enabled", "updated_at")
+    list_editable = ("enabled",)
+    search_fields = ("key", "title")
+    readonly_fields = ("updated_at",)
