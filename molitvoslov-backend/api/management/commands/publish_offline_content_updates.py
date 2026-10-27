@@ -360,7 +360,7 @@ class Command(BaseCommand):
         bootstrap = options["bootstrap"]
         scope_args = ("akathist_slug", "text_slug", "canon_slug", "prayer_rule_slug",
                       "psalter_slug", "kathisma_number", "category_slug", "asset_key",
-                      "calendar_date", "calendar_month", "calendar_year")
+                      "calendar_date", "calendar_month", "calendar_year", "bible_book", "bible_chapter")
         selected = [(name, options[name]) for name in scope_args if options[name] is not None]
         if len(selected) > 1:
             raise CommandError("Select only one scoped publication flag")
