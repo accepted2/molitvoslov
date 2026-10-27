@@ -202,6 +202,24 @@ class Command(BaseCommand):
             f"uncompressed_json_bytes={estimated_payload_bytes}, "
             f"estimated_initial_mb={estimated_payload_bytes / (1024 * 1024):.1f}"
         )
+        if options["dry_run"] and target_akathist:
+            existing = {
+                (row.section, row.object_key): row.checksum
+                for row in OfflineContentSnapshot.objects.filter(
+                    section="public",
+                    object_key__in=[key for section, key in incoming],
+                )
+            }
+            new_keys = [key for key in incoming if key not in existing]
+            changed_keys = [key for key, (checksum, _) in incoming.items()
+                            if key in existing and existing[key] != checksum]
+            self.stdout.write(
+                f"Scoped delta preview: new={len(new_keys)}, updated={len(changed_keys)}, deleted=0"
+            )
+            for section, key in new_keys:
+                self.stdout.write(f"NEW {section} {key}")
+            for section, key in changed_keys:
+                self.stdout.write(f"UPDATED {section} {key}")
         if options["dry_run"]:
             if baseline:
                 baseline_bytes = sum(len(key.encode("utf-8")) + len(section.encode("utf-8")) + 64 for section, key in incoming)
