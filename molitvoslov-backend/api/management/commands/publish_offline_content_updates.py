@@ -27,10 +27,10 @@ from api.calendar_serializers import CalendarDaySerializer
 from api.content_update_models import OfflineContentChange, OfflineContentSnapshot
 from api.mobile_content import build_mobile_content_payload
 from api.models import (Akathist, Text, Canon, PrayerRule, Psalter, Kathisma, Category,
-                        CategoryText, PublicAppAsset, BibleBook, BibleChapter, BibleTranslation)
+                        CategoryText, PublicAppAsset, BibleBook, BibleChapter, BibleTranslation, Psalm, DailyQuote)
 from api.serializers import (AkathistSerializer, AkathistSummarySerializer, TextSerializer,
     CanonSerializer, CanonSummarySerializer, PrayerRuleSerializer, PsalterSerializer,
-    KathismaSerializer, CategorySerializer, CategoryTextSerializer)
+    KathismaSerializer, CategorySerializer, CategoryTextSerializer, DailyQuoteSerializer)
 
 
 def normalized_json(value):
@@ -240,6 +240,27 @@ def scoped_objects(scope, value):
         yield from scoped_objects("psalter_slug", obj.psalter.slug)
         return
 
+    if scope == "psalm_number":
+        try:
+            number = int(value)
+        except (TypeError, ValueError):
+            raise CommandError("Psalm number must be an integer")
+        kathismas = Kathisma.objects.filter(psalms__number=number).distinct()
+        if kathismas.count() != 1:
+            raise CommandError(f"Psalm {number} has no unique parent kathisma")
+        yield from scoped_objects("kathisma_number", str(kathismas.first().number))
+        return
+
+    if scope == "daily_quotes":
+        yield "public", "daily_quotes", normalized_json(DailyQuoteSerializer(
+            DailyQuote.objects.filter(is_active=True).order_by("order", "id"), many=True).data)
+        return
+
+    if scope == "categories":
+        yield "public", "categories", normalized_json(CategorySerializer(
+            Category.objects.all().order_by("order", "id"), many=True).data)
+        return
+
     if scope == "category_slug":
         category = Category.objects.filter(slug=value).first()
         if category is None:
@@ -344,6 +365,9 @@ class Command(BaseCommand):
         parser.add_argument("--calendar-year", type=str, default=None)
         parser.add_argument("--bible-book", type=str, default=None)
         parser.add_argument("--bible-chapter", type=str, default=None)
+        parser.add_argument("--psalm-number", type=str, default=None)
+        parser.add_argument("--daily-quotes", action="store_const", const="all", default=None)
+        parser.add_argument("--categories", action="store_const", const="all", default=None)
         parser.add_argument("--akathist-slug", type=str, default=None,
                             help="Publish only one visible akathist, its texts and the akathist list")
         parser.add_argument("--baseline", action="store_true", help="Seed snapshot without publishing a massive initial delta")
@@ -360,7 +384,8 @@ class Command(BaseCommand):
         bootstrap = options["bootstrap"]
         scope_args = ("akathist_slug", "text_slug", "canon_slug", "prayer_rule_slug",
                       "psalter_slug", "kathisma_number", "category_slug", "asset_key",
-                      "calendar_date", "calendar_month", "calendar_year", "bible_book", "bible_chapter")
+                      "calendar_date", "calendar_month", "calendar_year", "bible_book", "bible_chapter",
+                      "psalm_number", "daily_quotes", "categories")
         selected = [(name, options[name]) for name in scope_args if options[name] is not None]
         if len(selected) > 1:
             raise CommandError("Select only one scoped publication flag")
