@@ -160,6 +160,9 @@ class Command(BaseCommand):
             f"estimated_initial_mb={estimated_payload_bytes / (1024 * 1024):.1f}"
         )
         if options["dry_run"]:
+            if baseline:
+                baseline_bytes = sum(len(key.encode("utf-8")) + len(section.encode("utf-8")) + 64 for section, key in incoming)
+                self.stdout.write(f"Compact baseline checksum/key bytes (excluding DB overhead): {baseline_bytes}")
             self.stdout.write("DRY RUN: no database changes")
             return
 
