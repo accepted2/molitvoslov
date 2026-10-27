@@ -174,3 +174,39 @@ class PublicationLifecycleTests(TestCase):
                 call_command("publish_offline_content_updates", years=[2026])
         self.assertFalse(OfflineContentSnapshot.objects.filter(object_key="texts/valid").exists())
         self.assertEqual(OfflineContentChange.objects.count(), 0)
+
+
+class PublicationBootstrapTests(TestCase):
+    def test_first_publication_requires_explicit_mode(self):
+        from django.core.management import call_command
+        from django.core.management.base import CommandError
+        from unittest.mock import patch
+        with patch("api.management.commands.publish_offline_content_updates.published_objects",
+                   return_value=iter([("public", "texts/new", {"title": "New"})])):
+            with self.assertRaises(CommandError):
+                call_command("publish_offline_content_updates", years=[2028])
+
+    def test_bootstrap_publishes_new_objects_to_older_devices(self):
+        from django.core.management import call_command
+        from unittest.mock import patch
+        from .content_update_models import OfflineContentSnapshot
+        records = [
+            ("public", "akathists/by_slug/new-akathist", {"slug": "new-akathist"}),
+            ("calendar", "2028-01-01/ru", {"date_gregorian": "2028-01-01"}),
+        ]
+        with patch("api.management.commands.publish_offline_content_updates.published_objects",
+                   return_value=iter(records)):
+            call_command("publish_offline_content_updates", bootstrap=True, years=[2028])
+        self.assertEqual(OfflineContentSnapshot.objects.count(), 2)
+        self.assertEqual(OfflineContentChange.objects.count(), 2)
+        self.assertTrue(all(event.payload["kind"] == "full"
+                            for event in OfflineContentChange.objects.all()))
+
+    def test_bootstrap_refuses_existing_feed(self):
+        from django.core.management import call_command
+        from django.core.management.base import CommandError
+        OfflineContentChange.objects.create(
+            section="public", object_key="texts/existing",
+            operation="upsert", payload={"kind": "full", "value": {}})
+        with self.assertRaises(CommandError):
+            call_command("publish_offline_content_updates", bootstrap=True, years=[2028])
