@@ -13,6 +13,7 @@ from api.bible_content import build_bible_content_payload
 from api.calendar_models import CalendarDay
 from api.calendar_serializers import CalendarDaySerializer
 from types import SimpleNamespace
+from collections import Counter
 from api.management.commands.publish_offline_content_updates import signature
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -36,10 +37,21 @@ class Command(BaseCommand):
         groups = ("categories", "category_texts", "texts", "prayer_rules",
                   "psalters", "kathismas", "akathists", "canons", "daily_quotes")
         differences = []
+        def describe(label, left, right):
+            if isinstance(left, dict) and isinstance(right, dict):
+                only_server = sorted(set(right) - set(left))
+                only_bundle = sorted(set(left) - set(right))
+                changed = sorted(k for k in set(left) & set(right)
+                                 if signature(left[k]) != signature(right[k]))
+                self.stdout.write(f"  {label}: only_server={only_server[:5]}, only_bundle={only_bundle[:5]}, changed={changed[:5]}")
+            elif isinstance(left, list) and isinstance(right, list):
+                self.stdout.write(f"  {label}: bundled_items={len(left)}, server_items={len(right)}")
+
         for group in groups:
             if signature(bundled.get(group)) != signature(server.get(group)):
                 differences.append(group)
                 self.stdout.write(self.style.WARNING(f"DIFF: {group}"))
+                describe(group, bundled.get(group), server.get(group))
             else:
                 self.stdout.write(self.style.SUCCESS(f"MATCH: {group}"))
         bundled_bible_file = APP_DATA / "offlineBible.json"
@@ -58,6 +70,7 @@ class Command(BaseCommand):
         calendar_root = APP_DATA / "calendar"
         calendar_mismatches = 0
         calendar_checked = 0
+        field_diff_counts = Counter()
         days_by_date = {
             day.date_gregorian.isoformat(): day
             for day in CalendarDay.objects.select_related(
@@ -80,6 +93,12 @@ class Command(BaseCommand):
                     calendar_checked += 1
                     if signature(bundled_day) != signature(remote_day):
                         calendar_mismatches += 1
+                        if isinstance(bundled_day, dict) and isinstance(remote_day, dict):
+                            for field in set(bundled_day) | set(remote_day):
+                                if signature(bundled_day.get(field)) != signature(remote_day.get(field)):
+                                    field_diff_counts[field] += 1
+                        if calendar_mismatches <= 3:
+                            describe(f"calendar {date}/{lang}", bundled_day, remote_day)
                         if calendar_mismatches <= 10:
                             self.stdout.write(self.style.WARNING(f"DIFF: calendar {date}/{lang}"))
         if len(days_by_date) * 2 != calendar_checked:
@@ -87,6 +106,7 @@ class Command(BaseCommand):
         if calendar_checked == 0 or calendar_mismatches:
             differences.append(f"calendar ({calendar_mismatches} mismatches / {calendar_checked} checked)")
         self.stdout.write(f"Calendar: checked={calendar_checked}, mismatches={calendar_mismatches}")
+        self.stdout.write(f"Calendar differing fields: {field_diff_counts.most_common(20)}")
 
         if differences:
             raise CommandError(
