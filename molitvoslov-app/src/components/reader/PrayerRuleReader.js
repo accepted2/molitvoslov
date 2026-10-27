@@ -2362,23 +2362,17 @@ const HTML_TEMPLATE = String.raw`
               '';
 
             const primaryLanguage =
-              viewMode === 'ukrainian' && ukrainianText
-                ? 'ukrainian'
-                : viewMode === 'ukrainian' && russianText
-                  ? 'russian'
-                  : viewMode === 'russian' && russianText
-                    ? 'russian'
-                    : viewMode === 'traditional' && traditionalText
-                      ? 'traditional'
-                      : 'church';
+              viewMode === 'ukrainian' ? 'ukrainian' :
+              viewMode === 'russian' ? 'russian' :
+              viewMode === 'traditional' ? 'traditional' : 'church';
 
             const primaryText =
               primaryLanguage === 'ukrainian'
-                ? ukrainianText
+                ? (ukrainianText || 'Перевод пока отсутствует.')
                 : primaryLanguage === 'russian'
-                  ? russianText
+                  ? (russianText || 'Перевод пока отсутствует.')
                   : primaryLanguage === 'traditional'
-                    ? traditionalText
+                    ? (traditionalText || 'Те́кстъ въ традиціо́нномъ начерта́ніи отсꙋ́тствꙋетъ.')
                     : churchText;
 
             const itemTitle =
