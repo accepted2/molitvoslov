@@ -10,7 +10,8 @@ class OfflineContentSnapshot(models.Model):
     section = models.CharField(max_length=24)
     object_key = models.CharField(max_length=200)
     checksum = models.CharField(max_length=64)
-    payload = models.JSONField()
+    # A compact baseline keeps only checksums; payload is populated when an object changes.
+    payload = models.JSONField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
