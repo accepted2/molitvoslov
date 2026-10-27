@@ -16,7 +16,6 @@ const CURSOR_KEY = '@molitvoslov/offline-content-cursor-v1';
 const CHECK_KEY = '@molitvoslov/offline-content-check-v1';
 const FAILURE_KEY = '@molitvoslov/offline-content-failed-v1';
 const RETRY_DELAY_MS = 15 * 60 * 1000;
-const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 let pending = null;
 
 const deepClone = (value) => JSON.parse(JSON.stringify(value));
@@ -245,10 +244,6 @@ const doSync = async ({force = false} = {}) => {
   if (!force && lastFailure && Date.now() - lastFailure < RETRY_DELAY_MS) {
     return {updated: false, skipped: true, retryLater: true};
   }
-  const last = Number(await AsyncStorage.getItem(CHECK_KEY) || 0);
-  if (!force && last && Date.now() - last < CHECK_INTERVAL_MS) {
-    return {updated: false, skipped: true};
-  }
   const network = await NetInfo.fetch();
   if (network.isConnected === false || network.isInternetReachable === false) {
     return {updated: false, offline: true};
@@ -334,9 +329,16 @@ const doSync = async ({force = false} = {}) => {
   }
   throw new Error('Too many delta pages');
 };
+// Manual diagnostics bypass the transient-failure backoff; the active sync is still deduplicated.
+export const forceSyncContentDeltas = () => syncContentDeltas({force: true});
+
 export const syncContentDeltas = (options = {}) => {
   if (pending) return pending;
   pending = doSync(options)
+    .then((result) => {
+      console.log('Offline content delta sync result:', JSON.stringify(result));
+      return result;
+    })
     .catch(async (error) => {
       // Transient API failures must not trigger a new network request on every
       // foreground transition. Never advance the applied revision on failure.
