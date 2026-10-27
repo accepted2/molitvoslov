@@ -430,8 +430,8 @@ class Command(BaseCommand):
             existing = {
                 (row.section, row.object_key): row.checksum
                 for row in OfflineContentSnapshot.objects.filter(
-                    section="public",
-                    object_key__in=[key for section, key in incoming],
+                    section__in={section for section, key in incoming},
+                    object_key__in={key for section, key in incoming},
                 )
             }
             new_keys = [key for key in incoming if key not in existing]
