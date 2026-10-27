@@ -59,7 +59,7 @@ def field_changes(before, after, path=()):
 
 def delivery_payload(old, value, checksum):
     full = {"kind": "full", "value": value, "checksum": checksum}
-    if old is None:
+    if old is None or old.payload is None:
         return full
     patch = {
         "kind": "patch",
@@ -174,7 +174,7 @@ class Command(BaseCommand):
                 delivery = delivery_payload(old, data, checksum)
                 if old is None:
                     to_create.append(OfflineContentSnapshot(
-                        section=section, object_key=key, checksum=checksum, payload=data
+                        section=section, object_key=key, checksum=checksum, payload=None if baseline else data
                     ))
                 elif old.checksum != checksum:
                     old.checksum = checksum
