@@ -24,6 +24,8 @@ from api.calendar_models import CalendarDay
 from api.calendar_serializers import CalendarDaySerializer
 from api.content_update_models import OfflineContentChange, OfflineContentSnapshot
 from api.mobile_content import build_mobile_content_payload
+from api.models import Akathist, Text
+from api.serializers import AkathistSerializer, AkathistSummarySerializer, TextSerializer
 
 
 def normalized_json(value):
@@ -114,10 +116,44 @@ def published_objects(years):
             )
 
 
+def akathist_objects(slug):
+    """Only one akathist and its nested Text records, without constructing the full catalog."""
+    akathist = (
+        Akathist.objects.filter(slug=slug, is_visible=True)
+        .select_related("troparion", "kontakion_before")
+        .prefetch_related("sections__text__categories")
+        .first()
+    )
+    if akathist is None:
+        raise CommandError(f"Visible akathist not found: {slug}")
+
+    detail = normalized_json(AkathistSerializer(akathist).data)
+    yield "public", f"akathists/by_slug/{slug}", detail
+
+    text_ids = {
+        section.text_id
+        for section in akathist.sections.all()
+        if section.text_id
+    }
+    for related_text in (akathist.troparion, akathist.kontakion_before):
+        if related_text is not None:
+            text_ids.add(related_text.id)
+    texts = Text.objects.filter(id__in=text_ids, is_visible=True).prefetch_related("categories")
+    for item in TextSerializer(texts, many=True).data:
+        yield "public", f"texts/{item['slug']}", normalized_json(item)
+
+    # Small list only: it is needed when a new akathist is published.
+    visible = Akathist.objects.filter(is_visible=True).order_by("id")
+    summary = normalized_json(AkathistSummarySerializer(visible, many=True).data)
+    yield "public", "akathists/list", summary
+
+
 class Command(BaseCommand):
     help = "Publish changed public records (or establish initial no-download baseline)."
 
     def add_arguments(self, parser):
+        parser.add_argument("--akathist-slug", type=str, default=None,
+                            help="Publish only one visible akathist, its texts and the akathist list")
         parser.add_argument("--baseline", action="store_true", help="Seed snapshot without publishing a massive initial delta")
         parser.add_argument("--years", nargs="+", type=int, default=None,
                             help="Calendar years; default: all years present in the database")
@@ -130,7 +166,13 @@ class Command(BaseCommand):
         baseline = options["baseline"]
         years = options["years"]
         bootstrap = options["bootstrap"]
-        if years is None:
+        target_akathist = options["akathist_slug"]
+        if target_akathist and (baseline or bootstrap):
+            raise CommandError("--akathist-slug cannot be combined with --baseline or --bootstrap")
+        if target_akathist and options["years"] is not None:
+            raise CommandError("--years is not needed for --akathist-slug")
+
+        if years is None and not target_akathist:
             years = list(CalendarDay.objects.annotate(
                 publication_year=ExtractYear("date_gregorian")
             ).values_list("publication_year", flat=True).distinct().order_by("publication_year"))
@@ -138,7 +180,7 @@ class Command(BaseCommand):
             raise CommandError("--bootstrap and --baseline are mutually exclusive")
         if bootstrap and (OfflineContentSnapshot.objects.exists() or OfflineContentChange.objects.exists()):
             raise CommandError("Bootstrap requires empty publication tables; refusing to replay initial content")
-        if any(year < 2000 or year > 2100 for year in years):
+        if any(year < 2000 or year > 2100 for year in (years or [])):
             raise CommandError("Invalid calendar years")
         if baseline and (OfflineContentSnapshot.objects.exists() or OfflineContentChange.objects.exists()):
             raise CommandError("Baseline already exists; refusing to reset subscribers' cursors")
@@ -147,7 +189,8 @@ class Command(BaseCommand):
 
         # Build once on explicit publication, never on each phone's version check.
         incoming = {}
-        for section, key, data in published_objects(years):
+        source = akathist_objects(target_akathist) if target_akathist else published_objects(years)
+        for section, key, data in source:
             incoming[(section, key)] = (signature(data), data)
 
         estimated_payload_bytes = sum(
@@ -167,9 +210,15 @@ class Command(BaseCommand):
             return
 
         with transaction.atomic():
+            snapshot_rows = OfflineContentSnapshot.objects.select_for_update()
+            if target_akathist:
+                snapshot_rows = snapshot_rows.filter(
+                    section="public",
+                    object_key__in=[key for section, key in incoming],
+                )
             current = {
                 (row.section, row.object_key): row
-                for row in OfflineContentSnapshot.objects.select_for_update().all()
+                for row in snapshot_rows
             }
             to_create, to_update, to_delete, changes = [], [], [], []
             for (section, key), (checksum, data) in incoming.items():
@@ -189,7 +238,7 @@ class Command(BaseCommand):
                     changes.append(OfflineContentChange(
                         section=section, object_key=key, operation="upsert", payload=delivery
                     ))
-            for old in current.values():
+            for old in ([] if target_akathist else current.values()):
                 if old.section == "calendar":
                     # --years is a publication filter, not a delete request.
                     # Preserve snapshots for years omitted from this run.
