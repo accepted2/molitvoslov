@@ -2546,16 +2546,12 @@ const HTML_TEMPLATE = String.raw`
               );
             }
 
-            if (
-              DATA.viewMode ===
-                'both' &&
-              russianText
-            ) {
+            if (DATA.viewMode === 'both') {
               wrapper.appendChild(
                 el(
                   'div',
                   'translation-text',
-                  russianText
+                  russianText || 'Перевод пока отсутствует.'
                 )
               );
             }
