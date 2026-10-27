@@ -1683,3 +1683,20 @@ from .calendar_models import CalendarFeast, CalendarDay
 # Public offline-content publication feed.
 from .content_update_models import OfflineContentSnapshot, OfflineContentChange
 
+
+class PublicAppAsset(models.Model):
+    """Versioned public presentation asset; URLs are never private user content."""
+    key = models.SlugField(max_length=100, unique=True)
+    image_url = models.URLField(max_length=2048, blank=True)
+    title = models.CharField(max_length=255, blank=True)
+    enabled = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["key"]
+        verbose_name = "Ресурс приложения"
+        verbose_name_plural = "Ресурсы приложения"
+
+    def __str__(self):
+        return self.key
+
