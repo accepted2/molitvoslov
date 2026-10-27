@@ -46,7 +46,7 @@ import {getLocalizedField} from '../services/localizedContent';
 import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
 import {getOfflineCalendarDay, getOfflineCalendarMonth} from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
-import {subscribeToContentUpdates} from '../services/contentStore';
+import {subscribeToContentUpdates, getCurrentContent} from '../services/contentStore';
 import {colors, spacing} from '../theme';
 import {getBibleArtwork} from '../data/bibleArtwork';
 const CATEGORY_ICONS = {
@@ -342,6 +342,10 @@ const CalendarReadingText = ({readings, style}) => {
 export const MenuScreen = ({navigation}) => {
   const {language: calendarLanguage, setLanguage: setAppLanguage, t} = useLanguage();
   const [categories, setCategories] = useState([]);
+  const [homeBannerUrl, setHomeBannerUrl] = useState(() => {
+    const asset = getCurrentContent()?.app_assets?.home_banner;
+    return asset?.enabled && /^https:\/\//.test(asset.image_url || '') ? asset.image_url : null;
+  });
   const [akathists, setAkathists] = useState([]);
   const [canons, setCanons] = useState([]);
   const [prayerRules, setPrayerRules] = useState([]);
@@ -567,6 +571,8 @@ export const MenuScreen = ({navigation}) => {
   useEffect(
     () =>
       subscribeToContentUpdates(() => {
+        const asset = getCurrentContent()?.app_assets?.home_banner;
+        setHomeBannerUrl(asset?.enabled && /^https:\/\//.test(asset.image_url || '') ? asset.image_url : null);
         loadLibrary();
         updateQuoteWidget();
       }),
@@ -1052,7 +1058,7 @@ export const MenuScreen = ({navigation}) => {
             ]}
           >
             <ImageBackground
-              source={homeArtwork.hero_biblical}
+              source={homeBannerUrl ? {uri: homeBannerUrl} : homeArtwork.hero_biblical}
               resizeMode="cover"
               style={[
                 styles.hero,
