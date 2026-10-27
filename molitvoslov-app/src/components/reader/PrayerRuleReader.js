@@ -2258,10 +2258,22 @@ const HTML_TEMPLATE = String.raw`
         );
       }
 
-      (
-        DATA.rule.items ||
-        []
-      ).forEach(
+      const allItems = DATA.rule.items || [];
+      const lacksTraditional = DATA.viewMode === 'traditional' &&
+        !allItems.some(item => item.item_type === 'text' && item.text?.traditional_content?.trim());
+      const lacksRussian = (DATA.viewMode === 'russian' || DATA.viewMode === 'both') &&
+        !allItems.some(item => item.item_type === 'text' && item.text?.translation?.trim());
+      if (lacksTraditional || (lacksRussian && DATA.viewMode === 'russian')) {
+        reader.appendChild(
+          el('div', 'rule-description', lacksTraditional
+            ? 'Те́кстъ въ традиціо́нномъ начерта́ніи отсꙋ́тствꙋетъ.'
+            : 'Перевод пока отсутствует.')
+        );
+      }
+
+      (lacksTraditional || (lacksRussian && DATA.viewMode === 'russian')
+        ? []
+        : allItems).forEach(
         item => {
           const wrapper =
             el(
