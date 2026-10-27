@@ -210,3 +210,13 @@ class PublicationBootstrapTests(TestCase):
             operation="upsert", payload={"kind": "full", "value": {}})
         with self.assertRaises(CommandError):
             call_command("publish_offline_content_updates", bootstrap=True, years=[2028])
+
+    def test_dry_run_does_not_create_snapshots_or_events(self):
+        from django.core.management import call_command
+        from unittest.mock import patch
+        with patch("api.management.commands.publish_offline_content_updates.published_objects",
+                   return_value=iter([("public", "akathists/by_slug/new", {"slug": "new"})])):
+            call_command("publish_offline_content_updates", bootstrap=True, dry_run=True, years=[2028])
+        from .content_update_models import OfflineContentSnapshot
+        self.assertEqual(OfflineContentSnapshot.objects.count(), 0)
+        self.assertEqual(OfflineContentChange.objects.count(), 0)
