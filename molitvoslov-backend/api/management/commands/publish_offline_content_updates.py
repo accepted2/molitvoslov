@@ -27,7 +27,7 @@ from api.calendar_serializers import CalendarDaySerializer
 from api.content_update_models import OfflineContentChange, OfflineContentSnapshot
 from api.mobile_content import build_mobile_content_payload
 from api.models import (Akathist, Text, Canon, PrayerRule, Psalter, Kathisma, Category,
-                        CategoryText, PublicAppAsset)
+                        CategoryText, PublicAppAsset, BibleBook, BibleChapter, BibleTranslation)
 from api.serializers import (AkathistSerializer, AkathistSummarySerializer, TextSerializer,
     CanonSerializer, CanonSummarySerializer, PrayerRuleSerializer, PsalterSerializer,
     KathismaSerializer, CategorySerializer, CategoryTextSerializer)
@@ -260,7 +260,43 @@ def scoped_objects(scope, value):
             "image_url": obj.image_url, "title": obj.title, "enabled": obj.enabled}
         return
 
-    if scope in ("calendar_date", "calendar_month", "calendar_year"):
+    if scope in ("bible_book", "bible_chapter"):
+        parts = value.split("/")
+        code = parts[0].lower()
+        book = BibleBook.objects.filter(code=code, translation__code="rst", translation__is_visible=True).first()
+        if book is None:
+            raise CommandError(f"Visible RST Bible book not found: {code}")
+        book_data = {
+            "id": book.id, "code": book.code, "testament": book.testament,
+            "section": book.section, "name": book.name, "short_name": book.short_name,
+            "slug": book.slug, "canonical_order": book.canonical_order,
+            "is_appendix": book.is_appendix,
+        }
+        if scope == "bible_book":
+            if len(parts) != 1:
+                raise CommandError("Use --bible-book CODE")
+            yield "bible", f"rst/book/{book.code}", normalized_json(book_data)
+            chapters = BibleChapter.objects.filter(book=book).prefetch_related("verses").order_by("number", "id")
+        else:
+            if len(parts) != 2:
+                raise CommandError("Use --bible-chapter CODE/NUMBER")
+            try:
+                chapter_number = int(parts[1])
+            except ValueError:
+                raise CommandError("Bible chapter number must be an integer")
+            chapters = BibleChapter.objects.filter(book=book, number=chapter_number).prefetch_related("verses")
+            if not chapters.exists():
+                raise CommandError(f"Bible chapter not found: {value}")
+        for chapter in chapters:
+            chapter_data = {
+                "id": chapter.id, "number": chapter.number,
+                "verses": [{"id": verse.id, "number": verse.number, "text": verse.text}
+                           for verse in sorted(chapter.verses.all(), key=lambda v: (v.number, v.id))],
+            }
+            yield "bible", f"rst/chapter/{book.code}/{chapter.number}", normalized_json(chapter_data)
+        return
+
+    if scope in ("calendar_date", "calendar_month", "calendar_year", "bible_book", "bible_chapter"):
         try:
             if scope == "calendar_date":
                 dates = [date.fromisoformat(value)]
@@ -306,6 +342,8 @@ class Command(BaseCommand):
         parser.add_argument("--calendar-date", type=str, default=None)
         parser.add_argument("--calendar-month", type=str, default=None)
         parser.add_argument("--calendar-year", type=str, default=None)
+        parser.add_argument("--bible-book", type=str, default=None)
+        parser.add_argument("--bible-chapter", type=str, default=None)
         parser.add_argument("--akathist-slug", type=str, default=None,
                             help="Publish only one visible akathist, its texts and the akathist list")
         parser.add_argument("--baseline", action="store_true", help="Seed snapshot without publishing a massive initial delta")
