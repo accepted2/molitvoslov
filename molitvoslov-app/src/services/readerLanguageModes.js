@@ -2,6 +2,7 @@ export const READER_LANGUAGE_MODES = {
   CHURCH: 'church',
   BOTH: 'both',
   RUSSIAN: 'russian',
+  UKRAINIAN: 'ukrainian', // legacy references; not an available prayer-reading mode
   TRADITIONAL: 'traditional',
 };
 
