@@ -301,6 +301,15 @@ export const ReaderScreen = ({route, navigation}) => {
       });
     }
 
+    if (viewMode === READER_LANGUAGE_MODES.BOTH) {
+      appendBlock({
+        id: 2,
+        value: text.translation?.trim() || 'Перевод пока отсутствует.',
+        language: 'russian',
+        className: 'secondary',
+      });
+    }
+
     return {
       title: getLocalizedTextTitle(text, language) || t('common.reading'),
 
