@@ -165,6 +165,19 @@ def scoped_objects(scope, value):
         for data in TextSerializer(rows, many=True).data:
             yield "public", f"texts/{data['slug']}", normalized_json(data)
 
+    if scope == "new_texts":
+        # Query only public Text identifiers missing from the publication ledger.
+        published_keys = OfflineContentSnapshot.objects.filter(
+            section="public", object_key__startswith="texts/"
+        ).values_list("object_key", flat=True)
+        published_slugs = {key[len("texts/"):] for key in published_keys}
+        missing = Text.objects.filter(is_visible=True).exclude(
+            slug__in=published_slugs
+        ).order_by("id").values_list("slug", flat=True)
+        for slug in missing:
+            yield from scoped_objects("text_slug", slug)
+        return
+
     if scope == "text_slug":
         obj = Text.objects.filter(slug=value, is_visible=True).first()
         if obj is None:
@@ -365,6 +378,8 @@ class Command(BaseCommand):
         parser.add_argument("--calendar-year", type=str, default=None)
         parser.add_argument("--bible-book", type=str, default=None)
         parser.add_argument("--bible-chapter", type=str, default=None)
+        parser.add_argument("--new-texts", action="store_const", const="all", default=None,
+                            help="Publish all visible Text objects absent from snapshots plus their category links")
         parser.add_argument("--psalm-number", type=str, default=None)
         parser.add_argument("--daily-quotes", action="store_const", const="all", default=None)
         parser.add_argument("--categories", action="store_const", const="all", default=None)
@@ -385,7 +400,7 @@ class Command(BaseCommand):
         scope_args = ("akathist_slug", "text_slug", "canon_slug", "prayer_rule_slug",
                       "psalter_slug", "kathisma_number", "category_slug", "asset_key",
                       "calendar_date", "calendar_month", "calendar_year", "bible_book", "bible_chapter",
-                      "psalm_number", "daily_quotes", "categories")
+                      "psalm_number", "daily_quotes", "categories", "new_texts")
         selected = [(name, options[name]) for name in scope_args if options[name] is not None]
         if len(selected) > 1:
             raise CommandError("Select only one scoped publication flag")
