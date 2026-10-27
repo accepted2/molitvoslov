@@ -71,6 +71,7 @@ class Command(BaseCommand):
         calendar_mismatches = 0
         calendar_checked = 0
         field_diff_counts = Counter()
+        nested_diff_counts = Counter()
         days_by_date = {
             day.date_gregorian.isoformat(): day
             for day in CalendarDay.objects.select_related(
@@ -97,6 +98,13 @@ class Command(BaseCommand):
                             for field in set(bundled_day) | set(remote_day):
                                 if signature(bundled_day.get(field)) != signature(remote_day.get(field)):
                                     field_diff_counts[field] += 1
+                                    if isinstance(bundled_day.get(field), dict) and isinstance(remote_day.get(field), dict):
+                                        for nested_key in set(bundled_day[field]) | set(remote_day[field]):
+                                            if bundled_day[field].get(nested_key) != remote_day[field].get(nested_key):
+                                                nested_diff_counts[f'{field}.{nested_key}'] += 1
+                                    elif isinstance(bundled_day.get(field), list) and isinstance(remote_day.get(field), list):
+                                        if len(bundled_day[field]) != len(remote_day[field]):
+                                            nested_diff_counts[f'{field}.length'] += 1
                         if calendar_mismatches <= 3:
                             describe(f"calendar {date}/{lang}", bundled_day, remote_day)
                         if calendar_mismatches <= 10:
@@ -107,6 +115,7 @@ class Command(BaseCommand):
             differences.append(f"calendar ({calendar_mismatches} mismatches / {calendar_checked} checked)")
         self.stdout.write(f"Calendar: checked={calendar_checked}, mismatches={calendar_mismatches}")
         self.stdout.write(f"Calendar differing fields: {field_diff_counts.most_common(20)}")
+        self.stdout.write(f"Nested calendar differences: {nested_diff_counts.most_common(20)}")
 
         if differences:
             raise CommandError(
