@@ -47,6 +47,7 @@ import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
 import {getOfflineCalendarDay, getOfflineCalendarMonth} from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {subscribeToContentUpdates, getCurrentContent} from '../services/contentStore';
+import {getCachedPublicImage} from '../services/publicAssetCache';
 import {colors, spacing} from '../theme';
 import {getBibleArtwork} from '../data/bibleArtwork';
 const CATEGORY_ICONS = {
@@ -341,7 +342,19 @@ const CalendarReadingText = ({readings, style}) => {
 
 export const MenuScreen = ({navigation}) => {
   const {language: calendarLanguage, setLanguage: setAppLanguage, t} = useLanguage();
+  useEffect(() => {
+    let mounted = true;
+    setCachedHomeBanner(null);
+    if (homeBannerUrl) {
+      getCachedPublicImage('home_banner', homeBannerUrl)
+        .then((file) => { if (mounted) setCachedHomeBanner(file); })
+        .catch((error) => console.log('Home banner cache:', error?.message || error));
+    }
+    return () => { mounted = false; };
+  }, [homeBannerUrl]);
+
   const [categories, setCategories] = useState([]);
+  const [cachedHomeBanner, setCachedHomeBanner] = useState(null);
   const [homeBannerUrl, setHomeBannerUrl] = useState(() => {
     const asset = getCurrentContent()?.app_assets?.home_banner;
     return asset?.enabled && /^https:\/\//.test(asset.image_url || '') ? asset.image_url : null;
@@ -1058,7 +1071,7 @@ export const MenuScreen = ({navigation}) => {
             ]}
           >
             <ImageBackground
-              source={homeBannerUrl ? {uri: homeBannerUrl} : homeArtwork.hero_biblical}
+              source={cachedHomeBanner ? {uri: cachedHomeBanner} : homeArtwork.hero_biblical}
               resizeMode="cover"
               style={[
                 styles.hero,
