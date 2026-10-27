@@ -1173,9 +1173,9 @@ export default function KathismaScreen({route, navigation}) {
 
     // Full translations are added as a unit; do not silently fall back to church text.
     const unavailableMode =
-      ((viewMode === MODE_RUSSIAN || viewMode === MODE_BOTH) && !hasRussianTranslation)
+      ((viewMode === READER_LANGUAGE_MODES.RUSSIAN || viewMode === READER_LANGUAGE_MODES.BOTH) && !hasRussianTranslation)
         ? 'russian'
-        : viewMode === MODE_TRADITIONAL && !hasTraditionalTranslation
+        : viewMode === READER_LANGUAGE_MODES.TRADITIONAL && !hasTraditionalTranslation
           ? 'traditional'
           : null;
     if (unavailableMode) {
