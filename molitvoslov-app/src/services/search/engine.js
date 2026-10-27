@@ -1,6 +1,6 @@
 import {getDatabase} from '../../db/database';
-import {getCurrentContent} from '../contentStore';
-import {getCurrentBibleContent} from '../bibleStore';
+import {getCurrentContent, getCurrentContentVersion} from '../contentStore';
+import {getCurrentBibleContent, getCurrentBibleContentVersion} from '../bibleStore';
 import {buildSearchIndexAsync} from '../searchIndex';
 import {normalizeSearchText} from './normalize';
 import {tokenizeQuery, buildPhraseQuery, buildAndQuery} from './query';
@@ -40,8 +40,8 @@ export const versionFor = (language) => {
   return [
     SEARCH_SCHEMA_VERSION,
     language,
-    bundledContent.content_version || bundledContent.generated_at || 'bundle-public',
-    bundledBible.content_version || bundledBible.generated_at || 'bundle-bible',
+    getCurrentContentVersion() || bundledContent.content_version || bundledContent.generated_at || 'bundle-public',
+    getCurrentBibleContentVersion('rst') || bundledBible.content_version || bundledBible.generated_at || 'bundle-bible',
   ].join(':');
 };
 
@@ -50,7 +50,7 @@ export const preparePersistentSearch = async (database = null) => {
   if (!initialization) {
     initialization = (async () => {
       console.error('[search] prepare: opening DB');
-      const db = await getDatabase();
+      const db = await getSearchDb();
       console.error('[search] prepare: DB opened');
       const option = await db.getFirstAsync(
         'SELECT sqlite_compileoption_used(?) AS available',
@@ -361,7 +361,7 @@ export const ensurePersistentSearch = async (
     const version = versionFor(language);
     const entries = await buildSearchIndexAsync(language, {isCancelled, onProgress: () => {}});
     if (!entries || isCancelled()) return false;
-    const db = await getDatabase();
+    const db = await getSearchDb();
     await db.runAsync('DELETE FROM search_metadata WHERE language = ?', [language]);
     await db.execAsync("INSERT INTO search_documents(search_documents) VALUES('delete-all');");
     await db.runAsync('DELETE FROM search_payloads');
