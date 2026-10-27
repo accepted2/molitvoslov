@@ -6,10 +6,27 @@ import {normalizeSearchText} from './normalize';
 import {tokenizeQuery, buildPhraseQuery, buildAndQuery} from './query';
 import {SEARCH_SCHEMA_VERSION, SEARCH_GROUPS, CREATE_SCHEMA_SQL} from './schema';
 
-// Keep search schema, index writes, metadata checks and MATCH queries
-// in the same database as getDatabase(). A separate search handle caused
-// the ready check to read a different SQLite file in release builds.
-const getSearchDb = () => getDatabase();
+import * as SQLite from 'expo-sqlite';
+
+let searchDb = null;
+const getSearchDb = async () => {
+
+  if (searchDb) {
+    try {
+      // проверка, что handle жив
+      await searchDb.getFirstAsync('SELECT 1');
+      return searchDb;
+    } catch {
+      // handle битый — закрыть и переоткрыть
+      try { await searchDb.closeAsync(); } catch {}
+      searchDb = null;
+    }
+  }
+  searchDb = await SQLite.openDatabaseAsync('molitvoslov_search_seed_v10.db', {
+    useNewConnection: true,
+  });
+  return searchDb;
+};
 
 const BM25_WEIGHTS = '10.0, 4.0, 1.0';
 const buildsByLanguage = new Map();
