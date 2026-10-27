@@ -17,6 +17,7 @@ from types import SimpleNamespace
 from django.core.management.base import BaseCommand, CommandError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import transaction
+from django.db.models.functions import ExtractYear
 
 from api.bible_content import build_bible_content_payload
 from api.calendar_models import CalendarDay
@@ -116,17 +117,29 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--baseline", action="store_true", help="Seed snapshot without publishing a massive initial delta")
-        parser.add_argument("--years", nargs="+", type=int, default=[2025, 2026, 2027])
+        parser.add_argument("--years", nargs="+", type=int, default=None,
+                            help="Calendar years; default: all years present in the database")
+        parser.add_argument("--bootstrap", action="store_true",
+                            help="Publish all existing content as initial events for APKs with unknown baselines")
 
     def handle(self, *args, **options):
         baseline = options["baseline"]
         years = options["years"]
+        bootstrap = options["bootstrap"]
+        if years is None:
+            years = list(CalendarDay.objects.annotate(
+                publication_year=ExtractYear("date_gregorian")
+            ).values_list("publication_year", flat=True).distinct().order_by("publication_year"))
+        if bootstrap and baseline:
+            raise CommandError("--bootstrap and --baseline are mutually exclusive")
+        if bootstrap and (OfflineContentSnapshot.objects.exists() or OfflineContentChange.objects.exists()):
+            raise CommandError("Bootstrap requires empty publication tables; refusing to replay initial content")
         if not years or any(year < 2000 or year > 2100 for year in years):
             raise CommandError("Invalid calendar years")
         if baseline and (OfflineContentSnapshot.objects.exists() or OfflineContentChange.objects.exists()):
             raise CommandError("Baseline already exists; refusing to reset subscribers' cursors")
-        if not baseline and not OfflineContentSnapshot.objects.exists():
-            raise CommandError("First publish requires --baseline and a matching bundled APK dataset")
+        if not baseline and not bootstrap and not OfflineContentSnapshot.objects.exists():
+            raise CommandError("First publish requires --baseline (matching APK) or --bootstrap (initial full deltas)")
 
         # Build once on explicit publication, never on each phone's version check.
         incoming = {}
@@ -185,7 +198,7 @@ class Command(BaseCommand):
             if changes:
                 OfflineContentChange.objects.bulk_create(changes, batch_size=100)
         self.stdout.write(self.style.SUCCESS(
-            f"Published: baseline={baseline}, total={len(incoming)}, "
+            f"Published: baseline={baseline}, bootstrap={bootstrap}, years={years}, total={len(incoming)}, "
             f"new={len(to_create)}, updated={len(to_update)}, deleted={len(to_delete)}, "
             f"delta_events={len(changes)}"
         ))
