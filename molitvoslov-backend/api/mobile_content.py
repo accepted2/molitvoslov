@@ -18,6 +18,7 @@ from .models import (
     PrayerRule,
     Psalter,
     Text,
+    PublicAppAsset,
 )
 from .serializers import (
     AkathistSerializer,
@@ -131,6 +132,7 @@ def build_mobile_content_payload():
         "akathists": akathists,
         "canons": canons,
         "daily_quotes": daily_quotes,
+        "app_assets": {asset.key: {"image_url": asset.image_url, "title": asset.title, "enabled": asset.enabled} for asset in PublicAppAsset.objects.all()},
     }
 
     version_source = json.dumps(
