@@ -136,7 +136,7 @@ class Command(BaseCommand):
             raise CommandError("--bootstrap and --baseline are mutually exclusive")
         if bootstrap and (OfflineContentSnapshot.objects.exists() or OfflineContentChange.objects.exists()):
             raise CommandError("Bootstrap requires empty publication tables; refusing to replay initial content")
-        if not years or any(year < 2000 or year > 2100 for year in years):
+        if any(year < 2000 or year > 2100 for year in years):
             raise CommandError("Invalid calendar years")
         if baseline and (OfflineContentSnapshot.objects.exists() or OfflineContentChange.objects.exists()):
             raise CommandError("Baseline already exists; refusing to reset subscribers' cursors")
