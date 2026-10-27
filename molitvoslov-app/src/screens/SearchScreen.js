@@ -20,7 +20,7 @@ import {useLanguage} from '../context/LanguageContext';
 import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {subscribeToContentUpdates} from '../services/contentStore';
 import {addSearchHistory, clearSearchHistory, getSearchHistory} from '../services/searchHistory';
-import {isPersistentSearchReady, searchPersistent} from '../services/search/engine';
+import {ensurePersistentSearch, searchPersistent} from '../services/search/engine';
 import {searchCalendarNames} from '../services/search/calendarNames';
 import {
   SEARCH_GROUPS,
@@ -186,19 +186,30 @@ const SearchContent = ({navigation}) => {
   useEffect(() => {
     let active = true;
     setSeedReady(false);
-    isPersistentSearchReady(language)
+    setIndexLoading(true);
+    resultCache.current.clear();
+    setResult({items: [], total: 0});
+    setSearchScope('');
+    // A stale bundled search seed must rebuild automatically. Otherwise the UI
+    // waits forever for metadata that can never match after a content update.
+    ensurePersistentSearch(language, {isCancelled: () => !active})
       .then((ready) => {
-        if (active) setSeedReady(ready);
+        if (active) {
+          setSeedReady(!!ready);
+          setIndexLoading(false);
+          if (!ready) console.warn('[search] index build did not complete');
+        }
       })
-      .catch((error) => console.warn('Search seed unavailable:', error?.message || error));
+      .catch((error) => {
+        if (active) {
+          setIndexLoading(false);
+          console.warn('Search index rebuild failed:', error?.message || error);
+        }
+      });
     return () => {
       active = false;
     };
   }, [language, publicGeneration, bibleGeneration]);
-
-  useEffect(() => {
-    setIndexLoading(!seedReady);
-  }, [seedReady]);
 
   useEffect(() => {
     if (paused) return undefined;
