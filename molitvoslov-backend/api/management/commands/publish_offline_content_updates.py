@@ -12,20 +12,25 @@ The command never reads or publishes user accounts, memorials, or private record
 """
 import hashlib
 import json
+from datetime import date
 from types import SimpleNamespace
 
 from django.core.management.base import BaseCommand, CommandError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import transaction
 from django.db.models.functions import ExtractYear
+from django.db.models import Q
 
 from api.bible_content import build_bible_content_payload
 from api.calendar_models import CalendarDay
 from api.calendar_serializers import CalendarDaySerializer
 from api.content_update_models import OfflineContentChange, OfflineContentSnapshot
 from api.mobile_content import build_mobile_content_payload
-from api.models import Akathist, Text
-from api.serializers import AkathistSerializer, AkathistSummarySerializer, TextSerializer
+from api.models import (Akathist, Text, Canon, PrayerRule, Psalter, Kathisma, Category,
+                        CategoryText, PublicAppAsset)
+from api.serializers import (AkathistSerializer, AkathistSummarySerializer, TextSerializer,
+    CanonSerializer, CanonSummarySerializer, PrayerRuleSerializer, PsalterSerializer,
+    KathismaSerializer, CategorySerializer, CategoryTextSerializer)
 
 
 def normalized_json(value):
@@ -148,10 +153,159 @@ def akathist_objects(slug):
     yield "public", "akathists/list", summary
 
 
+
+def scoped_objects(scope, value):
+    """Build only the requested public keys; avoid full content, Bible and calendar scans."""
+    if scope == "akathist_slug":
+        yield from akathist_objects(value)
+        return
+
+    def emit_texts(ids):
+        rows = Text.objects.filter(pk__in=set(ids), is_visible=True).prefetch_related("categories")
+        for data in TextSerializer(rows, many=True).data:
+            yield "public", f"texts/{data['slug']}", normalized_json(data)
+
+    if scope == "text_slug":
+        obj = Text.objects.filter(slug=value, is_visible=True).first()
+        if obj is None:
+            raise CommandError(f"Visible text not found: {value}")
+        yield from emit_texts([obj.pk])
+        # A text can be embedded in several public documents. Publish each impacted view.
+        for slug in Akathist.objects.filter(sections__text=obj, is_visible=True).values_list("slug", flat=True).distinct():
+            for section, key, data in akathist_objects(slug):
+                if key != "akathists/list":
+                    yield section, key, data
+        for slug in Canon.objects.filter(sections__text=obj, is_visible=True).values_list("slug", flat=True).distinct():
+            yield from scoped_objects("canon_slug", slug)
+        for slug in PrayerRule.objects.filter(items__text=obj, is_visible=True).values_list("slug", flat=True).distinct():
+            yield from scoped_objects("prayer_rule_slug", slug)
+        for cat_slug in Category.objects.filter(categorytext__text=obj).values_list("slug", flat=True).distinct():
+            yield from scoped_objects("category_slug", cat_slug)
+        # Related akathist introductory/concluding texts and default reading rule.
+        for slug in Akathist.objects.filter(is_visible=True).filter(
+            Q(troparion=obj) |
+            Q(kontakion_before=obj)
+        ).values_list("slug", flat=True).distinct():
+            for section, key, data in akathist_objects(slug):
+                if key != "akathists/list":
+                    yield section, key, data
+        return
+
+    if scope == "canon_slug":
+        obj = Canon.objects.filter(slug=value, is_visible=True).prefetch_related("sections__text__categories").first()
+        if obj is None:
+            raise CommandError(f"Visible canon not found: {value}")
+        yield "public", f"canons/by_slug/{value}", normalized_json(CanonSerializer(obj).data)
+        yield from emit_texts(s.text_id for s in obj.sections.all() if s.text_id)
+        yield "public", "canons/list", normalized_json(
+            CanonSummarySerializer(Canon.objects.filter(is_visible=True).order_by("id"), many=True).data)
+        return
+
+    if scope == "prayer_rule_slug":
+        obj = PrayerRule.objects.filter(slug=value, is_visible=True).prefetch_related(
+            "items__text__categories", "items__footnotes", "footnotes").first()
+        if obj is None:
+            raise CommandError(f"Visible prayer rule not found: {value}")
+        data = normalized_json(PrayerRuleSerializer(obj).data)
+        yield "public", f"prayer_rules/by_slug/{value}", data
+        # Original baseline stores serialized full rules in both keys.
+        yield "public", "prayer_rules/list", normalized_json(
+            PrayerRuleSerializer(PrayerRule.objects.filter(is_visible=True).prefetch_related(
+                "items__text__categories", "items__footnotes", "footnotes").order_by("id"),
+                many=True).data)
+        yield from emit_texts(item.text_id for item in obj.items.all() if item.text_id)
+        return
+
+    if scope == "psalter_slug":
+        obj = Psalter.objects.filter(slug=value, is_visible=True).prefetch_related("kathismas__psalms").first()
+        if obj is None:
+            raise CommandError(f"Visible Psalter not found: {value}")
+        yield "public", f"psalters/by_slug/{value}", normalized_json(PsalterSerializer(obj).data)
+        yield "public", "psalters/list", normalized_json(
+            PsalterSerializer(Psalter.objects.filter(is_visible=True).prefetch_related(
+                "kathismas__psalms").order_by("id"), many=True).data)
+        return
+
+    if scope == "kathisma_number":
+        try:
+            number = int(value)
+        except (TypeError, ValueError):
+            raise CommandError("Kathisma number must be an integer")
+        matches = Kathisma.objects.filter(number=number).select_related("psalter").prefetch_related(
+            "psalms__verses", "glories__after_psalm", "glories__after_verse")
+        if matches.count() != 1:
+            raise CommandError("Kathisma number must identify exactly one row; check Psalter duplicates")
+        obj = matches.first()
+        yield "public", f"kathismas/by_number/{number}", normalized_json(KathismaSerializer(obj).data)
+        yield from scoped_objects("psalter_slug", obj.psalter.slug)
+        return
+
+    if scope == "category_slug":
+        category = Category.objects.filter(slug=value).first()
+        if category is None:
+            raise CommandError(f"Category not found: {value}")
+        rows = CategoryText.objects.filter(category=category).select_related(
+            "category", "text").prefetch_related("text__categories").order_by("order", "id")
+        yield "public", f"category_texts/{value}", normalized_json(CategoryTextSerializer(rows, many=True).data)
+        yield "public", "categories", normalized_json(
+            CategorySerializer(Category.objects.all().order_by("order", "id"), many=True).data)
+        yield from emit_texts(row.text_id for row in rows)
+        return
+
+    if scope == "asset_key":
+        obj = PublicAppAsset.objects.filter(key=value).first()
+        if obj is None:
+            raise CommandError(f"App asset not found: {value}")
+        yield "public", f"app_assets/{value}", {
+            "image_url": obj.image_url, "title": obj.title, "enabled": obj.enabled}
+        return
+
+    if scope in ("calendar_date", "calendar_month", "calendar_year"):
+        try:
+            if scope == "calendar_date":
+                dates = [date.fromisoformat(value)]
+                days = CalendarDay.objects.filter(date_gregorian__in=dates)
+            elif scope == "calendar_month":
+                year, month = map(int, value.split("-"))
+                if not (1 <= month <= 12):
+                    raise ValueError()
+                days = CalendarDay.objects.filter(date_gregorian__year=year, date_gregorian__month=month)
+            else:
+                year = int(value)
+                days = CalendarDay.objects.filter(date_gregorian__year=year)
+            selected_year = dates[0].year if scope == "calendar_date" else year
+            if not (2000 <= selected_year <= 2100):
+                raise ValueError()
+        except (TypeError, ValueError):
+            raise CommandError(f"Invalid {scope} value: {value}")
+        days = days.select_related("main_feast", "fast_type").prefetch_related("feasts", "readings").order_by("date_gregorian")
+        if not days.exists():
+            raise CommandError(f"No calendar days for {value}")
+        contexts = {lang: {"request": SimpleNamespace(query_params={"lang": lang}, headers={})}
+                    for lang in ("ru", "uk")}
+        for day in days.iterator(chunk_size=64):
+            for lang in ("ru", "uk"):
+                yield "calendar", f"{day.date_gregorian.isoformat()}/{lang}", normalized_json(
+                    CalendarDaySerializer(day, context=contexts[lang]).data)
+        return
+    raise CommandError(f"Unsupported publication scope: {scope}")
+
+
+
 class Command(BaseCommand):
     help = "Publish changed public records (or establish initial no-download baseline)."
 
     def add_arguments(self, parser):
+        parser.add_argument("--text-slug", type=str, default=None)
+        parser.add_argument("--canon-slug", type=str, default=None)
+        parser.add_argument("--prayer-rule-slug", type=str, default=None)
+        parser.add_argument("--psalter-slug", type=str, default=None)
+        parser.add_argument("--kathisma-number", type=str, default=None)
+        parser.add_argument("--category-slug", type=str, default=None)
+        parser.add_argument("--asset-key", type=str, default=None)
+        parser.add_argument("--calendar-date", type=str, default=None)
+        parser.add_argument("--calendar-month", type=str, default=None)
+        parser.add_argument("--calendar-year", type=str, default=None)
         parser.add_argument("--akathist-slug", type=str, default=None,
                             help="Publish only one visible akathist, its texts and the akathist list")
         parser.add_argument("--baseline", action="store_true", help="Seed snapshot without publishing a massive initial delta")
@@ -166,13 +320,20 @@ class Command(BaseCommand):
         baseline = options["baseline"]
         years = options["years"]
         bootstrap = options["bootstrap"]
+        scope_args = ("akathist_slug", "text_slug", "canon_slug", "prayer_rule_slug",
+                      "psalter_slug", "kathisma_number", "category_slug", "asset_key",
+                      "calendar_date", "calendar_month", "calendar_year")
+        selected = [(name, options[name]) for name in scope_args if options[name] is not None]
+        if len(selected) > 1:
+            raise CommandError("Select only one scoped publication flag")
+        scope, value = selected[0] if selected else (None, None)
         target_akathist = options["akathist_slug"]
-        if target_akathist and (baseline or bootstrap):
+        if scope and (baseline or bootstrap):
             raise CommandError("--akathist-slug cannot be combined with --baseline or --bootstrap")
-        if target_akathist and options["years"] is not None:
+        if scope and options["years"] is not None:
             raise CommandError("--years is not needed for --akathist-slug")
 
-        if years is None and not target_akathist:
+        if years is None and not scope:
             years = list(CalendarDay.objects.annotate(
                 publication_year=ExtractYear("date_gregorian")
             ).values_list("publication_year", flat=True).distinct().order_by("publication_year"))
@@ -189,7 +350,7 @@ class Command(BaseCommand):
 
         # Build once on explicit publication, never on each phone's version check.
         incoming = {}
-        source = akathist_objects(target_akathist) if target_akathist else published_objects(years)
+        source = scoped_objects(scope, value) if scope else published_objects(years)
         for section, key, data in source:
             incoming[(section, key)] = (signature(data), data)
 
@@ -202,7 +363,7 @@ class Command(BaseCommand):
             f"uncompressed_json_bytes={estimated_payload_bytes}, "
             f"estimated_initial_mb={estimated_payload_bytes / (1024 * 1024):.1f}"
         )
-        if options["dry_run"] and target_akathist:
+        if options["dry_run"] and scope:
             existing = {
                 (row.section, row.object_key): row.checksum
                 for row in OfflineContentSnapshot.objects.filter(
@@ -229,11 +390,13 @@ class Command(BaseCommand):
 
         with transaction.atomic():
             snapshot_rows = OfflineContentSnapshot.objects.select_for_update()
-            if target_akathist:
-                snapshot_rows = snapshot_rows.filter(
-                    section="public",
-                    object_key__in=[key for section, key in incoming],
-                )
+            if scope:
+                # Lock only snapshots in this scope. Never infer deletions from a partial export.
+                from django.db.models import Q as ScopeQ
+                selector = ScopeQ(pk__in=[])
+                for section, key in incoming:
+                    selector |= ScopeQ(section=section, object_key=key)
+                snapshot_rows = snapshot_rows.filter(selector)
             current = {
                 (row.section, row.object_key): row
                 for row in snapshot_rows
@@ -256,7 +419,7 @@ class Command(BaseCommand):
                     changes.append(OfflineContentChange(
                         section=section, object_key=key, operation="upsert", payload=delivery
                     ))
-            for old in ([] if target_akathist else current.values()):
+            for old in ([] if scope else current.values()):
                 if old.section == "calendar":
                     # --years is a publication filter, not a delete request.
                     # Preserve snapshots for years omitted from this run.
