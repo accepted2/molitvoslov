@@ -88,8 +88,8 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     () => ({
       activeKey: viewMode,
       options: buildReaderLanguageOptions({
-        hasRussian: hasRussianTranslation,
-        hasTraditional: hasTraditionalTranslation,
+        hasRussian: true,
+        hasTraditional: true,
       }),
     }),
     [viewMode, hasRussianTranslation, hasTraditionalTranslation]
