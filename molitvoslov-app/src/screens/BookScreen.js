@@ -349,6 +349,17 @@ export const BookScreen = ({route, navigation}) => {
           );
         }
 
+        if (!blocks.length && (showRussian || showTraditional)) {
+          blocks.push({
+            id: Number(item.id) * 10 + 9,
+            text: showTraditional
+              ? 'Те́кстъ въ традиціо́нномъ начерта́ніи отсꙋ́тствꙋетъ.'
+              : 'Перевод пока отсутствует.',
+            className: showTraditional ? 'akathist-church' : 'secondary',
+            metadata: {language: showTraditional ? 'traditional' : 'russian'},
+          });
+        }
+
         return {
           progressAnchorId: Number(item.id),
 
@@ -382,8 +393,8 @@ export const BookScreen = ({route, navigation}) => {
       viewSwitcher: {
         activeKey: viewMode,
         options: buildReaderLanguageOptions({
-          hasRussian: hasRussianTranslation,
-          hasTraditional: hasTraditionalTranslation,
+          hasRussian: true,
+          hasTraditional: true,
         }),
       },
 
