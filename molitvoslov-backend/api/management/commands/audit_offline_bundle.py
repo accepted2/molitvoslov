@@ -72,6 +72,7 @@ class Command(BaseCommand):
         calendar_checked = 0
         field_diff_counts = Counter()
         nested_diff_counts = Counter()
+        reading_length_samples = []
         days_by_date = {
             day.date_gregorian.isoformat(): day
             for day in CalendarDay.objects.select_related(
@@ -105,6 +106,8 @@ class Command(BaseCommand):
                                     elif isinstance(bundled_day.get(field), list) and isinstance(remote_day.get(field), list):
                                         if len(bundled_day[field]) != len(remote_day[field]):
                                             nested_diff_counts[f'{field}.length'] += 1
+                                            if field == 'readings' and len(reading_length_samples) < 20:
+                                                reading_length_samples.append((date, lang, len(bundled_day[field]), len(remote_day[field])))
                         if calendar_mismatches <= 3:
                             describe(f"calendar {date}/{lang}", bundled_day, remote_day)
                         if calendar_mismatches <= 10:
@@ -116,6 +119,7 @@ class Command(BaseCommand):
         self.stdout.write(f"Calendar: checked={calendar_checked}, mismatches={calendar_mismatches}")
         self.stdout.write(f"Calendar differing fields: {field_diff_counts.most_common(20)}")
         self.stdout.write(f"Nested calendar differences: {nested_diff_counts.most_common(20)}")
+        self.stdout.write(f"Reading-count samples (date, language, bundle, server): {reading_length_samples}")
 
         if differences:
             raise CommandError(
