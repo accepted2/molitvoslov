@@ -137,11 +137,14 @@ class PublicationLifecycleTests(TestCase):
         with patch(command_path, side_effect=lambda years: iter(payload)):
             call_command("publish_offline_content_updates", baseline=True)
             self.assertEqual(OfflineContentChange.objects.count(), 0)
+            self.assertIsNone(OfflineContentSnapshot.objects.get(object_key="texts/example").payload)
             call_command("publish_offline_content_updates")
             self.assertEqual(OfflineContentChange.objects.count(), 0)
             payload = [("public", "texts/example", {"title": "revised"})]
             call_command("publish_offline_content_updates")
             self.assertEqual(OfflineContentChange.objects.count(), 1)
+            delta = OfflineContentChange.objects.get(object_key="texts/example")
+            self.assertEqual(delta.payload["kind"], "full")
             self.assertEqual(OfflineContentSnapshot.objects.get(object_key="texts/example").payload["title"], "revised")
             call_command("publish_offline_content_updates")
             self.assertEqual(OfflineContentChange.objects.count(), 1)
