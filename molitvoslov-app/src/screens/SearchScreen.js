@@ -192,7 +192,7 @@ const SearchContent = ({navigation}) => {
     setSearchScope('');
     // A stale bundled search seed must rebuild automatically. Otherwise the UI
     // waits forever for metadata that can never match after a content update.
-    ensurePersistentSearch(language, {isCancelled: () => !active})
+    ensurePersistentSearch(language)
       .then((ready) => {
         if (active) {
           setSeedReady(!!ready);
@@ -522,7 +522,14 @@ const SearchContent = ({navigation}) => {
 
           {!waitingForQuery && !queryTooShort && (
             <View style={styles.countRow}>
-              {indexLoading || (searchLoading && !paused) || (!resultsCurrent && !paused) ? (
+              {indexLoading ? (
+                <>
+                  <ActivityIndicator size="small" color="#A16E35" />
+                  <Text style={styles.countText}>Ищем…</Text>
+                </>
+              ) : !seedReady ? (
+                <Text style={styles.countText}>Поисковый индекс недоступен. Закройте и снова откройте поиск.</Text>
+              ) : (searchLoading && !paused) || (!resultsCurrent && !paused) ? (
                 <>
                   <ActivityIndicator size="small" color="#A16E35" />
                   <Text style={styles.countText}>Ищем…</Text>
