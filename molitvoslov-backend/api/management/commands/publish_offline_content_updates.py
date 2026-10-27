@@ -119,6 +119,8 @@ class Command(BaseCommand):
         parser.add_argument("--baseline", action="store_true", help="Seed snapshot without publishing a massive initial delta")
         parser.add_argument("--years", nargs="+", type=int, default=None,
                             help="Calendar years; default: all years present in the database")
+        parser.add_argument("--dry-run", action="store_true",
+                            help="Estimate publication payload without writing snapshots or events")
         parser.add_argument("--bootstrap", action="store_true",
                             help="Publish all existing content as initial events for APKs with unknown baselines")
 
@@ -145,6 +147,19 @@ class Command(BaseCommand):
         incoming = {}
         for section, key, data in published_objects(years):
             incoming[(section, key)] = (signature(data), data)
+
+        estimated_payload_bytes = sum(
+            len(json.dumps(data, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
+            for _, data in incoming.values()
+        )
+        self.stdout.write(
+            f"Publication scope: years={years}, objects={len(incoming)}, "
+            f"uncompressed_json_bytes={estimated_payload_bytes}, "
+            f"estimated_initial_mb={estimated_payload_bytes / (1024 * 1024):.1f}"
+        )
+        if options["dry_run"]:
+            self.stdout.write("DRY RUN: no database changes")
+            return
 
         with transaction.atomic():
             current = {
