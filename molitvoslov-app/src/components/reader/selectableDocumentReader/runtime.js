@@ -1447,7 +1447,11 @@ if (
         start: labelStart,
         end: labelStart + found[2].length,
       });
-      traditionalAndNowRanges.push({start: labelStart, end: labelStart + found[2].length});
+      // В первом славословии строка уже целиком красная:
+      // отдельную жирность для "И ныне" здесь не применяем.
+      if (!(isFirstKathismaTraditionalPrayer && /^слав/u.test(simple))) {
+        traditionalAndNowRanges.push({start: labelStart, end: labelStart + found[2].length});
+      }
     }
 
     if (isFirstKathismaTraditionalPrayer) {
