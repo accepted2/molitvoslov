@@ -124,7 +124,18 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       ? {background: readingSettings.customBackground, text: readingSettings.customText, surface: readingSettings.customBackground}
       : (PALETTE_COLORS[readingSettings.palette] || PALETTE_COLORS.parchment);
     const size = Math.max(14, Math.min(28, Number(readingSettings.fontSize) || 17));
-    const css = `body:not(.book-mode) {--background: ${palette.background}; --surface: ${palette.surface}; --text: ${palette.text};} body:not(.book-mode) .reader-text {font-size: ${size}px !important; line-height: ${Math.round(size * 1.7)}px !important;}`;
+    // One reading-size source for every non-book document category.
+    // Ponomar glyphs are visually smaller than civil Cyrillic at the same px size.
+    const traditionalSize = Math.min(30, size + 2);
+    const css = `body:not(.book-mode) {--background: ${palette.background}; --surface: ${palette.surface}; --text: ${palette.text}; --reading-font-size: ${size}px; --traditional-reading-font-size: ${traditionalSize}px;}
+      body:not(.book-mode) .reader-text {font-size: var(--reading-font-size) !important; line-height: 1.7 !important;}
+      body:not(.book-mode) .reader-language-traditional .reader-text {font-size: var(--traditional-reading-font-size) !important; line-height: 1.7 !important;}
+      body:not(.book-mode) .reader-language-traditional .reader-text .liturgical-word {font-size: inherit;}
+      body:not(.book-mode) .reader-text.akathist-church,
+      body:not(.book-mode) .reader-text.akathist-russian,
+      body:not(.book-mode) .reader-text.psalter-reading-prayers,
+      body:not(.book-mode) .reader-text.psalter-glory,
+      body:not(.book-mode) .reader-text.psalter-prayer {line-height: 1.7 !important;}`;
     return markup.replace('</style>', `${css}</style>`);
   }, [documentData, savedProgress, focusTarget, topContentInset, bottomContentInset, ponomarFontDataUri, readingSettings]);
 
