@@ -627,6 +627,11 @@ export const READER_STYLES = String.raw`
   color: #B22222 !important;
   font-weight: 400;
 }
+.reader-language-traditional .reader-text.psalter-prayer .psalter-traditional-and-now,
+.reader-language-traditional .reader-text.psalter-prayer .psalter-traditional-and-now .liturgical-word {
+  color: #B22222 !important;
+  font-weight: 700 !important;
+}
 .reader-language-traditional .reader-text.psalter-prayer .psalter-traditional-prayer-red {
   color: #B22222;
   font-family: 'Ponomar', serif;
