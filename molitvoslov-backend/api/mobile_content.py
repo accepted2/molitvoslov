@@ -1,6 +1,7 @@
 import hashlib
 import json
 
+from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseNotModified
 from django.utils import timezone
 from rest_framework.permissions import AllowAny
@@ -17,6 +18,7 @@ from .models import (
     PrayerRule,
     Psalter,
     Text,
+    PublicAppAsset,
 )
 from .serializers import (
     AkathistSerializer,
@@ -130,6 +132,7 @@ def build_mobile_content_payload():
         "akathists": akathists,
         "canons": canons,
         "daily_quotes": daily_quotes,
+        "app_assets": {asset.key: {"image_url": asset.image_url, "title": asset.title, "enabled": asset.enabled} for asset in PublicAppAsset.objects.all()},
     }
 
     version_source = json.dumps(
@@ -153,7 +156,12 @@ class MobileContentView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        payload = build_mobile_content_payload()
+        # Cache the expensive database serialization across conditional requests.
+        # TTL bounds staleness even for bulk_update/queryset.update import paths.
+        payload = cache.get('molitvoslov:mobile-content:payload:v1')
+        if payload is None:
+            payload = build_mobile_content_payload()
+            cache.set('molitvoslov:mobile-content:payload:v1', payload, timeout=60)
         content_version = payload["content_version"]
         etag = f'"{content_version}"'
 

@@ -210,13 +210,58 @@ def _new_label_from_prefix(prefix):
     if not prefix:
         return None
 
+    # New Azbyka layout: a service heading precedes Liturgy / Apostle / Gospel
+    # within a <p>. Respect headings even when previous references precede ";".
+    grouped = re.search(
+        r"(?:^|;\s*)([^;:]{2,75}):\s*"
+        r"(?:(?:Лит\.?|На литургии)\s*[–—-]?\s*)?"
+        r"(?:(?:Ап\.?|Ев\.?|Евангелие|Апостол)\s*:\s*)?$",
+        prefix, re.I,
+    )
+    if grouped:
+        candidate = _clean_label(grouped.group(1).rsplit(" – ", 1)[-1])
+        if candidate.lower() in {"ап.", "ев.", "ап", "ев", "евангелие", "апостол"}:
+            return None
+        if candidate.lower() in {"рядовое", "рядовые"}:
+            return "Ряд."
+        if candidate and not candidate.lower().startswith(("в служебных", "если ")):
+            return candidate
+
+    # The old Azbyka layout can place "Утр. – Страстотерпцев:"
+    # immediately before the first passage.
+    morning_group = re.search(
+        r"(?:^|[.;]\s*)(?:Утр\.?|На утрени)\s*[–—-]\s*"
+        r"([^;:]{2,75}):\s*$", prefix, re.I,
+    )
+    if morning_group:
+        return _clean_label(morning_group.group(1))
+
     # Отдельный маркер утрени перед первым воскресным Евангелием.
     if re.search(r"(?:^|[.;])\s*(?:Утр\.?|На утрени)\s*[–—-]?\s*$", prefix, re.I):
         return "Утр."
 
-    # "Лит. –" само по себе не является подписью группы.
+    # "Лит. –" alone does not change a saint/service group.
     if re.search(r"(?:^|[.;])\s*Лит\.?\s*[–—-]?\s*$", prefix, re.I):
-        return ""
+        return None
+
+    # Ап.: / Ев.: designate the type of reading, never its group label.
+    marker = re.search(r"(?:Ап\.?|Ев\.?|Евангелие|Апостол)\s*:\s*$", prefix, re.I)
+    if marker:
+        lead = prefix[:marker.start()].strip()
+        lead = re.sub(r"(?:Лит\.?|На литургии)\s*[–—-]?\s*$", "", lead, flags=re.I).strip()
+        # A heading can be followed by "Лит. –", and can contain dots (Сщмч.).
+        group = re.search(r"(?:^|[;]\s*)([^;:]{2,75}):\s*$", lead)
+        if group:
+            label = _clean_label(group.group(1))
+            if label.lower() in {"рядовое", "рядовые"}:
+                return "Ряд."
+            if label and not label.lower().startswith(("в служебных", "если ")):
+                return label
+        return None
+
+    # Azbyka's explanatory note is a genuine reading alternate, not a heading.
+    if re.search(r"в служебных апостоле и евангелии.*чтения за упокой", prefix, flags=re.I):
+        return "За упокой"
 
     if ":" not in prefix:
         return None
@@ -244,7 +289,22 @@ def _new_label_from_prefix(prefix):
     return candidate
 
 
+GROUP_BOUNDARY_RE = re.compile(r"\[\[AZBYKA_GROUP:([^\]]+)\]\]")
+
+
 def parse_readings_text(text):
+    # Explicit DOM group boundaries override heuristic label extraction.
+    # This preserves repeated readings from different services separately.
+    if GROUP_BOUNDARY_RE.search(text):
+        parts = GROUP_BOUNDARY_RE.split(text)
+        result = []
+        for i in range(1, len(parts), 2):
+            label = _clean_label(parts[i])
+            section = parts[i + 1] if i + 1 < len(parts) else ""
+            for item in parse_readings_text(section):
+                result.append(ParsedReading(kind=item.kind, label=label,
+                                            title=item.title, order=(len(result) + 1) * 10))
+        return result
     text = normalize_space(text)
     matches = list(REFERENCE_RE.finditer(text))
 
@@ -284,16 +344,9 @@ def parse_readings_text(text):
             order=index * 10,
         )
 
-        # Один и тот же отрывок может встречаться в разных группах —
-        # это разные чтения. Удаляем только точный дубль по содержанию.
-        duplicate = any(
-            existing.kind == reading.kind
-            and existing.label == reading.label
-            and existing.title == reading.title
-            for existing in result
-        )
-        if not duplicate:
-            result.append(reading)
+        # Keep repeated assignments, including identical texts and labels.
+        # Different services can legitimately cite the same Scripture passage.
+        result.append(reading)
 
     return result
 
@@ -307,6 +360,42 @@ def _heading_level(tag):
 def extract_readings_text(html):
     soup = BeautifulSoup(html, "lxml")
 
+    # Prefer Azbyka's dedicated readings block. It contains every group
+    # (daily, Theotokos, saints), possibly split among several paragraphs.
+    groups = soup.select(".readings-text .readings-groups")
+    if groups:
+        parts = []
+        for group in groups:
+            # Each <p> is a separate service, usually introduced by <i>name:</i>.
+            # Flattening the whole container previously lost the first label and
+            # carried the previous label into the next service.
+            paragraphs = group.find_all(["p", "li"], recursive=True)
+            if not paragraphs:
+                paragraphs = [group]
+            for paragraph in paragraphs:
+                text = normalize_space(paragraph.get_text(" ", strip=True))
+                if not REFERENCE_RE.search(text):
+                    continue
+                heading = paragraph.find("i")
+                if heading and not heading.find_parent(["span"]):
+                    name = normalize_space(heading.get_text(" ", strip=True)).rstrip(":").strip()
+                    if name:
+                        if name.lower() in {"рядовое", "рядовые"}:
+                            name = "Ряд."
+                        # Remove the source header and the first service/type
+                        # marker; the remaining Ев./Ап. markers denote types,
+                        # not changes to the service assignment.
+                        text = text[len(normalize_space(heading.get_text(" ", strip=True))):].strip()
+                        text = re.sub(
+                            r"^(?:(?:Лит\\.?|На литургии|Утр\\.?|На утрени)\\s*[–—-]?\\s*)?"
+                            r"(?:(?:Ап\\.?|Ев\\.?|Апостол|Евангелие)\\s*:\\s*)?",
+                            "", text, flags=re.I)
+                        text = f"[[AZBYKA_GROUP:{name}]] {text}"
+                parts.append(text)
+        text = " ; ".join(parts)
+        if REFERENCE_RE.search(text):
+            return text
+
     heading = None
     for candidate in soup.find_all(re.compile(r"^h[1-6]$")):
         text = normalize_space(candidate.get_text(" ", strip=True)).lower()
@@ -319,25 +408,27 @@ def extract_readings_text(html):
 
     level = _heading_level(heading) or 2
 
-    # Берём первый абзац после заголовка, в котором есть
-    # поддерживаемая ссылка на Писание. Пояснительные примечания ниже не импортируем
-    # как отдельные чтения.
+    # All consecutive Scripture paragraphs belong to the same reading section.
+    # Previously we returned after the first paragraph, dropping subsequent
+    # assignments (e.g. Theotokos and martyrs on 2026-11-06).
+    chunks = []
     for tag in heading.find_all_next():
         tag_level = _heading_level(tag)
         if tag_level is not None and tag_level <= level:
             break
-
         if tag.name not in {"p", "li"}:
             continue
-
         text = normalize_space(tag.get_text(" ", strip=True))
         lowered = text.lower()
-
         if any(stop in lowered for stop in STOP_TEXTS):
             break
-
         if REFERENCE_RE.search(text):
-            return text
+            chunks.append(text)
+        # Non-reference paragraphs can separate normal and optional services.
+        # Continue collecting until the next same/higher-level section heading.
+
+    if chunks:
+        return " ; ".join(chunks)
 
     # Fallback для страниц, где чтения завернуты не в <p>.
     chunks = []
@@ -363,6 +454,9 @@ def extract_readings_text(html):
     if chunks:
         return chunks[0]
 
+    # Do not crawl ancestor containers: these may include unrelated Bible
+    # references and produce confidently wrong results on exceptional days.
+    # If this page has no static passage text, fail closed.
     raise AzbykaReadingsError("В блоке чтений не найдены поддерживаемые ссылки.")
 
 

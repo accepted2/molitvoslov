@@ -102,16 +102,11 @@ export const ReaderScreen = ({route, navigation}) => {
     let nextMode = getReaderModeForAppLanguage(language, {
       hasRussian: hasRussianTranslation,
       hasUkrainian: hasUkrainianTranslation,
+      hasTraditional: hasTraditionalTranslation,
     });
 
     const preferred = focusTarget?.preferredLanguage;
 
-    console.error(
-      '[reader] preferred =', preferred,
-      '| hasRussian =', hasRussianTranslation,
-      '| hasUkrainian =', hasUkrainianTranslation,
-      '| initial =', nextMode
-    );
 
     if (preferred === 'russian') {
       nextMode = hasRussianTranslation
@@ -130,7 +125,6 @@ export const ReaderScreen = ({route, navigation}) => {
     }
 
     setViewMode(nextMode);
-    console.error('[reader] final mode =', nextMode);
   }, [
     language,
     text,
@@ -277,12 +271,8 @@ export const ReaderScreen = ({route, navigation}) => {
     if (viewMode === READER_LANGUAGE_MODES.TRADITIONAL) {
       appendBlock({
         id: 3,
-        value: text.traditional_content || text.content || text.translation || '',
-        language: text.traditional_content?.trim()
-          ? 'traditional'
-          : text.content?.trim()
-            ? 'church'
-            : 'russian',
+        value: text.traditional_content?.trim() || 'Те́кстъ въ традиціо́нномъ начерта́ніи отсꙋ́тствꙋетъ.',
+        language: 'traditional',
         className: !text.traditional_content?.trim() && text.translation?.trim() ? 'secondary' : '',
       });
     } else if (viewMode === READER_LANGUAGE_MODES.UKRAINIAN) {
@@ -299,15 +289,24 @@ export const ReaderScreen = ({route, navigation}) => {
     } else if (viewMode === READER_LANGUAGE_MODES.RUSSIAN) {
       appendBlock({
         id: 2,
-        value: text.translation || text.content || '',
-        language: text.translation?.trim() ? 'russian' : 'church',
+        value: text.translation?.trim() || 'Перевод пока отсутствует.',
+        language: 'russian',
         className: text.translation?.trim() ? 'secondary' : '',
       });
     } else {
       appendBlock({
         id: 1,
-        value: text.content || text.traditional_content || '',
+        value: text.content?.trim() || 'Текст церковнославянской версии пока отсутствует.',
         language: 'church',
+      });
+    }
+
+    if (viewMode === READER_LANGUAGE_MODES.BOTH) {
+      appendBlock({
+        id: 2,
+        value: text.translation?.trim() || 'Перевод пока отсутствует.',
+        language: 'russian',
+        className: 'secondary',
       });
     }
 
@@ -327,8 +326,8 @@ export const ReaderScreen = ({route, navigation}) => {
       viewSwitcher: {
         activeKey: viewMode,
         options: buildReaderLanguageOptions({
-          hasRussian: hasRussianTranslation,
-          hasTraditional: hasTraditionalTranslation,
+          hasRussian: true,
+          hasTraditional: true,
         }),
       },
 

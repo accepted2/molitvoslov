@@ -1,6 +1,7 @@
 import hashlib
 import json
 
+from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseNotModified
 from django.utils import timezone
 from rest_framework.permissions import AllowAny
@@ -96,7 +97,13 @@ class BibleContentView(APIView):
     def get(self, request):
         translation_code = str(request.query_params.get("translation") or "rst").strip()
 
-        payload = build_bible_content_payload(translation_code)
+        # ETag alone did not avoid rebuilding every verse from PostgreSQL.
+        cache_key = f'molitvoslov:bible-content:{translation_code}:payload:v1'
+        payload = cache.get(cache_key)
+        if payload is None:
+            payload = build_bible_content_payload(translation_code)
+            if payload is not None:
+                cache.set(cache_key, payload, timeout=60)
 
         if payload is None:
             return HttpResponse(

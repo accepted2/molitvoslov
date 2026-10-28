@@ -33,9 +33,11 @@ from .auth_views import (
     GoogleAuthView,
     CurrentUserView,
     LogoutView,
+    DeleteAccountView,
 )
 from .mobile_content import MobileContentView
 from .bible_content import BibleContentView
+from .content_updates import OfflineContentUpdatesView, OfflineContentObjectView, OfflineContentManifestView
 
 router = DefaultRouter()
 
@@ -89,6 +91,9 @@ router.register(
 
 urlpatterns = [
     path("mobile-content/", MobileContentView.as_view(), name="mobile-content"),
+    path("content-updates/", OfflineContentUpdatesView.as_view(), name="content-updates"),
+    path("content-updates/manifest/", OfflineContentManifestView.as_view(), name="content-update-manifest"),
+    path("content-updates/item/", OfflineContentObjectView.as_view(), name="content-update-item"),
     path("bible-content/", BibleContentView.as_view(), name="bible-content"),
     path("calendar/", include("api.calendar_urls")),
     path(
@@ -101,6 +106,7 @@ urlpatterns = [
         CurrentUserView.as_view(),
         name="current-user",
     ),
+    path("auth/delete-account/", DeleteAccountView.as_view(), name="delete-account"),
     path(
         "auth/logout/",
         LogoutView.as_view(),

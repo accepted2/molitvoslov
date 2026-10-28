@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import {applyYearMarkers, applyYearMarkersToMonth, loadYearMarkers} from './calendarYearMarkers';
 
@@ -32,7 +33,60 @@ const fetchCalendarJson = async (path, {signal} = {}) => {
 const monthCache = new Map();
 const dayCache = new Map();
 
+// Invalidate in-memory readers when a published server delta changes one day.
+export const invalidateCalendarCache = (date, language = 'ru') => {
+  const lang = language === 'uk' ? 'uk' : 'ru';
+  dayCache.delete(`${lang}:${date}`);
+  const parts = String(date).split('-');
+  if (parts.length === 3) monthCache.delete(`${lang}:${Number(parts[0])}-${Number(parts[1])}`);
+};
+
 const pad = (value) => String(value).padStart(2, '0');
+
+// Refresh one viewed calendar month at most once per 24 hours.
+// A failed request does not mark the month as refreshed.
+const monthRefreshRequests = new Map();
+const MONTH_REFRESH_MS = 24 * 60 * 60 * 1000;
+
+export const refreshCalendarMonthIfStale = (year, month, language = 'ru') => {
+  const lang = language === 'uk' ? 'uk' : 'ru';
+  const key = `calendar-month-refreshed-v1:${lang}:${year}-${String(month).padStart(2, '0')}`;
+  if (monthRefreshRequests.has(key)) return monthRefreshRequests.get(key);
+
+  const request = (async () => {
+    try {
+      const lastRefresh = Number(await AsyncStorage.getItem(key) || 0);
+      if (lastRefresh && Date.now() - lastRefresh < MONTH_REFRESH_MS) return null;
+
+      // Do not stamp failed/offline requests as successful.
+      const network = await NetInfo.fetch();
+      if (network.isConnected === false || network.isInternetReachable === false) return null;
+      const response = await fetchCalendarJson(
+        `/api/calendar/month/?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}&lang=${lang}`
+      );
+      const expectedDays = new Date(Number(year), Number(month), 0).getDate();
+      if (!Array.isArray(response?.days) || response.days.length !== expectedDays ||
+          new Set(response.days.map((day) => day?.date_gregorian)).size !== expectedDays ||
+          response.days.some((day) =>
+            !day?.date_gregorian?.startsWith(`${year}-${String(month).padStart(2, '0')}-`)
+          )) return null;
+      const enriched = applyYearMarkersToMonth(response, await loadYearMarkers(year));
+      await storeCalendarMonth(enriched, lang);
+      monthCache.set(`${lang}:${year}-${month}`, enriched);
+      for (const day of enriched.days) {
+        if (day?.date_gregorian) dayCache.set(`${lang}:${day.date_gregorian}`, day);
+      }
+      await AsyncStorage.setItem(key, String(Date.now()));
+      return enriched;
+    } catch (error) {
+      console.log('Обновление календаря:', error?.message || error);
+      return null;
+    }
+  })().finally(() => monthRefreshRequests.delete(key));
+  monthRefreshRequests.set(key, request);
+  return request;
+};
+
 
 export const toCalendarDate = (value) => {
   const date = value instanceof Date ? value : new Date(value);
@@ -100,6 +154,10 @@ export const getCalendarDay = async (
   }
 
   const offline = skipOffline ? null : await getOfflineCalendarDay(dateKey, lang);
+  if (!force && offline) {
+    dayCache.set(key, offline);
+    return offline;
+  }
   const online = await canReachNetwork();
 
   if (!online && offline) {
@@ -120,8 +178,8 @@ export const getCalendarDay = async (
     }
 
     const enriched = applyYearMarkers(data, await loadYearMarkers(Number(dateKey.slice(0, 4))));
-    dayCache.set(key, enriched);
     await storeCalendarDay(dateKey, lang, enriched);
+    dayCache.set(key, enriched);
 
     return enriched;
   } catch (error) {
@@ -151,6 +209,13 @@ export const getCalendarMonth = async (
   }
 
   const offline = skipOffline ? null : await getOfflineCalendarMonth(year, month, lang);
+  if (!force && offline) {
+    monthCache.set(key, offline);
+    (offline.days || []).forEach((day) => {
+      if (day?.date_gregorian) dayCache.set(`${lang}:${day.date_gregorian}`, day);
+    });
+    return offline;
+  }
   const online = await canReachNetwork();
 
   if (!online && offline) {
@@ -178,8 +243,8 @@ export const getCalendarMonth = async (
     }
 
     const enriched = applyYearMarkersToMonth(data, await loadYearMarkers(year));
-    monthCache.set(key, enriched);
     await storeCalendarMonth(enriched, lang);
+    monthCache.set(key, enriched);
 
     (enriched?.days || []).forEach((day) => {
       if (day?.date_gregorian) {
@@ -565,12 +630,18 @@ export const formatMemorialDay = (day, language = 'ru') => {
 
 export const getCalendarDayAppearance = (day) => {
   const markers = getCalendarMarkers(day);
-  if (!markers) return null;
-  if (markers.is_easter) return 'easter';
-  if (markers.is_major_feast) return 'feast';
-  if (markers.is_solid_week) return 'solid';
-  if (markers.is_fasting_day) return 'fast';
-  if (markers.is_memorial_day) return 'memorial';
+  if (markers?.is_easter) return 'easter';
+  if (markers?.is_major_feast) return 'feast';
+  const code = day?.fast_type_code || '';
+  const lenacomCodes = ['no-fast', 'fish', 'oil', 'no-oil', 'dry', 'cheese', 'no-food',
+    'caviar', 'fast_fish', 'fast_oil', 'fast_no_oil', 'fast_dry', 'fast_no_meat', 'fast_no_meal'];
+  if (lenacomCodes.includes(code)) {
+    if (code === 'no-fast' && markers?.is_solid_week) return 'solid';
+    return code === 'no-fast' ? null : code === 'cheese' || code === 'fast_no_meat' ? 'solid' : 'fast';
+  }
+  if (markers?.is_solid_week) return 'solid';
+  if (markers?.is_fasting_day) return 'fast';
+  if (markers?.is_memorial_day) return 'memorial';
   return null;
 };
 
@@ -584,13 +655,23 @@ export const formatFast = (day, language = 'ru') => {
   const solid = uk ? 'Суцільний тиждень' : 'Сплошная седмица';
   const fasting = uk ? 'Пісний день' : 'Постный день';
 
-  // A confirmed Azbyka marker takes precedence over outdated food rules.
-  if (markers?.is_solid_week) return solid;
-  if (markers?.is_fasting_day === false) return noFast;
+  // Lenacom imports carry the final dietary restriction for this date.
+  // Do not let older Azbyka fasting markers override verified imported values.
+  const imported = day?.source_payload?.lenacom_fasting || day?.source_payload?.lenacom_fasts ||
+    day?.source_payload?.lenacom_fasting_2025_2027 ||
+    day?.fast_source === 'lenacom' ||
+    ['no-fast', 'fish', 'oil', 'no-oil', 'dry', 'cheese', 'no-food', 'caviar',
+      'fast_fish', 'fast_oil', 'fast_no_oil', 'fast_dry', 'fast_no_meat', 'fast_no_meal'].includes(day.fast_type_code);
+  if (!imported) {
+    if (markers?.is_solid_week) return solid;
+    if (markers?.is_fasting_day === false) return noFast;
+  }
 
-  const name = day.fast_name || markers?.fast_period_name || '';
+  const name = day.fast_name || (!imported ? markers?.fast_period_name : '') || '';
   const type = day.fast_type_title || '';
-  if (name && type && type !== fasting && type !== 'Постный день') {
+  if (imported && (day.fast_type_code === 'no-fast' || (name === 'Нет поста' && !type))) return noFast;
+  if (name && type && !['Нет поста', 'Поста нет', type].includes(name) &&
+      type !== fasting && type !== 'Постный день') {
     return `${name} — ${type}`;
   }
   if (name) return name;

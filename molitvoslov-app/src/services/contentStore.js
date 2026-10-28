@@ -151,3 +151,8 @@ export const subscribeToContentUpdates = (listener) => {
     listeners.delete(listener);
   };
 };
+
+// Activate a snapshot already committed with the delta cursor in SQLite.
+export const activateCommittedPublicContent = (payload, version) => {
+  if (!activateContent(payload, version)) throw new Error('Invalid committed public content');
+};

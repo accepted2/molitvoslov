@@ -1075,7 +1075,9 @@ class PersonalPrayerPhotoAdmin(admin.ModelAdmin):
 @admin.register(CalendarFeast)
 class CalendarFeastAdmin(admin.ModelAdmin):
     list_display = [
+        "id",
         "source_id",
+        "sync_uid",
         "title_preview",
         "title_uk_preview",
         "celebration_dates",
@@ -1096,6 +1098,8 @@ class CalendarFeastAdmin(admin.ModelAdmin):
         "title_uk",
         "short_title_uk",
         "source_id",
+        "sync_uid",
+        "id",
     ]
 
     ordering = [
@@ -1104,6 +1108,7 @@ class CalendarFeastAdmin(admin.ModelAdmin):
     ]
 
     readonly_fields = [
+        "sync_uid",
         "gregorian_dates_display",
         "icon_preview",
         "all_dates",
@@ -1116,6 +1121,7 @@ class CalendarFeastAdmin(admin.ModelAdmin):
             {
                 "fields": [
                     "source_id",
+                    "sync_uid",
                     "date_type",
                     "celebration_type",
                     "celebration_rank",
@@ -1668,3 +1674,13 @@ class BibleTranslationAdmin(admin.ModelAdmin):
         "source_url",
     ]
     list_editable = ["is_visible"]
+
+
+from .models import PublicAppAsset
+
+@admin.register(PublicAppAsset)
+class PublicAppAssetAdmin(admin.ModelAdmin):
+    list_display = ("key", "title", "enabled", "updated_at")
+    list_editable = ("enabled",)
+    search_fields = ("key", "title")
+    readonly_fields = ("updated_at",)

@@ -6,6 +6,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 
 import {deleteSavedItem, saveItem} from '../../services/savedItems';
 import {useLanguage} from '../../context/LanguageContext';
+import {getReadingSettings, DEFAULT_READING_SETTINGS} from '../../services/readerPreferences';
 import {getCachedPonomarFontDataUri, loadPonomarFontDataUri} from '../../services/ponomarFont';
 
 const scriptSafeJson = (value) =>
@@ -2257,10 +2258,22 @@ const HTML_TEMPLATE = String.raw`
         );
       }
 
-      (
-        DATA.rule.items ||
-        []
-      ).forEach(
+      const allItems = DATA.rule.items || [];
+      const lacksTraditional = DATA.viewMode === 'traditional' &&
+        !allItems.some(item => item.item_type === 'text' && item.text?.traditional_content?.trim());
+      const lacksRussian = (DATA.viewMode === 'russian' || DATA.viewMode === 'both') &&
+        !allItems.some(item => item.item_type === 'text' && item.text?.translation?.trim());
+      if (lacksTraditional || (lacksRussian && DATA.viewMode === 'russian')) {
+        reader.appendChild(
+          el('div', 'rule-description', lacksTraditional
+            ? 'Те́кстъ въ традиціо́нномъ начерта́ніи отсꙋ́тствꙋетъ.'
+            : 'Перевод пока отсутствует.')
+        );
+      }
+
+      (lacksTraditional || (lacksRussian && DATA.viewMode === 'russian')
+        ? []
+        : allItems).forEach(
         item => {
           const wrapper =
             el(
@@ -2361,23 +2374,17 @@ const HTML_TEMPLATE = String.raw`
               '';
 
             const primaryLanguage =
-              viewMode === 'ukrainian' && ukrainianText
-                ? 'ukrainian'
-                : viewMode === 'ukrainian' && russianText
-                  ? 'russian'
-                  : viewMode === 'russian' && russianText
-                    ? 'russian'
-                    : viewMode === 'traditional' && traditionalText
-                      ? 'traditional'
-                      : 'church';
+              viewMode === 'ukrainian' ? 'ukrainian' :
+              viewMode === 'russian' ? 'russian' :
+              viewMode === 'traditional' ? 'traditional' : 'church';
 
             const primaryText =
               primaryLanguage === 'ukrainian'
-                ? ukrainianText
+                ? (ukrainianText || 'Перевод пока отсутствует.')
                 : primaryLanguage === 'russian'
-                  ? russianText
+                  ? (russianText || 'Перевод пока отсутствует.')
                   : primaryLanguage === 'traditional'
-                    ? traditionalText
+                    ? (traditionalText || 'Те́кстъ въ традиціо́нномъ начерта́ніи отсꙋ́тствꙋетъ.')
                     : churchText;
 
             const itemTitle =
@@ -2551,16 +2558,12 @@ const HTML_TEMPLATE = String.raw`
               );
             }
 
-            if (
-              DATA.viewMode ===
-                'both' &&
-              russianText
-            ) {
+            if (DATA.viewMode === 'both') {
               wrapper.appendChild(
                 el(
                   'div',
                   'translation-text',
-                  russianText
+                  russianText || 'Перевод пока отсутствует.'
                 )
               );
             }
@@ -6128,9 +6131,8 @@ const HTML_TEMPLATE = String.raw`
             0,
             Math.max(
               0,
-              window.scrollY +
-              rootRect.top -
-              18
+              window.scrollY + rootRect.top + Math.min(rootRect.height / 2, 44) -
+              (window.innerHeight / 2)
             )
           );
         }
@@ -6477,6 +6479,12 @@ export default function PrayerRuleReader({
 }) {
   const insets = useSafeAreaInsets();
   const {language, t} = useLanguage();
+  const [readingSettings, setReadingSettings] = useState(DEFAULT_READING_SETTINGS);
+  useEffect(() => {
+    let active = true;
+    getReadingSettings().then((settings) => {if (active) setReadingSettings(settings);}).catch(console.warn);
+    return () => {active = false;};
+  }, []);
 
   const webViewRef = useRef(null);
   const progressSourceRef = useRef(null);
@@ -6533,9 +6541,10 @@ export default function PrayerRuleReader({
     [language, t]
   );
 
+  const readerBg = readingSettings.palette === 'custom' ? readingSettings.customBackground : ({night:'#29231F',warm:'#DEBE94',ivory:'#FFFDF3'}[readingSettings.palette] || '#FFF4DE');
   const html = useMemo(
-    () =>
-      buildHtml({
+    () => {
+      const markup = buildHtml({
         rule,
         savedItems,
         savedProgress,
@@ -6547,7 +6556,20 @@ export default function PrayerRuleReader({
         memorialEnabled,
         ui,
         ponomarFontDataUri,
-      }),
+      });
+      const palettes = {
+        parchment: ['#FFF4DE', '#F8E9CF', '#3E2A1D'],
+        warm: ['#DEBE94', '#E8CDA8', '#3B281A'],
+        ivory: ['#FFFDF3', '#F5EFE0', '#352D26'],
+        night: ['#29231F', '#413831', '#F4E7D2'],
+      };
+      const [bg, surface, fg] = readingSettings.palette === 'custom'
+        ? [readingSettings.customBackground, readingSettings.customBackground, readingSettings.customText]
+        : (palettes[readingSettings.palette] || palettes.parchment);
+      const size = Math.max(14, Math.min(28, Number(readingSettings.fontSize) || 17));
+      const css = `:root {--background:${bg}; --surface:${surface}; --text:${fg};} .reader-text {font-size:${size}px !important;line-height:${Math.round(size*1.7)}px !important;}`;
+      return markup.replace('</style>', `${css}</style>`);
+    },
     [
       rule,
       savedItems,
@@ -6559,6 +6581,7 @@ export default function PrayerRuleReader({
       memorialEnabled,
       ui,
       ponomarFontDataUri,
+      readingSettings,
     ]
   );
 
@@ -6802,6 +6825,7 @@ export default function PrayerRuleReader({
         styles.container,
         {
           paddingBottom: Math.max(insets.bottom, 8),
+          backgroundColor: readerBg,
         },
       ]}
     >
@@ -6821,12 +6845,12 @@ export default function PrayerRuleReader({
         overScrollMode="never"
         textZoom={100}
         onMessage={handleMessage}
-        style={styles.webView}
+        style={[styles.webView, {backgroundColor: readerBg}]}
       />
 
       <LinearGradient
         pointerEvents="none"
-        colors={['rgba(255, 244, 222, 0)', 'rgba(255, 244, 222, 0.72)', '#FFF4DE']}
+        colors={['transparent', readerBg + 'BB', readerBg]}
         locations={[0, 0.58, 1]}
         style={[
           styles.bottomFade,

@@ -1,0 +1,54 @@
+name: Verify offline delta sync
+on:
+  push:
+    branches:
+      - fix/search-result-focus-language
+    paths:
+      - "molitvoslov-backend/api/**"
+      - "molitvoslov-app/src/services/contentDeltaSync.js"
+      - "molitvoslov-app/App.js"
+      - ".github/workflows/test-content-deltas.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  django:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: molitvoslov-backend/requirements.txt
+      - name: Install backend dependencies
+        run: python -m pip install -r molitvoslov-backend/requirements.txt
+      - name: Verify Python files
+        run: python -m compileall -q molitvoslov-backend
+      - name: Verify Django model state
+        working-directory: molitvoslov-backend
+        run: |
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+      - name: Test change feed and cached content
+        working-directory: molitvoslov-backend
+        run: python manage.py test api.test_content_updates api.test_content_cache --verbosity 2
+
+  expo-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.21.0"
+          cache: npm
+          cache-dependency-path: molitvoslov-app/package-lock.json
+      - name: Install client dependencies
+        working-directory: molitvoslov-app
+        run: npm ci
+      - name: Verify production Android JS bundle
+        working-directory: molitvoslov-app
+        env:
+          NODE_ENV: production
+          CI: "1"
+        run: npx expo export --platform android --output-dir dist/offline-delta-check

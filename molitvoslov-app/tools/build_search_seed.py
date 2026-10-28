@@ -14,16 +14,51 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "src" / "data" / "search_seed.db"
 CONTENT = ROOT / "src" / "data" / "offlineContent.json"
 BIBLE = ROOT / "src" / "data" / "offlineBible.json"
-SCHEMA = "8"
+SCHEMA = "9"
 KIND_BOOST = {"psalm-verse":1.20,"bible-verse":1.15,"psalm":1.10,"text":1.10,"prayer":1.10,"bible-chapter":1.0,"akathist":1.0,"canon":1.0,"psalter":1.0,"akathist-section":0.95,"canon-section":0.95,"prayer-rule":0.90,"kathisma":0.90,"bible-book":0.90}
 
 def fold(value):
-    value = unicodedata.normalize("NFD", str(value or "").lower().replace("ё", "е"))
+    # Normalize Slavonic letters to modern Russian spelling so Russian-keyboard
+    # queries match the canonical Church Slavonic text.
+    value = str(value or "").lower().replace("ё", "е")
+    value = value.translate(str.maketrans({
+        "ѣ": "е", "і": "и", "ѳ": "ф", "ѵ": "и", "ѡ": "о",
+        "ѧ": "я", "ѫ": "у", "ѕ": "з", "ѯ": "кс", "ѱ": "пс",
+        "ѻ": "о", "ѿ": "от", "ꙋ": "у", "ѹ": "у",
+    }))
+    value = unicodedata.normalize("NFD", value)
     value = "".join(ch for ch in value if unicodedata.category(ch) != "Mn")
-    return re.sub(r"\s+", " ", "".join(ch if ch.isalnum() else " " for ch in value)).strip()
+    value = re.sub(r"\s+", " ", "".join(ch if ch.isalnum() else " " for ch in value)).strip()
+    return re.sub(r"ъ(?=\s|$)", "", value)
+
+def saint_name_forms(value):
+    """Small additional lookup forms for Russian saint names (Иаков/Иакова).
+    Never replace the original name; these are extra search tokens only."""
+    words = fold(value).split()
+    extra = []
+    for word in words:
+        if len(word) < 4:
+            continue
+        if word.endswith("ий"):
+            extra.append(word[:-2] + "ия")
+        elif word.endswith("й"):
+            extra.append(word[:-1] + "я")
+        elif word.endswith("а"):
+            extra.append(word[:-1] + "ы")
+        elif word.endswith("я"):
+            extra.append(word[:-1] + "и")
+        elif word[-1] in "бвгджзклмнпрстфхцчшщ":
+            extra.append(word + "а")
+    return " ".join(extra)
 
 def compact(value):
     return re.sub(r"\s+", " ", str(value or "")).strip()
+
+def generic_prayer(title):
+    return fold(title) in {"молитва", "молитвы", "молитви"}
+
+def meaningful_prayer(title, body):
+    return not generic_prayer(title) or len(fold(body).split()) >= 40
 
 def main():
     content = json.loads(CONTENT.read_text(encoding="utf-8-sig"))
@@ -52,7 +87,7 @@ def main():
     db.execute("CREATE TABLE search_metadata (language TEXT PRIMARY KEY, version TEXT NOT NULL)")
     count = 0
 
-    def add(lang, group, identifier, title, source, texts, route, kind="text", preview=""):
+    def add(lang, group, identifier, title, source, texts, route, kind="text", preview="", text_language=None):
         nonlocal count
         texts = [compact(x) for x in texts if x]
         title = compact(title)
@@ -61,35 +96,137 @@ def main():
         payload = {"id": identifier, "group": group, "kind": kind, "title": title,
                    "source": source, "snippet": compact(preview)[:190],
                    "route": route, "matchedLanguageLabel": "",
-                   "groupLabel": group, "score": 150}
+                   "groupLabel": group, "score": 150, "matchedTextLanguage": text_language,
+                   "bodyWordCount": len(fold(" ".join(texts)).split())}
         normalized = fold(" ".join(texts))
         count += 1
         # Оригинал (для snippet()) — в search_documents_content.
         db.execute("INSERT INTO search_documents_content(rowid, title, source, body) VALUES (?, ?, ?, ?)",
                    (count, title, source, normalized))
         # Нормализованный (для поиска) — в FTS5.
+        indexed_title = fold(title)
+        # Verse titles are displayed with the book name, but this must not make
+        # every verse match a search for that book's name.
+        if kind == "bible-verse":
+            indexed_title = ""
         db.execute("INSERT INTO search_documents(rowid, title, source, body) VALUES (?, ?, ?, ?)",
-                   (count, fold(title), fold(source), normalized))
+                   (count, indexed_title, fold(source), normalized))
         db.execute("INSERT INTO search_payloads(rowid, language, group_key, kind, boost, payload) VALUES (?, ?, ?, ?, ?, ?)",
                    (count, lang, group, kind, KIND_BOOST.get(kind, 1.0), json.dumps(payload, ensure_ascii=False, separators=(",", ":"))))
         if count % 1500 == 0:
             db.commit()
 
+    # Feast-level calendar texts: no day-card headings and no date in search titles.
+    # De-duplicate recurring commemorations by source identity and text.
+    calendar_entries = {"ru": [], "uk": []}
+    seen_calendar = {"ru": set(), "uk": set()}
+    for month_file in sorted((ROOT / "src" / "data" / "calendar").glob("*.json")):
+        month_payload = json.loads(month_file.read_text(encoding="utf-8-sig"))
+        for date, versions in (month_payload.get("days") or {}).items():
+            for language in ("ru", "uk"):
+                day = (versions or {}).get(language) or (versions or {}).get("ru") or {}
+                for feast in [day.get("main_feast"), *(day.get("all_feasts") or [])]:
+                    if not isinstance(feast, dict):
+                        continue
+                    entity = compact(feast.get("title") or feast.get("short_title"))
+                    if not entity:
+                        continue
+                    for kind, label, field in (
+                        ("calendar-life", "Житие", "life_content"),
+                        ("calendar-troparion", "Тропарь", "troparion_content"),
+                        ("calendar-kontakion", "Кондак", "kontakion_content"),
+                    ):
+                        body = compact(feast.get(field))
+                        if not body:
+                            continue
+                        signature = (kind, fold(entity), fold(body))
+                        if signature in seen_calendar[language]:
+                            continue
+                        seen_calendar[language].add(signature)
+                        # Route reuses the existing SaintDetail interface. Keep the
+                        # original feast; display-only titles remain unmodified.
+                        route = {"name": "SaintDetail", "params": {
+                            "feast": feast, "focusSection": kind.split("-")[1]}}
+                        calendar_entries[language].append((
+                            kind, label + " — " + entity, entity,
+                            body, route, feast.get(field.replace("_content", "_title")) or "",
+                            feast.get("short_title") or "",
+                        ))
+
     books = bible.get("books", [])
+    category_data = content.get("categories") or {}
+    if isinstance(category_data, list):
+        category_list = category_data
+    elif isinstance(category_data, dict):
+        category_list = category_data.get("list") or category_data.get("items") or list(category_data.values())
+    else:
+        category_list = []
+    category_by_id = {
+        str(category["id"]): category
+        for category in category_list
+        if isinstance(category, dict) and category.get("id")
+    }
     text_objs = content.get("texts", {})
     if isinstance(text_objs, dict):
         text_objs = list(text_objs.values())
     for lang in ("ru", "uk"):
+        for kind, title, entity, body, route, original_title, short_title in calendar_entries[lang]:
+            add(lang, "calendar", "calendar:" + kind + ":" + str(len(entity)) + ":" +
+                str(len(body)) + ":" + str(route["params"]["feast"].get("source_id") or "") +
+                ":" + fold(entity)[:60], title, entity,
+                [body, short_title, original_title, saint_name_forms(entity), saint_name_forms(short_title)], route, kind=kind,
+                preview=body, text_language="church")
+        # Collect canonical prayers before indexing. A titled prayer gets a single
+        # result even if copied into several categories or multiple prayer rules.
+        prayer_candidates = {}
+        def queue_prayer(title, identifier, route, variants, source, priority):
+            candidates = [(language, compact(body)) for language, body in variants
+                          if language == "church" and body and meaningful_prayer(title, body)]
+            if not candidates:
+                return
+            church_text = candidates[0][1]
+            # A prayer is identified by its actual Slavonic text, not its label.
+            # Do not collapse distinct prayers merely because both say "Молитва".
+            key = fold(church_text)
+            candidate = (priority, title, identifier, route, candidates, source)
+            current = prayer_candidates.get(key)
+            if current is None or priority < current[0]:
+                prayer_candidates[key] = candidate
+
         for txt in text_objs:
             if not isinstance(txt, dict):
                 continue
             title = txt.get("title_uk") if lang == "uk" else txt.get("title")
             title = title or txt.get("title") or txt.get("traditional_title") or "Молитва"
-            texts = [txt.get(k) for k in ("title", "title_uk", "traditional_title", "description", "description_uk",
-                                          "content", "traditional_content", "translation", "translation_uk")]
-            add(lang, "prayers", "text:" + str(txt.get("id")), title, "Молитвы", texts,
-                {"name": "Reader", "params": {"slug": txt.get("slug")}},
-                preview=txt.get("translation") or txt.get("content") or txt.get("traditional_content") or "")
+            categories = []
+            for raw_category in txt.get("categories") or []:
+                if isinstance(raw_category, dict):
+                    resolved = category_by_id.get(str(raw_category.get("id")), raw_category)
+                    if not resolved.get("slug") and raw_category.get("slug"):
+                        resolved = raw_category
+                else:
+                    resolved = category_by_id.get(str(raw_category))
+                if isinstance(resolved, dict) and resolved.get("id") and resolved.get("slug"):
+                    categories.append(resolved)
+            category = categories[0] if categories else None
+            if category:
+                route = {"name": "Book", "params": {
+                    "categoryId": category["id"], "categorySlug": category["slug"],
+                    "categoryName": (category.get("name_uk") if lang == "uk" else category.get("name"))
+                                    or category.get("name") or "Молитвы",
+                    "focusTarget": {"anchor_type": "category_text",
+                                    "text_id": txt.get("id"),
+                                    "start_offset": None, "end_offset": None}}}
+            else:
+                route = {"name": "Reader", "params": {"slug": txt.get("slug")}}
+            # Standalone Reader snippets have no source section to navigate to.
+            if not category:
+                continue
+            queue_prayer(title, "text:" + str(txt.get("id")), route, (
+                ("church", txt.get("content")), ("russian", txt.get("translation")),
+                ("ukrainian", txt.get("translation_uk")),
+                ("traditional", txt.get("traditional_content"))),
+                "Молитвы", 30 if category else 50)
         for group, key, route_name in (("akathists", "akathists", "Akathist"),
                                        ("canons", "canons", "Canon")):
             items = content.get(key, {}).get("by_slug", {})
@@ -103,31 +240,65 @@ def main():
                 for section in item.get("sections", []):
                     st = section.get("text") or {}
                     sid = section.get("id")
-                    texts = [st.get(k) for k in ("title", "title_uk", "content", "traditional_content",
-                                                 "translation", "translation_uk")]
                     section_params = dict(params)
-                    section_params["focusTarget"] = {"anchor_type": "akathist_section" if group == "akathists" else "canon_section",
-                                                     "anchor_id": sid, "start_offset": None, "end_offset": None}
-                    add(lang, group, group + ":section:" + str(sid), st.get("title") or title,
-                        title, texts, {"name": route_name, "params": section_params}, kind=group + "-section",
-                        preview=st.get("content") or st.get("translation") or st.get("traditional_content") or "")
+                    section_params["parentTitle"] = title
+                    section_params["focusTarget"] = {
+                        "anchor_type": "akathist_section" if group == "akathists" else "canon_section",
+                        "anchor_id": sid, "start_offset": None, "end_offset": None}
+                    for text_language, field in (("church", "content"), ("russian", "translation"),
+                                                 ("ukrainian", "translation_uk"),
+                                                 ("traditional", "traditional_content")):
+                        body = st.get(field)
+                        if text_language != "church" or not body:
+                            continue
+                        add(lang, group, group + ":section:" + str(sid) + ":" + text_language,
+                            st.get("title") or title, title, [body],
+                            {"name": route_name, "params": section_params}, kind=group + "-section",
+                            preview=body, text_language=text_language)
         for rule in content.get("prayer_rules", {}).get("list", []):
             rule_title = (rule.get("name_uk") if lang == "uk" else rule.get("name")) or rule.get("name") or "Молитвенное правило"
             add(lang, "prayers", f"prayer-rule:{rule.get('id')}", rule_title, "Молитвенное правило",
                 [rule.get("name"), rule.get("name_uk"), rule.get("traditional_name"), rule.get("description")],
                 {"name": "PrayerRule", "params": {"slug": rule.get("slug")}}, "prayer-rule")
             for item in rule.get("items", []):
-                title = item.get("title") or (item.get("text") or {}).get("title") or rule_title
                 st = item.get("text") or {}
-                values = [item.get("content"), item.get("content_uk"), item.get("note"),
-                          st.get("title"), st.get("content"), st.get("traditional_content"),
-                          st.get("translation"), st.get("translation_uk")]
-                add(lang, "prayers", f"prayer-rule:{rule.get('id')}:item:{item.get('id')}",
-                    title, rule_title, values, {"name": "PrayerRule", "params": {
-                        "slug": rule.get("slug"), "focusTarget": {
-                            "anchor_type": "prayer_rule_item", "anchor_id": item.get("id"),
-                            "start_offset": None, "end_offset": None}}}, "prayer",
-                    preview=st.get("content") or st.get("translation") or item.get("content") or "")
+                # Never invent an item title from its parent prayer-rule name.
+                title = item.get("title") or st.get("title")
+                if not title:
+                    continue
+                # Section captions and instructions are not independent prayers.
+                lowered_title = fold(title)
+                known_short_prayers = {
+                    "отче наш", "молитва мытаря", "богородице дево радуйся",
+                    "царю небесный", "достойно есть", "символ веры",
+                }
+                church_body = st.get("content") or item.get("content") or ""
+                if (lowered_title.startswith("ясть человече") or
+                    (not ("молитв" in lowered_title or
+                          lowered_title in known_short_prayers) and
+                     len(fold(church_body).split()) < 40)):
+                    continue
+                route = {"name": "PrayerRule", "params": {
+                    "slug": rule.get("slug"), "focusTarget": {
+                        "anchor_type": "prayer_rule_item", "anchor_id": item.get("id"),
+                        "start_offset": None, "end_offset": None}}}
+                priority = 0 if "utren" in str(rule.get("slug") or "").lower() else 10
+                queue_prayer(title,
+                    f"prayer-rule:{rule.get('id')}:item:{item.get('id')}",
+                    route, (("church", st.get("content") or item.get("content")),
+                            ("russian", st.get("translation")),
+                            ("ukrainian", st.get("translation_uk") or item.get("content_uk")),
+                            ("traditional", st.get("traditional_content"))),
+                    rule_title, priority)
+
+        for priority, title, identifier, route, variants, source in prayer_candidates.values():
+            # One index row per prayer; search all available translations while
+            # opening the canonical text in the Church Slavonic reader mode.
+            chosen = next(((language, body) for language, body in variants
+                           if language == "church"), variants[0])
+            add(lang, "prayers", identifier, title, source,
+                [chosen[1]], route, kind="prayer",
+                preview=chosen[1], text_language="church")
         for psalter in content.get("psalters", {}).get("list", [])[:1]:
             add(lang, "psalter", f"psalter:{psalter.get('id')}", psalter.get("name") or "Псалтирь",
                 "Псалтирь", [psalter.get("description"), psalter.get("prayers_before"),
@@ -161,25 +332,43 @@ def main():
                                               "anchor_id": verse.get("id"), "start_offset": None, "end_offset": None,
                                               "metadata": {"psalm_id": psalm.get("id"), "psalm_number": pnum,
                                                            "verse_number": vnum}}
-                    add(lang, "psalter", f"psalm:{psalm.get('id')}:verse:{verse.get('id')}",
+                    church = verse.get("church_slavonic")
+                    russian = verse.get("russian")
+                    if not church:
+                        continue
+                    # Search both language wordings, but show and open one
+                    # canonical Church Slavonic Psalter result.
+                    add(lang, "psalter",
+                        f"psalm:{psalm.get('id')}:verse:{verse.get('id')}:church",
                         f"Псалом {pnum}:{vnum}", ktitle,
-                        [verse.get("russian"), verse.get("church_slavonic"),
-                         verse.get("church_slavonic_traditional"), verse.get("ukrainian")],
-                        {"name": "Kathisma", "params": vparams}, "psalm-verse",
-                        verse.get("russian") or verse.get("church_slavonic") or "")
+                        [church, russian], {"name": "Kathisma", "params": vparams},
+                        "psalm-verse", preview=church, text_language="church")
         for book in books:
+            # Canonical Psalter is indexed above, with both Slavonic and
+            # Russian wording. Avoid a second copy of its verses in Scripture.
+            book_name = fold(book.get("name") or book.get("short_name"))
+            book_slug = str(book.get("slug") or "").lower()
+            if (book_name in {"псалтирь", "псалтырь", "книга псалмов"} or
+                book_slug in {"psalms", "psalter", "psaltery"}):
+                continue
             book_id = book.get("id")
             display = book.get("name") or book.get("short_name") or "Библия"
+            chapters = book.get("chapters", [])
+            single_chapter = len(chapters) == 1
+            book_route = ({"name": "BibleChapter", "params": {
+                "bookId": book_id, "chapterNumber": chapters[0].get("number"),
+                "resume": False}} if single_chapter else
+                {"name": "BibleBook", "params": {"bookId": book_id}})
             add(lang, "scripture", "bible-book:" + str(book_id), display, "Писание",
-                [display, book.get("short_name")],
-                {"name": "BibleBook", "params": {"bookId": book_id}}, "bible-book")
-            for chapter in book.get("chapters", []):
+                [display, book.get("short_name")], book_route, "bible-book")
+            for chapter in chapters:
                 number = chapter.get("number")
                 chapter_title = f"{display} {number}"
-                add(lang, "scripture", f"bible-chapter:{book_id}:{chapter.get('id')}", chapter_title, "Писание",
-                    [chapter_title, f"{book.get('short_name') or display} {number}"],
-                    {"name": "BibleChapter", "params": {"bookId": book_id, "chapterNumber": number, "resume": False}},
-                    "bible-chapter")
+                if not single_chapter:
+                    add(lang, "scripture", f"bible-chapter:{book_id}:{chapter.get('id')}", chapter_title, "Писание",
+                        [chapter_title, f"{book.get('short_name') or display} {number}"],
+                        {"name": "BibleChapter", "params": {"bookId": book_id, "chapterNumber": number, "resume": False}},
+                        "bible-chapter")
                 for verse in chapter.get("verses", []):
                     verse_id = verse.get("id")
                     verse_no = verse.get("number")
@@ -191,7 +380,7 @@ def main():
                             "metadata": {"book_id": book_id, "book_slug": book.get("slug"),
                                          "chapter_number": number, "verse_number": verse_no}}}}
                     add(lang, "scripture", f"bible:{book_id}:{chapter.get('id')}:{verse_id}",
-                        title, "Писание", [title, f"{book.get('short_name') or display} {number}:{verse_no}", verse.get("text")],
+                        title, "Писание", [verse.get("text")],
                         route, "bible-verse", verse.get("text") or "")
         public_ver = content.get("content_version") or content.get("generated_at") or "bundle-public"
         bible_ver = bible.get("content_version") or bible.get("generated_at") or "bundle-bible"

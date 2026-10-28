@@ -7,6 +7,7 @@ import {
   setAppLanguage,
 } from '../services/languagePreferences';
 import {translate} from '../i18n/translations';
+import {getReadingSettings} from '../services/readerPreferences';
 
 const LanguageContext = createContext({
   language: APP_LANGUAGES.RU,
@@ -22,8 +23,8 @@ export const LanguageProvider = ({children}) => {
   useEffect(() => {
     let active = true;
 
-    getAppLanguage()
-      .then((storedLanguage) => {
+    Promise.all([getAppLanguage(), getReadingSettings()])
+      .then(([storedLanguage]) => {
         if (active) {
           setLanguageState(storedLanguage);
         }
