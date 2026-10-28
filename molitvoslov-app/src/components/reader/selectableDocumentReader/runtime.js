@@ -1411,6 +1411,7 @@ const collectPsalterRubricRanges = value => {
     .includes('psalter-prayer');
 
 const traditionalPrayerRedRanges = [];
+const traditionalOpeningRepeatRanges = [];
 const traditionalAndNowRanges = [];
 const traditionalTroparHeadingRanges = [];
 const traditionalPrayerTitleRanges = [];
@@ -1473,6 +1474,13 @@ if (
       if (gloryLine && firstKathismaIntroEnd < 0) {
         firstKathismaIntroEnd = offset;
         traditionalPrayerRedRanges.push({start, end: offset + line.length});
+        const repeat = /\(?[Тт]р[\u0300-\u036f\u0483-\u0489]*и[\u0300-\u036f\u0483-\u0489]*ж[\u0300-\u036f\u0483-\u0489]*д[\u0300-\u036f\u0483-\u0489]*ы[\u0300-\u036f\u0483-\u0489]*\)?/gu;
+        for (const found of line.matchAll(repeat)) {
+          traditionalOpeningRepeatRanges.push({
+            start: offset + found.index,
+            end: offset + found.index + found[0].length,
+          });
+        }
       }
       // Строка непосредственно после первого славословия —
       // Трисвятое, независимо от ударений и древних написаний.
@@ -1595,7 +1603,7 @@ const psalterRepeatNoteRanges =
 const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges( text ) : [];
         const boundaries = new Set([ 0, text.length, ]);
         [...traditionalPrayerRedRanges, ...traditionalTroparHeadingRanges,
-          ...traditionalPrayerTitleRanges, ...traditionalFirstKathismaIntroRanges, ...traditionalPrayerMercyRanges, ...traditionalAndNowRanges].forEach(range => {
+          ...traditionalPrayerTitleRanges, ...traditionalFirstKathismaIntroRanges, ...traditionalPrayerMercyRanges, ...traditionalAndNowRanges, ...traditionalOpeningRepeatRanges].forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
@@ -1964,9 +1972,11 @@ if (isSearchHit) {
       midpoint < range.end
   );
 
-         if (isPsalterRepeatNote &&
-             !traditionalPrayerRedRanges.some(range =>
-               midpoint >= range.start && midpoint < range.end)) {
+         if (traditionalOpeningRepeatRanges.some(range =>
+               midpoint >= range.start && midpoint < range.end) ||
+             (isPsalterRepeatNote &&
+               !traditionalPrayerRedRanges.some(range =>
+                 midpoint >= range.start && midpoint < range.end))) {
             span.classList.add('psalter-repeat-note');
             // Оформляем помету напрямую: одинаково для русского,
             // церковнославянского и традиционного славословия.
@@ -1974,6 +1984,10 @@ if (isSearchHit) {
             span.style.setProperty('font-style', 'italic', 'important');
             span.style.setProperty('font-weight', '700', 'important');
             span.style.setProperty('white-space', 'nowrap');
+            if (traditionalOpeningRepeatRanges.some(range =>
+              midpoint >= range.start && midpoint < range.end)) {
+              span.classList.remove('psalter-traditional-prayer-red');
+            }
           }
 
           const isPsalterVerseNumber = isPsalterText && psalterVerseNumberRanges.some( range =>
