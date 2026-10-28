@@ -1120,6 +1120,18 @@ export default function KathismaScreen({route, navigation}) {
         // Заголовок отображается блочным элементом WebView: соседние
         // переводы строк давали дополнительный пустой абзац.
         .replace(/\n(Мл҃тва)\n/u, '\n$1')
+        // В 20-й кафизме после первой молитвы идут общие заключительные
+        // молитвы Псалтири. Они отображаются в отдельном разделе.
+        .replace(/[\s\S]*/u, complete => {
+          if (Number(kathisma.number) !== 20) return complete;
+          const heading = complete.indexOf('Мл҃тва');
+          if (heading < 0) return complete;
+          const bodyStart = heading + 'Мл҃тва'.length;
+          const body = complete.slice(bodyStart);
+          const amen = /[Аа][\u0300-\u036f\u0483-\u0489]*[Мм][\u0300-\u036f\u0483-\u0489]*[ИиІі][\u0300-\u036f\u0483-\u0489]*[Нн][\u0300-\u036f\u0483-\u0489]*[ЬьЪъ]?[\u0300-\u036f\u0483-\u0489]*[.!]?/u.exec(body);
+          if (!amen) return complete;
+          return complete.slice(0, bodyStart + amen.index + amen[0].length).trimEnd();
+        })
         .trimStart();
       const blocks = [];
 
