@@ -2028,6 +2028,13 @@ if (needsSeparatorBeforeHeading) {
   appendPsalterSeparator(fragment);
 }
 
+// Разделительная линия после помилования, как в русском режиме.
+if (traditionalPrayerTitleRanges.some(range => range.start === start) &&
+    traditionalPrayerMercyRanges.some(range =>
+      range.end <= start && text.slice(range.end, start).trim() === '')) {
+  appendPsalterSeparator(fragment);
+}
+
 if (isPrayerHeading) {
   span.classList.add(
     'psalter-prayer-title'
