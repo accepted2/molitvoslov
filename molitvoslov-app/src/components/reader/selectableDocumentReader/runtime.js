@@ -1413,6 +1413,7 @@ const collectPsalterRubricRanges = value => {
 const traditionalPrayerRedRanges = [];
 const traditionalTroparHeadingRanges = [];
 const traditionalPrayerTitleRanges = [];
+const traditionalPrayerMercyRanges = [];
 const traditionalFirstKathismaIntroRanges = [];
 const isFirstKathismaTraditionalPrayer =
   isPsalterPrayer &&
@@ -1476,6 +1477,9 @@ if (
     }
     if (/^тропар(?:ь|и)\s*,?\s*глас/u.test(simple)) {
       traditionalTroparHeadingRanges.push({start, end: offset + line.length});
+    }
+    if (/помил[уѹ]/u.test(simple) && /^(?:господи|гди|гд[ие])/u.test(simple)) {
+      traditionalPrayerMercyRanges.push({start, end: offset + line.length});
     }
     if (/^млтва$/u.test(simple)) {
       traditionalPrayerTitleRanges.push({start, end: offset + line.length});
@@ -1578,7 +1582,7 @@ const psalterRepeatNoteRanges =
 const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges( text ) : [];
         const boundaries = new Set([ 0, text.length, ]);
         [...traditionalPrayerRedRanges, ...traditionalTroparHeadingRanges,
-          ...traditionalPrayerTitleRanges, ...traditionalFirstKathismaIntroRanges].forEach(range => {
+          ...traditionalPrayerTitleRanges, ...traditionalFirstKathismaIntroRanges, ...traditionalPrayerMercyRanges].forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
@@ -1675,6 +1679,10 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           const isActive = !!active && midpoint >= active.start && midpoint < active.end;
          
         const span = document.createElement('span');
+        if (traditionalPrayerMercyRanges.some(range =>
+          midpoint >= range.start && midpoint < range.end)) {
+          span.classList.add('psalter-traditional-mercy');
+        }
         if (traditionalFirstKathismaIntroRanges.some(range =>
           midpoint >= range.start && midpoint < range.end)) {
           span.classList.add('psalter-first-kathisma-intro');
