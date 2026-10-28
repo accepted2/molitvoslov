@@ -1413,6 +1413,14 @@ const collectPsalterRubricRanges = value => {
 const traditionalPrayerRedRanges = [];
 const traditionalTroparHeadingRanges = [];
 const traditionalPrayerTitleRanges = [];
+const traditionalFirstKathismaIntroRanges = [];
+const isFirstKathismaTraditionalPrayer =
+  isPsalterPrayer &&
+  itemConfig?.metadata?.language === 'traditional' &&
+  itemConfig?.metadata?.section === 'prayers_after' &&
+  Number(itemConfig?.metadata?.kathisma_number) === 1;
+let firstKathismaIntroStart = -1;
+let firstKathismaIntroEnd = -1;
 if (
   isPsalterPrayer &&
   itemConfig?.metadata?.language === 'traditional' &&
@@ -1439,6 +1447,23 @@ if (
       });
     }
 
+    if (isFirstKathismaTraditionalPrayer) {
+      if (/^слава\b/u.test(simple) && firstKathismaIntroEnd < 0) {
+        firstKathismaIntroEnd = offset;
+      } else if (firstKathismaIntroEnd < 0 && firstKathismaIntroStart < 0 &&
+                 /^в[ѣе]домо\b/u.test(simple)) {
+        firstKathismaIntroStart = start;
+      }
+      if (/^слава\b/u.test(simple) && /аллилу/u.test(simple)) {
+        traditionalPrayerRedRanges.push({start, end: offset + line.length});
+      }
+      if (/^таже\s+трисвят/u.test(simple)) {
+        traditionalPrayerRedRanges.push({start, end: offset + line.length});
+      }
+      if (/^и\s+тропари?\s+си[яѧ]/u.test(simple) && /глас/u.test(simple)) {
+        traditionalTroparHeadingRanges.push({start, end: offset + line.length});
+      }
+    }
     if (/^тропар(?:ь|и)\s*,?\s*глас/u.test(simple)) {
       traditionalTroparHeadingRanges.push({start, end: offset + line.length});
     }
@@ -1447,6 +1472,12 @@ if (
     }
     offset += line.length + 1;
   });
+  if (firstKathismaIntroStart >= 0 && firstKathismaIntroEnd > firstKathismaIntroStart) {
+    traditionalFirstKathismaIntroRanges.push({
+      start: firstKathismaIntroStart,
+      end: firstKathismaIntroEnd,
+    });
+  }
 }
 
 const rawPsalterPrayerAccentRanges =
@@ -1537,7 +1568,7 @@ const psalterRepeatNoteRanges =
 const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges( text ) : [];
         const boundaries = new Set([ 0, text.length, ]);
         [...traditionalPrayerRedRanges, ...traditionalTroparHeadingRanges,
-          ...traditionalPrayerTitleRanges].forEach(range => {
+          ...traditionalPrayerTitleRanges, ...traditionalFirstKathismaIntroRanges].forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
@@ -1634,6 +1665,10 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           const isActive = !!active && midpoint >= active.start && midpoint < active.end;
          
         const span = document.createElement('span');
+        if (traditionalFirstKathismaIntroRanges.some(range =>
+          midpoint >= range.start && midpoint < range.end)) {
+          span.classList.add('psalter-first-kathisma-intro');
+        }
         if (traditionalTroparHeadingRanges.some(range =>
           midpoint >= range.start && midpoint < range.end)) {
           span.classList.add('psalter-prayer-tropar-heading');
@@ -1894,7 +1929,9 @@ if (isSearchHit) {
       midpoint < range.end
   );
 
-         if (isPsalterRepeatNote) {
+         if (isPsalterRepeatNote &&
+             !traditionalPrayerRedRanges.some(range =>
+               midpoint >= range.start && midpoint < range.end)) {
             span.classList.add('psalter-repeat-note');
             // Оформляем помету напрямую: одинаково для русского,
             // церковнославянского и традиционного славословия.
