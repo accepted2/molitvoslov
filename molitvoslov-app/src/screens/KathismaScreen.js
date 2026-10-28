@@ -1085,23 +1085,25 @@ export default function KathismaScreen({route, navigation}) {
           if (!glas) return match;
           return prefix + (/тропари/u.test(plain) ? 'Тропа́ри' : 'Тропа́рь') + ', гла́съ ' + glas + ':';
         })
-        // Только традиционный ЦС: отдельная строка помилования и заголовок.
-        .replace(/(^|\n)([^\r\n]*)(?=\r?\n|$)/gu, (match, prefix, line) => {
-          const clean = value => String(value).normalize('NFD')
+        // Только традиционная версия: выделяем заголовок без изменения текста молитвы.
+        .split(/\r?\n/u)
+        .flatMap(line => {
+          const normalized = value => String(value).normalize('NFD')
             .replace(/[\u0300-\u036f\u0483-\u0489]/gu, '')
+            .replace(/[ꙋѹꙊѸ]/gu, 'у')
             .replace(/[ѣѢ]/gu, 'е')
             .toLowerCase();
-          const words = [...line.matchAll(/[^\s]+/gu)];
-          if (words.length < 2 || !/помил[уѹ]/u.test(clean(line))) return match;
-          const last = words[words.length - 1];
-          if (!/^(?:млтва|молитва):?$/u.test(clean(last[0]))) return match;
-          const before = line.slice(0, last.index).trimEnd()
-            .replace(/(?:^|[ \t]+)[ИиЕе][ \t]*$/u, '').trimEnd();
-          if (!/^(?:гд[ие]|господи)/u.test(clean(before.trimStart()))) return match;
-          return prefix + before + '\nМл҃тва';
+          if (!/помил/u.test(normalized(line))) return [line];
+          const match = line.match(/(?:^|[ \t]+)(?:[ЕеИи][\u0300-\u036f\u0483-\u0489]*[ \t]+)?([Мм][^\s:]*)[ \t]*:[ \t]*$/u);
+          if (!match || !/^(?:млтва|молитва)$/u.test(normalized(match[1]))) return [line];
+          return [line.slice(0, match.index).trimEnd(), 'Мл҃тва'];
         })
-        .replace(/(^|\n)[ \t]*[Мм][лЛ][\u0300-\u036f\u0483-\u0489]*тва[ \t]*:[ \t]*(?=\r?\n|$)/gu,
-          '$1Мл҃тва')
+        .map(line => {
+          const normalized = line.normalize('NFD')
+            .replace(/[\u0300-\u036f\u0483-\u0489]/gu, '').toLowerCase();
+          return /^(?:млтва|молитва)\s*:?\s*$/u.test(normalized) ? 'Мл҃тва' : line;
+        })
+        .join('\n')
         .trimStart();
       const blocks = [];
 
