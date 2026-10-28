@@ -1104,6 +1104,19 @@ export default function KathismaScreen({route, navigation}) {
           return /^(?:млтва|молитва)\s*:?\s*$/u.test(normalized) ? 'Мл҃тва' : line;
         })
         .join('\n')
+        // В первом славословии помета повторения должна быть "(Три́жды)".
+        // Меняем только эту помету, не остальные строки и кафизмы.
+        .replace(/(^|\n)([^\r\n]*)(?=\n|$)/gu, (whole, prefix, line) => {
+          if (Number(kathisma.number) !== 1) return whole;
+          const plain = line.normalize('NFD')
+            .replace(/[\u0300-\u036f\u0483-\u0489]/gu, '')
+            .toLowerCase();
+          if (!plain.startsWith('слава') || !plain.includes('аллилу')) return whole;
+          return prefix + line.replace(
+            /[ \t]*\(?[Тт]р[\u0300-\u036f\u0483-\u0489]*и[\u0300-\u036f\u0483-\u0489]*ж[\u0300-\u036f\u0483-\u0489]*д[\u0300-\u036f\u0483-\u0489]*ы[\u0300-\u036f\u0483-\u0489]*\)?\.?[ \t]*$/u,
+            ' (Три́жды)'
+          );
+        })
         // Заголовок отображается блочным элементом WebView: соседние
         // переводы строк давали дополнительный пустой абзац.
         .replace(/\n(Мл҃тва)\n/u, '\n$1')
