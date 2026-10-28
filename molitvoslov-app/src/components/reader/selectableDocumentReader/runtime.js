@@ -1432,7 +1432,7 @@ if (
       traditionalPrayerRedRanges.push({start, end: start + colon + 1});
     }
 
-    if (/^тропар[ьи]?\s*,?\s*глас/u.test(simple)) {
+    if (/^тропар(?:ь|и)\s*,?\s*глас/u.test(simple)) {
       traditionalTroparHeadingRanges.push({start, end: offset + line.length});
     }
     if (/^млтва$/u.test(simple)) {
