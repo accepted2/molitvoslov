@@ -1987,6 +1987,8 @@ if (isSearchHit) {
             if (traditionalOpeningRepeatRanges.some(range =>
               midpoint >= range.start && midpoint < range.end)) {
               span.classList.remove('psalter-traditional-prayer-red');
+              span.style.setProperty('font-style', 'normal', 'important');
+              span.style.setProperty('font-weight', '400', 'important');
             }
           }
 
