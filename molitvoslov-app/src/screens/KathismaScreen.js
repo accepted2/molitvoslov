@@ -1104,6 +1104,9 @@ export default function KathismaScreen({route, navigation}) {
           return /^(?:млтва|молитва)\s*:?\s*$/u.test(normalized) ? 'Мл҃тва' : line;
         })
         .join('\n')
+        // Заголовок отображается блочным элементом WebView: соседние
+        // переводы строк давали дополнительный пустой абзац.
+        .replace(/\n(Мл҃тва)\n/u, '$1')
         .trimStart();
       const blocks = [];
 
