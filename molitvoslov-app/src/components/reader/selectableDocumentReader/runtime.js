@@ -1416,6 +1416,13 @@ const traditionalAndNowRanges = [];
 const traditionalTroparHeadingRanges = [];
 const traditionalPrayerTitleRanges = [];
 const traditionalPrayerMercyRanges = [];
+const isLastKathismaTraditionalPrayer =
+  isPsalterPrayer &&
+  itemConfig?.metadata?.language === 'traditional' &&
+  itemConfig?.metadata?.section === 'prayers_after' &&
+  Number(itemConfig?.metadata?.kathisma_number) === 20;
+const lastKathismaPrayerBodyStart = isLastKathismaTraditionalPrayer
+  ? String(text).indexOf('Мл҃тва') + 'Мл҃тва'.length : -1;
 const traditionalFirstKathismaIntroRanges = [];
 const isFirstKathismaTraditionalPrayer =
   isPsalterPrayer &&
@@ -1700,6 +1707,11 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           const isActive = !!active && midpoint >= active.start && midpoint < active.end;
          
         const span = document.createElement('span');
+        if (isLastKathismaTraditionalPrayer &&
+            lastKathismaPrayerBodyStart >= 'Мл҃тва'.length &&
+            midpoint > lastKathismaPrayerBodyStart) {
+          span.classList.add('psalter-last-kathisma-prayer-body');
+        }
         if (traditionalAndNowRanges.some(range =>
           midpoint >= range.start && midpoint < range.end)) {
           span.classList.add('psalter-traditional-and-now');
@@ -2074,6 +2086,14 @@ if (isPrayerHeading) {
   );
 }
 
+if (isLastKathismaTraditionalPrayer &&
+    lastKathismaPrayerBodyStart >= 'Мл҃тва'.length &&
+    midpoint > lastKathismaPrayerBodyStart) {
+  span.classList.remove('psalter-traditional-prayer-red', 'psalter-prayer-accent');
+  span.style.setProperty('color', '#2B190F', 'important');
+  span.style.setProperty('font-weight', '400', 'important');
+  span.style.setProperty('font-style', 'normal', 'important');
+}
 fragment.appendChild(span);
 
 /* Блочная служебная пометка сама переносит следующий текст.
