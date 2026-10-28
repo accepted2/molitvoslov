@@ -1465,8 +1465,6 @@ if (
       }
       if (gloryLine && firstKathismaIntroEnd < 0) {
         firstKathismaIntroEnd = offset;
-      }
-      if (gloryLine && firstKathismaIntroEnd >= 0) {
         traditionalPrayerRedRanges.push({start, end: offset + line.length});
       }
       if (trisagionLine && firstKathismaIntroEnd >= 0) {
