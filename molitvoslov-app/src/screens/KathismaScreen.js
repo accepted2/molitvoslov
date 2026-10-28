@@ -1078,16 +1078,25 @@ export default function KathismaScreen({route, navigation}) {
           'Трист҃о́е, по Ѻ҆́ч҃е на́шъ:\n'
         )
         // Надпись над тропарями: глас оставляем из исходного текста.
-        .replace(/^Таже[^\r\n]*тропар[^\r\n]*$/gimu, (line) => {
+        .replace(/(^|\n)(Таже[^\r\n]*)(?=\r?\n|$)/u, (match, prefix, line) => {
+          const plain = line.normalize('NFD')
+            .replace(/[\u0300-\u036f\u0483-\u0489]/gu, '').toLowerCase();
+          if (!plain.includes('тропар') || !plain.includes('глас')) return match;
           const glas = line.match(/([^\s,]+)\s*:\s*$/u)?.[1];
-          return glas ? `Тропа́рь, гла́съ ${glas}:` : line.replace(/^Таже\s*/u, '');
+          return prefix + (glas ? `Тропа́рь, гла́съ ${glas}:` : line);
         })
         // "Господи, помилуй, ..." остаётся в строке; союз перед молитвой убираем.
         // Отделяем заголовок молитвы, не изменяя следующего молитвенного текста.
-        .replace(
-          /(^|\n)([^\r\n]*помилуй[^\r\n]*?)[ \t]+(?:и[ \t]+)?молитва[ \t]*:/gimu,
-          (_match, prefix, call) => `${prefix}${call.trimEnd()}\nМл҃тва\n`
-        )
+        .replace(/(^|\n)([^\r\n]*)(?=\r?\n|$)/gu, (match, prefix, line) => {
+          const plain = line.normalize('NFD')
+            .replace(/[\u0300-\u036f\u0483-\u0489]/gu, '').toLowerCase();
+          if (!plain.includes('помилуй') ||
+              !/(?:молитва|млтва)\s*:$/.test(plain)) return match;
+          const heading = /[ \t]+(?:(?:и[\u0300-\u036f\u0483-\u0489]*[ \t]+)?)м(?:о)?л[\u0300-\u036f\u0483-\u0489]*[иі]?т[\u0300-\u036f\u0483-\u0489]*ва[ \t]*:[ \t]*$/iu;
+          const found = line.match(heading);
+          if (!found) return match;
+          return `${prefix}${line.slice(0, found.index).trimEnd()}\nМл҃тва`;
+        })
         .trimStart();
       const blocks = [];
 
