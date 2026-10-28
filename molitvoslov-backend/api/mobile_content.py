@@ -90,10 +90,11 @@ def build_mobile_content_payload():
         "by_number": {str(item["number"]): item for item in kathisma_list},
     }
 
-    visible_akathists = list(Akathist.objects.filter(is_visible=True).order_by("id"))
-    curated_akathist_ids = [item.id for item in visible_akathists if is_curated_akathist(item)]
-
-    akathists_qs = Akathist.objects.filter(id__in=curated_akathist_ids).order_by("id")
+    # visible_akathists = list(Akathist.objects.filter(is_visible=True).order_by("id"))
+    # curated_akathist_ids = [item.id for item in visible_akathists if is_curated_akathist(item)]
+    #
+    # akathists_qs = Akathist.objects.filter(id__in=curated_akathist_ids).order_by("id")
+    akathists_qs = Akathist.objects.filter(is_visible=True).order_by("id")
     akathist_list = AkathistSummarySerializer(akathists_qs, many=True).data
     akathist_details = AkathistSerializer(
         akathists_qs.select_related("troparion", "kontakion_before").prefetch_related(

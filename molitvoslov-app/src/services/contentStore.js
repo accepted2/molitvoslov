@@ -46,6 +46,15 @@ const activateContent = (payload, version, {notify = true} = {}) => {
 };
 
 export const hydratePublicContent = async () => {
+  if (__DEV__) {
+    hydrated = true;
+    return {
+      success: true,
+      source: 'bundle',
+      version: bundledContent.content_version || null,
+    };
+  }
+
   if (hydrated) {
     return {
       success: true,

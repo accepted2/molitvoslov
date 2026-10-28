@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import {StatusBar} from 'expo-status-bar';
-import {SQLiteProvider} from 'expo-sqlite';
+import {SQLiteProvider, useSQLiteContext} from 'expo-sqlite';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
@@ -145,6 +145,7 @@ const SearchIcon = () => (
 );
 
 const SearchContent = ({navigation}) => {
+  const searchDb = useSQLiteContext();
   const [seedReady, setSeedReady] = useState(false);
   const [paused, setPaused] = useState(false);
   const { language } = useLanguage();
@@ -186,7 +187,7 @@ const SearchContent = ({navigation}) => {
   useEffect(() => {
     let active = true;
     setSeedReady(false);
-    isPersistentSearchReady(language)
+    isPersistentSearchReady(language, searchDb)
       .then((ready) => {
         if (active) setSeedReady(ready);
       })
@@ -194,7 +195,7 @@ const SearchContent = ({navigation}) => {
     return () => {
       active = false;
     };
-  }, [language, publicGeneration, bibleGeneration]);
+  }, [language, publicGeneration, bibleGeneration, searchDb]);
 
   useEffect(() => {
     setIndexLoading(!seedReady);
@@ -232,7 +233,7 @@ const SearchContent = ({navigation}) => {
     }
 
     setSearchLoading(true);
-    searchPersistent(language, searchQuery, activeGroup, 120, 0)
+    searchPersistent(language, searchQuery, activeGroup, 120, 0, searchDb)
       .then((nextResult) => {
         if (!cancelled && nextResult) {
           if (resultCache.current.size >= 30) {
@@ -258,7 +259,7 @@ const SearchContent = ({navigation}) => {
     return () => {
       cancelled = true;
     };
-  }, [searchQuery, activeGroup, language, seedReady, paused]);
+  }, [searchQuery, activeGroup, language, seedReady, paused, searchDb]);
 
   useEffect(() => {
     let active = true;
@@ -278,7 +279,7 @@ const SearchContent = ({navigation}) => {
     try {
       const nextOffset = result.items.length;
       const next = await searchPersistent(
-        language, searchQuery, activeGroup, 120, nextOffset
+        language, searchQuery, activeGroup, 120, nextOffset, searchDb
       );
       if (next) {
         setResult((prev) => ({
@@ -781,7 +782,7 @@ const styles = StyleSheet.create({
 
 export const SearchScreen = (props) => (
   <SQLiteProvider
-    databaseName="molitvoslov_search_seed_v10.db"
+    databaseName="molitvoslov_search_v10_b094e3e635a9.db"
     assetSource={{assetId: require('../data/search_seed.db')}}
   >
     <SearchContent {...props} />

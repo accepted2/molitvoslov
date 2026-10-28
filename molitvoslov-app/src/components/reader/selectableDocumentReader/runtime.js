@@ -166,6 +166,16 @@ export const READER_RUNTIME = String.raw`
       container.appendChild( wrapper );
     };
     const renderDocument = () => {
+          reader.classList.toggle(
+        'psalter-traditional-headings',
+        DATA.document.viewSwitcher?.activeKey === 'traditional' &&
+          Array.isArray(DATA.document.sections) &&
+          DATA.document.sections.some((section) =>
+            section.rows?.some((row) =>
+              row.blocks?.some((block) => block.className?.includes('psalter'))
+            )
+          )
+      );
       if ( DATA.document.title || DATA.document.action ) {
         const documentHeader = el( 'div', 'document-header' );
         if ( DATA.document.title ) {
@@ -759,10 +769,10 @@ const collectPsalterVerseNumberRanges = value => {
 const collectPsalterRepeatNoteRanges = value => {
   const source = String(value || '');
   const ranges = [];
-  const pattern = /\((?:трижды|3|поклон)\.?\)/giu;
-  let match = null;
+  const pattern = /\(\s*(?:три[\u0300-\u036f\u0483-\u0489]*жды|3|поклон)\.?\s*\)/giu;
+  let match;
 
-  while ((match = pattern.exec(source))) {
+  while ((match = pattern.exec(source)) !== null) {
     ranges.push({
       start: match.index,
       end: match.index + match[0].length,
@@ -1400,6 +1410,23 @@ const collectPsalterRubricRanges = value => {
   String(itemConfig?.className || '')
     .includes('psalter-prayer');
 
+const traditionalPrayerRedRanges = [];
+if (
+  isPsalterPrayer &&
+  itemConfig?.metadata?.language === 'traditional' &&
+  itemConfig?.metadata?.section === 'prayers_after'
+) {
+  const lines = text.split('\n');
+  let offset = 0;
+  for (const line of lines.slice(0, 2)) {
+    const label = line.trimStart();
+    if (label.startsWith('Трист҃о́е') || label.startsWith('Таже')) {
+      traditionalPrayerRedRanges.push({start: offset, end: offset + line.length});
+    }
+    offset += line.length + 1;
+  }
+}
+
 const rawPsalterPrayerAccentRanges =
   isPsalterPrayer
     ? collectPsalterPrayerAccentRanges(text)
@@ -1438,6 +1465,31 @@ const psalterPrayerInitialRanges =
         const isPsalterGlory =
           String(itemConfig?.className || '')
             .includes('psalter-glory');
+            const isTraditionalGlory =
+  isPsalterGlory &&
+  itemConfig?.metadata?.language === 'traditional';
+
+const gloryRedRanges = [];
+
+if (isTraditionalGlory) {
+  const phrases = [
+    'Сла́ва Ѻ҆ц҃ꙋ̀ и҆ Сн҃ꙋ и҆ Ст҃о́мꙋ Дх҃ꙋ.',
+    'И҆ ны́нѣ и҆ при́снѡ и҆ во вѣ́ки вѣкѡ́въ. А҆ми́нь.',
+  ];
+
+  phrases.forEach(phrase => {
+    let position = 0;
+
+    while ((position = text.indexOf(phrase, position)) !== -1) {
+      gloryRedRanges.push({
+        start: position,
+        end: position + phrase.length,
+      });
+
+      position += phrase.length;
+    }
+  });
+}
 
 const rawPsalterRepeatNoteRanges =
   isPsalterGlory || isPsalterPrayer
@@ -1462,6 +1514,15 @@ const psalterRepeatNoteRanges =
         const isPsalterText = String( itemConfig ?.className || '' ) .split(' ') .includes('psalter');
 const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges( text ) : [];
         const boundaries = new Set([ 0, text.length, ]);
+        traditionalPrayerRedRanges.forEach(range => {
+          boundaries.add(range.start);
+          boundaries.add(range.end);
+        });
+
+        gloryRedRanges.forEach(range => {
+  boundaries.add(range.start);
+  boundaries.add(range.end);
+});
         akathistJoyBreaks.forEach( offset => {
             boundaries.add( offset );
           }
@@ -1548,7 +1609,22 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           const midpoint = start + ( end - start ) / 2;
           const isSaved = saved.some( range => midpoint >= range.start && midpoint < range.end );
           const isActive = !!active && midpoint >= active.start && midpoint < active.end;
-          const span = document.createElement( 'span' );
+         
+        const span = document.createElement('span');
+
+        if (traditionalPrayerRedRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
+          span.classList.add('psalter-traditional-prayer-red');
+          span.style.setProperty('color', '#B22222', 'important');
+        }
+
+          if (isTraditionalGlory) {
+            const isRedLine = gloryRedRanges.some(
+              range => midpoint >= range.start && midpoint < range.end
+            );
+            if (isRedLine) {
+              span.classList.add('psalter-glory-red');
+            }
+          }
 
           const isMemorialMarkerSegment =
             !!memorialMarkerRange &&
@@ -1776,17 +1852,21 @@ if (isSearchHit) {
             );
           }
 
-          const isPsalterRepeatNote =
-            psalterRepeatNoteRanges.some(
-              range =>
-                midpoint >= range.start &&
-                midpoint < range.end
-            );
+        const isPsalterRepeatNote =
+  psalterRepeatNoteRanges.some(
+    range =>
+      midpoint >= range.start &&
+      midpoint < range.end
+  );
 
-          if (isPsalterRepeatNote) {
-            span.classList.add(
-              'psalter-repeat-note'
-            );
+         if (isPsalterRepeatNote) {
+            span.classList.add('psalter-repeat-note');
+            // Оформляем помету напрямую: одинаково для русского,
+            // церковнославянского и традиционного славословия.
+            span.style.setProperty('color', '#765238', 'important');
+            span.style.setProperty('font-style', 'italic', 'important');
+            span.style.setProperty('font-weight', '700', 'important');
+            span.style.setProperty('white-space', 'nowrap');
           }
 
           const isPsalterVerseNumber = isPsalterText && psalterVerseNumberRanges.some( range =>
@@ -1800,8 +1880,14 @@ const isCanonChurch = String( itemConfig ?.className || '' ).includes( 'canon-ch
 const isCanonPrayer = itemConfig ?.metadata ?.section_type === 'prayer' || String( itemConfig ?.className ||
     '' ).includes( 'canon-prayer' );
 const highlightLiturgicalPhrases =
-  isPsalterPrayer ||
-  (!isRussian && !isCanonPrayer);
+  !(
+    isPsalterGlory &&
+    itemConfig?.metadata?.language === 'traditional'
+  ) &&
+  (
+    isPsalterPrayer ||
+    (!isRussian && !isCanonPrayer)
+  );
 
 appendStyledSegment(
   span,
@@ -1824,12 +1910,8 @@ const normalizedPsalterPrayerAccentText =
     .trim();
 
 const isPsalterMetaAccent =
-   /^Тропар(?:ь|и)(?:\\s|,)/iu.test(
-    normalizedPsalterPrayerAccentText
-  ) ||
-  /^Господи,\s*помилуй\s*\((?:3|40)\)\.?$/iu.test(
-    normalizedPsalterPrayerAccentText
-  );
+  /^Тропар(?:ь|и)(?:\\s|,)/iu.test(normalizedPsalterPrayerAccentText) ||
+  /^Господи,\\s*помилуй\\s*\\((?:3|40)\\)\\.?$/iu.test(normalizedPsalterPrayerAccentText);
 
 if (isPsalterMetaAccent) {
   span.classList.add(
@@ -1838,15 +1920,9 @@ if (isPsalterMetaAccent) {
 }
 
 const isPrayerHeading =
-  /^Молитва(?:\s|$)/iu.test(
-    normalizedPsalterPrayerAccentText
-  ) ||
-  /^Свят(?:ейшей|ей|ой)\s+Живоначальн(?:ей|ой)\s+Троице/iu.test(
-    normalizedPsalterPrayerAccentText
-  ) ||
-  /^Таже\s+молитва/iu.test(
-    normalizedPsalterPrayerAccentText
-  );
+  /^Молитва(?:\\s|$)/iu.test(normalizedPsalterPrayerAccentText) ||
+  /^Свят(?:ейшей|ей|ой)\\s+Живоначальн(?:ей|ой)\\s+Троице/iu.test(normalizedPsalterPrayerAccentText) ||
+  /^Таже\\s+молитва/iu.test(normalizedPsalterPrayerAccentText);
 
 const needsSeparatorBeforeHeading =
   isPsalterPrayerAccent &&

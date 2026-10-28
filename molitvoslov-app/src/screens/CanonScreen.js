@@ -332,12 +332,6 @@ export const CanonScreen = ({route, navigation}) => {
 
     const preferred = focusTarget?.preferredLanguage;
 
-    console.error(
-      '[akathist] preferred =', preferred,
-      '| hasRussian =', hasRussianTranslation,
-      '| initial =', nextMode,
-      '| MODE_RUSSIAN =', MODE_RUSSIAN
-    );
 
     if (preferred === 'russian') {
       nextMode = hasRussianTranslation ? MODE_RUSSIAN : MODE_CHURCH;
@@ -350,7 +344,6 @@ export const CanonScreen = ({route, navigation}) => {
     }
 
     setViewMode(nextMode);
-    console.error('[akathist] final mode =', nextMode);
   }, [
     language,
     canon,
@@ -674,6 +667,33 @@ export const CanonScreen = ({route, navigation}) => {
       });
     });
 
+    // Full translations are added as a unit; do not silently fall back to church text.
+    const unavailableMode =
+      ((viewMode === MODE_RUSSIAN || viewMode === MODE_BOTH) && !hasRussianTranslation)
+        ? 'russian'
+        : viewMode === MODE_TRADITIONAL && !hasTraditionalTranslation
+          ? 'traditional'
+          : null;
+    if (unavailableMode) {
+      sections.length = 0;
+      sections.push({
+        progressAnchorId: 0,
+        trackProgress: false,
+        title: '',
+        rows: [{
+          layout: 'stack',
+          blocks: [{
+            id: nextBlockId++,
+            text: unavailableMode === 'traditional'
+              ? 'Те́кстъ въ традиціо́нномъ начерта́ніи отсꙋ́тствꙋетъ.'
+              : 'Перевод пока отсутствует.',
+            className: unavailableMode === 'traditional' ? 'akathist-church' : 'akathist-russian',
+            metadata: {language: unavailableMode},
+          }],
+        }],
+      });
+    }
+
     const wholeSaved = savedItemsRef.current.find(
       (item) =>
         item.anchor_type === 'canon' &&
@@ -701,8 +721,8 @@ export const CanonScreen = ({route, navigation}) => {
       viewSwitcher: {
         activeKey: viewMode,
         options: buildReaderLanguageOptions({
-          hasRussian: hasRussianTranslation,
-          hasTraditional: hasTraditionalTranslation,
+          hasRussian: true,
+          hasTraditional: true,
         }),
       },
 

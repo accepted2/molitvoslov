@@ -177,8 +177,8 @@ export default function ExpandablePrayerBlock({
     if (viewMode === READER_LANGUAGE_MODES.TRADITIONAL) {
       addBlock({
         id: 3,
-        value: normalizedTraditionalText || normalizedText || normalizedSecondaryText,
-        language: normalizedTraditionalText ? 'traditional' : normalizedText ? 'church' : 'russian',
+        value: normalizedTraditionalText || 'Те́кстъ въ традиціо́нномъ начерта́ніи отсꙋ́тствꙋетъ.',
+        language: 'traditional',
         className:
           !normalizedTraditionalText && !normalizedText && normalizedSecondaryText
             ? psalterClass
@@ -187,12 +187,12 @@ export default function ExpandablePrayerBlock({
             : psalterClass,
       });
     } else if (viewMode === READER_LANGUAGE_MODES.RUSSIAN) {
-      const value = normalizedSecondaryText || normalizedText || normalizedTraditionalText;
+      const value = normalizedSecondaryText || 'Перевод пока отсутствует.';
 
       addBlock({
         id: 2,
         value,
-        language: normalizedSecondaryText ? 'russian' : 'church',
+        language: 'russian',
         className: normalizedSecondaryText
           ? psalterClass
             ? `${psalterClass} secondary`
@@ -209,7 +209,7 @@ export default function ExpandablePrayerBlock({
 
       addBlock({
         id: 2,
-        value: normalizedSecondaryText,
+        value: normalizedSecondaryText || 'Перевод пока отсутствует.',
         language: 'russian',
         className: psalterClass ? `${psalterClass} secondary` : 'secondary',
       });
@@ -233,8 +233,8 @@ export default function ExpandablePrayerBlock({
       viewSwitcher: {
         activeKey: viewMode,
         options: buildReaderLanguageOptions({
-          hasRussian: !!normalizedSecondaryText,
-          hasTraditional: !!normalizedTraditionalText,
+          hasRussian: true,
+          hasTraditional: true,
         }),
       },
       progressAnchorType: saveProps.anchorType,

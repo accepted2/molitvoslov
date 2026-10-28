@@ -51,6 +51,13 @@ export const READER_STYLES = String.raw`
       font-weight: 400;
       font-variant-ligatures: common-ligatures;
     }
+    /* Заголовки Псалтири в традиционном церковнославянском режиме */
+.psalter-traditional-headings .rule-title,
+.psalter-traditional-headings .section-header .prayer-title {
+  font-family: 'Ponomar', Georgia, serif;
+  font-weight: 400;
+  font-variant-ligatures: common-ligatures;
+}
     .view-switcher {
       display: flex;
       gap: 4px;
@@ -466,7 +473,49 @@ export const READER_STYLES = String.raw`
   text-align: justify;
   text-align-last: auto;
 }
+/* Традиционное церковнославянское славословие */
+.reader-language-traditional .reader-text.psalter-glory {
+  font-family: 'Ponomar', serif;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.65;
+  color: #2B190F;
 
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-align: left;
+  text-align-last: left;
+
+  overflow-wrap: normal;
+  word-break: normal;
+  -webkit-hyphens: none;
+  hyphens: none;
+
+  font-variant-ligatures: common-ligatures;
+  font-synthesis: none;
+}
+
+/* Обычный текст славословия */
+.reader-language-traditional .reader-text.psalter-glory,
+.reader-language-traditional .reader-text.psalter-glory .liturgical-word {
+  color: #2B190F;
+  font-weight: 400;
+}
+
+/* Красным только специально отмеченные строки */
+.reader-language-traditional .reader-text.psalter-glory .psalter-glory-red,
+.reader-language-traditional .reader-text.psalter-glory .psalter-glory-red .liturgical-word {
+  color: #B22222;
+  font-weight: 400;
+}
+
+/* Подсказка поминовения */
+.reader-language-traditional .reader-text.psalter-glory .memorial-rubric-text {
+  color: var(--secondary);
+  font-family: 'Ponomar', serif;
+  font-weight: 400;
+  font-style: italic;
+}
 
 .reader-text .memorial-rubric-text {
   color: var(--secondary);
@@ -532,11 +581,11 @@ export const READER_STYLES = String.raw`
   text-align: center;
     text-align-last: center;
 }
-
-.reader-text .psalter-repeat-note {
-  color: var(--secondary);
-  font-weight: 600;
-  font-style: italic;
+.reader-text .psalter-repeat-note,
+.reader-language-traditional .reader-text.psalter-glory .psalter-repeat-note {
+  color: #765238 !important;
+  font-weight: 700 !important;
+  font-style: italic !important;
   white-space: nowrap;
 }
 
@@ -544,6 +593,16 @@ export const READER_STYLES = String.raw`
   color: var(--liturgical);
   font-style: italic;
   font-weight: 600;
+}
+.reader-language-traditional .reader-text.psalter-prayer .psalter-prayer-tropar-heading {
+  color: #765238;
+  font-weight: 700;
+  font-style: italic;
+}
+.reader-language-traditional .reader-text.psalter-prayer .psalter-traditional-prayer-red {
+  color: #B22222;
+  font-family: 'Ponomar', serif;
+  font-weight: 400;
 }
 
     .reader-text .akathist-initial {
