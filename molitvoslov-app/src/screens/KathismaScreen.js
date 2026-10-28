@@ -1106,7 +1106,7 @@ export default function KathismaScreen({route, navigation}) {
         .join('\n')
         // Заголовок отображается блочным элементом WebView: соседние
         // переводы строк давали дополнительный пустой абзац.
-        .replace(/\n(Мл҃тва)\n/u, '$1')
+        .replace(/\n(Мл҃тва)\n/u, '\n$1')
         .trimStart();
       const blocks = [];
 
