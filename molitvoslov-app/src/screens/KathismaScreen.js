@@ -1085,21 +1085,23 @@ export default function KathismaScreen({route, navigation}) {
           if (!glas) return match;
           return prefix + (/тропари/u.test(plain) ? 'Тропа́ри' : 'Тропа́рь') + ', гла́съ ' + glas + ':';
         })
-        // Гд҃и/Господи помилуй, N раз. остаётся отдельной строкой.
-        // Заголовок ищем по последнему слову, включая титло и ударения.
+        // Только традиционный ЦС: отдельная строка помилования и заголовок.
         .replace(/(^|\n)([^\r\n]*)(?=\r?\n|$)/gu, (match, prefix, line) => {
           const clean = value => String(value).normalize('NFD')
             .replace(/[\u0300-\u036f\u0483-\u0489]/gu, '')
-            .replace(/[:.,]/gu, '').toLowerCase();
-          if (!/помил[уѹ]/u.test(clean(line))) return match;
-          const tail = line.match(/([ \t]+)([^\s]+)[ \t]*$/u);
-          if (!tail || !/^(?:млтва|молитва)$/u.test(clean(tail[2]))) return match;
-          const rubric = line.slice(0, tail.index).trimEnd()
-            .replace(/[ \t]+[ЕеИи][ \t]*$/u, '').trimEnd();
-          return prefix + rubric + '\nМл҃тва';
+            .replace(/[ѣѢ]/gu, 'е')
+            .toLowerCase();
+          const words = [...line.matchAll(/[^\s]+/gu)];
+          if (words.length < 2 || !/помил[уѹ]/u.test(clean(line))) return match;
+          const last = words[words.length - 1];
+          if (!/^(?:млтва|молитва):?$/u.test(clean(last[0]))) return match;
+          const before = line.slice(0, last.index).trimEnd()
+            .replace(/(?:^|[ \t]+)[ИиЕе][ \t]*$/u, '').trimEnd();
+          if (!/^(?:гд[ие]|господи)/u.test(clean(before.trimStart()))) return match;
+          return prefix + before + '\nМл҃тва';
         })
-        // Когда заголовок уже стоит отдельно — удаляем только двоеточие.
-        .replace(/(^|\n)[ \t]*(?:Мл҃тва|Молитва|Млтва)[ \t]*:[ \t]*(?=\r?\n|$)/gu, '$1Мл҃тва')
+        .replace(/(^|\n)[ \t]*[Мм][лЛ][\u0300-\u036f\u0483-\u0489]*тва[ \t]*:[ \t]*(?=\r?\n|$)/gu,
+          '$1Мл҃тва')
         .trimStart();
       const blocks = [];
 
