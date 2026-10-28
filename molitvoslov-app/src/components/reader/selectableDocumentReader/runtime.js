@@ -1448,28 +1448,31 @@ if (
     }
 
     if (isFirstKathismaTraditionalPrayer) {
-      // JavaScript \b не распознаёт кириллицу как word-символ.
-      // Сопоставляем церковнославянские формы после снятия надстрочных знаков.
-      const rubric = simple
-        .replace(/[ѣѢ]/gu, 'е')
-        .replace(/[іІ]/gu, 'и')
+      // Первая кафизма: выделяем три последовательные служебные строки.
+      // Не зависим от дореформенных букв и от написания "Аллилуиа".
+      const rubric = simple.replace(/[ѣѢ]/gu, 'е')
+        .replace(/[іІїЇ]/gu, 'и')
         .replace(/[ѧѦ]/gu, 'я')
         .replace(/[ѡѠѻѺ]/gu, 'о')
-        .replace(/\u00a0/gu, ' ')
-        .trim();
-      if (rubric.startsWith('слава') && firstKathismaIntroEnd < 0) {
-        firstKathismaIntroEnd = offset;
-      } else if (firstKathismaIntroEnd < 0 && firstKathismaIntroStart < 0 &&
-                 rubric.startsWith('ведомо')) {
+        .replace(/\u00a0/gu, ' ').trim();
+      const gloryLine = /^слав/u.test(rubric);
+      const trisagionLine = /^таже/u.test(rubric) && /трисв/u.test(rubric);
+      const troparLine = /тропар/u.test(rubric) && /глас/u.test(rubric) &&
+        (firstKathismaIntroEnd >= 0 || /^и\s*тропар/u.test(rubric));
+      if (firstKathismaIntroStart < 0 && firstKathismaIntroEnd < 0 && label &&
+          !gloryLine && !trisagionLine && !troparLine) {
         firstKathismaIntroStart = start;
       }
-      if (rubric.startsWith('слава') && rubric.includes('аллилу')) {
+      if (gloryLine && firstKathismaIntroEnd < 0) {
+        firstKathismaIntroEnd = offset;
+      }
+      if (gloryLine && firstKathismaIntroEnd >= 0) {
         traditionalPrayerRedRanges.push({start, end: offset + line.length});
       }
-      if (rubric.startsWith('таже') && rubric.includes('трисвят')) {
+      if (trisagionLine && firstKathismaIntroEnd >= 0) {
         traditionalPrayerRedRanges.push({start, end: offset + line.length});
       }
-      if (/^(?:и\s*)?тропари?\s+си[яе]/u.test(rubric) && rubric.includes('глас')) {
+      if (troparLine) {
         traditionalTroparHeadingRanges.push({start, end: offset + line.length});
       }
     }
