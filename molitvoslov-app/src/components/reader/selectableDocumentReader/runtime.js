@@ -1478,7 +1478,7 @@ if (
     if (/^тропар(?:ь|и)\s*,?\s*глас/u.test(simple)) {
       traditionalTroparHeadingRanges.push({start, end: offset + line.length});
     }
-    if (/помил[уѹ]/u.test(simple) && /^(?:господи|гди|гд[ие])/u.test(simple)) {
+    if (/помил/u.test(simple) && /^(?:господи|гд)/u.test(simple)) {
       traditionalPrayerMercyRanges.push({start, end: offset + line.length});
     }
     if (/^млтва$/u.test(simple)) {
