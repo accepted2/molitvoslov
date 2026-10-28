@@ -1411,6 +1411,7 @@ const collectPsalterRubricRanges = value => {
     .includes('psalter-prayer');
 
 const traditionalPrayerRedRanges = [];
+const traditionalAndNowRanges = [];
 const traditionalTroparHeadingRanges = [];
 const traditionalPrayerTitleRanges = [];
 const traditionalPrayerMercyRanges = [];
@@ -1446,6 +1447,7 @@ if (
         start: labelStart,
         end: labelStart + found[2].length,
       });
+      traditionalAndNowRanges.push({start: labelStart, end: labelStart + found[2].length});
     }
 
     if (isFirstKathismaTraditionalPrayer) {
@@ -1468,7 +1470,14 @@ if (
         firstKathismaIntroEnd = offset;
         traditionalPrayerRedRanges.push({start, end: offset + line.length});
       }
-      if (trisagionLine && firstKathismaIntroEnd >= 0) {
+      // Строка непосредственно после первого славословия —
+      // Трисвятое, независимо от ударений и древних написаний.
+      const immediatelyAfterFirstGlory =
+        firstKathismaIntroEnd >= 0 &&
+        offset > firstKathismaIntroEnd &&
+        !traditionalTroparHeadingRanges.length &&
+        !/тропар/u.test(rubric);
+      if (trisagionLine || (immediatelyAfterFirstGlory && /^таже/u.test(rubric))) {
         traditionalPrayerRedRanges.push({start, end: offset + line.length});
       }
       if (troparLine) {
@@ -1582,7 +1591,7 @@ const psalterRepeatNoteRanges =
 const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges( text ) : [];
         const boundaries = new Set([ 0, text.length, ]);
         [...traditionalPrayerRedRanges, ...traditionalTroparHeadingRanges,
-          ...traditionalPrayerTitleRanges, ...traditionalFirstKathismaIntroRanges, ...traditionalPrayerMercyRanges].forEach(range => {
+          ...traditionalPrayerTitleRanges, ...traditionalFirstKathismaIntroRanges, ...traditionalPrayerMercyRanges, ...traditionalAndNowRanges].forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
@@ -1679,6 +1688,10 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           const isActive = !!active && midpoint >= active.start && midpoint < active.end;
          
         const span = document.createElement('span');
+        if (traditionalAndNowRanges.some(range =>
+          midpoint >= range.start && midpoint < range.end)) {
+          span.classList.add('psalter-traditional-and-now');
+        }
         if (traditionalPrayerMercyRanges.some(range =>
           midpoint >= range.start && midpoint < range.end)) {
           span.classList.add('psalter-traditional-mercy');
