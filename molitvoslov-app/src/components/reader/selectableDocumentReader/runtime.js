@@ -1411,20 +1411,35 @@ const collectPsalterRubricRanges = value => {
     .includes('psalter-prayer');
 
 const traditionalPrayerRedRanges = [];
+const traditionalTroparHeadingRanges = [];
+const traditionalPrayerTitleRanges = [];
 if (
   isPsalterPrayer &&
   itemConfig?.metadata?.language === 'traditional' &&
   itemConfig?.metadata?.section === 'prayers_after'
 ) {
-  const lines = text.split('\n');
   let offset = 0;
-  for (const line of lines.slice(0, 2)) {
+  text.split('\n').forEach(line => {
     const label = line.trimStart();
-    if (label.startsWith('Трист҃о́е') || label.startsWith('Таже')) {
-      traditionalPrayerRedRanges.push({start: offset, end: offset + line.length});
+    const start = offset + line.length - label.length;
+    const simple = label.normalize('NFD')
+      .replace(/[\u0300-\u036f\u0483-\u0489]/gu, '').toLowerCase();
+
+    if (label.startsWith('Трист҃о́е')) {
+      traditionalPrayerRedRanges.push({start, end: offset + line.length});
+    } else if (/^и\s+нын[ѣе]\s*:/u.test(simple)) {
+      const colon = label.indexOf(':');
+      traditionalPrayerRedRanges.push({start, end: start + colon + 1});
+    }
+
+    if (/^тропар[ьи]?\s*,?\s*глас/u.test(simple)) {
+      traditionalTroparHeadingRanges.push({start, end: offset + line.length});
+    }
+    if (/^млтва$/u.test(simple)) {
+      traditionalPrayerTitleRanges.push({start, end: offset + line.length});
     }
     offset += line.length + 1;
-  }
+  });
 }
 
 const rawPsalterPrayerAccentRanges =
@@ -1514,7 +1529,8 @@ const psalterRepeatNoteRanges =
         const isPsalterText = String( itemConfig ?.className || '' ) .split(' ') .includes('psalter');
 const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges( text ) : [];
         const boundaries = new Set([ 0, text.length, ]);
-        traditionalPrayerRedRanges.forEach(range => {
+        [...traditionalPrayerRedRanges, ...traditionalTroparHeadingRanges,
+          ...traditionalPrayerTitleRanges].forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
@@ -1611,6 +1627,14 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           const isActive = !!active && midpoint >= active.start && midpoint < active.end;
          
         const span = document.createElement('span');
+        if (traditionalTroparHeadingRanges.some(range =>
+          midpoint >= range.start && midpoint < range.end)) {
+          span.classList.add('psalter-prayer-tropar-heading');
+        }
+        if (traditionalPrayerTitleRanges.some(range =>
+          midpoint >= range.start && midpoint < range.end)) {
+          span.classList.add('psalter-traditional-prayer-title');
+        }
 
         if (traditionalPrayerRedRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
           span.classList.add('psalter-traditional-prayer-red');
@@ -1624,6 +1648,10 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
             if (isRedLine) {
               span.classList.add('psalter-glory-red');
             }
+          }
+          if (traditionalPrayerRedRanges.some(range =>
+            midpoint >= range.start && midpoint < range.end)) {
+            span.classList.add('psalter-traditional-prayer-red');
           }
 
           const isMemorialMarkerSegment =
