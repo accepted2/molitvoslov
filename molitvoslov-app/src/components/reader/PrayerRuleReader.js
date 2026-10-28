@@ -6567,7 +6567,11 @@ export default function PrayerRuleReader({
         ? [readingSettings.customBackground, readingSettings.customBackground, readingSettings.customText]
         : (palettes[readingSettings.palette] || palettes.parchment);
       const size = Math.max(14, Math.min(28, Number(readingSettings.fontSize) || 17));
-      const css = `:root {--background:${bg}; --surface:${surface}; --text:${fg};} .reader-text {font-size:${size}px !important;line-height:${Math.round(size*1.7)}px !important;}`;
+      const traditionalSize = Math.min(30, size + 2);
+      const css = `:root {--background:${bg}; --surface:${surface}; --text:${fg}; --reading-font-size:${size}px; --traditional-reading-font-size:${traditionalSize}px;}
+        .reader-text {font-size:var(--reading-font-size) !important;line-height:1.7 !important;}
+        .traditional-mode .reader-text {font-size:var(--traditional-reading-font-size) !important;line-height:1.7 !important;}
+        .traditional-mode .reader-text .liturgical-word {font-size:inherit;}`;
       return markup.replace('</style>', `${css}</style>`);
     },
     [
