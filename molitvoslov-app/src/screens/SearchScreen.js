@@ -781,7 +781,7 @@ const styles = StyleSheet.create({
 
 export const SearchScreen = (props) => (
   <SQLiteProvider
-    databaseName="molitvoslov_search_seed_v11.db"
+    databaseName="molitvoslov_search_seed_v10.db"
     assetSource={{assetId: require('../data/search_seed.db')}}
   >
     <SearchContent {...props} />
