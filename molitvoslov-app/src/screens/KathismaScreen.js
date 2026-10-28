@@ -1090,7 +1090,7 @@ export default function KathismaScreen({route, navigation}) {
         .replace(/(^|\n)([^\r\n]*)(?=\r?\n|$)/gu, (match, prefix, line) => {
           const plain = line.normalize('NFD')
             .replace(/[\u0300-\u036f\u0483-\u0489]/gu, '').toLowerCase();
-          if (!plain.includes('помилуй') ||
+          if (!/помилу[ий]/u.test(plain) ||
               !/(?:молитва|млтва)\s*:$/.test(plain)) return match;
           const heading = /[ \t]+(?:(?:и[\u0300-\u036f\u0483-\u0489]*[ \t]+)?)м(?:о)?л[\u0300-\u036f\u0483-\u0489]*[иі]?т[\u0300-\u036f\u0483-\u0489]*ва[ \t]*:[ \t]*$/iu;
           const found = line.match(heading);
