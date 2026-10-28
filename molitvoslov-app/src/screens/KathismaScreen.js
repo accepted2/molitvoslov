@@ -1111,7 +1111,7 @@ export default function KathismaScreen({route, navigation}) {
           const plain = line.normalize('NFD')
             .replace(/[\u0300-\u036f\u0483-\u0489]/gu, '')
             .toLowerCase();
-          if (!plain.startsWith('слава') || !plain.includes('аллилу')) return whole;
+          if (!plain.startsWith('слава') || !plain.includes('трижды')) return whole;
           return prefix + line.replace(
             /[ \t]*\(?[Тт]р[\u0300-\u036f\u0483-\u0489]*и[\u0300-\u036f\u0483-\u0489]*ж[\u0300-\u036f\u0483-\u0489]*д[\u0300-\u036f\u0483-\u0489]*ы[\u0300-\u036f\u0483-\u0489]*\)?\.?[ \t]*$/u,
             ' (Три́жды)'
