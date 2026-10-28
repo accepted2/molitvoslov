@@ -606,6 +606,12 @@ export const READER_STYLES = String.raw`
   font-weight: 700 !important;
   font-style: normal !important;
 }
+.reader-language-traditional .reader-text.psalter-prayer .psalter-traditional-mercy,
+.reader-language-traditional .reader-text.psalter-prayer .psalter-traditional-mercy .liturgical-word {
+  color: #765238 !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+}
 .reader-language-traditional .reader-text.psalter-prayer .psalter-traditional-prayer-title {
   display: block;
   margin: 8px 0 5px;
