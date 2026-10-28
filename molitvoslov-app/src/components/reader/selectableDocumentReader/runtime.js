@@ -1448,19 +1448,28 @@ if (
     }
 
     if (isFirstKathismaTraditionalPrayer) {
-      if (/^слава\b/u.test(simple) && firstKathismaIntroEnd < 0) {
+      // JavaScript \b не распознаёт кириллицу как word-символ.
+      // Сопоставляем церковнославянские формы после снятия надстрочных знаков.
+      const rubric = simple
+        .replace(/[ѣѢ]/gu, 'е')
+        .replace(/[іІ]/gu, 'и')
+        .replace(/[ѧѦ]/gu, 'я')
+        .replace(/[ѡѠѻѺ]/gu, 'о')
+        .replace(/\u00a0/gu, ' ')
+        .trim();
+      if (rubric.startsWith('слава') && firstKathismaIntroEnd < 0) {
         firstKathismaIntroEnd = offset;
       } else if (firstKathismaIntroEnd < 0 && firstKathismaIntroStart < 0 &&
-                 /^в[ѣе]домо\b/u.test(simple)) {
+                 rubric.startsWith('ведомо')) {
         firstKathismaIntroStart = start;
       }
-      if (/^слава\b/u.test(simple) && /аллилу/u.test(simple)) {
+      if (rubric.startsWith('слава') && rubric.includes('аллилу')) {
         traditionalPrayerRedRanges.push({start, end: offset + line.length});
       }
-      if (/^таже\s+трисвят/u.test(simple)) {
+      if (rubric.startsWith('таже') && rubric.includes('трисвят')) {
         traditionalPrayerRedRanges.push({start, end: offset + line.length});
       }
-      if (/^и\s+тропари?\s+си[яѧ]/u.test(simple) && /глас/u.test(simple)) {
+      if (/^(?:и\s*)?тропари?\s+си[яе]/u.test(rubric) && rubric.includes('глас')) {
         traditionalTroparHeadingRanges.push({start, end: offset + line.length});
       }
     }
