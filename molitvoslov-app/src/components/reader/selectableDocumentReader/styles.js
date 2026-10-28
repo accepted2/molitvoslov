@@ -614,7 +614,8 @@ export const READER_STYLES = String.raw`
 }
 .reader-language-traditional .reader-text.psalter-prayer .psalter-traditional-prayer-title {
   display: block;
-  margin: 0;
+  margin: 0 0 -10px;
+  line-height: 1.15;
   color: var(--accent-dark) !important;
   font-family: 'Ponomar', serif;
   font-weight: 400;
