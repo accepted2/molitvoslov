@@ -22,7 +22,7 @@ const getSearchDb = async () => {
       searchDb = null;
     }
   }
-  searchDb = await SQLite.openDatabaseAsync('molitvoslov_search_seed_v11.db', {
+  searchDb = await SQLite.openDatabaseAsync('molitvoslov_search_seed_v10.db', {
     useNewConnection: true,
   });
   return searchDb;
