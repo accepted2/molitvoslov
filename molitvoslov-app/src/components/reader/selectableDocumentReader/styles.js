@@ -597,14 +597,14 @@ export const READER_STYLES = String.raw`
 .reader-language-traditional .reader-text.psalter-prayer .psalter-first-kathisma-intro,
 .reader-language-traditional .reader-text.psalter-prayer .psalter-first-kathisma-intro .liturgical-word {
   color: #765238 !important;
-  font-weight: 700 !important;
-  font-style: italic !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
 }
 .reader-language-traditional .reader-text.psalter-prayer .psalter-prayer-tropar-heading,
 .reader-language-traditional .reader-text.psalter-prayer .psalter-prayer-tropar-heading .liturgical-word {
   color: #765238 !important;
   font-weight: 700 !important;
-  font-style: italic !important;
+  font-style: normal !important;
 }
 .reader-language-traditional .reader-text.psalter-prayer .psalter-traditional-prayer-title {
   display: block;
