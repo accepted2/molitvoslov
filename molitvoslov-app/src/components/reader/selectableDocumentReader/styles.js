@@ -594,10 +594,25 @@ export const READER_STYLES = String.raw`
   font-style: italic;
   font-weight: 600;
 }
-.reader-language-traditional .reader-text.psalter-prayer .psalter-prayer-tropar-heading {
-  color: #765238;
-  font-weight: 700;
-  font-style: italic;
+.reader-language-traditional .reader-text.psalter-prayer .psalter-prayer-tropar-heading,
+.reader-language-traditional .reader-text.psalter-prayer .psalter-prayer-tropar-heading .liturgical-word {
+  color: #765238 !important;
+  font-weight: 700 !important;
+  font-style: italic !important;
+}
+.reader-language-traditional .reader-text.psalter-prayer .psalter-traditional-prayer-title {
+  display: block;
+  margin: 8px 0 5px;
+  color: var(--accent-dark) !important;
+  font-family: 'Ponomar', serif;
+  font-weight: 400;
+  text-align: center;
+  text-align-last: center;
+}
+.reader-language-traditional .reader-text.psalter-prayer .psalter-traditional-prayer-red,
+.reader-language-traditional .reader-text.psalter-prayer .psalter-traditional-prayer-red .liturgical-word {
+  color: #B22222 !important;
+  font-weight: 400;
 }
 .reader-language-traditional .reader-text.psalter-prayer .psalter-traditional-prayer-red {
   color: #B22222;
