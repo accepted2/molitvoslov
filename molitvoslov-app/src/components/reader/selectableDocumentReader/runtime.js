@@ -1427,9 +1427,16 @@ if (
 
     if (label.startsWith('Трист҃о́е')) {
       traditionalPrayerRedRanges.push({start, end: offset + line.length});
-    } else if (/^и\s+нын[ѣе]\s*:/u.test(simple)) {
-      const colon = label.indexOf(':');
-      traditionalPrayerRedRanges.push({start, end: start + colon + 1});
+    }
+    // "И ныне:" может идти после пробелов или на одной строке с текстом.
+    // Выделяем лишь саму помету, не окрашивая следующий текст.
+    const andNow = /(^|[\s\u00a0])([Ии][\u0300-\u036f\u0483-\u0489]*[ \t\u00a0]+[Нн][\u0300-\u036f\u0483-\u0489]*[Ыы][\u0300-\u036f\u0483-\u0489]*[Нн][\u0300-\u036f\u0483-\u0489]*[ѢѣЕе][\u0300-\u036f\u0483-\u0489]*[ \t]*:)/gu;
+    for (const found of line.matchAll(andNow)) {
+      const labelStart = offset + found.index + found[1].length;
+      traditionalPrayerRedRanges.push({
+        start: labelStart,
+        end: labelStart + found[2].length,
+      });
     }
 
     if (/^тропар(?:ь|и)\s*,?\s*глас/u.test(simple)) {
