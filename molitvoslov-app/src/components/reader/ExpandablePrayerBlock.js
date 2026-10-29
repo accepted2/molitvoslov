@@ -110,6 +110,11 @@ export default function ExpandablePrayerBlock({
         /(Посе́мъ глаго́ли мл҃твꙋ сїю̀ со внима́нїемъ:)\s*/u,
         '$1\n\n'
       );
+      // Preserve the doxology and format the repeat count as a rubric.
+      value = value.replace(
+        /три́жды(\.)?/giu,
+        '(Три́жды.)'
+      );
       // Priest and layperson conclusions are two separate complete rubrics.
       // Never merge either label into the following dismissal prayer.
       value = value.replace(
