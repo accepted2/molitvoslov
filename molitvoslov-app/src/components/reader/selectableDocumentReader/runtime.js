@@ -1437,6 +1437,7 @@ const isStandaloneTraditionalPsalterPrayer =
   !itemConfig?.metadata?.kathisma_number &&
   ['prayers_before', 'prayers_after'].includes(itemConfig?.metadata?.section);
 const standalonePsalterRanges = [];
+const standaloneSeparatorStarts = new Set();
 if (isStandaloneTraditionalPsalterPrayer) {
   let lineOffset = 0;
   for (const line of text.split('\n')) {
@@ -1447,6 +1448,18 @@ if (isStandaloneTraditionalPsalterPrayer) {
       .toLowerCase()
       .replace(/[ѡѻ]/gu, 'о').replace(/ѣ/gu, 'е')
       .replace(/[ії]/gu, 'и').replace(/ꙋ/gu, 'у');
+    // Keep separators before actual prayer paragraphs; never after rubrics
+    // or between the troparia "Glory" / "And now" verses.
+    if (itemConfig?.metadata?.section === 'prayers_before' &&
+        (/^А҆́ще/u.test(trimmed) ||
+         /^Сла́ва тебѣ/u.test(trimmed) ||
+         /^Ст҃ы́й бж҃е/u.test(trimmed) ||
+         /^Сла́ва ѻ҆ц/u.test(trimmed) ||
+         /^Прест҃а́ѧ тр/u.test(trimmed) ||
+         /^Гдⷭ҇и поми́лꙋй/u.test(trimmed) ||
+         /^Ѻ҆́ч҃е на́шъ/u.test(trimmed))) {
+      standaloneSeparatorStarts.add(start);
+    }
     const mark = (from, to, kind) => {
       if (to > from) standalonePsalterRanges.push({start: from, end: to, kind});
     };
@@ -1800,6 +1813,10 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           const isSaved = saved.some( range => midpoint >= range.start && midpoint < range.end );
           const isActive = !!active && midpoint >= active.start && midpoint < active.end;
          
+        if (isStandaloneTraditionalPsalterPrayer &&
+            standaloneSeparatorStarts.has(start)) {
+          appendPsalterSeparator(fragment);
+        }
         const span = document.createElement('span');
         const standaloneDecoration = standalonePsalterRanges.find(range =>
           midpoint >= range.start && midpoint < range.end);
