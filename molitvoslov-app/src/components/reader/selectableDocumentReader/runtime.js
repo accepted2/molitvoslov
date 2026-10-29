@@ -1478,6 +1478,14 @@ if (isStandaloneTraditionalPsalterPrayer) {
     const mark = (from, to, kind) => {
       if (to > from) standalonePsalterRanges.push({start: from, end: to, kind});
     };
+    if (itemConfig?.metadata?.section === 'prayers_after') {
+      if (/^Гдⷭ҇и и҆ влⷣко/u.test(trimmed)) {
+        mark(start, start + 1, 'ephrem-initial');
+      }
+      if (/^Покло́нъ\.$/u.test(trimmed)) {
+        mark(start, start + trimmed.length, 'ephrem-bow');
+      }
+    }
     if (/^(?:тропар|млтва(?:\\s|$)|молитва(?:\\s|$)|и покло|посем|по соверш|или всего)/u.test(plain) &&
         (/глас|млтв|молитв|поклон|глаголи|соверш|псалтир|кафисм|каѳисм/u.test(plain))) {
       mark(start, start + trimmed.length, 'heading');
