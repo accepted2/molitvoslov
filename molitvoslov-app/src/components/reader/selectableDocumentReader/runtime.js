@@ -1525,7 +1525,7 @@ if (
         traditionalTroparHeadingRanges.push({start, end: offset + line.length});
       }
     }
-    if (/^тропар(?:ь|и)\s*,?\s*глас/u.test(simple)) {
+    if (/тропар/u.test(simple) && /глас/u.test(simple) && /^\s*(?:(?:и|таже)\s+)?тропар/u.test(simple)) {
       traditionalTroparHeadingRanges.push({start, end: offset + line.length});
     }
     if (/помил/u.test(simple) && /^(?:господи|гд)/u.test(simple)) {
