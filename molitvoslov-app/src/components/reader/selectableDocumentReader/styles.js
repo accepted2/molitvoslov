@@ -550,6 +550,13 @@ export const READER_STYLES = String.raw`
   font-weight: 400 !important;
   font-style: italic !important;
 }
+/* Initials of prayer paragraphs (not rubrics or headings). */
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-prayer-initial,
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-prayer-initial .liturgical-word {
+  color: #B22222 !important;
+  font-style: normal !important;
+  font-weight: 400 !important;
+}
 /* Traditional Ephrem prayer: red initial and the three bow instructions. */
 .reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-ephrem-initial,
 .reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-ephrem-initial .liturgical-word,
