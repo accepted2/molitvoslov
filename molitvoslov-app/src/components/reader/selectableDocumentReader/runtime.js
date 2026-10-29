@@ -1618,7 +1618,7 @@ const rawPsalterPrayerAccentRanges =
     : [];
 
 const psalterRubricRanges =
-  isPsalterPrayer
+  isPsalterPrayer && !isStandaloneTraditionalPsalterPrayer
     ? collectPsalterRubricRanges(text)
     : [];
 
