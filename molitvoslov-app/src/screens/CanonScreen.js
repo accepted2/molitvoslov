@@ -853,7 +853,8 @@ export const CanonScreen = ({route, navigation}) => {
         onMenuPress={openReaderMenu}
       />
 
-      <BottomNav navigation={navigation} active={null} readingHidden={readingChromeHidden} />    </View>
+      <BottomNav navigation={navigation} active={null} readingHidden={readingChromeHidden} />
+    </View>
   );
 };
 
