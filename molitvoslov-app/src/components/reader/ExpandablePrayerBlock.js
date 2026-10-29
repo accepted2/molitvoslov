@@ -84,6 +84,7 @@ export default function ExpandablePrayerBlock({
         /(А҆́ще ли[^\n]{0,110}?глаго́ли[^\n]{0,50}?:)\s*/u,
         '$1\n\n'
       );
+      value = value.replace(/(?:три́жды|трижды)(?=\.)/giu, '(Три́жды)');
     }
     return value;
   }, [traditionalText, saveProps?.metadata?.section]);
