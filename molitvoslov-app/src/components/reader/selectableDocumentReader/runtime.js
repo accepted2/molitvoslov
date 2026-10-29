@@ -728,6 +728,17 @@ const collectPsalterVerseNumberRanges = value => {
       cursor += 1;
     }
 
+    // Traditional Church Slavonic numerals are letters under titlo.
+    // Only consider them a verse number at the beginning of a line.
+    if (cursor === lineStart) {
+      const slavonicNumber = source.slice(lineStart).match(
+        /^[авгдєѕзиѳіклмнѯѻпчрс]+҃/u
+      );
+      if (slavonicNumber) {
+        cursor = lineStart + slavonicNumber[0].length;
+      }
+    }
+
     if (cursor > lineStart) {
       if (source[cursor] === '.') {
         cursor += 1;
