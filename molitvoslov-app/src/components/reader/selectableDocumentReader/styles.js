@@ -596,6 +596,13 @@ export const READER_STYLES = String.raw`
   font-style: normal !important;
 }
 
+/* Opening Psalter prayers: red mercy response, except the unchanged Ponomar view. */
+.reader-text.psalter-reading-prayers:not(.reader-language-traditional) .psalter-civil-before-mercy,
+.reader-text.psalter-reading-prayers:not(.reader-language-traditional) .psalter-civil-before-mercy .liturgical-word {
+  color: #B22222 !important;
+  font-style: normal !important;
+}
+
 .reader-text.psalter-reading-prayers .paragraph-gap {
   height: 0;
 }
