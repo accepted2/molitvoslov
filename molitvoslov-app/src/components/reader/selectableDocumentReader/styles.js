@@ -603,6 +603,23 @@ export const READER_STYLES = String.raw`
   font-style: normal !important;
 }
 
+/* Civil Psalter Trinity heading: the entire second line shares the first line's style. */
+.reader-text.psalter-reading-prayers .psalter-civil-trinity-second-line {
+  display: block;
+  width: 100%;
+  text-align: center;
+  text-align-last: center;
+  color: var(--secondary) !important;
+  font-weight: 700;
+  font-style: normal;
+}
+.reader-text.psalter-reading-prayers .psalter-civil-trinity-second-line *,
+.reader-text.psalter-reading-prayers .psalter-civil-trinity-second-line .liturgical-word {
+  color: var(--secondary) !important;
+  font-weight: 700 !important;
+  font-style: normal !important;
+}
+
 .reader-text.psalter-reading-prayers .paragraph-gap {
   height: 0;
 }
