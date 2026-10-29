@@ -1303,7 +1303,7 @@ export default function KathismaScreen({route, navigation}) {
         const isTraditional = block.metadata?.language === 'traditional';
         const heading = isTraditional
           ? text.lastIndexOf('Мл҃тва')
-          : Math.max(text.lastIndexOf('Молитва '), text.lastIndexOf('Молитва\\n'));
+          : text.lastIndexOf('Молитва');
         if (heading <= 0) return {troparia: null, prayer: block};
         const troparia = text.slice(0, heading).trimEnd();
         const prayer = text.slice(heading).trimStart();
@@ -1342,26 +1342,9 @@ export default function KathismaScreen({route, navigation}) {
       addPostKathismaSection('troparia', 'Тропари');
       addPostKathismaSection(
         'prayer',
-        showTraditional ? 'Мл҃тва' : 'Молитва'
+        ''
       );
-      /* Old single section removed: its save boundary included both texts. */
-      /*      sections.push({
-        progressAnchorId: Number(kathisma.id),
 
-        trackProgress: false,
-
-        title: showTraditional
-          ? `Мл҃твы по Каѳі́смѣ ${toChurchSlavonicNumber(kathisma.number)}`
-          : t('psalter.prayersAfterKathisma', {number: kathisma.number}),
-
-        rows: [
-          {
-            layout: blocks.length > 1 ? 'parallel' : 'stack',
-
-            blocks,
-          },
-        ],
-      }); */
     }
 
     // Full translations are added as a unit; do not silently fall back to church text.
