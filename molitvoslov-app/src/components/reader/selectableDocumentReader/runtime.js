@@ -1833,6 +1833,36 @@ if (isStandaloneCivilBeforePsalter) {
     }
   }
 }
+// Layout of the 40-fold mercy response and the following Trinity heading.
+// Restricted to civil standalone prayers before the Psalter.
+const civilFortyDividerStarts = new Set();
+let civilFortyBowStart = -1;
+let civilTrinityHeadingStart = -1;
+let civilTrinitySecondLineStart = -1;
+if (isStandaloneCivilBeforePsalter) {
+  const {normalized, originalIndex} = normalizedAkathistTextWithIndex(text);
+  const mercy40 = /Господи,?\s*помилуй\s*\(40\)/iu.exec(normalized);
+  if (mercy40) {
+    const mercyPosition = originalIndex[mercy40.index];
+    if (Number.isFinite(mercyPosition) && mercyPosition > 0) {
+      civilFortyDividerStarts.add(mercyPosition);
+    }
+    const remaining = normalized.slice(mercy40.index + mercy40[0].length);
+    const bow = /И\s+поклонися,?\s*елико/iu.exec(remaining);
+    if (bow) {
+      civilFortyBowStart = originalIndex[
+        mercy40.index + mercy40[0].length + bow.index
+      ] ?? -1;
+    }
+    const heading = /Молитва\s+(Свят(?:ейшей|ей|ой)\s+Живоначальн(?:ей|ой)\s+Троице)/iu.exec(remaining);
+    if (heading) {
+      const begin = mercy40.index + mercy40[0].length + heading.index;
+      civilTrinityHeadingStart = originalIndex[begin] ?? -1;
+      civilTrinitySecondLineStart =
+        originalIndex[begin + heading[0].indexOf(heading[1])] ?? -1;
+    }
+  }
+}
 const psalterPrayerInitialRanges =
   isPsalterPrayer && !isKathismaPrayersAfter
     ? collectPsalterPrayerInitialRanges(text)
@@ -1920,6 +1950,10 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           boundaries.add(range.end);
         });
         civilBeforeDividerStarts.forEach(start => boundaries.add(start));
+        civilFortyDividerStarts.forEach(start => boundaries.add(start));
+        if (civilFortyBowStart >= 0) boundaries.add(civilFortyBowStart);
+        if (civilTrinityHeadingStart >= 0) boundaries.add(civilTrinityHeadingStart);
+        if (civilTrinitySecondLineStart >= 0) boundaries.add(civilTrinitySecondLineStart);
         civilBeforeMercyRanges.forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
@@ -2016,6 +2050,15 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           appendPsalterSeparator(fragment);
         }
         if (isStandaloneCivilBeforePsalter && civilBeforeDividerStarts.has(start)) {
+          appendPsalterSeparator(fragment);
+        }
+        if (civilFortyDividerStarts.has(start)) {
+          appendPsalterSeparator(fragment);
+        }
+        if (start === civilFortyBowStart) {
+          fragment.appendChild(document.createElement('br'));
+        }
+        if (start === civilTrinityHeadingStart) {
           appendPsalterSeparator(fragment);
         }
         const span = document.createElement('span');
@@ -2416,7 +2459,9 @@ const needsSeparatorBeforeHeading =
     )
   );
 
-if (needsSeparatorBeforeHeading) {
+if (needsSeparatorBeforeHeading &&
+    start !== civilTrinityHeadingStart &&
+    start !== civilTrinitySecondLineStart) {
   appendPsalterSeparator(fragment);
 }
 
