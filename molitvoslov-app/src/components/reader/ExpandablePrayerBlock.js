@@ -91,12 +91,12 @@ export default function ExpandablePrayerBlock({
         '$1\n\n'
       );
       // One line break is enough after the centered Trinity prayer heading.
-      value = value.replace(/(Мл҃тва[^\n]+)\n{2,}/u, '$1\n');
+      value = value.replace(/(Мл҃тва[^\n]+)\n(?:[ \t]*\n)*/u, '$1\n');
       value = value.replace(/(?:три́жды|трижды)\./giu, '(Три́жды.)');
       // A short bow instruction belongs to the preceding mercy response.
       value = value.replace(
         /(Гдⷭ҇и\s+поми́лꙋй,?\s*м҃\.)\s*(И҆\s+поклони́сѧ[^\n.]*)\.?/u,
-        '$1 ($2.)'
+        '$1\n($2.)'
       );
       value = value.replace(/(\(Три́жды\.\))\s*(Сла́ва|Слава)/gu, '$1\n\n$2');
     }
