@@ -101,6 +101,11 @@ export default function ExpandablePrayerBlock({
         /(Тропарѝ,?\s*гла́съ\s*ѕ҃:)\s*/u,
         '$1\n\n'
       );
+      // Keep the rubric "Или, О Тебе радуется:" on its own line.
+      value = value.replace(
+        /(Ѡ҆\s+тебѣ̀\s+ра́дꙋетсѧ:)\s*/u,
+        '$1\n\n'
+      );
       value = value.replace(
         /(Посе́мъ глаго́ли мл҃твꙋ сїю̀ со внима́нїемъ:)\s*/u,
         '$1\n\n'
