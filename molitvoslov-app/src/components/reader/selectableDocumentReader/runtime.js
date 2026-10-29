@@ -2552,6 +2552,31 @@ if (
 
         }
         root.replaceChildren( fragment );
+        // The two-line Trinity heading already creates its own block.
+        // Suppress only redundant blank-line spans before the prayer body,
+        // while keeping the existing separator and ordinary spacing.
+        if (isStandaloneCivilBeforePsalter) {
+          const headingLine = root.querySelector('.psalter-civil-trinity-second-line');
+          if (headingLine) {
+            let sibling = headingLine.nextSibling;
+            while (sibling) {
+              const isDivider = sibling.nodeType === Node.ELEMENT_NODE &&
+                sibling.classList.contains('psalter-prayer-separator');
+              if (isDivider) {
+                sibling = sibling.nextSibling;
+                continue;
+              }
+              if (String(sibling.textContent || '').trim()) break;
+              const next = sibling.nextSibling;
+              if (sibling.nodeType === Node.ELEMENT_NODE) {
+                sibling.classList.add('psalter-prayer-gap-hidden');
+              } else {
+                sibling.textContent = '';
+              }
+              sibling = next;
+            }
+          }
+        }
         hideKnownEditorialMarkers( root );
         compactParagraphGaps( root );
         collapsePsalterRubricTrailingWhitespace( root );
