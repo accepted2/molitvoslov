@@ -1,5 +1,5 @@
 import React, {useEffect, useRef} from 'react';
-import {Animated, Pressable, StyleSheet, Text, View} from 'react-native';
+import {Animated, Easing, Pressable, StyleSheet, Text, View} from 'react-native';
 import {CommonActions} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {LinearGradient} from 'expo-linear-gradient';
@@ -34,7 +34,7 @@ const NavIcon = ({type, active}) => {
 export const BottomNav = ({navigation, active, readingHidden = false}) => {
   const visibility = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(visibility, {toValue: readingHidden ? 1 : 0, duration: 220, useNativeDriver: true}).start();
+    Animated.timing(visibility, {toValue: readingHidden ? 1 : 0, duration: 340, easing: Easing.out(Easing.cubic), useNativeDriver: true}).start();
   }, [readingHidden, visibility]);
   const insets = useSafeAreaInsets();
   const {t} = useLanguage();
@@ -53,12 +53,12 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
         styles.wrapper,
         {transform: [{translateY: visibility.interpolate({inputRange: [0, 1], outputRange: [0, 100]})}], opacity: visibility.interpolate({inputRange: [0, 1], outputRange: [1, 0]})},
         {
-          bottom: Math.max(insets.bottom + 5, 8),
+          bottom: Math.max(insets.bottom + 4, 7),
         },
       ]}
     >
       <LinearGradient
-        colors={['#3D2416', '#5A341D']}
+        colors={['rgba(61, 36, 22, 0.89)', 'rgba(90, 52, 29, 0.89)']}
         start={{x: 0, y: 0}}
         end={{x: 1, y: 1}}
         style={styles.container}
