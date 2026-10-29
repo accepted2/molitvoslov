@@ -1023,6 +1023,7 @@ export default function KathismaScreen({route, navigation}) {
       const psalmSaved = !!psalmSavedItem;
 
       sections.push({
+        className: 'psalter-psalm-section',
         progressAnchorId: Number(psalm.id),
 
         trackProgress: true,
