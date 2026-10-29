@@ -110,6 +110,18 @@ export default function ExpandablePrayerBlock({
         /(Посе́мъ глаго́ли мл҃твꙋ сїю̀ со внима́нїемъ:)\s*/u,
         '$1\n\n'
       );
+      // The three bows in St Ephrem's prayer are standalone rubrics.
+      // Limit the replacement to the text before the next prayer heading.
+      const ephremStart = value.indexOf('Гдⷭ҇и и҆ влⷣко');
+      const nextPrayer = value.indexOf('Посе́мъ глаго́ли', ephremStart);
+      if (ephremStart >= 0 && nextPrayer > ephremStart) {
+        const before = value.slice(0, ephremStart);
+        const ephrem = value.slice(ephremStart, nextPrayer).replace(
+          /\s*(Покло́нъ\.)/gu,
+          '\n$1\n'
+        );
+        value = before + ephrem + value.slice(nextPrayer);
+      }
     }
     return value;
   }, [traditionalText, saveProps?.metadata?.section]);
