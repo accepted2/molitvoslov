@@ -1882,6 +1882,17 @@ if (isStandaloneCivilBeforePsalter) {
     }
   }
 }
+const parallelPsalterLayout = isStandaloneCivilBeforePsalter && DATA.viewMode === 'both';
+let parallelTroparBreak = -1;
+if (parallelPsalterLayout) {
+  const normalized = normalizedAkathistTextWithIndex(text);
+  const tropar = /Тропари\s+сия\s*,\s*глас\s*(?:6|шестой)/iu.exec(normalized.normalized);
+  if (tropar) {
+    const comma = normalized.normalized.indexOf(',', tropar.index);
+    const next = comma + 1;
+    if (comma >= 0) parallelTroparBreak = normalized.originalIndex[next] ?? -1;
+  }
+}
 const psalterPrayerInitialRanges =
   isPsalterPrayer && !isKathismaPrayersAfter
     ? collectPsalterPrayerInitialRanges(text)
@@ -1969,6 +1980,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           boundaries.add(range.end);
         });
         civilBeforeDividerStarts.forEach(start => boundaries.add(start));
+        if (parallelTroparBreak >= 0) boundaries.add(parallelTroparBreak);
         russianOpeningInitials.forEach(range => { boundaries.add(range.start); boundaries.add(range.end); });
         civilFortyDividerStarts.forEach(start => boundaries.add(start));
         if (civilFortyBowStart >= 0) boundaries.add(civilFortyBowStart);
@@ -2088,6 +2100,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         if (start === civilTrinityHeadingStart) {
           appendPsalterSeparator(fragment);
         }
+        if (parallelTroparBreak === start) fragment.appendChild(document.createElement('br'));
         const span = document.createElement('span');
         const standaloneDecoration = standalonePsalterRanges.find(range =>
           midpoint >= range.start && midpoint < range.end && range.kind === 'mercy') ||
@@ -2230,6 +2243,11 @@ if (isSearchHit) {
           if (isStandaloneCivilBeforePsalter &&
               civilBeforeMercyRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
             span.classList.add('psalter-civil-before-mercy');
+          }
+          if (parallelPsalterLayout && civilBeforeMercyTogether &&
+              start >= civilBeforeMercyTogether.start && end <= civilBeforeMercyTogether.end &&
+              /^\s*,\s*$/u.test(text.slice(start, end))) {
+            span.style.setProperty('display', 'none');
           }
           const isPsalterPrayerAccent =
             isPsalterPrayer &&
