@@ -16,6 +16,10 @@ export const useReadingChrome = () => {
   const onScroll = useCallback((direction) => {
     if (hideTimer.current) clearTimeout(hideTimer.current);
     hideTimer.current = null;
+    if (direction === 'activity') {
+      if (!hiddenRef.current) hideTimer.current = setTimeout(() => setVisibility(true), 2000);
+      return;
+    }
     if (direction === 'down') {
       setVisibility(true);
       return;
