@@ -631,6 +631,10 @@ export const READER_STYLES = String.raw`
   white-space: normal;
   max-width: 100%;
 }
+.reader-row-parallel .reader-text.psalter-reading-prayers .psalter-parallel-mercy-words {
+  display: inline-block;
+  white-space: nowrap !important;
+}
 /* Keep only the mercy words together in narrow parallel columns. */
 .reader-row-parallel .reader-text.psalter-reading-prayers .psalter-civil-mercy-together .psalter-civil-before-mercy {
   white-space: nowrap !important;
