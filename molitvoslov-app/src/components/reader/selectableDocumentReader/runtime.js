@@ -1463,6 +1463,17 @@ if (isStandaloneTraditionalPsalterPrayer) {
          /^Та́же посто́й/u.test(trimmed))) {
       standaloneSeparatorStarts.add(start);
     }
+    if (itemConfig?.metadata?.section === 'prayers_after' &&
+        (/^Досто́йно/u.test(trimmed) ||
+         /^Тропарѝ/u.test(trimmed) ||
+         /^Гдⷭ҇и и҆ влⷣко/u.test(trimmed) ||
+         /^Посе́мъ глаго́ли/u.test(trimmed) ||
+         /^Многомлⷭ҇тиве/u.test(trimmed) ||
+         /^Чⷭ҇тнѣ́йш/u.test(trimmed) ||
+         /^А҆́ще і҆ере́й/u.test(trimmed) ||
+         /^А҆́ще ли просты́й/u.test(trimmed))) {
+      standaloneSeparatorStarts.add(start);
+    }
     const mark = (from, to, kind) => {
       if (to > from) standalonePsalterRanges.push({start: from, end: to, kind});
     };
@@ -1472,6 +1483,16 @@ if (isStandaloneTraditionalPsalterPrayer) {
     } else if (/^(?:аще|аще ли|или|таже|поклон|посем|и поклон)/u.test(plain)) {
       const rubric = trimmed.match(/^.{1,95}?:/u);
       mark(start, start + (rubric ? rubric[0].length : trimmed.length), 'rubric');
+    }
+    if (itemConfig?.metadata?.section === 'prayers_after' &&
+        (/^Посе́мъ/u.test(trimmed) ||
+         /^А҆́ще/u.test(trimmed) ||
+         /^И҆ покло́н/u.test(trimmed))) {
+      mark(start, start + trimmed.length, 'final-rubric');
+    }
+    if (itemConfig?.metadata?.section === 'prayers_after' &&
+        /^Тропарѝ/u.test(trimmed)) {
+      mark(start, start + trimmed.length, 'heading');
     }
     if (itemConfig?.metadata?.section === 'prayers_before' &&
         /^Та́же посто́й/u.test(trimmed)) {
@@ -1483,6 +1504,10 @@ if (isStandaloneTraditionalPsalterPrayer) {
     if (/^Гдⷭ҇и\s+поми́лꙋй/u.test(trimmed)) {
       const match = trimmed.match(/^Гдⷭ҇и\s+поми́лꙋй,?\s*м҃\./u);
       if (match) mark(start, start + match[0].length, 'mercy');
+    }
+    if (itemConfig?.metadata?.section === 'prayers_after') {
+      const mercy = trimmed.match(/^(?:Та́же,?\s*)?Гдⷭ҇и\s+поми́лꙋй[^\n]{0,15}/u);
+      if (mercy) mark(start, start + mercy[0].length, 'mercy');
     }
     const marker = /(?:^|\s)(Сла́ва:|Слава:|И҆ ны́нѣ:|И ныне:)/gu;
     for (const match of line.matchAll(marker)) {
