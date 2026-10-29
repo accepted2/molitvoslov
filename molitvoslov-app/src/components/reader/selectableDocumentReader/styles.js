@@ -661,6 +661,15 @@ export const READER_STYLES = String.raw`
   white-space: nowrap;
 }
 
+/* The repeat note in standalone traditional Psalter prayers is a plain rubric. */
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-repeat-note,
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-repeat-note .liturgical-word {
+  color: #765238 !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+  white-space: nowrap;
+}
+
 .reader-text.psalter-reading-prayers .liturgical-word {
   color: var(--liturgical);
   font-style: italic;
