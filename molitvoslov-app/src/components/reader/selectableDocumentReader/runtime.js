@@ -290,6 +290,9 @@ export const READER_RUNTIME = String.raw`
               if ((row.blocks || []).some(block => block.anchorType === 'psalm_text')) {
                 rowNode.classList.add('psalter-psalm-verses-row');
               }
+              if ((row.blocks || []).some(block => block.anchorType === 'kathisma_glory')) {
+                rowNode.classList.add('psalter-glory-row');
+              }
               wrapper.appendChild( rowNode );
             }
           );
