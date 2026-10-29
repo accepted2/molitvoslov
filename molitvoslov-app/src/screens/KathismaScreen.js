@@ -21,6 +21,7 @@ import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
+import {useReadingChrome} from '../hooks/useReadingChrome';
 import {
   READER_LANGUAGE_MODES,
   buildReaderLanguageOptions,
@@ -141,8 +142,7 @@ export default function KathismaScreen({route, navigation}) {
   const headerHeight = insets.top + 56;
 
   const [kathisma, setKathisma] = useState(null);
-  const [readingChromeHidden, setReadingChromeHidden] = useState(false);
-  const handleReadingScroll = direction => setReadingChromeHidden(direction === 'down');
+  const {readingChromeHidden, handleReadingScroll} = useReadingChrome();
 
   const [savedItems, setSavedItems] = useState([]);
 
