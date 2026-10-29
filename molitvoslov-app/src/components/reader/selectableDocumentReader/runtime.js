@@ -1446,7 +1446,7 @@ if (isStandaloneTraditionalPsalterPrayer) {
       .replace(/[\u0300-\u036f\u0483-\u0489]/gu, '')
       .toLowerCase()
       .replace(/[ѡѻ]/gu, 'о').replace(/ѣ/gu, 'е')
-      .replace(/[і ї]/gu, 'и').replace(/ꙋ/gu, 'у');
+      .replace(/[ії]/gu, 'и').replace(/ꙋ/gu, 'у');
     const mark = (from, to, kind) => {
       if (to > from) standalonePsalterRanges.push({start: from, end: to, kind});
     };
