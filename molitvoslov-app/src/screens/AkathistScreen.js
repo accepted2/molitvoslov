@@ -914,7 +914,8 @@ export const AkathistScreen = ({route, navigation}) => {
         onMenuPress={openReaderMenu}
       />
 
-      <BottomNav navigation={navigation} active={null} readingHidden={readingChromeHidden} />    </View>
+      <BottomNav navigation={navigation} active={null} readingHidden={readingChromeHidden} />
+    </View>
   );
 };
 
