@@ -329,8 +329,11 @@ export const READER_STYLES = String.raw`
     /* Separate the final psalm verse from the following Glory prayer. */
     .psalter-kathisma-reader .reader-row.psalter-glory-row {
       border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
       margin-top: 12px;
+      margin-bottom: 12px;
       padding-top: 12px;
+      padding-bottom: 12px;
     }
     .reader-row-parallel {
       display: flex;
