@@ -78,10 +78,10 @@ export default function ExpandablePrayerBlock({
       // Only in the traditional reading: keep one Slavonic heading and
       // put each opening blessing on the next line after its rubric.
       value = value.replace(
-        /^([АА҆][^\n]{0,95}?глаго́летъ:)\s*/u,
+        /(А҆́ще[^\n]{0,110}?глаго́летъ:)\s*/u,
         '$1\n\n'
       ).replace(
-        /^([АА҆][^\n]{0,110}?глаго́ли[^\n]{0,50}?:)\s*/gmu,
+        /(А҆́ще ли[^\n]{0,110}?глаго́ли[^\n]{0,50}?:)\s*/u,
         '$1\n\n'
       );
     }
