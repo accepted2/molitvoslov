@@ -1447,7 +1447,10 @@ const isFirstKathismaTraditionalPrayer =
   isPsalterPrayer &&
   itemConfig?.metadata?.language === 'traditional' &&
   itemConfig?.metadata?.section === 'prayers_after' &&
-  Number(itemConfig?.metadata?.kathisma_number) === 1;
+  Number(itemConfig?.metadata?.kathisma_number) === 1 &&
+  itemConfig?.metadata?.part !== 'troparia' &&
+  itemConfig?.metadata?.part !== 'conclusion' &&
+  itemConfig?.metadata?.part !== 'prayer';
 let firstKathismaIntroStart = -1;
 let firstKathismaIntroEnd = -1;
 if (
