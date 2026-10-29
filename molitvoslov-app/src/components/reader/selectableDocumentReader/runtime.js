@@ -1839,6 +1839,7 @@ const civilFortyDividerStarts = new Set();
 let civilFortyBowStart = -1;
 let civilTrinityHeadingStart = -1;
 let civilTrinitySecondLineStart = -1;
+let civilTrinitySecondLineEnd = -1;
 if (isStandaloneCivilBeforePsalter) {
   const {normalized, originalIndex} = normalizedAkathistTextWithIndex(text);
   const mercy40 = /Господи,?\s*помилуй\s*\(40\)/iu.exec(normalized);
@@ -1860,6 +1861,7 @@ if (isStandaloneCivilBeforePsalter) {
       civilTrinityHeadingStart = originalIndex[begin] ?? -1;
       civilTrinitySecondLineStart =
         originalIndex[begin + heading[0].indexOf(heading[1])] ?? -1;
+      civilTrinitySecondLineEnd = originalIndex[begin + heading[0].length] ?? text.length;
     }
   }
 }
@@ -1954,6 +1956,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         if (civilFortyBowStart >= 0) boundaries.add(civilFortyBowStart);
         if (civilTrinityHeadingStart >= 0) boundaries.add(civilTrinityHeadingStart);
         if (civilTrinitySecondLineStart >= 0) boundaries.add(civilTrinitySecondLineStart);
+        if (civilTrinitySecondLineEnd >= 0) boundaries.add(civilTrinitySecondLineEnd);
         civilBeforeMercyRanges.forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
@@ -2030,6 +2033,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
                 value >= 0 && value <= text.length ) .sort( (a, b) => a - b );
         const fragment = document.createDocumentFragment();
         let standaloneTitleWrapper = null;
+        let civilTrinitySecondLineWrapper = null;
         for ( let index = 0;
           index < points.length - 1;
           index += 1 ) {
@@ -2503,7 +2507,18 @@ if (isStandaloneTraditionalPsalterPrayer &&
   standaloneTitleWrapper.appendChild(span);
 } else {
   standaloneTitleWrapper = null;
-  fragment.appendChild(span);
+  if (civilTrinitySecondLineStart >= 0 &&
+      start >= civilTrinitySecondLineStart &&
+      end <= civilTrinitySecondLineEnd) {
+    if (!civilTrinitySecondLineWrapper) {
+      civilTrinitySecondLineWrapper = el('span', 'psalter-civil-trinity-second-line');
+      fragment.appendChild(civilTrinitySecondLineWrapper);
+    }
+    civilTrinitySecondLineWrapper.appendChild(span);
+  } else {
+    civilTrinitySecondLineWrapper = null;
+    fragment.appendChild(span);
+  }
 }
 
 /* Блочная служебная пометка сама переносит следующий текст.
