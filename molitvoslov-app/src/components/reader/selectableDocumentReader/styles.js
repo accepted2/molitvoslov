@@ -550,6 +550,15 @@ export const READER_STYLES = String.raw`
   font-weight: 400 !important;
   font-style: italic !important;
 }
+/* Traditional Ephrem prayer: red initial and the three bow instructions. */
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-ephrem-initial,
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-ephrem-initial .liturgical-word,
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-ephrem-bow,
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-ephrem-bow .liturgical-word {
+  color: #B22222 !important;
+  font-style: normal !important;
+  font-weight: 400 !important;
+}
 /* Psalter: standalone prayers before/after reading, traditional Ponomar. */
 .reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-heading,
 .reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-heading .liturgical-word {
