@@ -54,7 +54,13 @@ export default function ExpandablePrayerBlock({
       );
     }
 
-    return normalizeText(source);
+    const normalized = normalizeText(source);
+    if (saveProps?.metadata?.section === 'prayers_before') {
+      // The separator supplies the visual break before the doxology.
+      // Do not leave an additional empty paragraph after 'Господи, помилуй'.
+      return normalized.replace(/\n{2,}(?=[ \t]*Сла[\u0300-\u036f]*ва[ \t]+Отцу)/giu, '\n');
+    }
+    return normalized;
   };
 
   const normalizedText = useMemo(
