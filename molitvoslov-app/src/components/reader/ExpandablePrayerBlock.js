@@ -40,7 +40,7 @@ export default function ExpandablePrayerBlock({
 
   const readerHeight = Math.max(500, Math.min(windowHeight * 0.78, 720));
 
-  const stripSharedRubric = (value) => {
+  const stripSharedRubric = (value, compactCivilDoxology = false) => {
     let source = String(value || '');
 
     if (saveProps?.metadata?.section === 'prayers_before') {
@@ -55,7 +55,7 @@ export default function ExpandablePrayerBlock({
     }
 
     const normalized = normalizeText(source);
-    if (saveProps?.metadata?.section === 'prayers_before' && value !== traditionalText) {
+    if (saveProps?.metadata?.section === 'prayers_before' && compactCivilDoxology) {
       // The separator supplies the visual break before the doxology.
       // Do not leave an additional empty paragraph after 'Господи, помилуй'.
       return normalized.replace(/\n{2,}(?=[ \t]*Сла[\u0300-\u036f]*ва[ \t]+Отцу)/giu, '\n');
@@ -64,12 +64,12 @@ export default function ExpandablePrayerBlock({
   };
 
   const normalizedText = useMemo(
-    () => stripSharedRubric(text),
+    () => stripSharedRubric(text, true),
     [text, saveProps?.metadata?.section]
   );
 
   const normalizedSecondaryText = useMemo(
-    () => stripSharedRubric(secondaryText),
+    () => stripSharedRubric(secondaryText, true),
     [secondaryText, saveProps?.metadata?.section]
   );
 
