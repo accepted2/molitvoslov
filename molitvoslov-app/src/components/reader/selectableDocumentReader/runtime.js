@@ -1820,7 +1820,7 @@ if (isStandaloneCivilBeforePsalter) {
     ? locate(/слава\s+отцу/u, trisagion)
     : -1;
   const trinity = firstGlory >= 0
-    ? locate(/пресвятая\s+троиц|пресвятая\s+троице/u, firstGlory)
+    ? locate(/пресвятая\s+троиц|святейшая\s+троиц|пресвятая\s+троице/u, firstGlory)
     : -1;
   const mercy = trinity >= 0
     ? locate(/господи,?\s+помилуй/u, trinity)
