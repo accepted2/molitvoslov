@@ -94,6 +94,18 @@ export default function ExpandablePrayerBlock({
       );
       value = value.replace(/(\(Три́жды\.\))\s*(Сла́ва|Слава)/gu, '$1\n\n$2');
     }
+    if (saveProps?.metadata?.section === 'prayers_after') {
+      // Preserve the supplied Church Slavonic text, while keeping the
+      // liturgical instructions and the following prayers on separate lines.
+      value = value.replace(
+        /(Тропарѝ,?\s*гла́съ\s*ѕ҃:)\s*/u,
+        '$1\n\n'
+      );
+      value = value.replace(
+        /(Посе́мъ глаго́ли мл҃твꙋ сїю̀ со внима́нїемъ:)\s*/u,
+        '$1\n\n'
+      );
+    }
     return value;
   }, [traditionalText, saveProps?.metadata?.section]);
 
