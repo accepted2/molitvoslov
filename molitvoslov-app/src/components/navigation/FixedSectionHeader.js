@@ -1,5 +1,5 @@
-import React from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import React, {useEffect, useRef} from 'react';
+import {Animated, Pressable, StyleSheet, Text, View} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 
 export const FixedSectionHeader = ({
@@ -13,14 +13,21 @@ export const FixedSectionHeader = ({
   onMenuPress,
   dark = false,
   titleOffsetY = 0,
+  readingHidden = false,
+  compactReading = false,
 }) => {
   const headerHeight = topInset + (minimal ? 46 : 56);
+  const visibility = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(visibility, {toValue: readingHidden ? 1 : 0, duration: 220, useNativeDriver: true}).start();
+  }, [readingHidden, visibility]);
 
   return (
-    <View
-      pointerEvents="box-none"
+    <Animated.View
+      pointerEvents={readingHidden ? 'none' : 'box-none'}
       style={[
         styles.fixedHeader,
+        {transform: [{translateY: visibility.interpolate({inputRange: [0, 1], outputRange: [0, -(headerHeight + 16)]})}], opacity: visibility.interpolate({inputRange: [0, 1], outputRange: [1, 0]})},
         {
           height: minimal ? headerHeight : headerHeight + 10,
         },
@@ -75,7 +82,7 @@ export const FixedSectionHeader = ({
             ]}
           >
             <Text
-              style={[styles.title, dark && styles.titleDark]}
+              style={[styles.title, compactReading && {fontSize: 16, fontWeight: '600'}, dark && styles.titleDark]}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
@@ -105,7 +112,7 @@ export const FixedSectionHeader = ({
           </Pressable>
         )}
       </View>
-    </View>
+    </Animated.View>
   );
 };
 
