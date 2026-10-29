@@ -1893,12 +1893,12 @@ if (parallelPsalterLayout) {
     if (comma >= 0) parallelTroparBreak = normalized.originalIndex[next] ?? -1;
   }
 }
-let parallelMercyWordsEnd = -1;
-if (parallelPsalterLayout && civilBeforeMercyTogether) {
-  const source = text.slice(civilBeforeMercyTogether.start, civilBeforeMercyTogether.end);
-  const word = /Господи,?\s+помилуй/iu.exec(source);
-  if (word) parallelMercyWordsEnd = civilBeforeMercyTogether.start + word.index + word[0].length;
-}
+// Use the already verified accent-insensitive range, not a plain-text
+// expression that fails on Church Slavonic letters with stress marks.
+let parallelMercyWordsEnd =
+  parallelPsalterLayout && civilBeforeMercyTogether && civilBeforeMercyRanges.length
+    ? civilBeforeMercyRanges[0].end
+    : -1;
 const parallelMercyCommaPositions = new Set();
 if (parallelPsalterLayout && civilBeforeMercyTogether) {
   const part = text.slice(civilBeforeMercyTogether.start, civilBeforeMercyTogether.end);
