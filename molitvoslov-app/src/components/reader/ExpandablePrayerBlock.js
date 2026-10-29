@@ -85,6 +85,11 @@ export default function ExpandablePrayerBlock({
         '$1\n\n'
       );
       value = value.replace(/(?:три́жды|трижды)\./giu, '(Три́жды.)');
+      // A short bow instruction belongs to the preceding mercy response.
+      value = value.replace(
+        /(Гдⷭ҇и\s+поми́лꙋй,?\s*м҃\.)\s*(И҆\s+поклони́сѧ[^\n.]*)\.?/u,
+        '$1 ($2.)'
+      );
       value = value.replace(/(\(Три́жды\.\))\s*(Сла́ва|Слава)/gu, '$1\n\n$2');
     }
     return value;
