@@ -137,17 +137,17 @@ const styles = StyleSheet.create({
     marginTop: -2,
   },
   titleWrapReading: {
-    marginLeft: 0,
+    marginLeft: 5,
     paddingTop: 0,
     paddingRight: 0,
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
   },
   titleReading: {
     fontSize: 17,
     fontWeight: '700',
     lineHeight: 23,
-    textAlign: 'center',
+    textAlign: 'left',
     includeFontPadding: false,
   },
   ornamentReading: {
