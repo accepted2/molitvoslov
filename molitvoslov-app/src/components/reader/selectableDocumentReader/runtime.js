@@ -1488,7 +1488,8 @@ if (isStandaloneTraditionalPsalterPrayer) {
         (/^Посе́мъ/u.test(trimmed) ||
          /^А҆́ще/u.test(trimmed) ||
          /^И҆ покло́н/u.test(trimmed))) {
-      mark(start, start + trimmed.length, 'final-rubric');
+      const intro = trimmed.match(/^А҆́ще ли просты́й[^:]*:/u);
+      mark(start, start + (intro ? intro[0].length : trimmed.length), 'final-rubric');
     }
     if (itemConfig?.metadata?.section === 'prayers_after' &&
         /^Тропарѝ/u.test(trimmed)) {
