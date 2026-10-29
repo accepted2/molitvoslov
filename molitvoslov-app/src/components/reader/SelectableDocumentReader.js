@@ -183,7 +183,11 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       return;
     }
 
-    if (message.type === 'reading-scroll-activity') {\n      onReadingScroll?.('activity');\n      return;\n    }\n    if (message.type === 'reading-scroll') {
+    if (message.type === 'reading-scroll-activity') {
+      onReadingScroll?.('activity');
+      return;
+    }
+    if (message.type === 'reading-scroll') {
       onReadingScroll?.(message.direction);
       return;
     }
