@@ -6572,7 +6572,8 @@ export default function PrayerRuleReader({
       const css = `:root {--background:${bg}; --surface:${surface}; --text:${fg}; --reading-font-size:${size}px; --traditional-reading-font-size:${traditionalSize}px;}
         .reader-text {font-size:var(--reading-font-size) !important;line-height:1.7 !important;}
         .traditional-mode .reader-text {font-size:var(--traditional-reading-font-size) !important;line-height:1.7 !important;}
-        .traditional-mode .reader-text .liturgical-word {font-size:inherit;}`;
+        .traditional-mode .reader-text .liturgical-word {font-size:inherit;}
+        body {padding-bottom: 105px !important;}`;
       return markup.replace('</style>', `${css}</style>`);
     },
     [
