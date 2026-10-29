@@ -497,6 +497,22 @@ export const READER_STYLES = String.raw`
 }
 
 
+/* The Trinity prayer heading is centered without an underline. */
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-center-title,
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-center-title .liturgical-word {
+  display: block;
+  text-align: center;
+  text-align-last: center;
+  color: #765238 !important;
+  font-style: normal !important;
+  font-weight: 400 !important;
+}
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-mercy,
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-mercy .liturgical-word {
+  color: #B22222 !important;
+  font-style: normal !important;
+  font-weight: 400 !important;
+}
 /* Psalter: standalone prayers before/after reading, traditional Ponomar. */
 .reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-heading,
 .reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-heading .liturgical-word {
