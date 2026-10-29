@@ -1479,6 +1479,22 @@ if (isStandaloneTraditionalPsalterPrayer) {
       if (to > from) standalonePsalterRanges.push({start: from, end: to, kind});
     };
     if (itemConfig?.metadata?.section === 'prayers_after') {
+      // Red initial letters belong to prayer paragraphs, not the headings,
+      // priestly directions, bows or repeated doxology labels.
+      const isPrayerOpening =
+        /^(?:Досто́йно|Поми́лꙋй на́съ|Гдⷭ҇и и҆ влⷣко|Дꙋ́хъ же|Є҆́й гдⷭ҇и|Многомлⷭ҇тиве|Чⷭ҇тнѣ́йшꙋю|Гдⷭ҇и і҆и҃се)/u.test(trimmed);
+      if (isPrayerOpening) {
+        const firstLetter = trimmed.match(/[А-ЯЁІЇЄҐѢѲѴѠѺꙖҀ-Яа-яіїѣѳѡѻꙗ]/u);
+        if (firstLetter) {
+          mark(start + firstLetter.index, start + firstLetter.index + firstLetter[0].length, 'prayer-initial');
+        }
+      }
+      // Keep the entire priestly instruction distinct from the lay rubric.
+      if (/^А҆́ще і҆ере́й/u.test(trimmed)) {
+        mark(start, start + trimmed.length, 'final-rubric');
+      }
+    }
+    if (itemConfig?.metadata?.section === 'prayers_after') {
       if (/^Гдⷭ҇и и҆ влⷣко/u.test(trimmed)) {
         mark(start, start + 1, 'ephrem-initial');
       }
