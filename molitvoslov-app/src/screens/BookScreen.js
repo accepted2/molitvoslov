@@ -28,6 +28,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {BottomNav} from '../components/navigation/BottomNav';
 
 export const BookScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
@@ -38,6 +39,8 @@ export const BookScreen = ({route, navigation}) => {
   const headerHeight = insets.top + 56;
 
   const [texts, setTexts] = useState([]);
+  const [readingChromeHidden, setReadingChromeHidden] = useState(false);
+  const handleReadingScroll = direction => setReadingChromeHidden(direction === 'down');
 
   const [savedItems, setSavedItems] = useState([]);
 
@@ -445,6 +448,8 @@ export const BookScreen = ({route, navigation}) => {
         savedProgress={savedProgress}
         focusTarget={normalizedFocusTarget}
         topContentInset={headerHeight}
+        bottomContentInset={90}
+        onReadingScroll={handleReadingScroll}
         onProgress={scheduleSave}
         onAction={handleAction}
         onViewModeChange={setViewMode}
@@ -454,8 +459,12 @@ export const BookScreen = ({route, navigation}) => {
         title={categoryName || t('common.reading')}
         navigation={navigation}
         topInset={insets.top}
-        showTitle={false}
+        showTitle
+        compactReading
+        readingHidden={readingChromeHidden}
       />
+
+      <BottomNav navigation={navigation} active={null} readingHidden={readingChromeHidden} />
     </View>
   );
 };
