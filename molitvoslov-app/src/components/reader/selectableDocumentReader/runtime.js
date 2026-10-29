@@ -1532,9 +1532,11 @@ if (isStandaloneTraditionalPsalterPrayer) {
       if (match) mark(start, start + match[0].length, 'mercy');
     }
     if (itemConfig?.metadata?.section === 'prayers_after') {
-      const mercy = trimmed.match(/^(?:Та́же,?\s*)?Гдⷭ҇и\s+поми́лꙋй[^\n]{0,15}/u);
+      // A previous rubric may use "Гд҃и" rather than "Гдⷭ҇и".
+      // Match the literal mercy response after "Таже" and leave "Таже" brown.
+      const mercy = trimmed.match(/^(?:Та́же,?\s*)?(Г[^\s]{0,8}\s+поми́лꙋй[^\n]{0,15})/u);
       if (mercy) {
-        const offset = mercy[0].indexOf('Гдⷭ҇и');
+        const offset = mercy[0].indexOf(mercy[1]);
         mark(start + offset, start + mercy[0].length, 'mercy');
       }
     }
