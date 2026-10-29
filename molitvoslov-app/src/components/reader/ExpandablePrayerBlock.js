@@ -84,6 +84,8 @@ export default function ExpandablePrayerBlock({
         /(А҆́ще ли[^\n]{0,110}?глаго́ли[^\n]{0,50}?:)\s*/u,
         '$1\n\n'
       );
+      // One line break is enough after the centered Trinity prayer heading.
+      value = value.replace(/(Мл҃тва[^\n]+)\n{2,}/u, '$1\n');
       value = value.replace(/(?:три́жды|трижды)\./giu, '(Три́жды.)');
       // A short bow instruction belongs to the preceding mercy response.
       value = value.replace(
