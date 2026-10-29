@@ -292,7 +292,6 @@ export default function KathismaScreen({route, navigation}) {
       if (existing) {
         await deleteSavedItem(existing.id);
         savedItemsRef.current = savedItemsRef.current.filter(item => item.id !== existing.id);
-        setSavedItems([...savedItemsRef.current]);
         return {active: false};
       }
       const section = documentData.sections.find(item => item.action?.key === actionKey);
@@ -316,7 +315,6 @@ export default function KathismaScreen({route, navigation}) {
         },
       });
       savedItemsRef.current = [saved, ...savedItemsRef.current];
-      setSavedItems([...savedItemsRef.current]);
       return {active: true, savedItem: saved};
     }
 
