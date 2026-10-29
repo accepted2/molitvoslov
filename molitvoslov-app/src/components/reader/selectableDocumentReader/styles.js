@@ -335,6 +335,13 @@ export const READER_STYLES = String.raw`
       padding-top: 12px;
       padding-bottom: 12px;
     }
+    /* The section already has its own bottom divider: avoid a double line
+       when Glory is the final row (notably before the 17th kathisma prayers). */
+    .psalter-kathisma-reader .rule-item .reader-row.psalter-glory-row:last-child {
+      border-bottom: 0;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
     .reader-row-parallel {
       display: flex;
       flex-direction: row;
