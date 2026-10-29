@@ -492,7 +492,11 @@ export const READER_STYLES = String.raw`
 }
 
 .reader-text.psalter-reading-prayers:not(.secondary) {
-  text-align: left;
+  text-align: justify;
+  text-align-last: left;
+}
+.reader-language-traditional .reader-text.psalter-reading-prayers {
+  text-align: justify;
   text-align-last: left;
 }
 
