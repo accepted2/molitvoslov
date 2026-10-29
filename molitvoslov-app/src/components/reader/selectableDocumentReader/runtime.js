@@ -1755,14 +1755,14 @@ if (isStandaloneCivilAfterPsalter) {
   };
   // The first prayer starts with Достойно. Both the optional
   // "О Тебе радуется" and subsequent prayers start new sections.
-  const first = text.match(/^\\s*(?:Досто́йно|Достойно)/u);
+  const first = text.match(/^\s*(?:Досто́йно|Достойно)/u);
   if (first) addInitial(first[0].length - first[0].trim().length);
-  for (const found of text.matchAll(/(?:^|\\n)(\\s*(?:О\\s+Тебе|О\\s+Тебѣ|Поми́луй\\s+нас|Помилуй\\s+нас|Многомилостиве|Многоми́лостиве))/giu)) {
+  for (const found of text.matchAll(/(?:^|\n)(\s*(?:О\s+Тебе|О\s+Тебѣ|Поми́луй\s+нас|Помилуй\s+нас|Многомилостиве|Многоми́лостиве))/giu)) {
     addInitial(found.index + found[0].indexOf(found[1]), true);
   }
   // "Или:" is the transition after the first prayer, not a prayer
   // initial itself: draw the line before the instruction.
-  for (const found of text.matchAll(/(?:^|\\n)(\\s*Или́?:?)/giu)) {
+  for (const found of text.matchAll(/(?:^|\n)(\s*Или́?:?)/giu)) {
     civilAfterDividerStarts.add(found.index + found[0].indexOf(found[1]));
   }
 }
