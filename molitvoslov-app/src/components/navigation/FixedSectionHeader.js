@@ -138,6 +138,7 @@ const styles = StyleSheet.create({
   },
   titleWrapReading: {
     marginLeft: 5,
+    transform: [{translateY: -2}],
     paddingTop: 0,
     paddingRight: 0,
     alignItems: 'flex-start',
