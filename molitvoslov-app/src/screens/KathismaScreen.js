@@ -1298,26 +1298,51 @@ export default function KathismaScreen({route, navigation}) {
       // independent save actions and highlight boundaries.
       const splitPostKathisma = (block) => {
         const text = block.text || '';
-        const isTraditional = block.metadata?.language === 'traditional';
-        const heading = isTraditional
-          ? text.lastIndexOf('Мл҃тва')
-          : text.lastIndexOf('Молитва');
-        if (heading <= 0) return {troparia: null, prayer: block};
-        const troparia = text.slice(0, heading).trimEnd();
-        const prayer = text.slice(heading).trimStart();
-        if (!troparia || !prayer) return {troparia: null, prayer: block};
+        const lines = text.split('\n');
+        let offset = 0;
+        let troparStart = -1;
+        let mercyStart = -1;
+        let prayerStart = -1;
+        const normalize = value => String(value).normalize('NFD')
+          .replace(/[\u0300-\u036f\u0483-\u0489]/gu, '')
+          .replace(/[ꙋѹꙊѸ]/gu, 'у')
+          .replace(/[ѣѢ]/gu, 'е')
+          .toLowerCase();
+        for (const line of lines) {
+          const plain = normalize(line).trim();
+          if (troparStart < 0 && /^(?:таже\\s+)?тропар/u.test(plain) && /глас/u.test(plain)) {
+            troparStart = offset;
+          } else if (troparStart >= 0 && mercyStart < 0 &&
+                     /^(?:господи|гди)\\s*,?\\s*помил/u.test(plain)) {
+            mercyStart = offset;
+          }
+          if (prayerStart < 0 && (
+            /^молитва(?:\\s|$)/u.test(plain) ||
+            /^млтва(?:\\s|$)/u.test(plain)
+          )) {
+            prayerStart = offset;
+          }
+          offset += line.length + 1;
+        }
+        const makePart = (begin, finish) => {
+          if (begin < 0 || finish <= begin) return null;
+          const content = text.slice(begin, finish).trim();
+          return content ? {...block, id: nextBlockId++, text: content} : null;
+        };
+        const troparEnd = mercyStart >= 0 ? mercyStart : prayerStart;
         return {
-          // Each rendered block needs its own ID: the reader stores text by block ID.
-          troparia: {...block, id: nextBlockId++, text: troparia},
-          prayer: {...block, id: nextBlockId++, text: prayer},
+          introduction: makePart(0, troparStart),
+          troparia: makePart(troparStart, troparEnd),
+          conclusion: makePart(mercyStart, prayerStart),
+          prayer: makePart(prayerStart, text.length),
         };
       };
       const splitBlocks = blocks.map(splitPostKathisma);
-      const addPostKathismaSection = (part, title) => {
+      const addPostKathismaSection = (part, title, savable = false) => {
         const partBlocks = splitBlocks.map(item => item[part]).filter(Boolean);
         if (!partBlocks.length) return;
         const actionKey = 'kathisma:' + part;
-        const savedPart = savedItems.some(item =>
+        const savedPart = savable && savedItems.some(item =>
           item.anchor_type === 'kathisma_prayers_after' &&
           Number(item.anchor_id) === Number(kathisma.id) &&
           item.metadata?.part === part
@@ -1327,22 +1352,21 @@ export default function KathismaScreen({route, navigation}) {
           progressAnchorId: Number(kathisma.id),
           trackProgress: false,
           title,
-          action: {
+          ...(savable ? {action: {
             key: actionKey,
             active: savedPart,
             highlightContent: true,
-          },
+          }} : {}),
           rows: [{
             layout: partBlocks.length > 1 ? 'parallel' : 'stack',
             blocks: partBlocks,
           }],
         });
       };
-      addPostKathismaSection('troparia', 'Тропари');
-      addPostKathismaSection(
-        'prayer',
-        ''
-      );
+      addPostKathismaSection('introduction', '');
+      addPostKathismaSection('troparia', 'Тропари', true);
+      addPostKathismaSection('conclusion', '');
+      addPostKathismaSection('prayer', '', true);
 
     }
 
