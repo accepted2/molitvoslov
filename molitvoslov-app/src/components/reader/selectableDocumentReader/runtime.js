@@ -1468,6 +1468,16 @@ if (
     if (label.startsWith('Трист҃о́е')) {
       traditionalPrayerRedRanges.push({start, end: offset + line.length});
     }
+    // "Слава:" и "И ныне:" внутри тропарей должны иметь одинаковый
+    // красный цвет и жирность, не окрашивая следующий за ними текст.
+    if (itemConfig?.metadata?.part === 'troparia') {
+      const gloryLabel = label.match(/^[Сс][Лл][Аа][\u0300-\u036f\u0483-\u0489]*[Вв][Аа][\u0300-\u036f\u0483-\u0489]*\s*:/u);
+      if (gloryLabel) {
+        const range = {start, end: start + gloryLabel[0].length};
+        traditionalPrayerRedRanges.push(range);
+        traditionalAndNowRanges.push(range);
+      }
+    }
     // "И ныне:" может идти после пробелов или на одной строке с текстом.
     // Выделяем лишь саму помету, не окрашивая следующий текст.
     const andNow = /(^|[\s\u00a0])([Ии][\u0300-\u036f\u0483-\u0489]*[ \t\u00a0]+[Нн][\u0300-\u036f\u0483-\u0489]*[Ыы][\u0300-\u036f\u0483-\u0489]*[Нн][\u0300-\u036f\u0483-\u0489]*[ѢѣЕе][\u0300-\u036f\u0483-\u0489]*[ \t]*:)/gu;
