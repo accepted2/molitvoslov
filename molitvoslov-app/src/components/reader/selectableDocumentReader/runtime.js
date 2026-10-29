@@ -285,6 +285,9 @@ export const READER_RUNTIME = String.raw`
                   rowNode.appendChild( column );
                 }
               );
+              if ((row.blocks || []).some(block => block.anchorType === 'psalm_text')) {
+                rowNode.classList.add('psalter-psalm-verses-row');
+              }
               wrapper.appendChild( rowNode );
             }
           );
