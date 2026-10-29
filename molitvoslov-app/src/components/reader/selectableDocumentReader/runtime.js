@@ -1459,7 +1459,7 @@ if (isStandaloneTraditionalPsalterPrayer) {
          /^Гдⷭ҇и поми́лꙋй/u.test(trimmed) ||
          /^Ѻ҆́ч҃е на́шъ/u.test(trimmed) ||
          /^Мл҃тва(?:\s|$)/u.test(trimmed) ||
-         /^Прїиди́те/u.test(trimmed) ||
+         /^Прїиди́те, поклони́мсѧ цр/u.test(trimmed) ||
          /^Та́же посто́й/u.test(trimmed))) {
       standaloneSeparatorStarts.add(start);
     }
@@ -1498,12 +1498,6 @@ if (isStandaloneTraditionalPsalterPrayer) {
     if (/^(?:гд|господи)/u.test(plain) && /помил/u.test(plain) &&
         (/(?:м҃|трижды|40|\(3\))/u.test(plain))) {
       mark(start, start + trimmed.length, 'mercy');
-    }
-    // A single divider follows the last of the three invitations.
-    if (itemConfig?.metadata?.section === 'prayers_before' &&
-        /^Прїиди́те/u.test(trimmed) &&
-        /самомꙋ̀ хр/u.test(trimmed)) {
-      standaloneSeparatorStarts.add(lineOffset + line.length + 1);
     }
     lineOffset += line.length + 1;
   }
