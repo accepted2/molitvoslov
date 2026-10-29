@@ -282,6 +282,44 @@ export default function KathismaScreen({route, navigation}) {
       };
     }
 
+    if (actionKey === 'kathisma:troparia' || actionKey === 'kathisma:prayer') {
+      const part = actionKey === 'kathisma:troparia' ? 'troparia' : 'prayer';
+      const existing = savedItemsRef.current.find(item =>
+        item.anchor_type === 'kathisma_prayers_after' &&
+        Number(item.anchor_id) === Number(kathisma.id) &&
+        item.metadata?.part === part
+      );
+      if (existing) {
+        await deleteSavedItem(existing.id);
+        savedItemsRef.current = savedItemsRef.current.filter(item => item.id !== existing.id);
+        setSavedItems([...savedItemsRef.current]);
+        return {active: false};
+      }
+      const section = documentData.sections.find(item => item.action?.key === actionKey);
+      const block = section?.rows?.[0]?.blocks?.[0];
+      if (!block?.text) return null;
+      const saved = await saveItem({
+        save_type: 'prayer',
+        source_type: 'psalter',
+        source_id: kathisma.psalter,
+        anchor_type: 'kathisma_prayers_after',
+        anchor_id: kathisma.id,
+        source_title: t('psalter.title'),
+        item_title: part === 'troparia'
+          ? `Тропари по кафизме ${kathisma.number}`
+          : `Молитва по кафизме ${kathisma.number}`,
+        text: block.text,
+        metadata: {
+          kathisma_number: kathisma.number,
+          part,
+          language: block.metadata?.language || 'church',
+        },
+      });
+      savedItemsRef.current = [saved, ...savedItemsRef.current];
+      setSavedItems([...savedItemsRef.current]);
+      return {active: true, savedItem: saved};
+    }
+
     if (!actionKey?.startsWith('psalm:')) {
       return null;
     }
@@ -1258,7 +1296,56 @@ export default function KathismaScreen({route, navigation}) {
         );
       }
 
-      sections.push({
+      // Keep each translation's exact text, but give troparia and prayer
+      // independent save actions and highlight boundaries.
+      const splitPostKathisma = (block) => {
+        const text = block.text || '';
+        const isTraditional = block.metadata?.language === 'traditional';
+        const heading = isTraditional
+          ? text.lastIndexOf('Мл҃тва')
+          : Math.max(text.lastIndexOf('Молитва '), text.lastIndexOf('Молитва\\n'));
+        if (heading <= 0) return {troparia: null, prayer: block};
+        const troparia = text.slice(0, heading).trimEnd();
+        const prayer = text.slice(heading).trimStart();
+        if (!troparia || !prayer) return {troparia: null, prayer: block};
+        return {
+          troparia: {...block, text: troparia},
+          prayer: {...block, text: prayer},
+        };
+      };
+      const splitBlocks = blocks.map(splitPostKathisma);
+      const addPostKathismaSection = (part, title) => {
+        const partBlocks = splitBlocks.map(item => item[part]).filter(Boolean);
+        if (!partBlocks.length) return;
+        const actionKey = 'kathisma:' + part;
+        const savedPart = savedItems.some(item =>
+          item.anchor_type === 'kathisma_prayers_after' &&
+          Number(item.anchor_id) === Number(kathisma.id) &&
+          item.metadata?.part === part
+        );
+        sections.push({
+          className: 'psalter-post-kathisma-part',
+          progressAnchorId: Number(kathisma.id),
+          trackProgress: false,
+          title,
+          action: {
+            key: actionKey,
+            active: savedPart,
+            highlightContent: true,
+          },
+          rows: [{
+            layout: partBlocks.length > 1 ? 'parallel' : 'stack',
+            blocks: partBlocks,
+          }],
+        });
+      };
+      addPostKathismaSection('troparia', 'Тропари');
+      addPostKathismaSection(
+        'prayer',
+        showTraditional ? 'Мл҃тва' : 'Молитва'
+      );
+      /* Old single section removed: its save boundary included both texts. */
+      /*      sections.push({
         progressAnchorId: Number(kathisma.id),
 
         trackProgress: false,
@@ -1274,7 +1361,7 @@ export default function KathismaScreen({route, navigation}) {
             blocks,
           },
         ],
-      });
+      }); */
     }
 
     // Full translations are added as a unit; do not silently fall back to church text.
