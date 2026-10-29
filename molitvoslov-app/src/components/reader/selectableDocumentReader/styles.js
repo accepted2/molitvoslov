@@ -364,6 +364,11 @@ export const READER_STYLES = String.raw`
   font-weight: 700;
   color: var(--accent);
 }
+/* Красные буквенные номера стихов только в традиционном ЦС. */
+.reader-language-traditional .reader-text.psalter .psalter-verse-number,
+.reader-language-traditional .reader-text.psalter .psalter-verse-number .liturgical-word {
+  color: #B22222 !important;
+}
 .reader-text.psalter.secondary .psalter-verse-number {
 
   color: var(--color-late-gray);
