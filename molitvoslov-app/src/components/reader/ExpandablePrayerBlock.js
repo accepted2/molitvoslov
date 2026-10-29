@@ -110,6 +110,15 @@ export default function ExpandablePrayerBlock({
         /(Посе́мъ глаго́ли мл҃твꙋ сїю̀ со внима́нїемъ:)\s*/u,
         '$1\n\n'
       );
+      // Priest and layperson conclusions are two separate complete rubrics.
+      // Never merge either label into the following dismissal prayer.
+      value = value.replace(
+        /(А҆́ще і҆ере́й, конча́етъ сщ҃е́ннически\.)\s*/u,
+        '$1\n\n'
+      ).replace(
+        /(А҆́ще ли просты́й, конча́етъ си́це:)\s*/u,
+        '$1\n\n'
+      );
       // The three bows in St Ephrem's prayer are standalone rubrics.
       // Limit the replacement to the text before the next prayer heading.
       const ephremStart = value.indexOf('Гдⷭ҇и и҆ влⷣко');
