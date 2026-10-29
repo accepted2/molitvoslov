@@ -676,6 +676,13 @@ export const READER_STYLES = String.raw`
   color: #B22222 !important;
   font-weight: 700 !important;
 }
+/* The final prayer of kathisma 20 is body text, not a red rubric. */
+.reader-language-traditional .reader-text.psalter-prayer .psalter-last-kathisma-prayer-body,
+.reader-language-traditional .reader-text.psalter-prayer .psalter-last-kathisma-prayer-body .liturgical-word {
+  color: #2B190F !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+}
 .reader-language-traditional .reader-text.psalter-prayer .psalter-traditional-prayer-red {
   color: #B22222;
   font-family: 'Ponomar', serif;
