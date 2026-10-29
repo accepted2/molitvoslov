@@ -1806,6 +1806,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         const points = Array.from( boundaries ) .map(Number) .filter( value => Number.isFinite( value ) &&
                 value >= 0 && value <= text.length ) .sort( (a, b) => a - b );
         const fragment = document.createDocumentFragment();
+        let standaloneTitleWrapper = null;
         for ( let index = 0;
           index < points.length - 1;
           index += 1 ) {
@@ -2235,7 +2236,19 @@ if (isLastKathismaTraditionalPrayer &&
   span.style.setProperty('font-weight', '400', 'important');
   span.style.setProperty('font-style', 'normal', 'important');
 }
-fragment.appendChild(span);
+if (isStandaloneTraditionalPsalterPrayer &&
+    standalonePsalterRanges.some(range =>
+      range.kind === 'center-title' &&
+      midpoint >= range.start && midpoint < range.end)) {
+  if (!standaloneTitleWrapper) {
+    standaloneTitleWrapper = el('span', 'psalter-standalone-title-line');
+    fragment.appendChild(standaloneTitleWrapper);
+  }
+  standaloneTitleWrapper.appendChild(span);
+} else {
+  standaloneTitleWrapper = null;
+  fragment.appendChild(span);
+}
 
 /* Блочная служебная пометка сама переносит следующий текст.
    Дополнительные <br> и разделитель здесь не нужны. */
