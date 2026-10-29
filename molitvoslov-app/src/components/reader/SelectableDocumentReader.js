@@ -183,7 +183,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       return;
     }
 
-    if (message.type === 'reading-scroll') {
+    if (message.type === 'reading-scroll-activity') {\n      onReadingScroll?.('activity');\n      return;\n    }\n    if (message.type === 'reading-scroll') {
       onReadingScroll?.(message.direction);
       return;
     }
@@ -370,7 +370,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         }}
         originWhitelist={['*']}
         javaScriptEnabled
-        injectedJavaScript={documentData.readerMode === 'book' ? undefined : "(function() {\n  var previous = window.scrollY || 0, direction = '', cumulative = 0;\n  window.addEventListener('scroll', function() {\n    var y = Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);\n    var diff = y - previous;\n    previous = y;\n    if (Math.abs(diff) > 90) { cumulative = 0; return; }\n    var next = y <= 35 ? 'up' : diff > 0 ? 'down' : 'up';\n    if (next !== direction && Math.abs(diff) > 0) {\n      cumulative += Math.abs(diff);\n      if (cumulative >= 26 || y <= 35) {\n        direction = next;\n        cumulative = 0;\n        window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({type:'reading-scroll', direction:next}));\n      }\n    } else { cumulative = 0; }\n  }, {passive:true});\n})(); true;"}
+        injectedJavaScript={documentData.readerMode === 'book' ? undefined : "(function() {\n  var previous = window.scrollY || 0, direction = '', cumulative = 0, lastActivity = 0;\n  window.addEventListener('scroll', function() {\n    var y = Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);\n    var diff = y - previous;\n    previous = y;\n    if (Math.abs(diff) > 0 && Date.now() - lastActivity >= 120) { lastActivity = Date.now(); window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({type:'reading-scroll-activity'})); }\n    if (Math.abs(diff) > 90) { cumulative = 0; return; }\n    var next = y <= 35 ? 'up' : diff > 0 ? 'down' : 'up';\n    if (next !== direction && Math.abs(diff) > 0) {\n      cumulative += Math.abs(diff);\n      if (cumulative >= 26 || y <= 35) {\n        direction = next;\n        cumulative = 0;\n        window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({type:'reading-scroll', direction:next}));\n      }\n    } else { cumulative = 0; }\n  }, {passive:true});\n})(); true;"}
         scrollEnabled={documentData.readerMode !== 'book'}
         nestedScrollEnabled={documentData.readerMode !== 'book'}
         showsVerticalScrollIndicator={false}
