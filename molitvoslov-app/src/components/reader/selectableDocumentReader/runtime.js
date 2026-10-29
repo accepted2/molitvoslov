@@ -1563,7 +1563,10 @@ if (isStandaloneTraditionalPsalterPrayer) {
       const pos = lineOffset + match.index;
       mark(pos, pos + match[0].length, 'repeat');
     }
-    if (/^(?:гд|господи)/u.test(plain) && /помил/u.test(plain) &&
+    // A mercy response must be short; never color a whole dismissal prayer
+    // just because it starts with Господи and contains помилуй later.
+    if (trimmed.length < 90 &&
+        /^(?:гд|господи)/u.test(plain) && /помил/u.test(plain) &&
         (/(?:м҃|трижды|40|\(3\))/u.test(plain))) {
       mark(start, start + trimmed.length, 'mercy');
     }
