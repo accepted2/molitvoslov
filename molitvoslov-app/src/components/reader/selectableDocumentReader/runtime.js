@@ -1470,7 +1470,7 @@ if (isStandaloneTraditionalPsalterPrayer) {
       const rubric = trimmed.match(/^.{1,95}?:/u);
       mark(start, start + (rubric ? rubric[0].length : trimmed.length), 'rubric');
     }
-    if (/^Мл҃тва/u.test(trimmed)) {
+    if (/^Мл҃тва(?:\s|$)/u.test(trimmed)) {
       mark(start, start + trimmed.length, 'center-title');
     }
     if (/^Гдⷭ҇и\s+поми́лꙋй/u.test(trimmed)) {
