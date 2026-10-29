@@ -1467,6 +1467,7 @@ if (isStandaloneTraditionalPsalterPrayer) {
         (/^Досто́йно/u.test(trimmed) ||
          /^Тропарѝ/u.test(trimmed) ||
          /^Гдⷭ҇и и҆ влⷣко/u.test(trimmed) ||
+         /^И҆ покло́н/u.test(trimmed) ||
          /^Посе́мъ глаго́ли/u.test(trimmed) ||
          /^Многомлⷭ҇тиве/u.test(trimmed) ||
          /^Чⷭ҇тнѣ́йш/u.test(trimmed) ||
