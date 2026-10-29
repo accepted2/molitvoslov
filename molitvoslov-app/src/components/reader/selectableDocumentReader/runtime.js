@@ -1893,6 +1893,12 @@ if (parallelPsalterLayout) {
     if (comma >= 0) parallelTroparBreak = normalized.originalIndex[next] ?? -1;
   }
 }
+let parallelMercyWordsEnd = -1;
+if (parallelPsalterLayout && civilBeforeMercyTogether) {
+  const source = text.slice(civilBeforeMercyTogether.start, civilBeforeMercyTogether.end);
+  const word = /Господи,?\s+помилуй/iu.exec(source);
+  if (word) parallelMercyWordsEnd = civilBeforeMercyTogether.start + word.index + word[0].length;
+}
 const parallelMercyCommaPositions = new Set();
 if (parallelPsalterLayout && civilBeforeMercyTogether) {
   const part = text.slice(civilBeforeMercyTogether.start, civilBeforeMercyTogether.end);
@@ -1992,6 +1998,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         civilBeforeDividerStarts.forEach(start => boundaries.add(start));
         if (parallelTroparBreak >= 0) boundaries.add(parallelTroparBreak);
         parallelMercyCommaPositions.forEach(pos => { boundaries.add(pos); boundaries.add(pos + 1); });
+        if (parallelMercyWordsEnd >= 0) boundaries.add(parallelMercyWordsEnd);
         russianOpeningInitials.forEach(range => { boundaries.add(range.start); boundaries.add(range.end); });
         civilFortyDividerStarts.forEach(start => boundaries.add(start));
         if (civilFortyBowStart >= 0) boundaries.add(civilFortyBowStart);
@@ -2577,7 +2584,17 @@ if (isStandaloneTraditionalPsalterPrayer &&
         civilBeforeMercyWrapper = el('span', 'psalter-civil-mercy-together');
         fragment.appendChild(civilBeforeMercyWrapper);
       }
-      civilBeforeMercyWrapper.appendChild(span);
+      if (parallelPsalterLayout && parallelMercyWordsEnd > 0 &&
+          end <= parallelMercyWordsEnd) {
+        let words = civilBeforeMercyWrapper.querySelector('.psalter-parallel-mercy-words');
+        if (!words) {
+          words = el('span', 'psalter-parallel-mercy-words');
+          civilBeforeMercyWrapper.appendChild(words);
+        }
+        words.appendChild(span);
+      } else {
+        civilBeforeMercyWrapper.appendChild(span);
+      }
     } else {
       civilBeforeMercyWrapper = null;
       fragment.appendChild(span);
