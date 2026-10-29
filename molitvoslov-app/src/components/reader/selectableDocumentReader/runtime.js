@@ -1508,7 +1508,10 @@ if (isStandaloneTraditionalPsalterPrayer) {
     }
     if (itemConfig?.metadata?.section === 'prayers_after') {
       const mercy = trimmed.match(/^(?:Та́же,?\s*)?Гдⷭ҇и\s+поми́лꙋй[^\n]{0,15}/u);
-      if (mercy) mark(start, start + mercy[0].length, 'mercy');
+      if (mercy) {
+        const offset = mercy[0].indexOf('Гдⷭ҇и');
+        mark(start + offset, start + mercy[0].length, 'mercy');
+      }
     }
     const marker = /(?:^|\s)(Сла́ва:|Слава:|И҆ ны́нѣ:|И ныне:)/gu;
     for (const match of line.matchAll(marker)) {
