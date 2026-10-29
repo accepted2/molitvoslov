@@ -1457,6 +1457,13 @@ if (isStandaloneTraditionalPsalterPrayer) {
       const rubric = trimmed.match(/^.{1,95}?:/u);
       mark(start, start + (rubric ? rubric[0].length : trimmed.length), 'rubric');
     }
+    if (/^Мл҃тва/u.test(trimmed)) {
+      mark(start, start + trimmed.length, 'center-title');
+    }
+    if (/^Гдⷭ҇и\s+поми́лꙋй/u.test(trimmed)) {
+      const match = trimmed.match(/^Гдⷭ҇и\s+поми́лꙋй,?\s*м҃\./u);
+      if (match) mark(start, start + match[0].length, 'mercy');
+    }
     const marker = /(?:^|\s)(Сла́ва:|Слава:|И҆ ны́нѣ:|И ныне:)/gu;
     for (const match of line.matchAll(marker)) {
       const pos = lineOffset + match.index + match[0].indexOf(match[1]);
@@ -1796,6 +1803,12 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         const span = document.createElement('span');
         const standaloneDecoration = standalonePsalterRanges.find(range =>
           midpoint >= range.start && midpoint < range.end);
+        if (isStandaloneTraditionalPsalterPrayer &&
+            standaloneDecoration?.kind === 'heading' &&
+            /^Тропар/u.test(text.slice(standaloneDecoration.start, standaloneDecoration.end)) &&
+            start === standaloneDecoration.start) {
+          appendPsalterSeparator(fragment);
+        }
         if (standaloneDecoration) {
           span.classList.add('psalter-standalone-' + standaloneDecoration.kind);
         }
@@ -1971,7 +1984,8 @@ if (isSearchHit) {
             start > 0 &&
             !followsPsalterHeading &&
             !followsRubric &&
-            !followsTraditionalOpening
+            !followsTraditionalOpening &&
+            !isStandaloneTraditionalPsalterPrayer
           ) {
             appendPsalterSeparator(fragment);
           }
