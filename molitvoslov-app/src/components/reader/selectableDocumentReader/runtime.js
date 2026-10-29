@@ -1781,6 +1781,7 @@ const isStandaloneCivilBeforePsalter =
   !itemConfig?.metadata?.kathisma_number;
 const civilBeforeDividerStarts = new Set();
 const civilBeforeMercyRanges = [];
+let civilBeforeMercyTogether = null;
 if (isStandaloneCivilBeforePsalter) {
   // Match the liturgical words after removing stress marks but retain
   // exact UTF-16 offsets, including combining accents, for the DOM.
@@ -1830,6 +1831,11 @@ if (isStandaloneCivilBeforePsalter) {
         start: positions[mercy],
         end: finish < positions.length ? positions[finish] : text.length,
       });
+      const whole = /господи,?\s+помилуй,?\s*\(трижды\.\)/u.exec(plainText.slice(mercy));
+      if (whole && whole.index === 0) {
+        const endAt = mercy + whole[0].length;
+        civilBeforeMercyTogether = {start: positions[mercy], end: positions[endAt] ?? text.length};
+      }
     }
   }
 }
@@ -1961,6 +1967,10 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
+        if (civilBeforeMercyTogether) {
+          boundaries.add(civilBeforeMercyTogether.start);
+          boundaries.add(civilBeforeMercyTogether.end);
+        }
         psalterPrayerInitialRanges.forEach(range => {
             boundaries.add(range.start);
             boundaries.add(range.end);
@@ -2034,6 +2044,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         const fragment = document.createDocumentFragment();
         let standaloneTitleWrapper = null;
         let civilTrinitySecondLineWrapper = null;
+        let civilBeforeMercyWrapper = null;
         for ( let index = 0;
           index < points.length - 1;
           index += 1 ) {
@@ -2517,7 +2528,16 @@ if (isStandaloneTraditionalPsalterPrayer &&
     civilTrinitySecondLineWrapper.appendChild(span);
   } else {
     civilTrinitySecondLineWrapper = null;
-    fragment.appendChild(span);
+    if (civilBeforeMercyTogether && start >= civilBeforeMercyTogether.start && end <= civilBeforeMercyTogether.end) {
+      if (!civilBeforeMercyWrapper) {
+        civilBeforeMercyWrapper = el('span', 'psalter-civil-mercy-together');
+        fragment.appendChild(civilBeforeMercyWrapper);
+      }
+      civilBeforeMercyWrapper.appendChild(span);
+    } else {
+      civilBeforeMercyWrapper = null;
+      fragment.appendChild(span);
+    }
   }
 }
 
