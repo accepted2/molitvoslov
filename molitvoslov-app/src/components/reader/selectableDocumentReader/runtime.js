@@ -1450,7 +1450,7 @@ if (isStandaloneTraditionalPsalterPrayer) {
     const mark = (from, to, kind) => {
       if (to > from) standalonePsalterRanges.push({start: from, end: to, kind});
     };
-    if (/^(?:тропар|мл|молитв|и покло|посем|по соверш|или всего)/u.test(plain) &&
+    if (/^(?:тропар|млтва(?:\\s|$)|молитва(?:\\s|$)|и покло|посем|по соверш|или всего)/u.test(plain) &&
         (/глас|млтв|молитв|поклон|глаголи|соверш|псалтир|кафисм|каѳисм/u.test(plain))) {
       mark(start, start + trimmed.length, 'heading');
     } else if (/^(?:аще|аще ли|или|таже|поклон|посем|и поклон)/u.test(plain)) {
@@ -1802,8 +1802,8 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         if (standaloneDecoration?.kind === 'repeat') {
           span.classList.add('psalter-repeat-note');
           span.style.setProperty('color', '#765238', 'important');
-          span.style.setProperty('font-style', 'italic', 'important');
-          span.style.setProperty('font-weight', '700', 'important');
+          span.style.setProperty('font-style', 'normal', 'important');
+          span.style.setProperty('font-weight', '400', 'important');
           span.style.setProperty('white-space', 'nowrap');
         }
 
@@ -1955,6 +1955,10 @@ if (isSearchHit) {
             /(?:Трисвятое по Отче наш:|Тропар(?:ь|и)\s+(?:сия|покаянн(?:ый|ые|ыя))\s*,?\s*глас\s*(?:6|шест(?:ой|ый))\s*:*)$/iu
               .test(textBeforeSegment);
 
+          const followsTraditionalOpening =
+            isStandaloneTraditionalPsalterPrayer &&
+            /глаго(?:́)?л(?:етъ|и)[^\n:]{0,65}:\s*$/u.test(textBeforeSegment);
+
           const followsRubric =
             psalterRubricRanges.some(
               range =>
@@ -1966,12 +1970,13 @@ if (isSearchHit) {
             isPsalterPrayerInitial &&
             start > 0 &&
             !followsPsalterHeading &&
-            !followsRubric
+            !followsRubric &&
+            !followsTraditionalOpening
           ) {
             appendPsalterSeparator(fragment);
           }
 
-          if (isPsalterPrayerInitial) {
+          if (isPsalterPrayerInitial && !followsTraditionalOpening) {
             span.classList.add(
               'psalter-prayer-initial'
             );
