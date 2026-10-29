@@ -1309,8 +1309,9 @@ export default function KathismaScreen({route, navigation}) {
         const prayer = text.slice(heading).trimStart();
         if (!troparia || !prayer) return {troparia: null, prayer: block};
         return {
-          troparia: {...block, text: troparia},
-          prayer: {...block, text: prayer},
+          // Each rendered block needs its own ID: the reader stores text by block ID.
+          troparia: {...block, id: nextBlockId++, text: troparia},
+          prayer: {...block, id: nextBlockId++, text: prayer},
         };
       };
       const splitBlocks = blocks.map(splitPostKathisma);
