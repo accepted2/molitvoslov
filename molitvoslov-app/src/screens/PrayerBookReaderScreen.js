@@ -368,7 +368,7 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
     const direction = nextY < 35 ? 'up' : delta > 0 ? 'down' : 'up';
     if (direction !== scrollDirection.current) {
       scrollDistance.current += Math.abs(delta);
-      if (scrollDistance.current >= 26 || nextY < 35) {
+      if (scrollDistance.current >= 5 || nextY < 35) {
         scrollDirection.current = direction;
         scrollDistance.current = 0;
         onChromeScroll(direction);
