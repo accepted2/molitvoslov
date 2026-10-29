@@ -270,7 +270,8 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         titleOffsetY={-4}
       />
 
-      <BottomNav navigation={navigation} active={null} readingHidden={readingChromeHidden} />    </View>
+      <BottomNav navigation={navigation} active={null} readingHidden={readingChromeHidden} />
+    </View>
   );
 };
 
