@@ -1534,10 +1534,18 @@ if (isStandaloneTraditionalPsalterPrayer) {
     if (itemConfig?.metadata?.section === 'prayers_after') {
       // A previous rubric may use "Гд҃и" rather than "Гдⷭ҇и".
       // Match the literal mercy response after "Таже" and leave "Таже" brown.
-      const mercy = trimmed.match(/^(?:Та́же,?\s*)?(Г[^\s]{0,8}\s+поми́лꙋй[^\n]{0,15})/u);
-      if (mercy) {
-        const offset = mercy[0].indexOf(mercy[1]);
-        mark(start + offset, start + mercy[0].length, 'mercy');
+      // The abbreviation for Господи varies by Unicode titlo sequence.
+      // Identify the mercy phrase by its stable verb, then color from
+      // the preceding word through the numeric repetition mark.
+      if (/^Та́же[,\s]/u.test(trimmed)) {
+        const verb = trimmed.search(/поми́лꙋй/u);
+        if (verb >= 0) {
+          const prefix = trimmed.slice(0, verb).trimEnd();
+          const wordStart = prefix.lastIndexOf(' ') + 1;
+          if (wordStart > 0 && /^Г/u.test(trimmed.slice(wordStart))) {
+            mark(start + wordStart, start + trimmed.length, 'mercy');
+          }
+        }
       }
     }
     const marker = /(?:^|\s)(Сла́ва:|Слава:|И҆ ны́нѣ:|И ныне:)/gu;
@@ -1888,7 +1896,9 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         }
         const span = document.createElement('span');
         const standaloneDecoration = standalonePsalterRanges.find(range =>
-          midpoint >= range.start && midpoint < range.end);
+          midpoint >= range.start && midpoint < range.end && range.kind === 'mercy') ||
+          standalonePsalterRanges.find(range =>
+            midpoint >= range.start && midpoint < range.end);
         if (isStandaloneTraditionalPsalterPrayer &&
             standaloneDecoration?.kind === 'heading' &&
             /^Тропар/u.test(text.slice(standaloneDecoration.start, standaloneDecoration.end)) &&
