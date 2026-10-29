@@ -497,6 +497,24 @@ export const READER_STYLES = String.raw`
 }
 
 
+/* Keep all styled pieces of a prayer heading inside one centered line. */
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-title-line {
+  display: block;
+  width: 100%;
+  text-align: center;
+  text-align-last: center;
+  white-space: normal;
+}
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-title-line .psalter-standalone-center-title {
+  display: inline !important;
+  width: auto;
+}
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-bow,
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-bow .liturgical-word {
+  color: #765238 !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+}
 /* The Trinity prayer heading is centered without an underline. */
 .reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-center-title {
   display: block;
