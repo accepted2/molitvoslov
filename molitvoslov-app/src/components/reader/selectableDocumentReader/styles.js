@@ -631,6 +631,9 @@ export const READER_STYLES = String.raw`
   white-space: normal;
   max-width: 100%;
 }
+.reader-row-parallel .reader-text.psalter-reading-prayers .psalter-civil-mercy-together > span:first-child {
+  white-space: nowrap;
+}
 .reader-row-parallel .reader-text.psalter-reading-prayers .psalter-civil-mercy-together .psalter-repeat-note {
   display: block;
   white-space: nowrap;
