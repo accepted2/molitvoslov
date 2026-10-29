@@ -1440,8 +1440,14 @@ const isLastKathismaTraditionalPrayer =
   itemConfig?.metadata?.language === 'traditional' &&
   itemConfig?.metadata?.section === 'prayers_after' &&
   Number(itemConfig?.metadata?.kathisma_number) === 20;
+// The prayer title is now rendered in the section header, outside block.text.
 const lastKathismaPrayerBodyStart = isLastKathismaTraditionalPrayer
-  ? String(text).indexOf('Мл҃тва') + 'Мл҃тва'.length : -1;
+  ? (itemConfig?.metadata?.part === 'prayer'
+      ? 0
+      : String(text).indexOf('Мл҃тва') >= 0
+        ? String(text).indexOf('Мл҃тва') + 'Мл҃тва'.length
+        : -1)
+  : -1;
 const traditionalFirstKathismaIntroRanges = [];
 const isFirstKathismaTraditionalPrayer =
   isPsalterPrayer &&
@@ -1740,8 +1746,8 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
          
         const span = document.createElement('span');
         if (isLastKathismaTraditionalPrayer &&
-            lastKathismaPrayerBodyStart >= 'Мл҃тва'.length &&
-            midpoint > lastKathismaPrayerBodyStart) {
+            lastKathismaPrayerBodyStart >= 0 &&
+            midpoint >= lastKathismaPrayerBodyStart) {
           span.classList.add('psalter-last-kathisma-prayer-body');
         }
         if (traditionalAndNowRanges.some(range =>
@@ -2119,8 +2125,8 @@ if (isPrayerHeading) {
 }
 
 if (isLastKathismaTraditionalPrayer &&
-    lastKathismaPrayerBodyStart >= 'Мл҃тва'.length &&
-    midpoint > lastKathismaPrayerBodyStart) {
+    lastKathismaPrayerBodyStart >= 0 &&
+    midpoint >= lastKathismaPrayerBodyStart) {
   span.classList.remove('psalter-traditional-prayer-red', 'psalter-prayer-accent');
   span.style.setProperty('color', '#2B190F', 'important');
   span.style.setProperty('font-weight', '400', 'important');
