@@ -496,6 +496,34 @@ export const READER_STYLES = String.raw`
   text-align-last: left;
 }
 
+
+/* Psalter: standalone prayers before/after reading, traditional Ponomar. */
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-heading,
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-heading .liturgical-word {
+  color: #765238 !important;
+  font-weight: 700 !important;
+  font-style: normal !important;
+  display: inline;
+}
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-rubric,
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-rubric .liturgical-word {
+  color: #765238 !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+}
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-glory,
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-glory .liturgical-word {
+  color: #B22222 !important;
+  font-weight: 700 !important;
+  font-style: normal !important;
+}
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-mercy,
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-mercy .liturgical-word {
+  color: #B22222 !important;
+  font-weight: 400 !important;
+  font-style: normal !important;
+}
+
 .reader-text.psalter-reading-prayers .paragraph-gap {
   height: 0;
 }
