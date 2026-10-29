@@ -166,6 +166,8 @@ export const READER_RUNTIME = String.raw`
       container.appendChild( wrapper );
     };
     const renderDocument = () => {
+      reader.classList.toggle('psalter-kathisma-reader',
+        (DATA.document.sections || []).some(section => section.className === 'psalter-psalm-section'));
           reader.classList.toggle(
         'psalter-traditional-headings',
         DATA.document.viewSwitcher?.activeKey === 'traditional' &&
