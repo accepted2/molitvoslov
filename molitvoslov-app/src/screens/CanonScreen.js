@@ -17,6 +17,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {BottomNav} from '../components/navigation/BottomNav';
 import {
   READER_LANGUAGE_MODES,
   buildReaderLanguageOptions,
@@ -166,6 +167,8 @@ export const CanonScreen = ({route, navigation}) => {
   const headerHeight = insets.top + 56;
 
   const [canon, setCanon] = useState(null);
+  const [readingChromeHidden, setReadingChromeHidden] = useState(false);
+  const handleReadingScroll = direction => setReadingChromeHidden(direction === 'down');
 
   const [savedItems, setSavedItems] = useState([]);
 
@@ -820,6 +823,8 @@ export const CanonScreen = ({route, navigation}) => {
         savedProgress={readerProgress}
         focusTarget={focusTarget}
         topContentInset={headerHeight}
+        bottomContentInset={90}
+        onReadingScroll={handleReadingScroll}
         onProgress={scheduleSave}
         onAction={handleAction}
         onViewModeChange={setViewMode}
@@ -841,11 +846,14 @@ export const CanonScreen = ({route, navigation}) => {
         title={getLocalizedField(canon, 'title', language) || title || t('reading.canon')}
         navigation={navigation}
         topInset={insets.top}
-        showTitle={false}
+        showTitle
+        compactReading
+        readingHidden={readingChromeHidden}
         showMenu
         onMenuPress={openReaderMenu}
       />
-    </View>
+
+      <BottomNav navigation={navigation} active={null} readingHidden={readingChromeHidden} />    </View>
   );
 };
 
