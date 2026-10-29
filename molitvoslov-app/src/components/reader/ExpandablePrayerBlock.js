@@ -72,10 +72,21 @@ export default function ExpandablePrayerBlock({
     [ukrainianText, saveProps?.metadata?.section]
   );
 
-  const normalizedTraditionalText = useMemo(
-    () => stripSharedRubric(traditionalText),
-    [traditionalText, saveProps?.metadata?.section]
-  );
+  const normalizedTraditionalText = useMemo(() => {
+    let value = stripSharedRubric(traditionalText);
+    if (saveProps?.metadata?.section === 'prayers_before') {
+      // Only in the traditional reading: keep one Slavonic heading and
+      // put each opening blessing on the next line after its rubric.
+      value = value.replace(
+        /^([АА҆][^\n]{0,95}?глаго́летъ:)\s*/u,
+        '$1\n\n'
+      ).replace(
+        /^([АА҆][^\n]{0,110}?глаго́ли[^\n]{0,50}?:)\s*/gmu,
+        '$1\n\n'
+      );
+    }
+    return value;
+  }, [traditionalText, saveProps?.metadata?.section]);
 
   useEffect(() => {
     if (!isOpen || !saveProps?.sourceType || !saveProps?.sourceId) {
@@ -248,6 +259,7 @@ export default function ExpandablePrayerBlock({
             {
               layout: blocks.length > 1 ? 'parallel' : 'stack',
               sharedTitle:
+                viewMode === READER_LANGUAGE_MODES.TRADITIONAL ? '' :
                 saveProps?.metadata?.section === 'prayers_before'
                   ? 'Разумно да будет, како подобает особь пети Псалтирь'
                   : saveProps?.metadata?.section === 'prayers_after'
