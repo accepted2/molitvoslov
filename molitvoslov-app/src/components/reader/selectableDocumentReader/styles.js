@@ -198,6 +198,12 @@ export const READER_STYLES = String.raw`
       background: #F1DFC2;
       border-color: rgba(123, 79, 36, 0.28);
     }
+    /* In the kathisma reader hearts sit on the left, opposite their previous position. */
+    .psalter-kathisma-reader .document-header .document-action,
+    body:not(.book-mode) .psalter-kathisma-reader .section-action {
+      left: 0;
+      right: auto;
+    }
     body:not(.book-mode) .section-header {
       position: relative;
       min-height: 34px;
