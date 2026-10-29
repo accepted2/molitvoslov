@@ -1485,6 +1485,10 @@ if (isStandaloneTraditionalPsalterPrayer) {
     const mark = (from, to, kind) => {
       if (to > from) standalonePsalterRanges.push({start: from, end: to, kind});
     };
+    if (itemConfig?.metadata?.section === 'prayers_before' &&
+        lineOffset === 0 && /^Ра/u.test(trimmed)) {
+      mark(start, start + trimmed.length, 'opening-heading');
+    }
     if (itemConfig?.metadata?.section === 'prayers_after') {
       // Red initial letters belong to prayer paragraphs, not the headings,
       // priestly directions, bows or repeated doxology labels.
