@@ -1339,7 +1339,14 @@ export default function KathismaScreen({route, navigation}) {
       };
       const splitBlocks = blocks.map(splitPostKathisma);
       const addPostKathismaSection = (part, title, savable = false) => {
-        const partBlocks = splitBlocks.map(item => item[part]).filter(Boolean);
+        const partBlocks = splitBlocks.map(item => item[part]).filter(Boolean).map(block => {
+          if (part !== 'prayer') return block;
+          // The prayer title belongs in the section header beside its save heart.
+          const heading = block.metadata?.language === 'traditional'
+            ? /^Мл҃тва\s*/u
+            : /^Молитва\s*:?\s*/iu;
+          return {...block, text: block.text.replace(heading, '').trimStart()};
+        });
         if (!partBlocks.length) return;
         const actionKey = 'kathisma:' + part;
         const savedPart = savable && savedItems.some(item =>
@@ -1366,7 +1373,7 @@ export default function KathismaScreen({route, navigation}) {
       addPostKathismaSection('introduction', '');
       addPostKathismaSection('troparia', 'Тропари', true);
       addPostKathismaSection('conclusion', '');
-      addPostKathismaSection('prayer', '', true);
+      addPostKathismaSection('prayer', showTraditional ? 'Мл҃тва' : 'Молитва', true);
 
     }
 
