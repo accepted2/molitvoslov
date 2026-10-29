@@ -1436,6 +1436,14 @@ const isStandaloneTraditionalPsalterPrayer =
   itemConfig?.metadata?.language === 'traditional' &&
   !itemConfig?.metadata?.kathisma_number &&
   ['prayers_before', 'prayers_after'].includes(itemConfig?.metadata?.section);
+const standaloneDismissalBodyStart =
+  isStandaloneTraditionalPsalterPrayer &&
+  itemConfig?.metadata?.section === 'prayers_after'
+    ? (() => {
+        const label = text.match(/А҆́ще ли просты́й, конча́етъ си́це:/u);
+        return label ? text.indexOf(label[0]) + label[0].length : -1;
+      })()
+    : -1;
 const standalonePsalterRanges = [];
 const standaloneSeparatorStarts = new Set();
 if (isStandaloneTraditionalPsalterPrayer) {
@@ -2307,6 +2315,12 @@ if (isPrayerHeading) {
 if (isLastKathismaTraditionalPrayer &&
     lastKathismaPrayerBodyStart >= 0 &&
     midpoint >= lastKathismaPrayerBodyStart) {
+  span.classList.remove('psalter-traditional-prayer-red', 'psalter-prayer-accent');
+  span.style.setProperty('color', '#2B190F', 'important');
+  span.style.setProperty('font-weight', '400', 'important');
+  span.style.setProperty('font-style', 'normal', 'important');
+}
+if (standaloneDismissalBodyStart >= 0 && midpoint >= standaloneDismissalBodyStart) {
   span.classList.remove('psalter-traditional-prayer-red', 'psalter-prayer-accent');
   span.style.setProperty('color', '#2B190F', 'important');
   span.style.setProperty('font-weight', '400', 'important');
