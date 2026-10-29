@@ -14,6 +14,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {BottomNav} from '../components/navigation/BottomNav';
 import {getPrayerBook} from '../services/prayerBooks';
 import {useLanguage} from '../context/LanguageContext';
 
@@ -352,6 +353,27 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + 56;
   const [book, setBook] = useState(null);
+  const [readingChromeHidden, setReadingChromeHidden] = useState(false);
+  const lastScrollY = React.useRef(0);
+  const scrollDirection = React.useRef('');
+  const scrollDistance = React.useRef(0);
+  const handleReadingScroll = event => {
+    const nextY = Math.max(0, event.nativeEvent.contentOffset.y);
+    const delta = nextY - lastScrollY.current;
+    lastScrollY.current = nextY;
+    if (Math.abs(delta) > 100) { scrollDistance.current = 0; return; }
+    const direction = nextY < 35 ? 'up' : delta > 0 ? 'down' : 'up';
+    if (direction !== scrollDirection.current && delta !== 0) {
+      scrollDistance.current += Math.abs(delta);
+      if (scrollDistance.current >= 26 || nextY < 35) {
+        scrollDirection.current = direction;
+        scrollDistance.current = 0;
+        setReadingChromeHidden(direction === 'down');
+      }
+    } else {
+      scrollDistance.current = 0;
+    }
+  };
 
   const load = useCallback(async () => {
     const current = await getPrayerBook(bookSyncId);
@@ -375,11 +397,13 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
       <StatusBar style="light" translucent backgroundColor="transparent" />
 
       <ScrollView
+        onScroll={handleReadingScroll}
+        scrollEventThrottle={32}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingTop: headerHeight + 14,
           paddingHorizontal: 14,
-          paddingBottom: 36 + insets.bottom,
+          paddingBottom: 105 + insets.bottom,
         }}
       >
         {!prayerSyncId && !!book?.description && (
@@ -445,11 +469,14 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
       )}
 
       <FixedSectionHeader
-        title={book?.title || t('prayerBooks.title')}
+        title={prayerSyncId && items.length === 1 ? (items[0]?.prayer?.title || book?.title) : (book?.title || t('prayerBooks.title'))}
         navigation={navigation}
         topInset={insets.top}
-        showTitle={false}
+        showTitle
+        compactReading
+        readingHidden={readingChromeHidden}
       />
+      {!prayerSyncId && <BottomNav navigation={navigation} active={null} readingHidden={readingChromeHidden} />}
     </View>
   );
 };
