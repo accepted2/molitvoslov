@@ -78,7 +78,7 @@ export const FixedSectionHeader = ({
               styles.titleWrap,
               compactReading && styles.titleWrapReading,
               !showBack && styles.titleWrapRoot,
-              titleOffsetY !== 0 && {
+              titleOffsetY !== 0 && !compactReading && {
                 transform: [{translateY: titleOffsetY}],
               },
             ]}
