@@ -627,11 +627,16 @@ export const READER_STYLES = String.raw`
 }
 /* Parallel CS + RU: do not force the whole mercy phrase into one narrow column line. */
 .reader-row-parallel .reader-text.psalter-reading-prayers .psalter-civil-mercy-together {
-  display: inline;
+  display: inline-block;
   white-space: normal;
+  max-width: 100%;
 }
 .reader-row-parallel .reader-text.psalter-reading-prayers .psalter-civil-mercy-together .psalter-repeat-note {
+  display: block;
   white-space: nowrap;
+}
+.reader-row-parallel .reader-text.psalter-reading-prayers .psalter-civil-mercy-together .psalter-prayer-rubric-block {
+  display: block;
 }
 .reader-text.psalter-reading-prayers .psalter-civil-mercy-together .psalter-prayer-rubric-block {
   display: inline;
