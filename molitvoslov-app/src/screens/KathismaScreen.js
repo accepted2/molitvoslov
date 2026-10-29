@@ -1324,17 +1324,17 @@ export default function KathismaScreen({route, navigation}) {
           }
           offset += line.length + 1;
         }
-        const makePart = (begin, finish) => {
+        const makePart = (begin, finish, part) => {
           if (begin < 0 || finish <= begin) return null;
           const content = text.slice(begin, finish).trim();
-          return content ? {...block, id: nextBlockId++, text: content} : null;
+          return content ? {...block, id: nextBlockId++, text: content, metadata: {...block.metadata, part}} : null;
         };
         const troparEnd = mercyStart >= 0 ? mercyStart : prayerStart;
         return {
-          introduction: makePart(0, troparStart >= 0 ? troparStart : (prayerStart >= 0 ? prayerStart : text.length)),
-          troparia: makePart(troparStart, troparEnd),
-          conclusion: makePart(mercyStart, prayerStart),
-          prayer: makePart(prayerStart, text.length),
+          introduction: makePart(0, troparStart >= 0 ? troparStart : (prayerStart >= 0 ? prayerStart : text.length), 'introduction'),
+          troparia: makePart(troparStart, troparEnd, 'troparia'),
+          conclusion: makePart(mercyStart, prayerStart, 'conclusion'),
+          prayer: makePart(prayerStart, text.length, 'prayer'),
         };
       };
       const splitBlocks = blocks.map(splitPostKathisma);
