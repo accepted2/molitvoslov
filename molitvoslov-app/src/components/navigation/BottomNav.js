@@ -58,7 +58,7 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
       ]}
     >
       <LinearGradient
-        colors={['rgba(61, 36, 22, 0.86)', 'rgba(90, 52, 29, 0.86)']}
+        colors={['rgba(61, 36, 22, 0.98)', 'rgba(90, 52, 29, 0.98)']}
         start={{x: 0, y: 0}}
         end={{x: 1, y: 1}}
         style={styles.container}
