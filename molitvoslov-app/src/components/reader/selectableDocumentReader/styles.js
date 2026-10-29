@@ -119,6 +119,23 @@ export const READER_STYLES = String.raw`
       background: rgba(161, 110, 53, 0.075);
       box-shadow: inset 0 0 0 1px rgba(123, 79, 36, 0.18);
     }
+    /* Saved psalm styling must not include the separate "Glory..." prayer. */
+    .rule-item.psalter-psalm-section.whole-saved {
+      margin-left: 0;
+      margin-right: 0;
+      padding: 0 0 14px;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    .rule-item.psalter-psalm-section.whole-saved .psalter-psalm-verses-row {
+      margin-left: -8px;
+      margin-right: -8px;
+      padding: 10px 8px;
+      border-radius: 12px;
+      background: rgba(161, 110, 53, 0.075);
+      box-shadow: inset 0 0 0 1px rgba(123, 79, 36, 0.18);
+    }
     .document-action-row {
       display: flex;
       justify-content: center;
