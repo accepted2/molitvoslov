@@ -18,6 +18,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {BottomNav} from '../components/navigation/BottomNav';
 import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
@@ -45,6 +46,8 @@ export const PrayerRuleScreen = ({route, navigation}) => {
   const headerHeight = insets.top + 56;
 
   const [rule, setRule] = useState(null);
+  const [readingChromeHidden, setReadingChromeHidden] = useState(false);
+  const handleReadingScroll = direction => setReadingChromeHidden(direction === 'down');
 
   const [savedItems, setSavedItems] = useState([]);
 
@@ -247,6 +250,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         onProgress={scheduleSave}
         onViewModeChange={handleViewModeChange}
         onHeaderTitleVisibilityChange={setShowStickyTitle}
+        onReadingScroll={handleReadingScroll}
       />
 
       <MemorialQuickSheet
@@ -260,10 +264,13 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         title={getLocalizedField(rule, 'name', language) || t('reading.prayerRule')}
         navigation={navigation}
         topInset={insets.top}
-        showTitle={showStickyTitle}
+        showTitle={true}
+        compactReading
+        readingHidden={readingChromeHidden}
         titleOffsetY={-4}
       />
-    </View>
+
+      <BottomNav navigation={navigation} active={null} readingHidden={readingChromeHidden} />    </View>
   );
 };
 
