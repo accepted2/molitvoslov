@@ -1806,7 +1806,7 @@ if (isStandaloneCivilBeforePsalter) {
     return match ? from + match.index : -1;
   };
   if (itemConfig?.metadata?.language === 'russian') {
-    const words = ['благословен бог наш', 'по молитвам святых', 'слава тебе боже наш'];
+    const words = ['благословен бог наш', 'по молитвам святых', 'слава тебе, боже наш'];
     for (let n = 0; n < words.length; n++) {
       const at = plainText.indexOf(words[n]);
       if (at < 0) continue;
