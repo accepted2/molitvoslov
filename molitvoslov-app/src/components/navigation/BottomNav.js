@@ -15,7 +15,7 @@ const ITEMS = [
 ];
 
 const NavIcon = ({type, active}) => {
-  const color = active ? '#2C170B' : '#E3C692';
+  const color = active ? '#2C170B' : '#F5DCB5';
 
   const iconNames = {
     home: 'home',
@@ -58,7 +58,7 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
       ]}
     >
       <LinearGradient
-        colors={['rgba(61, 36, 22, 0.89)', 'rgba(90, 52, 29, 0.89)']}
+        colors={['rgba(61, 36, 22, 0.86)', 'rgba(90, 52, 29, 0.86)']}
         start={{x: 0, y: 0}}
         end={{x: 1, y: 1}}
         style={styles.container}
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
 
   label: {
     marginTop: 2,
-    color: '#E7D2AB',
+    color: '#F5DCB5',
     fontFamily: 'serif',
     paddingHorizontal: 1,
     fontSize: 10,
