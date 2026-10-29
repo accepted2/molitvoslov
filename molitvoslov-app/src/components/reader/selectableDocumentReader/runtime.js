@@ -1882,7 +1882,7 @@ if (isStandaloneCivilBeforePsalter) {
     }
   }
 }
-const parallelPsalterLayout = isStandaloneCivilBeforePsalter && DATA.viewMode === 'both';
+const parallelPsalterLayout = isStandaloneCivilBeforePsalter && !!root.closest('.reader-row-parallel');
 let parallelTroparBreak = -1;
 if (parallelPsalterLayout) {
   const normalized = normalizedAkathistTextWithIndex(text);
