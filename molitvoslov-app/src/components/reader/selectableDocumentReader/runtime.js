@@ -1804,12 +1804,12 @@ if (isStandaloneCivilBeforePsalter) {
     const match = pattern.exec(plainText.slice(from));
     return match ? from + match.index : -1;
   };
-  const trisagion = locate(/святый\s+боже|святой\s+боже/u);
+  const trisagion = locate(/святый\s+боже|святой\s+боже|святой\s+боже/u);
   const firstGlory = trisagion >= 0
     ? locate(/слава\s+отцу/u, trisagion)
     : -1;
   const trinity = firstGlory >= 0
-    ? locate(/пресвятая\s+троиц/u, firstGlory)
+    ? locate(/пресвятая\s+троиц|пресвятая\s+троице/u, firstGlory)
     : -1;
   const mercy = trinity >= 0
     ? locate(/господи,?\s+помилуй/u, trinity)
@@ -1831,7 +1831,7 @@ if (isStandaloneCivilBeforePsalter) {
         start: positions[mercy],
         end: finish < positions.length ? positions[finish] : text.length,
       });
-      const whole = /господи,?\s+помилуй,?\s*\(трижды\.\)/u.exec(plainText.slice(mercy));
+      const whole = /господи,?\s+помилуй[.,]?\s*\((?:трижды\.?|3\s*раза?)\)/u.exec(plainText.slice(mercy));
       if (whole && whole.index === 0) {
         const endAt = mercy + whole[0].length;
         civilBeforeMercyTogether = {start: positions[mercy], end: positions[endAt] ?? text.length};
@@ -1848,20 +1848,20 @@ let civilTrinitySecondLineStart = -1;
 let civilTrinitySecondLineEnd = -1;
 if (isStandaloneCivilBeforePsalter) {
   const {normalized, originalIndex} = normalizedAkathistTextWithIndex(text);
-  const mercy40 = /Господи,?\s*помилуй\s*\(40\)/iu.exec(normalized);
+  const mercy40 = /Господи,?\s*помилуй\s*\(40(?:\s*раз)?\)/iu.exec(normalized);
   if (mercy40) {
     const mercyPosition = originalIndex[mercy40.index];
     if (Number.isFinite(mercyPosition) && mercyPosition > 0) {
       civilFortyDividerStarts.add(mercyPosition);
     }
     const remaining = normalized.slice(mercy40.index + mercy40[0].length);
-    const bow = /И\s+поклонися,?\s*елико/iu.exec(remaining);
+    const bow = /И\s+поклонися,?\s*елико|И\s+поклонись,?\s*сколько/iu.exec(remaining);
     if (bow) {
       civilFortyBowStart = originalIndex[
         mercy40.index + mercy40[0].length + bow.index
       ] ?? -1;
     }
-    const heading = /Молитва\s+(Свят(?:ейшей|ей|ой)\s+Живоначальн(?:ей|ой)\s+Троице)/iu.exec(remaining);
+    const heading = /Молитва\s+((?:Пресвят(?:ой|ейшей)|Свят(?:ейшей|ей|ой))\s+Живоначальн(?:ей|ой)\s+Троице)/iu.exec(remaining);
     if (heading) {
       const begin = mercy40.index + mercy40[0].length + heading.index;
       civilTrinityHeadingStart = originalIndex[begin] ?? -1;
