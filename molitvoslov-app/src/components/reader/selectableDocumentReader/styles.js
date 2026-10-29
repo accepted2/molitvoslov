@@ -636,13 +636,8 @@ export const READER_STYLES = String.raw`
   display: block !important;
   width: 100%;
   white-space: nowrap !important;
-  font-size: 12px !important;
-  letter-spacing: -0.15px;
   text-align: left;
   text-align-last: left;
-}
-.reader-row-parallel .reader-text.psalter-reading-prayers .psalter-parallel-mercy-words * {
-  font-size: inherit !important;
 }
 .reader-row-parallel .reader-text.psalter-reading-prayers .psalter-parallel-mercy-words > span,
 .reader-row-parallel .reader-text.psalter-reading-prayers .psalter-parallel-mercy-words .liturgical-word {
