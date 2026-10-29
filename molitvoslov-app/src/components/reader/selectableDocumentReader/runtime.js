@@ -1735,6 +1735,37 @@ const psalterPrayerAccentRanges =
 const isKathismaPrayersAfter =
   itemConfig?.metadata?.section === 'prayers_after';
 
+// Initials and separators for the civil Church Slavonic / Russian
+// versions of the prayers AFTER Psalter reading. Traditional has its
+// own independently styled rules above.
+const isStandaloneCivilAfterPsalter =
+  isPsalterPrayer && isKathismaPrayersAfter &&
+  !isStandaloneTraditionalPsalterPrayer &&
+  !itemConfig?.metadata?.kathisma_number;
+const civilAfterInitialRanges = [];
+const civilAfterDividerStarts = new Set();
+if (isStandaloneCivilAfterPsalter) {
+  const addInitial = (at, divider = false) => {
+    const tail = text.slice(at);
+    const match = tail.match(/[А-ЯЁІЇЄҐ]/u);
+    if (!match || match.index > 4) return;
+    const start = at + match.index;
+    civilAfterInitialRanges.push({start, end: start + 1});
+    if (divider && start > 0) civilAfterDividerStarts.add(start);
+  };
+  // The first prayer starts with Достойно. Both the optional
+  // "О Тебе радуется" and subsequent prayers start new sections.
+  const first = text.match(/^\\s*(?:Досто́йно|Достойно)/u);
+  if (first) addInitial(first[0].length - first[0].trim().length);
+  for (const found of text.matchAll(/(?:^|\\n)(\\s*(?:О\\s+Тебе|О\\s+Тебѣ|Поми́луй\\s+нас|Помилуй\\s+нас|Многомилостиве|Многоми́лостиве))/giu)) {
+    addInitial(found.index + found[0].indexOf(found[1]), true);
+  }
+  // "Или:" is the transition after the first prayer, not a prayer
+  // initial itself: draw the line before the instruction.
+  for (const found of text.matchAll(/(?:^|\\n)(\\s*Или́?:?)/giu)) {
+    civilAfterDividerStarts.add(found.index + found[0].indexOf(found[1]));
+  }
+}
 const psalterPrayerInitialRanges =
   isPsalterPrayer && !isKathismaPrayersAfter
     ? collectPsalterPrayerInitialRanges(text)
@@ -1817,7 +1848,11 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
             boundaries.add( range.start );
             boundaries.add( range.end );
           })
-          psalterPrayerInitialRanges.forEach(range => {
+          civilAfterInitialRanges.forEach(range => {
+          boundaries.add(range.start);
+          boundaries.add(range.end);
+        });
+        psalterPrayerInitialRanges.forEach(range => {
             boundaries.add(range.start);
             boundaries.add(range.end);
           });
@@ -1903,6 +1938,9 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
          
         if (isStandaloneTraditionalPsalterPrayer &&
             standaloneSeparatorStarts.has(start)) {
+          appendPsalterSeparator(fragment);
+        }
+        if (isStandaloneCivilAfterPsalter && civilAfterDividerStarts.has(start)) {
           appendPsalterSeparator(fragment);
         }
         const span = document.createElement('span');
@@ -2101,6 +2139,10 @@ if (isSearchHit) {
             span.classList.add(
               'psalter-prayer-initial'
             );
+          }
+          if (isStandaloneCivilAfterPsalter &&
+              civilAfterInitialRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
+            span.classList.add('psalter-prayer-initial');
           }
 
           const psalterRubricText =
