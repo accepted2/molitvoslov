@@ -1786,24 +1786,24 @@ if (isStandaloneCivilBeforePsalter) {
     const match = pattern.exec(text.slice(offset));
     return match ? offset + match.index : -1;
   };
-  const trisagion = findFrom(/Свят(?:ы|о)й\\s+Боже/iu, 0);
+  const trisagion = findFrom(/Свят(?:ы|о)й\s+Боже/iu, 0);
   const firstGlory = trisagion >= 0
-    ? findFrom(/Сла[\\u0300-\\u036f]*ва\\s+Отцу/iu, trisagion)
+    ? findFrom(/Сла[\u0300-\u036f]*ва\s+Отцу/iu, trisagion)
     : -1;
   const trinity = firstGlory >= 0
-    ? findFrom(/Пресвят(?:а|а́)я\\s+Троиц/iu, firstGlory)
+    ? findFrom(/Пресвят(?:а|а́)я\s+Троиц/iu, firstGlory)
     : -1;
   const mercy = trinity >= 0
-    ? findFrom(/Господи[,]?\\s+помилуй/iu, trinity)
+    ? findFrom(/Господи[,]?\s+помилуй/iu, trinity)
     : -1;
   const lastGlory = mercy >= 0
-    ? findFrom(/Сла[\\u0300-\\u036f]*ва\\s+Отцу/iu, mercy)
+    ? findFrom(/Сла[\u0300-\u036f]*ва\s+Отцу/iu, mercy)
     : -1;
   for (const start of [firstGlory, mercy, lastGlory]) {
     if (start > 0) civilBeforeDividerStarts.add(start);
   }
   if (mercy >= 0) {
-    const response = /Господи[,]?\\s+помилуй(?:[,]?\\s*\\(Трижды\\.\\))?/iu.exec(text.slice(mercy));
+    const response = /Господи[,]?\s+помилуй(?:[,]?\s*\(Трижды\.\))?/iu.exec(text.slice(mercy));
     if (response) {
       const end = mercy + response[0].length;
       civilBeforeMercyRanges.push({start: mercy, end});
