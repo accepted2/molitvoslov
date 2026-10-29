@@ -1310,7 +1310,7 @@ export default function KathismaScreen({route, navigation}) {
           .toLowerCase();
         for (const line of lines) {
           const plain = normalize(line).trim();
-          if (troparStart < 0 && /^(?:таже\s+)?тропар/u.test(plain) && /глас/u.test(plain)) {
+          if (troparStart < 0 && /тропар/u.test(plain) && /глас/u.test(plain)) {
             troparStart = offset;
           } else if (troparStart >= 0 && mercyStart < 0 &&
                      /^(?:господи|гди)\s*,?\s*помил/u.test(plain)) {
@@ -1331,7 +1331,7 @@ export default function KathismaScreen({route, navigation}) {
         };
         const troparEnd = mercyStart >= 0 ? mercyStart : prayerStart;
         return {
-          introduction: makePart(0, troparStart),
+          introduction: makePart(0, troparStart >= 0 ? troparStart : (prayerStart >= 0 ? prayerStart : text.length)),
           troparia: makePart(troparStart, troparEnd),
           conclusion: makePart(mercyStart, prayerStart),
           prayer: makePart(prayerStart, text.length),
