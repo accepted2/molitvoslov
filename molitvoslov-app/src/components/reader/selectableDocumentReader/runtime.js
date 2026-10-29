@@ -2612,6 +2612,22 @@ if (
             }
           }
         }
+        if (isStandaloneCivilBeforePsalter && itemConfig?.metadata?.language === 'russian') {
+          root.querySelectorAll('.psalter-prayer-separator').forEach(divider => {
+            for (const direction of ['previousSibling', 'nextSibling']) {
+              let adjacent = divider[direction];
+              while (adjacent && !String(adjacent.textContent || '').trim()) {
+                const next = adjacent[direction];
+                if (adjacent.nodeType === Node.TEXT_NODE) {
+                  adjacent.textContent = '';
+                } else if (adjacent.nodeType === Node.ELEMENT_NODE) {
+                  adjacent.classList.add('psalter-prayer-gap-hidden');
+                }
+                adjacent = next;
+              }
+            }
+          });
+        }
         hideKnownEditorialMarkers( root );
         compactParagraphGaps( root );
         collapsePsalterRubricTrailingWhitespace( root );
