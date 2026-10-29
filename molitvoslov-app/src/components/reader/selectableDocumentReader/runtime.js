@@ -1760,6 +1760,12 @@ if (isStandaloneCivilAfterPsalter) {
   for (const found of text.matchAll(/(?:^|\n)(\s*(?:О\s+Тебе|О\s+Тебѣ|Поми́луй\s+нас|Помилуй\s+нас|Многомилостиве|Многоми́лостиве))/giu)) {
     addInitial(found.index + found[0].indexOf(found[1]), true);
   }
+  // The alternate hymn may follow "Или" on the same physical line.
+  for (const found of text.matchAll(/Или́?:?\s+(О\s+Теб[еѣ])/giu)) {
+    const at = found.index + found[0].lastIndexOf(found[1]);
+    addInitial(at);
+    civilAfterDividerStarts.add(found.index);
+  }
   // "Или:" is the transition after the first prayer, not a prayer
   // initial itself: draw the line before the instruction.
   for (const found of text.matchAll(/(?:^|\n)(\s*Или́?:?)/giu)) {
