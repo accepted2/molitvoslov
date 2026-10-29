@@ -620,6 +620,16 @@ export const READER_STYLES = String.raw`
   font-style: normal !important;
 }
 
+/* Keep the complete threefold mercy response on a single visual line. */
+.reader-text.psalter-reading-prayers .psalter-civil-mercy-together {
+  display: inline-block;
+  white-space: nowrap;
+}
+.reader-text.psalter-reading-prayers .psalter-civil-mercy-together .psalter-prayer-rubric-block {
+  display: inline;
+  margin: 0;
+}
+
 .reader-text.psalter-reading-prayers .paragraph-gap {
   height: 0;
 }
