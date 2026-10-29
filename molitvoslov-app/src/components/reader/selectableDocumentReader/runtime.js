@@ -1780,6 +1780,7 @@ const isStandaloneCivilBeforePsalter =
   itemConfig?.metadata?.language !== 'traditional' &&
   !itemConfig?.metadata?.kathisma_number;
 const civilBeforeDividerStarts = new Set();
+const russianOpeningInitials = [];
 const civilBeforeMercyRanges = [];
 let civilBeforeMercyTogether = null;
 if (isStandaloneCivilBeforePsalter) {
@@ -1804,6 +1805,16 @@ if (isStandaloneCivilBeforePsalter) {
     const match = pattern.exec(plainText.slice(from));
     return match ? from + match.index : -1;
   };
+  if (itemConfig?.metadata?.language === 'russian') {
+    const words = ['благословен бог наш', 'по молитвам святых', 'слава тебе боже наш'];
+    for (let n = 0; n < words.length; n++) {
+      const at = plainText.indexOf(words[n]);
+      if (at < 0) continue;
+      const start = positions[at];
+      russianOpeningInitials.push({start, end: start + 1});
+      if (n === 2 && start > 0) civilBeforeDividerStarts.add(start);
+    }
+  }
   const trisagion = locate(/святый\s+боже|святой\s+боже|святой\s+боже/u);
   const firstGlory = trisagion >= 0
     ? locate(/слава\s+отцу/u, trisagion)
@@ -1958,6 +1969,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           boundaries.add(range.end);
         });
         civilBeforeDividerStarts.forEach(start => boundaries.add(start));
+        russianOpeningInitials.forEach(range => { boundaries.add(range.start); boundaries.add(range.end); });
         civilFortyDividerStarts.forEach(start => boundaries.add(start));
         if (civilFortyBowStart >= 0) boundaries.add(civilFortyBowStart);
         if (civilTrinityHeadingStart >= 0) boundaries.add(civilTrinityHeadingStart);
@@ -2227,6 +2239,9 @@ if (isSearchHit) {
                 midpoint < range.end
             );
 
+          if (russianOpeningInitials.some(range => midpoint >= range.start && midpoint < range.end)) {
+            span.classList.add('psalter-prayer-initial');
+          }
           const isPsalterPrayerInitial =
             isPsalterPrayer &&
             psalterPrayerInitialRanges.some(
