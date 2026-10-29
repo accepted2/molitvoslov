@@ -1473,6 +1473,10 @@ if (isStandaloneTraditionalPsalterPrayer) {
       const rubric = trimmed.match(/^.{1,95}?:/u);
       mark(start, start + (rubric ? rubric[0].length : trimmed.length), 'rubric');
     }
+    if (itemConfig?.metadata?.section === 'prayers_before' &&
+        /^Та́же посто́й/u.test(trimmed)) {
+      mark(start, start + trimmed.length, 'final-rubric');
+    }
     if (/^Мл҃тва(?:\s|$)/u.test(trimmed)) {
       mark(start, start + trimmed.length, 'center-title');
     }
