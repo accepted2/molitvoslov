@@ -1772,6 +1772,44 @@ if (isStandaloneCivilAfterPsalter) {
     civilAfterDividerStarts.add(found.index + found[0].indexOf(found[1]));
   }
 }
+// The ordinary Church Slavonic and Russian opening prayers share these
+// liturgical divisions; traditional Ponomar keeps its separate renderer.
+const isStandaloneCivilBeforePsalter =
+  isPsalterPrayer &&
+  itemConfig?.metadata?.section === 'prayers_before' &&
+  itemConfig?.metadata?.language !== 'traditional' &&
+  !itemConfig?.metadata?.kathisma_number;
+const civilBeforeDividerStarts = new Set();
+const civilBeforeMercyRanges = [];
+if (isStandaloneCivilBeforePsalter) {
+  const findFrom = (pattern, offset) => {
+    const match = pattern.exec(text.slice(offset));
+    return match ? offset + match.index : -1;
+  };
+  const trisagion = findFrom(/Свят(?:ы|о)й\\s+Боже/iu, 0);
+  const firstGlory = trisagion >= 0
+    ? findFrom(/Сла[\\u0300-\\u036f]*ва\\s+Отцу/iu, trisagion)
+    : -1;
+  const trinity = firstGlory >= 0
+    ? findFrom(/Пресвят(?:а|а́)я\\s+Троиц/iu, firstGlory)
+    : -1;
+  const mercy = trinity >= 0
+    ? findFrom(/Господи[,]?\\s+помилуй/iu, trinity)
+    : -1;
+  const lastGlory = mercy >= 0
+    ? findFrom(/Сла[\\u0300-\\u036f]*ва\\s+Отцу/iu, mercy)
+    : -1;
+  for (const start of [firstGlory, mercy, lastGlory]) {
+    if (start > 0) civilBeforeDividerStarts.add(start);
+  }
+  if (mercy >= 0) {
+    const response = /Господи[,]?\\s+помилуй(?:[,]?\\s*\\(Трижды\\.\\))?/iu.exec(text.slice(mercy));
+    if (response) {
+      const end = mercy + response[0].length;
+      civilBeforeMercyRanges.push({start: mercy, end});
+    }
+  }
+}
 const psalterPrayerInitialRanges =
   isPsalterPrayer && !isKathismaPrayersAfter
     ? collectPsalterPrayerInitialRanges(text)
@@ -1855,6 +1893,11 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
             boundaries.add( range.end );
           })
           civilAfterInitialRanges.forEach(range => {
+          boundaries.add(range.start);
+          boundaries.add(range.end);
+        });
+        civilBeforeDividerStarts.forEach(start => boundaries.add(start));
+        civilBeforeMercyRanges.forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
@@ -1947,6 +1990,9 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           appendPsalterSeparator(fragment);
         }
         if (isStandaloneCivilAfterPsalter && civilAfterDividerStarts.has(start)) {
+          appendPsalterSeparator(fragment);
+        }
+        if (isStandaloneCivilBeforePsalter && civilBeforeDividerStarts.has(start)) {
           appendPsalterSeparator(fragment);
         }
         const span = document.createElement('span');
@@ -2087,6 +2133,10 @@ if (isSearchHit) {
                   range.end );
           if ( isAkathistInitial ) {
             span.classList.add( 'akathist-initial' );
+          }
+          if (isStandaloneCivilBeforePsalter &&
+              civilBeforeMercyRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
+            span.classList.add('psalter-civil-before-mercy');
           }
           const isPsalterPrayerAccent =
             isPsalterPrayer &&
