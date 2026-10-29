@@ -1893,6 +1893,16 @@ if (parallelPsalterLayout) {
     if (comma >= 0) parallelTroparBreak = normalized.originalIndex[next] ?? -1;
   }
 }
+const parallelMercyCommaPositions = new Set();
+if (parallelPsalterLayout && civilBeforeMercyTogether) {
+  const part = text.slice(civilBeforeMercyTogether.start, civilBeforeMercyTogether.end);
+  const note = part.indexOf('(');
+  if (note >= 0) {
+    for (let i = 0; i < note; i++) {
+      if (part[i] === ',') parallelMercyCommaPositions.add(civilBeforeMercyTogether.start + i);
+    }
+  }
+}
 const psalterPrayerInitialRanges =
   isPsalterPrayer && !isKathismaPrayersAfter
     ? collectPsalterPrayerInitialRanges(text)
@@ -1981,6 +1991,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         });
         civilBeforeDividerStarts.forEach(start => boundaries.add(start));
         if (parallelTroparBreak >= 0) boundaries.add(parallelTroparBreak);
+        parallelMercyCommaPositions.forEach(pos => { boundaries.add(pos); boundaries.add(pos + 1); });
         russianOpeningInitials.forEach(range => { boundaries.add(range.start); boundaries.add(range.end); });
         civilFortyDividerStarts.forEach(start => boundaries.add(start));
         if (civilFortyBowStart >= 0) boundaries.add(civilFortyBowStart);
@@ -2246,7 +2257,7 @@ if (isSearchHit) {
           }
           if (parallelPsalterLayout && civilBeforeMercyTogether &&
               start >= civilBeforeMercyTogether.start && end <= civilBeforeMercyTogether.end &&
-              /^\s*,\s*$/u.test(text.slice(start, end))) {
+              parallelMercyCommaPositions.has(start)) {
             span.style.setProperty('display', 'none');
           }
           const isPsalterPrayerAccent =
