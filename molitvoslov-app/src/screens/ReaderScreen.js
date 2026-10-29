@@ -27,6 +27,7 @@ import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
+import {useReadingChrome} from '../hooks/useReadingChrome';
 
 export const ReaderScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
@@ -37,8 +38,7 @@ export const ReaderScreen = ({route, navigation}) => {
   const headerHeight = insets.top + 56;
 
   const [text, setText] = useState(null);
-  const [readingChromeHidden, setReadingChromeHidden] = useState(false);
-  const handleReadingScroll = direction => setReadingChromeHidden(direction === 'down');
+  const {readingChromeHidden, handleReadingScroll} = useReadingChrome();
 
   const [savedItems, setSavedItems] = useState([]);
 
