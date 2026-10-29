@@ -15,6 +15,7 @@ import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
+import {useReadingChrome} from '../hooks/useReadingChrome';
 import {getPrayerBook} from '../services/prayerBooks';
 import {useLanguage} from '../context/LanguageContext';
 
@@ -353,7 +354,7 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
   const insets = useSafeAreaInsets();
   const headerHeight = insets.top + 56;
   const [book, setBook] = useState(null);
-  const [readingChromeHidden, setReadingChromeHidden] = useState(false);
+  const {readingChromeHidden, handleReadingScroll: onChromeScroll} = useReadingChrome();
   const lastScrollY = React.useRef(0);
   const scrollDirection = React.useRef('');
   const scrollDistance = React.useRef(0);
@@ -361,14 +362,16 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
     const nextY = Math.max(0, event.nativeEvent.contentOffset.y);
     const delta = nextY - lastScrollY.current;
     lastScrollY.current = nextY;
+    if (delta === 0) return;
+    onChromeScroll('activity');
     if (Math.abs(delta) > 100) { scrollDistance.current = 0; return; }
     const direction = nextY < 35 ? 'up' : delta > 0 ? 'down' : 'up';
-    if (direction !== scrollDirection.current && delta !== 0) {
+    if (direction !== scrollDirection.current) {
       scrollDistance.current += Math.abs(delta);
       if (scrollDistance.current >= 26 || nextY < 35) {
         scrollDirection.current = direction;
         scrollDistance.current = 0;
-        setReadingChromeHidden(direction === 'down');
+        onChromeScroll(direction);
       }
     } else {
       scrollDistance.current = 0;
