@@ -543,6 +543,13 @@ export const READER_STYLES = String.raw`
   font-style: normal !important;
   font-weight: 400 !important;
 }
+/* Closing instruction after the three invitations is entirely a rubric. */
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-final-rubric,
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-final-rubric .liturgical-word {
+  color: #765238 !important;
+  font-weight: 400 !important;
+  font-style: italic !important;
+}
 /* Psalter: standalone prayers before/after reading, traditional Ponomar. */
 .reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-heading,
 .reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-heading .liturgical-word {
