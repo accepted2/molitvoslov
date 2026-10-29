@@ -1429,6 +1429,46 @@ const collectPsalterRubricRanges = value => {
   String(itemConfig?.className || '')
     .includes('psalter-prayer');
 
+// Dedicated typography for the two expandable Psalter prayer blocks.
+// Preserve original Unicode and selection offsets; decorate ranges only.
+const isStandaloneTraditionalPsalterPrayer =
+  isPsalterPrayer &&
+  itemConfig?.metadata?.language === 'traditional' &&
+  !itemConfig?.metadata?.kathisma_number &&
+  ['prayers_before', 'prayers_after'].includes(itemConfig?.metadata?.section);
+const standalonePsalterRanges = [];
+if (isStandaloneTraditionalPsalterPrayer) {
+  let lineOffset = 0;
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim();
+    const start = lineOffset + line.indexOf(trimmed);
+    const plain = trimmed.normalize('NFD')
+      .replace(/[\u0300-\u036f\u0483-\u0489]/gu, '')
+      .toLowerCase()
+      .replace(/[ѡѻ]/gu, 'о').replace(/ѣ/gu, 'е')
+      .replace(/[і ї]/gu, 'и').replace(/ꙋ/gu, 'у');
+    const mark = (from, to, kind) => {
+      if (to > from) standalonePsalterRanges.push({start: from, end: to, kind});
+    };
+    if (/^(?:тропар|мл|молитв|и покло|посем|по соверш|или всего)/u.test(plain) &&
+        (/глас|млтв|молитв|поклон|глаголи|соверш|псалтир|кафисм|каѳисм/u.test(plain))) {
+      mark(start, start + trimmed.length, 'heading');
+    } else if (/^(?:аще|аще ли|или|таже|поклон|посем|и поклон)/u.test(plain)) {
+      const rubric = trimmed.match(/^.{1,95}?:/u);
+      mark(start, start + (rubric ? rubric[0].length : trimmed.length), 'rubric');
+    }
+    const marker = /(?:^|\s)(Сла́ва:|Слава:|И҆ ны́нѣ:|И ныне:)/gu;
+    for (const match of line.matchAll(marker)) {
+      const pos = lineOffset + match.index + match[0].indexOf(match[1]);
+      mark(pos, pos + match[1].length, 'glory');
+    }
+    if (/^(?:гд|господи)/u.test(plain) && /помил/u.test(plain) &&
+        (/(?:м҃|трижды|40|\(3\))/u.test(plain))) {
+      mark(start, start + trimmed.length, 'mercy');
+    }
+    lineOffset += line.length + 1;
+  }
+}
 const traditionalPrayerRedRanges = [];
 const traditionalOpeningRepeatRanges = [];
 const traditionalAndNowRanges = [];
@@ -1695,6 +1735,10 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
     boundaries.add( range.end );
   }
 );
+        standalonePsalterRanges.forEach(range => {
+          boundaries.add(range.start);
+          boundaries.add(range.end);
+        });
         saved.forEach( range => {
             boundaries.add( range.start );
             boundaries.add( range.end );
@@ -1745,6 +1789,12 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           const isActive = !!active && midpoint >= active.start && midpoint < active.end;
          
         const span = document.createElement('span');
+        const standaloneDecoration = standalonePsalterRanges.find(range =>
+          midpoint >= range.start && midpoint < range.end);
+        if (standaloneDecoration) {
+          span.classList.add('psalter-standalone-' + standaloneDecoration.kind);
+        }
+
         if (isLastKathismaTraditionalPrayer &&
             lastKathismaPrayerBodyStart >= 0 &&
             midpoint >= lastKathismaPrayerBodyStart) {
