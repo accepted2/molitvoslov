@@ -58,7 +58,7 @@ export default function ExpandablePrayerBlock({
     if (saveProps?.metadata?.section === 'prayers_before' && compactCivilDoxology) {
       // The separator supplies the visual break before the doxology.
       // Do not leave an additional empty paragraph after 'Господи, помилуй'.
-      return normalized.replace(/\n(?:[ \t]*\n)+(?=[ \t]*Сла[\u0300-\u036f]*ва)/giu, '\n');
+      return normalized.replace(/\n(?:[ \t]*\n)+(?=[ \t]*Сла[\u0300-\u036f]*ва)/giu, '\n').replace(/(Господи,?\s+помилуй)\s*,?\s*(\(Трижды\.\))/giu, '$1,\u00a0$2');
     }
     return normalized;
   };
