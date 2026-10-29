@@ -1482,6 +1482,11 @@ if (isStandaloneTraditionalPsalterPrayer) {
       const pos = lineOffset + match.index + match[0].indexOf(match[1]);
       mark(pos, pos + match[1].length, 'glory');
     }
+    const bow = line.match(/\(И҆\s+поклони́сѧ[^)]*\)/u);
+    if (bow) {
+      const offsetInLine = line.indexOf(bow[0]);
+      mark(lineOffset + offsetInLine, lineOffset + offsetInLine + bow[0].length, 'bow');
+    }
     // Match the repeat instruction exactly, not the prayer words before it.
     for (const match of line.matchAll(/три́жды|трижды/giu)) {
       const pos = lineOffset + match.index;
