@@ -6,6 +6,7 @@ export const useReadingChrome = () => {
   const [hidden, setHidden] = useState(false);
   const hideTimer = useRef(null);
   const hiddenRef = useRef(false);
+  const lastDirection = useRef(null);
 
   const setVisibility = useCallback((nextHidden) => {
     if (hiddenRef.current === nextHidden) return;
@@ -17,9 +18,11 @@ export const useReadingChrome = () => {
     if (hideTimer.current) clearTimeout(hideTimer.current);
     hideTimer.current = null;
     if (direction === 'activity') {
+      if (lastDirection.current === 'up') setVisibility(false);
       if (!hiddenRef.current) hideTimer.current = setTimeout(() => setVisibility(true), 2000);
       return;
     }
+    lastDirection.current = direction;
     if (direction === 'down') {
       setVisibility(true);
       return;
