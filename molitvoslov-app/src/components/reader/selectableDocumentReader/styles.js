@@ -498,14 +498,22 @@ export const READER_STYLES = String.raw`
 
 
 /* The Trinity prayer heading is centered without an underline. */
-.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-center-title,
-.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-center-title .liturgical-word {
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-center-title {
   display: block;
+  width: 100%;
   text-align: center;
   text-align-last: center;
   color: #765238 !important;
   font-style: normal !important;
   font-weight: 400 !important;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-center-title .liturgical-word {
+  display: inline !important;
+  color: inherit !important;
+  font-style: inherit !important;
+  font-weight: inherit !important;
 }
 .reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-mercy,
 .reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-mercy .liturgical-word {
@@ -520,6 +528,9 @@ export const READER_STYLES = String.raw`
   font-weight: 700 !important;
   font-style: normal !important;
   display: inline;
+}
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-heading .liturgical-word {
+  display: inline !important;
 }
 .reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-rubric,
 .reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-rubric .liturgical-word {
