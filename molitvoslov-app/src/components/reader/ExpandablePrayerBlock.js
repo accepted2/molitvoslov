@@ -118,11 +118,8 @@ export default function ExpandablePrayerBlock({
       // Priest and layperson conclusions are two separate complete rubrics.
       // Never merge either label into the following dismissal prayer.
       value = value.replace(
-        /(А҆́ще і҆ере́й, конча́етъ сщ҃е́ннически\.)\s*/u,
-        '$1\n\n'
-      ).replace(
-        /(А҆́ще ли просты́й, конча́етъ си́це:)\s*/u,
-        '$1\n\n'
+        /(А҆́ще і҆ере́й, конча́етъ сщ҃е́ннически\.)\s*(А҆́ще ли просты́й, конча́етъ си́це:)\s*/u,
+        '$1 $2\n'
       );
       // The three bows in St Ephrem's prayer are standalone rubrics.
       // Limit the replacement to the text before the next prayer heading.
