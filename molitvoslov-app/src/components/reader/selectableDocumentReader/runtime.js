@@ -1484,7 +1484,7 @@ if (isStandaloneTraditionalPsalterPrayer) {
       const isPrayerOpening =
         /^(?:Досто́йно|Поми́лꙋй на́съ|Гдⷭ҇и и҆ влⷣко|Дꙋ́хъ же|Є҆́й гдⷭ҇и|Многомлⷭ҇тиве|Чⷭ҇тнѣ́йшꙋю|Гдⷭ҇и і҆и҃се)/u.test(trimmed);
       if (isPrayerOpening) {
-        const firstLetter = trimmed.match(/[А-ЯЁІЇЄҐѢѲѴѠѺꙖҀ-Яа-яіїѣѳѡѻꙗ]/u);
+        const firstLetter = trimmed.match(/\p{L}/u);
         if (firstLetter) {
           mark(start + firstLetter.index, start + firstLetter.index + firstLetter[0].length, 'prayer-initial');
         }
