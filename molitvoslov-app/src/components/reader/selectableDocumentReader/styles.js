@@ -501,6 +501,13 @@ export const READER_STYLES = String.raw`
 }
 
 
+/* Traditional pre-Psalter introduction: heading color, original typeface and weight. */
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-opening-heading,
+.reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-opening-heading .liturgical-word {
+  color: #765238 !important;
+  font-style: normal !important;
+}
+
 /* Keep all styled pieces of a prayer heading inside one centered line. */
 .reader-language-traditional .reader-text.psalter-reading-prayers .psalter-standalone-title-line {
   display: block;
