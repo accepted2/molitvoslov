@@ -572,7 +572,7 @@ export const READER_STYLES = String.raw`
   display: block;
   width: min(100%, 260px);
   min-height: 40px;
-  margin: 8px auto 12px;
+  margin: 8px auto 2px;
   padding: 0;
   border: 1px solid rgba(123, 79, 36, 0.24);
   border-radius: 12px;
