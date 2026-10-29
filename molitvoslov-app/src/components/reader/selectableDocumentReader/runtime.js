@@ -2674,6 +2674,24 @@ if (
             }
           });
         }
+        // Traditional pre-Psalter prayer: discard blank text nodes directly
+        // after the centered Trinity heading, without changing other sections.
+        if (isStandaloneTraditionalPsalterPrayer &&
+            itemConfig?.metadata?.section === 'prayers_before') {
+          const title = root.querySelector('.psalter-standalone-title-line');
+          if (title) {
+            let node = title.nextSibling;
+            while (node && !String(node.textContent || '').trim()) {
+              const next = node.nextSibling;
+              if (node.nodeType === Node.TEXT_NODE) node.textContent = '';
+              else if (node.nodeType === Node.ELEMENT_NODE &&
+                       !node.classList.contains('psalter-prayer-separator')) {
+                node.classList.add('psalter-prayer-gap-hidden');
+              }
+              node = next;
+            }
+          }
+        }
         hideKnownEditorialMarkers( root );
         compactParagraphGaps( root );
         collapsePsalterRubricTrailingWhitespace( root );
