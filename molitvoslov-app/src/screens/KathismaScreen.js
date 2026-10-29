@@ -20,6 +20,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {BottomNav} from '../components/navigation/BottomNav';
 import {
   READER_LANGUAGE_MODES,
   buildReaderLanguageOptions,
@@ -140,6 +141,8 @@ export default function KathismaScreen({route, navigation}) {
   const headerHeight = insets.top + 56;
 
   const [kathisma, setKathisma] = useState(null);
+  const [readingChromeHidden, setReadingChromeHidden] = useState(false);
+  const handleReadingScroll = direction => setReadingChromeHidden(direction === 'down');
 
   const [savedItems, setSavedItems] = useState([]);
 
@@ -1521,6 +1524,8 @@ export default function KathismaScreen({route, navigation}) {
         savedProgress={readerProgress}
         focusTarget={normalizedFocusTarget}
         topContentInset={headerHeight}
+        bottomContentInset={90}
+        onReadingScroll={handleReadingScroll}
         onProgress={handleProgress}
         onAction={handleAction}
         onViewModeChange={setViewMode}
@@ -1549,11 +1554,14 @@ export default function KathismaScreen({route, navigation}) {
         title={t('psalter.kathisma', {number: kathisma.number})}
         navigation={navigation}
         topInset={insets.top}
-        showTitle={false}
+        showTitle
+        compactReading
+        readingHidden={readingChromeHidden}
         showMenu
         onMenuPress={openReaderMenu}
       />
-    </View>
+
+      <BottomNav navigation={navigation} active={null} readingHidden={readingChromeHidden} />    </View>
   );
 }
 
