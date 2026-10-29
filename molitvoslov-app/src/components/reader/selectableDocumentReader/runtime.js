@@ -1462,6 +1462,11 @@ if (isStandaloneTraditionalPsalterPrayer) {
       const pos = lineOffset + match.index + match[0].indexOf(match[1]);
       mark(pos, pos + match[1].length, 'glory');
     }
+    // Match the repeat instruction exactly, not the prayer words before it.
+    for (const match of line.matchAll(/три́жды|трижды/giu)) {
+      const pos = lineOffset + match.index;
+      mark(pos, pos + match[0].length, 'repeat');
+    }
     if (/^(?:гд|господи)/u.test(plain) && /помил/u.test(plain) &&
         (/(?:м҃|трижды|40|\(3\))/u.test(plain))) {
       mark(start, start + trimmed.length, 'mercy');
@@ -1793,6 +1798,13 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           midpoint >= range.start && midpoint < range.end);
         if (standaloneDecoration) {
           span.classList.add('psalter-standalone-' + standaloneDecoration.kind);
+        }
+        if (standaloneDecoration?.kind === 'repeat') {
+          span.classList.add('psalter-repeat-note');
+          span.style.setProperty('color', '#765238', 'important');
+          span.style.setProperty('font-style', 'italic', 'important');
+          span.style.setProperty('font-weight', '700', 'important');
+          span.style.setProperty('white-space', 'nowrap');
         }
 
         if (isLastKathismaTraditionalPrayer &&
