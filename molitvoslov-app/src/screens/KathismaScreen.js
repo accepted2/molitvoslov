@@ -88,7 +88,9 @@ const buildLanguageChunk = (verses, field) => {
       text += '\n';
     }
 
-    const numberPrefix = field === 'church_slavonic_traditional'\n      ? `${toChurchSlavonicNumber(verse.number)}.\u202F`\n      : `${verse.number}.\u202F`;
+    const numberPrefix = field === 'church_slavonic_traditional'
+      ? `${toChurchSlavonicNumber(verse.number)}.\u202F`
+      : `${verse.number}.\u202F`;
 
     text += numberPrefix;
 
