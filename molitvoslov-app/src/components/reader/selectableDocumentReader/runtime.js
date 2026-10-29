@@ -1782,31 +1782,54 @@ const isStandaloneCivilBeforePsalter =
 const civilBeforeDividerStarts = new Set();
 const civilBeforeMercyRanges = [];
 if (isStandaloneCivilBeforePsalter) {
-  const findFrom = (pattern, offset) => {
-    const match = pattern.exec(text.slice(offset));
-    return match ? offset + match.index : -1;
+  // Match the liturgical words after removing stress marks but retain
+  // exact UTF-16 offsets, including combining accents, for the DOM.
+  const letters = [];
+  const positions = [];
+  for (let index = 0; index < text.length;) {
+    const cp = text.codePointAt(index);
+    const letter = String.fromCodePoint(cp);
+    const originalLength = letter.length;
+    const plain = (letter === 'й' || letter === 'Й' ? letter : letter.normalize('NFD'))
+      .replace(/[\u0300-\u036f\u0483-\u0489]/gu, '');
+    for (const symbol of plain) {
+      letters.push(symbol.toLowerCase());
+      positions.push(index);
+    }
+    index += originalLength;
+  }
+  const plainText = letters.join('');
+  const locate = (pattern, from = 0) => {
+    const match = pattern.exec(plainText.slice(from));
+    return match ? from + match.index : -1;
   };
-  const trisagion = findFrom(/Свят(?:ы|о)й\s+Боже/iu, 0);
+  const trisagion = locate(/святый\s+боже|святой\s+боже/u);
   const firstGlory = trisagion >= 0
-    ? findFrom(/Сла[\u0300-\u036f]*ва\s+Отцу/iu, trisagion)
+    ? locate(/слава\s+отцу/u, trisagion)
     : -1;
   const trinity = firstGlory >= 0
-    ? findFrom(/Пресвят(?:а|а́)я\s+Троиц/iu, firstGlory)
+    ? locate(/пресвятая\s+троиц/u, firstGlory)
     : -1;
   const mercy = trinity >= 0
-    ? findFrom(/Господи[,]?\s+помилуй/iu, trinity)
+    ? locate(/господи,?\s+помилуй/u, trinity)
     : -1;
   const lastGlory = mercy >= 0
-    ? findFrom(/Сла[\u0300-\u036f]*ва\s+Отцу/iu, mercy)
+    ? locate(/слава\s+отцу/u, mercy)
     : -1;
-  for (const start of [firstGlory, mercy, lastGlory]) {
-    if (start > 0) civilBeforeDividerStarts.add(start);
+
+  for (const position of [firstGlory, mercy, lastGlory]) {
+    if (position > 0 && positions[position] > 0) {
+      civilBeforeDividerStarts.add(positions[position]);
+    }
   }
   if (mercy >= 0) {
-    const response = /Господи[,]?\s+помилуй(?:[,]?\s*\(Трижды\.\))?/iu.exec(text.slice(mercy));
-    if (response) {
-      const end = mercy + response[0].length;
-      civilBeforeMercyRanges.push({start: mercy, end});
+    const phrase = /господи,?\s+помилуй/u.exec(plainText.slice(mercy));
+    if (phrase) {
+      const finish = mercy + phrase[0].length;
+      civilBeforeMercyRanges.push({
+        start: positions[mercy],
+        end: finish < positions.length ? positions[finish] : text.length,
+      });
     }
   }
 }
