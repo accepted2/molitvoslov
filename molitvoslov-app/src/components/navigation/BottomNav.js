@@ -1,5 +1,5 @@
-import React from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import React, {useEffect, useRef} from 'react';
+import {Animated, Pressable, StyleSheet, Text, View} from 'react-native';
 import {CommonActions} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {LinearGradient} from 'expo-linear-gradient';
@@ -31,7 +31,11 @@ const NavIcon = ({type, active}) => {
   return <Feather name={iconNames[type] || 'circle'} size={17} color={color} />;
 };
 
-export const BottomNav = ({navigation, active}) => {
+export const BottomNav = ({navigation, active, readingHidden = false}) => {
+  const visibility = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(visibility, {toValue: readingHidden ? 1 : 0, duration: 220, useNativeDriver: true}).start();
+  }, [readingHidden, visibility]);
   const insets = useSafeAreaInsets();
   const {t} = useLanguage();
 
@@ -43,10 +47,11 @@ export const BottomNav = ({navigation, active}) => {
   };
 
   return (
-    <View
-      pointerEvents="box-none"
+    <Animated.View
+      pointerEvents={readingHidden ? 'none' : 'box-none'}
       style={[
         styles.wrapper,
+        {transform: [{translateY: visibility.interpolate({inputRange: [0, 1], outputRange: [0, 100]})}], opacity: visibility.interpolate({inputRange: [0, 1], outputRange: [1, 0]})},
         {
           bottom: Math.max(insets.bottom + 5, 8),
         },
@@ -94,7 +99,7 @@ export const BottomNav = ({navigation, active}) => {
           })}
         </View>
       </LinearGradient>
-    </View>
+    </Animated.View>
   );
 };
 
