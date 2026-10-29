@@ -2633,6 +2633,23 @@ if (
 
         }
         root.replaceChildren( fragment );
+        // Parallel columns: remove only empty nodes between the threefold
+        // mercy note and the following doxology separator.
+        if (parallelPsalterLayout) {
+          const mercyBlock = root.querySelector('.psalter-civil-mercy-together');
+          if (mercyBlock) {
+            let next = mercyBlock.nextSibling;
+            while (next && !String(next.textContent || '').trim()) {
+              const following = next.nextSibling;
+              if (next.nodeType === Node.TEXT_NODE) next.textContent = '';
+              else if (next.nodeType === Node.ELEMENT_NODE &&
+                       !next.classList.contains('psalter-prayer-separator')) {
+                next.classList.add('psalter-prayer-gap-hidden');
+              }
+              next = following;
+            }
+          }
+        }
         // The two-line Trinity heading already creates its own block.
         // Suppress only redundant blank-line spans before the prayer body,
         // while keeping the existing separator and ordinary spacing.
