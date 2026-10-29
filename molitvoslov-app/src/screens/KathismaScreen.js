@@ -1310,15 +1310,15 @@ export default function KathismaScreen({route, navigation}) {
           .toLowerCase();
         for (const line of lines) {
           const plain = normalize(line).trim();
-          if (troparStart < 0 && /^(?:таже\\s+)?тропар/u.test(plain) && /глас/u.test(plain)) {
+          if (troparStart < 0 && /^(?:таже\s+)?тропар/u.test(plain) && /глас/u.test(plain)) {
             troparStart = offset;
           } else if (troparStart >= 0 && mercyStart < 0 &&
-                     /^(?:господи|гди)\\s*,?\\s*помил/u.test(plain)) {
+                     /^(?:господи|гди)\s*,?\s*помил/u.test(plain)) {
             mercyStart = offset;
           }
           if (prayerStart < 0 && (
-            /^молитва(?:\\s|$)/u.test(plain) ||
-            /^млтва(?:\\s|$)/u.test(plain)
+            /^молитва(?:\s|$)/u.test(plain) ||
+            /^млтва(?:\s|$)/u.test(plain)
           )) {
             prayerStart = offset;
           }
