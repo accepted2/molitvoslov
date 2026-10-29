@@ -1471,8 +1471,7 @@ if (isStandaloneTraditionalPsalterPrayer) {
          /^Посе́мъ глаго́ли/u.test(trimmed) ||
          /^Многомлⷭ҇тиве/u.test(trimmed) ||
          /^Чⷭ҇тнѣ́йш/u.test(trimmed) ||
-         /^А҆́ще і҆ере́й/u.test(trimmed) ||
-         /^А҆́ще ли просты́й/u.test(trimmed))) {
+         /^А҆́ще і҆ере́й/u.test(trimmed))) {
       standaloneSeparatorStarts.add(start);
     }
     const mark = (from, to, kind) => {
@@ -1491,7 +1490,8 @@ if (isStandaloneTraditionalPsalterPrayer) {
       }
       // Keep the entire priestly instruction distinct from the lay rubric.
       if (/^А҆́ще і҆ере́й/u.test(trimmed)) {
-        mark(start, start + trimmed.length, 'final-rubric');
+        const directions = trimmed.match(/^.*?конча́етъ си́це:/u);
+        mark(start, start + (directions ? directions[0].length : trimmed.length), 'final-rubric');
       }
     }
     if (itemConfig?.metadata?.section === 'prayers_after') {
