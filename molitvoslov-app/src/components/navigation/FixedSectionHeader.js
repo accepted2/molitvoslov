@@ -1,5 +1,5 @@
 import React, {useEffect, useRef} from 'react';
-import {Animated, Pressable, StyleSheet, Text, View} from 'react-native';
+import {Animated, Easing, Pressable, StyleSheet, Text, View} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 
 export const FixedSectionHeader = ({
@@ -19,7 +19,7 @@ export const FixedSectionHeader = ({
   const headerHeight = topInset + (minimal ? 46 : 56);
   const visibility = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(visibility, {toValue: readingHidden ? 1 : 0, duration: 220, useNativeDriver: true}).start();
+    Animated.timing(visibility, {toValue: readingHidden ? 1 : 0, duration: 340, easing: Easing.out(Easing.cubic), useNativeDriver: true}).start();
   }, [readingHidden, visibility]);
 
   return (
@@ -63,6 +63,7 @@ export const FixedSectionHeader = ({
             onPress={() => navigation.goBack()}
             style={({pressed}) => [
               styles.backButton,
+              compactReading && styles.backButtonReading,
               minimal && styles.backButtonMinimal,
               pressed && styles.pressed,
             ]}
@@ -75,6 +76,7 @@ export const FixedSectionHeader = ({
           <View
             style={[
               styles.titleWrap,
+              compactReading && styles.titleWrapReading,
               !showBack && styles.titleWrapRoot,
               titleOffsetY !== 0 && {
                 transform: [{translateY: titleOffsetY}],
@@ -82,14 +84,14 @@ export const FixedSectionHeader = ({
             ]}
           >
             <Text
-              style={[styles.title, compactReading && {fontSize: 16, fontWeight: '600'}, dark && styles.titleDark]}
+              style={[styles.title, compactReading && styles.titleReading, dark && styles.titleDark]}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
               {title}
             </Text>
 
-            <View style={styles.ornament}>
+            <View style={[styles.ornament, compactReading && styles.ornamentReading]}>
               <View style={[styles.line, dark && styles.lineDark]} />
               <Text style={[styles.mark, dark && styles.markDark]}>✦</Text>
               <View style={[styles.line, dark && styles.lineDark]} />
@@ -131,6 +133,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
 
+  backButtonReading: {
+    marginTop: -2,
+  },
+  titleWrapReading: {
+    marginLeft: 0,
+    paddingTop: 0,
+    paddingRight: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titleReading: {
+    fontSize: 17,
+    fontWeight: '700',
+    lineHeight: 23,
+    textAlign: 'center',
+    includeFontPadding: false,
+  },
+  ornamentReading: {
+    width: 122,
+    marginTop: 2,
+  },
   titleWrapRoot: {
     marginLeft: 8,
   },
