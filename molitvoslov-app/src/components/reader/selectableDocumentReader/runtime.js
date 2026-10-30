@@ -1049,7 +1049,7 @@ const collectPsalterRubricRanges = value => {
     /(Посем глаголи молитву сию со вниманием:)/giu,
     /(Затем произноси следующую молитву со вниманием:)/giu,
 
-    /(Слава,\s*и\s*ныне:\s*Господи,\s*помилуй\s*\(3\)\.?\s*Благослови\.?)/giu,
+    /(Слава,\s*и\s*ныне:)/giu,
 
     /(Аще иерей,\s*кончает священнически,\s*аще ли простый,\s*кончает сице:)/giu,
     /(Священник произносит отпуст,\s*а мирянин кончает так:)/giu,
@@ -1747,6 +1747,24 @@ const isStandaloneCivilAfterPsalter =
   !isStandaloneTraditionalPsalterPrayer &&
   !itemConfig?.metadata?.kathisma_number;
 const civilAfterInitialRanges = [];
+const civilAfterFinalResponseRanges = [];
+if (isStandaloneCivilAfterPsalter) {
+  const mapped = normalizedAkathistTextWithIndex(text);
+  const pattern = /Слава,?\s*и\s*ныне:\s*(Господи,?\s*помилуй\s*\(3\)\.?)[\s\S]*?(Благослови\.?)/giu;
+  const match = pattern.exec(mapped.normalized);
+  if (match) {
+    for (const phrase of [match[1], match[2]]) {
+      const relative = match[0].indexOf(phrase);
+      const from = match.index + relative;
+      const to = from + phrase.length;
+      civilAfterFinalResponseRanges.push({
+        start: mapped.originalIndex[from],
+        end: mapped.originalIndex[to] ?? text.length,
+      });
+    }
+  }
+}
+
 const civilAfterDividerStarts = new Set();
 if (isStandaloneCivilAfterPsalter) {
   const addInitial = (at, divider = false) => {
@@ -2090,6 +2108,10 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
+        civilAfterFinalResponseRanges.forEach(range => {
+          boundaries.add(range.start);
+          boundaries.add(range.end);
+        });
         civilAfterInitialRanges.forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
@@ -2377,6 +2399,9 @@ if (isSearchHit) {
           }
           if (civilAfterPrayerInitials.some(range => midpoint >= range.start && midpoint < range.end)) {
             span.classList.add('psalter-prayer-initial');
+          }
+          if (civilAfterFinalResponseRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
+            span.classList.add('psalter-civil-final-response');
           }
           const isPsalterPrayerAccent =
             isPsalterPrayer &&
