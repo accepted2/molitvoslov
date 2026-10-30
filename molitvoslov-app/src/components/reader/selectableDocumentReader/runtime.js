@@ -2977,7 +2977,7 @@ if (
         if (isStandaloneCivilAfterPsalter &&
             itemConfig?.metadata?.language === 'russian') {
           const rubric = Array.from(root.querySelectorAll('.psalter-prayer-rubric-block'))
-            .find(node => /сколько\\s+хочешь[\\s\\S]*с\\s+молитвою:/iu
+            .find(node => /сколько\s+хочешь[\s\S]*с\s+молитвою:/iu
               .test(normalizedAkathistTextWithIndex(node.textContent || '').normalized));
           if (rubric) {
             let sibling = rubric.nextSibling;
