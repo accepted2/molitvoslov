@@ -699,6 +699,13 @@ export const READER_STYLES = String.raw`
   white-space: nowrap !important;
 }
 
+/* Pre-Psalter parallel CS column: remove only the excess gap below
+   "(Трижды.)", without changing the right column or other rubrics. */
+.reader-row-parallel .reader-column:first-child .reader-text.psalter-reading-prayers .psalter-parallel-repeat-note {
+  margin-bottom: -12px !important;
+  padding-bottom: 0 !important;
+}
+
 /* Keep only the mercy words together in narrow parallel columns. */
 .reader-row-parallel .reader-text.psalter-reading-prayers .psalter-civil-mercy-together .psalter-civil-before-mercy {
   white-space: nowrap !important;
