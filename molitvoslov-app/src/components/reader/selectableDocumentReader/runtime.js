@@ -2973,10 +2973,19 @@ if (
           const note = root.querySelector('.psalter-parallel-repeat-note');
           if (note) {
             let sibling = note.nextSibling;
-            while (sibling && !String(sibling.textContent || '').trim()) {
+            while (sibling &&
+                   !String(sibling.textContent || '').trim() &&
+                   !sibling.classList?.contains('psalter-prayer-separator')) {
               const next = sibling.nextSibling;
               sibling.remove();
               sibling = next;
+            }
+            // Keep the divider under "(Трижды.)" while removing only
+            // redundant blank lines that caused the oversized gap.
+            if (!note.nextElementSibling?.classList?.contains('psalter-prayer-separator')) {
+              const separator = document.createElement('span');
+              separator.className = 'psalter-prayer-separator';
+              note.after(separator);
             }
           }
           // Permit a balanced two-line Trinity title in the narrow CS column.
