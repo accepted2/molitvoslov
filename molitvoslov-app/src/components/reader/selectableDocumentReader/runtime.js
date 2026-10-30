@@ -2971,6 +2971,30 @@ if (
             }
           }
         }
+        // In the Russian post-Psalter bow instruction a paragraph break is
+        // already supplied by the block rubric. Remove extra blank DOM
+        // siblings before the first Ephrem prayer, leaving normal spacing.
+        if (isStandaloneCivilAfterPsalter &&
+            itemConfig?.metadata?.language === 'russian') {
+          const rubric = Array.from(root.querySelectorAll('.psalter-prayer-rubric-block'))
+            .find(node => /сколько\\s+хочешь[\\s\\S]*с\\s+молитвою:/iu
+              .test(normalizedAkathistTextWithIndex(node.textContent || '').normalized));
+          if (rubric) {
+            let sibling = rubric.nextSibling;
+            while (sibling && !String(sibling.textContent || '').trim()) {
+              const next = sibling.nextSibling;
+              if (sibling.nodeType === Node.TEXT_NODE) {
+                sibling.textContent = '';
+              } else if (sibling.nodeType === Node.ELEMENT_NODE &&
+                         !sibling.classList.contains('psalter-prayer-separator')) {
+                sibling.classList.add('psalter-prayer-gap-hidden');
+              } else {
+                break;
+              }
+              sibling = next;
+            }
+          }
+        }
         hideKnownEditorialMarkers( root );
         compactParagraphGaps( root );
         collapsePsalterRubricTrailingWhitespace( root );
