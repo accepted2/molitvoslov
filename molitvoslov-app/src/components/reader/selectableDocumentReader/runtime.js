@@ -1833,6 +1833,19 @@ if (isStandaloneCivilAfterPsalter) {
   for (const found of text.matchAll(/(?:^|\n)(\s*(?:О\s+Тебе|О\s+Тебѣ|Поми́луй\s+нас|Помилуй\s+нас|Многомилостиве|Многоми́лостиве))/giu)) {
     addInitial(found.index + found[0].indexOf(found[1]), true);
   }
+  // Russian opening of the final prayer: red capital without a divider.
+  if (itemConfig?.metadata?.language === 'russian') {
+    const mapped = normalizedAkathistTextWithIndex(text);
+    const rubric = /Затем\\s+произноси\\s+следующую\\s+молитву\\s+со\\s+вниманием:/iu.exec(mapped.normalized);
+    if (rubric) {
+      const remainder = mapped.normalized.slice(rubric.index + rubric[0].length);
+      const prayer = /Многомилостив[а-яѣ]+/iu.exec(remainder);
+      if (prayer) {
+        const at = mapped.originalIndex[rubric.index + rubric[0].length + prayer.index];
+        if (Number.isFinite(at)) civilAfterInitialRanges.push({start: at, end: at + 1});
+      }
+    }
+  }
   // The alternate hymn may follow "Или" on the same physical line.
   for (const found of text.matchAll(/Или́?:?\s+(О\s+Теб[еѣ])/giu)) {
     const at = found.index + found[0].lastIndexOf(found[1]);
@@ -2540,7 +2553,11 @@ if (isSearchHit) {
             !followsRubric &&
             !followsTraditionalOpening &&
             !isStandaloneTraditionalPsalterPrayer &&
-            start !== civilAfterTroparFirstVerse
+            start !== civilAfterTroparFirstVerse &&
+            !(isStandaloneCivilAfterPsalter &&
+              itemConfig?.metadata?.language === 'russian' &&
+              /затем произноси следующую молитву со вниманием:\\s*$/iu.test(
+                normalizedAkathistTextWithIndex(textBeforeSegment).normalized.toLowerCase()))
           ) {
             appendPsalterSeparator(fragment);
           }
@@ -2610,11 +2627,7 @@ if (isSearchHit) {
                   'посем глаголи молитву сию со вниманием'
                 ));
 
-            const needsSeparatorAfterRubric =
-              normalizedPsalterRubricText.startsWith(
-                'затем произноси следующую молитву со вниманием'
-              ) ||
-              false;
+            const needsSeparatorAfterRubric = false;
 
             span.classList.add(
               'psalter-prayer-rubric'
