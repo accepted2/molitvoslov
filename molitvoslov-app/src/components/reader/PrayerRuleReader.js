@@ -3308,7 +3308,7 @@ const HTML_TEMPLATE = String.raw`
             );
           }
           // Names and remembrance prompts use the same brown rubric style.
-          for (const placeholder of mappedBows.normalized.matchAll(/\(\s*(?:имя|имена(?:\s+их)?)\s*\)|\[\s*(?:родителей|родители)\s+моих\s*\]/giu)) {
+          for (const placeholder of mappedBows.normalized.matchAll(/\(\s*(?:имя|имена(?:\s+их)?)\s*\)|\[\s*родител(?:е[йи]|и)\s+моих\s*\]/giu)) {
             appendOriginalRange(
               bowRubricRanges,
               mappedBows.source,
