@@ -412,11 +412,12 @@ export const READER_STYLES = String.raw`
 
   color: var(--color-late-gray);
 }
-/* Morning prayers: "(Поклон)" uses the same brown as section headings,
-   not the liturgical red. No change to evening prayers or Psalter. */
-.reader-text .morning-prayer-bow,
-.reader-text .morning-prayer-bow.liturgical-word,
-.reader-text .morning-prayer-bow .liturgical-word {
+/* Parenthesized "(Поклон)" is a brown rubric in ordinary prayers,
+   including CS/RU parallel rows. The Psalter keeps its own styling. */
+.reader-text .rubric-bow,
+.reader-text .rubric-bow.liturgical-word,
+.reader-text .rubric-bow .liturgical-word,
+.reader-text .rubric-bow * {
   color: var(--secondary) !important;
   font-style: normal !important;
 }
