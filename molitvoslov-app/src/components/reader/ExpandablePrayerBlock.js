@@ -55,6 +55,14 @@ export default function ExpandablePrayerBlock({
     }
 
     const normalized = normalizeText(source);
+    if (saveProps?.metadata?.section === 'prayers_after' && compactCivilDoxology) {
+      // Keep the rubric after the fortyfold mercy response, but collapse
+      // the unnecessary blank paragraph before its following prayer.
+      return normalized.replace(
+        /(И\s+поклонов[^\n]*?с\s+молитвою:)\n{2,}/iu,
+        '$1\n'
+      );
+    }
     if (saveProps?.metadata?.section === 'prayers_before' && compactCivilDoxology) {
       // The separator supplies the visual break before the doxology.
       // Do not leave an additional empty paragraph after 'Господи, помилуй'.
