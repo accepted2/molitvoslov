@@ -3477,7 +3477,7 @@ const HTML_TEMPLATE = String.raw`
 
           if (
             isDailyPrayerRule &&
-            /^\\(Поклон(?:ы)?\\)$/iu.test(
+            /^\(Поклон(?:ы)?\)$/iu.test(
               text.slice(start, end).trim()
             )
           ) {
