@@ -2749,6 +2749,26 @@ if (
 
         }
         root.replaceChildren( fragment );
+        // The first troparion follows its heading directly, without a divider.
+        // Find the specific separator by the neighboring liturgical text,
+        // independent of how the reader split text into styled spans.
+        if (isStandaloneCivilAfterPsalter) {
+          const renderedNodes = Array.from(root.childNodes);
+          const flat = value => normalizedAkathistTextWithIndex(value)
+            .normalized.toLowerCase().replace(/\\s+/gu, ' ').trim();
+          renderedNodes.forEach((node, index) => {
+            if (node.nodeType !== Node.ELEMENT_NODE ||
+                !node.classList.contains('psalter-prayer-separator')) return;
+            const before = flat(renderedNodes.slice(Math.max(0, index - 12), index)
+              .map(item => item.textContent || '').join(''));
+            const after = flat(renderedNodes.slice(index + 1, index + 13)
+              .map(item => item.textContent || '').join(''));
+            if (/тропари\\s+(?:сия|покаянные),?\\s*глас\\s*(?:6|шестой)$/.test(before) &&
+                /^помилуй\\s+нас/.test(after)) {
+              node.remove();
+            }
+          });
+        }
         // Remove redundant blank paragraphs at the post-Psalter mercy divider.
         if (isStandaloneCivilAfterPsalter && civilAfterMercyRanges.length) {
           root.querySelectorAll('.psalter-prayer-separator').forEach(divider => {
