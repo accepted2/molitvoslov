@@ -61,6 +61,7 @@ export default function ExpandablePrayerBlock({
       return normalized
         .replace(/Посем\s+(?=Честн)/iu, '')
         .replace(/(кончает\s+сице:)[ \t]*(?:\n[ \t]*)+/iu, '$1\n')
+        .replace(/(Затем\s+произноси\s+следующую\s+молитву\s+со\s+вниманием:)[\s\u00a0]*(?=Многомилостив)/iu, '$1\n')
         .replace(/(И\s+поклонов[^\n]*?с\s+молитвою:)[ \t]*(?:\n[ \t]*)+/iu, '$1\n')
         .replace(/(И\s+поклонись[^\n]*?с\s+молитвою:)[ \t]*(?:\n[ \t]*)+/iu, '$1\n')
         .replace(/(с\s+молитвою:?)\s*(?=Господи\s+и\s+Владык[ао])/iu, '$1\n')
