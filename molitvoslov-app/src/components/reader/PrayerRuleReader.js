@@ -405,6 +405,9 @@ const HTML_TEMPLATE = String.raw`
     .reader-text .prayer-bow-rubric * {
       color: var(--secondary) !important;
     }
+    .reader-text .prayer-bow-rubric {
+      font-weight: 650;
+    }
 
 
     .liturgical-block {
