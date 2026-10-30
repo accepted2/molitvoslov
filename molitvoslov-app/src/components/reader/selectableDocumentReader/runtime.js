@@ -2204,12 +2204,16 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         const morningPrayerBowRanges = [];
         const morningPrayerContext = [
           DATA.document?.title,
+          DATA.document?.description,
+          root.closest('.rule-item')?.className,
+          root.closest('.rule-item')?.querySelector('.section-header .prayer-title')?.textContent,
           itemTitleMap.get(Number(itemId)),
           itemConfig?.metadata?.section,
+          itemConfig?.metadata?.category,
         ].filter(Boolean).join(' ');
-        if (/утрен/iu.test(morningPrayerContext)) {
+        if (/утрен|morning/iu.test(morningPrayerContext)) {
           const mappedBow = normalizedAkathistTextWithIndex(text);
-          for (const match of mappedBow.normalized.matchAll(/\(\s*Поклон\s*\)/giu)) {
+          for (const match of mappedBow.normalized.matchAll(/\(\s*поклон\s*\.?\s*\)/giu)) {
             morningPrayerBowRanges.push({
               start: mappedBow.originalIndex[match.index],
               end: mappedBow.originalIndex[match.index + match[0].length] ?? text.length,
@@ -2408,6 +2412,10 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         const span = document.createElement('span');
         if (morningPrayerBowRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
           span.classList.add('morning-prayer-bow');
+          // Override red liturgical highlighting even when this segment
+          // also receives the "liturgical-word" class.
+          span.style.setProperty('color', '#765238', 'important');
+          span.style.setProperty('font-style', 'normal', 'important');
         }
         const standaloneDecoration = standalonePsalterRanges.find(range =>
           midpoint >= range.start && midpoint < range.end && range.kind === 'mercy') ||
