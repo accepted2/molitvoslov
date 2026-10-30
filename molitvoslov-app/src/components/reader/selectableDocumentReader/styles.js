@@ -504,8 +504,11 @@ export const READER_STYLES = String.raw`
 }
 /* Consistent rubric red in all non-traditional before/after Psalter prayers.
    The traditional Church Slavonic rendering retains its own palette. */
-.reader-text.psalter-reading-prayers:not(.reader-language-traditional) {
+.reader-text.psalter-reading-prayers {
   --liturgical: #B22222;
+}
+.reader-language-traditional .reader-text.psalter-reading-prayers {
+  --liturgical: #9B3B32;
 }
 /* Keep "глас 6" together: if it does not fit, move both words. */
 .reader-text.psalter-reading-prayers .psalter-civil-tropar-tone {
