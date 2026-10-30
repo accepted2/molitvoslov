@@ -1748,6 +1748,39 @@ const isStandaloneCivilAfterPsalter =
   !itemConfig?.metadata?.kathisma_number;
 const civilAfterInitialRanges = [];
 const civilAfterFinalResponseRanges = [];
+const civilAfterGloryRanges = [];
+const civilAfterClosingDividers = new Set();
+const civilAfterCherubicInitials = [];
+if (isStandaloneCivilAfterPsalter) {
+  const mapped = normalizedAkathistTextWithIndex(text);
+  const plain = mapped.normalized;
+  const cherubic = /Честнейшую\s+Херувим/iu.exec(plain);
+  const glory = /Слава,?\s+и\s+ныне:/iu.exec(plain);
+  const endBlessing = glory
+    ? /Благослови\.?/iu.exec(plain.slice(glory.index + glory[0].length))
+    : null;
+  const dismissal = endBlessing
+    ? /Аще\s+иерей|Если\s+священник/iu.exec(plain.slice(glory.index + glory[0].length + endBlessing.index + endBlessing[0].length))
+    : null;
+  if (cherubic) {
+    const start = mapped.originalIndex[cherubic.index];
+    if (Number.isFinite(start)) {
+      civilAfterCherubicInitials.push({start, end: start + 1});
+      civilAfterClosingDividers.add(start);
+    }
+  }
+  if (glory) {
+    const start = mapped.originalIndex[glory.index];
+    const end = mapped.originalIndex[glory.index + glory[0].length] ?? text.length;
+    civilAfterGloryRanges.push({start, end});
+  }
+  if (dismissal) {
+    const at = glory.index + glory[0].length + endBlessing.index + endBlessing[0].length + dismissal.index;
+    const start = mapped.originalIndex[at];
+    if (Number.isFinite(start)) civilAfterClosingDividers.add(start);
+  }
+}
+
 if (isStandaloneCivilAfterPsalter) {
   const mapped = normalizedAkathistTextWithIndex(text);
   const pattern = /Слава,?\s*и\s*ныне:\s*(Господи,?\s*помилуй\s*\(3\)\.?)[\s\S]*?(Благослови\.?)/giu;
@@ -2108,6 +2141,10 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
+        civilAfterClosingDividers.forEach(at => boundaries.add(at));
+        [...civilAfterGloryRanges, ...civilAfterCherubicInitials].forEach(range => {
+          boundaries.add(range.start); boundaries.add(range.end);
+        });
         civilAfterFinalResponseRanges.forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
@@ -2226,6 +2263,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           appendPsalterSeparator(fragment);
         }
         if (civilAfterTrisagionStarts.has(start)) appendPsalterSeparator(fragment);
+        if (civilAfterClosingDividers.has(start)) appendPsalterSeparator(fragment);
         if (civilAfterTroparDividers.has(start)) appendPsalterSeparator(fragment);
         if (isStandaloneCivilAfterPsalter && civilAfterDividerStarts.has(start)) {
           appendPsalterSeparator(fragment);
@@ -2403,6 +2441,12 @@ if (isSearchHit) {
           if (civilAfterFinalResponseRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
             span.classList.add('psalter-civil-final-response');
           }
+          if (civilAfterGloryRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
+            span.classList.add('psalter-civil-final-response');
+          }
+          if (civilAfterCherubicInitials.some(range => midpoint >= range.start && midpoint < range.end)) {
+            span.classList.add('psalter-prayer-initial');
+          }
           const isPsalterPrayerAccent =
             isPsalterPrayer &&
             psalterPrayerAccentRanges.some(
@@ -2525,9 +2569,7 @@ if (isSearchHit) {
               normalizedPsalterRubricText.startsWith(
                 'затем произноси следующую молитву со вниманием'
               ) ||
-              normalizedPsalterRubricText.startsWith(
-                'слава, и ныне:'
-              );
+              false;
 
             span.classList.add(
               'psalter-prayer-rubric'
