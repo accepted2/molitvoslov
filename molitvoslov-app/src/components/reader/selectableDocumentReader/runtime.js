@@ -2869,6 +2869,33 @@ if (
 
         }
         root.replaceChildren( fragment );
+        // Russian post-Psalter prayer: insert the line break at the rendered
+        // boundary, regardless of whether the source contains a space/newline.
+        // This matches the working CS layout without changing prayer content.
+        if (isStandaloneCivilAfterPsalter &&
+            /сколько\s+хочешь/iu.test(root.textContent || '')) {
+          const renderedText = root.textContent || '';
+          const transition = /молитвою:\s*(Господи\s+и\s+Владык[ао])/iu.exec(renderedText);
+          if (transition) {
+            const prayerOffset = transition.index + transition[0].lastIndexOf(transition[1]);
+            const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+            let offset = 0;
+            let textNode = null;
+            while ((textNode = walker.nextNode())) {
+              const length = textNode.textContent.length;
+              if (prayerOffset < offset + length) {
+                const local = prayerOffset - offset;
+                const prayerNode = local > 0 ? textNode.splitText(local) : textNode;
+                const previous = prayerNode.previousSibling;
+                if (!(previous && previous.nodeName === 'BR')) {
+                  prayerNode.parentNode.insertBefore(document.createElement('br'), prayerNode);
+                }
+                break;
+              }
+              offset += length;
+            }
+          }
+        }
         // The Church Slavonic instruction has its rule ABOVE, not below.
         // Suppress the automatic prayer-start separator immediately following it.
         if (isStandaloneCivilAfterPsalter) {
