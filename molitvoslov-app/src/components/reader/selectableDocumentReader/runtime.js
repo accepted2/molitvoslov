@@ -2823,7 +2823,7 @@ if (
         // text fragments cannot prevent the match.
         if (isStandaloneCivilAfterPsalter) {
           const rendered = normalizedAkathistTextWithIndex(root.textContent || '');
-          const hymn = /Честн[^\\s]{0,16}\\s+Херувим/iu.exec(rendered.normalized);
+          const hymn = /Честн[^\s]{0,16}\s+Херувим/iu.exec(rendered.normalized);
           if (hymn) {
             const targetOffset = rendered.originalIndex[hymn.index];
             const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
