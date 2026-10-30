@@ -2566,12 +2566,26 @@ const HTML_TEMPLATE = String.raw`
             }
 
             if (DATA.viewMode === 'both') {
-              wrapper.appendChild(
+              const translationElement =
                 el(
                   'div',
                   'translation-text',
                   russianText || 'Перевод пока отсутствует.'
-                )
+                );
+
+              // Preserve the same paragraph breaks as in the Russian tab
+              // for the morning prayer of the Optina Elders.
+              if (
+                isMorningRule &&
+                /оптинск/u.test(normalizedTitle)
+              ) {
+                compactParagraphGaps(
+                  translationElement
+                );
+              }
+
+              wrapper.appendChild(
+                translationElement
               );
             }
 
