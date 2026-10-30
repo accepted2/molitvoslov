@@ -2493,9 +2493,6 @@ if (isSearchHit) {
                 'затем постой немного'
               ) ||
               normalizedPsalterRubricText.startsWith(
-                'посем глаголи молитву сию со вниманием'
-              ) ||
-              normalizedPsalterRubricText.startsWith(
                 'затем произноси следующую молитву со вниманием'
               );
 
