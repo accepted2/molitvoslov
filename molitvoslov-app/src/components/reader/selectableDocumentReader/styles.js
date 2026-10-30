@@ -671,6 +671,12 @@ export const READER_STYLES = String.raw`
   margin: 0;
 }
 
+/* Trisagion after Psalter reading: rubric stays brown, mercy words red. */
+.reader-text.psalter-reading-prayers .psalter-civil-after-mercy,
+.reader-text.psalter-reading-prayers .psalter-civil-after-mercy .liturgical-word {
+  color: #B22222 !important;
+  font-style: normal !important;
+}
 .reader-text.psalter-reading-prayers .paragraph-gap {
   height: 0;
 }
