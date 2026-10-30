@@ -699,11 +699,21 @@ export const READER_STYLES = String.raw`
   white-space: nowrap !important;
 }
 
-/* Pre-Psalter parallel CS column: remove only the excess gap below
-   "(Трижды.)", without changing the right column or other rubrics. */
+/* The note is a single ordinary text line; redundant source blank
+   lines are removed by the renderer rather than hidden with negative margins. */
 .reader-row-parallel .reader-column:first-child .reader-text.psalter-reading-prayers .psalter-parallel-repeat-note {
-  margin-bottom: -12px !important;
-  padding-bottom: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: inherit !important;
+}
+/* Match the two-line Trinity title layout of the adjacent Russian column. */
+.reader-row-parallel .reader-column:first-child .reader-text.psalter-reading-prayers .psalter-civil-trinity-second-line {
+  font-size: 14px;
+  line-height: 23px;
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: manual;
+  -webkit-hyphens: manual;
 }
 
 /* Keep only the mercy words together in narrow parallel columns. */
