@@ -708,6 +708,23 @@ export const READER_STYLES = String.raw`
   display: inline !important;
   margin: 0;
 }
+/* Parallel CS + RU only: allow the "(Трижды.)" note to wrap as
+   a whole when it does not fit beside "Господи, помилуй". */
+.reader-row-parallel .reader-text.psalter-reading-prayers .psalter-civil-after-mercy-together {
+  display: inline !important;
+  width: auto !important;
+  white-space: normal !important;
+}
+.reader-row-parallel .reader-text.psalter-reading-prayers .psalter-civil-after-mercy-together > span {
+  white-space: normal !important;
+}
+.reader-row-parallel .reader-text.psalter-reading-prayers .psalter-civil-after-mercy-together .psalter-repeat-note,
+.reader-row-parallel .reader-text.psalter-reading-prayers .psalter-civil-after-mercy-together .psalter-prayer-rubric,
+.reader-row-parallel .reader-text.psalter-reading-prayers .psalter-civil-after-mercy-together .psalter-prayer-rubric * {
+  display: inline !important;
+  white-space: nowrap !important;
+}
+
 /* Final blessing after Psalter: red response while retaining rubric styling. */
 .reader-text.psalter-reading-prayers .psalter-civil-final-response,
 .reader-text.psalter-reading-prayers .psalter-civil-final-response .liturgical-word {
