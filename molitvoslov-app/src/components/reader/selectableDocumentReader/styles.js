@@ -693,6 +693,13 @@ export const READER_STYLES = String.raw`
   display: inline !important;
   margin: 0;
 }
+/* Final blessing after Psalter: red response while retaining rubric styling. */
+.reader-text.psalter-reading-prayers .psalter-civil-final-response,
+.reader-text.psalter-reading-prayers .psalter-civil-final-response .liturgical-word {
+  color: #B22222 !important;
+  font-style: normal !important;
+  font-weight: 700 !important;
+}
 .reader-text.psalter-reading-prayers .paragraph-gap {
   height: 0;
 }
