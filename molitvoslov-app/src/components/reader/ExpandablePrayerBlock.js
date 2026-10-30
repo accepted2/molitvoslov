@@ -60,7 +60,7 @@ export default function ExpandablePrayerBlock({
       // the unnecessary blank paragraph before its following prayer.
       return normalized
         .replace(/Посем\s+(?=Честн)/iu, '')
-        .replace(/(кончает\s+сице:)[ \t]*(?:\n[ \t]*){2,}/iu, '$1\n')
+        .replace(/(кончает\s+сице:)[ \t]*(?:\n[ \t]*)+/iu, '$1\n')
         .replace(/(И\s+поклонов[^\n]*?с\s+молитвою:)[ \t]*(?:\n[ \t]*)+/iu, '$1\n')
         .replace(/(И\s+поклонись[^\n]*?с\s+молитвою:)[ \t]*(?:\n[ \t]*)+/iu, '$1\n')
         .replace(/([^\n]*?)(\s*\(Поклон\))/giu, (whole, before, bow) =>
