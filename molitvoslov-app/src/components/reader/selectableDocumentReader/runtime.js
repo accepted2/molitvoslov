@@ -2200,28 +2200,22 @@ const psalterRepeatNoteRanges =
 
         const isPsalterText = String( itemConfig ?.className || '' ) .split(' ') .includes('psalter');
 const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges( text ) : [];
-        // Morning prayers only: "Поклон" is a rubric, not a red liturgical word.
-        const morningPrayerBowRanges = [];
-        const morningPrayerContext = [
-          DATA.document?.title,
-          DATA.document?.description,
-          root.closest('.rule-item')?.className,
-          root.closest('.rule-item')?.querySelector('.section-header .prayer-title')?.textContent,
-          itemTitleMap.get(Number(itemId)),
-          itemConfig?.metadata?.section,
-          itemConfig?.metadata?.category,
-        ].filter(Boolean).join(' ');
-        if (/утрен|morning/iu.test(morningPrayerContext)) {
+        // A parenthesized bow is an instruction, not a liturgical response.
+        // Apply to ordinary prayer texts in CS, RU and parallel layouts,
+        // regardless of the document or individual prayer title.
+        const rubricBowRanges = [];
+        if (!isPsalterPrayer && !isPsalterText &&
+            itemConfig?.metadata?.language !== 'traditional') {
           const mappedBow = normalizedAkathistTextWithIndex(text);
           for (const match of mappedBow.normalized.matchAll(/\(\s*поклон\s*\.?\s*\)/giu)) {
-            morningPrayerBowRanges.push({
+            rubricBowRanges.push({
               start: mappedBow.originalIndex[match.index],
               end: mappedBow.originalIndex[match.index + match[0].length] ?? text.length,
             });
           }
         }
         const boundaries = new Set([ 0, text.length, ]);
-        morningPrayerBowRanges.forEach(range => {
+        rubricBowRanges.forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
@@ -2410,10 +2404,8 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         if (parallelTroparBreak === start) fragment.appendChild(document.createElement('br'));
 
         const span = document.createElement('span');
-        if (morningPrayerBowRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
-          span.classList.add('morning-prayer-bow');
-          // Override red liturgical highlighting even when this segment
-          // also receives the "liturgical-word" class.
+        if (rubricBowRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
+          span.classList.add('rubric-bow');
           span.style.setProperty('color', '#765238', 'important');
           span.style.setProperty('font-style', 'normal', 'important');
         }
