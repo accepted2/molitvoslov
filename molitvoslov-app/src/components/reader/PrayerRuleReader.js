@@ -398,6 +398,14 @@ const HTML_TEMPLATE = String.raw`
       color: var(--liturgical);
       font-weight: 600;
     }
+    /* Morning/evening prayer bow notes share the brown heading palette,
+       even if another highlighting rule matches the same text. */
+    .reader-text .prayer-bow-rubric,
+    .reader-text .prayer-bow-rubric.liturgical-phrase,
+    .reader-text .prayer-bow-rubric * {
+      color: var(--secondary) !important;
+    }
+
 
     .liturgical-block {
       color: var(--liturgical);
@@ -1817,29 +1825,6 @@ const HTML_TEMPLATE = String.raw`
             normalizedStart,
             normalizedStart +
               cue.length
-          );
-        }
-
-        const bowPattern =
-          /\((?:Поклон|Поклоны)\)/giu;
-
-        let bowMatch = null;
-
-        while (
-          (
-            bowMatch =
-              bowPattern.exec(
-                normalized
-              )
-          )
-        ) {
-          appendOriginalRange(
-            ranges,
-            source,
-            originalIndex,
-            bowMatch.index,
-            bowMatch.index +
-              bowMatch[0].length
           );
         }
 
@@ -3283,6 +3268,22 @@ const HTML_TEMPLATE = String.raw`
           }
         );
 
+        // Parenthesized bow instructions are rubrics, not red accents.
+        // Use original character offsets to preserve selection and saving.
+        const bowRubricRanges = [];
+        if (isDailyPrayerRule) {
+          const mappedBows = normalizedTextWithIndex(text);
+          for (const bow of mappedBows.normalized.matchAll(/\(\s*Поклон(?:ы)?\s*\.?\s*\)/giu)) {
+            appendOriginalRange(
+              bowRubricRanges,
+              mappedBows.source,
+              mappedBows.originalIndex,
+              bow.index,
+              bow.index + bow[0].length
+            );
+          }
+        }
+
         const liturgicalRubricRanges =
           collectLiturgicalRubricRanges(
             text
@@ -3322,6 +3323,10 @@ const HTML_TEMPLATE = String.raw`
             );
           }
         );
+        bowRubricRanges.forEach(range => {
+          boundaries.add(range.start);
+          boundaries.add(range.end);
+        });
 
         eveningNumberBreaks.forEach(
           offset => {
@@ -3471,6 +3476,9 @@ const HTML_TEMPLATE = String.raw`
             span.classList.add(
               'liturgical-phrase'
             );
+          }
+          if (bowRubricRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
+            span.classList.add('prayer-bow-rubric');
           }
 
           if (
