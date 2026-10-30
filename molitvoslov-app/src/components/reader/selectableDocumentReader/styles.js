@@ -666,6 +666,19 @@ export const READER_STYLES = String.raw`
   display: inline !important;
   white-space: nowrap !important;
 }
+/* The repeat note gets its own visual line in parallel pre-Psalter prayer. */
+.reader-row-parallel .reader-text.psalter-reading-prayers .psalter-parallel-repeat-note {
+  display: block !important;
+  width: 100%;
+  white-space: nowrap !important;
+  text-align: left;
+  text-align-last: left;
+}
+.reader-row-parallel .reader-text.psalter-reading-prayers .psalter-parallel-repeat-note > span {
+  display: inline !important;
+  white-space: nowrap !important;
+}
+
 /* Keep only the mercy words together in narrow parallel columns. */
 .reader-row-parallel .reader-text.psalter-reading-prayers .psalter-civil-mercy-together .psalter-civil-before-mercy {
   white-space: nowrap !important;
