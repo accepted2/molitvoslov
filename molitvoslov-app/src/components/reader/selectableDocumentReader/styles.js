@@ -738,6 +738,19 @@ export const READER_STYLES = String.raw`
   white-space: nowrap !important;
 }
 
+/* Threefold note AFTER Psalter: its own line in parallel CS + RU only. */
+.reader-row-parallel .reader-text.psalter-reading-prayers .psalter-parallel-after-repeat-note {
+  display: block !important;
+  width: 100%;
+  white-space: nowrap !important;
+  text-align: left;
+  text-align-last: left;
+}
+.reader-row-parallel .reader-text.psalter-reading-prayers .psalter-parallel-after-repeat-note > span {
+  display: inline !important;
+  white-space: nowrap !important;
+}
+
 /* Final blessing after Psalter: red response while retaining rubric styling. */
 .reader-text.psalter-reading-prayers .psalter-civil-final-response,
 .reader-text.psalter-reading-prayers .psalter-civil-final-response .liturgical-word {
