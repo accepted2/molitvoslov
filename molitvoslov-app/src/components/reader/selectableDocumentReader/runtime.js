@@ -1795,6 +1795,10 @@ if (isStandaloneCivilAfterPsalter) {
     const start = mapped.originalIndex[glory.index];
     const end = mapped.originalIndex[glory.index + glory[0].length] ?? text.length;
     civilAfterGloryRanges.push({start, end});
+    // Only the concluding doxology after the Cherubic hymn gets this divider.
+    if (cherubic && glory.index > cherubic.index && Number.isFinite(start) && start > 0) {
+      civilAfterClosingDividers.add(start);
+    }
   }
   if (dismissal) {
     const at = glory.index + glory[0].length + endBlessing.index + endBlessing[0].length + dismissal.index;
@@ -1868,11 +1872,20 @@ let civilAfterEphremStart = -1;
 const civilAfterPrayerInitials = [];
 const civilAfterTroparDividers = new Set();
 let civilAfterTroparFirstVerse = -1;
+let civilAfterTroparToneRange = null;
 if (isStandaloneCivilAfterPsalter) {
   const mapped = normalizedAkathistTextWithIndex(text);
   const plain = mapped.normalized;
   const heading = /Тропари\s+сия,?\s*глас\s*(?:6|шестой)/iu.exec(plain);
   if (heading) {
+    const tone = /глас\s*(?:6|шестой)/iu.exec(heading[0]);
+    if (tone) {
+      const from = heading.index + tone.index;
+      civilAfterTroparToneRange = {
+        start: mapped.originalIndex[from],
+        end: mapped.originalIndex[from + tone[0].length] ?? text.length,
+      };
+    }
     const verse = /Помилуй\s+нас/iu.exec(plain.slice(heading.index + heading[0].length));
     if (verse) {
       const index = heading.index + heading[0].length + verse.index;
@@ -2210,6 +2223,10 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         civilAfterTroparDividers.forEach(at => boundaries.add(at));
         civilAfterPrayerInitials.forEach(range => { boundaries.add(range.start); boundaries.add(range.end); });
         if (civilAfterTroparFirstVerse >= 0) boundaries.add(civilAfterTroparFirstVerse);
+        if (civilAfterTroparToneRange) {
+          boundaries.add(civilAfterTroparToneRange.start);
+          boundaries.add(civilAfterTroparToneRange.end);
+        }
         if (civilAfterMercyTogether) { boundaries.add(civilAfterMercyTogether.start); boundaries.add(civilAfterMercyTogether.end); }
         if (parallelAfterRepeat) { boundaries.add(parallelAfterRepeat.start); boundaries.add(parallelAfterRepeat.end); }
         [...civilAfterTrisagionInitials, ...civilAfterMercyRanges].forEach(range => {
@@ -2325,6 +2342,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         let civilBeforeMercyWrapper = null;
         let parallelRepeatWrapper = null;
         let civilAfterMercyWrapper = null;
+        let civilAfterTroparToneWrapper = null;
         let parallelAfterRepeatWrapper = null;
         for ( let index = 0;
           index < points.length - 1;
@@ -2854,7 +2872,15 @@ if (isStandaloneTraditionalPsalterPrayer &&
     civilTrinitySecondLineWrapper.appendChild(span);
   } else {
     civilTrinitySecondLineWrapper = null;
-    if (parallelPsalterLayout && parallelBeforeRepeatStart >= 0 &&
+    if (civilAfterTroparToneRange &&
+        start >= civilAfterTroparToneRange.start &&
+        end <= civilAfterTroparToneRange.end) {
+      if (!civilAfterTroparToneWrapper) {
+        civilAfterTroparToneWrapper = el('span', 'psalter-civil-tropar-tone');
+        fragment.appendChild(civilAfterTroparToneWrapper);
+      }
+      civilAfterTroparToneWrapper.appendChild(span);
+    } else if (parallelPsalterLayout && parallelBeforeRepeatStart >= 0 &&
         start >= parallelBeforeRepeatStart && end <= parallelBeforeRepeatEnd) {
       civilBeforeMercyWrapper = null;
       if (!parallelRepeatWrapper) {
