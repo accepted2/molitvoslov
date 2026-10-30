@@ -1681,6 +1681,16 @@ const HTML_TEMPLATE = String.raw`
       };
 
 
+    /* Fold historical Slavonic letters only for rubric recognition.
+       The original text and character offsets are never modified. */
+    const traditionalRubricLetters = {
+      'ѣ': 'е', 'і': 'и', 'ї': 'и', 'ѵ': 'и',
+      'ѳ': 'ф', 'ѕ': 'з', 'є': 'е', 'ѡ': 'о',
+      'ѻ': 'о', 'ꙍ': 'о', 'ꙋ': 'у', 'ѹ': 'у',
+      'ᲂ': 'у', 'ꙗ': 'я', 'ѧ': 'я', 'ꙙ': 'я',
+      'ѫ': 'у',
+    };
+
     const normalizedTextWithIndex =
       value => {
         const source =
@@ -1712,7 +1722,9 @@ const HTML_TEMPLATE = String.raw`
             }
 
             chars.push(
-              char
+              DATA.viewMode === 'traditional'
+                ? (traditionalRubricLetters[char.toLowerCase()] || char)
+                : char
             );
             originalIndex.push(
               index
@@ -2875,49 +2887,11 @@ const HTML_TEMPLATE = String.raw`
 
     const collectLiturgicalRubricRanges =
       value => {
-        const source =
-          String(
-            value ||
-            ''
-          );
-
-        const normalizedChars = [];
-        const originalIndex = [];
-
-        for (
-          let index = 0;
-          index < source.length;
-          index += 1
-        ) {
-          const decomposed =
-            source[
-              index
-            ].normalize(
-              'NFD'
-            );
-
-          for (const char of decomposed) {
-            if (
-              /[\u0300-\u036f\u0483-\u0487]/u.test(
-                char
-              )
-            ) {
-              continue;
-            }
-
-            normalizedChars.push(
-              char
-            );
-            originalIndex.push(
-              index
-            );
-          }
-        }
-
-        const normalized =
-          normalizedChars.join(
-            ''
-          );
+        const {
+          source,
+          normalized,
+          originalIndex,
+        } = normalizedTextWithIndex(value);
 
         const patterns = [
           /[\[(]\s*(?:(?:читается\s+)?(?:тр[иії]жды|дважды|единожды|три\s+раза|два\s+раза|3\s+раза?|12\s+раз|40\s+раз))\s*[\])]/giu,
@@ -3346,6 +3320,19 @@ const HTML_TEMPLATE = String.raw`
               bow.index,
               bow.index + bow[0].length
             );
+          }
+          // Traditional spelling keeps the same brown (Трижды.) cue as
+          // the other morning-prayer readings, including accented letters.
+          if (DATA.viewMode === 'traditional') {
+            for (const repetition of mappedBows.normalized.matchAll(/[\[(]\s*тр[иії]жды\s*\.?\s*[\])]/giu)) {
+              appendOriginalRange(
+                bowRubricRanges,
+                mappedBows.source,
+                mappedBows.originalIndex,
+                repetition.index,
+                repetition.index + repetition[0].length
+              );
+            }
           }
           // Names and remembrance prompts use the same brown rubric style.
           for (const placeholder of mappedBows.normalized.matchAll(/\(\s*(?:имя|имена(?:\s+их)?)\s*\)|\[\s*родител(?:е[йи]|и)\s+моих\s*\]/giu)) {
