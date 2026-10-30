@@ -2967,6 +2967,28 @@ if (
 
         }
         root.replaceChildren( fragment );
+        // The CS repeat note is already a block. Source newlines after it
+        // would add empty visual rows before the following doxology.
+        if (parallelPsalterLayout && itemConfig?.metadata?.language !== 'russian') {
+          const note = root.querySelector('.psalter-parallel-repeat-note');
+          if (note) {
+            let sibling = note.nextSibling;
+            while (sibling && !String(sibling.textContent || '').trim()) {
+              const next = sibling.nextSibling;
+              sibling.remove();
+              sibling = next;
+            }
+          }
+          // Permit a balanced two-line Trinity title in the narrow CS column.
+          const title = root.querySelector('.psalter-civil-trinity-second-line');
+          if (title) {
+            const walker = document.createTreeWalker(title, NodeFilter.SHOW_TEXT);
+            let node;
+            while ((node = walker.nextNode())) {
+              node.nodeValue = node.nodeValue.replace(/(Живона)(чальн)/giu, '$1\u00AD$2');
+            }
+          }
+        }
         // Russian post-Psalter prayer: insert the line break at the rendered
         // boundary, regardless of whether the source contains a space/newline.
         // This matches the working CS layout without changing prayer content.
