@@ -2350,7 +2350,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         }
         if (parallelTroparBreak === start) fragment.appendChild(document.createElement('br'));
         if (parallelBeforeRepeatStart === start &&
-            text[start - 1] !== '\\n') {
+            text[start - 1] !== '\n') {
           fragment.appendChild(document.createElement('br'));
         }
         const span = document.createElement('span');
@@ -2840,7 +2840,7 @@ if (isStandaloneTraditionalPsalterPrayer &&
     civilTrinitySecondLineWrapper.appendChild(span);
   } else {
     civilTrinitySecondLineWrapper = null;
-    if (civilBeforeMercyTogether && start >= civilBeforeMercyTogether.start && end <= civilBeforeMercyTogether.end) {
+    if (civilBeforeMercyTogether && start >= civilBeforeMercyTogether.start && end <= civilBeforeMercyTogether.end && !(parallelPsalterLayout && parallelBeforeRepeatStart >= 0 && start >= parallelBeforeRepeatStart)) {
       if (!civilBeforeMercyWrapper) {
         civilBeforeMercyWrapper = el('span', 'psalter-civil-mercy-together');
         fragment.appendChild(civilBeforeMercyWrapper);
