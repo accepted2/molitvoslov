@@ -63,6 +63,7 @@ export default function ExpandablePrayerBlock({
         .replace(/(кончает\s+сице:)[ \t]*(?:\n[ \t]*)+/iu, '$1\n')
         .replace(/(И\s+поклонов[^\n]*?с\s+молитвою:)[ \t]*(?:\n[ \t]*)+/iu, '$1\n')
         .replace(/(И\s+поклонись[^\n]*?с\s+молитвою:)[ \t]*(?:\n[ \t]*)+/iu, '$1\n')
+        .replace(/(И\s+поклонись[^\n]*?с\s+молитвою:)\s+(?=Господи\s+и\s+Владыко)/iu, '$1\n')
         .replace(/([^\n]*?)(\s*\(Поклон\))/giu, (whole, before, bow) =>
           before.trim() ? before + '\n' + bow.trimStart() : whole)
         .replace(/(Господи,?\s+помилуй)\s*,?\s*(\(Трижды\.\))/giu, '$1,\u00a0$2')
