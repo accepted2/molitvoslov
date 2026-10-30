@@ -706,10 +706,10 @@ export const READER_STYLES = String.raw`
   padding: 0 !important;
   line-height: inherit !important;
 }
-/* Match the two-line Trinity title layout of the adjacent Russian column. */
+/* Match the ordinary prayer text size while preserving the Trinity title wrapping. */
 .reader-row-parallel .reader-column:first-child .reader-text.psalter-reading-prayers .psalter-civil-trinity-second-line {
-  font-size: 14px;
-  line-height: 23px;
+  font-size: inherit;
+  line-height: inherit;
   word-break: normal;
   overflow-wrap: normal;
   hyphens: manual;
