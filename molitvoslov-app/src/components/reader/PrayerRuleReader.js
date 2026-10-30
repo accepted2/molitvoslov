@@ -343,6 +343,12 @@ const HTML_TEMPLATE = String.raw`
       display: none;
     }
 
+    /* Russian morning prayers 5–9 are continuous texts:
+       their source paragraph separators must not create visual breaks. */
+    .reader-text.continuous-morning-prayer .paragraph-gap {
+      display: none;
+    }
+
     .editorial-marker-hidden {
       display: none;
     }
@@ -1782,7 +1788,8 @@ const HTML_TEMPLATE = String.raw`
       (
         text,
         leadingCue,
-        itemKind
+        itemKind,
+        continuousPrayer = false
       ) => {
         if (
           !isDailyPrayerRule ||
@@ -1852,18 +1859,20 @@ const HTML_TEMPLATE = String.raw`
 
         let paragraphMatch = null;
 
-        while (
-          (
-            paragraphMatch =
-              paragraphPattern.exec(
-                source
-              )
-          )
-        ) {
-          paragraphStarts.push(
-            paragraphMatch.index +
-            paragraphMatch[0].length
-          );
+        if (!continuousPrayer) {
+          while (
+            (
+              paragraphMatch =
+                paragraphPattern.exec(
+                  source
+                )
+            )
+          ) {
+            paragraphStarts.push(
+              paragraphMatch.index +
+              paragraphMatch[0].length
+            );
+          }
         }
 
         if (
@@ -3127,6 +3136,22 @@ const HTML_TEMPLATE = String.raw`
             )
           ) || '';
 
+        /* Preserve the original prayer and selection offsets: only suppress
+           editorial paragraph breaks inside Russian morning prayers 5–9. */
+        const continuousMorningPrayer =
+          isMorningRule &&
+          DATA.viewMode === 'russian' &&
+          /^молитва [5-9](?: |$)/u.test(
+            normalizeLiturgicalValue(
+              itemTitleMap.get(Number(itemId)) || ''
+            )
+          );
+
+        root.classList.toggle(
+          'continuous-morning-prayer',
+          continuousMorningPrayer
+        );
+
         const saved =
           savedForItem(
             itemId
@@ -3284,7 +3309,8 @@ const HTML_TEMPLATE = String.raw`
         collectEveningAccentRanges(
           text,
           leadingCue,
-          eveningItemKind
+          eveningItemKind,
+          continuousMorningPrayer
         ).forEach(
           range => {
             liturgicalRanges.push(
