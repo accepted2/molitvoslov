@@ -1874,11 +1874,23 @@ if (isStandaloneCivilAfterPsalter) {
       civilAfterPrayerInitials.push({start: at, end: at + 1});
     }
   }
+  // The first Ephrem prayer follows the bow rubric even when the source
+  // has spaces or extra paragraph breaks instead of a single newline.
+  const afterBow = /с\s+молитвою\s*:\s*(Господи\s+и\s+Владыко)/iu.exec(plain);
+  if (afterBow) {
+    const position = mapped.originalIndex[
+      afterBow.index + afterBow[0].lastIndexOf(afterBow[1])
+    ];
+    if (Number.isFinite(position) &&
+        !civilAfterPrayerInitials.some(range => range.start === position)) {
+      civilAfterPrayerInitials.push({start: position, end: position + 1});
+    }
+  }
   const mercy40 = /Господи,?\s*помилуй\s*\(40(?:\s*раз)?\)/iu.exec(plain);
   if (mercy40) {
     const index = mapped.originalIndex[mercy40.index];
     if (Number.isFinite(index) && index > 0) civilAfterTroparDividers.add(index);
-    const bow = /И\s+поклонов,?\s+елико[^\n:]*с\s+молитвою\s*:/iu.exec(
+    const bow = /И\s+(?:поклонов,?\s+елико[^\n:]*|поклонись,?\s+сколько[^\n:]*?)\s+с\s+молитвою\s*:/iu.exec(
       plain.slice(mercy40.index + mercy40[0].length)
     );
     if (bow) {
