@@ -2901,11 +2901,11 @@ const HTML_TEMPLATE = String.raw`
           /Слава\s*,?\s*и\s+нын[еѣ]\s*:/giu,
         ];
 
-        /* Only in the morning rule, color "Господи, помилуй." red
-           when it immediately precedes the bow-style "(Трижды.)". */
+        /* Accent the call "Господи, помилуй." before (Трижды.)
+           and (12 раз), keeping the frequency rubric red below. */
         if (isMorningRule) {
           patterns.push(
-            /Господи\s*,?\s*помилу[йи]\s*[.!?]?(?=\s*\(\s*Трижды\.?\s*\))/giu
+            /Господи\s*,?\s*помилу[йи]\s*[.!?]?(?=\s*\(\s*(?:Трижды\.?|12\s+раз)\s*\))/giu
           );
         }
 
@@ -3305,6 +3305,16 @@ const HTML_TEMPLATE = String.raw`
               mappedBows.originalIndex,
               bow.index,
               bow.index + bow[0].length
+            );
+          }
+          // Names and remembrance prompts use the same brown rubric style.
+          for (const placeholder of mappedBows.normalized.matchAll(/\(\s*(?:имя|имена(?:\s+их)?)\s*\)|\[\s*(?:родителей|родители)\s+моих\s*\]/giu)) {
+            appendOriginalRange(
+              bowRubricRanges,
+              mappedBows.source,
+              mappedBows.originalIndex,
+              placeholder.index,
+              placeholder.index + placeholder[0].length
             );
           }
           for (const mercy of mappedBows.normalized.matchAll(/Господи\s*,?\s*помилу[йи]\s*[.!?]?\s*(\(\s*Трижды\.?\s*\))/giu)) {
