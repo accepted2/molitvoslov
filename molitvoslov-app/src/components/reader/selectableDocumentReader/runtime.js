@@ -1754,7 +1754,9 @@ const civilAfterCherubicInitials = [];
 if (isStandaloneCivilAfterPsalter) {
   const mapped = normalizedAkathistTextWithIndex(text);
   const plain = mapped.normalized;
-  const cherubic = /Честнейшую\s+Херувим/iu.exec(plain);
+  // Match both Church Slavonic/Russian spellings and stress-mark variants.
+  // Only the initial of the Cherubic hymn receives this divider and red color.
+  const cherubic = /Честн[^\s]{0,16}\s+Херувим/iu.exec(plain);
   const glory = /Слава,?\s+и\s+ныне:/iu.exec(plain);
   const endBlessing = glory
     ? /Благослови\.?/iu.exec(plain.slice(glory.index + glory[0].length))
