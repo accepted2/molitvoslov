@@ -3271,7 +3271,7 @@ const HTML_TEMPLATE = String.raw`
         // Parenthesized bow instructions are rubrics, not red accents.
         // Use original character offsets to preserve selection and saving.
         const bowRubricRanges = [];
-        if (isDailyPrayerRule) {
+        if (isMorningRule) {
           const mappedBows = normalizedTextWithIndex(text);
           for (const bow of mappedBows.normalized.matchAll(/\(\s*Поклон(?:ы)?\s*\.?\s*\)/giu)) {
             appendOriginalRange(
