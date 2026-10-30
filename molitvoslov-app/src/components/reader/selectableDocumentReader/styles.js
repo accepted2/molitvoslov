@@ -502,6 +502,14 @@ export const READER_STYLES = String.raw`
   text-align: justify;
   text-align-last: left;
 }
+/* Only the Church Slavonic column in parallel Psalter prayers. */
+.reader-row-parallel .reader-column:first-child .reader-text.psalter-reading-prayers {
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: manual;
+  -webkit-hyphens: manual;
+}
+
 .reader-language-traditional .reader-text.psalter-reading-prayers {
   text-align: justify;
   text-align-last: left;
