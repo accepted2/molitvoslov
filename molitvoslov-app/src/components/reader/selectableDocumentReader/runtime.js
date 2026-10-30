@@ -1836,7 +1836,7 @@ if (isStandaloneCivilAfterPsalter) {
   // Russian opening of the final prayer: red capital without a divider.
   if (itemConfig?.metadata?.language === 'russian') {
     const mapped = normalizedAkathistTextWithIndex(text);
-    const rubric = /Затем\\s+произноси\\s+следующую\\s+молитву\\s+со\\s+вниманием:/iu.exec(mapped.normalized);
+    const rubric = /Затем\s+произноси\s+следующую\s+молитву\s+со\s+вниманием:/iu.exec(mapped.normalized);
     if (rubric) {
       const remainder = mapped.normalized.slice(rubric.index + rubric[0].length);
       const prayer = /Многомилостив[а-яѣ]+/iu.exec(remainder);
@@ -2556,7 +2556,7 @@ if (isSearchHit) {
             start !== civilAfterTroparFirstVerse &&
             !(isStandaloneCivilAfterPsalter &&
               itemConfig?.metadata?.language === 'russian' &&
-              /затем произноси следующую молитву со вниманием:\\s*$/iu.test(
+              /затем произноси следующую молитву со вниманием:\s*$/iu.test(
                 normalizedAkathistTextWithIndex(textBeforeSegment).normalized.toLowerCase()))
           ) {
             appendPsalterSeparator(fragment);
