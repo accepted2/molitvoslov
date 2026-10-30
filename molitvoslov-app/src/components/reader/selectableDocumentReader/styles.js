@@ -678,6 +678,13 @@ export const READER_STYLES = String.raw`
   font-style: normal !important;
 }
 /* Keep post-Psalter mercy words, comma and repeat instruction together. */
+.reader-text.psalter-reading-prayers .psalter-civil-after-mercy-together,
+.reader-text.psalter-reading-prayers .psalter-civil-after-mercy-together * {
+  display: inline !important;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+}
 .reader-text.psalter-reading-prayers .psalter-civil-after-mercy-together {
   display: inline-block;
   white-space: nowrap !important;
