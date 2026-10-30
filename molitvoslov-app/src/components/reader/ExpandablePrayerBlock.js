@@ -63,7 +63,8 @@ export default function ExpandablePrayerBlock({
         .replace(/(И\s+поклонись[^\n]*?с\s+молитвою:)[ \t]*(?:\n[ \t]*)+/iu, '$1\n')
         .replace(/([^\n]*?)(\s*\(Поклон\))/giu, (whole, before, bow) =>
           before.trim() ? before + '\n' + bow.trimStart() : whole)
-        .replace(/(Господи,?\s+помилуй)\s*,?\s*(\(Трижды\.\))/giu, '$1,\u00a0$2');
+        .replace(/(Господи,?\s+помилуй)\s*,?\s*(\(Трижды\.\))/giu, '$1,\u00a0$2')
+        .replace(/(Слава,\s*и\s*ныне:)\s*(?=Господи,\s*помилуй\s*\(3\))/giu, '$1\n');
     }
     if (saveProps?.metadata?.section === 'prayers_before' && compactCivilDoxology) {
       // The separator supplies the visual break before the doxology.
