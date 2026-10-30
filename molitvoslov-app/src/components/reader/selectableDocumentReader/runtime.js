@@ -1916,7 +1916,7 @@ if (isStandaloneCivilAfterPsalter) {
     if (Number.isFinite(start)) civilAfterTrisagionInitials.push({start, end: start + 1});
   }
   if (mercy >= 0) {
-    const whole = /господи,?\s+помилуй\s*,?\s*\(трижды\.?\)/u.exec(plain.slice(mercy));
+    const whole = /господи,?\s+помилуй\s*[.,]?\s*\(трижды\.?\)/u.exec(plain.slice(mercy));
     if (whole && whole.index === 0) {
       const after = mercy + whole[0].length;
       civilAfterMercyTogether = {start: originalIndex[mercy], end: originalIndex[after] ?? text.length};
