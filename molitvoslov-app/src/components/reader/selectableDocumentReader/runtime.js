@@ -2200,7 +2200,27 @@ const psalterRepeatNoteRanges =
 
         const isPsalterText = String( itemConfig ?.className || '' ) .split(' ') .includes('psalter');
 const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges( text ) : [];
+        // Morning prayers only: "Поклон" is a rubric, not a red liturgical word.
+        const morningPrayerBowRanges = [];
+        const morningPrayerContext = [
+          DATA.document?.title,
+          itemTitleMap.get(Number(itemId)),
+          itemConfig?.metadata?.section,
+        ].filter(Boolean).join(' ');
+        if (/утрен/iu.test(morningPrayerContext)) {
+          const mappedBow = normalizedAkathistTextWithIndex(text);
+          for (const match of mappedBow.normalized.matchAll(/\(\s*Поклон\s*\)/giu)) {
+            morningPrayerBowRanges.push({
+              start: mappedBow.originalIndex[match.index],
+              end: mappedBow.originalIndex[match.index + match[0].length] ?? text.length,
+            });
+          }
+        }
         const boundaries = new Set([ 0, text.length, ]);
+        morningPrayerBowRanges.forEach(range => {
+          boundaries.add(range.start);
+          boundaries.add(range.end);
+        });
         [...traditionalPrayerRedRanges, ...traditionalTroparHeadingRanges,
           ...traditionalPrayerTitleRanges, ...traditionalFirstKathismaIntroRanges, ...traditionalPrayerMercyRanges, ...traditionalAndNowRanges, ...traditionalOpeningRepeatRanges].forEach(range => {
           boundaries.add(range.start);
@@ -2386,6 +2406,9 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         if (parallelTroparBreak === start) fragment.appendChild(document.createElement('br'));
 
         const span = document.createElement('span');
+        if (morningPrayerBowRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
+          span.classList.add('morning-prayer-bow');
+        }
         const standaloneDecoration = standalonePsalterRanges.find(range =>
           midpoint >= range.start && midpoint < range.end && range.kind === 'mercy') ||
           standalonePsalterRanges.find(range =>
