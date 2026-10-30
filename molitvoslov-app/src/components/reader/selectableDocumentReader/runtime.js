@@ -1778,6 +1778,7 @@ if (isStandaloneCivilAfterPsalter) {
 }
 // Troparion sequence: use one divider after the troparia, never between
 // the heading and its first verse.
+const civilAfterEphremInitials = [];
 const civilAfterTroparDividers = new Set();
 let civilAfterTroparFirstVerse = -1;
 if (isStandaloneCivilAfterPsalter) {
@@ -1789,6 +1790,23 @@ if (isStandaloneCivilAfterPsalter) {
     if (verse) {
       const index = heading.index + heading[0].length + verse.index;
       civilAfterTroparFirstVerse = mapped.originalIndex[index] ?? -1;
+    }
+  }
+  // Keep one divider between each of the three paragraphs of St Ephrem's prayer.
+  for (const pattern of [
+    /(?:^|\n)\s*(Господи\s+и\s+Владыко)/iu,
+    /(?:^|\n)\s*(Дух\s+же)/iu,
+    /(?:^|\n)\s*(Ей\s+Господи)/iu,
+  ]) {
+    const match = pattern.exec(plain);
+    if (!match) continue;
+    const offset = match.index + match[0].indexOf(match[1]);
+    const pos = mapped.originalIndex[offset];
+    if (Number.isFinite(pos)) {
+      civilAfterEphremInitials.push({start: pos, end: pos + 1});
+      if (pos > 0 && !/Господи\s+и\s+Владыко/iu.test(match[1])) {
+        civilAfterTroparDividers.add(pos);
+      }
     }
   }
   const mercy40 = /Господи,?\s*помилуй\s*\(40(?:\s*раз)?\)/iu.exec(plain);
@@ -2069,6 +2087,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           })
           civilAfterTrisagionStarts.forEach(at => boundaries.add(at));
         civilAfterTroparDividers.forEach(at => boundaries.add(at));
+        civilAfterEphremInitials.forEach(range => { boundaries.add(range.start); boundaries.add(range.end); });
         if (civilAfterTroparFirstVerse >= 0) boundaries.add(civilAfterTroparFirstVerse);
         if (civilAfterMercyTogether) { boundaries.add(civilAfterMercyTogether.start); boundaries.add(civilAfterMercyTogether.end); }
         [...civilAfterTrisagionInitials, ...civilAfterMercyRanges].forEach(range => {
@@ -2190,6 +2209,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         }
         if (civilAfterTrisagionStarts.has(start)) appendPsalterSeparator(fragment);
         if (civilAfterTroparDividers.has(start)) appendPsalterSeparator(fragment);
+        if (civilAfterEphremInitials.some(range => midpoint >= range.start && midpoint < range.end)) span.classList.add('psalter-prayer-initial');
         if (isStandaloneCivilAfterPsalter && civilAfterDividerStarts.has(start)) {
           appendPsalterSeparator(fragment);
         }
@@ -2736,6 +2756,33 @@ if (
 
         }
         root.replaceChildren( fragment );
+        if (isStandaloneCivilAfterPsalter) {
+          // A divider between the troparion heading and its first verse is
+          // redundant. Keep the preceding heading divider, if present.
+          const heading = Array.from(root.querySelectorAll('.psalter-prayer-accent'))
+            .find(node => /Тропари\s+сия,?\s*глас/iu.test(node.textContent || ''));
+          if (heading) {
+            let node = heading.nextSibling;
+            while (node && !String(node.textContent || '').trim()) {
+              const next = node.nextSibling;
+              if (node.nodeType === Node.ELEMENT_NODE &&
+                  node.classList.contains('psalter-prayer-separator')) node.remove();
+              node = next;
+            }
+          }
+          // Never stack a generated separator with a rubric's border.
+          root.querySelectorAll('.psalter-prayer-rubric-separator-before')
+            .forEach(node => {
+              let previous = node.previousSibling;
+              while (previous && !String(previous.textContent || '').trim() &&
+                     !previous.classList.contains?.('psalter-prayer-separator')) {
+                previous = previous.previousSibling;
+              }
+              if (previous?.classList?.contains('psalter-prayer-separator')) {
+                node.classList.remove('psalter-prayer-rubric-separator-before');
+              }
+            });
+        }
         // Remove redundant blank paragraphs at the post-Psalter mercy divider.
         if (isStandaloneCivilAfterPsalter && civilAfterMercyRanges.length) {
           root.querySelectorAll('.psalter-prayer-separator').forEach(divider => {
