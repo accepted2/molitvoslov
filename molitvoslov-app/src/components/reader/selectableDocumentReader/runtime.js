@@ -2686,6 +2686,31 @@ if (
 
         }
         root.replaceChildren( fragment );
+        // Remove redundant blank paragraphs at the post-Psalter mercy divider.
+        if (isStandaloneCivilAfterPsalter && civilAfterMercyRanges.length) {
+          root.querySelectorAll('.psalter-prayer-separator').forEach(divider => {
+            let node = divider.previousSibling;
+            while (node && !String(node.textContent || '').trim()) {
+              const previous = node.previousSibling;
+              if (node.nodeType === Node.TEXT_NODE) node.textContent = '';
+              else if (node.nodeType === Node.ELEMENT_NODE &&
+                       !node.classList.contains('psalter-prayer-separator')) {
+                node.classList.add('psalter-prayer-gap-hidden');
+              }
+              node = previous;
+            }
+            node = divider.nextSibling;
+            while (node && !String(node.textContent || '').trim()) {
+              const following = node.nextSibling;
+              if (node.nodeType === Node.TEXT_NODE) node.textContent = '';
+              else if (node.nodeType === Node.ELEMENT_NODE &&
+                       !node.classList.contains('psalter-prayer-separator')) {
+                node.classList.add('psalter-prayer-gap-hidden');
+              }
+              node = following;
+            }
+          });
+        }
         // Parallel columns: remove only empty nodes between the threefold
         // mercy note and the following doxology separator.
         if (parallelPsalterLayout) {
