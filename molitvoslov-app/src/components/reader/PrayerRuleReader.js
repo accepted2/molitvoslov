@@ -398,6 +398,11 @@ const HTML_TEMPLATE = String.raw`
       font-weight: 600;
     }
 
+    /* Поклоны: сохраняем существующий цвет, немного усиливаем начертание. */
+    .reader-text .prayer-bow-cue {
+      font-weight: 650;
+    }
+
     .liturgical-block {
       color: var(--liturgical);
       font-weight: 600;
@@ -3467,6 +3472,17 @@ const HTML_TEMPLATE = String.raw`
           if (isLiturgical) {
             span.classList.add(
               'liturgical-phrase'
+            );
+          }
+
+          if (
+            isDailyPrayerRule &&
+            /^\\(Поклон(?:ы)?\\)$/iu.test(
+              text.slice(start, end).trim()
+            )
+          ) {
+            span.classList.add(
+              'prayer-bow-cue'
             );
           }
 
