@@ -2608,6 +2608,14 @@ if (isSearchHit) {
             span.classList.add(
               'psalter-prayer-rubric'
             );
+            if (isStandaloneCivilAfterPsalter &&
+                itemConfig?.metadata?.language === 'russian' &&
+                normalizedPsalterRubricText.includes('сколько хочешь') &&
+                normalizedPsalterRubricText.includes('с молитвою:')) {
+              // The text already contains a newline after the instruction.
+              // Keep this rubric inline so block layout cannot add a blank line.
+              span.classList.add('psalter-civil-bow-rubric-compact');
+            }
 
             span.classList.add(
               isInlineRubric
