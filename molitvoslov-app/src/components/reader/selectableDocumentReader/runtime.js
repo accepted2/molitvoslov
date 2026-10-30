@@ -1924,6 +1924,7 @@ const civilAfterTrisagionStarts = new Set();
 const civilAfterTrisagionInitials = [];
 const civilAfterMercyRanges = [];
 let civilAfterMercyTogether = null;
+let parallelAfterRepeat = null;
 if (isStandaloneCivilAfterPsalter) {
   const {normalized, originalIndex} = normalizedAkathistTextWithIndex(text);
   const plain = normalized.toLowerCase();
@@ -1951,6 +1952,16 @@ if (isStandaloneCivilAfterPsalter) {
     if (whole && whole.index === 0) {
       const after = mercy + whole[0].length;
       civilAfterMercyTogether = {start: originalIndex[mercy], end: originalIndex[after] ?? text.length};
+    }
+    if (root.closest('.reader-row-parallel')) {
+      const note = /господи,?\s+помилуй\s*[.,]?\s*(\(\s*трижды\.?\s*\))/u.exec(plain.slice(mercy));
+      if (note) {
+        const first = mercy + note.index + note[0].lastIndexOf(note[1]);
+        parallelAfterRepeat = {
+          start: originalIndex[first],
+          end: originalIndex[first + note[1].length] ?? text.length,
+        };
+      }
     }
     const matched = /господи,?\s+помилуй/u.exec(plain.slice(mercy));
     if (matched) {
@@ -2200,6 +2211,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         civilAfterPrayerInitials.forEach(range => { boundaries.add(range.start); boundaries.add(range.end); });
         if (civilAfterTroparFirstVerse >= 0) boundaries.add(civilAfterTroparFirstVerse);
         if (civilAfterMercyTogether) { boundaries.add(civilAfterMercyTogether.start); boundaries.add(civilAfterMercyTogether.end); }
+        if (parallelAfterRepeat) { boundaries.add(parallelAfterRepeat.start); boundaries.add(parallelAfterRepeat.end); }
         [...civilAfterTrisagionInitials, ...civilAfterMercyRanges].forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
@@ -2313,6 +2325,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         let civilBeforeMercyWrapper = null;
         let parallelRepeatWrapper = null;
         let civilAfterMercyWrapper = null;
+        let parallelAfterRepeatWrapper = null;
         for ( let index = 0;
           index < points.length - 1;
           index += 1 ) {
@@ -2876,7 +2889,14 @@ if (isStandaloneTraditionalPsalterPrayer &&
       }
     } else {
       civilBeforeMercyWrapper = null;
-      if (civilAfterMercyTogether && start >= civilAfterMercyTogether.start && end <= civilAfterMercyTogether.end) {
+      if (parallelAfterRepeat && start >= parallelAfterRepeat.start && end <= parallelAfterRepeat.end) {
+        civilAfterMercyWrapper = null;
+        if (!parallelAfterRepeatWrapper) {
+          parallelAfterRepeatWrapper = el('span', 'psalter-parallel-after-repeat-note');
+          fragment.appendChild(parallelAfterRepeatWrapper);
+        }
+        parallelAfterRepeatWrapper.appendChild(span);
+      } else if (civilAfterMercyTogether && start >= civilAfterMercyTogether.start && end <= civilAfterMercyTogether.end) {
         if (!civilAfterMercyWrapper) {
           civilAfterMercyWrapper = el('span', 'psalter-civil-after-mercy-together');
           fragment.appendChild(civilAfterMercyWrapper);
