@@ -1751,6 +1751,17 @@ const civilAfterFinalResponseRanges = [];
 const civilAfterGloryRanges = [];
 const civilAfterClosingDividers = new Set();
 const civilAfterCherubicInitials = [];
+const civilAfterDismissalInitials = [];
+if (isStandaloneCivilAfterPsalter) {
+  const mapped = normalizedAkathistTextWithIndex(text);
+  const matches = Array.from(mapped.normalized.matchAll(/Господи\s+Иисусе\s+Христе/giu));
+  const finalPrayer = matches[matches.length - 1];
+  if (finalPrayer) {
+    const start = mapped.originalIndex[finalPrayer.index];
+    if (Number.isFinite(start)) civilAfterDismissalInitials.push({start, end: start + 1});
+  }
+}
+
 if (isStandaloneCivilAfterPsalter) {
   const mapped = normalizedAkathistTextWithIndex(text);
   const plain = mapped.normalized;
@@ -2149,6 +2160,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           boundaries.add(range.end);
         });
         civilAfterClosingDividers.forEach(at => boundaries.add(at));
+        civilAfterDismissalInitials.forEach(range => { boundaries.add(range.start); boundaries.add(range.end); });
         [...civilAfterGloryRanges, ...civilAfterCherubicInitials].forEach(range => {
           boundaries.add(range.start); boundaries.add(range.end);
         });
@@ -2450,6 +2462,9 @@ if (isSearchHit) {
           }
           if (civilAfterGloryRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
             span.classList.add('psalter-civil-final-response');
+          }
+          if (civilAfterDismissalInitials.some(range => midpoint >= range.start && midpoint < range.end)) {
+            span.classList.add('psalter-prayer-initial');
           }
           if (civilAfterCherubicInitials.some(range => midpoint >= range.start && midpoint < range.end)) {
             span.classList.add('psalter-prayer-initial');
