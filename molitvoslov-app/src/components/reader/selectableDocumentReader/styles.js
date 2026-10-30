@@ -677,6 +677,15 @@ export const READER_STYLES = String.raw`
   color: #B22222 !important;
   font-style: normal !important;
 }
+/* Keep post-Psalter mercy words, comma and repeat instruction together. */
+.reader-text.psalter-reading-prayers .psalter-civil-after-mercy-together {
+  display: inline-block;
+  white-space: nowrap !important;
+}
+.reader-text.psalter-reading-prayers .psalter-civil-after-mercy-together .psalter-prayer-rubric-block {
+  display: inline !important;
+  margin: 0;
+}
 .reader-text.psalter-reading-prayers .paragraph-gap {
   height: 0;
 }
