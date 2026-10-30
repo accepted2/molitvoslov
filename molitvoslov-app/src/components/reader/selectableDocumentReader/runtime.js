@@ -2083,6 +2083,18 @@ if (parallelPsalterLayout) {
     if (comma >= 0) parallelTroparBreak = normalized.originalIndex[next] ?? -1;
   }
 }
+// Parallel pre-Psalter columns: break at the repeat annotation itself,
+// even if the complete mercy phrase was not recognized as one wrapper.
+let parallelBeforeRepeatStart = -1;
+if (parallelPsalterLayout) {
+  const mapped = normalizedAkathistTextWithIndex(text);
+  const source = mapped.normalized;
+  const match = /Господи,?\s+помилуй\s*[,.;]?\s*(\(Трижды\.?\))/iu.exec(source);
+  if (match) {
+    const noteAt = match.index + match[0].lastIndexOf(match[1]);
+    parallelBeforeRepeatStart = mapped.originalIndex[noteAt] ?? -1;
+  }
+}
 // Use the already verified accent-insensitive range, not a plain-text
 // expression that fails on Church Slavonic letters with stress marks.
 let parallelMercyWordsEnd =
@@ -2205,6 +2217,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         });
         civilBeforeDividerStarts.forEach(start => boundaries.add(start));
         if (parallelTroparBreak >= 0) boundaries.add(parallelTroparBreak);
+        if (parallelBeforeRepeatStart >= 0) boundaries.add(parallelBeforeRepeatStart);
         parallelMercyCommaPositions.forEach(pos => { boundaries.add(pos); boundaries.add(pos + 1); });
         if (parallelMercyWordsEnd >= 0) boundaries.add(parallelMercyWordsEnd);
         russianOpeningInitials.forEach(range => { boundaries.add(range.start); boundaries.add(range.end); });
@@ -2336,6 +2349,10 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           appendPsalterSeparator(fragment);
         }
         if (parallelTroparBreak === start) fragment.appendChild(document.createElement('br'));
+        if (parallelBeforeRepeatStart === start &&
+            text[start - 1] !== '\\n') {
+          fragment.appendChild(document.createElement('br'));
+        }
         const span = document.createElement('span');
         const standaloneDecoration = standalonePsalterRanges.find(range =>
           midpoint >= range.start && midpoint < range.end && range.kind === 'mercy') ||
