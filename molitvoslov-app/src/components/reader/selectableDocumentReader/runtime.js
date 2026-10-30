@@ -2837,6 +2837,15 @@ if (isStandaloneTraditionalPsalterPrayer &&
         }
         words.appendChild(span);
       } else {
+        // In narrow CS + RU columns the mercy words and "(Трижды.)"
+        // must occupy separate lines; do not let the note overlap.
+        if (parallelPsalterLayout &&
+            civilBeforeMercyWrapper.querySelector('.psalter-parallel-mercy-words') &&
+            !civilBeforeMercyWrapper.querySelector('.psalter-parallel-repeat-break')) {
+          const lineBreak = document.createElement('br');
+          lineBreak.className = 'psalter-parallel-repeat-break';
+          civilBeforeMercyWrapper.appendChild(lineBreak);
+        }
         civilBeforeMercyWrapper.appendChild(span);
       }
     } else {
