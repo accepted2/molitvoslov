@@ -415,6 +415,7 @@ export const READER_STYLES = String.raw`
 /* Morning prayers: "(Поклон)" uses the same brown as section headings,
    not the liturgical red. No change to evening prayers or Psalter. */
 .reader-text .morning-prayer-bow,
+.reader-text .morning-prayer-bow.liturgical-word,
 .reader-text .morning-prayer-bow .liturgical-word {
   color: var(--secondary) !important;
   font-style: normal !important;
