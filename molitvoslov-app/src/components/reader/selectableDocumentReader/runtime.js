@@ -1776,6 +1776,35 @@ if (isStandaloneCivilAfterPsalter) {
     civilAfterDividerStarts.add(found.index + found[0].indexOf(found[1]));
   }
 }
+// Troparion sequence: use one divider after the troparia, never between
+// the heading and its first verse.
+const civilAfterTroparDividers = new Set();
+let civilAfterTroparFirstVerse = -1;
+if (isStandaloneCivilAfterPsalter) {
+  const mapped = normalizedAkathistTextWithIndex(text);
+  const plain = mapped.normalized;
+  const heading = /Тропари\s+сия,?\s*глас\s*(?:6|шестой)/iu.exec(plain);
+  if (heading) {
+    const verse = /Помилуй\s+нас/iu.exec(plain.slice(heading.index + heading[0].length));
+    if (verse) {
+      const index = heading.index + heading[0].length + verse.index;
+      civilAfterTroparFirstVerse = mapped.originalIndex[index] ?? -1;
+    }
+  }
+  const mercy40 = /Господи,?\s*помилуй\s*\(40(?:\s*раз)?\)/iu.exec(plain);
+  if (mercy40) {
+    const index = mapped.originalIndex[mercy40.index];
+    if (Number.isFinite(index) && index > 0) civilAfterTroparDividers.add(index);
+    const bow = /И\s+поклонов,?\s+елико[^\n:]*с\s+молитвою\s*:/iu.exec(
+      plain.slice(mercy40.index + mercy40[0].length)
+    );
+    if (bow) {
+      const afterMercy = mercy40.index + mercy40[0].length + bow.index;
+      const bowStart = mapped.originalIndex[afterMercy];
+      if (Number.isFinite(bowStart)) civilAfterTroparDividers.add(bowStart);
+    }
+  }
+}
 // Trisagion sequence after Psalter reading: typography only for civil modes.
 const civilAfterTrisagionStarts = new Set();
 const civilAfterTrisagionInitials = [];
@@ -2039,6 +2068,8 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
             boundaries.add( range.end );
           })
           civilAfterTrisagionStarts.forEach(at => boundaries.add(at));
+        civilAfterTroparDividers.forEach(at => boundaries.add(at));
+        if (civilAfterTroparFirstVerse >= 0) boundaries.add(civilAfterTroparFirstVerse);
         if (civilAfterMercyTogether) { boundaries.add(civilAfterMercyTogether.start); boundaries.add(civilAfterMercyTogether.end); }
         [...civilAfterTrisagionInitials, ...civilAfterMercyRanges].forEach(range => {
           boundaries.add(range.start);
@@ -2158,6 +2189,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           appendPsalterSeparator(fragment);
         }
         if (civilAfterTrisagionStarts.has(start)) appendPsalterSeparator(fragment);
+        if (civilAfterTroparDividers.has(start)) appendPsalterSeparator(fragment);
         if (isStandaloneCivilAfterPsalter && civilAfterDividerStarts.has(start)) {
           appendPsalterSeparator(fragment);
         }
@@ -2379,7 +2411,8 @@ if (isSearchHit) {
             !followsPsalterHeading &&
             !followsRubric &&
             !followsTraditionalOpening &&
-            !isStandaloneTraditionalPsalterPrayer
+            !isStandaloneTraditionalPsalterPrayer &&
+            start !== civilAfterTroparFirstVerse
           ) {
             appendPsalterSeparator(fragment);
           }
