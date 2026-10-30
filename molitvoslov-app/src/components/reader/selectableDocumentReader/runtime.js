@@ -1776,6 +1776,43 @@ if (isStandaloneCivilAfterPsalter) {
     civilAfterDividerStarts.add(found.index + found[0].indexOf(found[1]));
   }
 }
+// Trisagion sequence after Psalter reading: typography only for civil modes.
+const civilAfterTrisagionStarts = new Set();
+const civilAfterTrisagionInitials = [];
+const civilAfterMercyRanges = [];
+if (isStandaloneCivilAfterPsalter) {
+  const {normalized, originalIndex} = normalizedAkathistTextWithIndex(text);
+  const plain = normalized.toLowerCase();
+  const find = (pattern, from) => {
+    const match = pattern.exec(plain.slice(from));
+    return match ? from + match.index : -1;
+  };
+  const holy = find(/святый\s+боже|святой\s+боже/u, 0);
+  const glory1 = holy >= 0 ? find(/слава\s+отцу/u, holy) : -1;
+  const trinity = glory1 >= 0
+    ? find(/пресвятая\s+троиц|святейшая\s+троиц/u, glory1) : -1;
+  const mercy = trinity >= 0 ? find(/господи,?\s+помилуй/u, trinity) : -1;
+  const glory2 = mercy >= 0 ? find(/слава\s+отцу/u, mercy) : -1;
+  const father = glory2 >= 0 ? find(/отче\s+наш/u, glory2) : -1;
+  for (const offset of [holy, glory1, trinity, mercy, glory2, father]) {
+    const position = offset >= 0 ? originalIndex[offset] : -1;
+    if (Number.isFinite(position) && position > 0) civilAfterTrisagionStarts.add(position);
+  }
+  for (const offset of [holy, trinity, father]) {
+    const start = offset >= 0 ? originalIndex[offset] : -1;
+    if (Number.isFinite(start)) civilAfterTrisagionInitials.push({start, end: start + 1});
+  }
+  if (mercy >= 0) {
+    const matched = /господи,?\s+помилуй/u.exec(plain.slice(mercy));
+    if (matched) {
+      const finish = mercy + matched[0].length;
+      civilAfterMercyRanges.push({
+        start: originalIndex[mercy],
+        end: originalIndex[finish] ?? text.length,
+      });
+    }
+  }
+}
 // The ordinary Church Slavonic and Russian opening prayers share these
 // liturgical divisions; traditional Ponomar keeps its separate renderer.
 const isStandaloneCivilBeforePsalter =
@@ -1995,7 +2032,12 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
             boundaries.add( range.start );
             boundaries.add( range.end );
           })
-          civilAfterInitialRanges.forEach(range => {
+          civilAfterTrisagionStarts.forEach(at => boundaries.add(at));
+        [...civilAfterTrisagionInitials, ...civilAfterMercyRanges].forEach(range => {
+          boundaries.add(range.start);
+          boundaries.add(range.end);
+        });
+        civilAfterInitialRanges.forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
@@ -2107,6 +2149,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
             standaloneSeparatorStarts.has(start)) {
           appendPsalterSeparator(fragment);
         }
+        if (civilAfterTrisagionStarts.has(start)) appendPsalterSeparator(fragment);
         if (isStandaloneCivilAfterPsalter && civilAfterDividerStarts.has(start)) {
           appendPsalterSeparator(fragment);
         }
@@ -2270,6 +2313,12 @@ if (isSearchHit) {
               start >= civilBeforeMercyTogether.start && end <= civilBeforeMercyTogether.end &&
               parallelMercyCommaPositions.has(start)) {
             span.style.setProperty('display', 'none');
+          }
+          if (civilAfterTrisagionInitials.some(range => midpoint >= range.start && midpoint < range.end)) {
+            span.classList.add('psalter-prayer-initial');
+          }
+          if (civilAfterMercyRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
+            span.classList.add('psalter-civil-after-mercy');
           }
           const isPsalterPrayerAccent =
             isPsalterPrayer &&
