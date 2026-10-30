@@ -2755,7 +2755,7 @@ if (
         if (isStandaloneCivilAfterPsalter) {
           const renderedNodes = Array.from(root.childNodes);
           const flat = value => normalizedAkathistTextWithIndex(value)
-            .normalized.toLowerCase().replace(/\\s+/gu, ' ').trim();
+            .normalized.toLowerCase().replace(/\s+/gu, ' ').trim();
           renderedNodes.forEach((node, index) => {
             if (node.nodeType !== Node.ELEMENT_NODE ||
                 !node.classList.contains('psalter-prayer-separator')) return;
@@ -2763,8 +2763,8 @@ if (
               .map(item => item.textContent || '').join(''));
             const after = flat(renderedNodes.slice(index + 1, index + 13)
               .map(item => item.textContent || '').join(''));
-            if (/тропари\\s+(?:сия|покаянные),?\\s*глас\\s*(?:6|шестой)$/.test(before) &&
-                /^помилуй\\s+нас/.test(after)) {
+            if (/тропари\s+(?:сия|покаянные),?\s*глас\s*(?:6|шестой)$/.test(before) &&
+                /^помилуй\s+нас/.test(after)) {
               node.remove();
             }
           });
