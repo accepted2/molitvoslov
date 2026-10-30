@@ -1767,18 +1767,22 @@ if (isStandaloneCivilAfterPsalter) {
   const plain = mapped.normalized;
   // Match both Church Slavonic/Russian spellings and stress-mark variants.
   // Only the initial of the Cherubic hymn receives this divider and red color.
-  const cherubicMatches = Array.from(plain.matchAll(/Честн[^\s]{0,16}\s+Херувим/giu));
-  // The first occurrence belongs to the opening "Достойно есть".
-  // Only the last occurrence, after the prayer "Многомилостиве", is decorated.
-  const cherubic = cherubicMatches.length > 1
-    ? cherubicMatches[cherubicMatches.length - 1]
+  // Both Church Slavonic ("Честнейшую Херувим") and Russian
+  // ("Честью высшую Херувимов") belong to the final hymn after
+  // "Многомилостиве... Аминь.", not the opening hymns.
+  const prayerIntro = /Многомилостив[а-яѣ]+/iu.exec(plain);
+  const cherubicMatches = Array.from(plain.matchAll(
+    /Честн[^\s]{0,16}\s+Херувим|Честью\s+высшую\s+Херувим/giu
+  ));
+  const cherubic = prayerIntro
+    ? cherubicMatches.find(match => match.index > prayerIntro.index) || null
     : null;
   const glory = /Слава,?\s+и\s+ныне:/iu.exec(plain);
   const endBlessing = glory
     ? /Благослови\.?/iu.exec(plain.slice(glory.index + glory[0].length))
     : null;
   const dismissal = endBlessing
-    ? /Аще\s+иерей|Если\s+священник/iu.exec(plain.slice(glory.index + glory[0].length + endBlessing.index + endBlessing[0].length))
+    ? /Аще\s+иерей|Если\s+священник|Священник\s+произносит\s+отпуст/iu.exec(plain.slice(glory.index + glory[0].length + endBlessing.index + endBlessing[0].length))
     : null;
   if (cherubic) {
     const start = mapped.originalIndex[cherubic.index];
