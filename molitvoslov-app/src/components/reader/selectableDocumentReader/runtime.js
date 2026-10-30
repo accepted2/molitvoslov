@@ -1847,6 +1847,7 @@ if (isStandaloneCivilAfterPsalter) {
 }
 // Troparion sequence: use one divider after the troparia, never between
 // the heading and its first verse.
+let civilAfterEphremStart = -1;
 const civilAfterPrayerInitials = [];
 const civilAfterTroparDividers = new Set();
 let civilAfterTroparFirstVerse = -1;
@@ -1881,6 +1882,7 @@ if (isStandaloneCivilAfterPsalter) {
     const position = mapped.originalIndex[
       afterBow.index + afterBow[0].lastIndexOf(afterBow[1])
     ];
+    if (Number.isFinite(position)) civilAfterEphremStart = position;
     if (Number.isFinite(position) &&
         !civilAfterPrayerInitials.some(range => range.start === position)) {
       civilAfterPrayerInitials.push({start: position, end: position + 1});
@@ -2296,6 +2298,11 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         if (civilAfterTrisagionStarts.has(start)) appendPsalterSeparator(fragment);
         if (civilAfterClosingDividers.has(start)) appendPsalterSeparator(fragment);
         if (civilAfterTroparDividers.has(start)) appendPsalterSeparator(fragment);
+        if (isStandaloneCivilAfterPsalter &&
+            itemConfig?.metadata?.language === 'russian' &&
+            start === civilAfterEphremStart) {
+          fragment.appendChild(document.createElement('br'));
+        }
         if (isStandaloneCivilAfterPsalter && civilAfterDividerStarts.has(start)) {
           appendPsalterSeparator(fragment);
         }
