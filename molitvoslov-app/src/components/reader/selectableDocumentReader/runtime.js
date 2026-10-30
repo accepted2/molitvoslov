@@ -1756,7 +1756,12 @@ if (isStandaloneCivilAfterPsalter) {
   const plain = mapped.normalized;
   // Match both Church Slavonic/Russian spellings and stress-mark variants.
   // Only the initial of the Cherubic hymn receives this divider and red color.
-  const cherubic = /Честн[^\s]{0,16}\s+Херувим/iu.exec(plain);
+  const cherubicMatches = Array.from(plain.matchAll(/Честн[^\s]{0,16}\s+Херувим/giu));
+  // The first occurrence belongs to the opening "Достойно есть".
+  // Only the last occurrence, after the prayer "Многомилостиве", is decorated.
+  const cherubic = cherubicMatches.length > 1
+    ? cherubicMatches[cherubicMatches.length - 1]
+    : null;
   const glory = /Слава,?\s+и\s+ныне:/iu.exec(plain);
   const endBlessing = glory
     ? /Благослови\.?/iu.exec(plain.slice(glory.index + glory[0].length))
@@ -2818,36 +2823,6 @@ if (
 
         }
         root.replaceChildren( fragment );
-        // Ensure the Cherubic hymn starts with a divider and a red initial.
-        // Work from rendered characters so combining stress marks and styled
-        // text fragments cannot prevent the match.
-        if (isStandaloneCivilAfterPsalter) {
-          const rendered = normalizedAkathistTextWithIndex(root.textContent || '');
-          const hymn = /Честн[^\s]{0,16}\s+Херувим/iu.exec(rendered.normalized);
-          if (hymn) {
-            const targetOffset = rendered.originalIndex[hymn.index];
-            const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-            let cursor = 0;
-            let node = null;
-            while ((node = walker.nextNode())) {
-              const end = cursor + node.textContent.length;
-              if (targetOffset < end) {
-                const local = targetOffset - cursor;
-                const first = node.splitText(local);
-                if (first.textContent.length) {
-                  const tail = first.splitText(1);
-                  const initial = el('span', 'psalter-prayer-initial');
-                  first.parentNode.insertBefore(initial, first);
-                  initial.appendChild(first);
-                  const separator = el('span', 'psalter-prayer-separator');
-                  initial.parentNode.insertBefore(separator, initial);
-                }
-                break;
-              }
-              cursor = end;
-            }
-          }
-        }
         // The first troparion follows its heading directly, without a divider.
         // Find the specific separator by the neighboring liturgical text,
         // independent of how the reader split text into styled spans.
