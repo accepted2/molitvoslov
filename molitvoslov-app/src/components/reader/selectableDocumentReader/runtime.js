@@ -1862,7 +1862,7 @@ if (isStandaloneCivilAfterPsalter) {
     }
   }
   for (const pattern of [
-    /(?:^|\n)\s*(Господи\s+и\s+Владыко)/iu,
+    /(?:^|\n)\s*(Господи\s+и\s+Владык[ао])/iu,
     /(?:^|\n)\s*(Дух\s+же)/iu,
     /(?:^|\n)\s*(Ей\s+Господи)/iu,
     /(?:^|\n)\s*(Да,?\s+Господи)/iu,
@@ -1876,7 +1876,7 @@ if (isStandaloneCivilAfterPsalter) {
   }
   // The first Ephrem prayer follows the bow rubric even when the source
   // has spaces or extra paragraph breaks instead of a single newline.
-  const afterBow = /с\s+молитвою\s*:\s*(Господи\s+и\s+Владыко)/iu.exec(plain);
+  const afterBow = /с\s+молитвою\s*:\s*(Господи\s+и\s+Владык[ао])/iu.exec(plain);
   if (afterBow) {
     const position = mapped.originalIndex[
       afterBow.index + afterBow[0].lastIndexOf(afterBow[1])
