@@ -382,6 +382,17 @@ const HTML_TEMPLATE = String.raw`
       margin-bottom: 4px;
     }
 
+    /* In traditional writing, brief liturgical cues are upright. */
+    .traditional-mode .rule-leading-cue,
+    .traditional-mode .reader-inline-label {
+      font-style: normal;
+    }
+    .traditional-mode .reader-text span.creed-number {
+      color: var(--liturgical);
+      font-weight: 600;
+      font-style: normal;
+    }
+
     .translation-text {
       margin-top: 8px;
       color: var(--secondary);
@@ -2339,7 +2350,15 @@ const HTML_TEMPLATE = String.raw`
 
             const localizedTitle =
               viewMode === 'traditional'
-                ? text.traditional_title || text.title || ''
+                ? (
+                    isMorningRule
+                      ? String(text.traditional_title || text.title || '')
+                          .replace(
+                            /^Молитва\s+(?:9(?:[-‑–]?[яй])?|девятая)(?=\s|,|$)/iu,
+                            'Моли́тва ѳ҃'
+                          )
+                      : text.traditional_title || text.title || ''
+                  )
                 : viewMode === 'ukrainian'
                   ? text.title_uk || text.title || ''
                   : text.title || '';
@@ -2361,8 +2380,10 @@ const HTML_TEMPLATE = String.raw`
 
             const displayTitle =
               (
-                normalizedTitle ===
-                  'молитва' ||
+                (
+                  normalizedTitle === 'молитва' &&
+                  !/ѳ|9/u.test(localizedTitle)
+                ) ||
                 !!inlineLabel
               )
                 ? ''
@@ -2898,11 +2919,15 @@ const HTML_TEMPLATE = String.raw`
           /Слава\s*,?\s*и\s+нын[еѣ]\s*:/giu,
         ];
 
+        if (isMorningRule && DATA.viewMode === 'traditional') {
+          patterns.push(/[\[(]\s*12\s*(?:раз(?:а)?)?\s*[\])]/giu);
+        }
+
         /* Accent the call "Господи, помилуй." before (Трижды.)
            and (12 раз), keeping the frequency rubric red below. */
         if (isMorningRule) {
           patterns.push(
-            /Господи\s*,?\s*помилу[йи]\s*[.!?]?(?=\s*\(\s*(?:Трижды\.?|12\s+раз)\s*\))/giu
+            /(?:Господи|Гдси|Гди)\s*,?\s*помилу[йи]\s*[.!?]?(?=\s*[\[(]\s*(?:Трижды\.?|12\s*(?:раз(?:а)?)?)\s*[\])])/giu
           );
         }
 
@@ -3198,6 +3223,42 @@ const HTML_TEMPLATE = String.raw`
               )
             : null;
 
+        // Split the final traditional "Слава, и ныне:" from "Гд҃и, помилуй."
+        // without changing the text or saved-selection offsets.
+        let traditionalFinalMercyBreakOffset = null;
+        if (isMorningRule && DATA.viewMode === 'traditional') {
+          const mapped = normalizedTextWithIndex(text);
+          const ending = /^\s*Слава\s*,?\s*и\s+ныне\s*:\s*((?:Господи|Гдси|Гди)\s*,?\s*помилу[йи])/iu.exec(mapped.normalized);
+          if (ending) {
+            const mercyStart = ending.index + ending[0].lastIndexOf(ending[1]);
+            traditionalFinalMercyBreakOffset = mapped.originalIndex[mercyStart] ?? null;
+          }
+        }
+
+        const traditionalCreedNumberRanges = [];
+        if (DATA.viewMode === 'traditional') {
+          const item = (DATA.rule.items || []).find(
+            entry => Number(entry.id) === Number(itemId)
+          );
+          if (/символ/u.test(normalizeLiturgicalValue(item?.text?.title || ''))) {
+            const mapped = normalizedTextWithIndex(text);
+            // Mark numerals in brackets (Arabic or titlo-style Slavonic) and
+            // the unbracketed verse numbers joined directly to Creed clauses.
+            const numeralPattern = /[\[(⟨⟦]\s*(\d{1,2}|҂?[а-яё]{1,3})\s*[\])⟩⟧]|(?<![\p{L}\p{N}])(\d{1,2})(?=\p{L})/giu;
+            for (const number of mapped.normalized.matchAll(numeralPattern)) {
+              const numeral = number[1] || number[2];
+              const index = number.index + number[0].indexOf(numeral);
+              appendOriginalRange(
+                traditionalCreedNumberRanges,
+                mapped.source,
+                mapped.originalIndex,
+                index,
+                index + numeral.length
+              );
+            }
+          }
+        }
+
         const liturgicalRanges = [];
 
         if (!isEveningMinorLiturgical) {
@@ -3312,7 +3373,7 @@ const HTML_TEMPLATE = String.raw`
         const bowRubricRanges = [];
         if (isMorningRule) {
           const mappedBows = normalizedTextWithIndex(text);
-          for (const bow of mappedBows.normalized.matchAll(/\(\s*Поклон(?:ы)?\s*\.?\s*\)/giu)) {
+          for (const bow of mappedBows.normalized.matchAll(/[\[(]\s*Поклон(?:ы)?ъ?\s*\.?\s*[\])]/giu)) {
             appendOriginalRange(
               bowRubricRanges,
               mappedBows.source,
@@ -3335,7 +3396,7 @@ const HTML_TEMPLATE = String.raw`
             }
           }
           // Names and remembrance prompts use the same brown rubric style.
-          for (const placeholder of mappedBows.normalized.matchAll(/\(\s*(?:имя|имена(?:\s+их)?)\s*\)|\[\s*родител(?:е[йи]|и)\s+моих\s*\]/giu)) {
+          for (const placeholder of mappedBows.normalized.matchAll(/\(\s*(?:имя|имярекъ?|имена(?:\s+их)?)\s*\)|\[\s*родител(?:е[йи]|и)\s+моих\s*\]/giu)) {
             appendOriginalRange(
               bowRubricRanges,
               mappedBows.source,
@@ -3344,7 +3405,7 @@ const HTML_TEMPLATE = String.raw`
               placeholder.index + placeholder[0].length
             );
           }
-          for (const mercy of mappedBows.normalized.matchAll(/Господи\s*,?\s*помилу[йи]\s*[.!?]?\s*(\(\s*Трижды\.?\s*\))/giu)) {
+          for (const mercy of mappedBows.normalized.matchAll(/(?:Господи|Гдси|Гди)\s*,?\s*помилу[йи]\s*[.!?]?\s*(\(\s*Трижды\.?\s*\))/giu)) {
             const rubricStart = mercy.index + mercy[0].lastIndexOf(mercy[1]);
             appendOriginalRange(
               bowRubricRanges,
@@ -3399,6 +3460,13 @@ const HTML_TEMPLATE = String.raw`
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
+        traditionalCreedNumberRanges.forEach(range => {
+          boundaries.add(range.start);
+          boundaries.add(range.end);
+        });
+        if (Number.isFinite(traditionalFinalMercyBreakOffset)) {
+          boundaries.add(traditionalFinalMercyBreakOffset);
+        }
 
         eveningNumberBreaks.forEach(
           offset => {
@@ -3551,6 +3619,9 @@ const HTML_TEMPLATE = String.raw`
           }
           if (bowRubricRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
             span.classList.add('prayer-bow-rubric');
+          }
+          if (traditionalCreedNumberRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
+            span.classList.add('creed-number');
           }
 
           if (
@@ -3756,6 +3827,14 @@ const HTML_TEMPLATE = String.raw`
                 'br'
               )
             );
+          }
+
+          if (
+            Number.isFinite(traditionalFinalMercyBreakOffset) &&
+            end === traditionalFinalMercyBreakOffset &&
+            end !== eveningUtilityBreakOffset
+          ) {
+            fragment.appendChild(document.createElement('br'));
           }
 
           if (
