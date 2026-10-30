@@ -65,8 +65,9 @@ export default function ExpandablePrayerBlock({
         .replace(/(И\s+поклонов[^\n]*?с\s+молитвою:)[ \t]*(?:\n[ \t]*)+/iu, '$1\n')
         .replace(/(И\s+поклонись[^\n]*?с\s+молитвою:)[ \t]*(?:\n[ \t]*)+/iu, '$1\n')
         .replace(/(с\s+молитвою:?)\s*(?=Господи\s+и\s+Владык[ао])/iu, '$1\n')
-        .replace(/([^\n]*?)(\s*\(Поклон\))/giu, (whole, before, bow) =>
-          before.trim() ? before + '\n' + bow.trimStart() : whole)
+        // Keep "(Поклон)" inline when it fits; let the browser wrap the
+        // complete word naturally when the remaining line is too short.
+        .replace(/\s*(\(Поклон\))/giu, ' $1')
         .replace(/(Господи,?\s+помилуй)\s*,?\s*(\(Трижды\.\))/giu, '$1,\u00a0$2')
         .replace(/(Слава,\s*и\s*ныне:)\s*(?=Господи,\s*помилуй\s*\(3\))/giu, '$1\n');
     }
