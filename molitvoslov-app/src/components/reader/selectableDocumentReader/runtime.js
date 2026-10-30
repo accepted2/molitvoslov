@@ -1778,6 +1778,7 @@ if (isStandaloneCivilAfterPsalter) {
 }
 // Troparion sequence: use one divider after the troparia, never between
 // the heading and its first verse.
+const civilAfterPrayerInitials = [];
 const civilAfterTroparDividers = new Set();
 let civilAfterTroparFirstVerse = -1;
 if (isStandaloneCivilAfterPsalter) {
@@ -1789,6 +1790,19 @@ if (isStandaloneCivilAfterPsalter) {
     if (verse) {
       const index = heading.index + heading[0].length + verse.index;
       civilAfterTroparFirstVerse = mapped.originalIndex[index] ?? -1;
+    }
+  }
+  for (const pattern of [
+    /(?:^|\n)\s*(Господи\s+и\s+Владыко)/iu,
+    /(?:^|\n)\s*(Дух\s+же)/iu,
+    /(?:^|\n)\s*(Ей\s+Господи)/iu,
+    /(?:^|\n)\s*(Да,?\s+Господи)/iu,
+  ]) {
+    const match = pattern.exec(plain);
+    if (!match) continue;
+    const at = mapped.originalIndex[match.index + match[0].indexOf(match[1])];
+    if (Number.isFinite(at)) {
+      civilAfterPrayerInitials.push({start: at, end: at + 1});
     }
   }
   const mercy40 = /Господи,?\s*помилуй\s*\(40(?:\s*раз)?\)/iu.exec(plain);
@@ -2069,6 +2083,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           })
           civilAfterTrisagionStarts.forEach(at => boundaries.add(at));
         civilAfterTroparDividers.forEach(at => boundaries.add(at));
+        civilAfterPrayerInitials.forEach(range => { boundaries.add(range.start); boundaries.add(range.end); });
         if (civilAfterTroparFirstVerse >= 0) boundaries.add(civilAfterTroparFirstVerse);
         if (civilAfterMercyTogether) { boundaries.add(civilAfterMercyTogether.start); boundaries.add(civilAfterMercyTogether.end); }
         [...civilAfterTrisagionInitials, ...civilAfterMercyRanges].forEach(range => {
@@ -2360,6 +2375,9 @@ if (isSearchHit) {
           if (civilAfterMercyRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
             span.classList.add('psalter-civil-after-mercy');
           }
+          if (civilAfterPrayerInitials.some(range => midpoint >= range.start && midpoint < range.end)) {
+            span.classList.add('psalter-prayer-initial');
+          }
           const isPsalterPrayerAccent =
             isPsalterPrayer &&
             psalterPrayerAccentRanges.some(
@@ -2620,6 +2638,7 @@ const needsSeparatorBeforeHeading =
   );
 
 if (needsSeparatorBeforeHeading &&
+    start !== civilAfterTroparFirstVerse &&
     start !== civilTrinityHeadingStart &&
     start !== civilTrinitySecondLineStart) {
   appendPsalterSeparator(fragment);
