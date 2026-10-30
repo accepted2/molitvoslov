@@ -2086,13 +2086,15 @@ if (parallelPsalterLayout) {
 // Parallel pre-Psalter columns: break at the repeat annotation itself,
 // even if the complete mercy phrase was not recognized as one wrapper.
 let parallelBeforeRepeatStart = -1;
+let parallelBeforeRepeatEnd = -1;
 if (parallelPsalterLayout) {
   const mapped = normalizedAkathistTextWithIndex(text);
   const source = mapped.normalized;
-  const match = /Господи,?\s+помилуй\s*[,.;]?\s*(\(Трижды\.?\))/iu.exec(source);
+  const match = /Господи,?\s+помилуй\s*[,.;]?\s*(\(\s*Трижды\.?\s*\))/iu.exec(source);
   if (match) {
     const noteAt = match.index + match[0].lastIndexOf(match[1]);
     parallelBeforeRepeatStart = mapped.originalIndex[noteAt] ?? -1;
+    parallelBeforeRepeatEnd = mapped.originalIndex[noteAt + match[1].length] ?? text.length;
   }
 }
 // Use the already verified accent-insensitive range, not a plain-text
@@ -2218,6 +2220,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         civilBeforeDividerStarts.forEach(start => boundaries.add(start));
         if (parallelTroparBreak >= 0) boundaries.add(parallelTroparBreak);
         if (parallelBeforeRepeatStart >= 0) boundaries.add(parallelBeforeRepeatStart);
+        if (parallelBeforeRepeatEnd >= 0) boundaries.add(parallelBeforeRepeatEnd);
         parallelMercyCommaPositions.forEach(pos => { boundaries.add(pos); boundaries.add(pos + 1); });
         if (parallelMercyWordsEnd >= 0) boundaries.add(parallelMercyWordsEnd);
         russianOpeningInitials.forEach(range => { boundaries.add(range.start); boundaries.add(range.end); });
@@ -2308,6 +2311,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         let standaloneTitleWrapper = null;
         let civilTrinitySecondLineWrapper = null;
         let civilBeforeMercyWrapper = null;
+        let parallelRepeatWrapper = null;
         let civilAfterMercyWrapper = null;
         for ( let index = 0;
           index < points.length - 1;
@@ -2349,10 +2353,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           appendPsalterSeparator(fragment);
         }
         if (parallelTroparBreak === start) fragment.appendChild(document.createElement('br'));
-        if (parallelBeforeRepeatStart === start &&
-            text[start - 1] !== '\n') {
-          fragment.appendChild(document.createElement('br'));
-        }
+
         const span = document.createElement('span');
         const standaloneDecoration = standalonePsalterRanges.find(range =>
           midpoint >= range.start && midpoint < range.end && range.kind === 'mercy') ||
@@ -2840,7 +2841,15 @@ if (isStandaloneTraditionalPsalterPrayer &&
     civilTrinitySecondLineWrapper.appendChild(span);
   } else {
     civilTrinitySecondLineWrapper = null;
-    if (civilBeforeMercyTogether && start >= civilBeforeMercyTogether.start && end <= civilBeforeMercyTogether.end && !(parallelPsalterLayout && parallelBeforeRepeatStart >= 0 && start >= parallelBeforeRepeatStart)) {
+    if (parallelPsalterLayout && parallelBeforeRepeatStart >= 0 &&
+        start >= parallelBeforeRepeatStart && end <= parallelBeforeRepeatEnd) {
+      civilBeforeMercyWrapper = null;
+      if (!parallelRepeatWrapper) {
+        parallelRepeatWrapper = el('span', 'psalter-parallel-repeat-note');
+        fragment.appendChild(parallelRepeatWrapper);
+      }
+      parallelRepeatWrapper.appendChild(span);
+    } else if (civilBeforeMercyTogether && start >= civilBeforeMercyTogether.start && end <= civilBeforeMercyTogether.end && !(parallelPsalterLayout && parallelBeforeRepeatStart >= 0 && start >= parallelBeforeRepeatStart)) {
       if (!civilBeforeMercyWrapper) {
         civilBeforeMercyWrapper = el('span', 'psalter-civil-mercy-together');
         fragment.appendChild(civilBeforeMercyWrapper);
