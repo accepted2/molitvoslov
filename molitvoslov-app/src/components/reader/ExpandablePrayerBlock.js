@@ -58,10 +58,12 @@ export default function ExpandablePrayerBlock({
     if (saveProps?.metadata?.section === 'prayers_after' && compactCivilDoxology) {
       // Keep the rubric after the fortyfold mercy response, but collapse
       // the unnecessary blank paragraph before its following prayer.
-      return normalized.replace(
-        /(И\s+поклонов[^\n]*?с\s+молитвою:)\n{2,}/iu,
-        '$1\n'
-      );
+      return normalized
+        .replace(/(И\s+поклонов[^\n]*?с\s+молитвою:)[ \t]*(?:\n[ \t]*)+/iu, '$1\n')
+        .replace(/(И\s+поклонись[^\n]*?с\s+молитвою:)[ \t]*(?:\n[ \t]*)+/iu, '$1\n')
+        .replace(/([^\n]*?)(\s*\(Поклон\))/giu, (whole, before, bow) =>
+          before.trim() ? before + '\n' + bow.trimStart() : whole)
+        .replace(/(Господи,?\s+помилуй)\s*,?\s*(\(Трижды\.\))/giu, '$1,\u00a0$2');
     }
     if (saveProps?.metadata?.section === 'prayers_before' && compactCivilDoxology) {
       // The separator supplies the visual break before the doxology.
