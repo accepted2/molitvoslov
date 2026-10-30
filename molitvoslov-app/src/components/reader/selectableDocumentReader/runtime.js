@@ -2770,6 +2770,19 @@ if (
               node = next;
             }
           }
+          // The rubric draws its own bottom border; an adjacent generated
+          // separator after it would produce the doubled line.
+          root.querySelectorAll('.psalter-prayer-rubric-separator-after')
+            .forEach(node => {
+              let next = node.nextSibling;
+              while (next && !String(next.textContent || '').trim() &&
+                     !next.classList?.contains('psalter-prayer-separator')) {
+                next = next.nextSibling;
+              }
+              if (next?.classList?.contains('psalter-prayer-separator')) {
+                next.remove();
+              }
+            });
           // Never stack a generated separator with a rubric's border.
           root.querySelectorAll('.psalter-prayer-rubric-separator-before')
             .forEach(node => {
