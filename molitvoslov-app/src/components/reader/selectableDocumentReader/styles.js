@@ -428,6 +428,13 @@ export const READER_STYLES = String.raw`
   margin: 1px 0;
 }
 
+/* In the Russian prayer after the Psalter, the bow rubric is followed
+   by an explicit newline. Do not add an extra block break before the prayer. */
+.reader-text.psalter-reading-prayers .psalter-civil-bow-rubric-compact {
+  display: inline !important;
+  margin: 0 !important;
+  padding-bottom: 0 !important;
+}
 .reader-text .psalter-prayer-rubric-inline {
   display: inline;
   margin: 0;
