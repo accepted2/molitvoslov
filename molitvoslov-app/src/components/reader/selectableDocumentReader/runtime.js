@@ -1780,6 +1780,7 @@ if (isStandaloneCivilAfterPsalter) {
 const civilAfterTrisagionStarts = new Set();
 const civilAfterTrisagionInitials = [];
 const civilAfterMercyRanges = [];
+let civilAfterMercyTogether = null;
 if (isStandaloneCivilAfterPsalter) {
   const {normalized, originalIndex} = normalizedAkathistTextWithIndex(text);
   const plain = normalized.toLowerCase();
@@ -1803,6 +1804,11 @@ if (isStandaloneCivilAfterPsalter) {
     if (Number.isFinite(start)) civilAfterTrisagionInitials.push({start, end: start + 1});
   }
   if (mercy >= 0) {
+    const whole = /господи,?\s+помилуй\s*,?\s*\(трижды\.?\)/u.exec(plain.slice(mercy));
+    if (whole && whole.index === 0) {
+      const after = mercy + whole[0].length;
+      civilAfterMercyTogether = {start: originalIndex[mercy], end: originalIndex[after] ?? text.length};
+    }
     const matched = /господи,?\s+помилуй/u.exec(plain.slice(mercy));
     if (matched) {
       const finish = mercy + matched[0].length;
@@ -2033,6 +2039,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
             boundaries.add( range.end );
           })
           civilAfterTrisagionStarts.forEach(at => boundaries.add(at));
+        if (civilAfterMercyTogether) { boundaries.add(civilAfterMercyTogether.start); boundaries.add(civilAfterMercyTogether.end); }
         [...civilAfterTrisagionInitials, ...civilAfterMercyRanges].forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
@@ -2133,6 +2140,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         let standaloneTitleWrapper = null;
         let civilTrinitySecondLineWrapper = null;
         let civilBeforeMercyWrapper = null;
+        let civilAfterMercyWrapper = null;
         for ( let index = 0;
           index < points.length - 1;
           index += 1 ) {
@@ -2650,7 +2658,16 @@ if (isStandaloneTraditionalPsalterPrayer &&
       }
     } else {
       civilBeforeMercyWrapper = null;
-      fragment.appendChild(span);
+      if (civilAfterMercyTogether && start >= civilAfterMercyTogether.start && end <= civilAfterMercyTogether.end) {
+        if (!civilAfterMercyWrapper) {
+          civilAfterMercyWrapper = el('span', 'psalter-civil-after-mercy-together');
+          fragment.appendChild(civilAfterMercyWrapper);
+        }
+        civilAfterMercyWrapper.appendChild(span);
+      } else {
+        civilAfterMercyWrapper = null;
+        fragment.appendChild(span);
+      }
     }
   }
 }
