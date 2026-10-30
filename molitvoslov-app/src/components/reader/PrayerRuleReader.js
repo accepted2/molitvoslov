@@ -409,6 +409,16 @@ const HTML_TEMPLATE = String.raw`
       font-weight: 650;
     }
 
+    /* Compact morning rubrics need to override the generic compact-text color. */
+    .reader-text.morning-compact-liturgical-text span.liturgical-phrase {
+      color: var(--liturgical) !important;
+      font-weight: 600 !important;
+    }
+    .reader-text.morning-compact-liturgical-text span.prayer-bow-rubric {
+      color: var(--secondary) !important;
+      font-weight: 650 !important;
+    }
+
 
     .liturgical-block {
       color: var(--liturgical);
@@ -2891,6 +2901,14 @@ const HTML_TEMPLATE = String.raw`
           /Слава\s*,?\s*и\s+нын[еѣ]\s*:/giu,
         ];
 
+        /* Only in the morning rule, color "Господи, помилуй." red
+           when it immediately precedes the bow-style "(Трижды.)". */
+        if (isMorningRule) {
+          patterns.push(
+            /Господи\s*,?\s*помилу[йи]\s*[.!?]?(?=\s*\(\s*Трижды\.?\s*\))/giu
+          );
+        }
+
         const ranges = [];
 
         patterns.forEach(
@@ -3149,6 +3167,10 @@ const HTML_TEMPLATE = String.raw`
           'evening-minor-liturgical-text',
           isEveningMinorLiturgical
         );
+        root.classList.toggle(
+          'morning-compact-liturgical-text',
+          isMorningRule && isEveningMinorLiturgical
+        );
 
         const eveningNumberBreaks =
           collectEveningNumberBreaks(
@@ -3203,7 +3225,7 @@ const HTML_TEMPLATE = String.raw`
             );
 
           const phrasePattern =
-            /Слава\s+Отцу\s*,?\s*и\s+Сыну\s*,?\s*и\s+Святому\s+Духу\s*[:;,.!?]?|И\s+ныне\s*,?\s*и\s+присно\s*,?\s*и\s+во\s+веки\s+веков\s*[.,;:]?\s*аминь\s*[.!?]?/giu;
+            /Слава\s+Отцу\s*,?\s*и\s+Сыну\s*,?\s*и\s+Святому\s+Духу\s*,?\s*и\s+ныне\s*,?\s*и\s+(?:присно|всегда)\s*,?\s*и\s+во\s+веки\s+веков\s*[.,;:]?\s*аминь\s*[.!?]?|Слава\s+Отцу\s*,?\s*и\s+Сыну\s*,?\s*и\s+Святому\s+Духу\s*[:;,.!?]?|И\s+ныне\s*,?\s*и\s+(?:присно|всегда)\s*,?\s*и\s+во\s+веки\s+веков\s*[.,;:]?\s*аминь\s*[.!?]?/giu;
 
           let phraseMatch = null;
 
@@ -3283,6 +3305,16 @@ const HTML_TEMPLATE = String.raw`
               mappedBows.originalIndex,
               bow.index,
               bow.index + bow[0].length
+            );
+          }
+          for (const mercy of mappedBows.normalized.matchAll(/Господи\s*,?\s*помилу[йи]\s*[.!?]?\s*(\(\s*Трижды\.?\s*\))/giu)) {
+            const rubricStart = mercy.index + mercy[0].lastIndexOf(mercy[1]);
+            appendOriginalRange(
+              bowRubricRanges,
+              mappedBows.source,
+              mappedBows.originalIndex,
+              rubricStart,
+              rubricStart + mercy[1].length
             );
           }
         }
@@ -3559,7 +3591,7 @@ const HTML_TEMPLATE = String.raw`
             );
 
           const phrasePattern =
-            /Слава\s+Отцу\s*,?\s*и\s+Сыну\s*,?\s*и\s+Святому\s+Духу\s*[:;,.!?]?|И\s+ныне\s*,?\s*и\s+присно\s*,?\s*и\s+во\s+веки\s+веков\s*[.,;:]?\s*аминь\s*[.!?]?/giu;
+            /Слава\s+Отцу\s*,?\s*и\s+Сыну\s*,?\s*и\s+Святому\s+Духу\s*,?\s*и\s+ныне\s*,?\s*и\s+(?:присно|всегда)\s*,?\s*и\s+во\s+веки\s+веков\s*[.,;:]?\s*аминь\s*[.!?]?|Слава\s+Отцу\s*,?\s*и\s+Сыну\s*,?\s*и\s+Святому\s+Духу\s*[:;,.!?]?|И\s+ныне\s*,?\s*и\s+(?:присно|всегда)\s*,?\s*и\s+во\s+веки\s+веков\s*[.,;:]?\s*аминь\s*[.!?]?/giu;
 
           const ranges =
             [];
