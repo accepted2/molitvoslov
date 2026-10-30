@@ -2604,7 +2604,11 @@ if (isSearchHit) {
               ) ||
               normalizedPsalterRubricText.startsWith(
                 'затем произноси следующую молитву со вниманием'
-              );
+              ) ||
+              (isStandaloneCivilAfterPsalter &&
+                normalizedPsalterRubricText.startsWith(
+                  'посем глаголи молитву сию со вниманием'
+                ));
 
             const needsSeparatorAfterRubric =
               normalizedPsalterRubricText.startsWith(
@@ -2865,6 +2869,26 @@ if (
 
         }
         root.replaceChildren( fragment );
+        // The Church Slavonic instruction has its rule ABOVE, not below.
+        // Suppress the automatic prayer-start separator immediately following it.
+        if (isStandaloneCivilAfterPsalter) {
+          root.querySelectorAll('.psalter-prayer-rubric-block').forEach(rubric => {
+            const label = normalizedAkathistTextWithIndex(rubric.textContent || '')
+              .normalized.toLowerCase();
+            if (!label.startsWith('посем глаголи молитву сию со вниманием')) return;
+            rubric.classList.remove('psalter-prayer-rubric-separator-after');
+            rubric.classList.add('psalter-prayer-rubric-separator-before');
+            let next = rubric.nextSibling;
+            while (next && !String(next.textContent || '').trim()) {
+              const following = next.nextSibling;
+              if (next.nodeType === Node.ELEMENT_NODE &&
+                  next.classList.contains('psalter-prayer-separator')) {
+                next.remove();
+              }
+              next = following;
+            }
+          });
+        }
         // The first troparion follows its heading directly, without a divider.
         // Find the specific separator by the neighboring liturgical text,
         // independent of how the reader split text into styled spans.
