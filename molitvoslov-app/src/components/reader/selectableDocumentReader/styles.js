@@ -1446,6 +1446,12 @@ export const READER_STYLES = String.raw`
       background: var(--saved);
       border-radius: 3px;
     }
+    /* Whole-item favorites shade the outer card; fragment marks within
+       it must not add a second permanent background. Manual selections
+       still show their temporary active highlight. */
+    .rule-item.whole-saved .saved-highlight:not(.active-highlight) {
+      background: transparent !important;
+    }
     .active-highlight {
       background: var(--active);
       border-radius: 3px;
