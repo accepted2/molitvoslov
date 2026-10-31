@@ -404,6 +404,36 @@ const HTML_TEMPLATE = String.raw`
       line-height: 0;
     }
 
+    /* Non-traditional seventh evening prayer: keep the numbered petitions
+       left-aligned so justification cannot stretch "1. Господи" apart. */
+    .evening-rule .reader-text.chrysostom-standard,
+    .evening-rule .translation-text.chrysostom-translation {
+      text-align: left !important;
+      text-align-last: left !important;
+      text-justify: auto !important;
+      word-spacing: normal !important;
+    }
+    .evening-rule .translation-text.chrysostom-translation {
+      white-space: pre-line;
+    }
+    .evening-rule .chrysostom-standard span.chrysostom-small-number,
+    .evening-rule .chrysostom-translation span.chrysostom-small-number {
+      font-size: 0.88em;
+      font-weight: 600;
+      font-style: normal;
+      color: inherit;
+    }
+    .evening-rule .chrysostom-standard span.chrysostom-first-letter,
+    .evening-rule .chrysostom-translation span.chrysostom-first-letter {
+      text-transform: uppercase;
+      font-size: 1.03em;
+      font-weight: inherit;
+    }
+    .evening-rule .chrysostom-translation .chrysostom-number-word {
+      display: inline-block;
+      white-space: nowrap;
+    }
+
     .paragraph-gap {
       display: block;
       width: 100%;
@@ -1166,6 +1196,33 @@ const HTML_TEMPLATE = String.raw`
         fragment.appendChild(document.createTextNode(value.slice(cursor)));
         entry.node.replaceWith(fragment);
       }
+    };
+
+
+    // In the parallel reader, Russian translations are ordinary text
+    // rather than offset-mapped prayer spans. Keep all 24 source lines and
+    // style only the number/first word; textContent remains byte-for-byte
+    // the same, so selecting or copying text is unaffected.
+    const formatChrysostomTranslation = root => {
+      if (!root) return;
+      const source = root.textContent || '';
+      const pattern = /(?:^|\n)[ \t]*(\d{1,2}\.)([ \t]*)([Гг])(осподи)/gu;
+      const fragment = document.createDocumentFragment();
+      let cursor = 0;
+      for (const match of source.matchAll(pattern)) {
+        const numberStart = match.index + match[0].lastIndexOf(match[1]);
+        fragment.appendChild(document.createTextNode(source.slice(cursor, numberStart)));
+        const pair = el('span', 'chrysostom-number-word');
+        pair.appendChild(el('span', 'chrysostom-small-number', match[1]));
+        pair.appendChild(document.createTextNode(match[2]));
+        pair.appendChild(el('span', 'chrysostom-first-letter', match[3]));
+        pair.appendChild(document.createTextNode(match[4]));
+        fragment.appendChild(pair);
+        cursor = numberStart + match[1].length + match[2].length +
+          match[3].length + match[4].length;
+      }
+      fragment.appendChild(document.createTextNode(source.slice(cursor)));
+      root.replaceChildren(fragment);
     };
 
 
@@ -2915,6 +2972,11 @@ const HTML_TEMPLATE = String.raw`
                   russianText || 'Перевод пока отсутствует.'
                 );
 
+              if (isEveningRule && eveningItemKind === 'chrysostom') {
+                translationElement.classList.add('chrysostom-translation');
+                formatChrysostomTranslation(translationElement);
+              }
+
               // Parallel mode: the Russian column needs the same sentence
               // layout as the other three modes, not collapsed inline text.
               if (isOptinaMorningPrayer) {
@@ -3669,6 +3731,33 @@ const HTML_TEMPLATE = String.raw`
             eveningItemKind
           );
 
+        const isStandardChrysostom =
+          isEveningRule &&
+          eveningItemKind === 'chrysostom' &&
+          DATA.viewMode !== 'traditional';
+        root.classList.toggle('chrysostom-standard', isStandardChrysostom);
+        const standardChrysostomNumbers = [];
+        const standardChrysostomInitials = [];
+        if (isStandardChrysostom) {
+          const mapped = normalizedTextWithIndex(text);
+          // Number and "Господи" are already present in the original
+          // Church Slavonic/Russian prayer. Mark them without rewriting
+          // its text or the offsets used for saved selections.
+          const numberWord = /(?:^|\s)(\d{1,2}\.)([ \t]*)(господи)/giu;
+          for (const match of mapped.normalized.matchAll(numberWord)) {
+            const numStart = match.index + match[0].indexOf(match[1]);
+            appendOriginalRange(
+              standardChrysostomNumbers, mapped.source, mapped.originalIndex,
+              numStart, numStart + match[1].length
+            );
+            const wordStart = match.index + match[0].lastIndexOf(match[3]);
+            appendOriginalRange(
+              standardChrysostomInitials, mapped.source, mapped.originalIndex,
+              wordStart, wordStart + 1
+            );
+          }
+        }
+
         const eveningUtilityBreakOffset =
           isEveningMinorLiturgical
             ? findEveningUtilityBreakOffset(
@@ -4044,6 +4133,10 @@ const HTML_TEMPLATE = String.raw`
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
+        [...standardChrysostomNumbers, ...standardChrysostomInitials].forEach(range => {
+          boundaries.add(range.start);
+          boundaries.add(range.end);
+        });
         traditionalKondakInitialRanges.forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
@@ -4261,6 +4354,16 @@ const HTML_TEMPLATE = String.raw`
           }
           if (traditionalChrysostomNumberRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
             span.classList.add('chrysostom-number');
+          }
+          if (standardChrysostomNumbers.some(range =>
+            midpoint >= range.start && midpoint < range.end
+          )) {
+            span.classList.add('chrysostom-small-number');
+          }
+          if (standardChrysostomInitials.some(range =>
+            midpoint >= range.start && midpoint < range.end
+          )) {
+            span.classList.add('chrysostom-first-letter');
           }
           if (traditionalMercyRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
             span.classList.add('traditional-mercy-phrase');
