@@ -665,6 +665,12 @@ const HTML_TEMPLATE = String.raw`
       background: var(--saved);
       border-radius: 3px;
     }
+    /* Saving the whole prayer via the heart already highlights the outer
+       card. Do not double-highlight the words when a fragment is also
+       saved. An active manual selection must remain visible. */
+    .rule-item.whole-saved .reader-text .saved-highlight:not(.active-highlight) {
+      background: transparent !important;
+    }
 
     .active-highlight {
       background: var(--active);
