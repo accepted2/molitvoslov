@@ -445,12 +445,13 @@ const HTML_TEMPLATE = String.raw`
       color: var(--secondary) !important;
       font-weight: 650 !important;
     }
-    /* Traditional morning invocations: dark text, slightly heavier, upright.
-       Do not recolor [Трижды.], bows, numerals or other liturgical rubrics.
-       Specificity also overrides compact morning rubric red highlighting. */
+    /* Traditional morning invocations are liturgical red again, including
+       "Гд҃и, помилꙋй" and "Слава, и нынѣ". Keep the independent [Трижды.]
+       and bow rubric styles unchanged. This specificity wins over the
+       compact-liturgical neutral span color in the traditional reader. */
     .traditional-mode.morning-rule .reader-text span.traditional-mercy-phrase,
     .traditional-mode.morning-rule .reader-text span.traditional-glory-phrase {
-      color: var(--text) !important;
+      color: var(--liturgical) !important;
       font-weight: 650 !important;
       font-style: normal !important;
     }
