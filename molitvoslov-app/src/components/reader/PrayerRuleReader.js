@@ -201,8 +201,8 @@ const HTML_TEMPLATE = String.raw`
        original spelling and selection offsets remain untouched. */
     .traditional-mode.evening-rule .reader-text span.traditional-damaskin-initial {
       color: var(--liturgical) !important;
-      font-size: 1.35em;
-      font-weight: 650 !important;
+      font-size: 1.08em;
+      font-weight: 400 !important;
       font-style: normal !important;
       text-transform: uppercase;
     }
