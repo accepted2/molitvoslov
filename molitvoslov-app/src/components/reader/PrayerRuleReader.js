@@ -212,6 +212,12 @@ const HTML_TEMPLATE = String.raw`
     .traditional-mode.evening-rule .reader-text span.traditional-damaskin-lowercase {
       text-transform: lowercase !important;
     }
+    /* In the non-traditional evening prayer of St John of Damascus,
+       start the three indicated passages on new lines, with regular-sized
+       capital initials. Red "Слава:" and "И ныне:" remain unchanged. */
+    .evening-rule .reader-text span.standard-damaskin-initial {
+      text-transform: uppercase;
+    }
     /* The two adjacent Paschal verses form one hymn, despite separate
        database items. Preserve original text anchors; remove the visible
        divider and the second header only in the morning rule. */
@@ -1246,6 +1252,36 @@ const HTML_TEMPLATE = String.raw`
         fragment.appendChild(divider);
         cursor = offset;
       }
+      fragment.appendChild(document.createTextNode(text.slice(cursor)));
+      root.replaceChildren(fragment);
+    };
+
+
+    // Parallel CS+RU translation: show the same three paragraph starts
+    // as in the main reader. The source string and textContent are unchanged.
+    const breakDamaskinTranslation = root => {
+      if (!root) return;
+      const text = root.textContent || '';
+      const mapped = normalizedTextWithIndex(text);
+      const normalized = mapped.normalized.toLowerCase();
+      const patterns = [
+        /просвети\s+очи/u,
+        /слава\s*:/u,
+        /и\s+ныне\s*:/u,
+      ];
+      const offsets = patterns.map(pattern => {
+        const match = pattern.exec(normalized);
+        return match ? mapped.originalIndex[match.index] : null;
+      });
+      if (!offsets.every(Number.isFinite) ||
+          !offsets.every((point, index) => index === 0 || point > offsets[index - 1])) return;
+      const fragment = document.createDocumentFragment();
+      let cursor = 0;
+      offsets.forEach(offset => {
+        fragment.appendChild(document.createTextNode(text.slice(cursor, offset)));
+        fragment.appendChild(document.createElement('br'));
+        cursor = offset;
+      });
       fragment.appendChild(document.createTextNode(text.slice(cursor)));
       root.replaceChildren(fragment);
     };
@@ -3004,6 +3040,9 @@ const HTML_TEMPLATE = String.raw`
               if (isEveningRule && Number(text.id) === 144) {
                 divideEveningKondakTranslation(translationElement);
               }
+              if (isEveningRule && Number(text.id) === 146) {
+                breakDamaskinTranslation(translationElement);
+              }
 
               // Parallel mode: the Russian column needs the same sentence
               // layout as the other three modes, not collapsed inline text.
@@ -3659,6 +3698,41 @@ const HTML_TEMPLATE = String.raw`
           }
         }
 
+        // In the three non-traditional reader modes, the same prayer
+        // needs line breaks before "Просвети", "Слава:" and "И ныне:".
+        // Use source offsets to keep saved selections exactly aligned.
+        const standardDamaskinBreaks = new Set();
+        const standardDamaskinInitials = [];
+        const isStandardEveningDamaskin =
+          isEveningRule &&
+          DATA.viewMode !== 'traditional' &&
+          (DATA.rule.items || []).some(entry =>
+            Number(entry.id) === Number(itemId) &&
+            Number(entry.text?.id) === 146
+          );
+        if (isStandardEveningDamaskin) {
+          const mapped = normalizedTextWithIndex(text);
+          const normalized = mapped.normalized.toLowerCase();
+          const patterns = [
+            /просвети\s+очи/u,
+            /слава\s*:/u,
+            /и\s+ныне\s*:/u,
+          ];
+          const offsets = patterns.map(pattern => {
+            const match = pattern.exec(normalized);
+            return match ? mapped.originalIndex[match.index] : null;
+          });
+          if (offsets.every(Number.isFinite) &&
+              offsets.every((point, index) => index === 0 || point > offsets[index - 1])) {
+            offsets.forEach(start => {
+              standardDamaskinBreaks.add(start);
+              let end = start + 1;
+              while (end < text.length && /\p{M}/u.test(text[end])) end += 1;
+              standardDamaskinInitials.push({start, end});
+            });
+          }
+        }
+
         // Prayer of St John of Damascus (Text 146): in traditional
         // Church Slavonic, separate the psalm verse, both doxological
         // cues and their following supplications. Match historical
@@ -4176,11 +4250,12 @@ const HTML_TEMPLATE = String.raw`
           boundaries.add(range.end);
         });
         [...traditionalDamaskinRubrics, ...traditionalDamaskinInitials,
-          ...traditionalDamaskinLowercase].forEach(range => {
+          ...traditionalDamaskinLowercase, ...standardDamaskinInitials].forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
         traditionalDamaskinBreaks.forEach(offset => boundaries.add(offset));
+        standardDamaskinBreaks.forEach(offset => boundaries.add(offset));
         traditionalChrysostomNumberRanges.forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
@@ -4330,7 +4405,7 @@ const HTML_TEMPLATE = String.raw`
             divider.setAttribute('aria-hidden', 'true');
             fragment.appendChild(divider);
           }
-          if (traditionalDamaskinBreaks.has(start)) {
+          if (traditionalDamaskinBreaks.has(start) || standardDamaskinBreaks.has(start)) {
             fragment.appendChild(document.createElement('br'));
           }
 
@@ -4358,6 +4433,11 @@ const HTML_TEMPLATE = String.raw`
             midpoint >= range.start && midpoint < range.end
           )) {
             span.classList.add('traditional-damaskin-lowercase');
+          }
+          if (standardDamaskinInitials.some(range =>
+            midpoint >= range.start && midpoint < range.end
+          )) {
+            span.classList.add('standard-damaskin-initial');
           }
 
           if (isSaved) {
