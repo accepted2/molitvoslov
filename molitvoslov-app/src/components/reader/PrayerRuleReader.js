@@ -216,7 +216,7 @@ const HTML_TEMPLATE = String.raw`
        database items. Preserve original text anchors; remove the visible
        divider and the second header only in the morning rule. */
     .morning-rule .rule-item.paschal-hymn-opening,
-    .traditional-mode.evening-rule .rule-item.paschal-hymn-opening {
+    .evening-rule .rule-item.paschal-hymn-opening {
       border-bottom: 0;
       padding-bottom: 0;
       margin-bottom: 0;
@@ -2623,7 +2623,7 @@ const HTML_TEMPLATE = String.raw`
       // Only for the parallel CS+RU reader: defer the first verse's
       // translation until after both Church Slavonic verses are shown.
       let deferredPaschalRussianTranslation = null;
-      if (isMorningRule || (isEveningRule && DATA.viewMode === 'traditional')) {
+      if (isMorningRule || isEveningRule) {
         const foldPaschal = value => normalizedTextWithIndex(value || '')
           .normalized.toLowerCase().replace(/\s+/gu, ' ').trim();
         for (let i = 1; i < allItems.length; i += 1) {
