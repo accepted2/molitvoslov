@@ -1761,26 +1761,29 @@ const HTML_TEMPLATE = String.raw`
       };
 
 
-    /* Render ordinal titles as Church Slavonic in the traditional tab.
-       Keep any existing truly traditional title and preserve the rest of the
-       original heading, including its original accent marks. */
+    /* Until the editor supplies a traditional_title in Django, render the
+       familiar morning headings with actual Church Slavonic spelling rather
+       than Russian labels displayed using the Ponomar typeface. */
     const traditionalMorningPrayerTitle = value => {
-      const original = String(value || '');
-      const mapped = normalizedTextWithIndex(original);
-      const ordinal = /^\s*молитва\s+(7(?:[-‑–]?[яй])?|седьмая|10(?:[-‑–]?[яй])?|десятая)(?=\s|,|$)/iu.exec(mapped.normalized);
-      if (!ordinal) {
-        // Retain the previously supported ninth-prayer numeral.
-        return original.replace(
-          /^Молитва\s+(?:9(?:[-‑–]?[яй])?|девятая)(?=\s|,|$)/iu,
-          'Моли́тва ѳ҃'
-        );
-      }
+      const source = String(value || '');
+      const folded = normalizedTextWithIndex(source).normalized;
+      const match = /^\s*молитва\s+(7(?:[-‑–]?[яй])?|седьмая|9(?:[-‑–]?[яй])?|девятая|10(?:[-‑–]?[яй])?|десятая)(?=\s|,|$)/iu.exec(folded);
+      if (!match) return source;
 
-      const numeral = /^(?:7|седьмая)/iu.test(ordinal[1]) ? 'з҃' : 'і҃';
-      const suffixStart = mapped.originalIndex[ordinal[0].length] ?? original.length;
-      const suffix = original.slice(suffixStart)
-        .replace(/ко\s+пресвятой\s+богородице/iu, 'ко Пресвятѣ́й Богоро́дицѣ');
-      return 'Моли́тва ' + numeral + suffix;
+      const ordinal = match[1].toLowerCase();
+      const numeral = /^(?:7|седьмая)/u.test(ordinal)
+        ? 'з҃'
+        : /^(?:9|девятая)/u.test(ordinal) ? 'ѳ҃' : 'і҃';
+
+      if (/ко?\s+пресвятой\s+богородице/iu.test(folded)) {
+        return 'Моли́тва ' + numeral + ', ко Пресвятѣ́й Богоро́дицѣ';
+      }
+      if (/к\s+ангелу\s+хранителю/iu.test(folded)) {
+        return 'Моли́тва ' + numeral + ', ко А́нгелꙋ храни́телю';
+      }
+      // Other prayer headings stay verbatim until their own translation
+      // is supplied in the explicit traditional_title Django admin field.
+      return source;
     };
 
 
@@ -2384,7 +2387,8 @@ const HTML_TEMPLATE = String.raw`
               viewMode === 'traditional'
                 ? (
                     isMorningRule
-                      ? traditionalMorningPrayerTitle(text.traditional_title || text.title || '')
+                      ? (text.traditional_title?.trim()
+                          || traditionalMorningPrayerTitle(text.title || ''))
                       : text.traditional_title || text.title || ''
                   )
                 : viewMode === 'ukrainian'
@@ -3263,7 +3267,10 @@ const HTML_TEMPLATE = String.raw`
             const mercyStart = ending.index + ending[0].lastIndexOf(ending[1]);
             traditionalFinalMercyBreakOffset = mapped.originalIndex[mercyStart] ?? null;
           }
-          const afterThrice = /(?:Господи|Гдси|Гд[иь])\s*,?\s*помилу[йи]\s*[.!?]?\s*[\[(]\s*тр[иії]жды\s*\.?\s*[\])]\s*(Слава\s*,?\s*и\s+ныне\s*:)/iu.exec(mapped.normalized);
+          // The line break depends on the [Трижды.] -> Слава sequence
+          // itself, not on the spelling of the preceding "Господи".
+          // This covers historical abbreviations and extra punctuation.
+          const afterThrice = /[\[(]\s*тр[иії]жды\s*\.?\s*[\])]\s*(Слава\s*,?\s*и\s+ныне\s*:)/iu.exec(mapped.normalized);
           if (afterThrice) {
             const gloryStart = afterThrice.index + afterThrice[0].lastIndexOf(afterThrice[1]);
             traditionalGloryBreakOffset = mapped.originalIndex[gloryStart] ?? null;
@@ -3460,18 +3467,27 @@ const HTML_TEMPLATE = String.raw`
           // In Ponomar, 12 can be written with Slavonic numerals: [в҃і.].
           // The mapped text reads [ви.], since historical letters and titla
           // are folded only for pattern matching, never in displayed content.
-          const mercyWithCount = /((?:Господи|Гдси|Гд[иь])\s*,?\s*помилу[йи]\s*[.!?]?)(\s*)([\[(]\s*(?:тр[иії]жды|12\s*(?:раз(?:а)?)?|в[иі])\s*\.?\s*[\])])/giu;
-          for (const match of mapped.normalized.matchAll(mercyWithCount)) {
-            const mercyStart = match.index;
+          // Locate the actual words, without requiring "[Трижды.]" or
+          // an exact spelling of the Lord's abbreviated name after them.
+          // A rubric may use archaic letters, accents and titla.
+          const mercyPattern = /(?:^|[^\p{L}])(Г[а-я]{1,9}\s*,?\s*помилу[йи]\s*[.!?]?)/giu;
+          for (const match of mapped.normalized.matchAll(mercyPattern)) {
+            const phraseStart = match.index + match[0].lastIndexOf(match[1]);
+            const phraseEnd = phraseStart + match[1].length;
             appendOriginalRange(
               traditionalMercyRanges, mapped.source, mapped.originalIndex,
-              mercyStart, mercyStart + match[1].length
+              phraseStart, phraseEnd
             );
-            if (!/тр[иії]жды/iu.test(match[3])) {
-              const countStart = match.index + match[1].length + match[2].length;
+
+            // Old Church Slavonic numeral for twelve: [в҃і.] (= [ви.]
+            // after folding diacritics). Do not recolor [Трижды.].
+            const rest = mapped.normalized.slice(phraseEnd);
+            const count = /^\s*([\[(]\s*(?:в[иі]|12\s*(?:раз(?:а)?)?)\s*\.?\s*[\])])/iu.exec(rest);
+            if (count) {
+              const countStart = phraseEnd + count[0].lastIndexOf(count[1]);
               appendOriginalRange(
                 traditionalTwelveRanges, mapped.source, mapped.originalIndex,
-                countStart, countStart + match[3].length
+                countStart, countStart + count[1].length
               );
             }
           }
