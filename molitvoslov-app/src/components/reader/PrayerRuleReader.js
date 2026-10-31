@@ -804,6 +804,10 @@ const HTML_TEMPLATE = String.raw`
     const itemLanguageMap =
       new Map();
 
+    // Only the morning Optina Elders prayer receives sentence-by-sentence
+    // line breaks in every reader mode. The database text stays untouched.
+    const optinaMorningItemIds = new Set();
+
     const savedRanges =
       new Map();
 
@@ -1011,6 +1015,50 @@ const HTML_TEMPLATE = String.raw`
       );
 
       return node;
+    };
+
+
+    // Display one Optina Elders sentence per line without rewriting the
+    // original text. <br> has no textContent, preserving offsets used for
+    // selection, saved fragments and reading progress. This also works when
+    // the text is already split into liturgical highlight spans.
+    const insertSentenceLineBreaks = root => {
+      if (!root) return;
+
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      let fullText = '';
+      let node = null;
+      while ((node = walker.nextNode())) {
+        nodes.push({node, start: fullText.length, end: fullText.length + node.textContent.length});
+        fullText += node.textContent;
+      }
+
+      const breaks = [];
+      for (const match of fullText.matchAll(/[.!?]+(?=\s+\S)/gu)) {
+        breaks.push(match.index + match[0].length);
+      }
+      if (!breaks.length) return;
+
+      // Replace from the end so original text-node references stay valid.
+      for (const entry of nodes.reverse()) {
+        const positions = breaks
+          .filter(offset => offset > entry.start && offset <= entry.end)
+          .map(offset => offset - entry.start)
+          .sort((a, b) => a - b);
+        if (!positions.length) continue;
+
+        const fragment = document.createDocumentFragment();
+        const value = entry.node.textContent;
+        let cursor = 0;
+        for (const offset of positions) {
+          fragment.appendChild(document.createTextNode(value.slice(cursor, offset)));
+          fragment.appendChild(document.createElement('br'));
+          cursor = offset;
+        }
+        fragment.appendChild(document.createTextNode(value.slice(cursor)));
+        entry.node.replaceWith(fragment);
+      }
     };
 
 
@@ -2487,6 +2535,13 @@ const HTML_TEMPLATE = String.raw`
               primaryText
             );
 
+            const isOptinaMorningPrayer =
+              isMorningRule &&
+              /оптинск/u.test(normalizeLiturgicalValue(text.title || ''));
+            if (isOptinaMorningPrayer) {
+              optinaMorningItemIds.add(Number(item.id));
+            }
+
             itemTitleMap.set(
               Number(
                 item.id
@@ -2654,15 +2709,11 @@ const HTML_TEMPLATE = String.raw`
                   russianText || 'Перевод пока отсутствует.'
                 );
 
-              // Preserve the same paragraph breaks as in the Russian tab
-              // for the morning prayer of the Optina Elders.
-              if (
-                isMorningRule &&
-                /оптинск/u.test(normalizedTitle)
-              ) {
-                compactParagraphGaps(
-                  translationElement
-                );
+              // Parallel mode: the Russian column needs the same sentence
+              // layout as the other three modes, not collapsed inline text.
+              if (isOptinaMorningPrayer) {
+                compactParagraphGaps(translationElement);
+                insertSentenceLineBreaks(translationElement);
               }
 
               wrapper.appendChild(
@@ -4046,6 +4097,10 @@ const HTML_TEMPLATE = String.raw`
         compactParagraphGaps(
           root
         );
+
+        if (optinaMorningItemIds.has(Number(itemId))) {
+          insertSentenceLineBreaks(root);
+        }
       };
 
 
