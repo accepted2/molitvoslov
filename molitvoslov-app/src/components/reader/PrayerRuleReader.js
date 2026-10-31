@@ -3537,6 +3537,23 @@ const HTML_TEMPLATE = String.raw`
               );
             }
           }
+
+          // The closing "Слава, и нынѣ: Гд҃и, помилꙋй. [Трижды.]"
+          // sometimes abbreviates the Lord's name differently from other
+          // occurrences. Match the invocation by its surrounding liturgical
+          // markers instead of relying on its initial letters. Keep the
+          // repetition rubric outside the red range.
+          const finalGloryMercy = /Слава\s*,?\s*и\s+ныне\s*:[ \t]*([^\[\]()\r\n]{1,80}?)(?=[ \t]*[\[(][ \t]*тр[иії]жды[ \t]*\.?[ \t]*[\])])/giu;
+          for (const combined of mapped.normalized.matchAll(finalGloryMercy)) {
+            const invocation = combined[1];
+            if (!/помилу[йи]/iu.test(invocation)) continue;
+            const phraseStart = combined.index + combined[0].lastIndexOf(invocation);
+            const phraseEnd = phraseStart + invocation.trimEnd().length;
+            appendOriginalRange(
+              traditionalMercyRanges, mapped.source, mapped.originalIndex,
+              phraseStart, phraseEnd
+            );
+          }
         }
 
         const liturgicalRubricRanges =
