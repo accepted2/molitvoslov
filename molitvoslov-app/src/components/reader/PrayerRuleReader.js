@@ -473,6 +473,25 @@ const HTML_TEMPLATE = String.raw`
       font-style: normal;
     }
 
+    /* The evening rule's compact phrases have a stronger neutral span style.
+       In traditional script use the same red invocations and brown rubric
+       notes as in morning prayer, without affecting the other three tabs. */
+    .traditional-mode.evening-rule .reader-text span.traditional-mercy-phrase,
+    .traditional-mode.evening-rule .reader-text span.traditional-glory-phrase,
+    .traditional-mode.evening-rule .reader-text span.traditional-twelve-count {
+      color: var(--liturgical) !important;
+      font-weight: 650 !important;
+      font-style: normal !important;
+    }
+    .traditional-mode.evening-rule .reader-text span.prayer-bow-rubric,
+    .traditional-mode.evening-rule .reader-text span.prayer-name-rubric,
+    .traditional-mode.evening-rule .reader-text span.prayer-bow-rubric *,
+    .traditional-mode.evening-rule .reader-text span.prayer-name-rubric * {
+      color: var(--secondary) !important;
+      font-weight: 650 !important;
+      font-style: normal !important;
+    }
+
 
     .liturgical-block {
       color: var(--liturgical);
@@ -1504,6 +1523,12 @@ const HTML_TEMPLATE = String.raw`
     const isDailyPrayerRule =
       isEveningRule ||
       isMorningRule;
+
+    // Shared rubric parsing for historical Church Slavonic morning and
+    // evening texts; other modes retain their existing formatting.
+    const isTraditionalDailyRule =
+      isDailyPrayerRule &&
+      DATA.viewMode === 'traditional';
 
 
     const normalizeEveningUtilityValue =
@@ -3084,7 +3109,7 @@ const HTML_TEMPLATE = String.raw`
           /Слава\s*,?\s*и\s+нын[еѣ]\s*:/giu,
         ];
 
-        if (isMorningRule && DATA.viewMode === 'traditional') {
+        if (isTraditionalDailyRule) {
           patterns.push(/[\[(]\s*12\s*(?:раз(?:а)?)?\s*[\])]/giu);
         }
 
@@ -3393,7 +3418,7 @@ const HTML_TEMPLATE = String.raw`
         // Do not insert a source character or shift selection/save offsets.
         let traditionalFinalMercyBreakOffset = null;
         let traditionalGloryBreakOffset = null;
-        if (isMorningRule && DATA.viewMode === 'traditional') {
+        if (isTraditionalDailyRule) {
           const mapped = normalizedTextWithIndex(text);
           const ending = /^\s*Слава\s*,?\s*и\s+ныне\s*:\s*([^\[\]()\r\n]{1,80}?)(?=\s*[\[(]\s*тр[иії]жды\s*\.?\s*[\])])/iu.exec(mapped.normalized);
           if (ending && /помилу[йи]/iu.test(ending[1])) {
@@ -3546,7 +3571,7 @@ const HTML_TEMPLATE = String.raw`
         // Parenthesized bow instructions are rubrics, not red accents.
         // Use original character offsets to preserve selection and saving.
         const bowRubricRanges = [];
-        if (isMorningRule) {
+        if (isMorningRule || isTraditionalDailyRule) {
           const mappedBows = normalizedTextWithIndex(text);
           for (const bow of mappedBows.normalized.matchAll(/[\[(]\s*Поклон(?:ы)?ъ?\s*\.?\s*[\])]/giu)) {
             appendOriginalRange(
@@ -3595,7 +3620,7 @@ const HTML_TEMPLATE = String.raw`
         }
 
         const traditionalNameRanges = [];
-        if (isMorningRule && DATA.viewMode === 'traditional') {
+        if (isTraditionalDailyRule) {
           // Search the real source text in whole brackets. The Unicode
           // normalizer folds *all* combining marks including old superscript
           // letters, so [и҆мѧ́къ] and [иⷮмѧкъ] are both recognized.
@@ -3616,7 +3641,7 @@ const HTML_TEMPLATE = String.raw`
         const traditionalMercyRanges = [];
         const traditionalGloryRanges = [];
         const traditionalTwelveRanges = [];
-        if (isMorningRule && DATA.viewMode === 'traditional') {
+        if (isTraditionalDailyRule) {
           const mapped = normalizedTextWithIndex(text);
           // Highlight the short liturgical invocation in red while keeping
           // its original Church Slavonic letters and selection offsets.
