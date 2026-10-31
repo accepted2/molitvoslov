@@ -119,6 +119,7 @@ class TextAdmin(admin.ModelAdmin):
     search_fields = [
         "title",
         "title_uk",
+        "traditional_title",
         "description",
         "description_uk",
         "content",
@@ -158,6 +159,7 @@ class TextAdmin(admin.ModelAdmin):
                 "fields": (
                     "title",
                     "title_uk",
+                    "traditional_title",
                     "description",
                     "description_uk",
                     "description_position",
@@ -171,7 +173,9 @@ class TextAdmin(admin.ModelAdmin):
                     "wide",
                     "extrapretty",
                 ),
-                "description": "Заголовок и описание не обязательны. "
+                "description": "Поле 'Заголовок — церковнославянский традиционный' "
+                "используется только во вкладке ЦС традиционный. "
+                "Если оно пустое, применяется обычный заголовок. "
                 "Slug сгенерируется автоматически.",
             },
         ),
