@@ -164,6 +164,24 @@ const HTML_TEMPLATE = String.raw`
     .rule-item:last-child {
       border-bottom: 0;
     }
+    /* Four short supplications share one original Text record in the
+       traditional evening Theotokos kontakion. Separate them visually
+       without editing the source or changing saved selection offsets. */
+    .traditional-mode.evening-rule .reader-text .traditional-kondak-divider {
+      display: block;
+      width: 100%;
+      height: 0;
+      margin: 9px 0 10px;
+      padding: 0;
+      border: 0;
+      border-top: 1px solid var(--border);
+    }
+    .traditional-mode.evening-rule .reader-text span.traditional-kondak-initial {
+      text-transform: uppercase;
+      color: var(--liturgical);
+      font-weight: 650;
+      font-style: normal;
+    }
     /* The two adjacent Paschal verses form one hymn, despite separate
        database items. Preserve original text anchors; remove the visible
        divider and the second header only in the morning rule. */
@@ -3460,6 +3478,50 @@ const HTML_TEMPLATE = String.raw`
             ? 'minor-liturgical'
             : mappedEveningItemKind;
 
+        const isTraditionalEveningKondak =
+          isEveningRule &&
+          DATA.viewMode === 'traditional' &&
+          (DATA.rule.items || []).some(entry =>
+            Number(entry.id) === Number(itemId) &&
+            entry.item_type === 'text' &&
+            (
+              Number(entry.text?.id) === 144 ||
+              /кондак.*богородиц/u.test(
+                normalizeLiturgicalValue(entry.text?.title || '')
+              )
+            )
+          );
+
+        // The original traditional text contains three sentence endings
+        // after which four separate prayers must begin. Insert DOM
+        // dividers only, and capitalize the first letter via CSS on its
+        // own one-letter span. The source and its offsets remain intact.
+        const traditionalKondakBreaks = new Set();
+        const traditionalKondakInitialRanges = [];
+        if (isTraditionalEveningKondak) {
+          const mapped = normalizedTextWithIndex(text);
+          const endings = [
+            /неневестн[а-яёъ]*\s*[.!?]\s*(?=[А-Яа-яЁё])/giu,
+            /души\s+наш[а-яёъ]*\s*[.!?]\s*(?=[А-Яа-яЁё])/giu,
+            /под\s+кровомъ?\s+твоимъ?\s*[.!?]\s*(?=[А-Яа-яЁё])/giu,
+          ];
+          for (const ending of endings) {
+            const match = ending.exec(mapped.normalized);
+            if (!match) continue;
+            const nextLetter = mapped.originalIndex[match.index + match[0].length];
+            if (!Number.isFinite(nextLetter)) continue;
+            traditionalKondakBreaks.add(nextLetter);
+            let letterEnd = nextLetter + 1;
+            while (letterEnd < text.length && /\p{M}/u.test(text[letterEnd])) {
+              letterEnd += 1;
+            }
+            traditionalKondakInitialRanges.push({
+              start: nextLetter,
+              end: letterEnd,
+            });
+          }
+        }
+
         root.classList.toggle(
           'evening-minor-liturgical-text',
           isEveningMinorLiturgical
@@ -3850,6 +3912,10 @@ const HTML_TEMPLATE = String.raw`
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
+        traditionalKondakInitialRanges.forEach(range => {
+          boundaries.add(range.start);
+          boundaries.add(range.end);
+        });
         traditionalChrysostomNumberRanges.forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
@@ -3993,10 +4059,23 @@ const HTML_TEMPLATE = String.raw`
               )
             );
 
+          if (traditionalKondakBreaks.has(start)) {
+            const divider = document.createElement('div');
+            divider.className = 'traditional-kondak-divider';
+            divider.setAttribute('aria-hidden', 'true');
+            fragment.appendChild(divider);
+          }
+
           const span =
             document.createElement(
               'span'
             );
+
+          if (traditionalKondakInitialRanges.some(range =>
+            midpoint >= range.start && midpoint < range.end
+          )) {
+            span.classList.add('traditional-kondak-initial');
+          }
 
           if (isSaved) {
             span.classList.add(
