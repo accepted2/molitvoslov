@@ -2411,6 +2411,9 @@ const HTML_TEMPLATE = String.raw`
       // regardless of the title or currently selected reading language.
       const paschalOpeningItemIds = new Set();
       const paschalContinuationItemIds = new Set();
+      // Only for the parallel CS+RU reader: defer the first verse's
+      // translation until after both Church Slavonic verses are shown.
+      let deferredPaschalRussianTranslation = null;
       if (isMorningRule) {
         const foldPaschal = value => normalizedTextWithIndex(value || '')
           .normalized.toLowerCase().replace(/\s+/gu, ' ').trim();
@@ -2766,9 +2769,22 @@ const HTML_TEMPLATE = String.raw`
                 insertSentenceLineBreaks(translationElement);
               }
 
-              wrapper.appendChild(
-                translationElement
-              );
+              if (isMorningRule && paschalOpeningItemIds.has(Number(item.id))) {
+                // "Ангел вопияше" in CS is followed immediately by
+                // "Светися, светися" in CS. Its Russian translation
+                // belongs after the second Church Slavonic verse.
+                deferredPaschalRussianTranslation = translationElement;
+              } else {
+                if (
+                  isMorningRule &&
+                  paschalContinuationItemIds.has(Number(item.id)) &&
+                  deferredPaschalRussianTranslation
+                ) {
+                  wrapper.appendChild(deferredPaschalRussianTranslation);
+                  deferredPaschalRussianTranslation = null;
+                }
+                wrapper.appendChild(translationElement);
+              }
             }
 
             if (
