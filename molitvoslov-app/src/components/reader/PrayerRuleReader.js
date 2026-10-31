@@ -435,6 +435,15 @@ const HTML_TEMPLATE = String.raw`
       color: var(--secondary) !important;
       font-weight: 650 !important;
     }
+    /* Historical shorthand and numeral rubrics in traditional morning prayer.
+       These override the neutral compact-liturgical span color without changing
+       the styling of Russian, parallel or ordinary Church Slavonic tabs. */
+    .traditional-mode .reader-text span.traditional-mercy-phrase,
+    .traditional-mode .reader-text span.traditional-twelve-count {
+      color: var(--liturgical) !important;
+      font-weight: 600 !important;
+      font-style: normal;
+    }
 
 
     .liturgical-block {
@@ -1752,6 +1761,29 @@ const HTML_TEMPLATE = String.raw`
       };
 
 
+    /* Render ordinal titles as Church Slavonic in the traditional tab.
+       Keep any existing truly traditional title and preserve the rest of the
+       original heading, including its original accent marks. */
+    const traditionalMorningPrayerTitle = value => {
+      const original = String(value || '');
+      const mapped = normalizedTextWithIndex(original);
+      const ordinal = /^\s*молитва\s+(7(?:[-‑–]?[яй])?|седьмая|10(?:[-‑–]?[яй])?|десятая)(?=\s|,|$)/iu.exec(mapped.normalized);
+      if (!ordinal) {
+        // Retain the previously supported ninth-prayer numeral.
+        return original.replace(
+          /^Молитва\s+(?:9(?:[-‑–]?[яй])?|девятая)(?=\s|,|$)/iu,
+          'Моли́тва ѳ҃'
+        );
+      }
+
+      const numeral = /^(?:7|седьмая)/iu.test(ordinal[1]) ? 'з҃' : 'і҃';
+      const suffixStart = mapped.originalIndex[ordinal[0].length] ?? original.length;
+      const suffix = original.slice(suffixStart)
+        .replace(/ко\s+пресвятой\s+богородице/iu, 'ко Пресвятѣ́й Богоро́дицѣ');
+      return 'Моли́тва ' + numeral + suffix;
+    };
+
+
     const appendOriginalRange =
       (
         ranges,
@@ -2352,11 +2384,7 @@ const HTML_TEMPLATE = String.raw`
               viewMode === 'traditional'
                 ? (
                     isMorningRule
-                      ? String(text.traditional_title || text.title || '')
-                          .replace(
-                            /^Молитва\s+(?:9(?:[-‑–]?[яй])?|девятая)(?=\s|,|$)/iu,
-                            'Моли́тва ѳ҃'
-                          )
+                      ? traditionalMorningPrayerTitle(text.traditional_title || text.title || '')
                       : text.traditional_title || text.title || ''
                   )
                 : viewMode === 'ukrainian'
@@ -3223,15 +3251,22 @@ const HTML_TEMPLATE = String.raw`
               )
             : null;
 
-        // Split the final traditional "Слава, и ныне:" from "Гд҃и, помилуй."
-        // without changing the text or saved-selection offsets.
+        // Add semantic line breaks for the two traditional morning rubrics.
+        // The original string stays intact, so selection/save offsets do not
+        // shift when rendering additional <br> nodes.
         let traditionalFinalMercyBreakOffset = null;
+        let traditionalGloryBreakOffset = null;
         if (isMorningRule && DATA.viewMode === 'traditional') {
           const mapped = normalizedTextWithIndex(text);
-          const ending = /^\s*Слава\s*,?\s*и\s+ныне\s*:\s*((?:Господи|Гдси|Гди)\s*,?\s*помилу[йи])/iu.exec(mapped.normalized);
+          const ending = /^\s*Слава\s*,?\s*и\s+ныне\s*:\s*((?:Господи|Гдси|Гд[иь])\s*,?\s*помилу[йи])/iu.exec(mapped.normalized);
           if (ending) {
             const mercyStart = ending.index + ending[0].lastIndexOf(ending[1]);
             traditionalFinalMercyBreakOffset = mapped.originalIndex[mercyStart] ?? null;
+          }
+          const afterThrice = /(?:Господи|Гдси|Гд[иь])\s*,?\s*помилу[йи]\s*[.!?]?\s*[\[(]\s*тр[иії]жды\s*\.?\s*[\])]\s*(Слава\s*,?\s*и\s+ныне\s*:)/iu.exec(mapped.normalized);
+          if (afterThrice) {
+            const gloryStart = afterThrice.index + afterThrice[0].lastIndexOf(afterThrice[1]);
+            traditionalGloryBreakOffset = mapped.originalIndex[gloryStart] ?? null;
           }
         }
 
@@ -3395,8 +3430,9 @@ const HTML_TEMPLATE = String.raw`
               );
             }
           }
-          // Names and remembrance prompts use the same brown rubric style.
-          for (const placeholder of mappedBows.normalized.matchAll(/\(\s*(?:имя|имярекъ?|имена(?:\s+их)?)\s*\)|\[\s*родител(?:е[йи]|и)\s+моих\s*\]/giu)) {
+          // Names and remembrance prompts (including old spelling and
+          // accents) use the same brown typography as [Трижды.].
+          for (const placeholder of mappedBows.normalized.matchAll(/[\[(]\s*(?:имя|имярекъ?|имрекъ?|имена(?:\s+ихъ?)?|родител(?:е[йи]|и)\s+моихъ?)\s*[\])]/giu)) {
             appendOriginalRange(
               bowRubricRanges,
               mappedBows.source,
@@ -3414,6 +3450,30 @@ const HTML_TEMPLATE = String.raw`
               rubricStart,
               rubricStart + mercy[1].length
             );
+          }
+        }
+
+        const traditionalMercyRanges = [];
+        const traditionalTwelveRanges = [];
+        if (isMorningRule && DATA.viewMode === 'traditional') {
+          const mapped = normalizedTextWithIndex(text);
+          // In Ponomar, 12 can be written with Slavonic numerals: [в҃і.].
+          // The mapped text reads [ви.], since historical letters and titla
+          // are folded only for pattern matching, never in displayed content.
+          const mercyWithCount = /((?:Господи|Гдси|Гд[иь])\s*,?\s*помилу[йи]\s*[.!?]?)(\s*)([\[(]\s*(?:тр[иії]жды|12\s*(?:раз(?:а)?)?|в[иі])\s*\.?\s*[\])])/giu;
+          for (const match of mapped.normalized.matchAll(mercyWithCount)) {
+            const mercyStart = match.index;
+            appendOriginalRange(
+              traditionalMercyRanges, mapped.source, mapped.originalIndex,
+              mercyStart, mercyStart + match[1].length
+            );
+            if (!/тр[иії]жды/iu.test(match[3])) {
+              const countStart = match.index + match[1].length + match[2].length;
+              appendOriginalRange(
+                traditionalTwelveRanges, mapped.source, mapped.originalIndex,
+                countStart, countStart + match[3].length
+              );
+            }
           }
         }
 
@@ -3464,6 +3524,13 @@ const HTML_TEMPLATE = String.raw`
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
+        [...traditionalMercyRanges, ...traditionalTwelveRanges].forEach(range => {
+          boundaries.add(range.start);
+          boundaries.add(range.end);
+        });
+        if (Number.isFinite(traditionalGloryBreakOffset)) {
+          boundaries.add(traditionalGloryBreakOffset);
+        }
         if (Number.isFinite(traditionalFinalMercyBreakOffset)) {
           boundaries.add(traditionalFinalMercyBreakOffset);
         }
@@ -3622,6 +3689,12 @@ const HTML_TEMPLATE = String.raw`
           }
           if (traditionalCreedNumberRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
             span.classList.add('creed-number');
+          }
+          if (traditionalMercyRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
+            span.classList.add('traditional-mercy-phrase');
+          }
+          if (traditionalTwelveRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
+            span.classList.add('traditional-twelve-count');
           }
 
           if (
@@ -3833,6 +3906,14 @@ const HTML_TEMPLATE = String.raw`
             Number.isFinite(traditionalFinalMercyBreakOffset) &&
             end === traditionalFinalMercyBreakOffset &&
             end !== eveningUtilityBreakOffset
+          ) {
+            fragment.appendChild(document.createElement('br'));
+          }
+          if (
+            Number.isFinite(traditionalGloryBreakOffset) &&
+            end === traditionalGloryBreakOffset &&
+            end !== eveningUtilityBreakOffset &&
+            end !== traditionalFinalMercyBreakOffset
           ) {
             fragment.appendChild(document.createElement('br'));
           }
