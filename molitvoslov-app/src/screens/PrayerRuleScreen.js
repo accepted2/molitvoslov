@@ -209,7 +209,9 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         loadError.response?.data || loadError.message
       );
 
-      setError(t('menu.prayerRuleLoadError'));
+      // In dev show the local Django address/error instead of an opaque message.
+      // Production retains the regular translated user-facing error.
+      setError(__DEV__ ? (loadError?.message || t('menu.prayerRuleLoadError')) : t('menu.prayerRuleLoadError'));
     } finally {
       setLoading(false);
     }
