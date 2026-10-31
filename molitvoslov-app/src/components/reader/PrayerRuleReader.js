@@ -3089,14 +3089,15 @@ const HTML_TEMPLATE = String.raw`
                 insertSentenceLineBreaks(translationElement);
               }
 
-              if (isMorningRule && paschalOpeningItemIds.has(Number(item.id))) {
-                // "Ангел вопияше" in CS is followed immediately by
-                // "Светися, светися" in CS. Its Russian translation
-                // belongs after the second Church Slavonic verse.
+              if ((isMorningRule || isEveningRule) &&
+                  paschalOpeningItemIds.has(Number(item.id))) {
+                // In both morning and evening parallel reading, the
+                // two Paschal verses form a single hymn: show both CS
+                // verses first, then both Russian translations.
                 deferredPaschalRussianTranslation = translationElement;
               } else {
                 if (
-                  isMorningRule &&
+                  (isMorningRule || isEveningRule) &&
                   paschalContinuationItemIds.has(Number(item.id)) &&
                   deferredPaschalRussianTranslation
                 ) {
