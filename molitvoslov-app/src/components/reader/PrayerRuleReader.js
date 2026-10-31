@@ -435,10 +435,16 @@ const HTML_TEMPLATE = String.raw`
       color: var(--secondary) !important;
       font-weight: 650 !important;
     }
-    /* Historical shorthand and numeral rubrics in traditional morning prayer.
-       These override the neutral compact-liturgical span color without changing
-       the styling of Russian, parallel or ordinary Church Slavonic tabs. */
-    .traditional-mode .reader-text span.traditional-mercy-phrase,
+    /* Traditional morning invocations: dark text, slightly heavier, upright.
+       Do not recolor [Трижды.], bows, numerals or other liturgical rubrics.
+       Specificity also overrides compact morning rubric red highlighting. */
+    .traditional-mode.morning-rule .reader-text span.traditional-mercy-phrase,
+    .traditional-mode.morning-rule .reader-text span.traditional-glory-phrase {
+      color: var(--text) !important;
+      font-weight: 650 !important;
+      font-style: normal !important;
+    }
+    /* Twelve remains an independent liturgical rubric, unchanged. */
     .traditional-mode .reader-text span.traditional-twelve-count {
       color: var(--liturgical) !important;
       font-weight: 600 !important;
@@ -3437,9 +3443,10 @@ const HTML_TEMPLATE = String.raw`
               );
             }
           }
-          // Names and remembrance prompts (including old spelling and
-          // accents) use the same brown typography as [Трижды.].
-          for (const placeholder of mappedBows.normalized.matchAll(/[\[(]\s*(?:имя|имярекъ?|имрекъ?|имена(?:\s+ихъ?)?|родител(?:е[йи]|и)\s+моихъ?)\s*[\])]/giu)) {
+          // The historical prayer books use both [имѧрекъ] and the
+          // shortened [имѧкъ]. Include the complete brackets in the
+          // brown [Трижды.] rubric range; preserve the source spelling.
+          for (const placeholder of mappedBows.normalized.matchAll(/[\[(]\s*(?:имя(?:рекъ?|къ?)?|имрекъ?|имена(?:\s+ихъ?)?|родител(?:е[йи]|и)\s+моихъ?)\s*[\])]/giu)) {
             appendOriginalRange(
               bowRubricRanges,
               mappedBows.source,
@@ -3461,9 +3468,18 @@ const HTML_TEMPLATE = String.raw`
         }
 
         const traditionalMercyRanges = [];
+        const traditionalGloryRanges = [];
         const traditionalTwelveRanges = [];
         if (isMorningRule && DATA.viewMode === 'traditional') {
           const mapped = normalizedTextWithIndex(text);
+          // Only the short liturgical invocation gets the neutral color.
+          // Do not change its source text or offset numbering.
+          for (const glory of mapped.normalized.matchAll(/(?:Слава\s*,?\s*и\s+ныне|Слава|И\s+ныне)\s*:/giu)) {
+            appendOriginalRange(
+              traditionalGloryRanges, mapped.source, mapped.originalIndex,
+              glory.index, glory.index + glory[0].length
+            );
+          }
           // In Ponomar, 12 can be written with Slavonic numerals: [в҃і.].
           // The mapped text reads [ви.], since historical letters and titla
           // are folded only for pattern matching, never in displayed content.
@@ -3540,7 +3556,7 @@ const HTML_TEMPLATE = String.raw`
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
-        [...traditionalMercyRanges, ...traditionalTwelveRanges].forEach(range => {
+        [...traditionalMercyRanges, ...traditionalGloryRanges, ...traditionalTwelveRanges].forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
@@ -3708,6 +3724,9 @@ const HTML_TEMPLATE = String.raw`
           }
           if (traditionalMercyRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
             span.classList.add('traditional-mercy-phrase');
+          }
+          if (traditionalGloryRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
+            span.classList.add('traditional-glory-phrase');
           }
           if (traditionalTwelveRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
             span.classList.add('traditional-twelve-count');
