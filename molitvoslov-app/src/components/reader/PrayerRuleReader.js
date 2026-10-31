@@ -171,10 +171,11 @@ const HTML_TEMPLATE = String.raw`
       margin-bottom: 8px;
       padding-bottom: 4px;
     }
-    /* Four short supplications share one original Text record in the
-       traditional evening Theotokos kontakion. Separate them visually
-       without editing the source or changing saved selection offsets. */
-    .traditional-mode.evening-rule .reader-text .traditional-kondak-divider {
+    /* Four short supplications share one Theotokos kontakion. Separate
+       its verses in the evening reader and the parallel Russian translation,
+       without changing the source text or saved selection offsets. */
+    .evening-rule .reader-text .traditional-kondak-divider,
+    .evening-rule .translation-text .traditional-kondak-divider {
       display: block;
       width: 100%;
       height: 0;
@@ -1222,6 +1223,30 @@ const HTML_TEMPLATE = String.raw`
           match[3].length + match[4].length;
       }
       fragment.appendChild(document.createTextNode(source.slice(cursor)));
+      root.replaceChildren(fragment);
+    };
+
+
+    // Parallel CS+RU uses a separate DOM node for the Russian translation.
+    // Keep the full original text (including newlines) while displaying the
+    // same three dividers between the four kontakion paragraphs.
+    const divideEveningKondakTranslation = root => {
+      if (!root) return;
+      const text = root.textContent || '';
+      const breaks = [...text.matchAll(/\n[ \t]*\n(?:[ \t]*\n)*/gu)];
+      if (breaks.length !== 3) return;
+      const fragment = document.createDocumentFragment();
+      let cursor = 0;
+      for (const match of breaks) {
+        const offset = match.index + match[0].length;
+        fragment.appendChild(document.createTextNode(text.slice(cursor, offset)));
+        const divider = document.createElement('div');
+        divider.className = 'traditional-kondak-divider';
+        divider.setAttribute('aria-hidden', 'true');
+        fragment.appendChild(divider);
+        cursor = offset;
+      }
+      fragment.appendChild(document.createTextNode(text.slice(cursor)));
       root.replaceChildren(fragment);
     };
 
@@ -2976,6 +3001,9 @@ const HTML_TEMPLATE = String.raw`
                 translationElement.classList.add('chrysostom-translation');
                 formatChrysostomTranslation(translationElement);
               }
+              if (isEveningRule && Number(text.id) === 144) {
+                divideEveningKondakTranslation(translationElement);
+              }
 
               // Parallel mode: the Russian column needs the same sentence
               // layout as the other three modes, not collapsed inline text.
@@ -3581,9 +3609,8 @@ const HTML_TEMPLATE = String.raw`
             ? 'minor-liturgical'
             : mappedEveningItemKind;
 
-        const isTraditionalEveningKondak =
+        const isEveningKondak =
           isEveningRule &&
-          DATA.viewMode === 'traditional' &&
           (DATA.rule.items || []).some(entry =>
             Number(entry.id) === Number(itemId) &&
             entry.item_type === 'text' &&
@@ -3595,13 +3622,20 @@ const HTML_TEMPLATE = String.raw`
             )
           );
 
-        // The original traditional text contains three sentence endings
-        // after which four separate prayers must begin. Insert DOM
-        // dividers only, and capitalize the first letter via CSS on its
-        // own one-letter span. The source and its offsets remain intact.
+        // The traditional text is matched by sentence endings; the
+        // Church Slavonic and Russian translations already contain exactly
+        // three paragraph gaps. Both routes insert visual dividers only.
         const traditionalKondakBreaks = new Set();
         const traditionalKondakInitialRanges = [];
-        if (isTraditionalEveningKondak) {
+        if (isEveningKondak && DATA.viewMode !== 'traditional') {
+          const paragraphGaps = [...text.matchAll(/\n[ \t]*\n(?:[ \t]*\n)*/gu)];
+          if (paragraphGaps.length === 3) {
+            paragraphGaps.forEach(match => {
+              traditionalKondakBreaks.add(match.index + match[0].length);
+            });
+          }
+        }
+        if (isEveningKondak && DATA.viewMode === 'traditional') {
           const mapped = normalizedTextWithIndex(text);
           const endings = [
             /неневестн[а-яёъ]*\s*[.!?]\s*(?=[А-Яа-яЁё])/giu,
