@@ -184,6 +184,40 @@ const HTML_TEMPLATE = String.raw`
       border: 0;
       border-top: 1px solid var(--border);
     }
+
+    /* In evening CS+RU, the four parts of "Кондак Богородице" are one
+       source item. Display each CS part directly before its own Russian
+       translation. display:contents keeps each original .reader-text
+       DOM subtree intact for offset-based selection and saved excerpts. */
+    .evening-rule .rule-item.kondak-parallel-pairs {
+      display: flex;
+      flex-direction: column;
+    }
+    .evening-rule .rule-item.kondak-parallel-pairs > .section-header {
+      order: -10;
+    }
+    .evening-rule .rule-item.kondak-parallel-pairs > .reader-text,
+    .evening-rule .rule-item.kondak-parallel-pairs > .translation-text {
+      display: contents;
+    }
+    .evening-rule .rule-item.kondak-parallel-pairs > :not(.section-header):not(.reader-text):not(.translation-text) {
+      order: 100;
+    }
+    .evening-rule .rule-item.kondak-parallel-pairs .kondak-cs-part {
+      text-align: justify;
+      text-align-last: auto;
+      min-width: 0;
+    }
+    .evening-rule .rule-item.kondak-parallel-pairs .kondak-ru-part {
+      margin-top: 7px;
+      min-width: 0;
+      text-align: justify;
+      text-align-last: auto;
+    }
+    .evening-rule .rule-item.kondak-parallel-pairs .paragraph-gap,
+    .evening-rule .rule-item.kondak-parallel-pairs .paragraph-gap-continuation {
+      display: none;
+    }
     .traditional-mode.evening-rule .reader-text span.traditional-kondak-initial {
       text-transform: uppercase;
       color: var(--liturgical);
@@ -1281,6 +1315,65 @@ const HTML_TEMPLATE = String.raw`
         cursor = offset;
       }
       fragment.appendChild(document.createTextNode(text.slice(cursor)));
+      root.replaceChildren(fragment);
+    };
+
+
+    // Separate the Russian translation into four original paragraphs.
+    // Preserve every source character, including the original separators.
+    // CSS flex order then alternates these parts with the CS paragraphs.
+    const pairEveningKondakTranslation = root => {
+      if (!root) return false;
+      const source = root.textContent || '';
+      const breaks = [...source.matchAll(/\n[ \t]*\n(?:[ \t]*\n)*/gu)];
+      if (breaks.length !== 3) return false;
+      const fragment = document.createDocumentFragment();
+      let cursor = 0;
+      let index = 0;
+      for (const match of breaks) {
+        const end = match.index + match[0].length;
+        const part = el('div', 'kondak-ru-part', source.slice(cursor, end));
+        part.style.order = String(index * 3 + 1);
+        fragment.appendChild(part);
+        cursor = end;
+        index += 1;
+      }
+      const last = el('div', 'kondak-ru-part', source.slice(cursor));
+      last.style.order = String(index * 3 + 1);
+      fragment.appendChild(last);
+      root.replaceChildren(fragment);
+      return true;
+    };
+
+    // Group already-rendered CS spans using the existing three dividers.
+    // Do not splice the actual prayer string: the combined textContent and
+    // character offsets remain identical before and after regrouping.
+    const pairEveningKondakChurch = root => {
+      if (!root || !root.closest('.kondak-parallel-pairs')) return;
+      const nodes = Array.from(root.childNodes);
+      const lines = nodes.filter(node =>
+        node.nodeType === Node.ELEMENT_NODE &&
+        node.classList.contains('traditional-kondak-divider')
+      );
+      if (lines.length !== 3) return;
+      const fragment = document.createDocumentFragment();
+      let index = 0;
+      let part = el('div', 'kondak-cs-part');
+      part.style.order = '0';
+      for (const node of nodes) {
+        if (node.nodeType === Node.ELEMENT_NODE &&
+            node.classList.contains('traditional-kondak-divider')) {
+          fragment.appendChild(part);
+          node.style.order = String(index * 3 + 2);
+          fragment.appendChild(node);
+          index += 1;
+          part = el('div', 'kondak-cs-part');
+          part.style.order = String(index * 3);
+        } else {
+          part.appendChild(node);
+        }
+      }
+      fragment.appendChild(part);
       root.replaceChildren(fragment);
     };
 
@@ -3070,12 +3163,22 @@ const HTML_TEMPLATE = String.raw`
                   'translation-text',
                   russianText || 'Перевод пока отсутствует.'
                 );
+              const isEveningKondakParallel =
+                isEveningRule &&
+                Number(text.id) === 144 &&
+                [...churchText.matchAll(/\n[ \t]*\n(?:[ \t]*\n)*/gu)].length === 3 &&
+                [...russianText.matchAll(/\n[ \t]*\n(?:[ \t]*\n)*/gu)].length === 3;
+              if (isEveningKondakParallel) {
+                wrapper.classList.add('kondak-parallel-pairs');
+              }
 
               if (isEveningRule && eveningItemKind === 'chrysostom') {
                 translationElement.classList.add('chrysostom-translation');
                 formatChrysostomTranslation(translationElement);
               }
-              if (isEveningRule && Number(text.id) === 144) {
+              if (isEveningKondakParallel) {
+                pairEveningKondakTranslation(translationElement);
+              } else if (isEveningRule && Number(text.id) === 144) {
                 divideEveningKondakTranslation(translationElement);
               }
               if (isEveningRule && Number(text.id) === 146) {
@@ -4842,6 +4945,7 @@ const HTML_TEMPLATE = String.raw`
         if (!continuousRussianEveningPrayer) {
           compactParagraphGaps(root);
         }
+        pairEveningKondakChurch(root);
 
         if (optinaMorningItemIds.has(Number(itemId))) {
           insertSentenceLineBreaks(root);
