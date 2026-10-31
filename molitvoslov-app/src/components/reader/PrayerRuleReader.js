@@ -218,6 +218,16 @@ const HTML_TEMPLATE = String.raw`
     .evening-rule .reader-text span.standard-damaskin-initial {
       text-transform: uppercase;
     }
+    /* Highlight only the initial П of "Просвети" in the three
+       non-traditional evening prayer views; no oversized drop cap. */
+    .evening-rule .reader-text span.standard-damaskin-prosveti-initial,
+    .evening-rule .translation-text span.standard-damaskin-prosveti-initial {
+      color: var(--liturgical) !important;
+      font-size: 1.05em;
+      font-weight: 500;
+      font-style: normal;
+      text-transform: uppercase;
+    }
     /* The two adjacent Paschal verses form one hymn, despite separate
        database items. Preserve original text anchors; remove the visible
        divider and the second header only in the morning rule. */
@@ -1277,10 +1287,20 @@ const HTML_TEMPLATE = String.raw`
           !offsets.every((point, index) => index === 0 || point > offsets[index - 1])) return;
       const fragment = document.createDocumentFragment();
       let cursor = 0;
-      offsets.forEach(offset => {
+      offsets.forEach((offset, index) => {
         fragment.appendChild(document.createTextNode(text.slice(cursor, offset)));
         fragment.appendChild(document.createElement('br'));
-        cursor = offset;
+        if (index === 0) {
+          // The first letter is a separate red span; source text is intact.
+          let end = offset + 1;
+          while (end < text.length && /\p{M}/u.test(text[end])) end += 1;
+          fragment.appendChild(
+            el('span', 'standard-damaskin-prosveti-initial', text.slice(offset, end))
+          );
+          cursor = end;
+        } else {
+          cursor = offset;
+        }
       });
       fragment.appendChild(document.createTextNode(text.slice(cursor)));
       root.replaceChildren(fragment);
@@ -3703,6 +3723,7 @@ const HTML_TEMPLATE = String.raw`
         // Use source offsets to keep saved selections exactly aligned.
         const standardDamaskinBreaks = new Set();
         const standardDamaskinInitials = [];
+        let standardDamaskinProsvetiStart = null;
         const isStandardEveningDamaskin =
           isEveningRule &&
           DATA.viewMode !== 'traditional' &&
@@ -3724,6 +3745,7 @@ const HTML_TEMPLATE = String.raw`
           });
           if (offsets.every(Number.isFinite) &&
               offsets.every((point, index) => index === 0 || point > offsets[index - 1])) {
+            standardDamaskinProsvetiStart = offsets[0];
             offsets.forEach(start => {
               standardDamaskinBreaks.add(start);
               let end = start + 1;
@@ -4438,6 +4460,10 @@ const HTML_TEMPLATE = String.raw`
             midpoint >= range.start && midpoint < range.end
           )) {
             span.classList.add('standard-damaskin-initial');
+          }
+          if (Number.isFinite(standardDamaskinProsvetiStart) &&
+              start === standardDamaskinProsvetiStart) {
+            span.classList.add('standard-damaskin-prosveti-initial');
           }
 
           if (isSaved) {
