@@ -3731,6 +3731,19 @@ const HTML_TEMPLATE = String.raw`
             Number(entry.id) === Number(itemId) &&
             Number(entry.text?.id) === 146
           );
+
+        // In the Russian evening tab, ordinary prayers should read as a
+        // single uninterrupted body. Source \n\n is editorial formatting:
+        // the WebView's normal whitespace collapse keeps one word space.
+        // Preserve the three explicitly formatted exceptions: Chrysostom's
+        // numbered petitions, Theotokos kontakion, and John of Damascus.
+        const continuousRussianEveningPrayer =
+          isEveningRule &&
+          DATA.viewMode === 'russian' &&
+          eveningItemKind !== 'minor-liturgical' &&
+          eveningItemKind !== 'chrysostom' &&
+          !isEveningKondak &&
+          !isStandardEveningDamaskin;
         if (isStandardEveningDamaskin) {
           const mapped = normalizedTextWithIndex(text);
           const normalized = mapped.normalized.toLowerCase();
@@ -4041,7 +4054,7 @@ const HTML_TEMPLATE = String.raw`
           text,
           leadingCue,
           eveningItemKind,
-          continuousMorningPrayer
+          continuousMorningPrayer || continuousRussianEveningPrayer
         ).forEach(
           range => {
             liturgicalRanges.push(
@@ -4777,9 +4790,13 @@ const HTML_TEMPLATE = String.raw`
           root
         );
 
-        compactParagraphGaps(
-          root
-        );
+        // Retain the original Unicode text and its selection offsets.
+        // For continuous Russian evening prayers, do not wrap \n\n in
+        // artificial 8px paragraph-gap elements: default white-space
+        // rendering folds them into ordinary inter-word spacing.
+        if (!continuousRussianEveningPrayer) {
+          compactParagraphGaps(root);
+        }
 
         if (optinaMorningItemIds.has(Number(itemId))) {
           insertSentenceLineBreaks(root);
