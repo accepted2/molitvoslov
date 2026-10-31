@@ -164,6 +164,13 @@ const HTML_TEMPLATE = String.raw`
     .rule-item:last-child {
       border-bottom: 0;
     }
+    /* The three traditional evening Troparia (130, 131, 132) form one
+       sequence. Remove only the dividers after the first two verses. */
+    .traditional-mode.evening-rule .rule-item.evening-troparion-joined {
+      border-bottom: 0;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+    }
     /* Four short supplications share one original Text record in the
        traditional evening Theotokos kontakion. Separate them visually
        without editing the source or changing saved selection offsets. */
@@ -2572,6 +2579,17 @@ const HTML_TEMPLATE = String.raw`
           ) {
             const text =
               item.text;
+
+            // No separator between "Помилуй нас", "Слава" and
+            // "И ныне" in traditional evening Troparia. These are
+            // separate database items: keep their anchors unchanged.
+            if (
+              isEveningRule &&
+              DATA.viewMode === 'traditional' &&
+              (Number(text.id) === 130 || Number(text.id) === 131)
+            ) {
+              wrapper.classList.add('evening-troparion-joined');
+            }
 
             const eveningItemKind =
               getEveningItemKind(
