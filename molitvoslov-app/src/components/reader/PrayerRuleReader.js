@@ -205,6 +205,22 @@ const HTML_TEMPLATE = String.raw`
       overflow-wrap: normal;
       word-break: normal;
     }
+    /* The 7th evening prayer's rubric belongs under the title, not inside
+       the header: the save heart stays vertically aligned with the title. */
+    .traditional-mode.evening-rule .chrysostom-title-rubric {
+      margin: 3px 0 10px;
+      padding: 0 5px;
+      text-align: center;
+      font-family: 'Ponomar', Georgia, "Times New Roman", serif;
+      font-size: 15px;
+      line-height: 1.35;
+      font-weight: 650;
+      font-style: normal;
+      color: var(--secondary);
+      white-space: normal;
+      overflow-wrap: normal;
+      word-break: normal;
+    }
 
     .title-tail {
       display: inline-block;
@@ -1900,6 +1916,34 @@ const HTML_TEMPLATE = String.raw`
     };
 
 
+    // The original Traditional CS heading of St. John Chrysostom's
+    // seventh evening prayer contains both the title and an editorial
+    // subtitle after "Златоуста:". Keep the historical spelling verbatim.
+    // Separating the subtitle from the header also keeps the save button
+    // aligned with the actual prayer title.
+    const splitTraditionalChrysostomTitle = value => {
+      const raw = String(value || '').trim();
+      const mapped = normalizedTextWithIndex(raw);
+      const marker = /златоуста\s*:/iu.exec(mapped.normalized);
+      if (!marker) return null;
+
+      const colonIndex = marker.index + marker[0].lastIndexOf(':');
+      const sourceColon = mapped.originalIndex[colonIndex];
+      if (!Number.isFinite(sourceColon)) return null;
+
+      const heading = raw.slice(0, sourceColon + 1).trim();
+      const detail = raw.slice(sourceColon + 1)
+        .trim()
+        .replace(/^[\[(]\s*/u, '')
+        .replace(/\s*[\])]$/u, '')
+        .replace(/\s*[.]$/u, '')
+        .trim();
+
+      if (!detail) return null;
+      return {heading, rubric: '(' + detail + ')'};
+    };
+
+
     const appendOriginalRange =
       (
         ranges,
@@ -2582,6 +2626,11 @@ const HTML_TEMPLATE = String.raw`
                 '$1‑$2'
               );
 
+            const chrysostomTitleParts =
+              isTraditionalEveningChrysostom
+                ? splitTraditionalChrysostomTitle(displayTitleText)
+                : null;
+
             const churchText =
               text.content ||
               '';
@@ -2684,7 +2733,7 @@ const HTML_TEMPLATE = String.raw`
                   titleEl(
                     'h2',
                     'prayer-title',
-                    displayTitleText
+                    chrysostomTitleParts?.heading || displayTitleText
                   )
                 );
               }
@@ -2728,6 +2777,11 @@ const HTML_TEMPLATE = String.raw`
               wrapper.appendChild(
                 header
               );
+              if (chrysostomTitleParts?.rubric) {
+                wrapper.appendChild(
+                  el('div', 'chrysostom-title-rubric', chrysostomTitleParts.rubric)
+                );
+              }
             }
 
             if (
