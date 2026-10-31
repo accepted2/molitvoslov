@@ -3576,7 +3576,7 @@ const HTML_TEMPLATE = String.raw`
           const nowStart = protectorStart == null ? null
             : findFrom(/и\s+(?:ныне|нине|нне)\s+/u, protectorStart + 1);
           const motherStart = nowStart == null ? null
-            : findFrom(/преславн[а-яъ]*\s+бож/u, nowStart + 1);
+            : findFrom(/преславн[а-яъ]*\s+б(?:о)?ж/u, nowStart + 1);
 
           const ordered = [psalmStart, gloryStart, protectorStart, nowStart, motherStart];
           if (ordered.every(Number.isFinite) &&
