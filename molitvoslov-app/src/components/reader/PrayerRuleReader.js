@@ -252,10 +252,10 @@ const HTML_TEMPLATE = String.raw`
     .evening-rule .reader-text span.standard-damaskin-initial {
       text-transform: uppercase;
     }
-    /* Highlight only the initial П of "Просвети" in the three
-       non-traditional evening prayer views; no oversized drop cap. */
-    .evening-rule .reader-text span.standard-damaskin-prosveti-initial,
-    .evening-rule .translation-text span.standard-damaskin-prosveti-initial {
+    /* Highlight the opening П of "Просвети" only in the primary
+       prayer text. In CS+RU, the Russian translation keeps its normal
+       color and size, while retaining the same paragraph break. */
+    .evening-rule .reader-text span.standard-damaskin-prosveti-initial {
       color: var(--liturgical) !important;
       font-size: 1.05em;
       font-weight: 500;
