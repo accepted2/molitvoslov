@@ -430,8 +430,19 @@ const HTML_TEMPLATE = String.raw`
       text-justify: auto !important;
       word-spacing: normal !important;
     }
+    /* Keep the source \n\n in the parallel translation for copying,
+       but render one line per petition using explicit <br> elements.
+       pre-line would create an unwanted empty row between the two 12s. */
     .evening-rule .translation-text.chrysostom-translation {
-      white-space: pre-line;
+      white-space: normal;
+    }
+    /* In the seventh evening prayer, both closing Amens are liturgical.
+       This selector affects the main reader text only; the Russian
+       translation in CS+RU stays in its ordinary secondary color. */
+    .evening-rule .reader-text span.chrysostom-amen {
+      color: var(--liturgical) !important;
+      font-weight: 600;
+      font-style: normal;
     }
     .evening-rule .chrysostom-standard span.chrysostom-small-number,
     .evening-rule .chrysostom-translation span.chrysostom-small-number {
@@ -1226,15 +1237,22 @@ const HTML_TEMPLATE = String.raw`
       const pattern = /(?:^|\n)[ \t]*(\d{1,2}\.)([ \t]*)([Гг])(осподи)/gu;
       const fragment = document.createDocumentFragment();
       let cursor = 0;
+      let renderedPetitions = 0;
       for (const match of source.matchAll(pattern)) {
         const numberStart = match.index + match[0].lastIndexOf(match[1]);
         fragment.appendChild(document.createTextNode(source.slice(cursor, numberStart)));
+        // Rebuild the 24 visible lines explicitly. Each source newline
+        // remains in the text nodes, but no longer creates a blank row.
+        if (renderedPetitions > 0) {
+          fragment.appendChild(document.createElement('br'));
+        }
         const pair = el('span', 'chrysostom-number-word');
         pair.appendChild(el('span', 'chrysostom-small-number', match[1]));
         pair.appendChild(document.createTextNode(match[2]));
         pair.appendChild(el('span', 'chrysostom-first-letter', match[3]));
         pair.appendChild(document.createTextNode(match[4]));
         fragment.appendChild(pair);
+        renderedPetitions += 1;
         cursor = numberStart + match[1].length + match[2].length +
           match[3].length + match[4].length;
       }
@@ -3881,6 +3899,26 @@ const HTML_TEMPLATE = String.raw`
         root.classList.toggle('chrysostom-standard', isStandardChrysostom);
         const standardChrysostomNumbers = [];
         const standardChrysostomInitials = [];
+        const chrysostomAmenRanges = [];
+        // All primary versions of the seventh prayer contain two closing
+        // Amens: one after each group of twelve petitions. The secondary
+        // Russian translation of the CS+RU mode is a different element and
+        // deliberately receives no chrysostom-amen spans.
+        if (isEveningRule && eveningItemKind === 'chrysostom') {
+          const mapped = normalizedTextWithIndex(text);
+          const amens = [...mapped.normalized.matchAll(
+            /(?:^|[^\p{L}])(аминь[.!?]?)(?!\p{L})/giu
+          )];
+          if (amens.length === 2) {
+            for (const amen of amens) {
+              const start = amen.index + amen[0].lastIndexOf(amen[1]);
+              appendOriginalRange(
+                chrysostomAmenRanges, mapped.source, mapped.originalIndex,
+                start, start + amen[1].length
+              );
+            }
+          }
+        }
         if (isStandardChrysostom) {
           const mapped = normalizedTextWithIndex(text);
           // Number and "Господи" are already present in the original
@@ -4276,7 +4314,8 @@ const HTML_TEMPLATE = String.raw`
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
-        [...standardChrysostomNumbers, ...standardChrysostomInitials].forEach(range => {
+        [...standardChrysostomNumbers, ...standardChrysostomInitials,
+          ...chrysostomAmenRanges].forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
@@ -4517,6 +4556,11 @@ const HTML_TEMPLATE = String.raw`
             midpoint >= range.start && midpoint < range.end
           )) {
             span.classList.add('chrysostom-first-letter');
+          }
+          if (chrysostomAmenRanges.some(range =>
+            midpoint >= range.start && midpoint < range.end
+          )) {
+            span.classList.add('chrysostom-amen');
           }
           if (traditionalMercyRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
             span.classList.add('traditional-mercy-phrase');
