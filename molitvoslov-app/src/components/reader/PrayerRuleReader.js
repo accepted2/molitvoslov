@@ -208,15 +208,15 @@ const HTML_TEMPLATE = String.raw`
     /* The 7th evening prayer's rubric belongs under the title, not inside
        the header: the save heart stays vertically aligned with the title. */
     .traditional-mode.evening-rule .chrysostom-title-rubric {
-      margin: 3px 0 10px;
-      padding: 0 5px;
-      text-align: center;
+      margin: 2px 0 10px;
+      padding: 0 2px;
+      text-align: left;
       font-family: 'Ponomar', Georgia, "Times New Roman", serif;
-      font-size: 15px;
-      line-height: 1.35;
-      font-weight: 650;
-      font-style: normal;
-      color: var(--secondary);
+      font-size: 14px;
+      line-height: 1.4;
+      font-weight: 400;
+      font-style: italic;
+      color: var(--liturgical);
       white-space: normal;
       overflow-wrap: normal;
       word-break: normal;
@@ -1916,18 +1916,21 @@ const HTML_TEMPLATE = String.raw`
     };
 
 
-    // The original Traditional CS heading of St. John Chrysostom's
-    // seventh evening prayer contains both the title and an editorial
-    // subtitle after "Златоуста:". Keep the historical spelling verbatim.
-    // Separating the subtitle from the header also keeps the save button
-    // aligned with the actual prayer title.
+    // The traditional heading says "Златоꙋ́стаго", not necessarily
+    // "Златоуста". Match the inflected historical spelling and split
+    // the following descriptive rubric from the actual prayer title.
+    // Keeping the two DOM blocks separate aligns the save heart to the title.
     const splitTraditionalChrysostomTitle = value => {
       const raw = String(value || '').trim();
       const mapped = normalizedTextWithIndex(raw);
-      const marker = /златоуста\s*:/iu.exec(mapped.normalized);
-      if (!marker) return null;
+      const colonIndex = mapped.normalized.indexOf(':');
+      const beforeColon = colonIndex >= 0
+        ? mapped.normalized.slice(0, colonIndex).toLowerCase()
+        : '';
+      if (colonIndex < 0 || !/златоуст[а-яё]{0,12}$/u.test(beforeColon.trim())) {
+        return null;
+      }
 
-      const colonIndex = marker.index + marker[0].lastIndexOf(':');
       const sourceColon = mapped.originalIndex[colonIndex];
       if (!Number.isFinite(sourceColon)) return null;
 
@@ -2559,7 +2562,7 @@ const HTML_TEMPLATE = String.raw`
             const isTraditionalEveningChrysostom =
               isEveningRule &&
               DATA.viewMode === 'traditional' &&
-              eveningItemKind === 'chrysostom';
+              (eveningItemKind === 'chrysostom' || Number(text.id) === 153);
 
             eveningItemKindMap.set(
               Number(
