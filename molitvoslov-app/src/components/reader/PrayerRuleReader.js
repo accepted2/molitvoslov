@@ -196,6 +196,21 @@ const HTML_TEMPLATE = String.raw`
       font-weight: 650 !important;
       font-style: normal !important;
     }
+    /* Larger, rubric-red initials at the beginning of each separated
+       Church Slavonic passage. Only the rendered letter changes; its
+       original spelling and selection offsets remain untouched. */
+    .traditional-mode.evening-rule .reader-text span.traditional-damaskin-initial {
+      color: var(--liturgical) !important;
+      font-size: 1.35em;
+      font-weight: 650 !important;
+      font-style: normal !important;
+      text-transform: uppercase;
+    }
+    /* "Слава отцу и сыну и святому духу:" uses lower case after
+       "Слава", including abbreviated traditional Cyrillic names. */
+    .traditional-mode.evening-rule .reader-text span.traditional-damaskin-lowercase {
+      text-transform: lowercase !important;
+    }
     /* The two adjacent Paschal verses form one hymn, despite separate
        database items. Preserve original text anchors; remove the visible
        divider and the second header only in the morning rule. */
@@ -3554,6 +3569,8 @@ const HTML_TEMPLATE = String.raw`
         // orthography with indexed normalization. Do not change text.
         const traditionalDamaskinBreaks = new Set();
         const traditionalDamaskinRubrics = [];
+        const traditionalDamaskinInitials = [];
+        const traditionalDamaskinLowercase = [];
         if (
           isEveningRule &&
           DATA.viewMode === 'traditional' &&
@@ -3582,8 +3599,30 @@ const HTML_TEMPLATE = String.raw`
           if (ordered.every(Number.isFinite) &&
               ordered.every((position, index) => index === 0 || position > ordered[index - 1])) {
             ordered.forEach(position => {
-              traditionalDamaskinBreaks.add(mapped.originalIndex[position]);
+              const originalStart = mapped.originalIndex[position];
+              if (!Number.isFinite(originalStart)) return;
+              traditionalDamaskinBreaks.add(originalStart);
+              let originalEnd = originalStart + 1;
+              while (originalEnd < text.length && /\p{M}/u.test(text[originalEnd])) {
+                originalEnd += 1;
+              }
+              traditionalDamaskinInitials.push({start: originalStart, end: originalEnd});
             });
+
+            // Lowercase only the doxological names following "Слава",
+            // not the first word or anything in the next supplication.
+            const gloryText = source.slice(gloryStart, protectorStart);
+            const firstWord = /^слава\s+/u.exec(gloryText);
+            const gloryColon = gloryText.lastIndexOf(':');
+            if (firstWord && gloryColon > firstWord[0].length) {
+              appendOriginalRange(
+                traditionalDamaskinLowercase,
+                mapped.source,
+                mapped.originalIndex,
+                gloryStart + firstWord[0].length,
+                gloryStart + gloryColon
+              );
+            }
 
             const addRubric = (start, next, requireAmen) => {
               const length = next - start;
@@ -4009,7 +4048,8 @@ const HTML_TEMPLATE = String.raw`
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
-        traditionalDamaskinRubrics.forEach(range => {
+        [...traditionalDamaskinRubrics, ...traditionalDamaskinInitials,
+          ...traditionalDamaskinLowercase].forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
@@ -4181,6 +4221,16 @@ const HTML_TEMPLATE = String.raw`
             midpoint >= range.start && midpoint < range.end
           )) {
             span.classList.add('traditional-damaskin-rubric');
+          }
+          if (traditionalDamaskinInitials.some(range =>
+            midpoint >= range.start && midpoint < range.end
+          )) {
+            span.classList.add('traditional-damaskin-initial');
+          }
+          if (traditionalDamaskinLowercase.some(range =>
+            midpoint >= range.start && midpoint < range.end
+          )) {
+            span.classList.add('traditional-damaskin-lowercase');
           }
 
           if (isSaved) {
