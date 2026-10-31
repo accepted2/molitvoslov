@@ -189,6 +189,13 @@ const HTML_TEMPLATE = String.raw`
       font-weight: 650;
       font-style: normal;
     }
+    /* St John of Damascus's evening prayer: the full "Слава Отцу..."
+       and "И ныне..." rubrics appear as separate red lines. */
+    .traditional-mode.evening-rule .reader-text span.traditional-damaskin-rubric {
+      color: var(--liturgical) !important;
+      font-weight: 650 !important;
+      font-style: normal !important;
+    }
     /* The two adjacent Paschal verses form one hymn, despite separate
        database items. Preserve original text anchors; remove the visible
        divider and the second header only in the morning rule. */
@@ -3541,6 +3548,73 @@ const HTML_TEMPLATE = String.raw`
           }
         }
 
+        // Prayer of St John of Damascus (Text 146): in traditional
+        // Church Slavonic, separate the psalm verse, both doxological
+        // cues and their following supplications. Match historical
+        // orthography with indexed normalization. Do not change text.
+        const traditionalDamaskinBreaks = new Set();
+        const traditionalDamaskinRubrics = [];
+        if (
+          isEveningRule &&
+          DATA.viewMode === 'traditional' &&
+          (DATA.rule.items || []).some(entry =>
+            Number(entry.id) === Number(itemId) &&
+            Number(entry.text?.id) === 146
+          )
+        ) {
+          const mapped = normalizedTextWithIndex(text);
+          const source = mapped.normalized.toLowerCase();
+          const findFrom = (pattern, from = 0) => {
+            const found = pattern.exec(source.slice(from));
+            return found ? from + found.index : null;
+          };
+          const psalmStart = findFrom(/просвети\s+очи/u);
+          const gloryStart = psalmStart == null ? null
+            : findFrom(/слава\s+/u, psalmStart + 1);
+          const protectorStart = gloryStart == null ? null
+            : findFrom(/заступник[а-яъ]*\s+души/u, gloryStart + 1);
+          const nowStart = protectorStart == null ? null
+            : findFrom(/и\s+(?:ныне|нине|нне)\s+/u, protectorStart + 1);
+          const motherStart = nowStart == null ? null
+            : findFrom(/преславн[а-яъ]*\s+бож/u, nowStart + 1);
+
+          const ordered = [psalmStart, gloryStart, protectorStart, nowStart, motherStart];
+          if (ordered.every(Number.isFinite) &&
+              ordered.every((position, index) => index === 0 || position > ordered[index - 1])) {
+            ordered.forEach(position => {
+              traditionalDamaskinBreaks.add(mapped.originalIndex[position]);
+            });
+
+            const addRubric = (start, next, requireAmen) => {
+              const length = next - start;
+              if (length <= 0 || length > 180) return;
+              const segment = source.slice(start, next);
+              const colon = segment.lastIndexOf(':');
+              const amen = requireAmen
+                ? /аминь\s*[.:!?]?/u.exec(segment)
+                : null;
+              let end = null;
+              if (requireAmen && amen) {
+                end = start + amen.index + amen[0].length;
+                // Include a colon following the final Amen when present.
+              } else if (colon >= 0) {
+                end = start + colon + 1;
+              }
+              if (end != null) {
+                appendOriginalRange(
+                  traditionalDamaskinRubrics,
+                  mapped.source,
+                  mapped.originalIndex,
+                  start,
+                  end
+                );
+              }
+            };
+            addRubric(gloryStart, protectorStart, false);
+            addRubric(nowStart, motherStart, true);
+          }
+        }
+
         root.classList.toggle(
           'evening-minor-liturgical-text',
           isEveningMinorLiturgical
@@ -3935,6 +4009,11 @@ const HTML_TEMPLATE = String.raw`
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
+        traditionalDamaskinRubrics.forEach(range => {
+          boundaries.add(range.start);
+          boundaries.add(range.end);
+        });
+        traditionalDamaskinBreaks.forEach(offset => boundaries.add(offset));
         traditionalChrysostomNumberRanges.forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
@@ -4084,6 +4163,9 @@ const HTML_TEMPLATE = String.raw`
             divider.setAttribute('aria-hidden', 'true');
             fragment.appendChild(divider);
           }
+          if (traditionalDamaskinBreaks.has(start)) {
+            fragment.appendChild(document.createElement('br'));
+          }
 
           const span =
             document.createElement(
@@ -4094,6 +4176,11 @@ const HTML_TEMPLATE = String.raw`
             midpoint >= range.start && midpoint < range.end
           )) {
             span.classList.add('traditional-kondak-initial');
+          }
+          if (traditionalDamaskinRubrics.some(range =>
+            midpoint >= range.start && midpoint < range.end
+          )) {
+            span.classList.add('traditional-damaskin-rubric');
           }
 
           if (isSaved) {
