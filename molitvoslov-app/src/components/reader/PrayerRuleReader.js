@@ -491,6 +491,13 @@ const HTML_TEMPLATE = String.raw`
       font-weight: 650 !important;
       font-style: normal !important;
     }
+    /* Traditional seventh evening prayer: number each of the 24 short
+       petitions without changing the source text or other reading modes. */
+    .traditional-mode.evening-rule .reader-text span.chrysostom-number {
+      color: var(--liturgical) !important;
+      font-weight: 650 !important;
+      font-style: normal !important;
+    }
 
 
     .liturgical-block {
@@ -2505,6 +2512,10 @@ const HTML_TEMPLATE = String.raw`
               getEveningItemKind(
                 text
               );
+            const isTraditionalEveningChrysostom =
+              isEveningRule &&
+              DATA.viewMode === 'traditional' &&
+              eveningItemKind === 'chrysostom';
 
             eveningItemKindMap.set(
               Number(
@@ -2721,6 +2732,7 @@ const HTML_TEMPLATE = String.raw`
 
             if (
               localizedDescription &&
+              !isTraditionalEveningChrysostom &&
               text.description_position ===
                 'before'
             ) {
@@ -2814,6 +2826,7 @@ const HTML_TEMPLATE = String.raw`
 
             if (
               localizedDescription &&
+              !isTraditionalEveningChrysostom &&
               text.description_position ===
                 'after'
             ) {
@@ -2831,7 +2844,7 @@ const HTML_TEMPLATE = String.raw`
                 ? item.note_uk || item.note || ''
                 : item.note || '';
 
-            if (localizedNote) {
+            if (localizedNote && !isTraditionalEveningChrysostom) {
               wrapper.appendChild(
                 el(
                   'div',
@@ -2841,10 +2854,9 @@ const HTML_TEMPLATE = String.raw`
               );
             }
 
-            appendFootnotes(
-              wrapper,
-              item.footnotes
-            );
+            if (!isTraditionalEveningChrysostom) {
+              appendFootnotes(wrapper, item.footnotes);
+            }
           } else if (
             item.item_type ===
             'instruction'
@@ -3638,6 +3650,39 @@ const HTML_TEMPLATE = String.raw`
           }
         }
 
+        const traditionalChrysostomNumberRanges = [];
+        const traditionalChrysostomBreaks = new Set();
+        if (
+          isEveningRule &&
+          DATA.viewMode === 'traditional' &&
+          eveningItemKind === 'chrysostom'
+        ) {
+          const mappedNumbers = normalizedTextWithIndex(text);
+          // Accept (а҃), [а҃], (1), [1], а҃) and 1. . Unicode
+          // superscripts/titla are removed for recognition only.
+          // The following prayer clause must start with "Господи".
+          const numberPattern =
+            /(?:^|[\s.!?;])([\[(]\s*(?:\d{1,2}|[а-яё]{1,3})\s*[\])]\.?|(?:\d{1,2}|[а-яё]{1,3})\s*[.)])(?=\s*Г[а-яё]{1,12}(?:\s|,|\.|!))/giu;
+          let count = 0;
+          for (const number of mappedNumbers.normalized.matchAll(numberPattern)) {
+            const start = number.index + number[0].lastIndexOf(number[1]);
+            appendOriginalRange(
+              traditionalChrysostomNumberRanges,
+              mappedNumbers.source,
+              mappedNumbers.originalIndex,
+              start,
+              start + number[1].length
+            );
+            if (count > 0) {
+              const originalStart = mappedNumbers.originalIndex[start];
+              if (Number.isFinite(originalStart)) {
+                traditionalChrysostomBreaks.add(originalStart);
+              }
+            }
+            count += 1;
+          }
+        }
+
         const traditionalMercyRanges = [];
         const traditionalGloryRanges = [];
         const traditionalTwelveRanges = [];
@@ -3657,8 +3702,12 @@ const HTML_TEMPLATE = String.raw`
           // Locate the actual words, without requiring "[Трижды.]" or
           // an exact spelling of the Lord's abbreviated name after them.
           // A rubric may use archaic letters, accents and titla.
+          // The evening troparia contain ordinary prayers "Господи,
+          // помилуй нас". Only standalone short rubrics should be red;
+          // internal invocations are part of the main black prayer text.
+          const shouldAccentMercy = isMorningRule || isEveningMinorLiturgical;
           const mercyPattern = /(?:^|[^\p{L}])(Г[а-яё]{1,12}\s*,?\s*помилу[йи]\s*[.!?]?)/giu;
-          for (const match of mapped.normalized.matchAll(mercyPattern)) {
+          for (const match of (shouldAccentMercy ? mapped.normalized.matchAll(mercyPattern) : [])) {
             const phraseStart = match.index + match[0].lastIndexOf(match[1]);
             const phraseEnd = phraseStart + match[1].length;
             appendOriginalRange(
@@ -3685,7 +3734,7 @@ const HTML_TEMPLATE = String.raw`
           // markers instead of relying on its initial letters. Keep the
           // repetition rubric outside the red range.
           const finalGloryMercy = /Слава\s*,?\s*и\s+ныне\s*:[ \t]*([^\[\]()\r\n]{1,80}?)(?=[ \t]*[\[(][ \t]*тр[иії]жды[ \t]*\.?[ \t]*[\])])/giu;
-          for (const combined of mapped.normalized.matchAll(finalGloryMercy)) {
+          for (const combined of (shouldAccentMercy ? mapped.normalized.matchAll(finalGloryMercy) : [])) {
             const invocation = combined[1];
             if (!/помилу[йи]/iu.test(invocation)) continue;
             const phraseStart = combined.index + combined[0].lastIndexOf(invocation);
@@ -3744,6 +3793,11 @@ const HTML_TEMPLATE = String.raw`
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
+        traditionalChrysostomNumberRanges.forEach(range => {
+          boundaries.add(range.start);
+          boundaries.add(range.end);
+        });
+        traditionalChrysostomBreaks.forEach(offset => boundaries.add(offset));
         [...traditionalMercyRanges, ...traditionalGloryRanges, ...traditionalTwelveRanges, ...traditionalNameRanges].forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
@@ -3912,6 +3966,9 @@ const HTML_TEMPLATE = String.raw`
           }
           if (traditionalCreedNumberRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
             span.classList.add('creed-number');
+          }
+          if (traditionalChrysostomNumberRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
+            span.classList.add('chrysostom-number');
           }
           if (traditionalMercyRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
             span.classList.add('traditional-mercy-phrase');
@@ -4147,7 +4204,7 @@ const HTML_TEMPLATE = String.raw`
           if (
             eveningNumberBreaks.has(
               end
-            )
+            ) || traditionalChrysostomBreaks.has(end)
           ) {
             const numberBreak =
               document.createElement(
