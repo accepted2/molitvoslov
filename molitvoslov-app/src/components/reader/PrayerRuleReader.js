@@ -164,6 +164,17 @@ const HTML_TEMPLATE = String.raw`
     .rule-item:last-child {
       border-bottom: 0;
     }
+    /* The two adjacent Paschal verses form one hymn, despite separate
+       database items. Preserve original text anchors; remove the visible
+       divider and the second header only in the morning rule. */
+    .morning-rule .rule-item.paschal-hymn-opening {
+      border-bottom: 0;
+      padding-bottom: 0;
+      margin-bottom: 0;
+    }
+    .morning-rule .rule-item.paschal-hymn-continuation .section-header {
+      display: none;
+    }
 
     .rule-item.whole-saved {
       margin-left: -8px;
@@ -1036,7 +1047,13 @@ const HTML_TEMPLATE = String.raw`
 
       const breaks = [];
       for (const match of fullText.matchAll(/[.!?]+(?=\s+\S)/gu)) {
-        breaks.push(match.index + match[0].length);
+        const offset = match.index + match[0].length;
+        // The final "Аминь." stays on the line of the preceding sentence.
+        // Ignore combining marks so this works for accented Slavonic text.
+        const following = fullText.slice(offset)
+          .normalize('NFD').replace(/\p{M}/gu, '').trim();
+        if (/^аминь[.!?]*$/iu.test(following)) continue;
+        breaks.push(offset);
       }
       if (!breaks.length) return;
 
@@ -2388,6 +2405,32 @@ const HTML_TEMPLATE = String.raw`
       }
 
       const allItems = DATA.rule.items || [];
+
+      // "Ангел вопияше" and "Светися, светися" are consecutive Text
+      // objects. Identify both by source text, or by known Text IDs,
+      // regardless of the title or currently selected reading language.
+      const paschalOpeningItemIds = new Set();
+      const paschalContinuationItemIds = new Set();
+      if (isMorningRule) {
+        const foldPaschal = value => normalizedTextWithIndex(value || '')
+          .normalized.toLowerCase().replace(/\s+/gu, ' ').trim();
+        for (let i = 1; i < allItems.length; i += 1) {
+          const first = allItems[i - 1];
+          const second = allItems[i];
+          if (first?.item_type !== 'text' || second?.item_type !== 'text' ||
+              !first.text || !second.text) continue;
+          const matchingIds = Number(first.text.id) === 124 &&
+            Number(second.text.id) === 125;
+          const matchingContent =
+            /^ангел\s+вопияше(?:\s|:|,|!)/u.test(foldPaschal(first.text.content)) &&
+            /^светися\s*,?\s*светися(?:\s|,|!)/u.test(foldPaschal(second.text.content));
+          if (matchingIds || matchingContent) {
+            paschalOpeningItemIds.add(Number(first.id));
+            paschalContinuationItemIds.add(Number(second.id));
+          }
+        }
+      }
+
       const lacksTraditional = DATA.viewMode === 'traditional' &&
         !allItems.some(item => item.item_type === 'text' && item.text?.traditional_content?.trim());
       const lacksRussian = (DATA.viewMode === 'russian' || DATA.viewMode === 'both') &&
@@ -2414,6 +2457,13 @@ const HTML_TEMPLATE = String.raw`
             String(
               item.id
             );
+
+          if (paschalOpeningItemIds.has(Number(item.id))) {
+            wrapper.classList.add('paschal-hymn-opening');
+          }
+          if (paschalContinuationItemIds.has(Number(item.id))) {
+            wrapper.classList.add('paschal-hymn-continuation');
+          }
 
           if (
             item.item_type ===
