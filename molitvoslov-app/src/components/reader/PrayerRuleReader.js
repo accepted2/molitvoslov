@@ -418,10 +418,10 @@ const HTML_TEMPLATE = String.raw`
     }
     .evening-rule .chrysostom-standard span.chrysostom-small-number,
     .evening-rule .chrysostom-translation span.chrysostom-small-number {
-      font-size: 0.88em;
+      font-size: 0.84em;
       font-weight: 600;
       font-style: normal;
-      color: inherit;
+      color: var(--liturgical) !important;
     }
     .evening-rule .chrysostom-standard span.chrysostom-first-letter,
     .evening-rule .chrysostom-translation span.chrysostom-first-letter {
