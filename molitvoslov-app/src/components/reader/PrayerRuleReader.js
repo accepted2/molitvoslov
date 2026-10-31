@@ -1750,11 +1750,10 @@ const HTML_TEMPLATE = String.raw`
             );
 
           for (const char of decomposed) {
-            if (
-              /[\u0300-\u036f\u0483-\u0487]/u.test(
-                char
-              )
-            ) {
+            // Unicode Church Slavonic abbreviations contain combining
+            // letters (e.g. U+2DED in Гдⷭи), not just accents/titla.
+            // Strip every Unicode mark for matching, never for display.
+            if (/\p{M}/u.test(char)) {
               continue;
             }
 
@@ -1843,11 +1842,11 @@ const HTML_TEMPLATE = String.raw`
         let end =
           last + 1;
 
+        // Keep any trailing combining letters/titla inside the original
+        // styled range; selection and saved offsets remain source-based.
         while (
           end < source.length &&
-          /[\u0300-\u036f\u0483-\u0487]/u.test(
-            source[end]
-          )
+          /\p{M}/u.test(source[end])
         ) {
           end += 1;
         }
@@ -3272,15 +3271,15 @@ const HTML_TEMPLATE = String.raw`
               )
             : null;
 
-        // Add semantic line breaks for the two traditional morning rubrics.
-        // The original string stays intact, so selection/save offsets do not
-        // shift when rendering additional <br> nodes.
+        // In the closing short rubric, break after "Слава, и нынѣ:"
+        // regardless of how "Господи" was abbreviated in the UCS source.
+        // Do not insert a source character or shift selection/save offsets.
         let traditionalFinalMercyBreakOffset = null;
         let traditionalGloryBreakOffset = null;
         if (isMorningRule && DATA.viewMode === 'traditional') {
           const mapped = normalizedTextWithIndex(text);
-          const ending = /^\s*Слава\s*,?\s*и\s+ныне\s*:\s*((?:Господи|Гдси|Гд[иь])\s*,?\s*помилу[йи])/iu.exec(mapped.normalized);
-          if (ending) {
+          const ending = /^\s*Слава\s*,?\s*и\s+ныне\s*:\s*([^\[\]()\r\n]{1,80}?)(?=\s*[\[(]\s*тр[иії]жды\s*\.?\s*[\])])/iu.exec(mapped.normalized);
+          if (ending && /помилу[йи]/iu.test(ending[1])) {
             const mercyStart = ending.index + ending[0].lastIndexOf(ending[1]);
             traditionalFinalMercyBreakOffset = mapped.originalIndex[mercyStart] ?? null;
           }
@@ -3480,9 +3479,9 @@ const HTML_TEMPLATE = String.raw`
 
         const traditionalNameRanges = [];
         if (isMorningRule && DATA.viewMode === 'traditional') {
-          // Search the real source text in whole brackets, not only a few
-          // spellings in the normalized string. The old alphabet, titla and
-          // stress marks can vary even within the same prayer rule.
+          // Search the real source text in whole brackets. The Unicode
+          // normalizer folds *all* combining marks including old superscript
+          // letters, so [и҆мѧ́къ] and [иⷮмѧкъ] are both recognized.
           for (const bracket of text.matchAll(/[\[(]([^\]\)\r\n]{1,48})[\])]/gu)) {
             const token = normalizedTextWithIndex(bracket[1]).normalized
               .toLowerCase().trim().replace(/\s+/g, ' ');
@@ -3502,8 +3501,8 @@ const HTML_TEMPLATE = String.raw`
         const traditionalTwelveRanges = [];
         if (isMorningRule && DATA.viewMode === 'traditional') {
           const mapped = normalizedTextWithIndex(text);
-          // Only the short liturgical invocation gets the neutral color.
-          // Do not change its source text or offset numbering.
+          // Highlight the short liturgical invocation in red while keeping
+          // its original Church Slavonic letters and selection offsets.
           for (const glory of mapped.normalized.matchAll(/(?:Слава\s*,?\s*и\s+ныне|Слава|И\s+ныне)\s*:/giu)) {
             appendOriginalRange(
               traditionalGloryRanges, mapped.source, mapped.originalIndex,
@@ -3516,7 +3515,7 @@ const HTML_TEMPLATE = String.raw`
           // Locate the actual words, without requiring "[Трижды.]" or
           // an exact spelling of the Lord's abbreviated name after them.
           // A rubric may use archaic letters, accents and titla.
-          const mercyPattern = /(?:^|[^\p{L}])(Г[а-я]{1,9}\s*,?\s*помилу[йи]\s*[.!?]?)/giu;
+          const mercyPattern = /(?:^|[^\p{L}])(Г[а-яё]{1,12}\s*,?\s*помилу[йи]\s*[.!?]?)/giu;
           for (const match of mapped.normalized.matchAll(mercyPattern)) {
             const phraseStart = match.index + match[0].lastIndexOf(match[1]);
             const phraseEnd = phraseStart + match[1].length;
