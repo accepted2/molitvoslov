@@ -49,6 +49,7 @@ export const FixedSectionHeader = ({
       )}
 
       <View
+        pointerEvents="box-none"
         style={[
           styles.headerContent,
           {
@@ -59,7 +60,7 @@ export const FixedSectionHeader = ({
       >
         {showBack && (
           <Pressable
-            hitSlop={12}
+            hitSlop={16}
             onPress={() => navigation.goBack()}
             style={({pressed}) => [
               styles.backButton,
@@ -74,6 +75,7 @@ export const FixedSectionHeader = ({
 
         {showTitle && (
           <View
+            pointerEvents="none"
             style={[
               styles.titleWrap,
               compactReading && styles.titleWrapReading,
@@ -124,7 +126,10 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 20,
+    // Above WebView actions on Android; the Back arrow must win taps
+    // when its touch area overlaps a prayer's favorite heart.
+    zIndex: 1000,
+    elevation: 20,
   },
 
   headerContent: {
@@ -160,6 +165,7 @@ const styles = StyleSheet.create({
   },
 
   backButton: {
+    zIndex: 2,
     width: 38,
     height: 44,
     alignItems: 'center',
