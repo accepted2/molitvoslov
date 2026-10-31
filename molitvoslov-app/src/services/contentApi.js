@@ -42,7 +42,9 @@ const getLivePrayerRule = async (path) => {
   }
 
   try {
-    return response(await result.json());
+    const data = await result.json();
+    if (__DEV__) console.log('[PrayerRules] Django API:', path);
+    return response(data);
   } catch (error) {
     throw new Error(
       `Django вернул некорректный JSON для молитвенного правила (${url}): ` +
@@ -165,7 +167,16 @@ export const contentApi = {
     const normalizedPath = normalizePath(path);
 
     if (useLivePrayerRules() && isPrayerRulePath(normalizedPath)) {
-      // No fallback to an outdated JSON: it would hide missing local edits.
+      // The menu stays usable when Django is stopped, but opening a rule
+      // never silently falls back to outdated prayer texts.
+      if (normalizedPath === 'prayer-rules/') {
+        try {
+          return await getLivePrayerRule(normalizedPath);
+        } catch (error) {
+          console.warn('[PrayerRules] Django list unavailable, using offline menu:', error?.message);
+          return response(getLocal(normalizedPath));
+        }
+      }
       return getLivePrayerRule(normalizedPath);
     }
 
