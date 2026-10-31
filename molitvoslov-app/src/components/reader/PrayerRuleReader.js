@@ -425,6 +425,16 @@ const HTML_TEMPLATE = String.raw`
     .reader-text .prayer-bow-rubric {
       font-weight: 650;
     }
+    /* Name placeholders use the same brown rubric treatment as [Трижды.].
+       Match the entire token, including both brackets, and override any
+       liturgical or nested emphasis in the traditional morning reader. */
+    .traditional-mode.morning-rule .reader-text span.prayer-name-rubric,
+    .traditional-mode.morning-rule .reader-text span.prayer-name-rubric.liturgical-phrase,
+    .traditional-mode.morning-rule .reader-text span.prayer-name-rubric * {
+      color: var(--secondary) !important;
+      font-weight: 650 !important;
+      font-style: normal !important;
+    }
 
     /* Compact morning rubrics need to override the generic compact-text color. */
     .reader-text.morning-compact-liturgical-text span.liturgical-phrase {
@@ -3467,6 +3477,25 @@ const HTML_TEMPLATE = String.raw`
           }
         }
 
+        const traditionalNameRanges = [];
+        if (isMorningRule && DATA.viewMode === 'traditional') {
+          // Search the real source text in whole brackets, not only a few
+          // spellings in the normalized string. The old alphabet, titla and
+          // stress marks can vary even within the same prayer rule.
+          for (const bracket of text.matchAll(/[\[(]([^\]\)\r\n]{1,48})[\])]/gu)) {
+            const token = normalizedTextWithIndex(bracket[1]).normalized
+              .toLowerCase().trim().replace(/\s+/g, ' ');
+            const isName = /^им[а-я]{1,22}(?:\s+ихъ?)?$/u.test(token);
+            const isParent = /^родител[а-я]{1,18}\s+моихъ?$/u.test(token);
+            if (isName || isParent) {
+              traditionalNameRanges.push({
+                start: bracket.index,
+                end: bracket.index + bracket[0].length,
+              });
+            }
+          }
+        }
+
         const traditionalMercyRanges = [];
         const traditionalGloryRanges = [];
         const traditionalTwelveRanges = [];
@@ -3556,7 +3585,7 @@ const HTML_TEMPLATE = String.raw`
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
-        [...traditionalMercyRanges, ...traditionalGloryRanges, ...traditionalTwelveRanges].forEach(range => {
+        [...traditionalMercyRanges, ...traditionalGloryRanges, ...traditionalTwelveRanges, ...traditionalNameRanges].forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
@@ -3718,6 +3747,9 @@ const HTML_TEMPLATE = String.raw`
           }
           if (bowRubricRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
             span.classList.add('prayer-bow-rubric');
+          }
+          if (traditionalNameRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
+            span.classList.add('prayer-name-rubric');
           }
           if (traditionalCreedNumberRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
             span.classList.add('creed-number');
