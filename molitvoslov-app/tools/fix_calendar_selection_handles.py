@@ -56,7 +56,7 @@ def calendar(source,p):
 """,'',p)
     if 'wholeSaved' in source:
         raise RuntimeError('Calendar still has a full-section saved style')
-    return '// calendar selection handles: heart only\\n' + source
+    return '// calendar selection handles: heart only\n' + source
 
 def saint(source,p):
     if 'CalendarSelectableBody' not in source:
@@ -83,7 +83,7 @@ def saint(source,p):
 """,'',p)
     if 'wholeSaved' in source:
         raise RuntimeError('Saint still has full-section saved styling')
-    return '// saint selection handles: heart only\\n' + source
+    return '// saint selection handles: heart only\n' + source
 
 def calendar_save(source,p):
     source=one(source,
