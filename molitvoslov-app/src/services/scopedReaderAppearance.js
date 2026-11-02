@@ -24,6 +24,12 @@ export const resolveReaderAppearance = (settings) => {
     : READER_PALETTES[normalized.palette];
   return {...normalized, ...palette};
 };
+export const isDarkReaderBackground = (hex) => {
+  const color = validHex(hex, '#FFF4DE');
+  const rgb = [1, 3, 5].map(i => parseInt(color.slice(i, i + 2), 16) / 255);
+  const luminance = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+  return luminance < 0.48;
+};
 export const withOpacity = (hex, alpha = 1) => {
   const color = validHex(hex, '#FFF4DE');
   const rgb = [1, 3, 5].map(i => parseInt(color.slice(i, i + 2), 16));
