@@ -205,8 +205,8 @@ def document_runtime(s,p):
       ensureAutoScroll();""",
       """      state.lastDragPoint = {
         x: event.clientX, y: event.clientY, };
-      showSelectionLoupe(state.active.itemId,
-        mode === 'start' ? state.active.start : state.active.end,
+      const loupePoint = mode === 'start' ? state.active.startPoint : state.active.endPoint;
+      showSelectionLoupe(loupePoint.itemId, loupePoint.offset,
         event.clientX, event.clientY);
       ensureAutoScroll();""",p)
     s=one(s,
@@ -216,8 +216,8 @@ def document_runtime(s,p):
         );
         ensureAutoScroll();""",
       """        updateFromPoint( event.clientX, event.clientY );
-        showSelectionLoupe(state.active.itemId,
-          state.drag.mode === 'start' ? state.active.start : state.active.end,
+        const loupePoint = state.drag.mode === 'start' ? state.active.startPoint : state.active.endPoint;
+        showSelectionLoupe(loupePoint.itemId, loupePoint.offset,
           event.clientX, event.clientY);
         ensureAutoScroll();""",p)
     s=one(s,
