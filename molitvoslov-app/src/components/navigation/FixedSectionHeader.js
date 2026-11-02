@@ -23,16 +23,7 @@ export const FixedSectionHeader = ({
   }, [readingHidden, visibility]);
 
   return (
-    <Animated.View
-      pointerEvents={readingHidden ? 'none' : 'box-none'}
-      style={[
-        styles.fixedHeader,
-        {transform: [{translateY: visibility.interpolate({inputRange: [0, 1], outputRange: [0, -(headerHeight + 16)]})}], opacity: visibility.interpolate({inputRange: [0, 1], outputRange: [1, 0]})},
-        {
-          height: minimal ? headerHeight : headerHeight + 10,
-        },
-      ]}
-    >
+    <>
       {!minimal && (
         <LinearGradient
           pointerEvents="none"
@@ -44,9 +35,20 @@ export const FixedSectionHeader = ({
           locations={[0, 0.42, 1]}
           start={{x: 0.5, y: 0}}
           end={{x: 0.5, y: 1}}
-          style={StyleSheet.absoluteFill}
+          style={[styles.fixedGradient, {height: headerHeight + 10}]}
         />
       )}
+
+      <Animated.View
+      pointerEvents={readingHidden ? 'none' : 'box-none'}
+      style={[
+        styles.fixedHeader,
+        {transform: [{translateY: visibility.interpolate({inputRange: [0, 1], outputRange: [0, -(headerHeight + 16)]})}], opacity: visibility.interpolate({inputRange: [0, 1], outputRange: [1, 0]})},
+        {
+          height: minimal ? headerHeight : headerHeight + 10,
+        },
+      ]}
+    >
 
       <View
         pointerEvents="box-none"
@@ -116,11 +118,21 @@ export const FixedSectionHeader = ({
           </Pressable>
         )}
       </View>
-    </Animated.View>
+      </Animated.View>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
+  fixedGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    // Independent from header animation. Never blocks reader scroll/taps.
+    zIndex: 999,
+    elevation: 19,
+  },
   fixedHeader: {
     position: 'absolute',
     top: 0,
