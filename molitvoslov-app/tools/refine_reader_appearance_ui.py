@@ -89,9 +89,16 @@ def refine_header(s,name):
     s=replace_once(s,
         "  titleReading: {\n    fontSize: 17,\n    fontWeight: '700',\n    lineHeight: 23,",
         "  titleReading: {\n    fontSize: 17,\n    fontWeight: '700',\n    lineHeight: 20,",name)
-    s=replace_once(s,
-        "              height: headerHeight,\n              paddingTop: topInset,",
-        "              height: headerHeight,\n              paddingTop: topInset,\n              transform: [{translateY: compactReading ? -2.5 : 0}],",name)
+    # The independent-gradient patch indents the Animated.View subtree by
+    # two more spaces. Match the existing whitespace rather than assuming it.
+    header_size = re.compile(r'(?m)^([ \\t]*)height: headerHeight,\\n\\1paddingTop: topInset,')
+    if len(header_size.findall(s)) != 1:
+        raise RuntimeError(f"{name}: could not uniquely find header size/padding")
+    s = header_size.sub(
+        lambda m: m.group(1) + "height: headerHeight,\\n" +
+                  m.group(1) + "paddingTop: topInset,\\n" +
+                  m.group(1) + "transform: [{translateY: compactReading ? -2.5 : 0}],",
+        s, count=1)
 
     # Locate exactly one main header View, independently of indentation from
     # the previous local-only fixed-gradient patch.
