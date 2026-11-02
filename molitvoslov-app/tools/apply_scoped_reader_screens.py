@@ -21,7 +21,7 @@ def shared(source,path,kind,identifier,reader):
     hook="import {useReadingChrome} from '../hooks/useReadingChrome';"
     source=change(source,hook,hook+"""
 import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
-import {resolveReaderAppearance} from '../services/scopedReaderAppearance';
+import {resolveReaderAppearance, isDarkReaderBackground} from '../services/scopedReaderAppearance';
 import {ReaderAppearanceSheet} from '../components/reader/ReaderAppearanceSheet';""",path)
     old="  const {readingChromeHidden, handleReadingScroll} = useReadingChrome();"
     new=old+f"""
@@ -53,7 +53,7 @@ import {ReaderAppearanceSheet} from '../components/reader/ReaderAppearanceSheet'
 """,path)
     source=change(source,
         "        compactReading\n        readingHidden={readingChromeHidden}",
-        "        compactReading\n        readerMode={viewMode}\n        readerBackground={readerBackground}\n        readingHidden={readingChromeHidden}",path)
+        "        compactReading\n        readerMode={viewMode}\n        readerBackground={readerBackground}\n        dark={isDarkReaderBackground(readerBackground)}\n        readingHidden={readingChromeHidden}",path)
     return source
 
 def add_memory(source,path,kind,identifier):
