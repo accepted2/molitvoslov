@@ -3,6 +3,12 @@ import {ActivityIndicator, Pressable, StyleSheet, Text, View} from 'react-native
 import SelectableSaveText from './SelectableSaveText';
 import {deleteSavedItem, getSavedItems, saveItem} from '../../services/savedItems';
 
+/** Same canonical content in the calendar accordion and the saint detail card. */
+const normalizeSavedText = (value) =>
+  String(value || '').replace(/\r\n?/g, '\n')
+    .split('\n').map(line => line.trim()).join('\n')
+    .replace(/\n{3,}/g, '\n\n').trim();
+
 /** Stable positive integer key compatible with the existing saved_items schema. */
 export const savedSourceId = (value) => {
   const number = Number(value);
@@ -41,7 +47,7 @@ export const CalendarSaveWholeButton = ({text, saveContext}) => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const {sourceType, sourceId, anchorType, anchorId, sourceTitle, itemTitle, fullSaveType, metadata} = saveContext;
-  const normalized = String(text || '').trim();
+  const normalized = normalizeSavedText(text);
   useEffect(() => {
     let active = true;
     setSaved(null);
@@ -104,7 +110,7 @@ export const CalendarSaveWholeButton = ({text, saveContext}) => {
 
 /** Uses the app-wide selection bar, including sentence/paragraph classification. */
 export const CalendarSelectableBody = ({text, saveContext, textStyle}) => {
-  const normalized = useMemo(() => String(text || '').replace(/\r\n?/g, '\n').trim(), [text]);
+  const normalized = useMemo(() => normalizeSavedText(text), [text]);
   if (!normalized) return null;
   return (
     <SelectableSaveText
