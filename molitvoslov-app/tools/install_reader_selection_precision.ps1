@@ -17,7 +17,8 @@ $hash=(& git hash-object $calendar | Select-Object -First 1).Trim()
 if($LASTEXITCODE -ne 0){throw 'Cannot hash local calendar selection component'}
 $allowed=@(
   '56d2c3087d0908e21319dae3530d07c2d8f8e137', # previous handle component
-  'd8641869a8eb936625c72dac1ff48f6b80e93d4e'  # already refined
+  'd8641869a8eb936625c72dac1ff48f6b80e93d4e', # intermediate
+  '8ea76736ce727e64552d23f7b84b9d3f115f0989'  # current precise grip
 )
 if($allowed -notcontains $hash){
   throw "The calendar selection file was edited locally ($hash). Refusing to overwrite it. Keep local changes and report this message."
