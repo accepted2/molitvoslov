@@ -44,8 +44,8 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
               <Text style={styles.doneText}>Готово</Text>
             </Pressable>
           </View>
-          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-            <Text style={styles.label}>Размер шрифта: {resolved.fontSize} пт</Text>
+          <ScrollView style={styles.scrollArea} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+            <Text style={styles.label}>Размер шрифта: {resolved.fontSize}</Text>
             <View style={styles.sizeRow}>
               <Pressable onPress={() => onChange?.({fontSize: clampSize(resolved.fontSize - 1)})} style={styles.step}><Text style={styles.stepText}>A−</Text></Pressable>
               <View
@@ -91,12 +91,6 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
                 onChange={(color) => setCustom(showColorPicker,color)}
               />
             )}
-            <View style={[styles.preview,{backgroundColor:resolved.background}]}>
-              <Text style={[styles.previewText,{fontSize:resolved.fontSize,color:resolved.text,lineHeight:resolved.fontSize*1.5}]}>
-                Господи, научи меня творить волю Твою.
-              </Text>
-              <Text style={[styles.caption,{color:resolved.text}]}>Изменения сразу видны в читалке и сохраняются только для этого текста.</Text>
-            </View>
             <Pressable onPress={onReset} style={styles.reset}><Text style={styles.resetText}>Вернуть общие настройки</Text></Pressable>
           </ScrollView>
         </View>
@@ -108,12 +102,13 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
 const styles=StyleSheet.create({
   overlay:{flex:1,justifyContent:'flex-end',backgroundColor:'rgba(24,17,12,.35)'},
   dismiss:{flex:1},
-  sheet:{maxHeight:'88%',backgroundColor:'#FFF4DE',borderTopLeftRadius:23,borderTopRightRadius:23,paddingHorizontal:18,paddingTop:16},
+  sheet:{maxHeight:'78%',backgroundColor:'#FFF4DE',borderTopLeftRadius:23,borderTopRightRadius:23,paddingHorizontal:18,paddingTop:16},
   header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:12},
   heading:{fontSize:19,fontWeight:'700',color:'#4B2D18'},
   done:{paddingVertical:9,paddingHorizontal:15,borderRadius:14,backgroundColor:'#E6CEAA'},
   doneText:{color:'#54351C',fontWeight:'700'},
-  scroll:{paddingBottom:20,gap:13},
+  scrollArea:{flexGrow:0,flexShrink:1},
+  scroll:{paddingBottom:8,gap:13},
   label:{fontSize:14,color:'#684229',fontWeight:'700'},
   sizeRow:{flexDirection:'row',alignItems:'center',gap:11},
   step:{padding:9,borderRadius:8,backgroundColor:'#F1DFC2'},
@@ -128,9 +123,6 @@ const styles=StyleSheet.create({
   colorRow:{flexDirection:'row',gap:8},
   colorButton:{flex:1,flexDirection:'row',gap:8,alignItems:'center',padding:8,borderRadius:9,backgroundColor:'#F2E0C5'},
   colorChip:{width:23,height:23,borderRadius:6,borderColor:'#A88762',borderWidth:1},
-  preview:{borderRadius:14,padding:15,marginTop:6},
-  previewText:{fontFamily:'serif'},
-  caption:{fontSize:11,marginTop:7,opacity:.75},
   reset:{alignSelf:'center',padding:12},
   resetText:{fontSize:13,color:'#7E5235',textDecorationLine:'underline'}
 });
