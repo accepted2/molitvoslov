@@ -95,6 +95,26 @@ const restoreCalendarBodies = async (db, candidates) => {
     const texts = row.body ? row.body.split(SEP) : [];''',
         "calendar snippet from full feast text")
 
+    pytests = root / "tools/test_search_seed.py"
+    if pytests.is_file():
+        anchor = "    def test_build_is_deterministic(self):"
+        case = '''    def test_identical_ru_uk_calendar_lives_are_one_document(self):
+        content, bible, calendar = fixture()
+        day = calendar['days']['2026-12-19']
+        day['uk']['main_feast'] = dict(day['ru']['main_feast'])
+        with tempfile.TemporaryDirectory() as tmp:
+            cal_dir = Path(tmp)
+            (cal_dir / '2026-12.json').write_text(
+                json.dumps(calendar, ensure_ascii=False), encoding='utf8')
+            docs = B.extract_documents(content, bible, cal_dir)
+        lives = [doc for doc in docs if doc['kind'] == 'calendar-life']
+        self.assertEqual(len(lives), 1)
+        self.assertEqual(lives[0]['lang'], '')
+        self.assertEqual(lives[0]['variants'][0][0], 'r')
+
+'''
+        replace_once(pytests, anchor, case + anchor, "RU/UK calendar merge regression test")
+
     tests = root / "tests/search/search.test.mjs"
     if tests.is_file():
         anchor = "  it('Ukrainian user sees Ukrainian title when present', async () => {"
