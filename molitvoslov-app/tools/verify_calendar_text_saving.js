@@ -51,6 +51,44 @@ for (const [file, strings] of Object.entries(mustHave)) {
   const s = fs.readFileSync(path.resolve(root,file),'utf8');
   for (const text of strings) if (!s.includes(text)) { failures++; console.error('FAIL missing:',file,text); }
 }
+// These invariants check the entire fragment-save chain, not just JSX syntax.
+const fragmentChain = {
+  'src/components/reader/CalendarSaveText.js': [
+    'fullSaveType={null}', 'sourceId={saveContext.sourceId}',
+    'anchorId={saveContext.anchorId}', 'onSavedChange', "name={saved ? 'heart' : 'heart-o'}",
+    'color="#765238"',
+  ],
+  'src/components/reader/SelectableSaveText.js': [
+    'onSelectionChange={handleSelectionChange}', 'lastValidRangeRef.current = range',
+    'activateSelection({', 'onSave: () => {', 'return saveRange(savedRange)',
+    'save_type: saveType', 'start_offset: range.start', 'end_offset: range.end',
+  ],
+  'src/context/TextSelectionContext.js': [
+    'onPress={saveSelection}', 'current.onSave()', 'Выделенный фрагмент',
+  ],
+  'src/screens/ChurchCalendarScreen.js': [
+    'onSavedChange={setWholeSaved}', 'calendarSavedBlock',
+    'CalendarSelectableBody', 'styles.calendarSavedContent',
+  ],
+  'src/screens/SaintDetailScreen.js': [
+    'onSavedChange={setWholeSaved}', 'accordionSaved',
+    'CalendarSelectableBody', 'styles.expandedWrapSaved',
+  ],
+};
+for (const [file, needles] of Object.entries(fragmentChain)) {
+  const source = fs.readFileSync(path.resolve(root, file), 'utf8');
+  for (const needle of needles) {
+    if (!source.includes(needle)) {
+      failures++;
+      console.error('FAIL selection/saved-style chain:', file, needle);
+    }
+  }
+}
+const saveButtonSource = fs.readFileSync(path.resolve(root, 'src/components/reader/CalendarSaveText.js'), 'utf8');
+if (saveButtonSource.includes('♥ Сохранено') || saveButtonSource.includes('♡ Сохранить целиком')) {
+  failures++;
+  console.error('FAIL: old text-based heart button still present');
+}
 if (failures) {
   console.error('Calendar saving verification failed:',failures);
   process.exit(1);
