@@ -47,31 +47,9 @@ if (Test-Path $apk) {
   Copy-Item $apk (Join-Path $backupDir "app-release-before-1.0.20.apk")
 }
 
-Write-Host "[3/5] Set version 1.0.20, versionCode 21"
-$patterns = @(
-  @{ Path=$appJson; Pattern='(?m)^([ \t]*"version"[ \t]*:[ \t]*")1\.0\.(?:19|20)(".*)$'; Replace='11.0.202' },
-  @{ Path=$appJson; Pattern='(?m)^([ \t]*"versionCode"[ \t]*:[ \t]*)(?:20|21)(.*)$'; Replace='1212' },
-  @{ Path=$gradleFile; Pattern='(?m)^([ \t]*versionCode[ \t]+)(?:20|21)([ \t]*)$'; Replace='1212' },
-  @{ Path=$gradleFile; Pattern='(?m)^([ \t]*versionName[ \t]+)"1\.0\.(?:19|20)"([ \t]*)$'; Replace='1"1.0.20"2' }
-)
-$changed = @{}
-foreach ($path in @($appJson, $gradleFile)) {
-  $changed[$path] = [IO.File]::ReadAllText($path)
-}
-foreach ($entry in $patterns) {
-  if ([regex]::Matches($changed[$entry.Path], $entry.Pattern).Count -ne 1) {
-    throw "Cannot identify exact version entry in $($entry.Path); backup: $backupDir"
-  }
-  $changed[$entry.Path] = [regex]::Replace($changed[$entry.Path], $entry.Pattern, $entry.Replace)
-}
-$encoding = New-Object System.Text.UTF8Encoding($false)
-[IO.File]::WriteAllText($appJson, $changed[$appJson], $encoding)
-[IO.File]::WriteAllText($gradleFile, $changed[$gradleFile], $encoding)
-$config = Get-Content $appJson -Raw | ConvertFrom-Json
-if ($config.expo.version -ne "1.0.20" -or $config.expo.android.versionCode -ne 21) {
-  throw "Version verification failed"
-}
-Write-Host "Version: $($config.expo.version) ($($config.expo.android.versionCode))"
+Write-Host "[3/5] Restore malformed version files if needed; set UTF-8 version 1.0.20 (21)"
+& $python -X utf8 ".\tools\repair_release_version_1_0_20.py"
+Assert-Command "Version and configuration repair"
 
 Write-Host "[4/5] Check single bundled offline search database"
 node .\scripts\copy-search-seed.js
