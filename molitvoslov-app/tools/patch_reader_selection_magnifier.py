@@ -97,6 +97,24 @@ def prayer(s,p):
     s=common_css(s,p)
     s=one(s,"    const eveningItemKindMap =\n      new Map();",
           "    const eveningItemKindMap =\n      new Map();\n"+LOUPE,p)
+    s=one(s,
+      """      state.drag = {
+        mode,
+        pointerId:
+          event.pointerId,
+        itemId:
+          state.active.itemId,
+      };""",
+      """      const gripRange = domRange(state.active.itemId, state.active.start, state.active.end);
+      const gripRects = gripRange ? Array.from(gripRange.getClientRects()) : [];
+      const gripRect = mode === 'start' ? gripRects[0] : gripRects[gripRects.length - 1];
+      state.drag = {
+        mode,
+        pointerId: event.pointerId,
+        itemId: state.active.itemId,
+        grabOffsetX: gripRect ? (mode === 'start' ? gripRect.left : gripRect.right) - event.clientX : 0,
+        grabOffsetY: gripRect ? gripRect.bottom - 7 - event.clientY : 0,
+      };""",p)
     # The loupe is in a shared source-string, no JSX/React rerender required.
     s=regex_once(s,
       r"startHandle\.style\.left\s*=\s*\(\s*first\.left\s*-\s*18\s*\)\s*\+\s*'px';",
@@ -126,8 +144,8 @@ def prayer(s,p):
       ensureAutoScroll();""",p)
     s=one(s,
       """        updateFromPoint(
-          event.clientX,
-          event.clientY
+          event.clientX + (state.drag.grabOffsetX || 0),
+          event.clientY + (state.drag.grabOffsetY || 0)
         );
 
         ensureAutoScroll();""",
@@ -169,6 +187,19 @@ def document_runtime(s,p):
       "endHandle.style.left = ( last.right - 18 ) + 'px';",
       "endHandle.style.left = ( last.right - 10 ) + 'px';",p)
     s=one(s,
+      """      event.currentTarget .setPointerCapture( event.pointerId );
+      state.drag = {
+        mode, pointerId: event.pointerId, itemId: state.active.itemId, };""",
+      """      event.currentTarget .setPointerCapture( event.pointerId );
+      const gripRange = domRangeForActive(state.active);
+      const gripRects = gripRange ? Array.from(gripRange.getClientRects()) : [];
+      const gripRect = mode === 'start' ? gripRects[0] : gripRects[gripRects.length - 1];
+      state.drag = {
+        mode, pointerId: event.pointerId, itemId: state.active.itemId,
+        grabOffsetX: gripRect ? (mode === 'start' ? gripRect.left : gripRect.right) - event.clientX : 0,
+        grabOffsetY: gripRect ? gripRect.bottom - 7 - event.clientY : 0,
+      };""",p)
+    s=one(s,
       """      state.lastDragPoint = {
         x: event.clientX, y: event.clientY, };
       ensureAutoScroll();""",
@@ -179,7 +210,10 @@ def document_runtime(s,p):
         event.clientX, event.clientY);
       ensureAutoScroll();""",p)
     s=one(s,
-      """        updateFromPoint( event.clientX, event.clientY );
+      """        updateFromPoint(
+          event.clientX + (state.drag.grabOffsetX || 0),
+          event.clientY + (state.drag.grabOffsetY || 0)
+        );
         ensureAutoScroll();""",
       """        updateFromPoint( event.clientX, event.clientY );
         showSelectionLoupe(state.active.itemId,
