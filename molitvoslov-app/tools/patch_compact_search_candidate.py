@@ -8,11 +8,11 @@ import sys
 
 def replace_once(path, old, new, label):
     source = path.read_text(encoding="utf-8")
+    if new in source:
+        print("ALREADY PATCHED:", label)
+        return
     count = source.count(old)
     if count != 1:
-        if new in source:
-            print("ALREADY PATCHED:", label)
-            return
         raise RuntimeError(f"{label}: expected 1 anchor, found {count}")
     path.write_text(source.replace(old, new, 1), encoding="utf-8")
     print("PATCHED:", label)
