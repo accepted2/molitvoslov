@@ -56,6 +56,21 @@ def regex_once(s,pattern,fn,p,flags=0):
         raise RuntimeError(f"{p}: regex {pattern[:65]!r}: {len(matches)} matches")
     return s[:matches[0].start()] + fn(matches[0]) + s[matches[0].end():]
 
+def replace_handle_move(s, old, new, p):
+    # The same updateFromPoint call also exists in the ordinary pointermove
+    # handler. Only the draggable-selection handle may receive grip offsets.
+    start_marker = 'const moveHandle ='
+    end_marker = 'const endHandleDrag ='
+    if s.count(start_marker) != 1 or s.count(end_marker) != 1:
+        raise RuntimeError(f"{p}: handle drag boundary changed")
+    start = s.index(start_marker)
+    end = s.index(end_marker, start)
+    area = s[start:end]
+    if area.count(old) != 1:
+        raise RuntimeError(f"{p}: moveHandle replacement anchor occurs {area.count(old)} times")
+    return s[:start] + area.replace(old, new, 1) + s[end:]
+
+
 def common_css(s,p):
     s=one(s,
       """      width: 36px;
@@ -142,7 +157,7 @@ def prayer(s,p):
         mode === 'start' ? state.active.start : state.active.end,
         event.clientX, event.clientY);
       ensureAutoScroll();""",p)
-    s=one(s,
+    s=replace_handle_move(s,
       """        updateFromPoint(
           event.clientX,
           event.clientY
@@ -209,7 +224,7 @@ def document_runtime(s,p):
       showSelectionLoupe(loupePoint.itemId, loupePoint.offset,
         event.clientX, event.clientY);
       ensureAutoScroll();""",p)
-    s=one(s,
+    s=replace_handle_move(s,
       """        updateFromPoint( event.clientX, event.clientY );
         ensureAutoScroll();""",
       """        updateFromPoint(
