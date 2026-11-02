@@ -25,12 +25,49 @@ for(const file of files){
 }
 const calendar=read(files[0]),saint=read(files[1]),web=read(files[2]);
 function invariant(name,ok){if(!ok){errors++;console.error('FAIL',name);}else console.log('PASS',name);}
-invariant('Calendar: heart is a sibling of accordion toggle',calendar.includes('styles.textBlockHeaderRow')&&
- calendar.includes('<CalendarSaveWholeButton text={text} saveContext={saveContext} />\n      </View>')&&
- !calendar.includes('style={styles.textBlockSaveRow}'));
-invariant('Saint: heart is a sibling of accordion toggle',saint.includes('styles.accordionHeaderRow')&&
- saint.includes('<CalendarSaveWholeButton text={text} saveContext={saveContext} />\n      </View>')&&
- !saint.includes('style={styles.saintSaveRow}'));
+// Inspect the actual JSX hierarchy rather than relying on whitespace/formatting.
+// The header heart and the header toggle must be direct children of the same View.
+// This also guarantees that tapping the heart does not toggle the accordion.
+function hasSiblingHeartInHeader(source, rowStyle) {
+  const tree=parser.parse(source,{sourceType:'unambiguous',plugins:['jsx']});
+  let found=0, valid=0;
+  const elementName=node=>{
+    if(!node || node.type!=='JSXElement') return null;
+    const n=node.openingElement.name;
+    return n.type==='JSXIdentifier' ? n.name : null;
+  };
+  const styledAs=(opening,styleName)=>{
+    const attr=opening.attributes.find(a=>a.type==='JSXAttribute' && a.name.name==='style');
+    const x=attr?.value?.expression;
+    return x?.type==='MemberExpression' && x.object?.name==='styles' &&
+      x.property?.name===styleName && !x.computed;
+  };
+  const visit=node=>{
+    if(!node || typeof node!=='object') return;
+    if(node.type==='JSXElement' && elementName(node)==='View' &&
+       styledAs(node.openingElement,rowStyle)){
+      found++;
+      const children=node.children.filter(ch=>ch.type==='JSXElement');
+      const toggle=children.filter(ch=>elementName(ch)==='Pressable');
+      const hearts=children.filter(ch=>elementName(ch)==='CalendarSaveWholeButton');
+      if(toggle.length===1 && hearts.length===1) valid++;
+    }
+    for(const [key,value] of Object.entries(node)){
+      if(['loc','start','end','comments','tokens','extra'].includes(key)) continue;
+      if(Array.isArray(value)){
+        for(const child of value) if(child && typeof child==='object') visit(child);
+      }else if(value && typeof value==='object') visit(value);
+    }
+  };
+  visit(tree.program);
+  return {ok:found===1 && valid===1,rows:found,valid};
+}
+const calendarHeart=hasSiblingHeartInHeader(calendar,'textBlockHeaderRow');
+const saintHeart=hasSiblingHeartInHeader(saint,'accordionHeaderRow');
+invariant('Calendar: heart is sibling of header toggle (rows='+calendarHeart.rows+')',
+  calendarHeart.ok && !calendar.includes('style={styles.textBlockSaveRow}'));
+invariant('Saint: heart is sibling of header toggle (rows='+saintHeart.rows+')',
+  saintHeart.ok && !saint.includes('style={styles.saintSaveRow}'));
 invariant('No saved-area highlighting',!calendar.includes('wholeSaved')&&!saint.includes('wholeSaved'));
 invariant('Calendar: outer padding reduced',calendar.includes('paddingHorizontal: 6,')&&calendar.includes('marginHorizontal: 2, marginTop: 2'));
 invariant('Saint: outer padding reduced',saint.includes('readingContent: {paddingHorizontal: 4, paddingTop: 0')&&saint.includes('lifeInset: {marginHorizontal: 2, marginTop: 4'));
