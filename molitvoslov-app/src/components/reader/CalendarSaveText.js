@@ -1,5 +1,6 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {ActivityIndicator, Pressable, StyleSheet, Text, View} from 'react-native';
+import {FontAwesome} from '@expo/vector-icons';
 import SelectableSaveText from './SelectableSaveText';
 import {deleteSavedItem, getSavedItems, saveItem} from '../../services/savedItems';
 
@@ -42,27 +43,34 @@ export const makeCalendarSaveContext = ({feast, date, section, title, sectionTit
   };
 };
 
-export const CalendarSaveWholeButton = ({text, saveContext}) => {
+export const CalendarSaveWholeButton = ({text, saveContext, onSavedChange}) => {
   const [saved, setSaved] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const {sourceType, sourceId, anchorType, anchorId, sourceTitle, itemTitle, fullSaveType, metadata} = saveContext;
   const normalized = normalizeSavedText(text);
+  // Keep the section highlight and the heart state in sync without triggering
+  // repeat database queries when an inline callback changes identity.
+  const notifySaved = useRef(onSavedChange);
+  notifySaved.current = onSavedChange;
   useEffect(() => {
     let active = true;
     setSaved(null);
+    notifySaved.current?.(false);
     setError('');
     getSavedItems({source_type: sourceType, source_id: sourceId})
       .then((items) => {
         if (!active) return;
-        setSaved(items.find((item) =>
+        const match = items.find((item) =>
           item.anchor_type === anchorType &&
           Number(item.anchor_id) === anchorId &&
           item.save_type === fullSaveType &&
           item.start_offset === 0 &&
           item.end_offset === normalized.length &&
           item.text === normalized
-        ) || null);
+        ) || null;
+        setSaved(match);
+        notifySaved.current?.(!!match);
       }).catch((reason) => {
         console.warn('[calendar saved] load:', reason?.message || reason);
       });
@@ -77,6 +85,7 @@ export const CalendarSaveWholeButton = ({text, saveContext}) => {
       if (saved) {
         await deleteSavedItem(saved.id);
         setSaved(null);
+        notifySaved.current?.(false);
       } else {
         const row = await saveItem({
           save_type: fullSaveType,
@@ -86,6 +95,7 @@ export const CalendarSaveWholeButton = ({text, saveContext}) => {
           start_offset: 0, end_offset: normalized.length, metadata,
         });
         setSaved(row);
+        notifySaved.current?.(true);
       }
     } catch (reason) {
       console.warn('[calendar saved] toggle:', reason?.message || reason);
@@ -97,11 +107,29 @@ export const CalendarSaveWholeButton = ({text, saveContext}) => {
 
   return (
     <View style={styles.saveRow}>
-      <Pressable onPress={toggle} disabled={busy} accessibilityRole="button"
+      <Pressable
+        onPress={toggle}
+        disabled={busy}
+        hitSlop={7}
+        accessibilityRole="button"
         accessibilityLabel={saved ? 'Убрать из избранного' : 'Сохранить текст целиком'}
-        style={({pressed}) => [styles.saveButton, saved && styles.saveButtonActive, pressed && styles.pressed]}>
-        {busy ? <ActivityIndicator size="small" color="#77502D" /> :
-          <Text style={styles.saveLabel}>{saved ? '♥ Сохранено' : '♡ Сохранить целиком'}</Text>}
+        accessibilityState={{selected: !!saved, disabled: busy}}
+        style={({pressed}) => [
+          styles.saveButton, saved && styles.saveButtonActive,
+          pressed && !busy && styles.pressed,
+        ]}
+      >
+        {busy ? (
+          <ActivityIndicator size="small" color="#765238" />
+        ) : (
+          <FontAwesome
+            name={saved ? 'heart' : 'heart-o'}
+            size={19}
+            color="#765238"
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+          />
+        )}
       </Pressable>
       {!!error && <Text style={styles.error}>{error}</Text>}
     </View>
@@ -128,11 +156,18 @@ export const CalendarSelectableBody = ({text, saveContext, textStyle}) => {
   );
 };
 
-const styles=StyleSheet.create({
-  saveRow:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:8,marginBottom:9},
-  saveButton:{minHeight:32,borderRadius:16,paddingHorizontal:12,paddingVertical:6,borderWidth:1,borderColor:'#D9B98C',backgroundColor:'#F5E6CC',justifyContent:'center'},
-  saveButtonActive:{borderColor:'#AC7E43',backgroundColor:'#E8CFAB'},
-  saveLabel:{color:'#77502D',fontWeight:'700',fontSize:12},
-  pressed:{opacity:0.66},
-  error:{color:'#A13C31',fontSize:12},
+const styles = StyleSheet.create({
+  saveRow: {flexDirection:'row',alignItems:'center',minHeight:42,paddingVertical:3},
+  saveButton: {
+    width:36,height:36,borderRadius:18,borderWidth:1,
+    borderColor:'rgba(123, 79, 36, 0.20)',
+    backgroundColor:'rgba(241, 223, 194, 0.94)',
+    justifyContent:'center',alignItems:'center',
+  },
+  saveButtonActive: {
+    backgroundColor:'#F1DFC2',
+    borderColor:'rgba(123, 79, 36, 0.28)',
+  },
+  pressed: {opacity:0.66},
+  error: {color:'#A13C31',fontSize:12,marginLeft:9},
 });
