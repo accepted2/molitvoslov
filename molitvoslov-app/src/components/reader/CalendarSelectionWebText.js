@@ -20,6 +20,10 @@ const selectionScript = String.raw`
   var marks=document.getElementById('marks');
   var left=document.getElementById('left');
   var right=document.getElementById('right');
+  var lens=document.getElementById('selection-lens');
+  var lensBefore=document.getElementById('selection-lens-before');
+  var lensLetter=document.getElementById('selection-lens-letter');
+  var lensAfter=document.getElementById('selection-lens-after');
   var active=null,touch=null,timer=null,drag=null;
   function post(data){if(window.ReactNativeWebView)window.ReactNativeWebView.postMessage(JSON.stringify(data));}
   function caret(x,y) {
@@ -50,16 +54,27 @@ const selectionScript = String.raw`
     });
     var first=rectangles[0],last=rectangles[rectangles.length-1];
     left.style.display='block';right.style.display='block';
-    left.style.left=(first.left-root.left-18)+'px';
-    left.style.top=(first.bottom-root.top-5)+'px';
-    right.style.left=(last.right-root.left-18)+'px';
-    right.style.top=(last.bottom-root.top-5)+'px';
+    left.style.left=(first.left-root.left-28)+'px';
+    left.style.top=(first.bottom-root.top-12)+'px';
+    right.style.left=(last.right-root.left-28)+'px';
+    right.style.top=(last.bottom-root.top-12)+'px';
+  }
+  function hideLens(){lens.style.display='none';}
+  function showLens(offset,x,y){
+    var pos=Math.max(0,Math.min(original.length,offset));
+    lensBefore.textContent=original.slice(Math.max(0,pos-8),pos).replace(/\s/g,' ');
+    lensLetter.textContent=original.slice(pos,pos+1)||'│';
+    lensAfter.textContent=original.slice(pos+1,Math.min(original.length,pos+9)).replace(/\s/g,' ');
+    lens.style.display='flex';
+    lens.style.left=Math.max(4,Math.min(document.documentElement.clientWidth-172,x-86))+'px';
+    lens.style.top=Math.max(2,y-104)+'px';
   }
   function select(a,b){
     var start=Math.max(0,Math.min(original.length,Math.min(a,b)));
     var end=Math.max(0,Math.min(original.length,Math.max(a,b)));
     if(start===end)return;
     active={start:start,end:end};draw();
+    post({type:'scroll-lock',locked:true});
     post({type:'selection',start:start,end:end});
   }
   function wordAt(pos){
@@ -77,6 +92,8 @@ const selectionScript = String.raw`
     if(timer)clearTimeout(timer);
     timer=null;touch=null;drag=null;active=null;
     draw();
+    hideLens();
+    post({type:'scroll-lock',locked:false});
     if(send)post({type:'clear'});
   }
   window.calendarClearSelection=function(){clear(false);};
@@ -111,13 +128,18 @@ const selectionScript = String.raw`
     if(!active)return;
     e.preventDefault();e.stopPropagation();
     drag={id:e.pointerId,side:side};
+    post({type:'scroll-lock',locked:true});
+    showLens(side==='left'?active.start:active.end,e.clientX,e.clientY);
     e.currentTarget.setPointerCapture(e.pointerId);
   }
   function moveDrag(e){
     if(!drag || drag.id!==e.pointerId||!active)return;
     e.preventDefault();e.stopPropagation();
-    var pos=caret(e.clientX,e.clientY);
+    // The finger is below the visible marker tip; correct that offset.
+    var pos=caret(e.clientX,e.clientY-25);
+    if(pos===null)pos=caret(e.clientX,e.clientY);
     if(pos===null)return;
+    showLens(pos,e.clientX,e.clientY);
     if(drag.side==='left'){
       if(pos<active.end)select(pos,active.end);
       else{select(active.end,pos);drag.side='right';}
@@ -127,7 +149,7 @@ const selectionScript = String.raw`
     }
   }
   function finishDrag(e){
-    if(drag&&drag.id===e.pointerId){e.preventDefault();e.stopPropagation();drag=null;}
+    if(drag&&drag.id===e.pointerId){e.preventDefault();e.stopPropagation();drag=null;hideLens();}
   }
   [[left,'left'],[right,'right']].forEach(function(pair){
     var node=pair[0],side=pair[1];
@@ -158,17 +180,21 @@ const buildHtml = (value, style) => {
     '-webkit-user-select:none;user-select:none;touch-action:pan-y}' +
     '#marks{position:absolute;top:0;left:0;pointer-events:none;z-index:2}' +
     '.highlight{position:absolute;background:rgba(206,162,72,.38);border-radius:2px}' +
-    '.handle{position:absolute;display:none;width:36px;height:44px;z-index:5;touch-action:none}' +
-    '.handle:before{content:"";position:absolute;left:16px;top:0;width:4px;height:24px;background:#9A693A;border-radius:2px}' +
-    '.handle:after{content:"";position:absolute;left:9px;top:21px;width:18px;height:18px;border-radius:50%;background:#9A693A;box-shadow:0 1px 3px rgba(0,0,0,.22)}' +
+    '.handle{position:absolute;display:none;width:56px;height:62px;z-index:5;touch-action:none;user-select:none}' +
+    '.handle:before{content:"";position:absolute;left:26px;top:6px;width:4px;height:24px;background:#9A693A;border-radius:2px}' +
+    '.handle:after{content:"";position:absolute;left:19px;top:27px;width:18px;height:18px;border-radius:50%;background:#9A693A;box-shadow:0 1px 3px rgba(0,0,0,.22)}' +
+    '#selection-lens{position:absolute;display:none;align-items:center;justify-content:center;gap:1px;width:172px;height:52px;padding:7px 9px;border:1px solid #A37A47;border-radius:12px;background:#FFF8EB;color:#38271A;font:700 18px Georgia,serif;box-shadow:0 3px 12px rgba(50,29,12,.25);pointer-events:none;z-index:11;white-space:pre;overflow:hidden}' +
+    '#selection-lens-letter{font-size:26px;color:#8E5B2E;border-bottom:2px solid #9A693A}' +
     '</style></head><body><div id="text">'+htmlEscape(value) +
     '<div id="marks"></div><div id="left" class="handle"></div><div id="right" class="handle"></div></div>' +
+    '<div id="selection-lens"><span id="selection-lens-before"></span><span id="selection-lens-letter"></span><span id="selection-lens-after"></span></div>' +
     '<script>'+selectionScript+'</script></body></html>';
 };
 
 export default function CalendarSelectionWebText({
   text, textStyle, sourceType, sourceId, anchorType, anchorId,
   sourceTitle, itemTitle, metadata = {}, fullSaveType = null,
+  onSelectionLockChange,
 }) {
   const [height,setHeight] = useState(34);
   const view = useRef(null);
@@ -180,10 +206,11 @@ export default function CalendarSelectionWebText({
   const html=useMemo(()=>buildHtml(value,textStyle),[value,s.fontSize,s.lineHeight,s.color,s.textAlign]);
   const pageSource=useMemo(()=>({html,baseUrl:'about:blank'}),[html]);
   const latest=useRef(null);
-  latest.current={value,sourceType,sourceId,anchorType,anchorId,sourceTitle,itemTitle,metadata,fullSaveType};
+  latest.current={value,sourceType,sourceId,anchorType,anchorId,sourceTitle,itemTitle,metadata,fullSaveType,onSelectionLockChange};
 
   const clearWeb=useCallback(()=>{
     selected.current=null;
+    latest.current?.onSelectionLockChange?.(false);
     view.current?.injectJavaScript('window.calendarClearSelection&&window.calendarClearSelection();true;');
   },[]);
   const save=useCallback(async()=>{
@@ -213,6 +240,8 @@ export default function CalendarSelectionWebText({
     if(data?.type==='height'){
       const n=Number(data.height);
       if(Number.isFinite(n)&&n>0&&n<250000)setHeight(h=>Math.abs(h-n)>2?n:h);
+    }else if(data?.type==='scroll-lock'){
+      latest.current?.onSelectionLockChange?.(Boolean(data.locked));
     }else if(data?.type==='selection'){
       const a=Number(data.start),b=Number(data.end);
       if(!Number.isFinite(a)||!Number.isFinite(b)||a<0||a>=b||b>latest.current.value.length)return;
@@ -220,10 +249,14 @@ export default function CalendarSelectionWebText({
       activateSelection({id:id.current,count:b-a,tooLong:false,canSave:true,onSave:save,onClear:clearWeb});
     }else if(data?.type==='clear'){
       selected.current=null;
+      latest.current?.onSelectionLockChange?.(false);
       clearSelection(id.current);
     }
   },[activateSelection,clearSelection,clearWeb,save]);
-  useEffect(()=>()=>clearSelection(id.current),[clearSelection]);
+  useEffect(()=>()=>{
+    latest.current?.onSelectionLockChange?.(false);
+    clearSelection(id.current);
+  },[clearSelection]);
 
   return (
     <View style={[styles.wrap,{height}]}>
