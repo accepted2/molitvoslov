@@ -92,10 +92,10 @@ def prayer(s,p):
           "    const eveningItemKindMap =\n      new Map();\n"+LOUPE,p)
     # The loupe is in a shared source-string, no JSX/React rerender required.
     s=regex_once(s,
-      r"startHandle\\.style\\.left\\s*=\\s*\\(\\s*first\\.left\\s*-\\s*18\\s*\\)\\s*\\+\\s*'px';",
+      r"startHandle\.style\.left\s*=\s*\(\s*first\.left\s*-\s*18\s*\)\s*\+\s*'px';",
       lambda m:m.group(0).replace("18", "28"),p)
     s=regex_once(s,
-      r"endHandle\\.style\\.left\\s*=\\s*\\(\\s*last\\.right\\s*-\\s*18\\s*\\)\\s*\\+\\s*'px';",
+      r"endHandle\.style\.left\s*=\s*\(\s*last\.right\s*-\s*18\s*\)\s*\+\s*'px';",
       lambda m:m.group(0).replace("18", "28"),p)
     s=one(s,
       """      state.lastDragPoint = {
