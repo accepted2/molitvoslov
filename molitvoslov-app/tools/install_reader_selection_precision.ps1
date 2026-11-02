@@ -13,7 +13,7 @@ $calendar='src/components/reader/CalendarSelectionWebText.js'
 if(-not (Test-Path $calendar)){
   throw 'Previous two-handle calendar selection is missing; do not overwrite local changes.'
 }
-$hash=(& git hash-object $calendar | Select-Object -First 1).Trim()
+$hash=(& git hash-object --path=$calendar $calendar | Select-Object -First 1).Trim()
 if($LASTEXITCODE -ne 0){throw 'Cannot hash local calendar selection component'}
 $allowed=@(
   '56d2c3087d0908e21319dae3530d07c2d8f8e137', # previous handle component
