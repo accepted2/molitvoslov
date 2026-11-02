@@ -56,7 +56,7 @@ def calendar(source,p):
 """,'',p)
     if 'wholeSaved' in source:
         raise RuntimeError('Calendar still has a full-section saved style')
-    return source
+    return '// calendar selection handles: heart only\\n' + source
 
 def saint(source,p):
     if 'CalendarSelectableBody' not in source:
@@ -83,7 +83,7 @@ def saint(source,p):
 """,'',p)
     if 'wholeSaved' in source:
         raise RuntimeError('Saint still has full-section saved styling')
-    return source
+    return '// saint selection handles: heart only\\n' + source
 
 def calendar_save(source,p):
     source=one(source,
@@ -99,8 +99,8 @@ def selection_classifier(source,p):
       'const classifySelection = ({text, range, fullSaveType}) => {',
       'export const classifySelection = ({text, range, fullSaveType}) => {',p)
 
-patch('src/screens/ChurchCalendarScreen.js',calendar,'// saved section tint removed; two handles')
-patch('src/screens/SaintDetailScreen.js',saint,'// saved section tint removed; two handles')
+patch('src/screens/ChurchCalendarScreen.js',calendar,'// calendar selection handles: heart only')
+patch('src/screens/SaintDetailScreen.js',saint,'// saint selection handles: heart only')
 patch('src/components/reader/CalendarSaveText.js',calendar_save,"import CalendarSelectionWebText from './CalendarSelectionWebText';")
 patch('src/components/reader/SelectableSaveText.js',selection_classifier,'export const classifySelection = ')
 
