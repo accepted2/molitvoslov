@@ -69,6 +69,16 @@ export const applyReaderAppearance = (webView, appearance, isRule = false) => {
   const safe = JSON.stringify({background:v.background, surface:v.surface, text:v.text, size:v.fontSize, traditional:Math.min(30, v.fontSize + 2)});
   const selector = isRule ? '.reader-text' : 'body:not(.book-mode) .reader-text';
   const traditional = isRule ? '.traditional-mode .reader-text' : 'body:not(.book-mode) .reader-language-traditional .reader-text';
+  // Recolor ordinary headings/explanations, but leave liturgical rubrics
+  // (including traditional red invocations, verse numbers and bows) intact.
+  const scope = isRule ? '' : 'body:not(.book-mode) ';
+  const headingSelector = [
+    '.rule-title', '.prayer-title', '.section-title', '.rule-description',
+    '.description', '.note', '.instruction', '.reader-label', '.reader-inline-label',
+  ].map(name => scope + name).join(',');
+  const secondarySelector = isRule
+    ? '.translation-text, .section-content'
+    : 'body:not(.book-mode) .reader-text.secondary, body:not(.book-mode) .reader-text.akathist-russian, body:not(.book-mode) .section-content';
   const js = "(function(){var s=" + safe + ";var root=document.documentElement;" +
     "root.style.setProperty('--background',s.background);" +
     "root.style.setProperty('--surface',s.surface);" +
@@ -77,7 +87,9 @@ export const applyReaderAppearance = (webView, appearance, isRule = false) => {
     "root.style.setProperty('--traditional-reading-font-size',s.traditional+'px');" +
     "var css='body {background:'+s.background+' !important;color:'+s.text+' !important;} " +
     selector + "{font-size:'+s.size+'px !important;color:'+s.text+' !important;} " +
-    traditional + "{font-size:'+s.traditional+'px !important;}';" +
+    traditional + "{font-size:'+s.traditional+'px !important;} " +
+    headingSelector + "{color:'+s.text+' !important;} " +
+    secondarySelector + "{color:'+s.text+' !important;}';" +
     "var node=document.getElementById('molitvoslov-local-appearance');" +
     "if(!node){node=document.createElement('style');node.id='molitvoslov-local-appearance';document.head.appendChild(node);}" +
     "node.textContent=css;})(); true;";
