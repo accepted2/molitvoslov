@@ -33,6 +33,7 @@ const checks={
  'src/components/reader/CalendarSelectionWebText.js':[
    "type:'scroll-lock',locked:true", "type:'scroll-lock',locked:false",
    'onSelectionLockChange','showLens(', 'hideLens()', 'width:56px;height:62px',
+   '#left:before{left:44px}', '#right:before{left:8px}',
    "showLens(pos,e.clientX,e.clientY)", 'setPointerCapture', 'scrollEnabled={false}',
    'onSave:save','end_offset:range.end','start_offset:range.start',
  ],
@@ -54,14 +55,16 @@ const checks={
  'src/components/reader/PrayerRuleReader.js':[
    'showSelectionLoupe','hideSelectionLoupe','width: 56px;',
    'height: 64px;', 'event.currentTarget',
+   '#start-handle.selection-handle::before {left:44px;}',
  ],
  'src/components/reader/selectableDocumentReader/styles.js':[
    'width: 56px;','height: 64px;','left: 26px;','left: 19px;',
+   '#end-handle.selection-handle::before {left:8px;}',
  ],
  'src/components/reader/selectableDocumentReader/runtime.js':[
    'showSelectionLoupe','hideSelectionLoupe',
-   "startHandle.style.left = ( first.left - 28 ) + 'px';",
-   "endHandle.style.left = ( last.right - 28 ) + 'px';",
+   "startHandle.style.left = ( first.left - 46 ) + 'px';",
+   "endHandle.style.left = ( last.right - 10 ) + 'px';",
  ],
 };
 for(const [p,needles] of Object.entries(checks)){
