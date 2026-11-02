@@ -60,11 +60,21 @@ for (const [file, needle] of [
   ['src/screens/ReaderScreen.js','readerMode={viewMode}'],
   ['src/services/readerPreferences.js','getCachedBackendUser'],
   ['src/components/reader/ReaderBookmarkMenu.js','onAppearanceOpen'],
+  ['src/components/reader/ReaderAppearanceSheet.js','scrollArea:{flexGrow:0,flexShrink:1}'],
+  ['src/components/navigation/FixedSectionHeader.js','readingHeaderShield:'],
+  ['src/components/navigation/FixedSectionHeader.js','numberOfLines={compactReading ? 2 : 1}'],
+  ['src/components/navigation/FixedSectionHeader.js','translateY: compactReading ? -2.5 : 0'],
+  ['src/services/scopedReaderAppearance.js','const headingSelector = ['],
 ]) {
   if (!fs.readFileSync(path.join(root, file), 'utf8').includes(needle)) {
     failures++;
     console.error('FAIL invariant:',file,needle);
   }
+}
+const sheet = fs.readFileSync(path.join(root, 'src/components/reader/ReaderAppearanceSheet.js'), 'utf8');
+if (sheet.includes('styles.preview') || sheet.includes('Господи, научи меня творить волю Твою.')) {
+  failures++;
+  console.error('FAIL: the bouncing reader settings preview was not removed');
 }
 if (failures) {
   console.error('Scoped reader verification failed:', failures);
