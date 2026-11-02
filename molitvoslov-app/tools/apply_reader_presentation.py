@@ -62,8 +62,8 @@ def header(s,p):
         # The previous persistent-gradient patch preserved local JSX but added
         # two spaces to the animated header descendants. Support that layout
         # without replacing the user's complete header component.
-        indented_old="\\n".join(("  "+line if line.strip() else line) for line in old.split("\\n"))
-        indented_new="\\n".join(("  "+line if line.strip() else line) for line in new.split("\\n"))
+        indented_old="\n".join(("  "+line if line.strip() else line) for line in old.split("\n"))
+        indented_new="\n".join(("  "+line if line.strip() else line) for line in new.split("\n"))
         s=replace_one(s,indented_old,indented_new,p)
     return replace_one(s,"  titleWrapReading: {",
         """  readerTitleRow: {flexDirection:'row',alignItems:'center',maxWidth:'100%',gap:6},
