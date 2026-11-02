@@ -84,6 +84,13 @@ def common_css(s,p):
       top: 28px;
       width: 18px;
       height: 18px;""",p)
+    s=one(s,
+      '    #selection-bar {',
+      """    #start-handle.selection-handle::before {left:44px;}
+    #start-handle.selection-handle::after {left:37px;}
+    #end-handle.selection-handle::before {left:8px;}
+    #end-handle.selection-handle::after {left:1px;}
+    #selection-bar {""",p)
     return s
 
 def prayer(s,p):
@@ -93,10 +100,10 @@ def prayer(s,p):
     # The loupe is in a shared source-string, no JSX/React rerender required.
     s=regex_once(s,
       r"startHandle\.style\.left\s*=\s*\(\s*first\.left\s*-\s*18\s*\)\s*\+\s*'px';",
-      lambda m:m.group(0).replace("18", "28"),p)
+      lambda m:m.group(0).replace("18", "46"),p)
     s=regex_once(s,
       r"endHandle\.style\.left\s*=\s*\(\s*last\.right\s*-\s*18\s*\)\s*\+\s*'px';",
-      lambda m:m.group(0).replace("18", "28"),p)
+      lambda m:m.group(0).replace("18", "10"),p)
     s=one(s,
       """      state.lastDragPoint = {
         x:
@@ -157,10 +164,10 @@ def document_runtime(s,p):
       "    const savedRanges = new Map();\n"+LOUPE,p)
     s=one(s,
       "startHandle.style.left = ( first.left - 18 ) + 'px';",
-      "startHandle.style.left = ( first.left - 28 ) + 'px';",p)
+      "startHandle.style.left = ( first.left - 46 ) + 'px';",p)
     s=one(s,
       "endHandle.style.left = ( last.right - 18 ) + 'px';",
-      "endHandle.style.left = ( last.right - 28 ) + 'px';",p)
+      "endHandle.style.left = ( last.right - 10 ) + 'px';",p)
     s=one(s,
       """      state.lastDragPoint = {
         x: event.clientX, y: event.clientY, };
