@@ -144,14 +144,14 @@ def prayer(s,p):
       ensureAutoScroll();""",p)
     s=one(s,
       """        updateFromPoint(
-          event.clientX + (state.drag.grabOffsetX || 0),
-          event.clientY + (state.drag.grabOffsetY || 0)
+          event.clientX,
+          event.clientY
         );
 
         ensureAutoScroll();""",
       """        updateFromPoint(
-          event.clientX,
-          event.clientY
+          event.clientX + (state.drag.grabOffsetX || 0),
+          event.clientY + (state.drag.grabOffsetY || 0)
         );
 
         showSelectionLoupe(state.active.itemId,
@@ -210,12 +210,12 @@ def document_runtime(s,p):
         event.clientX, event.clientY);
       ensureAutoScroll();""",p)
     s=one(s,
+      """        updateFromPoint( event.clientX, event.clientY );
+        ensureAutoScroll();""",
       """        updateFromPoint(
           event.clientX + (state.drag.grabOffsetX || 0),
           event.clientY + (state.drag.grabOffsetY || 0)
         );
-        ensureAutoScroll();""",
-      """        updateFromPoint( event.clientX, event.clientY );
         const loupePoint = state.drag.mode === 'start' ? state.active.startPoint : state.active.endPoint;
         showSelectionLoupe(loupePoint.itemId, loupePoint.offset,
           event.clientX, event.clientY);
