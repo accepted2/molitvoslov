@@ -178,6 +178,7 @@ export default function CalendarSelectionWebText({
   const value=String(text || '');
   const s=StyleSheet.flatten(textStyle)||{};
   const html=useMemo(()=>buildHtml(value,textStyle),[value,s.fontSize,s.lineHeight,s.color,s.textAlign]);
+  const pageSource=useMemo(()=>({html,baseUrl:'about:blank'}),[html]);
   const latest=useRef(null);
   latest.current={value,sourceType,sourceId,anchorType,anchorId,sourceTitle,itemTitle,metadata,fullSaveType};
 
@@ -228,7 +229,7 @@ export default function CalendarSelectionWebText({
     <View style={[styles.wrap,{height}]}>
       <WebView
         ref={view}
-        source={{html,baseUrl:'about:blank'}}
+        source={pageSource}
         originWhitelist={['*']}
         javaScriptEnabled
         scrollEnabled={false}
