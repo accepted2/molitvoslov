@@ -41,11 +41,11 @@ def calendar(source, path):
 
     source = replace_one(source, "  textBlockHeader: {",
       """  calendarSavedBlock: {
-    borderColor: 'rgba(123, 79, 36, 0.36)',
+    borderColor: 'rgba(123, 79, 36, 0.18)',
     backgroundColor: '#EAD7B8',
   },
   calendarSavedContent: {
-    backgroundColor: 'rgba(194, 145, 73, 0.13)',
+    backgroundColor: 'rgba(161, 110, 53, 0.075)',
   },
   textBlockHeader: {""", path)
     return source
@@ -71,11 +71,11 @@ def saint(source,path):
     source = replace_one(source,
       "  accordionFocused: {borderColor: '#A16E35', borderWidth: 2},",
       """  accordionFocused: {borderColor: '#A16E35', borderWidth: 2},
-  accordionSaved: {borderColor:'rgba(123, 79, 36, 0.36)'},""",path)
+  accordionSaved: {borderColor:'rgba(123, 79, 36, 0.18)'},""",path)
     source = replace_one(source,
       "  readingContent: {paddingHorizontal: 15, paddingTop: 14, paddingBottom: 16},",
-      """  expandedWrapSaved: {backgroundColor:'rgba(194, 145, 73, 0.13)'},
-  lifeInsetSaved: {backgroundColor:'rgba(194, 145, 73, 0.13)'},
+      """  expandedWrapSaved: {backgroundColor:'rgba(161, 110, 53, 0.075)'},
+  lifeInsetSaved: {backgroundColor:'rgba(161, 110, 53, 0.075)'},
   readingContent: {paddingHorizontal: 15, paddingTop: 14, paddingBottom: 16},""",path)
     return source
 
