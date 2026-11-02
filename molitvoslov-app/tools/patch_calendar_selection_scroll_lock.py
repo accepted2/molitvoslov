@@ -82,7 +82,17 @@ def saint(s,p):
       "      <ScrollView\n        scrollEnabled={!readerSelectionLocked}\n        showsVerticalScrollIndicator={false}\n        contentContainerStyle=",p)
     return s
 
+def shared_component(s,p):
+    s=change(s,
+      "export const CalendarSelectableBody = ({text, saveContext, textStyle}) => {",
+      "export const CalendarSelectableBody = ({text, saveContext, textStyle, onSelectionLockChange}) => {",p)
+    s=change(s,
+      "      fullSaveType={null}\n",
+      "      fullSaveType={null}\n      onSelectionLockChange={onSelectionLockChange}\n",p)
+    return s
+
 for p,fn,done in (
+    ("src/components/reader/CalendarSaveText.js",shared_component,"onSelectionLockChange={onSelectionLockChange}"),
     ("src/screens/ChurchCalendarScreen.js",calendar,"calendarSelectionLocked"),
     ("src/screens/SaintDetailScreen.js",saint,"readerSelectionLocked"),
 ):
@@ -90,7 +100,13 @@ for p,fn,done in (
     if done in original:
         print("ALREADY PATCHED:",p)
         continue
-    if "CalendarSelectableBody" not in original or "calendar selection handles: heart only" not in original and "saint selection handles: heart only" not in original:
+    if p.endswith('CalendarSaveText.js'):
+        if 'CalendarSelectionWebText' not in original:
+            raise RuntimeError('Install the two-handle calendar component first')
+    elif "CalendarSelectableBody" not in original or not (
+        "calendar selection handles: heart only" in original or
+        "saint selection handles: heart only" in original
+    ):
         raise RuntimeError(f"Missing earlier calendar selection patch: {p}")
     changed[p]=fn(original,p)
 
