@@ -33,9 +33,6 @@ def calendar(source, path):
       "<CalendarSaveWholeButton text={text} saveContext={saveContext} />",
       "<CalendarSaveWholeButton text={text} saveContext={saveContext} onSavedChange={setWholeSaved} />", path)
     source = replace_one(source,
-      "<View style={[styles.calendarLifeScrollFrame, {maxHeight: readerHeight}]}>",
-      "<View style={[styles.calendarLifeScrollFrame, {maxHeight: readerHeight}]}>", path) if False else source
-    source = replace_one(source,
       "<View style={styles.calendarLifeInset}>",
       "<View style={[styles.calendarLifeInset, wholeSaved && styles.calendarSavedContent]}>", path)
     source = replace_one(source,
