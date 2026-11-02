@@ -40,84 +40,84 @@ export const FixedSectionHeader = ({
       )}
 
       <Animated.View
-      pointerEvents={readingHidden ? 'none' : 'box-none'}
-      style={[
-        styles.fixedHeader,
-        {transform: [{translateY: visibility.interpolate({inputRange: [0, 1], outputRange: [0, -(headerHeight + 16)]})}], opacity: visibility.interpolate({inputRange: [0, 1], outputRange: [1, 0]})},
-        {
-          height: minimal ? headerHeight : headerHeight + 10,
-        },
-      ]}
-    >
-
-      <View
-        pointerEvents="box-none"
+        pointerEvents={readingHidden ? 'none' : 'box-none'}
         style={[
-          styles.headerContent,
+          styles.fixedHeader,
+          {transform: [{translateY: visibility.interpolate({inputRange: [0, 1], outputRange: [0, -(headerHeight + 16)]})}], opacity: visibility.interpolate({inputRange: [0, 1], outputRange: [1, 0]})},
           {
-            height: headerHeight,
-            paddingTop: topInset,
+            height: minimal ? headerHeight : headerHeight + 10,
           },
         ]}
       >
-        {showBack && (
-          <Pressable
-            hitSlop={16}
-            onPress={() => navigation.goBack()}
-            style={({pressed}) => [
-              styles.backButton,
-              compactReading && styles.backButtonReading,
-              minimal && styles.backButtonMinimal,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Text style={[styles.backArrow, dark && styles.backArrowDark]}>‹</Text>
-          </Pressable>
-        )}
 
-        {showTitle && (
-          <View
-            pointerEvents="none"
-            style={[
-              styles.titleWrap,
-              compactReading && styles.titleWrapReading,
-              !showBack && styles.titleWrapRoot,
-              titleOffsetY !== 0 && !compactReading && {
-                transform: [{translateY: titleOffsetY}],
-              },
-            ]}
-          >
-            <Text
-              style={[styles.title, compactReading && styles.titleReading, dark && styles.titleDark]}
-              numberOfLines={1}
-              ellipsizeMode="tail"
+        <View
+          pointerEvents="box-none"
+          style={[
+            styles.headerContent,
+            {
+              height: headerHeight,
+              paddingTop: topInset,
+            },
+          ]}
+        >
+          {showBack && (
+            <Pressable
+              hitSlop={16}
+              onPress={() => navigation.goBack()}
+              style={({pressed}) => [
+                styles.backButton,
+                compactReading && styles.backButtonReading,
+                minimal && styles.backButtonMinimal,
+                pressed && styles.pressed,
+              ]}
             >
-              {title}
-            </Text>
+              <Text style={[styles.backArrow, dark && styles.backArrowDark]}>‹</Text>
+            </Pressable>
+          )}
 
-            <View style={[styles.ornament, compactReading && styles.ornamentReading]}>
-              <View style={[styles.line, dark && styles.lineDark]} />
-              <Text style={[styles.mark, dark && styles.markDark]}>✦</Text>
-              <View style={[styles.line, dark && styles.lineDark]} />
+          {showTitle && (
+            <View
+              pointerEvents="none"
+              style={[
+                styles.titleWrap,
+                compactReading && styles.titleWrapReading,
+                !showBack && styles.titleWrapRoot,
+                titleOffsetY !== 0 && !compactReading && {
+                  transform: [{translateY: titleOffsetY}],
+                },
+              ]}
+            >
+              <Text
+                style={[styles.title, compactReading && styles.titleReading, dark && styles.titleDark]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {title}
+              </Text>
+
+              <View style={[styles.ornament, compactReading && styles.ornamentReading]}>
+                <View style={[styles.line, dark && styles.lineDark]} />
+                <Text style={[styles.mark, dark && styles.markDark]}>✦</Text>
+                <View style={[styles.line, dark && styles.lineDark]} />
+              </View>
             </View>
-          </View>
-        )}
+          )}
 
-        {showMenu && (
-          <Pressable
-            hitSlop={12}
-            onPress={onMenuPress}
-            style={({pressed}) => [
-              styles.menuButton,
-              !showTitle && styles.menuButtonWithoutTitle,
-              minimal && styles.menuButtonMinimal,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Text style={[styles.menuText, dark && styles.menuTextDark]}>⋮</Text>
-          </Pressable>
-        )}
-      </View>
+          {showMenu && (
+            <Pressable
+              hitSlop={12}
+              onPress={onMenuPress}
+              style={({pressed}) => [
+                styles.menuButton,
+                !showTitle && styles.menuButtonWithoutTitle,
+                minimal && styles.menuButtonMinimal,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={[styles.menuText, dark && styles.menuTextDark]}>⋮</Text>
+            </Pressable>
+          )}
+        </View>
       </Animated.View>
     </>
   );
