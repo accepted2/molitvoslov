@@ -1,6 +1,6 @@
 import React from 'react';
 import {Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
-import {normalizeSearchText} from '../../services/prayerSearch';
+import {normalizeSearchText} from '../../services/search/normalize';
 
 export const matchesLocalQuery = (query, ...fields) => {
   const words = normalizeSearchText(query).split(' ').filter(Boolean);
