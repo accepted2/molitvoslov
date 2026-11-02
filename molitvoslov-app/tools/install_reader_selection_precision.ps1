@@ -8,37 +8,43 @@ $branch='backup/local-changes-20261028'
 $python='C:\m\repo\molitvoslov-backend\venv\Scripts\python.exe'
 if(-not (Test-Path $python)){throw "Python not found: $python"}
 
-Write-Host '[1/5] Check existing calendar selection file and back it up'
+Write-Host '[1/5] Validate and back up existing calendar selection file (no Git hash)'
 $calendar='src/components/reader/CalendarSelectionWebText.js'
 if(-not (Test-Path $calendar)){
   throw 'Previous two-handle calendar selection is missing; do not overwrite local changes.'
 }
-$hash=(& git hash-object --path=$calendar $calendar | Select-Object -First 1).Trim()
-if($LASTEXITCODE -ne 0){throw 'Cannot hash local calendar selection component'}
-$allowed=@(
-  '56d2c3087d0908e21319dae3530d07c2d8f8e137', # previous handle component
-  'd8641869a8eb936625c72dac1ff48f6b80e93d4e', # intermediate
-  '8ea76736ce727e64552d23f7b84b9d3f115f0989'  # current precise grip
+# This source was already restored during the preceding attempt (stage 2).
+# Preserve the local file rather than hashing it or checking it out again.
+# A content/feature preflight avoids Git/CRLF/PowerShell hash differences.
+$source=[System.IO.File]::ReadAllText((Resolve-Path $calendar).Path,[System.Text.Encoding]::UTF8)
+$required=@(
+  'const selectionScript = String.raw',
+  "type:'scroll-lock',locked:true",
+  'onSelectionLockChange',
+  'selection-lens',
+  'setPointerCapture',
+  'offsetX:edge?'
 )
-if($allowed -notcontains $hash){
-  throw "The calendar selection file was edited locally ($hash). Refusing to overwrite it. Keep local changes and report this message."
+foreach($token in $required){
+  if(-not $source.Contains($token)){
+    throw "Existing calendar selection component lacks a required feature: $token. Refusing to overwrite local edits."
+  }
 }
 $backup=Join-Path (Split-Path -Parent $root) ('build-backups\reader-selection-precision-' + (Get-Date -Format 'yyyyMMdd_HHmmss'))
 New-Item -ItemType Directory -Force -Path $backup | Out-Null
 Copy-Item $calendar (Join-Path $backup 'CalendarSelectionWebText.js') -Force
 Write-Host "Calendar selection backup: $backup"
 
-Write-Host '[2/5] Retrieve the new magnifier component and source-safe patchers'
+Write-Host '[2/5] Fetch corrected source-safe patchers; preserve local selection component'
 & git fetch origin $branch
 if($LASTEXITCODE -ne 0){throw 'Git fetch failed'}
 $files=@(
-  'src/components/reader/CalendarSelectionWebText.js',
   'tools/patch_calendar_selection_scroll_lock.py',
   'tools/patch_reader_selection_magnifier.py',
   'tools/verify_reader_selection_precision.js'
 )
 & git restore --source=FETCH_HEAD -- $files
-if($LASTEXITCODE -ne 0){throw 'Could not restore the precision selection files'}
+if($LASTEXITCODE -ne 0){throw 'Could not restore precision patch tools'}
 
 Write-Host '[3/5] Lock native parent/nested scrolling while calendar text is selected'
 & $python -X utf8 '.\tools\patch_calendar_selection_scroll_lock.py'
