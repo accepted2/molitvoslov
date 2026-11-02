@@ -127,7 +127,14 @@ const selectionScript = String.raw`
   function startDrag(side,e){
     if(!active)return;
     e.preventDefault();e.stopPropagation();
-    drag={id:e.pointerId,side:side};
+    var range=document.createRange();
+    range.setStart(textNode,active.start);
+    range.setEnd(textNode,active.end);
+    var positions=range.getClientRects();
+    var edge=side==='left' ? positions[0] : positions[positions.length-1];
+    drag={id:e.pointerId,side:side,
+      offsetX:edge?(side==='left'?edge.left:edge.right)-e.clientX:0,
+      offsetY:edge?(edge.bottom-7)-e.clientY:-25};
     post({type:'scroll-lock',locked:true});
     showLens(side==='left'?active.start:active.end,e.clientX,e.clientY);
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -135,9 +142,10 @@ const selectionScript = String.raw`
   function moveDrag(e){
     if(!drag || drag.id!==e.pointerId||!active)return;
     e.preventDefault();e.stopPropagation();
-    // The finger is below the visible marker tip; correct that offset.
-    var pos=caret(e.clientX,e.clientY-25);
-    if(pos===null)pos=caret(e.clientX,e.clientY);
+    // Preserve the initial grab offset so the selection never jumps when the
+    // user touches the edge of the enlarged invisible handle.
+    var pos=caret(e.clientX+drag.offsetX,e.clientY+drag.offsetY);
+    if(pos===null)pos=caret(e.clientX,e.clientY-25);
     if(pos===null)return;
     showLens(pos,e.clientX,e.clientY);
     if(drag.side==='left'){
