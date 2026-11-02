@@ -137,7 +137,7 @@ export const CalendarSaveWholeButton = ({text, saveContext, onSavedChange}) => {
 };
 
 /** Uses the app-wide selection bar, including sentence/paragraph classification. */
-export const CalendarSelectableBody = ({text, saveContext, textStyle}) => {
+export const CalendarSelectableBody = ({text, saveContext, textStyle, onSelectionLockChange}) => {
   const normalized = useMemo(() => normalizeSavedText(text), [text]);
   if (!normalized) return null;
   return (
@@ -152,6 +152,7 @@ export const CalendarSelectableBody = ({text, saveContext, textStyle}) => {
       itemTitle={saveContext.itemTitle}
       metadata={saveContext.metadata}
       fullSaveType={null}
+      onSelectionLockChange={onSelectionLockChange}
     />
   );
 };
