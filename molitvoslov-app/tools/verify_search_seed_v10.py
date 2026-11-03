@@ -30,9 +30,12 @@ def main():
             expected.add('akathists:'+str(ak.get('id')))
             for section in ak.get('sections',[]):
                 if (section.get('text') or {}).get('content'):
-                    expected.add('akathists:section:'+str(section.get('id'))+':church')
+                    expected.add('akathists:section:'+str(section.get('id')))
         actual={row[0] for row in db.execute("SELECT ext FROM doc WHERE grp='akathists'")}
-        missing=sorted(expected-actual)
+        # Native v10 documents combine all languages under one ID;
+        # legacy-v9 extraction adds :church to the section ID.
+        missing=sorted(key for key in expected
+                       if key not in actual and key+':church' not in actual)
         if missing:
             raise RuntimeError('Missing published akathist search entries: '+', '.join(missing[:20]))
         print('Akathist search coverage verified:',len(expected),'records')
