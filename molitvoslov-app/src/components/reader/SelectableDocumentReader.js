@@ -408,8 +408,10 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         onLoadEnd={(event) => {
           if (appearanceRef.current) applyReaderAppearance(webViewRef.current, appearanceRef.current);
           const ratio = scrollFallbackRef.current;
+          const captured = languageProgressRef.current;
           scrollFallbackRef.current = null;
-          if (ratio !== null && !languageProgressRef.current) {
+          languageProgressRef.current = null;
+          if (ratio !== null && !captured) {
             inject('setTimeout(function(){var max=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);window.scrollTo(0,max*' + Math.max(0,Math.min(1,ratio)) + ');},120)');
           }
           onReady?.(event);
