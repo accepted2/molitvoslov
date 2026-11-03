@@ -21,7 +21,8 @@ $files = @(
   'tools/verify_bundled_apk_mode.js',
   'tools/prepare_offline_apk.py',
   'tools/audit_local_public_sources.py',
-  'tools/restore_akathist_izbavlenie.py',
+  'tools/repair_local_mobile_export.py',
+  'tools/promote_local_django_offline.py',
   'tools/verify_akathist_content.js'
 )
 & git restore --source=FETCH_HEAD -- $files
@@ -41,11 +42,13 @@ Assert-Last 'Guarded source patch'
 & node '.\tools\verify_bundled_apk_mode.js'
 Assert-Last 'APK mode structural verification'
 
-Write-Host '[3/5] Audit LOCAL backup sources, then restore the known missing akathist'
+Write-Host '[3/5] Audit local sources, repair old Django export whitelist and promote ALL published public texts'
 & $python -X utf8 '.\tools\audit_local_public_sources.py'
 Assert-Last 'Read-only local content inventory'
-& $python -X utf8 '.\tools\restore_akathist_izbavlenie.py'
-Assert-Last 'Local Django/JSON source restoration'
+& $python -X utf8 '.\tools\repair_local_mobile_export.py'
+Assert-Last 'Local Django published akathist export repair'
+& $python -X utf8 '.\tools\promote_local_django_offline.py'
+Assert-Last 'Complete local Django-to-APK public content promotion'
 
 Write-Host '[4/5] Rebuild packaged SQLite search from the exact offline JSON; stamp its version'
 & $python -X utf8 '.\tools\prepare_offline_apk.py'
