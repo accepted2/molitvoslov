@@ -22,6 +22,7 @@ import {StatusBar} from 'expo-status-bar';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
+import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
 import {
   READER_LANGUAGE_MODES,
   buildReaderLanguageOptions,
@@ -148,6 +149,8 @@ export default function KathismaScreen({route, navigation}) {
 
   const savedItemsRef = useRef([]);
   const readerRef = useRef(null);
+  const {appearance, changeAppearance, resetAppearance} = useScopedReaderAppearance('kathisma', kathismaNumber);
+  useEffect(() => {readerRef.current?.applyAppearance(appearance);}, [appearance]);
 
   const [loading, setLoading] = useState(true);
 
@@ -1529,6 +1532,7 @@ export default function KathismaScreen({route, navigation}) {
         onProgress={handleProgress}
         onAction={handleAction}
         onViewModeChange={setViewMode}
+        onReady={() => readerRef.current?.applyAppearance(appearance)}
         onMemorialOpen={() => setMemorialVisible(true)}
       />
 
@@ -1543,6 +1547,9 @@ export default function KathismaScreen({route, navigation}) {
         onClose={() => setReaderMenuVisible(false)}
         navigation={navigation}
         bookmark={bookmarkConfig}
+        appearance={appearance}
+        onAppearanceChange={changeAppearance}
+        onAppearanceReset={resetAppearance}
         canReturnToProgress={!!stablePosition}
         onReturnToProgress={() => {
           readerRef.current?.goToProgress(stablePosition);
@@ -1559,6 +1566,8 @@ export default function KathismaScreen({route, navigation}) {
         readingHidden={readingChromeHidden}
         showMenu
         onMenuPress={openReaderMenu}
+        languageSwitcher={documentData.viewSwitcher}
+        onLanguageChange={(mode) => readerRef.current?.changeViewMode(mode)}
       />
 
       <BottomNav navigation={navigation} active={null} readingHidden={readingChromeHidden} />
