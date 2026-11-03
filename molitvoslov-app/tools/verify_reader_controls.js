@@ -23,10 +23,13 @@ const files = [
 ];
 const required = {
   'src/components/reader/ReaderAppearanceSheet.js': [
-    'sliderPreviewOpacity', 'onResponderGrant', 'onResponderRelease', 'onResponderTerminate',
+    'sliderPreviewOpacity', 'sliderDragging', 'sheetBackground', 'settingsBlock',
+    'setSliderPreview(true)', 'onResponderGrant', 'onResponderRelease', 'onResponderTerminate',
   ],
   'src/components/navigation/FixedSectionHeader.js': [
     'languageSwitcher', 'onLanguageChange', 'languageDropdown', 'menuButtonReading',
+    'headerHidden = readingHidden && !languageOpen', 'visible={languageOpen}',
+    'name="chevron-down"', 'name="chevron-back"', 'name="ellipsis-vertical"',
   ],
   'src/components/reader/SelectableDocumentReader.js': [
     'languageProgressRef', 'snapshotForViewSwitch', // runtime below owns snapshot
@@ -57,6 +60,21 @@ for (const relative of files) {
   babel.parse(source, {sourceType: 'module', plugins: ['jsx']});
   for (const expected of required[relative] || []) {
     if (!source.includes(expected)) throw new Error(relative + ' missing: ' + expected);
+  }
+  if (relative.endsWith('/FixedSectionHeader.js')) {
+    if (source.includes('if (readingHidden) setLanguageOpen(false)') ||
+        source.includes('visible={languageOpen && !readingHidden}')) {
+      throw new Error('The language dropdown must stay open while reading chrome hides');
+    }
+  }
+  if (relative.endsWith('/ReaderAppearanceSheet.js')) {
+    if (source.includes('styles.sheet, {opacity: sliderPreviewOpacity')) {
+      throw new Error('Animating the entire appearance sheet hides the active slider');
+    }
+    if (!source.includes('style={styles.track}') ||
+        !source.includes('styles.sheetBackground, {opacity: sliderPreviewOpacity}')) {
+      throw new Error('Only the appearance background and other controls should fade');
+    }
   }
   if (relative.endsWith('/PrayerRuleReader.js')) {
     const startMarker = 'const HTML_TEMPLATE = String.raw' + String.fromCharCode(96);
