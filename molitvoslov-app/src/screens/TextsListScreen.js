@@ -15,7 +15,8 @@ export const TextsListScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
   const {categorySlug, categoryName} = route.params;
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
+  React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
   const [texts, setTexts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -79,7 +80,7 @@ export const TextsListScreen = ({route, navigation}) => {
         )}
       />
 
-      <FixedSectionHeader
+      <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
         title={categoryName || t('reading.prayers')}
         navigation={navigation}
         topInset={insets.top}
