@@ -59,9 +59,15 @@ for (const relative of files) {
     if (!source.includes(expected)) throw new Error(relative + ' missing: ' + expected);
   }
   if (relative.endsWith('/runtime.js')) {
-    const matched = /^export const READER_RUNTIME = String\\.raw`([\\s\\S]*)`;\\s*$/.exec(source);
-    if (!matched) throw new Error('Cannot extract reader WebView runtime for syntax test');
-    new vm.Script('(function(){' + matched[1] + '\\n})();', {filename: relative + ':inline'});
+    const prefix = 'export const READER_RUNTIME = String.raw' + String.fromCharCode(96);
+    const lastTick = source.lastIndexOf(String.fromCharCode(96) + ';');
+    if (!source.startsWith(prefix) || lastTick < prefix.length) {
+      throw new Error('Cannot extract reader WebView runtime for syntax test');
+    }
+    const runtime = source.slice(prefix.length, lastTick);
+    new vm.Script('(function(){' + runtime + String.fromCharCode(10) + '})();', {
+      filename: relative + ':inline',
+    });
   }
   console.log('PASS', relative);
   count += 1;
