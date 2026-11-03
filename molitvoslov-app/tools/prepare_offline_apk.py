@@ -68,6 +68,19 @@ def distinct_keys(payload, section):
 def validate_public(payload):
     if payload.get("schema_version") != 1 or not payload.get("content_version"):
         raise ValueError("Invalid public JSON format or missing content version")
+    canonical_content = {
+        key: value for key, value in payload.items()
+        if key not in ("schema_version", "content_version", "generated_at")
+    }
+    actual_version = hashlib.sha256(
+        json.dumps(canonical_content, ensure_ascii=False, sort_keys=True,
+                   separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    if actual_version != payload["content_version"]:
+        raise ValueError(
+            "offlineContent.json changed without updating content_version; "
+            "export it from Django before building APK. Embedded search would be stale."
+        )
     for section in ("akathists", "canons", "prayer_rules"):
         listing = payload.get(section, {}).get("list")
         details = payload.get(section, {}).get("by_slug")
