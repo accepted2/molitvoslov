@@ -34,10 +34,18 @@ for (const exe of candidates) {
 }
 if (!checked) throw new Error('Python executable not found. Set MOLITVOSLOV_PYTHON to the full path to python.exe.');
 
-if (!fs.existsSync(path.dirname(dest))) {
-  console.log('Android assets directory absent; search seed validated but not copied.');
-} else {
-  fs.copyFileSync(src, dest);
-  if (fs.statSync(src).size !== fs.statSync(dest).size) throw new Error('Copied seed has wrong length.');
-  console.log('Verified search_seed.db copied to Android assets.');
+// SEARCH_SEED_METRO_ONLY_V1
+// SQLiteProvider assetSource=require(src/data/search_seed.db) already bundles
+// the seed via Metro. A second copy in android/app/src/main/assets would
+// increase the APK and may accidentally shadow the versioned search DB.
+if (fs.existsSync(dest)) {
+  const crypto = require('crypto');
+  const hash = (name) => crypto.createHash('sha256').update(fs.readFileSync(name)).digest('hex');
+  if (hash(src) !== hash(dest)) {
+    throw new Error('Conflicting native search_seed.db at ' + dest +
+      '. Preserve/inspect that file before a new APK build.');
+  }
+  fs.unlinkSync(dest);
+  console.log('Removed redundant identical native search_seed.db; Metro keeps its copy.');
 }
+console.log('Verified single Metro-bundled search_seed.db; no duplicate native asset.');
