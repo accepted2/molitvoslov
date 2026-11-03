@@ -118,7 +118,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     const captured = languageProgressRef.current;
     const switchingLanguage = !!captured || scrollFallbackRef.current !== null;
     const effectiveProgress = captured?.anchorId
-      ? {anchor_type: documentData.progressAnchorType, anchor_id: captured.anchorId, offset: captured.offset}
+      ? {anchor_type: documentData.progressAnchorType, anchor_id: captured.anchorId, offset: captured.offset, offsetRatio: captured.offsetRatio ?? null}
       : savedProgress;
     const markup = buildHtml({
       documentData,
