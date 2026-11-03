@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import {StatusBar} from 'expo-status-bar';
 import {SQLiteProvider, useSQLiteContext} from 'expo-sqlite';
+import searchSeedBuild from '../data/searchSeedBuild.json';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
@@ -782,7 +783,7 @@ const styles = StyleSheet.create({
 
 export const SearchScreen = (props) => (
   <SQLiteProvider
-    databaseName="molitvoslov_search_v10_b094e3e635a9.db"
+    databaseName={searchSeedBuild.database_name}
     assetSource={{assetId: require('../data/search_seed.db')}}
   >
     <SearchContent {...props} />
