@@ -29,6 +29,7 @@ BIBLE = DATA / "offlineBible.json"
 SEED = DATA / "search_seed.db"
 SEED_V10 = DATA / "search_seed_v10.db"
 MANIFEST = DATA / "searchSeedBuild.json"
+LEGACY_SEARCH_META = DATA / "search_seed.meta.json"
 MUST_HAVE_AKATHIST = "akafist-bogoroditse-izbavlenie-ot-bed-strazhdushchikh"
 
 sys.path.insert(0, str(TOOLS))
@@ -232,6 +233,52 @@ def rebuild_seed(public_version, bible_version):
     print("Rebuilt packaged search DB:", count, "records")
 
 
+def sync_native_search_metadata(write):
+    # The user's newer search installation already checks search_seed.meta.json
+    # using verify_search_seed.py. Keep that metadata synchronized with the
+    # versioned APK index in addition to our new searchSeedBuild.json.
+    with sqlite3.connect("file:" + SEED.resolve().as_posix() + "?mode=ro",
+                         uri=True) as db:
+        meta = dict(db.execute("SELECT k, v FROM meta"))
+        count = db.execute("SELECT COUNT(*) FROM doc").fetchone()[0]
+    if meta.get("schema") != SCHEMA or not meta.get("fingerprint"):
+        raise RuntimeError("Generated search index lacks its schema/fingerprint")
+    db_name = meta.get("dbName") or (
+        "molitvoslov_search_v" + SCHEMA + "_" +
+        str(meta["fingerprint"])[:8] + ".db"
+    )
+    expected = {
+        "schema": SCHEMA,
+        "dbName": db_name,
+        "fingerprint": meta["fingerprint"],
+        "docs": count,
+        "bytes": SEED.stat().st_size,
+    }
+    if write:
+        if not LEGACY_SEARCH_META.is_file() or load_json(LEGACY_SEARCH_META) != expected:
+            if LEGACY_SEARCH_META.is_file():
+                BACKUPS.mkdir(parents=True, exist_ok=True)
+                backup = BACKUPS / (
+                    "search-meta-before-apk-" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".json"
+                )
+                shutil.copy2(LEGACY_SEARCH_META, backup)
+                print("Old search metadata backup:", backup)
+            temp = LEGACY_SEARCH_META.with_name(".search_seed.meta.json.tmp")
+            try:
+                temp.write_text(
+                    json.dumps(expected, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+                os.replace(temp, LEGACY_SEARCH_META)
+            finally:
+                if temp.exists():
+                    temp.unlink()
+            print("Synchronized optimized search metadata:", LEGACY_SEARCH_META)
+    elif not LEGACY_SEARCH_META.is_file() or load_json(LEGACY_SEARCH_META) != expected:
+        raise RuntimeError("Existing search_seed.meta.json is stale")
+    print("Optimized search metadata verified:", count, "docs;" , db_name)
+
+
 def verify_manifest(public_version, bible_version, write):
     count = seed_metadata(SEED, public_version, bible_version)
     if not count:
@@ -280,6 +327,7 @@ def main():
     compare_to_prior_backups(public)
     if not args.verify_only:
         rebuild_seed(public["content_version"], bible["content_version"])
+    sync_native_search_metadata(not args.verify_only)
     verify_manifest(public["content_version"], bible["content_version"], not args.verify_only)
     print("OFFLINE APK CONTENT READY - NO REMOTE PUBLIC SOURCE")
 
