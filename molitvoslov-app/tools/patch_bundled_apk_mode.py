@@ -183,16 +183,19 @@ if (matches.length === 1) {
 parser.parse(output, {sourceType: 'module', plugins: ['jsx']});
 process.stdout.write(JSON.stringify({content: output, previousDatabaseName: old}));
 """
+    # CRITICAL on Windows: subprocess text=True converts stdin LF to CRLF.
+    # The Node script returns the source verbatim; sending it as text would
+    # alter line endings on every invocation and break idempotence.
     result = subprocess.run(
-        ["node", "-e", script], input=src, cwd=str(ROOT),
-        capture_output=True, text=True, encoding="utf-8", errors="replace"
+        ["node", "-e", script], input=src.encode("utf-8"), cwd=str(ROOT),
+        capture_output=True
     )
     if result.returncode:
         raise ValueError(
             "SearchScreen SQLiteProvider cannot be safely patched: " +
-            result.stderr[-2200:]
+            result.stderr.decode("utf-8", errors="replace")[-2200:]
         )
-    payload = json.loads(result.stdout)
+    payload = json.loads(result.stdout.decode("utf-8"))
     updated = payload["content"]
     if updated.count("databaseName={searchSeedBuild.database_name}") != 1:
         raise ValueError("SearchScreen search DB name was not uniquely replaced")
