@@ -17,6 +17,7 @@ Write-Host '[1/5] Fetch APK-only patchers, content guard and original source rec
 Assert-Last 'Git fetch'
 $files = @(
   'tools/patch_bundled_apk_mode.py',
+  'tools/test_apk_patcher_variants.py',
   'tools/verify_bundled_apk_mode.js',
   'tools/prepare_offline_apk.py',
   'tools/audit_local_public_sources.py',
@@ -32,7 +33,9 @@ if (-not (Test-Path '.\src\data\searchSeedBuild.json')) {
   Assert-Last 'Restoring initial manifest'
 }
 
-Write-Host '[2/5] Apply guarded APK-authoritative public content patch'
+Write-Host '[2/5] Test customized SearchScreen variants, then safely patch public APK sources'
+& $python -X utf8 '.\tools\test_apk_patcher_variants.py'
+Assert-Last 'SQLiteProvider filename patch regression tests'
 & $python -X utf8 '.\tools\patch_bundled_apk_mode.py'
 Assert-Last 'Guarded source patch'
 & node '.\tools\verify_bundled_apk_mode.js'
