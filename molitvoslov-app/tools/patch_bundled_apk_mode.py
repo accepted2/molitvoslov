@@ -22,6 +22,7 @@ FILES = {
     "src/services/contentApi.js",
     "src/services/calendarOfflineStore.js",
     "src/screens/SearchScreen.js",
+    "scripts/copy-search-seed.js",
     "tools/build_release_1_0_20.ps1",
 }
 
@@ -159,6 +160,17 @@ def patch(path, src, new):
         return src.replace(old, replacement, 1)
     if path == "src/screens/SearchScreen.js":
         return patch_search(src, new)
+    if path == "scripts/copy-search-seed.js":
+        if "SEARCH_SEED_METRO_ONLY_V1" in src:
+            return src
+        anchor = "if (!fs.existsSync(path.dirname(dest))) {"
+        if src.count(anchor) != 1 or new.count("// SEARCH_SEED_METRO_ONLY_V1") != 1:
+            raise ValueError("Unfamiliar native search seed copy code")
+        pos = src.index(anchor)
+        if "fs.copyFileSync(src, dest)" not in src[pos:]:
+            raise ValueError("Unfamiliar native search seed copy code")
+        new_pos = new.index("// SEARCH_SEED_METRO_ONLY_V1")
+        return src[:pos] + new[new_pos:]
     if path == "tools/build_release_1_0_20.ps1":
         return patch_release(src, new)
     raise ValueError("Unexpected file " + path)
