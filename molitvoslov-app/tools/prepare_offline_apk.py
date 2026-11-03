@@ -222,6 +222,7 @@ def rebuild_seed(public_version, bible_version):
         )
     print("Search index document count:", count,
           "(previous: %s)" % (prior_count if prior_count is not None else "unknown"))
+    previous = None
     if SEED.is_file() and SEED.stat().st_size > 4096:
         BACKUPS.mkdir(parents=True, exist_ok=True)
         previous = BACKUPS / (
@@ -232,7 +233,30 @@ def rebuild_seed(public_version, bible_version):
     tmp = DATA / (".search_seed." + str(os.getpid()) + ".tmp")
     try:
         shutil.copyfile(SEED_V10, tmp)
-        os.replace(tmp, SEED)
+        try:
+            os.replace(tmp, SEED)
+        except PermissionError:
+            # On Windows an opened destination can forbid renaming but allow
+            # direct replacement of its bytes. Only use this path after the
+            # candidate has passed all search corpus and integrity checks.
+            print("WINDOWS SQLITE RENAME BLOCKED: trying checked copy fallback")
+            try:
+                shutil.copyfile(tmp, SEED)
+                if sha256(SEED) != sha256(tmp):
+                    raise RuntimeError("Search DB bytes differ after Windows copy fallback")
+                if seed_metadata(SEED, public_version, bible_version) != count:
+                    raise RuntimeError("Search DB metadata mismatch after Windows copy fallback")
+            except Exception as error:
+                if previous is not None:
+                    try:
+                        shutil.copyfile(previous, SEED)
+                        print("Previous search DB restored after failed copy")
+                    except OSError as restore_error:
+                        print("WARNING: previous search DB could not be restored:", restore_error)
+                raise RuntimeError(
+                    "Windows blocked the verified search DB copy: " + str(error)
+                ) from error
+            print("VERIFIED WINDOWS SQLITE COPY FALLBACK:", count, "documents")
     finally:
         if tmp.exists():
             tmp.unlink()
