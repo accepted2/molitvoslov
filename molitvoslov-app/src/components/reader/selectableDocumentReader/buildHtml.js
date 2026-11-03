@@ -26,6 +26,7 @@ export const buildHtml = ({
             anchorId: Number(savedProgress.anchor_id),
 
             offset: Number(savedProgress.offset || 0),
+            offsetRatio: savedProgress.offsetRatio ?? null,
           }
         : null,
   };
