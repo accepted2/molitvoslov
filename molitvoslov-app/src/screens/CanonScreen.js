@@ -166,7 +166,8 @@ export const CanonScreen = ({route, navigation}) => {
 
   const insets = useSafeAreaInsets();
 
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
+  useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   const [canon, setCanon] = useState(null);
   const {readingChromeHidden, handleReadingScroll} = useReadingChrome();
@@ -850,6 +851,7 @@ export const CanonScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
+        onHeaderHeightChange={setHeaderHeight}
         title={getLocalizedField(canon, 'title', language) || title || t('reading.canon')}
         navigation={navigation}
         topInset={insets.top}
