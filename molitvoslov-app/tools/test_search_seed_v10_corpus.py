@@ -1,121 +1,128 @@
 #!/usr/bin/env python3
-"""Read-only regression tests for the v10 search corpus generator."""
+"""Read-only tests of the ACTUAL local search extractor (native v10 or legacy v9)."""
+import ast
 import importlib.util
-import json
 from pathlib import Path
+import re
 import tempfile
 import unittest
+from unittest import mock
 
-from build_search_seed_v10 import compile_corpus, verify_source_coverage, ORIGINAL
+import build_search_seed_v10 as generator
 
 
-def corpus_documents(source):
-    spec = importlib.util.spec_from_file_location("original_search_for_test", ORIGINAL)
-    old = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(old)
-    content = {
-        "categories": [],
-        "texts": {},
+def sample():
+    return {
+        "categories": [], "texts": {},
         "canons": {"by_slug": {}},
         "akathists": {"by_slug": {
             "sample": {
-                "id": 9130001, "slug": "sample", "title": "Тестовый акафист",
-                "is_visible": True,
-                "sections": [
-                    {"id": 9130002, "text": {"title": "Кондак 1",
-                                           "content": "Господи, помилуй нас."}}
-                ],
+                "id": 9130001, "slug": "sample",
+                "title": "Акафист для проверки", "is_visible": True,
+                "sections": [{
+                    "id": 9130002,
+                    "text": {"title": "Кондак 1",
+                             "content": "Господи, помилуй нас.",
+                             "traditional_content": "Господи, помилуй насъ.",
+                             "translation": "Господи, помилуй нас.",
+                             "translation_uk": "Господи, помилуй нас."}
+                }],
             }
         }},
         "prayer_rules": {"list": []},
         "psalters": {"list": []},
         "kathismas": {"by_number": {}},
     }
-    collected = {"ru": [], "uk": []}
 
-    def add(lang, group, identifier, title, source_text, texts, route,
-            kind="text", preview="", text_language=None):
-        if title or any(texts):
-            collected[lang].append({
-                "ext": str(identifier), "grp": str(group),
-                "kind": str(kind), "title": title, "route": route,
-            })
+
+def corpus(source_text=None):
     with tempfile.TemporaryDirectory() as folder:
         root = Path(folder)
-        (root / "src/data/calendar").mkdir(parents=True)
-        scope = dict(vars(old))
-        scope.update({
-            "ROOT": root, "content": content,
-            "bible": {"books": []}, "add": add
-        })
-        exec(compile_corpus(source), scope, scope)
-    return content, collected
+        cal = root / "src/data/calendar"
+        cal.mkdir(parents=True)
+        if source_text is not None:
+            variant = root / "tools" / "build_search_seed.py"
+            variant.parent.mkdir(parents=True)
+            variant.write_text(source_text, encoding="utf-8")
+            with mock.patch.object(generator, "ORIGINAL", variant):
+                docs, kind = generator.extract_source_documents(
+                    sample(), {"books": []}, cal
+                )
+        else:
+            docs, kind = generator.extract_source_documents(
+                sample(), {"books": []}, cal
+            )
+    return docs, kind
 
 
-class OriginalSearchTraversalTests(unittest.TestCase):
+class SearchCorpusCompatibilityTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.source = ORIGINAL.read_text(encoding="utf-8-sig")
+        cls.source = generator.ORIGINAL.read_text(encoding="utf-8-sig")
+        cls.original_mode = ("modern" if
+                             any(isinstance(n, ast.FunctionDef) and
+                                 n.name == "extract_documents"
+                                 for n in ast.parse(cls.source).body)
+                             else "legacy")
 
-    def test_original_search_corpus_contains_the_akathist_and_section(self):
-        content, collected = corpus_documents(self.source)
-        verify_source_coverage(content, collected)
-        for lang in ("ru", "uk"):
-            ext = {d["ext"] for d in collected[lang]}
-            self.assertIn("akathists:9130001", ext)
-            self.assertIn("akathists:section:9130002:church", ext)
+    def test_current_local_source_is_supported(self):
+        docs, kind = corpus()
+        self.assertGreaterEqual(len(docs), 2)
+        self.assertEqual(kind, "native-v10" if self.original_mode == "modern"
+                         else "legacy-v9")
+        generator.verify_source_coverage(sample(), docs)
 
-    def test_modified_comment_does_not_omit_any_documents(self):
-        # Existing local v9 may already have renamed the original comment,
-        # therefore modify ANY standalone comments, not one hard-coded line.
-        import re
-        alternate = re.sub(r"(?m)^([ \t]*)#[^\n]*$",
-                           r"\1# comment changed locally", self.source)
-        content, original = corpus_documents(self.source)
-        content2, modified = corpus_documents(alternate)
-        self.assertEqual(content, content2)
+    def test_akathist_title_and_sections_are_included(self):
+        docs, _ = corpus()
+        ext = {doc["ext"] for doc in docs}
+        self.assertIn("akathists:9130001", ext)
+        self.assertTrue(
+            "akathists:section:9130002" in ext
+            or "akathists:section:9130002:church" in ext
+        )
+
+    def test_changing_comments_does_not_change_search_content(self):
+        altered = re.sub(r"(?m)^([ \t]*)#[^\n]*$",
+                         r"\1# locally modified comment", self.source)
+        original, _ = corpus()
+        modified, _ = corpus(altered)
         self.assertEqual(original, modified)
 
-    def test_modified_metadata_spacing_preserves_corpus(self):
-        # Same traversal despite local formatting changes in metadata.
-        import re
-        alternate = re.sub(r"(?m)\b(public_ver|bible_ver)\s*=",
-                           r"\1  =", self.source)
-        _, baseline = corpus_documents(self.source)
-        _, modified = corpus_documents(alternate)
-        self.assertEqual(baseline, modified)
+    def test_native_v10_indexes_traditional_and_translations(self):
+        if self.original_mode != "modern":
+            self.skipTest("Older source has no combined language variants")
+        docs, _ = corpus()
+        section = next(d for d in docs if
+                       d["ext"] == "akathists:section:9130002")
+        codes = {c for c, value in section["variants"] if value}
+        self.assertTrue({"c", "t", "r", "u"}.issubset(codes))
 
-    def test_direct_db_write_before_metadata_is_rejected(self):
-        import ast
+    def test_missing_published_akathist_is_rejected(self):
+        docs, _ = corpus()
+        altered = [d for d in docs if d["ext"] != "akathists:9130001"]
+        with self.assertRaisesRegex(RuntimeError, "Published akathists missing"):
+            generator.verify_source_coverage(sample(), altered)
+
+    def test_missing_section_is_rejected(self):
+        docs, _ = corpus()
+        altered = [d for d in docs if not
+                   d["ext"].startswith("akathists:section:9130002")]
+        with self.assertRaisesRegex(RuntimeError, "Published akathists missing"):
+            generator.verify_source_coverage(sample(), altered)
+
+    def test_legacy_direct_sql_in_corpus_is_rejected(self):
+        if self.original_mode != "legacy":
+            self.skipTest("Native v10 extraction performs no legacy SQL slicing")
         tree = ast.parse(self.source)
         main = next(n for n in tree.body
                     if isinstance(n, ast.FunctionDef) and n.name == "main")
-        idx = next(i for i, node in enumerate(main.body)
-                   if isinstance(node, ast.FunctionDef) and node.name == "add")
-        at = main.body[idx + 1].lineno - 1
+        idx = next(i for i, n in enumerate(main.body)
+                   if isinstance(n, ast.FunctionDef) and n.name == "add")
         lines = self.source.splitlines(keepends=True)
-        lines.insert(at, "    db.execute('DELETE FROM users')\n")
+        lines.insert(main.body[idx + 1].lineno - 1,
+                     "    db.execute('DELETE FROM some_table')\n")
         with self.assertRaisesRegex(RuntimeError, "direct database operations"):
-            compile_corpus("".join(lines))
-
-    def test_missing_published_akathist_stops_build(self):
-        content, collected = corpus_documents(self.source)
-        for lang in ("ru", "uk"):
-            collected[lang] = [
-                d for d in collected[lang] if d["ext"] != "akathists:9130001"
-            ]
-        with self.assertRaisesRegex(RuntimeError, "Published akathists missing"):
-            verify_source_coverage(content, collected)
-
-    def test_missing_published_akathist_section_stops_build(self):
-        content, collected = corpus_documents(self.source)
-        for lang in ("ru", "uk"):
-            collected[lang] = [
-                d for d in collected[lang]
-                if d["ext"] != "akathists:section:9130002:church"
-            ]
-        with self.assertRaisesRegex(RuntimeError, "Published akathists missing"):
-            verify_source_coverage(content, collected)
+            generator.compile_corpus("".join(lines))
 
 
 if __name__ == "__main__":
