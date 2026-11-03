@@ -27,7 +27,8 @@ export const BibleBookScreen = ({route, navigation}) => {
 
   const insets = useSafeAreaInsets();
 
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
+  React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   const loadProgress = useCallback(async () => {
     if (!book?.id) {
@@ -223,7 +224,7 @@ export const BibleBookScreen = ({route, navigation}) => {
           }}
         />
 
-        <FixedSectionHeader title={displayName} navigation={navigation} topInset={insets.top} />
+        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={displayName} navigation={navigation} topInset={insets.top} />
 
         <BottomNav navigation={navigation} active={null} />
       </ImageBackground>
