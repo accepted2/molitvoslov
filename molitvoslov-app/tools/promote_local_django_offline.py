@@ -11,6 +11,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+
+from restore_misc_prayers import validate_offline_snapshot
 import shutil
 import subprocess
 import sys
@@ -154,6 +156,7 @@ def main():
     run_export(candidate)
     new = load(candidate)
     new_akathists = ensure_valid(new)
+    validate_offline_snapshot(new)
     if TARGET not in new_akathists or not new_akathists[TARGET].get("is_visible"):
         raise RuntimeError("APK would omit the published 'Избавление от бед страждущих'")
     sections = new["akathists"]["by_slug"][TARGET].get("sections", [])
