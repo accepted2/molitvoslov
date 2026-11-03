@@ -151,7 +151,8 @@ const SearchContent = ({navigation}) => {
   const [paused, setPaused] = useState(false);
   const { language } = useLanguage();
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
+  React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
   const bibleGeneration = useBibleContentGeneration();
 
   const [publicGeneration, setPublicGeneration] = useState(0);
@@ -614,7 +615,7 @@ const SearchContent = ({navigation}) => {
           />
         )}
 
-        <FixedSectionHeader title={copy.title} navigation={navigation} topInset={insets.top} />
+        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={copy.title} navigation={navigation} topInset={insets.top} />
       </View>
     </AppBackground>
   );
