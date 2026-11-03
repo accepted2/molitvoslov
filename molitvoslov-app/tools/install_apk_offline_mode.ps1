@@ -23,6 +23,7 @@ $files = @(
   'tools/audit_local_public_sources.py',
   'tools/repair_local_mobile_export.py',
   'tools/promote_local_django_offline.py',
+  'tools/test_local_offline_export.py',
   'tools/verify_akathist_content.js'
 )
 & git restore --source=FETCH_HEAD -- $files
@@ -42,7 +43,9 @@ Assert-Last 'Guarded source patch'
 & node '.\tools\verify_bundled_apk_mode.js'
 Assert-Last 'APK mode structural verification'
 
-Write-Host '[3/5] Audit local sources, repair old Django export whitelist and promote ALL published public texts'
+Write-Host '[3/5] Verify exporter logic, audit local sources and promote ALL published public texts'
+& $python -X utf8 '.\tools\test_local_offline_export.py'
+Assert-Last 'Django exporter and no-loss offline promotion regression tests'
 & $python -X utf8 '.\tools\audit_local_public_sources.py'
 Assert-Last 'Read-only local content inventory'
 & $python -X utf8 '.\tools\repair_local_mobile_export.py'
