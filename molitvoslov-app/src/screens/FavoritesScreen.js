@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {useFonts} from 'expo-font';
 import {Ionicons} from '@expo/vector-icons';
+import {LinearGradient} from 'expo-linear-gradient';
 import {AppBackground} from '../components/layout/AppBackground';
 import {ActivityIndicator, FlatList, PanResponder, Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -411,7 +412,17 @@ export const FavoritesScreen = ({route, navigation}) => {
             )}
           />
         )}
-
+          {/* Fade moving cards softly beneath the fixed tab row, without covering taps. */}
+          <LinearGradient
+            pointerEvents="none"
+            colors={[
+              'rgba(255, 244, 222, 0.82)',
+              'rgba(255, 244, 222, 0.42)',
+              'rgba(255, 244, 222, 0)',
+            ]}
+            locations={[0, 0.45, 1]}
+            style={styles.topListFade}
+          />
         </View>
 
         <BottomNav navigation={navigation} active="favorites" />
@@ -438,7 +449,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingBottom: 4,
     gap: spacing.sm,
-    backgroundColor: 'rgba(255, 244, 222, 0.68)',
+    backgroundColor: 'transparent',
   },
 
   headerTitleBlock: {
@@ -512,6 +523,17 @@ const styles = StyleSheet.create({
   listRegion: {
     flex: 1,
     minHeight: 0,
+    position: 'relative',
+  },
+
+  topListFade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 28,
+    zIndex: 3,
+    elevation: 3,
   },
 
   tabs: {
