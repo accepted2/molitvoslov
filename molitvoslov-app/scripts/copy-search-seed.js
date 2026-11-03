@@ -35,17 +35,22 @@ for (const exe of candidates) {
 if (!checked) throw new Error('Python executable not found. Set MOLITVOSLOV_PYTHON to the full path to python.exe.');
 
 // SEARCH_SEED_METRO_ONLY_V1
-// SQLiteProvider assetSource=require(src/data/search_seed.db) already bundles
-// the seed via Metro. A second copy in android/app/src/main/assets would
-// increase the APK and may accidentally shadow the versioned search DB.
-if (fs.existsSync(dest)) {
+// Run this final cleanup after any legacy seed-copy logic. The search index is
+// already bundled by Metro via assetSource. Never delete a DIFFERENT native DB.
+;(() => {
+  const cleanupFs = require('fs');
+  const cleanupPath = require('path');
   const crypto = require('crypto');
-  const hash = (name) => crypto.createHash('sha256').update(fs.readFileSync(name)).digest('hex');
-  if (hash(src) !== hash(dest)) {
-    throw new Error('Conflicting native search_seed.db at ' + dest +
-      '. Preserve/inspect that file before a new APK build.');
+  const rootDir = cleanupPath.join(__dirname, '..');
+  const sourceSeed = cleanupPath.join(rootDir, 'src', 'data', 'search_seed.db');
+  const nativeSeed = cleanupPath.join(rootDir, 'android', 'app', 'src', 'main', 'assets', 'search_seed.db');
+  if (!cleanupFs.existsSync(nativeSeed)) return;
+  const hash = (file) => crypto.createHash('sha256').update(cleanupFs.readFileSync(file)).digest('hex');
+  if (hash(sourceSeed) !== hash(nativeSeed)) {
+    throw new Error('Conflicting native search database: ' + nativeSeed +
+      '. Existing file preserved. Review it before building a release APK.');
   }
-  fs.unlinkSync(dest);
-  console.log('Removed redundant identical native search_seed.db; Metro keeps its copy.');
-}
-console.log('Verified single Metro-bundled search_seed.db; no duplicate native asset.');
+  cleanupFs.unlinkSync(nativeSeed);
+  console.log('Removed redundant identical native search DB; Metro bundles the versioned seed.');
+})();
+console.log('Verified Metro-bundled search seed without a duplicate native DB.');
