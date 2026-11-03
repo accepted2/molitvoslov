@@ -6628,6 +6628,7 @@ const HTML_TEMPLATE = String.raw`
         return {
           anchorId: Number(current.dataset.itemId),
           offset: Math.round(offset),
+          offsetRatio: current.offsetHeight ? offset / current.offsetHeight : 0,
           progressPercent: Math.max(0, Math.min(progressPercent, 100)),
         };
       };
@@ -7427,11 +7428,17 @@ const HTML_TEMPLATE = String.raw`
           return;
         }
 
+        const restoredOffset =
+          progress.offsetRatio !== undefined &&
+          progress.offsetRatio !== null &&
+          Number.isFinite(Number(progress.offsetRatio))
+            ? item.offsetHeight * Math.max(0, Math.min(1, Number(progress.offsetRatio)))
+            : progress.offset;
         const target =
           Math.max(
             0,
             item.offsetTop +
-            progress.offset -
+            restoredOffset -
             (
               window.innerHeight /
               2
@@ -7678,12 +7685,13 @@ const buildHtml = ({
         item.end_offset !== null
     ),
 
-    focusTarget: focusTarget || null,
+    focusTarget: restoreProgress?.anchorId ? null : (focusTarget || null),
 
     progress: restoreProgress?.anchorId
       ? {
           anchorId: Number(restoreProgress.anchorId),
           offset: Number(restoreProgress.offset || 0),
+          offsetRatio: restoreProgress.offsetRatio ?? null,
         }
       : savedProgress?.anchor_type === 'prayer_rule_item'
         ? {
@@ -7873,6 +7881,7 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
         ? {
             anchorId: Number(message.progress.anchorId),
             offset: Math.max(0, Number(message.progress.offset || 0)),
+            offsetRatio: message.progress.offsetRatio ?? null,
             progressPercent: Math.max(
               0,
               Math.min(Number(message.progress.progressPercent || 0), 100)
