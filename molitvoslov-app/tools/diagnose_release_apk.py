@@ -69,6 +69,7 @@ def inspect_apk(apk, expected_titles):
                    if name.endswith("index.android.bundle") or name.endswith("index.android.bundle.hbc")]
         print("Embedded SQLite entries:", db_entries)
         print("Embedded JS bundles:", bundles)
+        inspect_js_build(archive, bundles)
         if len(db_entries) != 1:
             raise RuntimeError("Expected one embedded search SQLite DB, got: " + repr(db_entries))
         with tempfile.TemporaryDirectory(prefix="molitvoslov-apk-audit-") as folder:
@@ -87,6 +88,57 @@ def inspect_apk(apk, expected_titles):
             for title in info["missing_misc_titles"]:
                 print("MISSING FROM SEARCH DB:", title)
             return embedded_hash, info
+
+
+def inspect_js_build(archive, bundle_names):
+    """Best-effort check of the compiled release JS and its source map."""
+    print("\\n=== Embedded JavaScript ===")
+    if not bundle_names:
+        print("WARNING: no standard index.android.bundle found in APK")
+    for name in bundle_names:
+        with archive.open(name) as payload:
+            digest = hashlib.sha256()
+            for piece in iter(lambda: payload.read(1024 * 1024), b""):
+                digest.update(piece)
+        print("APK JavaScript bundle:", name, "SHA-256:", digest.hexdigest())
+
+    candidates = [
+        ROOT / "android/app/build/generated/sourcemaps/react/release/index.android.bundle.map",
+        ROOT / "android/app/build/generated/sourcemaps/react/release/index.android.bundle.packager.map",
+        ROOT / "android/app/build/generated/sourcemaps/react/release/index.android.bundle.compiler.map",
+    ]
+    for candidate in candidates:
+        if not candidate.is_file():
+            continue
+        try:
+            mapping = json_file(candidate)
+            paths = mapping.get("sources") or []
+            sources = mapping.get("sourcesContent") or []
+            print("RELEASE SOURCE MAP:", candidate)
+            markers = {
+                "FixedSectionHeader.js": ("languageOpen", "extraTitleHeight"),
+                "ReaderAppearanceSheet.js": ("sliderDragging", "sheetPreview"),
+                "SearchScreen.js": ("searchSeedBuild.database_name", "SQLiteProvider"),
+            }
+            for file_name, needles in markers.items():
+                positions = [i for i, name in enumerate(paths)
+                             if str(name).replace("\\\\", "/").endswith("/" + file_name)]
+                if not positions:
+                    print("SOURCE IN BUNDLE:", file_name, "NOT LISTED")
+                elif not sources:
+                    print("SOURCE IN BUNDLE:", file_name,
+                          "LISTED; map does not embed source contents")
+                else:
+                    actual = [sources[i] or "" for i in positions if i < len(sources)]
+                    present = any(all(needle in value for needle in needles)
+                                  for value in actual)
+                    print("CURRENT FEATURES IN BUNDLED SOURCE:", file_name,
+                          "YES" if present else "NO - bundled source appears outdated")
+            break
+        except (OSError, ValueError, TypeError) as error:
+            print("Could not read source map:", str(error)[:160])
+    else:
+        print("RELEASE SOURCE MAP: not found; JavaScript source revision cannot be confirmed.")
 
 
 def source_checks(expected_titles):
