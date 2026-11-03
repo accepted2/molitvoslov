@@ -16,7 +16,8 @@ export const BibleScreen = ({navigation}) => {
   const bibleGeneration = useBibleContentGeneration();
   const insets = useSafeAreaInsets();
 
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
+  React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   const oldBooks = useMemo(() => bibleContent.getBooks('old'), [bibleGeneration]);
 
@@ -74,7 +75,7 @@ export const BibleScreen = ({navigation}) => {
         )}
       </View>
 
-      <FixedSectionHeader title={t('bible.title')} navigation={navigation} topInset={insets.top} />
+      <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={t('bible.title')} navigation={navigation} topInset={insets.top} />
 
       <BottomNav navigation={navigation} active={null} />
     </AppBackground>
