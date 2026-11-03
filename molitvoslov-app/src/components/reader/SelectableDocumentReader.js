@@ -13,6 +13,7 @@ import {getCachedPonomarFontDataUri, loadPonomarFontDataUri} from '../../service
 
 import {buildHtml, scriptSafeJson} from './selectableDocumentReader/buildHtml';
 import {getReadingSettings, DEFAULT_READING_SETTINGS} from '../../services/readerPreferences';
+import {applyReaderAppearance} from '../../services/scopedReaderAppearance';
 
 const PALETTE_COLORS = {
   parchment: {background: '#FFF4DE', surface: '#F8E9CF', text: '#3E2A1D'},
@@ -50,6 +51,9 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
   }, []);
 
   const webViewRef = useRef(null);
+  const appearanceRef = useRef(null);
+  const languageProgressRef = useRef(null);
+  const scrollFallbackRef = useRef(null);
 
   const needsPonomar = useMemo(
     () =>
@@ -111,9 +115,13 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
 
   const html = useMemo(() => {
     console.warn('[reader] incoming FT =', JSON.stringify(focusTarget));
+    const captured = languageProgressRef.current;
+    const effectiveProgress = captured?.anchorId
+      ? {anchor_type: documentData.progressAnchorType, anchor_id: captured.anchorId, offset: captured.offset}
+      : savedProgress;
     const markup = buildHtml({
       documentData,
-      savedProgress,
+      savedProgress: effectiveProgress,
       focusTarget,
       topContentInset,
       bottomContentInset,
@@ -163,6 +171,15 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         );
       },
 
+      changeViewMode: (key) => {
+        inject('window.readerApi && window.readerApi.changeViewMode(' + scriptSafeJson(key) + ')');
+      },
+
+      applyAppearance: (appearance) => {
+        appearanceRef.current = appearance;
+        applyReaderAppearance(webViewRef.current, appearance);
+      },
+
       setBookTheme: (theme) => {
         inject(
           'window.readerApi && window.readerApi.setBookTheme(' +
@@ -192,6 +209,10 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       return;
     }
     if (message.type === 'view-mode') {
+      languageProgressRef.current = message.progress?.anchorId ? message.progress : null;
+      scrollFallbackRef.current = Number.isFinite(message.progress?.scrollRatio)
+        ? message.progress.scrollRatio
+        : null;
       onViewModeChange?.(message.value);
 
       return;
@@ -383,7 +404,15 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         overScrollMode="never"
         textZoom={100}
         onMessage={handleMessage}
-        onLoadEnd={onReady}
+        onLoadEnd={(event) => {
+          if (appearanceRef.current) applyReaderAppearance(webViewRef.current, appearanceRef.current);
+          const ratio = scrollFallbackRef.current;
+          scrollFallbackRef.current = null;
+          if (ratio !== null && !languageProgressRef.current) {
+            inject('setTimeout(function(){var max=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);window.scrollTo(0,max*' + Math.max(0,Math.min(1,ratio)) + ');},120)');
+          }
+          onReady?.(event);
+        }}
         style={[styles.webView, {backgroundColor: documentData.readerMode === 'book' ? backgroundColor : (readingSettings.palette === 'custom' ? readingSettings.customBackground : (PALETTE_COLORS[readingSettings.palette]?.background || backgroundColor))}]}
         onConsoleMessage={(event) => {
           const { message, lineNumber } = event.nativeEvent;
