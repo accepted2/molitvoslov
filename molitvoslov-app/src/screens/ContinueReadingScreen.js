@@ -278,7 +278,8 @@ export const ContinueReadingScreen = ({navigation}) => {
     setProgress((current) => current.filter((item) => item.id !== id));
   };
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
+  React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   return (
     <AppBackground imageOpacity={0.72}>
@@ -374,7 +375,7 @@ export const ContinueReadingScreen = ({navigation}) => {
         </ScrollView>
       )}
 
-      <FixedSectionHeader title="Продолжить чтение" navigation={navigation} topInset={insets.top} />
+      <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title="Продолжить чтение" navigation={navigation} topInset={insets.top} />
 
       <BottomNav navigation={navigation} active={null} />
     </AppBackground>
