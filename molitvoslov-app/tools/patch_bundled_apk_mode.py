@@ -7,6 +7,7 @@ The caller must first git fetch the target branch to populate FETCH_HEAD.
 """
 from datetime import datetime
 from pathlib import Path
+import json
 import re
 import shutil
 import subprocess
@@ -108,21 +109,99 @@ def patch_api(src, new):
 
 
 def patch_search(src, new):
-    if "searchSeedBuild.database_name" in src:
-        if "import searchSeedBuild from '../data/searchSeedBuild.json';" not in src:
-            raise ValueError("Search manifest import missing")
-        return src
-    src = once(
-        src, "import {SQLiteProvider, useSQLiteContext} from 'expo-sqlite';",
-        "import {SQLiteProvider, useSQLiteContext} from 'expo-sqlite';\n"
-        "import searchSeedBuild from '../data/searchSeedBuild.json';",
-        "SearchScreen import",
+    """Change only SQLiteProvider.databaseName, preserving all other local UI.
+
+    Parse JSX with the project's existing @babel/parser instead of guessing
+    a particular hard-coded database filename or its quoting/indentation.
+    All character offsets stay in JavaScript to safely handle Unicode.
+    """
+    script = r"""
+const fs = require('fs');
+const parser = require('@babel/parser');
+const input = fs.readFileSync(0, 'utf8');
+const ast = parser.parse(input, {sourceType: 'module', plugins: ['jsx']});
+const providers = [];
+function walk(node) {
+  if (!node || typeof node !== 'object') return;
+  if (Array.isArray(node)) { node.forEach(walk); return; }
+  if (node.type === 'JSXOpeningElement' && node.name?.type === 'JSXIdentifier' &&
+      node.name.name === 'SQLiteProvider') providers.push(node);
+  for (const [key, value] of Object.entries(node)) {
+    if (key === 'loc' || key === 'extra' || key === 'comments') continue;
+    if (value && typeof value === 'object') walk(value);
+  }
+}
+walk(ast.program);
+if (providers.length !== 1) {
+  throw new Error('Expected one SQLiteProvider, found ' + providers.length);
+}
+const provider = providers[0];
+const attrs = provider.attributes.filter(a => a.type === 'JSXAttribute');
+const databaseNames = attrs.filter(a => a.name.name === 'databaseName');
+if (databaseNames.length !== 1) {
+  throw new Error('SQLiteProvider.databaseName must occur exactly once');
+}
+if (!attrs.some(a => a.name.name === 'assetSource')) {
+  throw new Error('SQLiteProvider has no bundled SQLite assetSource');
+}
+const target = databaseNames[0];
+const old = input.slice(target.start, target.end);
+if (old !== 'databaseName={searchSeedBuild.database_name}') {
+  if (!target.value ||
+      (target.value.type !== 'StringLiteral' &&
+       target.value.type !== 'JSXExpressionContainer')) {
+    throw new Error('SQLiteProvider databaseName has an unsupported value');
+  }
+  if (target.value.type === 'JSXExpressionContainer') {
+    const expr = target.value.expression;
+    if (expr.type !== 'StringLiteral' && expr.type !== 'TemplateLiteral') {
+      throw new Error('Refusing to overwrite a customized dynamic search databaseName');
+    }
+  }
+}
+const newAttr = 'databaseName={searchSeedBuild.database_name}';
+let output = input.slice(0, target.start) + newAttr + input.slice(target.end);
+const manifestPath = '../data/searchSeedBuild.json';
+const matches = ast.program.body.filter(n => n.type === 'ImportDeclaration' &&
+  n.source.value === manifestPath);
+if (matches.length > 1) throw new Error('Duplicate search seed manifest imports');
+if (matches.length === 1) {
+  if (!matches[0].specifiers.some(spec => spec.type === 'ImportDefaultSpecifier' &&
+                                  spec.local.name === 'searchSeedBuild')) {
+    throw new Error('Conflicting existing search seed manifest import');
+  }
+} else {
+  const sqliteImports = ast.program.body.filter(n => n.type === 'ImportDeclaration' &&
+    n.source.value === 'expo-sqlite');
+  if (sqliteImports.length !== 1) {
+    throw new Error('Cannot find exactly one expo-sqlite import for manifest insertion');
+  }
+  // Insert after the existing SQLite import. Its byte offset is before JSX.
+  // Source indices are UTF-16 and are used only in this Node process.
+  const insertionIndex = sqliteImports[0].end;
+  output = output.slice(0, insertionIndex) +
+    "\nimport searchSeedBuild from '../data/searchSeedBuild.json';" +
+    output.slice(insertionIndex);
+}
+parser.parse(output, {sourceType: 'module', plugins: ['jsx']});
+process.stdout.write(JSON.stringify({content: output, previousDatabaseName: old}));
+"""
+    result = subprocess.run(
+        ["node", "-e", script], input=src, cwd=str(ROOT),
+        capture_output=True, text=True, encoding="utf-8", errors="replace"
     )
-    old = re.findall(r'databaseName="molitvoslov_search_v10_[A-Za-z0-9]+\.db"', src)
-    if len(old) != 1:
-        raise ValueError("SearchScreen has unfamiliar SQLiteProvider name; refusing replacement")
-    src = src.replace(old[0], "databaseName={searchSeedBuild.database_name}", 1)
-    return src
+    if result.returncode:
+        raise ValueError(
+            "SearchScreen SQLiteProvider cannot be safely patched: " +
+            result.stderr[-2200:]
+        )
+    payload = json.loads(result.stdout)
+    updated = payload["content"]
+    if updated.count("databaseName={searchSeedBuild.database_name}") != 1:
+        raise ValueError("SearchScreen search DB name was not uniquely replaced")
+    if updated != src:
+        print("SearchScreen databaseName updated from:", payload["previousDatabaseName"])
+    return updated
 
 
 def patch_release(src, new):
