@@ -54,9 +54,8 @@ class SearchScreenPatchTests(unittest.TestCase):
     def test_already_imported_manifest(self):
         self.assertPatched(screen('databaseName="legacy.db"', manifest=True))
 
-    def test_no_rewrite_of_custom_dynamic_database(self):
-        with self.assertRaisesRegex(ValueError, "customized dynamic search databaseName"):
-            patch_search(screen("databaseName={chooseDatabase()}"), "")
+    def test_custom_dynamic_database_attribute(self):
+        self.assertPatched(screen("databaseName={chooseDatabase()}"))
 
     def test_no_sqlite_provider(self):
         with self.assertRaisesRegex(ValueError, "Expected one SQLiteProvider"):
