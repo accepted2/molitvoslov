@@ -5,6 +5,7 @@ Does not rebuild the APK, edit SQLite, or touch user data.
 Usage: python -X utf8 tools/diagnose_release_apk.py [--installed-apk PATH]
 """
 import argparse
+from contextlib import closing
 import hashlib
 import json
 from pathlib import Path
@@ -40,7 +41,9 @@ def json_file(path):
 
 
 def audit_db(db_path, expected_titles):
-    with sqlite3.connect("file:" + db_path.resolve().as_posix() + "?mode=ro", uri=True) as db:
+    # sqlite3.Connection's own context manager does NOT close on exit.
+    # Windows cannot delete the extracted APK database while the handle is open.
+    with closing(sqlite3.connect("file:" + db_path.resolve().as_posix() + "?mode=ro", uri=True)) as db:
         integrity = db.execute("PRAGMA integrity_check").fetchone()[0]
         count = db.execute("SELECT COUNT(*) FROM doc").fetchone()[0]
         meta = dict(db.execute("SELECT k, v FROM meta"))
