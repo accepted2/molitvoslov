@@ -1,5 +1,5 @@
-import React, {useState} from 'react';
-import {Modal, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
+import React, {useEffect, useRef, useState} from 'react';
+import {Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import ColorPalettePicker from '../settings/ColorPalettePicker';
 import {READER_PALETTES, resolveReaderAppearance} from '../../services/scopedReaderAppearance';
@@ -20,6 +20,20 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
   const insets = useSafeAreaInsets();
   const [sliderWidth, setSliderWidth] = useState(240);
   const [showColorPicker, setShowColorPicker] = useState(null);
+  const sliderPreviewOpacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!visible) sliderPreviewOpacity.setValue(1);
+  }, [visible, sliderPreviewOpacity]);
+
+  const animateControls = (opacity) => {
+    Animated.timing(sliderPreviewOpacity, {
+      toValue: opacity,
+      duration: opacity ? 240 : 130,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  };
   const resolved = resolveReaderAppearance(appearance);
   const changeSize = (event) => {
     const position = Math.max(0, Math.min(sliderWidth, event.nativeEvent.locationX));
@@ -36,8 +50,9 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
   return (
     <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <View style={styles.overlay}>
+        <Animated.View pointerEvents="none" style={[styles.scrim, {opacity: sliderPreviewOpacity}]} />
         <Pressable style={styles.dismiss} onPress={onClose}/>
-        <View style={[styles.sheet, {paddingBottom: Math.max(18, insets.bottom + 12)}]}>
+        <Animated.View style={[styles.sheet, {opacity: sliderPreviewOpacity, paddingBottom: Math.max(18, insets.bottom + 12)}]}>
           <View style={styles.header}>
             <Text style={styles.heading}>Оформление чтения</Text>
             <Pressable accessibilityRole="button" accessibilityLabel="Закрыть настройки" onPress={onClose} style={styles.done}>
@@ -57,8 +72,10 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
                 onLayout={(event) => setSliderWidth(event.nativeEvent.layout.width)}
                 onStartShouldSetResponder={() => true}
                 onMoveShouldSetResponder={() => true}
-                onResponderGrant={changeSize}
+                onResponderGrant={(event) => {animateControls(0); changeSize(event);}}
                 onResponderMove={changeSize}
+                onResponderRelease={() => animateControls(1)}
+                onResponderTerminate={() => animateControls(1)}
                 style={styles.track}>
                 <View pointerEvents="none" style={[styles.trackFill,{width:(resolved.fontSize - 14) / 14 * 100 + '%'}]}/>
                 <View pointerEvents="none" style={[styles.thumb,{left:(resolved.fontSize - 14) / 14 * 100 + '%'}]}/>
@@ -93,14 +110,15 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
             )}
             <Pressable onPress={onReset} style={styles.reset}><Text style={styles.resetText}>Вернуть общие настройки</Text></Pressable>
           </ScrollView>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
 };
 
 const styles=StyleSheet.create({
-  overlay:{flex:1,justifyContent:'flex-end',backgroundColor:'rgba(24,17,12,.35)'},
+  overlay:{flex:1,justifyContent:'flex-end',backgroundColor:'transparent'},
+  scrim:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(24,17,12,.35)'},
   dismiss:{flex:1},
   sheet:{maxHeight:'78%',backgroundColor:'#FFF4DE',borderTopLeftRadius:23,borderTopRightRadius:23,paddingHorizontal:18,paddingTop:16},
   header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:12},
