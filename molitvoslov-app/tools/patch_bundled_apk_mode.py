@@ -152,12 +152,9 @@ if (old !== 'databaseName={searchSeedBuild.database_name}') {
        target.value.type !== 'JSXExpressionContainer')) {
     throw new Error('SQLiteProvider databaseName has an unsupported value');
   }
-  if (target.value.type === 'JSXExpressionContainer') {
-    const expr = target.value.expression;
-    if (expr.type !== 'StringLiteral' && expr.type !== 'TemplateLiteral') {
-      throw new Error('Refusing to overwrite a customized dynamic search databaseName');
-    }
-  }
+  // The named SQLiteProvider and its bundled assetSource uniquely identify
+  // the search DB. Its databaseName may be a literal, identifier or expression;
+  // only this one attribute is replaced, leaving the local UI untouched.
 }
 const newAttr = 'databaseName={searchSeedBuild.database_name}';
 let output = input.slice(0, target.start) + newAttr + input.slice(target.end);
