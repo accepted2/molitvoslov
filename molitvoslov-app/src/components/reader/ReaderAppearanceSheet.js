@@ -20,16 +20,23 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
   const insets = useSafeAreaInsets();
   const [sliderWidth, setSliderWidth] = useState(240);
   const [showColorPicker, setShowColorPicker] = useState(null);
+  const [sliderDragging, setSliderDragging] = useState(false);
   const sliderPreviewOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    if (!visible) sliderPreviewOpacity.setValue(1);
+    if (!visible) {
+      sliderPreviewOpacity.stopAnimation();
+      sliderPreviewOpacity.setValue(1);
+      setSliderDragging(false);
+    }
   }, [visible, sliderPreviewOpacity]);
 
-  const animateControls = (opacity) => {
+  const setSliderPreview = (dragging) => {
+    setSliderDragging(dragging);
+    sliderPreviewOpacity.stopAnimation();
     Animated.timing(sliderPreviewOpacity, {
-      toValue: opacity,
-      duration: opacity ? 240 : 130,
+      toValue: dragging ? 0 : 1,
+      duration: dragging ? 140 : 260,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
@@ -52,17 +59,21 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
       <View style={styles.overlay}>
         <Animated.View pointerEvents="none" style={[styles.scrim, {opacity: sliderPreviewOpacity}]} />
         <Pressable style={styles.dismiss} onPress={onClose}/>
-        <Animated.View style={[styles.sheet, {opacity: sliderPreviewOpacity, paddingBottom: Math.max(18, insets.bottom + 12)}]}>
-          <View style={styles.header}>
+        <View style={[styles.sheet, {paddingBottom: Math.max(18, insets.bottom + 12)}]}>
+          {/* The slider stays opaque while the panel and its other controls fade. */}
+          <Animated.View pointerEvents="none" style={[styles.sheetBackground, {opacity: sliderPreviewOpacity}]} />
+          <Animated.View pointerEvents={sliderDragging ? 'none' : 'auto'} style={[styles.header, {opacity: sliderPreviewOpacity}]}>
             <Text style={styles.heading}>Оформление чтения</Text>
             <Pressable accessibilityRole="button" accessibilityLabel="Закрыть настройки" onPress={onClose} style={styles.done}>
               <Text style={styles.doneText}>Готово</Text>
             </Pressable>
-          </View>
+          </Animated.View>
           <ScrollView style={styles.scrollArea} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-            <Text style={styles.label}>Размер шрифта: {resolved.fontSize}</Text>
+            <Animated.Text style={[styles.label, {opacity: sliderPreviewOpacity}]}>Размер шрифта: {resolved.fontSize}</Animated.Text>
             <View style={styles.sizeRow}>
-              <Pressable onPress={() => onChange?.({fontSize: clampSize(resolved.fontSize - 1)})} style={styles.step}><Text style={styles.stepText}>A−</Text></Pressable>
+              <Animated.View pointerEvents={sliderDragging ? 'none' : 'auto'} style={{opacity: sliderPreviewOpacity}}>
+                <Pressable onPress={() => onChange?.({fontSize: clampSize(resolved.fontSize - 1)})} style={styles.step}><Text style={styles.stepText}>A−</Text></Pressable>
+              </Animated.View>
               <View
                 accessibilityRole="adjustable"
                 accessibilityLabel="Размер шрифта"
@@ -72,16 +83,19 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
                 onLayout={(event) => setSliderWidth(event.nativeEvent.layout.width)}
                 onStartShouldSetResponder={() => true}
                 onMoveShouldSetResponder={() => true}
-                onResponderGrant={(event) => {animateControls(0); changeSize(event);}}
+                onResponderGrant={(event) => {setSliderPreview(true); changeSize(event);}}
                 onResponderMove={changeSize}
-                onResponderRelease={() => animateControls(1)}
-                onResponderTerminate={() => animateControls(1)}
+                onResponderRelease={() => setSliderPreview(false)}
+                onResponderTerminate={() => setSliderPreview(false)}
                 style={styles.track}>
                 <View pointerEvents="none" style={[styles.trackFill,{width:(resolved.fontSize - 14) / 14 * 100 + '%'}]}/>
                 <View pointerEvents="none" style={[styles.thumb,{left:(resolved.fontSize - 14) / 14 * 100 + '%'}]}/>
               </View>
-              <Pressable onPress={() => onChange?.({fontSize: clampSize(resolved.fontSize + 1)})} style={styles.step}><Text style={styles.stepText}>A+</Text></Pressable>
+              <Animated.View pointerEvents={sliderDragging ? 'none' : 'auto'} style={{opacity: sliderPreviewOpacity}}>
+                <Pressable onPress={() => onChange?.({fontSize: clampSize(resolved.fontSize + 1)})} style={styles.step}><Text style={styles.stepText}>A+</Text></Pressable>
+              </Animated.View>
             </View>
+            <Animated.View pointerEvents={sliderDragging ? 'none' : 'auto'} style={[styles.settingsBlock, {opacity: sliderPreviewOpacity}]}>
             <Text style={styles.label}>Цветовая тема</Text>
             <View style={styles.paletteRow}>
               {PRESETS.map(item => (
@@ -109,8 +123,9 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
               />
             )}
             <Pressable onPress={onReset} style={styles.reset}><Text style={styles.resetText}>Вернуть общие настройки</Text></Pressable>
+            </Animated.View>
           </ScrollView>
-        </Animated.View>
+        </View>
       </View>
     </Modal>
   );
@@ -120,13 +135,15 @@ const styles=StyleSheet.create({
   overlay:{flex:1,justifyContent:'flex-end',backgroundColor:'transparent'},
   scrim:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(24,17,12,.35)'},
   dismiss:{flex:1},
-  sheet:{maxHeight:'78%',backgroundColor:'#FFF4DE',borderTopLeftRadius:23,borderTopRightRadius:23,paddingHorizontal:18,paddingTop:16},
+  sheet:{maxHeight:'78%',backgroundColor:'transparent',paddingHorizontal:18,paddingTop:16},
+  sheetBackground:{...StyleSheet.absoluteFillObject,backgroundColor:'#FFF4DE',borderTopLeftRadius:23,borderTopRightRadius:23},
   header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:12},
   heading:{fontSize:19,fontWeight:'700',color:'#4B2D18'},
   done:{paddingVertical:9,paddingHorizontal:15,borderRadius:14,backgroundColor:'#E6CEAA'},
   doneText:{color:'#54351C',fontWeight:'700'},
   scrollArea:{flexGrow:0,flexShrink:1},
   scroll:{paddingBottom:8,gap:13},
+  settingsBlock:{gap:13},
   label:{fontSize:14,color:'#684229',fontWeight:'700'},
   sizeRow:{flexDirection:'row',alignItems:'center',gap:11},
   step:{padding:9,borderRadius:8,backgroundColor:'#F1DFC2'},
