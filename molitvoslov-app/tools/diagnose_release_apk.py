@@ -92,7 +92,7 @@ def inspect_apk(apk, expected_titles):
 
 def inspect_js_build(archive, bundle_names):
     """Best-effort check of the compiled release JS and its source map."""
-    print("\\n=== Embedded JavaScript ===")
+    print("\n=== Embedded JavaScript ===")
     if not bundle_names:
         print("WARNING: no standard index.android.bundle found in APK")
     for name in bundle_names:
@@ -122,7 +122,7 @@ def inspect_js_build(archive, bundle_names):
             }
             for file_name, needles in markers.items():
                 positions = [i for i, name in enumerate(paths)
-                             if str(name).replace("\\\\", "/").endswith("/" + file_name)]
+                             if str(name).replace("\\", "/").endswith("/" + file_name)]
                 if not positions:
                     print("SOURCE IN BUNDLE:", file_name, "NOT LISTED")
                 elif not sources:
