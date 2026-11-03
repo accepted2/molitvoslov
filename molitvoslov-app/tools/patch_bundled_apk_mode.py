@@ -20,6 +20,7 @@ FILES = {
     "src/services/contentStore.js",
     "src/services/bibleStore.js",
     "src/services/contentApi.js",
+    "src/services/calendarOfflineStore.js",
     "src/screens/SearchScreen.js",
     "tools/build_release_1_0_20.ps1",
 }
@@ -146,6 +147,16 @@ def patch(path, src, new):
                               "BIBLE_CONTENT_BUNDLED_ONLY_V1", ["SELECT version, payload", "public_content_cache"])
     if path == "src/services/contentApi.js":
         return patch_api(src, new)
+    if path == "src/services/calendarOfflineStore.js":
+        if "CALENDAR_BUNDLED_ONLY_V1" in src:
+            return src
+        start = "export const getOfflineCalendarDay = async (date, language = 'ru') => {"
+        end = "/*\n * Сохраняем свежий день, полученный с сервера."
+        old = extract(src, start, end, path)
+        if "getStoredCalendarDay" not in old or "storedByDate" not in old:
+            raise ValueError("Calendar offline read path has unknown modifications")
+        replacement = extract(new, "// CALENDAR_BUNDLED_ONLY_V1", end, path)
+        return src.replace(old, replacement, 1)
     if path == "src/screens/SearchScreen.js":
         return patch_search(src, new)
     if path == "tools/build_release_1_0_20.ps1":
