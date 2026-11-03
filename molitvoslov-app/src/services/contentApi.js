@@ -1,19 +1,18 @@
-import bundledBaseline from '../data/offlineContent.json';
 import {getDailyQuote} from './dailyQuote';
-import {isCuratedAkathist} from '../data/curatedAkathists';
 import {getCurrentContent} from './contentStore';
 import {API_BASE_URL} from './backendAuth';
 
-const baselineAkathistSlugs = new Set(Object.keys(bundledBaseline?.akathists?.by_slug || {}));
-const isVisibleAkathist = (item) => !!item && (isCuratedAkathist(item) || (!!item.slug && !baselineAkathistSlugs.has(String(item.slug))));
+// AKATHIST_PUBLISHED_ONLY_V1: every published akathist bundled in the APK is visible.
+const isVisibleAkathist = (item) => !!item && item.is_visible === true;
 
 const response = (data) => ({data});
 
 // Until the prayer rules have been finalized in Django, use the current
 // local SQLite-backed API in development. Production stays fully offline.
-// Set EXPO_PUBLIC_PRAYER_RULES_SOURCE=offline to use the bundled JSON in dev.
+// PUBLIC_RULES_BUNDLED_BY_DEFAULT_V1: identical public content in dev and APK.
+// Explicit EXPO_PUBLIC_PRAYER_RULES_SOURCE=django is a local editing preview only.
 const useLivePrayerRules = () =>
-  __DEV__ && process.env.EXPO_PUBLIC_PRAYER_RULES_SOURCE !== 'offline';
+  __DEV__ && process.env.EXPO_PUBLIC_PRAYER_RULES_SOURCE === 'django';
 
 const isPrayerRulePath = (path) =>
   path === 'prayer-rules/' || /^prayer-rules\/[^/]+\/$/.test(path);
