@@ -124,14 +124,14 @@ def corrected_exporter(source):
             "Exporter omits published akathists, but its akathists_qs is "
             "not the known legacy curated-only filter: " + old_segment[:450]
         )
-    if stmt.lineno != stmt.end_lineno:
-        raise RuntimeError("Unexpected multiline curated filter; refusing automatic edit")
     lines = source.splitlines(keepends=True)
     original = lines[stmt.lineno - 1]
     prefix = original[:len(original) - len(original.lstrip(" \t"))]
-    lines[stmt.lineno - 1] = (
+    # AST end_lineno lets us safely replace a one-line or multiline curated
+    # assignment without rewriting the rest of the user's local backend.
+    lines[stmt.lineno - 1:stmt.end_lineno] = [
         prefix + "akathists_qs = Akathist.objects.filter(is_visible=True).order_by('id')\n"
-    )
+    ]
     corrected = "".join(lines)
     compile(corrected, str(SOURCE), "exec")
     return corrected, old_segment
