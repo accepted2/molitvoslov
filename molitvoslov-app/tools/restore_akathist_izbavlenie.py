@@ -150,7 +150,9 @@ def main():
     print("Current offline akathists:", len(old_list))
     source = get_importer_source()
     if DEST.is_file():
-        if DEST.read_bytes() != source:
+        # Windows Git checkouts may have CRLF while the Git blob uses LF.
+        normalize_source = lambda raw: raw.decode("utf-8-sig").replace("\r\n", "\n").strip()
+        if normalize_source(DEST.read_bytes()) != normalize_source(source):
             raise RuntimeError("Local Django importer differs from GitHub; existing file was NOT overwritten.")
         print("Importer already exists in backend; matching original source.")
     else:
