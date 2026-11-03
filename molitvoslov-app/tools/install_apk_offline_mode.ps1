@@ -16,14 +16,17 @@ Write-Host '[1/5] Fetch APK-only patchers, content guard and original source rec
 & git fetch origin $branch
 Assert-Last 'Git fetch'
 # Preserve any local edits to the v10 generator before updating the tool.
-$searchBuilder = '.\tools\build_search_seed_v10.py'
-if (Test-Path $searchBuilder) {
-  $backups = Join-Path (Split-Path $root -Parent) 'build-backups'
-  New-Item -ItemType Directory -Force -Path $backups | Out-Null
-  $stamp = Get-Date -Format 'yyyyMMdd_HHmmss_fff'
-  $builderBackup = Join-Path $backups "search-v10-builder-before-ast-$stamp.py"
-  Copy-Item -LiteralPath $searchBuilder -Destination $builderBackup -ErrorAction Stop
-  Write-Host "Search generator backup: $builderBackup"
+$searchTools = @('build_search_seed_v10.py', 'verify_search_seed_v10.py')
+$backups = Join-Path (Split-Path $root -Parent) 'build-backups'
+New-Item -ItemType Directory -Force -Path $backups | Out-Null
+$stamp = Get-Date -Format 'yyyyMMdd_HHmmss_fff'
+foreach ($tool in $searchTools) {
+  $toolPath = Join-Path '.\tools' $tool
+  if (Test-Path $toolPath) {
+    $backup = Join-Path $backups "$tool.before-offline-corpus-fix.$stamp"
+    Copy-Item -LiteralPath $toolPath -Destination $backup -ErrorAction Stop
+    Write-Host "Search tool backup: $backup"
+  }
 }
 $files = @(
   'tools/patch_bundled_apk_mode.py',
@@ -31,6 +34,7 @@ $files = @(
   'tools/verify_bundled_apk_mode.js',
   'tools/prepare_offline_apk.py',
   'tools/build_search_seed_v10.py',
+  'tools/verify_search_seed_v10.py',
   'tools/test_search_seed_v10_corpus.py',
   'tools/audit_local_public_sources.py',
   'tools/repair_local_mobile_export.py',
