@@ -180,6 +180,11 @@ def main():
     planned = {}
     for name in sorted(FILES):
         destination = ROOT / name
+        if not destination.is_file():
+            if name == "tools/build_release_1_0_20.ps1":
+                planned[name] = remote(name)
+                continue
+            raise FileNotFoundError("Missing source file: " + str(destination))
         source = destination.read_text(encoding="utf-8-sig").replace("\r\n", "\n")
         future = patch(name, source, remote(name))
         if source != future:
@@ -194,7 +199,8 @@ def main():
         local = ROOT / name
         saved = backup / name
         saved.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(local, saved)
+        if local.exists():
+            shutil.copy2(local, saved)
 
     try:
         for name, text in planned.items():
@@ -211,7 +217,11 @@ def main():
             raise RuntimeError("Source verification failed: " + result.stderr[-2000:])
     except BaseException:
         for name in planned:
-            shutil.copy2(backup / name, ROOT / name)
+            saved = backup / name
+            if saved.exists():
+                shutil.copy2(saved, ROOT / name)
+            else:
+                (ROOT / name).unlink(missing_ok=True)
         print("PATCH FAILED: code restored from backup", backup)
         raise
 
