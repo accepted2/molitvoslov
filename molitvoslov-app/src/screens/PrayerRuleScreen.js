@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 
 import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
 
@@ -9,6 +9,7 @@ import {useReadingProgress} from '../hooks/useReadingProgress';
 import {getSavedItems} from '../services/savedItems';
 
 import PrayerRuleReader from '../components/reader/PrayerRuleReader';
+import {ReaderAppearanceSheet} from '../components/reader/ReaderAppearanceSheet';
 
 import {MemorialQuickSheet} from '../components/memorial/MemorialQuickSheet';
 
@@ -20,6 +21,7 @@ import {StatusBar} from 'expo-status-bar';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
+import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
 import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
@@ -47,6 +49,10 @@ export const PrayerRuleScreen = ({route, navigation}) => {
   const headerHeight = insets.top + 56;
 
   const [rule, setRule] = useState(null);
+  const readerRef = useRef(null);
+  const {appearance, changeAppearance, resetAppearance} = useScopedReaderAppearance('prayer_rule', slug);
+  const [appearanceVisible, setAppearanceVisible] = useState(false);
+  useEffect(() => {readerRef.current?.applyAppearance(appearance);}, [appearance]);
   const {readingChromeHidden, handleReadingScroll} = useReadingChrome();
 
   const [savedItems, setSavedItems] = useState([]);
@@ -240,6 +246,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
       <StatusBar style="light" translucent backgroundColor="transparent" />
 
       <PrayerRuleReader
+        ref={readerRef}
         rule={rule}
         savedItems={savedItems}
         savedProgress={savedProgress}
@@ -253,6 +260,14 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         onViewModeChange={handleViewModeChange}
         onHeaderTitleVisibilityChange={setShowStickyTitle}
         onReadingScroll={handleReadingScroll}
+      />
+
+      <ReaderAppearanceSheet
+        visible={appearanceVisible}
+        onClose={() => setAppearanceVisible(false)}
+        appearance={appearance}
+        onChange={changeAppearance}
+        onReset={resetAppearance}
       />
 
       <MemorialQuickSheet
@@ -270,6 +285,10 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         compactReading
         readingHidden={readingChromeHidden}
         titleOffsetY={-4}
+        showMenu
+        onMenuPress={() => setAppearanceVisible(true)}
+        languageSwitcher={viewSwitcher}
+        onLanguageChange={(mode) => readerRef.current?.changeViewMode(mode)}
       />
 
       <BottomNav navigation={navigation} active={null} readingHidden={readingChromeHidden} />
