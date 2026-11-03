@@ -174,11 +174,27 @@ def seed_metadata(path, public_version, bible_version):
         return None
 
 
+def previous_seed_count(path, bible_version):
+    if not path.is_file() or path.stat().st_size < 4096:
+        return None
+    try:
+        with sqlite3.connect("file:" + path.resolve().as_posix() + "?mode=ro",
+                             uri=True) as db:
+            meta = dict(db.execute("SELECT k, v FROM meta"))
+            if (meta.get("schema") != SCHEMA or
+                    meta.get("bible_content_version") != bible_version):
+                return None
+            return db.execute("SELECT COUNT(*) FROM doc").fetchone()[0]
+    except sqlite3.Error:
+        return None
+
+
 def rebuild_seed(public_version, bible_version):
     count = seed_metadata(SEED, public_version, bible_version)
     if count:
         print("Existing packaged search seed matches source JSON: docs", count)
         return
+    prior_count = previous_seed_count(SEED, bible_version)
     print("Search seed is stale or missing; building complete SQLite from bundled JSON...")
     subprocess.run(
         [sys.executable, "-X", "utf8", str(TOOLS / "build_search_seed_v10.py")],
@@ -191,6 +207,14 @@ def rebuild_seed(public_version, bible_version):
     count = seed_metadata(SEED_V10, public_version, bible_version)
     if not count:
         raise RuntimeError("Regenerated search seed does not match the bundled content")
+    if prior_count is not None and count < prior_count:
+        raise RuntimeError(
+            "REFUSING REGRESSED SEARCH INDEX: previous bundle had %d documents, "
+            "new candidate has %d. The existing search_seed.db has NOT been "
+            "overwritten." % (prior_count, count)
+        )
+    print("Search index document count:", count,
+          "(previous: %s)" % (prior_count if prior_count is not None else "unknown"))
     if SEED.is_file() and SEED.stat().st_size > 4096:
         BACKUPS.mkdir(parents=True, exist_ok=True)
         previous = BACKUPS / (
