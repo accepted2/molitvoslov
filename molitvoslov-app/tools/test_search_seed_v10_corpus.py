@@ -66,30 +66,37 @@ class OriginalSearchTraversalTests(unittest.TestCase):
             self.assertIn("akathists:section:9130002:church", ext)
 
     def test_modified_comment_does_not_omit_any_documents(self):
-        # This source change broke the previous brittle string-slice v10 generator.
-        original_tag = "    # Feast-level calendar texts:"
-        self.assertIn(original_tag, self.source)
-        alternate = self.source.replace(original_tag, "    # Local search corpus:")
+        # Existing local v9 may already have renamed the original comment,
+        # therefore modify ANY standalone comments, not one hard-coded line.
+        import re
+        alternate = re.sub(r"(?m)^([ \t]*)#[^\n]*$",
+                           r"\1# comment changed locally", self.source)
         content, original = corpus_documents(self.source)
         content2, modified = corpus_documents(alternate)
         self.assertEqual(content, content2)
         self.assertEqual(original, modified)
 
     def test_modified_metadata_spacing_preserves_corpus(self):
-        original = "        public_ver = content.get("
-        self.assertIn(original, self.source)
-        alternate = self.source.replace(original, "        public_ver  =  content.get(")
+        # Same traversal despite local formatting changes in metadata.
+        import re
+        alternate = re.sub(r"(?m)\b(public_ver|bible_ver)\s*=",
+                           r"\1  =", self.source)
         _, baseline = corpus_documents(self.source)
         _, modified = corpus_documents(alternate)
         self.assertEqual(baseline, modified)
 
     def test_direct_db_write_before_metadata_is_rejected(self):
-        needle = "    # Feast-level calendar texts:"
-        self.assertIn(needle, self.source)
-        modified = self.source.replace(needle,
-                                       "    db.execute('DELETE FROM users')\n" + needle)
+        import ast
+        tree = ast.parse(self.source)
+        main = next(n for n in tree.body
+                    if isinstance(n, ast.FunctionDef) and n.name == "main")
+        idx = next(i for i, node in enumerate(main.body)
+                   if isinstance(node, ast.FunctionDef) and node.name == "add")
+        at = main.body[idx + 1].lineno - 1
+        lines = self.source.splitlines(keepends=True)
+        lines.insert(at, "    db.execute('DELETE FROM users')\n")
         with self.assertRaisesRegex(RuntimeError, "direct database operations"):
-            compile_corpus(modified)
+            compile_corpus("".join(lines))
 
     def test_missing_published_akathist_stops_build(self):
         content, collected = corpus_documents(self.source)
