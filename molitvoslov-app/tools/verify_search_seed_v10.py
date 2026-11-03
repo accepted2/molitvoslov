@@ -21,6 +21,21 @@ def main():
         count=db.execute('SELECT COUNT(*) FROM doc').fetchone()[0]
         if count<1000: raise RuntimeError('Too few documents: '+str(count))
         if db.execute('PRAGMA quick_check').fetchone()[0]!='ok': raise RuntimeError('Corrupt database')
+        # Guard against losing published akathists/sections during corpus merging.
+        public=json.loads(CONTENT.read_text(encoding='utf-8-sig'))
+        expected=set()
+        for ak in (public.get('akathists',{}).get('by_slug',{}) or {}).values():
+            if not ak.get('is_visible',True):
+                continue
+            expected.add('akathists:'+str(ak.get('id')))
+            for section in ak.get('sections',[]):
+                if (section.get('text') or {}).get('content'):
+                    expected.add('akathists:section:'+str(section.get('id'))+':church')
+        actual={row[0] for row in db.execute("SELECT ext FROM doc WHERE grp='akathists'")}
+        missing=sorted(expected-actual)
+        if missing:
+            raise RuntimeError('Missing published akathist search entries: '+', '.join(missing[:20]))
+        print('Akathist search coverage verified:',len(expected),'records')
         for phrase in ('отче наш','богородица','господи помилуй'):
             query=' AND '.join('"'+w+'"' for w in stems(phrase))
             n=db.execute('SELECT COUNT(*) FROM fts WHERE fts MATCH ?', (query,)).fetchone()[0]
