@@ -37,7 +37,8 @@ export const ReaderScreen = ({route, navigation}) => {
 
   const insets = useSafeAreaInsets();
 
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
+  useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   const [text, setText] = useState(null);
   const {readingChromeHidden, handleReadingScroll} = useReadingChrome();
@@ -418,6 +419,7 @@ export const ReaderScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
+        onHeaderHeightChange={setHeaderHeight}
         title={getLocalizedTextTitle(text, language) || t('common.reading')}
         navigation={navigation}
         topInset={insets.top}
