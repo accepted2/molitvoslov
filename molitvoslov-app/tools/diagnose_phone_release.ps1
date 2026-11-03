@@ -1,5 +1,8 @@
 # Read-only: compares the new release APK against the APK actually installed
 # on the connected Android phone. Does not install/uninstall anything.
+# -Serial can explicitly select a connected device (e.g. the physical phone).
+param([string]$Serial)
+
 $ErrorActionPreference = "Stop"
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 Set-Location $root
@@ -17,9 +20,22 @@ if (Test-Path -LiteralPath $adb) {
     $lines | Where-Object { $_ -match '^([^\s]+)\s+device\s*$' } |
       ForEach-Object { ([regex]::Match($_, '^([^\s]+)\s+device\s*$')).Groups[1].Value }
   )
-  if ($serials.Count -eq 1) {
+  $physicalSerials = @($serials | Where-Object { $_ -notmatch '^emulator-' })
+  if ($Serial) {
+    if ($serials -notcontains $Serial) {
+      throw "Requested Android device $Serial is not connected. Found: $($serials -join ', ')"
+    }
+    $serial = $Serial
+  } elseif ($physicalSerials.Count -eq 1) {
+    $serial = $physicalSerials[0]
+  } elseif ($serials.Count -eq 1) {
     $serial = $serials[0]
-    Write-Host "CONNECTED DEVICE: $serial"
+  } else {
+    $serial = $null
+  }
+
+  if ($serial) {
+    Write-Host "SELECTED DEVICE: $serial"
     $package = "com.accepted2.molitvoslov"
     $packageLines = @(& $adb -s $serial shell pm path $package)
     $base = $packageLines | Where-Object {
@@ -48,8 +64,8 @@ if (Test-Path -LiteralPath $adb) {
   } elseif ($serials.Count -eq 0) {
     Write-Host "No ADB phone connected. Will inspect locally built APK only."
   } else {
-    Write-Warning "Multiple Android devices connected: $($serials -join ', ')"
-    Write-Warning "Disconnect emulator/other device to inspect the intended phone."
+    Write-Warning "Multiple physical Android devices connected: $($serials -join ', ')"
+    Write-Warning "Specify the phone via -Serial DEVICE_ID."
   }
 } else {
   Write-Warning "ADB not found: $adb. Will inspect local APK only."
