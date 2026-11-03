@@ -23,12 +23,16 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
   const [sliderDragging, setSliderDragging] = useState(false);
   const sliderPreviewOpacity = useRef(new Animated.Value(1)).current;
 
+  const restorePanel = () => {
+    sliderPreviewOpacity.stopAnimation();
+    sliderPreviewOpacity.setValue(1);
+    setSliderDragging(false);
+  };
+
+  // Reset even when reopening after an interrupted gesture. The normal menu
+  // must never inherit a transparent panel from a previous font preview.
   useEffect(() => {
-    if (!visible) {
-      sliderPreviewOpacity.stopAnimation();
-      sliderPreviewOpacity.setValue(1);
-      setSliderDragging(false);
-    }
+    restorePanel();
   }, [visible, sliderPreviewOpacity]);
 
   const setSliderPreview = (dragging) => {
@@ -38,9 +42,14 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
       toValue: dragging ? 0 : 1,
       duration: dragging ? 140 : 260,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
+      // Background color and opacity must advance together on Android.
+      useNativeDriver: false,
     }).start();
   };
+  const animatedSheetColor = sliderPreviewOpacity.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(255,244,222,0)', 'rgba(255,244,222,1)'],
+  });
   const resolved = resolveReaderAppearance(appearance);
   const changeSize = (event) => {
     const position = Math.max(0, Math.min(sliderWidth, event.nativeEvent.locationX));
@@ -55,13 +64,25 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
     });
   };
   return (
-    <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+    <Modal
+      transparent
+      visible={visible}
+      animationType="slide"
+      onRequestClose={onClose}
+      onShow={restorePanel}
+      statusBarTranslucent
+    >
       <View style={styles.overlay}>
         <Animated.View pointerEvents="none" style={[styles.scrim, {opacity: sliderPreviewOpacity}]} />
         <Pressable style={styles.dismiss} onPress={onClose}/>
-        <View style={[styles.sheet, {paddingBottom: Math.max(18, insets.bottom + 12)}]}>
-          {/* The slider stays opaque while the panel and its other controls fade. */}
-          <Animated.View pointerEvents="none" style={[styles.sheetBackground, {opacity: sliderPreviewOpacity}]} />
+        <Animated.View
+          style={[styles.sheet, {
+            backgroundColor: animatedSheetColor,
+            paddingBottom: Math.max(18, insets.bottom + 12),
+          }]}
+        >
+          {/* Animate the actual sheet surface, not an absolute child that might
+              render beneath the underlying WebView on Android. */}
           <Animated.View pointerEvents={sliderDragging ? 'none' : 'auto'} style={[styles.header, {opacity: sliderPreviewOpacity}]}>
             <Text style={styles.heading}>Оформление чтения</Text>
             <Pressable accessibilityRole="button" accessibilityLabel="Закрыть настройки" onPress={onClose} style={styles.done}>
@@ -125,7 +146,7 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
             <Pressable onPress={onReset} style={styles.reset}><Text style={styles.resetText}>Вернуть общие настройки</Text></Pressable>
             </Animated.View>
           </ScrollView>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -135,8 +156,7 @@ const styles=StyleSheet.create({
   overlay:{flex:1,justifyContent:'flex-end',backgroundColor:'transparent'},
   scrim:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(24,17,12,.35)'},
   dismiss:{flex:1},
-  sheet:{maxHeight:'78%',backgroundColor:'transparent',paddingHorizontal:18,paddingTop:16},
-  sheetBackground:{...StyleSheet.absoluteFillObject,backgroundColor:'#FFF4DE',borderTopLeftRadius:23,borderTopRightRadius:23},
+  sheet:{maxHeight:'78%',backgroundColor:'#FFF4DE',borderTopLeftRadius:23,borderTopRightRadius:23,paddingHorizontal:18,paddingTop:16},
   header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:12},
   heading:{fontSize:19,fontWeight:'700',color:'#4B2D18'},
   done:{paddingVertical:9,paddingHorizontal:15,borderRadius:14,backgroundColor:'#E6CEAA'},
