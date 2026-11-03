@@ -515,7 +515,8 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   }, [route.params?.date]);
 
   const wide = width >= 760;
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
+  React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
   const locale = CALENDAR_MONTHS[language] || CALENDAR_MONTHS.ru;
   const copy = calendarText(language);
   const gospelReadings = useMemo(() => getCalendarReadingItems(dayData, 'gospel'), [dayData]);
@@ -956,7 +957,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
         )}
       </ScrollView>
 
-      <FixedSectionHeader
+      <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
         title={copy.calendarTitle}
         navigation={navigation}
         topInset={insets.top}
