@@ -163,21 +163,15 @@ def patch(path, src, new):
     if path == "scripts/copy-search-seed.js":
         marker = "// SEARCH_SEED_METRO_ONLY_V1"
         if marker in src:
-            if "fs.unlinkSync(dest)" not in src[src.index(marker):]:
-                raise ValueError("Search seed postcondition marker is incomplete")
+            if "cleanupFs.unlinkSync(nativeSeed)" not in src[src.index(marker):]:
+                raise ValueError("Search seed cleanup marker is incomplete")
             return src
         if new.count(marker) != 1:
             raise ValueError("Missing canonical search seed postcondition in GitHub")
-        # Preserve the locally customized search installer byte-for-byte.
-        # Its historical native-asset copy logic can vary between revisions.
-        # Append a safe final postcondition instead of overwriting those edits:
-        # only an identical native copy may be removed; a different one fails.
-        if not all(token in src for token in (
-            "require('fs')", "const src =", "const dest ="
-        )):
-            raise ValueError("Unknown search seed source/destination; refuse modification")
-        if "process.exit(" in src or "module.exports" in src:
-            raise ValueError("Search seed script has custom control flow; refuse modification")
+        # Append a self-contained, checksum-guarded cleanup. Existing installer
+        # code remains untouched, even if locally modified or reorganized.
+        # The suffix computes its own source/destination paths, so it does not
+        # depend on earlier local variable names.
         suffix = new[new.index(marker):].rstrip()
         return src.rstrip() + "\n\n" + suffix + "\n"
     if path == "tools/build_release_1_0_20.ps1":
