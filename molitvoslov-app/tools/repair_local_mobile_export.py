@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Repair a LOCAL legacy Django exporter that excludes published akathists.
+r"""Repair a LOCAL legacy Django exporter that excludes published akathists.
 
 Only touches C:\m\repo\molitvoslov-backend\api\mobile_content.py if it still
 contains the original curated-only akathists_qs selection.  Back up first;
