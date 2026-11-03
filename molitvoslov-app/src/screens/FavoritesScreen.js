@@ -1,10 +1,11 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {useFonts} from 'expo-font';
+import {Ionicons} from '@expo/vector-icons';
 import {AppBackground} from '../components/layout/AppBackground';
-import {ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, FlatList, PanResponder, Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
-import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {useFocusEffect} from '@react-navigation/native';
 
 import {BottomNav} from '../components/navigation/BottomNav';
@@ -26,6 +27,13 @@ const TABS = [
 
 const FRAGMENT_SAVE_TYPES = new Set(['word', 'sentence', 'paragraph', 'fragment']);
 
+// The ordinary Android serif cannot reliably render historic Cyrillic glyphs and accents.
+const CHURCH_SCRIPT_PATTERN = /[\u0300-\u036f\u0483-\u0489\u0460-\u052f\u2de0-\u2dff\ua640-\ua69f]/u;
+const isChurchPreview = (item) =>
+  ['church', 'traditional', 'church_slavonic'].includes(
+    item.metadata?.language || item.metadata?.text_language
+  ) || CHURCH_SCRIPT_PATTERN.test(item.text || '');
+
 export const FavoritesScreen = ({route, navigation}) => {
   const {t} = useLanguage();
   const initialTab = TABS.some((tab) => tab.key === route.params?.tab)
@@ -33,12 +41,15 @@ export const FavoritesScreen = ({route, navigation}) => {
     : TAB_SAVED;
 
   const [items, setItems] = useState([]);
+  const [search, setSearch] = useState('');
+  const [ponomarLoaded] = useFonts({
+    FavoritesPonomar: require('../../assets/fonts/Ponomar-Regular.ttf'),
+  });
   const [activeTab, setActiveTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 56;
 
   useEffect(() => {
     if (TABS.some((tab) => tab.key === route.params?.tab)) {
@@ -84,12 +95,36 @@ export const FavoritesScreen = ({route, navigation}) => {
     [items]
   );
 
-  const visibleItems =
+  const activeItems =
     activeTab === TAB_PLACES
       ? placeItems
       : activeTab === TAB_FRAGMENTS
         ? fragmentItems
         : savedItems;
+
+  const searchQuery = search.trim().toLocaleLowerCase();
+  const visibleItems = searchQuery
+    ? activeItems.filter((item) =>
+        [item.item_title, item.source_title, item.save_type_display, item.text]
+          .some((part) => String(part || '').toLocaleLowerCase().includes(searchQuery))
+      )
+    : activeItems;
+
+  // Respond only to clear horizontal gestures, leaving vertical scrolling intact.
+  const swipeResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => false,
+    onMoveShouldSetPanResponder: (_event, gesture) =>
+      Math.abs(gesture.dx) > 35 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.6,
+    onPanResponderRelease: (_event, gesture) => {
+      if (Math.abs(gesture.dx) < 65 ||
+          Math.abs(gesture.dx) < Math.abs(gesture.dy) * 1.4) return;
+      setActiveTab((current) => {
+        const position = TABS.findIndex((tab) => tab.key === current);
+        const next = Math.max(0, Math.min(TABS.length - 1, position + (gesture.dx < 0 ? 1 : -1)));
+        return TABS[next]?.key || current;
+      });
+    },
+  }), []);
 
   const removeItem = async (itemId) => {
     try {
@@ -205,8 +240,9 @@ export const FavoritesScreen = ({route, navigation}) => {
     return savedItems.length;
   };
 
-  const emptyCopy =
-    activeTab === TAB_PLACES
+  const emptyCopy = searchQuery
+    ? {icon: '⌕', title: t('favorites.noResults'), text: ''}
+    : activeTab === TAB_PLACES
       ? {
           icon: '⌑',
           title: t('favorites.emptyPlacesTitle'),
@@ -229,6 +265,73 @@ export const FavoritesScreen = ({route, navigation}) => {
       <StatusBar style="light" translucent backgroundColor="transparent" />
 
       <View style={styles.screen}>
+        <View style={[styles.headerRow, {paddingTop: insets.top + 2}]}>
+          <View style={styles.headerTitleBlock}>
+            <Text style={styles.headerTitle} numberOfLines={1}>{t('favorites.title')}</Text>
+            <View style={styles.headerOrnament}>
+              <View style={styles.headerLine} />
+              <Text style={styles.headerStar}>✦</Text>
+              <View style={styles.headerLine} />
+            </View>
+          </View>
+          <View style={styles.searchField}>
+            <Ionicons name="search-outline" size={17} color={colors.accent} />
+            <TextInput
+              style={styles.searchInput}
+              value={search}
+              onChangeText={setSearch}
+              placeholder={t('favorites.searchPlaceholder')}
+              placeholderTextColor={colors.textMuted}
+              selectionColor={colors.accent}
+              autoCorrect={false}
+              autoCapitalize="none"
+              returnKeyType="search"
+              underlineColorAndroid="transparent"
+              accessibilityLabel={t('favorites.searchPlaceholder')}
+            />
+            {!!search && (
+              <Pressable
+                style={styles.clearSearch}
+                hitSlop={8}
+                onPress={() => setSearch('')}
+                accessibilityRole="button"
+                accessibilityLabel={t('favorites.clearSearch')}
+              >
+                <Ionicons name="close-circle" size={17} color={colors.textMuted} />
+              </Pressable>
+            )}
+          </View>
+        </View>
+        <View style={styles.tabsWrap}>
+          <View style={styles.tabs}>
+            {TABS.map((tab) => {
+              const active = activeTab === tab.key;
+              return (
+                <Pressable
+                  key={tab.key}
+                  onPress={() => setActiveTab(tab.key)}
+                  accessibilityRole="tab"
+                  accessibilityState={{selected: active}}
+                  style={({pressed}) => [
+                    styles.tab,
+                    active && styles.tabActive,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={[styles.tabText, active && styles.tabTextActive]}>
+                    {t(tab.labelKey)}
+                  </Text>
+                  {!!tabCount(tab.key) && (
+                    <Text style={[styles.tabCount, active && styles.tabCountActive]}>
+                      {tabCount(tab.key)}
+                    </Text>
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+        <View style={styles.listRegion} {...swipeResponder.panHandlers}>
         {loading ? (
           <View style={styles.center}>
             <ActivityIndicator color={colors.accent} />
@@ -239,21 +342,19 @@ export const FavoritesScreen = ({route, navigation}) => {
           </View>
         ) : (
           <FlatList
+            key={activeTab}
             data={visibleItems}
             keyExtractor={(item) => String(item.id)}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[
               visibleItems.length ? styles.list : styles.emptyList,
-              {
-                paddingTop: headerHeight + 78,
-                paddingBottom: 115 + insets.bottom,
-              },
+              {paddingBottom: 115 + insets.bottom},
             ]}
             ListEmptyComponent={
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyHeart}>{emptyCopy.icon}</Text>
                 <Text style={styles.emptyTitle}>{emptyCopy.title}</Text>
-                <Text style={styles.emptyText}>{emptyCopy.text}</Text>
+                {!!emptyCopy.text && <Text style={styles.emptyText}>{emptyCopy.text}</Text>}
               </View>
             }
             renderItem={({item}) => (
@@ -296,7 +397,7 @@ export const FavoritesScreen = ({route, navigation}) => {
                     </Text>
                   ) : (
                     !!item.text && (
-                      <Text style={styles.quote} numberOfLines={8}>
+                      <Text style={[styles.quote, isChurchPreview(item) && ponomarLoaded && styles.quoteChurch]} numberOfLines={8}>
                         «{item.text}»
                       </Text>
                     )
@@ -311,50 +412,7 @@ export const FavoritesScreen = ({route, navigation}) => {
           />
         )}
 
-        <View
-          pointerEvents="box-none"
-          style={[
-            styles.tabsWrap,
-            {
-              top: headerHeight + 6,
-            },
-          ]}
-        >
-          <View style={styles.tabs}>
-            {TABS.map((tab) => {
-              const active = activeTab === tab.key;
-
-              return (
-                <Pressable
-                  key={tab.key}
-                  onPress={() => setActiveTab(tab.key)}
-                  style={({pressed}) => [
-                    styles.tab,
-                    active && styles.tabActive,
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Text style={[styles.tabText, active && styles.tabTextActive]}>
-                    {t(tab.labelKey)}
-                  </Text>
-
-                  {!!tabCount(tab.key) && (
-                    <Text style={[styles.tabCount, active && styles.tabCountActive]}>
-                      {tabCount(tab.key)}
-                    </Text>
-                  )}
-                </Pressable>
-              );
-            })}
-          </View>
         </View>
-
-        <FixedSectionHeader
-          title={t('favorites.title')}
-          navigation={navigation}
-          topInset={insets.top}
-          showBack={false}
-        />
 
         <BottomNav navigation={navigation} active="favorites" />
       </View>
@@ -374,11 +432,86 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingBottom: 4,
+    gap: spacing.sm,
+    backgroundColor: 'rgba(255, 244, 222, 0.68)',
+  },
+
+  headerTitleBlock: {
+    flexShrink: 0,
+    width: 140,
+    paddingLeft: 2,
+  },
+
+  headerTitle: {
+    fontFamily: 'serif',
+    fontWeight: '700',
+    fontSize: 21,
+    lineHeight: 25,
+    color: '#432A19',
+    includeFontPadding: false,
+  },
+
+  headerOrnament: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 115,
+    marginTop: 2,
+  },
+
+  headerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(139, 88, 40, 0.38)',
+  },
+
+  headerStar: {
+    marginHorizontal: 6,
+    color: '#98622E',
+    fontSize: 7,
+  },
+
+  searchField: {
+    flex: 1,
+    minWidth: 0,
+    height: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 9,
+    paddingRight: 7,
+    gap: 5,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(126, 82, 38, 0.22)',
+    backgroundColor: 'rgba(255, 244, 222, 0.96)',
+  },
+
+  searchInput: {
+    flex: 1,
+    minWidth: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    fontSize: 13,
+    color: colors.text,
+  },
+
+  clearSearch: {
+    padding: 2,
+  },
+
   tabsWrap: {
-    position: 'absolute',
-    left: spacing.md,
-    right: spacing.md,
-    zIndex: 19,
+    marginHorizontal: spacing.md,
+    marginTop: 3,
+    marginBottom: 8,
+  },
+
+  listRegion: {
+    flex: 1,
+    minHeight: 0,
   },
 
   tabs: {
@@ -526,6 +659,13 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     color: colors.textSecondary,
     fontFamily: 'serif',
+  },
+
+  quoteChurch: {
+    fontFamily: 'FavoritesPonomar',
+    fontSize: 17,
+    lineHeight: 25,
+    includeFontPadding: false,
   },
 
   placeMeta: {
