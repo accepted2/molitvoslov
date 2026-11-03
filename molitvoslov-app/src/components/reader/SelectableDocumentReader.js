@@ -116,13 +116,14 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
   const html = useMemo(() => {
     console.warn('[reader] incoming FT =', JSON.stringify(focusTarget));
     const captured = languageProgressRef.current;
+    const switchingLanguage = !!captured || scrollFallbackRef.current !== null;
     const effectiveProgress = captured?.anchorId
       ? {anchor_type: documentData.progressAnchorType, anchor_id: captured.anchorId, offset: captured.offset}
       : savedProgress;
     const markup = buildHtml({
       documentData,
       savedProgress: effectiveProgress,
-      focusTarget,
+      focusTarget: switchingLanguage ? null : focusTarget,
       topContentInset,
       bottomContentInset,
       ponomarFontDataUri,
