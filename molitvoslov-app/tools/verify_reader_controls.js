@@ -58,6 +58,16 @@ for (const relative of files) {
   for (const expected of required[relative] || []) {
     if (!source.includes(expected)) throw new Error(relative + ' missing: ' + expected);
   }
+  if (relative.endsWith('/PrayerRuleReader.js')) {
+    const startMarker = 'const HTML_TEMPLATE = String.raw' + String.fromCharCode(96);
+    const start = source.indexOf(startMarker);
+    const scriptStart = source.indexOf('<script>', start) + '<script>'.length;
+    const scriptEnd = source.indexOf('</script>', scriptStart);
+    if (start < 0 || scriptStart < '<script>'.length || scriptEnd < scriptStart) {
+      throw new Error('Cannot extract prayer-rule inline WebView script');
+    }
+    new vm.Script(source.slice(scriptStart, scriptEnd), {filename: relative + ':inline'});
+  }
   if (relative.endsWith('/runtime.js')) {
     const prefix = 'export const READER_RUNTIME = String.raw' + String.fromCharCode(96);
     const lastTick = source.lastIndexOf(String.fromCharCode(96) + ';');
