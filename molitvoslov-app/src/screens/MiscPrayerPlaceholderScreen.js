@@ -17,7 +17,8 @@ export const MiscPrayerPlaceholderScreen = ({route, navigation}) => {
 
   const [viewMode, setViewMode] = useState(READER_LANGUAGE_MODES.BOTH);
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
+  React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   const options = useMemo(
     () =>
@@ -93,7 +94,7 @@ export const MiscPrayerPlaceholderScreen = ({route, navigation}) => {
         ))}
       </ScrollView>
 
-      <FixedSectionHeader
+      <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
         title={title}
         navigation={navigation}
         topInset={insets.top}
