@@ -23,7 +23,8 @@ const files = [
 ];
 const required = {
   'src/components/reader/ReaderAppearanceSheet.js': [
-    'sliderPreviewOpacity', 'sliderDragging', 'sheetBackground', 'settingsBlock',
+    'sliderPreviewOpacity', 'sliderDragging', 'animatedSheetColor', 'settingsBlock',
+    'onShow={restorePanel}', 'useNativeDriver: false',
     'setSliderPreview(true)', 'onResponderGrant', 'onResponderRelease', 'onResponderTerminate',
   ],
   'src/components/navigation/FixedSectionHeader.js': [
@@ -72,8 +73,14 @@ for (const relative of files) {
       throw new Error('Animating the entire appearance sheet hides the active slider');
     }
     if (!source.includes('style={styles.track}') ||
-        !source.includes('styles.sheetBackground, {opacity: sliderPreviewOpacity}')) {
-      throw new Error('Only the appearance background and other controls should fade');
+        !source.includes('backgroundColor: animatedSheetColor') ||
+        !source.includes("backgroundColor:'#FFF4DE'") ||
+        source.includes('sheetBackground:')) {
+      throw new Error('The menu must start opaque and fade its actual sheet surface only while dragging');
+    }
+    if (!source.includes('onShow={restorePanel}') ||
+        !source.includes('useNativeDriver: false')) {
+      throw new Error('An interrupted font-size gesture must reset to an opaque menu on reopen');
     }
   }
   if (relative.endsWith('/PrayerRuleReader.js')) {
