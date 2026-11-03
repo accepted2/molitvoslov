@@ -19,6 +19,11 @@ const checks = [
     'BIBLE_CONTENT_BUNDLED_ONLY_V1',
     'activateBibleContent(bundledBible',
   ]],
+  ['src/services/calendarOfflineStore.js', [
+    'CALENDAR_BUNDLED_ONLY_V1',
+    'getBundledCalendarDay(date, language)',
+    'getBundledCalendarMonth(year, month, language)',
+  ]],
   ['src/services/contentApi.js', [
     'AKATHIST_PUBLISHED_ONLY_V1',
     'PUBLIC_RULES_BUNDLED_BY_DEFAULT_V1',
@@ -55,6 +60,13 @@ try {
         ?.split('export const saveSyncedBibleContent = async')[0];
       if (!hydrate || hydrate.includes('SELECT version, payload')) {
         throw new Error('Bible hydration still reads old OTA cache');
+      }
+    }
+    if (name === 'src/services/calendarOfflineStore.js') {
+      const offline = source.split('// CALENDAR_BUNDLED_ONLY_V1')[1]
+        ?.split('export const storeCalendarDay = async')[0];
+      if (!offline || offline.includes('storedByDate') || offline.includes('getStoredCalendarDay(')) {
+        throw new Error('Calendar offline reader still uses stale OTA or AsyncStorage');
       }
     }
     console.log('PASS', name);
