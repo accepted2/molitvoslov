@@ -34,6 +34,10 @@ const checks = [
     "import searchSeedBuild from '../data/searchSeedBuild.json';",
     'databaseName={searchSeedBuild.database_name}',
   ]],
+  ['scripts/copy-search-seed.js', [
+    'SEARCH_SEED_METRO_ONLY_V1',
+    'fs.unlinkSync(dest)',
+  ]],
 ];
 
 try {
@@ -46,6 +50,9 @@ try {
     if (name === 'App.js' &&
         (source.includes("import {syncContentDeltas}") || source.includes("syncContentDeltas()"))) {
       throw new Error('App still fetches public OTA deltas');
+    }
+    if (name === 'scripts/copy-search-seed.js' && source.includes('fs.copyFileSync(src, dest)')) {
+      throw new Error('Search seed will be duplicated in native Android assets');
     }
     if (name === 'src/services/contentStore.js') {
       const hydrate = source.split('export const hydratePublicContent = async')[1]
