@@ -27,7 +27,6 @@ import {syncMemorials} from './src/services/memorials';
 
 import {syncPrayerBooks} from './src/services/prayerBooks';
 import {hydratePublicContent} from './src/services/contentStore';
-import {syncContentDeltas} from './src/services/contentDeltaSync';
 import {getCachedBackendUser} from './src/services/backendAuth';
 import {hydrateBibleContent} from './src/services/bibleStore';
 
@@ -140,10 +139,8 @@ export default function App() {
     const runSync = async (reason) => {
       let ownsPersonalSync = false;
       try {
-        // Read a small published change feed; never request full Bible or calendar here.
-        syncContentDeltas().catch((error) =>
-          console.log('Offline content delta sync:', error?.message || error)
-        );
+        // PUBLIC_CONTENT_BUNDLED_ONLY_V1: public texts ship in the APK.
+        // Personal backups may still sync independently when the user signs in.
         const user = await getCachedBackendUser();
         if (!user?.id || personalSyncing) return;
         const stampKey = '@molitvoslov/personal-last-pull-v1:' + String(user.id);
