@@ -182,8 +182,12 @@ def previous_seed_count(path, bible_version):
         with sqlite3.connect("file:" + path.resolve().as_posix() + "?mode=ro",
                              uri=True) as db:
             meta = dict(db.execute("SELECT k, v FROM meta"))
-            if (meta.get("schema") != SCHEMA or
-                    meta.get("bible_content_version") != bible_version):
+            if meta.get("schema") != SCHEMA:
+                return None
+            # Older compact v10 seeds had no Bible-version metadata.
+            # They are still a valid lower bound while we add public texts.
+            old_bible_version = meta.get("bible_content_version")
+            if old_bible_version and old_bible_version != bible_version:
                 return None
             return db.execute("SELECT COUNT(*) FROM doc").fetchone()[0]
     except sqlite3.Error:
