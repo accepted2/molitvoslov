@@ -71,13 +71,15 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
       <View style={styles.overlay}>
         <Animated.View pointerEvents="none" style={[styles.scrim, {opacity: sliderPreviewOpacity}]} />
         <Pressable style={styles.dismiss} onPress={onClose}/>
-        <View style={[styles.sheet, {paddingBottom: Math.max(18, insets.bottom + 12)}]}>
-          {/* Separate opaque warm-paper layer. Only its opacity changes;
-              the font slider and its touch target remain visible above it. */}
-          <Animated.View
-            pointerEvents="none"
-            style={[styles.sheetBackground, {opacity: sliderPreviewOpacity}]}
-          />
+        <View
+          style={[
+            styles.sheet,
+            sliderDragging && styles.sheetPreview,
+            {paddingBottom: Math.max(18, insets.bottom + 12)},
+          ]}
+        >
+          {/* A solid background is the default, independent of animation state.
+              Only an active slider gesture makes the real sheet transparent. */}
           <Animated.View pointerEvents={sliderDragging ? 'none' : 'auto'} style={[styles.header, {opacity: sliderPreviewOpacity}]}>
             <Text style={styles.heading}>Оформление чтения</Text>
             <Pressable accessibilityRole="button" accessibilityLabel="Закрыть настройки" onPress={onClose} style={styles.done}>
@@ -151,8 +153,20 @@ const styles=StyleSheet.create({
   overlay:{flex:1,justifyContent:'flex-end',backgroundColor:'transparent'},
   scrim:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(24,17,12,.35)'},
   dismiss:{flex:1},
-  sheet:{maxHeight:'78%',backgroundColor:'transparent',paddingHorizontal:18,paddingTop:16},
-  sheetBackground:{...StyleSheet.absoluteFillObject,backgroundColor:'#E6D0AD',borderTopLeftRadius:23,borderTopRightRadius:23,borderWidth:1,borderColor:'#B9946B'},
+  sheet:{
+    maxHeight:'78%',
+    backgroundColor:'#E6D0AD',
+    borderTopLeftRadius:23,
+    borderTopRightRadius:23,
+    borderWidth:1,
+    borderColor:'#B9946B',
+    paddingHorizontal:18,
+    paddingTop:16,
+  },
+  sheetPreview:{
+    backgroundColor:'transparent',
+    borderColor:'transparent',
+  },
   header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:12},
   heading:{fontSize:19,fontWeight:'700',color:'#4B2D18'},
   done:{paddingVertical:9,paddingHorizontal:15,borderRadius:14,backgroundColor:'#E6CEAA'},
