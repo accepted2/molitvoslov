@@ -211,90 +211,15 @@ export const getBundledCalendarMonth = (year, month, language = 'ru') => {
  * Лучший локальный вариант дня:
  * сначала более свежий кэш телефона, затем встроенный JSON из APK.
  */
-export const getOfflineCalendarDay = async (date, language = 'ru') => {
-  const stored = await getStoredCalendarDay(date, language);
+// CALENDAR_BUNDLED_ONLY_V1
+// In APK-only mode, older AsyncStorage/OTA calendar snapshots cannot override
+// the calendar shipped with this installed application version.
+// Stored entries are preserved for possible future migrations.
+export const getOfflineCalendarDay = async (date, language = 'ru') =>
+  getBundledCalendarDay(date, language);
 
-  const day = stored || getBundledCalendarDay(date, language);
-  const year = Number(normalizeDate(date)?.slice(0, 4));
-  return applyYearMarkers(day, await loadYearMarkers(year));
-};
-
-/*
- * Собираем целый месяц без сети.
- * Для каждого дня кэш телефона перекрывает встроенный JSON.
- * Благодаря этому исправления, однажды полученные с сервера,
- * остаются доступны после отключения интернета.
- */
-export const getOfflineCalendarMonth = async (year, month, language = 'ru') => {
-  const lang = normalizeLanguage(language);
-  const dateKeys = getMonthDateKeys(year, month);
-
-  if (!dateKeys.length) {
-    return null;
-  }
-
-  let storedByDate = new Map();
-
-  try {
-    const storageKeys = dateKeys.map((dateKey) => getStorageKey(dateKey, lang));
-    const pairs = await AsyncStorage.multiGet(storageKeys);
-
-    storedByDate = new Map(
-      pairs
-        .map(([key, raw], index) => {
-          if (!raw) {
-            return null;
-          }
-
-          try {
-            return [dateKeys[index], JSON.parse(raw)];
-          } catch {
-            return null;
-          }
-        })
-        .filter(Boolean)
-    );
-  } catch (error) {
-    console.log('Ошибка чтения calendar month cache:', error?.message || error);
-  }
-
-  // Atomic SQLite overrides take precedence over the older AsyncStorage cache.
-  try {
-    const db = await getDatabase();
-    const rows = await db.getAllAsync(
-      'SELECT date, payload FROM content_delta_calendar WHERE date >= ? AND date <= ? AND language = ?',
-      [dateKeys[0], dateKeys[dateKeys.length - 1], lang]
-    );
-    for (const row of rows) storedByDate.set(row.date, JSON.parse(row.payload));
-  } catch (error) {
-    console.log('Ошибка чтения атомарного calendar cache:', error?.message || error);
-  }
-
-  const bundledMonth = getBundledMonthPayload(year, month);
-
-  const days = dateKeys
-    .map((dateKey) => storedByDate.get(dateKey) || bundledMonth?.days?.[dateKey]?.[lang] || null)
-    .filter(Boolean);
-
-  if (!days.length) {
-    return null;
-  }
-
-  return applyYearMarkersToMonth(
-    {
-      year: Number(year),
-      month: Number(month),
-      language: lang,
-      days,
-      total_days: days.length,
-      start_date: dateKeys[0],
-      end_date: dateKeys[dateKeys.length - 1],
-      source_error: null,
-      offline: true,
-    },
-    await loadYearMarkers(year)
-  );
-};
+export const getOfflineCalendarMonth = async (year, month, language = 'ru') =>
+  getBundledCalendarMonth(year, month, language);
 
 /*
  * Сохраняем свежий день, полученный с сервера.
