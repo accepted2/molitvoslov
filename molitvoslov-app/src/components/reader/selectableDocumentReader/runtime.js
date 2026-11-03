@@ -205,7 +205,8 @@ export const READER_RUNTIME = String.raw`
             button.addEventListener( 'click', () => {
                 if ( !button.disabled && !active ) {
                   post({
-                    type: 'view-mode', value: option.key, });
+                    type: 'view-mode', value: option.key,
+                    progress: snapshotForViewSwitch(), });
                 }
               }
             );
@@ -4194,6 +4195,28 @@ if (
           offset: Math.round( offset ),
           progressPercent: Math.max( 0, Math.min( progressPercent, 100 ) ), });
       };
+    // Save an anchor in the currently visible section before changing text language.
+    // A proportional scroll fallback handles untracked single-document readers.
+    const snapshotForViewSwitch = () => {
+      const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      const scrollRatio = max > 0 ? Math.max(0, Math.min(1, window.scrollY / max)) : 0;
+      const items = Array.from(document.querySelectorAll('.rule-item[data-track-progress="true"]'));
+      if (!items.length) return {scrollRatio};
+      if (bookMode) {
+        const currentPage = reader.querySelector('.book-page[data-page-index="' + state.bookPage + '"]');
+        const current = currentPage?.querySelector('.rule-item[data-track-progress="true"]') || items[0];
+        return {anchorId: Number(current.dataset.itemId), offset: state.bookPage, scrollRatio};
+      }
+      const center = window.scrollY + window.innerHeight / 2;
+      let current = items[0], distance = Infinity;
+      items.forEach(item => {
+        const top = item.offsetTop, bottom = top + item.offsetHeight;
+        const candidate = center < top ? top - center : center > bottom ? center - bottom : 0;
+        if (candidate < distance) {distance = candidate; current = item;}
+      });
+      const offset = Math.max(0, Math.min(current.offsetHeight, center - current.offsetTop));
+      return {anchorId: Number(current.dataset.itemId), offset: Math.round(offset), scrollRatio};
+    };
     const updateScrollControls = () => {
         const documentHeight = Math.max( document.body.scrollHeight, document.documentElement.scrollHeight );
         const maxScroll = Math.max( 0, documentHeight - window.innerHeight );
@@ -4630,6 +4653,10 @@ if (
     };
 
     window.readerApi = {
+      changeViewMode: key => {
+        post({type: 'view-mode', value: key, progress: snapshotForViewSwitch()});
+      },
+
       saveSucceeded: ( itemId, savedItem ) => {
           const storedSegments = Array.isArray(savedItem?.metadata?.selection_segments)
             ? savedItem.metadata.selection_segments
