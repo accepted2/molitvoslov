@@ -23,8 +23,8 @@ const files = [
 ];
 const required = {
   'src/components/reader/ReaderAppearanceSheet.js': [
-    'sliderPreviewOpacity', 'sliderDragging', 'animatedSheetColor', 'settingsBlock',
-    'onShow={restorePanel}', 'useNativeDriver: false',
+    'sliderPreviewOpacity', 'sliderDragging', 'sheetBackground', 'settingsBlock',
+    'onShow={restorePanel}', 'useNativeDriver: true',
     'setSliderPreview(true)', 'onResponderGrant', 'onResponderRelease', 'onResponderTerminate',
   ],
   'src/components/navigation/FixedSectionHeader.js': [
@@ -73,14 +73,15 @@ for (const relative of files) {
       throw new Error('Animating the entire appearance sheet hides the active slider');
     }
     if (!source.includes('style={styles.track}') ||
-        !source.includes('backgroundColor: animatedSheetColor') ||
-        !source.includes("backgroundColor:'#FFF4DE'") ||
-        source.includes('sheetBackground:')) {
-      throw new Error('The menu must start opaque and fade its actual sheet surface only while dragging');
+        !source.includes('styles.sheetBackground, {opacity: sliderPreviewOpacity}') ||
+        !source.includes("backgroundColor:'#E6D0AD'") ||
+        source.includes('animatedSheetColor')) {
+      throw new Error('Use a distinct opaque background layer, never a JS-driven color interpolation');
     }
     if (!source.includes('onShow={restorePanel}') ||
-        !source.includes('useNativeDriver: false')) {
-      throw new Error('An interrupted font-size gesture must reset to an opaque menu on reopen');
+        !source.includes('useNativeDriver: true') ||
+        source.includes('useNativeDriver: false')) {
+      throw new Error('Always reset on open and keep one native animation driver');
     }
   }
   if (relative.endsWith('/PrayerRuleReader.js')) {
