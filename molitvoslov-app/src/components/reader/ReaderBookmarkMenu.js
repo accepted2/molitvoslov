@@ -26,6 +26,18 @@ export const ReaderBookmarkMenu = ({
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [appearanceVisible, setAppearanceVisible] = useState(false);
+  const [appearanceRequested, setAppearanceRequested] = useState(false);
+
+  // Android shows one native Modal at a time. Open the appearance sheet only
+  // after the bookmark menu has closed, so fading the sheet reveals the reader.
+  useEffect(() => {
+    if (!appearanceRequested || visible) return undefined;
+    const timer = setTimeout(() => {
+      setAppearanceRequested(false);
+      setAppearanceVisible(true);
+    }, 260);
+    return () => clearTimeout(timer);
+  }, [appearanceRequested, visible]);
 
   useEffect(() => {
     if (visible) {
@@ -115,7 +127,10 @@ export const ReaderBookmarkMenu = ({
 
           {!!appearance && (
             <Pressable
-              onPress={() => setAppearanceVisible(true)}
+              onPress={() => {
+                setAppearanceRequested(true);
+                onClose?.();
+              }}
               style={({pressed}) => [styles.action, pressed && styles.pressed]}
               accessibilityRole="button"
             >
