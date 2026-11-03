@@ -34,7 +34,8 @@ export const PersonalPrayerEditorScreen = ({route, navigation}) => {
   const {t} = useLanguage();
   const {bookSyncId = null, prayerSyncId = null} = route.params || {};
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
+  React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   const [prayer, setPrayer] = useState(null);
   const [title, setTitle] = useState('');
@@ -262,7 +263,7 @@ export const PersonalPrayerEditorScreen = ({route, navigation}) => {
           </Pressable>
         </ScrollView>
 
-        <FixedSectionHeader
+        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
           title={prayer ? t('prayerBooks.editPrayer') : t('prayerBooks.newPrayer')}
           navigation={navigation}
           topInset={insets.top}
