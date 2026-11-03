@@ -9,7 +9,7 @@ import copy
 import importlib.util
 import json
 from pathlib import Path
-from search_seed_lib import SeedWriter, merge_languages, KIND_BOOST, fingerprint, SCHEMA
+from search_seed_lib import SeedWriter, merge_languages, KIND_BOOST, fingerprint, SCHEMA, is_placeholder
 
 ROOT = Path(__file__).resolve().parents[1]
 ORIGINAL = ROOT / "tools" / "build_search_seed.py"
@@ -95,7 +95,7 @@ def verify_source_coverage(content, docs):
             missing.append(ext)
         for section in ak.get("sections") or []:
             text = section.get("text") or {}
-            if text.get("content"):
+            if text.get("content") and not is_placeholder(text.get("content")):
                 sections += 1
                 base = "akathists:section:" + str(section.get("id"))
                 if base not in rows and (base + ":church") not in rows:
