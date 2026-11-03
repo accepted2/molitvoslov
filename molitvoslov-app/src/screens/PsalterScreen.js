@@ -56,7 +56,8 @@ export default function PsalterScreen({navigation}) {
   );
 
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
+  React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
   const loadSavedKathismas = async (psalterId) => {
     try {
       const saved = await getSavedItems({
@@ -344,7 +345,7 @@ export default function PsalterScreen({navigation}) {
             ) : null
           }
         />
-        <FixedSectionHeader
+        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
           title={getLocalizedField(psalter, 'name', language) || t('psalter.title')}
           navigation={navigation}
           topInset={insets.top}
