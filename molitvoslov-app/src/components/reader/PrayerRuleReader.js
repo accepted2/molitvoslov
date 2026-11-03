@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react';
 import {StyleSheet, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {WebView} from 'react-native-webview';
@@ -7,6 +7,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 import {deleteSavedItem, saveItem} from '../../services/savedItems';
 import {useLanguage} from '../../context/LanguageContext';
 import {getReadingSettings, DEFAULT_READING_SETTINGS} from '../../services/readerPreferences';
+import {applyReaderAppearance} from '../../services/scopedReaderAppearance';
 import {getCachedPonomarFontDataUri, loadPonomarFontDataUri} from '../../services/ponomarFont';
 
 const scriptSafeJson = (value) =>
@@ -7453,6 +7454,10 @@ const HTML_TEMPLATE = String.raw`
 
 
     window.readerApi = {
+      changeViewMode: value => {
+        post({type: 'view-mode', value, progress: getProgressSnapshot()});
+      },
+
       saveSucceeded:
         savedItem => {
           const itemId =
@@ -7696,7 +7701,7 @@ const buildHtml = ({
     .replace('__READER_PAYLOAD__', scriptSafeJson(payload));
 };
 
-export default function PrayerRuleReader({
+const PrayerRuleReader = forwardRef(function PrayerRuleReader({
   rule,
   savedItems,
   savedProgress,
@@ -7711,7 +7716,7 @@ export default function PrayerRuleReader({
   onViewModeChange,
   onHeaderTitleVisibilityChange,
   onReadingScroll,
-}) {
+}, ref) {
   const insets = useSafeAreaInsets();
   const {language, t} = useLanguage();
   const [readingSettings, setReadingSettings] = useState(DEFAULT_READING_SETTINGS);
@@ -7722,6 +7727,7 @@ export default function PrayerRuleReader({
   }, []);
 
   const webViewRef = useRef(null);
+  const appearanceRef = useRef(null);
   const progressSourceRef = useRef(null);
   const sessionProgressRef = useRef(null);
   const [ponomarFontDataUri, setPonomarFontDataUri] = useState(getCachedPonomarFontDataUri());
@@ -7828,6 +7834,16 @@ export default function PrayerRuleReader({
   const inject = (script) => {
     webViewRef.current?.injectJavaScript(script + '; true;');
   };
+
+  useImperativeHandle(ref, () => ({
+    changeViewMode: (mode) => {
+      inject('window.readerApi && window.readerApi.changeViewMode(' + scriptSafeJson(mode) + ')');
+    },
+    applyAppearance: (appearance) => {
+      appearanceRef.current = appearance;
+      applyReaderAppearance(webViewRef.current, appearance, true);
+    },
+  }), []);
 
   const handleMessage = async (event) => {
     let message;
@@ -8094,6 +8110,11 @@ export default function PrayerRuleReader({
         overScrollMode="never"
         textZoom={100}
         onMessage={handleMessage}
+        onLoadEnd={() => {
+          if (appearanceRef.current) {
+            applyReaderAppearance(webViewRef.current, appearanceRef.current, true);
+          }
+        }}
         style={[styles.webView, {backgroundColor: readerBg}]}
       />
 
@@ -8110,7 +8131,9 @@ export default function PrayerRuleReader({
       />
     </View>
   );
-}
+});
+
+export default PrayerRuleReader;
 
 const styles = StyleSheet.create({
   container: {
