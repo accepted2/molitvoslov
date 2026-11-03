@@ -4215,7 +4215,8 @@ if (
         if (candidate < distance) {distance = candidate; current = item;}
       });
       const offset = Math.max(0, Math.min(current.offsetHeight, center - current.offsetTop));
-      return {anchorId: Number(current.dataset.itemId), offset: Math.round(offset), scrollRatio};
+      return {anchorId: Number(current.dataset.itemId), offset: Math.round(offset),
+        offsetRatio: current.offsetHeight ? offset / current.offsetHeight : 0, scrollRatio};
     };
     const updateScrollControls = () => {
         const documentHeight = Math.max( document.body.scrollHeight, document.documentElement.scrollHeight );
@@ -4606,7 +4607,10 @@ if (
               : pageForElement( item );
           applyBookPage( savedPage, false );
         } else {
-          const target = Math.max( 0, item.offsetTop + progress.offset - ( window.innerHeight / 2 ) );
+          const restoredOffset = progress.offsetRatio != null && Number.isFinite(Number(progress.offsetRatio))
+            ? item.offsetHeight * Math.max(0, Math.min(1, Number(progress.offsetRatio)))
+            : progress.offset;
+          const target = Math.max( 0, item.offsetTop + restoredOffset - ( window.innerHeight / 2 ) );
           window.scrollTo( 0, target );
         }
         setTimeout( () => {
