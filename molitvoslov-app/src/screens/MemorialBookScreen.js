@@ -229,7 +229,8 @@ export const MemorialBookScreen = ({navigation, route}) => {
   const {t} = useLanguage();
   const insets = useSafeAreaInsets();
 
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
+  React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   const bookSyncId = route.params?.bookSyncId;
 
@@ -692,7 +693,7 @@ export const MemorialBookScreen = ({navigation, route}) => {
           </Pressable>
         </ScrollView>
 
-        <FixedSectionHeader
+        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
           title={title || t('memorial.title')}
           navigation={navigation}
           topInset={insets.top}
