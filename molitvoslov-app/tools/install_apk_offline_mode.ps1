@@ -15,11 +15,23 @@ if (-not (Test-Path $python)) { throw "Backend Python venv missing: $python" }
 Write-Host '[1/5] Fetch APK-only patchers, content guard and original source recovery'
 & git fetch origin $branch
 Assert-Last 'Git fetch'
+# Preserve any local edits to the v10 generator before updating the tool.
+$searchBuilder = '.\tools\build_search_seed_v10.py'
+if (Test-Path $searchBuilder) {
+  $backups = Join-Path (Split-Path $root -Parent) 'build-backups'
+  New-Item -ItemType Directory -Force -Path $backups | Out-Null
+  $stamp = Get-Date -Format 'yyyyMMdd_HHmmss_fff'
+  $builderBackup = Join-Path $backups "search-v10-builder-before-ast-$stamp.py"
+  Copy-Item -LiteralPath $searchBuilder -Destination $builderBackup -ErrorAction Stop
+  Write-Host "Search generator backup: $builderBackup"
+}
 $files = @(
   'tools/patch_bundled_apk_mode.py',
   'tools/test_apk_patcher_variants.py',
   'tools/verify_bundled_apk_mode.js',
   'tools/prepare_offline_apk.py',
+  'tools/build_search_seed_v10.py',
+  'tools/test_search_seed_v10_corpus.py',
   'tools/audit_local_public_sources.py',
   'tools/repair_local_mobile_export.py',
   'tools/promote_local_django_offline.py',
@@ -53,7 +65,9 @@ Assert-Last 'Local Django published akathist export repair'
 & $python -X utf8 '.\tools\promote_local_django_offline.py'
 Assert-Last 'Complete local Django-to-APK public content promotion'
 
-Write-Host '[4/5] Rebuild packaged SQLite search from the exact offline JSON; stamp its version'
+Write-Host '[4/5] Test complete search extraction, then rebuild SQLite from the exact offline JSON'
+& $python -X utf8 '.\tools\test_search_seed_v10_corpus.py'
+Assert-Last 'Complete v9-to-v10 corpus and akathist coverage regression tests'
 & $python -X utf8 '.\tools\prepare_offline_apk.py'
 Assert-Last 'Public content and search seed preflight'
 & $python -X utf8 '.\tools\prepare_offline_apk.py' --verify-only
