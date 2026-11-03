@@ -34,6 +34,7 @@ MUST_HAVE_AKATHIST = "akafist-bogoroditse-izbavlenie-ot-bed-strazhdushchikh"
 
 sys.path.insert(0, str(TOOLS))
 from search_seed_lib import SCHEMA  # noqa: E402
+from restore_misc_prayers import validate_offline_snapshot  # noqa: E402
 
 
 def load_json(path):
@@ -109,6 +110,7 @@ def validate_public(payload):
         raise ValueError("The restored akathist is not published")
     if not isinstance(payload.get("texts"), dict) or not payload.get("texts"):
         raise ValueError("No offline public prayers")
+    validate_offline_snapshot(payload)
     print("PUBLIC JSON VALID:", snapshot_status(payload))
 
 
