@@ -42,14 +42,10 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
       toValue: dragging ? 0 : 1,
       duration: dragging ? 140 : 260,
       easing: Easing.out(Easing.cubic),
-      // Background color and opacity must advance together on Android.
-      useNativeDriver: false,
+      // Opacity only: never switch this Animated.Value between JS and native drivers.
+      useNativeDriver: true,
     }).start();
   };
-  const animatedSheetColor = sliderPreviewOpacity.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['rgba(255,244,222,0)', 'rgba(255,244,222,1)'],
-  });
   const resolved = resolveReaderAppearance(appearance);
   const changeSize = (event) => {
     const position = Math.max(0, Math.min(sliderWidth, event.nativeEvent.locationX));
@@ -75,14 +71,13 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
       <View style={styles.overlay}>
         <Animated.View pointerEvents="none" style={[styles.scrim, {opacity: sliderPreviewOpacity}]} />
         <Pressable style={styles.dismiss} onPress={onClose}/>
-        <Animated.View
-          style={[styles.sheet, {
-            backgroundColor: animatedSheetColor,
-            paddingBottom: Math.max(18, insets.bottom + 12),
-          }]}
-        >
-          {/* Animate the actual sheet surface, not an absolute child that might
-              render beneath the underlying WebView on Android. */}
+        <View style={[styles.sheet, {paddingBottom: Math.max(18, insets.bottom + 12)}]}>
+          {/* Separate opaque warm-paper layer. Only its opacity changes;
+              the font slider and its touch target remain visible above it. */}
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.sheetBackground, {opacity: sliderPreviewOpacity}]}
+          />
           <Animated.View pointerEvents={sliderDragging ? 'none' : 'auto'} style={[styles.header, {opacity: sliderPreviewOpacity}]}>
             <Text style={styles.heading}>Оформление чтения</Text>
             <Pressable accessibilityRole="button" accessibilityLabel="Закрыть настройки" onPress={onClose} style={styles.done}>
@@ -146,7 +141,7 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
             <Pressable onPress={onReset} style={styles.reset}><Text style={styles.resetText}>Вернуть общие настройки</Text></Pressable>
             </Animated.View>
           </ScrollView>
-        </Animated.View>
+        </View>
       </View>
     </Modal>
   );
@@ -156,7 +151,8 @@ const styles=StyleSheet.create({
   overlay:{flex:1,justifyContent:'flex-end',backgroundColor:'transparent'},
   scrim:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(24,17,12,.35)'},
   dismiss:{flex:1},
-  sheet:{maxHeight:'78%',backgroundColor:'#FFF4DE',borderTopLeftRadius:23,borderTopRightRadius:23,paddingHorizontal:18,paddingTop:16},
+  sheet:{maxHeight:'78%',backgroundColor:'transparent',paddingHorizontal:18,paddingTop:16},
+  sheetBackground:{...StyleSheet.absoluteFillObject,backgroundColor:'#E6D0AD',borderTopLeftRadius:23,borderTopRightRadius:23,borderWidth:1,borderColor:'#B9946B'},
   header:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginBottom:12},
   heading:{fontSize:19,fontWeight:'700',color:'#4B2D18'},
   done:{paddingVertical:9,paddingHorizontal:15,borderRadius:14,backgroundColor:'#E6CEAA'},
