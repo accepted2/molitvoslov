@@ -39,7 +39,8 @@ export const BookScreen = ({route, navigation}) => {
 
   const insets = useSafeAreaInsets();
 
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
+  useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   const [texts, setTexts] = useState([]);
   const {readingChromeHidden, handleReadingScroll} = useReadingChrome();
@@ -472,6 +473,7 @@ export const BookScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
+        onHeaderHeightChange={setHeaderHeight}
         title={categoryName || t('common.reading')}
         navigation={navigation}
         topInset={insets.top}
