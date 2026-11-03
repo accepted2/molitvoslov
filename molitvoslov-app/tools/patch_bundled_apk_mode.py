@@ -162,15 +162,43 @@ def patch(path, src, new):
         return patch_search(src, new)
     if path == "scripts/copy-search-seed.js":
         if "SEARCH_SEED_METRO_ONLY_V1" in src:
+            if "fs.copyFileSync(src, dest)" in src:
+                raise ValueError("Native seed copying still exists despite marker")
             return src
         anchor = "if (!fs.existsSync(path.dirname(dest))) {"
-        if src.count(anchor) != 1 or new.count("// SEARCH_SEED_METRO_ONLY_V1") != 1:
-            raise ValueError("Unfamiliar native search seed copy code")
+        marker = "// SEARCH_SEED_METRO_ONLY_V1"
+        if src.count(anchor) != 1 or new.count(marker) != 1:
+            raise ValueError("Search seed copy function has unknown boundaries")
         pos = src.index(anchor)
-        if "fs.copyFileSync(src, dest)" not in src[pos:]:
-            raise ValueError("Unfamiliar native search seed copy code")
-        new_pos = new.index("// SEARCH_SEED_METRO_ONLY_V1")
-        return src[:pos] + new[new_pos:]
+        # Safely replace only this top-level if/else statement, regardless of
+        # local changes to its body. A previously customized script may no longer
+        # contain the exact fs.copyFileSync(src, dest) string.
+        probe = (
+            "const fs=require('fs');"
+            "const parser=require('@babel/parser');"
+            "const source=fs.readFileSync(0,'utf8');"
+            "const at=source.indexOf(" + repr(anchor) + ");"
+            "const ast=parser.parse(source,{sourceType:'script'}).program.body;"
+            "const node=ast.find(item=>item.start===at && item.type==='IfStatement');"
+            "if(!node){process.stderr.write('Expected a top-level native-copy if statement');process.exit(2);}"
+            "process.stdout.write(String(node.end));"
+        )
+        result = subprocess.run(
+            ["node", "-e", probe], input=src, cwd=str(ROOT),
+            capture_output=True, text=True, encoding="utf-8", errors="replace"
+        )
+        if result.returncode:
+            raise ValueError(
+                "Cannot safely isolate native seed copy statement: " + result.stderr[-900:]
+            )
+        end = int(result.stdout)
+        if not (pos < end <= len(src)):
+            raise ValueError("Invalid native copy statement boundary")
+        replacement = new[new.index(marker):]
+        updated = src[:pos] + replacement + src[end:]
+        if "fs.copyFileSync(src, dest)" in updated:
+            raise ValueError("A second native search seed copy call remains")
+        return updated
     if path == "tools/build_release_1_0_20.ps1":
         return patch_release(src, new)
     raise ValueError("Unexpected file " + path)
