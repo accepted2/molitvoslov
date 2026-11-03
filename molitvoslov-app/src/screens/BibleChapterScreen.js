@@ -49,7 +49,8 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
   const insets = useSafeAreaInsets();
 
-  const readerTopInset = insets.top + 64;
+  const [readerTopInset, setReaderTopInset] = useState(insets.top + 64);
+  useEffect(() => {setReaderTopInset(insets.top + 64);}, [insets.top]);
 
   const readerBottomInset = 4;
 
@@ -637,6 +638,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
+        onHeaderHeightChange={(height) => setReaderTopInset(height + 8)}
         title={displayName}
         navigation={navigation}
         topInset={insets.top}
