@@ -114,6 +114,8 @@ def main():
     args = argparse.ArgumentParser()
     args.add_argument("--installed-apk", type=Path, default=None,
                       help="ADB-pulled installed base.apk for exact comparison")
+    args.add_argument("--strict", action="store_true",
+                      help="Fail release validation if bundled search and source differ")
     parsed = args.parse_args()
     for file in (APK, SEED, PUBLIC, MANIFEST):
         if not file.is_file():
@@ -135,6 +137,16 @@ def main():
           else "NO - search manifest and APK database differ")
     print("SEARCH_5_PRAYERS:", "YES" if len(info["matched_misc_titles"]) == 5
           else "NO - some restored prayer titles are absent in bundled DB")
+    if parsed.strict and (
+        len(titles) != 5 or embedded_hash != source_hash or
+        info["meta"].get("public_content_version") != content.get("content_version") or
+        manifest.get("seed_sha256") != embedded_hash or
+        len(info["matched_misc_titles"]) != 5 or info["integrity"] != "ok"
+    ):
+        raise RuntimeError(
+            "Release APK does not contain the complete expected five prayer search index; "
+            "refusing to mark it BUILD VERIFIED."
+        )
     if parsed.installed_apk:
         if not parsed.installed_apk.is_file():
             raise RuntimeError("Installed APK copy missing: " + str(parsed.installed_apk))
