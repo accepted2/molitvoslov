@@ -144,6 +144,83 @@ def inspect_js_build(archive, bundle_names):
         print("RELEASE SOURCE MAP: not found; JavaScript source revision cannot be confirmed.")
 
 
+def _zip_entry_sha(archive, entry):
+    digest = hashlib.sha256()
+    with archive.open(entry) as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def compare_installed_payload(built_path, installed_path, expected_titles):
+    """Compare actual JS and SQLite bytes, not only outer APK signatures.
+
+    Android can store/repackage/sign the ZIP differently. A different APK hash
+    therefore does not by itself establish that a different app is running.
+    """
+    with zipfile.ZipFile(built_path) as built, zipfile.ZipFile(installed_path) as installed:
+        built_entries = {item.filename: item for item in built.infolist()}
+        installed_entries = {item.filename: item for item in installed.infolist()}
+        common = set(built_entries) & set(installed_entries)
+        missing = sorted(set(built_entries) - set(installed_entries))
+        extra = sorted(set(installed_entries) - set(built_entries))
+        changed = sorted(
+            name for name in common
+            if (built_entries[name].file_size, built_entries[name].CRC)
+            != (installed_entries[name].file_size, installed_entries[name].CRC)
+        )
+        print("APK_ARCHIVE_ENTRIES:", len(built_entries), "built;", len(installed_entries), "installed")
+        print("APK_ENTRIES_DIFFER:", len(missing) + len(extra) + len(changed))
+        if missing:
+            print("MISSING INSTALLED ENTRIES (sample):", missing[:12])
+        if extra:
+            print("EXTRA INSTALLED ENTRIES (sample):", extra[:12])
+        if changed:
+            print("MODIFIED INSTALLED ENTRIES (sample):", changed[:20])
+
+        def member(label, pattern):
+            candidates = [n for n in built_entries if pattern(n)]
+            installed_candidates = [n for n in installed_entries if pattern(n)]
+            if len(candidates) != 1 or len(installed_candidates) != 1:
+                print(label + "_MATCH: UNKNOWN (unexpected APK members)")
+                print("  built:", candidates, "installed:", installed_candidates)
+                return None, None, None
+            src, dest = candidates[0], installed_candidates[0]
+            a, b = _zip_entry_sha(built, src), _zip_entry_sha(installed, dest)
+            print(label + "_BUILT_SHA256:", a)
+            print(label + "_INSTALLED_SHA256:", b)
+            print(label + "_MATCH:", "YES" if a == b else "NO")
+            return src, dest, a == b
+
+        js = member("INSTALLED_JS_BUNDLE", lambda n: n.endswith("index.android.bundle") or n.endswith("index.android.bundle.hbc"))
+        db = member("INSTALLED_SEARCH_DB", lambda n: n.lower().endswith(".db"))
+        if db[1]:
+            with tempfile.TemporaryDirectory(prefix="molitvoslov-phone-search-") as folder:
+                dst = Path(folder) / "phone-search.db"
+                with installed.open(db[1]) as input_stream, dst.open("wb") as output_stream:
+                    for chunk in iter(lambda: input_stream.read(1024 * 1024), b""):
+                        output_stream.write(chunk)
+                try:
+                    info = audit_db(dst, expected_titles)
+                    print("INSTALLED_SEARCH_DOCS:", info["docs"])
+                    print("INSTALLED_SEARCH_INTEGRITY:", info["integrity"])
+                    print("INSTALLED_SEARCH_PUBLIC_VERSION:", info["meta"].get("public_content_version"))
+                    print("INSTALLED_SEARCH_5_PRAYERS:", len(info["matched_misc_titles"]), "/ 5")
+                except sqlite3.Error as exc:
+                    print("INSTALLED_SEARCH_SQLITE_ERROR:", exc)
+        print("INSTALLED_PAYLOAD_MATCH:", (
+            "YES" if js[2] is True and db[2] is True
+            else "NO" if js[2] is False or db[2] is False
+            else "UNKNOWN"
+        ))
+        if js[2] is True and db[2] is True:
+            print("DIAGNOSIS: JS and search SQLite on phone MATCH current APK.")
+            print("Investigate runtime selection, cached data and search behavior; a rebuild is not indicated.")
+        elif js[2] is False or db[2] is False:
+            print("DIAGNOSIS: phone contains different JS or search SQLite.")
+            print("A signature-compatible adb install -r may update the app without clearing user data.")
+
+
 def source_checks(expected_titles):
     print("=== Local source artifacts ===")
     content = json_file(PUBLIC)
@@ -209,7 +286,8 @@ def main():
         print("INSTALLED_APK_SHA256:", sha(parsed.installed_apk))
         print("INSTALLED_MATCHES_BUILT:",
               "YES" if sha(APK) == sha(parsed.installed_apk)
-              else "NO - telephone is running different APK bytes")
+              else "NO - APK container bytes differ; inspect embedded payload below")
+        compare_installed_payload(APK, parsed.installed_apk, titles)
     else:
         print("\nNo installed APK supplied; phone version remains UNVERIFIED.")
     print("IMPORTANT: SQLite contents do not establish which JavaScript bundle runs on the phone.")
