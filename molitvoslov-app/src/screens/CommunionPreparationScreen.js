@@ -50,7 +50,8 @@ export const CommunionPreparationScreen = ({navigation}) => {
   const [error, setError] = useState(null);
 
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
+  React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
   const loadCanons = useCallback(async () => {
     try {
       setLoading(true);
@@ -189,7 +190,7 @@ export const CommunionPreparationScreen = ({navigation}) => {
           )}
         </ScrollView>
 
-        <FixedSectionHeader
+        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
           title="Ко Святому Причащению"
           navigation={navigation}
           topInset={insets.top}
