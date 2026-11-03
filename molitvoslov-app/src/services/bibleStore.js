@@ -50,44 +50,17 @@ const activateBibleContent = (payload, version, {notify = true} = {}) => {
   return true;
 };
 
+// BIBLE_CONTENT_BUNDLED_ONLY_V1: fresh APK data supersedes old OTA cache.
 export const hydrateBibleContent = async (code = 'rst') => {
   const normalizedCode = String(code || 'rst').trim() || 'rst';
-
-  try {
-    const db = await getDatabase();
-    const row = await db.getFirstAsync(
-      `
-        SELECT version, payload
-        FROM public_content_cache
-        WHERE cache_key = ?
-        LIMIT 1
-      `,
-      [CACHE_PREFIX + normalizedCode]
-    );
-
-    if (row?.payload) {
-      const parsed = JSON.parse(row.payload);
-
-      if (
-        isValidBibleContent(parsed, normalizedCode) &&
-        activateBibleContent(parsed, row.version, {notify: false})
-      ) {
-        return {
-          success: true,
-          source: 'cache',
-          version: row.version || parsed.content_version || null,
-        };
-      }
-    }
-  } catch (error) {
-    console.log('Не удалось прочитать локальный кэш Библии:', error?.message || error);
+  if (normalizedCode !== bundledCode) {
+    return {success: true, source: 'none', version: null};
   }
-
-  return {
-    success: true,
-    source: normalizedCode === bundledCode ? 'bundle' : 'none',
-    version: versionByCode.get(normalizedCode) || null,
-  };
+  if (!isValidBibleContent(bundledBible, bundledCode)) {
+    throw new Error('Некорректный комплект offlineBible.json в APK');
+  }
+  activateBibleContent(bundledBible, bundledBible.content_version || null, {notify: false});
+  return {success: true, source: 'bundle', version: bundledBible.content_version || null};
 };
 
 export const saveSyncedBibleContent = async (payload, version) => {
