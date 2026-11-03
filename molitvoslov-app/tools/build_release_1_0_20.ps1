@@ -78,7 +78,7 @@ if (-not (Test-Path $apk)) { throw "Release APK not found: $apk" }
 # Previous validation only checked whether an asset named *.db existed.
 # Inspect its actual SQLite content and compare its hash with this build's
 # source index, including all five recovered miscellaneous prayers.
-& $python -X utf8 ".\\tools\\diagnose_release_apk.py" --strict
+& $python -X utf8 ".\tools\diagnose_release_apk.py" --strict
 Assert-Command "Embedded release APK search and content verification"
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
