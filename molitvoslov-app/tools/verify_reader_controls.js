@@ -31,6 +31,8 @@ const required = {
     'languageSwitcher', 'onLanguageChange', 'languageDropdown', 'menuButtonReading',
     'headerHidden = readingHidden && !languageOpen', 'visible={languageOpen}',
     'name="chevron-down"', 'name="chevron-back"', 'name="ellipsis-vertical"',
+    'size={23}', 'size={20}', 'onTextLayout=', 'onHeaderHeightChange?.(headerHeight)',
+    'titleLines - 1',
   ],
   'src/components/reader/SelectableDocumentReader.js': [
     'languageProgressRef', 'snapshotForViewSwitch', // runtime below owns snapshot
@@ -66,6 +68,11 @@ for (const relative of files) {
     if (source.includes('if (readingHidden) setLanguageOpen(false)') ||
         source.includes('visible={languageOpen && !readingHidden}')) {
       throw new Error('The language dropdown must stay open while reading chrome hides');
+    }
+    if (/style=\{\[styles\.title,\s*styles\.titleFlex[^>]*numberOfLines=\{1\}/s.test(source) ||
+        !source.includes('onTextLayout=') ||
+        !source.includes('extraTitleHeight')) {
+      throw new Error('Long reader titles must wrap and expand the header');
     }
   }
   if (relative.endsWith('/ReaderAppearanceSheet.js')) {
@@ -110,4 +117,22 @@ for (const relative of files) {
   console.log('PASS', relative);
   count += 1;
 }
-console.log('READER CONTROLS VERIFIED:', count, 'files');
+const headerScreens = [
+  'PrayerRuleScreen', 'AkathistScreen', 'CanonScreen', 'KathismaScreen',
+  'ReaderScreen', 'BookScreen', 'PrayerBookReaderScreen', 'BibleChapterScreen',
+  'BibleBookScreen', 'BibleBooksScreen', 'BibleScreen', 'CanonListScreen',
+  'CategoryMenuScreen', 'ChurchCalendarScreen', 'CommunionPreparationScreen',
+  'ContinueReadingScreen', 'MemorialBookScreen', 'MemorialScreen',
+  'MiscPrayerPlaceholderScreen', 'MiscPrayersScreen', 'PersonalPrayerEditorScreen',
+  'PrayerBookScreen', 'PrayerBooksScreen', 'PsalterScreen', 'SearchScreen', 'TextsListScreen',
+];
+for (const name of headerScreens) {
+  const file = 'src/screens/' + name + '.js';
+  const source = fs.readFileSync(path.join(root, file), 'utf8');
+  babel.parse(source, {sourceType: 'module', plugins: ['jsx']});
+  if (!source.includes('onHeaderHeightChange=') ||
+      !(source.includes('setHeaderHeight') || source.includes('setReaderTopInset'))) {
+    throw new Error(file + ' does not reserve space for a wrapped title');
+  }
+}
+console.log('READER CONTROLS VERIFIED:', count, 'files; responsive headers:', headerScreens.length);
