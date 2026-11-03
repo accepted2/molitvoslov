@@ -51,9 +51,13 @@ Write-Host "[3/5] Restore malformed version files if needed; set UTF-8 version 1
 & $python -X utf8 ".\tools\repair_release_version_1_0_20.py"
 Assert-Command "Version and configuration repair"
 
-Write-Host "[4/5] Check single bundled offline search database"
+Write-Host "[4/5] Build and verify ALL public content inside the APK"
+& $python -X utf8 ".\tools\prepare_offline_apk.py"
+Assert-Command "Offline APK public content and search preflight"
 node .\scripts\copy-search-seed.js
 Assert-Command "Search seed verification"
+& $python -X utf8 ".\tools\prepare_offline_apk.py" --verify-only
+Assert-Command "Offline APK verification"
 if (Test-Path ".\android\app\src\main\assets\search_seed.db") {
   throw "Duplicate native search DB exists; aborting build"
 }
