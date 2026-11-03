@@ -1,5 +1,5 @@
-import React, {useEffect, useRef} from 'react';
-import {Animated, Easing, Pressable, StyleSheet, Text, View} from 'react-native';
+import React, {useEffect, useRef, useState} from 'react';
+import {Animated, Easing, Modal, Pressable, StyleSheet, Text, View} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 
 export const FixedSectionHeader = ({
@@ -15,9 +15,15 @@ export const FixedSectionHeader = ({
   titleOffsetY = 0,
   readingHidden = false,
   compactReading = false,
+  languageSwitcher = null,
+  onLanguageChange,
 }) => {
   const headerHeight = topInset + (minimal ? 46 : 56);
   const visibility = useRef(new Animated.Value(0)).current;
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const languageOptions = Array.isArray(languageSwitcher?.options) ? languageSwitcher.options : [];
+  const selectedLanguage = languageOptions.find(option => option.key === languageSwitcher?.activeKey);
+  useEffect(() => {if (readingHidden) setLanguageOpen(false);}, [readingHidden]);
   useEffect(() => {
     Animated.timing(visibility, {toValue: readingHidden ? 1 : 0, duration: 340, easing: Easing.out(Easing.cubic), useNativeDriver: true}).start();
   }, [readingHidden, visibility]);
@@ -77,7 +83,7 @@ export const FixedSectionHeader = ({
 
           {showTitle && (
             <View
-              pointerEvents="none"
+              pointerEvents="box-none"
               style={[
                 styles.titleWrap,
                 compactReading && styles.titleWrapReading,
@@ -87,13 +93,27 @@ export const FixedSectionHeader = ({
                 },
               ]}
             >
-              <Text
-                style={[styles.title, compactReading && styles.titleReading, dark && styles.titleDark]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {title}
-              </Text>
+              <View style={styles.titleLine}>
+                <Text
+                  style={[styles.title, styles.titleFlex, compactReading && styles.titleReading, dark && styles.titleDark]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {title}
+                </Text>
+                {!!selectedLanguage && !!onLanguageChange && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Выбрать язык чтения"
+                    accessibilityState={{expanded: languageOpen}}
+                    onPress={() => setLanguageOpen(true)}
+                    style={({pressed}) => [styles.languagePill, pressed && styles.pressed]}
+                  >
+                    <Text style={styles.languagePillText} numberOfLines={1}>{selectedLanguage.label}</Text>
+                    <Text style={styles.languageChevron}>⌄</Text>
+                  </Pressable>
+                )}
+              </View>
 
               <View style={[styles.ornament, compactReading && styles.ornamentReading]}>
                 <View style={[styles.line, dark && styles.lineDark]} />
@@ -111,6 +131,7 @@ export const FixedSectionHeader = ({
                 styles.menuButton,
                 !showTitle && styles.menuButtonWithoutTitle,
                 minimal && styles.menuButtonMinimal,
+                compactReading && styles.menuButtonReading,
                 pressed && styles.pressed,
               ]}
             >
@@ -119,6 +140,40 @@ export const FixedSectionHeader = ({
           )}
         </View>
       </Animated.View>
+      <Modal
+        visible={languageOpen && !readingHidden}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setLanguageOpen(false)}
+      >
+        <Pressable style={styles.languageModalDismiss} onPress={() => setLanguageOpen(false)}>
+          <View style={[styles.languageDropdownPosition, {top: topInset + 53}]}>
+            <View style={styles.languageDropdown}>
+              {languageOptions.map((option) => (
+                <Pressable
+                  key={option.key}
+                  disabled={!!option.disabled}
+                  accessibilityRole="button"
+                  accessibilityState={{selected: option.key === languageSwitcher?.activeKey, disabled: !!option.disabled}}
+                  onPress={() => {
+                    setLanguageOpen(false);
+                    if (option.key !== languageSwitcher?.activeKey) onLanguageChange?.(option.key);
+                  }}
+                  style={({pressed}) => [
+                    styles.languageDropdownItem,
+                    option.key === languageSwitcher?.activeKey && styles.languageDropdownActive,
+                    option.disabled && styles.languageDropdownDisabled,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.languageDropdownText}>{option.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
     </>
   );
 };
@@ -151,11 +206,11 @@ const styles = StyleSheet.create({
   },
 
   backButtonReading: {
-    marginTop: -2,
+    transform: [{translateY: -4}],
   },
   titleWrapReading: {
     marginLeft: 5,
-    transform: [{translateY: -2}],
+    transform: [{translateY: -3}],
     paddingTop: 0,
     paddingRight: 0,
     alignItems: 'flex-start',
@@ -204,6 +259,76 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
 
+  titleLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: 0,
+    gap: 5,
+  },
+  titleFlex: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  languagePill: {
+    flexShrink: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    minHeight: 23,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: 'rgba(126,82,38,0.22)',
+    backgroundColor: '#FFF4DE',
+  },
+  languagePillText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#744A2B',
+  },
+  languageChevron: {
+    fontSize: 12,
+    marginLeft: 3,
+    color: '#744A2B',
+  },
+  languageModalDismiss: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  languageDropdownPosition: {
+    position: 'absolute',
+    right: 49,
+    minWidth: 155,
+    maxWidth: 220,
+  },
+  languageDropdown: {
+    padding: 5,
+    borderRadius: 12,
+    backgroundColor: '#FFF4DE',
+    borderColor: 'rgba(126,82,38,0.3)',
+    borderWidth: 1,
+    elevation: 8,
+    shadowColor: '#442917',
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: {width: 0, height: 4},
+  },
+  languageDropdownItem: {
+    minHeight: 37,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  languageDropdownActive: {
+    backgroundColor: '#E8DCCB',
+  },
+  languageDropdownDisabled: {
+    opacity: 0.4,
+  },
+  languageDropdownText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#54351C',
+  },
   title: {
     color: '#432A19',
     fontFamily: 'serif',
@@ -244,6 +369,9 @@ const styles = StyleSheet.create({
 
   menuButtonMinimal: {
     marginTop: -5,
+  },
+  menuButtonReading: {
+    transform: [{translateY: -4}],
   },
 
   menuText: {
