@@ -45,64 +45,52 @@ const activateContent = (payload, version, {notify = true} = {}) => {
   return true;
 };
 
+// PUBLIC_CONTENT_BUNDLED_ONLY_V1
+// The APK's complete offlineContent.json is authoritative in dev and release.
+// A previously installed SQLite cache (including old OTA data) must NEVER
+// silently supersede the contents of a new APK.
 export const hydratePublicContent = async () => {
-  if (__DEV__) {
-    hydrated = true;
-    return {
-      success: true,
-      source: 'bundle',
-      version: bundledContent.content_version || null,
-    };
+  const bundledVersion = String(bundledContent?.content_version || '');
+  if (!isValidContent(bundledContent) || !bundledVersion) {
+    throw new Error('Некорректный комплект offlineContent.json в APK');
   }
 
   if (hydrated) {
-    return {
-      success: true,
-      source: currentVersion ? 'cache' : 'bundle',
-      version: currentVersion,
-    };
+    return {success: true, source: 'bundle', version: bundledVersion};
   }
-
-  if (hydratePromise) {
-    return hydratePromise;
-  }
+  if (hydratePromise) return hydratePromise;
 
   hydratePromise = (async () => {
+    // Upgrade only the PUBLIC cache; do not touch saved_items, progress,
+    // personal_prayers, memorials or other user-owned SQLite tables.
     try {
       const db = await getDatabase();
       const row = await db.getFirstAsync(
-        `
-          SELECT version, payload
-          FROM public_content_cache
-          WHERE cache_key = ?
-          LIMIT 1
-        `,
+        'SELECT version FROM public_content_cache WHERE cache_key = ?',
         [CACHE_KEY]
       );
-
-      if (row?.payload) {
-        const parsed = JSON.parse(row.payload);
-
-        if (activateContent(parsed, row.version, {notify: false})) {
-          hydrated = true;
-          return {
-            success: true,
-            source: 'cache',
-            version: currentVersion,
-          };
-        }
+      if (row?.version !== bundledVersion) {
+        const now = new Date().toISOString();
+        await db.withExclusiveTransactionAsync(async (tx) => {
+          await tx.runAsync(
+            `INSERT INTO public_content_cache (cache_key, version, payload, updated_at)
+             VALUES (?, ?, ?, ?)
+             ON CONFLICT(cache_key) DO UPDATE SET
+               version=excluded.version,
+               payload=excluded.payload,
+               updated_at=excluded.updated_at`,
+            [CACHE_KEY, bundledVersion, JSON.stringify(bundledContent), now]
+          );
+        });
+        console.log('[offline] APK public content installed:', bundledVersion);
       }
     } catch (error) {
-      console.log('Не удалось прочитать локальный публичный контент:', error?.message || error);
+      // Even when SQLite is unavailable, the bundled APK content stays readable.
+      console.warn('[offline] Failed to persist APK public snapshot:', error?.message || error);
     }
-
+    activateContent(bundledContent, bundledVersion, {notify: false});
     hydrated = true;
-
-    return {
-      success: true,
-      source: 'bundle',
-      version: null,
-    };
+    return {success: true, source: 'bundle', version: bundledVersion};
   })();
 
   try {
