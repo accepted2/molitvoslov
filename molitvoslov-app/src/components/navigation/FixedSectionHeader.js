@@ -18,10 +18,16 @@ export const FixedSectionHeader = ({
   compactReading = false,
   languageSwitcher = null,
   onLanguageChange,
+  onHeaderHeightChange,
 }) => {
-  const headerHeight = topInset + (minimal ? 46 : 56);
   const visibility = useRef(new Animated.Value(0)).current;
   const [languageOpen, setLanguageOpen] = useState(false);
+  const [titleLines, setTitleLines] = useState(1);
+  const extraTitleHeight = showTitle ? Math.max(0, titleLines - 1) * (compactReading ? 20 : 25) : 0;
+  const headerHeight = topInset + (minimal ? 46 : 56) + extraTitleHeight;
+  useEffect(() => {
+    onHeaderHeightChange?.(headerHeight);
+  }, [headerHeight, onHeaderHeightChange]);
   const languageOptions = Array.isArray(languageSwitcher?.options) ? languageSwitcher.options : [];
   const selectedLanguage = languageOptions.find(option => option.key === languageSwitcher?.activeKey);
   // Freeze the reading header while the language menu is open. A scroll/idle
@@ -86,7 +92,7 @@ export const FixedSectionHeader = ({
               ]}
             >
               {compactReading ? (
-                <Ionicons name="chevron-back" size={29} color={dark ? '#D7B88C' : '#6F4727'} />
+                <Ionicons name="chevron-back" size={23} color={dark ? '#D7B88C' : '#6F4727'} />
               ) : (
                 <Text style={[styles.backArrow, dark && styles.backArrowDark]}>‹</Text>
               )}
@@ -99,6 +105,7 @@ export const FixedSectionHeader = ({
               style={[
                 styles.titleWrap,
                 compactReading && styles.titleWrapReading,
+                compactReading && {height: 44 + extraTitleHeight},
                 !showBack && styles.titleWrapRoot,
                 titleOffsetY !== 0 && !compactReading && {
                   transform: [{translateY: titleOffsetY}],
@@ -108,8 +115,10 @@ export const FixedSectionHeader = ({
               <View style={styles.titleLine}>
                 <Text
                   style={[styles.title, styles.titleFlex, compactReading && styles.titleReading, dark && styles.titleDark]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
+                  onTextLayout={(event) => {
+                    const count = event.nativeEvent?.lines?.length || 1;
+                    setTitleLines((previous) => previous === count ? previous : count);
+                  }}
                 >
                   {title}
                 </Text>
@@ -148,7 +157,7 @@ export const FixedSectionHeader = ({
               ]}
             >
               {compactReading ? (
-                <Ionicons name="ellipsis-vertical" size={25} color={dark ? '#D7B88C' : '#6F4727'} />
+                <Ionicons name="ellipsis-vertical" size={20} color={dark ? '#D7B88C' : '#6F4727'} />
               ) : (
                 <Text style={[styles.menuText, dark && styles.menuTextDark]}>⋮</Text>
               )}
@@ -164,7 +173,7 @@ export const FixedSectionHeader = ({
         onRequestClose={() => setLanguageOpen(false)}
       >
         <Pressable style={styles.languageModalDismiss} onPress={() => setLanguageOpen(false)}>
-          <View style={[styles.languageDropdownPosition, {top: topInset + 53}]}>
+          <View style={[styles.languageDropdownPosition, {top: headerHeight + 2}]}>
             <View style={styles.languageDropdown}>
               {languageOptions.map((option) => (
                 <Pressable
@@ -238,16 +247,13 @@ const styles = StyleSheet.create({
   titleReading: {
     fontSize: 17,
     fontWeight: '700',
-    lineHeight: 23,
+    lineHeight: 20,
     textAlign: 'left',
     includeFontPadding: false,
   },
   ornamentReading: {
-    position: 'absolute',
-    left: 0,
-    bottom: 0,
     width: 122,
-    marginTop: 0,
+    marginTop: 2,
   },
   titleWrapRoot: {
     marginLeft: 8,
@@ -357,6 +363,7 @@ const styles = StyleSheet.create({
     fontSize: 21,
     lineHeight: 25,
     fontWeight: '700',
+    flexWrap: 'wrap',
   },
 
   ornament: {
