@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {Animated, Easing, Modal, Pressable, StyleSheet, Text, View} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 export const FixedSectionHeader = ({
   title,
@@ -23,10 +24,17 @@ export const FixedSectionHeader = ({
   const [languageOpen, setLanguageOpen] = useState(false);
   const languageOptions = Array.isArray(languageSwitcher?.options) ? languageSwitcher.options : [];
   const selectedLanguage = languageOptions.find(option => option.key === languageSwitcher?.activeKey);
-  useEffect(() => {if (readingHidden) setLanguageOpen(false);}, [readingHidden]);
+  // Freeze the reading header while the language menu is open. A scroll/idle
+  // hide event must not dismiss the menu before the user can choose a language.
+  const headerHidden = readingHidden && !languageOpen;
   useEffect(() => {
-    Animated.timing(visibility, {toValue: readingHidden ? 1 : 0, duration: 340, easing: Easing.out(Easing.cubic), useNativeDriver: true}).start();
-  }, [readingHidden, visibility]);
+    Animated.timing(visibility, {
+      toValue: headerHidden ? 1 : 0,
+      duration: 340,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [headerHidden, visibility]);
 
   return (
     <>
@@ -46,7 +54,7 @@ export const FixedSectionHeader = ({
       )}
 
       <Animated.View
-        pointerEvents={readingHidden ? 'none' : 'box-none'}
+        pointerEvents={headerHidden ? 'none' : 'box-none'}
         style={[
           styles.fixedHeader,
           {transform: [{translateY: visibility.interpolate({inputRange: [0, 1], outputRange: [0, -(headerHeight + 16)]})}], opacity: visibility.interpolate({inputRange: [0, 1], outputRange: [1, 0]})},
@@ -77,7 +85,11 @@ export const FixedSectionHeader = ({
                 pressed && styles.pressed,
               ]}
             >
-              <Text style={[styles.backArrow, dark && styles.backArrowDark]}>‹</Text>
+              {compactReading ? (
+                <Ionicons name="chevron-back" size={29} color={dark ? '#D7B88C' : '#6F4727'} />
+              ) : (
+                <Text style={[styles.backArrow, dark && styles.backArrowDark]}>‹</Text>
+              )}
             </Pressable>
           )}
 
@@ -110,7 +122,7 @@ export const FixedSectionHeader = ({
                     style={({pressed}) => [styles.languagePill, pressed && styles.pressed]}
                   >
                     <Text style={styles.languagePillText} numberOfLines={1}>{selectedLanguage.label}</Text>
-                    <Text style={styles.languageChevron}>⌄</Text>
+                    <Ionicons name="chevron-down" size={13} color="#744A2B" style={styles.languageChevronIcon} />
                   </Pressable>
                 )}
               </View>
@@ -135,13 +147,17 @@ export const FixedSectionHeader = ({
                 pressed && styles.pressed,
               ]}
             >
-              <Text style={[styles.menuText, dark && styles.menuTextDark]}>⋮</Text>
+              {compactReading ? (
+                <Ionicons name="ellipsis-vertical" size={25} color={dark ? '#D7B88C' : '#6F4727'} />
+              ) : (
+                <Text style={[styles.menuText, dark && styles.menuTextDark]}>⋮</Text>
+              )}
             </Pressable>
           )}
         </View>
       </Animated.View>
       <Modal
-        visible={languageOpen && !readingHidden}
+        visible={languageOpen}
         transparent
         animationType="fade"
         statusBarTranslucent
@@ -205,15 +221,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
 
+  // The three compact controls use the same 44px line box and vertical
+  // offset. The ornament is positioned separately so it cannot lift the text.
   backButtonReading: {
-    transform: [{translateY: -4}],
+    transform: [{translateY: -5}],
   },
   titleWrapReading: {
+    height: 44,
     marginLeft: 5,
-    transform: [{translateY: -3}],
+    transform: [{translateY: -5}],
     paddingTop: 0,
     paddingRight: 0,
-    alignItems: 'flex-start',
+    alignItems: 'stretch',
     justifyContent: 'center',
   },
   titleReading: {
@@ -224,8 +243,11 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   ornamentReading: {
+    position: 'absolute',
+    left: 0,
+    bottom: 0,
     width: 122,
-    marginTop: 2,
+    marginTop: 0,
   },
   titleWrapRoot: {
     marginLeft: 8,
@@ -282,13 +304,13 @@ const styles = StyleSheet.create({
   },
   languagePillText: {
     fontSize: 10,
+    lineHeight: 14,
+    includeFontPadding: false,
     fontWeight: '700',
     color: '#744A2B',
   },
-  languageChevron: {
-    fontSize: 12,
+  languageChevronIcon: {
     marginLeft: 3,
-    color: '#744A2B',
   },
   languageModalDismiss: {
     flex: 1,
@@ -371,7 +393,7 @@ const styles = StyleSheet.create({
     marginTop: -5,
   },
   menuButtonReading: {
-    transform: [{translateY: -4}],
+    transform: [{translateY: -5}],
   },
 
   menuText: {
