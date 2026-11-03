@@ -36,7 +36,7 @@ const checks = [
   ]],
   ['scripts/copy-search-seed.js', [
     'SEARCH_SEED_METRO_ONLY_V1',
-    'fs.unlinkSync(dest)',
+    'cleanupFs.unlinkSync(nativeSeed)',
   ]],
 ];
 
@@ -53,9 +53,10 @@ try {
     }
     if (name === 'scripts/copy-search-seed.js') {
       const postcondition = source.split('// SEARCH_SEED_METRO_ONLY_V1').slice(-1)[0];
-      if (!postcondition || !postcondition.includes('fs.unlinkSync(dest)') ||
+      if (!postcondition || !postcondition.includes('cleanupFs.unlinkSync(nativeSeed)') ||
+          !postcondition.includes('hash(sourceSeed) !== hash(nativeSeed)') ||
           postcondition.includes('fs.copyFileSync(src, dest)')) {
-        throw new Error('Search seed duplicate-cleanup must execute after all legacy copy operations');
+        throw new Error('Search seed cleanup must verify a byte-identical duplicate before deletion');
       }
     }
     if (name === 'src/services/contentStore.js') {
