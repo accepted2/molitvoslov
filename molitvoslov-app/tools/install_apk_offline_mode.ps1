@@ -19,6 +19,7 @@ $files = @(
   'tools/patch_bundled_apk_mode.py',
   'tools/verify_bundled_apk_mode.js',
   'tools/prepare_offline_apk.py',
+  'tools/audit_local_public_sources.py',
   'tools/restore_akathist_izbavlenie.py',
   'tools/verify_akathist_content.js'
 )
@@ -37,7 +38,9 @@ Assert-Last 'Guarded source patch'
 & node '.\tools\verify_bundled_apk_mode.js'
 Assert-Last 'APK mode structural verification'
 
-Write-Host '[3/5] Restore previously supplied missing akathist into LOCAL Django and JSON'
+Write-Host '[3/5] Audit LOCAL backup sources, then restore the known missing akathist'
+& $python -X utf8 '.\tools\audit_local_public_sources.py'
+Assert-Last 'Read-only local content inventory'
 & $python -X utf8 '.\tools\restore_akathist_izbavlenie.py'
 Assert-Last 'Local Django/JSON source restoration'
 
