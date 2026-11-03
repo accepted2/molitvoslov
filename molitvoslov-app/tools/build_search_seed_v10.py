@@ -9,7 +9,7 @@ import copy
 import importlib.util
 import json
 from pathlib import Path
-from search_seed_lib import SeedWriter, merge_languages, KIND_BOOST
+from search_seed_lib import SeedWriter, merge_languages, KIND_BOOST, fingerprint, SCHEMA
 
 ROOT = Path(__file__).resolve().parents[1]
 ORIGINAL = ROOT / "tools" / "build_search_seed.py"
@@ -78,50 +78,74 @@ def compile_corpus(source, filename=str(ORIGINAL)):
     return compile(module, filename + ":v10-corpus", "exec")
 
 
-def verify_source_coverage(content, collected):
-    """Every visible akathist and its Slavonic sections must be searchable."""
-    rows = {doc["ext"] for docs in collected.values() for doc in docs}
+def verify_source_coverage(content, docs):
+    """Every published akathist and each readable Slavonic section must be indexed.
+
+    Legacy v9 IDs end in :church; modern v10 IDs hold every language
+    variant in a single document without that suffix. Both are valid.
+    """
+    rows = {doc["ext"] for doc in docs}
     missing, sections, published = [], 0, 0
     for ak in ((content.get("akathists") or {}).get("by_slug") or {}).values():
         if not ak.get("is_visible", True):
             continue
         published += 1
-        ref = "akathists:" + str(ak.get("id"))
-        if ref not in rows:
-            missing.append(ref)
+        ext = "akathists:" + str(ak.get("id"))
+        if ext not in rows:
+            missing.append(ext)
         for section in ak.get("sections") or []:
-            if (section.get("text") or {}).get("content"):
+            text = section.get("text") or {}
+            if text.get("content"):
                 sections += 1
-                ref = "akathists:section:" + str(section.get("id")) + ":church"
-                if ref not in rows:
-                    missing.append(ref)
+                base = "akathists:section:" + str(section.get("id"))
+                if base not in rows and (base + ":church") not in rows:
+                    missing.append(base)
     if missing:
-        raise RuntimeError("Published akathists missing from search: " +
-                           ", ".join(missing[:30]))
+        raise RuntimeError(
+            "Published akathists missing from search: " + ", ".join(missing[:30])
+        )
     print("V10 CORPUS COVERAGE: %d published akathists; %d Slavonic sections" %
           (published, sections))
 
 
-def main():
-    source = ORIGINAL.read_text(encoding="utf-8-sig")
-    corpus = compile_corpus(source)
+def extract_source_documents(content, bible, calendar_dir):
+    """Support the optimized native-v10 extractor AND the older v9 builder."""
     spec = importlib.util.spec_from_file_location("molitvoslov_original_seed", ORIGINAL)
-    old = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(old)
-    content = json.loads((ROOT / "src/data/offlineContent.json").read_text(encoding="utf-8-sig"))
-    bible = json.loads((ROOT / "src/data/offlineBible.json").read_text(encoding="utf-8-sig"))
+    original = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(original)
+
+    # Modern optimized search (already installed by the user): one document
+    # contains Slavonic, traditional, Russian and Ukrainian text variants.
+    # Never replace this richer traversal with a frozen v9 collector.
+    native = getattr(original, "extract_documents", None)
+    if callable(native):
+        docs = native(content, bible, Path(calendar_dir))
+        if not isinstance(docs, list) or len(docs) < 1:
+            raise RuntimeError("Modern extract_documents returned no search records")
+        for item in docs:
+            if not all(k in item for k in
+                       ("ext", "grp", "kind", "title", "source", "route",
+                        "variants", "lang")):
+                raise RuntimeError("Unexpected modern search record structure")
+        print("Using existing optimized schema-10 corpus extractor:", len(docs), "documents")
+        return docs, "native-v10"
+
+    # Legacy version: preserve its exact corpus extraction rules, ignoring
+    # whitespace/comments and removing only legacy database writes.
+    code = compile_corpus(ORIGINAL.read_text(encoding="utf-8-sig"))
     collected = {"ru": [], "uk": []}
 
     def add(lang, group, identifier, title, source, texts, route,
             kind="text", preview="", text_language=None):
         variants = []
-        code = {"church": "c", "russian": "r", "ukrainian": "u"}.get(text_language, "m")
+        code_letter = {"church": "c", "russian": "r",
+                       "ukrainian": "u"}.get(text_language, "m")
         for value in texts:
             if value:
-                original = old.compact(value)
-                if original:
-                    variants.append((code, original))
-        title = old.compact(title)
+                val = original.compact(value)
+                if val:
+                    variants.append((code_letter, val))
+        title = original.compact(title)
         if not title and not variants:
             return
         collected[lang].append({
@@ -130,24 +154,41 @@ def main():
             "variants": variants, "boost": KIND_BOOST.get(kind, 1.0),
         })
 
-    ns = dict(vars(old))
-    ns.update({"ROOT": ROOT, "content": content, "bible": bible, "add": add})
-    exec(corpus, ns, ns)
-    verify_source_coverage(content, collected)
-    merged = merge_languages(collected)
+    ns = dict(vars(original))
+    root = Path(calendar_dir).resolve().parents[2]
+    ns.update({"ROOT": root, "content": content, "bible": bible, "add": add})
+    exec(code, ns, ns)
+    docs = merge_languages(collected)
+    print("Using structural legacy traversal: ru=%d uk=%d merged=%d" %
+          (len(collected["ru"]), len(collected["uk"]), len(docs)))
+    return docs, "legacy-v9"
+
+
+def main():
+    content = json.loads((ROOT / "src/data/offlineContent.json").read_text(encoding="utf-8-sig"))
+    bible = json.loads((ROOT / "src/data/offlineBible.json").read_text(encoding="utf-8-sig"))
+    docs, source_kind = extract_source_documents(
+        content, bible, ROOT / "src/data/calendar"
+    )
+    verify_source_coverage(content, docs)
     writer = SeedWriter()
-    for doc in merged:
+    for doc in docs:
         writer.add(doc)
+    # Preserve the modern generator's content-fingerprint database name so
+    # its existing verify_search_seed.py remains compatible; the separate
+    # APK manifest will use the full on-disk SHA256 for upgrade detection.
+    source_fingerprint = fingerprint(docs)
+    db_name = "molitvoslov_search_v%s_%s.db" % (SCHEMA, source_fingerprint[:8])
     stats = writer.finish(DEST, {
         "public_content_version": str(content.get("content_version", "")),
         "bible_content_version": str(bible.get("content_version", "")),
-        "generator": "v10-from-original-corpus-ast",
+        "dbName": db_name,
+        "generator": "v10-" + source_kind,
     })
     if stats["integrity"] != "ok":
         raise RuntimeError("Generated database integrity_check failed")
     print("V10 GENERATED:", json.dumps(stats, ensure_ascii=False, indent=2))
-    print("Original records: ru=%d uk=%d, merged=%d" %
-          (len(collected["ru"]), len(collected["uk"]), len(merged)))
+    print("Original extractor:", source_kind, "; documents:", len(docs))
     print("Output:", DEST)
 
 
