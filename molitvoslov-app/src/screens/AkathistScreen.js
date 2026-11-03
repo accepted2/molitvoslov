@@ -19,6 +19,7 @@ import {StatusBar} from 'expo-status-bar';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
+import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
 import {
   READER_LANGUAGE_MODES,
   buildReaderLanguageOptions,
@@ -115,6 +116,8 @@ export const AkathistScreen = ({route, navigation}) => {
 
   const savedItemsRef = useRef([]);
   const readerRef = useRef(null);
+  const {appearance, changeAppearance, resetAppearance} = useScopedReaderAppearance('akathist', akathistId);
+  useEffect(() => {readerRef.current?.applyAppearance(appearance);}, [appearance]);
 
   const [viewMode, setViewMode] = useState(MODE_CHURCH);
 
@@ -889,6 +892,7 @@ export const AkathistScreen = ({route, navigation}) => {
         onProgress={scheduleSave}
         onAction={handleAction}
         onViewModeChange={setViewMode}
+        onReady={() => readerRef.current?.applyAppearance(appearance)}
       />
 
       <ReaderBookmarkMenu
@@ -896,6 +900,9 @@ export const AkathistScreen = ({route, navigation}) => {
         onClose={() => setReaderMenuVisible(false)}
         navigation={navigation}
         bookmark={bookmarkConfig}
+        appearance={appearance}
+        onAppearanceChange={changeAppearance}
+        onAppearanceReset={resetAppearance}
         canReturnToProgress={!!stablePosition}
         onReturnToProgress={() => {
           readerRef.current?.goToProgress(stablePosition);
@@ -912,6 +919,8 @@ export const AkathistScreen = ({route, navigation}) => {
         readingHidden={readingChromeHidden}
         showMenu
         onMenuPress={openReaderMenu}
+        languageSwitcher={documentData.viewSwitcher}
+        onLanguageChange={(mode) => readerRef.current?.changeViewMode(mode)}
       />
 
       <BottomNav navigation={navigation} active={null} readingHidden={readingChromeHidden} />
