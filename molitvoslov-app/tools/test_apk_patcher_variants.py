@@ -58,9 +58,9 @@ class SearchScreenPatchTests(unittest.TestCase):
         self.assertPatched(screen("databaseName={chooseDatabase()}"))
 
     def test_crlf_windows_does_not_double_carriage_returns(self):
-        source = screen('databaseName="windows.db"').replace("\\n", "\\r\\n")
+        source = screen('databaseName="windows.db"').replace("\n", "\r\n")
         changed = patch_search(source, "")
-        self.assertNotIn("\\r\\r\\n", changed)
+        self.assertNotIn("\r\r\n", changed)
         self.assertEqual(patch_search(changed, ""), changed)
 
     def test_no_sqlite_provider(self):
