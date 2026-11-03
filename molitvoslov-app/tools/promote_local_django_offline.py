@@ -163,8 +163,10 @@ def main():
         raise RuntimeError("Django exported an unexpected count of published akathists")
     if set(new_akathists) != set(diagnostics["visible"]):
         raise RuntimeError("Django exported different akathists than the local SQLite ORM")
-    if set(new["texts"]) != set(diagnostics_texts_from_export(new)):
-        raise RuntimeError("Invalid exported text keys")
+    if len(new["texts"]) != diagnostics["exported_text_count"]:
+        raise RuntimeError("Django exported a different text count than the verified SQLite source")
+    if len(new["texts"]) != diagnostics["visible_text_count"]:
+        raise RuntimeError("Django failed to bundle all visible local prayer texts")
     changes = compare_without_loss(old, new)
     print("Previous offline JSON:", len(old_akathists), "akathists;",
           len(old["texts"]), "texts")
@@ -190,9 +192,6 @@ def main():
     print("APK PUBLIC JSON UPDATED:", CURRENT)
     print("LOCAL APK PUBLIC SNAPSHOT VERIFIED")
 
-
-def diagnostics_texts_from_export(snapshot):
-    return snapshot.get("texts", {})
 
 
 if __name__ == "__main__":
