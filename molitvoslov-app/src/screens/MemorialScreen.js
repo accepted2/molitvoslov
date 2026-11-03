@@ -23,7 +23,8 @@ export const MemorialScreen = ({navigation}) => {
   const {t} = useLanguage();
   const insets = useSafeAreaInsets();
 
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
+  React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   const [books, setBooks] = useState([]);
 
@@ -190,7 +191,7 @@ export const MemorialScreen = ({navigation}) => {
           />
         )}
 
-        <FixedSectionHeader
+        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
           title={t('memorial.title')}
           navigation={navigation}
           topInset={insets.top}
