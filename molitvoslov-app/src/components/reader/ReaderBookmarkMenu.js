@@ -4,6 +4,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {saveReadingBookmark} from '../../services/readerBookmarks';
 import {colors, radius, spacing} from '../../theme';
+import {ReaderAppearanceSheet} from './ReaderAppearanceSheet';
 import {useLanguage} from '../../context/LanguageContext';
 
 export const ReaderBookmarkMenu = ({
@@ -16,11 +17,15 @@ export const ReaderBookmarkMenu = ({
   languageOptions = [],
   activeLanguage = null,
   onLanguageChange,
+  appearance,
+  onAppearanceChange,
+  onAppearanceReset,
 }) => {
   const insets = useSafeAreaInsets();
   const {t} = useLanguage();
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [appearanceVisible, setAppearanceVisible] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -54,9 +59,10 @@ export const ReaderBookmarkMenu = ({
   };
 
   return (
+    <>
     <Modal
       transparent
-      visible={visible}
+      visible={visible && !appearanceVisible}
       animationType="fade"
       statusBarTranslucent
       onRequestClose={onClose}
@@ -105,6 +111,22 @@ export const ReaderBookmarkMenu = ({
                 })}
               </View>
             </View>
+          )}
+
+          {!!appearance && (
+            <Pressable
+              onPress={() => setAppearanceVisible(true)}
+              style={({pressed}) => [styles.action, pressed && styles.pressed]}
+              accessibilityRole="button"
+            >
+              <View style={styles.iconWrap}>
+                <Ionicons name="text-outline" size={22} color={colors.accent} />
+              </View>
+              <View style={styles.actionTextWrap}>
+                <Text style={styles.actionTitle}>Оформление чтения</Text>
+                <Text style={styles.actionSubtitle}>Размер шрифта и цвет страницы</Text>
+              </View>
+            </Pressable>
           )}
 
           <Pressable
@@ -166,6 +188,17 @@ export const ReaderBookmarkMenu = ({
         </Pressable>
       </Pressable>
     </Modal>
+    <ReaderAppearanceSheet
+      visible={appearanceVisible}
+      onClose={() => {
+        setAppearanceVisible(false);
+        onClose?.();
+      }}
+      appearance={appearance}
+      onChange={onAppearanceChange}
+      onReset={onAppearanceReset}
+    />
+    </>
   );
 };
 
