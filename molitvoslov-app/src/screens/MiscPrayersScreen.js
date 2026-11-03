@@ -113,7 +113,8 @@ export const MiscPrayersScreen = ({route, navigation}) => {
   const [loading, setLoading] = useState(true);
 
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
+  React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   useEffect(() => {
     let active = true;
@@ -275,7 +276,7 @@ export const MiscPrayersScreen = ({route, navigation}) => {
           />
         )}
 
-        <FixedSectionHeader
+        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
           title={categoryName || 'Разные молитвы'}
           navigation={navigation}
           topInset={insets.top}
