@@ -260,17 +260,30 @@ def patch(path, src, new):
 
 def main():
     planned = {}
+    preflight_errors = []
+    # Preflight EVERY target before writing ANY file, so if an unexpected
+    # local version exists, all incompatibilities appear in one invocation.
     for name in sorted(FILES):
         destination = ROOT / name
-        if not destination.is_file():
-            if name == "tools/build_release_1_0_20.ps1":
-                planned[name] = remote(name)
-                continue
-            raise FileNotFoundError("Missing source file: " + str(destination))
-        source = destination.read_text(encoding="utf-8-sig").replace("\r\n", "\n")
-        future = patch(name, source, remote(name))
-        if source != future:
-            planned[name] = future
+        try:
+            if not destination.is_file():
+                if name == "tools/build_release_1_0_20.ps1":
+                    planned[name] = remote(name)
+                    continue
+                raise FileNotFoundError("Missing source file: " + str(destination))
+            source = destination.read_text(encoding="utf-8-sig").replace("\r\n", "\n")
+            future = patch(name, source, remote(name))
+            if source != future:
+                planned[name] = future
+        except Exception as error:
+            preflight_errors.append((name, error))
+    if preflight_errors:
+        print("APK PATCH PREFLIGHT found", len(preflight_errors),
+              "local incompatibilities; no app source files modified:",
+              file=sys.stderr)
+        for name, error in preflight_errors:
+            print(" -", name, ":", error, file=sys.stderr)
+        raise RuntimeError("Fix the listed incompatibilities before applying APK mode")
     if not planned:
         print("APK-only public content code already patched")
         return
