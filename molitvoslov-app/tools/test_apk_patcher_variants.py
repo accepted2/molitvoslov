@@ -57,6 +57,12 @@ class SearchScreenPatchTests(unittest.TestCase):
     def test_custom_dynamic_database_attribute(self):
         self.assertPatched(screen("databaseName={chooseDatabase()}"))
 
+    def test_crlf_windows_does_not_double_carriage_returns(self):
+        source = screen('databaseName="windows.db"').replace("\\n", "\\r\\n")
+        changed = patch_search(source, "")
+        self.assertNotIn("\\r\\r\\n", changed)
+        self.assertEqual(patch_search(changed, ""), changed)
+
     def test_no_sqlite_provider(self):
         with self.assertRaisesRegex(ValueError, "Expected one SQLiteProvider"):
             patch_search("import React from 'react'; export default () => <Text/>;", "")
