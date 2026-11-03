@@ -369,7 +369,8 @@ export const PrayerBookScreen = ({route, navigation}) => {
   const {t} = useLanguage();
   const {bookSyncId} = route.params;
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
+  React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   const [book, setBook] = useState(null);
   const [savedItems, setSavedItems] = useState([]);
@@ -480,7 +481,7 @@ export const PrayerBookScreen = ({route, navigation}) => {
         <View style={styles.center}>
           <Text style={styles.loading}>{t('common.loading')}</Text>
         </View>
-        <FixedSectionHeader
+        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
           title={t('nav.prayerBooks')}
           navigation={navigation}
           topInset={insets.top}
@@ -632,7 +633,7 @@ export const PrayerBookScreen = ({route, navigation}) => {
           </Pressable>
         </View>
 
-        <FixedSectionHeader title={book.title} navigation={navigation} topInset={insets.top} />
+        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={book.title} navigation={navigation} topInset={insets.top} />
 
         <SavedPickerModal
           visible={savedPicker}
