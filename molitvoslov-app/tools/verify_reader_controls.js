@@ -23,7 +23,7 @@ const files = [
 ];
 const required = {
   'src/components/reader/ReaderAppearanceSheet.js': [
-    'sliderPreviewOpacity', 'sliderDragging', 'sheetBackground', 'settingsBlock',
+    'sliderPreviewOpacity', 'sliderDragging', 'styles.sheetPreview', 'settingsBlock',
     'onShow={restorePanel}', 'useNativeDriver: true',
     'setSliderPreview(true)', 'onResponderGrant', 'onResponderRelease', 'onResponderTerminate',
   ],
@@ -73,10 +73,12 @@ for (const relative of files) {
       throw new Error('Animating the entire appearance sheet hides the active slider');
     }
     if (!source.includes('style={styles.track}') ||
-        !source.includes('styles.sheetBackground, {opacity: sliderPreviewOpacity}') ||
+        !source.includes('sliderDragging && styles.sheetPreview') ||
         !source.includes("backgroundColor:'#E6D0AD'") ||
+        !source.includes("sheetPreview:{") ||
+        source.includes('sheetBackground') ||
         source.includes('animatedSheetColor')) {
-      throw new Error('Use a distinct opaque background layer, never a JS-driven color interpolation');
+      throw new Error('Reader settings must have a solid default surface and become transparent only on drag');
     }
     if (!source.includes('onShow={restorePanel}') ||
         !source.includes('useNativeDriver: true') ||
