@@ -24,7 +24,8 @@ export const BibleBooksScreen = ({route, navigation}) => {
 
   const insets = useSafeAreaInsets();
 
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
+  React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   useFocusEffect(
     useCallback(() => {
@@ -131,7 +132,7 @@ export const BibleBooksScreen = ({route, navigation}) => {
         }}
       />
 
-      <FixedSectionHeader title={title} navigation={navigation} topInset={insets.top} />
+      <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={title} navigation={navigation} topInset={insets.top} />
 
       <BottomNav navigation={navigation} active={null} />
     </AppBackground>
