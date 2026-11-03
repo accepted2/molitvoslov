@@ -20,7 +20,8 @@ export const CategoryMenuScreen = ({route, navigation}) => {
     });
   };
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
+  React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   return (
     <AppBackground imageOpacity={0.72}>
@@ -42,7 +43,7 @@ export const CategoryMenuScreen = ({route, navigation}) => {
             </TouchableOpacity>
           )}
         />
-        <FixedSectionHeader
+        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
           title={getLocalizedField(parentCategory, 'name', language)}
           navigation={navigation}
           topInset={insets.top}
