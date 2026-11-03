@@ -352,7 +352,8 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
   const {t} = useLanguage();
   const {bookSyncId, prayerSyncId = null} = route.params;
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
+  useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
   const [book, setBook] = useState(null);
   const {readingChromeHidden, handleReadingScroll: onChromeScroll} = useReadingChrome();
   const lastScrollY = React.useRef(0);
@@ -472,6 +473,7 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
       )}
 
       <FixedSectionHeader
+        onHeaderHeightChange={setHeaderHeight}
         title={prayerSyncId && items.length === 1 ? (items[0]?.prayer?.title || book?.title) : (book?.title || t('prayerBooks.title'))}
         navigation={navigation}
         topInset={insets.top}
