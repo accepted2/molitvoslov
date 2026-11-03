@@ -140,7 +140,8 @@ export default function KathismaScreen({route, navigation}) {
 
   const insets = useSafeAreaInsets();
 
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
+  useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   const [kathisma, setKathisma] = useState(null);
   const {readingChromeHidden, handleReadingScroll} = useReadingChrome();
@@ -1558,6 +1559,7 @@ export default function KathismaScreen({route, navigation}) {
       />
 
       <FixedSectionHeader
+        onHeaderHeightChange={setHeaderHeight}
         title={t('psalter.kathisma', {number: kathisma.number})}
         navigation={navigation}
         topInset={insets.top}
