@@ -9,6 +9,7 @@ import {useReadingProgress} from '../hooks/useReadingProgress';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
+import {ReaderAppearanceSheet} from '../components/reader/ReaderAppearanceSheet';
 
 import {
   READER_LANGUAGE_MODES,
@@ -30,6 +31,7 @@ import {StatusBar} from 'expo-status-bar';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
+import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
 
 export const BookScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
@@ -45,6 +47,10 @@ export const BookScreen = ({route, navigation}) => {
   const [savedItems, setSavedItems] = useState([]);
 
   const savedItemsRef = useRef([]);
+  const readerRef = useRef(null);
+  const {appearance, changeAppearance, resetAppearance} = useScopedReaderAppearance('category', categoryId);
+  const [appearanceVisible, setAppearanceVisible] = useState(false);
+  useEffect(() => {readerRef.current?.applyAppearance(appearance);}, [appearance]);
 
   const [viewMode, setViewMode] = useState(READER_LANGUAGE_MODES.CHURCH);
 
@@ -444,6 +450,7 @@ export const BookScreen = ({route, navigation}) => {
       <StatusBar style="light" translucent backgroundColor="transparent" />
 
       <SelectableDocumentReader
+        ref={readerRef}
         documentData={documentData}
         savedProgress={savedProgress}
         focusTarget={normalizedFocusTarget}
@@ -453,6 +460,15 @@ export const BookScreen = ({route, navigation}) => {
         onProgress={scheduleSave}
         onAction={handleAction}
         onViewModeChange={setViewMode}
+        onReady={() => readerRef.current?.applyAppearance(appearance)}
+      />
+
+      <ReaderAppearanceSheet
+        visible={appearanceVisible}
+        onClose={() => setAppearanceVisible(false)}
+        appearance={appearance}
+        onChange={changeAppearance}
+        onReset={resetAppearance}
       />
 
       <FixedSectionHeader
@@ -462,6 +478,10 @@ export const BookScreen = ({route, navigation}) => {
         showTitle
         compactReading
         readingHidden={readingChromeHidden}
+        showMenu
+        onMenuPress={() => setAppearanceVisible(true)}
+        languageSwitcher={documentData.viewSwitcher}
+        onLanguageChange={(mode) => readerRef.current?.changeViewMode(mode)}
       />
 
       <BottomNav navigation={navigation} active={null} readingHidden={readingChromeHidden} />
