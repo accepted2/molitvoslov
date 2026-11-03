@@ -4,7 +4,7 @@ import json
 import sqlite3
 import sys
 from pathlib import Path
-from search_seed_lib import SCHEMA, stems
+from search_seed_lib import SCHEMA, stems, is_placeholder
 ROOT=Path(__file__).resolve().parents[1]
 P=ROOT/'src/data/search_seed_v10.db'
 CONTENT=ROOT/'src/data/offlineContent.json'
@@ -29,7 +29,8 @@ def main():
                 continue
             expected.add('akathists:'+str(ak.get('id')))
             for section in ak.get('sections',[]):
-                if (section.get('text') or {}).get('content'):
+                content=(section.get('text') or {}).get('content')
+                if content and not is_placeholder(content):
                     expected.add('akathists:section:'+str(section.get('id')))
         actual={row[0] for row in db.execute("SELECT ext FROM doc WHERE grp='akathists'")}
         # Native v10 documents combine all languages under one ID;
