@@ -14,7 +14,8 @@ import {useLanguage} from '../context/LanguageContext';
 export const PrayerBooksScreen = ({navigation}) => {
   const {t} = useLanguage();
   const insets = useSafeAreaInsets();
-  const headerHeight = insets.top + 56;
+  const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
+  React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
   const [books, setBooks] = useState([]);
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState('');
@@ -115,7 +116,7 @@ export const PrayerBooksScreen = ({navigation}) => {
           )}
         />
 
-        <FixedSectionHeader
+        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
           title={t('prayerBooks.title')}
           navigation={navigation}
           topInset={insets.top}
