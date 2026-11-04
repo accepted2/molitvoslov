@@ -49,10 +49,10 @@ assert.ok(n0 >= 0 && n1 > n0 && w0 > n1 && w1 > w0, 'Runtime helpers not found')
 const helperSandbox = {module:{exports:{}}};
 vm.runInNewContext(
   runtime.slice(n0,n1) + '\n' + runtime.slice(w0,w1) +
-    '\nmodule.exports = {inv:collectAkathistInvocationRanges, alleluia:collectAkathistAlleluiaRanges, breaks:collectAkathistJoyBreaks};',
+    '\nmodule.exports = {inv:collectAkathistInvocationRanges, alleluia:collectAkathistAlleluiaRanges, breaks:collectAkathistJoyBreaks, initials:collectAkathistInitialRanges};',
   helperSandbox,
 );
-const {inv, alleluia, breaks} = helperSandbox.module.exports;
+const {inv, alleluia, breaks, initials} = helperSandbox.module.exports;
 const praise = 'Радуйся, Мати Божия. Иисусе, Сладчайший! Радуйся, Дево!';
 assert.deepEqual(Array.from(inv(praise), range => praise.slice(range.start,range.end)), ['Радуйся','Иисусе','Радуйся']);
 assert.deepEqual([...breaks(praise)], [praise.indexOf('Иисусе'), praise.lastIndexOf('Радуйся')]);
@@ -64,6 +64,20 @@ assert.equal(inv('НеРадуйся').length, 0, 'Never decorate inside another
 assert.match(runtime, /akathistAlleluiaWrapper = el\('span', 'akathist-alleluia'\)/);
 assert.match(runtime, /akathistJoyBreaks\.has\(end\)/);
 console.log('PASS: full Raduisya/Iisuse colored with new lines; Alleluia stays one wrapping unit');
+
+// Ordinary prayer prose must not be rendered as an Ikos refrain.
+const prayerProse = 'Владыко Господи\nИисусе Христе Боже мой, послушай.';
+assert.deepEqual(Array.from(initials(prayerProse, false), range =>
+  prayerProse.slice(range.start, range.end)), ['В']);
+assert.match(runtime, /const isAkathistIkos = isAkathist && itemConfig\?\.metadata\?\.section_type === 'ikos'/);
+assert.match(runtime, /const isAkathistKontakion = isAkathist && \(/);
+assert.match(runtime, /isAkathistIkos \? collectAkathistJoyBreaks\( text \) : new Set\(\)/);
+assert.match(runtime, /collectAkathistInitialRanges\( text, isAkathistIkos \)/);
+assert.match(runtime, /isAkathistKontakion \? collectAkathistAlleluiaRanges\( text \) : \[\]/);
+assert.match(screen, /accentWords: \[\]/);
+assert.equal((screen.match(/section_type: section\.section_type/g) || []).length, 3,
+  'Every Akathist text language must pass its section type');
+console.log('PASS: ordinary prayers with Иисусе/Радуйся stay unbroken and unaccented');
 
 const css = read('src/components/reader/selectableDocumentReader/styles.js');
 assert.match(css, /\.rule-item\.akathist-section \.section-header \.prayer-title/);
