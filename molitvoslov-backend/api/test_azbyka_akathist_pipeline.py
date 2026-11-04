@@ -151,7 +151,7 @@ class AzbykaPipelineTests(SimpleTestCase):
                 {"text": refrain, "classes": set()},
             ], section_type="kontakion",
         )
-        self.assertEqual(content, opening + "\\n\\n" + refrain)
+        self.assertEqual(content, opening + "\n\n" + refrain)
         self.assertEqual(translation, "")
 
     def test_glory_to_thee_refrain_is_not_a_translation(self):
@@ -179,7 +179,7 @@ class AzbykaPipelineTests(SimpleTestCase):
             [{"text": line, "classes": set()} for line in lines],
             section_type="ikos",
         )
-        self.assertEqual(content, "\\n\\n".join(lines))
+        self.assertEqual(content, "\n\n".join(lines))
         self.assertEqual(translation, "")
 
     def test_explicit_russian_translation_is_kept_separately(self):
@@ -202,7 +202,7 @@ class AzbykaPipelineTests(SimpleTestCase):
                 {"text": "Русский перевод", "classes": {"translate"}},
             ], section_type="ikos",
         )
-        self.assertEqual(content, "Первый абзац\\n\\nВажная строка")
+        self.assertEqual(content, "Первый абзац\n\nВажная строка")
         self.assertEqual(translation, "Русский перевод")
 
     def test_language_class_is_inherited_from_nearest_parent(self):
