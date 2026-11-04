@@ -19,7 +19,8 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {AppBackground} from '../components/layout/AppBackground';
 import {useLanguage} from '../context/LanguageContext';
 import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
-import {subscribeToContentUpdates} from '../services/contentStore';
+import {getCurrentContent, subscribeToContentUpdates} from '../services/contentStore';
+import {resolveSearchOpenRoute} from '../services/search/openRoute';
 import {addSearchHistory, clearSearchHistory, getSearchHistory} from '../services/searchHistory';
 import {isPersistentSearchReady, searchPersistent} from '../services/search/engine';
 import {searchCalendarNames} from '../services/search/calendarNames';
@@ -330,7 +331,8 @@ const SearchContent = ({navigation}) => {
     Keyboard.dismiss();
     if (!item?.route?.name) return;
     rememberQuery();
-    navigation.navigate(item.route.name, item.route.params || {});
+    const target = resolveSearchOpenRoute(item, getCurrentContent());
+    navigation.navigate(target.name, target.params || {});
   };
 
   const submitSearch = () => {
