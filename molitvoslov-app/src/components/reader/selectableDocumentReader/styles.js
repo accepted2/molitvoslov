@@ -1007,9 +1007,29 @@ export const READER_STYLES = String.raw`
   font-weight: 400;
 }
 
-    .reader-text .akathist-initial {
-      color: var(--liturgical);
+    /* Akathists use the same heading brown as the other reader categories. */
+    body:not(.book-mode) .rule-item.akathist-section .section-header .prayer-title {
+      color: var(--accent-dark);
+      font-style: normal;
+    }
+    /* Entire invocations (not only their initial letters) are red in every tab. */
+    .reader-text .akathist-initial,
+    .reader-text .akathist-initial .liturgical-word {
+      color: var(--liturgical) !important;
       font-weight: 700;
+      font-style: normal;
+    }
+    /* WebView keeps Alleluia and its punctuation together if it must wrap. */
+    .reader-text .akathist-alleluia {
+      display: inline-block;
+      white-space: nowrap;
+      color: var(--liturgical) !important;
+      font-weight: 700;
+      font-style: normal;
+    }
+    .reader-text .akathist-alleluia span,
+    .reader-text .akathist-alleluia .liturgical-word {
+      color: inherit !important;
     }
     .reader-text.canon-church {
       color: var(--text);
