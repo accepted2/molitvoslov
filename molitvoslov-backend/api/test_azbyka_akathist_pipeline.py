@@ -6,7 +6,9 @@ from tempfile import TemporaryDirectory
 
 from django.core.management.base import CommandError
 from django.test import SimpleTestCase
+from bs4 import BeautifulSoup
 
+from api.management.commands.import_akathist import Command as AkathistParser
 from api.management.commands.audit_azbyka_akathist_catalog import (
     CATALOG_URL,
     canonical_url,
@@ -96,3 +98,39 @@ class AzbykaPipelineTests(SimpleTestCase):
             with self.assertRaises(CommandError):
                 load_approved(path)
         self.assertEqual(load_approved(None), set())
+
+    def test_dotted_and_accented_section_headings(self):
+        parser = AkathistParser()
+        self.assertEqual(parser.parse_section_heading("Конда́к. 8."), {"type": "kontakion", "number": 8})
+        self.assertEqual(parser.parse_section_heading("И́кос 3."), {"type": "ikos", "number": 3})
+        self.assertEqual(parser.parse_section_heading("Кондак № 13"), {"type": "kontakion", "number": 13})
+        self.assertIsNone(parser.parse_section_heading("Кондак без номера"))
+
+    def test_non_paragraph_leaf_blocks_are_parsed_only_as_fallback(self):
+        parser = AkathistParser()
+        markup = '<article>'
+        for number in range(1, 14):
+            markup += (
+                f'<h4>Кондак {number}</h4><div class="church">Кондак текст {number} аллилуиа</div>'
+            )
+            if number <= 12:
+                markup += (
+                    f'<h4>Икос {number}</h4><div class="church">Икос текст {number} радуйся</div>'
+                )
+        markup += '</article>'
+        parsed = parser.normalize_sections(parser.parse_sections(parser.find_best_root(BeautifulSoup(markup, "html.parser"))))
+        parser.validate_sections(parsed)
+        self.assertEqual(len([x for x in parsed if x["type"] == "kontakion"]), 13)
+        self.assertEqual(len([x for x in parsed if x["type"] == "ikos"]), 12)
+
+    def test_paragraph_source_still_takes_priority_over_div_fallback(self):
+        parser = AkathistParser()
+        markup = (
+            '<article><h4>Кондак 1</h4>'
+            '<div><p class="church">Оригинальный церковнославянский текст</p></div>'
+            '<h4>Икос 1</h4><p>Текст икоса</p></article>'
+        )
+        root = BeautifulSoup(markup, "html.parser")
+        sections = parser.parse_heading_format(root)
+        self.assertEqual(sections[0]["content"], "Оригинальный церковнославянский текст")
+        self.assertEqual(sections[1]["content"], "Текст икоса")
