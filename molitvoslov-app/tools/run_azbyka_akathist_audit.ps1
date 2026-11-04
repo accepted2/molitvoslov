@@ -27,7 +27,7 @@ $target = Join-Path $backendRoot 'api\management\commands'
 if (-not (Test-Path $source)) { throw "Missing GitHub backend command directory: $source" }
 if (-not (Test-Path $target)) { throw "Missing local Django command directory: $target" }
 
-$files = @('audit_azbyka_akathist_catalog.py', 'import_azbyka_akathists_safe.py')
+$files = @('import_akathist.py', 'audit_azbyka_akathist_catalog.py', 'import_azbyka_akathists_safe.py')
 $backup = Join-Path $backendRoot ('build-backups\azbyka-audit-code-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 foreach ($file in $files) {
     $src = Join-Path $source $file
@@ -66,7 +66,7 @@ if ($testDiffers) {
 
 Push-Location $backendRoot
 try {
-    & $python -X utf8 -m py_compile (Join-Path $target $files[0]) (Join-Path $target $files[1]) $testTarget
+    & $python -X utf8 -m py_compile (Join-Path $target $files[0]) (Join-Path $target $files[1]) (Join-Path $target $files[2]) $testTarget
     if ($LASTEXITCODE -ne 0) { throw 'Python syntax check failed.' }
 
     & $python -X utf8 manage.py check
