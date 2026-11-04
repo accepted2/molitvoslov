@@ -27,9 +27,10 @@ $commandsInBackend = Join-Path $backend 'api\management\commands'
 $sourceTests = Join-Path $repoRoot 'molitvoslov-backend\api\test_azbyka_akathist_pipeline.py'
 $targetTests = Join-Path $backend 'api\test_azbyka_akathist_pipeline.py'
 $helper = Join-Path $PSScriptRoot 'azbyka_akathist_batch.py'
+$helperTests = Join-Path $PSScriptRoot 'test_azbyka_akathist_batch.py'
 $offline = (Resolve-Path (Join-Path $PSScriptRoot '..\src\data\offlineContent.json') -ErrorAction Stop).Path
 
-foreach ($file in @($python, $dbPath, $commandsFromRepo, $commandsInBackend, $sourceTests, $helper)) {
+foreach ($file in @($python, $dbPath, $commandsFromRepo, $commandsInBackend, $sourceTests, $helper, $helperTests)) {
     if (-not (Test-Path $file)) { throw "Required file or folder missing: $file" }
 }
 $workDir = Join-Path $backend 'files\akathists'
@@ -57,8 +58,7 @@ foreach ($filename in $files) {
     if (-not (Test-Path $src)) { throw "Missing source file: $src" }
     $changed = -not (Test-Path $dst)
     if (-not $changed) {
-        $changed = (Get-FileHash $src -Algorithm SHA256).Hash -ne
-            (Get-FileHash $dst -Algorithm SHA256).Hash
+        $changed = ((Get-FileHash $src -Algorithm SHA256).Hash -ne (Get-FileHash $dst -Algorithm SHA256).Hash)
     }
     if ($changed) {
         if (Test-Path $dst) {
@@ -69,9 +69,11 @@ foreach ($filename in $files) {
         Write-Host "Synced: $filename"
     }
 }
-if (-not (Test-Path $targetTests) -or
-    (Get-FileHash $sourceTests -Algorithm SHA256).Hash -ne
-    (Get-FileHash $targetTests -Algorithm SHA256).Hash) {
+$testsDifferent = -not (Test-Path $targetTests)
+if (-not $testsDifferent) {
+    $testsDifferent = ((Get-FileHash $sourceTests -Algorithm SHA256).Hash -ne (Get-FileHash $targetTests -Algorithm SHA256).Hash)
+}
+if ($testsDifferent) {
     if (Test-Path $targetTests) {
         New-Item -ItemType Directory -Path $codeBackupDir -Force | Out-Null
         Copy-Item $targetTests (Join-Path $codeBackupDir 'test_azbyka_akathist_pipeline.py')
@@ -88,6 +90,8 @@ try {
     Write-Host '[2/5] Check Django and parser tests'
     & $python -X utf8 -m py_compile (Join-Path $commandsInBackend $files[0]) (Join-Path $commandsInBackend $files[1]) (Join-Path $commandsInBackend $files[2]) $targetTests $helper
     if ($LASTEXITCODE -ne 0) { throw 'Python compilation failed.' }
+    & $python -X utf8 $helperTests
+    if ($LASTEXITCODE -ne 0) { throw 'Offline merge regression tests failed.' }
     & $python -X utf8 manage.py check
     if ($LASTEXITCODE -ne 0) { throw 'Django system check failed.' }
     & $python -X utf8 manage.py test api.test_azbyka_akathist_pipeline -v 1
