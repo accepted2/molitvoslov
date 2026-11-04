@@ -96,6 +96,8 @@ export const applyReaderAppearance = (webView, appearance, isRule = false) => {
     "root.style.setProperty('--surface',s.surface);" +
     "root.style.setProperty('--text',s.text);" +
     "root.style.setProperty('--secondary',s.translation);" +
+    "root.style.setProperty('--psalter-heading-color',s.heading);" +
+    "root.style.setProperty('--psalter-translation-color',s.translation);" +
     "root.style.setProperty('--accent-dark',s.heading);" +
     "root.style.setProperty('--accent',s.accent);" +
     "root.style.setProperty('--liturgical',s.rubric);" +
@@ -111,9 +113,9 @@ export const applyReaderAppearance = (webView, appearance, isRule = false) => {
     accentText + "{color:var(--accent) !important;} " +
     scope + ".section-content{color:'+s.text+' !important;} " +
     "body:not(.book-mode) .psalter-kathisma-reader .rule-item.psalter-psalm-section .section-header .prayer-title" +
-    "{color:var(--accent-dark) !important;} " +
+    "{color:var(--psalter-heading-color) !important;} " +
     "body:not(.book-mode) .psalter-kathisma-reader .reader-row-parallel .reader-text.psalter.secondary" +
-    "{color:var(--secondary) !important;}';" +
+    "{color:var(--psalter-translation-color) !important;}';" +
     "var node=document.getElementById('molitvoslov-local-appearance');" +
     "if(!node){node=document.createElement('style');node.id='molitvoslov-local-appearance';document.head.appendChild(node);}" +
     "node.textContent=css;})(); true;";
