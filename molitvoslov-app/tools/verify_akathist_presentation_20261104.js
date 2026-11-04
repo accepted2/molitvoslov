@@ -58,6 +58,8 @@ assert.deepEqual(Array.from(inv(praise), range => praise.slice(range.start,range
 assert.deepEqual([...breaks(praise)], [praise.indexOf('Иисусе'), praise.lastIndexOf('Радуйся')]);
 const accented = 'Иису́се, Сладчайший! Іисусе!';
 assert.deepEqual(Array.from(inv(accented), range => accented.slice(range.start,range.end)), ['Иису́се','Іисусе']);
+const spacedOld = 'И ису́се пречудный; Радꙋйсѧ, Мати';
+assert.deepEqual(Array.from(inv(spacedOld), range => spacedOld.slice(range.start,range.end)), ['И ису́се','Радꙋйсѧ']);
 const response = 'Поем Тебе Аллилуиа! И паки: Аллилуия.';
 assert.deepEqual(Array.from(alleluia(response), range => response.slice(range.start,range.end)), ['Аллилуиа!','Аллилуия.']);
 assert.equal(inv('НеРадуйся').length, 0, 'Never decorate inside another word');
