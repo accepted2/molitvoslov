@@ -120,6 +120,54 @@ assert.deepEqual(
 );
 console.log('PASS: prose quotations remain inline; true Ikos responses stay red and start new lines');
 
+// Some Akathists address the Holy Spirit with "Прииди" instead of "Радуйся".
+// In Kontakion 1, "Приидите, вернии" is narration (plural), not the refrain.
+const holySpiritKontakion = 'Прииди́те, ве́рнии, Духа Святаго прославим, взывающе: ' +
+  'Прииди́, Утешителю Душе Святый, и вселися в ны.';
+assert.deepEqual(
+  Array.from(inv(holySpiritKontakion), range =>
+    holySpiritKontakion.slice(range.start, range.end)),
+  ['Прииди́'],
+);
+assert.deepEqual(
+  [...breaks(holySpiritKontakion)],
+  [holySpiritKontakion.lastIndexOf('Прииди́')],
+);
+const holySpiritIkos = 'Ангели на небеси воспевают: Прииди, Свете истинный; ' +
+  'прииди, росоносный Облаче; Прииди́, и прими.';
+assert.deepEqual(
+  Array.from(inv(holySpiritIkos), range =>
+    holySpiritIkos.slice(range.start, range.end)),
+  ['Прииди', 'прииди', 'Прииди́'],
+);
+assert.deepEqual(
+  [...breaks(holySpiritIkos)],
+  [holySpiritIkos.indexOf('Прииди,'),
+    holySpiritIkos.indexOf('прииди,'),
+    holySpiritIkos.lastIndexOf('Прииди́')],
+);
+assert.equal(inv('приидите, вернии').length, 0, 'Do not match inside Приидите');
+assert.equal(inv('приходи во храм').length, 0, 'Do not color unrelated verbs');
+const griefKontakion = 'Возбранный Воеводо и Господи, радосте и веселие рабом Твоим, ' +
+  'явлением спасения посети мя, зовуща: Господи мой, Господи, Радосте моя, даруй ми.';
+assert.deepEqual(
+  Array.from(inv(griefKontakion), range =>
+    griefKontakion.slice(range.start, range.end)),
+  ['Господи мой'],
+);
+assert.deepEqual([...breaks(griefKontakion)], [griefKontakion.indexOf('Господи мой')]);
+assert.equal(inv('Возлюбив, Господи мой, прихожду к Тебе.').length, 0,
+  'Do not split a narrative sentence at Господи мой');
+const quotedCome = 'Сказано: «Прииди, Утешителю!» Прииди, Душе Святый.';
+assert.deepEqual(
+  Array.from(initials(quotedCome, true, true), range =>
+    quotedCome.slice(range.start, range.end)),
+  ['Прииди', 'С'],
+  'Quoted Прииди must remain plain; the genuine refrain must be red',
+);
+console.log('PASS: Прииди and Господи мой refrains highlight and line-break only in appropriate contexts');
+
+
 assert.match(runtime, /akathistAlleluiaWrapper = el\('span', 'akathist-alleluia'\)/);
 assert.match(runtime, /akathistJoyBreaks\.has\(end\)/);
 console.log('PASS: full Raduisya/Iisuse colored with new lines; Alleluia stays one wrapping unit');
