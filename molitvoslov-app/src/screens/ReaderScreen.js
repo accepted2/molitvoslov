@@ -30,6 +30,7 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
 import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
+import {resolveReaderAppearance} from '../services/scopedReaderAppearance';
 
 export const ReaderScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
@@ -41,7 +42,7 @@ export const ReaderScreen = ({route, navigation}) => {
   useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   const [text, setText] = useState(null);
-  const {readingChromeHidden, handleReadingScroll} = useReadingChrome();
+  const {readingChromeHidden, handleReadingScroll, handleNativeReadingScroll} = useReadingChrome();
 
   const [savedItems, setSavedItems] = useState([]);
 
@@ -405,6 +406,7 @@ export const ReaderScreen = ({route, navigation}) => {
         topContentInset={headerHeight}
         bottomContentInset={90}
         onReadingScroll={handleReadingScroll}
+        onNativeReadingScroll={handleNativeReadingScroll}
         onAction={handleAction}
         onViewModeChange={setViewMode}
         onReady={() => readerRef.current?.applyAppearance(appearance)}
@@ -419,6 +421,7 @@ export const ReaderScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
+        gradientColor={resolveReaderAppearance(appearance).background}
         onHeaderHeightChange={setHeaderHeight}
         title={getLocalizedTextTitle(text, language) || t('common.reading')}
         navigation={navigation}
