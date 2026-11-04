@@ -109,7 +109,7 @@ export const PersonalPrayerReadingView = ({
 
       {images.length > 0 && (
         <Pressable
-          style={[styles.photoToggle, {bottom: isSingle ? 88 + insets.bottom : 92 + insets.bottom}]}
+          style={[styles.photoToggle, {bottom: isSingle ? 170 + insets.bottom : 92 + insets.bottom}]}
           onPress={() => setShowPhotos(value => !value)}
           accessibilityRole="button"
         >
