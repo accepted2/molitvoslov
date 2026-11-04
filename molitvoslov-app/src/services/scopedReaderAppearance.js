@@ -66,7 +66,17 @@ export const resetScopedAppearance = async (key) => {
 export const applyReaderAppearance = (webView, appearance, isRule = false) => {
   if (!webView || !appearance) return;
   const v = resolveReaderAppearance(appearance);
-  const safe = JSON.stringify({background:v.background, surface:v.surface, text:v.text, size:v.fontSize, traditional:Math.min(30, v.fontSize + 2)});
+  // Psalm headings and the Russian column in a parallel Psalter reading
+  // deliberately use colors different from the main reading text.
+  // Compute them for the selected background so the distinction also
+  // survives custom palettes and dark mode.
+  const psalterDark = isDarkReaderBackground(v.background);
+  const safe = JSON.stringify({
+    background:v.background, surface:v.surface, text:v.text,
+    size:v.fontSize, traditional:Math.min(30, v.fontSize + 2),
+    psalterHeading: psalterDark ? '#D1AE7A' : '#765238',
+    psalterTranslation: psalterDark ? '#D8C7AC' : '#765238',
+  });
   const selector = isRule ? '.reader-text' : 'body:not(.book-mode) .reader-text';
   const traditional = isRule ? '.traditional-mode .reader-text' : 'body:not(.book-mode) .reader-language-traditional .reader-text';
   // Recolor ordinary headings/explanations, but leave liturgical rubrics
@@ -85,11 +95,17 @@ export const applyReaderAppearance = (webView, appearance, isRule = false) => {
     "root.style.setProperty('--text',s.text);" +
     "root.style.setProperty('--reading-font-size',s.size+'px');" +
     "root.style.setProperty('--traditional-reading-font-size',s.traditional+'px');" +
+    "root.style.setProperty('--psalter-heading-color',s.psalterHeading);" +
+    "root.style.setProperty('--psalter-translation-color',s.psalterTranslation);" +
     "var css='body {background:'+s.background+' !important;color:'+s.text+' !important;} " +
     selector + "{font-size:'+s.size+'px !important;color:'+s.text+' !important;} " +
     traditional + "{font-size:'+s.traditional+'px !important;} " +
     headingSelector + "{color:'+s.text+' !important;} " +
-    secondarySelector + "{color:'+s.text+' !important;}';" +
+    secondarySelector + "{color:'+s.text+' !important;} " +
+    "body:not(.book-mode) .psalter-kathisma-reader .rule-item.psalter-psalm-section .section-header .prayer-title " +
+    "{color:var(--psalter-heading-color) !important;} " +
+    "body:not(.book-mode) .psalter-kathisma-reader .reader-row-parallel .reader-text.psalter.secondary " +
+    "{color:var(--psalter-translation-color) !important;}';" +
     "var node=document.getElementById('molitvoslov-local-appearance');" +
     "if(!node){node=document.createElement('style');node.id='molitvoslov-local-appearance';document.head.appendChild(node);}" +
     "node.textContent=css;})(); true;";
