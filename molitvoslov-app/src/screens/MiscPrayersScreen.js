@@ -7,6 +7,7 @@ import {AppBackground} from '../components/layout/AppBackground';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {contentApi as api} from '../services/contentApi';
+import {LocalSearchField, matchesLocalQuery} from '../components/search/LocalSearchField';
 import {colors, radius, spacing} from '../theme';
 
 const ROOT_SLUG = 'raznye-molitvy';
@@ -111,12 +112,14 @@ export const MiscPrayersScreen = ({route, navigation}) => {
   const [subcategories, setSubcategories] = useState([]);
   const [texts, setTexts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState(''); // MOLITVOSLOV_LOCAL_CATEGORY_SEARCH_V1
 
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
   React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   useEffect(() => {
+    setQuery('');
     let active = true;
 
     const load = async () => {
@@ -194,6 +197,16 @@ export const MiscPrayersScreen = ({route, navigation}) => {
     [subcategories, texts]
   );
 
+  const visibleItems = useMemo(
+    () => items.filter(item => matchesLocalQuery(
+      query,
+      item.kind === 'category'
+        ? item.category.name
+        : (item.row.text?.title || item.row.text?.description || 'Молитва')
+    )),
+    [items, query]
+  );
+
   const openItem = (item) => {
     if (item.kind === 'category') {
       navigation.push('MiscPrayers', {
@@ -231,7 +244,7 @@ export const MiscPrayersScreen = ({route, navigation}) => {
           </View>
         ) : (
           <FlatList
-            data={items}
+            data={visibleItems}
             keyExtractor={(item) => item.key}
             contentContainerStyle={{
               paddingTop: headerHeight + 18,
@@ -239,11 +252,18 @@ export const MiscPrayersScreen = ({route, navigation}) => {
               paddingBottom: 92 + insets.bottom,
               gap: spacing.sm,
             }}
+            keyboardShouldPersistTaps="handled"
+            ListHeaderComponent={
+              <View style={styles.localSearch}>
+                <LocalSearchField value={query} onChangeText={setQuery}
+                  placeholder="Поиск молитвы по названию" />
+              </View>
+            }
             ListEmptyComponent={
               <View style={styles.emptyCard}>
-                <Text style={styles.emptyTitle}>Молитвы пока не добавлены</Text>
+                <Text style={styles.emptyTitle}>{query.trim() ? 'Ничего не найдено' : 'Молитвы пока не добавлены'}</Text>
                 <Text style={styles.emptyText}>
-                  Этот раздел уже готов для наполнения через админку.
+                  {query.trim() ? 'Попробуйте другое название молитвы' : 'Этот раздел уже готов для наполнения через админку.'}
                 </Text>
               </View>
             }
@@ -293,6 +313,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
+  localSearch: {marginBottom: 8},
   center: {
     flex: 1,
     alignItems: 'center',
