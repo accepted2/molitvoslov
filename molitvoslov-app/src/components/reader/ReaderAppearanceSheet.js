@@ -33,6 +33,7 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
   // must never inherit a transparent panel from a previous font preview.
   useEffect(() => {
     restorePanel();
+    if (!visible) setShowColorPicker(null);
   }, [visible, sliderPreviewOpacity]);
 
   const setSliderPreview = (dragging) => {
@@ -88,7 +89,7 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
           </Animated.View>
           <ScrollView style={styles.scrollArea} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
             <Animated.Text style={[styles.label, {opacity: sliderPreviewOpacity}]}>Размер шрифта: {resolved.fontSize}</Animated.Text>
-            <View style={styles.sizeRow}>
+            <View pointerEvents={sliderDragging && showColorPicker ? 'none' : 'auto'} style={[styles.sizeRow, sliderDragging && showColorPicker && {opacity:0}]}>
               <Animated.View pointerEvents={sliderDragging ? 'none' : 'auto'} style={{opacity: sliderPreviewOpacity}}>
                 <Pressable onPress={() => onChange?.({fontSize: clampSize(resolved.fontSize - 1)})} style={styles.step}><Text style={styles.stepText}>A−</Text></Pressable>
               </Animated.View>
@@ -132,16 +133,20 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
                 </Pressable>
               ))}
             </View>
-            {!!showColorPicker && (
-              <ColorPalettePicker
-                key={showColorPicker}
-                title={showColorPicker==='customBackground'?'Выбрать фон':'Выбрать цвет текста'}
-                color={showColorPicker==='customBackground'?resolved.background:resolved.text}
-                onChange={(color) => setCustom(showColorPicker,color)}
-              />
-            )}
             <Pressable onPress={onReset} style={styles.reset}><Text style={styles.resetText}>Вернуть общие настройки</Text></Pressable>
             </Animated.View>
+            {!!showColorPicker && (
+              <View style={styles.activeColorPicker}>
+                <ColorPalettePicker
+                  key={showColorPicker}
+                  title={showColorPicker==='customBackground'?'Выбрать фон':'Выбрать цвет текста'}
+                  color={showColorPicker==='customBackground'?resolved.background:resolved.text}
+                  onChange={(color) => setCustom(showColorPicker,color)}
+                  onGestureStart={() => setSliderPreview(true)}
+                  onGestureEnd={() => setSliderPreview(false)}
+                />
+              </View>
+            )}
           </ScrollView>
         </View>
       </View>
@@ -185,6 +190,7 @@ const styles=StyleSheet.create({
   preset:{alignItems:'center',flex:1,gap:4},
   swatch:{width:42,height:42,borderRadius:22},
   presetText:{fontSize:11,color:'#69472B',textAlign:'center'},
+  activeColorPicker:{gap:7,padding:10,borderRadius:14,backgroundColor:'rgba(245,227,198,0.92)',borderWidth:1,borderColor:'rgba(177,145,104,0.46)'},
   colorRow:{flexDirection:'row',gap:8},
   colorButton:{flex:1,flexDirection:'row',gap:8,alignItems:'center',padding:8,borderRadius:9,backgroundColor:'#F2E0C5'},
   colorChip:{width:23,height:23,borderRadius:6,borderColor:'#A88762',borderWidth:1},
