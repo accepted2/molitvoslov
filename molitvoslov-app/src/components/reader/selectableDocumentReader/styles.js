@@ -375,6 +375,13 @@ export const READER_STYLES = String.raw`
       font-size: 16px;
       line-height: 25px;
     }
+    /* User-authored prayers are displayed as text, never as an editable field.
+       Preserve their own line breaks and paragraph boundaries. */
+    .reader-text.personal-prayer {
+      white-space: pre-line;
+      overflow-wrap: break-word;
+      text-align: justify;
+    }
     .reader-text.akathist-church {
       color: var(--text);
       font-size: 17px;
