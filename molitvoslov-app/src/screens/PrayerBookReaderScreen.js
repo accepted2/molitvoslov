@@ -17,8 +17,7 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
 import {getPrayerBook} from '../services/prayerBooks';
-import SelectableSaveText from '../components/reader/SelectableSaveText';
-import {savedSourceId} from '../components/reader/CalendarSaveText';
+import {PersonalPrayerReadingView} from '../components/reader/PersonalPrayerReadingView';
 import {useLanguage} from '../context/LanguageContext';
 
 const bundledContent = require('../data/offlineContent.json');
@@ -398,6 +397,26 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
     [book, prayerSyncId]
   );
 
+  // Personal texts are READ with the standard selectable document reader,
+  // never an editable TextInput. Preserve the existing special Psalter view
+  // when saved Psalms or kathismas are mixed into the user's book.
+  const personalTextOnly = items.length > 0 &&
+    items.every(item => !psalterMode(item.prayer)) &&
+    items.some(item => String(item.prayer?.text || '').trim());
+
+  if (personalTextOnly) {
+    return (
+      <PersonalPrayerReadingView
+        book={book}
+        items={items}
+        bookSyncId={bookSyncId}
+        prayerSyncId={prayerSyncId}
+        navigation={navigation}
+        fallbackTitle={t('prayerBooks.title')}
+      />
+    );
+  }
+
   return (
     <View style={styles.screen}>
       <StatusBar style="light" translucent backgroundColor="transparent" />
@@ -429,21 +448,20 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
                   <Text style={styles.title}>{prayer.title}</Text>
 
                   {!!prayer.text && (
-                    <SelectableSaveText
-                      text={String(prayer.text)}
-                      textStyle={styles.text}
-                      sourceType="personal_prayer"
-                      sourceId={savedSourceId(prayer.sync_id)}
-                      anchorType="personal_prayer"
-                      anchorId={savedSourceId(prayer.sync_id)}
-                      sourceTitle={book?.title || t('prayerBooks.title')}
-                      itemTitle={prayer.title || 'Молитва'}
-                      metadata={{
-                        book_sync_id: bookSyncId,
-                        prayer_sync_id: prayer.sync_id,
-                      }}
-                      fullSaveType="prayer"
-                    />
+                    <>
+                      <Text style={styles.text}>{String(prayer.text)}</Text>
+                      <Pressable
+                        style={styles.openReaderButton}
+                        accessibilityRole="button"
+                        onPress={() => navigation.navigate('PrayerBookReader', {
+                          bookSyncId, prayerSyncId: prayer.sync_id,
+                        })}
+                      >
+                        <Text style={styles.openReaderText}>
+                          Открыть молитву для чтения и выделения
+                        </Text>
+                      </Pressable>
+                    </>
                   )}
                 </>
               )}
@@ -666,6 +684,12 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
   },
+  openReaderButton: {
+    marginTop: 12, paddingVertical: 10, paddingHorizontal: 14,
+    alignSelf: 'center', backgroundColor: '#F1DFC2',
+    borderRadius: 12, borderWidth: 1, borderColor: 'rgba(123,79,36,0.25)',
+  },
+  openReaderText: {color: '#765238', fontSize: 13, fontWeight: '700'},
   editBar: {
     paddingHorizontal: 14,
     paddingTop: 10,
