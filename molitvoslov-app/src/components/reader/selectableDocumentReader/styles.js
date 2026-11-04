@@ -1009,7 +1009,8 @@ export const READER_STYLES = String.raw`
 
     /* Akathists use the same heading brown as the other reader categories. */
     body:not(.book-mode) .rule-item.akathist-section .section-header .prayer-title {
-      color: var(--accent-dark);
+      /* Override the runtime injected generic heading color: var(--text) !important. */
+      color: #765238 !important;
       font-style: normal;
     }
     /* Entire invocations (not only their initial letters) are red in every tab. */
