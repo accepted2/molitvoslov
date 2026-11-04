@@ -700,13 +700,41 @@ const computeFocusHighlightRanges = () => {
     };
     const collectAkathistInvocationRanges = value =>
       collectAkathistWordRanges(value, /(?:Радуйся|Иисусе|Іисусе|Исусе|Ісусе)/giu);
+    // Other akathists can have different refrain addresses. Only treat them as
+    // standalone responses when they start a clause (start, new line or after
+    // strong punctuation), and only in an Ikos. Never within prayer prose.
+    const collectAkathistAdditionalResponseRanges = value => {
+      const source = String(value || '');
+      const {normalized, originalIndex} = normalizedAkathistTextWithIndex(source);
+      const pattern = /(?:^|[.!?…;:\n]\s*)((?:Пресвятая\s+Богородице|Пречистая\s+Богородице|Богородице|Владычице|Господи|Спасителю|Святителю|Преподобне|Мучениче|Чудотворче|Ангеле|Архангеле))(?=[\s,;:.!?…]|$)/gimu;
+      const ranges = [];
+      for (const match of normalized.matchAll(pattern)) {
+        const token = match[1];
+        const normalizedStart = match.index + match[0].lastIndexOf(token);
+        const start = originalIndex[normalizedStart];
+        if (!Number.isFinite(start)) continue;
+        let end = (originalIndex[normalizedStart + token.length - 1] ?? start) + 1;
+        while (end < source.length && /[\u0300-\u036f\u0483-\u0489]/u.test(source[end])) end += 1;
+        ranges.push({start, end});
+      }
+      return ranges;
+    };
+    const collectAkathistRefrainRanges = (value, extraResponses = false) => {
+      const standard = collectAkathistInvocationRanges(value);
+      if (!extraResponses) return standard;
+      const combined = [...standard, ...collectAkathistAdditionalResponseRanges(value)];
+      return combined.filter((range, index) =>
+        !combined.some((other, j) => j !== index && other.start <= range.start &&
+          other.end >= range.end && (other.start < range.start || other.end > range.end))
+      );
+    };
     const collectAkathistAlleluiaRanges = value =>
       collectAkathistWordRanges(value, /(?:Аллилуиа|Аллилуия|Алилуиа|Алілуя|Аллілуя)/giu, true);
-    const collectAkathistJoyBreaks = value =>
-      new Set(collectAkathistInvocationRanges(value).map(range => range.start).filter(at => at > 0));
-    const collectAkathistInitialRanges = (value, includeInvocations = true) => {
+    const collectAkathistJoyBreaks = (value, extraResponses = false) =>
+      new Set(collectAkathistRefrainRanges(value, extraResponses).map(range => range.start).filter(at => at > 0));
+    const collectAkathistInitialRanges = (value, includeInvocations = true, extraResponses = false) => {
       const source = String(value || '');
-      const invocationRanges = includeInvocations ? collectAkathistInvocationRanges(source) : [];
+      const invocationRanges = includeInvocations ? collectAkathistRefrainRanges(source, extraResponses) : [];
       const ranges = [...invocationRanges];
       // Preserve the existing red first letter of ordinary paragraphs.
       const opening = source.match(/^\s*([\p{L}][\u0300-\u036f\u0483-\u0489]*)/u);
@@ -1422,17 +1450,22 @@ const collectPsalterRubricRanges = value => {
             : null;
         const isAkathist = String( itemConfig ?.className || '' ).includes( 'akathist-' ) || itemConfig
             ?.sourceType === 'akathist';
-        // "Иисусе" and "Радуйся" also occur inside ordinary prayers.
-        // Refrain formatting belongs exclusively to Ikos sections; never
-        // split or paint these words inside prayers, troparia or Kontakia.
+        // Scope acclamation styling to hymn sections. Prayer prose and
+        // troparia may contain the same words but must never be rearranged.
         const isAkathistIkos = isAkathist && itemConfig?.metadata?.section_type === 'ikos';
+        const isAkathistFirstKontakion = isAkathist &&
+          itemConfig?.metadata?.section_type === 'kontakion' &&
+          Number(itemConfig?.metadata?.section_number) === 1;
+        const hasAkathistInvocations = isAkathistIkos || isAkathistFirstKontakion;
         const isAkathistKontakion = isAkathist && (
           itemConfig?.metadata?.section_type === 'kontakion' ||
           itemConfig?.metadata?.special === 'kontakion_before'
         );
-        const akathistJoyBreaks = isAkathistIkos ? collectAkathistJoyBreaks( text ) : new Set();
-        const akathistInitialRanges = isAkathist ? collectAkathistInitialRanges( text, isAkathistIkos ) : [];
-        const akathistAlleluiaRanges = isAkathistKontakion ? collectAkathistAlleluiaRanges( text ) : [];
+        const akathistJoyBreaks = hasAkathistInvocations
+          ? collectAkathistJoyBreaks(text, isAkathistIkos) : new Set();
+        const akathistInitialRanges = isAkathist
+          ? collectAkathistInitialRanges(text, hasAkathistInvocations, isAkathistIkos) : [];
+        const akathistAlleluiaRanges = isAkathistKontakion ? collectAkathistAlleluiaRanges(text) : [];
  const isPsalterPrayer =
   String(itemConfig?.className || '')
     .includes('psalter-prayer');
