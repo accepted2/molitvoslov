@@ -47,7 +47,7 @@ export const PersonalPrayerReadingView = ({
   // personal-prayer favorites and their fragment offsets.
   useFocusEffect(useCallback(() => {
     let active = true;
-    const sources = new Set(items.map(item => savedSourceId(item.prayer.sync_id)));
+    const sources = new Set(items.filter(item => item?.prayer?.sync_id).map(item => savedSourceId(item.prayer.sync_id)));
     getSavedItems({source_type: 'personal_prayer'})
       .then(rows => {if (active) setSavedItems(rows.filter(row => sources.has(Number(row.source_id))));})
       .catch(error => console.log('Не удалось загрузить сохранённые фрагменты:', error?.message || error));
@@ -63,8 +63,8 @@ export const PersonalPrayerReadingView = ({
 
   const images = useMemo(
     () => items.flatMap(item =>
-      (item.prayer.photos || []).map(photo => ({
-        ...photo, prayerTitle: item.prayer.title || 'Молитва',
+      (item.prayer?.photos || []).map(photo => ({
+        ...photo, prayerTitle: item.prayer?.title || 'Молитва',
       }))
     ), [items]
   );
