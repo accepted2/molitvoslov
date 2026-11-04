@@ -73,7 +73,9 @@ export const applyReaderAppearance = (webView, appearance, isRule = false) => {
   const safe = JSON.stringify({
     background: v.background, surface: v.surface, text: v.text,
     size: v.fontSize, traditional: Math.min(30, v.fontSize + 2),
-    heading: dark ? '#D1AE7A' : '#765238',
+    heading: dark ? '#D1AE7A' : '#7A4F2D',
+    sectionHeading: dark ? '#DFC19A' : '#5A3822',
+    psalterHeading: dark ? '#D1AE7A' : '#765238',
     translation: dark ? '#D8C7AC' : '#765238',
     accent: dark ? '#E2BB80' : '#A16E35',
     rubric: dark ? '#E18A84' : '#9B3B32',
@@ -84,7 +86,8 @@ export const applyReaderAppearance = (webView, appearance, isRule = false) => {
     ? '.traditional-mode .reader-text'
     : 'body:not(.book-mode) .reader-language-traditional .reader-text';
   const join = names => names.map(name => scope + name).join(',');
-  const headings = join(['.rule-title', '.prayer-title', '.section-title']);
+  const headings = join(['.rule-title', '.prayer-title']);
+  const sectionHeadings = join(['.section-title']);
   const translations = isRule
     ? '.translation-text'
     : join(['.reader-text.secondary', '.reader-text.akathist-russian']);
@@ -96,7 +99,8 @@ export const applyReaderAppearance = (webView, appearance, isRule = false) => {
     "root.style.setProperty('--surface',s.surface);" +
     "root.style.setProperty('--text',s.text);" +
     "root.style.setProperty('--secondary',s.translation);" +
-    "root.style.setProperty('--psalter-heading-color',s.heading);" +
+    "root.style.setProperty('--psalter-heading-color',s.psalterHeading);" +
+    "root.style.setProperty('--reader-section-heading',s.sectionHeading);" +
     "root.style.setProperty('--psalter-translation-color',s.translation);" +
     "root.style.setProperty('--accent-dark',s.heading);" +
     "root.style.setProperty('--accent',s.accent);" +
@@ -107,6 +111,7 @@ export const applyReaderAppearance = (webView, appearance, isRule = false) => {
     selector + "{font-size:'+s.size+'px !important;color:'+s.text+' !important;} " +
     traditional + "{font-size:'+s.traditional+'px !important;} " +
     headings + "{color:var(--accent-dark) !important;} " +
+    sectionHeadings + "{color:var(--reader-section-heading) !important;} " +
     translations + "{color:var(--secondary) !important;} " +
     secondaryText + "{color:var(--secondary) !important;} " +
     redText + "{color:var(--liturgical) !important;} " +
