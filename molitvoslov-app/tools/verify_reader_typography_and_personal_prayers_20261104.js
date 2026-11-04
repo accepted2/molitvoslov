@@ -45,14 +45,16 @@ for (const [palette, dark] of [
 ]) {
   for (const rule of [false, true]) {
     const {vars, css} = getCss(palette, rule);
-    assert.equal(vars['--accent-dark'], dark ? '#D1AE7A' : '#765238');
+    assert.equal(vars['--accent-dark'], dark ? '#D1AE7A' : '#7A4F2D');
+    assert.equal(vars['--reader-section-heading'], dark ? '#DFC19A' : '#5A3822');
     assert.equal(vars['--secondary'], dark ? '#D8C7AC' : '#765238');
     assert.equal(vars['--liturgical'], dark ? '#E18A84' : '#9B3B32');
-    assert.equal(vars['--psalter-heading-color'], vars['--accent-dark']);
+    assert.equal(vars['--psalter-heading-color'], dark ? '#D1AE7A' : '#765238');
     assert.equal(vars['--psalter-translation-color'], vars['--secondary']);
     assert.ok(css.includes('.prayer-title'), 'Prayer headings must be themed');
     assert.ok(css.includes('.section-title'), 'Section headings must be themed');
     assert.ok(css.includes('{color:var(--accent-dark) !important;}'), 'Headings must be brown, not body text');
+    assert.ok(css.includes('{color:var(--reader-section-heading) !important;}'), 'Section titles must keep their original darker brown');
     assert.ok(css.includes('{color:var(--secondary) !important;}'), 'RU translations must differ from body');
     assert.ok(css.includes('{color:var(--liturgical) !important;}'), 'Liturgical cues must stay red');
     assert.ok(!css.includes('.reader-inline-label{color:' + vars['--text']),
