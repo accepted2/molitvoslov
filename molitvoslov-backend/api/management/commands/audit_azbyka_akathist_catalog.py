@@ -96,6 +96,20 @@ def count_types(sections, section_type):
     return sum(section.get("type") == section_type for section in sections)
 
 
+def parsed_content_sha256(sections, troparion=None, kontakion_before=None):
+    """Stable source-text fingerprint; independent of dynamic page HTML."""
+    payload = {
+        "sections": [
+            {key: section.get(key) for key in ("type", "number", "content", "translation", "note")}
+            for section in sections
+        ],
+        "troparion": troparion,
+        "kontakion_before": kontakion_before,
+    }
+    encoded = json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
 class Command(BaseCommand):
     help = "Безопасно сверяет каталог 500+ акафистов Азбуки: чтение и проверка без изменений БД."
 
@@ -110,6 +124,8 @@ class Command(BaseCommand):
                             help="Локальный JSON-отчёт; повторный запуск продолжает проверку.")
         parser.add_argument("--retry-failed", action="store_true",
                             help="Повторно проверить страницы с прошлой ошибкой.")
+        parser.add_argument("--refresh-checked", action="store_true",
+                            help="Повторно проверить уже разобранные страницы и обновить контрольную сумму текста.")
 
     def handle(self, *args, **options):
         limit = options["limit"]
@@ -203,7 +219,7 @@ class Command(BaseCommand):
 
         for url, item in fresh.items():
             status = item["status"]
-            if status == "existing" or status == "checked":
+            if status == "existing" or (status == "checked" and not options["refresh_checked"]):
                 continue
             if status not in ("pending", "error") or (status == "error" and not options["retry_failed"]):
                 continue
@@ -244,8 +260,12 @@ class Command(BaseCommand):
                     ),
                     "source_sections": len(sections),
                 }
-                item.update(status="checked", checks=counts,
-                            html_sha256=hashlib.sha256(response.content).hexdigest())
+                item.update(
+                    status="checked",
+                    checks=counts,
+                    html_sha256=hashlib.sha256(response.content).hexdigest(),
+                    content_sha256=parsed_content_sha256(sections, troparion, kontakion_before),
+                )
                 item.pop("error", None)
             except (requests.RequestException, Exception) as exc:
                 item.update(status="error", error=str(exc)[:1500])
