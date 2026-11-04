@@ -376,6 +376,90 @@ def repair(args):
     print("Резервная копия: " + str(backup_path))
 
 
+def quarantine(args):
+    """Safely flag the first imported Azbyka batch as Russian-unverified.
+
+    Preserve all original text and translations; do not touch Django,
+    existing Akathist IDs, bookmarks, or other offline collections.
+    """
+    path = Path(args.existing).resolve()
+    data = read_json(path)
+    before = copy.deepcopy(data)
+    report = read_json(args.report)
+    if report.get("source") != SOURCE or not isinstance(report.get("pages"), dict):
+        raise ValueError("Unrecognized Akathist import report.")
+    imported = {
+        entry.get("slug") for entry in report["pages"].values()
+        if isinstance(entry, dict) and entry.get("status") == "imported" and entry.get("slug")
+    }
+    if not imported:
+        raise ValueError("No imported Akathists recorded; nothing to quarantine.")
+    if len(imported) > args.max_count:
+        raise ValueError(
+            "Import report has %d records, above limit %d; refusing to tag others."
+            % (len(imported), args.max_count)
+        )
+    index = akathist_index(data)
+    unknown = imported - set(index)
+    if unknown:
+        raise ValueError("Previously imported Akathists not in offline JSON: "
+                         + ", ".join(sorted(unknown)[:10]))
+    changed = []
+    for slug in sorted(imported):
+        detail = data["akathists"]["by_slug"][slug]
+        prior = detail.get("translation_review_status")
+        if prior not in (None, "unverified"):
+            raise ValueError("Explicit review status exists for " + slug + ": " + str(prior))
+        if prior is None:
+            detail["translation_review_status"] = "unverified"
+            changed.append(slug)
+    for slug in index:
+        if slug not in imported:
+            if data["akathists"]["by_slug"][slug] != before["akathists"]["by_slug"][slug]:
+                raise ValueError("Attempt to alter unrelated Akathist " + slug)
+    for key in before:
+        if key in ("akathists", "generated_at", "content_version"):
+            continue
+        if before[key] != data[key]:
+            raise ValueError("Attempt to alter unrelated offline collection " + key)
+    for slug in imported:
+        original = before["akathists"]["by_slug"][slug]
+        updated = data["akathists"]["by_slug"][slug]
+        for key in original:
+            if original[key] != updated.get(key):
+                raise ValueError("Attempt to change an existing value in " + slug + ": " + key)
+        if {k:v for k,v in updated.items() if k != "translation_review_status"} != original:
+            raise ValueError("Unexpected changes in " + slug)
+    print("Imported Akathists in scope: " + str(len(imported)))
+    print("Newly unverified: " + str(len(changed)))
+    for slug in sorted(imported):
+        print("  " + slug)
+    if not changed:
+        print("All targeted Akathists already marked unverified; no write necessary.")
+        return
+    if not args.apply:
+        print("PREVIEW ONLY. Source texts, translations and offline JSON unchanged.")
+        return
+    backup_dir = Path(args.backup_dir).resolve()
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+    backup_path = backup_dir / ("offlineContent-before-translation-review-" + stamp + ".json")
+    shutil.copy2(path, backup_path)
+    if not backup_path.exists() or not backup_path.stat().st_size:
+        raise ValueError("Offline backup failed; changes canceled.")
+    data["generated_at"] = datetime.now(timezone.utc).isoformat()
+    data["content_version"] = content_fingerprint(data)
+    write_json_atomic(path, data)
+    persisted = read_json(path)
+    if content_fingerprint(persisted) != persisted.get("content_version"):
+        raise ValueError("Written offline JSON fingerprint mismatch.")
+    if len(akathist_index(persisted)) != len(index):
+        raise ValueError("Akathist count changed.")
+    print("Marked %d Akathists unverified, no texts deleted." % len(changed))
+    print("Backup: " + str(backup_path))
+    print("Updated: " + str(path))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="operation", required=True)
@@ -396,6 +480,13 @@ def main():
     fix.add_argument("--backup-dir", required=True)
     fix.add_argument("--apply", action="store_true")
     fix.set_defaults(func=repair)
+    hold = sub.add_parser("quarantine", help="Temporarily hide RU translations in an imported batch.")
+    hold.add_argument("--existing", required=True)
+    hold.add_argument("--report", required=True)
+    hold.add_argument("--backup-dir", required=True)
+    hold.add_argument("--max-count", type=int, default=5)
+    hold.add_argument("--apply", action="store_true")
+    hold.set_defaults(func=quarantine)
     args = parser.parse_args()
     try:
         args.func(args)
