@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -22,6 +22,7 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {colors} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
+import {LocalSearchField, filterByTitle} from '../components/search/LocalSearchField';
 
 export const AkathistListScreen = ({navigation}) => {
   const {language, t} = useLanguage();
@@ -31,6 +32,10 @@ export const AkathistListScreen = ({navigation}) => {
   const [akathists, setAkathists] = useState([]);
   const [savedAkathists, setSavedAkathists] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState(''); // MOLITVOSLOV_CATEGORY_TITLE_SEARCH_V1
+  const visibleRows = useMemo(() => filterByTitle(
+    akathists, query, item => getLocalizedField(item, 'title', language)
+  ), [akathists, query, language]);
 
   const loadSavedAkathists = useCallback(async () => {
     try {
@@ -140,7 +145,7 @@ export const AkathistListScreen = ({navigation}) => {
 
       <View style={styles.screen}>
         <FlatList
-          data={akathists}
+          data={visibleRows}
           keyExtractor={(item) => String(item.id)}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
@@ -150,6 +155,16 @@ export const AkathistListScreen = ({navigation}) => {
               paddingBottom: 80 + insets.bottom,
             },
           ]}
+          keyboardShouldPersistTaps="handled"
+          ListHeaderComponent={
+            <View style={styles.localSearch}>
+              <LocalSearchField
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Поиск акафиста по названию"
+              />
+            </View>
+          }
           renderItem={({item}) => {
             const saved = !!getSavedAkathist(item.id);
 
@@ -181,7 +196,7 @@ export const AkathistListScreen = ({navigation}) => {
           }}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>{t('menu.akathistsEmpty')}</Text>
+              <Text style={styles.emptyText}>{query.trim() ? 'По запросу нет акафистов' : t('menu.akathistsEmpty')}</Text>
             </View>
           }
         />
@@ -251,6 +266,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
 
+  localSearch: {paddingHorizontal: 10, paddingBottom: 12},
   listContent: {
     paddingBottom: 18,
   },
