@@ -2,6 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {Animated, Easing, Modal, Pressable, StyleSheet, Text, View} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import {isDarkReaderBackground, withOpacity} from '../../services/scopedReaderAppearance';
 
 export const FixedSectionHeader = ({
   title,
@@ -13,6 +14,7 @@ export const FixedSectionHeader = ({
   showMenu = false,
   onMenuPress,
   dark = false,
+  gradientColor = null,
   titleOffsetY = 0,
   readingHidden = false,
   compactReading = false,
@@ -22,6 +24,8 @@ export const FixedSectionHeader = ({
 }) => {
   const visibility = useRef(new Animated.Value(0)).current;
   const [languageOpen, setLanguageOpen] = useState(false);
+  const chromeBackground = gradientColor || (dark ? '#171310' : '#FFF4DE');
+  const chromeDark = dark || isDarkReaderBackground(chromeBackground);
   const [titleLines, setTitleLines] = useState(1);
   const extraTitleHeight = showTitle ? Math.max(0, titleLines - 1) * (compactReading ? 20 : 25) : 0;
   const headerHeight = topInset + (minimal ? 46 : 56) + extraTitleHeight;
@@ -47,11 +51,11 @@ export const FixedSectionHeader = ({
       {!minimal && (
         <LinearGradient
           pointerEvents="none"
-          colors={
-            dark
-              ? ['#171310', 'rgba(23, 19, 16, 0.82)', 'rgba(23, 19, 16, 0)']
-              : ['#FFF4DE', 'rgba(255, 244, 222, 0.72)', 'rgba(255, 244, 222, 0)']
-          }
+          colors={[
+            chromeBackground,
+            withOpacity(chromeBackground, 0.82),
+            withOpacity(chromeBackground, 0),
+          ]}
           locations={[0, 0.42, 1]}
           start={{x: 0.5, y: 0}}
           end={{x: 0.5, y: 1}}
@@ -92,9 +96,9 @@ export const FixedSectionHeader = ({
               ]}
             >
               {compactReading ? (
-                <Ionicons name="chevron-back" size={23} color={dark ? '#D7B88C' : '#6F4727'} />
+                <Ionicons name="chevron-back" size={23} color={chromeDark ? '#D7B88C' : '#6F4727'} />
               ) : (
-                <Text style={[styles.backArrow, dark && styles.backArrowDark]}>‹</Text>
+                <Text style={[styles.backArrow, chromeDark && styles.backArrowDark]}>‹</Text>
               )}
             </Pressable>
           )}
@@ -114,7 +118,7 @@ export const FixedSectionHeader = ({
             >
               <View style={styles.titleLine}>
                 <Text
-                  style={[styles.title, styles.titleFlex, compactReading && styles.titleReading, dark && styles.titleDark]}
+                  style={[styles.title, styles.titleFlex, compactReading && styles.titleReading, chromeDark && styles.titleDark]}
                   onTextLayout={(event) => {
                     const count = event.nativeEvent?.lines?.length || 1;
                     setTitleLines((previous) => previous === count ? previous : count);
@@ -128,18 +132,18 @@ export const FixedSectionHeader = ({
                     accessibilityLabel="Выбрать язык чтения"
                     accessibilityState={{expanded: languageOpen}}
                     onPress={() => setLanguageOpen(true)}
-                    style={({pressed}) => [styles.languagePill, pressed && styles.pressed]}
+                    style={({pressed}) => [styles.languagePill, chromeDark && styles.languagePillDark, pressed && styles.pressed]}
                   >
-                    <Text style={styles.languagePillText} numberOfLines={1}>{selectedLanguage.label}</Text>
-                    <Ionicons name="chevron-down" size={13} color="#744A2B" style={styles.languageChevronIcon} />
+                    <Text style={[styles.languagePillText, chromeDark && styles.languagePillTextDark]} numberOfLines={1}>{selectedLanguage.label}</Text>
+                    <Ionicons name="chevron-down" size={13} color={chromeDark ? '#D7B88C' : '#744A2B'} style={styles.languageChevronIcon} />
                   </Pressable>
                 )}
               </View>
 
               <View style={[styles.ornament, compactReading && styles.ornamentReading]}>
-                <View style={[styles.line, dark && styles.lineDark]} />
-                <Text style={[styles.mark, dark && styles.markDark]}>✦</Text>
-                <View style={[styles.line, dark && styles.lineDark]} />
+                <View style={[styles.line, chromeDark && styles.lineDark]} />
+                <Text style={[styles.mark, chromeDark && styles.markDark]}>✦</Text>
+                <View style={[styles.line, chromeDark && styles.lineDark]} />
               </View>
             </View>
           )}
@@ -157,9 +161,9 @@ export const FixedSectionHeader = ({
               ]}
             >
               {compactReading ? (
-                <Ionicons name="ellipsis-vertical" size={20} color={dark ? '#D7B88C' : '#6F4727'} />
+                <Ionicons name="ellipsis-vertical" size={20} color={chromeDark ? '#D7B88C' : '#6F4727'} />
               ) : (
-                <Text style={[styles.menuText, dark && styles.menuTextDark]}>⋮</Text>
+                <Text style={[styles.menuText, chromeDark && styles.menuTextDark]}>⋮</Text>
               )}
             </Pressable>
           )}
@@ -307,6 +311,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(126,82,38,0.22)',
     backgroundColor: '#FFF4DE',
+  },
+  languagePillDark: {
+    backgroundColor: '#413831',
+    borderColor: 'rgba(205, 163, 108, 0.40)',
+  },
+  languagePillTextDark: {
+    color: '#EADBC7',
   },
   languagePillText: {
     fontSize: 10,
