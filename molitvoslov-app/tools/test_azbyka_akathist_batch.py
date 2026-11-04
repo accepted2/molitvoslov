@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from azbyka_akathist_batch import SOURCE, akathist_index, content_fingerprint, merge, prepare, repair, verify_detail
+from azbyka_akathist_batch import SOURCE, akathist_index, content_fingerprint, merge, prepare, quarantine, repair, verify_detail
 
 
 def section(section_type, number, uid):
@@ -195,6 +195,54 @@ class AdditiveAkathistsTest(unittest.TestCase):
             repair(self.repair_params(True))
         self.assertEqual(self.old.read_bytes(), before)
         self.assertFalse(self.backups.exists())
+
+
+    def quarantine_params(self, apply):
+        return argparse.Namespace(
+            existing=str(self.old),
+            report=str(self.report),
+            backup_dir=str(self.backups),
+            max_count=5,
+            apply=apply,
+        )
+
+    def test_quarantine_imported_keeps_all_texts_and_backup(self):
+        # The report targets a new item that already exists in this fixture.
+        self.old.write_text(json.dumps(
+            self.latest, ensure_ascii=False), encoding="utf-8")
+        original = json.loads(self.old.read_text(encoding="utf-8"))
+        with contextlib.redirect_stdout(io.StringIO()):
+            quarantine(self.quarantine_params(False))
+        self.assertEqual(json.loads(self.old.read_text(encoding="utf-8")), original)
+        with contextlib.redirect_stdout(io.StringIO()):
+            quarantine(self.quarantine_params(True))
+        result = json.loads(self.old.read_text(encoding="utf-8"))
+        old = result["akathists"]["by_slug"]["akafist-old"]
+        newly_imported = result["akathists"]["by_slug"]["akafist-new"]
+        self.assertEqual(old, original["akathists"]["by_slug"]["akafist-old"])
+        self.assertEqual(newly_imported["translation_review_status"], "unverified")
+        unmarked_copy = dict(newly_imported)
+        unmarked_copy.pop("translation_review_status")
+        self.assertEqual(unmarked_copy, original["akathists"]["by_slug"]["akafist-new"])
+        self.assertEqual(result["texts"], original["texts"])
+        self.assertEqual(result["prayer_rules"], original["prayer_rules"])
+        self.assertEqual(result["content_version"], content_fingerprint(result))
+        self.assertEqual(len(list(self.backups.glob("*.json"))), 1)
+        with contextlib.redirect_stdout(io.StringIO()):
+            quarantine(self.quarantine_params(True))
+        self.assertEqual(len(list(self.backups.glob("*.json"))), 1)
+
+    def test_quarantine_refuses_batch_beyond_limit(self):
+        self.old.write_text(json.dumps(self.latest, ensure_ascii=False), encoding="utf-8")
+        payload = json.loads(self.report.read_text(encoding="utf-8"))
+        payload["pages"]["different"] = {"status": "imported", "slug": "akafist-old"}
+        self.report.write_text(json.dumps(payload), encoding="utf-8")
+        args = self.quarantine_params(True)
+        args.max_count = 1
+        before = self.old.read_bytes()
+        with self.assertRaisesRegex(ValueError, "above limit"):
+            quarantine(args)
+        self.assertEqual(self.old.read_bytes(), before)
 
 
 if __name__ == "__main__":
