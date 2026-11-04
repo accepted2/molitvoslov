@@ -62,50 +62,58 @@ export const resetScopedAppearance = async (key) => {
   if (key) await AsyncStorage.removeItem(key);
   return normalizeReaderAppearance(await getReadingSettings().catch(() => DEFAULT_READING_SETTINGS));
 };
-/** Update WebView styles without modifying its HTML source, losing scroll position or changing liturgical span colors. */
+/** Apply theme and text size without flattening the liturgical color hierarchy.
+ * In every reader, prayer headings are brown, Russian translation is secondary,
+ * rubrics are red, and only ordinary body copy follows the chosen text color.
+ */
 export const applyReaderAppearance = (webView, appearance, isRule = false) => {
   if (!webView || !appearance) return;
   const v = resolveReaderAppearance(appearance);
-  // Psalm headings and the Russian column in a parallel Psalter reading
-  // deliberately use colors different from the main reading text.
-  // Compute them for the selected background so the distinction also
-  // survives custom palettes and dark mode.
-  const psalterDark = isDarkReaderBackground(v.background);
+  const dark = isDarkReaderBackground(v.background);
   const safe = JSON.stringify({
-    background:v.background, surface:v.surface, text:v.text,
-    size:v.fontSize, traditional:Math.min(30, v.fontSize + 2),
-    psalterHeading: psalterDark ? '#D1AE7A' : '#765238',
-    psalterTranslation: psalterDark ? '#D8C7AC' : '#765238',
+    background: v.background, surface: v.surface, text: v.text,
+    size: v.fontSize, traditional: Math.min(30, v.fontSize + 2),
+    heading: dark ? '#D1AE7A' : '#765238',
+    translation: dark ? '#D8C7AC' : '#765238',
+    accent: dark ? '#E2BB80' : '#A16E35',
+    rubric: dark ? '#E18A84' : '#9B3B32',
   });
-  const selector = isRule ? '.reader-text' : 'body:not(.book-mode) .reader-text';
-  const traditional = isRule ? '.traditional-mode .reader-text' : 'body:not(.book-mode) .reader-language-traditional .reader-text';
-  // Recolor ordinary headings/explanations, but leave liturgical rubrics
-  // (including traditional red invocations, verse numbers and bows) intact.
   const scope = isRule ? '' : 'body:not(.book-mode) ';
-  const headingSelector = [
-    '.rule-title', '.prayer-title', '.section-title', '.rule-description',
-    '.description', '.note', '.instruction', '.reader-label', '.reader-inline-label',
-  ].map(name => scope + name).join(',');
-  const secondarySelector = isRule
-    ? '.translation-text, .section-content'
-    : 'body:not(.book-mode) .reader-text.secondary, body:not(.book-mode) .reader-text.akathist-russian, body:not(.book-mode) .section-content';
+  const selector = scope + '.reader-text';
+  const traditional = isRule
+    ? '.traditional-mode .reader-text'
+    : 'body:not(.book-mode) .reader-language-traditional .reader-text';
+  const join = names => names.map(name => scope + name).join(',');
+  const headings = join(['.rule-title', '.prayer-title', '.section-title']);
+  const translations = isRule
+    ? '.translation-text'
+    : join(['.reader-text.secondary', '.reader-text.akathist-russian']);
+  const secondaryText = join(['.rule-description', '.instruction']);
+  const redText = join(['.description', '.reader-inline-label']);
+  const accentText = join(['.note', '.reader-label']);
   const js = "(function(){var s=" + safe + ";var root=document.documentElement;" +
     "root.style.setProperty('--background',s.background);" +
     "root.style.setProperty('--surface',s.surface);" +
     "root.style.setProperty('--text',s.text);" +
+    "root.style.setProperty('--secondary',s.translation);" +
+    "root.style.setProperty('--accent-dark',s.heading);" +
+    "root.style.setProperty('--accent',s.accent);" +
+    "root.style.setProperty('--liturgical',s.rubric);" +
     "root.style.setProperty('--reading-font-size',s.size+'px');" +
     "root.style.setProperty('--traditional-reading-font-size',s.traditional+'px');" +
-    "root.style.setProperty('--psalter-heading-color',s.psalterHeading);" +
-    "root.style.setProperty('--psalter-translation-color',s.psalterTranslation);" +
     "var css='body {background:'+s.background+' !important;color:'+s.text+' !important;} " +
     selector + "{font-size:'+s.size+'px !important;color:'+s.text+' !important;} " +
     traditional + "{font-size:'+s.traditional+'px !important;} " +
-    headingSelector + "{color:'+s.text+' !important;} " +
-    secondarySelector + "{color:'+s.text+' !important;} " +
-    "body:not(.book-mode) .psalter-kathisma-reader .rule-item.psalter-psalm-section .section-header .prayer-title " +
-    "{color:var(--psalter-heading-color) !important;} " +
-    "body:not(.book-mode) .psalter-kathisma-reader .reader-row-parallel .reader-text.psalter.secondary " +
-    "{color:var(--psalter-translation-color) !important;}';" +
+    headings + "{color:var(--accent-dark) !important;} " +
+    translations + "{color:var(--secondary) !important;} " +
+    secondaryText + "{color:var(--secondary) !important;} " +
+    redText + "{color:var(--liturgical) !important;} " +
+    accentText + "{color:var(--accent) !important;} " +
+    scope + ".section-content{color:'+s.text+' !important;} " +
+    "body:not(.book-mode) .psalter-kathisma-reader .rule-item.psalter-psalm-section .section-header .prayer-title" +
+    "{color:var(--accent-dark) !important;} " +
+    "body:not(.book-mode) .psalter-kathisma-reader .reader-row-parallel .reader-text.psalter.secondary" +
+    "{color:var(--secondary) !important;}';" +
     "var node=document.getElementById('molitvoslov-local-appearance');" +
     "if(!node){node=document.createElement('style');node.id='molitvoslov-local-appearance';document.head.appendChild(node);}" +
     "node.textContent=css;})(); true;";
