@@ -371,7 +371,7 @@ class Command(BaseCommand):
         normalized = self.normalize_for_match(value).strip()
 
         match = re.match(
-            r"^(Кондак|Икос)\s*(\d+)\s*[\.:]?\s*$",
+            r"^(Кондак|Икос)\s*[\.:]?\s*№?\s*(\d+)\s*[\.:]?\s*$",
             normalized,
             flags=re.IGNORECASE,
         )
@@ -399,7 +399,7 @@ class Command(BaseCommand):
         normalized = self.normalize_for_match(value)
 
         match = re.match(
-            r"^\s*(Кондак|Икос)\s*(\d+)\s*[\.:]?\s*",
+            r"^\s*(Кондак|Икос)\s*[\.:]?\s*№?\s*(\d+)\s*[\.:]?\s*",
             normalized,
             flags=re.IGNORECASE,
         )
@@ -430,7 +430,7 @@ class Command(BaseCommand):
         word = "Кондак" if section_type == "kontakion" else "Икос"
 
         match = re.match(
-            rf"^\s*{word}\s*{number}\s*[\.:]?\s*",
+            rf"^\s*{word}\s*[\.:]?\s*№?\s*{number}\s*[\.:]?\s*",
             normalized,
             flags=re.IGNORECASE,
         )
@@ -439,7 +439,7 @@ class Command(BaseCommand):
             return value.strip()
 
         original_match = re.match(
-            rf"^\s*{word}\s*{number}\s*[\.:]?\s*",
+            rf"^\s*{word}\s*[\.:]?\s*№?\s*{number}\s*[\.:]?\s*",
             value,
             flags=re.IGNORECASE,
         )
