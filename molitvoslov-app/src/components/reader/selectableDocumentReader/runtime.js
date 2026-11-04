@@ -483,6 +483,29 @@ export const READER_RUNTIME = String.raw`
         return {
           normalized: chars.join(''), originalIndex, };
       };
+      // Azbyka's Cyrillic akathist hymns sometimes contain Latin accented
+      // homoglyphs inside a Cyrillic word, e.g. "Рáдуйся" (Latin á).
+      // Fold only letters surrounded by Cyrillic. Keep originalIndex intact:
+      // selection, highlights and progress always use the original text.
+      const normalizedAkathistRefrainWithIndex = value => {
+        const result = normalizedAkathistTextWithIndex(value);
+        const chars = result.normalized.split('');
+        const latinLookalikes = {
+          a: 'а', A: 'А', e: 'е', E: 'Е', o: 'о', O: 'О',
+          p: 'р', P: 'Р', c: 'с', C: 'С', x: 'х', X: 'Х',
+          y: 'у', Y: 'У', k: 'к', K: 'К', m: 'м', M: 'М',
+          t: 'т', T: 'Т', b: 'в', B: 'В', h: 'н', H: 'Н',
+        };
+        for (let i = 1; i < chars.length - 1; i += 1) {
+          const substitute = latinLookalikes[chars[i]];
+          if (!substitute) continue;
+          if (/\p{Script=Cyrillic}/u.test(chars[i - 1]) &&
+              /\p{Script=Cyrillic}/u.test(chars[i + 1])) {
+            chars[i] = substitute;
+          }
+        }
+        return {normalized: chars.join(''), originalIndex: result.originalIndex};
+      };
       const HIGHLIGHT_COMBINING = /[\u0300-\u036f\u0483-\u0489\ufe20-\ufe2f]/u;
 const HIGHLIGHT_LETTER_OR_DIGIT = /[\p{L}\p{N}]/u;
 
@@ -680,7 +703,7 @@ const computeFocusHighlightRanges = () => {
     // Presentation-only spans keep all selection and progress offsets intact.
     const collectAkathistWordRanges = (value, pattern, includePunctuation = false) => {
       const source = String(value || '');
-      const {normalized, originalIndex} = normalizedAkathistTextWithIndex(source);
+      const {normalized, originalIndex} = normalizedAkathistRefrainWithIndex(source);
       const ranges = [];
       let match;
       while ((match = pattern.exec(normalized)) !== null) {
@@ -700,7 +723,7 @@ const computeFocusHighlightRanges = () => {
     };
     const collectAkathistDoxologyRanges = value => {
       const source = String(value || '');
-      const {normalized, originalIndex} = normalizedAkathistTextWithIndex(source);
+      const {normalized, originalIndex} = normalizedAkathistRefrainWithIndex(source);
       const pattern = /(?:^|[.!?…;:\n]\s*)(Слава[ \t]+Теб[еѣ])(?=[\s,;:.!?…]|$)/gimu;
       const ranges = [];
       for (const match of normalized.matchAll(pattern)) {
@@ -723,7 +746,7 @@ const computeFocusHighlightRanges = () => {
     // strong punctuation), and only in an Ikos. Never within prayer prose.
     const collectAkathistAdditionalResponseRanges = value => {
       const source = String(value || '');
-      const {normalized, originalIndex} = normalizedAkathistTextWithIndex(source);
+      const {normalized, originalIndex} = normalizedAkathistRefrainWithIndex(source);
       const pattern = /(?:^|[.!?…;:\n]\s*)((?:Пресвятая\s+Богородице|Пречистая\s+Богородице|Богородице|Владычице|Господи|Спасителю|Святителю|Преподобне|Мучениче|Чудотворче|Ангеле|Архангеле))(?=[\s,;:.!?…]|$)/gimu;
       const ranges = [];
       for (const match of normalized.matchAll(pattern)) {
