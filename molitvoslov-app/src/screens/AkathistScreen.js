@@ -442,7 +442,9 @@ export const AkathistScreen = ({route, navigation}) => {
 
         metadata,
 
-        accentWords: language === 'church' ? ['Радуйся', 'Иисусе', 'Аллилуиа'] : [],
+        // Response colors are applied only to actual Ikos / Kontakion text in
+        // the WebView. A prayer may contain the same words as ordinary prose.
+        accentWords: [],
       };
     };
 
@@ -706,6 +708,8 @@ export const AkathistScreen = ({route, navigation}) => {
             metadata: {
               slug,
               section_id: section.id,
+              section_type: section.section_type,
+              section_number: section.number,
               segment: 'whole',
               language: 'church',
             },
@@ -733,6 +737,8 @@ export const AkathistScreen = ({route, navigation}) => {
             metadata: {
               slug,
               section_id: section.id,
+              section_type: section.section_type,
+              section_number: section.number,
               segment: 'whole',
               language: 'russian',
             },
