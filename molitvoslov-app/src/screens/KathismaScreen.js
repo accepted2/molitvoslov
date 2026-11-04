@@ -23,6 +23,7 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
 import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
+import {resolveReaderAppearance} from '../services/scopedReaderAppearance';
 import {
   READER_LANGUAGE_MODES,
   buildReaderLanguageOptions,
@@ -144,7 +145,7 @@ export default function KathismaScreen({route, navigation}) {
   useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   const [kathisma, setKathisma] = useState(null);
-  const {readingChromeHidden, handleReadingScroll} = useReadingChrome();
+  const {readingChromeHidden, handleReadingScroll, handleNativeReadingScroll} = useReadingChrome();
 
   const [savedItems, setSavedItems] = useState([]);
 
@@ -1530,6 +1531,7 @@ export default function KathismaScreen({route, navigation}) {
         topContentInset={headerHeight}
         bottomContentInset={90}
         onReadingScroll={handleReadingScroll}
+        onNativeReadingScroll={handleNativeReadingScroll}
         onProgress={handleProgress}
         onAction={handleAction}
         onViewModeChange={setViewMode}
@@ -1559,6 +1561,7 @@ export default function KathismaScreen({route, navigation}) {
       />
 
       <FixedSectionHeader
+        gradientColor={resolveReaderAppearance(appearance).background}
         onHeaderHeightChange={setHeaderHeight}
         title={t('psalter.kathisma', {number: kathisma.number})}
         navigation={navigation}
