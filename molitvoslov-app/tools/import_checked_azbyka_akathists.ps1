@@ -45,7 +45,8 @@ $backups = Join-Path $workDir 'backups'
 $files = @(
     'import_akathist.py',
     'audit_azbyka_akathist_catalog.py',
-    'import_azbyka_akathists_safe.py'
+    'import_azbyka_akathists_safe.py',
+    'export_imported_azbyka_akathists.py'
 )
 
 if (-not (Test-Path $auditPath)) {
@@ -90,7 +91,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Cannot build a verified-only manifest.' }
 Push-Location $backend
 try {
     Write-Host '[2/5] Check Django and parser tests'
-    & $python -X utf8 -m py_compile (Join-Path $commandsInBackend $files[0]) (Join-Path $commandsInBackend $files[1]) (Join-Path $commandsInBackend $files[2]) $targetTests $helper $helperTests $qaHelper
+    & $python -X utf8 -m py_compile (Join-Path $commandsInBackend $files[0]) (Join-Path $commandsInBackend $files[1]) (Join-Path $commandsInBackend $files[2]) $targetTests (Join-Path $commandsInBackend $files[3]) $helper $helperTests $qaHelper
     if ($LASTEXITCODE -ne 0) { throw 'Python compilation failed.' }
     & $python -X utf8 $helperTests
     if ($LASTEXITCODE -ne 0) { throw 'Offline merge regression tests failed.' }
@@ -122,10 +123,10 @@ try {
     & $python -X utf8 manage.py import_azbyka_akathists_safe --audit $auditPath --approved-file $approved --limit $Limit --delay $Delay --report $importReport --apply --rights-confirmed
     if ($LASTEXITCODE -ne 0) { throw 'Django import failed. The existing offline JSON has not been touched.' }
 
-    Write-Host '[5/5] Export to a staging file; then merge ONLY new Akathists'
-    & $python -X utf8 manage.py export_mobile_content --output $staged
+    Write-Host '[5/5] Export ONLY imported Akathists; then merge new entries'
+    & $python -X utf8 manage.py export_imported_azbyka_akathists --report $importReport --output $staged
     if ($LASTEXITCODE -ne 0) {
-        throw 'Export to staging failed. The existing offline JSON has not been touched.'
+        throw 'Akathist-only staging export failed. The existing offline JSON has not been touched.'
     }
     & $python -X utf8 $qaHelper --staged $staged --report $importReport --output $qaReport
     if ($LASTEXITCODE -ne 0) { throw 'QA found critical problems. The existing offline JSON has not been touched.' }
