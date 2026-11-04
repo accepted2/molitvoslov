@@ -40,6 +40,7 @@ import {
 } from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {colors} from '../theme';
+import {CalendarSaveWholeButton, CalendarSelectableBody, makeCalendarSaveContext} from '../components/reader/CalendarSaveText';
 
 const buildCells = (year, month) => {
   const first = new Date(year, month - 1, 1);
@@ -269,30 +270,39 @@ const FormattedCalendarText = ({text}) => {
   );
 };
 
-const ExpandableTextBlock = ({title, subtitle, text, life = false}) => {
+const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, section, sourceTitle}) => {
   const [expanded, setExpanded] = useState(false);
+  const [wholeSaved, setWholeSaved] = useState(false);
   const {height: windowHeight} = useWindowDimensions();
   const readerHeight = Math.min(420, windowHeight * 0.78);
   const [lifeOverflows, setLifeOverflows] = useState(false);
+  const [lifeScrolled, setLifeScrolled] = useState(false);
   const [lifeViewport, setLifeViewport] = useState(0);
 
   if (!text) return null;
-
+  const saveContext = makeCalendarSaveContext({
+    feast, date, section, title: sourceTitle, sectionTitle: title,
+  });
   return (
-    <View style={styles.textBlock}>
-      <Pressable
-        onPress={() => setExpanded((value) => !value)}
-        style={({pressed}) => [styles.textBlockHeader, pressed && styles.pressed]}
-      >
+    <View style={[styles.textBlock, wholeSaved && styles.calendarSavedBlock]}>
+      <View style={styles.textBlockHeaderRow}>
+        <Pressable
+          onPress={() => setExpanded((value) => !value)}
+          accessibilityRole="button"
+          accessibilityState={{expanded}}
+          style={({pressed}) => [styles.textBlockHeader, styles.textBlockHeaderTap, pressed && styles.pressed]}
+        >
         <View style={styles.textBlockHeaderText}>
           <Text style={styles.textBlockTitle}>{title}</Text>
           {!!subtitle && <Text style={styles.textBlockSubtitle}>{subtitle}</Text>}
         </View>
         <SoftChevron expanded={expanded} />
-      </Pressable>
+        </Pressable>
+        <CalendarSaveWholeButton text={text} saveContext={saveContext} onSavedChange={setWholeSaved} />
+      </View>
 
       {expanded && (life ? (
-        <View style={styles.calendarLifeInset}>
+        <View style={[styles.calendarLifeInset, wholeSaved && styles.calendarSavedContent]}>
           <View style={[styles.calendarLifeScrollFrame, {maxHeight: readerHeight}]}>
             <ScrollView
               nestedScrollEnabled
@@ -303,11 +313,19 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false}) => {
               onContentSizeChange={(_width, contentHeight) =>
                 setLifeOverflows(contentHeight > lifeViewport + 2)
               }
+              onScroll={({nativeEvent}) => setLifeScrolled(nativeEvent.contentOffset.y > 3)}
+              scrollEventThrottle={32}
               contentContainerStyle={styles.calendarLifeScrollContent}
             >
-              <FormattedCalendarText text={text} />
+              <View style={[styles.textBlockContent, wholeSaved && styles.calendarSavedContent]}>
+                <CalendarSelectableBody
+                  text={normalizeCalendarText(text)}
+                  saveContext={saveContext}
+                  textStyle={styles.textBlockParagraph}
+                />
+              </View>
             </ScrollView>
-            {lifeOverflows && <LinearGradient pointerEvents="none"
+            {lifeOverflows && lifeScrolled && <LinearGradient pointerEvents="none"
               colors={['#FFF8EB', 'rgba(255,248,235,0.77)', 'rgba(255,248,235,0)']}
               style={styles.calendarLifeFadeTop} />}
             {lifeOverflows && <LinearGradient pointerEvents="none"
@@ -315,7 +333,15 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false}) => {
               style={styles.calendarLifeFade} />}
           </View>
         </View>
-      ) : <FormattedCalendarText text={text} />)}
+      ) : (
+        <View style={[styles.textBlockContent, wholeSaved && styles.calendarSavedContent]}>
+          <CalendarSelectableBody
+            text={normalizeCalendarText(text)}
+            saveContext={saveContext}
+            textStyle={styles.textBlockParagraph}
+          />
+        </View>
+      ))}
     </View>
   );
 };
@@ -843,6 +869,10 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
           {!!mainFeast?.life_content && (
             <ExpandableTextBlock
+              feast={mainFeast}
+              date={dayData?.date_gregorian || selectedDate}
+              section="life"
+              sourceTitle={displayTitle(mainFeast, copy)}
               title={copy.life}
               subtitle={mainFeast.life_title}
               text={mainFeast.life_content}
@@ -852,6 +882,10 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
           {!!mainFeast?.troparion_content && (
             <ExpandableTextBlock
+              feast={mainFeast}
+              date={dayData?.date_gregorian || selectedDate}
+              section="troparion"
+              sourceTitle={displayTitle(mainFeast, copy)}
               title={copy.troparion}
               subtitle={
                 mainFeast.troparion_echo
@@ -864,6 +898,10 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
           {!!mainFeast?.kontakion_content && (
             <ExpandableTextBlock
+              feast={mainFeast}
+              date={dayData?.date_gregorian || selectedDate}
+              section="kontakion"
+              sourceTitle={displayTitle(mainFeast, copy)}
               title={copy.kontakion}
               subtitle={
                 mainFeast.kontakion_echo
@@ -1237,6 +1275,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#EAD7B8',
     overflow: 'hidden',
   },
+  calendarSavedBlock: {
+    borderColor: 'rgba(123, 79, 36, 0.18)',
+    backgroundColor: '#EAD7B8',
+  },
+  calendarSavedContent: {backgroundColor: 'rgba(161, 110, 53, 0.075)'},
+  textBlockHeaderRow: {flexDirection: 'row', alignItems: 'center', paddingRight: 9},
+  textBlockHeaderTap: {flex: 1, minWidth: 0, paddingRight: 2},
   textBlockHeader: {
     minHeight: 56,
     paddingLeft: 14,
@@ -1259,7 +1304,7 @@ const styles = StyleSheet.create({
     color: '#8A6547',
     fontSize: 11,
   },
-  calendarLifeInset: {marginHorizontal: 4, marginTop: 5, marginBottom: 6,
+  calendarLifeInset: {marginHorizontal: 2, marginTop: 2, marginBottom: 5,
     borderRadius: 13, borderWidth: 1, borderColor: '#E7D6B6',
     backgroundColor: '#FFF8EB', overflow: 'hidden'},
   calendarLifeScrollFrame: {position: 'relative'},
@@ -1270,9 +1315,9 @@ const styles = StyleSheet.create({
   calendarLifeFade: {position: 'absolute', left: 0, right: 0, bottom: 0, height: 46},
   calendarLifeFadeTop: {position: 'absolute', left: 0, right: 0, top: 0, height: 30},
   textBlockContent: {
-    paddingHorizontal: 16,
-    paddingTop: 15,
-    paddingBottom: 17,
+    paddingHorizontal: 6,
+    paddingTop: 0,
+    paddingBottom: 10,
     backgroundColor: '#FFF4DE',
   },
   textBlockParagraph: {
