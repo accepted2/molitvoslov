@@ -47,13 +47,33 @@ foreach ($file in $files) {
     }
 }
 
+# Synchronize isolated regression tests as well.
+$testRelativePath = 'api\test_azbyka_akathist_pipeline.py'
+$testSource = Join-Path (Join-Path $repoRoot 'molitvoslov-backend') $testRelativePath
+$testTarget = Join-Path $backendRoot $testRelativePath
+if (-not (Test-Path $testSource)) { throw "Missing test script: $testSource" }
+$testDiffers = -not (Test-Path $testTarget)
+if (-not $testDiffers) {
+    $testDiffers = (Get-FileHash $testSource -Algorithm SHA256).Hash -ne (Get-FileHash $testTarget -Algorithm SHA256).Hash
+}
+if ($testDiffers) {
+    if (Test-Path $testTarget) {
+        New-Item -ItemType Directory -Path $backup -Force | Out-Null
+        Copy-Item $testTarget (Join-Path $backup 'test_azbyka_akathist_pipeline.py')
+    }
+    Copy-Item $testSource $testTarget -Force
+}
+
 Push-Location $backendRoot
 try {
-    & $python -X utf8 -m py_compile (Join-Path $target $files[0]) (Join-Path $target $files[1])
+    & $python -X utf8 -m py_compile (Join-Path $target $files[0]) (Join-Path $target $files[1]) $testTarget
     if ($LASTEXITCODE -ne 0) { throw 'Python syntax check failed.' }
 
     & $python -X utf8 manage.py check
     if ($LASTEXITCODE -ne 0) { throw 'Django system check failed.' }
+
+    & $python -X utf8 manage.py test api.test_azbyka_akathist_pipeline -v 1
+    if ($LASTEXITCODE -ne 0) { throw 'Akathist parser regression tests failed.' }
 
     $argsForAudit = @(
         '-X', 'utf8', 'manage.py', 'audit_azbyka_akathist_catalog',
