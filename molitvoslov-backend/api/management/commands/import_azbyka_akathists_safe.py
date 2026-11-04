@@ -24,6 +24,7 @@ from api.management.commands.audit_azbyka_akathist_catalog import (
     USER_AGENT,
     normalize_title,
     now_utc,
+    parsed_content_sha256,
     save_json,
 )
 from api.management.commands.import_akathist import Command as AkathistParser
@@ -93,7 +94,7 @@ def validate_candidate(item):
         and isinstance(checks, dict)
         and checks.get("kontakia") == 13
         and checks.get("ikoses") == 12
-        and len(item.get("html_sha256", "")) == 64
+        and len(item.get("content_sha256", "")) == 64
         and isinstance(item.get("title"), str)
         and bool(item["title"].strip())
     )
@@ -172,6 +173,9 @@ class Command(BaseCommand):
         if not robots.can_fetch(USER_AGENT, CATALOG_URL):
             raise CommandError("robots.txt запрещает обход каталога.")
 
+        if not eligible:
+            self.stdout.write("Новых разрешённых акафистов нет; ничего не изменено.")
+            return
         parser = AkathistParser()
         imported = 0
         attempted = 0
@@ -199,14 +203,15 @@ class Command(BaseCommand):
                 response.raise_for_status()
                 if len(response.content) > 6_000_000:
                     raise ValueError("HTML превышает 6 MB")
-                actual_hash = hashlib.sha256(response.content).hexdigest()
-                if actual_hash != item["html_sha256"]:
-                    raise ValueError("Страница изменилась после аудита; требуется повторная проверка")
+                html_hash = hashlib.sha256(response.content).hexdigest()
                 parser.source_url, parser.akathist_slug, parser.akathist_title = url, slug, title
                 root = parser.find_best_root(BeautifulSoup(response.text, "html.parser"))
                 troparion, kontakion_before = parser.parse_preface_hymns(root)
                 sections = parser.normalize_sections(parser.parse_sections(root))
                 parser.validate_sections(sections)
+                text_hash = parsed_content_sha256(sections, troparion, kontakion_before)
+                if text_hash != item["content_sha256"]:
+                    raise ValueError("Текст изменился после аудита; нужен --refresh-checked")
                 # Recheck inside the same transaction. No preexisting Akathist
                 # or Text record may be overwritten by the legacy save method.
                 with transaction.atomic():
@@ -222,7 +227,8 @@ class Command(BaseCommand):
                         raise ValueError("Акафист создан без разделов")
                 report["pages"][url] = {
                     "slug": slug, "status": "imported", "created_id": created.id,
-                    "sections": len(sections), "html_sha256": actual_hash,
+                    "sections": len(sections), "html_sha256": html_hash,
+                    "content_sha256": text_hash,
                 }
                 imported += 1
             except requests.HTTPError as exc:
