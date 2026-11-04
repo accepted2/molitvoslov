@@ -20,6 +20,7 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
 import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
+import {resolveReaderAppearance} from '../services/scopedReaderAppearance';
 import {
   READER_LANGUAGE_MODES,
   buildReaderLanguageOptions,
@@ -170,7 +171,7 @@ export const CanonScreen = ({route, navigation}) => {
   useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   const [canon, setCanon] = useState(null);
-  const {readingChromeHidden, handleReadingScroll} = useReadingChrome();
+  const {readingChromeHidden, handleReadingScroll, handleNativeReadingScroll} = useReadingChrome();
 
   const [savedItems, setSavedItems] = useState([]);
 
@@ -829,6 +830,7 @@ export const CanonScreen = ({route, navigation}) => {
         topContentInset={headerHeight}
         bottomContentInset={90}
         onReadingScroll={handleReadingScroll}
+        onNativeReadingScroll={handleNativeReadingScroll}
         onProgress={scheduleSave}
         onAction={handleAction}
         onViewModeChange={setViewMode}
@@ -851,6 +853,7 @@ export const CanonScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
+        gradientColor={resolveReaderAppearance(appearance).background}
         onHeaderHeightChange={setHeaderHeight}
         title={getLocalizedField(canon, 'title', language) || title || t('reading.canon')}
         navigation={navigation}
