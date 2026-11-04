@@ -9,6 +9,7 @@ from django.test import SimpleTestCase
 from bs4 import BeautifulSoup
 
 from api.management.commands.import_akathist import Command as AkathistParser
+from api.management.commands.repair_azbyka_imported_akathists import LegacyAkathistParser
 from api.management.commands.audit_azbyka_akathist_catalog import (
     CATALOG_URL,
     canonical_url,
@@ -214,3 +215,17 @@ class AzbykaPipelineTests(SimpleTestCase):
         nodes = soup.find_all("p")
         self.assertEqual(parser.inherited_language_classes(nodes[0]), {"paint"})
         self.assertEqual(parser.inherited_language_classes(nodes[1]), {"translate"})
+
+    def test_legacy_parser_reproduces_missing_refrain_as_false_translation(self):
+        legacy = LegacyAkathistParser()
+        corrected = AkathistParser()
+        blocks = [
+            {"text": "Возбранный Воеводо и Господи, зовуща:", "classes": set()},
+            {"text": "Господи мой, Господи, Радосте моя.", "classes": set()},
+        ]
+        source, false_translation = legacy.parse_element_group(blocks, "kontakion")
+        self.assertEqual(source, blocks[0]["text"])
+        self.assertEqual(false_translation, blocks[1]["text"])
+        restored, translation = corrected.parse_element_group(blocks, "kontakion")
+        self.assertEqual(restored, blocks[0]["text"] + "\n\n" + blocks[1]["text"])
+        self.assertEqual(translation, "")
