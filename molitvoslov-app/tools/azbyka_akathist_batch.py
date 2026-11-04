@@ -425,11 +425,22 @@ def quarantine(args):
     for slug in imported:
         original = before["akathists"]["by_slug"][slug]
         updated = data["akathists"]["by_slug"][slug]
-        for key in original:
-            if original[key] != updated.get(key):
-                raise ValueError("Attempt to change an existing value in " + slug + ": " + key)
-        if {k:v for k,v in updated.items() if k != "translation_review_status"} != original:
+        # Compare both versions without the one field this operation owns.
+        # On a second run the ORIGINAL already has "unverified"; comparing
+        # the stripped updated record with the unstripped original wrongly
+        # rejected idempotent re-runs.
+        original_content = {
+            key: value for key, value in original.items()
+            if key != "translation_review_status"
+        }
+        updated_content = {
+            key: value for key, value in updated.items()
+            if key != "translation_review_status"
+        }
+        if original_content != updated_content:
             raise ValueError("Unexpected changes in " + slug)
+        if updated.get("translation_review_status") != "unverified":
+            raise ValueError("Review status was not set for " + slug)
     print("Imported Akathists in scope: " + str(len(imported)))
     print("Newly unverified: " + str(len(changed)))
     for slug in sorted(imported):
