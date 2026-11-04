@@ -28,6 +28,7 @@ import {
 } from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
+import {prepareAkathistSections} from '../services/akathistPresentation';
 
 const MODE_CHURCH = READER_LANGUAGE_MODES.CHURCH;
 const MODE_BOTH = READER_LANGUAGE_MODES.BOTH;
@@ -624,6 +625,8 @@ export const AkathistScreen = ({route, navigation}) => {
 
         trackProgress: false,
 
+        className: 'akathist-section',
+
         title: heading,
 
         rows: blocks.map((block) => ({
@@ -640,7 +643,7 @@ export const AkathistScreen = ({route, navigation}) => {
 
     addSpecial(akathist.kontakion_before, 'Кондак', 'kontakion_before');
 
-    (akathist.sections || []).forEach((section) => {
+    prepareAkathistSections(akathist.sections).forEach(({section, repeated}) => {
       const church = normalizeAkathistText(section.text?.content);
 
       const russian = normalizeAkathistText(section.text?.translation);
@@ -744,9 +747,11 @@ export const AkathistScreen = ({route, navigation}) => {
       }
 
       sections.push({
-        progressAnchorId: Number(section.id),
+        progressAnchorId: repeated ? 0 : Number(section.id),
 
-        trackProgress: true,
+        trackProgress: !repeated,
+
+        className: 'akathist-section',
 
         title: sectionTitle,
 
