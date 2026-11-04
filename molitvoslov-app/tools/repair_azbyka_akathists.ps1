@@ -21,6 +21,7 @@ $target = Join-Path $backend 'api\management\commands'
 $testsSrc = Join-Path $repo 'molitvoslov-backend\api\test_azbyka_akathist_pipeline.py'
 $testsDst = Join-Path $backend 'api\test_azbyka_akathist_pipeline.py'
 $helper = Join-Path $PSScriptRoot 'azbyka_akathist_batch.py'
+$helperTests = Join-Path $PSScriptRoot 'test_azbyka_akathist_batch.py'
 $offline = Join-Path $PSScriptRoot '..\src\data\offlineContent.json'
 $work = Join-Path $backend 'files\akathists'
 $report = Join-Path $work 'azbyka_import_report.json'
@@ -31,7 +32,7 @@ $files = @(
     'audit_azbyka_akathist_catalog.py',
     'repair_azbyka_imported_akathists.py'
 )
-foreach ($file in @($python, $db, $source, $target, $testsSrc, $helper, $offline, $report)) {
+foreach ($file in @($python, $db, $source, $target, $testsSrc, $helper, $helperTests, $offline, $report)) {
     if (-not (Test-Path $file)) {
         throw "Required path missing: $file"
     }
@@ -71,6 +72,8 @@ try {
     Write-Host '[1/4] Verify parser and Django'
     & $python -X utf8 -m py_compile (Join-Path $target $files[0]) (Join-Path $target $files[1]) (Join-Path $target $files[2]) $helper $testsDst
     if ($LASTEXITCODE -ne 0) { throw 'Python syntax check failed.' }
+    & $python -X utf8 $helperTests
+    if ($LASTEXITCODE -ne 0) { throw 'Offline repair regression tests failed.' }
     & $python -X utf8 manage.py check
     if ($LASTEXITCODE -ne 0) { throw 'Django system check failed.' }
     & $python -X utf8 manage.py test api.test_azbyka_akathist_pipeline -v 1
