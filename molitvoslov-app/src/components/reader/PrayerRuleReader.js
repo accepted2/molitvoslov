@@ -7,7 +7,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 import {deleteSavedItem, saveItem} from '../../services/savedItems';
 import {useLanguage} from '../../context/LanguageContext';
 import {getReadingSettings, DEFAULT_READING_SETTINGS} from '../../services/readerPreferences';
-import {applyReaderAppearance} from '../../services/scopedReaderAppearance';
+import {applyReaderAppearance, resolveReaderAppearance} from '../../services/scopedReaderAppearance';
 import {getCachedPonomarFontDataUri, loadPonomarFontDataUri} from '../../services/ponomarFont';
 
 const scriptSafeJson = (value) =>
@@ -7724,10 +7724,12 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
   onViewModeChange,
   onHeaderTitleVisibilityChange,
   onReadingScroll,
+  onNativeReadingScroll,
 }, ref) {
   const insets = useSafeAreaInsets();
   const {language, t} = useLanguage();
   const [readingSettings, setReadingSettings] = useState(DEFAULT_READING_SETTINGS);
+  const [scopedBackground, setScopedBackground] = useState(null);
   useEffect(() => {
     let active = true;
     getReadingSettings().then((settings) => {if (active) setReadingSettings(settings);}).catch(console.warn);
@@ -7790,7 +7792,7 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
     [language, t]
   );
 
-  const readerBg = readingSettings.palette === 'custom' ? readingSettings.customBackground : ({night:'#29231F',warm:'#DEBE94',ivory:'#FFFDF3'}[readingSettings.palette] || '#FFF4DE');
+  const readerBg = scopedBackground || (readingSettings.palette === 'custom' ? readingSettings.customBackground : ({night:'#29231F',warm:'#DEBE94',ivory:'#FFFDF3'}[readingSettings.palette] || '#FFF4DE'));
   const html = useMemo(
     () => {
       const markup = buildHtml({
@@ -7849,6 +7851,8 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
     },
     applyAppearance: (appearance) => {
       appearanceRef.current = appearance;
+      const nextBackground = resolveReaderAppearance(appearance).background;
+      setScopedBackground(current => current === nextBackground ? current : nextBackground);
       applyReaderAppearance(webViewRef.current, appearance, true);
     },
   }), []);
@@ -8119,6 +8123,8 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
         overScrollMode="never"
         textZoom={100}
         onMessage={handleMessage}
+        onScroll={onNativeReadingScroll}
+        scrollEventThrottle={16}
         onLoadEnd={() => {
           if (appearanceRef.current) {
             applyReaderAppearance(webViewRef.current, appearanceRef.current, true);
