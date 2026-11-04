@@ -291,6 +291,90 @@ def merge(args):
     print("Поисковый индекс НЕ изменён — обновите его отдельно перед выпуском APK.")
 
 
+def repair(args):
+    """Patch only exact previously-imported text values in the current APK JSON."""
+    path = Path(args.existing).resolve()
+    data = read_json(path)
+    before = copy.deepcopy(data)
+    patch = read_json(args.patch)
+    if patch.get("source") != SOURCE or not isinstance(patch.get("changes"), list):
+        raise ValueError("Неизвестный источник или некорректный формат исправления.")
+    index = akathist_index(data)
+    counts = Counter()
+    for item in patch["changes"]:
+        slug = item.get("slug")
+        if slug not in index:
+            counts["not_in_offline"] += 1
+            continue
+        detail = data["akathists"]["by_slug"][slug]
+        if detail.get("id") != item.get("akathist_id"):
+            raise ValueError("ID акафиста не совпал: " + slug)
+        for correction in item.get("sections", []):
+            section_type = correction.get("section_type")
+            number = correction.get("number")
+            if section_type in ("troparion", "kontakion_before"):
+                target = detail.get(section_type)
+                if not isinstance(target, dict):
+                    raise ValueError("Не найден дополнительный текст " + slug)
+                texts = [target]
+            else:
+                texts = [
+                    row.get("text") for row in detail.get("sections", [])
+                    if row.get("section_type") == section_type and row.get("number") == number
+                ]
+                if not texts or any(not isinstance(text, dict) for text in texts):
+                    raise ValueError("Нет раздела для исправления " + slug)
+            old = (correction["old_content"], correction["old_translation"])
+            new = (correction["new_content"], correction["new_translation"])
+            for text in texts:
+                current = (text.get("content", ""), text.get("translation", ""))
+                if current != old and current != new:
+                    raise ValueError(
+                        "Локальный текст изменён вручную; не перезаписываем: %s %s %s"
+                        % (slug, section_type, number)
+                    )
+                if current == old and current != new:
+                    text["content"], text["translation"] = new
+                    counts["updated_sections"] += 1
+                else:
+                    counts["already_updated"] += 1
+        counts["akathists"] += 1
+    for key in before:
+        if key in ("akathists", "generated_at", "content_version"):
+            continue
+        if before[key] != data[key]:
+            raise ValueError("Обнаружена попытка изменения посторонних молитв: " + key)
+    for slug in index:
+        if all(row.get("slug") != slug for row in patch["changes"]):
+            if data["akathists"]["by_slug"][slug] != before["akathists"]["by_slug"][slug]:
+                raise ValueError("Неожиданное изменение другого акафиста: " + slug)
+    if not counts["updated_sections"]:
+        print("Нет изменений для offline JSON: " + str(dict(counts)))
+        return
+    data["generated_at"] = datetime.now(timezone.utc).isoformat()
+    data["content_version"] = content_fingerprint(data)
+    print("Акафистов в патче: %s; исправлено частей: %s; уже исправлено: %s"
+          % (counts["akathists"], counts["updated_sections"], counts["already_updated"]))
+    if not args.apply:
+        print("ПРОВЕРКА: offline JSON не изменён.")
+        return
+    backup_dir = Path(args.backup_dir).resolve()
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+    backup_path = backup_dir / ("offlineContent-before-akathist-repair-" + stamp + ".json")
+    shutil.copy2(path, backup_path)
+    if not backup_path.exists() or not backup_path.stat().st_size:
+        raise ValueError("Не удалось сохранить копию offline JSON.")
+    write_json_atomic(path, data)
+    persisted = read_json(path)
+    if content_fingerprint(persisted) != persisted.get("content_version"):
+        raise ValueError("Контрольная сумма исправленного JSON неверна.")
+    if len(akathist_index(persisted)) != len(index):
+        raise ValueError("Изменилось количество акафистов.")
+    print("Исправленный offline JSON: " + str(path))
+    print("Резервная копия: " + str(backup_path))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="operation", required=True)
@@ -305,6 +389,12 @@ def main():
     join.add_argument("--backup-dir", required=True)
     join.add_argument("--apply", action="store_true")
     join.set_defaults(func=merge)
+    fix = sub.add_parser("repair", help="Исправить только подтверждённые старые значения в offline JSON.")
+    fix.add_argument("--existing", required=True)
+    fix.add_argument("--patch", required=True)
+    fix.add_argument("--backup-dir", required=True)
+    fix.add_argument("--apply", action="store_true")
+    fix.set_defaults(func=repair)
     args = parser.parse_args()
     try:
         args.func(args)
