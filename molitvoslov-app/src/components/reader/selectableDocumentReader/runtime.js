@@ -760,11 +760,32 @@ const computeFocusHighlightRanges = () => {
       }
       return ranges;
     };
+    // A word in quoted speech ("Радуйся, Благодатная...") is not a
+    // stand-alone litany address. Keep it inline and in the ordinary ink,
+    // while retaining red line-start refrains outside the quotation.
+    const collectAkathistQuotedSpeechRanges = value => {
+      const source = String(value || '');
+      const closingFor = {'«': '»', '„': '“', '“': '”', '"': '"'};
+      const stack = [];
+      const ranges = [];
+      for (let index = 0; index < source.length; index += 1) {
+        const mark = source[index];
+        if (stack.length && mark === stack[stack.length - 1].close) {
+          const open = stack.pop();
+          ranges.push({start: open.start, end: index + 1});
+        } else if (Object.prototype.hasOwnProperty.call(closingFor, mark)) {
+          stack.push({start: index, close: closingFor[mark]});
+        }
+      }
+      return ranges;
+    };
     const collectAkathistRefrainRanges = (value, extraResponses = false) => {
       const standard = collectAkathistInvocationRanges(value);
-      if (!extraResponses) return standard;
-      const combined = [...standard, ...collectAkathistAdditionalResponseRanges(value)];
+      const combined = extraResponses
+        ? [...standard, ...collectAkathistAdditionalResponseRanges(value)] : standard;
+      const quotedSpeech = collectAkathistQuotedSpeechRanges(value);
       return combined.filter((range, index) =>
+        !quotedSpeech.some(quote => range.start >= quote.start && range.start < quote.end) &&
         !combined.some((other, j) => j !== index && other.start <= range.start &&
           other.end >= range.end && (other.start < range.start || other.end > range.end))
       );
