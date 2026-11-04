@@ -17,6 +17,7 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {useLanguage} from '../context/LanguageContext';
 import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
+import {CalendarSaveWholeButton, CalendarSelectableBody, makeCalendarSaveContext} from '../components/reader/CalendarSaveText';
 
 const formatDate = (value, language) => {
   if (!value) return '';
@@ -48,30 +49,36 @@ const Accordion = ({
   focusHighlight = false,
   innerScroll = false,
   height = 320,
+  feast,
+  date,
+  section,
+  sourceTitle,
 }) => {
   const [open, setOpen] = useState(initialOpen || focusHighlight);
+  const [wholeSaved, setWholeSaved] = useState(false);
   const [hasMoreText, setHasMoreText] = useState(false);
   const [atBottom, setAtBottom] = useState(false);
   const [scrollMetrics, setScrollMetrics] = useState({content: 0, viewport: height, y: 0});
   useEffect(() => { if (focusHighlight) setOpen(true); }, [focusHighlight]);
   if (!text) return null;
-  const paragraphs = String(text).replace(/\r\n?/g, '\n').split(/\n\s*\n/).map((part) => part.trim()).filter(Boolean);
+  const saveContext = makeCalendarSaveContext({
+    feast, date, section, title: sourceTitle, sectionTitle: title,
+  });
   const content = (
     <View style={styles.readingContent}>
       {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-      {paragraphs.map((paragraph, index) => (
-        <Text key={index} selectable style={styles.body}>{paragraph}</Text>
-      ))}
+      <CalendarSelectableBody text={text} saveContext={saveContext} textStyle={styles.body} />
     </View>
   );
   return (
-    <View style={[styles.accordion, focusHighlight && styles.accordionFocused]}>
-      <Pressable
-        onPress={() => setOpen((value) => !value)}
-        accessibilityRole="button"
-        accessibilityState={{expanded: open}}
-        style={styles.accordionHeader}
-      >
+    <View style={[styles.accordion, focusHighlight && styles.accordionFocused, wholeSaved && styles.accordionSaved]}>
+      <View style={styles.accordionHeaderRow}>
+        <Pressable
+          onPress={() => setOpen((value) => !value)}
+          accessibilityRole="button"
+          accessibilityState={{expanded: open}}
+          style={[styles.accordionHeader, styles.accordionHeaderTap]}
+        >
         <View style={styles.accordionIcon}>
           {icon === 'life' ? <Feather name="book-open" size={22} color="#7A4F2D" /> : <Text style={styles.accordionIconText}>{icon}</Text>}
         </View>
@@ -80,11 +87,13 @@ const Accordion = ({
           {!open && !!subtitle && <Text style={styles.preview} numberOfLines={1}>{subtitle}</Text>}
         </View>
         <View style={[styles.chevron, open && styles.chevronOpen]} />
-      </Pressable>
+        </Pressable>
+        <CalendarSaveWholeButton text={text} saveContext={saveContext} onSavedChange={setWholeSaved} />
+      </View>
       {open && (
-        <View style={styles.expandedWrap}>
+        <View style={[styles.expandedWrap, wholeSaved && styles.expandedWrapSaved]}>
           {innerScroll ? (
-            <View style={styles.lifeInset}>
+            <View style={[styles.lifeInset, wholeSaved && styles.lifeInsetSaved]}>
               <View style={[styles.lifeScrollFrame, {maxHeight: height}]}>
                 <ScrollView
                   nestedScrollEnabled
@@ -228,6 +237,10 @@ export const SaintDetailScreen = ({route, navigation}) => {
 
         <Accordion
           title={getStoryHeading(title, uk)}
+          feast={resolvedFeast}
+          date={date}
+          sourceTitle={title}
+          section="life"
           icon="life"
           text={life}
           initialOpen={focusSection === "life"}
@@ -237,6 +250,10 @@ export const SaintDetailScreen = ({route, navigation}) => {
         />
         <Accordion
           title={uk ? 'Тропар' : 'Тропарь'}
+          feast={resolvedFeast}
+          date={date}
+          sourceTitle={title}
+          section="troparion"
           focusHighlight={focusSection === 'troparion'}
           icon="♪"
           text={troparion}
@@ -244,12 +261,17 @@ export const SaintDetailScreen = ({route, navigation}) => {
         />
         <Accordion
           title="Кондак"
+          feast={resolvedFeast}
+          date={date}
+          sourceTitle={title}
+          section="kontakion"
           focusHighlight={focusSection === "kontakion"}
           icon="✧"
           text={kontakion}
           subtitle={resolvedFeast?.kontakion_echo ? 'Глас ' + resolvedFeast.kontakion_echo : resolvedFeast?.kontakion_title}
         />
-        {!!prayer && <Accordion title={uk ? 'Молитва' : 'Молитва'} icon="✝" text={prayer} />}
+        {!!prayer && <Accordion title={uk ? 'Молитва' : 'Молитва'} icon="✝" text={prayer}
+          feast={resolvedFeast} date={date} sourceTitle={title} section="prayer" />}
         {!life && !troparion && !kontakion && !prayer && (
           <Text style={styles.empty}>
             {uk ? 'Додаткових текстів поки немає.' : 'Дополнительных текстов пока нет.'}
@@ -334,6 +356,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#EAD7B8', overflow: 'hidden',
   },
   accordionFocused: {borderColor: '#A16E35', borderWidth: 2},
+  accordionSaved: {borderColor: 'rgba(123, 79, 36, 0.18)'}, 
+  accordionHeaderRow: {flexDirection: 'row', alignItems: 'center', paddingRight: 9},
+  accordionHeaderTap: {flex: 1, minWidth: 0, paddingRight: 2},
   accordionHeader: {
     minHeight: 65, padding: 12, flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#EAD7B8',
@@ -356,11 +381,13 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(123,79,36,0.16)', backgroundColor: '#FFF4DE',
   },
-  readingContent: {paddingHorizontal: 15, paddingTop: 14, paddingBottom: 16},
-  lifeInset: {marginHorizontal: 5, marginTop: 8, marginBottom: 12,
+  expandedWrapSaved: {backgroundColor: 'rgba(161, 110, 53, 0.075)'},
+  lifeInsetSaved: {backgroundColor: 'rgba(161, 110, 53, 0.075)'},
+  readingContent: {paddingHorizontal: 4, paddingTop: 0, paddingBottom: 8},
+  lifeInset: {marginHorizontal: 2, marginTop: 4, marginBottom: 8,
     borderRadius: 13, borderWidth: 1, borderColor: '#E7D6B6', backgroundColor: '#FFF4DE', overflow: 'hidden'},
   lifeScrollContent: {
-    paddingHorizontal: 2,
+    paddingHorizontal: 0,
     paddingTop:0,
     paddingBottom: 38,
   },
