@@ -17,6 +17,8 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
 import {getPrayerBook} from '../services/prayerBooks';
+import SelectableSaveText from '../components/reader/SelectableSaveText';
+import {savedSourceId} from '../components/reader/CalendarSaveText';
 import {useLanguage} from '../context/LanguageContext';
 
 const bundledContent = require('../data/offlineContent.json');
@@ -427,9 +429,21 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
                   <Text style={styles.title}>{prayer.title}</Text>
 
                   {!!prayer.text && (
-                    <Text style={styles.text} selectable>
-                      {prayer.text}
-                    </Text>
+                    <SelectableSaveText
+                      text={String(prayer.text)}
+                      textStyle={styles.text}
+                      sourceType="personal_prayer"
+                      sourceId={savedSourceId(prayer.sync_id)}
+                      anchorType="personal_prayer"
+                      anchorId={savedSourceId(prayer.sync_id)}
+                      sourceTitle={book?.title || t('prayerBooks.title')}
+                      itemTitle={prayer.title || 'Молитва'}
+                      metadata={{
+                        book_sync_id: bookSyncId,
+                        prayer_sync_id: prayer.sync_id,
+                      }}
+                      fullSaveType="prayer"
+                    />
                   )}
                 </>
               )}
