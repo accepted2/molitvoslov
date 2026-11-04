@@ -45,7 +45,7 @@ assert.match(chrome, /y <= 35/);
 for (const file of ['SelectableDocumentReader.js', 'PrayerRuleReader.js']) {
   const source = read('src/components/reader/' + file);
   assert.match(source, /onScroll={onNativeReadingScroll}/);
-  assert.match(source, /scrollEventThrottle={16}/);
+  assert.ok(source.includes('scrollEventThrottle={16}'), file + ': native WebView throttle missing');
   assert.match(source, /setScopedBackground|setChromeBackground/);
 }
 assert.match(read('src/components/reader/SelectableDocumentReader.js'), /direction = delta > 0 \? 'down' : 'up'/);
