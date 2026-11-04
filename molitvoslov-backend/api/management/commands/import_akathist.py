@@ -733,6 +733,20 @@ class Command(BaseCommand):
 
         return sections
 
+    def inherited_language_classes(self, element):
+        """Find nearest explicit source/translation marker on the paragraph tree."""
+        recognized = CONTENT_CLASSES | TRANSLATION_CLASSES
+        current = element
+        for _ in range(5):
+            if not isinstance(current, Tag):
+                break
+            classes = {cls.lower() for cls in current.get("class", [])}
+            matched = classes & recognized
+            if matched:
+                return matched
+            current = current.parent
+        return set()
+
     def collect_elements_after_heading(
         self,
         heading,
@@ -788,7 +802,7 @@ class Command(BaseCommand):
             elements.append(
                 {
                     "text": text,
-                    "classes": set(element.get("class") or []),
+                    "classes": self.inherited_language_classes(element),
                 }
             )
 
@@ -838,7 +852,7 @@ class Command(BaseCommand):
                 break
             blocks.append({
                 "text": text,
-                "classes": set(element.get("class") or []),
+                "classes": self.inherited_language_classes(element),
             })
         return blocks
 
@@ -874,34 +888,25 @@ class Command(BaseCommand):
 
         content_parts = []
         translation_parts = []
-        unknown_parts = []
-
         has_language_classes = False
 
+        # Keep every untagged paragraph in its original source order, even
+        # when its neighbours carry explicit language CSS classes. Previously
+        # these paragraphs were silently discarded.
         for item in filtered:
             text = item["text"]
             classes = {cls.lower() for cls in item["classes"]}
 
-            if classes & CONTENT_CLASSES:
-                has_language_classes = True
-                content_parts.append(text)
-                continue
-
             if classes & TRANSLATION_CLASSES:
                 has_language_classes = True
                 translation_parts.append(text)
-                continue
-
-            unknown_parts.append(text)
+            else:
+                if classes & CONTENT_CLASSES:
+                    has_language_classes = True
+                content_parts.append(text)
 
         if has_language_classes:
-            if not content_parts and unknown_parts:
-                content_parts.extend(unknown_parts)
-
-            return (
-                self.join_parts(content_parts),
-                self.join_parts(translation_parts),
-            )
+            return self.join_parts(content_parts), self.join_parts(translation_parts)
 
         blocks = [item["text"] for item in filtered]
 
@@ -918,25 +923,19 @@ class Command(BaseCommand):
     # ======================================================================
 
     def parse_parallel_akathist_blocks(self, blocks):
-        if not blocks:
-            return "", ""
+        """
+        Untagged paragraphs are not necessarily alternating CS and RU.
 
-        if len(blocks) == 1:
-            return blocks[0], ""
+        Azbyka often stores the opening prose and a separate refrain as two
+        consecutive <p> elements. Treating every second paragraph as a
+        translation drops the refrain from the CS tab.
 
-        content = []
-        translation = []
-
-        for index, block in enumerate(blocks):
-            if index % 2 == 0:
-                content.append(block)
-            else:
-                translation.append(block)
-
-        return (
-            self.join_parts(content),
-            self.join_parts(translation),
-        )
+        Explicit CSS/numbered translations are handled in parse_element_group.
+        For unmarked material preserve *all* paragraphs in original order.
+        We prefer an absent unverified translation to a false translation
+        containing essential prayer text.
+        """
+        return self.join_parts(blocks), ""
 
     # ======================================================================
     # МОЛИТВЫ БЕЗ CSS-МАРКЕРОВ
