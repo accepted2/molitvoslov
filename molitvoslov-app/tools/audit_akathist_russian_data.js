@@ -18,7 +18,7 @@ const normalize = value => String(value || '')
   .toLowerCase()
   .replace(/\s+/g, ' ')
   .trim();
-const archaicWords = /\b(?:яко|аще|есмь|еси|мя|тя|вопием|сие|сице|идеже|днесь|аще|даждь|веси|обретается|рече|приими|несть|зовуща)\b/gu;
+const archaicWords = /(?<![\p{L}])(?:яко|аще|есмь|еси|мя|тя|вопием|сие|сице|идеже|днесь|даждь|веси|рече|приими|несть|зовуща)(?![\p{L}])/gu;
 const expected = [
   ...Array.from({length: 13}, (_, index) => 'kontakion:' + (index + 1)),
   ...Array.from({length: 12}, (_, index) => 'ikos:' + (index + 1)),
