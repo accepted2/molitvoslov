@@ -72,6 +72,30 @@ class SearchCorpusCompatibilityTests(unittest.TestCase):
                          else "legacy-v9")
         generator.verify_source_coverage(sample(), docs)
 
+    def test_legacy_language_tuple_ast_compiles(self):
+        if self.original_mode != "legacy":
+            self.skipTest("Current source uses native v10 extraction")
+        code = generator.compile_corpus(self.source)
+        self.assertIsInstance(code, type(compile("pass", "<test>", "exec")))
+
+    def test_legacy_language_list_ast_compiles(self):
+        if self.original_mode != "legacy":
+            self.skipTest("Current source uses native v10 extraction")
+        old = 'for lang in ("ru", "uk"):'
+        self.assertEqual(self.source.count(old), 1)
+        variant = self.source.replace(old, 'for lang in ["ru", "uk"]:')
+        code = generator.compile_corpus(variant)
+        self.assertIsInstance(code, type(compile("pass", "<test>", "exec")))
+
+    def test_nonconstant_legacy_languages_are_rejected(self):
+        if self.original_mode != "legacy":
+            self.skipTest("Current source uses native v10 extraction")
+        old = 'for lang in ("ru", "uk"):'
+        self.assertEqual(self.source.count(old), 1)
+        variant = self.source.replace(old, 'for lang in (unknown_language, "uk"):')
+        with self.assertRaisesRegex(RuntimeError, "must be string literals"):
+            generator.compile_corpus(variant)
+
     def test_akathist_title_and_sections_are_included(self):
         docs, _ = corpus()
         ext = {doc["ext"] for doc in docs}
