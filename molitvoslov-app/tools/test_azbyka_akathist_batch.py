@@ -228,9 +228,13 @@ class AdditiveAkathistsTest(unittest.TestCase):
         self.assertEqual(result["prayer_rules"], original["prayer_rules"])
         self.assertEqual(result["content_version"], content_fingerprint(result))
         self.assertEqual(len(list(self.backups.glob("*.json"))), 1)
+        already_marked = self.old.read_bytes()
         with contextlib.redirect_stdout(io.StringIO()):
             quarantine(self.quarantine_params(True))
-        self.assertEqual(len(list(self.backups.glob("*.json"))), 1)
+        self.assertEqual(self.old.read_bytes(), already_marked,
+                         "Repeated apply must not rewrite JSON or update timestamps")
+        self.assertEqual(len(list(self.backups.glob("*.json"))), 1,
+                         "Repeated apply must not generate redundant backups")
 
     def test_quarantine_refuses_batch_beyond_limit(self):
         self.old.write_text(json.dumps(self.latest, ensure_ascii=False), encoding="utf-8")
