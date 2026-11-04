@@ -18,7 +18,7 @@ export const PersonalPrayerReadingView = ({
   book, items, bookSyncId, prayerSyncId, navigation, fallbackTitle,
 }) => {
   const insets = useSafeAreaInsets();
-  const {width} = useWindowDimensions();
+  const {width, height} = useWindowDimensions();
   const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
   const [savedItems, setSavedItems] = useState([]);
   const [showPhotos, setShowPhotos] = useState(false);
@@ -73,7 +73,7 @@ export const PersonalPrayerReadingView = ({
     <View style={[styles.screen, {backgroundColor: background}]}>
       <StatusBar style="light" translucent backgroundColor="transparent" />
 
-      {showPhotos ? (
+      {showPhotos && (
         <ScrollView
           style={styles.photoGallery}
           contentContainerStyle={{paddingTop: headerHeight + 16, paddingBottom: 110 + insets.bottom}}
@@ -91,7 +91,9 @@ export const PersonalPrayerReadingView = ({
             </Pressable>
           ))}
         </ScrollView>
-      ) : (
+      )}
+      {/* Keep the selection and reading position when viewing attached photos. */}
+      <View style={{flex: 1, display: showPhotos ? 'none' : 'flex'}}>
         <SelectableDocumentReader
           ref={readerRef}
           documentData={documentData}
@@ -103,7 +105,7 @@ export const PersonalPrayerReadingView = ({
           onReadingScroll={handleReadingScroll}
           onNativeReadingScroll={handleNativeReadingScroll}
         />
-      )}
+      </View>
 
       {images.length > 0 && (
         <Pressable
@@ -153,7 +155,7 @@ export const PersonalPrayerReadingView = ({
                 <Image
                   source={{uri: zoomedPhoto.uri}}
                   resizeMode="contain"
-                  style={{width: photoZoom ? width * 2 : width, height: '100%'}}
+                  style={{width: photoZoom ? width * 2 : width, height: Math.max(250, height - 100)}}
                 />
               </Pressable>
             )}
