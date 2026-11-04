@@ -49,10 +49,10 @@ assert.ok(n0 >= 0 && n1 > n0 && w0 > n1 && w1 > w0, 'Runtime helpers not found')
 const helperSandbox = {module:{exports:{}}};
 vm.runInNewContext(
   runtime.slice(n0,n1) + '\n' + runtime.slice(w0,w1) +
-    '\nmodule.exports = {inv:collectAkathistInvocationRanges, alleluia:collectAkathistAlleluiaRanges, breaks:collectAkathistJoyBreaks, initials:collectAkathistInitialRanges};',
+    '\nmodule.exports = {inv:collectAkathistInvocationRanges, extra:collectAkathistAdditionalResponseRanges, alleluia:collectAkathistAlleluiaRanges, breaks:collectAkathistJoyBreaks, initials:collectAkathistInitialRanges};',
   helperSandbox,
 );
-const {inv, alleluia, breaks, initials} = helperSandbox.module.exports;
+const {inv, extra, alleluia, breaks, initials} = helperSandbox.module.exports;
 const praise = 'Радуйся, Мати Божия. Иисусе, Сладчайший! Радуйся, Дево!';
 assert.deepEqual(Array.from(inv(praise), range => praise.slice(range.start,range.end)), ['Радуйся','Иисусе','Радуйся']);
 assert.deepEqual([...breaks(praise)], [praise.indexOf('Иисусе'), praise.lastIndexOf('Радуйся')]);
@@ -71,13 +71,30 @@ assert.deepEqual(Array.from(initials(prayerProse, false), range =>
   prayerProse.slice(range.start, range.end)), ['В']);
 assert.match(runtime, /const isAkathistIkos = isAkathist && itemConfig\?\.metadata\?\.section_type === 'ikos'/);
 assert.match(runtime, /const isAkathistKontakion = isAkathist && \(/);
-assert.match(runtime, /isAkathistIkos \? collectAkathistJoyBreaks\( text \) : new Set\(\)/);
-assert.match(runtime, /collectAkathistInitialRanges\( text, isAkathistIkos \)/);
-assert.match(runtime, /isAkathistKontakion \? collectAkathistAlleluiaRanges\( text \) : \[\]/);
+assert.match(runtime, /hasAkathistInvocations\s*\? collectAkathistJoyBreaks\(text, isAkathistIkos\) : new Set\(\)/);
+assert.match(runtime, /collectAkathistInitialRanges\(text, hasAkathistInvocations, isAkathistIkos\)/);
+assert.match(runtime, /isAkathistKontakion \? collectAkathistAlleluiaRanges\(text\) : \[\]/);
 assert.match(screen, /accentWords: \[\]/);
 assert.equal((screen.match(/section_type: section\.section_type/g) || []).length, 3,
   'Every Akathist text language must pass its section type');
 console.log('PASS: ordinary prayers with Иисусе/Радуйся stay unbroken and unaccented');
+
+
+const differentRefrain = 'Тебя славим: Пресвятая Богородице, спаси нас; Святителю, моли Бога!';
+assert.deepEqual(Array.from(extra(differentRefrain), range =>
+  differentRefrain.slice(range.start,range.end)), ['Пресвятая Богородице','Святителю']);
+assert.deepEqual(Array.from(breaks(differentRefrain, true)),
+  [differentRefrain.indexOf('Пресвятая'), differentRefrain.indexOf('Святителю')]);
+assert.deepEqual(Array.from(initials(differentRefrain, true, true), range =>
+  differentRefrain.slice(range.start,range.end)),
+  ['Пресвятая Богородице','Святителю','Т']);
+assert.deepEqual(Array.from(extra('Свою Владычицу просим. Владычице, моли Бога.'), range =>
+  'Свою Владычицу просим. Владычице, моли Бога.'.slice(range.start,range.end)),
+  ['Владычице']);
+assert.match(runtime, /const isAkathistFirstKontakion = isAkathist/);
+assert.match(runtime, /Number\(itemConfig\?\.metadata\?\.section_number\) === 1/);
+assert.match(runtime, /const hasAkathistInvocations = isAkathistIkos \|\| isAkathistFirstKontakion/);
+console.log('PASS: extra vocatives only after clause breaks; Jesus invoked in Kontakion 1');
 
 const css = read('src/components/reader/selectableDocumentReader/styles.js');
 assert.match(css, /\.rule-item\.akathist-section \.section-header \.prayer-title/);
