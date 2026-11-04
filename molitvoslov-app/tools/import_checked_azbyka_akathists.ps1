@@ -15,7 +15,7 @@ if ($Limit -lt 0 -or $Delay -lt 1) {
     throw 'Limit must be >= 0 and Delay >= 1.'
 }
 if ($Apply -and -not $RightsConfirmed) {
-    throw 'Для импорта нужно подтвердить права на использование выбранных текстов: -RightsConfirmed.'
+    throw 'Confirm permission to reuse selected texts using -RightsConfirmed.'
 }
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
