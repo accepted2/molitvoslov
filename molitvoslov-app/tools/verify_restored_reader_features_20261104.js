@@ -22,6 +22,10 @@ const expectations = {
   'src/screens/PrayerBookReaderScreen.js': [
     'SelectableSaveText', 'sourceType="personal_prayer"', 'fullSaveType="prayer"',
   ],
+  'src/screens/PrayerBookScreen.js': [
+    'searchAllPrayers(', 'existingResultKeys', 'setAddedKeys',
+    'onPress={() => onAdd(item)}', 'search_key: result.key',
+  ],
   'src/screens/FavoritesScreen.js': [
     "item.source_type === 'calendar'", "item.source_type === 'personal_prayer'",
     "navigation.push('SaintDetail'", "navigation.push('PrayerBookReader'",
