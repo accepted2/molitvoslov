@@ -736,10 +736,23 @@ const computeFocusHighlightRanges = () => {
       }
       return ranges;
     };
+    // "Прииди" is the repeated invocation in the Akathist to the Holy
+    // Spirit. Treat it like "Радуйся" and "Иисусе" in Ikoses and Kontakion 1,
+    // including Church Slavonic accents and common modern spellings.
+    const collectAkathistLordMyRanges = value => {
+      const source = String(value || '');
+      return collectAkathistWordRanges(source, /Господи[ \t]+мой/giu)
+        .filter(range => {
+          // "Господи мой" in a narrative sentence is not a refrain.
+          const before = source.slice(0, range.start).trimEnd();
+          return !before || /[.!?…;:\n][»”"']?$/u.test(before);
+        });
+    };
     const collectAkathistInvocationRanges = value => [
       ...collectAkathistWordRanges(value,
-        /(?:Радуйтеся|Радуйся|Радꙋйсѧ|Иисусе|Іисусе|И\s+исусе|Исусе|Ісусе)/giu),
+        /(?:Радуйтеся|Радуйся|Радꙋйсѧ|Иисусе|Іисусе|И\s+исусе|Исусе|Ісусе|Прииди|Приди|Прийди)/giu),
       ...collectAkathistDoxologyRanges(value),
+      ...collectAkathistLordMyRanges(value),
     ];
     // Other akathists can have different refrain addresses. Only treat them as
     // standalone responses when they start a clause (start, new line or after
