@@ -463,21 +463,41 @@ export const READER_RUNTIME = String.raw`
         return {
           normalized: chars.join(''), originalIndex, };
       };
-    const collectAkathistJoyBreaks = value => {
-        const {
-          normalized, originalIndex, } = normalizedAkathistTextWithIndex( value );
-        const offsets = new Set();
-        const pattern = /Радуйся/giu;
-        let match = null;
-        while ( ( match = pattern.exec( normalized ) ) ) {
-          const offset = originalIndex[ match.index ];
-          if ( Number.isFinite( offset ) && offset > 0 ) {
-            offsets.add( offset );
-          }
+    const collectAkathistCueRanges = value => {
+      const source = String(value || '');
+      const {normalized, originalIndex} = normalizedAkathistTextWithIndex(source);
+      const ranges = [];
+      // Match complete invocations, including their punctuation, with accents removed for matching.
+      const pattern = /(?:Радуйтеся|Радуйся|Слава[ \\t]+Теб[еѣ])(?:[,;:!?])?/giu;
+      const isLetter = char => /[А-Яа-яЁёІіЇїЄєҐґ\\u0400-\\u052F]/u.test(char);
+      let match = null;
+      while ((match = pattern.exec(normalized))) {
+        const first = match.index;
+        const last = first + match[0].length;
+        const before = normalized.slice(0, first);
+        const linePrefix = before.slice(before.lastIndexOf(String.fromCharCode(10)) + 1);
+        const atLineStart = linePrefix.trim() === '';
+        const afterClause = /[.!?;:,][ \\t]*$/u.test(before);
+        if (
+          isLetter(first > 0 ? normalized[first - 1] : '') ||
+          isLetter(normalized[last] || '') ||
+          (!atLineStart && !afterClause)
+        ) {
+          continue;
         }
-        return offsets;
-      };
-    const collectAkathistInitialRanges = value => {
+        const start = originalIndex[first];
+        const lastOriginal = originalIndex[last - 1];
+        if (!Number.isFinite(start) || !Number.isFinite(lastOriginal)) continue;
+        let end = lastOriginal + 1;
+        while (end < source.length &&
+          /[\\u0300-\\u036f\\u0483-\\u0487]/u.test(source[end])) {
+          end += 1;
+        }
+        ranges.push({start, end});
+      }
+      return ranges;
+    };
+    const collectAkathistInitialRanges = (value, cueRanges) => {
         const source = String( value || '' );
         const ranges = [];
         const addInitialAt = rawStart => {
@@ -500,10 +520,9 @@ export const READER_RUNTIME = String.raw`
               start: letterStart, end: letterEnd, });
           };
         addInitialAt( 0 );
-        collectAkathistJoyBreaks( source ).forEach( offset => {
-            addInitialAt( offset );
-          }
-        );
+        cueRanges.forEach(({start}) => {
+          if (start > 0) addInitialAt(start);
+        });
         return ranges;
       };
 const collectPsalterVerseNumberRanges = value => {
@@ -1198,8 +1217,13 @@ const collectPsalterRubricRanges = value => {
             : null;
         const isAkathist = String( itemConfig ?.className || '' ).includes( 'akathist-' ) || itemConfig
             ?.sourceType === 'akathist';
-        const akathistJoyBreaks = isAkathist ? collectAkathistJoyBreaks( text ) : new Set();
-        const akathistInitialRanges = isAkathist ? collectAkathistInitialRanges( text ) : [];
+        const akathistCueRanges = isAkathist ? collectAkathistCueRanges(text) : [];
+        const akathistCueBreaks = new Set(
+          akathistCueRanges.map(({start}) => start).filter(start => start > 0)
+        );
+        const akathistInitialRanges = isAkathist
+          ? collectAkathistInitialRanges(text, akathistCueRanges)
+          : [];
  const isPsalterPrayer =
   String(itemConfig?.className || '')
     .includes('psalter-prayer');
@@ -1266,10 +1290,10 @@ const psalterRepeatNoteRanges =
         const isPsalterText = String( itemConfig ?.className || '' ) .split(' ') .includes('psalter');
 const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges( text ) : [];
         const boundaries = new Set([ 0, text.length, ]);
-        akathistJoyBreaks.forEach( offset => {
-            boundaries.add( offset );
-          }
-        );
+        akathistCueRanges.forEach(({start, end}) => {
+          boundaries.add(start);
+          boundaries.add(end);
+        });
         akathistInitialRanges.forEach( range => {
             boundaries.add( range.start );
             boundaries.add( range.end );
@@ -1415,6 +1439,11 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
                   range.end );
           if ( isAkathistInitial ) {
             span.classList.add( 'akathist-initial' );
+          }
+          if (isAkathist && akathistCueRanges.some(
+            range => midpoint >= range.start && midpoint < range.end
+          )) {
+            span.classList.add('liturgical-word');
           }
           const isPsalterPrayerAccent =
             isPsalterPrayer &&
@@ -1685,7 +1714,8 @@ if (
 
 if (
   isAkathist &&
-  akathistJoyBreaks.has(end)
+  akathistCueBreaks.has(end) &&
+  !/[\\r\\n][ \\t]*$/u.test(text.slice(0, end))
 ) {
   fragment.appendChild(
     document.createElement('br')
