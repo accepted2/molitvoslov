@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {AppBackground} from '../components/layout/AppBackground';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
@@ -26,6 +26,7 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {colors} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
+import {LocalSearchField, filterByTitle} from '../components/search/LocalSearchField';
 
 export const CanonListScreen = ({navigation}) => {
   const {language, t} = useLanguage();
@@ -34,6 +35,10 @@ export const CanonListScreen = ({navigation}) => {
   const [savedCanons, setSavedCanons] = useState([]);
 
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState(''); // MOLITVOSLOV_CATEGORY_TITLE_SEARCH_V1
+  const visibleRows = useMemo(() => filterByTitle(
+    canons, query, item => getLocalizedField(item, 'title', language)
+  ), [canons, query, language]);
 
   const [error, setError] = useState(null);
 
@@ -168,7 +173,7 @@ export const CanonListScreen = ({navigation}) => {
       <StatusBar style="light" translucent backgroundColor="transparent" />
       <View style={styles.container}>
         <FlatList
-          data={canons}
+          data={visibleRows}
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={[
             styles.listContent,
@@ -177,6 +182,16 @@ export const CanonListScreen = ({navigation}) => {
               paddingBottom: 80 + insets.bottom,
             },
           ]}
+          keyboardShouldPersistTaps="handled"
+          ListHeaderComponent={
+            <View style={styles.localSearch}>
+              <LocalSearchField
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Поиск канона по названию"
+              />
+            </View>
+          }
           renderItem={({item}) => {
             const saved = !!getSavedCanon(item.id);
 
@@ -218,7 +233,7 @@ export const CanonListScreen = ({navigation}) => {
           }}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>{t('menu.canonsEmpty')}</Text>
+              <Text style={styles.emptyText}>{query.trim() ? 'По запросу нет канонов' : t('menu.canonsEmpty')}</Text>
             </View>
           }
         />
@@ -239,6 +254,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
+  localSearch: {paddingHorizontal: 10, paddingBottom: 12},
   listContent: {
     paddingTop: 100,
     paddingBottom: 18,
