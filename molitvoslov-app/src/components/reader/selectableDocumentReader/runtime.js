@@ -698,8 +698,26 @@ const computeFocusHighlightRanges = () => {
       }
       return ranges;
     };
-    const collectAkathistInvocationRanges = value =>
-      collectAkathistWordRanges(value, /(?:Радуйся|Радꙋйсѧ|Иисусе|Іисусе|И\s+исусе|Исусе|Ісусе)/giu);
+    const collectAkathistDoxologyRanges = value => {
+      const source = String(value || '');
+      const {normalized, originalIndex} = normalizedAkathistTextWithIndex(source);
+      const pattern = /(?:^|[.!?…;:\n]\s*)(Слава[ \t]+Теб[еѣ])(?=[\s,;:.!?…]|$)/gimu;
+      const ranges = [];
+      for (const match of normalized.matchAll(pattern)) {
+        const startIndex = match.index + match[0].lastIndexOf(match[1]);
+        const start = originalIndex[startIndex];
+        if (!Number.isFinite(start)) continue;
+        let end = (originalIndex[startIndex + match[1].length - 1] ?? start) + 1;
+        while (end < source.length && /[\u0300-\u036f\u0483-\u0489]/u.test(source[end])) end += 1;
+        ranges.push({start, end});
+      }
+      return ranges;
+    };
+    const collectAkathistInvocationRanges = value => [
+      ...collectAkathistWordRanges(value,
+        /(?:Радуйтеся|Радуйся|Радꙋйсѧ|Иисусе|Іисусе|И\s+исусе|Исусе|Ісусе)/giu),
+      ...collectAkathistDoxologyRanges(value),
+    ];
     // Other akathists can have different refrain addresses. Only treat them as
     // standalone responses when they start a clause (start, new line or after
     // strong punctuation), and only in an Ikos. Never within prayer prose.
