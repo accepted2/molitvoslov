@@ -1,5 +1,6 @@
 import NetInfo from '@react-native-community/netinfo';
 import {applyYearMarkers, applyYearMarkersToMonth, loadYearMarkers} from './calendarYearMarkers';
+import {publishCalendarUpdate} from './calendarEvents';
 
 import {API_BASE_URL} from './backendAuth';
 import {bibleContent} from './bibleContent';
@@ -31,6 +32,14 @@ const fetchCalendarJson = async (path, {signal} = {}) => {
 
 const monthCache = new Map();
 const dayCache = new Map();
+const monthPending = new Map();
+const dayPending = new Map();
+
+export const peekCalendarMonth = (year, month, language = 'ru') =>
+  monthCache.get(`${language === 'uk' ? 'uk' : 'ru'}:${year}-${month}`) || null;
+
+export const peekCalendarDay = (date, language = 'ru') =>
+  dayCache.get(`${language === 'uk' ? 'uk' : 'ru'}:${date}`) || null;
 
 const pad = (value) => String(value).padStart(2, '0');
 
@@ -122,6 +131,7 @@ export const getCalendarDay = async (
     const enriched = applyYearMarkers(data, await loadYearMarkers(Number(dateKey.slice(0, 4))));
     dayCache.set(key, enriched);
     await storeCalendarDay(dateKey, lang, enriched);
+    publishCalendarUpdate({kind: 'day', date: dateKey, language: lang});
 
     return enriched;
   } catch (error) {
@@ -186,6 +196,7 @@ export const getCalendarMonth = async (
         dayCache.set(`${lang}:${day.date_gregorian}`, day);
       }
     });
+    publishCalendarUpdate({kind: 'month', year, month, language: lang});
 
     return enriched;
   } catch (error) {

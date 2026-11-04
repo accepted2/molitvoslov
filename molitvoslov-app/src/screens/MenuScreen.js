@@ -44,7 +44,8 @@ import {useLanguage} from '../context/LanguageContext';
 import {LANGUAGE_OPTIONS, getCalendarDataLanguage} from '../services/languagePreferences';
 import {getLocalizedField} from '../services/localizedContent';
 import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
-import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
+import {getOfflineCalendarDay, getOfflineCalendarMonth} from '../services/calendarOfflineStore';
+import {subscribeCalendarUpdates} from '../services/calendarEvents';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {subscribeToContentUpdates} from '../services/contentStore';
 import {colors, spacing} from '../theme';
@@ -506,22 +507,40 @@ export const MenuScreen = ({navigation}) => {
     const year = calendarVisibleMonth.getFullYear();
     const month = calendarVisibleMonth.getMonth() + 1;
     const language = getCalendarDataLanguage(calendarLanguage);
+
+    // Show cached or bundled fasting markers immediately; network never gates the grid.
+    const showOffline = async () => {
+      const cached = await getOfflineCalendarMonth(year, month, language);
+      if (active && cached) setCalendarMonthDays(cached.days || []);
+    };
+    showOffline().catch((error) =>
+      console.log('Локальный мини-календарь:', error?.message || error)
+    );
+
+    const unsubscribe = subscribeCalendarUpdates((change) => {
+      if (!active || (change.language && change.language !== language)) return;
+      if (change.kind === 'month' && (change.year !== year || change.month !== month)) return;
+      if (change.kind === 'day' && !change.date?.startsWith(
+        `${year}-${String(month).padStart(2, '0')}-`
+      )) return;
+      if (change.kind === 'markers' && change.year !== year) return;
+      showOffline();
+    });
+
     getCalendarMonth(year, month, {
       language,
       force: true,
       skipOffline: true,
       signal: controller.signal,
-    })
-      .then((data) => {
-        if (active) setCalendarMonthDays(data?.days || []);
-      })
-      .catch((error) => {
-        if (active && error?.name !== 'AbortError') {
-          console.log('Фоновое обновление мини-календаря:', error?.message || error);
-        }
-      });
+    }).catch((error) => {
+      if (active && error?.name !== 'AbortError') {
+        console.log('Фоновое обновление мини-календаря:', error?.message || error);
+      }
+    });
+
     return () => {
       active = false;
+      unsubscribe();
       controller.abort();
     };
   }, [calendarVisibleMonth, calendarLanguage]);
@@ -593,14 +612,43 @@ export const MenuScreen = ({navigation}) => {
     }, [loadProgress, dailyQuote?.id, updateQuoteWidget, calendarLanguage])
   );
 
+  useEffect(() => subscribeCalendarUpdates((change) => {
+    const language = getCalendarDataLanguage(calendarLanguage);
+    if (change.language && change.language !== language) return;
+    if (change.kind === 'day' && change.date === toCalendarDate(calendarSelectedDate)) {
+      getOfflineCalendarDay(change.date, language).then((day) => {
+        if (day) setCalendarToday(day);
+      }).catch(() => {});
+    }
+    if (change.kind === 'month' &&
+      change.year === calendarSelectedDate.getFullYear() &&
+      change.month === calendarSelectedDate.getMonth() + 1) {
+      getOfflineCalendarDay(toCalendarDate(calendarSelectedDate), language)
+        .then((day) => { if (day) setCalendarToday(day); }).catch(() => {});
+    }
+    if (change.kind === 'markers' && change.year === calendarSelectedDate.getFullYear()) {
+      getOfflineCalendarDay(toCalendarDate(calendarSelectedDate), language)
+        .then((day) => { if (day) setCalendarToday(day); }).catch(() => {});
+    }
+  }), [calendarLanguage, calendarSelectedDate]);
+
   const updateCalendarWidget = useCallback(
     async (day = calendarToday, language = calendarLanguage) => {
       try {
+        const today = new Date();
+        const todayKey = toCalendarDate(today);
+        const widgetDay = day?.date_gregorian === todayKey
+          ? day
+          : await getOfflineCalendarDay(todayKey, getCalendarDataLanguage(language));
+        const month = await getOfflineCalendarMonth(
+          today.getFullYear(), today.getMonth() + 1, getCalendarDataLanguage(language)
+        );
         await requestWidgetUpdate({
           widgetName: 'ChurchCalendar',
           renderWidget: (widgetInfo) => (
             <ChurchCalendarWidget
-              day={day}
+              monthDays={month?.days || []}
+              day={widgetDay || day}
               language={language}
               width={widgetInfo.width}
               height={widgetInfo.height}

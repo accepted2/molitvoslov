@@ -2,7 +2,7 @@ import React from 'react';
 
 import {getDailyQuote} from '../services/dailyQuote';
 import {getCalendarDay} from '../services/churchCalendar';
-import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
+import {getOfflineCalendarDay, getOfflineCalendarMonth} from '../services/calendarOfflineStore';
 import {getCalendarLanguage} from '../services/calendarPreferences';
 import {QuoteOfDayWidget} from './QuoteOfDayWidget';
 import {ChurchCalendarWidget} from './ChurchCalendarWidget';
@@ -117,8 +117,13 @@ export const widgetTaskHandler = async (props) => {
     console.log('Ошибка локальных данных виджета календаря:', error?.message || error);
   }
 
+  const displayMonth = await getOfflineCalendarMonth(
+    finalDisplayDate.getFullYear(), finalDisplayDate.getMonth() + 1, language
+  ).catch(() => null);
+
   renderWidget(
     <ChurchCalendarWidget
+      monthDays={displayMonth?.days || []}
       day={localDay}
       language={language}
       width={widgetInfo.width}
@@ -148,6 +153,7 @@ export const widgetTaskHandler = async (props) => {
     if (freshDay) {
       renderWidget(
         <ChurchCalendarWidget
+          monthDays={displayMonth?.days || []}
           day={freshDay}
           language={language}
           width={widgetInfo.width}
