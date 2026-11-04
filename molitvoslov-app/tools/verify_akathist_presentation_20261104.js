@@ -63,6 +63,24 @@ assert.deepEqual(Array.from(inv(spacedOld), range => spacedOld.slice(range.start
 const response = 'Поем Тебе Аллилуиа! И паки: Аллилуия.';
 assert.deepEqual(Array.from(alleluia(response), range => response.slice(range.start,range.end)), ['Аллилуиа!','Аллилуия.']);
 assert.equal(inv('НеРадуйся').length, 0, 'Never decorate inside another word');
+
+// Some Azbyka texts contain a LATIN accented vowel inside a Cyrillic refrain.
+// Match/color/break those words without altering the original characters.
+const mixedScript = 'Рáдуйся, Матерь; рáдуйся, врата; Ра́дуйся, Жизнь; ра́дуйся, отрада.';
+const mixedMatches = Array.from(inv(mixedScript), range => mixedScript.slice(range.start, range.end));
+assert.deepEqual(mixedMatches, ['Рáдуйся', 'рáдуйся', 'Ра́дуйся', 'ра́дуйся']);
+assert.deepEqual([...breaks(mixedScript)], [
+  mixedScript.indexOf('рáдуйся'),
+  mixedScript.indexOf('Ра́дуйся'),
+  mixedScript.lastIndexOf('ра́дуйся'),
+], 'Every mixed-script invocation starts a new line');
+assert.deepEqual(
+  Array.from(inv('Радуйcя, Дево'), range => 'Радуйcя, Дево'.slice(range.start, range.end)),
+  ['Радуйcя'], 'Latin lookalike c inside a Cyrillic word is recognized',
+);
+assert.equal(inv('НеРáдуйся').length, 0, 'Do not style a substring of another word');
+assert.equal(inv('Cacao, радуйся').length, 1, 'Standalone Latin words are not rewritten');
+console.log('PASS: Cyrillic and Latin-accented Радуйся recognized with original offsets');
 assert.match(runtime, /akathistAlleluiaWrapper = el\('span', 'akathist-alleluia'\)/);
 assert.match(runtime, /akathistJoyBreaks\.has\(end\)/);
 console.log('PASS: full Raduisya/Iisuse colored with new lines; Alleluia stays one wrapping unit');
