@@ -176,21 +176,32 @@ export const AkathistScreen = ({route, navigation}) => {
   };
 
   const hasRussianTranslation = useMemo(() => {
-    if (!akathist) {
-      return false;
+    if (!akathist) return false;
+
+    // A single Russian fragment is NOT a translation of the entire Akathist.
+    // Legacy Azbyka parsing could mislabel a CS refrain as the Russian
+    // translation for just one section.
+    const main = new Map();
+    const prayers = [];
+    for (const section of akathist.sections || []) {
+      if (section.section_type === 'kontakion' || section.section_type === 'ikos') {
+        main.set(section.section_type + ':' + section.number, section);
+      } else if (section.section_type === 'prayer') {
+        prayers.push(section);
+      }
     }
-
-    const specialTexts = [
-      akathist.troparion,
-      akathist.kontakion_before,
-      akathist.common_rule?.opening,
-      akathist.common_rule?.ending,
-    ];
-
-    return (
-      specialTexts.some((item) => !!item?.translation?.trim()) ||
-      (akathist.sections || []).some((section) => !!section.text?.translation?.trim())
+    if (main.size !== 25) return false;
+    const completeMain = [...main.values()].every(
+      section => !!section.text?.translation?.trim()
     );
+    const completePrayers = prayers.every(
+      section => !section.text?.content?.trim() || !!section.text?.translation?.trim()
+    );
+    const specialTexts = [akathist.troparion, akathist.kontakion_before];
+    const completeSpecials = specialTexts.every(
+      item => !item?.content?.trim() || !!item?.translation?.trim()
+    );
+    return completeMain && completePrayers && completeSpecials;
   }, [akathist]);
 
   const hasUkrainianTranslation = useMemo(() => {
@@ -342,14 +353,15 @@ export const AkathistScreen = ({route, navigation}) => {
 
     const showChurch = viewMode === MODE_CHURCH || viewMode === MODE_BOTH;
 
-    const showRussian = viewMode === MODE_RUSSIAN || viewMode === MODE_BOTH;
+    const showRussian = hasRussianTranslation &&
+      (viewMode === MODE_RUSSIAN || viewMode === MODE_BOTH);
 
     const showUkrainian = viewMode === MODE_UKRAINIAN;
 
     const showTraditional = viewMode === MODE_TRADITIONAL;
 
     const missingLanguage =
-      ((viewMode === MODE_RUSSIAN || viewMode === MODE_BOTH) && !hasRussianTranslation)
+      (viewMode === MODE_RUSSIAN && !hasRussianTranslation)
         ? 'russian'
         : viewMode === MODE_TRADITIONAL && !hasTraditionalTranslation
           ? 'traditional'
@@ -631,11 +643,10 @@ export const AkathistScreen = ({route, navigation}) => {
 
         title: heading,
 
-        rows: blocks.map((block) => ({
-          layout: 'stack',
-
-          blocks: [block],
-        })),
+        rows: [{
+          layout: blocks.length > 1 ? 'parallel' : 'stack',
+          blocks,
+        }],
       });
     };
 
@@ -763,15 +774,34 @@ export const AkathistScreen = ({route, navigation}) => {
 
         note: getLocalizedField(section, 'note', language),
 
-        rows: blocks.map((block) => ({
-          layout: 'stack',
-
-          blocks: [block],
-        })),
+        rows: [{
+          layout: blocks.length > 1 ? 'parallel' : 'stack',
+          blocks,
+        }],
       });
     });
 
     addSpecial(akathist.common_rule?.ending, 'Окончание чтения акафиста', 'ending');
+
+    // In CS+RU mode a partial translation is not silently presented as
+    // complete. Show the CS text, and explicitly explain why no RU column
+    // is present for an unverified Akathist.
+    if (viewMode === MODE_BOTH && !hasRussianTranslation) {
+      sections.unshift({
+        progressAnchorId: 0,
+        trackProgress: false,
+        title: '',
+        rows: [{
+          layout: 'stack',
+          blocks: [{
+            id: nextBlockId++,
+            text: 'Полный русский перевод этого акафиста отсутствует или ещё не проверен. Ниже показан церковнославянский текст.',
+            className: 'akathist-russian',
+            metadata: {language: 'russian'},
+          }],
+        }],
+      });
+    }
 
     // Keep all reading tabs visible, even when a translation is not provided.
     // Never substitute the church text for a missing translation.
@@ -787,7 +817,7 @@ export const AkathistScreen = ({route, navigation}) => {
             id: nextBlockId++,
             text: missingLanguage === 'traditional'
               ? 'Те́кстъ въ традиціо́нномъ начерта́ніи отсꙋ́тствꙋетъ.'
-              : 'Перевод пока отсутствует.',
+              : 'Полный русский перевод этого акафиста отсутствует или ещё не проверен.',
             className: missingLanguage === 'traditional' ? 'akathist-church' : 'akathist-russian',
             metadata: {language: missingLanguage},
           }],
