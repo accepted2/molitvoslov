@@ -677,49 +677,47 @@ const computeFocusHighlightRanges = () => {
   });
    console.error('[runtime] highlighted items =', hits);
 };
-    const collectAkathistJoyBreaks = value => {
-        const {
-          normalized, originalIndex, } = normalizedAkathistTextWithIndex( value );
-        const offsets = new Set();
-        const pattern = /Радуйся/giu;
-        let match = null;
-        while ( ( match = pattern.exec( normalized ) ) ) {
-          const offset = originalIndex[ match.index ];
-          if ( Number.isFinite( offset ) && offset > 0 ) {
-            offsets.add( offset );
-          }
+    // Presentation-only spans keep all selection and progress offsets intact.
+    const collectAkathistWordRanges = (value, pattern, includePunctuation = false) => {
+      const source = String(value || '');
+      const {normalized, originalIndex} = normalizedAkathistTextWithIndex(source);
+      const ranges = [];
+      let match;
+      while ((match = pattern.exec(normalized)) !== null) {
+        const before = normalized[match.index - 1] || '';
+        const after = normalized[match.index + match[0].length] || '';
+        if (/\p{L}/u.test(before) || /\p{L}/u.test(after)) continue;
+        const start = originalIndex[match.index];
+        if (!Number.isFinite(start)) continue;
+        let end = (originalIndex[match.index + match[0].length - 1] ?? start) + 1;
+        while (end < source.length && /[\u0300-\u036f\u0483-\u0489]/u.test(source[end])) end += 1;
+        if (includePunctuation) {
+          while (end < source.length && /[.!?…,:;]/u.test(source[end])) end += 1;
         }
-        return offsets;
-      };
+        ranges.push({start, end});
+      }
+      return ranges;
+    };
+    const collectAkathistInvocationRanges = value =>
+      collectAkathistWordRanges(value, /(?:Радуйся|Иисусе|Іисусе|Исусе|Ісусе)/giu);
+    const collectAkathistAlleluiaRanges = value =>
+      collectAkathistWordRanges(value, /(?:Аллилуиа|Аллилуия|Алилуиа|Алілуя|Аллілуя)/giu, true);
+    const collectAkathistJoyBreaks = value =>
+      new Set(collectAkathistInvocationRanges(value).map(range => range.start).filter(at => at > 0));
     const collectAkathistInitialRanges = value => {
-        const source = String( value || '' );
-        const ranges = [];
-        const addInitialAt = rawStart => {
-            let start = Math.max( 0, rawStart );
-            while ( start < source.length && /\s/u.test( source[start] ) ) {
-              start += 1;
-            }
-            const tail = source.slice( start );
-            const match = tail.match( /[А-Яа-яЁёІіЇїЄєҐґ\u0400-\u052F]/u );
-            if (!match) {
-              return;
-            }
-            const letterStart = start + match.index;
-            let letterEnd = letterStart + 1;
-            while ( letterEnd < source.length && /[\u0300-\u036f\u0483-\u0487]/u.test( source[ letterEnd ] )
-            ) {
-              letterEnd += 1;
-            }
-            ranges.push({
-              start: letterStart, end: letterEnd, });
-          };
-        addInitialAt( 0 );
-        collectAkathistJoyBreaks( source ).forEach( offset => {
-            addInitialAt( offset );
-          }
-        );
-        return ranges;
-      };
+      const source = String(value || '');
+      const invocationRanges = collectAkathistInvocationRanges(source);
+      const ranges = [...invocationRanges];
+      // Preserve the existing red first letter of ordinary paragraphs.
+      const opening = source.match(/^\s*([\p{L}][\u0300-\u036f\u0483-\u0489]*)/u);
+      if (opening) {
+        const start = opening.index + opening[0].indexOf(opening[1]);
+        if (!invocationRanges.some(range => range.start === start)) {
+          ranges.push({start, end: start + opening[1].length});
+        }
+      }
+      return ranges;
+    };
 const collectPsalterVerseNumberRanges = value => {
   const source = String(value || '');
   const ranges = [];
@@ -1426,6 +1424,7 @@ const collectPsalterRubricRanges = value => {
             ?.sourceType === 'akathist';
         const akathistJoyBreaks = isAkathist ? collectAkathistJoyBreaks( text ) : new Set();
         const akathistInitialRanges = isAkathist ? collectAkathistInitialRanges( text ) : [];
+        const akathistAlleluiaRanges = isAkathist ? collectAkathistAlleluiaRanges( text ) : [];
  const isPsalterPrayer =
   String(itemConfig?.className || '')
     .includes('psalter-prayer');
@@ -2237,7 +2236,11 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         akathistInitialRanges.forEach( range => {
             boundaries.add( range.start );
             boundaries.add( range.end );
-          })
+          });
+        akathistAlleluiaRanges.forEach(range => {
+          boundaries.add(range.start);
+          boundaries.add(range.end);
+        })
           civilAfterTrisagionStarts.forEach(at => boundaries.add(at));
         civilAfterTroparDividers.forEach(at => boundaries.add(at));
         civilAfterPrayerInitials.forEach(range => { boundaries.add(range.start); boundaries.add(range.end); });
@@ -2363,6 +2366,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         let civilAfterMercyWrapper = null;
         let civilAfterTroparToneWrapper = null;
         let parallelAfterRepeatWrapper = null;
+        let akathistAlleluiaWrapper = null;
         for ( let index = 0;
           index < points.length - 1;
           index += 1 ) {
@@ -2547,6 +2551,9 @@ if (isSearchHit) {
                   range.end );
           if ( isAkathistInitial ) {
             span.classList.add( 'akathist-initial' );
+          }
+          if (isAkathist && akathistAlleluiaRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
+            span.classList.add('akathist-alleluia-word');
           }
           if (isStandaloneCivilBeforePsalter &&
               civilBeforeMercyRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
@@ -2954,7 +2961,18 @@ if (isStandaloneTraditionalPsalterPrayer &&
         civilAfterMercyWrapper.appendChild(span);
       } else {
         civilAfterMercyWrapper = null;
-        fragment.appendChild(span);
+        // A whole Alleluia and its punctuation may wrap only as one unit.
+        const withinAlleluia = isAkathist && akathistAlleluiaRanges.some(range => start >= range.start && end <= range.end);
+        if (withinAlleluia) {
+          if (!akathistAlleluiaWrapper) {
+            akathistAlleluiaWrapper = el('span', 'akathist-alleluia');
+            fragment.appendChild(akathistAlleluiaWrapper);
+          }
+          akathistAlleluiaWrapper.appendChild(span);
+        } else {
+          akathistAlleluiaWrapper = null;
+          fragment.appendChild(span);
+        }
       }
     }
   }
