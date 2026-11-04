@@ -63,9 +63,10 @@ class AdditiveAkathistsTest(unittest.TestCase):
         self.report = self.dir / "report.json"
         self.backups = self.dir / "backups"
         self.approved = self.dir / "approved.json"
-        self.existing = payload([akathist("akafist-old", 12)])
-        self.latest = payload([akathist("akafist-old", 12), akathist("akafist-new", 12)])
-        # IDs collide on purpose. The merge must preserve the old item's IDs.
+        self.existing = payload([akathist("akafist-old", 13)])
+        self.latest = payload([akathist("akafist-old", 1000), akathist("akafist-new", 13)])
+        # New Django IDs collide with the local offline copy, not with each
+        # other in the staged Django export. Existing IDs must remain stable.
         self.old.write_text(json.dumps(self.existing, ensure_ascii=False), encoding="utf-8")
         self.staged.write_text(json.dumps(self.latest, ensure_ascii=False), encoding="utf-8")
         self.report.write_text(json.dumps({
