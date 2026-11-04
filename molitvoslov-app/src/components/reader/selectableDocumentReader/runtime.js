@@ -699,7 +699,7 @@ const computeFocusHighlightRanges = () => {
       return ranges;
     };
     const collectAkathistInvocationRanges = value =>
-      collectAkathistWordRanges(value, /(?:Радуйся|Иисусе|Іисусе|Исусе|Ісусе)/giu);
+      collectAkathistWordRanges(value, /(?:Радуйся|Радꙋйсѧ|Иисусе|Іисусе|И\s+исусе|Исусе|Ісусе)/giu);
     // Other akathists can have different refrain addresses. Only treat them as
     // standalone responses when they start a clause (start, new line or after
     // strong punctuation), and only in an Ikos. Never within prayer prose.
