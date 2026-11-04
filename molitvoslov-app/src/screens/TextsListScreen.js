@@ -1,6 +1,7 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator} from 'react-native';
 import {contentApi as api} from '../services/contentApi';
+import {LocalSearchField, filterByTitle} from '../components/search/LocalSearchField';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
@@ -19,8 +20,16 @@ export const TextsListScreen = ({route, navigation}) => {
   React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
   const [texts, setTexts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  // MOLITVOSLOV_LOCAL_CATEGORY_SEARCH_V1: title-only search in the current category.
+  const visibleTexts = useMemo(() => filterByTitle(
+    texts, query,
+    item => getLocalizedTextTitle(item.text, language) ||
+      getLocalizedTextDescription(item.text, language) || t('common.prayer')
+  ), [texts, query, language, t]);
 
   useEffect(() => {
+    setQuery('');
     loadTexts();
   }, [categorySlug]);
 
@@ -56,12 +65,24 @@ export const TextsListScreen = ({route, navigation}) => {
       <StatusBar style="light" translucent backgroundColor="transparent" />
 
       <FlatList
-        data={texts}
+        data={visibleTexts}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={{
           paddingTop: headerHeight + 18,
           paddingBottom: 24 + insets.bottom,
         }}
+        keyboardShouldPersistTaps="handled"
+        ListHeaderComponent={
+          <View style={styles.searchArea}>
+            <LocalSearchField value={query} onChangeText={setQuery}
+              placeholder="Поиск по названию" />
+          </View>
+        }
+        ListEmptyComponent={
+          <Text style={styles.emptySearch}>
+            {query.trim() ? 'В этой категории ничего не найдено' : 'В категории пока нет текстов'}
+          </Text>
+        }
         renderItem={({item, index}) => (
           <TouchableOpacity style={styles.item} onPress={() => handlePress(item.text.slug)}>
             {/*<Text style={styles.order}>{index + 1}.</Text>*/}
@@ -100,6 +121,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFF4DE',
   },
+  searchArea: {paddingHorizontal: 10, paddingBottom: 10},
+  emptySearch: {padding: 24, textAlign: 'center', color: '#765238'},
   item: {
     flexDirection: 'row',
     alignItems: 'center',
