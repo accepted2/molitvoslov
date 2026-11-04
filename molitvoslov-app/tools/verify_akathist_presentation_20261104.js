@@ -81,6 +81,45 @@ assert.deepEqual(
 assert.equal(inv('НеРáдуйся').length, 0, 'Do not style a substring of another word');
 assert.equal(inv('Cacao, радуйся').length, 1, 'Standalone Latin words are not rewritten');
 console.log('PASS: Cyrillic and Latin-accented Радуйся recognized with original offsets');
+
+// A narrative quotation in an Ikos is not a list refrain. Keep the
+// archangel's greeting inline, without the red word and forced line break.
+const quotedGreeting =
+  'Архангельский глас вопием Ти, Чистая: «Рáдуйся, Благодатная, Господь с Тобою!» ' +
+  'И в сретение Тебе взываем: радуйся, Мати Слова; ра́дуйся, Троицы обитель.';
+const quotedWordStart = quotedGreeting.indexOf('Рáдуйся');
+const visibleRefrains = initials(quotedGreeting, true, true);
+assert.deepEqual(
+  Array.from(visibleRefrains, range => quotedGreeting.slice(range.start, range.end)),
+  ['радуйся', 'ра́дуйся', 'А'],
+);
+assert.equal(
+  visibleRefrains.some(range => range.start <= quotedWordStart && range.end > quotedWordStart),
+  false,
+  'Quoted Радуйся must be plain inline prose',
+);
+assert.deepEqual([...breaks(quotedGreeting, true)], [
+  quotedGreeting.indexOf('радуйся'),
+  quotedGreeting.lastIndexOf('ра́дуйся'),
+], 'No forced line break inside the quoted angelic greeting');
+const nestedQuote =
+  'Слышали: «Слова его: „Радуйся, Благодатная!“» Радуйся, Дево.';
+assert.deepEqual(
+  Array.from(initials(nestedQuote, true, true), range =>
+    nestedQuote.slice(range.start, range.end)),
+  ['Радуйся', 'С'],
+  'Both nested quotation levels must be ignored as refrains',
+);
+assert.deepEqual([...breaks(nestedQuote, true)], [nestedQuote.lastIndexOf('Радуйся')]);
+const quotedJesus = 'Слышали: “Иисусе, помоги!” Иисусе, помилуй.';
+assert.deepEqual(
+  Array.from(initials(quotedJesus, true, true), range =>
+    quotedJesus.slice(range.start, range.end)),
+  ['Иисусе', 'С'],
+  'The same quotation rule applies to Иисусе',
+);
+console.log('PASS: prose quotations remain inline; true Ikos responses stay red and start new lines');
+
 assert.match(runtime, /akathistAlleluiaWrapper = el\('span', 'akathist-alleluia'\)/);
 assert.match(runtime, /akathistJoyBreaks\.has\(end\)/);
 console.log('PASS: full Raduisya/Iisuse colored with new lines; Alleluia stays one wrapping unit');
