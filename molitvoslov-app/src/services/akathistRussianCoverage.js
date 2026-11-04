@@ -1,6 +1,9 @@
 // Completeness is a structural check only, not certification that the
 // Russian language itself was translated or proofread.
 export const getAkathistRussianCoverage = akathist => {
+  // Imported translations explicitly marked as unreviewed must NEVER be
+  // treated as certified, even when all 25 fields happen to be populated.
+  const awaitingReview = akathist?.translation_review_status === 'unverified';
   const expected = [
     ...Array.from({length: 13}, (_, index) => 'kontakion:' + (index + 1)),
     ...Array.from({length: 12}, (_, index) => 'ikos:' + (index + 1)),
@@ -28,7 +31,7 @@ export const getAkathistRussianCoverage = akathist => {
     .filter(([, item]) => item?.content?.trim() && !item?.translation?.trim())
     .map(([name]) => name);
   return {
-    complete: Boolean(akathist) && missingMain.length === 0 &&
+    complete: Boolean(akathist) && !awaitingReview && missingMain.length === 0 &&
       missingPrayers.length === 0 && missingSpecial.length === 0,
     totalMain: expected.length,
     translatedMain: expected.length - missingMain.length,
