@@ -134,3 +134,83 @@ class AzbykaPipelineTests(SimpleTestCase):
         sections = parser.parse_heading_format(root)
         self.assertEqual(sections[0]["content"], "Оригинальный церковнославянский текст")
         self.assertEqual(sections[1]["content"], "Текст икоса")
+
+    def test_two_untagged_paragraphs_are_one_church_slavonic_hymn(self):
+        parser = AkathistParser()
+        opening = (
+            "Возбранный Воеводо и Господи, радосте и веселие рабом Твоим, "
+            "идеже Ты, тамо потребляется всякая печаль, зовуща:"
+        )
+        refrain = (
+            "Господи мой, Господи, Радосте моя, даруй ми, "
+            "да возрадуюся о милости Твоей."
+        )
+        content, translation = parser.parse_element_group(
+            [
+                {"text": opening, "classes": set()},
+                {"text": refrain, "classes": set()},
+            ], section_type="kontakion",
+        )
+        self.assertEqual(content, opening + "\\n\\n" + refrain)
+        self.assertEqual(translation, "")
+
+    def test_glory_to_thee_refrain_is_not_a_translation(self):
+        parser = AkathistParser()
+        first = "Избранному прежде век соделать спасение мира, воспеваем Тебе, взывающе:"
+        refrain = "Слава Тебе, Господи, слава Тебе."
+        content, translation = parser.parse_element_group(
+            [
+                {"text": first, "classes": set()},
+                {"text": refrain, "classes": set()},
+            ], section_type="kontakion",
+        )
+        self.assertTrue(content.endswith(refrain))
+        self.assertEqual(translation, "")
+
+    def test_multiple_untagged_ikos_paragraphs_remain_in_order(self):
+        parser = AkathistParser()
+        lines = [
+            "Глас вознесем:",
+            "Радуйся, Чистая.",
+            "Радуйся, Владычице.",
+            "Радуйся, Мати Божия.",
+        ]
+        content, translation = parser.parse_element_group(
+            [{"text": line, "classes": set()} for line in lines],
+            section_type="ikos",
+        )
+        self.assertEqual(content, "\\n\\n".join(lines))
+        self.assertEqual(translation, "")
+
+    def test_explicit_russian_translation_is_kept_separately(self):
+        parser = AkathistParser()
+        content, translation = parser.parse_element_group(
+            [
+                {"text": "Слава Тебе, Господи.", "classes": {"paint"}},
+                {"text": "Слава Тебе, Господи.", "classes": {"translate"}},
+            ], section_type="kontakion",
+        )
+        self.assertEqual(content, "Слава Тебе, Господи.")
+        self.assertEqual(translation, "Слава Тебе, Господи.")
+
+    def test_unknown_paragraph_not_discarded_between_tagged_paragraphs(self):
+        parser = AkathistParser()
+        content, translation = parser.parse_element_group(
+            [
+                {"text": "Первый абзац", "classes": {"church"}},
+                {"text": "Важная строка", "classes": set()},
+                {"text": "Русский перевод", "classes": {"translate"}},
+            ], section_type="ikos",
+        )
+        self.assertEqual(content, "Первый абзац\\n\\nВажная строка")
+        self.assertEqual(translation, "Русский перевод")
+
+    def test_language_class_is_inherited_from_nearest_parent(self):
+        parser = AkathistParser()
+        soup = BeautifulSoup(
+            '<div class="paint"><p>Церковнославянский</p></div>'
+            '<div class="translate"><p>Русский</p></div>', "html.parser",
+        )
+        nodes = soup.find_all("p")
+        self.assertEqual(parser.inherited_language_classes(nodes[0]), {"paint"})
+        self.assertEqual(parser.inherited_language_classes(nodes[1]), {"translate"})
