@@ -219,9 +219,13 @@ class Command(BaseCommand):
 
         for url, item in fresh.items():
             status = item["status"]
-            if status == "existing" or (status == "checked" and not options["refresh_checked"]):
+            if status == "existing":
                 continue
-            if status not in ("pending", "error") or (status == "error" and not options["retry_failed"]):
+            if status == "checked" and not options["refresh_checked"]:
+                continue
+            if status == "error" and not options["retry_failed"]:
+                continue
+            if status not in ("pending", "error", "checked"):
                 continue
             if limit and processed >= limit:
                 break
