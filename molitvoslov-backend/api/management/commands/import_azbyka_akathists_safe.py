@@ -166,8 +166,11 @@ class Command(BaseCommand):
         robots.set_url(ROBOTS_URL)
         try:
             response = session.get(ROBOTS_URL, timeout=25)
-            response.raise_for_status()
-            robots.parse(response.text.splitlines())
+            if response.status_code == 404:
+                robots.parse([])
+            else:
+                response.raise_for_status()
+                robots.parse(response.text.splitlines())
         except requests.RequestException as exc:
             raise CommandError("Не удалось проверить robots.txt, импорт остановлен: " + str(exc)) from exc
         if not robots.can_fetch(USER_AGENT, CATALOG_URL):
