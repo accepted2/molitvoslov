@@ -28,9 +28,10 @@ $sourceTests = Join-Path $repoRoot 'molitvoslov-backend\api\test_azbyka_akathist
 $targetTests = Join-Path $backend 'api\test_azbyka_akathist_pipeline.py'
 $helper = Join-Path $PSScriptRoot 'azbyka_akathist_batch.py'
 $helperTests = Join-Path $PSScriptRoot 'test_azbyka_akathist_batch.py'
+$qaHelper = Join-Path $PSScriptRoot 'qa_azbyka_akathists.py'
 $offline = (Resolve-Path (Join-Path $PSScriptRoot '..\src\data\offlineContent.json') -ErrorAction Stop).Path
 
-foreach ($file in @($python, $dbPath, $commandsFromRepo, $commandsInBackend, $sourceTests, $helper, $helperTests)) {
+foreach ($file in @($python, $dbPath, $commandsFromRepo, $commandsInBackend, $sourceTests, $helper, $helperTests, $qaHelper)) {
     if (-not (Test-Path $file)) { throw "Required file or folder missing: $file" }
 }
 $workDir = Join-Path $backend 'files\akathists'
@@ -39,6 +40,7 @@ $auditPath = Join-Path $workDir 'azbyka_audit.json'
 $approved = Join-Path $workDir 'azbyka_checked_approved.json'
 $importReport = Join-Path $workDir 'azbyka_import_report.json'
 $staged = Join-Path $workDir 'azbyka_export_staged.json'
+$qaReport = Join-Path $workDir 'azbyka_batch_qa.json'
 $backups = Join-Path $workDir 'backups'
 $files = @(
     'import_akathist.py',
@@ -88,7 +90,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Cannot build a verified-only manifest.' }
 Push-Location $backend
 try {
     Write-Host '[2/5] Check Django and parser tests'
-    & $python -X utf8 -m py_compile (Join-Path $commandsInBackend $files[0]) (Join-Path $commandsInBackend $files[1]) (Join-Path $commandsInBackend $files[2]) $targetTests $helper
+    & $python -X utf8 -m py_compile (Join-Path $commandsInBackend $files[0]) (Join-Path $commandsInBackend $files[1]) (Join-Path $commandsInBackend $files[2]) $targetTests $helper $helperTests $qaHelper
     if ($LASTEXITCODE -ne 0) { throw 'Python compilation failed.' }
     & $python -X utf8 $helperTests
     if ($LASTEXITCODE -ne 0) { throw 'Offline merge regression tests failed.' }
@@ -125,12 +127,15 @@ try {
     if ($LASTEXITCODE -ne 0) {
         throw 'Export to staging failed. The existing offline JSON has not been touched.'
     }
+    & $python -X utf8 $qaHelper --staged $staged --report $importReport --output $qaReport
+    if ($LASTEXITCODE -ne 0) { throw 'QA found critical problems. The existing offline JSON has not been touched.' }
     & $python -X utf8 $helper merge --existing $offline --staged $staged --report $importReport --backup-dir $backups
     if ($LASTEXITCODE -ne 0) { throw 'Offline merge preview failed: JSON has not been touched.' }
     & $python -X utf8 $helper merge --existing $offline --staged $staged --report $importReport --backup-dir $backups --apply
     if ($LASTEXITCODE -ne 0) { throw 'Offline merge failed. Check the saved backup.' }
 
     Write-Host 'Import and additive offline merge completed. Restart Expo with --dev-client --clear.'
+    Write-Host "QA report: $qaReport"
     Write-Host 'This does NOT automatically update global full-text search or release an APK.'
 }
 finally {
