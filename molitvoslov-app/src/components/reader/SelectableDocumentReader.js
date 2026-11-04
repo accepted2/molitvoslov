@@ -13,7 +13,7 @@ import {getCachedPonomarFontDataUri, loadPonomarFontDataUri} from '../../service
 
 import {buildHtml, scriptSafeJson} from './selectableDocumentReader/buildHtml';
 import {getReadingSettings, DEFAULT_READING_SETTINGS} from '../../services/readerPreferences';
-import {applyReaderAppearance} from '../../services/scopedReaderAppearance';
+import {applyReaderAppearance, resolveReaderAppearance, withOpacity} from '../../services/scopedReaderAppearance';
 
 const PALETTE_COLORS = {
   parchment: {background: '#FFF4DE', surface: '#F8E9CF', text: '#3E2A1D'},
@@ -39,11 +39,14 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     onPageTurn,
     onReady,
     onReadingScroll,
+    onNativeReadingScroll,
   },
   ref
 ) {
   const insets = useSafeAreaInsets();
   const [readingSettings, setReadingSettings] = useState(DEFAULT_READING_SETTINGS);
+  // Native chrome must follow the scoped color choice without rebuilding HTML.
+  const [chromeBackground, setChromeBackground] = useState(null);
   useEffect(() => {
     let active = true;
     getReadingSettings().then((settings) => { if (active) setReadingSettings(settings); }).catch(console.warn);
@@ -178,6 +181,8 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
 
       applyAppearance: (appearance) => {
         appearanceRef.current = appearance;
+        const nextBackground = resolveReaderAppearance(appearance).background;
+        setChromeBackground(current => current === nextBackground ? current : nextBackground);
         applyReaderAppearance(webViewRef.current, appearance);
       },
 
@@ -379,13 +384,19 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     }
   };
 
+  const pageBackground = documentData.readerMode === 'book'
+    ? backgroundColor
+    : (chromeBackground || (readingSettings.palette === 'custom'
+      ? readingSettings.customBackground
+      : (PALETTE_COLORS[readingSettings.palette]?.background || backgroundColor)));
+
   return (
     <View
       style={[
         styles.container,
         {
           paddingBottom: respectBottomSafeArea ? Math.max(insets.bottom, 8) : 0,
-          backgroundColor,
+          backgroundColor: pageBackground,
         },
       ]}
     >
@@ -405,6 +416,8 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         overScrollMode="never"
         textZoom={100}
         onMessage={handleMessage}
+        onScroll={onNativeReadingScroll}
+        scrollEventThrottle={16}
         onLoadEnd={(event) => {
           if (appearanceRef.current) applyReaderAppearance(webViewRef.current, appearanceRef.current);
           const ratio = scrollFallbackRef.current;
@@ -416,7 +429,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
           }
           onReady?.(event);
         }}
-        style={[styles.webView, {backgroundColor: documentData.readerMode === 'book' ? backgroundColor : (readingSettings.palette === 'custom' ? readingSettings.customBackground : (PALETTE_COLORS[readingSettings.palette]?.background || backgroundColor))}]}
+        style={[styles.webView, {backgroundColor: pageBackground}]}
         onConsoleMessage={(event) => {
           const { message, lineNumber } = event.nativeEvent;
           if (message && (message.includes('[runtime]') || message.includes('[reader]') || message.includes('Error'))) {
@@ -428,7 +441,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       {documentData.readerMode !== 'book' && (
         <LinearGradient
           pointerEvents="none"
-          colors={['rgba(255, 244, 222, 0)', 'rgba(255, 244, 222, 0.72)', '#FFF4DE']}
+          colors={[withOpacity(pageBackground, 0), withOpacity(pageBackground, 0.72), pageBackground]}
           locations={[0, 0.58, 1]}
           style={[
             styles.bottomFade,
