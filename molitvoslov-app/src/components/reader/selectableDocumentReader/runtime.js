@@ -704,9 +704,9 @@ const computeFocusHighlightRanges = () => {
       collectAkathistWordRanges(value, /(?:Аллилуиа|Аллилуия|Алилуиа|Алілуя|Аллілуя)/giu, true);
     const collectAkathistJoyBreaks = value =>
       new Set(collectAkathistInvocationRanges(value).map(range => range.start).filter(at => at > 0));
-    const collectAkathistInitialRanges = value => {
+    const collectAkathistInitialRanges = (value, includeInvocations = true) => {
       const source = String(value || '');
-      const invocationRanges = collectAkathistInvocationRanges(source);
+      const invocationRanges = includeInvocations ? collectAkathistInvocationRanges(source) : [];
       const ranges = [...invocationRanges];
       // Preserve the existing red first letter of ordinary paragraphs.
       const opening = source.match(/^\s*([\p{L}][\u0300-\u036f\u0483-\u0489]*)/u);
@@ -1422,9 +1422,17 @@ const collectPsalterRubricRanges = value => {
             : null;
         const isAkathist = String( itemConfig ?.className || '' ).includes( 'akathist-' ) || itemConfig
             ?.sourceType === 'akathist';
-        const akathistJoyBreaks = isAkathist ? collectAkathistJoyBreaks( text ) : new Set();
-        const akathistInitialRanges = isAkathist ? collectAkathistInitialRanges( text ) : [];
-        const akathistAlleluiaRanges = isAkathist ? collectAkathistAlleluiaRanges( text ) : [];
+        // "Иисусе" and "Радуйся" also occur inside ordinary prayers.
+        // Refrain formatting belongs exclusively to Ikos sections; never
+        // split or paint these words inside prayers, troparia or Kontakia.
+        const isAkathistIkos = isAkathist && itemConfig?.metadata?.section_type === 'ikos';
+        const isAkathistKontakion = isAkathist && (
+          itemConfig?.metadata?.section_type === 'kontakion' ||
+          itemConfig?.metadata?.special === 'kontakion_before'
+        );
+        const akathistJoyBreaks = isAkathistIkos ? collectAkathistJoyBreaks( text ) : new Set();
+        const akathistInitialRanges = isAkathist ? collectAkathistInitialRanges( text, isAkathistIkos ) : [];
+        const akathistAlleluiaRanges = isAkathistKontakion ? collectAkathistAlleluiaRanges( text ) : [];
  const isPsalterPrayer =
   String(itemConfig?.className || '')
     .includes('psalter-prayer');
