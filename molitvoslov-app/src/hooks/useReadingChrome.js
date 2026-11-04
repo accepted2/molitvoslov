@@ -50,9 +50,47 @@ export const useReadingChrome = () => {
     }
   }, [setVisibility]);
 
+  // Some Android WebViews do not deliver the first injected page scroll
+  // event until their HTML is reloaded (e.g. after switching language).
+  // Native WebView scroll is a secondary, independent source of direction.
+  const nativeY = useRef(null);
+  const nativePending = useRef(0);
+  const nativeDirection = useRef(null);
+  const handleNativeReadingScroll = useCallback((event) => {
+    const raw = event?.nativeEvent?.contentOffset?.y;
+    if (!Number.isFinite(raw)) return;
+    const y = Math.max(0, raw);
+    const previous = nativeY.current;
+    nativeY.current = y;
+
+    if (y <= 35) {
+      nativePending.current = 0;
+      nativeDirection.current = 'top';
+      onScroll('top');
+      return;
+    }
+    if (previous == null) {
+      // A restored deep link may start away from the top.
+      atTopRef.current = false;
+      return;
+    }
+    const delta = y - previous;
+    if (!delta) return;
+    const next = delta > 0 ? 'down' : 'up';
+    if (next !== nativeDirection.current) {
+      nativePending.current += Math.abs(delta);
+      if (nativePending.current < 5) return;
+      nativeDirection.current = next;
+      nativePending.current = 0;
+    } else {
+      nativePending.current = 0;
+    }
+    onScroll(next);
+  }, [onScroll]);
+
   useEffect(() => () => {
     if (hideTimer.current) clearTimeout(hideTimer.current);
   }, []);
 
-  return {readingChromeHidden: hidden, handleReadingScroll: onScroll};
+  return {readingChromeHidden: hidden, handleReadingScroll: onScroll, handleNativeReadingScroll};
 };
