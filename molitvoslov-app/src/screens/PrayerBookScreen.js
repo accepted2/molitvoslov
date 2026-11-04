@@ -181,6 +181,7 @@ const GlobalPrayerSearchModal = ({
   visible,
   personalPrayers,
   excludedPrayerIds,
+  existingResultKeys,
   onClose,
   onSelect,
 }) => {
@@ -188,10 +189,27 @@ const GlobalPrayerSearchModal = ({
   const [query, setQuery] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('all');
+  // Allow multiple additions without closing the search modal.
+  const [addedKeys, setAddedKeys] = useState(() => new Set());
+  const [pendingKey, setPendingKey] = useState(null);
+  const onAdd = async (item) => {
+    if (pendingKey || addedKeys.has(item.key) ||
+        existingResultKeys.has(item.key) ||
+        (item.kind === 'personal' && excludedPrayerIds.has(item.prayer?.sync_id))) return;
+    setPendingKey(item.key);
+    try {
+      const ok = await onSelect(item);
+      if (ok) setAddedKeys(previous => new Set([...previous, item.key]));
+    } finally {
+      setPendingKey(null);
+    }
+  };
 
   useEffect(() => {
     if (!visible) {
       setSearchQuery('');
+      setAddedKeys(new Set());
+      setPendingKey(null);
       return undefined;
     }
 
@@ -214,10 +232,8 @@ const GlobalPrayerSearchModal = ({
       return [];
     }
 
-    return searchAllPrayers(personalPrayers, searchQuery).filter(
-      (item) => item.kind !== 'personal' || !excludedPrayerIds.has(item.prayer?.sync_id)
-    );
-  }, [excludedPrayerIds, personalPrayers, searchQuery, visible]);
+    return searchAllPrayers(personalPrayers, searchQuery);
+  }, [personalPrayers, searchQuery, visible]);
 
   const counts = useMemo(() => {
     const next = {all: allResults.length, prayer: 0, psalter: 0, personal: 0};
@@ -312,7 +328,10 @@ const GlobalPrayerSearchModal = ({
               }
               renderItem={({item}) => (
                 <Pressable
-                  onPress={() => onSelect(item)}
+                  disabled={!!pendingKey || addedKeys.has(item.key) ||
+                    existingResultKeys.has(item.key) ||
+                    (item.kind === 'personal' && excludedPrayerIds.has(item.prayer?.sync_id))}
+                  onPress={() => onAdd(item)}
                   style={({pressed}) => [styles.searchResult, pressed && styles.pressed]}
                 >
                   <View style={styles.searchResultTop}>
@@ -352,8 +371,15 @@ const GlobalPrayerSearchModal = ({
                     />
                   )}
 
-                  <View style={styles.addSearchResultButton}>
-                    <Text style={styles.addSearchResultText}>＋</Text>
+                  <View style={[styles.addSearchResultButton,
+                    (addedKeys.has(item.key) || existingResultKeys.has(item.key) ||
+                      (item.kind === 'personal' && excludedPrayerIds.has(item.prayer?.sync_id))) &&
+                      styles.addSearchResultButtonDone]}>
+                    <Text style={styles.addSearchResultText}>
+                      {addedKeys.has(item.key) || existingResultKeys.has(item.key) ||
+                        (item.kind === 'personal' && excludedPrayerIds.has(item.prayer?.sync_id))
+                        ? '✓' : pendingKey === item.key ? '…' : '＋'}
+                    </Text>
                   </View>
                 </Pressable>
               )}
@@ -420,7 +446,7 @@ export const PrayerBookScreen = ({route, navigation}) => {
 
   const addSearchResult = async (result) => {
     if (busy) {
-      return;
+      return false;
     }
 
     try {
@@ -436,16 +462,18 @@ export const PrayerBookScreen = ({route, navigation}) => {
           origin_data: {
             ...(result.origin_data || {}),
             search_source: 'global_prayer_search',
+            search_key: result.key,
           },
         });
 
         await addPrayerToBook(bookSyncId, prayer.sync_id);
       }
 
-      setGlobalSearch(false);
       await load();
+      return true;
     } catch (error) {
       Alert.alert(t('prayerBooks.addPrayerError'), error.message);
+      return false;
     } finally {
       setBusy(false);
     }
@@ -490,7 +518,17 @@ export const PrayerBookScreen = ({route, navigation}) => {
     );
   }
 
-  const existingPrayerIds = new Set((book.items || []).map((item) => item.prayer_sync_id));
+  const existingPrayerIds = new Set((book.items || []).map(item => item.prayer_sync_id));
+  const existingResultKeys = new Set((book.items || []).map(item => {
+    const origin = item.prayer?.origin_data;
+    let parsed = origin;
+    if (typeof origin === 'string') {
+      try {parsed = JSON.parse(origin);} catch {parsed = null;}
+    }
+    return parsed?.search_key ||
+      (parsed?.psalm_id ? 'psalm:' + parsed.psalm_id : null) ||
+      (parsed?.text_id ? 'library:' + parsed.text_id : null);
+  }).filter(Boolean));
 
   return (
     <AppBackground imageOpacity={0.72}>
@@ -646,6 +684,7 @@ export const PrayerBookScreen = ({route, navigation}) => {
           visible={globalSearch}
           personalPrayers={personalPrayers}
           excludedPrayerIds={existingPrayerIds}
+          existingResultKeys={existingResultKeys}
           onClose={() => setGlobalSearch(false)}
           onSelect={addSearchResult}
         />
@@ -986,6 +1025,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
   },
+  addSearchResultButtonDone: {backgroundColor: '#8FAD78'},
   addSearchResultButton: {
     position: 'absolute',
     right: 10,
