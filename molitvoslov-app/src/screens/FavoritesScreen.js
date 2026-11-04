@@ -206,6 +206,25 @@ export const FavoritesScreen = ({route, navigation}) => {
       return;
     }
 
+    if (item.source_type === 'calendar') {
+      navigation.push('SaintDetail', {
+        date: metadata.date || undefined,
+        feastId: metadata.feast_id || undefined,
+        feastUid: metadata.feast_uid || undefined,
+        feastTitle: metadata.feast_title || item.source_title,
+        focusSection: metadata.section || 'life',
+      });
+      return;
+    }
+
+    if (item.source_type === 'personal_prayer' && metadata.book_sync_id) {
+      navigation.push('PrayerBookReader', {
+        bookSyncId: metadata.book_sync_id,
+        prayerSyncId: metadata.prayer_sync_id || null,
+      });
+      return;
+    }
+
     if (item.source_type === 'daily_quote') {
       navigation.navigate('Menu');
       return;
