@@ -22,6 +22,7 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
 import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
+import {resolveReaderAppearance} from '../services/scopedReaderAppearance';
 import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
@@ -54,7 +55,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
   const {appearance, changeAppearance, resetAppearance} = useScopedReaderAppearance('prayer_rule', slug);
   const [appearanceVisible, setAppearanceVisible] = useState(false);
   useEffect(() => {readerRef.current?.applyAppearance(appearance);}, [appearance]);
-  const {readingChromeHidden, handleReadingScroll} = useReadingChrome();
+  const {readingChromeHidden, handleReadingScroll, handleNativeReadingScroll} = useReadingChrome();
 
   const [savedItems, setSavedItems] = useState([]);
 
@@ -261,6 +262,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         onViewModeChange={handleViewModeChange}
         onHeaderTitleVisibilityChange={setShowStickyTitle}
         onReadingScroll={handleReadingScroll}
+        onNativeReadingScroll={handleNativeReadingScroll}
       />
 
       <ReaderAppearanceSheet
@@ -279,6 +281,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
+        gradientColor={resolveReaderAppearance(appearance).background}
         onHeaderHeightChange={setHeaderHeight}
         title={getLocalizedField(rule, 'name', language) || t('reading.prayerRule')}
         navigation={navigation}
