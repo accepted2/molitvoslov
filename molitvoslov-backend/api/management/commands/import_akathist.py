@@ -792,7 +792,55 @@ class Command(BaseCommand):
                 }
             )
 
+        if not elements:
+            # Some Azbyka pages keep hymn bodies in div/blockquote containers
+            # rather than <p>. Do not change the existing paragraph-based path:
+            # use this fallback only for sections where it found no content.
+            elements = self.collect_non_paragraph_elements_after_heading(
+                heading, stop_heading=stop_heading,
+                stop_at_any_heading=stop_at_any_heading,
+            )
+
         return elements
+
+    def collect_non_paragraph_elements_after_heading(
+        self,
+        heading,
+        stop_heading=None,
+        stop_at_any_heading=False,
+    ):
+        blocks = []
+        for element in heading.next_elements:
+            if stop_heading is not None and element is stop_heading:
+                break
+            if not isinstance(element, Tag) or element is heading:
+                continue
+            if element.name in SECTION_TAGS:
+                if stop_at_any_heading:
+                    break
+                heading_text = self.clean_text(element.get_text(" ", strip=True))
+                if self.is_page_tail_marker(heading_text) or self.parse_section_heading(heading_text):
+                    break
+            if element.name not in ("div", "section", "blockquote", "li"):
+                continue
+            # An enclosing article, a nested section, or a block containing
+            # paragraphs/headings must never be imported as a text fragment.
+            if element.find(("p", "h2", "h3", "h4", "h5", "h6")):
+                continue
+            if element.find(("div", "section", "blockquote", "li")):
+                continue
+            if element.find_parent("p"):
+                continue
+            text = self.clean_text(element.get_text("\n", strip=True))
+            if not text or len(text) < 12:
+                continue
+            if self.is_page_tail_marker(text):
+                break
+            blocks.append({
+                "text": text,
+                "classes": set(element.get("class") or []),
+            })
+        return blocks
 
     # ======================================================================
     # РАЗБОР ГРУППЫ <p>
