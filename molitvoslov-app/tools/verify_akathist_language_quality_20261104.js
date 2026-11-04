@@ -29,6 +29,8 @@ const missingPrayer = {sections: [...makeSections('Русский перевод
   {section_type: 'prayer', number: 1, text: {content: 'Молитва', translation: ''}}]};
 
 assert.equal(getCoverage(full).complete, true, 'Complete 25 section translations available');
+assert.equal(getCoverage({...full, translation_review_status: 'unverified'}).complete, false,
+  'Imported unreviewed Russian fields remain hidden even if all 25 are populated');
 assert.equal(getCoverage(partial).complete, false, 'One translated paragraph is not an entire Akathist');
 assert.equal(getCoverage(partial).translatedMain, 1);
 assert.equal(getCoverage(missingPrayer).complete, false, 'Missing concluding prayer translation');
