@@ -307,8 +307,9 @@ def repair(args):
             counts["not_in_offline"] += 1
             continue
         detail = data["akathists"]["by_slug"][slug]
-        if detail.get("id") != item.get("akathist_id"):
-            raise ValueError("ID акафиста не совпал: " + slug)
+        # The additive merge can remap Django IDs to avoid collisions with
+        # older offline Akathists. Slug + exact old text are the safety keys.
+        # Do not require the original Django numeric ID here.
         for correction in item.get("sections", []):
             section_type = correction.get("section_type")
             number = correction.get("number")
