@@ -29,6 +29,7 @@ import {
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
 import {prepareAkathistSections} from '../services/akathistPresentation';
+import {getAkathistRussianCoverage} from '../services/akathistRussianCoverage';
 
 const MODE_CHURCH = READER_LANGUAGE_MODES.CHURCH;
 const MODE_BOTH = READER_LANGUAGE_MODES.BOTH;
@@ -175,34 +176,11 @@ export const AkathistScreen = ({route, navigation}) => {
     }
   };
 
-  const hasRussianTranslation = useMemo(() => {
-    if (!akathist) return false;
-
-    // A single Russian fragment is NOT a translation of the entire Akathist.
-    // Legacy Azbyka parsing could mislabel a CS refrain as the Russian
-    // translation for just one section.
-    const main = new Map();
-    const prayers = [];
-    for (const section of akathist.sections || []) {
-      if (section.section_type === 'kontakion' || section.section_type === 'ikos') {
-        main.set(section.section_type + ':' + section.number, section);
-      } else if (section.section_type === 'prayer') {
-        prayers.push(section);
-      }
-    }
-    if (main.size !== 25) return false;
-    const completeMain = [...main.values()].every(
-      section => !!section.text?.translation?.trim()
-    );
-    const completePrayers = prayers.every(
-      section => !section.text?.content?.trim() || !!section.text?.translation?.trim()
-    );
-    const specialTexts = [akathist.troparion, akathist.kontakion_before];
-    const completeSpecials = specialTexts.every(
-      item => !item?.content?.trim() || !!item?.translation?.trim()
-    );
-    return completeMain && completePrayers && completeSpecials;
-  }, [akathist]);
+  // Use section-level completeness, not a truthy translation in one fragment.
+  const hasRussianTranslation = useMemo(
+    () => getAkathistRussianCoverage(akathist).complete,
+    [akathist]
+  );
 
   const hasUkrainianTranslation = useMemo(() => {
     if (!akathist) {
