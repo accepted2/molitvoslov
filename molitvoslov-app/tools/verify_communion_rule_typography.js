@@ -11,10 +11,12 @@ const service = read('src/services/communionRuleTypography.js');
 const helpers = new Function(
   service
     .replace('export const getCommunionRuleKind =', 'const getCommunionRuleKind =')
-    .replace('export const buildCommunionTypography =', 'const buildCommunionTypography =') +
-  '\nreturn {getCommunionRuleKind, buildCommunionTypography};'
+    .replace('export const buildCommunionTypography =', 'const buildCommunionTypography =')
+    .replace('export const getCommunionAlleluiaCompaction =', 'const getCommunionAlleluiaCompaction =')
+    .replace('export const compactCommunionAlleluiaDisplay =', 'const compactCommunionAlleluiaDisplay =') +
+  '\nreturn {getCommunionRuleKind, buildCommunionTypography, getCommunionAlleluiaCompaction, compactCommunionAlleluiaDisplay};'
 )();
-const {getCommunionRuleKind, buildCommunionTypography} = helpers;
+const {getCommunionRuleKind, buildCommunionTypography, getCommunionAlleluiaCompaction, compactCommunionAlleluiaDisplay} = helpers;
 
 assert.equal(getCommunionRuleKind({name: 'Последование ко Святому Причащению'}), 'preparation');
 assert.equal(getCommunionRuleKind({slug: 'posledovanie-ko-svyatomu-prichashcheniyu'}), 'preparation');
@@ -57,6 +59,24 @@ assert.ok(!plan(longer).ranges.some(range => range.kind === 'response'));
 assert.ok(contains('Слава Отцу, и Сыну, и Святому Духу.', 'response',
   'Слава Отцу, и Сыну, и Святому Духу.'));
 
+const alleluiaUnit = 'Аллилуйа, аллилуйа, аллилуйа, слава Тебе, Боже.';
+const tripleAlleluia = [alleluiaUnit, alleluiaUnit, alleluiaUnit].join(' ') +
+  ' (С тремя поклонами)';
+assert.equal(compactCommunionAlleluiaDisplay(tripleAlleluia),
+  alleluiaUnit + ' (Трижды)');
+assert.ok(getCommunionAlleluiaCompaction(tripleAlleluia).length === 1);
+assert.ok(plan(tripleAlleluia).ranges.some(range => range.kind === 'alleluia-replace'));
+assert.equal(compactCommunionAlleluiaDisplay(alleluiaUnit), alleluiaUnit);
+const distinct = 'Аллилуйа, аллилуйа, аллилуйа, слава Тебе, Боже. ' +
+  'Аллилуйа, аллилуйа, аллилуйа, помилуй нас, Боже.';
+assert.equal(compactCommunionAlleluiaDisplay(distinct), distinct,
+  'Different prayer invocations must remain untouched');
+const accentedUnit = 'Аллилу́йа, аллилу́йа, аллилу́йа, сла́ва Тебе́, Бо́же.';
+const accentedTriple = [accentedUnit, accentedUnit, accentedUnit].join('\n') +
+  ' (с тремя поклонами)';
+assert.equal(compactCommunionAlleluiaDisplay(accentedTriple),
+  accentedUnit + ' (Трижды)', 'Accents and line breaks must be handled');
+
 const reader = read('src/components/reader/PrayerRuleReader.js');
 assert.match(reader, /import \{getCommunionRuleKind, buildCommunionTypography\}/);
 assert.match(reader, /const communionKind = getCommunionRuleKind\(rule\)/);
@@ -69,6 +89,10 @@ assert.match(reader, /while \(\s*!isCommunionReadingRule &&/);
 assert.match(reader, /body\.communion-reading-rule \.reader-text \.communion-initial/);
 assert.match(reader, /body\.communion-reading-rule \.translation-text/);
 assert.match(reader, /body\.communion-reading-rule \.section-header \.prayer-title/);
+assert.match(reader, /communion-alleluia-count::after/);
+assert.match(reader, /communion-alleluia-hidden/);
+assert.match(reader, /compactCommunionAlleluiaDisplay\(item\.content\)/);
+assert.match(reader, /viewMode === 'both'/);
 assert.match(reader, /isCommunionReadingRule\s*\?\s*\{/);
 assert.match(reader, /content: viewMode === 'russian'/);
 assert.match(reader, /isCommunionReadingRule && primaryLanguage === 'russian'/);
@@ -85,6 +109,7 @@ babel.parse(reader, {sourceType: 'module', plugins: ['jsx']});
 babel.parse(service, {sourceType: 'module'});
 console.log('PASS: Communion rule identification excludes morning/evening and unrelated texts');
 console.log('PASS: red initials, actual rubric ranges, neutral prayer prose and brown repeat notes');
+console.log('PASS: threefold Alleluia displays once with (Трижды), retaining original selection offsets');
 console.log('PASS: original text and UTF-16 selection offsets remain unchanged');
 console.log('PASS: Church Slavonic styling and secondary parallel translations remain separate');
 console.log('PASS: WebView inline script and React Native sources parse');
