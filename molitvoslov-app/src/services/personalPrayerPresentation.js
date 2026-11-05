@@ -63,9 +63,9 @@ export const personalPrayerLanguage = (prayer, displayedText = '') => {
   const text = String(displayedText || prayer?.text || '');
   // Church-Slavonic letters and accent marks in legacy local copies may
   // otherwise fall back to a civil serif which renders accents badly.
-  if (/[ѣѳѡѫѧѩі҆ꙋꙑꙗѵꙝ]/iu.test(text) ||
+  if (/[\u0460-\u052Fꙋꙑꙗ]/iu.test(text) ||
       /[\u0483-\u0489]/u.test(text) ||
-      /(?<![\p{L}])(?:иже\s+еси|аще|яко|несть|днесь|есмь|мя\s+грешна)(?![\p{L}])/iu.test(text)) {
+      /(?:^|[^\p{L}])(?:иже\s+еси|аще|яко|несть|днесь|есмь|мя\s+грешна)(?=$|[^\p{L}])/iu.test(text)) {
     return 'church';
   }
   return 'russian';
