@@ -23,7 +23,7 @@ export const savedSourceId = (value) => {
   return (hash >>> 0) % 2147483646 + 1;
 };
 
-export const makeCalendarSaveContext = ({feast, date, section, title, sectionTitle}) => {
+export const makeCalendarSaveContext = ({feast, date, section, title, sectionTitle, fontFamily = 'serif'}) => {
   const identity = feast?.id || feast?.sync_uid || feast?.title || title || date;
   const sourceId = savedSourceId(identity);
   const kind = {life: 1, troparion: 2, kontakion: 3, prayer: 4}[section] || 5;
@@ -38,6 +38,9 @@ export const makeCalendarSaveContext = ({feast, date, section, title, sectionTit
       : sectionTitle,
     fullSaveType: section === 'prayer' ? 'prayer' : 'text',
     metadata: {
+      // Persist the actual source font: accented troparia and kontakia are
+      // often rendered in ordinary serif, NOT traditional Ponomar.
+      font_family: String(fontFamily || 'serif'),
       date: date || null,
       feast_id: feast?.id ?? null,
       feast_uid: feast?.sync_uid || null,
