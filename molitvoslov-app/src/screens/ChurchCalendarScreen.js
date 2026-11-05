@@ -282,6 +282,7 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, 
   if (!text) return null;
   const saveContext = makeCalendarSaveContext({
     feast, date, section, title: sourceTitle, sectionTitle: title,
+    fontFamily: styles.textBlockParagraph.fontFamily,
   });
   return (
     <View style={styles.textBlock}>
