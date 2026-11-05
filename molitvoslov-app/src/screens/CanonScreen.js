@@ -29,6 +29,7 @@ import {
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
 import {buildCanonTypography} from '../services/canonTypography';
+import {getCanonRussianCoverage} from '../services/canonRussianCoverage';
 
 const MODE_CHURCH = READER_LANGUAGE_MODES.CHURCH;
 const MODE_BOTH = READER_LANGUAGE_MODES.BOTH;
@@ -313,16 +314,12 @@ export const CanonScreen = ({route, navigation}) => {
     });
   }, [activeSections]);
 
-  // A partial Russian canon is not shown at all. Every source text
-  // section (including refrains, irmoi and prayers) must have a translation.
-  // Headings without source text are not independent translation units.
-  const hasRussianTranslation = useMemo(() => {
-    const sourceSections = displaySections.filter(
-      (section) => !!section.text?.content?.trim()
-    );
-    return sourceSections.length > 0 &&
-      sourceSections.every((section) => !!section.text?.translation?.trim());
-  }, [displaySections]);
+  // All-or-nothing: hide the entire Russian text if ANY source section
+  // (including an irmos, refrain or prayer) has no Russian translation.
+  const hasRussianTranslation = useMemo(
+    () => getCanonRussianCoverage(displaySections).complete,
+    [displaySections]
+  );
 
   const hasUkrainianTranslation = useMemo(
     () => displaySections.some((section) => !!section.text?.translation_uk?.trim()),
