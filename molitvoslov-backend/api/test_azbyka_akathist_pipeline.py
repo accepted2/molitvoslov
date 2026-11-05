@@ -229,3 +229,38 @@ class AzbykaPipelineTests(SimpleTestCase):
         restored, translation = corrected.parse_element_group(blocks, "kontakion")
         self.assertEqual(restored, blocks[0]["text"] + "\n\n" + blocks[1]["text"])
         self.assertEqual(translation, "")
+
+    def test_unmarked_two_paragraph_prayer_is_not_false_russian_translation(self):
+        parser = AkathistParser()
+        parts = [
+            "Господи, избави мя от скорбей, яко недостоин есмь",
+            "Сохрани мя, Преблагий, во вся дни живота моего",
+        ]
+        original = [{"text": item, "classes": set()} for item in parts]
+        content, translation = parser.parse_element_group(original, "prayer")
+        self.assertEqual(content, "\n\n".join(parts))
+        self.assertEqual(translation, "")
+
+    def test_unmarked_many_paragraph_prayer_never_split_on_language_score(self):
+        parser = AkathistParser()
+        parts = [
+            "Во дни сии Тебе вопием яко Господу",
+            "Даруй нам оставление согрешений наших",
+            "И по сем просим Тя, Господи, приими молитву нашу",
+        ]
+        content, translation = parser.parse_element_group(
+            [{"text": item, "classes": set()} for item in parts], "prayer"
+        )
+        self.assertEqual(content, "\n\n".join(parts))
+        self.assertFalse(translation)
+
+    def test_explicit_russian_prayer_translation_is_still_separate(self):
+        parser = AkathistParser()
+        content, translation = parser.parse_element_group(
+            [
+                {"text": "Спаси мя, Господи.", "classes": {"paint"}},
+                {"text": "Спаси меня, Господи.", "classes": {"translate"}},
+            ], "prayer",
+        )
+        self.assertEqual(content, "Спаси мя, Господи.")
+        self.assertEqual(translation, "Спаси меня, Господи.")

@@ -137,7 +137,7 @@ const Accordion = ({
                 )}
                 {hasMoreText && !atBottom && (
                   <LinearGradient pointerEvents="none"
-                    colors={['rgba(255,248,235,0)', 'rgba(255,248,235,0.90)', '#FFF8EB']}
+                    colors={['rgba(255,244,222,0)', 'rgba(255,244,222,0.90)', '#FFF4DE']}
                     style={styles.lifeScrollFade} />
                 )}
               </View>
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   lifeInsetSaved: {backgroundColor: 'rgba(161, 110, 53, 0.075)'},
   readingContent: {paddingHorizontal: 10, paddingTop: 2, paddingBottom: 8},
   lifeInset: {marginHorizontal: 2, marginTop: 4, marginBottom: 8,
-    borderRadius: 13, borderWidth: 1, borderColor: '#E7D6B6', backgroundColor: '#FFF4DE', overflow: 'hidden'},
+    borderRadius: 0, borderWidth: 1, borderColor: '#E7D6B6', backgroundColor: '#FFF4DE', overflow: 'hidden'},
   lifeScrollContent: {
     paddingHorizontal: 0,
     paddingTop:0,

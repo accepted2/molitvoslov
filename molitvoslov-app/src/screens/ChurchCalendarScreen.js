@@ -1306,8 +1306,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   calendarLifeInset: {marginHorizontal: 2, marginTop: 2, marginBottom: 5,
-    borderRadius: 13, borderWidth: 1, borderColor: '#E7D6B6',
-    backgroundColor: '#FFF8EB', overflow: 'hidden'},
+    borderRadius: 0, borderWidth: 1, borderColor: '#E7D6B6',
+    backgroundColor: '#FFF8EB', overflow: 'hidden'}
   calendarLifeScrollFrame: {position: 'relative'},
   calendarLifeScrollContent: {paddingBottom: 38},
   calendarLifeScrollTrack: {position: 'absolute', right: 3, top: 5, bottom: 5,

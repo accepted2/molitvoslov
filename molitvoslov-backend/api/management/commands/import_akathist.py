@@ -943,54 +943,14 @@ class Command(BaseCommand):
 
     def parse_unclassified_prayer(self, blocks):
         """
-        ВАЖНО:
+        Do not guess Russian translations from unmarked prayer paragraphs.
 
-        Для молитвы НИКОГДА не используем схему
-        ЦС / RU / ЦС / RU по каждому абзацу.
-
-        Ищем границу между цельным церковнославянским текстом
-        и цельным русским переводом.
+        In Azbyka Akathists, two consecutive paragraphs can be parts of the
+        same Church Slavonic prayer. A language-score split previously moved
+        the second paragraph (or half of a longer prayer) into translation.
+        Explicit CSS and numbered translation markers are handled before
+        this fallback in parse_element_group; unmarked text is one source.
         """
-        if not blocks:
-            return "", ""
-
-        if len(blocks) == 1:
-            return blocks[0], ""
-
-        if len(blocks) == 2:
-            first_score = self.church_slavonic_score(blocks[0])
-            second_score = self.church_slavonic_score(blocks[1])
-
-            if first_score >= second_score:
-                return blocks[0], blocks[1]
-
-            return self.join_parts(blocks), ""
-
-        best_split = None
-        best_score = None
-
-        for split_at in range(1, len(blocks)):
-            left = blocks[:split_at]
-            right = blocks[split_at:]
-
-            left_score = self.average_church_score(left)
-            right_score = self.average_church_score(right)
-
-            score = left_score - right_score
-
-            if best_score is None or score > best_score:
-                best_score = score
-                best_split = split_at
-
-        if best_split is not None and best_score is not None and best_score >= 1.5:
-            return (
-                self.join_parts(blocks[:best_split]),
-                self.join_parts(blocks[best_split:]),
-            )
-
-        # Если язык надёжно определить нельзя, НЕ угадываем перевод.
-        # Лучше сохранить молитву целиком как source, чем снова перемешать
-        # разные абзацы и получить неверный перевод.
         return self.join_parts(blocks), ""
 
     def average_church_score(self, blocks):
