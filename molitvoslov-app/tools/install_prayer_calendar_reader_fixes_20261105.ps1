@@ -63,4 +63,4 @@ foreach ($test in $tests) {
   Assert-Last $test
 }
 Write-Host 'READER FIXES VERIFIED. Offline JSON, search DB and personal SQLite are unchanged.'
-Write-Host 'Restart Metro: npx expo start --dev-client --clear'
+Write-Host 'Restart Metro: npx expo start --dev-client (no forced cache clear)'
