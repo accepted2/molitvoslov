@@ -976,6 +976,16 @@ export const READER_STYLES = String.raw`
   text-align: center;
     text-align-last: center;
 }
+/* Keep "Молитва" in the Psalter's original subdued brown.
+   The reader can wrap a liturgical span inside this heading, which must
+   inherit the heading palette instead of becoming red. */
+.rule-item.psalter-post-kathisma-part .section-header .prayer-title,
+.reader-text.psalter-prayer .psalter-prayer-title,
+.reader-text.psalter-reading-prayers .psalter-prayer-title,
+.reader-text.psalter-prayer .psalter-prayer-title .liturgical-word,
+.reader-text.psalter-reading-prayers .psalter-prayer-title .liturgical-word {
+  color: #765238 !important;
+}
 .reader-text .psalter-repeat-note,
 .reader-language-traditional .reader-text.psalter-glory .psalter-repeat-note {
   color: #765238 !important;
@@ -1113,13 +1123,6 @@ export const READER_STYLES = String.raw`
       word-break: normal;
       -webkit-hyphens: manual;
       hyphens: manual;
-    }
-    /* A Russian-only canon may contain an untranslated Slavonic refrain.
-       The language is explicitly identified in its small section label. */
-    .rule-item.canon-section .reader-text.canon-untranslated-refrain {
-      color: var(--secondary);
-      font-size: 16px;
-      line-height: 26px;
     }
     .reader-text.canon-russian .liturgical-word, .reader-text.akathist-russian .liturgical-word {
       color: inherit;
