@@ -136,14 +136,14 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     });
     // Preserve separate pagination and per-book themes for Bible/book readers.
     if (documentData.readerMode === 'book') return markup;
-    const bodyMarkup = embedded
-      ? markup.replace('</style>', `body.embedded-reader .reader-text {
+    const embeddedCss = embedded
+      ? `body.embedded-reader .reader-text {
           font-size: ${Math.max(12, Number(embeddedTextStyle?.fontSize) || 16)}px !important;
           line-height: ${Math.max(16, Number(embeddedTextStyle?.lineHeight) || 26)}px !important;
           color: ${String(embeddedTextStyle?.color || '#3E2A1D')};
           text-align: ${embeddedTextStyle?.textAlign === 'center' ? 'center' : 'justify'};
-        }</style>`)
-      : markup;
+        }`
+      : '';
     const palette = readingSettings.palette === 'custom'
       ? {background: readingSettings.customBackground, text: readingSettings.customText, surface: readingSettings.customBackground}
       : (PALETTE_COLORS[readingSettings.palette] || PALETTE_COLORS.parchment);
@@ -160,7 +160,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       body:not(.book-mode) .reader-text.psalter-reading-prayers,
       body:not(.book-mode) .reader-text.psalter-glory,
       body:not(.book-mode) .reader-text.psalter-prayer {line-height: 1.7 !important;}`;
-    return bodyMarkup.replace('</style>', `${css}</style>`);
+    return markup.replace('</style>', `${css}${embeddedCss}</style>`);
   }, [documentData, savedProgress, focusTarget, topContentInset, bottomContentInset, ponomarFontDataUri, readingSettings, embedded, embeddedTextStyle]);
 
   const inject = (script) => {
