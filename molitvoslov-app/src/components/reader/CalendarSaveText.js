@@ -1,8 +1,9 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {ActivityIndicator, Pressable, StyleSheet, Text, View} from 'react-native';
 import {FontAwesome} from '@expo/vector-icons';
 import SelectableDocumentReader from './SelectableDocumentReader';
 import {calendarSectionTitle} from '../../services/personalPrayerPresentation';
+import {useTextSelection} from '../../context/TextSelectionContext';
 import {deleteSavedItem, getSavedItems, saveItem} from '../../services/savedItems';
 
 /** Same canonical content in the calendar accordion and the saint detail card. */
@@ -139,16 +140,39 @@ export const CalendarSaveWholeButton = ({text, saveContext, onSavedChange}) => {
   );
 };
 
+let calendarInlineSelectionCounter = 0;
+
 /** Inline read-only calendar content uses the SAME gesture/fragment engine as
  * every other WebView reader. Never mount a TextInput in a saint's life. */
 export const CalendarSelectableBody = ({text, saveContext, textStyle}) => {
   const normalized = useMemo(() => normalizeSavedText(text), [text]);
   const [savedItems, setSavedItems] = useState([]);
-  const appearance = useMemo(() => ({
-    palette: 'parchment',
-    fontSize: Number(StyleSheet.flatten(textStyle)?.fontSize) || 16,
-  }), [textStyle]);
+  const {activateSelection, clearSelection} = useTextSelection();
+  const readerRef = useRef(null);
+  const selectionIdRef = useRef(null);
+  if (selectionIdRef.current === null) {
+    calendarInlineSelectionCounter += 1;
+    selectionIdRef.current = 'calendar-inline-' + calendarInlineSelectionCounter;
+  }
   const numericId = Number(saveContext.sourceId);
+  const metadataKey = JSON.stringify(saveContext.metadata || {});
+  useEffect(() => () => clearSelection(selectionIdRef.current), [clearSelection]);
+  const onEmbeddedSelection = useCallback((info) => {
+    if (!info.active) {
+      clearSelection(selectionIdRef.current);
+      return;
+    }
+    activateSelection({
+      id: selectionIdRef.current,
+      count: Number(info.count) || 0,
+      tooLong: false,
+      canSave: !info.pending && Number(info.count) > 0,
+      actionLabel: info.removable ? 'Удалить' : 'Сохранить',
+      onSave: () => readerRef.current?.saveEmbeddedSelection() ||
+        Promise.resolve({ok: false, message: 'Читатель не готов'}),
+      onClear: () => readerRef.current?.clearEmbeddedSelection(),
+    });
+  }, [activateSelection, clearSelection]);
   useEffect(() => {
     let live = true;
     setSavedItems([]);
@@ -188,18 +212,20 @@ export const CalendarSelectableBody = ({text, saveContext, textStyle}) => {
           anchorId: saveContext.anchorId,
           sourceTitle: saveContext.sourceTitle,
           itemTitle: saveContext.itemTitle,
-          metadata: saveContext.metadata,
+          metadata: JSON.parse(metadataKey),
           fullSaveType: null,
         }],
       }],
     }],
   }), [normalized, numericId, saveContext.sourceType, saveContext.anchorType,
     saveContext.anchorId, saveContext.sourceTitle, saveContext.itemTitle,
-    saveContext.metadata, savedItems]);
+    metadataKey, savedItems]);
   if (!normalized) return null;
   return (
     <SelectableDocumentReader
+      ref={readerRef}
       documentData={doc}
+      onEmbeddedSelection={onEmbeddedSelection}
       embedded
       embeddedTextStyle={StyleSheet.flatten(textStyle)}
       backgroundColor="#FFF4DE"
