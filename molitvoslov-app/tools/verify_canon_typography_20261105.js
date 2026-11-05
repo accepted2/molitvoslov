@@ -59,6 +59,36 @@ assert.ok(contains(traditionalGlory, traditional, 'doxology',
   'Сла́ва Ѻ҆ц҃ꙋ̀ и҆ Сн҃ꙋ и҆ Ст҃о́мꙋ Дх҃ꙋ.'));
 assert.deepEqual(traditional.breakBefore, [traditionalGlory.indexOf('Помилꙋй')]);
 
+// Regression for the real canon screenshot: the first colon belongs to the
+// hymn body ("источи:" / "помози:"), NOT to a red introductory rubric.
+const realGlory =
+  'Сла́ва Отцу́, и Сы́ну, и Свято́му Ду́ху. ' +
+  'Благоде́теля рождши добрых виновнаго, благодея́ния богатство всем источи́: ' +
+  'Вся бо можеши, яко сильнаго';
+const gloryMarkup = format(realGlory);
+assert.deepEqual(gloryMarkup.breakBefore, [realGlory.indexOf('Благоде́теля')]);
+assert.ok(contains(realGlory, gloryMarkup, 'doxology',
+  'Сла́ва Отцу́, и Сы́ну, и Свято́му Ду́ху.'));
+assert.ok(contains(realGlory, gloryMarkup, 'initial', 'Б'));
+assert.ok(!gloryMarkup.ranges.some(range => ['long-cue', 'prayer-cue', 'glory-cue'].includes(range.kind)),
+  'Glory + verse before a colon must not be considered an introductory rubric');
+assert.ok(!gloryMarkup.ranges.some(range =>
+  range.kind !== 'initial' && range.kind !== 'doxology' &&
+  realGlory.slice(range.start, range.end).includes('Благоде́теля')),
+  'Only the first letter of the verse can be emphasized');
+
+const realNow =
+  'И ны́не, и при́сно, во ве́ки веко́в, ами́нь. ' +
+  'Лю́тыми неду́ги и боле́зненными страстьми истяза́ему, ' +
+  'Де́во, Ты ми́ помози́: Исцели́й бо неоскудное Тя знаю';
+const nowMarkup = format(realNow);
+assert.deepEqual(nowMarkup.breakBefore, [realNow.indexOf('Лю́тыми')]);
+assert.ok(contains(realNow, nowMarkup, 'doxology',
+  'И ны́не, и при́сно, во ве́ки веко́в, ами́нь.'));
+assert.ok(contains(realNow, nowMarkup, 'initial', 'Л'));
+assert.ok(!nowMarkup.ranges.some(range => ['long-cue', 'prayer-cue', 'glory-cue'].includes(range.kind)),
+  'And now + verse before a colon must not be colored as a heading');
+
 const newLine = 'Слава Отцу и Сыну и Святому Духу.\nГосподи, помилуй.';
 assert.deepEqual(format(newLine).breakBefore, [], 'Never add duplicate break before existing newline');
 
