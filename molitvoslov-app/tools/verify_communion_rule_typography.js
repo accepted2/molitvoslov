@@ -75,10 +75,11 @@ assert.match(reader, /isCommunionReadingRule && primaryLanguage === 'russian'/);
 assert.match(reader, /!isCommunionReadingRule/);
 assert.match(reader, /itemTextMap\.set\(/);
 assert.match(reader, /root\.replaceChildren\(/);
-const scriptStart = reader.indexOf('  <script>\n');
-const scriptEnd = reader.indexOf('  </script>', scriptStart);
-assert.ok(scriptStart >= 0 && scriptEnd > scriptStart);
-new Function(reader.slice(scriptStart + '  <script>\n'.length, scriptEnd));
+// Use tag boundaries, not an LF-specific literal. Git on Windows may
+// check out PrayerRuleReader.js with CRLF line endings.
+const scriptMatch = /<script\b[^>]*>([\s\S]*?)<\/script>/u.exec(reader);
+assert.ok(scriptMatch, 'Could not locate the WebView inline script');
+new Function(scriptMatch[1]);
 
 babel.parse(reader, {sourceType: 'module', plugins: ['jsx']});
 babel.parse(service, {sourceType: 'module'});
