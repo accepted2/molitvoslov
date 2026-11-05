@@ -67,7 +67,11 @@ export const buildCanonTypography = (value, inlineLabel = '') => {
   // "Иисусу:" and "Слава:") while separating only long introductory cues.
   // "Молитва:" was already rendered on its own line in the canon reader.
   const mappedCue = normalizeWithOffsets(text);
-  const cue = /^\s*((?:Тропар(?:ь|и)|Богородичен|Ирмос|Припев|Иисусу|Седален|Кондак|Икос|Светилен|Молитва|Слава|И\s+ныне|Ныне)[^:\n]{0,110}:)/iu.exec(mappedCue.normalized);
+  // Never let "Слава Отцу..." or "И ныне и присно..." consume the
+  // following hymn as a "long heading" merely because it contains a colon.
+  // Doxologies are separate cues and have their own break/initial logic.
+  // For actual hymn rubrics, stop at sentence-ending punctuation too.
+  const cue = /^\s*((?:(?:Слава|И\s+ныне|Ныне)\s*:|(?:Тропар(?:ь|и)|Богородичен|Ирмос|Припев|Иисусу|Седален|Кондак|Икос|Светилен|Молитва)[^:\n.!?]{0,110}:))/iu.exec(mappedCue.normalized);
   let bodyStart = 0;
   if (cue) {
     const from = mappedCue.offsets[cue[0].length - cue[1].length];
@@ -102,7 +106,7 @@ export const buildCanonTypography = (value, inlineLabel = '') => {
   const {normalized, offsets} = normalizeWithOffsets(text);
   const doxologies = [
     /слава\s+(?:отцу|оцу),?\s+и\s+(?:сыну|сну),?\s+и\s+(?:святому|стому)\s+(?:духу|дху)[ \t]*[.:;!?]?/giu,
-    /(?:и\s+)?ныне,?\s+и\s+присно,?\s+и\s+во\s*веки\s+веков[ъ]?[ \t]*[.,;:]?[ \t]*амин[ьъ]?[ \t]*[.!?]?/giu,
+    /(?:и\s+)?ныне,?\s+и\s+присно,?\s+(?:и\s+)?во\s*веки\s+веков[ъ]?[ \t]*[.,;:]?[ \t]*амин[ьъ]?[ \t]*[.!?]?/giu,
   ];
 
   for (const pattern of doxologies) {
