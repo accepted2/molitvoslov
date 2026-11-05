@@ -1110,19 +1110,21 @@ export const READER_STYLES = String.raw`
       font-style: inherit !important;
       font-weight: inherit !important;
     }
-    /* Canon only: do not stretch inter-word spaces to justify narrow
-       Slavonic/Russian lines. Emergency long-word wrapping is visual only:
-       the source text and selection offsets remain byte-for-byte intact. */
+    /* Justified canon text with browser-side automatic hyphenation.
+       CSS never modifies the source, saved text, or selection offsets. */
     .rule-item.canon-section .reader-text.canon-church,
     .rule-item.canon-section .reader-text.canon-russian {
-      text-align: left !important;
+      text-align: justify !important;
       text-align-last: left !important;
-      text-justify: auto !important;
+      text-justify: inter-word !important;
       word-spacing: normal !important;
       overflow-wrap: break-word;
       word-break: normal;
-      -webkit-hyphens: manual;
-      hyphens: manual;
+      -webkit-hyphens: auto;
+      hyphens: auto;
+      -webkit-hyphenate-character: "‐";
+      hyphenate-character: "‐";
+      hyphenate-limit-chars: 6 3 3;
     }
     .reader-text.canon-russian .liturgical-word, .reader-text.akathist-russian .liturgical-word {
       color: inherit;
