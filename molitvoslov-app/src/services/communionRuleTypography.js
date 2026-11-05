@@ -32,9 +32,51 @@ const mappedText = value => {
   return {source, normalized, positions};
 };
 
+// Compact three identical "Аллилуйа ... слава Тебе, Боже."
+// invocations without rewriting selectable source text or saved offsets.
+export const getCommunionAlleluiaCompaction = value => {
+  const {source, normalized, positions} = mappedText(value);
+  const phrase = /(?:ал{1,2}илу(?:й?[ая]|и[ая])\s*[,;]\s*){3}слава\s+тебе\s*,?\s*боже[.!]?/giu;
+  const found = [...normalized.matchAll(phrase)];
+  const signature = matched => matched[0].toLowerCase()
+    .replace(/[^\p{L}]+/gu, ' ').trim();
+  const ranges = [];
+  for (let i = 0; i + 2 < found.length; i += 1) {
+    const first = found[i], second = found[i + 1], third = found[i + 2];
+    const firstEnd = first.index + first[0].length;
+    const secondEnd = second.index + second[0].length;
+    if (signature(first) !== signature(second) ||
+        signature(first) !== signature(third) ||
+        !/^\s*$/u.test(normalized.slice(firstEnd, second.index)) ||
+        !/^\s*$/u.test(normalized.slice(secondEnd, third.index))) continue;
+    const note = /^\s*\((?:с\s+тремя\s+поклонами|трижды)\)/iu.exec(
+      normalized.slice(third.index + third[0].length)
+    );
+    const last = third.index + third[0].length + (note ? note[0].length : 0);
+    const start = positions[firstEnd];
+    const lastPosition = positions[last - 1];
+    if (!Number.isInteger(start) || !Number.isInteger(lastPosition)) continue;
+    let end = lastPosition + 1;
+    while (end < source.length && MARK.test(source[end])) end += 1;
+    ranges.push({start, end, kind: 'alleluia-replace'});
+    i += 2;
+  }
+  return ranges;
+};
+
+export const compactCommunionAlleluiaDisplay = value => {
+  const source = String(value || '');
+  const ranges = getCommunionAlleluiaCompaction(source);
+  let result = source;
+  for (const range of [...ranges].reverse()) {
+    result = result.slice(0, range.start) + ' (Трижды)' + result.slice(range.end);
+  }
+  return result;
+};
+
 export const buildCommunionTypography = value => {
   const {source, normalized, positions} = mappedText(value);
-  const ranges = [];
+  const ranges = getCommunionAlleluiaCompaction(value);
   const breakBefore = new Set();
 
   const addRange = (from, to, kind) => {
