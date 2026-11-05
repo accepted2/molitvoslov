@@ -101,7 +101,7 @@ export const buildCanonTypography = (value, inlineLabel = '') => {
 
   const {normalized, offsets} = normalizeWithOffsets(text);
   const doxologies = [
-    /слава\s+отцу,?\s+и\s+сыну,?\s+и\s+святому\s+духу[ \t]*[.:;!?]?/giu,
+    /слава\s+(?:отцу|оцу),?\s+и\s+(?:сыну|сну),?\s+и\s+(?:святому|стому)\s+(?:духу|дху)[ \t]*[.:;!?]?/giu,
     /(?:и\s+)?ныне,?\s+и\s+присно,?\s+и\s+во\s*веки\s+веков[ъ]?[ \t]*[.,;:]?[ \t]*амин[ьъ]?[ \t]*[.!?]?/giu,
   ];
 
