@@ -1086,6 +1086,20 @@ export const READER_STYLES = String.raw`
       font-style: normal !important;
       font-weight: 400 !important;
     }
+    /* CS + RU canon: match the subdued translation style used for prayers.
+       Only the original hymn receives liturgical red initials and cues. */
+    .rule-item.canon-section .reader-text.canon-russian.canon-parallel-translation {
+      color: var(--secondary) !important;
+      font-size: 16px;
+      line-height: 26px;
+      font-style: normal !important;
+      font-weight: 400 !important;
+    }
+    .rule-item.canon-section .reader-text.canon-parallel-translation .liturgical-word {
+      color: inherit !important;
+      font-style: inherit !important;
+      font-weight: inherit !important;
+    }
     .reader-text.canon-russian .liturgical-word, .reader-text.akathist-russian .liturgical-word {
       color: inherit;
       font-style: inherit;
