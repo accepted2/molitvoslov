@@ -327,10 +327,10 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, 
               </View>
             </ScrollView>
             {lifeOverflows && lifeScrolled && <LinearGradient pointerEvents="none"
-              colors={['#FFF8EB', 'rgba(255,248,235,0.77)', 'rgba(255,248,235,0)']}
+              colors={['#FFF4DE', 'rgba(255,244,222,0.77)', 'rgba(255,244,222,0)']}
               style={styles.calendarLifeFadeTop} />}
             {lifeOverflows && <LinearGradient pointerEvents="none"
-              colors={['rgba(255,248,235,0)', 'rgba(255,248,235,0.86)', '#FFF8EB']}
+              colors={['rgba(255,244,222,0)', 'rgba(255,244,222,0.86)', '#FFF4DE']}
               style={styles.calendarLifeFade} />}
           </View>
         </View>
@@ -1306,8 +1306,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   calendarLifeInset: {marginHorizontal: 2, marginTop: 2, marginBottom: 5,
-    borderRadius: 13, borderWidth: 1, borderColor: '#E7D6B6',
-    backgroundColor: '#FFF8EB', overflow: 'hidden'},
+    borderRadius: 0, borderWidth: 1, borderColor: '#E7D6B6',
+    backgroundColor: '#FFF4DE', overflow: 'hidden'},
   calendarLifeScrollFrame: {position: 'relative'},
   calendarLifeScrollContent: {paddingBottom: 38},
   calendarLifeScrollTrack: {position: 'absolute', right: 3, top: 5, bottom: 5,
