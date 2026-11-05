@@ -44,7 +44,11 @@ const initialAt = (text, start) => {
 const markAfter = (text, from, breaks, initials) => {
   const tail = text.slice(from);
   // Never introduce an extra blank line if the author already used one.
-  if (/^[ \t]*\r?\n/u.test(tail)) return;
+  if (/^[ \t]*\r?\n/u.test(tail)) {
+    const first = initialAt(text, from);
+    if (first) initials.push(first);
+    return;
+  }
   const spaces = /^[ \t]*/u.exec(tail)[0];
   const position = from + spaces.length;
   if (position >= text.length || !LETTER.test(text[position])) return;
@@ -61,11 +65,12 @@ export const buildCanonTypography = (value, inlineLabel = '') => {
 
   // Long introductory rubrics are separate from the text of the hymn.
   // Short cues such as "Ирмос:" keep their existing inline appearance.
-  const cue = /^\s*((?:Тропар(?:ь|и)|Богородичен|Ирмос|Седален|Кондак|Икос|Светилен|Молитва)\b[^:\n]{0,110}:)/iu.exec(text);
+  const mappedCue = normalizeWithOffsets(text);
+  const cue = /^\s*((?:Тропар(?:ь|и)|Богородичен|Ирмос|Седален|Кондак|Икос|Светилен|Молитва)[^:\n]{0,110}:)/iu.exec(mappedCue.normalized);
   let bodyStart = 0;
   if (cue && cue[1].trim().length >= 20) {
-    const from = cue[0].length - cue[1].length;
-    const to = cue[0].length;
+    const from = mappedCue.offsets[cue[0].length - cue[1].length];
+    const to = extendCombiningMarks(text, mappedCue.offsets[cue[0].length - 1] + 1);
     ranges.push({start: from, end: to, kind: 'long-cue'});
     bodyStart = to;
     markAfter(text, to, breakBefore, initials);
@@ -82,8 +87,8 @@ export const buildCanonTypography = (value, inlineLabel = '') => {
 
   const {normalized, offsets} = normalizeWithOffsets(text);
   const doxologies = [
-    /слава\s+отцу\s+и\s+сыну\s+и\s+святому\s+духу\s*[.:;!?]?/giu,
-    /(?:и\s+)?ныне\s+и\s+присно\s+и\s+во\s+веки\s+веков[ъ]?\s*[.,;:]?\s*амин[ьъ]?\s*[.!?]?/giu,
+    /слава\s+отцу\s+и\s+сыну\s+и\s+святому\s+духу[ \t]*[.:;!?]?/giu,
+    /(?:и\s+)?ныне\s+и\s+присно\s+и\s+во\s+веки\s+веков[ъ]?[ \t]*[.,;:]?[ \t]*амин[ьъ]?[ \t]*[.!?]?/giu,
   ];
 
   for (const pattern of doxologies) {
