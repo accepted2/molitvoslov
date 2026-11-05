@@ -74,13 +74,18 @@ export const buildCommunionTypography = value => {
 
   // A whole short liturgical response is a rubric. Do not match the same
   // words when they appear within longer prayer sentences.
-  const response = /(?:^|\n)[ \t]*((?:Слава\s+Отцу[^\n]{0,115}|И\s+ныне\s*,?\s+и\s+(?:присно|всегда)[^\n]{0,115}|(?:Господи|Гдси)\s*,?\s*помилуй[^\n]{0,35}|Аллилу[ийа][^\n]{0,22}))(?=\n|$)/gimu;
-  for (const match of normalized.matchAll(response)) {
+  const responseLines = /(?:^|\n)[ \t]*([^\n]{1,160})(?=\n|$)/gmu;
+  for (const match of normalized.matchAll(responseLines)) {
     const from = match.index + match[0].lastIndexOf(match[1]);
     const piece = match[1].trim();
-    if (/^(?:Слава\s+Отцу|И\s+ныне)/iu.test(piece) &&
-        !/(?:Дух|веков|Амин)/iu.test(piece)) continue;
-    addRange(from, from + match[1].length, 'response');
+    const isDoxology =
+      /^Слава\s+Отцу[\s\S]{0,100}Святому\s+Духу[.!?:;]*$/iu.test(piece) ||
+      /^И\s+ныне\s*,?\s+и\s+(?:присно|всегда)[\s\S]{0,85}во\s+веки\s+веков[ъ]?\s*[.,;:]?\s*аминь[.!?]*$/iu.test(piece);
+    const isMercy = /^(?:Господи|Гдси)\s*,?\s*помилуй\s*[.!?]?(?:\s*[\[(]\s*(?:3|12|40|трижды)\s*\.?\s*[\])])?$/iu.test(piece);
+    const isAlleluia = /^Аллилу[ийа]+[.!?]*$/iu.test(piece);
+    if (isDoxology || isMercy || isAlleluia) {
+      addRange(from, from + match[1].trimEnd().length, 'response');
+    }
   }
 
   const note = /[\[(]\s*(?:тр[иії]жды|дважды|единожды|поклон(?:ы)?|12\s*раз(?:а)?|40\s*раз(?:а)?)\s*\.?\s*[\])]/gimu;
