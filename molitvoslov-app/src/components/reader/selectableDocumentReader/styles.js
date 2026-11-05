@@ -1108,6 +1108,8 @@ export const READER_STYLES = String.raw`
     }
     .rule-item.canon-section .reader-text .canon-short-cue,
     .rule-item.canon-section .reader-text .canon-short-cue .liturgical-word,
+    .rule-item.canon-section .reader-text .canon-glory-cue,
+    .rule-item.canon-section .reader-text .canon-glory-cue .liturgical-word,
     .rule-item.canon-section .reader-text .canon-prayer-cue,
     .rule-item.canon-section .reader-text .canon-prayer-cue .liturgical-word,
     .rule-item.canon-section .reader-text .canon-long-cue,
@@ -1123,7 +1125,8 @@ export const READER_STYLES = String.raw`
       font-style: italic;
     }
     .rule-item.canon-section .reader-text .canon-short-cue.canon-initial,
-    .rule-item.canon-section .reader-text .canon-prayer-cue.canon-initial {
+    .rule-item.canon-section .reader-text .canon-prayer-cue.canon-initial,
+    .rule-item.canon-section .reader-text .canon-glory-cue {
       font-style: normal;
     }
     .rule-item.canon-section .reader-text .canon-repeat-note,
