@@ -280,6 +280,9 @@ export const READER_RUNTIME = String.raw`
                         .replace( /[\u0300-\u036f\u0483-\u0487]/g, '' ) .trim() .toLowerCase();
                     const inline = el( 'div', normalizedInlineLabel .startsWith( 'молитва' )
                           ? 'reader-inline prayer-inline' : 'reader-inline' );
+                    if (block.sourceType === 'canon' && block.canonTypography?.standaloneInlineLabel) {
+                      inline.classList.add('canon-long-label');
+                    }
                     inline.appendChild( el( 'span', 'reader-inline-label', block.inlineLabel ) );
                     inline.appendChild( textElement );
                     column.appendChild( inline );
@@ -1511,6 +1514,15 @@ const collectPsalterRubricRanges = value => {
         const saved = savedForItem( itemId );
         const active = activeForItem( itemId );
         const itemConfig = itemConfigMap.get( itemId );
+        // No other reader receives these decorations: the planner is created
+        // only by CanonScreen and is guarded by the actual source type here.
+        const canonTypography = itemConfig?.sourceType === 'canon'
+          ? itemConfig.canonTypography : null;
+        const canonRanges = Array.isArray(canonTypography?.ranges)
+          ? canonTypography.ranges : [];
+        const canonBreakBefore = new Set(
+          Array.isArray(canonTypography?.breakBefore) ? canonTypography.breakBefore : []
+        );
         const memorialAction = itemConfig?.memorialAction || null;
         const memorialMarkerText = String(memorialAction?.marker || '');
         const memorialMarkerStart =
@@ -2332,6 +2344,11 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           }
         }
         const boundaries = new Set([ 0, text.length, ]);
+        canonRanges.forEach(range => {
+          boundaries.add(range.start);
+          boundaries.add(range.end);
+        });
+        canonBreakBefore.forEach(offset => boundaries.add(offset));
         rubricBowRanges.forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
@@ -2495,7 +2512,12 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           const midpoint = start + ( end - start ) / 2;
           const isSaved = saved.some( range => midpoint >= range.start && midpoint < range.end );
           const isActive = !!active && midpoint >= active.start && midpoint < active.end;
-         
+
+        if (canonBreakBefore.has(start)) {
+          // A visual BR has no textContent and does not change selection
+          // offsets, persisted text, bookmarks or fragment ranges.
+          fragment.appendChild(document.createElement('br'));
+        }
         if (isStandaloneTraditionalPsalterPrayer &&
             standaloneSeparatorStarts.has(start)) {
           appendPsalterSeparator(fragment);
@@ -2526,6 +2548,13 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         if (parallelTroparBreak === start) fragment.appendChild(document.createElement('br'));
 
         const span = document.createElement('span');
+        if (canonRanges.length) {
+          for (const range of canonRanges) {
+            if (start >= range.start && end <= range.end) {
+              span.classList.add('canon-' + range.kind);
+            }
+          }
+        }
         if (rubricBowRanges.some(range => midpoint >= range.start && midpoint < range.end)) {
           span.classList.add('rubric-bow');
           span.style.setProperty('color', '#765238', 'important');
@@ -2926,7 +2955,7 @@ appendStyledSegment(
   text.slice(start, end),
   itemConfig?.accentWords,
   highlightLiturgicalPhrases,
-  isCanonChurch && start === 0
+  isCanonChurch && start === 0 && !canonRanges.some(range => range.kind === 'long-cue')
 );
 
 const psalterPrayerAccentText =
