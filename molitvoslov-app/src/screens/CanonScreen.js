@@ -497,7 +497,7 @@ export const CanonScreen = ({route, navigation}) => {
         // Canon-specific visual ranges; never rewrite text or save offsets.
         canonTypography: isParallelTranslation
           ? null
-          : buildCanonTypography(text || '', inlineLabel || ''),
+          : buildCanonTypography(text || '', inlineLabel || '', section.heading || ''),
 
         className: isParallelTranslation
           ? `${className} canon-parallel-translation`
@@ -652,7 +652,7 @@ export const CanonScreen = ({route, navigation}) => {
 
       const showStandaloneHeading = effectiveSectionType === 'other' && !!effectiveHeading;
 
-      if (!blocks.length && !showStandaloneHeading) {
+      if (!blocks.length && (!showStandaloneHeading || viewMode === MODE_RUSSIAN)) {
         return;
       }
 
@@ -689,13 +689,12 @@ export const CanonScreen = ({route, navigation}) => {
       });
     });
 
-    // Full translations are added as a unit; do not silently fall back to church text.
+    // RU tabs show only content with an actual translation. No placeholders
+    // or Slavonic fallbacks are inserted for missing Russian text.
     const unavailableMode =
-      ((viewMode === MODE_RUSSIAN || viewMode === MODE_BOTH) && !hasRussianTranslation)
-        ? 'russian'
-        : viewMode === MODE_TRADITIONAL && !hasTraditionalTranslation
-          ? 'traditional'
-          : null;
+      viewMode === MODE_TRADITIONAL && !hasTraditionalTranslation
+        ? 'traditional'
+        : null;
     if (unavailableMode) {
       sections.length = 0;
       sections.push({
@@ -706,10 +705,8 @@ export const CanonScreen = ({route, navigation}) => {
           layout: 'stack',
           blocks: [{
             id: nextBlockId++,
-            text: unavailableMode === 'traditional'
-              ? 'Те́кстъ въ традиціо́нномъ начерта́ніи отсꙋ́тствꙋетъ.'
-              : 'Перевод пока отсутствует.',
-            className: unavailableMode === 'traditional' ? 'akathist-church' : 'akathist-russian',
+            text: 'Те́кстъ въ традиціо́нномъ начерта́ніи отсꙋ́тствꙋетъ.',
+            className: 'akathist-church',
             metadata: {language: unavailableMode},
           }],
         }],
