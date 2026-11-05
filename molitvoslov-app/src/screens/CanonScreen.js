@@ -313,10 +313,16 @@ export const CanonScreen = ({route, navigation}) => {
     });
   }, [activeSections]);
 
-  const hasRussianTranslation = useMemo(
-    () => displaySections.some((section) => !!section.text?.translation?.trim()),
-    [displaySections]
-  );
+  // A partial Russian canon is not shown at all. Every source text
+  // section (including refrains, irmoi and prayers) must have a translation.
+  // Headings without source text are not independent translation units.
+  const hasRussianTranslation = useMemo(() => {
+    const sourceSections = displaySections.filter(
+      (section) => !!section.text?.content?.trim()
+    );
+    return sourceSections.length > 0 &&
+      sourceSections.every((section) => !!section.text?.translation?.trim());
+  }, [displaySections]);
 
   const hasUkrainianTranslation = useMemo(
     () => displaySections.some((section) => !!section.text?.translation_uk?.trim()),
@@ -436,9 +442,17 @@ export const CanonScreen = ({route, navigation}) => {
       };
     }
 
-    const showChurch = viewMode === MODE_CHURCH || viewMode === MODE_BOTH;
+    // If a translation is incomplete, only the original Church Slavonic
+    // canon is available. Never render isolated Russian sections or notices.
+    const displayMode = !hasRussianTranslation &&
+      (viewMode === MODE_RUSSIAN || viewMode === MODE_BOTH)
+        ? MODE_CHURCH
+        : viewMode;
 
-    const showRussian = viewMode === MODE_RUSSIAN || viewMode === MODE_BOTH;
+    const showChurch = displayMode === MODE_CHURCH || displayMode === MODE_BOTH;
+
+    const showRussian = hasRussianTranslation &&
+      (displayMode === MODE_RUSSIAN || displayMode === MODE_BOTH);
 
     const showUkrainian = viewMode === MODE_UKRAINIAN;
 
@@ -456,7 +470,7 @@ export const CanonScreen = ({route, navigation}) => {
       const syntheticId = nextBlockId++;
       // In CS + RU, the translation is an explanatory secondary paragraph.
       // Do not give it the Slavonic hymn's red initials or doxology styling.
-      const isParallelTranslation = viewMode === MODE_BOTH && language === 'russian';
+      const isParallelTranslation = displayMode === MODE_BOTH && language === 'russian';
 
       savedItems
         .filter((item) => {
@@ -497,7 +511,15 @@ export const CanonScreen = ({route, navigation}) => {
         // Canon-specific visual ranges; never rewrite text or save offsets.
         canonTypography: isParallelTranslation
           ? null
-          : buildCanonTypography(text || '', inlineLabel || '', section.heading || ''),
+          : buildCanonTypography(
+              text || '',
+              inlineLabel || '',
+              section.heading || '',
+              section.section_type === 'prayer' ||
+                /^молитв/u.test(normalizeCanonCue(section.heading))
+                  ? 'prayer'
+                  : section.section_type || ''
+            ),
 
         className: isParallelTranslation
           ? `${className} canon-parallel-translation`
@@ -643,7 +665,7 @@ export const CanonScreen = ({route, navigation}) => {
 
             // Show standalone RU rubrics, but keep the CS + RU translation
             // visually secondary without repeating the source headings.
-            inlineLabel: viewMode === MODE_RUSSIAN
+            inlineLabel: displayMode === MODE_RUSSIAN
               ? getCanonInlineLabel(displaySection, russian, t)
               : '',
           })
@@ -652,7 +674,7 @@ export const CanonScreen = ({route, navigation}) => {
 
       const showStandaloneHeading = effectiveSectionType === 'other' && !!effectiveHeading;
 
-      if (!blocks.length && (!showStandaloneHeading || viewMode === MODE_RUSSIAN)) {
+      if (!blocks.length && (!showStandaloneHeading || displayMode === MODE_RUSSIAN)) {
         return;
       }
 
@@ -738,9 +760,9 @@ export const CanonScreen = ({route, navigation}) => {
       },
 
       viewSwitcher: {
-        activeKey: viewMode,
+        activeKey: displayMode,
         options: buildReaderLanguageOptions({
-          hasRussian: true,
+          hasRussian: hasRussianTranslation,
           hasTraditional: true,
         }),
       },
