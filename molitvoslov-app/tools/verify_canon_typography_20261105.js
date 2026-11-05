@@ -13,10 +13,15 @@ const buildCanonTypography = new Function(
   source.replace('export const buildCanonTypography =', 'const buildCanonTypography =') +
     '\nreturn buildCanonTypography;'
 )();
+const coverageSource = read('src/services/canonRussianCoverage.js');
+const getCanonRussianCoverage = new Function(
+  coverageSource.replace('export const getCanonRussianCoverage =', 'const getCanonRussianCoverage =') +
+    '\nreturn getCanonRussianCoverage;'
+)();
 
-const format = (text, label, heading) => {
+const format = (text, label, heading, sectionType) => {
   const snapshot = text;
-  const info = buildCanonTypography(text, label, heading);
+  const info = buildCanonTypography(text, label, heading, sectionType);
   assert.equal(text, snapshot, 'The original text must remain unchanged');
   assert.ok(Array.isArray(info.ranges));
   assert.ok(Array.isArray(info.breakBefore));
@@ -139,20 +144,56 @@ assert.equal(format('Господи, помилуй', 'Ирмос:').standaloneI
 
 // The shared renderer is permitted to show the classes but must never
 // infer canon formatting from generic Cyrillic content or a regex alone.
+// An incomplete Russian canon must never show any translated sections.
+const canonParts = [
+  {id: 1, section_type: 'irmos', text: {content: 'Ирмос', translation: 'Ирмос'}},
+  {id: 2, section_type: 'refrain', text: {content: 'Припев', translation: ''}},
+  {id: 3, section_type: 'prayer', text: {content: 'Молитва', translation: 'Молитва'}},
+  {id: 4, section_type: 'other', heading: 'Песнь 1', text: null},
+];
+const incomplete = getCanonRussianCoverage(canonParts);
+assert.equal(incomplete.complete, false, 'A single untranslated refrain blocks the entire RU canon');
+assert.equal(incomplete.total, 3);
+assert.equal(incomplete.translated, 2);
+assert.deepEqual(incomplete.missingSectionIds, [2]);
+const fullCanonParts = canonParts.map(part => part.id === 2
+  ? {...part, text: {...part.text, translation: 'Переведённый припев'}}
+  : part);
+assert.equal(getCanonRussianCoverage(fullCanonParts).complete, true);
+assert.equal(getCanonRussianCoverage([]).complete, false);
+assert.equal(getCanonRussianCoverage([{id: 6, text: {content: 'Текст', translation: '  '}}]).complete, false);
+// Normal prayer prose contains the same words as a separate liturgical
+// doxology, but must never be rendered in red or get an inserted line break.
+const canonPrayerBody =
+  'Пречистая Богородице, всегда, и ныне и присно и во веки веков. Аминь.';
+const prayerBodyStyle = format(canonPrayerBody, '', 'Молитва', 'prayer');
+assert.equal(prayerBodyStyle.prayerProse, true);
+assert.ok(!prayerBodyStyle.ranges.some(range => range.kind === 'doxology'),
+  'Prayer prose must not receive red doxology ranges');
+assert.deepEqual(prayerBodyStyle.breakBefore, [],
+  'Prayer prose must not be split at ordinary and-now wording');
+assert.ok(format(canonPrayerBody, '', '', 'troparion').ranges.some(
+  range => range.kind === 'doxology'
+), 'Standalone hymn doxology styling must remain unchanged');
 const canon = read('src/screens/CanonScreen.js');
 const reader = read('src/components/reader/selectableDocumentReader/runtime.js');
 const styles = read('src/components/reader/selectableDocumentReader/styles.js');
 assert.match(canon, /import \{buildCanonTypography\} from '\.\.\/services\/canonTypography'/);
 // The parallel Russian translation behaves like prayer-rule translations:
 // no red initial/doxology planner, but independent paragraph typography.
-assert.match(canon, /const isParallelTranslation = viewMode === MODE_BOTH && language === 'russian'/);
-assert.match(canon, /canonTypography: isParallelTranslation\s*\?\s*null\s*:\s*buildCanonTypography\(text \|\| '', inlineLabel \|\| '', section\.heading \|\| ''\)/);
+assert.match(canon, /const isParallelTranslation = displayMode === MODE_BOTH && language === 'russian'/);
+assert.match(canon, /canonTypography: isParallelTranslation\s*\?\s*null\s*:\s*buildCanonTypography\(/);
+assert.match(canon, /section\.section_type === 'prayer'/);
+assert.match(canon, /getCanonRussianCoverage\(displaySections\)\.complete/);
+assert.match(canon, /const displayMode = !hasRussianTranslation/);
+assert.match(canon, /const showRussian = hasRussianTranslation\s*&&/);
+assert.match(canon, /hasRussian: hasRussianTranslation/);
 assert.match(canon, /className: isParallelTranslation\s*\?\s*`\$\{className\} canon-parallel-translation`\s*:\s*className/);
 assert.match(styles, /\.rule-item\.canon-section \.reader-text\.canon-russian\.canon-parallel-translation\s*\{/);
 assert.match(styles, /\.reader-text\.canon-russian\.canon-parallel-translation\s*\{[^}]*color: var\(--secondary\) !important;[^}]*font-size: 16px;[^}]*line-height: 26px/s);
 // Single-language Russian/UK readers display hymn rubric labels; parallel
 // translations deliberately remain secondary and have no redundant headings.
-assert.match(canon, /inlineLabel: viewMode === MODE_RUSSIAN\s*\?\s*getCanonInlineLabel\(displaySection, russian, t\)\s*:\s*''/);
+assert.match(canon, /inlineLabel: displayMode === MODE_RUSSIAN\s*\?\s*getCanonInlineLabel\(displaySection, russian, t\)\s*:\s*''/);
 assert.match(canon, /inlineLabel: getCanonInlineLabel\(displaySection, localized, t\)/);
 // A missing Russian translation is omitted completely. Do not fall back
 // to Slavonic with a visible notification in the RU reading.
@@ -171,6 +212,7 @@ assert.match(reader, /itemConfig\?\.sourceType === 'canon'\s*\?\s*itemConfig\.ca
 assert.match(reader, /block\.sourceType === 'canon' && block\.canonTypography\?\.standaloneInlineLabel/);
 assert.match(reader, /canonBreakBefore\.has\(start\)/);
 assert.match(reader, /span\.classList\.add\('canon-' \+ range\.kind\)/);
+assert.match(reader, /canonTypography\?\.prayerProse === true/);
 for (const token of ['canon-initial', 'canon-long-cue', 'canon-doxology', 'canon-repeat-note', 'canon-short-cue', 'canon-glory-cue', 'canon-prayer-cue']) {
   assert.ok(styles.includes('.rule-item.canon-section .reader-text .'+token),
     'Missing canon-specific CSS: ' + token);
@@ -180,12 +222,14 @@ for (const name of [
   'src/components/reader/selectableDocumentReader/runtime.js',
   'src/components/reader/selectableDocumentReader/styles.js',
   'src/services/canonTypography.js',
+  'src/services/canonRussianCoverage.js',
 ]) {
   babel.parse(read(name), {sourceType: 'module', plugins: ['jsx']});
 }
 console.log('PASS: canon-only text formatting for initials, rubrics, doxology breaks and (Дважды)');
 console.log('PASS: parallel RU translation uses secondary prayer style without canon red initials');
-console.log('PASS: standalone RU headings and justified canon text; untranslated refrains are omitted');
+console.log('PASS: all-or-nothing canon Russian translation coverage and justified text');
+console.log('PASS: no red doxologies inside canon prayer prose; hymn doxologies unchanged');
 console.log('PASS: Psalter prayer heading remains brown in both heading and inline renderers');
 console.log('PASS: original text, UTF-16 selection offsets and other reader scopes are protected');
 console.log('PASS: four edited/new modules parse via Babel');
