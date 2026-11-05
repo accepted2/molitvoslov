@@ -67,7 +67,21 @@ assert.ok(contains(para, p, 'initial', 'г'));
 assert.ok(contains(para, p, 'initial', 'с'));
 
 const short = 'Ирмос: Достойно есть.';
-assert.deepEqual(format(short).breakBefore, [], 'Short established cues remain inline');
+const shortStyle = format(short);
+assert.deepEqual(shortStyle.breakBefore, [], 'Short established cues remain inline');
+assert.ok(contains(short, shortStyle, 'short-cue', 'Ирмос:'));
+assert.ok(contains(short, shortStyle, 'initial', 'Д'));
+
+const gloryCue = 'Слава: Господи, помилуй.';
+const gloryStyle = format(gloryCue);
+assert.deepEqual(gloryStyle.breakBefore, [], 'Short glory label stays on its original line');
+assert.ok(contains(gloryCue, gloryStyle, 'glory-cue', 'Слава:'));
+assert.ok(contains(gloryCue, gloryStyle, 'initial', 'Г'));
+
+const prayerCue = 'Молитва: Господи, услыши нас.';
+const prayerStyle = format(prayerCue);
+assert.ok(contains(prayerCue, prayerStyle, 'prayer-cue', 'Молитва:'));
+assert.deepEqual(prayerStyle.breakBefore, [prayerCue.indexOf('Господи')]);
 
 const longInline = format('к Богородице ныне', 'Тропарь Богородице, глас 4-й:');
 assert.equal(longInline.standaloneInlineLabel, true);
@@ -85,7 +99,7 @@ assert.match(reader, /itemConfig\?\.sourceType === 'canon'\s*\?\s*itemConfig\.ca
 assert.match(reader, /block\.sourceType === 'canon' && block\.canonTypography\?\.standaloneInlineLabel/);
 assert.match(reader, /canonBreakBefore\.has\(start\)/);
 assert.match(reader, /span\.classList\.add\('canon-' \+ range\.kind\)/);
-for (const token of ['canon-initial', 'canon-long-cue', 'canon-doxology', 'canon-repeat-note']) {
+for (const token of ['canon-initial', 'canon-long-cue', 'canon-doxology', 'canon-repeat-note', 'canon-short-cue', 'canon-glory-cue', 'canon-prayer-cue']) {
   assert.ok(styles.includes('.rule-item.canon-section .reader-text .'+token),
     'Missing canon-specific CSS: ' + token);
 }
