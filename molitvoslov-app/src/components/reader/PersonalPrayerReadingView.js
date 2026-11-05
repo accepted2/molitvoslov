@@ -13,6 +13,7 @@ import {useScopedReaderAppearance} from '../../hooks/useScopedReaderAppearance';
 import {resolveReaderAppearance} from '../../services/scopedReaderAppearance';
 import {getSavedItems} from '../../services/savedItems';
 import {buildPersonalPrayerReadingDocument} from '../../services/personalPrayerReadingDocument';
+import {presentPersonalPrayer} from '../../services/personalPrayerPresentation';
 
 export const PersonalPrayerReadingView = ({
   book, items, bookSyncId, prayerSyncId, navigation, fallbackTitle,
@@ -32,7 +33,7 @@ export const PersonalPrayerReadingView = ({
   const background = resolveReaderAppearance(appearance).background;
   const isSingle = Boolean(prayerSyncId && items.length === 1);
   const displayTitle = isSingle
-    ? String(items[0]?.prayer?.title || fallbackTitle || 'Молитва')
+    ? (presentPersonalPrayer(items[0]?.prayer).title || String(book?.title || fallbackTitle || 'Молитва'))
     : String(book?.title || fallbackTitle || 'Мой молитвослов');
 
   useEffect(() => {
