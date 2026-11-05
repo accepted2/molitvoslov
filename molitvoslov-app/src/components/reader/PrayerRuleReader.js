@@ -9,7 +9,7 @@ import {useLanguage} from '../../context/LanguageContext';
 import {getReadingSettings, DEFAULT_READING_SETTINGS} from '../../services/readerPreferences';
 import {applyReaderAppearance, resolveReaderAppearance} from '../../services/scopedReaderAppearance';
 import {getCachedPonomarFontDataUri, loadPonomarFontDataUri} from '../../services/ponomarFont';
-import {getCommunionRuleKind, buildCommunionTypography} from '../../services/communionRuleTypography';
+import {getCommunionRuleKind, buildCommunionTypography, compactCommunionAlleluiaDisplay} from '../../services/communionRuleTypography';
 
 const scriptSafeJson = (value) =>
   JSON.stringify(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
@@ -628,6 +628,24 @@ const HTML_TEMPLATE = String.raw`
       font-weight: 600;
       font-style: normal;
       white-space: nowrap;
+    }
+    /* Keep the complete source DOM for selection offsets. Display one
+       Alleluia invocation and the brown count instead of its repeats. */
+    body.communion-reading-rule .reader-text .communion-alleluia-count {
+      font-size: 0 !important;
+      line-height: 0 !important;
+    }
+    body.communion-reading-rule .reader-text .communion-alleluia-count::after {
+      content: " (Трижды)";
+      color: var(--secondary) !important;
+      font-size: var(--reading-font-size, 17px);
+      line-height: 1.7;
+      font-weight: 600;
+      font-style: normal;
+      white-space: nowrap;
+    }
+    body.communion-reading-rule .reader-text .communion-alleluia-hidden {
+      display: none !important;
     }
 
     .liturgical-phrase {
@@ -4688,7 +4706,13 @@ const HTML_TEMPLATE = String.raw`
             );
           for (const range of communionRanges) {
             if (start >= range.start && end <= range.end) {
-              span.classList.add('communion-' + range.kind);
+              if (range.kind === 'alleluia-replace') {
+                span.classList.add(start === range.start
+                  ? 'communion-alleluia-count'
+                  : 'communion-alleluia-hidden');
+              } else {
+                span.classList.add('communion-' + range.kind);
+              }
             }
           }
 
@@ -7778,8 +7802,34 @@ const buildHtml = ({
       }
     }
   }
+  // Only non-selectable captions and secondary translations are shortened
+  // in the HTML data. Selectable texts are kept verbatim and folded by CSS.
+  const displayRule = communionKind && rule
+    ? {
+        ...rule,
+        items: (rule.items || []).map(item => {
+          if (item?.item_type === 'instruction' || item?.item_type === 'section') {
+            return {
+              ...item,
+              content: compactCommunionAlleluiaDisplay(item.content),
+              content_uk: compactCommunionAlleluiaDisplay(item.content_uk),
+            };
+          }
+          if (item?.item_type === 'text' && item.text && viewMode === 'both') {
+            return {
+              ...item,
+              text: {
+                ...item.text,
+                translation: compactCommunionAlleluiaDisplay(item.text.translation),
+              },
+            };
+          }
+          return item;
+        }),
+      }
+    : rule;
   const payload = {
-    rule,
+    rule: displayRule,
     communionKind,
     communionTypographyByItem,
 
