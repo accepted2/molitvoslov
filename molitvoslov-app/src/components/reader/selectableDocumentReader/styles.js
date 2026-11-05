@@ -48,7 +48,7 @@ export const READER_STYLES = String.raw`
     /* Inline saint/calendar reading keeps the same custom fragment-selection
        engine, without creating an editable Android text field. */
     body.embedded-reader {
-      padding: 0 0 68px !important;
+      padding: 0 !important;
       margin: 0 !important;
       overflow: hidden;
     }
@@ -68,10 +68,11 @@ export const READER_STYLES = String.raw`
     body.embedded-reader .view-switcher {
       display: none !important;
     }
-    body.embedded-reader #selection-bar {
-      bottom: 4px !important;
-      left: 2px;
-      right: 2px;
+    /* Selection gestures stay in the WebView; the save bar is the same
+       app-wide React Native selection bar used in prayer categories. */
+    body.embedded-reader #selection-bar,
+    body.embedded-reader .selection-handle {
+      display: none !important;
     }
     body.embedded-reader .reader-text {
       white-space: pre-line;
