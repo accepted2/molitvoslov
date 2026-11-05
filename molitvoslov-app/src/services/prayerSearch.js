@@ -23,69 +23,56 @@ const preview = (value, limit = 130) => {
   return clean.slice(0, limit - 1).trimEnd() + '…';
 };
 
-const textTitle = (item) => {
-  const explicit = String(item?.title || item?.description || '').trim();
-  if (explicit) {
-    return explicit;
-  }
-
-  const source = String(item?.translation || item?.content || '').trim();
-  const firstLine = source.split(/\r?\n/).find((line) => line.trim()) || '';
-
-  return preview(firstLine, 72) || 'Молитва';
-};
+const textTitle = item =>
+  // A first line from the prayer body is not an authored title.
+  String(item?.title || '').trim() || 'Молитва';
 
 const categoryNames = (item) =>
   (item?.categories || []).map((category) => String(category?.name || '').trim()).filter(Boolean);
 
-const composeFullText = (item) => {
-  const church = String(item?.content || '').trim();
-  const russian = String(item?.translation || '').trim();
-
-  if (church && russian && normalizeSearchText(church) !== normalizeSearchText(russian)) {
-    return church + '\n\nРусский перевод\n' + russian;
-  }
-
-  return church || russian;
-};
-
+// Each language is a separate option. Importing a Russian prayer must never
+// silently append the Church Slavonic source (or the other way round).
 const buildTextEntries = () =>
   Object.values(getCurrentContent()?.texts || {})
     .filter((item) => item && (item.content || item.translation))
-    .map((item) => {
+    .flatMap((item) => {
       const title = textTitle(item);
       const categories = categoryNames(item);
-      const content = String(item.content || '');
-      const translation = String(item.translation || '');
+      const content = String(item.content || '').trim();
+      const translation = String(item.translation || '').trim();
       const description = String(item.description || '');
-      const fullText = composeFullText(item);
-
-      return {
-        key: 'library:' + String(item.id ?? item.slug ?? title),
-        kind: 'library',
-        group: 'prayer',
-        id: item.id ?? null,
-        slug: item.slug || '',
-        title,
-        subtitle: categories.length
-          ? 'Библиотека · ' + categories.slice(0, 2).join(' · ')
-          : 'Библиотека молитв',
-        preview: preview(translation || content || description),
-        text: fullText,
-        origin_data: {
-          text_id: item.id ?? null,
+      const subtitle = categories.length
+        ? 'Библиотека · ' + categories.slice(0, 2).join(' · ')
+        : 'Библиотека молитв';
+      return [
+        ['church', 'ЦС', content],
+        ['russian', 'РУС', translation],
+      ].filter(([, , body]) => Boolean(body))
+        .map(([language, label, body]) => ({
+          key: 'library:' + String(item.id ?? item.slug ?? title) + ':' + language,
+          kind: 'library',
+          group: 'prayer',
+          id: item.id ?? null,
           slug: item.slug || '',
-          language: item.language || '',
-          category_slugs: (item.categories || []).map((category) => category?.slug).filter(Boolean),
-        },
-        search: {
-          title: normalizeSearchText(title),
-          description: normalizeSearchText(description),
-          categories: normalizeSearchText(categories.join(' ')),
-          content: normalizeSearchText(content),
-          translation: normalizeSearchText(translation),
-        },
-      };
+          title,
+          subtitle: subtitle + ' · ' + label,
+          preview: preview(body),
+          text: body,
+          origin_data: {
+            text_id: item.id ?? null,
+            slug: item.slug || '',
+            language,
+            auto_generated_title: !String(item.title || '').trim(),
+            category_slugs: (item.categories || []).map((category) => category?.slug).filter(Boolean),
+          },
+          search: {
+            title: normalizeSearchText(title),
+            description: normalizeSearchText(description),
+            categories: normalizeSearchText(categories.join(' ')),
+            content: normalizeSearchText(content),
+            translation: normalizeSearchText(translation),
+          },
+        }));
     });
 
 const buildPsalmEntries = () => {
