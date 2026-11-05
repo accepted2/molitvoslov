@@ -1100,6 +1100,27 @@ export const READER_STYLES = String.raw`
       font-style: inherit !important;
       font-weight: inherit !important;
     }
+    /* Canon only: do not stretch inter-word spaces to justify narrow
+       Slavonic/Russian lines. Emergency long-word wrapping is visual only:
+       the source text and selection offsets remain byte-for-byte intact. */
+    .rule-item.canon-section .reader-text.canon-church,
+    .rule-item.canon-section .reader-text.canon-russian {
+      text-align: left !important;
+      text-align-last: left !important;
+      text-justify: auto !important;
+      word-spacing: normal !important;
+      overflow-wrap: break-word;
+      word-break: normal;
+      -webkit-hyphens: manual;
+      hyphens: manual;
+    }
+    /* A Russian-only canon may contain an untranslated Slavonic refrain.
+       The language is explicitly identified in its small section label. */
+    .rule-item.canon-section .reader-text.canon-untranslated-refrain {
+      color: var(--secondary);
+      font-size: 16px;
+      line-height: 26px;
+    }
     .reader-text.canon-russian .liturgical-word, .reader-text.akathist-russian .liturgical-word {
       color: inherit;
       font-style: inherit;
