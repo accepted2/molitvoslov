@@ -143,7 +143,7 @@ export const TextSelectionProvider = ({children}) => {
               {saving ? (
                 <ActivityIndicator size="small" color={colors.white} />
               ) : (
-                <Text style={styles.saveText}>Сохранить</Text>
+                <Text style={styles.saveText}>{activeSelection.actionLabel || 'Сохранить'}</Text>
               )}
             </Pressable>
           </View>
