@@ -10,10 +10,14 @@ from pathlib import Path
 SCRIPT = Path(__file__).with_name("audit_git_local_vs_remote_20261105.py")
 
 def git(repo, *args):
-    return subprocess.run(
+    # Git on Windows may emit localized diagnostics in the console code page.
+    # Decode with replacement so non-UTF8 bytes do not crash the test
+    # subprocess reader thread. All fields asserted below are ASCII.
+    result = subprocess.run(
         ["git", "-C", str(repo), *args], check=True,
-        capture_output=True, text=True
-    ).stdout.strip()
+        capture_output=True
+    )
+    return result.stdout.decode("utf-8", errors="replace").strip()
 
 def write(repo, file, contents):
     path = repo / file
@@ -55,9 +59,10 @@ class AuditTests(unittest.TestCase):
             result = subprocess.run(
                 [sys.executable, str(SCRIPT), "--root", str(repo),
                  "--remote", "target", "--report-dir", str(report_dir)],
-                check=True, capture_output=True, text=True
+                check=True, capture_output=True
             )
-            self.assertIn("BOTH_DIFFER:", result.stdout)
+            stdout = result.stdout.decode("utf-8", errors="replace")
+            self.assertIn("BOTH_DIFFER:", stdout)
             reports = list(report_dir.glob("*.csv"))
             self.assertEqual(len(reports), 1)
             with reports[0].open(encoding="utf-8-sig", newline="") as f:
@@ -81,10 +86,12 @@ class AuditTests(unittest.TestCase):
             result = subprocess.run(
                 [sys.executable, str(SCRIPT), "--root", str(repo),
                  "--remote", "target", "--report-dir", str(repo / "reports")],
-                capture_output=True, text=True
+                capture_output=True
             )
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("OUTSIDE", result.stderr + result.stdout)
+            stdout = result.stdout.decode("utf-8", errors="replace")
+            stderr = result.stderr.decode("utf-8", errors="replace")
+            self.assertIn("OUTSIDE", stderr + stdout)
             self.assertFalse((repo / "reports").exists())
 
 if __name__ == "__main__":
