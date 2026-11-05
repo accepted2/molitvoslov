@@ -181,27 +181,34 @@ const styles = read('src/components/reader/selectableDocumentReader/styles.js');
 assert.match(canon, /import \{buildCanonTypography\} from '\.\.\/services\/canonTypography'/);
 // The parallel Russian translation behaves like prayer-rule translations:
 // no red initial/doxology planner, but independent paragraph typography.
-assert.match(canon, /const isParallelTranslation = displayMode === MODE_BOTH && language === 'russian'/);
+assert.match(canon, /const isParallelTranslation = viewMode === MODE_BOTH && language === 'russian'/);
 assert.match(canon, /canonTypography: isParallelTranslation\s*\?\s*null\s*:\s*buildCanonTypography\(/);
 assert.match(canon, /section\.section_type === 'prayer'/);
 assert.match(canon, /getCanonRussianCoverage\(displaySections\)\.complete/);
-assert.match(canon, /const displayMode = !hasRussianTranslation/);
+assert.ok(!canon.includes('const displayMode = !hasRussianTranslation'));
 assert.match(canon, /const showRussian = hasRussianTranslation\s*&&/);
-assert.match(canon, /hasRussian: hasRussianTranslation/);
+assert.match(canon, /hasRussian: true/);
+assert.match(canon, /activeKey: viewMode/);
+assert.match(canon, /nextMode = MODE_RUSSIAN/);
 assert.match(canon, /className: isParallelTranslation\s*\?\s*`\$\{className\} canon-parallel-translation`\s*:\s*className/);
 assert.match(styles, /\.rule-item\.canon-section \.reader-text\.canon-russian\.canon-parallel-translation\s*\{/);
 assert.match(styles, /\.reader-text\.canon-russian\.canon-parallel-translation\s*\{[^}]*color: var\(--secondary\) !important;[^}]*font-size: 16px;[^}]*line-height: 26px/s);
 // Single-language Russian/UK readers display hymn rubric labels; parallel
 // translations deliberately remain secondary and have no redundant headings.
-assert.match(canon, /inlineLabel: displayMode === MODE_RUSSIAN\s*\?\s*getCanonInlineLabel\(displaySection, russian, t\)\s*:\s*''/);
+assert.match(canon, /inlineLabel: viewMode === MODE_RUSSIAN\s*\?\s*getCanonInlineLabel\(displaySection, russian, t\)\s*:\s*''/);
 assert.match(canon, /inlineLabel: getCanonInlineLabel\(displaySection, localized, t\)/);
-// A missing Russian translation is omitted completely. Do not fall back
-// to Slavonic with a visible notification in the RU reading.
+// An incomplete translation shows one message, not partial text, while
+// preserving the Church Slavonic original in the combined reading mode.
 assert.ok(!canon.includes('Церковнославянский припев — перевод отсутствует'));
 assert.ok(!canon.includes('canon-untranslated-refrain'));
 assert.ok(!styles.includes('canon-untranslated-refrain'));
 assert.ok(!canon.includes('Перевод пока отсутствует.'));
 assert.match(canon, /const unavailableMode =\s*viewMode === MODE_TRADITIONAL/);
+assert.match(canon, /if \(!hasRussianTranslation &&\s*\(viewMode === MODE_RUSSIAN \|\| viewMode === MODE_BOTH\)\)/);
+assert.match(canon, /if \(viewMode === MODE_RUSSIAN\) sections\.length = 0/);
+assert.match(canon, /sections\.unshift\(\{/);
+assert.match(canon, /text: 'Нет текста этого перевода\.'/);
+assert.match(canon, /const showChurch = viewMode === MODE_CHURCH \|\| viewMode === MODE_BOTH/);
 // Psalter labels remain brown in both the post-kathisma section header
 // and inline prayers (including nested liturgical-word spans).
 assert.match(styles, /\.rule-item\.psalter-post-kathisma-part \.section-header \.prayer-title/);
@@ -228,7 +235,7 @@ for (const name of [
 }
 console.log('PASS: canon-only text formatting for initials, rubrics, doxology breaks and (Дважды)');
 console.log('PASS: parallel RU translation uses secondary prayer style without canon red initials');
-console.log('PASS: all-or-nothing canon Russian translation coverage and justified text');
+console.log('PASS: canon language tabs persist; missing Russian translation shows one message');
 console.log('PASS: no red doxologies inside canon prayer prose; hymn doxologies unchanged');
 console.log('PASS: Psalter prayer heading remains brown in both heading and inline renderers');
 console.log('PASS: original text, UTF-16 selection offsets and other reader scopes are protected');
