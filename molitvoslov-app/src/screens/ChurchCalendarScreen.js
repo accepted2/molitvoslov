@@ -284,7 +284,7 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, 
     feast, date, section, title: sourceTitle, sectionTitle: title,
   });
   return (
-    <View style={[styles.textBlock, wholeSaved && styles.calendarSavedBlock]}>
+    <View style={styles.textBlock}>
       <View style={styles.textBlockHeaderRow}>
         <Pressable
           onPress={() => setExpanded((value) => !value)}
@@ -302,7 +302,7 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, 
       </View>
 
       {expanded && (life ? (
-        <View style={[styles.calendarLifeInset, wholeSaved && styles.calendarSavedContent]}>
+        <View style={styles.calendarLifeInset}>
           <View style={[styles.calendarLifeScrollFrame, {maxHeight: readerHeight}]}>
             <ScrollView
               nestedScrollEnabled
@@ -317,7 +317,7 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, 
               scrollEventThrottle={32}
               contentContainerStyle={styles.calendarLifeScrollContent}
             >
-              <View style={[styles.textBlockContent, wholeSaved && styles.calendarSavedContent]}>
+              <View style={styles.textBlockContent}>
                 <CalendarSelectableBody
                   text={normalizeCalendarText(text)}
                   saveContext={saveContext}
@@ -334,7 +334,7 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, 
           </View>
         </View>
       ) : (
-        <View style={[styles.textBlockContent, wholeSaved && styles.calendarSavedContent]}>
+        <View style={styles.textBlockContent}>
           <CalendarSelectableBody
             text={normalizeCalendarText(text)}
             saveContext={saveContext}
