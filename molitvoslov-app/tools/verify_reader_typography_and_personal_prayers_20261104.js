@@ -65,11 +65,19 @@ for (const [palette, dark] of [
 }
 console.log('PASS: morning/evening, general, parallel and Psalter text colors preserved in four themes');
 
+// Evaluate the pure builder with its actual helper dependency in the same
+// test VM. The source module imports an ES module, which cannot be executed
+// as-is inside vm.runInNewContext (a CommonJS script context).
+const presentation = read('src/services/personalPrayerPresentation.js')
+  .replace(/export const /g, 'const ');
 const builder = read('src/services/personalPrayerReadingDocument.js')
-  .replace('export const buildPersonalPrayerReadingDocument =', 'const buildPersonalPrayerReadingDocument =') +
-  '\nmodule.exports = buildPersonalPrayerReadingDocument;';
+  .replace(/^import\s+\{presentPersonalPrayer\}\s+from\s+['"]\.\/personalPrayerPresentation['"];\s*$/m, '')
+  .replace('export const buildPersonalPrayerReadingDocument =', 'const buildPersonalPrayerReadingDocument =');
 const docSandbox = {module: {exports: null}};
-vm.runInNewContext(builder, docSandbox);
+vm.runInNewContext(
+  presentation + '\n' + builder + '\nmodule.exports = buildPersonalPrayerReadingDocument;',
+  docSandbox,
+);
 const create = docSandbox.module.exports;
 const book = {title: 'Мои молитвы', description: 'Мой сборник'};
 const items = [
