@@ -1,7 +1,8 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {ActivityIndicator, Pressable, StyleSheet, Text, View} from 'react-native';
 import {FontAwesome} from '@expo/vector-icons';
-import SelectableSaveText from './SelectableSaveText';
+import SelectableDocumentReader from './SelectableDocumentReader';
+import {calendarSectionTitle} from '../../services/personalPrayerPresentation';
 import {deleteSavedItem, getSavedItems, saveItem} from '../../services/savedItems';
 
 /** Same canonical content in the calendar accordion and the saint detail card. */
@@ -31,7 +32,9 @@ export const makeCalendarSaveContext = ({feast, date, section, title, sectionTit
     anchorType: 'calendar_section',
     anchorId: kind,
     sourceTitle: String(title || feast?.title || 'Церковный календарь'),
-    itemTitle: sectionTitle,
+    itemTitle: (section === 'troparion' || section === 'kontakion')
+      ? (calendarSectionTitle(section, feast?.title || title) || sectionTitle)
+      : sectionTitle,
     fullSaveType: section === 'prayer' ? 'prayer' : 'text',
     metadata: {
       date: date || null,
@@ -115,7 +118,7 @@ export const CalendarSaveWholeButton = ({text, saveContext, onSavedChange}) => {
         accessibilityLabel={saved ? 'Убрать из избранного' : 'Сохранить текст целиком'}
         accessibilityState={{selected: !!saved, disabled: busy}}
         style={({pressed}) => [
-          styles.saveButton, saved && styles.saveButtonActive,
+          styles.saveButton,
           pressed && !busy && styles.pressed,
         ]}
       >
@@ -125,7 +128,7 @@ export const CalendarSaveWholeButton = ({text, saveContext, onSavedChange}) => {
           <FontAwesome
             name={saved ? 'heart' : 'heart-o'}
             size={19}
-            color="#765238"
+            color={saved ? '#9B3B32' : '#765238'}
             accessibilityElementsHidden
             importantForAccessibility="no"
           />
@@ -136,23 +139,71 @@ export const CalendarSaveWholeButton = ({text, saveContext, onSavedChange}) => {
   );
 };
 
-/** Uses the app-wide selection bar, including sentence/paragraph classification. */
-export const CalendarSelectableBody = ({text, saveContext, textStyle, onSelectionLockChange}) => {
+/** Inline read-only calendar content uses the SAME gesture/fragment engine as
+ * every other WebView reader. Never mount a TextInput in a saint's life. */
+export const CalendarSelectableBody = ({text, saveContext, textStyle}) => {
   const normalized = useMemo(() => normalizeSavedText(text), [text]);
+  const [savedItems, setSavedItems] = useState([]);
+  const appearance = useMemo(() => ({
+    palette: 'parchment',
+    fontSize: Number(StyleSheet.flatten(textStyle)?.fontSize) || 16,
+  }), [textStyle]);
+  const numericId = Number(saveContext.sourceId);
+  useEffect(() => {
+    let live = true;
+    setSavedItems([]);
+    getSavedItems({source_type: saveContext.sourceType, source_id: numericId})
+      .then(items => {
+        if (!live) return;
+        // Whole-text heart saves must NOT paint the text background; only
+        // independently selected fragments use the saved-range highlight.
+        setSavedItems(items.filter(item =>
+          item.anchor_type === saveContext.anchorType &&
+          Number(item.anchor_id) === Number(saveContext.anchorId) &&
+          item.save_type !== saveContext.fullSaveType
+        ));
+      })
+      .catch(error => console.warn('[calendar reader] saved excerpts:', error?.message || error));
+    return () => {live = false;};
+  }, [saveContext.sourceType, saveContext.anchorType, numericId,
+    saveContext.anchorId, saveContext.fullSaveType, normalized]);
+  const doc = useMemo(() => ({
+    embedded: true,
+    title: '',
+    progressAnchorType: 'calendar_section',
+    savedItems,
+    sections: [{
+      title: '',
+      progressAnchorId: saveContext.anchorId,
+      trackProgress: false,
+      rows: [{
+        layout: 'stack',
+        blocks: [{
+          id: 1,
+          text: normalized,
+          className: 'calendar-inline-text',
+          sourceType: saveContext.sourceType,
+          sourceId: numericId,
+          anchorType: saveContext.anchorType,
+          anchorId: saveContext.anchorId,
+          sourceTitle: saveContext.sourceTitle,
+          itemTitle: saveContext.itemTitle,
+          metadata: saveContext.metadata,
+          fullSaveType: null,
+        }],
+      }],
+    }],
+  }), [normalized, numericId, saveContext.sourceType, saveContext.anchorType,
+    saveContext.anchorId, saveContext.sourceTitle, saveContext.itemTitle,
+    saveContext.metadata, savedItems]);
   if (!normalized) return null;
   return (
-    <SelectableSaveText
-      text={normalized}
-      textStyle={textStyle}
-      sourceType={saveContext.sourceType}
-      sourceId={saveContext.sourceId}
-      anchorType={saveContext.anchorType}
-      anchorId={saveContext.anchorId}
-      sourceTitle={saveContext.sourceTitle}
-      itemTitle={saveContext.itemTitle}
-      metadata={saveContext.metadata}
-      fullSaveType={null}
-      onSelectionLockChange={onSelectionLockChange}
+    <SelectableDocumentReader
+      documentData={doc}
+      embedded
+      embeddedTextStyle={StyleSheet.flatten(textStyle)}
+      backgroundColor="#FFF4DE"
+      respectBottomSafeArea={false}
     />
   );
 };
