@@ -91,17 +91,27 @@ const getPsalm = (kathisma, prayer) => {
   );
 };
 
-const ParallelText = ({church, russian, churchStyle, russianStyle}) => {
-  if (!russian) {
-    return <Text style={[styles.psalterText, churchStyle]}>{church}</Text>;
-  }
+const personalPsalterLanguage = prayer => {
+  const origin = prayerOrigin(prayer);
+  const explicit = String(origin.language || origin.metadata?.language || '').toLowerCase();
+  if (['russian', 'ru'].includes(explicit)) return 'russian';
+  if (['both', 'parallel'].includes(explicit)) return 'both';
+  if (['church', 'cs', 'traditional', 'church_slavonic'].includes(explicit)) return 'church';
+  return presentPersonalPrayer(prayer).language === 'russian' ? 'russian' : 'church';
+};
 
+const ParallelText = ({church, russian, churchStyle, russianStyle, language = 'both'}) => {
+  if (language === 'russian') {
+    return <Text style={[styles.psalterText, styles.psalterRussian, russianStyle]}>{russian || church}</Text>;
+  }
+  if (language === 'church' || !russian) {
+    return <Text style={[styles.psalterText, styles.psalterChurch, churchStyle]}>{church || russian}</Text>;
+  }
   return (
     <View style={styles.parallelRow}>
       <View style={styles.parallelColumnLeft}>
-        <Text style={[styles.psalterText, churchStyle]}>{church}</Text>
+        <Text style={[styles.psalterText, styles.psalterChurch, churchStyle]}>{church}</Text>
       </View>
-
       <View style={styles.parallelColumnRight}>
         <Text style={[styles.psalterText, styles.psalterRussian, russianStyle]}>{russian}</Text>
       </View>
@@ -109,14 +119,15 @@ const ParallelText = ({church, russian, churchStyle, russianStyle}) => {
   );
 };
 
-const PsalmParallel = ({psalm, verses: verseItems = null, showLabels = false}) => {
+const PsalmParallel = ({psalm, verses: verseItems = null, showLabels = false, language = 'both'}) => {
   const {t} = useLanguage();
   const verses = verseItems || psalm?.verses || [];
-  const hasRussian = verses.some((verse) => String(verse?.russian || '').trim());
+  const hasRussian = verses.some(verse => String(verse?.russian || '').trim());
+  const parallel = language === 'both' && hasRussian;
 
   return (
     <View>
-      {showLabels && hasRussian && (
+      {showLabels && parallel && (
         <View style={styles.languageRow}>
           <Text style={styles.languageLabel}>{t('prayerBooks.churchSlavonic')}</Text>
           <Text style={[styles.languageLabel, styles.languageLabelRussian]}>
@@ -124,32 +135,40 @@ const PsalmParallel = ({psalm, verses: verseItems = null, showLabels = false}) =
           </Text>
         </View>
       )}
-
-      {verses.map((verse) => {
+      {verses.map(verse => {
         const church = String(verse?.church_slavonic || '').trim();
         const russian = String(verse?.russian || '').trim();
-
-        if (!church && !russian) {
-          return null;
+        if (!church && !russian) return null;
+        const number = verse.number;
+        if (!parallel) {
+          const russianOnly = language === 'russian';
+          return (
+            <View key={verse.id || number} style={styles.verseRow}>
+              <Text style={[
+                styles.psalterText,
+                russianOnly ? styles.psalterRussian : styles.psalterChurch,
+                {flex: 1},
+              ]}>
+                <Text style={russianOnly ? styles.verseNumberRussian : styles.verseNumber}>{number} </Text>
+                {russianOnly ? (russian || church) : (church || russian)}
+              </Text>
+            </View>
+          );
         }
-
         return (
-          <View key={verse.id || verse.number} style={styles.verseRow}>
+          <View key={verse.id || number} style={styles.verseRow}>
             <View style={styles.parallelColumnLeft}>
-              <Text style={styles.psalterText}>
-                <Text style={styles.verseNumber}>{verse.number} </Text>
+              <Text style={[styles.psalterText, styles.psalterChurch]}>
+                <Text style={styles.verseNumber}>{number} </Text>
                 {church || russian}
               </Text>
             </View>
-
-            {hasRussian && (
-              <View style={styles.parallelColumnRight}>
-                <Text style={[styles.psalterText, styles.psalterRussian]}>
-                  <Text style={styles.verseNumberRussian}>{verse.number} </Text>
-                  {russian || church}
-                </Text>
-              </View>
-            )}
+            <View style={styles.parallelColumnRight}>
+              <Text style={[styles.psalterText, styles.psalterRussian]}>
+                <Text style={styles.verseNumberRussian}>{number} </Text>
+                {russian || church}
+              </Text>
+            </View>
           </View>
         );
       })}
@@ -202,6 +221,7 @@ const PsalterPrayer = ({prayer}) => {
   const {t} = useLanguage();
   const mode = psalterMode(prayer);
   const kathisma = getKathisma(prayer);
+  const language = personalPsalterLanguage(prayer);
 
   if (!mode || !kathisma) {
     return null;
@@ -219,7 +239,7 @@ const PsalterPrayer = ({prayer}) => {
         <Text style={styles.title}>
           {prayer.title || t('psalter.psalm', {number: psalm.number})}
         </Text>
-        <PsalmParallel psalm={psalm} showLabels />
+        <PsalmParallel psalm={psalm} showLabels language={language} />
       </View>
     );
   }
@@ -242,6 +262,7 @@ const PsalterPrayer = ({prayer}) => {
                 psalm={psalm}
                 verses={chunk.verses}
                 showLabels={psalmIndex === 0 && chunkIndex === 0}
+                language={language}
               />
 
               {chunk.gloryAfter && (
@@ -265,6 +286,7 @@ const PsalterPrayer = ({prayer}) => {
             russian={String(kathisma.prayers_after_russian || '').trim()}
             churchStyle={styles.afterPrayerText}
             russianStyle={styles.afterPrayerText}
+            language={language}
           />
         </View>
       )}
@@ -600,6 +622,11 @@ const styles = StyleSheet.create({
   },
   psalterRussian: {
     color: '#765238',
+  },
+  psalterChurch: {
+    fontFamily: 'Ponomar',
+    fontSize: 18,
+    lineHeight: 28,
   },
   verseNumber: {
     color: '#A16E35',
