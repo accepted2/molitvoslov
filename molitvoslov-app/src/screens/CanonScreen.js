@@ -620,10 +620,9 @@ export const CanonScreen = ({route, navigation}) => {
 
               label: '',
 
-              inlineLabel:
-                localizedLanguage === 'church'
-                  ? getCanonInlineLabel(displaySection, localized, t)
-                  : '',
+              // Standalone localized tabs need the same Irmos/Refrain/etc.
+              // labels as the Church Slavonic tab.
+              inlineLabel: getCanonInlineLabel(displaySection, localized, t),
             })
           );
         }
@@ -642,7 +641,37 @@ export const CanonScreen = ({route, navigation}) => {
 
             label: '',
 
-            inlineLabel: '',
+            // Show standalone RU rubrics, but keep the CS + RU translation
+            // visually secondary without repeating the source headings.
+            inlineLabel: viewMode === MODE_RUSSIAN
+              ? getCanonInlineLabel(displaySection, russian, t)
+              : '',
+          })
+        );
+      }
+
+      // Some imported refrains have Slavonic text but no RU translation.
+      // Do not silently omit them in RU-only mode or pretend they are RU:
+      // show the available original, clearly marked as untranslated.
+      if (
+        viewMode === MODE_RUSSIAN &&
+        effectiveSectionType === 'refrain' &&
+        !russian &&
+        church
+      ) {
+        blocks.push(
+          makeBlock({
+            section,
+
+            text: church,
+
+            language: 'church',
+
+            className: 'canon-church canon-refrain canon-untranslated-refrain',
+
+            label: 'Церковнославянский припев — перевод отсутствует',
+
+            inlineLabel: getCanonInlineLabel(displaySection, church, t),
           })
         );
       }
