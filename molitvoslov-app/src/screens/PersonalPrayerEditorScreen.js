@@ -210,6 +210,12 @@ export const PersonalPrayerEditorScreen = ({route, navigation}) => {
             style={styles.titleInput}
           />
 
+          {!!prayer && prayer.origin_type !== 'custom' && (
+            <Text style={styles.copyNotice}>
+              Редактируется ваша личная копия. Исходный текст библиотеки не изменяется.
+            </Text>
+          )}
+
           <Text style={[styles.label, styles.textLabel]}>{t('prayerBooks.fieldText')}</Text>
           <TextInput
             value={text}
@@ -323,6 +329,12 @@ const styles = StyleSheet.create({
     color: '#3E2A1D',
     fontFamily: 'serif',
     fontSize: 16,
+  },
+  copyNotice: {
+    marginTop: 8,
+    color: '#765238',
+    fontSize: 12,
+    lineHeight: 18,
   },
   textLabel: {marginTop: 18},
   churchText: {fontFamily: 'Ponomar', fontSize: 19, lineHeight: 30},
