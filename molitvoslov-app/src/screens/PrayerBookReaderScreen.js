@@ -17,6 +17,7 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
 import {getPrayerBook} from '../services/prayerBooks';
+import {presentPersonalPrayer} from '../services/personalPrayerPresentation';
 import {PersonalPrayerReadingView} from '../components/reader/PersonalPrayerReadingView';
 import {useLanguage} from '../context/LanguageContext';
 
@@ -445,11 +446,13 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
                 <PsalterPrayer prayer={prayer} />
               ) : (
                 <>
-                  <Text style={styles.title}>{prayer.title}</Text>
+                  {!!presentPersonalPrayer(prayer).title && (
+                    <Text style={styles.title}>{presentPersonalPrayer(prayer).title}</Text>
+                  )}
 
                   {!!prayer.text && (
                     <>
-                      <Text style={styles.text}>{String(prayer.text)}</Text>
+                      <Text style={styles.text}>{presentPersonalPrayer(prayer).text}</Text>
                       <Pressable
                         style={styles.openReaderButton}
                         accessibilityRole="button"
