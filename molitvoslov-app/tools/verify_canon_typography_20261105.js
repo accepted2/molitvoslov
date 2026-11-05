@@ -141,8 +141,16 @@ assert.match(styles, /\.reader-text\.canon-russian\.canon-parallel-translation\s
 // translations deliberately remain secondary and have no redundant headings.
 assert.match(canon, /inlineLabel: viewMode === MODE_RUSSIAN\s*\?\s*getCanonInlineLabel\(displaySection, russian, t\)\s*:\s*''/);
 assert.match(canon, /inlineLabel: getCanonInlineLabel\(displaySection, localized, t\)/);
-assert.match(canon, /viewMode === MODE_RUSSIAN\s*&&\s*effectiveSectionType === 'refrain'\s*&&\s*!russian\s*&&\s*church/);
-assert.match(canon, /label: 'Церковнославянский припев — перевод отсутствует'/);
+// A missing Russian translation is omitted completely. Do not fall back
+// to Slavonic with a visible notification in the RU reading.
+assert.ok(!canon.includes('Церковнославянский припев — перевод отсутствует'));
+assert.ok(!canon.includes('canon-untranslated-refrain'));
+assert.ok(!styles.includes('canon-untranslated-refrain'));
+// Psalter labels remain brown in both the post-kathisma section header
+// and inline prayers (including nested liturgical-word spans).
+assert.match(styles, /\.rule-item\.psalter-post-kathisma-part \.section-header \.prayer-title/);
+assert.match(styles, /\.reader-text\.psalter-prayer \.psalter-prayer-title \.liturgical-word/);
+assert.match(styles, /\.reader-text\.psalter-reading-prayers \.psalter-prayer-title \.liturgical-word/);
 assert.match(styles, /\.rule-item\.canon-section \.reader-text\.canon-church,\s*\.rule-item\.canon-section \.reader-text\.canon-russian\s*\{[^}]*text-align: left !important;[^}]*word-spacing: normal !important;[^}]*overflow-wrap: break-word;/s);
 assert.match(reader, /itemConfig\?\.sourceType === 'canon'\s*\?\s*itemConfig\.canonTypography\s*:\s*null/);
 assert.match(reader, /block\.sourceType === 'canon' && block\.canonTypography\?\.standaloneInlineLabel/);
@@ -162,6 +170,7 @@ for (const name of [
 }
 console.log('PASS: canon-only text formatting for initials, rubrics, doxology breaks and (Дважды)');
 console.log('PASS: parallel RU translation uses secondary prayer style without canon red initials');
-console.log('PASS: standalone RU labels, explicit missing RU refrains and left-aligned canon text');
+console.log('PASS: standalone RU headings and left-aligned canon text; untranslated refrains are omitted');
+console.log('PASS: Psalter prayer heading remains brown in both heading and inline renderers');
 console.log('PASS: original text, UTF-16 selection offsets and other reader scopes are protected');
 console.log('PASS: four edited/new modules parse via Babel');
