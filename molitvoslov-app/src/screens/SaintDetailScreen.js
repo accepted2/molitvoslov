@@ -63,6 +63,7 @@ const Accordion = ({
   if (!text) return null;
   const saveContext = makeCalendarSaveContext({
     feast, date, section, title: sourceTitle, sectionTitle: title,
+    fontFamily: styles.body.fontFamily,
   });
   const content = (
     <View style={styles.readingContent}>
@@ -71,7 +72,7 @@ const Accordion = ({
     </View>
   );
   return (
-    <View style={[styles.accordion, focusHighlight && styles.accordionFocused, wholeSaved && styles.accordionSaved]}>
+    <View style={[styles.accordion, focusHighlight && styles.accordionFocused]}>
       <View style={styles.accordionHeaderRow}>
         <Pressable
           onPress={() => setOpen((value) => !value)}
@@ -91,9 +92,9 @@ const Accordion = ({
         <CalendarSaveWholeButton text={text} saveContext={saveContext} onSavedChange={setWholeSaved} />
       </View>
       {open && (
-        <View style={[styles.expandedWrap, wholeSaved && styles.expandedWrapSaved]}>
+        <View style={styles.expandedWrap}>
           {innerScroll ? (
-            <View style={[styles.lifeInset, wholeSaved && styles.lifeInsetSaved]}>
+            <View style={styles.lifeInset}>
               <View style={[styles.lifeScrollFrame, {maxHeight: height}]}>
                 <ScrollView
                   nestedScrollEnabled
@@ -383,7 +384,7 @@ const styles = StyleSheet.create({
   },
   expandedWrapSaved: {backgroundColor: 'rgba(161, 110, 53, 0.075)'},
   lifeInsetSaved: {backgroundColor: 'rgba(161, 110, 53, 0.075)'},
-  readingContent: {paddingHorizontal: 4, paddingTop: 0, paddingBottom: 8},
+  readingContent: {paddingHorizontal: 10, paddingTop: 2, paddingBottom: 8},
   lifeInset: {marginHorizontal: 2, marginTop: 4, marginBottom: 8,
     borderRadius: 13, borderWidth: 1, borderColor: '#E7D6B6', backgroundColor: '#FFF4DE', overflow: 'hidden'},
   lifeScrollContent: {
