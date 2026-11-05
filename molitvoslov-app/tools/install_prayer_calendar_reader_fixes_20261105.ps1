@@ -58,7 +58,7 @@ $tests = @(
   'tools/verify_restored_reader_features_20261104.js',
   'tools/verify_reader_typography_and_personal_prayers_20261104.js',
   'tools/verify_personal_prayer_edit_20261105.js',
-  'tools/verify_psalter_heading_colors_20261104.js
+  'tools/verify_psalter_heading_colors_20261104.js',
   'tools/verify_reader_customization_20261104.js',
   'tools/verify_react_hook_imports.js'
 )
