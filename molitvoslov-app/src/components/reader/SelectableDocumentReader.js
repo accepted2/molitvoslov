@@ -211,7 +211,14 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
           resolve({ok: false, message: 'Молитва не открыта'});
           return;
         }
-        embeddedSaveResolverRef.current = resolve;
+        // A lost bridge message should not freeze the global toolbar.
+        const timeout = setTimeout(() => {
+          resolveEmbeddedSave({ok: false, message: 'Нет ответа от чтения. Повторите сохранение.'});
+        }, 12000);
+        embeddedSaveResolverRef.current = result => {
+          clearTimeout(timeout);
+          resolve(result);
+        };
         inject('window.readerApi && window.readerApi.saveEmbeddedSelection()');
       }),
       clearEmbeddedSelection: () => {
