@@ -650,32 +650,6 @@ export const CanonScreen = ({route, navigation}) => {
         );
       }
 
-      // Some imported refrains have Slavonic text but no RU translation.
-      // Do not silently omit them in RU-only mode or pretend they are RU:
-      // show the available original, clearly marked as untranslated.
-      if (
-        viewMode === MODE_RUSSIAN &&
-        effectiveSectionType === 'refrain' &&
-        !russian &&
-        church
-      ) {
-        blocks.push(
-          makeBlock({
-            section,
-
-            text: church,
-
-            language: 'church',
-
-            className: 'canon-church canon-refrain canon-untranslated-refrain',
-
-            label: 'Церковнославянский припев — перевод отсутствует',
-
-            inlineLabel: getCanonInlineLabel(displaySection, church, t),
-          })
-        );
-      }
-
       const showStandaloneHeading = effectiveSectionType === 'other' && !!effectiveHeading;
 
       if (!blocks.length && !showStandaloneHeading) {
