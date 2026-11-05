@@ -2955,7 +2955,7 @@ appendStyledSegment(
   text.slice(start, end),
   itemConfig?.accentWords,
   highlightLiturgicalPhrases,
-  isCanonChurch && start === 0 && !canonRanges.some(range => range.kind === 'long-cue')
+  isCanonChurch && start === 0 && !canonRanges.some(range => range.kind.endsWith('-cue'))
 );
 
 const psalterPrayerAccentText =
