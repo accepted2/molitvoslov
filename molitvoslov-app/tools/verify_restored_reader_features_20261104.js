@@ -20,7 +20,10 @@ const expectations = {
     'CalendarSelectableBody',
   ],
   'src/screens/PrayerBookReaderScreen.js': [
-    'SelectableSaveText', 'sourceType="personal_prayer"', 'fullSaveType="prayer"',
+    'PersonalPrayerReadingView', 'personalTextOnly',
+  ],
+  'src/services/personalPrayerReadingDocument.js': [
+    "sourceType: 'personal_prayer'", "fullSaveType: 'prayer'",
   ],
   'src/screens/PrayerBookScreen.js': [
     'searchAllPrayers(', 'existingResultKeys', 'setAddedKeys',
@@ -77,7 +80,7 @@ for (const [file, required] of Object.entries(expectations)) {
 // Heart-only saves must not tint calendar/life content or re-enable TextInput.
 for (const file of ['src/screens/ChurchCalendarScreen.js', 'src/screens/SaintDetailScreen.js']) {
   const source = fs.readFileSync(path.resolve(root, file), 'utf8');
-  if (/wholeSaved && styles\\.(?:calendarSavedBlock|calendarSavedContent|expandedWrapSaved|lifeInsetSaved|accordionSaved)/.test(source)) {
+  if (/wholeSaved && styles\.(?:calendarSavedBlock|calendarSavedContent|expandedWrapSaved|lifeInsetSaved|accordionSaved)/.test(source)) {
     errors += 1;
     console.error('FAIL heart-only styling:', file);
   }
