@@ -14,9 +14,9 @@ const buildCanonTypography = new Function(
     '\nreturn buildCanonTypography;'
 )();
 
-const format = (text, label) => {
+const format = (text, label, heading) => {
   const snapshot = text;
-  const info = buildCanonTypography(text, label);
+  const info = buildCanonTypography(text, label, heading);
   assert.equal(text, snapshot, 'The original text must remain unchanged');
   assert.ok(Array.isArray(info.ranges));
   assert.ok(Array.isArray(info.breakBefore));
@@ -119,6 +119,19 @@ const prayerStyle = format(prayerCue);
 assert.ok(contains(prayerCue, prayerStyle, 'prayer-cue', 'Молитва:'));
 assert.deepEqual(prayerStyle.breakBefore, [prayerCue.indexOf('Господи')]);
 
+// A verse that starts with "Молитва" must not be painted red through a
+// later colon. Match longer prayer headings only against the actual title.
+const prose = 'Молитва умиляет сердце наше и направляет нас ко Господу: помилуй нас.';
+const proseStyle = format(prose, '', 'Молитва');
+assert.ok(!proseStyle.ranges.some(range => ['prayer-cue', 'long-cue'].includes(range.kind)));
+assert.ok(contains(prose, proseStyle, 'initial', 'М'));
+const titledPrayer = 'Молитва ко Пресвятой Богородице: спаси нас.';
+const titledStyle = format(titledPrayer, '', 'Молитва ко Пресвятой Богородице');
+assert.ok(contains(titledPrayer, titledStyle, 'prayer-cue', 'Молитва ко Пресвятой Богородице:'));
+assert.ok(contains(titledPrayer, titledStyle, 'initial', 'с'));
+const mismatchedTitle = format(titledPrayer, '', 'Молитва');
+assert.ok(!mismatchedTitle.ranges.some(range => range.kind === 'prayer-cue'));
+
 const longInline = format('к Богородице ныне', 'Тропарь Богородице, глас 4-й:');
 assert.equal(longInline.standaloneInlineLabel, true);
 assert.ok(contains('к Богородице ныне', longInline, 'initial', 'к'));
@@ -133,7 +146,7 @@ assert.match(canon, /import \{buildCanonTypography\} from '\.\.\/services\/canon
 // The parallel Russian translation behaves like prayer-rule translations:
 // no red initial/doxology planner, but independent paragraph typography.
 assert.match(canon, /const isParallelTranslation = viewMode === MODE_BOTH && language === 'russian'/);
-assert.match(canon, /canonTypography: isParallelTranslation\s*\?\s*null\s*:\s*buildCanonTypography\(text \|\| '', inlineLabel \|\| ''\)/);
+assert.match(canon, /canonTypography: isParallelTranslation\s*\?\s*null\s*:\s*buildCanonTypography\(text \|\| '', inlineLabel \|\| '', section\.heading \|\| ''\)/);
 assert.match(canon, /className: isParallelTranslation\s*\?\s*`\$\{className\} canon-parallel-translation`\s*:\s*className/);
 assert.match(styles, /\.rule-item\.canon-section \.reader-text\.canon-russian\.canon-parallel-translation\s*\{/);
 assert.match(styles, /\.reader-text\.canon-russian\.canon-parallel-translation\s*\{[^}]*color: var\(--secondary\) !important;[^}]*font-size: 16px;[^}]*line-height: 26px/s);
@@ -146,12 +159,14 @@ assert.match(canon, /inlineLabel: getCanonInlineLabel\(displaySection, localized
 assert.ok(!canon.includes('Церковнославянский припев — перевод отсутствует'));
 assert.ok(!canon.includes('canon-untranslated-refrain'));
 assert.ok(!styles.includes('canon-untranslated-refrain'));
+assert.ok(!canon.includes('Перевод пока отсутствует.'));
+assert.match(canon, /const unavailableMode =\s*viewMode === MODE_TRADITIONAL/);
 // Psalter labels remain brown in both the post-kathisma section header
 // and inline prayers (including nested liturgical-word spans).
 assert.match(styles, /\.rule-item\.psalter-post-kathisma-part \.section-header \.prayer-title/);
 assert.match(styles, /\.reader-text\.psalter-prayer \.psalter-prayer-title \.liturgical-word/);
 assert.match(styles, /\.reader-text\.psalter-reading-prayers \.psalter-prayer-title \.liturgical-word/);
-assert.match(styles, /\.rule-item\.canon-section \.reader-text\.canon-church,\s*\.rule-item\.canon-section \.reader-text\.canon-russian\s*\{[^}]*text-align: left !important;[^}]*word-spacing: normal !important;[^}]*overflow-wrap: break-word;/s);
+assert.match(styles, /\.rule-item\.canon-section \.reader-text\.canon-church,\s*\.rule-item\.canon-section \.reader-text\.canon-russian\s*\{[^}]*text-align: justify !important;[^}]*word-spacing: normal !important;[^}]*-webkit-hyphens: auto;[^}]*hyphens: auto;/s);
 assert.match(reader, /itemConfig\?\.sourceType === 'canon'\s*\?\s*itemConfig\.canonTypography\s*:\s*null/);
 assert.match(reader, /block\.sourceType === 'canon' && block\.canonTypography\?\.standaloneInlineLabel/);
 assert.match(reader, /canonBreakBefore\.has\(start\)/);
@@ -170,7 +185,7 @@ for (const name of [
 }
 console.log('PASS: canon-only text formatting for initials, rubrics, doxology breaks and (Дважды)');
 console.log('PASS: parallel RU translation uses secondary prayer style without canon red initials');
-console.log('PASS: standalone RU headings and left-aligned canon text; untranslated refrains are omitted');
+console.log('PASS: standalone RU headings and justified canon text; untranslated refrains are omitted');
 console.log('PASS: Psalter prayer heading remains brown in both heading and inline renderers');
 console.log('PASS: original text, UTF-16 selection offsets and other reader scopes are protected');
 console.log('PASS: four edited/new modules parse via Babel');
