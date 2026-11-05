@@ -2937,8 +2937,9 @@ if (isPsalterVerseNumber) {
           const isRussian = String( itemConfig ?.className || '' ).includes( 'russian' ) || itemConfig
               ?.metadata ?.language === 'russian';
 const isCanonChurch = String( itemConfig ?.className || '' ).includes( 'canon-church' ) && !isRussian;
-const isCanonPrayer = itemConfig ?.metadata ?.section_type === 'prayer' || String( itemConfig ?.className ||
-    '' ).includes( 'canon-prayer' );
+const isCanonPrayer = itemConfig ?.metadata ?.section_type === 'prayer' ||
+    String( itemConfig ?.className || '' ).includes( 'canon-prayer' ) ||
+    (itemConfig ?.sourceType === 'canon' && canonTypography?.prayerProse === true);
 const highlightLiturgicalPhrases =
   !DATA.document.embedded &&
   !(
