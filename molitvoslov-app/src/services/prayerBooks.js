@@ -487,6 +487,21 @@ export const updatePersonalPrayer = async (syncId, patch = {}) => {
   return prayers.find((prayer) => prayer.sync_id === syncId) || null;
 };
 
+/** Editing from a personal prayerbook must resolve to a user-owned prayer
+ * and an item actually linked to that book, never to a published library text.
+ * The global "texts" and "prayer_rules" sources are read-only in this path.
+ */
+export const updateBookPersonalPrayer = async (bookSyncId, prayerSyncId, patch = {}) => {
+  if (!bookSyncId) {
+    throw new Error('Для изменения молитвы откройте свой молитвослов');
+  }
+  const book = await getPrayerBook(bookSyncId);
+  if (!book || !(book.items || []).some(item => item.prayer?.sync_id === prayerSyncId)) {
+    throw new Error('Молитва не принадлежит этому личному молитвослову');
+  }
+  return updatePersonalPrayer(prayerSyncId, patch);
+};
+
 export const addPrayerToBook = async (bookSyncId, prayerSyncId) => {
   const db = await getDatabase();
   const {user, cloudUserId} = await currentOwner();
