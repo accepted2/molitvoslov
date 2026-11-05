@@ -40,6 +40,8 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     onReady,
     onReadingScroll,
     onNativeReadingScroll,
+    embedded = false,
+    embeddedTextStyle = null,
   },
   ref
 ) {
@@ -47,6 +49,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
   const [readingSettings, setReadingSettings] = useState(DEFAULT_READING_SETTINGS);
   // Native chrome must follow the scoped color choice without rebuilding HTML.
   const [chromeBackground, setChromeBackground] = useState(null);
+  const [embeddedHeight, setEmbeddedHeight] = useState(120);
   useEffect(() => {
     let active = true;
     getReadingSettings().then((settings) => { if (active) setReadingSettings(settings); }).catch(console.warn);
@@ -133,6 +136,14 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     });
     // Preserve separate pagination and per-book themes for Bible/book readers.
     if (documentData.readerMode === 'book') return markup;
+    const bodyMarkup = embedded
+      ? markup.replace('</style>', `body.embedded-reader .reader-text {
+          font-size: ${Math.max(12, Number(embeddedTextStyle?.fontSize) || 16)}px !important;
+          line-height: ${Math.max(16, Number(embeddedTextStyle?.lineHeight) || 26)}px !important;
+          color: ${String(embeddedTextStyle?.color || '#3E2A1D')};
+          text-align: ${embeddedTextStyle?.textAlign === 'center' ? 'center' : 'justify'};
+        }</style>`)
+      : markup;
     const palette = readingSettings.palette === 'custom'
       ? {background: readingSettings.customBackground, text: readingSettings.customText, surface: readingSettings.customBackground}
       : (PALETTE_COLORS[readingSettings.palette] || PALETTE_COLORS.parchment);
@@ -149,8 +160,8 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       body:not(.book-mode) .reader-text.psalter-reading-prayers,
       body:not(.book-mode) .reader-text.psalter-glory,
       body:not(.book-mode) .reader-text.psalter-prayer {line-height: 1.7 !important;}`;
-    return markup.replace('</style>', `${css}</style>`);
-  }, [documentData, savedProgress, focusTarget, topContentInset, bottomContentInset, ponomarFontDataUri, readingSettings]);
+    return bodyMarkup.replace('</style>', `${css}</style>`);
+  }, [documentData, savedProgress, focusTarget, topContentInset, bottomContentInset, ponomarFontDataUri, readingSettings, embedded, embeddedTextStyle]);
 
   const inject = (script) => {
     webViewRef.current?.injectJavaScript(script + '; true;');
@@ -206,6 +217,14 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       return;
     }
 
+    if (embedded && message.type === 'reader-height') {
+      const measured = Number(message.height);
+      if (Number.isFinite(measured) && measured > 0) {
+        setEmbeddedHeight(current => Math.abs(current - measured) >= 2
+          ? Math.max(50, Math.min(100000, measured)) : current);
+      }
+      return;
+    }
     if (message.type === 'reading-scroll-activity') {
       onReadingScroll?.('activity');
       return;
@@ -395,9 +414,10 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       style={[
         styles.container,
         {
-          paddingBottom: respectBottomSafeArea ? Math.max(insets.bottom, 8) : 0,
+          paddingBottom: embedded ? 0 : (respectBottomSafeArea ? Math.max(insets.bottom, 8) : 0),
           backgroundColor: pageBackground,
         },
+        embedded && {flex: 0, height: embeddedHeight},
       ]}
     >
       <WebView
@@ -408,8 +428,8 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         originWhitelist={['*']}
         javaScriptEnabled
         injectedJavaScript={documentData.readerMode === 'book' ? undefined : "(function() {\n var previous = window.scrollY || 0, pending = 0, direction = '', lastSent = 0;\n var post = function(type, dir) {\n   if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify({type:type,direction:dir}));\n };\n window.addEventListener('scroll', function() {\n   var y = Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);\n   var delta = y - previous;\n   previous = y;\n   if (!delta) return;\n   var now = Date.now();\n   if (now - lastSent > 100) { post('reading-scroll-activity'); lastSent = now; }\n   if (Math.abs(delta) > 100) { pending = 0; direction = delta > 0 ? 'down' : 'up'; }\n   if (y <= 35) {\n     if (direction !== 'top') {\n       direction = 'top';\n       pending = 0;\n       post('reading-scroll', 'top');\n     }\n     return;\n   }\n   if (direction === 'top') { direction = ''; pending = 0; }\n   var next = delta < 0 ? 'up' : 'down';\n   if (next !== direction) {\n     pending += Math.abs(delta);\n     if (pending >= 5 || y < 35) {\n       direction = next;\n       pending = 0;\n       post('reading-scroll', next);\n     }\n   } else {\n     pending = 0;\n   }\n }, {passive:true});\n})(); true;"}
-        scrollEnabled={documentData.readerMode !== 'book'}
-        nestedScrollEnabled={documentData.readerMode !== 'book'}
+        scrollEnabled={!embedded && documentData.readerMode !== 'book'}
+        nestedScrollEnabled={!embedded && documentData.readerMode !== 'book'}
         showsVerticalScrollIndicator={false}
         domStorageEnabled={false}
         setSupportMultipleWindows={false}
@@ -419,7 +439,16 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         onScroll={onNativeReadingScroll}
         scrollEventThrottle={16}
         onLoadEnd={(event) => {
-          if (appearanceRef.current) applyReaderAppearance(webViewRef.current, appearanceRef.current);
+          if (appearanceRef.current && !embedded) applyReaderAppearance(webViewRef.current, appearanceRef.current);
+          if (embedded) {
+            inject("(function(){var node=document.getElementById('reader');" +
+              "if(!node)return;var send=function(){" +
+              "var h=Math.ceil(node.getBoundingClientRect().height+72);" +
+              "window.ReactNativeWebView&&window.ReactNativeWebView.postMessage(" +
+              "JSON.stringify({type:'reader-height',height:h}));};" +
+              "send();if(typeof ResizeObserver!=='undefined')new ResizeObserver(send).observe(node);" +
+              "setTimeout(send,150);})();");
+          }
           const ratio = scrollFallbackRef.current;
           const captured = languageProgressRef.current;
           scrollFallbackRef.current = null;
@@ -429,7 +458,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
           }
           onReady?.(event);
         }}
-        style={[styles.webView, {backgroundColor: pageBackground}]}
+        style={[styles.webView, {backgroundColor: pageBackground}, embedded && {flex: 0, height: embeddedHeight}]}
         onConsoleMessage={(event) => {
           const { message, lineNumber } = event.nativeEvent;
           if (message && (message.includes('[runtime]') || message.includes('[reader]') || message.includes('Error'))) {
@@ -438,7 +467,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         }}
       />
 
-      {documentData.readerMode !== 'book' && (
+      {!embedded && documentData.readerMode !== 'book' && (
         <LinearGradient
           pointerEvents="none"
           colors={[withOpacity(pageBackground, 0), withOpacity(pageBackground, 0.72), pageBackground]}
