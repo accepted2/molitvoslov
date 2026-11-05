@@ -53,6 +53,12 @@ assert.ok(contains(now, n, 'doxology', 'И ныне, и присно, и вов�
 assert.ok(contains(now, n, 'initial', 'с'));
 assert.deepEqual(n.breakBefore, [now.indexOf('спаси')]);
 
+const traditionalGlory = 'Сла́ва Ѻ҆ц҃ꙋ̀ и҆ Сн҃ꙋ и҆ Ст҃о́мꙋ Дх҃ꙋ. Помилꙋй нас.';
+const traditional = format(traditionalGlory);
+assert.ok(contains(traditionalGlory, traditional, 'doxology',
+  'Сла́ва Ѻ҆ц҃ꙋ̀ и҆ Сн҃ꙋ и҆ Ст҃о́мꙋ Дх҃ꙋ.'));
+assert.deepEqual(traditional.breakBefore, [traditionalGlory.indexOf('Помилꙋй')]);
+
 const newLine = 'Слава Отцу и Сыну и Святому Духу.\nГосподи, помилуй.';
 assert.deepEqual(format(newLine).breakBefore, [], 'Never add duplicate break before existing newline');
 
