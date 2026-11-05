@@ -7746,8 +7746,29 @@ const buildHtml = ({
   ui,
   ponomarFontDataUri,
 }) => {
+  const communionKind = getCommunionRuleKind(rule);
+  const communionTypographyByItem = {};
+  if (communionKind) {
+    for (const item of rule?.items || []) {
+      if (item?.item_type !== 'text' || !item.text) continue;
+      const source = item.text;
+      const value = viewMode === 'russian'
+        ? source.translation
+        : viewMode === 'traditional'
+          ? source.traditional_content
+          : viewMode === 'ukrainian'
+            ? (source.translation_uk || source.translation || source.content)
+            : source.content;
+      if (String(value || '').trim()) {
+        communionTypographyByItem[String(item.id)] =
+          buildCommunionTypography(value);
+      }
+    }
+  }
   const payload = {
     rule,
+    communionKind,
+    communionTypographyByItem,
 
     viewMode: viewMode || 'both',
 
