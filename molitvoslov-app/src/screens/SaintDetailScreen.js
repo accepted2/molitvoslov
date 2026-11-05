@@ -71,7 +71,7 @@ const Accordion = ({
     </View>
   );
   return (
-    <View style={[styles.accordion, focusHighlight && styles.accordionFocused, wholeSaved && styles.accordionSaved]}>
+    <View style={[styles.accordion, focusHighlight && styles.accordionFocused]}>
       <View style={styles.accordionHeaderRow}>
         <Pressable
           onPress={() => setOpen((value) => !value)}
@@ -91,9 +91,9 @@ const Accordion = ({
         <CalendarSaveWholeButton text={text} saveContext={saveContext} onSavedChange={setWholeSaved} />
       </View>
       {open && (
-        <View style={[styles.expandedWrap, wholeSaved && styles.expandedWrapSaved]}>
+        <View style={styles.expandedWrap}>
           {innerScroll ? (
-            <View style={[styles.lifeInset, wholeSaved && styles.lifeInsetSaved]}>
+            <View style={styles.lifeInset}>
               <View style={[styles.lifeScrollFrame, {maxHeight: height}]}>
                 <ScrollView
                   nestedScrollEnabled
