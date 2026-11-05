@@ -607,7 +607,10 @@ export const PrayerBookScreen = ({route, navigation}) => {
                     <Text style={styles.cardTitle}>{visiblePrayer.listTitle}</Text>
 
                     {!!visiblePrayer.text && (
-                      <Text style={styles.preview} numberOfLines={3}>
+                      <Text
+                        style={[styles.preview, visiblePrayer.language === 'church' && styles.churchPreview]}
+                        numberOfLines={3}
+                      >
                         {visiblePrayer.text}
                       </Text>
                     )}
@@ -784,6 +787,12 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
     fontSize: 16,
     fontWeight: '700',
+  },
+  churchPreview: {
+    // The font is already registered globally in App.js.
+    fontFamily: 'Ponomar',
+    fontSize: 15,
+    lineHeight: 24,
   },
   preview: {
     marginTop: 5,
