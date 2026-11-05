@@ -336,8 +336,9 @@ export const CanonScreen = ({route, navigation}) => {
       return;
     }
 
+    // Keep every language tab selectable even when its translation is missing.
     let nextMode = getReaderModeForAppLanguage(language, {
-      hasRussian: hasRussianTranslation,
+      hasRussian: true,
       hasUkrainian: hasUkrainianTranslation,
       hasTraditional: hasTraditionalTranslation,
     });
@@ -346,7 +347,7 @@ export const CanonScreen = ({route, navigation}) => {
 
 
     if (preferred === 'russian') {
-      nextMode = hasRussianTranslation ? MODE_RUSSIAN : MODE_CHURCH;
+      nextMode = MODE_RUSSIAN;
     } else if (preferred === 'ukrainian') {
       nextMode = hasUkrainianTranslation ? MODE_UKRAINIAN : MODE_CHURCH;
     } else if (preferred === 'church') {
@@ -439,17 +440,11 @@ export const CanonScreen = ({route, navigation}) => {
       };
     }
 
-    // If a translation is incomplete, only the original Church Slavonic
-    // canon is available. Never render isolated Russian sections or notices.
-    const displayMode = !hasRussianTranslation &&
-      (viewMode === MODE_RUSSIAN || viewMode === MODE_BOTH)
-        ? MODE_CHURCH
-        : viewMode;
-
-    const showChurch = displayMode === MODE_CHURCH || displayMode === MODE_BOTH;
+    // Keep the selected tab visible, but never show only part of a translation.
+    const showChurch = viewMode === MODE_CHURCH || viewMode === MODE_BOTH;
 
     const showRussian = hasRussianTranslation &&
-      (displayMode === MODE_RUSSIAN || displayMode === MODE_BOTH);
+      (viewMode === MODE_RUSSIAN || viewMode === MODE_BOTH);
 
     const showUkrainian = viewMode === MODE_UKRAINIAN;
 
@@ -467,7 +462,7 @@ export const CanonScreen = ({route, navigation}) => {
       const syntheticId = nextBlockId++;
       // In CS + RU, the translation is an explanatory secondary paragraph.
       // Do not give it the Slavonic hymn's red initials or doxology styling.
-      const isParallelTranslation = displayMode === MODE_BOTH && language === 'russian';
+      const isParallelTranslation = viewMode === MODE_BOTH && language === 'russian';
 
       savedItems
         .filter((item) => {
@@ -662,7 +657,7 @@ export const CanonScreen = ({route, navigation}) => {
 
             // Show standalone RU rubrics, but keep the CS + RU translation
             // visually secondary without repeating the source headings.
-            inlineLabel: displayMode === MODE_RUSSIAN
+            inlineLabel: viewMode === MODE_RUSSIAN
               ? getCanonInlineLabel(displaySection, russian, t)
               : '',
           })
@@ -671,7 +666,7 @@ export const CanonScreen = ({route, navigation}) => {
 
       const showStandaloneHeading = effectiveSectionType === 'other' && !!effectiveHeading;
 
-      if (!blocks.length && (!showStandaloneHeading || displayMode === MODE_RUSSIAN)) {
+      if (!blocks.length && (!showStandaloneHeading || viewMode === MODE_RUSSIAN)) {
         return;
       }
 
@@ -708,8 +703,28 @@ export const CanonScreen = ({route, navigation}) => {
       });
     });
 
-    // RU tabs show only content with an actual translation. No placeholders
-    // or Slavonic fallbacks are inserted for missing Russian text.
+    // RU and CS+RU remain accessible. A missing or partial translation
+    // is replaced with ONE message; no individual translated verse leaks.
+    if (!hasRussianTranslation &&
+      (viewMode === MODE_RUSSIAN || viewMode === MODE_BOTH)) {
+      if (viewMode === MODE_RUSSIAN) sections.length = 0;
+      sections.unshift({
+        className: 'canon-translation-notice',
+        progressAnchorId: 0,
+        trackProgress: false,
+        title: '',
+        rows: [{
+          layout: 'stack',
+          blocks: [{
+            id: nextBlockId++,
+            text: 'Нет текста этого перевода.',
+            className: 'canon-russian',
+            metadata: {language: 'russian'},
+          }],
+        }],
+      });
+    }
+
     const unavailableMode =
       viewMode === MODE_TRADITIONAL && !hasTraditionalTranslation
         ? 'traditional'
@@ -757,9 +772,9 @@ export const CanonScreen = ({route, navigation}) => {
       },
 
       viewSwitcher: {
-        activeKey: displayMode,
+        activeKey: viewMode,
         options: buildReaderLanguageOptions({
-          hasRussian: hasRussianTranslation,
+          hasRussian: true,
           hasTraditional: true,
         }),
       },
