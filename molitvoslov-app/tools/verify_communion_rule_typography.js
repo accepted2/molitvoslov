@@ -78,7 +78,7 @@ assert.equal(compactCommunionAlleluiaDisplay(accentedTriple),
   accentedUnit + ' (Трижды)', 'Accents and line breaks must be handled');
 
 const reader = read('src/components/reader/PrayerRuleReader.js');
-assert.match(reader, /import \{getCommunionRuleKind, buildCommunionTypography\}/);
+assert.match(reader, /import \{getCommunionRuleKind, buildCommunionTypography, compactCommunionAlleluiaDisplay\}/);
 assert.match(reader, /const communionKind = getCommunionRuleKind\(rule\)/);
 assert.match(reader, /communionTypographyByItem\[String\(item\.id\)\]/);
 assert.match(reader, /if \(isCommunionReadingRule\)/);
