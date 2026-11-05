@@ -2911,6 +2911,7 @@ const isCanonChurch = String( itemConfig ?.className || '' ).includes( 'canon-ch
 const isCanonPrayer = itemConfig ?.metadata ?.section_type === 'prayer' || String( itemConfig ?.className ||
     '' ).includes( 'canon-prayer' );
 const highlightLiturgicalPhrases =
+  !DATA.document.embedded &&
   !(
     isPsalterGlory &&
     itemConfig?.metadata?.language === 'traditional'
