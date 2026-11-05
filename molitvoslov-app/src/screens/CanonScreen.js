@@ -28,6 +28,7 @@ import {
 } from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
+import {buildCanonTypography} from '../services/canonTypography';
 
 const MODE_CHURCH = READER_LANGUAGE_MODES.CHURCH;
 const MODE_BOTH = READER_LANGUAGE_MODES.BOTH;
@@ -489,6 +490,9 @@ export const CanonScreen = ({route, navigation}) => {
         label: label || '',
 
         inlineLabel: inlineLabel || '',
+
+        // Canon-specific visual ranges; never rewrite text or save offsets.
+        canonTypography: buildCanonTypography(text || '', inlineLabel || ''),
 
         className,
 
