@@ -267,7 +267,7 @@ const PsalterPrayer = ({prayer}) => {
 
               {chunk.gloryAfter && (
                 <View style={styles.gloryBlock}>
-                  <Text style={styles.gloryText}>{GLORY_TEXT}</Text>
+                  <Text style={[styles.gloryText, language === 'church' && styles.psalterChurch]}>{GLORY_TEXT}</Text>
                 </View>
               )}
             </View>
