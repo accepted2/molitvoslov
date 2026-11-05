@@ -3628,6 +3628,7 @@ if (
     const updateBar = () => {
         if (!state.active) {
           selectionBar.classList.remove('visible');
+          if (DATA.document.embedded) post({type:'embedded-selection-info', active:false});
           return;
         }
 
@@ -3650,6 +3651,10 @@ if (
         saveButton.textContent = savedRange ? 'Удалить' : 'Сохранить';
         saveButton.classList.toggle('delete-mode', !!savedRange);
         saveButton.disabled = count <= 0 || state.savePending;
+        if (DATA.document.embedded) {
+          post({type:'embedded-selection-info', active:true, count,
+            pending:state.savePending, removable:!!savedRange});
+        }
       };
 
     const setActivePoints = (
@@ -4793,6 +4798,8 @@ if (
     };
 
     window.readerApi = {
+      saveEmbeddedSelection: () => { if (DATA.document.embedded) saveButton.click(); },
+      clearEmbeddedSelection: () => { if (DATA.document.embedded) clearSelection(); },
       changeViewMode: key => {
         post({type: 'view-mode', value: key, progress: snapshotForViewSwitch()});
       },
