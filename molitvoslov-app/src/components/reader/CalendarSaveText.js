@@ -179,7 +179,7 @@ export const CalendarSelectableBody = ({text, saveContext, textStyle}) => {
       rows: [{
         layout: 'stack',
         blocks: [{
-          id: 1,
+          id: Number(saveContext.anchorId),
           text: normalized,
           className: 'calendar-inline-text',
           sourceType: saveContext.sourceType,
