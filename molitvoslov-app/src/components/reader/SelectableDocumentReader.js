@@ -471,7 +471,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
           if (embedded) {
             inject("(function(){var node=document.getElementById('reader');" +
               "if(!node)return;var send=function(){" +
-              "var h=Math.ceil(node.getBoundingClientRect().height+72);" +
+              "var h=Math.ceil(node.getBoundingClientRect().height+2);" +
               "window.ReactNativeWebView&&window.ReactNativeWebView.postMessage(" +
               "JSON.stringify({type:'reader-height',height:h}));};" +
               "send();if(typeof ResizeObserver!=='undefined')new ResizeObserver(send).observe(node);" +
