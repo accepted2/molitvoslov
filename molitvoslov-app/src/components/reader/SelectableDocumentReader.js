@@ -152,9 +152,10 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
           text-align: ${embeddedTextStyle?.textAlign === 'center' ? 'center' : 'justify'};
         }`
       : '';
-    const palette = readingSettings.palette === 'custom'
+    const palette = !embedded && readingSettings.palette === 'custom'
       ? {background: readingSettings.customBackground, text: readingSettings.customText, surface: readingSettings.customBackground}
-      : (PALETTE_COLORS[readingSettings.palette] || PALETTE_COLORS.parchment);
+      : (embedded ? PALETTE_COLORS.parchment
+        : (PALETTE_COLORS[readingSettings.palette] || PALETTE_COLORS.parchment));
     const size = Math.max(14, Math.min(28, Number(readingSettings.fontSize) || 17));
     // One reading-size source for every non-book document category.
     // Ponomar glyphs are visually smaller than civil Cyrillic at the same px size.
@@ -431,7 +432,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     }
   };
 
-  const pageBackground = documentData.readerMode === 'book'
+  const pageBackground = embedded || documentData.readerMode === 'book'
     ? backgroundColor
     : (chromeBackground || (readingSettings.palette === 'custom'
       ? readingSettings.customBackground
