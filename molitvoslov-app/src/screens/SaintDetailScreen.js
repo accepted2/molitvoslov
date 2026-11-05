@@ -63,6 +63,7 @@ const Accordion = ({
   if (!text) return null;
   const saveContext = makeCalendarSaveContext({
     feast, date, section, title: sourceTitle, sectionTitle: title,
+    fontFamily: styles.body.fontFamily,
   });
   const content = (
     <View style={styles.readingContent}>
