@@ -454,6 +454,9 @@ export const CanonScreen = ({route, navigation}) => {
 
     const makeBlock = ({section, text, language, className, label, inlineLabel}) => {
       const syntheticId = nextBlockId++;
+      // In CS + RU, the translation is an explanatory secondary paragraph.
+      // Do not give it the Slavonic hymn's red initials or doxology styling.
+      const isParallelTranslation = viewMode === MODE_BOTH && language === 'russian';
 
       savedItems
         .filter((item) => {
@@ -492,9 +495,13 @@ export const CanonScreen = ({route, navigation}) => {
         inlineLabel: inlineLabel || '',
 
         // Canon-specific visual ranges; never rewrite text or save offsets.
-        canonTypography: buildCanonTypography(text || '', inlineLabel || ''),
+        canonTypography: isParallelTranslation
+          ? null
+          : buildCanonTypography(text || '', inlineLabel || ''),
 
-        className,
+        className: isParallelTranslation
+          ? `${className} canon-parallel-translation`
+          : className,
 
         sourceType: 'canon',
 
