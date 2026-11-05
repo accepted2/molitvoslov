@@ -167,5 +167,8 @@ export const buildCanonTypography = (value, inlineLabel = '', sectionHeading = '
     ranges: [...unique.values()].sort((left, right) => left.start - right.start),
     breakBefore: [...breakBefore].sort((a, b) => a - b),
     standaloneInlineLabel,
+    // The WebView must also skip its generic liturgical phrase matcher
+    // inside prayer prose, not just these canon-specific doxology ranges.
+    prayerProse: sectionType === 'prayer',
   };
 };
