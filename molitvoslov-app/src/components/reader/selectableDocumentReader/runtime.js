@@ -1313,7 +1313,7 @@ const collectPsalterRubricRanges = value => {
         }
         const normalized = normalizedChars.join( '' );
         const match = normalized.match(
-            /^\s*((?:Молитва[^:\n]{0,140})|Ирмос|Припев|Иисусу|Богородичен|Кондак|Икос|Седален|Светилен|Тропарь|Слава|И\s+ныне|Ныне)\s*:/iu
+            /^\s*(Молитва|Ирмос|Припев|Иисусу|Богородичен|Кондак|Икос|Седален|Светилен|Тропарь|Слава|И\s+ныне|Ныне)\s*:/iu
           );
         if (!match) {
           return null;
