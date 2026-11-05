@@ -9,6 +9,7 @@ import {useLanguage} from '../../context/LanguageContext';
 import {getReadingSettings, DEFAULT_READING_SETTINGS} from '../../services/readerPreferences';
 import {applyReaderAppearance, resolveReaderAppearance} from '../../services/scopedReaderAppearance';
 import {getCachedPonomarFontDataUri, loadPonomarFontDataUri} from '../../services/ponomarFont';
+import {getCommunionRuleKind, buildCommunionTypography} from '../../services/communionRuleTypography';
 
 const scriptSafeJson = (value) =>
   JSON.stringify(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
@@ -577,6 +578,56 @@ const HTML_TEMPLATE = String.raw`
       text-align: justify;
       text-align-last: auto;
       text-justify: inter-word;
+    }
+
+    /* Communion preparation and thanksgiving use a dedicated, restrained
+       prayer-book style; all other prayer rules retain their existing CSS. */
+    body.communion-reading-rule .rule-title,
+    body.communion-reading-rule .section-header .prayer-title,
+    body.communion-reading-rule .section-title {
+      color: var(--secondary);
+      font-style: normal;
+      font-weight: 700;
+    }
+    body.communion-reading-rule .rule-item {
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    body.communion-reading-rule .reader-text {
+      text-align: justify;
+      text-align-last: auto;
+      word-spacing: normal;
+      overflow-wrap: break-word;
+      word-break: normal;
+      -webkit-hyphens: auto;
+      hyphens: auto;
+    }
+    body.communion-reading-rule .instruction,
+    body.communion-reading-rule .description,
+    body.communion-reading-rule .note {
+      color: var(--secondary);
+      font-style: normal;
+    }
+    body.communion-reading-rule .instruction.liturgical-block {
+      color: var(--liturgical);
+    }
+    body.communion-reading-rule .translation-text {
+      color: var(--secondary);
+      font-weight: 400;
+    }
+    body.communion-reading-rule .reader-text .communion-initial,
+    body.communion-reading-rule .reader-text .communion-cue,
+    body.communion-reading-rule .reader-text .communion-response {
+      color: var(--liturgical) !important;
+      font-weight: 650;
+      font-style: normal;
+    }
+    body.communion-reading-rule .reader-text .communion-note {
+      color: var(--secondary) !important;
+      font-weight: 600;
+      font-style: normal;
+      white-space: nowrap;
     }
 
     .liturgical-phrase {
@@ -1850,6 +1901,7 @@ const HTML_TEMPLATE = String.raw`
     const isDailyPrayerRule =
       isEveningRule ||
       isMorningRule;
+    const isCommunionReadingRule = !!DATA.communionKind;
 
     // Shared rubric parsing for historical Church Slavonic morning and
     // evening texts; other modes retain their existing formatting.
@@ -2687,6 +2739,10 @@ const HTML_TEMPLATE = String.raw`
           'morning-rule'
         );
       }
+      if (isCommunionReadingRule) {
+        document.body.classList.add('communion-reading-rule');
+        document.body.classList.add('communion-' + DATA.communionKind);
+      }
 
       const ruleName =
         DATA.viewMode === 'traditional'
@@ -2929,7 +2985,8 @@ const HTML_TEMPLATE = String.raw`
               (
                 (
                   normalizedTitle === 'молитва' &&
-                  !/ѳ|9/u.test(localizedTitle)
+                  !/ѳ|9/u.test(localizedTitle) &&
+                  !isCommunionReadingRule
                 ) ||
                 !!inlineLabel
               )
@@ -3786,11 +3843,22 @@ const HTML_TEMPLATE = String.raw`
           );
 
         const leadingCue =
-          isEveningMinorLiturgical
+          isEveningMinorLiturgical || isCommunionReadingRule
             ? null
             : findLeadingCueRange(
                 text
               );
+        // Ranges are computed against the exact text in this language tab.
+        // No source characters or saved offsets are changed by decorations.
+        const communionTypography = isCommunionReadingRule
+          ? DATA.communionTypographyByItem?.[String(itemId)] || null
+          : null;
+        const communionRanges = Array.isArray(communionTypography?.ranges)
+          ? communionTypography.ranges : [];
+        const communionBreakBefore = new Set(
+          Array.isArray(communionTypography?.breakBefore)
+            ? communionTypography.breakBefore : []
+        );
 
         const eveningItemKind =
           isEveningMinorLiturgical
@@ -4105,7 +4173,7 @@ const HTML_TEMPLATE = String.raw`
 
         const liturgicalRanges = [];
 
-        if (!isEveningMinorLiturgical) {
+        if (!isEveningMinorLiturgical && !isCommunionReadingRule) {
           const normalizedChars = [];
           const originalIndex = [];
 
@@ -4378,10 +4446,9 @@ const HTML_TEMPLATE = String.raw`
           }
         }
 
-        const liturgicalRubricRanges =
-          collectLiturgicalRubricRanges(
-            text
-          );
+        const liturgicalRubricRanges = isCommunionReadingRule
+          ? []
+          : collectLiturgicalRubricRanges(text);
 
         liturgicalRubricRanges.forEach(
           range => {
@@ -4396,6 +4463,11 @@ const HTML_TEMPLATE = String.raw`
             0,
             text.length,
           ]);
+        communionRanges.forEach(range => {
+          boundaries.add(range.start);
+          boundaries.add(range.end);
+        });
+        communionBreakBefore.forEach(offset => boundaries.add(offset));
 
         if (leadingCue) {
           boundaries.add(
@@ -4594,10 +4666,18 @@ const HTML_TEMPLATE = String.raw`
             fragment.appendChild(document.createElement('br'));
           }
 
+          if (communionBreakBefore.has(start)) {
+            fragment.appendChild(document.createElement('br'));
+          }
           const span =
             document.createElement(
               'span'
             );
+          for (const range of communionRanges) {
+            if (start >= range.start && end <= range.end) {
+              span.classList.add('communion-' + range.kind);
+            }
+          }
 
           if (traditionalKondakInitialRanges.some(range =>
             midpoint >= range.start && midpoint < range.end
@@ -4766,6 +4846,7 @@ const HTML_TEMPLATE = String.raw`
           let match = null;
 
           while (
+            !isCommunionReadingRule &&
             (
               match =
                 phrasePattern.exec(
