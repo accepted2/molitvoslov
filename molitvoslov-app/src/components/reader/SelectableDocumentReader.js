@@ -355,10 +355,12 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
             Number(message.savedItemId) +
             ')'
         );
+        resolveEmbeddedSave({ok: true});
       } catch (deleteError) {
         console.log('Ошибка удаления выделения:', deleteError.message);
 
         inject("window.readerApi && window.readerApi.saveFailed('Не удалось удалить')");
+        resolveEmbeddedSave({ok: false, message: 'Не удалось удалить'});
       }
 
       return;
@@ -371,6 +373,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     const itemConfig = itemConfigMap.get(Number(message.itemId));
 
     if (!itemConfig) {
+      resolveEmbeddedSave({ok: false, message: 'Текст не найден'});
       return;
     }
 
