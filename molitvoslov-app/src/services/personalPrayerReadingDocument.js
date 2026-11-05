@@ -23,6 +23,8 @@ export const buildPersonalPrayerReadingDocument = ({
           id: nextId++,
           text: presentation.text,
           className: 'personal-prayer',
+          // Use the same Ponomar font path as the traditional CS reader.
+          // No mutation of the saved prayer text or offsets is needed.
           sourceType: 'personal_prayer',
           sourceId: numericId,
           anchorType: 'personal_prayer',
@@ -31,6 +33,7 @@ export const buildPersonalPrayerReadingDocument = ({
           sourceTitle: String(book?.title || 'Мой молитвослов'),
           itemTitle: presentation.listTitle,
           metadata: {
+            language: presentation.language === 'church' ? 'traditional' : 'russian',
             book_sync_id: bookSyncId,
             prayer_sync_id: prayer.sync_id,
           },
