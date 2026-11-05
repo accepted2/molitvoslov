@@ -33,6 +33,8 @@ assert.equal(savedPrayerTitle({item_title:'Тропарь',metadata:{feast_title
  'Тропарь: Николай Чудотворец');
 assert.equal(savedPrayerTitle({item_title:'Кондак',metadata:{feast_title:'Серафим Саровский'}}),
  'Кондак: Серафим Саровский');
+assert.equal(savedPrayerTitle({item_title:'Тропарь',source_type:'prayer_rule',
+  source_title:'Вечерние молитвы'}), 'Тропарь');
 const church='Отче наш, Иже еси на небесех! Да святится имя Твое.';
 const ru='Отче наш, Который на небесах! Да святится имя Твоё.';
 assert.equal(choosePrayerLanguage({church,russian:ru,selected:ru.slice(0,25)}),'russian');
