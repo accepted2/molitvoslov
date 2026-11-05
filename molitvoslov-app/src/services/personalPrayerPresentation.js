@@ -45,6 +45,32 @@ export const choosePrayerLanguage = ({church, russian, selected, language}) => {
   return 'church';
 };
 
+// Respect a recorded source language first; for legacy rows infer church
+// Slavonic only from distinctive spelling, not from generic Russian prayers.
+const normalizePersonalLanguage = value => {
+  const key = String(value || '').trim().toLowerCase();
+  if (['russian', 'ru', 'русский'].includes(key)) return 'russian';
+  if (['church', 'cs', 'church_slavonic', 'traditional', 'цс'].includes(key)) return 'church';
+  return '';
+};
+
+export const personalPrayerLanguage = (prayer, displayedText = '') => {
+  const origin = prayer?.origin_data || {};
+  const declared = normalizePersonalLanguage(
+    origin.language || origin.metadata?.language || prayer?.language
+  );
+  if (declared) return declared;
+  const text = String(displayedText || prayer?.text || '');
+  // Church-Slavonic letters and accent marks in legacy local copies may
+  // otherwise fall back to a civil serif which renders accents badly.
+  if (/[ѣѳѡѫѧѩі҆ꙋꙑꙗѵꙝ]/iu.test(text) ||
+      /[\u0483-\u0489]/u.test(text) ||
+      /\b(?:иже\s+еси|аще|яко|несть|днесь|есмь|мя\s+грешна)/iu.test(text)) {
+    return 'church';
+  }
+  return 'russian';
+};
+
 export const presentPersonalPrayer = prayer => {
   const origin = prayer?.origin_data || {};
   const metadata = origin.metadata || {};
@@ -59,6 +85,7 @@ export const presentPersonalPrayer = prayer => {
   }
 
   let text = String(prayer?.text || '');
+  let chosenLanguage = '';
   // Previous library imports wrongly merged two complete language variants.
   // Only correct known imports at presentation time; never mutate saved rows.
   const oldParallel = text.match(/^([\s\S]+?)\n\s*Русский перевод\s*\n([\s\S]+)$/u);
@@ -68,6 +95,7 @@ export const presentPersonalPrayer = prayer => {
       selected: originalTitle, language: origin.language || metadata.language,
     });
     text = (lang === 'russian' ? oldParallel[2] : oldParallel[1]).trim();
+    chosenLanguage = lang;
   }
   const normalizedTitle = normalizePrayerLabel(originalTitle);
   const normalizedText = normalizePrayerLabel(text);
@@ -83,5 +111,6 @@ export const presentPersonalPrayer = prayer => {
     title: displayTitle,
     listTitle: displayTitle || 'Молитва',
     text,
+    language: chosenLanguage || personalPrayerLanguage(prayer, text),
   };
 };
