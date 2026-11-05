@@ -21,7 +21,8 @@ $files = @(
   'src/screens/SaintDetailScreen.js',
   'src/screens/ChurchCalendarScreen.js',
   'tools/verify_prayer_book_calendar_integrity_20261105.js',
-  'tools/verify_restored_reader_features_20261104.js'
+  'tools/verify_restored_reader_features_20261104.js',
+  'tools/verify_reader_typography_and_personal_prayers_20261104.js'
 )
 function Assert-Last([string]$what) {
   if ($LASTEXITCODE -ne 0) { throw "$what failed (exit code $LASTEXITCODE)" }
