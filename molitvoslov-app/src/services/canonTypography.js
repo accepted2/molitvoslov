@@ -57,7 +57,7 @@ const markAfter = (text, from, breaks, initials) => {
   if (first) initials.push(first);
 };
 
-export const buildCanonTypography = (value, inlineLabel = '', sectionHeading = '') => {
+export const buildCanonTypography = (value, inlineLabel = '', sectionHeading = '', sectionType = '') => {
   const text = String(value || '');
   const ranges = [];
   const breakBefore = new Set();
@@ -123,14 +123,19 @@ export const buildCanonTypography = (value, inlineLabel = '', sectionHeading = '
     /(?:и\s+)?ныне,?\s+и\s+присно,?\s+(?:и\s+)?во\s*веки\s+веков[ъ]?[ \t]*[.,;:]?[ \t]*амин[ьъ]?[ \t]*[.!?]?/giu,
   ];
 
-  for (const pattern of doxologies) {
-    for (const match of normalized.matchAll(pattern)) {
-      const start = offsets[match.index];
-      const last = offsets[match.index + match[0].length - 1];
-      if (!Number.isInteger(start) || !Number.isInteger(last)) continue;
-      const end = extendCombiningMarks(text, last + 1);
-      ranges.push({start, end, kind: 'doxology'});
-      markAfter(text, end, breakBefore, initials);
+  // A prayer can contain "и ныне ... во веки веков" as ordinary prose.
+  // Doxology color and a forced next line belong to hymn sections only,
+  // never to the body of a canon prayer.
+  if (sectionType !== 'prayer') {
+    for (const pattern of doxologies) {
+      for (const match of normalized.matchAll(pattern)) {
+        const start = offsets[match.index];
+        const last = offsets[match.index + match[0].length - 1];
+        if (!Number.isInteger(start) || !Number.isInteger(last)) continue;
+        const end = extendCombiningMarks(text, last + 1);
+        ranges.push({start, end, kind: 'doxology'});
+        markAfter(text, end, breakBefore, initials);
+      }
     }
   }
 
