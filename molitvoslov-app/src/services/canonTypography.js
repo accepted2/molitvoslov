@@ -87,8 +87,8 @@ export const buildCanonTypography = (value, inlineLabel = '') => {
 
   const {normalized, offsets} = normalizeWithOffsets(text);
   const doxologies = [
-    /слава\s+отцу\s+и\s+сыну\s+и\s+святому\s+духу[ \t]*[.:;!?]?/giu,
-    /(?:и\s+)?ныне\s+и\s+присно\s+и\s+во\s+веки\s+веков[ъ]?[ \t]*[.,;:]?[ \t]*амин[ьъ]?[ \t]*[.!?]?/giu,
+    /слава\s+отцу,?\s+и\s+сыну,?\s+и\s+святому\s+духу[ \t]*[.:;!?]?/giu,
+    /(?:и\s+)?ныне,?\s+и\s+присно,?\s+и\s+во\s*веки\s+веков[ъ]?[ \t]*[.,;:]?[ \t]*амин[ьъ]?[ \t]*[.!?]?/giu,
   ];
 
   for (const pattern of doxologies) {
