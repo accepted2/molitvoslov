@@ -57,7 +57,7 @@ const markAfter = (text, from, breaks, initials) => {
   if (first) initials.push(first);
 };
 
-export const buildCanonTypography = (value, inlineLabel = '') => {
+export const buildCanonTypography = (value, inlineLabel = '', sectionHeading = '') => {
   const text = String(value || '');
   const ranges = [];
   const breakBefore = new Set();
@@ -71,7 +71,21 @@ export const buildCanonTypography = (value, inlineLabel = '') => {
   // following hymn as a "long heading" merely because it contains a colon.
   // Doxologies are separate cues and have their own break/initial logic.
   // For actual hymn rubrics, stop at sentence-ending punctuation too.
-  const cue = /^\s*((?:(?:Слава|И\s+ныне|Ныне)\s*:|(?:Тропар(?:ь|и)|Богородичен|Ирмос|Припев|Иисусу|Седален|Кондак|Икос|Светилен|Молитва)[^:\n.!?]{0,110}:))/iu.exec(mappedCue.normalized);
+  // "Молитва" also occurs at the beginning of ordinary prayer prose.
+  // Do not color everything up to a later colon as a rubric. A long
+  // "Молитва ...:" label is valid only when it matches this section's
+  // actual source heading; the simple "Молитва:" label is always valid.
+  let cue = /^\s*((?:(?:Слава|И\s+ныне|Ныне)\s*:|(?:Тропар(?:ь|и)|Богородичен|Ирмос|Припев|Иисусу|Седален|Кондак|Икос|Светилен)[^:\n.!?]{0,110}:|Молитва\s*:))/iu.exec(mappedCue.normalized);
+  if (!cue && sectionHeading) {
+    const longPrayerCue = /^\s*(Молитва[^:\n.!?]{1,110}:)/iu.exec(mappedCue.normalized);
+    if (longPrayerCue) {
+      const normalizedHeading = normalizeWithOffsets(sectionHeading).normalized
+        .replace(/[:;]+$/u, '').replace(/\s+/gu, ' ').trim().toLowerCase();
+      const candidateHeading = longPrayerCue[1]
+        .replace(/[:;]+$/u, '').replace(/\s+/gu, ' ').trim().toLowerCase();
+      if (candidateHeading === normalizedHeading) cue = longPrayerCue;
+    }
+  }
   let bodyStart = 0;
   if (cue) {
     const from = mappedCue.offsets[cue[0].length - cue[1].length];
