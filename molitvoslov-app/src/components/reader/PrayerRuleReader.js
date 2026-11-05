@@ -2976,9 +2976,20 @@ const HTML_TEMPLATE = String.raw`
                 localizedTitle
               );
 
+            // The Communion service's Russian text needs the same rubric
+            // labels as CS, but without duplicating labels already present.
             const inlineLabel =
               getRuleInlineLabel(
-                text
+                isCommunionReadingRule
+                  ? {
+                      ...text,
+                      content: viewMode === 'russian'
+                        ? (text.translation || '')
+                        : viewMode === 'traditional'
+                          ? (text.traditional_content || '')
+                          : (text.content || ''),
+                    }
+                  : text
               );
 
             const displayTitle =
@@ -3190,8 +3201,10 @@ const HTML_TEMPLATE = String.raw`
 
             if (
               inlineLabel &&
-              primaryLanguage ===
-                'church'
+              (
+                primaryLanguage === 'church' ||
+                (isCommunionReadingRule && primaryLanguage === 'russian')
+              )
             ) {
               const inline =
                 el(
