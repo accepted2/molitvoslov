@@ -25,9 +25,10 @@ import {
   createPersonalPrayer,
   deletePrayerPhoto,
   getPersonalPrayers,
-  updatePersonalPrayer,
+  updateBookPersonalPrayer,
 } from '../services/prayerBooks';
 import {colors, spacing} from '../theme';
+import {presentPersonalPrayer, personalPrayerLanguage} from '../services/personalPrayerPresentation';
 import {useLanguage} from '../context/LanguageContext';
 
 export const PersonalPrayerEditorScreen = ({route, navigation}) => {
@@ -40,6 +41,7 @@ export const PersonalPrayerEditorScreen = ({route, navigation}) => {
   const [prayer, setPrayer] = useState(null);
   const [title, setTitle] = useState('');
   const [text, setText] = useState('');
+  const [textLanguage, setTextLanguage] = useState('russian');
   const [pendingAssets, setPendingAssets] = useState([]);
   const [saving, setSaving] = useState(false);
   const [viewerUri, setViewerUri] = useState(null);
@@ -50,8 +52,13 @@ export const PersonalPrayerEditorScreen = ({route, navigation}) => {
     const current = prayers.find((item) => item.sync_id === prayerSyncId) || null;
     setPrayer(current);
     if (current) {
-      setTitle(current.title || '');
-      setText(current.text || '');
+      // The previous importer sometimes stored both languages and created a
+      // long title from the first line. Edit the same personal presentation
+      // the reader shows, never the obsolete merged source field.
+      const visible = presentPersonalPrayer(current);
+      setTitle(visible.title);
+      setText(visible.text);
+      setTextLanguage(visible.language);
     }
   }, [prayerSyncId]);
 
@@ -95,7 +102,9 @@ export const PersonalPrayerEditorScreen = ({route, navigation}) => {
   };
 
   const save = async () => {
-    if (!title.trim()) {
+    // Imported prayers can legitimately have no authored title.
+    // New custom prayers still require one.
+    if (!title.trim() && !prayer) {
       Alert.alert(t('prayerBooks.titleRequired'), t('prayerBooks.titleRequiredHint'));
       return;
     }
@@ -108,13 +117,25 @@ export const PersonalPrayerEditorScreen = ({route, navigation}) => {
       setSaving(true);
       let current = prayer;
       if (current) {
-        current = await updatePersonalPrayer(current.sync_id, {
-          title,
+        const explicitTitle = title.trim();
+        // Preserve its provenance but make sure its subsequent edits operate
+        // on the chosen language only. Never update a published text.
+        const changedOrigin = {
+          ...(current.origin_data || {}),
+          language: personalPrayerLanguage({
+            ...current,
+            origin_data: {...current.origin_data, language: textLanguage},
+          }, text),
+          auto_generated_title: !explicitTitle,
+        };
+        current = await updateBookPersonalPrayer(bookSyncId, current.sync_id, {
+          title: explicitTitle || 'Молитва',
           text,
+          origin_data: changedOrigin,
         });
       } else {
         current = await createPersonalPrayer({
-          title,
+          title: title.trim(),
           text,
           origin_type: 'custom',
           origin_data: {created_in_app: true},
@@ -197,7 +218,9 @@ export const PersonalPrayerEditorScreen = ({route, navigation}) => {
             textAlignVertical="top"
             placeholder={t('prayerBooks.prayerTextPlaceholder')}
             placeholderTextColor="#A58A73"
-            style={styles.textInput}
+            style={[styles.textInput, textLanguage === 'church' && styles.churchText]}
+            autoCorrect={false}
+            spellCheck={false}
           />
 
           <View style={styles.photoHeading}>
@@ -302,6 +325,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   textLabel: {marginTop: 18},
+  churchText: {fontFamily: 'Ponomar', fontSize: 19, lineHeight: 30},
   textInput: {
     marginTop: 7,
     minHeight: 250,
