@@ -65,7 +65,7 @@ export const personalPrayerLanguage = (prayer, displayedText = '') => {
   // otherwise fall back to a civil serif which renders accents badly.
   if (/[ѣѳѡѫѧѩі҆ꙋꙑꙗѵꙝ]/iu.test(text) ||
       /[\u0483-\u0489]/u.test(text) ||
-      /\b(?:иже\s+еси|аще|яко|несть|днесь|есмь|мя\s+грешна)/iu.test(text)) {
+      /(?<![\p{L}])(?:иже\s+еси|аще|яко|несть|днесь|есмь|мя\s+грешна)(?![\p{L}])/iu.test(text)) {
     return 'church';
   }
   return 'russian';
