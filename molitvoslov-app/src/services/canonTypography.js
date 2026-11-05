@@ -63,17 +63,27 @@ export const buildCanonTypography = (value, inlineLabel = '') => {
   const breakBefore = new Set();
   const initials = [];
 
-  // Long introductory rubrics are separate from the text of the hymn.
-  // Short cues such as "Ирмос:" keep their existing inline appearance.
+  // Keep the established short headings (including "Ирмос:", "Припев:",
+  // "Иисусу:" and "Слава:") while separating only long introductory cues.
+  // "Молитва:" was already rendered on its own line in the canon reader.
   const mappedCue = normalizeWithOffsets(text);
-  const cue = /^\s*((?:Тропар(?:ь|и)|Богородичен|Ирмос|Седален|Кондак|Икос|Светилен|Молитва)[^:\n]{0,110}:)/iu.exec(mappedCue.normalized);
+  const cue = /^\s*((?:Тропар(?:ь|и)|Богородичен|Ирмос|Припев|Иисусу|Седален|Кондак|Икос|Светилен|Молитва|Слава|И\s+ныне|Ныне)[^:\n]{0,110}:)/iu.exec(mappedCue.normalized);
   let bodyStart = 0;
-  if (cue && cue[1].trim().length >= 20) {
+  if (cue) {
     const from = mappedCue.offsets[cue[0].length - cue[1].length];
     const to = extendCombiningMarks(text, mappedCue.offsets[cue[0].length - 1] + 1);
-    ranges.push({start: from, end: to, kind: 'long-cue'});
-    bodyStart = to;
-    markAfter(text, to, breakBefore, initials);
+    const long = cue[1].trim().length >= 20;
+    const prayer = /^\s*молитва/iu.test(cue[1]);
+    ranges.push({start: from, end: to, kind: prayer ? 'prayer-cue' : long ? 'long-cue' : 'short-cue'});
+    if (long || prayer) {
+      bodyStart = to;
+      markAfter(text, to, breakBefore, initials);
+    } else {
+      const opening = initialAt(text, 0);
+      if (opening) initials.push(opening);
+      const body = initialAt(text, to);
+      if (body) initials.push(body);
+    }
   } else {
     const first = initialAt(text, 0);
     if (first) initials.push(first);
