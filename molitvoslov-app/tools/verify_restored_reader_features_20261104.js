@@ -11,13 +11,13 @@ const expectations = {
     "makeCalendarSaveContext", 'CalendarSaveWholeButton',
     'CalendarSelectableBody', 'onSavedChange={setWholeSaved}',
     'section="life"', 'section="troparion"', 'section="kontakion"',
-    'styles.calendarSavedContent',
+    'CalendarSelectableBody',
   ],
   'src/screens/SaintDetailScreen.js': [
     "makeCalendarSaveContext", 'CalendarSaveWholeButton',
     'CalendarSelectableBody', 'onSavedChange={setWholeSaved}',
     'section="life"', 'section="troparion"', 'section="kontakion"',
-    'styles.expandedWrapSaved',
+    'CalendarSelectableBody',
   ],
   'src/screens/PrayerBookReaderScreen.js': [
     'SelectableSaveText', 'sourceType="personal_prayer"', 'fullSaveType="prayer"',
@@ -45,6 +45,7 @@ const expectations = {
   'src/components/reader/CalendarSaveText.js': [
     'export const CalendarSaveWholeButton', 'export const CalendarSelectableBody',
     "name={saved ? 'heart' : 'heart-o'}", 'onSavedChange',
+    '<SelectableDocumentReader', 'embedded',
   ],
   'src/components/search/LocalSearchField.js': [
     'export const LocalSearchField', 'export const filterByTitle',
@@ -71,6 +72,20 @@ for (const [file, required] of Object.entries(expectations)) {
     errors += 1;
     console.error('FAIL', file, error.message);
   }
+}
+
+// Heart-only saves must not tint calendar/life content or re-enable TextInput.
+for (const file of ['src/screens/ChurchCalendarScreen.js', 'src/screens/SaintDetailScreen.js']) {
+  const source = fs.readFileSync(path.resolve(root, file), 'utf8');
+  if (/wholeSaved && styles\\.(?:calendarSavedBlock|calendarSavedContent|expandedWrapSaved|lifeInsetSaved|accordionSaved)/.test(source)) {
+    errors += 1;
+    console.error('FAIL heart-only styling:', file);
+  }
+}
+const calendar = fs.readFileSync(path.resolve(root, 'src/components/reader/CalendarSaveText.js'), 'utf8');
+if (calendar.includes('<SelectableSaveText') || !calendar.includes('<SelectableDocumentReader')) {
+  errors += 1;
+  console.error('FAIL calendar must use read-only WebView selection, not TextInput');
 }
 
 if (errors) {
