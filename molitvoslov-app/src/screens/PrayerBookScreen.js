@@ -19,6 +19,7 @@ import {normalizeSearchText, searchAllPrayers} from '../services/prayerSearch';
 import {getSavedItems} from '../services/savedItems';
 import {colors, spacing} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
+import {presentPersonalPrayer} from '../services/personalPrayerPresentation';
 
 const SavedPickerModal = ({visible, items, onClose, onSelect}) => {
   const {t} = useLanguage();
@@ -587,6 +588,7 @@ export const PrayerBookScreen = ({route, navigation}) => {
           }
           renderItem={({item, index}) => {
             const prayer = item.prayer;
+            const visiblePrayer = presentPersonalPrayer(prayer);
 
             return (
               <View style={styles.card}>
@@ -602,11 +604,11 @@ export const PrayerBookScreen = ({route, navigation}) => {
                   <Text style={styles.order}>{index + 1}</Text>
 
                   <View style={styles.cardText}>
-                    <Text style={styles.cardTitle}>{prayer.title}</Text>
+                    <Text style={styles.cardTitle}>{visiblePrayer.listTitle}</Text>
 
-                    {!!prayer.text && (
+                    {!!visiblePrayer.text && (
                       <Text style={styles.preview} numberOfLines={3}>
-                        {prayer.text}
+                        {visiblePrayer.text}
                       </Text>
                     )}
 
