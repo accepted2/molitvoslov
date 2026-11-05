@@ -2,6 +2,7 @@ export const READER_RUNTIME = String.raw`
     const DATA = __READER_PAYLOAD__;
     const bookMode = DATA.document ?.readerMode === 'book';
     document.body.classList.toggle( 'book-mode', bookMode );
+    document.body.classList.toggle('embedded-reader', !!DATA.document.embedded);
     const reader = document.getElementById( 'reader' );
     const bookViewport = document.getElementById( 'book-viewport' );
     const selectionBar = document.getElementById( 'selection-bar' );
