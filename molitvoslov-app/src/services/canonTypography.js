@@ -74,7 +74,11 @@ export const buildCanonTypography = (value, inlineLabel = '') => {
     const to = extendCombiningMarks(text, mappedCue.offsets[cue[0].length - 1] + 1);
     const long = cue[1].trim().length >= 20;
     const prayer = /^\s*молитва/iu.test(cue[1]);
-    ranges.push({start: from, end: to, kind: prayer ? 'prayer-cue' : long ? 'long-cue' : 'short-cue'});
+    const glory = /^\s*(?:слава|и\s+ныне|ныне)\s*:/iu.test(cue[1]);
+    ranges.push({
+      start: from, end: to,
+      kind: prayer ? 'prayer-cue' : long ? 'long-cue' : glory ? 'glory-cue' : 'short-cue',
+    });
     if (long || prayer) {
       bodyStart = to;
       markAfter(text, to, breakBefore, initials);
