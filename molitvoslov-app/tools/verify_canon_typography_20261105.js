@@ -1,0 +1,102 @@
+#!/usr/bin/env node
+// Canon-only typography regression: assert original text and selection offsets
+// remain identical and unrelated prayer/akathist/psalter readers are excluded.
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const babel = require('@babel/parser');
+
+const root = path.resolve(__dirname, '..');
+const read = name => fs.readFileSync(path.join(root, name), 'utf8');
+const source = read('src/services/canonTypography.js');
+const buildCanonTypography = new Function(
+  source.replace('export const buildCanonTypography =', 'const buildCanonTypography =') +
+    '\nreturn buildCanonTypography;'
+)();
+
+const format = (text, label) => {
+  const snapshot = text;
+  const info = buildCanonTypography(text, label);
+  assert.equal(text, snapshot, 'The original text must remain unchanged');
+  assert.ok(Array.isArray(info.ranges));
+  assert.ok(Array.isArray(info.breakBefore));
+  for (const range of info.ranges) {
+    assert.ok(range.start >= 0 && range.end <= text.length && range.end > range.start);
+  }
+  return info;
+};
+const contains = (text, info, kind, value) =>
+  info.ranges.some(range =>
+    range.kind === kind && text.slice(range.start, range.end) === value
+  );
+
+const example = 'Тропарь Богородице, глас 4-й: К Богородице прилежно ныне притечем.';
+const e = format(example);
+assert.ok(contains(example, e, 'long-cue', 'Тропарь Богородице, глас 4-й:'));
+assert.deepEqual(e.breakBefore, [example.indexOf('К Богородице')]);
+assert.ok(contains(example, e, 'initial', 'К'));
+
+const accented = 'Тропа́рь Богородице, глас 4-й: к Богородице';
+const a = format(accented);
+assert.ok(contains(accented, a, 'long-cue', 'Тропа́рь Богородице, глас 4-й:'));
+assert.ok(contains(accented, a, 'initial', 'к'));
+
+const glory = 'Сла́ва Отцу́, и Сы́ну, и Свято́му Ду́ху. гос́поди, помилуй.';
+const g = format(glory);
+assert.ok(contains(glory, g, 'doxology', 'Сла́ва Отцу́, и Сы́ну, и Свято́му Ду́ху.'));
+assert.ok(contains(glory, g, 'initial', 'г'));
+assert.deepEqual(g.breakBefore, [glory.indexOf('гос́поди')]);
+
+const now = 'И ныне, и присно, и вовеки веков. Аминь. спаси нас';
+const n = format(now);
+assert.ok(contains(now, n, 'doxology', 'И ныне, и присно, и вовеки веков. Аминь.'));
+assert.ok(contains(now, n, 'initial', 'с'));
+assert.deepEqual(n.breakBefore, [now.indexOf('спаси')]);
+
+const newLine = 'Слава Отцу и Сыну и Святому Духу.\nГосподи, помилуй.';
+assert.deepEqual(format(newLine).breakBefore, [], 'Never add duplicate break before existing newline');
+
+const twice = 'Господи, помилуй. (Дважды) (Трижды.)';
+const r = format(twice);
+assert.ok(contains(twice, r, 'repeat-note', '(Дважды)'));
+assert.ok(contains(twice, r, 'repeat-note', '(Трижды.)'));
+
+const para = 'господи, помилуй.\n\nспаси нас';
+const p = format(para);
+assert.ok(contains(para, p, 'initial', 'г'));
+assert.ok(contains(para, p, 'initial', 'с'));
+
+const short = 'Ирмос: Достойно есть.';
+assert.deepEqual(format(short).breakBefore, [], 'Short established cues remain inline');
+
+const longInline = format('к Богородице ныне', 'Тропарь Богородице, глас 4-й:');
+assert.equal(longInline.standaloneInlineLabel, true);
+assert.ok(contains('к Богородице ныне', longInline, 'initial', 'к'));
+assert.equal(format('Господи, помилуй', 'Ирмос:').standaloneInlineLabel, false);
+
+// The shared renderer is permitted to show the classes but must never
+// infer canon formatting from generic Cyrillic content or a regex alone.
+const canon = read('src/screens/CanonScreen.js');
+const reader = read('src/components/reader/selectableDocumentReader/runtime.js');
+const styles = read('src/components/reader/selectableDocumentReader/styles.js');
+assert.match(canon, /import \{buildCanonTypography\} from '\.\.\/services\/canonTypography'/);
+assert.match(canon, /canonTypography: buildCanonTypography\(text \|\| '', inlineLabel \|\| ''\)/);
+assert.match(reader, /itemConfig\?\.sourceType === 'canon'\s*\?\s*itemConfig\.canonTypography\s*:\s*null/);
+assert.match(reader, /block\.sourceType === 'canon' && block\.canonTypography\?\.standaloneInlineLabel/);
+assert.match(reader, /canonBreakBefore\.has\(start\)/);
+assert.match(reader, /span\.classList\.add\('canon-' \+ range\.kind\)/);
+for (const token of ['canon-initial', 'canon-long-cue', 'canon-doxology', 'canon-repeat-note']) {
+  assert.ok(styles.includes('.rule-item.canon-section .reader-text .'+token),
+    'Missing canon-specific CSS: ' + token);
+}
+for (const name of [
+  'src/screens/CanonScreen.js',
+  'src/components/reader/selectableDocumentReader/runtime.js',
+  'src/components/reader/selectableDocumentReader/styles.js',
+  'src/services/canonTypography.js',
+]) {
+  babel.parse(read(name), {sourceType: 'module', plugins: ['jsx']});
+}
+console.log('PASS: canon-only text formatting for initials, rubrics, doxology breaks and (Дважды)');
+console.log('PASS: original text, UTF-16 selection offsets and other reader scopes are protected');
+console.log('PASS: four edited/new modules parse via Babel');
