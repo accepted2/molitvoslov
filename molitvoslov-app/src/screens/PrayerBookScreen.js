@@ -709,9 +709,10 @@ const styles = StyleSheet.create({
   stickyReadBar: {
     paddingHorizontal: spacing.md,
     paddingTop: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(126,82,38,0.25)',
-    backgroundColor: '#FFF4DE',
+    // Keep the page artwork visible under the sticky reading button.
+    // The former solid #FFF4DE panel produced an unwanted light footer.
+    backgroundColor: 'transparent',
+    borderTopWidth: 0,
   },
   readButton: {
     minHeight: 44,
