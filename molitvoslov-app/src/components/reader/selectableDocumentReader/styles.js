@@ -1106,12 +1106,25 @@ export const READER_STYLES = String.raw`
       font-weight: 700;
       font-style: normal;
     }
+    .rule-item.canon-section .reader-text .canon-short-cue,
+    .rule-item.canon-section .reader-text .canon-short-cue .liturgical-word,
+    .rule-item.canon-section .reader-text .canon-prayer-cue,
+    .rule-item.canon-section .reader-text .canon-prayer-cue .liturgical-word,
     .rule-item.canon-section .reader-text .canon-long-cue,
     .rule-item.canon-section .reader-text .canon-long-cue .liturgical-word,
     .rule-item.canon-section .reader-text .canon-doxology,
     .rule-item.canon-section .reader-text .canon-doxology .liturgical-word {
       color: var(--liturgical) !important;
       font-weight: 700;
+    }
+    .rule-item.canon-section .reader-text .canon-long-cue,
+    .rule-item.canon-section .reader-text .canon-short-cue,
+    .rule-item.canon-section .reader-text .canon-prayer-cue {
+      font-style: italic;
+    }
+    .rule-item.canon-section .reader-text .canon-short-cue.canon-initial,
+    .rule-item.canon-section .reader-text .canon-prayer-cue.canon-initial {
+      font-style: normal;
     }
     .rule-item.canon-section .reader-text .canon-repeat-note,
     .rule-item.canon-section .reader-text .canon-repeat-note .liturgical-word {
