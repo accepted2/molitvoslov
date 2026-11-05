@@ -137,6 +137,13 @@ assert.match(canon, /canonTypography: isParallelTranslation\s*\?\s*null\s*:\s*bu
 assert.match(canon, /className: isParallelTranslation\s*\?\s*`\$\{className\} canon-parallel-translation`\s*:\s*className/);
 assert.match(styles, /\.rule-item\.canon-section \.reader-text\.canon-russian\.canon-parallel-translation\s*\{/);
 assert.match(styles, /\.reader-text\.canon-russian\.canon-parallel-translation\s*\{[^}]*color: var\(--secondary\) !important;[^}]*font-size: 16px;[^}]*line-height: 26px/s);
+// Single-language Russian/UK readers display hymn rubric labels; parallel
+// translations deliberately remain secondary and have no redundant headings.
+assert.match(canon, /inlineLabel: viewMode === MODE_RUSSIAN\s*\?\s*getCanonInlineLabel\(displaySection, russian, t\)\s*:\s*''/);
+assert.match(canon, /inlineLabel: getCanonInlineLabel\(displaySection, localized, t\)/);
+assert.match(canon, /viewMode === MODE_RUSSIAN\s*&&\s*effectiveSectionType === 'refrain'\s*&&\s*!russian\s*&&\s*church/);
+assert.match(canon, /label: 'Церковнославянский припев — перевод отсутствует'/);
+assert.match(styles, /\.rule-item\.canon-section \.reader-text\.canon-church,\s*\.rule-item\.canon-section \.reader-text\.canon-russian\s*\{[^}]*text-align: left !important;[^}]*word-spacing: normal !important;[^}]*overflow-wrap: break-word;/s);
 assert.match(reader, /itemConfig\?\.sourceType === 'canon'\s*\?\s*itemConfig\.canonTypography\s*:\s*null/);
 assert.match(reader, /block\.sourceType === 'canon' && block\.canonTypography\?\.standaloneInlineLabel/);
 assert.match(reader, /canonBreakBefore\.has\(start\)/);
@@ -155,5 +162,6 @@ for (const name of [
 }
 console.log('PASS: canon-only text formatting for initials, rubrics, doxology breaks and (Дважды)');
 console.log('PASS: parallel RU translation uses secondary prayer style without canon red initials');
+console.log('PASS: standalone RU labels, explicit missing RU refrains and left-aligned canon text');
 console.log('PASS: original text, UTF-16 selection offsets and other reader scopes are protected');
 console.log('PASS: four edited/new modules parse via Babel');
