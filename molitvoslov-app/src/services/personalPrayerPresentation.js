@@ -14,7 +14,12 @@ export const calendarSectionTitle = (section, feastTitle) => {
 export const savedPrayerTitle = item => {
   const label = String(item?.item_title || '').trim();
   const metadata = item?.metadata || {};
-  const sourceTitle = String(metadata.feast_title || item?.source_title || '').trim();
+  // Only calendar saves have a saint/feast owner. Do not mislabel a
+  // generic troparion as "Тропарь: Молитвенное правило".
+  const sourceTitle = String(
+    metadata.feast_title ||
+    (item?.source_type === 'calendar' ? item?.source_title : '') || ''
+  ).trim();
   const normalized = normalizePrayerLabel(label);
   if (['тропарь', 'кондак', 'тропар', 'кондакъ'].includes(normalized)) {
     return calendarSectionTitle(normalized.startsWith('тропар') ? 'troparion' : 'kontakion', sourceTitle) || label;
