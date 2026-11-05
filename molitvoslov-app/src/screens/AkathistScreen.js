@@ -29,6 +29,7 @@ import {
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
 import {prepareAkathistSections} from '../services/akathistPresentation';
+import {getAkathistRussianCoverage} from '../services/akathistRussianCoverage';
 
 const MODE_CHURCH = READER_LANGUAGE_MODES.CHURCH;
 const MODE_BOTH = READER_LANGUAGE_MODES.BOTH;
@@ -175,23 +176,11 @@ export const AkathistScreen = ({route, navigation}) => {
     }
   };
 
-  const hasRussianTranslation = useMemo(() => {
-    if (!akathist) {
-      return false;
-    }
-
-    const specialTexts = [
-      akathist.troparion,
-      akathist.kontakion_before,
-      akathist.common_rule?.opening,
-      akathist.common_rule?.ending,
-    ];
-
-    return (
-      specialTexts.some((item) => !!item?.translation?.trim()) ||
-      (akathist.sections || []).some((section) => !!section.text?.translation?.trim())
-    );
-  }, [akathist]);
+  // Use section-level completeness, not a truthy translation in one fragment.
+  const hasRussianTranslation = useMemo(
+    () => getAkathistRussianCoverage(akathist).complete,
+    [akathist]
+  );
 
   const hasUkrainianTranslation = useMemo(() => {
     if (!akathist) {
@@ -342,14 +331,15 @@ export const AkathistScreen = ({route, navigation}) => {
 
     const showChurch = viewMode === MODE_CHURCH || viewMode === MODE_BOTH;
 
-    const showRussian = viewMode === MODE_RUSSIAN || viewMode === MODE_BOTH;
+    const showRussian = hasRussianTranslation &&
+      (viewMode === MODE_RUSSIAN || viewMode === MODE_BOTH);
 
     const showUkrainian = viewMode === MODE_UKRAINIAN;
 
     const showTraditional = viewMode === MODE_TRADITIONAL;
 
     const missingLanguage =
-      ((viewMode === MODE_RUSSIAN || viewMode === MODE_BOTH) && !hasRussianTranslation)
+      (viewMode === MODE_RUSSIAN && !hasRussianTranslation)
         ? 'russian'
         : viewMode === MODE_TRADITIONAL && !hasTraditionalTranslation
           ? 'traditional'
@@ -631,11 +621,10 @@ export const AkathistScreen = ({route, navigation}) => {
 
         title: heading,
 
-        rows: blocks.map((block) => ({
-          layout: 'stack',
-
-          blocks: [block],
-        })),
+        rows: [{
+          layout: blocks.length > 1 ? 'parallel' : 'stack',
+          blocks,
+        }],
       });
     };
 
@@ -763,15 +752,34 @@ export const AkathistScreen = ({route, navigation}) => {
 
         note: getLocalizedField(section, 'note', language),
 
-        rows: blocks.map((block) => ({
-          layout: 'stack',
-
-          blocks: [block],
-        })),
+        rows: [{
+          layout: blocks.length > 1 ? 'parallel' : 'stack',
+          blocks,
+        }],
       });
     });
 
     addSpecial(akathist.common_rule?.ending, 'Окончание чтения акафиста', 'ending');
+
+    // In CS+RU mode a partial translation is not silently presented as
+    // complete. Show the CS text, and explicitly explain why no RU column
+    // is present for an unverified Akathist.
+    if (viewMode === MODE_BOTH && !hasRussianTranslation) {
+      sections.unshift({
+        progressAnchorId: 0,
+        trackProgress: false,
+        title: '',
+        rows: [{
+          layout: 'stack',
+          blocks: [{
+            id: nextBlockId++,
+            text: 'Полный русский перевод этого акафиста отсутствует или ещё не проверен. Ниже показан церковнославянский текст.',
+            className: 'akathist-russian',
+            metadata: {language: 'russian'},
+          }],
+        }],
+      });
+    }
 
     // Keep all reading tabs visible, even when a translation is not provided.
     // Never substitute the church text for a missing translation.
@@ -787,7 +795,7 @@ export const AkathistScreen = ({route, navigation}) => {
             id: nextBlockId++,
             text: missingLanguage === 'traditional'
               ? 'Те́кстъ въ традиціо́нномъ начерта́ніи отсꙋ́тствꙋетъ.'
-              : 'Перевод пока отсутствует.',
+              : 'Полный русский перевод этого акафиста отсутствует или ещё не проверен.',
             className: missingLanguage === 'traditional' ? 'akathist-church' : 'akathist-russian',
             metadata: {language: missingLanguage},
           }],

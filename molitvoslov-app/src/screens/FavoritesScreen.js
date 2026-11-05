@@ -12,6 +12,7 @@ import {useFocusEffect} from '@react-navigation/native';
 import {BottomNav} from '../components/navigation/BottomNav';
 
 import {deleteSavedItem, getSavedItems} from '../services/savedItems';
+import {savedTextFontFamily} from '../services/savedTextTypography';
 
 import {colors, radius, spacing} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
@@ -28,12 +29,9 @@ const TABS = [
 
 const FRAGMENT_SAVE_TYPES = new Set(['word', 'sentence', 'paragraph', 'fragment']);
 
-// The ordinary Android serif cannot reliably render historic Cyrillic glyphs and accents.
-const CHURCH_SCRIPT_PATTERN = /[\u0300-\u036f\u0483-\u0489\u0460-\u052f\u2de0-\u2dff\ua640-\ua69f]/u;
-const isChurchPreview = (item) =>
-  ['church', 'traditional', 'church_slavonic'].includes(
-    item.metadata?.language || item.metadata?.text_language
-  ) || CHURCH_SCRIPT_PATTERN.test(item.text || '');
+// Font is sourced from the reader that created the saved item, never from
+// letters or combining accents in the text itself.
+const isPonomarPreview = item => savedTextFontFamily(item) === 'Ponomar';
 
 export const FavoritesScreen = ({route, navigation}) => {
   const {t} = useLanguage();
@@ -417,7 +415,7 @@ export const FavoritesScreen = ({route, navigation}) => {
                     </Text>
                   ) : (
                     !!item.text && (
-                      <Text style={[styles.quote, isChurchPreview(item) && ponomarLoaded && styles.quoteChurch]} numberOfLines={8}>
+                      <Text style={[styles.quote, isPonomarPreview(item) && ponomarLoaded && styles.quoteChurch]} numberOfLines={8}>
                         «{item.text}»
                       </Text>
                     )

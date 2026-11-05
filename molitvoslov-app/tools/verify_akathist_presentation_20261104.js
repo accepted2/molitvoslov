@@ -63,6 +63,111 @@ assert.deepEqual(Array.from(inv(spacedOld), range => spacedOld.slice(range.start
 const response = 'Поем Тебе Аллилуиа! И паки: Аллилуия.';
 assert.deepEqual(Array.from(alleluia(response), range => response.slice(range.start,range.end)), ['Аллилуиа!','Аллилуия.']);
 assert.equal(inv('НеРадуйся').length, 0, 'Never decorate inside another word');
+
+// Some Azbyka texts contain a LATIN accented vowel inside a Cyrillic refrain.
+// Match/color/break those words without altering the original characters.
+const mixedScript = 'Рáдуйся, Матерь; рáдуйся, врата; Ра́дуйся, Жизнь; ра́дуйся, отрада.';
+const mixedMatches = Array.from(inv(mixedScript), range => mixedScript.slice(range.start, range.end));
+assert.deepEqual(mixedMatches, ['Рáдуйся', 'рáдуйся', 'Ра́дуйся', 'ра́дуйся']);
+assert.deepEqual([...breaks(mixedScript)], [
+  mixedScript.indexOf('рáдуйся'),
+  mixedScript.indexOf('Ра́дуйся'),
+  mixedScript.lastIndexOf('ра́дуйся'),
+], 'Every mixed-script invocation starts a new line');
+assert.deepEqual(
+  Array.from(inv('Радуйcя, Дево'), range => 'Радуйcя, Дево'.slice(range.start, range.end)),
+  ['Радуйcя'], 'Latin lookalike c inside a Cyrillic word is recognized',
+);
+assert.equal(inv('НеРáдуйся').length, 0, 'Do not style a substring of another word');
+assert.equal(inv('Cacao, радуйся').length, 1, 'Standalone Latin words are not rewritten');
+console.log('PASS: Cyrillic and Latin-accented Радуйся recognized with original offsets');
+
+// A narrative quotation in an Ikos is not a list refrain. Keep the
+// archangel's greeting inline, without the red word and forced line break.
+const quotedGreeting =
+  'Архангельский глас вопием Ти, Чистая: «Рáдуйся, Благодатная, Господь с Тобою!» ' +
+  'И в сретение Тебе взываем: радуйся, Мати Слова; ра́дуйся, Троицы обитель.';
+const quotedWordStart = quotedGreeting.indexOf('Рáдуйся');
+const visibleRefrains = initials(quotedGreeting, true, true);
+assert.deepEqual(
+  Array.from(visibleRefrains, range => quotedGreeting.slice(range.start, range.end)),
+  ['радуйся', 'ра́дуйся', 'А'],
+);
+assert.equal(
+  visibleRefrains.some(range => range.start <= quotedWordStart && range.end > quotedWordStart),
+  false,
+  'Quoted Радуйся must be plain inline prose',
+);
+assert.deepEqual([...breaks(quotedGreeting, true)], [
+  quotedGreeting.indexOf('радуйся'),
+  quotedGreeting.lastIndexOf('ра́дуйся'),
+], 'No forced line break inside the quoted angelic greeting');
+const nestedQuote =
+  'Слышали: «Слова его: „Радуйся, Благодатная!“» Радуйся, Дево.';
+assert.deepEqual(
+  Array.from(initials(nestedQuote, true, true), range =>
+    nestedQuote.slice(range.start, range.end)),
+  ['Радуйся', 'С'],
+  'Both nested quotation levels must be ignored as refrains',
+);
+assert.deepEqual([...breaks(nestedQuote, true)], [nestedQuote.lastIndexOf('Радуйся')]);
+const quotedJesus = 'Слышали: “Иисусе, помоги!” Иисусе, помилуй.';
+assert.deepEqual(
+  Array.from(initials(quotedJesus, true, true), range =>
+    quotedJesus.slice(range.start, range.end)),
+  ['Иисусе', 'С'],
+  'The same quotation rule applies to Иисусе',
+);
+console.log('PASS: prose quotations remain inline; true Ikos responses stay red and start new lines');
+
+// Some Akathists address the Holy Spirit with "Прииди" instead of "Радуйся".
+// In Kontakion 1, "Приидите, вернии" is narration (plural), not the refrain.
+const holySpiritKontakion = 'Прииди́те, ве́рнии, Духа Святаго прославим, взывающе: ' +
+  'Прииди́, Утешителю Душе Святый, и вселися в ны.';
+assert.deepEqual(
+  Array.from(inv(holySpiritKontakion), range =>
+    holySpiritKontakion.slice(range.start, range.end)),
+  ['Прииди́'],
+);
+assert.deepEqual(
+  [...breaks(holySpiritKontakion)],
+  [holySpiritKontakion.lastIndexOf('Прииди́')],
+);
+const holySpiritIkos = 'Ангели на небеси воспевают: Прииди, Свете истинный; ' +
+  'прииди, росоносный Облаче; Прииди́, и прими.';
+assert.deepEqual(
+  Array.from(inv(holySpiritIkos), range =>
+    holySpiritIkos.slice(range.start, range.end)),
+  ['Прииди', 'прииди', 'Прииди́'],
+);
+assert.deepEqual(
+  [...breaks(holySpiritIkos)],
+  [holySpiritIkos.indexOf('Прииди,'),
+    holySpiritIkos.indexOf('прииди,'),
+    holySpiritIkos.lastIndexOf('Прииди́')],
+);
+assert.equal(inv('приидите, вернии').length, 0, 'Do not match inside Приидите');
+assert.equal(inv('приходи во храм').length, 0, 'Do not color unrelated verbs');
+const griefKontakion = 'Возбранный Воеводо и Господи, радосте и веселие рабом Твоим, ' +
+  'явлением спасения посети мя, зовуща: Господи мой, Господи, Радосте моя, даруй ми.';
+assert.deepEqual(
+  Array.from(inv(griefKontakion), range =>
+    griefKontakion.slice(range.start, range.end)),
+  ['Господи мой'],
+);
+assert.deepEqual([...breaks(griefKontakion)], [griefKontakion.indexOf('Господи мой')]);
+assert.equal(inv('Возлюбив, Господи мой, прихожду к Тебе.').length, 0,
+  'Do not split a narrative sentence at Господи мой');
+const quotedCome = 'Сказано: «Прииди, Утешителю!» Прииди, Душе Святый.';
+assert.deepEqual(
+  Array.from(initials(quotedCome, true, true), range =>
+    quotedCome.slice(range.start, range.end)),
+  ['Прииди', 'С'],
+  'Quoted Прииди must remain plain; the genuine refrain must be red',
+);
+console.log('PASS: Прииди and Господи мой refrains highlight and line-break only in appropriate contexts');
+
+
 assert.match(runtime, /akathistAlleluiaWrapper = el\('span', 'akathist-alleluia'\)/);
 assert.match(runtime, /akathistJoyBreaks\.has\(end\)/);
 console.log('PASS: full Raduisya/Iisuse colored with new lines; Alleluia stays one wrapping unit');

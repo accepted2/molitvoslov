@@ -31,6 +31,10 @@ import {
   getSearchSuggestions,
 } from '../services/searchIndex';
 
+const SEARCH_SQLITE_OPTIONS = Object.freeze({
+  finalizeUnusedStatementsBeforeClosing: false,
+});
+
 const copyForLanguage = (language) =>
   language === 'uk'
     ? {
@@ -787,6 +791,7 @@ const styles = StyleSheet.create({
 export const SearchScreen = (props) => (
   <SQLiteProvider
     databaseName={searchSeedBuild.database_name}
+    options={SEARCH_SQLITE_OPTIONS}
     assetSource={{assetId: require('../data/search_seed.db')}}
   >
     <SearchContent {...props} />

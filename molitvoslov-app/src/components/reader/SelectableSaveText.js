@@ -215,7 +215,13 @@ export default function SelectableSaveText({
 
         end_offset: range.end,
 
-        metadata,
+        metadata: {
+          ...(metadata || {}),
+          font_family:
+            metadata?.font_family || metadata?.fontFamily ||
+            flattenedStyle.fontFamily ||
+            (metadata?.language === 'traditional' ? 'Ponomar' : 'serif'),
+        },
       });
 
       onSaved?.(saved);

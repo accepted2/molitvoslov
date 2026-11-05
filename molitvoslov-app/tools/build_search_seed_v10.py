@@ -45,7 +45,12 @@ def compile_corpus(source, filename=str(ORIGINAL)):
     loop = body[lang_idxs[0]]
     if not isinstance(loop.iter, (ast.Tuple, ast.List)):
         raise RuntimeError("Original language traversal has changed")
-    langs = [n.value for n in loop.iter if isinstance(n, ast.Constant)]
+    # ast.Tuple/ast.List nodes are not iterable: traverse their .elts.
+    # Never silently drop a dynamic entry from the search language list.
+    if not all(isinstance(n, ast.Constant) and isinstance(n.value, str)
+               for n in loop.iter.elts):
+        raise RuntimeError("Original search languages must be string literals")
+    langs = [n.value for n in loop.iter.elts]
     if langs != ["ru", "uk"]:
         raise RuntimeError("Expected original search languages (ru, uk)")
     metadata = [

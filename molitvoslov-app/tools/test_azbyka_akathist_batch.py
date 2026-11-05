@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from azbyka_akathist_batch import SOURCE, akathist_index, content_fingerprint, merge, prepare, verify_detail
+from azbyka_akathist_batch import SOURCE, akathist_index, content_fingerprint, merge, prepare, quarantine, repair, verify_detail
 
 
 def section(section_type, number, uid):
@@ -137,6 +137,116 @@ class AdditiveAkathistsTest(unittest.TestCase):
         approved = json.loads(self.approved.read_text(encoding="utf-8"))
         self.assertEqual(len(approved), 50)
         self.assertNotIn("akafist-100", approved)
+
+
+    def repair_params(self, apply):
+        return argparse.Namespace(
+            existing=str(self.old), patch=str(self.dir / "repair.json"),
+            backup_dir=str(self.backups), apply=apply,
+        )
+
+    def test_repair_old_first_kontakion_refrain_without_overwriting_other_texts(self):
+        original = self.existing["akathists"]["by_slug"]["akafist-old"]["sections"][0]["text"]["content"]
+        corrected = original + "\n\nГосподи мой, Господи, Радосте моя."
+        patch = {
+            "source": SOURCE,
+            "changes": [{
+                "slug": "akafist-old", "akathist_id": 999999,
+                "sections": [{
+                    "section_type": "kontakion", "number": 1,
+                    "old_content": original, "old_translation": "",
+                    "new_content": corrected, "new_translation": "",
+                }],
+            }],
+        }
+        (self.dir / "repair.json").write_text(
+            json.dumps(patch, ensure_ascii=False), encoding="utf-8"
+        )
+        before = self.old.read_bytes()
+        with contextlib.redirect_stdout(io.StringIO()):
+            repair(self.repair_params(False))
+        self.assertEqual(self.old.read_bytes(), before)
+        with contextlib.redirect_stdout(io.StringIO()):
+            repair(self.repair_params(True))
+        result = json.loads(self.old.read_text(encoding="utf-8"))
+        hymn = result["akathists"]["by_slug"]["akafist-old"]
+        found = [
+            row["text"]["content"] for row in hymn["sections"]
+            if row["section_type"] == "kontakion" and row["number"] == 1
+        ]
+        self.assertTrue(all(value == corrected for value in found))
+        self.assertEqual(result["texts"], self.existing["texts"])
+        self.assertEqual(result["prayer_rules"], self.existing["prayer_rules"])
+        self.assertEqual(result["content_version"], content_fingerprint(result))
+        self.assertEqual(len(list(self.backups.glob("*.json"))), 1)
+
+    def test_repair_rejects_manually_changed_content(self):
+        patch = {"source": SOURCE, "changes": [{
+            "slug": "akafist-old", "akathist_id": 12,
+            "sections": [{
+                "section_type": "kontakion", "number": 1,
+                "old_content": "different-original", "old_translation": "",
+                "new_content": "corrected", "new_translation": "",
+            }],
+        }]}
+        (self.dir / "repair.json").write_text(json.dumps(patch), encoding="utf-8")
+        before = self.old.read_bytes()
+        with self.assertRaisesRegex(ValueError, "изменён вручную"):
+            repair(self.repair_params(True))
+        self.assertEqual(self.old.read_bytes(), before)
+        self.assertFalse(self.backups.exists())
+
+
+    def quarantine_params(self, apply):
+        return argparse.Namespace(
+            existing=str(self.old),
+            report=str(self.report),
+            backup_dir=str(self.backups),
+            max_count=5,
+            apply=apply,
+        )
+
+    def test_quarantine_imported_keeps_all_texts_and_backup(self):
+        # The report targets a new item that already exists in this fixture.
+        self.old.write_text(json.dumps(
+            self.latest, ensure_ascii=False), encoding="utf-8")
+        original = json.loads(self.old.read_text(encoding="utf-8"))
+        with contextlib.redirect_stdout(io.StringIO()):
+            quarantine(self.quarantine_params(False))
+        self.assertEqual(json.loads(self.old.read_text(encoding="utf-8")), original)
+        with contextlib.redirect_stdout(io.StringIO()):
+            quarantine(self.quarantine_params(True))
+        result = json.loads(self.old.read_text(encoding="utf-8"))
+        old = result["akathists"]["by_slug"]["akafist-old"]
+        newly_imported = result["akathists"]["by_slug"]["akafist-new"]
+        self.assertEqual(old, original["akathists"]["by_slug"]["akafist-old"])
+        self.assertEqual(newly_imported["translation_review_status"], "unverified")
+        unmarked_copy = dict(newly_imported)
+        unmarked_copy.pop("translation_review_status")
+        self.assertEqual(unmarked_copy, original["akathists"]["by_slug"]["akafist-new"])
+        self.assertEqual(result["texts"], original["texts"])
+        self.assertEqual(result["prayer_rules"], original["prayer_rules"])
+        self.assertEqual(result["content_version"], content_fingerprint(result))
+        self.assertEqual(len(list(self.backups.glob("*.json"))), 1)
+        already_marked = self.old.read_bytes()
+        with contextlib.redirect_stdout(io.StringIO()):
+            quarantine(self.quarantine_params(True))
+        self.assertEqual(self.old.read_bytes(), already_marked,
+                         "Repeated apply must not rewrite JSON or update timestamps")
+        self.assertEqual(len(list(self.backups.glob("*.json"))), 1,
+                         "Repeated apply must not generate redundant backups")
+
+    def test_quarantine_refuses_batch_beyond_limit(self):
+        self.old.write_text(json.dumps(self.latest, ensure_ascii=False), encoding="utf-8")
+        payload = json.loads(self.report.read_text(encoding="utf-8"))
+        payload["pages"]["different"] = {"status": "imported", "slug": "akafist-old"}
+        self.report.write_text(json.dumps(payload), encoding="utf-8")
+        args = self.quarantine_params(True)
+        args.max_count = 1
+        before = self.old.read_bytes()
+        with self.assertRaisesRegex(ValueError, "above limit"):
+            quarantine(args)
+        self.assertEqual(self.old.read_bytes(), before)
 
 
 if __name__ == "__main__":

@@ -45,6 +45,41 @@ export const READER_STYLES = String.raw`
       padding: var(--reader-top-padding) 14px var(--reader-bottom-padding);
     }
 
+    /* Inline saint/calendar reading keeps the same custom fragment-selection
+       engine, without creating an editable Android text field. */
+    body.embedded-reader {
+      padding: 0 !important;
+      margin: 0 !important;
+      overflow: hidden;
+    }
+    body.embedded-reader .rule-item {
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+    }
+    body.embedded-reader .reader-row,
+    body.embedded-reader .reader-column {
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    body.embedded-reader #reader-scroll-track,
+    body.embedded-reader #reader-scroll-top,
+    body.embedded-reader .document-header,
+    body.embedded-reader .view-switcher {
+      display: none !important;
+    }
+    /* Selection gestures stay in the WebView; the save bar is the same
+       app-wide React Native selection bar used in prayer categories. */
+    body.embedded-reader #selection-bar,
+    body.embedded-reader .selection-handle {
+      display: none !important;
+    }
+    body.embedded-reader .reader-text {
+      white-space: pre-line;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
     .reader-language-traditional .reader-text,
     .reader-language-traditional .reader-inline-label {
       font-family: 'Ponomar', Georgia, "Times New Roman", serif;
@@ -374,6 +409,13 @@ export const READER_STYLES = String.raw`
       color: var(--secondary);
       font-size: 16px;
       line-height: 25px;
+    }
+    /* User-authored prayers are displayed as text, never as an editable field.
+       Preserve their own line breaks and paragraph boundaries. */
+    .reader-text.personal-prayer {
+      white-space: pre-line;
+      overflow-wrap: break-word;
+      text-align: justify;
     }
     .reader-text.akathist-church {
       color: var(--text);

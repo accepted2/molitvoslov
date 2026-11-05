@@ -19,6 +19,7 @@ import {normalizeSearchText, searchAllPrayers} from '../services/prayerSearch';
 import {getSavedItems} from '../services/savedItems';
 import {colors, spacing} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
+import {presentPersonalPrayer} from '../services/personalPrayerPresentation';
 
 const SavedPickerModal = ({visible, items, onClose, onSelect}) => {
   const {t} = useLanguage();
@@ -587,6 +588,7 @@ export const PrayerBookScreen = ({route, navigation}) => {
           }
           renderItem={({item, index}) => {
             const prayer = item.prayer;
+            const visiblePrayer = presentPersonalPrayer(prayer);
 
             return (
               <View style={styles.card}>
@@ -602,11 +604,14 @@ export const PrayerBookScreen = ({route, navigation}) => {
                   <Text style={styles.order}>{index + 1}</Text>
 
                   <View style={styles.cardText}>
-                    <Text style={styles.cardTitle}>{prayer.title}</Text>
+                    <Text style={styles.cardTitle}>{visiblePrayer.listTitle}</Text>
 
-                    {!!prayer.text && (
-                      <Text style={styles.preview} numberOfLines={3}>
-                        {prayer.text}
+                    {!!visiblePrayer.text && (
+                      <Text
+                        style={[styles.preview, visiblePrayer.language === 'church' && styles.churchPreview]}
+                        numberOfLines={3}
+                      >
+                        {visiblePrayer.text}
                       </Text>
                     )}
 
@@ -707,9 +712,10 @@ const styles = StyleSheet.create({
   stickyReadBar: {
     paddingHorizontal: spacing.md,
     paddingTop: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(126,82,38,0.25)',
-    backgroundColor: '#FFF4DE',
+    // Keep the page artwork visible under the sticky reading button.
+    // The former solid #FFF4DE panel produced an unwanted light footer.
+    backgroundColor: 'transparent',
+    borderTopWidth: 0,
   },
   readButton: {
     minHeight: 44,
@@ -781,6 +787,12 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
     fontSize: 16,
     fontWeight: '700',
+  },
+  churchPreview: {
+    // The font is already registered globally in App.js.
+    fontFamily: 'Ponomar',
+    fontSize: 15,
+    lineHeight: 24,
   },
   preview: {
     marginTop: 5,

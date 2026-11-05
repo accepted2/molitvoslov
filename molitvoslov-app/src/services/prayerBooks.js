@@ -4,6 +4,7 @@ import {Directory, File, Paths} from 'expo-file-system';
 
 import {getDatabase} from '../db/database';
 import {contentApi} from './contentApi';
+import {choosePrayerLanguage, savedPrayerTitle} from './personalPrayerPresentation';
 import {API_BASE_URL, authenticatedFetch, getApiToken, getCachedBackendUser} from './backendAuth';
 
 let prayerBooksSyncPromise = null;
@@ -486,6 +487,21 @@ export const updatePersonalPrayer = async (syncId, patch = {}) => {
   return prayers.find((prayer) => prayer.sync_id === syncId) || null;
 };
 
+/** Editing from a personal prayerbook must resolve to a user-owned prayer
+ * and an item actually linked to that book, never to a published library text.
+ * The global "texts" and "prayer_rules" sources are read-only in this path.
+ */
+export const updateBookPersonalPrayer = async (bookSyncId, prayerSyncId, patch = {}) => {
+  if (!bookSyncId) {
+    throw new Error('Для изменения молитвы откройте свой молитвослов');
+  }
+  const book = await getPrayerBook(bookSyncId);
+  if (!book || !(book.items || []).some(item => item.prayer?.sync_id === prayerSyncId)) {
+    throw new Error('Молитва не принадлежит этому личному молитвослову');
+  }
+  return updatePersonalPrayer(prayerSyncId, patch);
+};
+
 export const addPrayerToBook = async (bookSyncId, prayerSyncId) => {
   const db = await getDatabase();
   const {user, cloudUserId} = await currentOwner();
@@ -656,16 +672,12 @@ export const removePrayerFromBook = async (itemSyncId) => {
   syncPrayerBooks().catch(() => {});
 };
 
-const textFromObject = (object, language) => {
-  if (!object) {
-    return '';
-  }
-  if (language === 'russian') {
-    return String(object.translation || object.russian || object.content || '').trim();
-  }
-  return String(
-    object.content || object.church_slavonic || object.translation || object.russian || ''
-  ).trim();
+const textFromObject = (object, language, selected = '') => {
+  if (!object) return '';
+  const church = String(object.content || object.church_slavonic || '').trim();
+  const russian = String(object.translation || object.russian || '').trim();
+  const chosen = choosePrayerLanguage({church, russian, selected, language});
+  return chosen === 'russian' ? russian || church : church || russian;
 };
 
 const PSALTER_GLORY_TEXT = `Слава Отцу и Сыну и Святому Духу.
@@ -702,8 +714,8 @@ const fullPsalmText = (psalm, language) => {
     return psalmLanguageText(psalm, 'russian');
   }
 
-  if (language === 'church') {
-    return psalmLanguageText(psalm, 'church');
+  if (language !== 'both') {
+    return psalmLanguageText(psalm, 'church') || psalmLanguageText(psalm, 'russian');
   }
 
   const church = psalmLanguageText(psalm, 'church');
@@ -724,7 +736,7 @@ const combineChurchAndRussian = (church, russian, language) => {
     return russianText || churchText;
   }
 
-  if (language === 'church') {
+  if (language !== 'both') {
     return churchText || russianText;
   }
 
@@ -792,12 +804,17 @@ const fullKathismaPsalmsText = (kathisma, language) =>
 
 const fullTextFromSavedItem = async (item) => {
   const metadata = item?.metadata || {};
-  const language = metadata.language;
+  const language = metadata.language || item?.language || null;
+
+  // An excerpt imported from favorites must remain exactly what was selected.
+  if (['word', 'sentence', 'paragraph', 'fragment', 'verse', 'quote'].includes(item?.save_type)) {
+    return String(item?.text || '').trim();
+  }
 
   try {
     if (item.source_type === 'text' && metadata.slug) {
       const response = await contentApi.get(`texts/${metadata.slug}/`);
-      return textFromObject(response.data, language) || item.text || '';
+      return textFromObject(response.data, language, item.text) || item.text || '';
     }
 
     if (item.source_type === 'category' && metadata.category_slug) {
@@ -807,7 +824,7 @@ const fullTextFromSavedItem = async (item) => {
           Number(row?.text?.id) === Number(item.anchor_id) ||
           Number(row?.id) === Number(item.anchor_id)
       );
-      return textFromObject(entry?.text, language) || item.text || '';
+      return textFromObject(entry?.text, language, item.text) || item.text || '';
     }
 
     if (item.source_type === 'prayer_rule' && metadata.slug) {
@@ -819,7 +836,7 @@ const fullTextFromSavedItem = async (item) => {
           Number(row?.text?.id) === Number(item.anchor_id)
       );
       return (
-        textFromObject(ruleItem?.text, language) ||
+        textFromObject(ruleItem?.text, language, item.text) ||
         String(ruleItem?.content || '').trim() ||
         item.text ||
         ''
@@ -880,7 +897,7 @@ const fullTextFromSavedItem = async (item) => {
                 : section.section_type === 'ikos'
                   ? `Икос ${section.number || ''}`
                   : section.text?.title || '';
-            const body = textFromObject(section.text, language);
+            const body = textFromObject(section.text, language, item.text);
             return [heading, body].filter(Boolean).join('\n');
           })
           .filter(Boolean)
@@ -889,7 +906,7 @@ const fullTextFromSavedItem = async (item) => {
       const section = (akathist?.sections || []).find(
         (row) => Number(row?.id) === Number(item.anchor_id)
       );
-      return textFromObject(section?.text, language) || item.text || '';
+      return textFromObject(section?.text, language, item.text) || item.text || '';
     }
 
     if (item.source_type === 'canon' && metadata.slug) {
@@ -899,7 +916,7 @@ const fullTextFromSavedItem = async (item) => {
         return (canon?.sections || [])
           .map((section) => {
             const heading = section.heading || '';
-            const body = textFromObject(section.text, language);
+            const body = textFromObject(section.text, language, item.text);
             return [heading, body].filter(Boolean).join('\n');
           })
           .filter(Boolean)
@@ -908,7 +925,7 @@ const fullTextFromSavedItem = async (item) => {
       const section = (canon?.sections || []).find(
         (row) => Number(row?.id) === Number(item.anchor_id)
       );
-      return textFromObject(section?.text, language) || item.text || '';
+      return textFromObject(section?.text, language, item.text) || item.text || '';
     }
   } catch (error) {
     console.log('Не удалось восстановить полный текст сохранения:', error?.message || error);
@@ -920,7 +937,7 @@ const fullTextFromSavedItem = async (item) => {
 export const importSavedItemToBook = async (bookSyncId, item) => {
   const fullText = await fullTextFromSavedItem(item);
   const prayer = await createPersonalPrayer({
-    title: item?.item_title || item?.source_title || item?.save_type_display || 'Молитва',
+    title: savedPrayerTitle(item),
     text: fullText,
     origin_type: 'saved',
     origin_data: {
@@ -931,6 +948,7 @@ export const importSavedItemToBook = async (bookSyncId, item) => {
       anchor_type: item?.anchor_type || null,
       anchor_id: item?.anchor_id ?? null,
       metadata: item?.metadata || {},
+      language: item?.metadata?.language || null,
       full_text_resolved: fullText.length > String(item?.text || '').length,
     },
   });

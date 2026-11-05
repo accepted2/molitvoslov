@@ -17,8 +17,8 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
 import {getPrayerBook} from '../services/prayerBooks';
-import SelectableSaveText from '../components/reader/SelectableSaveText';
-import {savedSourceId} from '../components/reader/CalendarSaveText';
+import {presentPersonalPrayer} from '../services/personalPrayerPresentation';
+import {PersonalPrayerReadingView} from '../components/reader/PersonalPrayerReadingView';
 import {useLanguage} from '../context/LanguageContext';
 
 const bundledContent = require('../data/offlineContent.json');
@@ -91,17 +91,27 @@ const getPsalm = (kathisma, prayer) => {
   );
 };
 
-const ParallelText = ({church, russian, churchStyle, russianStyle}) => {
-  if (!russian) {
-    return <Text style={[styles.psalterText, churchStyle]}>{church}</Text>;
-  }
+const personalPsalterLanguage = prayer => {
+  const origin = prayerOrigin(prayer);
+  const explicit = String(origin.language || origin.metadata?.language || '').toLowerCase();
+  if (['russian', 'ru'].includes(explicit)) return 'russian';
+  if (['both', 'parallel'].includes(explicit)) return 'both';
+  if (['church', 'cs', 'traditional', 'church_slavonic'].includes(explicit)) return 'church';
+  return presentPersonalPrayer(prayer).language === 'russian' ? 'russian' : 'church';
+};
 
+const ParallelText = ({church, russian, churchStyle, russianStyle, language = 'both'}) => {
+  if (language === 'russian') {
+    return <Text style={[styles.psalterText, styles.psalterRussian, russianStyle]}>{russian || church}</Text>;
+  }
+  if (language === 'church' || !russian) {
+    return <Text style={[styles.psalterText, styles.psalterChurch, churchStyle]}>{church || russian}</Text>;
+  }
   return (
     <View style={styles.parallelRow}>
       <View style={styles.parallelColumnLeft}>
-        <Text style={[styles.psalterText, churchStyle]}>{church}</Text>
+        <Text style={[styles.psalterText, styles.psalterChurch, churchStyle]}>{church}</Text>
       </View>
-
       <View style={styles.parallelColumnRight}>
         <Text style={[styles.psalterText, styles.psalterRussian, russianStyle]}>{russian}</Text>
       </View>
@@ -109,14 +119,15 @@ const ParallelText = ({church, russian, churchStyle, russianStyle}) => {
   );
 };
 
-const PsalmParallel = ({psalm, verses: verseItems = null, showLabels = false}) => {
+const PsalmParallel = ({psalm, verses: verseItems = null, showLabels = false, language = 'both'}) => {
   const {t} = useLanguage();
   const verses = verseItems || psalm?.verses || [];
-  const hasRussian = verses.some((verse) => String(verse?.russian || '').trim());
+  const hasRussian = verses.some(verse => String(verse?.russian || '').trim());
+  const parallel = language === 'both' && hasRussian;
 
   return (
     <View>
-      {showLabels && hasRussian && (
+      {showLabels && parallel && (
         <View style={styles.languageRow}>
           <Text style={styles.languageLabel}>{t('prayerBooks.churchSlavonic')}</Text>
           <Text style={[styles.languageLabel, styles.languageLabelRussian]}>
@@ -124,32 +135,40 @@ const PsalmParallel = ({psalm, verses: verseItems = null, showLabels = false}) =
           </Text>
         </View>
       )}
-
-      {verses.map((verse) => {
+      {verses.map(verse => {
         const church = String(verse?.church_slavonic || '').trim();
         const russian = String(verse?.russian || '').trim();
-
-        if (!church && !russian) {
-          return null;
+        if (!church && !russian) return null;
+        const number = verse.number;
+        if (!parallel) {
+          const russianOnly = language === 'russian';
+          return (
+            <View key={verse.id || number} style={styles.verseRow}>
+              <Text style={[
+                styles.psalterText,
+                russianOnly ? styles.psalterRussian : styles.psalterChurch,
+                {flex: 1},
+              ]}>
+                <Text style={russianOnly ? styles.verseNumberRussian : styles.verseNumber}>{number} </Text>
+                {russianOnly ? (russian || church) : (church || russian)}
+              </Text>
+            </View>
+          );
         }
-
         return (
-          <View key={verse.id || verse.number} style={styles.verseRow}>
+          <View key={verse.id || number} style={styles.verseRow}>
             <View style={styles.parallelColumnLeft}>
-              <Text style={styles.psalterText}>
-                <Text style={styles.verseNumber}>{verse.number} </Text>
+              <Text style={[styles.psalterText, styles.psalterChurch]}>
+                <Text style={styles.verseNumber}>{number} </Text>
                 {church || russian}
               </Text>
             </View>
-
-            {hasRussian && (
-              <View style={styles.parallelColumnRight}>
-                <Text style={[styles.psalterText, styles.psalterRussian]}>
-                  <Text style={styles.verseNumberRussian}>{verse.number} </Text>
-                  {russian || church}
-                </Text>
-              </View>
-            )}
+            <View style={styles.parallelColumnRight}>
+              <Text style={[styles.psalterText, styles.psalterRussian]}>
+                <Text style={styles.verseNumberRussian}>{number} </Text>
+                {russian || church}
+              </Text>
+            </View>
           </View>
         );
       })}
@@ -202,6 +221,7 @@ const PsalterPrayer = ({prayer}) => {
   const {t} = useLanguage();
   const mode = psalterMode(prayer);
   const kathisma = getKathisma(prayer);
+  const language = personalPsalterLanguage(prayer);
 
   if (!mode || !kathisma) {
     return null;
@@ -219,7 +239,7 @@ const PsalterPrayer = ({prayer}) => {
         <Text style={styles.title}>
           {prayer.title || t('psalter.psalm', {number: psalm.number})}
         </Text>
-        <PsalmParallel psalm={psalm} showLabels />
+        <PsalmParallel psalm={psalm} showLabels language={language} />
       </View>
     );
   }
@@ -242,11 +262,12 @@ const PsalterPrayer = ({prayer}) => {
                 psalm={psalm}
                 verses={chunk.verses}
                 showLabels={psalmIndex === 0 && chunkIndex === 0}
+                language={language}
               />
 
               {chunk.gloryAfter && (
                 <View style={styles.gloryBlock}>
-                  <Text style={styles.gloryText}>{GLORY_TEXT}</Text>
+                  <Text style={[styles.gloryText, language === 'church' && styles.psalterChurch]}>{GLORY_TEXT}</Text>
                 </View>
               )}
             </View>
@@ -265,6 +286,7 @@ const PsalterPrayer = ({prayer}) => {
             russian={String(kathisma.prayers_after_russian || '').trim()}
             churchStyle={styles.afterPrayerText}
             russianStyle={styles.afterPrayerText}
+            language={language}
           />
         </View>
       )}
@@ -398,6 +420,26 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
     [book, prayerSyncId]
   );
 
+  // Personal texts are READ with the standard selectable document reader,
+  // never an editable TextInput. Preserve the existing special Psalter view
+  // when saved Psalms or kathismas are mixed into the user's book.
+  const personalTextOnly = items.length > 0 &&
+    items.every(item => !psalterMode(item.prayer)) &&
+    items.some(item => String(item.prayer?.text || '').trim());
+
+  if (personalTextOnly) {
+    return (
+      <PersonalPrayerReadingView
+        book={book}
+        items={items}
+        bookSyncId={bookSyncId}
+        prayerSyncId={prayerSyncId}
+        navigation={navigation}
+        fallbackTitle={t('prayerBooks.title')}
+      />
+    );
+  }
+
   return (
     <View style={styles.screen}>
       <StatusBar style="light" translucent backgroundColor="transparent" />
@@ -426,24 +468,25 @@ export const PrayerBookReaderScreen = ({route, navigation}) => {
                 <PsalterPrayer prayer={prayer} />
               ) : (
                 <>
-                  <Text style={styles.title}>{prayer.title}</Text>
+                  {!!presentPersonalPrayer(prayer).title && (
+                    <Text style={styles.title}>{presentPersonalPrayer(prayer).title}</Text>
+                  )}
 
                   {!!prayer.text && (
-                    <SelectableSaveText
-                      text={String(prayer.text)}
-                      textStyle={styles.text}
-                      sourceType="personal_prayer"
-                      sourceId={savedSourceId(prayer.sync_id)}
-                      anchorType="personal_prayer"
-                      anchorId={savedSourceId(prayer.sync_id)}
-                      sourceTitle={book?.title || t('prayerBooks.title')}
-                      itemTitle={prayer.title || 'Молитва'}
-                      metadata={{
-                        book_sync_id: bookSyncId,
-                        prayer_sync_id: prayer.sync_id,
-                      }}
-                      fullSaveType="prayer"
-                    />
+                    <>
+                      <Text style={styles.text}>{presentPersonalPrayer(prayer).text}</Text>
+                      <Pressable
+                        style={styles.openReaderButton}
+                        accessibilityRole="button"
+                        onPress={() => navigation.navigate('PrayerBookReader', {
+                          bookSyncId, prayerSyncId: prayer.sync_id,
+                        })}
+                      >
+                        <Text style={styles.openReaderText}>
+                          Открыть молитву для чтения и выделения
+                        </Text>
+                      </Pressable>
+                    </>
                   )}
                 </>
               )}
@@ -580,6 +623,11 @@ const styles = StyleSheet.create({
   psalterRussian: {
     color: '#765238',
   },
+  psalterChurch: {
+    fontFamily: 'Ponomar',
+    fontSize: 18,
+    lineHeight: 28,
+  },
   verseNumber: {
     color: '#A16E35',
     fontSize: 12,
@@ -666,6 +714,12 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
   },
+  openReaderButton: {
+    marginTop: 12, paddingVertical: 10, paddingHorizontal: 14,
+    alignSelf: 'center', backgroundColor: '#F1DFC2',
+    borderRadius: 12, borderWidth: 1, borderColor: 'rgba(123,79,36,0.25)',
+  },
+  openReaderText: {color: '#765238', fontSize: 13, fontWeight: '700'},
   editBar: {
     paddingHorizontal: 14,
     paddingTop: 10,

@@ -2,6 +2,7 @@ export const READER_RUNTIME = String.raw`
     const DATA = __READER_PAYLOAD__;
     const bookMode = DATA.document ?.readerMode === 'book';
     document.body.classList.toggle( 'book-mode', bookMode );
+    document.body.classList.toggle('embedded-reader', !!DATA.document.embedded);
     const reader = document.getElementById( 'reader' );
     const bookViewport = document.getElementById( 'book-viewport' );
     const selectionBar = document.getElementById( 'selection-bar' );
@@ -483,6 +484,29 @@ export const READER_RUNTIME = String.raw`
         return {
           normalized: chars.join(''), originalIndex, };
       };
+      // Azbyka's Cyrillic akathist hymns sometimes contain Latin accented
+      // homoglyphs inside a Cyrillic word, e.g. "Рáдуйся" (Latin á).
+      // Fold only letters surrounded by Cyrillic. Keep originalIndex intact:
+      // selection, highlights and progress always use the original text.
+      const normalizedAkathistRefrainWithIndex = value => {
+        const result = normalizedAkathistTextWithIndex(value);
+        const chars = result.normalized.split('');
+        const latinLookalikes = {
+          a: 'а', A: 'А', e: 'е', E: 'Е', o: 'о', O: 'О',
+          p: 'р', P: 'Р', c: 'с', C: 'С', x: 'х', X: 'Х',
+          y: 'у', Y: 'У', k: 'к', K: 'К', m: 'м', M: 'М',
+          t: 'т', T: 'Т', b: 'в', B: 'В', h: 'н', H: 'Н',
+        };
+        for (let i = 1; i < chars.length - 1; i += 1) {
+          const substitute = latinLookalikes[chars[i]];
+          if (!substitute) continue;
+          if (/\p{Script=Cyrillic}/u.test(chars[i - 1]) &&
+              /\p{Script=Cyrillic}/u.test(chars[i + 1])) {
+            chars[i] = substitute;
+          }
+        }
+        return {normalized: chars.join(''), originalIndex: result.originalIndex};
+      };
       const HIGHLIGHT_COMBINING = /[\u0300-\u036f\u0483-\u0489\ufe20-\ufe2f]/u;
 const HIGHLIGHT_LETTER_OR_DIGIT = /[\p{L}\p{N}]/u;
 
@@ -680,7 +704,7 @@ const computeFocusHighlightRanges = () => {
     // Presentation-only spans keep all selection and progress offsets intact.
     const collectAkathistWordRanges = (value, pattern, includePunctuation = false) => {
       const source = String(value || '');
-      const {normalized, originalIndex} = normalizedAkathistTextWithIndex(source);
+      const {normalized, originalIndex} = normalizedAkathistRefrainWithIndex(source);
       const ranges = [];
       let match;
       while ((match = pattern.exec(normalized)) !== null) {
@@ -700,7 +724,7 @@ const computeFocusHighlightRanges = () => {
     };
     const collectAkathistDoxologyRanges = value => {
       const source = String(value || '');
-      const {normalized, originalIndex} = normalizedAkathistTextWithIndex(source);
+      const {normalized, originalIndex} = normalizedAkathistRefrainWithIndex(source);
       const pattern = /(?:^|[.!?…;:\n]\s*)(Слава[ \t]+Теб[еѣ])(?=[\s,;:.!?…]|$)/gimu;
       const ranges = [];
       for (const match of normalized.matchAll(pattern)) {
@@ -713,17 +737,30 @@ const computeFocusHighlightRanges = () => {
       }
       return ranges;
     };
+    // "Прииди" is the repeated invocation in the Akathist to the Holy
+    // Spirit. Treat it like "Радуйся" and "Иисусе" in Ikoses and Kontakion 1,
+    // including Church Slavonic accents and common modern spellings.
+    const collectAkathistLordMyRanges = value => {
+      const source = String(value || '');
+      return collectAkathistWordRanges(source, /Господи[ \t]+мой/giu)
+        .filter(range => {
+          // "Господи мой" in a narrative sentence is not a refrain.
+          const before = source.slice(0, range.start).trimEnd();
+          return !before || /[.!?…;:\n][»”"']?$/u.test(before);
+        });
+    };
     const collectAkathistInvocationRanges = value => [
       ...collectAkathistWordRanges(value,
-        /(?:Радуйтеся|Радуйся|Радꙋйсѧ|Иисусе|Іисусе|И\s+исусе|Исусе|Ісусе)/giu),
+        /(?:Радуйтеся|Радуйся|Радꙋйсѧ|Иисусе|Іисусе|И\s+исусе|Исусе|Ісусе|Прииди|Приди|Прийди)/giu),
       ...collectAkathistDoxologyRanges(value),
+      ...collectAkathistLordMyRanges(value),
     ];
     // Other akathists can have different refrain addresses. Only treat them as
     // standalone responses when they start a clause (start, new line or after
     // strong punctuation), and only in an Ikos. Never within prayer prose.
     const collectAkathistAdditionalResponseRanges = value => {
       const source = String(value || '');
-      const {normalized, originalIndex} = normalizedAkathistTextWithIndex(source);
+      const {normalized, originalIndex} = normalizedAkathistRefrainWithIndex(source);
       const pattern = /(?:^|[.!?…;:\n]\s*)((?:Пресвятая\s+Богородице|Пречистая\s+Богородице|Богородице|Владычице|Господи|Спасителю|Святителю|Преподобне|Мучениче|Чудотворче|Ангеле|Архангеле))(?=[\s,;:.!?…]|$)/gimu;
       const ranges = [];
       for (const match of normalized.matchAll(pattern)) {
@@ -737,11 +774,32 @@ const computeFocusHighlightRanges = () => {
       }
       return ranges;
     };
+    // A word in quoted speech ("Радуйся, Благодатная...") is not a
+    // stand-alone litany address. Keep it inline and in the ordinary ink,
+    // while retaining red line-start refrains outside the quotation.
+    const collectAkathistQuotedSpeechRanges = value => {
+      const source = String(value || '');
+      const closingFor = {'«': '»', '„': '“', '“': '”', '"': '"'};
+      const stack = [];
+      const ranges = [];
+      for (let index = 0; index < source.length; index += 1) {
+        const mark = source[index];
+        if (stack.length && mark === stack[stack.length - 1].close) {
+          const open = stack.pop();
+          ranges.push({start: open.start, end: index + 1});
+        } else if (Object.prototype.hasOwnProperty.call(closingFor, mark)) {
+          stack.push({start: index, close: closingFor[mark]});
+        }
+      }
+      return ranges;
+    };
     const collectAkathistRefrainRanges = (value, extraResponses = false) => {
       const standard = collectAkathistInvocationRanges(value);
-      if (!extraResponses) return standard;
-      const combined = [...standard, ...collectAkathistAdditionalResponseRanges(value)];
+      const combined = extraResponses
+        ? [...standard, ...collectAkathistAdditionalResponseRanges(value)] : standard;
+      const quotedSpeech = collectAkathistQuotedSpeechRanges(value);
       return combined.filter((range, index) =>
+        !quotedSpeech.some(quote => range.start >= quote.start && range.start < quote.end) &&
         !combined.some((other, j) => j !== index && other.start <= range.start &&
           other.end >= range.end && (other.start < range.start || other.end > range.end))
       );
@@ -2853,6 +2911,7 @@ const isCanonChurch = String( itemConfig ?.className || '' ).includes( 'canon-ch
 const isCanonPrayer = itemConfig ?.metadata ?.section_type === 'prayer' || String( itemConfig ?.className ||
     '' ).includes( 'canon-prayer' );
 const highlightLiturgicalPhrases =
+  !DATA.document.embedded &&
   !(
     isPsalterGlory &&
     itemConfig?.metadata?.language === 'traditional'
@@ -3569,6 +3628,7 @@ if (
     const updateBar = () => {
         if (!state.active) {
           selectionBar.classList.remove('visible');
+          if (DATA.document.embedded) post({type:'embedded-selection-info', active:false});
           return;
         }
 
@@ -3591,6 +3651,10 @@ if (
         saveButton.textContent = savedRange ? 'Удалить' : 'Сохранить';
         saveButton.classList.toggle('delete-mode', !!savedRange);
         saveButton.disabled = count <= 0 || state.savePending;
+        if (DATA.document.embedded) {
+          post({type:'embedded-selection-info', active:true, count,
+            pending:state.savePending, removable:!!savedRange});
+        }
       };
 
     const setActivePoints = (
@@ -4734,6 +4798,8 @@ if (
     };
 
     window.readerApi = {
+      saveEmbeddedSelection: () => { if (DATA.document.embedded) saveButton.click(); },
+      clearEmbeddedSelection: () => { if (DATA.document.embedded) clearSelection(); },
       changeViewMode: key => {
         post({type: 'view-mode', value: key, progress: snapshotForViewSwitch()});
       },

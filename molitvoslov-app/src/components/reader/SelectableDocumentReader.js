@@ -40,6 +40,9 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     onReady,
     onReadingScroll,
     onNativeReadingScroll,
+    embedded = false,
+    embeddedTextStyle = null,
+    onEmbeddedSelection,
   },
   ref
 ) {
@@ -47,6 +50,14 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
   const [readingSettings, setReadingSettings] = useState(DEFAULT_READING_SETTINGS);
   // Native chrome must follow the scoped color choice without rebuilding HTML.
   const [chromeBackground, setChromeBackground] = useState(null);
+  const [embeddedHeight, setEmbeddedHeight] = useState(120);
+  const embeddedSaveResolverRef = useRef(null);
+  const resolveEmbeddedSave = result => {
+    if (embeddedSaveResolverRef.current) {
+      embeddedSaveResolverRef.current(result);
+      embeddedSaveResolverRef.current = null;
+    }
+  };
   useEffect(() => {
     let active = true;
     getReadingSettings().then((settings) => { if (active) setReadingSettings(settings); }).catch(console.warn);
@@ -133,9 +144,18 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     });
     // Preserve separate pagination and per-book themes for Bible/book readers.
     if (documentData.readerMode === 'book') return markup;
-    const palette = readingSettings.palette === 'custom'
+    const embeddedCss = embedded
+      ? `body.embedded-reader .reader-text {
+          font-size: ${Math.max(12, Number(embeddedTextStyle?.fontSize) || 16)}px !important;
+          line-height: ${Math.max(16, Number(embeddedTextStyle?.lineHeight) || 26)}px !important;
+          color: ${String(embeddedTextStyle?.color || '#3E2A1D')};
+          text-align: ${embeddedTextStyle?.textAlign === 'center' ? 'center' : 'justify'};
+        }`
+      : '';
+    const palette = !embedded && readingSettings.palette === 'custom'
       ? {background: readingSettings.customBackground, text: readingSettings.customText, surface: readingSettings.customBackground}
-      : (PALETTE_COLORS[readingSettings.palette] || PALETTE_COLORS.parchment);
+      : (embedded ? PALETTE_COLORS.parchment
+        : (PALETTE_COLORS[readingSettings.palette] || PALETTE_COLORS.parchment));
     const size = Math.max(14, Math.min(28, Number(readingSettings.fontSize) || 17));
     // One reading-size source for every non-book document category.
     // Ponomar glyphs are visually smaller than civil Cyrillic at the same px size.
@@ -149,8 +169,8 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       body:not(.book-mode) .reader-text.psalter-reading-prayers,
       body:not(.book-mode) .reader-text.psalter-glory,
       body:not(.book-mode) .reader-text.psalter-prayer {line-height: 1.7 !important;}`;
-    return markup.replace('</style>', `${css}</style>`);
-  }, [documentData, savedProgress, focusTarget, topContentInset, bottomContentInset, ponomarFontDataUri, readingSettings]);
+    return markup.replace('</style>', `${css}${embeddedCss}</style>`);
+  }, [documentData, savedProgress, focusTarget, topContentInset, bottomContentInset, ponomarFontDataUri, readingSettings, embedded, embeddedTextStyle]);
 
   const inject = (script) => {
     webViewRef.current?.injectJavaScript(script + '; true;');
@@ -186,6 +206,24 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         applyReaderAppearance(webViewRef.current, appearance);
       },
 
+      saveEmbeddedSelection: () => new Promise(resolve => {
+        if (!embedded || !webViewRef.current) {
+          resolve({ok: false, message: 'Молитва не открыта'});
+          return;
+        }
+        // A lost bridge message should not freeze the global toolbar.
+        const timeout = setTimeout(() => {
+          resolveEmbeddedSave({ok: false, message: 'Нет ответа от чтения. Повторите сохранение.'});
+        }, 12000);
+        embeddedSaveResolverRef.current = result => {
+          clearTimeout(timeout);
+          resolve(result);
+        };
+        inject('window.readerApi && window.readerApi.saveEmbeddedSelection()');
+      }),
+      clearEmbeddedSelection: () => {
+        inject('window.readerApi && window.readerApi.clearEmbeddedSelection()');
+      },
       setBookTheme: (theme) => {
         inject(
           'window.readerApi && window.readerApi.setBookTheme(' +
@@ -206,6 +244,18 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       return;
     }
 
+    if (embedded && message.type === 'embedded-selection-info') {
+      onEmbeddedSelection?.(message);
+      return;
+    }
+    if (embedded && message.type === 'reader-height') {
+      const measured = Number(message.height);
+      if (Number.isFinite(measured) && measured > 0) {
+        setEmbeddedHeight(current => Math.abs(current - measured) >= 2
+          ? Math.max(50, Math.min(100000, measured)) : current);
+      }
+      return;
+    }
     if (message.type === 'reading-scroll-activity') {
       onReadingScroll?.('activity');
       return;
@@ -313,10 +363,12 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
             Number(message.savedItemId) +
             ')'
         );
+        resolveEmbeddedSave({ok: true});
       } catch (deleteError) {
         console.log('Ошибка удаления выделения:', deleteError.message);
 
         inject("window.readerApi && window.readerApi.saveFailed('Не удалось удалить')");
+        resolveEmbeddedSave({ok: false, message: 'Не удалось удалить'});
       }
 
       return;
@@ -329,6 +381,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     const itemConfig = itemConfigMap.get(Number(message.itemId));
 
     if (!itemConfig) {
+      resolveEmbeddedSave({ok: false, message: 'Текст не найден'});
       return;
     }
 
@@ -356,6 +409,11 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
 
         metadata: {
           ...(itemConfig.metadata || {}),
+          font_family:
+            itemConfig.metadata?.font_family ||
+            itemConfig.metadata?.fontFamily ||
+            itemConfig.metadata?.reader_font ||
+            (itemConfig.metadata?.language === 'traditional' ? 'Ponomar' : 'serif'),
           ...(Array.isArray(message.segments) && message.segments.length > 1
             ? {
                 selection_segments: message.segments.map((segment) => ({
@@ -369,6 +427,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       });
 
       onSaved?.(saved, itemConfig);
+      resolveEmbeddedSave({ok: true});
 
       inject(
         'window.readerApi && window.readerApi.saveSucceeded(' +
@@ -381,10 +440,11 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       console.log('Ошибка сохранения выделения:', error.response?.data || error.message);
 
       inject("window.readerApi && window.readerApi.saveFailed('Не удалось сохранить')");
+      resolveEmbeddedSave({ok: false, message: 'Не удалось сохранить'});
     }
   };
 
-  const pageBackground = documentData.readerMode === 'book'
+  const pageBackground = embedded || documentData.readerMode === 'book'
     ? backgroundColor
     : (chromeBackground || (readingSettings.palette === 'custom'
       ? readingSettings.customBackground
@@ -395,9 +455,10 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       style={[
         styles.container,
         {
-          paddingBottom: respectBottomSafeArea ? Math.max(insets.bottom, 8) : 0,
+          paddingBottom: embedded ? 0 : (respectBottomSafeArea ? Math.max(insets.bottom, 8) : 0),
           backgroundColor: pageBackground,
         },
+        embedded && {flex: 0, height: embeddedHeight},
       ]}
     >
       <WebView
@@ -408,8 +469,8 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         originWhitelist={['*']}
         javaScriptEnabled
         injectedJavaScript={documentData.readerMode === 'book' ? undefined : "(function() {\n var previous = window.scrollY || 0, pending = 0, direction = '', lastSent = 0;\n var post = function(type, dir) {\n   if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify({type:type,direction:dir}));\n };\n window.addEventListener('scroll', function() {\n   var y = Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);\n   var delta = y - previous;\n   previous = y;\n   if (!delta) return;\n   var now = Date.now();\n   if (now - lastSent > 100) { post('reading-scroll-activity'); lastSent = now; }\n   if (Math.abs(delta) > 100) { pending = 0; direction = delta > 0 ? 'down' : 'up'; }\n   if (y <= 35) {\n     if (direction !== 'top') {\n       direction = 'top';\n       pending = 0;\n       post('reading-scroll', 'top');\n     }\n     return;\n   }\n   if (direction === 'top') { direction = ''; pending = 0; }\n   var next = delta < 0 ? 'up' : 'down';\n   if (next !== direction) {\n     pending += Math.abs(delta);\n     if (pending >= 5 || y < 35) {\n       direction = next;\n       pending = 0;\n       post('reading-scroll', next);\n     }\n   } else {\n     pending = 0;\n   }\n }, {passive:true});\n})(); true;"}
-        scrollEnabled={documentData.readerMode !== 'book'}
-        nestedScrollEnabled={documentData.readerMode !== 'book'}
+        scrollEnabled={!embedded && documentData.readerMode !== 'book'}
+        nestedScrollEnabled={!embedded && documentData.readerMode !== 'book'}
         showsVerticalScrollIndicator={false}
         domStorageEnabled={false}
         setSupportMultipleWindows={false}
@@ -419,7 +480,16 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         onScroll={onNativeReadingScroll}
         scrollEventThrottle={16}
         onLoadEnd={(event) => {
-          if (appearanceRef.current) applyReaderAppearance(webViewRef.current, appearanceRef.current);
+          if (appearanceRef.current && !embedded) applyReaderAppearance(webViewRef.current, appearanceRef.current);
+          if (embedded) {
+            inject("(function(){var node=document.getElementById('reader');" +
+              "if(!node)return;var send=function(){" +
+              "var h=Math.ceil(node.getBoundingClientRect().height+2);" +
+              "window.ReactNativeWebView&&window.ReactNativeWebView.postMessage(" +
+              "JSON.stringify({type:'reader-height',height:h}));};" +
+              "send();if(typeof ResizeObserver!=='undefined')new ResizeObserver(send).observe(node);" +
+              "setTimeout(send,150);})();");
+          }
           const ratio = scrollFallbackRef.current;
           const captured = languageProgressRef.current;
           scrollFallbackRef.current = null;
@@ -429,7 +499,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
           }
           onReady?.(event);
         }}
-        style={[styles.webView, {backgroundColor: pageBackground}]}
+        style={[styles.webView, {backgroundColor: pageBackground}, embedded && {flex: 0, height: embeddedHeight}]}
         onConsoleMessage={(event) => {
           const { message, lineNumber } = event.nativeEvent;
           if (message && (message.includes('[runtime]') || message.includes('[reader]') || message.includes('Error'))) {
@@ -438,7 +508,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         }}
       />
 
-      {documentData.readerMode !== 'book' && (
+      {!embedded && documentData.readerMode !== 'book' && (
         <LinearGradient
           pointerEvents="none"
           colors={[withOpacity(pageBackground, 0), withOpacity(pageBackground, 0.72), pageBackground]}

@@ -15,7 +15,14 @@ if ($Limit -lt 0 -or $Delay -lt 1) {
     throw 'Limit must be >= 0 and Delay >= 1.'
 }
 if ($Apply -and -not $RightsConfirmed) {
-    throw 'Для импорта нужно подтвердить права на использование выбранных текстов: -RightsConfirmed.'
+    throw 'Confirm permission to reuse selected texts using -RightsConfirmed.'
+}
+# Structure-only audits cannot establish the fidelity of CS/RU translations.
+# Several newly imported Akathists had CS refrains misclassified as Russian.
+# Suspend all NEW writes until a separately reviewed source-text and
+# parallel-translation approval mechanism is implemented.
+if ($Apply) {
+    throw 'New Azbyka imports suspended: Russian/parallel text QA is incomplete. Existing data is untouched.'
 }
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
