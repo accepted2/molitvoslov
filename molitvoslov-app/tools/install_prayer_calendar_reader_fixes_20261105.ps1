@@ -11,6 +11,7 @@ $files = @(
   'src/services/prayerBooks.js',
   'src/services/personalPrayerReadingDocument.js',
   'src/screens/PrayerBookScreen.js',
+  'src/screens/PersonalPrayerEditorScreen.js',
   'src/screens/PrayerBookReaderScreen.js',
   'src/components/reader/PersonalPrayerReadingView.js',
   'src/components/reader/CalendarSaveText.js',
@@ -22,7 +23,8 @@ $files = @(
   'src/screens/ChurchCalendarScreen.js',
   'tools/verify_prayer_book_calendar_integrity_20261105.js',
   'tools/verify_restored_reader_features_20261104.js',
-  'tools/verify_reader_typography_and_personal_prayers_20261104.js'
+  'tools/verify_reader_typography_and_personal_prayers_20261104.js',
+  'tools/verify_personal_prayer_edit_20261105.js'
 )
 function Assert-Last([string]$what) {
   if ($LASTEXITCODE -ne 0) { throw "$what failed (exit code $LASTEXITCODE)" }
@@ -55,7 +57,8 @@ $tests = @(
   'tools/verify_prayer_book_calendar_integrity_20261105.js',
   'tools/verify_restored_reader_features_20261104.js',
   'tools/verify_reader_typography_and_personal_prayers_20261104.js',
-  'tools/verify_psalter_heading_colors_20261104.js',
+  'tools/verify_personal_prayer_edit_20261105.js',
+  'tools/verify_psalter_heading_colors_20261104.js
   'tools/verify_reader_customization_20261104.js',
   'tools/verify_react_hook_imports.js'
 )
