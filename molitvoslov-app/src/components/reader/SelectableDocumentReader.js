@@ -409,6 +409,11 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
 
         metadata: {
           ...(itemConfig.metadata || {}),
+          font_family:
+            itemConfig.metadata?.font_family ||
+            itemConfig.metadata?.fontFamily ||
+            itemConfig.metadata?.reader_font ||
+            (itemConfig.metadata?.language === 'traditional' ? 'Ponomar' : 'serif'),
           ...(Array.isArray(message.segments) && message.segments.length > 1
             ? {
                 selection_segments: message.segments.map((segment) => ({
