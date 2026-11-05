@@ -42,6 +42,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     onNativeReadingScroll,
     embedded = false,
     embeddedTextStyle = null,
+    onEmbeddedSelection,
   },
   ref
 ) {
@@ -50,6 +51,13 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
   // Native chrome must follow the scoped color choice without rebuilding HTML.
   const [chromeBackground, setChromeBackground] = useState(null);
   const [embeddedHeight, setEmbeddedHeight] = useState(120);
+  const embeddedSaveResolverRef = useRef(null);
+  const resolveEmbeddedSave = result => {
+    if (embeddedSaveResolverRef.current) {
+      embeddedSaveResolverRef.current(result);
+      embeddedSaveResolverRef.current = null;
+    }
+  };
   useEffect(() => {
     let active = true;
     getReadingSettings().then((settings) => { if (active) setReadingSettings(settings); }).catch(console.warn);
@@ -197,6 +205,17 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         applyReaderAppearance(webViewRef.current, appearance);
       },
 
+      saveEmbeddedSelection: () => new Promise(resolve => {
+        if (!embedded || !webViewRef.current) {
+          resolve({ok: false, message: 'Молитва не открыта'});
+          return;
+        }
+        embeddedSaveResolverRef.current = resolve;
+        inject('window.readerApi && window.readerApi.saveEmbeddedSelection()');
+      }),
+      clearEmbeddedSelection: () => {
+        inject('window.readerApi && window.readerApi.clearEmbeddedSelection()');
+      },
       setBookTheme: (theme) => {
         inject(
           'window.readerApi && window.readerApi.setBookTheme(' +
@@ -217,6 +236,10 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       return;
     }
 
+    if (embedded && message.type === 'embedded-selection-info') {
+      onEmbeddedSelection?.(message);
+      return;
+    }
     if (embedded && message.type === 'reader-height') {
       const measured = Number(message.height);
       if (Number.isFinite(measured) && measured > 0) {
@@ -388,6 +411,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       });
 
       onSaved?.(saved, itemConfig);
+      resolveEmbeddedSave({ok: true});
 
       inject(
         'window.readerApi && window.readerApi.saveSucceeded(' +
@@ -400,6 +424,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       console.log('Ошибка сохранения выделения:', error.response?.data || error.message);
 
       inject("window.readerApi && window.readerApi.saveFailed('Не удалось сохранить')");
+      resolveEmbeddedSave({ok: false, message: 'Не удалось сохранить'});
     }
   };
 
