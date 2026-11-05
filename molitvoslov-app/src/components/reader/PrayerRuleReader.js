@@ -8079,6 +8079,7 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
         metadata: {
           slug: rule.slug,
           language: message.language || 'church',
+          font_family: message.language === 'traditional' ? 'Ponomar' : 'serif',
         },
       });
 
