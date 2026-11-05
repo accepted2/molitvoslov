@@ -132,7 +132,7 @@ export const CalendarSaveWholeButton = ({text, saveContext, onSavedChange}) => {
           <FontAwesome
             name={saved ? 'heart' : 'heart-o'}
             size={19}
-            color={saved ? '#9B3B32' : '#765238'}
+            color={saved ? '#765238' : '#765238'}
             accessibilityElementsHidden
             importantForAccessibility="no"
           />
