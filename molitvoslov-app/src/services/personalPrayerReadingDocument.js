@@ -1,5 +1,7 @@
 // Build ordinary personal-prayer pages for the same selectable WebView reader
 // used by Akathists, canons, Bible verses and prayer rules. No TextInput here.
+import {presentPersonalPrayer} from './personalPrayerPresentation';
+
 export const buildPersonalPrayerReadingDocument = ({
   book, items, bookSyncId, sourceIdForSync, savedItems = [],
 }) => {
@@ -9,16 +11,17 @@ export const buildPersonalPrayerReadingDocument = ({
   ).map(item => {
     const prayer = item.prayer;
     const numericId = sourceIdForSync(prayer.sync_id);
+    const presentation = presentPersonalPrayer(prayer);
     return {
       className: 'personal-prayer-section',
       progressAnchorId: numericId,
       trackProgress: false,
-      title: String(prayer.title || 'Молитва'),
+      title: presentation.title,
       rows: [{
         layout: 'stack',
         blocks: [{
           id: nextId++,
-          text: String(prayer.text),
+          text: presentation.text,
           className: 'personal-prayer',
           sourceType: 'personal_prayer',
           sourceId: numericId,
@@ -26,7 +29,7 @@ export const buildPersonalPrayerReadingDocument = ({
           anchorId: numericId,
           fullSaveType: 'prayer',
           sourceTitle: String(book?.title || 'Мой молитвослов'),
-          itemTitle: String(prayer.title || 'Молитва'),
+          itemTitle: presentation.listTitle,
           metadata: {
             book_sync_id: bookSyncId,
             prayer_sync_id: prayer.sync_id,
@@ -36,8 +39,10 @@ export const buildPersonalPrayerReadingDocument = ({
     };
   });
   return {
-    title: String(book?.title || 'Мой молитвослов'),
-    description: String(book?.description || ''),
+    // The FixedSectionHeader already shows the book name. Do not repeat it
+    // above the first prayer (or expose user-created book notes as a heading).
+    title: '',
+    description: '',
     progressAnchorType: 'personal_prayer',
     savedItems,
     sections,
