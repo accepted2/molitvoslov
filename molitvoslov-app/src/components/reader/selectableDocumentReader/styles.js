@@ -1097,6 +1097,37 @@ export const READER_STYLES = String.raw`
       line-height: 23px;
       font-weight: 700;
     }
+    /* Only canonical hymn sections use these visual decorations.
+       No source string or selection offset is modified by their styles. */
+    .rule-item.canon-section .reader-text .canon-initial,
+    .rule-item.canon-section .reader-text .canon-initial .liturgical-word {
+      color: var(--liturgical) !important;
+      text-transform: uppercase;
+      font-weight: 700;
+      font-style: normal;
+    }
+    .rule-item.canon-section .reader-text .canon-long-cue,
+    .rule-item.canon-section .reader-text .canon-long-cue .liturgical-word,
+    .rule-item.canon-section .reader-text .canon-doxology,
+    .rule-item.canon-section .reader-text .canon-doxology .liturgical-word {
+      color: var(--liturgical) !important;
+      font-weight: 700;
+    }
+    .rule-item.canon-section .reader-text .canon-repeat-note,
+    .rule-item.canon-section .reader-text .canon-repeat-note .liturgical-word {
+      color: #765238 !important;
+      font-weight: 600;
+      font-style: normal;
+      white-space: nowrap;
+    }
+    .rule-item.canon-section .reader-inline.canon-long-label .reader-inline-label {
+      display: block;
+      margin-right: 0;
+      margin-bottom: 3px;
+    }
+    .rule-item.canon-section .reader-inline.canon-long-label .reader-text {
+      display: block;
+    }
     .reader-inline {
       display: block;
     }
