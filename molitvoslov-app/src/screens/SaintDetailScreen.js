@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
   },
   expandedWrapSaved: {backgroundColor: 'rgba(161, 110, 53, 0.075)'},
   lifeInsetSaved: {backgroundColor: 'rgba(161, 110, 53, 0.075)'},
-  readingContent: {paddingHorizontal: 4, paddingTop: 0, paddingBottom: 8},
+  readingContent: {paddingHorizontal: 10, paddingTop: 2, paddingBottom: 8},
   lifeInset: {marginHorizontal: 2, marginTop: 4, marginBottom: 8,
     borderRadius: 0, borderWidth: 1, borderColor: '#E7D6B6', backgroundColor: '#FFF4DE', overflow: 'hidden'},
   lifeScrollContent: {
