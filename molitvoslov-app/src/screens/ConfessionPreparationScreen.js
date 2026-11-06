@@ -322,13 +322,16 @@ export const ConfessionPreparationScreen = ({navigation}) => {
           </View>
         ) : (
           <FlatList
+            key={viewMode}
             data={source}
             keyExtractor={item => item.id}
             renderItem={catalogMode ? renderCatalogItem : renderSelectedItem}
             ListHeaderComponent={listHeader}
             ListEmptyComponent={
               <Text style={styles.empty}>
-                Пока ничего не выбрано. Откройте "Все грехи" и добавьте нужные пункты.
+                {catalogMode
+                  ? 'В справочнике пока нет записей.'
+                  : 'Пока ничего не выбрано. Откройте "Все грехи" и добавьте нужные пункты.'}
               </Text>
             }
             contentContainerStyle={[
