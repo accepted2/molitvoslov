@@ -53,6 +53,56 @@ class IconVariantsTests(unittest.TestCase):
             with self.assertRaises(LowResolutionIcon):
                 render_icon_variants(src, Path(folder) / "out", asset_id="old-thumbnail")
 
+    def test_offline_bundle_includes_main_and_all_feasts_without_duplicates(self):
+        import importlib.util
+        generator = (
+            Path(__file__).resolve().parents[2] / ".github"
+            / "scripts" / "build_calendar_offline_bundle.py"
+        )
+        spec = importlib.util.spec_from_file_location("offline_icon_generator", generator)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        self.assertEqual(module.ICON_MAX_SIZE, (480, 640))
+        self.assertEqual(module.ICON_QUALITY, 80)
+        data = {
+            "days": {
+                "2026-11-06": {
+                    "ru": {
+                        "main_feast": {
+                            "sync_uid": "main-feast-1",
+                            "source_id": None,
+                            "icon_url": "https://example.org/main.jpg",
+                        },
+                        "all_feasts": [
+                            {
+                                "sync_uid": "main-feast-1",
+                                "icon_url": "https://example.org/main.jpg",
+                            },
+                            {
+                                "sync_uid": "other-feast-2",
+                                "source_id": 42,
+                                "icon_url": "https://example.org/other.jpg",
+                            },
+                        ],
+                    },
+                    "uk": {
+                        "main_feast": {
+                            "sync_uid": "main-feast-1",
+                            "icon_url": "https://example.org/main.jpg",
+                        },
+                        "all_feasts": [],
+                    },
+                }
+            }
+        }
+        feasts = module.visible_feasts(data)
+        self.assertEqual(len(feasts), 2)
+        self.assertEqual(
+            {feast["sync_uid"] for feast in feasts},
+            {"main-feast-1", "other-feast-2"},
+        )
+
     def test_only_public_https_urls(self):
         self.assertTrue(_public_https("https://res.cloudinary.com/cloud/image/upload/icon.jpg"))
         for bad in (
