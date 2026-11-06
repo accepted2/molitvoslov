@@ -8,7 +8,7 @@ from PIL import Image
 from api.calendar_icon_variants import (
     CANVASES, LowResolutionIcon, render_icon_variants,
 )
-from api.management.commands.audit_calendar_icons import _public_https
+from api.calendar_icon_variants import public_https as _public_https
 
 
 class IconVariantsTests(unittest.TestCase):
