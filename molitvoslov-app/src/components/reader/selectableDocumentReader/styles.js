@@ -1221,6 +1221,19 @@ export const READER_STYLES = String.raw`
       font-style: normal;
       white-space: nowrap;
     }
+    /* Traditional three combined canons: [Три́жды.], [Покло́нъ.],
+       [Три́жды и покло́ны трѝ.] and numeral counts are quiet rubrics,
+       not red prayer text. Keep superscripts and titla in Ponomar. */
+    .rule-item.three-combined-traditional .reader-text .canon-repeat-note,
+    .rule-item.three-combined-traditional .reader-text .canon-repeat-note .liturgical-word {
+      color: #765238 !important;
+      font-family: 'Ponomar', Georgia, serif;
+      font-size: 0.94em;
+      font-weight: 400 !important;
+      font-style: normal !important;
+      text-transform: none !important;
+      white-space: nowrap;
+    }
     .rule-item.canon-section .reader-inline.canon-long-label .reader-inline-label {
       display: block;
       margin-right: 0;
