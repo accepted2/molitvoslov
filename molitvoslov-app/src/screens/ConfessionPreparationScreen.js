@@ -3,7 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  FlatList,
+  ScrollView,
   Modal,
   Pressable,
   StyleSheet,
@@ -59,20 +59,21 @@ export const ConfessionPreparationScreen = ({navigation}) => {
     scrollY.setValue(Math.max(0, event.nativeEvent.contentOffset?.y || 0));
   }, [handleNativeReadingScroll, scrollY]);
   const scrollToPosition = useCallback(offset => {
-    scrollRef.current?.scrollToOffset({offset, animated: false});
+    scrollRef.current?.scrollTo({y: Math.max(0, offset), animated: false});
   }, []);
   const scrollToTop = useCallback(() => {
-    scrollRef.current?.scrollToOffset({offset: 0, animated: true});
+    scrollRef.current?.scrollTo({y: 0, animated: true});
     // Match morning prayers: reveal both reading bars when going to top.
     handleReadingScroll('top');
   }, [handleReadingScroll]);
   const switchView = useCallback(nextMode => {
+    if (nextMode === viewMode) return;
     // Remount the destination list at its start with visible reading chrome.
     handleReadingScroll('top');
     scrollY.setValue(0);
     setContentHeight(0);
     setViewMode(nextMode);
-  }, [handleReadingScroll, scrollY]);
+  }, [handleReadingScroll, scrollY, viewMode]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]);
   const [menuSinId, setMenuSinId] = useState(null);
@@ -366,20 +367,10 @@ export const ConfessionPreparationScreen = ({navigation}) => {
             <ActivityIndicator color={colors.accent} size="large" />
           </View>
         ) : (
-          <FlatList
+          <ScrollView
             ref={scrollRef}
-            key={`confession-list:${viewMode}`}
-            data={source}
-            keyExtractor={(item, index) => item.id || 'doc-' + index}
-            renderItem={catalogMode ? renderDocumentBlock : renderSelectedItem}
-            ListHeaderComponent={listHeader}
-            ListEmptyComponent={
-              <Text style={styles.empty}>
-                {catalogMode
-                  ? 'В справочнике пока нет записей.'
-                  : 'Пока ничего не выбрано. Откройте "Все грехи" и добавьте нужные пункты.'}
-              </Text>
-            }
+            key={`confession-scroll:${viewMode}`}
+            style={styles.scroll}
             contentContainerStyle={[
               styles.content,
               {paddingTop: headerHeight + 18, paddingBottom: insets.bottom + 95},
@@ -391,10 +382,22 @@ export const ConfessionPreparationScreen = ({navigation}) => {
             onLayout={event => setViewportHeight(event.nativeEvent.layout.height)}
             onContentSizeChange={(_width, height) => setContentHeight(height)}
             showsVerticalScrollIndicator={false}
-            initialNumToRender={10}
-            maxToRenderPerBatch={12}
-            windowSize={7}
-          />
+          >
+            {listHeader}
+            {source.length ? source.map((item, index) => (
+              <React.Fragment key={item.id || `doc-${index}`}>
+                {catalogMode
+                  ? renderDocumentBlock({item, index})
+                  : renderSelectedItem({item, index})}
+              </React.Fragment>
+            )) : (
+              <Text style={styles.empty}>
+                {catalogMode
+                  ? 'В справочнике пока нет записей.'
+                  : 'Пока ничего не выбрано. Откройте "Все грехи" и добавьте нужные пункты.'}
+              </Text>
+            )}
+          </ScrollView>
         )}
         <ThinScrollIndicator
           key={`confession-scrollbar:${viewMode}`}
@@ -484,6 +487,7 @@ const styles = StyleSheet.create({
   page: {flex: 1, backgroundColor: '#FFF4DE'},
   screen: {flex: 1, backgroundColor: '#FFF4DE'},
   loading: {flex: 1, justifyContent: 'center', alignItems: 'center'},
+  scroll: {flex: 1},
   content: {paddingHorizontal: 12},
   listHeader: {marginBottom: 10},
   title: {
