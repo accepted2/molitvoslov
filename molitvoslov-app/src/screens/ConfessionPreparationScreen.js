@@ -358,7 +358,8 @@ export const ConfessionPreparationScreen = ({navigation}) => {
             keyboardDismissMode="on-drag"
             onScroll={handleNativeReadingScroll}
             scrollEventThrottle={16}
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator
+            persistentScrollbar
             nestedScrollEnabled
             overScrollMode="never"
           >
