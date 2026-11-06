@@ -100,7 +100,7 @@ const canonTextSignature = (value) =>
     .trim();
 
 const getCanonInlineLabel = (section, text, t) => {
-  if (!section) {
+  if (!section || section.suppress_inline_label) {
     return '';
   }
 
@@ -247,13 +247,19 @@ export const CanonScreen = ({route, navigation}) => {
     return values.length ? Math.min(...values) : 1;
   }, [canon]);
 
-  const activeSections = useMemo(
-    () =>
-      (canon?.sections || [])
-        .filter((section) => Number(section.variant || 1) === Number(primaryVariant))
-        .sort((left, right) => Number(left.order || 0) - Number(right.order || 0)),
-    [canon, primaryVariant]
-  );
+  const activeSections = useMemo(() => {
+    // The three combined canons have their own full traditional prayer-book
+    // structure (including prelude and conclusion), distinct from the
+    // modern CS/RU parallel paragraphs. Never align unrelated verses by index.
+    const source = viewMode === MODE_TRADITIONAL &&
+      Array.isArray(canon?.traditional_sections) &&
+      canon.traditional_sections.length
+        ? canon.traditional_sections
+        : canon?.sections || [];
+    return source
+      .filter((section) => Number(section.variant || 1) === Number(primaryVariant))
+      .sort((left, right) => Number(left.order || 0) - Number(right.order || 0));
+  }, [canon, primaryVariant, viewMode]);
 
   const displaySections = useMemo(() => {
     const refrainCandidates = activeSections.filter((section) => {
