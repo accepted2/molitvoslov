@@ -253,6 +253,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
           <View style={styles.intro}>
             <Text style={styles.introTitle}>Что такое исповедь?</Text>
             <Text style={styles.introText}>{confessionCatalog.intro}</Text>
+            <Text style={styles.sourceNote}>{confessionCatalog.caution}</Text>
           </View>
           <Text style={styles.heading}>Грехи с объяснениями</Text>
           <Text style={styles.explanation}>
@@ -381,6 +382,11 @@ const styles = StyleSheet.create({
     lineHeight: 24, color: '#704527', marginBottom: 8,
   },
   introText: {fontSize: 15, lineHeight: 23, color: '#4A3526'},
+  sourceNote: {
+    fontSize: 12, lineHeight: 18, color: '#806852',
+    marginTop: 12, paddingTop: 9,
+    borderTopWidth: 1, borderTopColor: 'rgba(126,82,38,0.16)',
+  },
   heading: {
     fontFamily: 'serif', fontSize: 19, fontWeight: '700',
     color: '#69412A', marginBottom: 5,
