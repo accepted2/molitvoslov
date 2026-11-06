@@ -37,7 +37,10 @@ import {
   getOfflineCalendarDay,
   getOfflineCalendarMonth,
 } from '../services/calendarOfflineStore';
-import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
+import {
+  getBundledCalendarIconFallbackSource,
+  getBundledCalendarIconSource,
+} from '../data/calendarIconAssets';
 import {colors} from '../theme';
 
 const buildCells = (year, month) => {
@@ -173,13 +176,17 @@ const formatCalendarDateLabel = (value, locale) => {
 
 const FeastImage = ({feast}) => {
   const [failed, setFailed] = useState(false);
+  const [useFallback, setUseFallback] = useState(false);
   const [imageHeight, setImageHeight] = useState(120);
 
-  const source = getBundledCalendarIconSource(feast);
+  const primarySource = getBundledCalendarIconSource(feast);
+  const fallbackSource = getBundledCalendarIconFallbackSource(feast);
+  const source = useFallback && fallbackSource ? fallbackSource : primarySource;
   const imageWidth = 98;
 
   useEffect(() => {
     setFailed(false);
+    setUseFallback(false);
 
     if (!source) {
       return;
@@ -224,7 +231,15 @@ const FeastImage = ({feast}) => {
           height: imageHeight,
         },
       ]}
-      onError={() => setFailed(true)}
+      onError={() => {
+        // Новая HD-ссылка недоступна: возвращаемся к правильной
+        // привязке по source_id из APK, а не к чужой иконе.
+        if (!useFallback && fallbackSource && fallbackSource !== primarySource) {
+          setUseFallback(true);
+        } else {
+          setFailed(true);
+        }
+      }}
     />
   );
 };
