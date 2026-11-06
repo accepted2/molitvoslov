@@ -75,7 +75,13 @@ export const buildCanonTypography = (value, inlineLabel = '', sectionHeading = '
   // Do not color everything up to a later colon as a rubric. A long
   // "Молитва ...:" label is valid only when it matches this section's
   // actual source heading; the simple "Молитва:" label is always valid.
-  let cue = /^\s*((?:(?:Слава|И\s+ныне|Ныне)\s*:|(?:Тропар(?:ь|и)|Богородичен|Ирмос|Припев|Иисусу|Седален|Кондак|Икос|Светилен)[^:\n.!?]{0,110}:|Молитва\s*:))/iu.exec(mappedCue.normalized);
+  // In the traditional Three Canons "Подо́бенъ:" is a rubric; the
+  // following model melody is ordinary text and must remain uncolored.
+  const traditionalPodobenCue = options.traditionalLiturgicalNotes
+    ? /^\s*(Подобенъ?\s*:)/iu.exec(mappedCue.normalized)
+    : null;
+  let cue = traditionalPodobenCue ||
+    /^\s*((?:(?:Слава|И\s+ныне|Ныне)\s*:|(?:Тропар(?:ь|и)|Богородичен|Ирмос|Припев|Иисусу|Седален|Кондак|Икос|Светилен)[^:\n.!?]{0,110}:|Молитва\s*:))/iu.exec(mappedCue.normalized);
   if (!cue && sectionHeading) {
     const longPrayerCue = /^\s*(Молитва[^:\n.!?]{1,110}:)/iu.exec(mappedCue.normalized);
     if (longPrayerCue) {
@@ -93,9 +99,12 @@ export const buildCanonTypography = (value, inlineLabel = '', sectionHeading = '
     const long = cue[1].trim().length >= 20;
     const prayer = /^\s*молитва/iu.test(cue[1]);
     const glory = /^\s*(?:слава|и\s+ныне|ныне)\s*:/iu.test(cue[1]);
+    const isPodoben = !!traditionalPodobenCue &&
+      /^\s*подобенъ?\s*:/iu.test(cue[1]);
     ranges.push({
       start: from, end: to,
-      kind: prayer ? 'prayer-cue' : long ? 'long-cue' : glory ? 'glory-cue' : 'short-cue',
+      kind: isPodoben ? 'podoben-cue' :
+        prayer ? 'prayer-cue' : long ? 'long-cue' : glory ? 'glory-cue' : 'short-cue',
     });
     if (long || prayer) {
       bodyStart = to;
@@ -103,7 +112,8 @@ export const buildCanonTypography = (value, inlineLabel = '', sectionHeading = '
     } else {
       const opening = initialAt(text, 0);
       if (opening) initials.push(opening);
-      const body = initialAt(text, to);
+      // The model melody after "Подо́бенъ:" has no red drop-cap.
+      const body = isPodoben ? null : initialAt(text, to);
       if (body) initials.push(body);
     }
   } else {
@@ -140,6 +150,17 @@ export const buildCanonTypography = (value, inlineLabel = '', sectionHeading = '
         ranges.push({start, end, kind: 'doxology'});
         markAfter(text, end, breakBefore, initials);
       }
+    }
+  }
+
+  // The short invocations after the Lord's and Theotokos prayers are
+  // standalone refrains. Only explicitly flagged source sections receive
+  // full-text red; every other traditional refrain keeps its existing style.
+  if (options.traditionalFullRefrain && text.trim()) {
+    const first = text.search(/\S/u);
+    const last = text.length - (text.match(/\s*$/u)?.[0].length || 0);
+    if (first >= 0 && last > first) {
+      ranges.push({start: first, end: last, kind: 'full-refrain'});
     }
   }
 
