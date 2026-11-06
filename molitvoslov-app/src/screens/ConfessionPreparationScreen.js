@@ -17,6 +17,7 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {colors} from '../theme';
 import confessionCatalog from '../data/confessionCatalog.json';
+import confessionDocument from '../data/confessionDocument.json';
 import {
   loadConfessionPreparation,
   saveConfessionSelection,
@@ -27,9 +28,12 @@ import {
   CONFESSION_TITLE_MAX_LENGTH,
 } from '../services/confessionPreparationStorage';
 
-const CATALOG_BY_ID = Object.fromEntries(
-  confessionCatalog.items.map(item => [item.id, item])
-);
+// Legacy c*** IDs are still readable for saved notes; all new selections
+// use precise individual s**** phrases in the continuous source document.
+const CATALOG_BY_ID = Object.fromEntries([
+  ...confessionCatalog.items,
+  ...confessionDocument.entries,
+].map(item => [item.id, item]));
 
 const notifySaveError = () => {
   Alert.alert(
@@ -47,7 +51,6 @@ export const ConfessionPreparationScreen = ({navigation}) => {
   const selectedRef = useRef([]);
   const [notes, setNotes] = useState({});
   const [custom, setCustom] = useState({});
-  const [expandedId, setExpandedId] = useState(null);
   const [addingCustom, setAddingCustom] = useState(false);
   const [customTitle, setCustomTitle] = useState('');
 
@@ -75,13 +78,11 @@ export const ConfessionPreparationScreen = ({navigation}) => {
   const addSelected = useCallback(id => {
     if (selectedRef.current.includes(id)) return;
     persistSelection([...selectedRef.current, id]);
-    setExpandedId(null);
   }, [persistSelection]);
 
   const removeSelected = useCallback(id => {
     if (!selectedRef.current.includes(id)) return;
     persistSelection(selectedRef.current.filter(value => value !== id));
-    setExpandedId(null);
     setNotes(previous => {
       const copy = {...previous};
       delete copy[id];
@@ -133,7 +134,6 @@ export const ConfessionPreparationScreen = ({navigation}) => {
             setSelectedIds([]);
             setNotes({});
             setCustom({});
-            setExpandedId(null);
             clearConfessionPreparation(oldIds).catch(notifySaveError);
           },
         },
@@ -149,42 +149,53 @@ export const ConfessionPreparationScreen = ({navigation}) => {
   );
 
   const catalogMode = viewMode === 'catalog';
-  const source = catalogMode ? confessionCatalog.items : chosenEntries;
+  const source = catalogMode ? confessionDocument.blocks : chosenEntries;
 
-  const renderCatalogItem = ({item}) => {
-    const chosen = selectedIds.includes(item.id);
-    const opened = expandedId === item.id;
+  const openSinMenu = useCallback(id => {
+    const item = CATALOG_BY_ID[id];
+    if (!item) return;
+    const isSelected = selectedRef.current.includes(id);
+    Alert.alert(
+      item.title,
+      isSelected ? 'Этот грех уже в вашем списке.' : 'Добавить этот грех в мой список?',
+      [
+        {text: 'Отмена', style: 'cancel'},
+        {
+          text: isSelected ? 'Убрать из списка' : 'Добавить в мой список',
+          style: isSelected ? 'destructive' : 'default',
+          onPress: () => isSelected ? removeSelected(id) : addSelected(id),
+        },
+      ]
+    );
+  }, [addSelected, removeSelected]);
+
+  // Read the source as one continuous text. Only the phrase the reader
+  // actually taps is selected; never its surrounding paragraph.
+  const renderDocumentBlock = ({item}) => {
+    if (item.type === 'heading') {
+      return (
+        <View style={styles.documentHeadingWrap}>
+          <Text style={styles.documentHeading}>{item.text}</Text>
+        </View>
+      );
+    }
     return (
-      <View style={styles.entry}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={item.title + '. ' + (chosen ? 'В моём списке' : 'Добавить в мой список')}
-          accessibilityState={{expanded: opened}}
-          onPress={() => setExpandedId(opened ? null : item.id)}
-          style={({pressed}) => [styles.entryTap, pressed && styles.pressed]}
-        >
-          <View style={styles.entryHeading}>
-            <Text style={styles.entryTitle}>{item.title}</Text>
-            <Text style={[styles.caret, chosen && styles.chosen]}>
-              {chosen ? '✓' : opened ? '⌃' : '›'}
-            </Text>
-          </View>
-          <Text style={styles.entryDescription}>{item.description}</Text>
-        </Pressable>
-        {opened && (
-          <View style={styles.entryActionArea}>
-            <Pressable
+      <Text style={styles.documentParagraph}>
+        {item.segments.map(segment => {
+          const selected = selectedIds.includes(segment.id);
+          return (
+            <Text
+              key={segment.id}
+              onPress={() => openSinMenu(segment.id)}
               accessibilityRole="button"
-              style={styles.actionButton}
-              onPress={() => chosen ? removeSelected(item.id) : addSelected(item.id)}
+              accessibilityLabel={'Выбрать грех: ' + (CATALOG_BY_ID[segment.id]?.title || '')}
+              style={selected ? styles.documentSelected : styles.documentPhrase}
             >
-              <Text style={styles.actionText}>
-                {chosen ? 'Убрать из моего списка' : '+ Добавить в мой список'}
-              </Text>
-            </Pressable>
-          </View>
-        )}
-      </View>
+              {segment.text}
+            </Text>
+          );
+        })}
+      </Text>
     );
   };
 
@@ -229,7 +240,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
       <View style={styles.tabs}>
         <Pressable
           style={[styles.tab, catalogMode && styles.tabActive]}
-          onPress={() => {setViewMode('catalog'); setExpandedId(null);}}
+          onPress={() => setViewMode('catalog')}
           accessibilityRole="tab"
           accessibilityState={{selected: catalogMode}}
         >
@@ -239,7 +250,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
         </Pressable>
         <Pressable
           style={[styles.tab, !catalogMode && styles.tabActive]}
-          onPress={() => {setViewMode('mine'); setExpandedId(null);}}
+          onPress={() => setViewMode('mine')}
           accessibilityRole="tab"
           accessibilityState={{selected: !catalogMode}}
         >
@@ -252,13 +263,13 @@ export const ConfessionPreparationScreen = ({navigation}) => {
         <>
           <View style={styles.intro}>
             <Text style={styles.introTitle}>Что такое исповедь?</Text>
-            <Text style={styles.introText}>{confessionCatalog.intro}</Text>
-            <Text style={styles.sourceNote}>{confessionCatalog.caution}</Text>
+            <Text style={styles.introText}>{confessionDocument.intro}</Text>
+            <Text style={styles.sourceNote}>{confessionDocument.caution}</Text>
           </View>
           <Text style={styles.heading}>Грехи с объяснениями</Text>
           <Text style={styles.explanation}>
-            Нажмите на нужный пункт, чтобы добавить его в свой список.
-            Это материал для личного размышления, а не обязательный перечень.
+            Нажмите на конкретное слово или выражение в тексте, чтобы добавить
+            этот грех в свой список. Текст читается одним целым.
           </Text>
         </>
       ) : (
@@ -325,7 +336,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
             key={viewMode}
             data={source}
             keyExtractor={item => item.id}
-            renderItem={catalogMode ? renderCatalogItem : renderSelectedItem}
+            renderItem={catalogMode ? renderDocumentBlock : renderSelectedItem}
             ListHeaderComponent={listHeader}
             ListEmptyComponent={
               <Text style={styles.empty}>
@@ -395,6 +406,23 @@ const styles = StyleSheet.create({
     color: '#69412A', marginBottom: 5,
   },
   explanation: {fontSize: 13, lineHeight: 20, color: '#745C46', marginBottom: 15},
+  documentHeadingWrap: {
+    marginTop: 15, marginBottom: 9,
+    borderBottomColor: 'rgba(126,82,38,0.22)',
+    borderBottomWidth: 1, paddingBottom: 8,
+  },
+  documentHeading: {
+    color: '#73492E', fontFamily: 'serif',
+    fontSize: 17, lineHeight: 24, fontWeight: '700',
+    textAlign: 'center',
+  },
+  documentParagraph: {
+    color: '#463627', fontFamily: 'serif', fontSize: 17,
+    lineHeight: 27, marginBottom: 9,
+    textAlign: 'left', paddingHorizontal: 3,
+  },
+  documentPhrase: {color: '#463627'},
+  documentSelected: {color: '#A44331', textDecorationLine: 'underline'},
   entry: {
     borderRadius: 13,
     borderWidth: 1, borderColor: 'rgba(126, 82, 38, 0.18)',
