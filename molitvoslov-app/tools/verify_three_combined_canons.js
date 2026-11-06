@@ -124,6 +124,41 @@ assert.equal(plain.ranges.filter(range => range.kind === 'initial').length, 3);
 assert.equal(grouped.ranges.filter(range => range.kind === 'initial').length, 1);
 assert.equal(grouped.prayerProse, true);
 
+// Repeat counts and bows in the original traditional source are presentation
+// ranges only. Preserve every accent, titlo, character and selection offset.
+const traditionalRubrics = data.traditional_sections
+  .filter(section => section.text && /\[[^\]]+\]/u.test(section.text.traditional_content));
+let checkedNotes = 0;
+for (const section of traditionalRubrics) {
+  const value = section.text.traditional_content;
+  const original = value;
+  const formatted = buildTypography(value, '', '', section.section_type,
+    {traditionalLiturgicalNotes: true});
+  const noteRanges = formatted.ranges.filter(range => range.kind === 'repeat-note');
+  assert.ok(noteRanges.length >= 1, 'Missing traditional rubric styling in section ' + section.id);
+  assert.equal(value, original);
+  for (const range of noteRanges) {
+    assert.ok(Number.isInteger(range.start) && Number.isInteger(range.end));
+    assert.ok(range.start >= 0 && range.end <= value.length);
+    assert.ok(/^\[[^\]]+\]$/u.test(value.slice(range.start, range.end)));
+  }
+  checkedNotes += noteRanges.length;
+}
+assert.equal(checkedNotes, 14, 'All 14 original bow/repeat notes must be styled');
+const rawTrad = 'Гдⷭ҇и, поми́лꙋй. [Три́жды и҆ покло́ны трѝ.]';
+const withoutNotes = buildTypography(rawTrad, '', '', 'other');
+assert.ok(!withoutNotes.ranges.some(range => range.kind === 'repeat-note'),
+  'Other canon reading modes must keep their existing rubric rules');
+const noteSelection = buildTypography(rawTrad, '', '', 'other',
+  {traditionalLiturgicalNotes: true});
+assert.ok(noteSelection.ranges.some(range =>
+  range.kind === 'repeat-note' &&
+  rawTrad.slice(range.start, range.end) === '[Три́жды и҆ покло́ны трѝ.]'
+));
+assert.match(canonScreen, /traditionalLiturgicalNotes:/);
+assert.match(styles, /\.rule-item\.three-combined-traditional \.reader-text \.canon-repeat-note/);
+assert.match(styles, /font-family: 'Ponomar', Georgia, serif/);
+
 for (const file of [
   'src/services/contentApi.js',
   'src/screens/CommunionPreparationScreen.js',
@@ -134,6 +169,7 @@ for (const file of [
 }
 console.log('PASS: 206 CS and RU paragraphs in 198 modern reading blocks; 277 traditional paragraphs');
 console.log('PASS: 277 traditional paragraphs converted UCS to Church Slavonic Unicode');
+console.log('PASS: 14 traditional bow/repeat rubrics styled brown, no source or offset changes');
 console.log('PASS: thin traditional prayer and heading separators; refrain stays with its troparion');
 console.log('PASS: 4 prayers, 3 joined prayer bodies; one red initial per joined prayer');
 console.log('PASS: traditional switch does not reset availability or selected tab');
