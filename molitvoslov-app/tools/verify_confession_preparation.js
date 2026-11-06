@@ -9,6 +9,7 @@ const babel = require('@babel/parser');
 const root = path.resolve(__dirname, '..');
 const read = name => fs.readFileSync(path.join(root, name), 'utf8');
 const catalog = JSON.parse(read('src/data/confessionCatalog.json'));
+const document = JSON.parse(read('src/data/confessionDocument.json'));
 const screen = read('src/screens/ConfessionPreparationScreen.js');
 const storageSource = read('src/services/confessionPreparationStorage.js');
 const navigation = read('src/navigation/AppNavigator.js');
@@ -25,12 +26,41 @@ assert.ok(catalog.items.some(item => item.context === 'Грехи против �
 assert.ok(catalog.items.some(item => item.context === 'Грехи против Господа Бога'));
 assert.ok(catalog.items.some(item => item.context === 'Грехи против самого себя'));
 assert.match(catalog.intro, /Исповедь — таинство Покаяния/);
+assert.equal(document.version, 1);
+assert.ok(document.blocks.length >= 115);
+assert.ok(document.entries.length >= 400);
+const atomIds = new Set(document.entries.map(item => item.id));
+assert.equal(atomIds.size, document.entries.length);
+assert.ok([...atomIds].every(id => /^s\d{4}$/u.test(id)));
+assert.ok(document.blocks.some(block => block.type === 'heading' &&
+  /Первая заповедь/u.test(block.text)));
+assert.ok(document.blocks.some(block => block.type === 'heading' &&
+  /Грехи против ближнего/u.test(block.text)));
+const paragraphs = document.blocks.filter(block => block.type === 'paragraph');
+assert.ok(paragraphs.length >= 98);
+for (const paragraph of paragraphs) {
+  assert.ok(paragraph.segments.length >= 1);
+  assert.ok(paragraph.segments.every(segment => atomIds.has(segment.id)));
+}
+const opening = paragraphs[0].segments;
+assert.equal(opening[0].text.trim(), 'маловерием,');
+assert.equal(opening[1].text.trim(), 'неверием,');
+assert.notEqual(opening[0].id, opening[1].id,
+  'An individual sin must be selectable without adding the whole paragraph');
+assert.ok(document.entries.every(item => !item.description),
+  'Individual selected sins should not import unrelated sins in their explanation');
+
 assert.match(screen, /Все грехи/);
 assert.match(screen, /Мой список/);
 assert.match(screen, /Добавить в мой список/);
 assert.match(screen, /Мои мысли и обстоятельства/);
 assert.match(screen, /Очистить мой список/);
-assert.match(screen, /const source = catalogMode \? confessionCatalog\.items : chosenEntries/);
+assert.match(screen, /const source = catalogMode \? confessionDocument\.blocks : chosenEntries/);
+assert.match(screen, /onPress=\{\(\) => openSinMenu\(segment\.id\)\}/);
+assert.match(screen, /keyExtractor=\{\(item, index\) => item\.id \|\| 'doc-' \+ index\}/);
+assert.match(screen, /\.\.\.confessionCatalog\.items/);
+assert.match(screen, /\.\.\.confessionDocument\.entries/);
+assert.ok(!screen.includes('renderCatalogItem'));
 assert.match(navigation, /name="ConfessionPreparation"/);
 assert.match(category, /navigation\.navigate\('ConfessionPreparation'\)/);
 assert.match(storageSource, /from 'expo-secure-store'/);
@@ -69,18 +99,21 @@ const storage = new Function('SecureStore', exposed + `
   let loaded = await storage.loadConfessionPreparation();
   assert.deepEqual(loaded.ids, []);
 
+  // Old grouped selections remain loadable, new individual phrases use s****.
   await storage.saveConfessionEntry('c001', 'Моя личная заметка');
-  await storage.saveConfessionSelection(['c001', 'c002']);
+  await storage.saveConfessionEntry('s0002', 'Конкретный грех');
+  await storage.saveConfessionSelection(['c001', 'c002', 's0002']);
   loaded = await storage.loadConfessionPreparation();
-  assert.deepEqual(loaded.ids, ['c001', 'c002']);
+  assert.deepEqual(loaded.ids, ['c001', 'c002', 's0002']);
+  assert.equal(loaded.notes.s0002, 'Конкретный грех');
   assert.equal(loaded.notes.c001, 'Моя личная заметка');
   assert.equal(loaded.notes.c002, '');
 
   const ownId = 'uabc123';
   await storage.saveConfessionEntry(ownId, 'Пояснение', 'Свой пункт');
-  await storage.saveConfessionSelection(['c001', ownId]);
+  await storage.saveConfessionSelection(['c001', 's0002', ownId]);
   loaded = await storage.loadConfessionPreparation();
-  assert.deepEqual(loaded.ids, ['c001', ownId]);
+  assert.deepEqual(loaded.ids, ['c001', 's0002', ownId]);
   assert.equal(loaded.custom[ownId], 'Свой пункт');
   assert.equal(loaded.notes[ownId], 'Пояснение');
 
@@ -97,13 +130,14 @@ const storage = new Function('SecureStore', exposed + `
   assert.deepEqual(loaded.ids, [ownId]);
   assert.equal(mockStore.has('molitvoslov.confession.v1.item.c001'), false);
 
-  await storage.clearConfessionPreparation([ownId]);
+  await storage.clearConfessionPreparation([ownId, 's0002']);
   loaded = await storage.loadConfessionPreparation();
   assert.deepEqual(loaded.ids, []);
   assert.equal(mockStore.size, 0);
 
   await assert.rejects(storage.saveConfessionEntry('../unsafe', 'x'));
-  console.log('PASS: 98 source-based catalog entries, no category selector');
+  console.log('PASS: source text is continuous, 456 individual selectable phrases');
+  console.log('PASS: existing grouped selections retained without losing prior notes');
   console.log('PASS: confession screen and Communion navigation parse');
   console.log('PASS: personal notes stored only in SecureStore, excluded from sync');
   console.log('PASS: selection, individual notes, custom items, ordered writes, removal, clearing');
