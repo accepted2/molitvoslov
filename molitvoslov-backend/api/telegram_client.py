@@ -29,7 +29,11 @@ class TelegramClient:
             response.raise_for_status()
             data = response.json()
         except (requests.RequestException, ValueError) as error:
-            raise TelegramError(f"Ошибка Telegram API ({method}): {error}") from error
+            # requests может включать bot token в URL HTTPError — не логируем его.
+            safe_error = str(error).replace(self.token, "<TOKEN_REDACTED>")
+            raise TelegramError(
+                f"Ошибка Telegram API ({method}): {safe_error}"
+            ) from None
         if not data.get("ok"):
             raise TelegramError(
                 f"Telegram API ({method}): {data.get('description', 'неизвестная ошибка')}"
