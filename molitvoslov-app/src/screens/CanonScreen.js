@@ -672,7 +672,12 @@ export const CanonScreen = ({route, navigation}) => {
 
       const showStandaloneHeading = effectiveSectionType === 'other' && !!effectiveHeading;
 
-      if (!blocks.length && (!showStandaloneHeading || viewMode === MODE_RUSSIAN)) {
+      // Combined Three Canons include real source headings (ode, kontakion,
+      // ikos, prayer). Keep them in the standalone Russian tab as well.
+      const isStructuredCombinedCanon = Array.isArray(canon.traditional_sections);
+      if (!blocks.length &&
+        (!showStandaloneHeading ||
+          (viewMode === MODE_RUSSIAN && !isStructuredCombinedCanon))) {
         return;
       }
 
