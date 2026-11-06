@@ -296,18 +296,17 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   sectionTitle: {
-    marginHorizontal: 0,
-    marginBottom: 8,
-    paddingHorizontal: 11,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(111, 71, 39, 0.28)',
-    backgroundColor: 'rgba(255, 244, 222, 0.91)',
-    color: '#4A2B19',
+    // Distinct from the cream navigation cards. Keep the picture visible
+    // and increase text contrast without adding another card background.
+    marginHorizontal: 5,
+    marginBottom: 9,
+    color: '#7F3029',
+    textShadowColor: 'rgba(255, 244, 222, 0.92)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 3,
     fontFamily: 'serif',
     fontSize: 18,
-    lineHeight: 23,
+    lineHeight: 24,
     fontWeight: '700',
   },
 
