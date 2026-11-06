@@ -900,8 +900,8 @@ const HTML_TEMPLATE = String.raw`
     #reader-scroll-thumb {
       position: absolute;
       top: 0;
-      right: 7px;
-      width: 8px;
+      right: 8px;
+      width: 5px;
       min-height: 44px;
       border-radius: 999px;
       background: rgba(104, 66, 41, 0.48);
