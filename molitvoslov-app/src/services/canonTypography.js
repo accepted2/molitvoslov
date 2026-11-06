@@ -57,7 +57,7 @@ const markAfter = (text, from, breaks, initials) => {
   if (first) initials.push(first);
 };
 
-export const buildCanonTypography = (value, inlineLabel = '', sectionHeading = '', sectionType = '') => {
+export const buildCanonTypography = (value, inlineLabel = '', sectionHeading = '', sectionType = '', options = {}) => {
   const text = String(value || '');
   const ranges = [];
   const breakBefore = new Set();
@@ -111,10 +111,14 @@ export const buildCanonTypography = (value, inlineLabel = '', sectionHeading = '
     if (first) initials.push(first);
   }
 
-  // Colored first letters after actual paragraph breaks.
-  for (const match of text.matchAll(/\n[ \t]*\r?\n/gu)) {
-    const first = initialAt(text, match.index + match[0].length);
-    if (first) initials.push(first);
+  // A grouped prayer is one reading unit even when it contains several
+  // authorial paragraphs. Give it one red initial, not a new decorated
+  // beginning for each paragraph.
+  if (!options.initialOnlyFirstParagraph) {
+    for (const match of text.matchAll(/\n[ \t]*\r?\n/gu)) {
+      const first = initialAt(text, match.index + match[0].length);
+      if (first) initials.push(first);
+    }
   }
 
   const {normalized, offsets} = normalizeWithOffsets(text);
