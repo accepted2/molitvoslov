@@ -2,7 +2,6 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Animated,
   ScrollView,
   Modal,
   Pressable,
@@ -15,7 +14,6 @@ import {StatusBar} from 'expo-status-bar';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
-import {ThinScrollIndicator} from '../components/reader/ThinScrollIndicator';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
 import {colors} from '../theme';
@@ -49,31 +47,13 @@ export const ConfessionPreparationScreen = ({navigation}) => {
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
   const [viewMode, setViewMode] = useState('catalog');
-  const scrollRef = useRef(null);
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const [viewportHeight, setViewportHeight] = useState(0);
-  const [contentHeight, setContentHeight] = useState(0);
   const {readingChromeHidden, handleReadingScroll, handleNativeReadingScroll} = useReadingChrome();
-  const handleListScroll = useCallback(event => {
-    handleNativeReadingScroll(event);
-    scrollY.setValue(Math.max(0, event.nativeEvent.contentOffset?.y || 0));
-  }, [handleNativeReadingScroll, scrollY]);
-  const scrollToPosition = useCallback(offset => {
-    scrollRef.current?.scrollTo({y: Math.max(0, offset), animated: false});
-  }, []);
-  const scrollToTop = useCallback(() => {
-    scrollRef.current?.scrollTo({y: 0, animated: true});
-    // Match morning prayers: reveal both reading bars when going to top.
-    handleReadingScroll('top');
-  }, [handleReadingScroll]);
   const switchView = useCallback(nextMode => {
     if (nextMode === viewMode) return;
-    // Remount the destination list at its start with visible reading chrome.
+    // Each mode remounts its own native scroll container at the start.
     handleReadingScroll('top');
-    scrollY.setValue(0);
-    setContentHeight(0);
     setViewMode(nextMode);
-  }, [handleReadingScroll, scrollY, viewMode]);
+  }, [handleReadingScroll, viewMode]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]);
   const [menuSinId, setMenuSinId] = useState(null);
@@ -368,7 +348,6 @@ export const ConfessionPreparationScreen = ({navigation}) => {
           </View>
         ) : (
           <ScrollView
-            ref={scrollRef}
             key={`confession-scroll:${viewMode}`}
             style={styles.scroll}
             contentContainerStyle={[
@@ -377,11 +356,11 @@ export const ConfessionPreparationScreen = ({navigation}) => {
             ]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
-            onScroll={handleListScroll}
+            onScroll={handleNativeReadingScroll}
             scrollEventThrottle={16}
-            onLayout={event => setViewportHeight(event.nativeEvent.layout.height)}
-            onContentSizeChange={(_width, height) => setContentHeight(height)}
             showsVerticalScrollIndicator={false}
+            nestedScrollEnabled
+            overScrollMode="never"
           >
             {listHeader}
             {source.length ? source.map((item, index) => (
@@ -399,18 +378,6 @@ export const ConfessionPreparationScreen = ({navigation}) => {
             )}
           </ScrollView>
         )}
-        <ThinScrollIndicator
-          key={`confession-scrollbar:${viewMode}`}
-          scrollY={scrollY}
-          viewportHeight={viewportHeight}
-          contentHeight={contentHeight}
-          topInset={headerHeight + 8}
-          bottomInset={Math.max(insets.bottom + 69, 76)}
-          scrollTo={scrollToPosition}
-          autoHide
-          showScrollTop
-          onScrollTop={scrollToTop}
-        />
         <FixedSectionHeader
           title="Подготовка к исповеди"
           gradientColor="#FFF4DE"
