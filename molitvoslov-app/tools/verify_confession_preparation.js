@@ -14,6 +14,8 @@ const screen = read('src/screens/ConfessionPreparationScreen.js');
 const storageSource = read('src/services/confessionPreparationStorage.js');
 const navigation = read('src/navigation/AppNavigator.js');
 const category = read('src/screens/CommunionPreparationScreen.js');
+const header = read('src/components/navigation/FixedSectionHeader.js');
+const readingChrome = read('src/hooks/useReadingChrome.js');
 
 assert.equal(catalog.version, 1);
 assert.equal(catalog.items.length, 98);
@@ -63,6 +65,32 @@ assert.match(screen, /Добавить в мой список/);
 assert.match(screen, /Мои мысли и обстоятельства/);
 assert.match(screen, /Очистить мой список/);
 assert.match(screen, /const source = catalogMode \? confessionDocument\.blocks : chosenEntries/);
+// Reading mode: keep the source as one text, left-aligned headings and
+// justified paragraphs, while preserving the original tappable phrases.
+assert.match(screen, /documentHeading:\s*\{[^}]*textAlign: 'left'/s);
+assert.match(screen, /documentParagraph:\s*\{[^}]*textAlign: 'justify'/s);
+assert.match(screen, /android_hyphenationFrequency="normal"/);
+assert.match(screen, /textBreakStrategy="highQuality"/);
+assert.ok(!screen.includes("Текст читается одним целым"));
+assert.ok(!screen.includes("+ Свой пункт"));
+assert.match(screen, /addingCustom \? 'Отмена' : '\+ Добавить'/);
+// Explicit persistent native scrollbar on Android, both screens continue
+// using the same FlatList. No extra scroll-to-top is required to switch.
+assert.match(screen, /showsVerticalScrollIndicator=\{true\}/);
+assert.match(screen, /persistentScrollbar=\{catalogMode\}/);
+assert.match(screen, /scrollEventThrottle=\{16\}/);
+assert.match(screen, /onScroll=\{handleNativeReadingScroll\}/);
+assert.match(screen, /useReadingChrome\(\)/);
+assert.match(screen, /handleReadingScroll\('top'\)/);
+assert.match(screen, /readingHidden=\{readingChromeHidden\}/);
+assert.match(screen, /headerAction=\{\{[\s\S]*?label: catalogMode \? 'Мой список' : 'Все грехи'/);
+assert.match(screen, /onPress: \(\) => switchView\(catalogMode \? 'mine' : 'catalog'\)/);
+assert.match(header, /headerAction = null/);
+assert.match(header, /accessibilityLabel=\{headerAction\.accessibilityLabel \|\| headerAction\.label\}/);
+assert.match(header, /onPress=\{headerAction\.onPress\}/);
+assert.match(header, /styles\.headerActionButton/);
+assert.match(readingChrome, /direction === 'down'/);
+assert.match(readingChrome, /direction === 'up'/);
 // Confession notes must be legible on solid cream paper, never on the home
 // illustration; header and status bar also use the reader's light scheme.
 assert.ok(!screen.includes("import {AppBackground}"));
@@ -102,6 +130,8 @@ assert.ok(!/SecureStore/u.test(category), 'Navigation must never load private no
 
 for (const file of [
   'src/screens/ConfessionPreparationScreen.js',
+  'src/components/navigation/FixedSectionHeader.js',
+  'src/hooks/useReadingChrome.js',
   'src/services/confessionPreparationStorage.js',
   'src/navigation/AppNavigator.js',
   'src/screens/CommunionPreparationScreen.js',
@@ -173,6 +203,8 @@ const storage = new Function('SecureStore', exposed + `
   console.log('PASS: confession screen and Communion navigation parse');
   console.log('PASS: plain cream background and legible reader-style header, no home artwork');
   console.log('PASS: themed cream in-app confession dialog, native alert removed for sin selection');
+  console.log('PASS: persistent scrollbar, justified confession text, left-aligned headings');
+  console.log('PASS: auto-hiding reading header/bottom navigation and direct My List shortcut');
   console.log('PASS: personal notes stored only in SecureStore, excluded from sync');
   console.log('PASS: selection, individual notes, custom items, ordered writes, removal, clearing');
 })().catch(err => {
