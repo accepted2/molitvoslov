@@ -190,7 +190,11 @@ export const ConfessionPreparationScreen = ({navigation}) => {
       );
     }
     return (
-      <Text style={styles.documentParagraph}>
+      <Text
+        style={styles.documentParagraph}
+        textBreakStrategy="highQuality"
+        android_hyphenationFrequency="normal"
+      >
         {item.segments.map(segment => {
           const selected = selectedIds.includes(segment.id);
           return (
