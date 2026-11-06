@@ -2,6 +2,7 @@ import React, {useCallback, useEffect, useMemo, useState} from 'react';
 
 import {
   ActivityIndicator,
+  Animated,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,6 +15,7 @@ import {contentApi as api} from '../services/contentApi';
 import {colors, radius, spacing} from '../theme';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {ThinScrollIndicator} from '../components/reader/ThinScrollIndicator';
 import {StatusBar} from 'expo-status-bar';
 import {AppBackground} from '../components/layout/AppBackground';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -53,6 +55,17 @@ export const CommunionPreparationScreen = ({navigation}) => {
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
   React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
+  const scrollRef = React.useRef(null);
+  const scrollY = React.useRef(new Animated.Value(0)).current;
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+  const handleScroll = useCallback(event => {
+    scrollY.setValue(Math.max(0, event.nativeEvent.contentOffset?.y || 0));
+  }, [scrollY]);
+  const scrollToPosition = useCallback(y => {
+    scrollRef.current?.scrollTo({y, animated: false});
+  }, []);
+
   const loadCanons = useCallback(async () => {
     try {
       setLoading(true);
@@ -113,12 +126,17 @@ export const CommunionPreparationScreen = ({navigation}) => {
 
       <View style={styles.screen}>
         <ScrollView
+          ref={scrollRef}
           style={styles.scroll}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          onLayout={event => setViewportHeight(event.nativeEvent.layout.height)}
+          onContentSizeChange={(_width, height) => setContentHeight(height)}
           contentContainerStyle={[
             styles.content,
             {
               paddingTop: headerHeight + 20,
-              paddingBottom: 24,
+              paddingBottom: Math.max(insets.bottom + 90, 100),
             },
           ]}
           showsVerticalScrollIndicator={false}
@@ -210,6 +228,14 @@ export const CommunionPreparationScreen = ({navigation}) => {
             </View>
           )}
         </ScrollView>
+        <ThinScrollIndicator
+          scrollY={scrollY}
+          viewportHeight={viewportHeight}
+          contentHeight={contentHeight}
+          topInset={headerHeight + 8}
+          bottomInset={Math.max(insets.bottom + 69, 76)}
+          scrollTo={scrollToPosition}
+        />
 
         <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
           title="Ко Святому Причащению"
@@ -270,12 +296,18 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   sectionTitle: {
-    marginHorizontal: 5,
-    marginBottom: 6,
-    color: '#4A301D',
+    marginHorizontal: 0,
+    marginBottom: 8,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(111, 71, 39, 0.28)',
+    backgroundColor: 'rgba(255, 244, 222, 0.91)',
+    color: '#4A2B19',
     fontFamily: 'serif',
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 18,
+    lineHeight: 23,
     fontWeight: '700',
   },
 
