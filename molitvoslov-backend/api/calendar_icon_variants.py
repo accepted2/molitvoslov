@@ -1,9 +1,8 @@
-"""Единый формат икон без обрезания ликов и потери оригинала.
+"""Одна средняя WebP-копия на икону для полностью офлайнового APK.
 
-На вход: вручную проверенный оригинал JPG/PNG/WebP.
-На выход: HD 1200x1600, экран 768x1024, офлайн 240x320.
-Все изображения содержат исходную икону полностью, с полями по краям.
-Никаких загрузок в интернет или привязок к праздникам здесь нет.
+Оригиналы хранятся вне APK. Для приложения создаётся только WebP
+480x640 с полями, без обрезки и искусственного увеличения.
+Связь со святой памятью задаётся asset_id (sync_uid/source_id).
 """
 from __future__ import annotations
 
@@ -14,11 +13,8 @@ from pathlib import Path
 from ipaddress import ip_address
 from urllib.parse import urlsplit
 
-CANVASES = {
-    "master": (1200, 1600),
-    "display": (768, 1024),
-    "offline": (240, 320),
-}
+CANVASES = {"offline": (480, 640)}
+WEBP_QUALITY = 80
 BG_COLOR = (244, 239, 229)
 
 
@@ -82,7 +78,7 @@ def render_icon_variants(original_path, output_dir, *, asset_id):
                 at = ((size[0] - full.width) // 2, (size[1] - full.height) // 2)
                 canvas.alpha_composite(full, dest=at)
                 target = destination / f"{safe_id}-{kind}.webp"
-                canvas.convert("RGB").save(target, "WEBP", quality=89, method=6)
+                canvas.convert("RGB").save(target, "WEBP", quality=WEBP_QUALITY, method=6)
                 variants[kind] = str(target)
     except (OSError, UnidentifiedImageError) as error:
         raise ValueError("Не удалось прочитать исходную икону.") from error
@@ -94,6 +90,9 @@ def render_icon_variants(original_path, output_dir, *, asset_id):
         "variants": variants,
         "canvases": {key: list(value) for key, value in CANVASES.items()},
         "method": "contain, no crop, no upscale",
+        "webp_quality": WEBP_QUALITY,
+        "target": "offline APK",
+        "file_bytes": Path(variants["offline"]).stat().st_size,
     }
     (destination / f"{safe_id}-metadata.json").write_text(
         json.dumps(info, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
