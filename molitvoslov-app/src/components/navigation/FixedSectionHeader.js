@@ -29,7 +29,7 @@ export const FixedSectionHeader = ({
   const chromeDark = dark || isDarkReaderBackground(chromeBackground);
   const [titleLines, setTitleLines] = useState(1);
   const extraTitleHeight = showTitle ? Math.max(0, titleLines - 1) * (compactReading ? 20 : 25) : 0;
-  const headerHeight = topInset + (minimal ? 46 : 56) + extraTitleHeight;
+  const headerHeight = topInset + (minimal ? 45 : 36) + extraTitleHeight;
   useEffect(() => {
     onHeaderHeightChange?.(headerHeight);
   }, [headerHeight, onHeaderHeightChange]);
@@ -62,7 +62,7 @@ export const FixedSectionHeader = ({
           locations={[0, 0.42, 1]}
           start={{x: 0.5, y: 0}}
           end={{x: 0.5, y: 1}}
-          style={[styles.fixedGradient, {height: headerHeight + 10}]}
+          style={[styles.fixedGradient, {height: 95}]}
         />
       )}
 
@@ -276,17 +276,26 @@ const styles = StyleSheet.create({
     zIndex: 1000,
     elevation: 20,
   },
-
+  headerFrost: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(255, 244, 222, 0.78)',
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(120, 80, 40, 0.12)',
+  },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
+
   },
 
   // The three compact controls use the same 44px line box and vertical
   // offset. The ornament is positioned separately so it cannot lift the text.
   backButtonReading: {
-    transform: [{translateY: -5}],
+    transform: [{translateY: -6}],
   },
   titleWrapReading: {
     height: 44,
@@ -302,6 +311,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 20,
     textAlign: 'left',
+
     includeFontPadding: false,
   },
   ornamentReading: {
@@ -485,7 +495,7 @@ const styles = StyleSheet.create({
     marginTop: -5,
   },
   menuButtonReading: {
-    transform: [{translateY: -5}],
+    transform: [{translateY: -11}],
   },
 
   menuText: {

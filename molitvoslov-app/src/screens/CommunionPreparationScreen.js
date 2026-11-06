@@ -300,8 +300,8 @@ const styles = StyleSheet.create({
     // and increase text contrast without adding another card background.
     marginHorizontal: 5,
     marginBottom: 9,
-    color: '#7F3029',
-    textShadowColor: 'rgba(255, 244, 222, 0.92)',
+    color: '#2E2118',
+    textShadowColor: 'rgb(196 160 134)',
     textShadowOffset: {width: 0, height: 1},
     textShadowRadius: 3,
     fontFamily: 'serif',
