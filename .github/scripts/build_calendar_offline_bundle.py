@@ -327,7 +327,18 @@ def build_icon_bundle(data: dict) -> None:
         target = ASSET_DIR / filename
 
         try:
-            if not target.exists() or target.stat().st_size == 0:
+            regenerate = True
+            if target.is_file() and target.stat().st_size:
+                try:
+                    with Image.open(target) as previous:
+                        regenerate = (
+                            previous.size != ICON_MAX_SIZE
+                            or previous.format != "WEBP"
+                        )
+                except (OSError, ValueError):
+                    regenerate = True
+            if regenerate:
+                # Existing 256x384 icons must be rebuilt at 480x640.
                 download_icon(session, url, target)
 
             used_files.add(filename)
@@ -412,9 +423,18 @@ def build_icon_bundle(data: dict) -> None:
 
     ICON_MODULE.write_text("\n".join(lines), encoding="utf-8")
 
+    total_bytes = sum(
+        (ASSET_DIR / filename).stat().st_size for filename in used_files
+    )
+    average_kib = (total_bytes / len(used_files) / 1024) if used_files else 0
     print(
         f"icons: {len(used_files)} bundled, {len(failures)} failed -> "
         f"{ICON_MODULE.relative_to(ROOT)}"
+    )
+    print(
+        f"real offline WebP payload: {total_bytes / 1024 / 1024:.2f} MiB; "
+        f"average {average_kib:.1f} KiB/image. "
+        "APK size change depends on packaging and other assets."
     )
 
     if failures:
