@@ -49,7 +49,9 @@ export const FixedSectionHeader = ({
 
   return (
     <>
-      {!minimal && (
+      {/* Background treatments belong to reading screens only. Ordinary
+          category menus must keep their own artwork visible in the header. */}
+      {!minimal && compactReading && (
         <LinearGradient
           pointerEvents="none"
           colors={[
@@ -74,6 +76,15 @@ export const FixedSectionHeader = ({
           },
         ]}
       >
+
+        {/* A subtle matte backing prevents prayer text from showing through
+            the controls. It is intentionally absent in category screens. */}
+        {compactReading && (
+          <View
+            pointerEvents="none"
+            style={[styles.readerHeaderFrost, {height: headerHeight}]}
+          />
+        )}
 
         <View
           pointerEvents="box-none"
@@ -237,6 +248,15 @@ const styles = StyleSheet.create({
     // Independent from header animation. Never blocks reader scroll/taps.
     zIndex: 999,
     elevation: 19,
+  },
+  readerHeaderFrost: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(255, 244, 222, 0.78)',
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(120, 80, 40, 0.12)',
   },
   fixedHeader: {
     position: 'absolute',
