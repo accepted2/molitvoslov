@@ -78,7 +78,11 @@ assert.match(screen, /addingCustom \? 'Отмена' : '\+ Добавить'/);
 // The same thin, draggable native indicator is used for both the catalog
 // and personal list. It does not replace reading-direction detection.
 assert.match(screen, /showsVerticalScrollIndicator=\{false\}/);
-assert.match(screen, /<ThinScrollIndicator\s+key=\{viewMode\}/);
+// Both components are siblings: the catalog/mine mode alone cannot be their
+// React key, otherwise the "catalog" key collides during reconciliation.
+assert.match(screen, /<FlatList\s+[\s\S]*?key=\{\x60confession-list:\$\{viewMode\}\x60\}/);
+assert.match(screen, /<ThinScrollIndicator\s+key=\{\x60confession-scrollbar:\$\{viewMode\}\x60\}/);
+assert.ok(!screen.includes('key={viewMode}'), 'Sibling elements must have unique React keys');
 assert.match(screen, /onScroll=\{handleListScroll\}/);
 assert.match(screen, /handleNativeReadingScroll\(event\)/);
 assert.match(screen, /scrollEventThrottle=\{16\}/);
