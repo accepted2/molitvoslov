@@ -9,6 +9,8 @@ const bySourceId = {
   4446: require('../../assets/calendar-icons/f4ac22ebe37f37f6d659.webp'),
 };
 
+const byUid = {};
+
 const byUrl = {
   'https://res.cloudinary.com/dnmoe5gza/image/upload/v1/saints_icons/%D0%90%D0%BA%D0%B8%D0%BB%D0%B8%D0%BD%D0%B02_btdu08': require('../../assets/calendar-icons/6e5674f3d4600dd4c71a.webp'),
   'https://res.cloudinary.com/dnmoe5gza/image/upload/v1/saints_icons/%D0%A1%D0%B2%D1%8F%D1%82%D0%B8%D1%82%D0%B5%D0%BB%D1%8C_%D0%9C%D0%B8%D1%85%D0%B0%D0%B8%D0%BB_%D0%B5%D0%BF%D0%B8%D1%81%D0%BA%D0%BE%D0%BF_%D0%A1%D0%B8%D0%BD%D0%B0%D0%B4%D1%81%D0%BA%D0%B8%D0%B91_afnnvh': require('../../assets/calendar-icons/f53a7df19c9251ed5347.webp'),
@@ -19,22 +21,22 @@ const byUrl = {
 
 export const getBundledCalendarIconSource = (feast) => {
   if (!feast) return null;
-  const url = String(feast.icon_url || '').trim();
-  // Обновлённый URL важнее устаревшего изображения, встроенного в APK.
-  if (url && byUrl[url]) return byUrl[url];
-  if (url) return {uri: url};
-  const sourceId = feast.source_id;
-  return sourceId != null ? (bySourceId[String(sourceId)] || null) : null;
-};
-
-export const getBundledCalendarIconFallbackSource = (feast) => {
-  if (!feast) return null;
+  const uid = String(feast.sync_uid || '').trim();
+  if (uid && byUid[uid]) return byUid[uid];
   const sourceId = feast.source_id;
   if (sourceId != null && bySourceId[String(sourceId)]) {
     return bySourceId[String(sourceId)];
   }
   const url = String(feast.icon_url || '').trim();
-  return url && byUrl[url] ? byUrl[url] : null;
+  if (url && byUrl[url]) return byUrl[url];
+  // Пока икона не включена в APK, оставляем сетевой запасной вариант.
+  return url ? {uri: url} : null;
+};
+
+export const getBundledCalendarIconFallbackSource = (feast) => {
+  if (!feast) return null;
+  const url = String(feast.icon_url || '').trim();
+  return url ? {uri: url} : null;
 };
 
 export const bundledCalendarIconCount = 5;
