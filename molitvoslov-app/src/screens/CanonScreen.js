@@ -530,7 +530,10 @@ export const CanonScreen = ({route, navigation}) => {
               section.section_type === 'prayer' ||
                 /^молитв/u.test(normalizeCanonCue(section.heading))
                   ? 'prayer'
-                  : section.section_type || ''
+                  : section.section_type || '',
+              {
+                initialOnlyFirstParagraph: !!section.grouped_prayer,
+              }
             ),
 
         className: isParallelTranslation
