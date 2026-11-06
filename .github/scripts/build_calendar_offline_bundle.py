@@ -20,7 +20,7 @@ ASSET_DIR = ROOT / "molitvoslov-app" / "assets" / "calendar-icons"
 ICON_MODULE = ROOT / "molitvoslov-app" / "src" / "data" / "calendarIconAssets.js"
 
 YEAR = 2026
-ICON_MAX_SIZE = (240, 320)
+ICON_MAX_SIZE = (480, 640)
 ICON_QUALITY = 80
 USER_AGENT = "MolitvoslovOfflineCalendar/1.0"
 IDENTITY_SIMILARITY_THRESHOLD = 0.50
@@ -237,41 +237,46 @@ def build_month_files(data: dict) -> None:
 
 
 def visible_feasts(data: dict) -> list[dict]:
+    """Собрать иконы ВСЕХ памятей календаря, а не только главного святого дня.
+
+    Приоритет идентичности: sync_uid -> source_id -> URL.
+    Сам файл дедуплицируем по URL; несколько памятей могут ссылаться
+    на одну икону, но не наоборот.
+    """
     result = []
     seen = set()
 
     for day in (data.get("days") or {}).values():
         if not isinstance(day, dict):
             continue
-
         for language_data in day.values():
             if not isinstance(language_data, dict):
                 continue
-
-            feast = language_data.get("main_feast")
-            if not feast:
-                all_feasts = language_data.get("all_feasts") or []
-                feast = all_feasts[0] if all_feasts else None
-
-            if not isinstance(feast, dict):
-                continue
-
-            url = str(feast.get("icon_url") or "").strip()
-            if not url.startswith(("http://", "https://")):
-                continue
-
-            source_id = feast.get("source_id")
-            key = (str(source_id) if source_id is not None else "", url)
-            if key in seen:
-                continue
-
-            seen.add(key)
-            result.append(
-                {
+            feasts = [
+                language_data.get("main_feast"),
+                *(language_data.get("all_feasts") or []),
+            ]
+            for feast in feasts:
+                if not isinstance(feast, dict):
+                    continue
+                url = str(feast.get("icon_url") or "").strip()
+                if not url.startswith(("http://", "https://")):
+                    continue
+                uid = str(feast.get("sync_uid") or "").strip()
+                source_id = feast.get("source_id")
+                key = (
+                    ("uid", uid) if uid else
+                    ("source", str(source_id)) if source_id is not None else
+                    ("url", url)
+                )
+                if key in seen:
+                    continue
+                seen.add(key)
+                result.append({
+                    "sync_uid": uid,
                     "source_id": source_id,
                     "url": url,
-                }
-            )
+                })
 
     return result
 
@@ -310,6 +315,7 @@ def build_icon_bundle(data: dict) -> None:
     session.headers.update({"User-Agent": USER_AGENT})
 
     source_entries: list[tuple[str, str]] = []
+    uid_entries: list[tuple[str, str]] = []
     url_entries: list[tuple[str, str]] = []
     used_files = set()
     failures = []
@@ -330,6 +336,9 @@ def build_icon_bundle(data: dict) -> None:
             source_id = feast.get("source_id")
             if source_id is not None:
                 source_entries.append((str(source_id), relative_require))
+            sync_uid = feast.get("sync_uid")
+            if sync_uid:
+                uid_entries.append((str(sync_uid), relative_require))
 
             url_entries.append((url, relative_require))
             print(f"icon {index}/{len(feasts)}: {filename}")
@@ -345,6 +354,10 @@ def build_icon_bundle(data: dict) -> None:
     for key, require_path in source_entries:
         source_map.setdefault(key, require_path)
 
+    uid_map = {}
+    for key, require_path in uid_entries:
+        uid_map.setdefault(key, require_path)
+
     url_map = {}
     for key, require_path in url_entries:
         url_map.setdefault(key, require_path)
@@ -359,6 +372,10 @@ def build_icon_bundle(data: dict) -> None:
     for key in sorted(source_map, key=lambda item: (len(item), item)):
         lines.append(f"  {js_string(key)}: require({js_string(source_map[key])}),")
 
+    lines.extend(["};", "", "const byUid = {"])
+    for key in sorted(uid_map):
+        lines.append(f"  {js_string(key)}: require({js_string(uid_map[key])}),")
+
     lines.extend(["};", "", "const byUrl = {"])
 
     for key in sorted(url_map):
@@ -370,23 +387,22 @@ def build_icon_bundle(data: dict) -> None:
             "",
             "export const getBundledCalendarIconSource = (feast) => {",
             "  if (!feast) return null;",
-            "",
-            "  const url = String(feast.icon_url || '').trim();",
-            "  // URL поменялся: показываем новую онлайн-икону, а не старый APK asset.",
-            "  if (url && byUrl[url]) return byUrl[url];",
-            "  if (url) return {uri: url};",
-            "  const sourceId = feast.source_id;",
-            "  return sourceId != null ? (bySourceId[String(sourceId)] || null) : null;",
-            "};",
-            "",
-            "export const getBundledCalendarIconFallbackSource = (feast) => {",
-            "  if (!feast) return null;",
+            "  const uid = String(feast.sync_uid || '').trim();",
+            "  if (uid && byUid[uid]) return byUid[uid];",
             "  const sourceId = feast.source_id;",
             "  if (sourceId != null && bySourceId[String(sourceId)]) {",
             "    return bySourceId[String(sourceId)];",
             "  }",
             "  const url = String(feast.icon_url || '').trim();",
-            "  return url && byUrl[url] ? byUrl[url] : null;",
+            "  if (url && byUrl[url]) return byUrl[url];",
+            "  // Пока икона не собрана в APK, возможна онлайн-загрузка.",
+            "  return url ? {uri: url} : null;",
+            "};",
+            "",
+            "export const getBundledCalendarIconFallbackSource = (feast) => {",
+            "  if (!feast) return null;",
+            "  const url = String(feast.icon_url || '').trim();",
+            "  return url ? {uri: url} : null;",
             "};",
             "",
             f"export const bundledCalendarIconCount = {len(used_files)};",
