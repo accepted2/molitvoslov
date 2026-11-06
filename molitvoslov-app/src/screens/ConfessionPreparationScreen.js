@@ -61,6 +61,11 @@ export const ConfessionPreparationScreen = ({navigation}) => {
   const scrollToPosition = useCallback(offset => {
     scrollRef.current?.scrollToOffset({offset, animated: false});
   }, []);
+  const scrollToTop = useCallback(() => {
+    scrollRef.current?.scrollToOffset({offset: 0, animated: true});
+    // Match morning prayers: reveal both reading bars when going to top.
+    handleReadingScroll('top');
+  }, [handleReadingScroll]);
   const switchView = useCallback(nextMode => {
     // Remount the destination list at its start with visible reading chrome.
     handleReadingScroll('top');
@@ -398,6 +403,9 @@ export const ConfessionPreparationScreen = ({navigation}) => {
           topInset={headerHeight + 8}
           bottomInset={Math.max(insets.bottom + 69, 76)}
           scrollTo={scrollToPosition}
+          autoHide
+          showScrollTop
+          onScrollTop={scrollToTop}
         />
         <FixedSectionHeader
           title="Подготовка к исповеди"
