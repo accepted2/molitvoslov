@@ -55,8 +55,19 @@ assert.equal(data.traditional_sections.filter(section => section.text).length, 2
 for (const heading of ['Песнь 1','Песнь 9','Кондак','Икос','Молитва Ангелу Хранителю']) {
   assert.ok(data.sections.some(section => section.heading === heading));
 }
-assert.ok(data.traditional_sections.some(section => /КанHнъ/u.test(section.heading)));
-assert.ok(data.traditional_sections.some(section => /Њкончaніе/u.test(section.heading)));
+// Unicode conversion: the old UCS font codes like "Мlтвами" and "КанHнъ"
+ // must never reach the Unicode-only Ponomar renderer.
+assert.equal(data.source.traditional_encoding, 'Unicode (converted from UCS)');
+const traditionalBody = data.traditional_sections.map(section =>
+  section.text?.traditional_content || section.heading || ''
+).join('\n');
+assert.ok(data.traditional_sections[0].text.traditional_content
+  .startsWith('Мл҃твами ст҃ы́хъ'));
+assert.ok(!/[A-Za-z0-9]/u.test(traditionalBody),
+  'Old Latin/digit UCS glyph codes must not remain');
+assert.ok(!/[\uFFFD\uFFFE]/u.test(traditionalBody));
+assert.ok(data.traditional_sections.some(section => /канѡ́нъ/iu.test(section.heading)));
+assert.ok(data.traditional_sections.some(section => /ѡ҆конча́нїе/iu.test(section.heading)));
 assert.ok(!data.traditional_sections.some(section =>
   String(section.text?.traditional_content || '').startsWith('См. также:')));
 assert.ok(data.sections.every(section => !section.text ||
@@ -87,6 +98,11 @@ assert.match(canonScreen, /initialOnlyFirstParagraph: !!section\.grouped_prayer/
 assert.ok(!/getCanonRussianCoverage\(displaySections\)/.test(canonScreen),
   'Language availability must not be recomputed from the selected tab');
 assert.match(styles, /\.rule-item\.three-combined-canon\.three-combined-traditional \.section-title/);
+assert.match(styles, /\.rule-item\.three-combined-traditional\.three-combined-paragraph/);
+assert.match(styles, /\.rule-item\.three-combined-traditional\.three-combined-heading/);
+assert.match(styles, /font-family: 'Ponomar', Georgia, serif/);
+assert.match(canonScreen, /three-combined-paragraph/);
+assert.match(canonScreen, /three-combined-heading/);
 const buildTypography = new Function(
   typographyCode.replace('export const buildCanonTypography =',
     'const buildCanonTypography =') +
@@ -109,6 +125,8 @@ for (const file of [
   babel.parse(read(file), {sourceType: 'module', plugins: ['jsx']});
 }
 console.log('PASS: 206 CS and RU paragraphs in 198 modern reading blocks; 277 traditional paragraphs');
+console.log('PASS: 277 traditional paragraphs converted UCS to Church Slavonic Unicode');
+console.log('PASS: traditional sections no longer show a divider after every paragraph');
 console.log('PASS: 4 prayers, 3 joined prayer bodies; one red initial per joined prayer');
 console.log('PASS: traditional switch does not reset availability or selected tab');
 console.log('PASS: 16 modern and 44 traditional headings; complete ordered text');
