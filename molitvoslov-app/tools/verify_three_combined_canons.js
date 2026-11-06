@@ -124,6 +124,50 @@ assert.equal(plain.ranges.filter(range => range.kind === 'initial').length, 3);
 assert.equal(grouped.ranges.filter(range => range.kind === 'initial').length, 1);
 assert.equal(grouped.prayerProse, true);
 
+// A traditional Podoben rubric is red but its model melody must remain
+// normal text; source strings and offsets stay unchanged.
+const podoben = data.traditional_sections.find(section =>
+  section.text?.traditional_content.startsWith('Подо́бенъ:'));
+assert.ok(podoben && podoben.order === 108, 'Expected traditional Podoben rubric');
+const podText = podoben.text.traditional_content;
+const podStyle = buildTypography(podText, '', '', podoben.section_type,
+  {traditionalLiturgicalNotes: true});
+assert.ok(podStyle.ranges.some(range => range.kind === 'podoben-cue' &&
+  podText.slice(range.start, range.end) === 'Подо́бенъ:'));
+assert.ok(!podStyle.ranges.some(range => range.kind === 'initial' &&
+  podText.slice(range.start, range.end).includes('В')));
+const outsideTraditional = buildTypography(podText, '', '', podoben.section_type);
+assert.ok(!outsideTraditional.ranges.some(range => range.kind === 'podoben-cue'));
+
+// These two lines follow separate prayers, not parts of those prayers.
+// Only these marked standalone invocations receive full red text.
+const fullRefrains = data.traditional_sections.filter(section =>
+  section.traditional_full_refrain === true);
+assert.deepEqual(fullRefrains.map(section => section.order), [310, 313]);
+const expectedRefrains = [
+  'Прест҃а́ѧ бцⷣе, сп҃сѝ на́съ.',
+  'Ст҃ы́й а҆́гг҃ле бж҃їй, храни́телю мо́й, молѝ бг҃а ѡ҆ мнѣ̀.',
+];
+fullRefrains.forEach((section, index) => {
+  const text = section.text?.traditional_content || '';
+  assert.equal(text, expectedRefrains[index], 'Do not rewrite original prayer text');
+  assert.equal(section.section_type, 'refrain');
+  assert.equal(data.traditional_sections[section.order - 2].section_type, 'prayer');
+  const highlighted = buildTypography(text, '', '', section.section_type, {
+    traditionalLiturgicalNotes: true,
+    traditionalFullRefrain: true,
+  });
+  assert.ok(highlighted.ranges.some(range =>
+    range.kind === 'full-refrain' &&
+    range.start === 0 && range.end === text.length));
+  assert.ok(!buildTypography(text, '', '', section.section_type,
+    {traditionalLiturgicalNotes: true}).ranges.some(
+      range => range.kind === 'full-refrain'));
+});
+assert.match(canonScreen, /section\.traditional_full_refrain === true/);
+assert.match(styles, /\.reader-text \.canon-podoben-cue/);
+assert.match(styles, /\.reader-text \.canon-full-refrain/);
+
 // Repeat counts and bows in the original traditional source are presentation
 // ranges only. Preserve every accent, titlo, character and selection offset.
 const traditionalRubrics = data.traditional_sections
@@ -178,6 +222,7 @@ for (const file of [
 console.log('PASS: 206 CS and RU paragraphs in 198 modern reading blocks; 277 traditional paragraphs');
 console.log('PASS: 277 traditional paragraphs converted UCS to Church Slavonic Unicode');
 console.log('PASS: 14 traditional bow/repeat rubrics styled brown, no source or offset changes');
+console.log('PASS: Podoben rubric only red; two post-prayer refrains fully red');
 console.log('PASS: thin traditional prayer, refrain and heading separators');
 console.log('PASS: 4 prayers, 3 joined prayer bodies; one red initial per joined prayer');
 console.log('PASS: traditional switch does not reset availability or selected tab');
