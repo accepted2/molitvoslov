@@ -32,6 +32,16 @@ class TelegramDailyParsingTests(SimpleTestCase):
             ("HEB", [VerseRange(11, 33, 12, 2)]),
         )
 
+    def test_lectionary_suffix(self):
+        self.assertEqual(
+            parse_reference("1Кор.1:1–9 (зач. 122)"),
+            ("1CO", [VerseRange(1, 1, 1, 9)]),
+        )
+        self.assertEqual(
+            parse_reference("Мф.10:32–33,19:27–30 (38 зач. от полу́)"),
+            ("MAT", [VerseRange(10, 32, 10, 33), VerseRange(19, 27, 19, 30)]),
+        )
+
     def test_unrecognized_reference_is_not_hallucinated(self):
         with self.assertRaises(ScriptureReferenceError):
             parse_reference("Неизвестная. 5:1–7")
