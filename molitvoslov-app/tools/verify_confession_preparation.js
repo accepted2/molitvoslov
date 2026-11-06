@@ -73,6 +73,22 @@ assert.match(screen, /screen:\s*\{flex: 1, backgroundColor: '#FFF4DE'\}/);
 assert.match(screen, /gradientColor="#FFF4DE"/);
 assert.match(screen, /<StatusBar style="dark" translucent backgroundColor="transparent"/);
 assert.match(screen, /onPress=\{\(\) => openSinMenu\(segment\.id\)\}/);
+// Selecting one phrase must open the styled in-app dialog, never the
+// platform's default white/teal Android Alert box.
+assert.match(screen, /import \{[\s\S]*?Modal,[\s\S]*?\} from 'react-native'/);
+assert.match(screen, /const \[menuSinId, setMenuSinId\] = useState\(null\)/);
+assert.match(screen, /const openSinMenu = useCallback\(id => \{\s*if \(CATALOG_BY_ID\[id\]\) setMenuSinId\(id\)/);
+assert.ok(!/Alert\.alert\(\s*item\.title/u.test(screen));
+assert.match(screen, /visible=\{!!menuSin\}/);
+assert.match(screen, /animationType="fade"/);
+assert.match(screen, /onRequestClose=\{closeSinMenu\}/);
+assert.match(screen, /onPress=\{closeSinMenu\}/);
+assert.match(screen, /onPress=\{confirmSinMenu\}/);
+assert.match(screen, /selectedRef\.current\.includes\(menuSinId\)/);
+assert.match(screen, /menuAlreadySelected \? 'Убрать из моего списка' : 'Добавить в мой список'/);
+assert.match(screen, /sinMenuCard:\s*\{[^}]*backgroundColor: '#FFF4DE'/s);
+assert.match(screen, /sinMenuOverlay:\s*\{[^}]*backgroundColor: 'rgba\(32, 21, 13, 0\.52\)'/s);
+assert.match(screen, /sinMenuConfirm:\s*\{[^}]*backgroundColor: '#795036'/s);
 assert.match(screen, /keyExtractor=\{\(item, index\) => item\.id \|\| 'doc-' \+ index\}/);
 assert.match(screen, /\.\.\.confessionCatalog\.items/);
 assert.match(screen, /\.\.\.confessionDocument\.entries/);
@@ -156,6 +172,7 @@ const storage = new Function('SecureStore', exposed + `
   console.log('PASS: existing grouped selections retained without losing prior notes');
   console.log('PASS: confession screen and Communion navigation parse');
   console.log('PASS: plain cream background and legible reader-style header, no home artwork');
+  console.log('PASS: themed cream in-app confession dialog, native alert removed for sin selection');
   console.log('PASS: personal notes stored only in SecureStore, excluded from sync');
   console.log('PASS: selection, individual notes, custom items, ordered writes, removal, clearing');
 })().catch(err => {
