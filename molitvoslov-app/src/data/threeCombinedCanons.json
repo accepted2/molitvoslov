@@ -7489,7 +7489,7 @@
       "id": 99000629,
       "order": 307,
       "variant": 1,
-      "section_type": "other",
+      "section_type": "refrain",
       "heading": "",
       "suppress_inline_label": true,
       "text": {
@@ -7498,7 +7498,8 @@
         "content": "",
         "translation": "",
         "traditional_content": "Гдⷭ҇и і҆и҃се хрⷭ҇тѐ сн҃е бж҃їй, поми́лꙋй мѧ̀."
-      }
+      },
+      "traditional_full_refrain": true
     },
     {
       "id": 99000630,
