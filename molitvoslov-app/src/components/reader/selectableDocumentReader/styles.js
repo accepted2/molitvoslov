@@ -88,8 +88,8 @@ export const READER_STYLES = String.raw`
     }
     /* The traditional combined Three Canons source uses Ponomar glyph
        encodings in its chapter headings, not only in its prayer paragraphs. */
-    .reader-language-traditional .rule-item.three-combined-canon .section-title,
-    .reader-language-traditional .rule-item.three-combined-canon .section-header .prayer-title {
+    .rule-item.three-combined-canon.three-combined-traditional .section-title,
+    .rule-item.three-combined-canon.three-combined-traditional .section-header .prayer-title {
       font-family: 'Ponomar', Georgia, serif;
       font-size: 20px;
       line-height: 1.5;
