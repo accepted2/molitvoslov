@@ -51,6 +51,9 @@ def parse_reference(reference: str) -> tuple[str, list[VerseRange]]:
         str(reference).replace("\u00a0", " ").replace("–", "-")
         .replace("—", "-").replace("−", "-").strip()
     )
+    # Множество календарных ссылок содержит помету зачала:
+    # «Лк.10:1–15 (50 зач. )» — это метаданные, не часть ссылки.
+    normalized = re.sub(r"\s*\([^()]*\)\s*$", "", normalized)
     matched = re.fullmatch(
         r"\s*([1-3]?\s*[А-Яа-яЁё]+)\.?\s*(\d+\s*:\s*.+?)\s*",
         normalized,
