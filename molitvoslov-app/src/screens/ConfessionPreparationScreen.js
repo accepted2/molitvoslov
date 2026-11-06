@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -47,6 +48,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
   const [viewMode, setViewMode] = useState('catalog');
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [menuSinId, setMenuSinId] = useState(null);
   const selectedRef = useRef([]);
   const [notes, setNotes] = useState({});
   const [custom, setCustom] = useState({});
@@ -151,22 +153,24 @@ export const ConfessionPreparationScreen = ({navigation}) => {
   const source = catalogMode ? confessionDocument.blocks : chosenEntries;
 
   const openSinMenu = useCallback(id => {
-    const item = CATALOG_BY_ID[id];
-    if (!item) return;
-    const isSelected = selectedRef.current.includes(id);
-    Alert.alert(
-      item.title,
-      isSelected ? 'Этот грех уже в вашем списке.' : 'Добавить этот грех в мой список?',
-      [
-        {text: 'Отмена', style: 'cancel'},
-        {
-          text: isSelected ? 'Убрать из списка' : 'Добавить в мой список',
-          style: isSelected ? 'destructive' : 'default',
-          onPress: () => isSelected ? removeSelected(id) : addSelected(id),
-        },
-      ]
-    );
-  }, [addSelected, removeSelected]);
+    if (CATALOG_BY_ID[id]) setMenuSinId(id);
+  }, []);
+
+  const closeSinMenu = useCallback(() => setMenuSinId(null), []);
+
+  const confirmSinMenu = useCallback(() => {
+    if (!menuSinId) return;
+    // Check current selection at confirmation time, not a stale snapshot.
+    if (selectedRef.current.includes(menuSinId)) {
+      removeSelected(menuSinId);
+    } else {
+      addSelected(menuSinId);
+    }
+    setMenuSinId(null);
+  }, [menuSinId, addSelected, removeSelected]);
+
+  const menuSin = menuSinId ? CATALOG_BY_ID[menuSinId] : null;
+  const menuAlreadySelected = !!menuSinId && selectedIds.includes(menuSinId);
 
   // Read the source as one continuous text. Only the phrase the reader
   // actually taps is selected; never its surrounding paragraph.
@@ -365,6 +369,54 @@ export const ConfessionPreparationScreen = ({navigation}) => {
         />
         <BottomNav navigation={navigation} active={null} />
       </View>
+
+      <Modal
+        transparent
+        visible={!!menuSin}
+        animationType="fade"
+        onRequestClose={closeSinMenu}
+        statusBarTranslucent
+      >
+        <View style={styles.sinMenuOverlay}>
+          <Pressable
+            style={StyleSheet.absoluteFillObject}
+            onPress={closeSinMenu}
+            accessibilityRole="button"
+            accessibilityLabel="Закрыть меню"
+          />
+          <View style={styles.sinMenuCard} accessibilityViewIsModal>
+            <View style={styles.sinMenuAccent} />
+            <Text style={styles.sinMenuCaption}>Подготовка к исповеди</Text>
+            <Text style={styles.sinMenuTitle}>{menuSin?.title}</Text>
+            <Text style={styles.sinMenuDescription}>
+              {menuAlreadySelected
+                ? 'Этот грех уже добавлен в ваш список.'
+                : 'Добавить выбранный грех в мой список?'}
+            </Text>
+            <View style={styles.sinMenuDivider} />
+            <Pressable
+              accessibilityRole="button"
+              style={({pressed}) => [
+                styles.sinMenuConfirm,
+                menuAlreadySelected && styles.sinMenuRemove,
+                pressed && styles.pressed,
+              ]}
+              onPress={confirmSinMenu}
+            >
+              <Text style={styles.sinMenuConfirmText}>
+                {menuAlreadySelected ? 'Убрать из моего списка' : 'Добавить в мой список'}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              style={({pressed}) => [styles.sinMenuCancel, pressed && styles.pressed]}
+              onPress={closeSinMenu}
+            >
+              <Text style={styles.sinMenuCancelText}>Отмена</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -502,5 +554,95 @@ const styles = StyleSheet.create({
   empty: {
     paddingVertical: 40, paddingHorizontal: 22,
     textAlign: 'center', lineHeight: 23, color: '#735840', fontSize: 15,
+  },
+  sinMenuOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 18,
+    backgroundColor: 'rgba(32, 21, 13, 0.52)',
+  },
+  sinMenuCard: {
+    width: '100%',
+    maxWidth: 370,
+    maxHeight: '82%',
+    paddingHorizontal: 20,
+    paddingTop: 23,
+    paddingBottom: 13,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#D9BA91',
+    backgroundColor: '#FFF4DE',
+    shadowColor: '#34200F',
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.24,
+    shadowRadius: 18,
+    elevation: 14,
+  },
+  sinMenuAccent: {
+    alignSelf: 'center',
+    width: 45,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: '#986548',
+    marginBottom: 17,
+  },
+  sinMenuCaption: {
+    color: '#987454',
+    fontSize: 12,
+    lineHeight: 17,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  sinMenuTitle: {
+    color: '#633E2B',
+    fontFamily: 'serif',
+    fontSize: 20,
+    fontWeight: '700',
+    lineHeight: 27,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  sinMenuDescription: {
+    color: '#65503E',
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: 'center',
+  },
+  sinMenuDivider: {
+    height: 1,
+    backgroundColor: 'rgba(126, 82, 38, 0.22)',
+    marginTop: 18,
+    marginBottom: 17,
+  },
+  sinMenuConfirm: {
+    minHeight: 46,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: '#795036',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sinMenuRemove: {
+    backgroundColor: '#94574D',
+  },
+  sinMenuConfirmText: {
+    color: '#FFF4DE',
+    fontWeight: '700',
+    fontSize: 15,
+    textAlign: 'center',
+  },
+  sinMenuCancel: {
+    marginTop: 4,
+    minHeight: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+  },
+  sinMenuCancelText: {
+    color: '#77563B',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
