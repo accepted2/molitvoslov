@@ -533,6 +533,9 @@ export const CanonScreen = ({route, navigation}) => {
                   : section.section_type || '',
               {
                 initialOnlyFirstParagraph: !!section.grouped_prayer,
+                traditionalLiturgicalNotes:
+                  canon.slug === 'tri-sovmeshchennykh-kanona' &&
+                  language === 'traditional',
               }
             ),
 
