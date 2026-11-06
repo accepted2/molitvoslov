@@ -20,7 +20,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install only icon pipeline dependencies
-        run: python -m pip install 'Django==6.1' 'Pillow>=10,<13'
+        run: python -m pip install 'Django==6.1' 'Pillow>=10,<13' 'requests>=2,<3'
       - name: Test aspect ratio, original preservation, public URLs
         working-directory: molitvoslov-backend
-        run: python -m unittest api.tests_calendar_icon_variants -v
+        run: |
+          python -m py_compile ../.github/scripts/build_calendar_offline_bundle.py
+          python -m unittest api.tests_calendar_icon_variants -v
