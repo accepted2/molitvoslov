@@ -397,6 +397,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
           />
         )}
         <ThinScrollIndicator
+          key={viewMode}
           scrollY={scrollY}
           viewportHeight={viewportHeight}
           contentHeight={contentHeight}
