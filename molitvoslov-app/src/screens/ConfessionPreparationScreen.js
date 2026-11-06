@@ -2,6 +2,8 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
+  PanResponder,
   ScrollView,
   Modal,
   Pressable,
@@ -43,17 +45,107 @@ const notifySaveError = () => {
   );
 };
 
+
+// A narrow, draggable reading-style thumb. Only its 22px-wide handle takes
+// gestures; the surrounding text continues to receive regular scroll swipes.
+const ConfessionScrollThumb = ({
+  scrollY, offsetRef, draggingRef, viewportHeight, contentHeight,
+  topInset, bottomInset, scrollTo,
+}) => {
+  const trackHeight = Math.max(0, viewportHeight - topInset - bottomInset);
+  const maxScroll = Math.max(0, contentHeight - viewportHeight);
+  const thumbHeight = Math.min(trackHeight, Math.max(46,
+    contentHeight > 0 ? trackHeight * viewportHeight / contentHeight : trackHeight));
+  const thumbTravel = Math.max(0, trackHeight - thumbHeight);
+  const dragStartRef = useRef(0);
+
+  const panResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: () => {
+      draggingRef.current = true;
+      dragStartRef.current = offsetRef.current;
+    },
+    onPanResponderMove: (_event, gesture) => {
+      if (maxScroll <= 0 || thumbTravel <= 0) return;
+      const next = Math.max(0, Math.min(maxScroll,
+        dragStartRef.current + gesture.dy * maxScroll / thumbTravel));
+      scrollTo(next);
+    },
+    onPanResponderRelease: () => { draggingRef.current = false; },
+    onPanResponderTerminate: () => { draggingRef.current = false; },
+    onPanResponderTerminationRequest: () => false,
+  }), [draggingRef, maxScroll, offsetRef, scrollTo, thumbTravel]);
+
+  const translateY = scrollY.interpolate({
+    inputRange: [0, Math.max(1, maxScroll)],
+    outputRange: [0, thumbTravel],
+    extrapolate: 'clamp',
+  });
+
+  if (viewportHeight <= 0 || contentHeight <= viewportHeight + 5 || trackHeight < 80) {
+    return null;
+  }
+
+  return (
+    <View
+      pointerEvents="box-none"
+      style={[styles.scrollThumbTrack, {top: topInset, bottom: bottomInset}]}
+    >
+      <View pointerEvents="none" style={styles.scrollThumbRail} />
+      <Animated.View
+        {...panResponder.panHandlers}
+        style={[styles.scrollThumbTouch, {
+          height: thumbHeight,
+          transform: [{translateY}],
+        }]}
+        accessible
+        accessibilityRole="adjustable"
+        accessibilityLabel="Прокрутка текста. Перетащите ползунок вверх или вниз."
+      >
+        <View pointerEvents="none" style={styles.scrollThumb} />
+      </Animated.View>
+    </View>
+  );
+};
+
 export const ConfessionPreparationScreen = ({navigation}) => {
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
   const [viewMode, setViewMode] = useState('catalog');
+  const scrollRef = useRef(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const scrollOffsetRef = useRef(0);
+  const thumbDraggingRef = useRef(false);
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
   const {readingChromeHidden, handleReadingScroll, handleNativeReadingScroll} = useReadingChrome();
+
+  const handleListScroll = useCallback(event => {
+    handleNativeReadingScroll(event);
+    const raw = event.nativeEvent?.contentOffset?.y;
+    if (!Number.isFinite(raw) || thumbDraggingRef.current) return;
+    const position = Math.max(0, raw);
+    scrollOffsetRef.current = position;
+    scrollY.setValue(position);
+  }, [handleNativeReadingScroll, scrollY]);
+
+  const scrollToPosition = useCallback(offset => {
+    const position = Math.max(0, offset);
+    scrollOffsetRef.current = position;
+    scrollY.setValue(position);
+    scrollRef.current?.scrollTo({y: position, animated: false});
+  }, [scrollY]);
+
   const switchView = useCallback(nextMode => {
     if (nextMode === viewMode) return;
-    // Each mode remounts its own native scroll container at the start.
     handleReadingScroll('top');
+    thumbDraggingRef.current = false;
+    scrollOffsetRef.current = 0;
+    scrollY.setValue(0);
+    setContentHeight(0);
     setViewMode(nextMode);
-  }, [handleReadingScroll, viewMode]);
+  }, [handleReadingScroll, scrollY, viewMode]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]);
   const [menuSinId, setMenuSinId] = useState(null);
@@ -348,6 +440,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
           </View>
         ) : (
           <ScrollView
+            ref={scrollRef}
             key={`confession-scroll:${viewMode}`}
             style={styles.scroll}
             contentContainerStyle={[
@@ -356,10 +449,11 @@ export const ConfessionPreparationScreen = ({navigation}) => {
             ]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
-            onScroll={handleNativeReadingScroll}
+            onScroll={handleListScroll}
             scrollEventThrottle={16}
-            showsVerticalScrollIndicator
-            persistentScrollbar
+            onLayout={event => setViewportHeight(event.nativeEvent.layout.height)}
+            onContentSizeChange={(_width, height) => setContentHeight(height)}
+            showsVerticalScrollIndicator={false}
             nestedScrollEnabled
             overScrollMode="never"
           >
@@ -379,6 +473,16 @@ export const ConfessionPreparationScreen = ({navigation}) => {
             )}
           </ScrollView>
         )}
+        <ConfessionScrollThumb
+          scrollY={scrollY}
+          offsetRef={scrollOffsetRef}
+          draggingRef={thumbDraggingRef}
+          viewportHeight={viewportHeight}
+          contentHeight={contentHeight}
+          topInset={headerHeight + 8}
+          bottomInset={Math.max(insets.bottom + 69, 76)}
+          scrollTo={scrollToPosition}
+        />
         <FixedSectionHeader
           title="Подготовка к исповеди"
           gradientColor="#FFF4DE"
@@ -456,7 +560,23 @@ const styles = StyleSheet.create({
   screen: {flex: 1, backgroundColor: '#FFF4DE'},
   loading: {flex: 1, justifyContent: 'center', alignItems: 'center'},
   scroll: {flex: 1},
-  content: {paddingHorizontal: 12},
+  content: {paddingLeft: 12, paddingRight: 20},
+  scrollThumbTrack: {
+    position: 'absolute', right: 2, width: 22, zIndex: 20,
+  },
+  scrollThumbRail: {
+    position: 'absolute', right: 8, top: 0, bottom: 0,
+    width: 2, borderRadius: 2,
+    backgroundColor: 'rgba(104, 66, 41, 0.12)',
+  },
+  scrollThumbTouch: {
+    position: 'absolute', top: 0, right: 0, width: 22,
+    alignItems: 'flex-end', paddingRight: 7,
+  },
+  scrollThumb: {
+    width: 4, height: '100%', borderRadius: 4,
+    backgroundColor: 'rgba(100, 61, 35, 0.64)',
+  },
   listHeader: {marginBottom: 10},
   title: {
     fontFamily: 'serif', fontSize: 24, lineHeight: 30,
