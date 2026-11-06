@@ -86,8 +86,35 @@ export const READER_STYLES = String.raw`
       font-weight: 400;
       font-variant-ligatures: common-ligatures;
     }
-    /* The traditional combined Three Canons source uses Ponomar glyph
-       encodings in its chapter headings, not only in its prayer paragraphs. */
+    /* The combined Three Canons' traditional UCS source has been
+       converted to real Unicode Church Slavonic. Ponomar renders the
+       letters, accents and titla without the original ASCII glyph codes.
+       Compact consecutive prayer paragraphs; keep divisions at headings. */
+    .rule-item.three-combined-traditional.three-combined-paragraph {
+      margin-bottom: 6px;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    .rule-item.three-combined-traditional.three-combined-heading {
+      margin-top: 12px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .rule-item.three-combined-traditional .reader-column.reader-language-traditional .reader-text {
+      font-family: 'Ponomar', Georgia, serif;
+      font-size: 18px;
+      line-height: 1.8;
+      font-weight: 400;
+      font-synthesis: none;
+      font-variant-ligatures: common-ligatures;
+    }
+    .rule-item.three-combined-traditional .reader-column.reader-language-traditional .canon-initial {
+      color: var(--liturgical) !important;
+      font-weight: 400 !important;
+      text-transform: none !important;
+    }
+    /* Traditional headings are now Unicode as well. */
     .rule-item.three-combined-canon.three-combined-traditional .section-title,
     .rule-item.three-combined-canon.three-combined-traditional .section-header .prayer-title {
       font-family: 'Ponomar', Georgia, serif;
