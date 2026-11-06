@@ -1238,6 +1238,19 @@ export const READER_STYLES = String.raw`
     .rule-item.three-combined-traditional .reader-text .canon-repeat-note .liturgical-word {
       font-size: inherit;
     }
+    /* Scoped to the traditional Three Combined Canons.
+       "Подо́бенъ:" alone is the red rubric; the melody title stays brown.
+       Two named invocations after prayers are red in full. */
+    .rule-item.three-combined-traditional .reader-text .canon-podoben-cue,
+    .rule-item.three-combined-traditional .reader-text .canon-podoben-cue .liturgical-word,
+    .rule-item.three-combined-traditional .reader-text .canon-full-refrain,
+    .rule-item.three-combined-traditional .reader-text .canon-full-refrain .liturgical-word {
+      color: var(--liturgical) !important;
+      font-family: 'Ponomar', Georgia, serif;
+      font-style: normal !important;
+      font-weight: 400 !important;
+      text-transform: none !important;
+    }
     .rule-item.canon-section .reader-inline.canon-long-label .reader-inline-label {
       display: block;
       margin-right: 0;
