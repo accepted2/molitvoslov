@@ -25,9 +25,12 @@ assert.match(menu, /showsVerticalScrollIndicator=\{false\}/);
 assert.match(menu, /<ThinScrollIndicator[\s\S]*?topInset=\{headerHeight \+ 8\}/);
 assert.match(menu, /bottomInset=\{Math\.max\(insets\.bottom \+ 69, 76\)\}/);
 
-assert.match(menu, /sectionTitle:\s*\{[^}]*backgroundColor: 'rgba\(255, 244, 222, 0\.91\)'/s);
-assert.match(menu, /sectionTitle:\s*\{[^}]*color: '#4A2B19'/s);
-assert.match(menu, /sectionTitle:\s*\{[^}]*borderColor: 'rgba\(111, 71, 39, 0\.28\)'/s);
+const headingRule = /sectionTitle:\s*\{([^}]+)\}/su.exec(menu);
+assert.ok(headingRule, 'Missing section heading style');
+assert.match(headingRule[1], /color: '#7F3029'/u);
+assert.match(headingRule[1], /textShadowColor: 'rgba\(255, 244, 222, 0\.92\)'/u);
+assert.ok(!/backgroundColor:|borderColor:|borderRadius:/u.test(headingRule[1]),
+  'Communion section headings must be plain text, not cream category cards');
 for (const label of ['Каноны', 'Последование и молитвы', 'Подготовка к исповеди']) {
   assert.ok(menu.includes(label));
 }
@@ -45,6 +48,14 @@ assert.match(indicator, /thumbTravel/);
 assert.match(indicator, /scrollY\.interpolate\(/);
 assert.match(indicator, /width: 4/);
 assert.match(indicator, /width: 22/);
+assert.match(indicator, /autoHide = false, showScrollTop = false, onScrollTop/);
+assert.match(indicator, /setTimeout\(\(\) => \{/);
+assert.match(indicator, /\}, 950\)/);
+assert.match(indicator, /setTopVisible\(showScrollTop && y < previous && y > viewportHeight \* 0\.65\)/);
+assert.match(indicator, /scrollTopButton:/);
+assert.match(indicator, /if \(onScrollTop\) onScrollTop\(\)/);
+assert.match(confession, /autoHide\s+showScrollTop\s+onScrollTop=\{scrollToTop\}/);
+assert.match(confession, /scrollRef\.current\?\.scrollToOffset\(\{offset: 0, animated: true\}\)/);
 
 const cssThumb = (source) => {
   const match = source.match(/#reader-scroll-thumb\s*\{([^}]+)\}/u);
@@ -63,7 +74,7 @@ for (const source of [
 ]) babel.parse(read(source), {sourceType: 'module', plugins: ['jsx']});
 
 console.log('PASS: Communion menu has a draggable native slim scrollbar');
-console.log('PASS: Section headings are readable on warm translucent parchment strips');
-console.log('PASS: Confession catalog and selected notes share the slim scrollbar');
+console.log('PASS: Bordeaux-colored plain headings without cream backgrounds');
+console.log('PASS: Confession scrollbar fades on idle; scroll-up shows a jump-to-top button');
 console.log('PASS: WebView thumb widths are 5px/4px without narrowing drag tracks');
 console.log('PASS: React Native JS/JSX syntax');
