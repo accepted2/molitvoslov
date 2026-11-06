@@ -722,7 +722,9 @@ export const CanonScreen = ({route, navigation}) => {
           ? viewMode === MODE_TRADITIONAL
             ? sectionTitle
               ? 'canon-section three-combined-canon three-combined-traditional three-combined-heading'
-              : 'canon-section three-combined-canon three-combined-traditional three-combined-paragraph'
+              : effectiveSectionType === 'refrain'
+                ? 'canon-section three-combined-canon three-combined-traditional three-combined-paragraph three-combined-refrain'
+                : 'canon-section three-combined-canon three-combined-traditional three-combined-paragraph'
             : 'canon-section three-combined-canon'
           : 'canon-section',
 
