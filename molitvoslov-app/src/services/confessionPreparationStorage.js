@@ -7,7 +7,7 @@ const INDEX_KEY = 'molitvoslov.confession.v1.selected';
 const ITEM_PREFIX = 'molitvoslov.confession.v1.item.';
 const MAX_NOTE_LENGTH = 1200;
 const MAX_TITLE_LENGTH = 90;
-const VALID_ID = /^(?:c\d{3,4}|u[a-z0-9]+)$/u;
+const VALID_ID = /^(?:c\d{3,4}|s\d{4}|u[a-z0-9]+)$/u;
 let writeQueue = Promise.resolve();
 
 const enqueue = (operation) => {
