@@ -1,6 +1,7 @@
 import {getDailyQuote} from './dailyQuote';
 import {getCurrentContent} from './contentStore';
 import {API_BASE_URL} from './backendAuth';
+import threeCombinedCanons from '../data/threeCombinedCanons.json';
 
 // AKATHIST_PUBLISHED_ONLY_V1: every published akathist bundled in the APK is visible.
 const isVisibleAkathist = (item) => !!item && item.is_visible === true;
@@ -144,11 +145,23 @@ const getLocal = (rawPath) => {
   }
 
   if (path === 'canons/') {
-    return bundledContent.canons?.list || [];
+    // Keep the combined Three Canons independent of the regenerated
+    // offlineContent.json so local user-owned snapshots are never replaced.
+    const listed = bundledContent.canons?.list || [];
+    return listed.some(item => item.slug === threeCombinedCanons.slug)
+      ? listed
+      : [...listed, {
+          id: threeCombinedCanons.id,
+          slug: threeCombinedCanons.slug,
+          title: threeCombinedCanons.title,
+          description: threeCombinedCanons.description,
+          tone: threeCombinedCanons.tone,
+        }];
   }
 
   match = path.match(/^canons\/([^/]+)\/$/);
   if (match) {
+    if (match[1] === threeCombinedCanons.slug) return threeCombinedCanons;
     const item = bundledContent.canons?.by_slug?.[match[1]];
     if (!item) throw notFound(path);
     return item;
