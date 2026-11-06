@@ -139,12 +139,13 @@ assert.ok(!podStyle.ranges.some(range => range.kind === 'initial' &&
 const outsideTraditional = buildTypography(podText, '', '', podoben.section_type);
 assert.ok(!outsideTraditional.ranges.some(range => range.kind === 'podoben-cue'));
 
-// These two lines follow separate prayers, not parts of those prayers.
-// Only these marked standalone invocations receive full red text.
+// Three standalone invocations need full red text, without changing
+// any of the source characters or other refrain styles.
 const fullRefrains = data.traditional_sections.filter(section =>
   section.traditional_full_refrain === true);
-assert.deepEqual(fullRefrains.map(section => section.order), [310, 313]);
+assert.deepEqual(fullRefrains.map(section => section.order), [307, 310, 313]);
 const expectedRefrains = [
+  'Гдⷭ҇и і҆и҃се хрⷭ҇тѐ сн҃е бж҃їй, поми́лꙋй мѧ̀.',
   'Прест҃а́ѧ бцⷣе, сп҃сѝ на́съ.',
   'Ст҃ы́й а҆́гг҃ле бж҃їй, храни́телю мо́й, молѝ бг҃а ѡ҆ мнѣ̀.',
 ];
@@ -152,7 +153,13 @@ fullRefrains.forEach((section, index) => {
   const text = section.text?.traditional_content || '';
   assert.equal(text, expectedRefrains[index], 'Do not rewrite original prayer text');
   assert.equal(section.section_type, 'refrain');
-  assert.equal(data.traditional_sections[section.order - 2].section_type, 'prayer');
+  if (section.order === 307) {
+    assert.equal(data.traditional_sections[section.order - 2].text.traditional_content,
+      'Гдⷭ҇и, поми́лꙋй. [м҃.]',
+      'Lord Jesus Christ invocation follows the 40-fold mercy response');
+  } else {
+    assert.equal(data.traditional_sections[section.order - 2].section_type, 'prayer');
+  }
   const highlighted = buildTypography(text, '', '', section.section_type, {
     traditionalLiturgicalNotes: true,
     traditionalFullRefrain: true,
@@ -222,7 +229,7 @@ for (const file of [
 console.log('PASS: 206 CS and RU paragraphs in 198 modern reading blocks; 277 traditional paragraphs');
 console.log('PASS: 277 traditional paragraphs converted UCS to Church Slavonic Unicode');
 console.log('PASS: 14 traditional bow/repeat rubrics styled brown, no source or offset changes');
-console.log('PASS: Podoben rubric only red; two post-prayer refrains fully red');
+console.log('PASS: Podoben rubric only red; all three standalone invocations fully red');
 console.log('PASS: thin traditional prayer, refrain and heading separators');
 console.log('PASS: 4 prayers, 3 joined prayer bodies; one red initial per joined prayer');
 console.log('PASS: traditional switch does not reset availability or selected tab');
