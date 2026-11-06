@@ -90,16 +90,16 @@ export const READER_STYLES = String.raw`
        converted to real Unicode Church Slavonic. Ponomar renders the
        letters, accents and titla without the original ASCII glyph codes.
        Restore subtle separators between distinct prayers and stanzas.
-       A refrain stays visually attached to the stanza that follows it. */
+       Refrains also need their own divider before the following troparion. */
     .rule-item.three-combined-traditional.three-combined-paragraph {
       margin-bottom: 12px;
       padding-bottom: 12px;
       border-bottom: 1px solid rgba(123, 79, 36, 0.20);
     }
     .rule-item.three-combined-traditional.three-combined-refrain {
-      margin-bottom: 4px;
-      padding-bottom: 0;
-      border-bottom: none;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(123, 79, 36, 0.20);
     }
     .rule-item.three-combined-traditional.three-combined-heading {
       margin-top: 14px;
