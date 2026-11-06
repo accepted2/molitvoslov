@@ -46,6 +46,7 @@ class CalendarFeastSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "source_id",
+            "sync_uid",
             "date_type",
             "celebration_type",
             "celebration_rank",
