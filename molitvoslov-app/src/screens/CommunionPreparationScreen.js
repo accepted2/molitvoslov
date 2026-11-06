@@ -184,6 +184,26 @@ export const CommunionPreparationScreen = ({navigation}) => {
             <Text style={styles.arrow}>›</Text>
           </TouchableOpacity>
 
+          <Text style={[styles.sectionTitle, styles.afterSectionTitle]}>
+            Подготовка к исповеди
+          </Text>
+
+          <TouchableOpacity
+            style={styles.item}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('ConfessionPreparation')}
+            accessibilityRole="button"
+            accessibilityLabel="Открыть подготовку к исповеди"
+          >
+            <View style={styles.textContainer}>
+              <Text style={styles.title}>Подготовка к исповеди</Text>
+              <Text style={styles.description}>
+                Список грехов с объяснениями и мои заметки
+              </Text>
+            </View>
+            <Text style={styles.arrow}>›</Text>
+          </TouchableOpacity>
+
           {!!error && (
             <View style={styles.warning}>
               <Text style={styles.warningText}>{error}</Text>
