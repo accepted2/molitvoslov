@@ -19,6 +19,7 @@ import {AppBackground} from '../components/layout/AppBackground';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 const CANON_ORDER = [
+  'tri-sovmeshchennykh-kanona',
   'kanon-pokayannyy-ko-gospodu-iisusu-khristu',
   'kanon-molebnyy-ko-presvyatoy-bogoroditse',
   'kanon-angelu-hranitelu',
@@ -146,7 +147,7 @@ export const CommunionPreparationScreen = ({navigation}) => {
           {communionCanons.length !== CANON_ORDER.length && (
             <View style={styles.warning}>
               <Text style={styles.warningText}>
-                Не все три канона найдены в базе. Проверьте импорт канонов.
+                Не все каноны найдены в базе. Проверьте импорт канонов.
               </Text>
             </View>
           )}
