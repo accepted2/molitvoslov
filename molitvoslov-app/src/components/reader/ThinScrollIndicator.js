@@ -131,7 +131,9 @@ export const ThinScrollIndicator = ({
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute', right: 0, width: 22, zIndex: 25,
+    // Wide enough for the 42px top button to remain inside its parent's
+    // touch bounds. Only the 22px thumb area captures drag gestures.
+    position: 'absolute', right: 0, width: 64, zIndex: 25,
     justifyContent: 'flex-start',
   },
   rail: {
@@ -140,7 +142,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(104, 66, 41, 0.14)',
   },
   touchTarget: {
-    position: 'absolute', top: 0, left: 0, right: 0,
+    position: 'absolute', top: 0, right: 0, width: 22,
     alignItems: 'flex-end', justifyContent: 'center', paddingRight: 9,
   },
   thumb: {
