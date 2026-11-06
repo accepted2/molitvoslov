@@ -596,7 +596,10 @@ export const CanonScreen = ({route, navigation}) => {
             text: traditional,
             language: 'traditional',
             className: 'canon-church',
-            label,
+            // The traditional source already contains all rubrics, and
+            // heading-only sections mark the ode boundaries. Avoid printing
+            // the generic "Текст" label before each prayer paragraph.
+            label: canon.slug === 'tri-sovmeshchennykh-kanona' ? '' : label,
             inlineLabel: '',
           })
         );
