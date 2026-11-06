@@ -16,6 +16,7 @@ import {AkathistScreen} from '../screens/AkathistScreen';
 import {CanonListScreen} from '../screens/CanonListScreen';
 import {CanonScreen} from '../screens/CanonScreen';
 import {CommunionPreparationScreen} from '../screens/CommunionPreparationScreen';
+import {ConfessionPreparationScreen} from '../screens/ConfessionPreparationScreen';
 import {BibleScreen} from '../screens/BibleScreen';
 import {BibleBooksScreen} from '../screens/BibleBooksScreen';
 import {BibleBookScreen} from '../screens/BibleBookScreen';
@@ -251,6 +252,13 @@ export const AppNavigator = () => {
         <Stack.Screen
           name="CommunionPreparation"
           component={CommunionPreparationScreen}
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="ConfessionPreparation"
+          component={ConfessionPreparationScreen}
           options={{
             headerShown: false,
           }}
