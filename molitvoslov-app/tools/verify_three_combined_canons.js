@@ -127,7 +127,8 @@ assert.equal(grouped.prayerProse, true);
 // Repeat counts and bows in the original traditional source are presentation
 // ranges only. Preserve every accent, titlo, character and selection offset.
 const traditionalRubrics = data.traditional_sections
-  .filter(section => section.text && /\[[^\]]+\]/u.test(section.text.traditional_content));
+  .filter(section => section.text &&
+    /\[(?:Три|Пок|в҃і|м҃)/u.test(section.text.traditional_content));
 let checkedNotes = 0;
 for (const section of traditionalRubrics) {
   const value = section.text.traditional_content;
@@ -145,6 +146,13 @@ for (const section of traditionalRubrics) {
   checkedNotes += noteRanges.length;
 }
 assert.equal(checkedNotes, 14, 'All 14 original bow/repeat notes must be styled');
+const namePlaceholder = data.traditional_sections.find(section =>
+  section.text?.traditional_content.includes('[и҆́мⷬ҇къ]'));
+assert.ok(namePlaceholder, 'The name placeholder must remain in the prayer');
+const placeholderRanges = buildTypography(namePlaceholder.text.traditional_content,
+  '', '', 'prayer', {traditionalLiturgicalNotes: true});
+assert.ok(!placeholderRanges.ranges.some(range => range.kind === 'repeat-note'),
+  'The [имярек] placeholder must never be styled as a bow instruction');
 const rawTrad = 'Гдⷭ҇и, поми́лꙋй. [Три́жды и҆ покло́ны трѝ.]';
 const withoutNotes = buildTypography(rawTrad, '', '', 'other');
 assert.ok(!withoutNotes.ranges.some(range => range.kind === 'repeat-note'),
