@@ -2,6 +2,7 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   FlatList,
   Modal,
   Pressable,
@@ -14,6 +15,7 @@ import {StatusBar} from 'expo-status-bar';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {ThinScrollIndicator} from '../components/reader/ThinScrollIndicator';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
 import {colors} from '../theme';
@@ -47,12 +49,25 @@ export const ConfessionPreparationScreen = ({navigation}) => {
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
   const [viewMode, setViewMode] = useState('catalog');
+  const scrollRef = useRef(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
   const {readingChromeHidden, handleReadingScroll, handleNativeReadingScroll} = useReadingChrome();
+  const handleListScroll = useCallback(event => {
+    handleNativeReadingScroll(event);
+    scrollY.setValue(Math.max(0, event.nativeEvent.contentOffset?.y || 0));
+  }, [handleNativeReadingScroll, scrollY]);
+  const scrollToPosition = useCallback(offset => {
+    scrollRef.current?.scrollToOffset({offset, animated: false});
+  }, []);
   const switchView = useCallback(nextMode => {
-    // The newly mounted list always starts at the top with visible controls.
+    // Remount the destination list at its start with visible reading chrome.
     handleReadingScroll('top');
+    scrollY.setValue(0);
+    setContentHeight(0);
     setViewMode(nextMode);
-  }, [handleReadingScroll]);
+  }, [handleReadingScroll, scrollY]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]);
   const [menuSinId, setMenuSinId] = useState(null);
@@ -347,6 +362,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
           </View>
         ) : (
           <FlatList
+            ref={scrollRef}
             key={viewMode}
             data={source}
             keyExtractor={(item, index) => item.id || 'doc-' + index}
@@ -365,16 +381,24 @@ export const ConfessionPreparationScreen = ({navigation}) => {
             ]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
-            onScroll={handleNativeReadingScroll}
+            onScroll={handleListScroll}
             scrollEventThrottle={16}
-            showsVerticalScrollIndicator={true}
-            persistentScrollbar={catalogMode}
-            indicatorStyle="black"
+            onLayout={event => setViewportHeight(event.nativeEvent.layout.height)}
+            onContentSizeChange={(_width, height) => setContentHeight(height)}
+            showsVerticalScrollIndicator={false}
             initialNumToRender={10}
             maxToRenderPerBatch={12}
             windowSize={7}
           />
         )}
+        <ThinScrollIndicator
+          scrollY={scrollY}
+          viewportHeight={viewportHeight}
+          contentHeight={contentHeight}
+          topInset={headerHeight + 8}
+          bottomInset={Math.max(insets.bottom + 69, 76)}
+          scrollTo={scrollToPosition}
+        />
         <FixedSectionHeader
           title="Подготовка к исповеди"
           gradientColor="#FFF4DE"
