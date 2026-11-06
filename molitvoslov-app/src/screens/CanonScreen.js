@@ -536,6 +536,10 @@ export const CanonScreen = ({route, navigation}) => {
                 traditionalLiturgicalNotes:
                   canon.slug === 'tri-sovmeshchennykh-kanona' &&
                   language === 'traditional',
+                traditionalFullRefrain:
+                  canon.slug === 'tri-sovmeshchennykh-kanona' &&
+                  language === 'traditional' &&
+                  section.traditional_full_refrain === true,
               }
             ),
 
