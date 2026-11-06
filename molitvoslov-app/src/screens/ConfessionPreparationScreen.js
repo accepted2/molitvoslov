@@ -368,7 +368,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
         ) : (
           <FlatList
             ref={scrollRef}
-            key={viewMode}
+            key={`confession-list:${viewMode}`}
             data={source}
             keyExtractor={(item, index) => item.id || 'doc-' + index}
             renderItem={catalogMode ? renderDocumentBlock : renderSelectedItem}
@@ -397,7 +397,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
           />
         )}
         <ThinScrollIndicator
-          key={viewMode}
+          key={`confession-scrollbar:${viewMode}`}
           scrollY={scrollY}
           viewportHeight={viewportHeight}
           contentHeight={contentHeight}
