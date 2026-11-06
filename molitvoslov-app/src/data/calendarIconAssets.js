@@ -19,17 +19,22 @@ const byUrl = {
 
 export const getBundledCalendarIconSource = (feast) => {
   if (!feast) return null;
-
-  const sourceId = feast.source_id;
-  if (sourceId !== null && sourceId !== undefined) {
-    const localById = bySourceId[String(sourceId)];
-    if (localById) return localById;
-  }
-
   const url = String(feast.icon_url || '').trim();
+  // Обновлённый URL важнее устаревшего изображения, встроенного в APK.
   if (url && byUrl[url]) return byUrl[url];
+  if (url) return {uri: url};
+  const sourceId = feast.source_id;
+  return sourceId != null ? (bySourceId[String(sourceId)] || null) : null;
+};
 
-  return url ? {uri: url} : null;
+export const getBundledCalendarIconFallbackSource = (feast) => {
+  if (!feast) return null;
+  const sourceId = feast.source_id;
+  if (sourceId != null && bySourceId[String(sourceId)]) {
+    return bySourceId[String(sourceId)];
+  }
+  const url = String(feast.icon_url || '').trim();
+  return url && byUrl[url] ? byUrl[url] : null;
 };
 
 export const bundledCalendarIconCount = 5;
