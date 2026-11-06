@@ -106,7 +106,7 @@ def main():
     if load_json(app)["expo"]["version"] != TARGET_VERSION or check_gradle(gradle.read_text(encoding="utf-8")) != (TARGET_CODE, TARGET_VERSION):
         raise RuntimeError("Post-write version check failed")
 
-    print("VERSION REPAIRED: 1.0.23 (23)")
+    print("VERSION REPAIRED: 1.0.23 (24)")
     print("UNICODE PRESERVED:", conf["expo"].get("name"))
     print("SAFETY BACKUP:", recovery_dir)
     print("All other files were left unchanged.")
