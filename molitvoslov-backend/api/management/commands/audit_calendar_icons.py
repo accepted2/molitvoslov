@@ -7,9 +7,7 @@ CSV всегда связан с id + sync_uid/source_id + названием + 
 from __future__ import annotations
 
 import csv
-from ipaddress import ip_address
 from pathlib import Path
-from urllib.parse import urlsplit
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
@@ -17,6 +15,7 @@ from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone
 
+from api.calendar_icon_variants import public_https as _public_https
 from api.calendar_models import CalendarFeast
 from api.sqlite_backup import create_sqlite_backup
 
@@ -29,20 +28,6 @@ FIELDS = [
 ]
 
 
-def _public_https(value):
-    try:
-        parts = urlsplit(value.strip())
-        host = parts.hostname or ""
-        if parts.scheme != "https" or not host or parts.username or parts.password:
-            return False
-        if host in {"localhost", "localhost.localdomain"} or host.endswith(".local"):
-            return False
-        try:
-            return ip_address(host).is_global
-        except ValueError:
-            return True
-    except ValueError:
-        return False
 
 
 class Command(BaseCommand):
