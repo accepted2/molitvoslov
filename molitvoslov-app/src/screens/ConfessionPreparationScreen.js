@@ -214,7 +214,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
           <Text style={styles.removeText}>×</Text>
         </Pressable>
       </View>
-      {!item.isCustom && (
+      {!item.isCustom && !!item.description && (
         <Text style={styles.selectedDescription}>{item.description}</Text>
       )}
       <Text style={styles.noteLabel}>Мои мысли и обстоятельства</Text>
@@ -335,7 +335,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
           <FlatList
             key={viewMode}
             data={source}
-            keyExtractor={item => item.id}
+            keyExtractor={(item, index) => item.id || 'doc-' + index}
             renderItem={catalogMode ? renderDocumentBlock : renderSelectedItem}
             ListHeaderComponent={listHeader}
             ListEmptyComponent={
