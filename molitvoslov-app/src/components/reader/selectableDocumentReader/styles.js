@@ -1833,8 +1833,8 @@ export const READER_STYLES = String.raw`
     #reader-scroll-thumb {
       position: absolute;
       top: 0;
-      right: 8px;
-      width: 6px;
+      right: 9px;
+      width: 4px;
       min-height: 44px;
       border-radius: 999px;
       background: rgba(104, 66, 41, 0.48);
