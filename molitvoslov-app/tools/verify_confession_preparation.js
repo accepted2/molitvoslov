@@ -78,7 +78,7 @@ assert.match(screen, /addingCustom \? 'Отмена' : '\+ Добавить'/);
 // The same thin, draggable native indicator is used for both the catalog
 // and personal list. It does not replace reading-direction detection.
 assert.match(screen, /showsVerticalScrollIndicator=\{false\}/);
-assert.match(screen, /<ThinScrollIndicator/);
+assert.match(screen, /<ThinScrollIndicator\s+key=\{viewMode\}/);
 assert.match(screen, /onScroll=\{handleListScroll\}/);
 assert.match(screen, /handleNativeReadingScroll\(event\)/);
 assert.match(screen, /scrollEventThrottle=\{16\}/);
