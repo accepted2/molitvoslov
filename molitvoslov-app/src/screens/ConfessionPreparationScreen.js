@@ -4,7 +4,6 @@ import {
   Alert,
   Animated,
   PanResponder,
-  ScrollView,
   Modal,
   Pressable,
   StyleSheet,
@@ -92,7 +91,6 @@ const ConfessionScrollThumb = ({
       pointerEvents="box-none"
       style={[styles.scrollThumbTrack, {top: topInset, bottom: bottomInset}]}
     >
-      <View pointerEvents="none" style={styles.scrollThumbRail} />
       <Animated.View
         {...panResponder.panHandlers}
         style={[styles.scrollThumbTouch, {
@@ -121,21 +119,30 @@ export const ConfessionPreparationScreen = ({navigation}) => {
   const [contentHeight, setContentHeight] = useState(0);
   const {readingChromeHidden, handleReadingScroll, handleNativeReadingScroll} = useReadingChrome();
 
+  // Drive the thumb directly from the native scroll position, avoiding
+  // per-frame JS updates that make the handle stutter during fast swipes.
   const handleListScroll = useCallback(event => {
     handleNativeReadingScroll(event);
     const raw = event.nativeEvent?.contentOffset?.y;
     if (!Number.isFinite(raw) || thumbDraggingRef.current) return;
-    const position = Math.max(0, raw);
-    scrollOffsetRef.current = position;
-    scrollY.setValue(position);
-  }, [handleNativeReadingScroll, scrollY]);
+    scrollOffsetRef.current = Math.max(0, raw);
+  }, [handleNativeReadingScroll]);
+
+  const nativeScrollHandler = useMemo(() => Animated.event(
+    [{nativeEvent: {contentOffset: {y: scrollY}}}],
+    {useNativeDriver: true, listener: handleListScroll},
+  ), [handleListScroll, scrollY]);
 
   const scrollToPosition = useCallback(offset => {
     const position = Math.max(0, offset);
     scrollOffsetRef.current = position;
-    scrollY.setValue(position);
-    scrollRef.current?.scrollTo({y: position, animated: false});
-  }, [scrollY]);
+    const scrollView = scrollRef.current;
+    if (typeof scrollView?.scrollTo === 'function') {
+      scrollView.scrollTo({y: position, animated: false});
+    } else {
+      scrollView?.getNode?.()?.scrollTo?.({y: position, animated: false});
+    }
+  }, []);
 
   const switchView = useCallback(nextMode => {
     if (nextMode === viewMode) return;
@@ -439,7 +446,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
             <ActivityIndicator color={colors.accent} size="large" />
           </View>
         ) : (
-          <ScrollView
+          <Animated.ScrollView
             ref={scrollRef}
             key={`confession-scroll:${viewMode}`}
             style={styles.scroll}
@@ -449,7 +456,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
             ]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
-            onScroll={handleListScroll}
+            onScroll={nativeScrollHandler}
             scrollEventThrottle={16}
             onLayout={event => setViewportHeight(event.nativeEvent.layout.height)}
             onContentSizeChange={(_width, height) => setContentHeight(height)}
@@ -471,7 +478,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
                   : 'Пока ничего не выбрано. Откройте "Все грехи" и добавьте нужные пункты.'}
               </Text>
             )}
-          </ScrollView>
+          </Animated.ScrollView>
         )}
         <ConfessionScrollThumb
           scrollY={scrollY}
@@ -563,11 +570,6 @@ const styles = StyleSheet.create({
   content: {paddingLeft: 12, paddingRight: 20},
   scrollThumbTrack: {
     position: 'absolute', right: 2, width: 22, zIndex: 20,
-  },
-  scrollThumbRail: {
-    position: 'absolute', right: 8, top: 0, bottom: 0,
-    width: 2, borderRadius: 2,
-    backgroundColor: 'rgba(104, 66, 41, 0.12)',
   },
   scrollThumbTouch: {
     position: 'absolute', top: 0, right: 0, width: 22,
