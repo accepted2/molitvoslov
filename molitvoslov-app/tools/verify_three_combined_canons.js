@@ -12,11 +12,12 @@ const category = read('src/screens/CommunionPreparationScreen.js');
 const canonScreen = read('src/screens/CanonScreen.js');
 const styles = read('src/components/reader/selectableDocumentReader/styles.js');
 const coverageCode = read('src/services/canonRussianCoverage.js');
+const typographyCode = read('src/services/canonTypography.js');
 
 assert.equal(data.slug, 'tri-sovmeshchennykh-kanona');
 assert.equal(data.id, 99000001);
 assert.equal(data.title, 'Три совмещённых канона');
-assert.equal(data.sections.length, 222);
+assert.equal(data.sections.length, 214);
 assert.equal(data.traditional_sections.length, 321);
 const all = [...data.sections, ...data.traditional_sections];
 assert.equal(new Set(all.map(section => section.id)).size, all.length);
@@ -36,8 +37,20 @@ for (const [variant, sections] of [['modern', data.sections], ['traditional', da
 }
 assert.equal(data.sections.filter(section => !section.text).length, 16);
 assert.equal(data.traditional_sections.filter(section => !section.text).length, 44);
-assert.equal(data.sections.filter(section => section.text).length, 206);
-assert.equal(data.sections.filter(section => section.text && section.text.translation.trim()).length, 206);
+assert.equal(data.sections.filter(section => section.text).length, 198);
+assert.equal(data.sections.filter(section => section.text && section.text.translation.trim()).length, 198);
+// No source paragraph has been deleted: several paragraphs now share one
+// reading block, rather than getting separate separators and red initials.
+const countParagraphs = (value) => String(value).split(/\n\s*\n/u).length;
+assert.equal(data.sections.filter(s => s.text)
+  .reduce((total, s) => total + countParagraphs(s.text.content), 0), 206);
+assert.equal(data.sections.filter(s => s.text)
+  .reduce((total, s) => total + countParagraphs(s.text.translation), 0), 206);
+const prayers = data.sections.filter(s => s.section_type === 'prayer');
+assert.equal(prayers.length, 4, 'Two distinct Theotokos prayers must stay separate');
+assert.deepEqual(prayers.map(s => s.paragraph_count || 1), [3, 1, 5, 3]);
+assert.ok(prayers.filter(s => s.grouped_prayer).length === 3);
+assert.ok(prayers[0].text.content.includes('\n\nОмрачи́хся'));
 assert.equal(data.traditional_sections.filter(section => section.text).length, 277);
 for (const heading of ['Песнь 1','Песнь 9','Кондак','Икос','Молитва Ангелу Хранителю']) {
   assert.ok(data.sections.some(section => section.heading === heading));
@@ -56,7 +69,7 @@ const getCoverage = new Function(
 )();
 assert.equal(getCoverage(data.sections).complete, true);
 assert.ok(data.sections.filter(section => section.section_type === 'refrain').length >= 80);
-assert.ok(data.sections.filter(section => section.section_type === 'prayer').length >= 10);
+assert.equal(data.sections.filter(section => section.section_type === 'prayer').length, 4);
 
 assert.match(api, /import threeCombinedCanons from '\.\.\/data\/threeCombinedCanons\.json'/);
 assert.match(api, /match\[1\] === threeCombinedCanons\.slug/);
@@ -67,16 +80,37 @@ assert.match(canonScreen, /viewMode === MODE_TRADITIONAL/);
 assert.match(canonScreen, /suppress_inline_label/);
 assert.match(canonScreen, /viewMode === MODE_RUSSIAN && !isStructuredCombinedCanon/);
 assert.match(canonScreen, /three-combined-canon/);
+assert.match(canonScreen, /const modernSections = useMemo/);
+assert.match(canonScreen, /getCanonRussianCoverage\(modernSections\)/);
+assert.match(canonScreen, /canon\?\.traditional_sections\?\.length/);
+assert.match(canonScreen, /initialOnlyFirstParagraph: !!section\.grouped_prayer/);
+assert.ok(!/getCanonRussianCoverage\(displaySections\)/.test(canonScreen),
+  'Language availability must not be recomputed from the selected tab');
 assert.match(styles, /\.rule-item\.three-combined-canon\.three-combined-traditional \.section-title/);
+const buildTypography = new Function(
+  typographyCode.replace('export const buildCanonTypography =',
+    'const buildCanonTypography =') +
+  '\nreturn buildCanonTypography;'
+)();
+const prayerSample = prayers[0].text.content;
+const plain = buildTypography(prayerSample, '', '', 'prayer');
+const grouped = buildTypography(prayerSample, '', '', 'prayer',
+  {initialOnlyFirstParagraph: true});
+assert.equal(plain.ranges.filter(range => range.kind === 'initial').length, 3);
+assert.equal(grouped.ranges.filter(range => range.kind === 'initial').length, 1);
+assert.equal(grouped.prayerProse, true);
 
 for (const file of [
   'src/services/contentApi.js',
   'src/screens/CommunionPreparationScreen.js',
-  'src/screens/CanonScreen.js'
+  'src/screens/CanonScreen.js',
+  'src/services/canonTypography.js'
 ]) {
   babel.parse(read(file), {sourceType: 'module', plugins: ['jsx']});
 }
-console.log('PASS: 206 CS and RU paragraphs; 277 traditional paragraphs');
+console.log('PASS: 206 CS and RU paragraphs in 198 modern reading blocks; 277 traditional paragraphs');
+console.log('PASS: 4 prayers, 3 joined prayer bodies; one red initial per joined prayer');
+console.log('PASS: traditional switch does not reset availability or selected tab');
 console.log('PASS: 16 modern and 44 traditional headings; complete ordered text');
 console.log('PASS: valid Russian coverage, refrains and prayer sections');
 console.log('PASS: offline API, Communion category, traditional reader integration');
