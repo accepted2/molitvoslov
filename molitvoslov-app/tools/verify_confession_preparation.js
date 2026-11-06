@@ -16,6 +16,7 @@ const navigation = read('src/navigation/AppNavigator.js');
 const category = read('src/screens/CommunionPreparationScreen.js');
 const header = read('src/components/navigation/FixedSectionHeader.js');
 const readingChrome = read('src/hooks/useReadingChrome.js');
+const thinScrollbar = read('src/components/reader/ThinScrollIndicator.js');
 
 assert.equal(catalog.version, 1);
 assert.equal(catalog.items.length, 98);
@@ -74,12 +75,18 @@ assert.match(screen, /textBreakStrategy="highQuality"/);
 assert.ok(!screen.includes("Текст читается одним целым"));
 assert.ok(!screen.includes("+ Свой пункт"));
 assert.match(screen, /addingCustom \? 'Отмена' : '\+ Добавить'/);
-// Explicit persistent native scrollbar on Android, both screens continue
-// using the same FlatList. No extra scroll-to-top is required to switch.
-assert.match(screen, /showsVerticalScrollIndicator=\{true\}/);
-assert.match(screen, /persistentScrollbar=\{catalogMode\}/);
+// The same thin, draggable native indicator is used for both the catalog
+// and personal list. It does not replace reading-direction detection.
+assert.match(screen, /showsVerticalScrollIndicator=\{false\}/);
+assert.match(screen, /<ThinScrollIndicator/);
+assert.match(screen, /onScroll=\{handleListScroll\}/);
+assert.match(screen, /handleNativeReadingScroll\(event\)/);
 assert.match(screen, /scrollEventThrottle=\{16\}/);
-assert.match(screen, /onScroll=\{handleNativeReadingScroll\}/);
+assert.match(screen, /onContentSizeChange=\{\(_width, height\) => setContentHeight\(height\)\}/);
+assert.match(screen, /scrollRef\.current\?\.scrollToOffset\(\{offset, animated: false\}\)/);
+assert.match(screen, /scrollTo=\{scrollToPosition\}/);
+assert.match(thinScrollbar, /width: 4/);
+assert.match(thinScrollbar, /PanResponder\.create\(/);
 assert.match(screen, /useReadingChrome\(\)/);
 assert.match(screen, /handleReadingScroll\('top'\)/);
 assert.match(screen, /readingHidden=\{readingChromeHidden\}/);
@@ -132,6 +139,7 @@ for (const file of [
   'src/screens/ConfessionPreparationScreen.js',
   'src/components/navigation/FixedSectionHeader.js',
   'src/hooks/useReadingChrome.js',
+  'src/components/reader/ThinScrollIndicator.js',
   'src/services/confessionPreparationStorage.js',
   'src/navigation/AppNavigator.js',
   'src/screens/CommunionPreparationScreen.js',
@@ -203,7 +211,7 @@ const storage = new Function('SecureStore', exposed + `
   console.log('PASS: confession screen and Communion navigation parse');
   console.log('PASS: plain cream background and legible reader-style header, no home artwork');
   console.log('PASS: themed cream in-app confession dialog, native alert removed for sin selection');
-  console.log('PASS: persistent scrollbar, justified confession text, left-aligned headings');
+  console.log('PASS: slim draggable scrollbar, justified confession text, left-aligned headings');
   console.log('PASS: auto-hiding reading header/bottom navigation and direct My List shortcut');
   console.log('PASS: personal notes stored only in SecureStore, excluded from sync');
   console.log('PASS: selection, individual notes, custom items, ordered writes, removal, clearing');
