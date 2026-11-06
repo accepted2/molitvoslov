@@ -30,7 +30,7 @@ assert.match(screen, /Мой список/);
 assert.match(screen, /Добавить в мой список/);
 assert.match(screen, /Мои мысли и обстоятельства/);
 assert.match(screen, /Очистить мой список/);
-assert.match(screen, /\{catalogMode \? confessionCatalog\.items : chosenEntries\}/);
+assert.match(screen, /const source = catalogMode \? confessionCatalog\.items : chosenEntries/);
 assert.match(navigation, /name="ConfessionPreparation"/);
 assert.match(category, /navigation\.navigate\('ConfessionPreparation'\)/);
 assert.match(storageSource, /from 'expo-secure-store'/);
