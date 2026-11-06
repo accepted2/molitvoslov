@@ -20,6 +20,7 @@ export const FixedSectionHeader = ({
   compactReading = false,
   languageSwitcher = null,
   onLanguageChange,
+  headerAction = null,
   onHeaderHeightChange,
 }) => {
   const visibility = useRef(new Animated.Value(0)).current;
@@ -136,6 +137,26 @@ export const FixedSectionHeader = ({
                   >
                     <Text style={[styles.languagePillText, chromeDark && styles.languagePillTextDark]} numberOfLines={1}>{selectedLanguage.label}</Text>
                     <Ionicons name="chevron-down" size={13} color={chromeDark ? '#D7B88C' : '#744A2B'} style={styles.languageChevronIcon} />
+                  </Pressable>
+                )}
+                {!!headerAction?.label && !!headerAction?.onPress && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={headerAction.accessibilityLabel || headerAction.label}
+                    onPress={headerAction.onPress}
+                    hitSlop={8}
+                    style={({pressed}) => [
+                      styles.headerActionButton,
+                      chromeDark && styles.headerActionButtonDark,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Text
+                      numberOfLines={1}
+                      style={[styles.headerActionText, chromeDark && styles.headerActionTextDark]}
+                    >
+                      {headerAction.label}
+                    </Text>
                   </Pressable>
                 )}
               </View>
@@ -300,6 +321,31 @@ const styles = StyleSheet.create({
   titleFlex: {
     flexShrink: 1,
     minWidth: 0,
+  },
+  headerActionButton: {
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 28,
+    paddingHorizontal: 9,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: 'rgba(126, 82, 38, 0.25)',
+    backgroundColor: '#F4E4CA',
+  },
+  headerActionButtonDark: {
+    backgroundColor: '#413831',
+    borderColor: 'rgba(205, 163, 108, 0.40)',
+  },
+  headerActionText: {
+    color: '#744A2B',
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '700',
+    includeFontPadding: false,
+  },
+  headerActionTextDark: {
+    color: '#EADBC7',
   },
   languagePill: {
     flexShrink: 0,
