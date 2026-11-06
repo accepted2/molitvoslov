@@ -320,21 +320,35 @@ export const CanonScreen = ({route, navigation}) => {
     });
   }, [activeSections]);
 
-  // All-or-nothing: hide the entire Russian text if ANY source section
-  // (including an irmos, refrain or prayer) has no Russian translation.
+  // Language availability must not depend on the currently selected tab.
+  // The combined Three Canons have a separate traditional corpus, and changing
+  // tabs must not retrigger the default-language initialization effect.
+  const modernSections = useMemo(
+    () => (canon?.sections || []).filter(
+      (section) => Number(section.variant || 1) === Number(primaryVariant)
+    ),
+    [canon, primaryVariant]
+  );
+
+  // All-or-nothing: if ANY modern source section lacks RU, do not mix a
+  // partial translation into the parallel view.
   const hasRussianTranslation = useMemo(
-    () => getCanonRussianCoverage(displaySections).complete,
-    [displaySections]
+    () => getCanonRussianCoverage(modernSections).complete,
+    [modernSections]
   );
 
   const hasUkrainianTranslation = useMemo(
-    () => displaySections.some((section) => !!section.text?.translation_uk?.trim()),
-    [displaySections]
+    () => modernSections.some((section) => !!section.text?.translation_uk?.trim()),
+    [modernSections]
   );
 
   const hasTraditionalTranslation = useMemo(
-    () => displaySections.some((section) => !!section.text?.traditional_content?.trim()),
-    [displaySections]
+    () => (
+      canon?.traditional_sections?.length
+        ? canon.traditional_sections
+        : modernSections
+    ).some((section) => !!section.text?.traditional_content?.trim()),
+    [canon, modernSections]
   );
 
   useEffect(() => {
