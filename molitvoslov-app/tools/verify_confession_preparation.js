@@ -63,6 +63,15 @@ assert.match(screen, /Добавить в мой список/);
 assert.match(screen, /Мои мысли и обстоятельства/);
 assert.match(screen, /Очистить мой список/);
 assert.match(screen, /const source = catalogMode \? confessionDocument\.blocks : chosenEntries/);
+// Confession notes must be legible on solid cream paper, never on the home
+// illustration; header and status bar also use the reader's light scheme.
+assert.ok(!screen.includes("import {AppBackground}"));
+assert.ok(!screen.includes("<AppBackground"));
+assert.ok(!screen.includes("imageOpacity="));
+assert.match(screen, /page:\s*\{flex: 1, backgroundColor: '#FFF4DE'\}/);
+assert.match(screen, /screen:\s*\{flex: 1, backgroundColor: '#FFF4DE'\}/);
+assert.match(screen, /gradientColor="#FFF4DE"/);
+assert.match(screen, /<StatusBar style="dark" translucent backgroundColor="transparent"/);
 assert.match(screen, /onPress=\{\(\) => openSinMenu\(segment\.id\)\}/);
 assert.match(screen, /keyExtractor=\{\(item, index\) => item\.id \|\| 'doc-' \+ index\}/);
 assert.match(screen, /\.\.\.confessionCatalog\.items/);
@@ -146,6 +155,7 @@ const storage = new Function('SecureStore', exposed + `
   console.log('PASS: source text is continuous, ' + document.entries.length + ' individual selectable phrases');
   console.log('PASS: existing grouped selections retained without losing prior notes');
   console.log('PASS: confession screen and Communion navigation parse');
+  console.log('PASS: plain cream background and legible reader-style header, no home artwork');
   console.log('PASS: personal notes stored only in SecureStore, excluded from sync');
   console.log('PASS: selection, individual notes, custom items, ordered writes, removal, clearing');
 })().catch(err => {
