@@ -12,7 +12,6 @@ import {
 import {StatusBar} from 'expo-status-bar';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
-import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {colors} from '../theme';
@@ -324,8 +323,8 @@ export const ConfessionPreparationScreen = ({navigation}) => {
   );
 
   return (
-    <AppBackground imageOpacity={0.72}>
-      <StatusBar style="light" translucent backgroundColor="transparent" />
+    <View style={styles.page}>
+      <StatusBar style="dark" translucent backgroundColor="transparent" />
       <View style={styles.screen}>
         {loading ? (
           <View style={styles.loading}>
@@ -359,18 +358,22 @@ export const ConfessionPreparationScreen = ({navigation}) => {
         )}
         <FixedSectionHeader
           title="Подготовка к исповеди"
+          gradientColor="#FFF4DE"
           navigation={navigation}
           topInset={insets.top}
           onHeaderHeightChange={setHeaderHeight}
         />
         <BottomNav navigation={navigation} active={null} />
       </View>
-    </AppBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  screen: {flex: 1, backgroundColor: 'transparent'},
+  // Use the same plain paper color as CanonScreen; never render homeArtwork
+  // under personal confession notes or the continuous reading document.
+  page: {flex: 1, backgroundColor: '#FFF4DE'},
+  screen: {flex: 1, backgroundColor: '#FFF4DE'},
   loading: {flex: 1, justifyContent: 'center', alignItems: 'center'},
   content: {paddingHorizontal: 12},
   listHeader: {marginBottom: 10},
