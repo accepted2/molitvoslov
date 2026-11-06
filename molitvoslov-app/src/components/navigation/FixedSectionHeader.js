@@ -82,7 +82,11 @@ export const FixedSectionHeader = ({
         {compactReading && (
           <View
             pointerEvents="none"
-            style={[styles.readerHeaderFrost, {height: headerHeight}]}
+            style={[
+              styles.readerHeaderFrost,
+              chromeDark && styles.readerHeaderFrostDark,
+              {height: headerHeight},
+            ]}
           />
         )}
 
@@ -257,6 +261,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 244, 222, 0.78)',
     borderBottomWidth: 0.5,
     borderBottomColor: 'rgba(120, 80, 40, 0.12)',
+  },
+  readerHeaderFrostDark: {
+    backgroundColor: 'rgba(23, 19, 16, 0.78)',
+    borderBottomColor: 'rgba(205, 163, 108, 0.12)',
   },
   fixedHeader: {
     position: 'absolute',
