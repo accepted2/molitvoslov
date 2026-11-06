@@ -698,7 +698,9 @@ export const CanonScreen = ({route, navigation}) => {
       }
 
       sections.push({
-        className: 'canon-section',
+        className: canon.slug === 'tri-sovmeshchennykh-kanona'
+          ? 'canon-section three-combined-canon'
+          : 'canon-section',
 
         progressAnchorId: Number(section.id),
 
