@@ -1234,6 +1234,10 @@ export const READER_STYLES = String.raw`
       text-transform: none !important;
       white-space: nowrap;
     }
+    /* The nested generic liturgical span must not shrink twice. */
+    .rule-item.three-combined-traditional .reader-text .canon-repeat-note .liturgical-word {
+      font-size: inherit;
+    }
     .rule-item.canon-section .reader-inline.canon-long-label .reader-inline-label {
       display: block;
       margin-right: 0;
