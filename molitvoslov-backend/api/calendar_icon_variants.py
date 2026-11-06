@@ -11,6 +11,8 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+from ipaddress import ip_address
+from urllib.parse import urlsplit
 
 CANVASES = {
     "master": (1200, 1600),
@@ -18,6 +20,23 @@ CANVASES = {
     "offline": (240, 320),
 }
 BG_COLOR = (244, 239, 229)
+
+
+def public_https(value):
+    """Проверка ссылки для публичной иконы без обращения к сети или Django."""
+    try:
+        parts = urlsplit(str(value).strip())
+        host = parts.hostname or ""
+        if parts.scheme != "https" or not host or parts.username or parts.password:
+            return False
+        if host in {"localhost", "localhost.localdomain"} or host.endswith(".local"):
+            return False
+        try:
+            return ip_address(host).is_global
+        except ValueError:
+            return True
+    except ValueError:
+        return False
 
 
 class LowResolutionIcon(ValueError):
