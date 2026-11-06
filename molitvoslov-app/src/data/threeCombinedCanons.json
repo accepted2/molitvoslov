@@ -7528,7 +7528,7 @@
       "id": 99000632,
       "order": 310,
       "variant": 1,
-      "section_type": "prayer",
+      "section_type": "refrain",
       "heading": "",
       "suppress_inline_label": true,
       "text": {
@@ -7537,7 +7537,8 @@
         "content": "",
         "translation": "",
         "traditional_content": "Прест҃а́ѧ бцⷣе, сп҃сѝ на́съ."
-      }
+      },
+      "traditional_full_refrain": true
     },
     {
       "id": 99000633,
@@ -7567,7 +7568,7 @@
       "id": 99000635,
       "order": 313,
       "variant": 1,
-      "section_type": "prayer",
+      "section_type": "refrain",
       "heading": "",
       "suppress_inline_label": true,
       "text": {
@@ -7576,7 +7577,8 @@
         "content": "",
         "translation": "",
         "traditional_content": "Ст҃ы́й а҆́гг҃ле бж҃їй, храни́телю мо́й, молѝ бг҃а ѡ҆ мнѣ̀."
-      }
+      },
+      "traditional_full_refrain": true
     },
     {
       "id": 99000636,
