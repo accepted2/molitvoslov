@@ -143,8 +143,14 @@ export const buildCanonTypography = (value, inlineLabel = '', sectionHeading = '
     }
   }
 
-  // Same subdued rubric color as the existing "(Трижды)" notation.
-  const repeats = /\(\s*(?:дважды|трижды)\s*\.?\s*\)/giu;
+  // Rubric-style repeat and bow instructions. Traditional Three Canons
+  // use square brackets and Church Slavonic supralinear signs (e.g.
+  // [Три́жды и҆ покло́ны трѝ.], [Покло́нъ.], [в҃і.], [м҃.]).
+  // Work through the NFD offset map, preserving the original source text
+  // and UTF-16 selection offsets. Other canons retain their old behavior.
+  const repeats = options.traditionalLiturgicalNotes
+    ? /[([]\s*(?:(?:дважды|трижды)(?:\s+и\s+поклоны?\s+три)?|поклоны?(?:ъ)?|в[іи]|м)\s*\.?\s*[)\]]/giu
+    : /\(\s*(?:дважды|трижды)\s*\.?\s*\)/giu;
   for (const match of normalized.matchAll(repeats)) {
     const start = offsets[match.index];
     const last = offsets[match.index + match[0].length - 1];
