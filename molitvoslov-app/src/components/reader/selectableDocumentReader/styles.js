@@ -86,6 +86,18 @@ export const READER_STYLES = String.raw`
       font-weight: 400;
       font-variant-ligatures: common-ligatures;
     }
+    /* The traditional combined Three Canons source uses Ponomar glyph
+       encodings in its chapter headings, not only in its prayer paragraphs. */
+    .reader-language-traditional .rule-item.three-combined-canon .section-title,
+    .reader-language-traditional .rule-item.three-combined-canon .section-header .prayer-title {
+      font-family: 'Ponomar', Georgia, serif;
+      font-size: 20px;
+      line-height: 1.5;
+      font-weight: 400;
+      font-style: normal;
+      font-variant-ligatures: common-ligatures;
+      color: var(--secondary);
+    }
     /* Заголовки Псалтири в традиционном церковнославянском режиме */
 .psalter-traditional-headings .rule-title,
 .psalter-traditional-headings .section-header .prayer-title {
