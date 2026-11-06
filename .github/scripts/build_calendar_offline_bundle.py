@@ -20,7 +20,7 @@ ASSET_DIR = ROOT / "molitvoslov-app" / "assets" / "calendar-icons"
 ICON_MODULE = ROOT / "molitvoslov-app" / "src" / "data" / "calendarIconAssets.js"
 
 YEAR = 2026
-ICON_MAX_SIZE = (256, 384)
+ICON_MAX_SIZE = (240, 320)
 ICON_QUALITY = 80
 USER_AGENT = "MolitvoslovOfflineCalendar/1.0"
 IDENTITY_SIMILARITY_THRESHOLD = 0.50
@@ -286,17 +286,16 @@ def download_icon(session: requests.Session, url: str, target: Path) -> None:
     if image.mode not in {"RGB", "RGBA"}:
         image = image.convert("RGBA" if "A" in image.getbands() else "RGB")
 
+    # Единый размер офлайн-копий; оригинал не обрезаем и не растягиваем.
+    # Масштабирование только вниз. Крупные версии живут отдельно на CDN.
+    image = image.convert("RGBA")
     image.thumbnail(ICON_MAX_SIZE, Image.Resampling.LANCZOS)
-
-    if image.mode == "RGBA":
-        background = Image.new("RGB", image.size, (246, 227, 195))
-        background.paste(image, mask=image.getchannel("A"))
-        image = background
-    else:
-        image = image.convert("RGB")
-
+    background = Image.new("RGB", ICON_MAX_SIZE, (244, 239, 229))
+    left = (ICON_MAX_SIZE[0] - image.width) // 2
+    top = (ICON_MAX_SIZE[1] - image.height) // 2
+    background.paste(image, (left, top), mask=image.getchannel("A"))
     target.parent.mkdir(parents=True, exist_ok=True)
-    image.save(target, "WEBP", quality=ICON_QUALITY, method=6)
+    background.save(target, "WEBP", quality=ICON_QUALITY, method=6)
 
 
 def js_string(value: str) -> str:
@@ -372,16 +371,22 @@ def build_icon_bundle(data: dict) -> None:
             "export const getBundledCalendarIconSource = (feast) => {",
             "  if (!feast) return null;",
             "",
-            "  const sourceId = feast.source_id;",
-            "  if (sourceId !== null && sourceId !== undefined) {",
-            "    const localById = bySourceId[String(sourceId)];",
-            "    if (localById) return localById;",
-            "  }",
-            "",
             "  const url = String(feast.icon_url || '').trim();",
+            "  // URL поменялся: показываем новую онлайн-икону, а не старый APK asset.",
             "  if (url && byUrl[url]) return byUrl[url];",
+            "  if (url) return {uri: url};",
+            "  const sourceId = feast.source_id;",
+            "  return sourceId != null ? (bySourceId[String(sourceId)] || null) : null;",
+            "};",
             "",
-            "  return url ? {uri: url} : null;",
+            "export const getBundledCalendarIconFallbackSource = (feast) => {",
+            "  if (!feast) return null;",
+            "  const sourceId = feast.source_id;",
+            "  if (sourceId != null && bySourceId[String(sourceId)]) {",
+            "    return bySourceId[String(sourceId)];",
+            "  }",
+            "  const url = String(feast.icon_url || '').trim();",
+            "  return url && byUrl[url] ? byUrl[url] : null;",
             "};",
             "",
             f"export const bundledCalendarIconCount = {len(used_files)};",
