@@ -67,7 +67,7 @@ assert.match(canonScreen, /viewMode === MODE_TRADITIONAL/);
 assert.match(canonScreen, /suppress_inline_label/);
 assert.match(canonScreen, /viewMode === MODE_RUSSIAN && !isStructuredCombinedCanon/);
 assert.match(canonScreen, /three-combined-canon/);
-assert.match(styles, /\.reader-language-traditional \.rule-item\.three-combined-canon \.section-title/);
+assert.match(styles, /\.rule-item\.three-combined-canon\.three-combined-traditional \.section-title/);
 
 for (const file of [
   'src/services/contentApi.js',
