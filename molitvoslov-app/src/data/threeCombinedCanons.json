@@ -3248,23 +3248,8 @@
   ],
   "traditional_sections": [
     {
-      "id": 99000322,
-      "order": 1,
-      "variant": 1,
-      "section_type": "other",
-      "heading": "",
-      "suppress_inline_label": true,
-      "text": {
-        "id": 99200322,
-        "title": "",
-        "content": "",
-        "translation": "",
-        "traditional_content": "См. также: Три совмещенных канона"
-      }
-    },
-    {
       "id": 99000323,
-      "order": 2,
+      "order": 1,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3279,7 +3264,7 @@
     },
     {
       "id": 99000324,
-      "order": 3,
+      "order": 2,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3294,7 +3279,7 @@
     },
     {
       "id": 99000325,
-      "order": 4,
+      "order": 3,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3309,7 +3294,7 @@
     },
     {
       "id": 99000326,
-      "order": 5,
+      "order": 4,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3324,7 +3309,7 @@
     },
     {
       "id": 99000327,
-      "order": 6,
+      "order": 5,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3339,7 +3324,7 @@
     },
     {
       "id": 99000328,
-      "order": 7,
+      "order": 6,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3354,7 +3339,7 @@
     },
     {
       "id": 99000329,
-      "order": 8,
+      "order": 7,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3369,7 +3354,7 @@
     },
     {
       "id": 99000330,
-      "order": 9,
+      "order": 8,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3384,7 +3369,7 @@
     },
     {
       "id": 99000331,
-      "order": 10,
+      "order": 9,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3399,7 +3384,7 @@
     },
     {
       "id": 99000332,
-      "order": 11,
+      "order": 10,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3414,7 +3399,7 @@
     },
     {
       "id": 99000333,
-      "order": 12,
+      "order": 11,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3429,7 +3414,7 @@
     },
     {
       "id": 99000334,
-      "order": 13,
+      "order": 12,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3444,7 +3429,7 @@
     },
     {
       "id": 99000335,
-      "order": 14,
+      "order": 13,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3459,7 +3444,7 @@
     },
     {
       "id": 99000336,
-      "order": 15,
+      "order": 14,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3474,7 +3459,7 @@
     },
     {
       "id": 99000337,
-      "order": 238,
+      "order": 15,
       "variant": 1,
       "section_type": "other",
       "heading": "Pал0мъ рм7в.",
@@ -3483,7 +3468,7 @@
     },
     {
       "id": 99000338,
-      "order": 17,
+      "order": 16,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3498,7 +3483,7 @@
     },
     {
       "id": 99000339,
-      "order": 18,
+      "order": 17,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3513,7 +3498,7 @@
     },
     {
       "id": 99000340,
-      "order": 19,
+      "order": 18,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3528,7 +3513,7 @@
     },
     {
       "id": 99000341,
-      "order": 242,
+      "order": 19,
       "variant": 1,
       "section_type": "other",
       "heading": "Тaже БGъ гDь во глaсъ }:",
@@ -3537,7 +3522,7 @@
     },
     {
       "id": 99000342,
-      "order": 21,
+      "order": 20,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3552,7 +3537,7 @@
     },
     {
       "id": 99000343,
-      "order": 22,
+      "order": 21,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3567,7 +3552,7 @@
     },
     {
       "id": 99000344,
-      "order": 23,
+      "order": 22,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3582,7 +3567,7 @@
     },
     {
       "id": 99000345,
-      "order": 24,
+      "order": 23,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3597,7 +3582,7 @@
     },
     {
       "id": 99000346,
-      "order": 25,
+      "order": 24,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3612,7 +3597,7 @@
     },
     {
       "id": 99000347,
-      "order": 26,
+      "order": 25,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3627,7 +3612,7 @@
     },
     {
       "id": 99000348,
-      "order": 27,
+      "order": 26,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3642,7 +3627,7 @@
     },
     {
       "id": 99000349,
-      "order": 28,
+      "order": 27,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3657,7 +3642,7 @@
     },
     {
       "id": 99000350,
-      "order": 29,
+      "order": 28,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3672,7 +3657,7 @@
     },
     {
       "id": 99000351,
-      "order": 252,
+      "order": 29,
       "variant": 1,
       "section_type": "other",
       "heading": "Посeмъ тропaрь всеми1лостивагw сп7са, глaсъ }:",
@@ -3681,7 +3666,7 @@
     },
     {
       "id": 99000352,
-      "order": 31,
+      "order": 30,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3696,7 +3681,7 @@
     },
     {
       "id": 99000353,
-      "order": 254,
+      "order": 31,
       "variant": 1,
       "section_type": "other",
       "heading": "Тропaрь бцdэ, глaсъ д7:",
@@ -3705,7 +3690,7 @@
     },
     {
       "id": 99000354,
-      "order": 33,
+      "order": 32,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3720,7 +3705,7 @@
     },
     {
       "id": 99000355,
-      "order": 34,
+      "order": 33,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3735,7 +3720,7 @@
     },
     {
       "id": 99000356,
-      "order": 257,
+      "order": 34,
       "variant": 1,
       "section_type": "other",
       "heading": "И# тропaрь ѓгGлу храни1телю, глaсъ ѕ7:",
@@ -3744,7 +3729,7 @@
     },
     {
       "id": 99000357,
-      "order": 36,
+      "order": 35,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3759,7 +3744,7 @@
     },
     {
       "id": 99000358,
-      "order": 37,
+      "order": 36,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3774,7 +3759,7 @@
     },
     {
       "id": 99000359,
-      "order": 38,
+      "order": 37,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3789,7 +3774,7 @@
     },
     {
       "id": 99000360,
-      "order": 261,
+      "order": 38,
       "variant": 1,
       "section_type": "other",
       "heading": "Pал0мъ н7:",
@@ -3798,7 +3783,7 @@
     },
     {
       "id": 99000361,
-      "order": 40,
+      "order": 39,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3813,7 +3798,7 @@
     },
     {
       "id": 99000362,
-      "order": 263,
+      "order": 40,
       "variant": 1,
       "section_type": "other",
       "heading": "КанHнъ покаsнный, глaсъ ѕ7.",
@@ -3822,7 +3807,7 @@
     },
     {
       "id": 99000363,
-      "order": 42,
+      "order": 41,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3837,7 +3822,7 @@
     },
     {
       "id": 99000364,
-      "order": 43,
+      "order": 42,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3852,7 +3837,7 @@
     },
     {
       "id": 99000365,
-      "order": 44,
+      "order": 43,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -3867,7 +3852,7 @@
     },
     {
       "id": 99000366,
-      "order": 45,
+      "order": 44,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3882,7 +3867,7 @@
     },
     {
       "id": 99000367,
-      "order": 46,
+      "order": 45,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -3897,7 +3882,7 @@
     },
     {
       "id": 99000368,
-      "order": 47,
+      "order": 46,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3912,7 +3897,7 @@
     },
     {
       "id": 99000369,
-      "order": 48,
+      "order": 47,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -3927,7 +3912,7 @@
     },
     {
       "id": 99000370,
-      "order": 49,
+      "order": 48,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3942,7 +3927,7 @@
     },
     {
       "id": 99000371,
-      "order": 50,
+      "order": 49,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -3957,7 +3942,7 @@
     },
     {
       "id": 99000372,
-      "order": 51,
+      "order": 50,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -3972,7 +3957,7 @@
     },
     {
       "id": 99000373,
-      "order": 274,
+      "order": 51,
       "variant": 1,
       "section_type": "other",
       "heading": "И$нъ канHнъ ко прест7ёй бцdэ, творeніе fеостирjкта монaха. Глaсъ }.",
@@ -3981,7 +3966,7 @@
     },
     {
       "id": 99000374,
-      "order": 53,
+      "order": 52,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -3996,7 +3981,7 @@
     },
     {
       "id": 99000375,
-      "order": 54,
+      "order": 53,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4011,7 +3996,7 @@
     },
     {
       "id": 99000376,
-      "order": 55,
+      "order": 54,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -4026,7 +4011,7 @@
     },
     {
       "id": 99000377,
-      "order": 56,
+      "order": 55,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4041,7 +4026,7 @@
     },
     {
       "id": 99000378,
-      "order": 57,
+      "order": 56,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -4056,7 +4041,7 @@
     },
     {
       "id": 99000379,
-      "order": 58,
+      "order": 57,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4071,7 +4056,7 @@
     },
     {
       "id": 99000380,
-      "order": 59,
+      "order": 58,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -4086,7 +4071,7 @@
     },
     {
       "id": 99000381,
-      "order": 60,
+      "order": 59,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4101,7 +4086,7 @@
     },
     {
       "id": 99000382,
-      "order": 283,
+      "order": 60,
       "variant": 1,
       "section_type": "other",
       "heading": "И$нъ канHнъ ѓгGлу храни1телю, глaсъ }.",
@@ -4110,7 +4095,7 @@
     },
     {
       "id": 99000383,
-      "order": 62,
+      "order": 61,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -4125,7 +4110,7 @@
     },
     {
       "id": 99000384,
-      "order": 63,
+      "order": 62,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4140,7 +4125,7 @@
     },
     {
       "id": 99000385,
-      "order": 64,
+      "order": 63,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -4155,7 +4140,7 @@
     },
     {
       "id": 99000386,
-      "order": 65,
+      "order": 64,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4170,7 +4155,7 @@
     },
     {
       "id": 99000387,
-      "order": 66,
+      "order": 65,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4185,7 +4170,7 @@
     },
     {
       "id": 99000388,
-      "order": 67,
+      "order": 66,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4200,7 +4185,7 @@
     },
     {
       "id": 99000389,
-      "order": 68,
+      "order": 67,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4215,7 +4200,7 @@
     },
     {
       "id": 99000390,
-      "order": 69,
+      "order": 68,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4230,7 +4215,7 @@
     },
     {
       "id": 99000391,
-      "order": 292,
+      "order": 69,
       "variant": 1,
       "section_type": "other",
       "heading": "Пёснь G.",
@@ -4239,7 +4224,7 @@
     },
     {
       "id": 99000392,
-      "order": 71,
+      "order": 70,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -4254,7 +4239,7 @@
     },
     {
       "id": 99000393,
-      "order": 72,
+      "order": 71,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -4269,7 +4254,7 @@
     },
     {
       "id": 99000394,
-      "order": 73,
+      "order": 72,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -4284,7 +4269,7 @@
     },
     {
       "id": 99000395,
-      "order": 74,
+      "order": 73,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -4299,7 +4284,7 @@
     },
     {
       "id": 99000396,
-      "order": 75,
+      "order": 74,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -4314,7 +4299,7 @@
     },
     {
       "id": 99000397,
-      "order": 76,
+      "order": 75,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -4329,7 +4314,7 @@
     },
     {
       "id": 99000398,
-      "order": 77,
+      "order": 76,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -4344,7 +4329,7 @@
     },
     {
       "id": 99000399,
-      "order": 78,
+      "order": 77,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -4359,7 +4344,7 @@
     },
     {
       "id": 99000400,
-      "order": 79,
+      "order": 78,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -4374,7 +4359,7 @@
     },
     {
       "id": 99000401,
-      "order": 302,
+      "order": 79,
       "variant": 1,
       "section_type": "other",
       "heading": "И$нъ, ко прест7ёй бцdэ.",
@@ -4383,7 +4368,7 @@
     },
     {
       "id": 99000402,
-      "order": 81,
+      "order": 80,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -4398,7 +4383,7 @@
     },
     {
       "id": 99000403,
-      "order": 82,
+      "order": 81,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4413,7 +4398,7 @@
     },
     {
       "id": 99000404,
-      "order": 83,
+      "order": 82,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -4428,7 +4413,7 @@
     },
     {
       "id": 99000405,
-      "order": 84,
+      "order": 83,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4443,7 +4428,7 @@
     },
     {
       "id": 99000406,
-      "order": 85,
+      "order": 84,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -4458,7 +4443,7 @@
     },
     {
       "id": 99000407,
-      "order": 86,
+      "order": 85,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4473,7 +4458,7 @@
     },
     {
       "id": 99000408,
-      "order": 87,
+      "order": 86,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -4488,7 +4473,7 @@
     },
     {
       "id": 99000409,
-      "order": 88,
+      "order": 87,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4503,7 +4488,7 @@
     },
     {
       "id": 99000410,
-      "order": 311,
+      "order": 88,
       "variant": 1,
       "section_type": "other",
       "heading": "И$нъ, ѓгGлу храни1телю.",
@@ -4512,7 +4497,7 @@
     },
     {
       "id": 99000411,
-      "order": 90,
+      "order": 89,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -4527,7 +4512,7 @@
     },
     {
       "id": 99000412,
-      "order": 91,
+      "order": 90,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4542,7 +4527,7 @@
     },
     {
       "id": 99000413,
-      "order": 92,
+      "order": 91,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -4557,7 +4542,7 @@
     },
     {
       "id": 99000414,
-      "order": 93,
+      "order": 92,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4572,7 +4557,7 @@
     },
     {
       "id": 99000415,
-      "order": 94,
+      "order": 93,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4587,7 +4572,7 @@
     },
     {
       "id": 99000416,
-      "order": 95,
+      "order": 94,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4602,7 +4587,7 @@
     },
     {
       "id": 99000417,
-      "order": 96,
+      "order": 95,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4617,7 +4602,7 @@
     },
     {
       "id": 99000418,
-      "order": 97,
+      "order": 96,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4632,7 +4617,7 @@
     },
     {
       "id": 99000419,
-      "order": 98,
+      "order": 97,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4647,7 +4632,7 @@
     },
     {
       "id": 99000420,
-      "order": 321,
+      "order": 98,
       "variant": 1,
       "section_type": "other",
       "heading": "Кондaкъ прест7ёй бцdэ, глaсъ ѕ7:",
@@ -4656,7 +4641,7 @@
     },
     {
       "id": 99000421,
-      "order": 100,
+      "order": 99,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4671,7 +4656,7 @@
     },
     {
       "id": 99000422,
-      "order": 101,
+      "order": 100,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4686,7 +4671,7 @@
     },
     {
       "id": 99000423,
-      "order": 324,
+      "order": 101,
       "variant": 1,
       "section_type": "other",
       "heading": "Кондaкъ ѓгGлу храни1телю, глaсъ д7:",
@@ -4695,7 +4680,7 @@
     },
     {
       "id": 99000424,
-      "order": 103,
+      "order": 102,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4710,7 +4695,7 @@
     },
     {
       "id": 99000425,
-      "order": 104,
+      "order": 103,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4725,7 +4710,7 @@
     },
     {
       "id": 99000426,
-      "order": 327,
+      "order": 104,
       "variant": 1,
       "section_type": "other",
       "heading": "Сэдaленъ ї}су хrтY, глaсъ ѕ7:",
@@ -4734,7 +4719,7 @@
     },
     {
       "id": 99000427,
-      "order": 106,
+      "order": 105,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4749,7 +4734,7 @@
     },
     {
       "id": 99000428,
-      "order": 107,
+      "order": 106,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4764,7 +4749,7 @@
     },
     {
       "id": 99000429,
-      "order": 330,
+      "order": 107,
       "variant": 1,
       "section_type": "other",
       "heading": "Сэдaленъ ѓгGлу храни1телю, глaсъ в7.",
@@ -4773,7 +4758,7 @@
     },
     {
       "id": 99000430,
-      "order": 109,
+      "order": 108,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4788,7 +4773,7 @@
     },
     {
       "id": 99000431,
-      "order": 110,
+      "order": 109,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4803,7 +4788,7 @@
     },
     {
       "id": 99000432,
-      "order": 111,
+      "order": 110,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4818,7 +4803,7 @@
     },
     {
       "id": 99000433,
-      "order": 112,
+      "order": 111,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -4833,7 +4818,7 @@
     },
     {
       "id": 99000434,
-      "order": 335,
+      "order": 112,
       "variant": 1,
       "section_type": "other",
       "heading": "Пёснь д7.",
@@ -4842,7 +4827,7 @@
     },
     {
       "id": 99000435,
-      "order": 114,
+      "order": 113,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -4857,7 +4842,7 @@
     },
     {
       "id": 99000436,
-      "order": 115,
+      "order": 114,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -4872,7 +4857,7 @@
     },
     {
       "id": 99000437,
-      "order": 116,
+      "order": 115,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -4887,7 +4872,7 @@
     },
     {
       "id": 99000438,
-      "order": 117,
+      "order": 116,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -4902,7 +4887,7 @@
     },
     {
       "id": 99000439,
-      "order": 118,
+      "order": 117,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -4917,7 +4902,7 @@
     },
     {
       "id": 99000440,
-      "order": 119,
+      "order": 118,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -4932,7 +4917,7 @@
     },
     {
       "id": 99000441,
-      "order": 120,
+      "order": 119,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -4947,7 +4932,7 @@
     },
     {
       "id": 99000442,
-      "order": 121,
+      "order": 120,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -4962,7 +4947,7 @@
     },
     {
       "id": 99000443,
-      "order": 122,
+      "order": 121,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -4977,7 +4962,7 @@
     },
     {
       "id": 99000444,
-      "order": 345,
+      "order": 122,
       "variant": 1,
       "section_type": "other",
       "heading": "И$нъ, ко прест7ёй бцdэ.",
@@ -4986,7 +4971,7 @@
     },
     {
       "id": 99000445,
-      "order": 124,
+      "order": 123,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5001,7 +4986,7 @@
     },
     {
       "id": 99000446,
-      "order": 125,
+      "order": 124,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5016,7 +5001,7 @@
     },
     {
       "id": 99000447,
-      "order": 126,
+      "order": 125,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5031,7 +5016,7 @@
     },
     {
       "id": 99000448,
-      "order": 127,
+      "order": 126,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5046,7 +5031,7 @@
     },
     {
       "id": 99000449,
-      "order": 128,
+      "order": 127,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5061,7 +5046,7 @@
     },
     {
       "id": 99000450,
-      "order": 129,
+      "order": 128,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5076,7 +5061,7 @@
     },
     {
       "id": 99000451,
-      "order": 130,
+      "order": 129,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5091,7 +5076,7 @@
     },
     {
       "id": 99000452,
-      "order": 131,
+      "order": 130,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5106,7 +5091,7 @@
     },
     {
       "id": 99000453,
-      "order": 132,
+      "order": 131,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5121,7 +5106,7 @@
     },
     {
       "id": 99000454,
-      "order": 133,
+      "order": 132,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5136,7 +5121,7 @@
     },
     {
       "id": 99000455,
-      "order": 356,
+      "order": 133,
       "variant": 1,
       "section_type": "other",
       "heading": "И$нъ, ѓгGлу храни1телю.",
@@ -5145,7 +5130,7 @@
     },
     {
       "id": 99000456,
-      "order": 135,
+      "order": 134,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5160,7 +5145,7 @@
     },
     {
       "id": 99000457,
-      "order": 136,
+      "order": 135,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5175,7 +5160,7 @@
     },
     {
       "id": 99000458,
-      "order": 137,
+      "order": 136,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5190,7 +5175,7 @@
     },
     {
       "id": 99000459,
-      "order": 138,
+      "order": 137,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5205,7 +5190,7 @@
     },
     {
       "id": 99000460,
-      "order": 139,
+      "order": 138,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5220,7 +5205,7 @@
     },
     {
       "id": 99000461,
-      "order": 140,
+      "order": 139,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5235,7 +5220,7 @@
     },
     {
       "id": 99000462,
-      "order": 141,
+      "order": 140,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5250,7 +5235,7 @@
     },
     {
       "id": 99000463,
-      "order": 142,
+      "order": 141,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5265,7 +5250,7 @@
     },
     {
       "id": 99000464,
-      "order": 365,
+      "order": 142,
       "variant": 1,
       "section_type": "other",
       "heading": "Пёснь є7.",
@@ -5274,7 +5259,7 @@
     },
     {
       "id": 99000465,
-      "order": 144,
+      "order": 143,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -5289,7 +5274,7 @@
     },
     {
       "id": 99000466,
-      "order": 145,
+      "order": 144,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5304,7 +5289,7 @@
     },
     {
       "id": 99000467,
-      "order": 146,
+      "order": 145,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -5319,7 +5304,7 @@
     },
     {
       "id": 99000468,
-      "order": 147,
+      "order": 146,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5334,7 +5319,7 @@
     },
     {
       "id": 99000469,
-      "order": 148,
+      "order": 147,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -5349,7 +5334,7 @@
     },
     {
       "id": 99000470,
-      "order": 149,
+      "order": 148,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5364,7 +5349,7 @@
     },
     {
       "id": 99000471,
-      "order": 150,
+      "order": 149,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -5379,7 +5364,7 @@
     },
     {
       "id": 99000472,
-      "order": 151,
+      "order": 150,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5394,7 +5379,7 @@
     },
     {
       "id": 99000473,
-      "order": 152,
+      "order": 151,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -5409,7 +5394,7 @@
     },
     {
       "id": 99000474,
-      "order": 375,
+      "order": 152,
       "variant": 1,
       "section_type": "other",
       "heading": "И$нъ, ко прест7ёй бцdэ.",
@@ -5418,7 +5403,7 @@
     },
     {
       "id": 99000475,
-      "order": 154,
+      "order": 153,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5433,7 +5418,7 @@
     },
     {
       "id": 99000476,
-      "order": 155,
+      "order": 154,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5448,7 +5433,7 @@
     },
     {
       "id": 99000477,
-      "order": 156,
+      "order": 155,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5463,7 +5448,7 @@
     },
     {
       "id": 99000478,
-      "order": 157,
+      "order": 156,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5478,7 +5463,7 @@
     },
     {
       "id": 99000479,
-      "order": 158,
+      "order": 157,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5493,7 +5478,7 @@
     },
     {
       "id": 99000480,
-      "order": 159,
+      "order": 158,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5508,7 +5493,7 @@
     },
     {
       "id": 99000481,
-      "order": 160,
+      "order": 159,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5523,7 +5508,7 @@
     },
     {
       "id": 99000482,
-      "order": 161,
+      "order": 160,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5538,7 +5523,7 @@
     },
     {
       "id": 99000483,
-      "order": 384,
+      "order": 161,
       "variant": 1,
       "section_type": "other",
       "heading": "И$нъ, ѓгGлу храни1телю.",
@@ -5547,7 +5532,7 @@
     },
     {
       "id": 99000484,
-      "order": 163,
+      "order": 162,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5562,7 +5547,7 @@
     },
     {
       "id": 99000485,
-      "order": 164,
+      "order": 163,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5577,7 +5562,7 @@
     },
     {
       "id": 99000486,
-      "order": 165,
+      "order": 164,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5592,7 +5577,7 @@
     },
     {
       "id": 99000487,
-      "order": 166,
+      "order": 165,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5607,7 +5592,7 @@
     },
     {
       "id": 99000488,
-      "order": 167,
+      "order": 166,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5622,7 +5607,7 @@
     },
     {
       "id": 99000489,
-      "order": 168,
+      "order": 167,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5637,7 +5622,7 @@
     },
     {
       "id": 99000490,
-      "order": 169,
+      "order": 168,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5652,7 +5637,7 @@
     },
     {
       "id": 99000491,
-      "order": 170,
+      "order": 169,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5667,7 +5652,7 @@
     },
     {
       "id": 99000492,
-      "order": 393,
+      "order": 170,
       "variant": 1,
       "section_type": "other",
       "heading": "Пёснь ѕ7.",
@@ -5676,7 +5661,7 @@
     },
     {
       "id": 99000493,
-      "order": 172,
+      "order": 171,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -5691,7 +5676,7 @@
     },
     {
       "id": 99000494,
-      "order": 173,
+      "order": 172,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5706,7 +5691,7 @@
     },
     {
       "id": 99000495,
-      "order": 174,
+      "order": 173,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -5721,7 +5706,7 @@
     },
     {
       "id": 99000496,
-      "order": 175,
+      "order": 174,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5736,7 +5721,7 @@
     },
     {
       "id": 99000497,
-      "order": 176,
+      "order": 175,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -5751,7 +5736,7 @@
     },
     {
       "id": 99000498,
-      "order": 177,
+      "order": 176,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5766,7 +5751,7 @@
     },
     {
       "id": 99000499,
-      "order": 178,
+      "order": 177,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -5781,7 +5766,7 @@
     },
     {
       "id": 99000500,
-      "order": 179,
+      "order": 178,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5796,7 +5781,7 @@
     },
     {
       "id": 99000501,
-      "order": 180,
+      "order": 179,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -5811,7 +5796,7 @@
     },
     {
       "id": 99000502,
-      "order": 403,
+      "order": 180,
       "variant": 1,
       "section_type": "other",
       "heading": "И$нъ, ко прест7ёй бцdэ.",
@@ -5820,7 +5805,7 @@
     },
     {
       "id": 99000503,
-      "order": 182,
+      "order": 181,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5835,7 +5820,7 @@
     },
     {
       "id": 99000504,
-      "order": 183,
+      "order": 182,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5850,7 +5835,7 @@
     },
     {
       "id": 99000505,
-      "order": 184,
+      "order": 183,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5865,7 +5850,7 @@
     },
     {
       "id": 99000506,
-      "order": 185,
+      "order": 184,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5880,7 +5865,7 @@
     },
     {
       "id": 99000507,
-      "order": 186,
+      "order": 185,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5895,7 +5880,7 @@
     },
     {
       "id": 99000508,
-      "order": 187,
+      "order": 186,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5910,7 +5895,7 @@
     },
     {
       "id": 99000509,
-      "order": 188,
+      "order": 187,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5925,7 +5910,7 @@
     },
     {
       "id": 99000510,
-      "order": 189,
+      "order": 188,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5940,7 +5925,7 @@
     },
     {
       "id": 99000511,
-      "order": 412,
+      "order": 189,
       "variant": 1,
       "section_type": "other",
       "heading": "И$нъ, ѓгGлу храни1телю.",
@@ -5949,7 +5934,7 @@
     },
     {
       "id": 99000512,
-      "order": 191,
+      "order": 190,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5964,7 +5949,7 @@
     },
     {
       "id": 99000513,
-      "order": 192,
+      "order": 191,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -5979,7 +5964,7 @@
     },
     {
       "id": 99000514,
-      "order": 193,
+      "order": 192,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -5994,7 +5979,7 @@
     },
     {
       "id": 99000515,
-      "order": 194,
+      "order": 193,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6009,7 +5994,7 @@
     },
     {
       "id": 99000516,
-      "order": 195,
+      "order": 194,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6024,7 +6009,7 @@
     },
     {
       "id": 99000517,
-      "order": 196,
+      "order": 195,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6039,7 +6024,7 @@
     },
     {
       "id": 99000518,
-      "order": 197,
+      "order": 196,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6054,7 +6039,7 @@
     },
     {
       "id": 99000519,
-      "order": 198,
+      "order": 197,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6069,7 +6054,7 @@
     },
     {
       "id": 99000520,
-      "order": 199,
+      "order": 198,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6084,7 +6069,7 @@
     },
     {
       "id": 99000521,
-      "order": 200,
+      "order": 199,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6099,7 +6084,7 @@
     },
     {
       "id": 99000522,
-      "order": 423,
+      "order": 200,
       "variant": 1,
       "section_type": "other",
       "heading": "Кондaкъ ї}су хrтY, глaсъ ѕ7:",
@@ -6108,7 +6093,7 @@
     },
     {
       "id": 99000523,
-      "order": 202,
+      "order": 201,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6123,7 +6108,7 @@
     },
     {
       "id": 99000524,
-      "order": 203,
+      "order": 202,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6138,7 +6123,7 @@
     },
     {
       "id": 99000525,
-      "order": 426,
+      "order": 203,
       "variant": 1,
       "section_type": "other",
       "heading": "Пёснь з7.",
@@ -6147,7 +6132,7 @@
     },
     {
       "id": 99000526,
-      "order": 205,
+      "order": 204,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -6162,7 +6147,7 @@
     },
     {
       "id": 99000527,
-      "order": 206,
+      "order": 205,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6177,7 +6162,7 @@
     },
     {
       "id": 99000528,
-      "order": 207,
+      "order": 206,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -6192,7 +6177,7 @@
     },
     {
       "id": 99000529,
-      "order": 208,
+      "order": 207,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6207,7 +6192,7 @@
     },
     {
       "id": 99000530,
-      "order": 209,
+      "order": 208,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -6222,7 +6207,7 @@
     },
     {
       "id": 99000531,
-      "order": 210,
+      "order": 209,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6237,7 +6222,7 @@
     },
     {
       "id": 99000532,
-      "order": 211,
+      "order": 210,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -6252,7 +6237,7 @@
     },
     {
       "id": 99000533,
-      "order": 212,
+      "order": 211,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6267,7 +6252,7 @@
     },
     {
       "id": 99000534,
-      "order": 213,
+      "order": 212,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -6282,7 +6267,7 @@
     },
     {
       "id": 99000535,
-      "order": 436,
+      "order": 213,
       "variant": 1,
       "section_type": "other",
       "heading": "И$нъ, ко прест7ёй бцdэ.",
@@ -6291,7 +6276,7 @@
     },
     {
       "id": 99000536,
-      "order": 215,
+      "order": 214,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6306,7 +6291,7 @@
     },
     {
       "id": 99000537,
-      "order": 216,
+      "order": 215,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6321,7 +6306,7 @@
     },
     {
       "id": 99000538,
-      "order": 217,
+      "order": 216,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6336,7 +6321,7 @@
     },
     {
       "id": 99000539,
-      "order": 218,
+      "order": 217,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6351,7 +6336,7 @@
     },
     {
       "id": 99000540,
-      "order": 219,
+      "order": 218,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6366,7 +6351,7 @@
     },
     {
       "id": 99000541,
-      "order": 220,
+      "order": 219,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6381,7 +6366,7 @@
     },
     {
       "id": 99000542,
-      "order": 221,
+      "order": 220,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6396,7 +6381,7 @@
     },
     {
       "id": 99000543,
-      "order": 222,
+      "order": 221,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6411,7 +6396,7 @@
     },
     {
       "id": 99000544,
-      "order": 445,
+      "order": 222,
       "variant": 1,
       "section_type": "other",
       "heading": "И$нъ, ѓгGлу храни1телю.",
@@ -6420,7 +6405,7 @@
     },
     {
       "id": 99000545,
-      "order": 224,
+      "order": 223,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6435,7 +6420,7 @@
     },
     {
       "id": 99000546,
-      "order": 225,
+      "order": 224,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6450,7 +6435,7 @@
     },
     {
       "id": 99000547,
-      "order": 226,
+      "order": 225,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6465,7 +6450,7 @@
     },
     {
       "id": 99000548,
-      "order": 227,
+      "order": 226,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6480,7 +6465,7 @@
     },
     {
       "id": 99000549,
-      "order": 228,
+      "order": 227,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6495,7 +6480,7 @@
     },
     {
       "id": 99000550,
-      "order": 229,
+      "order": 228,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6510,7 +6495,7 @@
     },
     {
       "id": 99000551,
-      "order": 230,
+      "order": 229,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6525,7 +6510,7 @@
     },
     {
       "id": 99000552,
-      "order": 231,
+      "order": 230,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6540,7 +6525,7 @@
     },
     {
       "id": 99000553,
-      "order": 454,
+      "order": 231,
       "variant": 1,
       "section_type": "other",
       "heading": "Пёснь }.",
@@ -6549,7 +6534,7 @@
     },
     {
       "id": 99000554,
-      "order": 233,
+      "order": 232,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -6564,7 +6549,7 @@
     },
     {
       "id": 99000555,
-      "order": 234,
+      "order": 233,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6579,7 +6564,7 @@
     },
     {
       "id": 99000556,
-      "order": 235,
+      "order": 234,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -6594,7 +6579,7 @@
     },
     {
       "id": 99000557,
-      "order": 236,
+      "order": 235,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6609,7 +6594,7 @@
     },
     {
       "id": 99000558,
-      "order": 237,
+      "order": 236,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -6624,7 +6609,7 @@
     },
     {
       "id": 99000559,
-      "order": 238,
+      "order": 237,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6639,7 +6624,7 @@
     },
     {
       "id": 99000560,
-      "order": 239,
+      "order": 238,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -6654,7 +6639,7 @@
     },
     {
       "id": 99000561,
-      "order": 240,
+      "order": 239,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6669,7 +6654,7 @@
     },
     {
       "id": 99000562,
-      "order": 241,
+      "order": 240,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -6684,7 +6669,7 @@
     },
     {
       "id": 99000563,
-      "order": 464,
+      "order": 241,
       "variant": 1,
       "section_type": "other",
       "heading": "И$нъ, ко прест7ёй бцdэ.",
@@ -6693,7 +6678,7 @@
     },
     {
       "id": 99000564,
-      "order": 243,
+      "order": 242,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6708,7 +6693,7 @@
     },
     {
       "id": 99000565,
-      "order": 244,
+      "order": 243,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6723,7 +6708,7 @@
     },
     {
       "id": 99000566,
-      "order": 245,
+      "order": 244,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6738,7 +6723,7 @@
     },
     {
       "id": 99000567,
-      "order": 246,
+      "order": 245,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6753,7 +6738,7 @@
     },
     {
       "id": 99000568,
-      "order": 247,
+      "order": 246,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6768,7 +6753,7 @@
     },
     {
       "id": 99000569,
-      "order": 248,
+      "order": 247,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6783,7 +6768,7 @@
     },
     {
       "id": 99000570,
-      "order": 249,
+      "order": 248,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6798,7 +6783,7 @@
     },
     {
       "id": 99000571,
-      "order": 250,
+      "order": 249,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6813,7 +6798,7 @@
     },
     {
       "id": 99000572,
-      "order": 473,
+      "order": 250,
       "variant": 1,
       "section_type": "other",
       "heading": "И$нъ, ѓгGлу храни1телю.",
@@ -6822,7 +6807,7 @@
     },
     {
       "id": 99000573,
-      "order": 252,
+      "order": 251,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6837,7 +6822,7 @@
     },
     {
       "id": 99000574,
-      "order": 253,
+      "order": 252,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6852,7 +6837,7 @@
     },
     {
       "id": 99000575,
-      "order": 254,
+      "order": 253,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6867,7 +6852,7 @@
     },
     {
       "id": 99000576,
-      "order": 255,
+      "order": 254,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6882,7 +6867,7 @@
     },
     {
       "id": 99000577,
-      "order": 256,
+      "order": 255,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6897,7 +6882,7 @@
     },
     {
       "id": 99000578,
-      "order": 257,
+      "order": 256,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6912,7 +6897,7 @@
     },
     {
       "id": 99000579,
-      "order": 258,
+      "order": 257,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6927,7 +6912,7 @@
     },
     {
       "id": 99000580,
-      "order": 259,
+      "order": 258,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -6942,7 +6927,7 @@
     },
     {
       "id": 99000581,
-      "order": 482,
+      "order": 259,
       "variant": 1,
       "section_type": "other",
       "heading": "Пёснь f7.",
@@ -6951,7 +6936,7 @@
     },
     {
       "id": 99000582,
-      "order": 261,
+      "order": 260,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -6966,7 +6951,7 @@
     },
     {
       "id": 99000583,
-      "order": 262,
+      "order": 261,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -6981,7 +6966,7 @@
     },
     {
       "id": 99000584,
-      "order": 263,
+      "order": 262,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -6996,7 +6981,7 @@
     },
     {
       "id": 99000585,
-      "order": 264,
+      "order": 263,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -7011,7 +6996,7 @@
     },
     {
       "id": 99000586,
-      "order": 265,
+      "order": 264,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -7026,7 +7011,7 @@
     },
     {
       "id": 99000587,
-      "order": 266,
+      "order": 265,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -7041,7 +7026,7 @@
     },
     {
       "id": 99000588,
-      "order": 267,
+      "order": 266,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -7056,7 +7041,7 @@
     },
     {
       "id": 99000589,
-      "order": 268,
+      "order": 267,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -7071,7 +7056,7 @@
     },
     {
       "id": 99000590,
-      "order": 269,
+      "order": 268,
       "variant": 1,
       "section_type": "troparion",
       "heading": "",
@@ -7086,7 +7071,7 @@
     },
     {
       "id": 99000591,
-      "order": 492,
+      "order": 269,
       "variant": 1,
       "section_type": "other",
       "heading": "И$нъ, ко прест7ёй бцdэ.",
@@ -7095,7 +7080,7 @@
     },
     {
       "id": 99000592,
-      "order": 271,
+      "order": 270,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -7110,7 +7095,7 @@
     },
     {
       "id": 99000593,
-      "order": 272,
+      "order": 271,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7125,7 +7110,7 @@
     },
     {
       "id": 99000594,
-      "order": 273,
+      "order": 272,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -7140,7 +7125,7 @@
     },
     {
       "id": 99000595,
-      "order": 274,
+      "order": 273,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7155,7 +7140,7 @@
     },
     {
       "id": 99000596,
-      "order": 275,
+      "order": 274,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -7170,7 +7155,7 @@
     },
     {
       "id": 99000597,
-      "order": 276,
+      "order": 275,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7185,7 +7170,7 @@
     },
     {
       "id": 99000598,
-      "order": 277,
+      "order": 276,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -7200,7 +7185,7 @@
     },
     {
       "id": 99000599,
-      "order": 278,
+      "order": 277,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7215,7 +7200,7 @@
     },
     {
       "id": 99000600,
-      "order": 279,
+      "order": 278,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -7230,7 +7215,7 @@
     },
     {
       "id": 99000601,
-      "order": 280,
+      "order": 279,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7245,7 +7230,7 @@
     },
     {
       "id": 99000602,
-      "order": 503,
+      "order": 280,
       "variant": 1,
       "section_type": "other",
       "heading": "И$нъ, ѓгGлу храни1телю.",
@@ -7254,7 +7239,7 @@
     },
     {
       "id": 99000603,
-      "order": 282,
+      "order": 281,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -7269,7 +7254,7 @@
     },
     {
       "id": 99000604,
-      "order": 283,
+      "order": 282,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7284,7 +7269,7 @@
     },
     {
       "id": 99000605,
-      "order": 284,
+      "order": 283,
       "variant": 1,
       "section_type": "refrain",
       "heading": "",
@@ -7299,7 +7284,7 @@
     },
     {
       "id": 99000606,
-      "order": 285,
+      "order": 284,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7314,7 +7299,7 @@
     },
     {
       "id": 99000607,
-      "order": 286,
+      "order": 285,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7329,7 +7314,7 @@
     },
     {
       "id": 99000608,
-      "order": 287,
+      "order": 286,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7344,7 +7329,7 @@
     },
     {
       "id": 99000609,
-      "order": 288,
+      "order": 287,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7359,7 +7344,7 @@
     },
     {
       "id": 99000610,
-      "order": 289,
+      "order": 288,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7374,7 +7359,7 @@
     },
     {
       "id": 99000611,
-      "order": 512,
+      "order": 289,
       "variant": 1,
       "section_type": "other",
       "heading": "По скончaніи же канHна глаг0лемъ:",
@@ -7383,7 +7368,7 @@
     },
     {
       "id": 99000612,
-      "order": 291,
+      "order": 290,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7398,7 +7383,7 @@
     },
     {
       "id": 99000613,
-      "order": 514,
+      "order": 291,
       "variant": 1,
       "section_type": "other",
       "heading": "Трис™0е:",
@@ -7407,7 +7392,7 @@
     },
     {
       "id": 99000614,
-      "order": 293,
+      "order": 292,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7422,7 +7407,7 @@
     },
     {
       "id": 99000615,
-      "order": 294,
+      "order": 293,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7437,7 +7422,7 @@
     },
     {
       "id": 99000616,
-      "order": 517,
+      "order": 294,
       "variant": 1,
       "section_type": "other",
       "heading": "Мlтва ко прес™ёй трbцэ:",
@@ -7446,7 +7431,7 @@
     },
     {
       "id": 99000617,
-      "order": 296,
+      "order": 295,
       "variant": 1,
       "section_type": "prayer",
       "heading": "",
@@ -7461,7 +7446,7 @@
     },
     {
       "id": 99000618,
-      "order": 297,
+      "order": 296,
       "variant": 1,
       "section_type": "prayer",
       "heading": "",
@@ -7476,7 +7461,7 @@
     },
     {
       "id": 99000619,
-      "order": 298,
+      "order": 297,
       "variant": 1,
       "section_type": "prayer",
       "heading": "",
@@ -7491,7 +7476,7 @@
     },
     {
       "id": 99000620,
-      "order": 521,
+      "order": 298,
       "variant": 1,
       "section_type": "other",
       "heading": "Мlтва гDнz:",
@@ -7500,7 +7485,7 @@
     },
     {
       "id": 99000621,
-      "order": 300,
+      "order": 299,
       "variant": 1,
       "section_type": "prayer",
       "heading": "",
@@ -7515,7 +7500,7 @@
     },
     {
       "id": 99000622,
-      "order": 523,
+      "order": 300,
       "variant": 1,
       "section_type": "other",
       "heading": "И# тропари2 сі‰, глaсъ ѕ7:",
@@ -7524,7 +7509,7 @@
     },
     {
       "id": 99000623,
-      "order": 302,
+      "order": 301,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7539,7 +7524,7 @@
     },
     {
       "id": 99000624,
-      "order": 303,
+      "order": 302,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7554,7 +7539,7 @@
     },
     {
       "id": 99000625,
-      "order": 304,
+      "order": 303,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7569,7 +7554,7 @@
     },
     {
       "id": 99000626,
-      "order": 305,
+      "order": 304,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7584,7 +7569,7 @@
     },
     {
       "id": 99000627,
-      "order": 306,
+      "order": 305,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7599,7 +7584,7 @@
     },
     {
       "id": 99000628,
-      "order": 307,
+      "order": 306,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7614,7 +7599,7 @@
     },
     {
       "id": 99000629,
-      "order": 308,
+      "order": 307,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7629,7 +7614,7 @@
     },
     {
       "id": 99000630,
-      "order": 531,
+      "order": 308,
       "variant": 1,
       "section_type": "other",
       "heading": "Мlтва ко гDу нaшему ї}су хrтY:",
@@ -7638,7 +7623,7 @@
     },
     {
       "id": 99000631,
-      "order": 310,
+      "order": 309,
       "variant": 1,
       "section_type": "prayer",
       "heading": "",
@@ -7653,7 +7638,7 @@
     },
     {
       "id": 99000632,
-      "order": 311,
+      "order": 310,
       "variant": 1,
       "section_type": "prayer",
       "heading": "",
@@ -7668,7 +7653,7 @@
     },
     {
       "id": 99000633,
-      "order": 534,
+      "order": 311,
       "variant": 1,
       "section_type": "other",
       "heading": "Мlтва ко прес™ёй бцdэ:",
@@ -7677,7 +7662,7 @@
     },
     {
       "id": 99000634,
-      "order": 313,
+      "order": 312,
       "variant": 1,
       "section_type": "prayer",
       "heading": "",
@@ -7692,7 +7677,7 @@
     },
     {
       "id": 99000635,
-      "order": 314,
+      "order": 313,
       "variant": 1,
       "section_type": "prayer",
       "heading": "",
@@ -7707,7 +7692,7 @@
     },
     {
       "id": 99000636,
-      "order": 537,
+      "order": 314,
       "variant": 1,
       "section_type": "other",
       "heading": "Мlтва ко ѓгGлу храни1телю:",
@@ -7716,7 +7701,7 @@
     },
     {
       "id": 99000637,
-      "order": 316,
+      "order": 315,
       "variant": 1,
       "section_type": "prayer",
       "heading": "",
@@ -7731,7 +7716,7 @@
     },
     {
       "id": 99000638,
-      "order": 539,
+      "order": 316,
       "variant": 1,
       "section_type": "other",
       "heading": "Њкончaніе:",
@@ -7740,7 +7725,7 @@
     },
     {
       "id": 99000639,
-      "order": 318,
+      "order": 317,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7755,7 +7740,7 @@
     },
     {
       "id": 99000640,
-      "order": 319,
+      "order": 318,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7770,7 +7755,7 @@
     },
     {
       "id": 99000641,
-      "order": 320,
+      "order": 319,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7785,7 +7770,7 @@
     },
     {
       "id": 99000642,
-      "order": 321,
+      "order": 320,
       "variant": 1,
       "section_type": "other",
       "heading": "",
@@ -7800,7 +7785,7 @@
     },
     {
       "id": 99000643,
-      "order": 322,
+      "order": 321,
       "variant": 1,
       "section_type": "other",
       "heading": "",
