@@ -49,6 +49,13 @@ assert.notEqual(opening[0].id, opening[1].id,
   'An individual sin must be selectable without adding the whole paragraph');
 assert.ok(document.entries.every(item => !item.description),
   'Individual selected sins should not import unrelated sins in their explanation');
+assert.ok(document.blocks.every(block => block.type !== 'paragraph' ||
+  block.segments.every(segment => !/^[#]{3}\s/u.test(segment.text))),
+  'Themed headings must be rendered as headings, never selectable sins');
+assert.ok(document.blocks.filter(block => block.type === 'heading').length >= 20);
+assert.ok(document.entries.some(item =>
+  item.title === 'Посещением гуляний, театра, кино под великие праздники'));
+assert.ok(document.entries.some(item => item.title === 'чтение порнографических книг, журналов'));
 
 assert.match(screen, /Все грехи/);
 assert.match(screen, /Мой список/);
@@ -136,7 +143,7 @@ const storage = new Function('SecureStore', exposed + `
   assert.equal(mockStore.size, 0);
 
   await assert.rejects(storage.saveConfessionEntry('../unsafe', 'x'));
-  console.log('PASS: source text is continuous, 456 individual selectable phrases');
+  console.log('PASS: source text is continuous, ' + document.entries.length + ' individual selectable phrases');
   console.log('PASS: existing grouped selections retained without losing prior notes');
   console.log('PASS: confession screen and Communion navigation parse');
   console.log('PASS: personal notes stored only in SecureStore, excluded from sync');
