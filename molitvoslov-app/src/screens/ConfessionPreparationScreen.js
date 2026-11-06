@@ -15,6 +15,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
+import {useReadingChrome} from '../hooks/useReadingChrome';
 import {colors} from '../theme';
 import confessionCatalog from '../data/confessionCatalog.json';
 import confessionDocument from '../data/confessionDocument.json';
@@ -46,6 +47,12 @@ export const ConfessionPreparationScreen = ({navigation}) => {
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
   const [viewMode, setViewMode] = useState('catalog');
+  const {readingChromeHidden, handleReadingScroll, handleNativeReadingScroll} = useReadingChrome();
+  const switchView = useCallback(nextMode => {
+    // The newly mounted list always starts at the top with visible controls.
+    handleReadingScroll('top');
+    setViewMode(nextMode);
+  }, [handleReadingScroll]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]);
   const [menuSinId, setMenuSinId] = useState(null);
@@ -243,7 +250,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
       <View style={styles.tabs}>
         <Pressable
           style={[styles.tab, catalogMode && styles.tabActive]}
-          onPress={() => setViewMode('catalog')}
+          onPress={() => switchView('catalog')}
           accessibilityRole="tab"
           accessibilityState={{selected: catalogMode}}
         >
@@ -253,7 +260,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
         </Pressable>
         <Pressable
           style={[styles.tab, !catalogMode && styles.tabActive]}
-          onPress={() => setViewMode('mine')}
+          onPress={() => switchView('mine')}
           accessibilityRole="tab"
           accessibilityState={{selected: !catalogMode}}
         >
@@ -272,7 +279,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
           <Text style={styles.heading}>Грехи с объяснениями</Text>
           <Text style={styles.explanation}>
             Нажмите на конкретное слово или выражение в тексте, чтобы добавить
-            этот грех в свой список. Текст читается одним целым.
+            этот грех в свой список.
           </Text>
         </>
       ) : (
@@ -288,7 +295,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
               onPress={() => setAddingCustom(value => !value)}
             >
               <Text style={styles.smallButtonText}>
-                {addingCustom ? 'Отмена' : '+ Свой пункт'}
+                {addingCustom ? 'Отмена' : '+ Добавить'}
               </Text>
             </Pressable>
             {selectedIds.length > 0 && (
@@ -354,7 +361,11 @@ export const ConfessionPreparationScreen = ({navigation}) => {
             ]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
-            showsVerticalScrollIndicator={false}
+            onScroll={handleNativeReadingScroll}
+            scrollEventThrottle={16}
+            showsVerticalScrollIndicator={true}
+            persistentScrollbar={catalogMode}
+            indicatorStyle="black"
             initialNumToRender={10}
             maxToRenderPerBatch={12}
             windowSize={7}
@@ -364,10 +375,19 @@ export const ConfessionPreparationScreen = ({navigation}) => {
           title="Подготовка к исповеди"
           gradientColor="#FFF4DE"
           navigation={navigation}
+          compactReading
+          readingHidden={readingChromeHidden}
+          headerAction={{
+            label: catalogMode ? 'Мой список' : 'Все грехи',
+            accessibilityLabel: catalogMode
+              ? 'Перейти в мой список'
+              : 'Перейти ко всем грехам',
+            onPress: () => switchView(catalogMode ? 'mine' : 'catalog'),
+          }}
           topInset={insets.top}
           onHeaderHeightChange={setHeaderHeight}
         />
-        <BottomNav navigation={navigation} active={null} />
+        <BottomNav navigation={navigation} active={null} readingHidden={readingChromeHidden} />
       </View>
 
       <Modal
@@ -469,12 +489,12 @@ const styles = StyleSheet.create({
   documentHeading: {
     color: '#73492E', fontFamily: 'serif',
     fontSize: 17, lineHeight: 24, fontWeight: '700',
-    textAlign: 'center',
+    textAlign: 'left',
   },
   documentParagraph: {
     color: '#463627', fontFamily: 'serif', fontSize: 17,
     lineHeight: 27, marginBottom: 9,
-    textAlign: 'left', paddingHorizontal: 3,
+    textAlign: 'justify', paddingHorizontal: 3,
   },
   documentPhrase: {color: '#463627'},
   documentSelected: {color: '#A44331', textDecorationLine: 'underline'},
