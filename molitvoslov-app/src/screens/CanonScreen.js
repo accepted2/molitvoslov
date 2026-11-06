@@ -720,7 +720,9 @@ export const CanonScreen = ({route, navigation}) => {
       sections.push({
         className: canon.slug === 'tri-sovmeshchennykh-kanona'
           ? viewMode === MODE_TRADITIONAL
-            ? 'canon-section three-combined-canon three-combined-traditional'
+            ? sectionTitle
+              ? 'canon-section three-combined-canon three-combined-traditional three-combined-heading'
+              : 'canon-section three-combined-canon three-combined-traditional three-combined-paragraph'
             : 'canon-section three-combined-canon'
           : 'canon-section',
 
