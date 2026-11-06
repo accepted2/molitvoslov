@@ -100,12 +100,12 @@ assert.ok(!/getCanonRussianCoverage\(displaySections\)/.test(canonScreen),
 assert.match(styles, /\.rule-item\.three-combined-canon\.three-combined-traditional \.section-title/);
 assert.match(styles, /\.rule-item\.three-combined-traditional\.three-combined-paragraph/);
 assert.match(styles, /\.rule-item\.three-combined-traditional\.three-combined-heading/);
-// The traditional source's independent paragraphs have subtle separators;
-// refrain lines remain attached to the troparia that follow them.
+// Independent traditional prayers, stanzas AND refrain lines have subtle
+// separators; the styling is scoped to the three combined canons.
 assert.match(canonScreen, /effectiveSectionType === 'refrain'/);
 assert.match(canonScreen, /three-combined-paragraph three-combined-refrain/);
 assert.match(styles, /\.rule-item\.three-combined-traditional\.three-combined-paragraph\s*\{[^}]*border-bottom: 1px solid rgba\(123, 79, 36, 0\.20\);/s);
-assert.match(styles, /\.rule-item\.three-combined-traditional\.three-combined-refrain\s*\{[^}]*border-bottom: none;/s);
+assert.match(styles, /\.rule-item\.three-combined-traditional\.three-combined-refrain\s*\{[^}]*margin-bottom: 10px;[^}]*padding-bottom: 10px;[^}]*border-bottom: 1px solid rgba\(123, 79, 36, 0\.20\);/s);
 assert.match(styles, /\.rule-item\.three-combined-traditional\.three-combined-heading\s*\{[^}]*border-bottom: 1px solid rgba\(123, 79, 36, 0\.24\);/s);
 assert.ok(data.traditional_sections.filter(section => section.section_type === 'refrain').length > 50);
 assert.match(styles, /font-family: 'Ponomar', Georgia, serif/);
@@ -178,7 +178,7 @@ for (const file of [
 console.log('PASS: 206 CS and RU paragraphs in 198 modern reading blocks; 277 traditional paragraphs');
 console.log('PASS: 277 traditional paragraphs converted UCS to Church Slavonic Unicode');
 console.log('PASS: 14 traditional bow/repeat rubrics styled brown, no source or offset changes');
-console.log('PASS: thin traditional prayer and heading separators; refrain stays with its troparion');
+console.log('PASS: thin traditional prayer, refrain and heading separators');
 console.log('PASS: 4 prayers, 3 joined prayer bodies; one red initial per joined prayer');
 console.log('PASS: traditional switch does not reset availability or selected tab');
 console.log('PASS: 16 modern and 44 traditional headings; complete ordered text');
