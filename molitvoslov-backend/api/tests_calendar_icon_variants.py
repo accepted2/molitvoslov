@@ -12,7 +12,7 @@ from api.calendar_icon_variants import public_https as _public_https
 
 
 class IconVariantsTests(unittest.TestCase):
-    def test_source_unchanged_and_three_fixed_size_canvases(self):
+    def test_one_medium_size_offline_canvas_preserves_original(self):
         with tempfile.TemporaryDirectory() as folder:
             src = Path(folder) / "original.png"
             Image.new("RGB", (1600, 1200), (110, 25, 35)).save(src)
@@ -24,10 +24,11 @@ class IconVariantsTests(unittest.TestCase):
             self.assertEqual(
                 (info["original_width"], info["original_height"]), (1600, 1200)
             )
-            for label, dimensions in CANVASES.items():
-                with Image.open(info["variants"][label]) as result:
-                    self.assertEqual(result.size, dimensions)
-            with Image.open(info["variants"]["master"]) as master:
+            self.assertEqual(CANVASES, {"offline": (480, 640)})
+            self.assertEqual(set(info["variants"]), {"offline"})
+            self.assertGreater(info["file_bytes"], 0)
+            with Image.open(info["variants"]["offline"]) as master:
+                self.assertEqual(master.size, (480, 640))
                 # Верхний угол — цвет поля, значит изображение НЕ обрезано.
                 expected = (244, 239, 229)
                 actual = master.getpixel((0, 0))
@@ -38,8 +39,8 @@ class IconVariantsTests(unittest.TestCase):
             src = Path(folder) / "portrait.png"
             Image.new("RGB", (1000, 1800), (170, 30, 20)).save(src)
             info = render_icon_variants(src, Path(folder) / "out", asset_id="saint-123")
-            with Image.open(info["variants"]["display"]) as output:
-                self.assertEqual(output.size, (768, 1024))
+            with Image.open(info["variants"]["offline"]) as output:
+                self.assertEqual(output.size, (480, 640))
                 actual = output.getpixel((0, 0))
                 self.assertLessEqual(
                     max(abs(a-b) for a,b in zip(actual,(244,239,229))), 3
