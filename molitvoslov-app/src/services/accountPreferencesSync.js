@@ -13,6 +13,7 @@ const MODE_OLD = '@molitvoslov/reader-language-mode/v1:';
 const SECTIONS = ['settings', 'reader_overrides', 'reader_modes'];
 let timer = null;
 let running = null;
+let writeQueue = Promise.resolve();
 
 const mergePatch = (left = {}, right = {}) => {
   const result = {...left};
@@ -21,27 +22,31 @@ const mergePatch = (left = {}, right = {}) => {
   }
   return result;
 };
-const accountKey = (userId, scope) =>
-  `${APPEARANCE}account-${encodeURIComponent(String(userId))}:${scope.replace(':', ':')}`;
 const pendingKey = (userId) => PENDING + String(userId);
 const parse = (raw, fallback = {}) => {
   try { return raw ? JSON.parse(raw) : fallback; } catch { return fallback; }
 };
 const readPending = async (id) => parse(await AsyncStorage.getItem(pendingKey(id)));
 
-export const queueAccountPreferencePatch = async (patch) => {
-  const user = await getCachedBackendUser().catch(() => null);
-  const token = await getApiToken().catch(() => null);
-  if (!user?.id || !token) return;
-  const key = pendingKey(user.id);
-  const current = await readPending(user.id);
-  await AsyncStorage.setItem(key, JSON.stringify(mergePatch(current, patch)));
-  if (timer) clearTimeout(timer);
-  timer = setTimeout(() => {
-    syncAccountPreferences().catch(error =>
-      console.warn('[preferences] retry on next login/connection:', error?.message || error)
-    );
-  }, 1100);
+export const queueAccountPreferencePatch = (patch) => {
+  // Serialise concurrent palette-drag updates so older writes cannot
+  // overwrite a newer color choice in the offline pending queue.
+  const enqueue = async () => {
+    const user = await getCachedBackendUser().catch(() => null);
+    const token = await getApiToken().catch(() => null);
+    if (!user?.id || !token) return;
+    const key = pendingKey(user.id);
+    const current = await readPending(user.id);
+    await AsyncStorage.setItem(key, JSON.stringify(mergePatch(current, patch)));
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      syncAccountPreferences().catch(error =>
+        console.warn('[preferences] retry on next login/connection:', error?.message || error)
+      );
+    }, 1300);
+  };
+  writeQueue = writeQueue.then(enqueue, enqueue);
+  return writeQueue;
 };
 
 const request = async (method, patch = null) => {
@@ -126,6 +131,7 @@ const syncOnce = async () => {
   const token = await getApiToken().catch(() => null);
   if (!user?.id || !token) return {success: false, reason: 'no-user'};
   const id = user.id;
+  await writeQueue;
   let remote = await request('GET');
   let pending = await readPending(id);
   if (!Object.keys(remote.settings || {}).length && !Object.keys(remote.reader_overrides || {}).length &&
@@ -134,6 +140,7 @@ const syncOnce = async () => {
   }
   if (Object.keys(pending).length) {
     remote = await request('PATCH', pending);
+    await writeQueue;
     const latest = await readPending(id);
     const remaining = {};
     for (const section of SECTIONS) {
