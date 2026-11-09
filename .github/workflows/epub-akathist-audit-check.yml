@@ -15,6 +15,8 @@ on:
       - 'molitvoslov-app/tools/azbyka_akathist_batch.py'
       - 'molitvoslov-app/src/components/reader/selectableDocumentReader/runtime.js'
       - 'molitvoslov-app/tools/verify_akathist_presentation_20261104.js'
+      - 'molitvoslov-app/tools/patch_akathist_response_render_20261109.py'
+      - 'molitvoslov-app/tools/test_patch_akathist_response_render_20261109.py'
       - '.github/workflows/epub-akathist-audit-check.yml'
   workflow_dispatch:
 
@@ -65,3 +67,8 @@ jobs:
       - name: Verify response line breaks and all CS Alleluia spellings
         working-directory: molitvoslov-app
         run: node tools/verify_akathist_presentation_20261104.js
+      - name: Verify guarded Windows-ready local patcher
+        working-directory: molitvoslov-app
+        run: |
+          python tools/test_patch_akathist_response_render_20261109.py
+          python tools/patch_akathist_response_render_20261109.py --check
