@@ -57,9 +57,10 @@ export const loadScopedAppearance = async (scope) => {
   // Older releases cached inherited values as document overrides. Treat a
   // snapshot identical to a default/global appearance as inherited instead.
   const plain = saved && normalizeReaderAppearance(saved);
-  const inherited = !plain ||
+  const inherited = !plain || (saved?.__explicitOverride !== true && (
     JSON.stringify(plain) === JSON.stringify(normalizeReaderAppearance(globalSettings)) ||
-    JSON.stringify(plain) === JSON.stringify(normalizeReaderAppearance(DEFAULT_READING_SETTINGS));
+    JSON.stringify(plain) === JSON.stringify(normalizeReaderAppearance(DEFAULT_READING_SETTINGS))
+  ));
   return {
     key,
     value: inherited ? normalizeReaderAppearance(globalSettings)
@@ -74,7 +75,7 @@ const cloudScopeFromKey = (key) => {
 export const storeScopedAppearance = async (key, appearance) => {
   if (!key) return;
   const value = normalizeReaderAppearance(appearance);
-  await AsyncStorage.setItem(key, JSON.stringify(value));
+  await AsyncStorage.setItem(key, JSON.stringify({...value, __explicitOverride: true}));
   const scope = cloudScopeFromKey(key);
   if (scope) queueAccountPreferencePatch({reader_overrides: {[scope]: value}}).catch(console.warn);
 };
