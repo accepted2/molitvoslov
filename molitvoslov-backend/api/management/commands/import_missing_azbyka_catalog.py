@@ -123,6 +123,14 @@ class Command(BaseCommand):
         parser.add_argument("--report", default="files/akathists/catalog_cs_report.csv")
 
     def handle(self, *args, **options):
+        # The APK uses its own offlineContent.json, which can contain books
+        # absent from this Django database. Until both inventories are checked,
+        # no write operation is safe, even when database slugs are new.
+        if options["write"]:
+            raise CommandError(
+                "Запись отключена: сначала требуется сверить каталог "
+                "с полным offlineContent.json из приложения, а не только с Django."
+            )
         limit = options["limit"]
         if limit < 0:
             raise CommandError("--limit must not be negative")
