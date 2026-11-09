@@ -3,6 +3,22 @@ from django.db import migrations, models
 import django.db.models.deletion
 
 
+def enable_rls(apps, schema_editor):
+    # Supabase exposes public-schema tables through its Data API when granted.
+    # Django connects as the table owner; deny direct API row access by default.
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.execute(
+            "ALTER TABLE api_accountpreferences ENABLE ROW LEVEL SECURITY"
+        )
+
+
+def disable_rls(apps, schema_editor):
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.execute(
+            "ALTER TABLE api_accountpreferences DISABLE ROW LEVEL SECURITY"
+        )
+
+
 class Migration(migrations.Migration):
     dependencies = [
         ("api", "0049_compact_content_baseline"),
@@ -25,4 +41,5 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "Настройки приложения",
             },
         ),
+        migrations.RunPython(enable_rls, disable_rls),
     ]
