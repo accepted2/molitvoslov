@@ -9,7 +9,7 @@ import {useLanguage} from '../../context/LanguageContext';
 import {getReadingSettings, DEFAULT_READING_SETTINGS} from '../../services/readerPreferences';
 import {applyReaderAppearance, resolveReaderAppearance} from '../../services/scopedReaderAppearance';
 import {getCachedPonomarFontDataUri, loadPonomarFontDataUri} from '../../services/ponomarFont';
-import {getCommunionRuleKind, buildCommunionTypography, compactCommunionAlleluiaDisplay} from '../../services/communionRuleTypography';
+import {getCommunionRuleKind, isCommunionPrayerHeading, buildCommunionTypography, compactCommunionAlleluiaDisplay} from '../../services/communionRuleTypography';
 
 const scriptSafeJson = (value) =>
   JSON.stringify(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
@@ -3884,6 +3884,7 @@ const HTML_TEMPLATE = String.raw`
         const communionTypography = isCommunionReadingRule
           ? DATA.communionTypographyByItem?.[String(itemId)] || null
           : null;
+        const continuousCommunionPrayer = !!communionTypography?.continuousPrayer;
         const communionRanges = Array.isArray(communionTypography?.ranges)
           ? communionTypography.ranges : [];
         const communionBreakBefore = new Set(
@@ -5067,7 +5068,7 @@ const HTML_TEMPLATE = String.raw`
         // For continuous Russian evening prayers, do not wrap \n\n in
         // artificial 8px paragraph-gap elements: default white-space
         // rendering folds them into ordinary inter-word spacing.
-        if (!continuousRussianEveningPrayer) {
+        if (!continuousRussianEveningPrayer && !continuousCommunionPrayer) {
           compactParagraphGaps(root);
         }
         pairEveningKondakChurch(root);
@@ -7786,8 +7787,23 @@ const buildHtml = ({
   const communionKind = getCommunionRuleKind(rule);
   const communionTypographyByItem = {};
   if (communionKind) {
+    // Communion preparation stores prayer headings as separate section
+    // items, followed by an untitled text item. Match the adjacent section
+    // rather than relying only on the text item's own (often empty) title.
+    // No prayer content is rewritten; selection offsets remain unchanged.
+    let followingTextIsPrayer = false;
     for (const item of rule?.items || []) {
-      if (item?.item_type !== 'text' || !item.text) continue;
+      if (item?.item_type === 'section') {
+        followingTextIsPrayer = isCommunionPrayerHeading(item.title || item.content);
+        continue;
+      }
+      if (item?.item_type !== 'text' || !item.text) {
+        followingTextIsPrayer = false;
+        continue;
+      }
+      const continuousPrayer = followingTextIsPrayer ||
+        isCommunionPrayerHeading(item.text.title);
+      followingTextIsPrayer = false;
       const source = item.text;
       const value = viewMode === 'russian'
         ? source.translation
@@ -7797,8 +7813,10 @@ const buildHtml = ({
             ? (source.translation_uk || source.translation || source.content)
             : source.content;
       if (String(value || '').trim()) {
-        communionTypographyByItem[String(item.id)] =
-          buildCommunionTypography(value);
+        communionTypographyByItem[String(item.id)] = {
+          ...buildCommunionTypography(value, {continuousPrayer}),
+          continuousPrayer,
+        };
       }
     }
   }
