@@ -32,6 +32,7 @@ jobs:
         run: |
           node tools/verify_global_preferences_20261109.js
           node tools/verify_react_hook_imports.js
+          node tools/verify_reader_header_chrome_20261109.js
       # Full APK bundling must use the verified local v10 search seed.
       # That binary is deliberately not committed to this Git branch.
       # The build is tested on Windows using the app's release build script.
