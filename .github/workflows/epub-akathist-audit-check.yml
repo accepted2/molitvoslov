@@ -33,3 +33,13 @@ jobs:
         run: |
           python manage.py check
           python manage.py test api.test_audit_akathist_epubs api.test_import_missing_azbyka_catalog --verbosity 2
+      - name: Set up Node for bundled app catalogue verification
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+      - name: Install mobile verifier dependencies
+        working-directory: molitvoslov-app
+        run: npm ci --ignore-scripts
+      - name: Verify published akathist list in APK offline JSON
+        working-directory: molitvoslov-app
+        run: node tools/verify_akathist_content.js
