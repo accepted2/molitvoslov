@@ -35,6 +35,7 @@ from .auth_views import (
     LogoutView,
     DeleteAccountView,
 )
+from .account_preferences import AccountPreferencesView
 from .mobile_content import MobileContentView
 from .bible_content import BibleContentView
 from .content_updates import OfflineContentUpdatesView, OfflineContentObjectView, OfflineContentManifestView
@@ -90,6 +91,7 @@ router.register(
 )
 
 urlpatterns = [
+    path("account-preferences/", AccountPreferencesView.as_view(), name="account-preferences"),
     path("mobile-content/", MobileContentView.as_view(), name="mobile-content"),
     path("content-updates/", OfflineContentUpdatesView.as_view(), name="content-updates"),
     path("content-updates/manifest/", OfflineContentManifestView.as_view(), name="content-update-manifest"),
