@@ -1,5 +1,5 @@
 import React, {useEffect, useRef} from 'react';
-import {Animated, Easing, Pressable, StyleSheet, Text, View, useWindowDimensions} from 'react-native';
+import {Animated, Easing, Pressable, StyleSheet, Text, View} from 'react-native';
 import {CommonActions} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {LinearGradient} from 'expo-linear-gradient';
@@ -14,7 +14,7 @@ const ITEMS = [
   {key: 'account', route: 'Account', labelKey: 'nav.account', icon: 'account'},
 ];
 
-const NavIcon = ({type, active, size}) => {
+const NavIcon = ({type, active}) => {
   const color = active ? '#2C170B' : '#F5DCB5';
 
   const iconNames = {
@@ -25,10 +25,10 @@ const NavIcon = ({type, active, size}) => {
   };
 
   if (type === 'candle') {
-    return <MaterialCommunityIcons name="candle" size={size} color={color} />;
+    return <MaterialCommunityIcons name="candle" size={17} color={color} />;
   }
 
-  return <Feather name={iconNames[type] || 'circle'} size={size} color={color} />;
+  return <Feather name={iconNames[type] || 'circle'} size={17} color={color} />;
 };
 
 export const BottomNav = ({navigation, active, readingHidden = false}) => {
@@ -37,22 +37,7 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
     Animated.timing(visibility, {toValue: readingHidden ? 1 : 0, duration: 340, easing: Easing.out(Easing.cubic), useNativeDriver: true}).start();
   }, [readingHidden, visibility]);
   const insets = useSafeAreaInsets();
-  const {width: windowWidth, fontScale} = useWindowDimensions();
   const {t} = useLanguage();
-
-  // Logical window width (dp), not device pixel count: grow the entire bar
-  // gradually on larger phones without making it huge on tablets.
-  // At 390dp: 22dp icons, 12sp labels, 64dp row;
-  // at >=468dp: 26dp icons, ~14sp labels, >=76dp row.
-  const navScale = Math.min(1.2, Math.max(1, windowWidth / 390));
-  const iconSize = Math.round(22 * navScale);
-  const labelSize = Math.round(12 * navScale * 10) / 10;
-  const labelLineHeight = Math.round(15 * navScale * 10) / 10;
-  const rowHeight = Math.ceil(Math.max(
-    64 * navScale,
-    (34 + 30 * Math.max(1, fontScale)) * navScale,
-  ));
-  const itemHeight = rowHeight - 4;
 
   const openRootTab = (route) => {
     navigation.dispatch(CommonActions.reset({
@@ -66,7 +51,7 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
       pointerEvents={readingHidden ? 'none' : 'box-none'}
       style={[
         styles.wrapper,
-        {transform: [{translateY: visibility.interpolate({inputRange: [0, 1], outputRange: [0, rowHeight + 40]})}], opacity: visibility.interpolate({inputRange: [0, 1], outputRange: [1, 0]})},
+        {transform: [{translateY: visibility.interpolate({inputRange: [0, 1], outputRange: [0, 100]})}], opacity: visibility.interpolate({inputRange: [0, 1], outputRange: [1, 0]})},
         {
           bottom: Math.max(insets.bottom + 4, 7),
         },
@@ -78,7 +63,7 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
         end={{x: 1, y: 1}}
         style={styles.container}
       >
-        <View style={[styles.itemsRow, {height: rowHeight}]}>
+        <View style={styles.itemsRow}>
           {ITEMS.map((item) => {
             const isActive = item.key === active;
 
@@ -91,19 +76,20 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
                 onPress={() => openRootTab(item.route)}
                 style={({pressed}) => [
                   styles.item,
-                  {height: itemHeight},
                   isActive && styles.itemActive,
                   pressed && styles.pressed,
                 ]}
               >
                 <View style={styles.itemContent}>
-                  <View style={[styles.navIconWrap, {width: iconSize + 4, height: iconSize + 4}]}>
-                    <NavIcon type={item.icon} active={isActive} size={iconSize} />
+                  <View style={styles.navIconWrap}>
+                    <NavIcon type={item.icon} active={isActive} />
                   </View>
 
                   <Text
-                    numberOfLines={2}
-                    style={[styles.label, {fontSize: labelSize, lineHeight: labelLineHeight}, isActive && styles.labelActive]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
+                    style={[styles.label, isActive && styles.labelActive]}
                   >
                     {t(item.labelKey)}
                   </Text>
@@ -123,7 +109,7 @@ const styles = StyleSheet.create({
     left: 8,
     right: 8,
     zIndex: 30,
-    maxWidth: 520,
+    maxWidth: 410,
     alignSelf: 'center',
   },
 
@@ -143,7 +129,7 @@ const styles = StyleSheet.create({
 
   itemsRow: {
     width: '100%',
-    height: 64,
+    height: 46,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -154,8 +140,8 @@ const styles = StyleSheet.create({
   },
 
   navIconWrap: {
-    width: 26,
-    height: 26,
+    width: 22,
+    height: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -163,11 +149,11 @@ const styles = StyleSheet.create({
   item: {
     flex: 1,
     minWidth: 0,
-    height: 60,
+    height: 41,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 0,
-    paddingVertical: 0,
+    paddingVertical: 2,
     borderRadius: 12,
   },
 
@@ -266,8 +252,8 @@ const styles = StyleSheet.create({
     color: '#F5DCB5',
     fontFamily: 'serif',
     paddingHorizontal: 1,
-    fontSize: 12,
-    lineHeight: 15,
+    fontSize: 10,
+    lineHeight: 12,
     fontWeight: '600',
     textAlign: 'center',
     includeFontPadding: false,
