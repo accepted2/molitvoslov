@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models import Prefetch
 
+from api.bible_ids import bible_client_id
 from api.models import (
     BibleBook,
     BibleChapter,
@@ -71,7 +72,7 @@ class Command(BaseCommand):
         data = {
             "schema_version": 1,
             "translation": {
-                "id": translation.id,
+                "id": bible_client_id(translation_code, "translation", translation.id),
                 "code": translation.code,
                 "name": translation.name,
                 "language": translation.language,
@@ -88,7 +89,7 @@ class Command(BaseCommand):
 
         for book in books:
             book_data = {
-                "id": book.id,
+                "id": bible_client_id(translation_code, "book", book.id, order=book.canonical_order),
                 "code": book.code,
                 "testament": book.testament,
                 "section": book.section,
@@ -102,7 +103,10 @@ class Command(BaseCommand):
 
             for chapter in book.chapters.all():
                 chapter_data = {
-                    "id": chapter.id,
+                    "id": bible_client_id(
+                        translation_code, "chapter", chapter.id,
+                        order=book.canonical_order, chapter=chapter.number,
+                    ),
                     "number": chapter.number,
                     "verses": [],
                 }
@@ -110,7 +114,11 @@ class Command(BaseCommand):
                 for verse in chapter.verses.all():
                     chapter_data["verses"].append(
                         {
-                            "id": verse.id,
+                            "id": bible_client_id(
+                                translation_code, "verse", verse.id,
+                                order=book.canonical_order, chapter=chapter.number,
+                                verse=verse.number,
+                            ),
                             "number": verse.number,
                             "text": verse.text,
                         }

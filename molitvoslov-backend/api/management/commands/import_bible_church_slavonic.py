@@ -87,7 +87,10 @@ def read_pilot(path):
         raise CommandError("Кандидат должен содержать GEN, PSA и MAT.")
     if len(set(b["order"] for b in selected.values())) != len(selected):
         raise CommandError("Дублирующиеся порядковые номера книг.")
-    return selected, hashlib.sha256(raw).hexdigest()
+    source_hash = source.get("source_sha256") or hashlib.sha256(raw).hexdigest()
+    if not isinstance(source_hash, str) or len(source_hash) != 64:
+        raise CommandError("Некорректная контрольная сумма исходного корпуса.")
+    return selected, source_hash
 
 
 class Command(BaseCommand):
@@ -118,7 +121,7 @@ class Command(BaseCommand):
                     "script_variant": BibleTranslation.SCRIPT_VARIANT_CHURCH_TRADITIONAL,
                     "source_url": "",
                     "source_revision": source_hash,
-                    "license_name": "Не проверена — внутреннее тестирование",
+                    "license_name": "Проверка источника и прав не завершена",
                     "is_visible": True,
                 },
             )

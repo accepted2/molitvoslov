@@ -9,6 +9,7 @@ from django.test import SimpleTestCase, TestCase
 from api.models import BibleBook, BibleChapter, BibleTranslation, BibleVerse
 
 from api.management.commands.import_bible_church_slavonic import read_pilot
+from api.bible_ids import bible_client_id
 
 
 def fixture():
@@ -81,6 +82,46 @@ class ChurchSlavonicPilotValidationTests(SimpleTestCase):
             self.run_fixture(payload)
 
 
+
+    def test_bundled_sample_ids_are_stable(self):
+        from django.conf import settings
+
+        path = (
+            settings.BASE_DIR.parent
+            / "molitvoslov-app" / "src" / "data"
+            / "offlineBibleCslTraditional.json"
+        )
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(payload["translation"]["code"], "csl_traditional")
+        self.assertEqual(payload["translation"]["id"], 500000)
+        self.assertEqual(
+            [(b["code"], len(b["chapters"])) for b in payload["books"]],
+            [("GEN", 50), ("PSA", 150), ("MAT", 28)],
+        )
+        total = 0
+        ids = set()
+        for book in payload["books"]:
+            order = book["canonical_order"]
+            self.assertEqual(book["id"], bible_client_id(
+                "csl_traditional", "book", None, order=order
+            ))
+            for chapter in book["chapters"]:
+                self.assertEqual(chapter["id"], bible_client_id(
+                    "csl_traditional", "chapter", None,
+                    order=order, chapter=chapter["number"],
+                ))
+                for verse in chapter["verses"]:
+                    self.assertEqual(verse["id"], bible_client_id(
+                        "csl_traditional", "verse", None,
+                        order=order, chapter=chapter["number"],
+                        verse=verse["number"],
+                    ))
+                    self.assertTrue(verse["text"].strip())
+                    self.assertNotIn(verse["id"], ids)
+                    ids.add(verse["id"])
+                    total += 1
+        self.assertEqual(total, 5131)
+
 class ChurchSlavonicPilotDatabaseTests(TestCase):
     def test_import_and_export_do_not_change_synodal_ids(self):
         rst = BibleTranslation.objects.create(
@@ -114,6 +155,11 @@ class ChurchSlavonicPilotDatabaseTests(TestCase):
             self.assertEqual({b["code"] for b in payload["books"]}, {"GEN", "PSA", "MAT"})
             self.assertTrue(all(b["chapters"] for b in payload["books"]))
             self.assertNotIn(rst_book.id, {b["id"] for b in payload["books"]})
+            self.assertEqual(payload["translation"]["id"], 500000)
+            self.assertEqual(payload["books"][0]["id"], 500001)
+            first_chapter = payload["books"][0]["chapters"][0]
+            self.assertEqual(first_chapter["id"], 10001001)
+            self.assertEqual(first_chapter["verses"][0]["id"], 101001001)
 
         rst_verse.refresh_from_db()
         self.assertEqual(rst_verse.text, "В начале сотворил Бог небо и землю.")

@@ -7,6 +7,7 @@ from django.utils import timezone
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
+from .bible_ids import bible_client_id
 from .models import BibleBook, BibleChapter, BibleTranslation, BibleVerse
 
 
@@ -30,7 +31,7 @@ def build_bible_content_payload(translation_code="rst"):
     data = {
         "schema_version": 1,
         "translation": {
-            "id": translation.id,
+            "id": bible_client_id(translation_code, "translation", translation.id),
             "code": translation.code,
             "name": translation.name,
             "language": translation.language,
@@ -44,7 +45,7 @@ def build_bible_content_payload(translation_code="rst"):
 
     for book in books:
         book_data = {
-            "id": book.id,
+            "id": bible_client_id(translation_code, "book", book.id, order=book.canonical_order),
             "code": book.code,
             "testament": book.testament,
             "section": book.section,
@@ -58,7 +59,10 @@ def build_bible_content_payload(translation_code="rst"):
 
         for chapter in book.chapters.all():
             chapter_data = {
-                "id": chapter.id,
+                "id": bible_client_id(
+                    translation_code, "chapter", chapter.id,
+                    order=book.canonical_order, chapter=chapter.number,
+                ),
                 "number": chapter.number,
                 "verses": [],
             }
@@ -66,7 +70,11 @@ def build_bible_content_payload(translation_code="rst"):
             for verse in chapter.verses.all():
                 chapter_data["verses"].append(
                     {
-                        "id": verse.id,
+                        "id": bible_client_id(
+                            translation_code, "verse", verse.id,
+                            order=book.canonical_order, chapter=chapter.number,
+                            verse=verse.number,
+                        ),
                         "number": verse.number,
                         "text": verse.text,
                     }
