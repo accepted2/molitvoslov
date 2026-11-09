@@ -79,7 +79,7 @@ const initialSnapshot = async (userId) => {
   // copy of the global appearance as a document override.
   const scopes = keys.filter(key => key.startsWith(APPEARANCE + 'guest:') ||
     key.startsWith(APPEARANCE + 'account-' + encodeURIComponent(String(userId)) + ':'))
-    .sort((left, right) => Number(left.includes(':guest:')) - Number(right.includes(':guest:')));
+    .sort((left, right) => Number(right.includes(':guest:')) - Number(left.includes(':guest:')));
   for (const key of scopes) {
     const parts = key.split(':');
     if (parts.length < 4) continue;
