@@ -2888,17 +2888,8 @@ const HTML_TEMPLATE = String.raw`
       }
 
       const allItems = DATA.rule.items || [];
-      const communionJoinedTroparionIds = new Set();
-      if (DATA.communionKind === 'preparation') {
-        for (let i = 0; i + 1 < allItems.length; i += 1) {
-          const first = allItems[i];
-          const second = allItems[i + 1];
-          if (first?.item_type !== 'text' || second?.item_type !== 'text') continue;
-          if (isCommunionDoxologyPair(first.text?.content, second.text?.content)) {
-            communionJoinedTroparionIds.add(Number(first.id));
-          }
-        }
-      }
+      // Calculated in native JS and included in the WebView payload.
+      const communionJoinedTroparionIds = new Set(DATA.communionJoinedTroparionIds || []);
 
       // "Ангел вопияше" and "Светися, светися" are consecutive Text
       // objects. Identify both by source text, or by known Text IDs,
@@ -7839,6 +7830,18 @@ const buildHtml = ({
   ponomarFontDataUri,
 }) => {
   const communionKind = getCommunionRuleKind(rule);
+  const communionJoinedTroparionIds = [];
+  if (communionKind === 'preparation') {
+    const items = rule?.items || [];
+    for (let i = 0; i + 1 < items.length; i += 1) {
+      const first = items[i];
+      const second = items[i + 1];
+      if (first?.item_type !== 'text' || second?.item_type !== 'text') continue;
+      if (isCommunionDoxologyPair(first.text?.content, second.text?.content)) {
+        communionJoinedTroparionIds.push(Number(first.id));
+      }
+    }
+  }
   const communionTypographyByItem = {};
   if (communionKind) {
     // Communion preparation stores prayer headings as separate section
@@ -7904,6 +7907,7 @@ const buildHtml = ({
     rule: displayRule,
     communionKind,
     communionTypographyByItem,
+    communionJoinedTroparionIds,
 
     viewMode: viewMode || 'both',
 
