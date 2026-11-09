@@ -69,7 +69,7 @@ assert.deepEqual(
   ['Аллилуиа!', 'Аллилуия.', 'Алилуиа;', 'Алілуя,', 'Аллілуя:', 'Аллилуіа!', 'Аллилꙋ́їа.', 'А҆ллилꙋ́їа!'],
   'All encountered CS variants must retain their punctuation and original Unicode',
 );
-assert.equal(alleluia('Предал­лилуия').length, 0, 'Never highlight a substring of another word');
+assert.equal(alleluia('Предаллилуия').length, 0, 'Never highlight a substring of another word');
 assert.equal(inv('НеРадуйся').length, 0, 'Never decorate inside another word');
 
 // Some Azbyka texts contain a LATIN accented vowel inside a Cyrillic refrain.
