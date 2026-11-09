@@ -133,6 +133,16 @@ export const getCommunionLiturgicalSeparators = value => {
   return [];
 };
 
+// The "Слава Отцу..." and "И ныне..." troparia are consecutive Text
+// items, but form a single two-part hymn. Only its second part is followed
+// by the ordinary rule-item divider.
+export const isCommunionDoxologyPair = (first, second) => {
+  const fold = value => String(value || '').normalize('NFD')
+    .replace(/\p{M}/gu, '').trim().toLowerCase().replace(/ё/g, 'е');
+  return /^слава\s+отцу(?:\s|,)/u.test(fold(first)) &&
+    /^и\s+ныне(?:\s|,)/u.test(fold(second));
+};
+
 export const buildCommunionTypography = (value, {continuousPrayer = false, communionKind = null} = {}) => {
   const {source, normalized, positions} = mappedText(value);
   const ranges = getCommunionAlleluiaCompaction(value);
@@ -161,14 +171,23 @@ export const buildCommunionTypography = (value, {continuousPrayer = false, commu
     ranges.push({start: at, end, kind: 'initial'});
   };
 
-  // A doxology at the start of a troparion is a red liturgical rubric,
-  // not a paragraph boundary. Preserve the next words on the same line.
+  // The red introduction is its own line, but NOT a separate paragraph or
+  // hymn. Keep the source intact and insert a visual <br> only when words
+  // follow it in the same Text item (e.g. "Слава... Во причастие...").
   const introductoryDoxology =
     /^\s*(слава\s+отцу\s*,?\s+и\s+сыну\s*,?\s+и\s+святому\s+духу\s*[.!?:;]?|и\s+ныне\s*,?\s+и\s+присно\s*,?\s+и\s+во\s+веки\s+веков\s*,?\s+аминь\s*[.!?:;]?)(?=\s|$)/iu.exec(normalized);
   if (introductoryDoxology) {
     const from = introductoryDoxology.index +
       introductoryDoxology[0].indexOf(introductoryDoxology[1]);
-    addRange(from, from + introductoryDoxology[1].length, 'response');
+    const ending = from + introductoryDoxology[1].length;
+    addRange(from, ending, 'response');
+    if (communionKind === 'preparation') {
+      const continuation = /^\s+(\p{L})/u.exec(normalized.slice(ending));
+      if (continuation) {
+        const next = ending + continuation[0].length - continuation[1].length;
+        if (Number.isInteger(positions[next])) breakBefore.add(positions[next]);
+      }
+    }
   }
 
   // Only a real rubric at the start of a physical line gets red typography.
