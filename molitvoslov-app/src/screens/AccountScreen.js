@@ -72,9 +72,24 @@ export const AccountScreen = ({navigation}) => {
       console.warn('[account preferences] local save:', error);
     }
   };
+  // Drag gestures render preview immediately; persist once on finger release.
+  const previewReadingSettings = patch => {
+    const next = {...readingSettingsRef.current, ...patch};
+    readingSettingsRef.current = next;
+    setReadingSettings(next);
+  };
+  const commitReadingSettings = async () => {
+    const next = {...readingSettingsRef.current};
+    try {
+      await saveReadingSettings(next);
+      queueAccountPreferencePatch({settings: next}).catch(console.warn);
+    } catch (error) {
+      console.warn('[account preferences] gesture save:', error);
+    }
+  };
   const changeCustomColor = (field, color) => {
     const resolved = resolveReaderAppearance(readingSettingsRef.current);
-    changeReadingSettings({
+    previewReadingSettings({
       palette: 'custom',
       customBackground: resolved.background,
       customText: resolved.text,
@@ -83,7 +98,7 @@ export const AccountScreen = ({navigation}) => {
   };
   const changeFontFromGesture = event => {
     const position = Math.max(0, Math.min(fontSliderWidth, event.nativeEvent.locationX));
-    changeReadingSettings({
+    previewReadingSettings({
       fontSize: Math.max(14, Math.min(28, Math.round(14 + 14 * position / Math.max(fontSliderWidth, 1)))),
     });
   };
@@ -350,6 +365,8 @@ export const AccountScreen = ({navigation}) => {
                 onMoveShouldSetResponder={() => true}
                 onResponderGrant={changeFontFromGesture}
                 onResponderMove={changeFontFromGesture}
+                onResponderRelease={commitReadingSettings}
+                onResponderTerminate={commitReadingSettings}
               >
                 <View pointerEvents="none" style={[styles.fontSliderFill, {width: (readingSettings.fontSize - 14) / 14 * 100 + '%'}]}/>
                 <View pointerEvents="none" style={[styles.fontSliderThumb, {left: (readingSettings.fontSize - 14) / 14 * 100 + '%'}]}/>
@@ -396,6 +413,7 @@ export const AccountScreen = ({navigation}) => {
                     ? resolveReaderAppearance(readingSettings).background
                     : resolveReaderAppearance(readingSettings).text}
                   onChange={color => changeCustomColor(showColorPicker, color)}
+                  onGestureEnd={commitReadingSettings}
                 />
               </View>
             )}
