@@ -1623,6 +1623,18 @@ export const READER_STYLES = String.raw`
       font-weight: 400;
     }
 
+    body.book-mode .bible-chapter-start.csl-bible-verse .note {
+      font-family: 'Ponomar', Georgia, serif;
+      font-size: 15px;
+      line-height: 1.5;
+      font-weight: 400;
+      color: #765238;
+      padding-bottom: 3px;
+    }
+    body.book-mode .bible-chapter-start.csl-bible-verse .prayer-title {
+      font-family: 'Ponomar', Georgia, serif;
+      font-weight: 400;
+    }
     body.book-mode .bible-verse-section + .bible-verse-section {
       margin-top: 0 !important;
     }
