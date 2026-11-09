@@ -72,7 +72,28 @@ assert.equal(secondShort.slice(secondThrice.start, secondThrice.end), '(Триж
 assert.equal(getCommunionLiturgicalSeparators('Псало́м 50\n\nСла́ва Отцу.' ).length, 0);
 assert.equal(buildCommunionTypography(secondShort, {continuousPrayer: true, communionKind: 'preparation'}).separatorBefore.length, 0);
 assert.equal(buildCommunionTypography(secondShort, {communionKind: 'thanksgiving'}).separatorBefore.length, 0);
-assert.equal(buildCommunionTypography('Го́споди, поми́луй. (12 раз)\n\nПрииди́те, поклони́мся.', {communionKind: 'preparation'}).separatorBefore.length, 0);
+assert.equal(buildCommunionTypography('Го́споди, поми́луй. (12 раз)\n\nПрииди́те, поклони́мся.', {communionKind: 'preparation'}).separatorBefore.length, 1);
+
+
+const refrain = 'Припе́в: Пресвята́я Тро́ице, Бо́же наш, сла́ва Тебе́.\n\nТрепе́щу, прие́мля огнь, да не опалю́ся.';
+assert.deepEqual(Array.from(buildCommunionTypography(refrain, {communionKind: 'preparation'}).separatorBefore),
+  [refrain.indexOf('Трепе́щу')]);
+for (const troparion of [
+  'Сла́ва Отцу, и Сы́ну, и Свято́му Ду́ху. Го́споди, поми́луй на́с, на Тя́ бо упова́хом.',
+  'И ны́не, и при́сно, и во ве́ки веко́в, ами́нь. Милосе́рдия две́ри отве́рзи на́м.',
+  'Сла́ва Отцу, и Сы́ну, и Свято́му Ду́ху. Во прича́стие святы́нь Твои́х ка́ко дерзну́.',
+  'И ны́не, и при́сно, и во ве́ки веко́в, ами́нь. Мно́гая мно́жества мои́х, Богоро́дице.',
+]) {
+  const result = buildCommunionTypography(troparion, {communionKind: 'preparation'});
+  assert.equal(result.separatorBefore.length, 0, 'doxology must not create divider');
+  assert.equal(result.breakBefore.length, 0, 'doxology must not create line break');
+  const leadingRubric = result.ranges.find(range => range.kind === 'response' && range.start === 0);
+  assert.ok(leadingRubric, 'doxology must have liturgical style');
+  assert.ok(/[.!?]$/.test(troparion.slice(leadingRubric.start, leadingRubric.end)));
+}
+assert.equal(buildCommunionTypography(
+  'Го́споди, поми́луй. (40 ра́з) И покло́ны, ско́лько хочешь.',
+  {communionKind: 'preparation'}).separatorBefore.length, 0);
 
 assert.ok(reader.includes('followingTextIsPrayer = isCommunionPrayerHeading(item.title || item.content)'));
 assert.ok(reader.includes('isCommunionPrayerHeading(item.text.title)'));
