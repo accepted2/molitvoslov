@@ -3,6 +3,7 @@ import {Animated, Easing, Modal, Pressable, StyleSheet, Text, View} from 'react-
 import {LinearGradient} from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {isDarkReaderBackground, withOpacity} from '../../services/scopedReaderAppearance';
+import {useInterfaceScale} from '../../context/InterfaceScaleContext';
 
 export const FixedSectionHeader = ({
   title,
@@ -23,12 +24,13 @@ export const FixedSectionHeader = ({
   headerAction = null,
   onHeaderHeightChange,
 }) => {
+  const uiScale = useInterfaceScale();
   const visibility = useRef(new Animated.Value(0)).current;
   const [languageOpen, setLanguageOpen] = useState(false);
   const chromeBackground = gradientColor || (dark ? '#171310' : '#FFF4DE');
   const chromeDark = dark || isDarkReaderBackground(chromeBackground);
   const [titleLines, setTitleLines] = useState(1);
-  const extraTitleHeight = showTitle ? Math.max(0, titleLines - 1) * (compactReading ? 20 : 25) : 0;
+  const extraTitleHeight = showTitle ? Math.max(0, titleLines - 1) * Math.ceil((compactReading ? 20 : 25) * uiScale) : 0;
   const headerHeight = topInset + (minimal ? 45 : 36) + extraTitleHeight;
   useEffect(() => {
     onHeaderHeightChange?.(headerHeight);
@@ -134,7 +136,10 @@ export const FixedSectionHeader = ({
             >
               <View style={styles.titleLine}>
                 <Text
-                  style={[styles.title, styles.titleFlex, compactReading && styles.titleReading, chromeDark && styles.titleDark]}
+                  style={[styles.title, styles.titleFlex, compactReading && styles.titleReading, chromeDark && styles.titleDark, {
+                    fontSize: (compactReading ? 17 : 21) * uiScale,
+                    lineHeight: (compactReading ? 20 : 25) * uiScale,
+                  }]}
                   onTextLayout={(event) => {
                     const count = event.nativeEvent?.lines?.length || 1;
                     setTitleLines((previous) => previous === count ? previous : count);
@@ -150,7 +155,7 @@ export const FixedSectionHeader = ({
                     onPress={() => setLanguageOpen(true)}
                     style={({pressed}) => [styles.languagePill, chromeDark && styles.languagePillDark, pressed && styles.pressed]}
                   >
-                    <Text style={[styles.languagePillText, chromeDark && styles.languagePillTextDark]} numberOfLines={1}>{selectedLanguage.label}</Text>
+                    <Text style={[styles.languagePillText, {fontSize: 10 * uiScale, lineHeight: 14 * uiScale}, chromeDark && styles.languagePillTextDark]} numberOfLines={1}>{selectedLanguage.label}</Text>
                     <Ionicons name="chevron-down" size={13} color={chromeDark ? '#D7B88C' : '#744A2B'} style={styles.languageChevronIcon} />
                   </Pressable>
                 )}
@@ -168,7 +173,7 @@ export const FixedSectionHeader = ({
                   >
                     <Text
                       numberOfLines={1}
-                      style={[styles.headerActionText, chromeDark && styles.headerActionTextDark]}
+                      style={[styles.headerActionText, {fontSize: 11 * uiScale, lineHeight: 15 * uiScale}, chromeDark && styles.headerActionTextDark]}
                     >
                       {headerAction.label}
                     </Text>
