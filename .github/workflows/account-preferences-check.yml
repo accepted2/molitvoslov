@@ -5,6 +5,7 @@ on:
     branches:
       - feature/backend-account-preferences-20261109
       - fix/account-preferences-rls-20261109
+      - fix/account-preferences-migration-sql-20261109
     paths:
       - 'molitvoslov-backend/**'
       - '.github/workflows/account-preferences-check.yml'
