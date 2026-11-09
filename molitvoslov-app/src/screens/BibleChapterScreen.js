@@ -15,6 +15,14 @@ import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {colors} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
 
+// A lectionary reference is a rubric, never part of the first Bible verse.
+// Strip only a leading numbered rubric in CSL; keep the verse's own diacritics.
+const cleanTraditionalVerse = (value, isFirstVerse) => {
+  const text = String(value || '');
+  if (!isFirstVerse) return text;
+  return text.replace(/^\\s*(?:\\(\\s*)?за[\\u0300-\\u036f]*чало\\s*(?:№\\s*)?\\d+\\s*\\)?[\\s.:—–-]*/iu, '');
+};
+
 export const BibleChapterScreen = ({route, navigation}) => {
   const {t} = useLanguage();
   useBibleContentGeneration();
@@ -372,7 +380,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
                 {
                   id: Number(verse.id),
 
-                  text: verse.text || '',
+                  text: isTraditional ? cleanTraditionalVerse(verse.text, verseIndex === 0) : (verse.text || ''),
 
                   label: '',
 
