@@ -166,7 +166,7 @@ export const AccountScreen = ({navigation}) => {
         syncReadingProgress(),
         syncMemorials(),
         syncPrayerBooks(),
-        syncAccountPreferences(),
+        syncAccountPreferences().catch(error => ({success: false, error})),
       ]);
 
       if (
@@ -419,7 +419,7 @@ export const AccountScreen = ({navigation}) => {
                 queueAccountPreferencePatch({settings: {...reset, language: 'ru'}}).catch(console.warn);
               }}]
             )}>
-              <Text style={[styles.settingText, {fontSize:14*uiScale}]}>Сбросить настройки чтения и языка</Text>
+              <Text style={[styles.settingText, {fontSize:14*uiScale}]}>Сбросить общие настройки</Text>
             </Pressable>
           </View>
         </ScrollView>
