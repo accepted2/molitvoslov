@@ -2,7 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {READER_LANGUAGE_MODES, setDefaultReaderMode} from './readerLanguageModes';
 import {getCachedBackendUser} from './backendAuth';
-import {queueAccountPreferencePatch} from './accountPreferencesSync';
+// Cloud sync is required lazily in the user action to avoid a circular
+// module initialization (the sync layer also imports global preferences).
 
 const readerSettingsListeners = new Set();
 export const subscribeReadingSettings = (listener) => {
@@ -58,6 +59,7 @@ export const saveReaderLanguageModePreference = async ({sourceType, sourceId, mo
   const scope = makeReaderPreferenceId(sourceType, sourceId);
   if (user?.id) {
     await AsyncStorage.setItem(getAccountReaderModeStorageKey(user.id, scope), mode);
+    const {queueAccountPreferencePatch} = require('./accountPreferencesSync');
     queueAccountPreferencePatch({reader_modes: {[scope]: mode}}).catch(console.warn);
   } else {
     await AsyncStorage.setItem(buildStorageKey({sourceType, sourceId}), mode);
