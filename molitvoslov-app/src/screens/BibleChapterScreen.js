@@ -325,6 +325,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
         return (chapter.verses || []).map((verse, verseIndex) => ({
           className: [
             'bible-verse-section',
+            isTraditional ? 'csl-bible-verse' : '',
 
             verseIndex === 0 ? 'bible-chapter-start' : '',
 
@@ -338,6 +339,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
           chapterNumber: verseIndex === 0 ? Number(chapter.number) : null,
 
           title: verseIndex === 0 ? t('bible.chapter', {number: chapter.number}) : '',
+          note: verseIndex === 0 && isTraditional ? (chapter.heading || '') : '',
 
           action:
             verseIndex === 0
