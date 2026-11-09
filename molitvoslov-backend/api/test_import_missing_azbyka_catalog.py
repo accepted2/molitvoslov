@@ -1,8 +1,12 @@
+import json
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
 from django.core.management.base import CommandError
 from django.test import SimpleTestCase
 
 from api.management.commands.import_missing_azbyka_catalog import (
-    Command, catalogue_entries, existing_match, is_church_text,
+    Command, catalogue_entries, existing_match, is_church_text, load_offline_inventory,
     normalize_slug, only_church, source_only,
 )
 
@@ -12,6 +16,52 @@ class CatalogChurchOnlyTests(SimpleTestCase):
         # This must fail before downloading or querying Django.
         with self.assertRaisesRegex(CommandError, "offlineContent.json"):
             Command().handle(write=True)
+
+    def test_offline_inventory_includes_every_published_and_hidden_akathist(self):
+        # The user's actual local APK has 20, including five absent from Supabase.
+        with TemporaryDirectory() as folder:
+            path = Path(folder) / "offlineContent.json"
+            extra = [
+                "akafist-premudrosti-slova-bozhija",
+                "akafist-slava-bogu-za-vsyo",
+                "akafist-svjatomu-duhu",
+                "akafist-v-chest-sretenija-presvjatyja-vladychicy-nasheja-bogorodicy-s-pravednoju-elisavetoju-v-gornem-grade-iudove",
+                "akafist-vsemogushhemu-bogu-v-nashestvii-pechali",
+            ]
+            listed = [
+                {"slug": f"akafist-other-{i}", "title": f"Акафист прочий {i}", "is_visible": True}
+                for i in range(15)
+            ] + [
+                {"slug": slug, "title": f"Акафист уже существующий {i}", "is_visible": True}
+                for i, slug in enumerate(extra)
+            ]
+            payload = {
+                "akathists": {
+                    "list": listed,
+                    "by_slug": {row["slug"]: {"title": row["title"]} for row in listed},
+                }
+            }
+            path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+            entries, published = load_offline_inventory(path)
+            self.assertEqual(len(entries), 20)
+            self.assertEqual(published, 20)
+            for slug in extra:
+                self.assertTrue(existing_match({"slug": slug, "title": "Другое имя"}, entries))
+            self.assertTrue(existing_match({
+                "slug": "akafist-svjatomu-duhu", "title": "Новый заголовок"
+            }, entries))
+            self.assertFalse(existing_match({
+                "slug": "akafist-completely-new", "title": "Акафист ещё не добавленный"
+            }, entries))
+
+    def test_offline_inventory_must_be_provided_and_well_formed(self):
+        with self.assertRaisesRegex(CommandError, "--offline-file"):
+            load_offline_inventory(None)
+        with TemporaryDirectory() as folder:
+            path = Path(folder) / "offlineContent.json"
+            path.write_text('{"akathists":{"list":[],"by_slug":{}}}', encoding="utf-8")
+            with self.assertRaisesRegex(CommandError, "неполный"):
+                load_offline_inventory(path)
 
     def test_catalogue_only_section_links_and_deduplicates(self):
         html = """
