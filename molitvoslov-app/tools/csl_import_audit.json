@@ -1,0 +1,565 @@
+{
+  "source_revision": "0af645f438856f45c22026912d2e4a9ce495e531",
+  "books": {
+    "GEN": {
+      "chapters": 50,
+      "verses": 1533,
+      "missing_verse_numbers": {},
+      "other_lines": [
+        "1584: Коне́цъ кни́зѣ пе́рвѣй мѡѷсе́овѣ: и҆́мать въ себѣ̀ гла́въ 50"
+      ]
+    },
+    "EXO": {
+      "chapters": 40,
+      "verses": 1084,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "LEV": {
+      "chapters": 27,
+      "verses": 859,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "NUM": {
+      "chapters": 36,
+      "verses": 1289,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "DEU": {
+      "chapters": 34,
+      "verses": 959,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "JOS": {
+      "chapters": 24,
+      "verses": 661,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "JDG": {
+      "chapters": 21,
+      "verses": 618,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "RUT": {
+      "chapters": 4,
+      "verses": 85,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "1SA": {
+      "chapters": 31,
+      "verses": 811,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "2SA": {
+      "chapters": 24,
+      "verses": 695,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "1KI": {
+      "chapters": 22,
+      "verses": 815,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "2KI": {
+      "chapters": 25,
+      "verses": 719,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "1CH": {
+      "chapters": 29,
+      "verses": 942,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "2CH": {
+      "chapters": 36,
+      "verses": 823,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "EZR": {
+      "chapters": 10,
+      "verses": 280,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "NEH": {
+      "chapters": 13,
+      "verses": 406,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "1ES": {
+      "chapters": 9,
+      "verses": 442,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "TOB": {
+      "chapters": 14,
+      "verses": 244,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "JDT": {
+      "chapters": 16,
+      "verses": 340,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "EST": {
+      "chapters": 10,
+      "verses": 166,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "JOB": {
+      "chapters": 42,
+      "verses": 1069,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "PSA": {
+      "chapters": 151,
+      "verses": 2465,
+      "missing_verse_numbers": {
+        "50": [
+          2
+        ],
+        "66": [
+          7
+        ],
+        "141": [
+          2
+        ]
+      },
+      "other_lines": []
+    },
+    "PRO": {
+      "chapters": 31,
+      "verses": 921,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "ECC": {
+      "chapters": 12,
+      "verses": 222,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "SNG": {
+      "chapters": 8,
+      "verses": 116,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "WIS": {
+      "chapters": 19,
+      "verses": 440,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "SIR": {
+      "chapters": 51,
+      "verses": 1523,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "ISA": {
+      "chapters": 66,
+      "verses": 1291,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "JER": {
+      "chapters": 52,
+      "verses": 1364,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "LAM": {
+      "chapters": 5,
+      "verses": 154,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "LJE": {
+      "chapters": 1,
+      "verses": 72,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "BAR": {
+      "chapters": 5,
+      "verses": 141,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "EZK": {
+      "chapters": 48,
+      "verses": 1273,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "DAN": {
+      "chapters": 14,
+      "verses": 530,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "HOS": {
+      "chapters": 14,
+      "verses": 197,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "JOL": {
+      "chapters": 3,
+      "verses": 73,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "AMO": {
+      "chapters": 9,
+      "verses": 146,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "OBA": {
+      "chapters": 1,
+      "verses": 21,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "JON": {
+      "chapters": 4,
+      "verses": 48,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "MIC": {
+      "chapters": 7,
+      "verses": 105,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "NAM": {
+      "chapters": 3,
+      "verses": 47,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "HAB": {
+      "chapters": 3,
+      "verses": 56,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "ZEP": {
+      "chapters": 3,
+      "verses": 53,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "HAG": {
+      "chapters": 2,
+      "verses": 38,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "ZEC": {
+      "chapters": 14,
+      "verses": 211,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "MAL": {
+      "chapters": 4,
+      "verses": 55,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "1MA": {
+      "chapters": 16,
+      "verses": 925,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "2MA": {
+      "chapters": 15,
+      "verses": 558,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "3MA": {
+      "chapters": 7,
+      "verses": 181,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "2ES": {
+      "chapters": 16,
+      "verses": 876,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "MAT": {
+      "chapters": 28,
+      "verses": 1071,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "MRK": {
+      "chapters": 16,
+      "verses": 678,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "LUK": {
+      "chapters": 24,
+      "verses": 1151,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "JHN": {
+      "chapters": 21,
+      "verses": 879,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "ACT": {
+      "chapters": 28,
+      "verses": 1006,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "JAS": {
+      "chapters": 5,
+      "verses": 108,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "1PE": {
+      "chapters": 5,
+      "verses": 105,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "2PE": {
+      "chapters": 3,
+      "verses": 61,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "1JN": {
+      "chapters": 5,
+      "verses": 105,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "2JN": {
+      "chapters": 1,
+      "verses": 13,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "3JN": {
+      "chapters": 1,
+      "verses": 15,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "JUD": {
+      "chapters": 1,
+      "verses": 25,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "ROM": {
+      "chapters": 16,
+      "verses": 433,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "1CO": {
+      "chapters": 16,
+      "verses": 437,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "2CO": {
+      "chapters": 13,
+      "verses": 255,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "GAL": {
+      "chapters": 6,
+      "verses": 149,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "EPH": {
+      "chapters": 6,
+      "verses": 155,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "PHP": {
+      "chapters": 4,
+      "verses": 104,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "COL": {
+      "chapters": 4,
+      "verses": 95,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "1TH": {
+      "chapters": 5,
+      "verses": 89,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "2TH": {
+      "chapters": 3,
+      "verses": 47,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "1TI": {
+      "chapters": 6,
+      "verses": 113,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "2TI": {
+      "chapters": 4,
+      "verses": 83,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "TIT": {
+      "chapters": 3,
+      "verses": 46,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "PHM": {
+      "chapters": 1,
+      "verses": 25,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "HEB": {
+      "chapters": 13,
+      "verses": 303,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    },
+    "REV": {
+      "chapters": 22,
+      "verses": 404,
+      "missing_verse_numbers": {},
+      "other_lines": []
+    }
+  },
+  "source_sha256": {
+    "Gen.text": "e49ebf98afd39a2012eb5825b3b024e63e6c69ea0b46717a4c48e271e702eea1",
+    "Ex.text": "f057d0086bb1225efaaf6daa9965253e27f9e19bd62c381ac70c68c259472987",
+    "Lev.text": "763a81faea05ab56169ed308affe83ec9708d590fea3252700201b7a6769fddb",
+    "Num.text": "991970fb322066c583f59097bd8f7485782c7948ea10ebedb02f451f75816b77",
+    "Deut.text": "c700dcd3a995db7c7b7dbacb27db75590a6e0672952db80aef16d446b704706a",
+    "Josh.text": "ca55c4c4a7c755dcdcc29c2d877ec8b5d459a5f4b2cb28b20c551c7071c6a915",
+    "Judg.text": "5c648914189a21fa2d7418afe3bb55f3bf2da9815ae2eb3e8a7030f231053e2a",
+    "Ruth.text": "324265dd0e93e140ace239b5d1131eeaf0b8d4cb315bd5eaf1f28d230573bcb4",
+    "I_Kings.text": "07865711f50f66e5cf9c35e995256b98da7e30022c9119f5e8bb1a792fb341e5",
+    "II_Kings.text": "72a51e43bf5fec7a361aee60a12b2aedb91b6f56faac50ab9e4f06536e9e7a7d",
+    "III_Kings.text": "0720046c4a218076a4c0cefd1e22359b3e4b585d16d284d5813e4ce85fd3f7b1",
+    "IV_Kings.text": "9817986a54fd9b525bca3b3423f419efe33acde9a5783a3a25eef7b843da7869",
+    "I_Paral.text": "4d193cb9325bee85334084c20db9533cab7a3676607be13565faea6491954981",
+    "II_Paral.text": "6c9da168dff535d396a742346c0a5934fafc376bdd50ce5939e828da265cc858",
+    "I_Esdra.text": "1cab73c84b58cb7037b6a586208bef764d4db7a3c057985fa41d82a57add016a",
+    "Nehem.text": "a38ec4e15486210cf9941ae140efa3b905cdf5ec1983fb6ad438b45d4545f2ad",
+    "II_Esdra.text": "7cf59fb12656e4ef7f635c079be705f6a93df9f86436a030e8b23db50d2dc502",
+    "Tobit.text": "0357109e452d6c483ecb4dda534114d5f501f4a216c704d300a906c7e0823f83",
+    "Judith.text": "a7716f773176cce0b9fa362c76963a201ec28b40e22cf52a1855e13d21cb866d",
+    "Esther.text": "7d9ead91091c37df5c8c13d29e867e9c07a8bbca404960c438a34a3633a6cbfa",
+    "Job.text": "1621cc3e6c27474f5e930a9cb81a40fd50037df2282120d64cd1af51b843fed4",
+    "Psalm.text": "6652a0d2a2ff9b5cf60dd189c0b3466d19a2f0e4d13a099b96558796cabb2b23",
+    "Prov.text": "d56b939d8f8838039929b20aaf6c90d4232bc0ae270e47504c2b6e9729abbd3e",
+    "Eccles.text": "a66b0615edb3ceac4a4683726c98972021713c299ad646657931f963df57bee2",
+    "Song.text": "6c541ccc88250d66b1a00e39506e98b4c6fd1b3a40788ca1a541b580ce39a271",
+    "Wisd.text": "72c031da452ff60d6773ccd3490b93818c28f3ab75b209dae1bfc98c3f1e3b1e",
+    "Sirach.text": "561c92180eb3fbcde6ff0ac6bcec9ec8177b82e7f7e2cf24e66a630dc66cc862",
+    "Isa.text": "3ea64d924a5c6a3b9f5a426ac362764e9dbb5346766eff3858f51a2b91d90169",
+    "Jerem.text": "005b0ffa4477df6565c31b92cd21aba032cf6567619d678cf5caf7f6f4a404b2",
+    "Lamen.text": "21038f962970e095cc1e7113da3f16c65064b29a5f54dbd44c1d9c739caf09f7",
+    "Epistle.text": "25a2bab7ce10118d31fb4096b2465aba4db002295ca0c69b2dae57adc09a9421",
+    "Baruch.text": "21f262ff09c73b908f018cc4ddb35f2fc6f1ea5e314ff8e3208776e9c4a1bab4",
+    "Ezek.text": "9ec7fb860d4f2c2e8231c24c019cbdc4f544a35383c7d2a27dec078541c4e1c0",
+    "Dan.text": "c468ba64039703d58d2d6ed455b19055101e4a65826b4c8704a23b2d60f514f2",
+    "Hos.text": "905906f47a45721dc971670115a466208bd928f1dd0e83b4a23bdcfeb23e26b0",
+    "Joel.text": "55b33b4cc39a45c6ab18b3232f25f2701660c71568c230a10f20229e10865eb3",
+    "Amos.text": "5d993850ada185514edd7438adf7b47e0623ad320c52cb3ca7dcc4702a0f65b9",
+    "Obad.text": "8043e5d916a4adeb29bf02b58db91cf78a490a916e382eac615790d0c7ce9b6b",
+    "Jona.text": "d238262ddab8984b85d58c9f1b8831f50df82fe499913fd33cb29ad27b52335e",
+    "Mica.text": "c7a11143046d3b31799f886a392eccaa1ba82fd01cef5a1e3b92c138256a6b10",
+    "Nahum.text": "ea8e970623262df9ff3b0bfa1fb12899d834c6750995a0f7252e7a3e3cfaa4a5",
+    "Habak.text": "8ff8839867336b9e72a73b1b485176411c6744a4dd5f26dfa0c12ccf7f6d9961",
+    "Zeph.text": "75799cb617547a44d460f06e405f812c0c33d46af7ee20c68b386122fd408c99",
+    "Hagg.text": "0c18f2d35937813d13ced9a82d8193b02d47aed33296e9203553b33984470d8b",
+    "Zech.text": "95a62b693e22c59c82cfca5566b225ff261abfebc6ef9bd2767d0c3368bfed36",
+    "Mal.text": "afb70e6fd452332848567f72973224578349f3f5681961dd2a24d0376453437d",
+    "I_Macc.text": "f66ce50d4668e47470111207c3c610970ae255ce863def952e990741d57a8e34",
+    "II_Macc.text": "128bd77779cca3dbc62f492a8c23846bb09c61d39d4c6eff5dc4f782c2ab72f5",
+    "III_Macc.text": "06de1256aa7e27d65deaf4f0c3199b59e112ae783c729ee95e2119893567050b",
+    "III_Esdra.text": "df9c3d2414c67efee385a740f36b9d13b4eddb56c781bae0c4fc869434d566b4",
+    "Mt.text": "47293accb3d386276e28b00f59f1d87d4096a2306800e9c214cd8fb0e33a18b9",
+    "Mk.text": "0524e36bd3390e553a0e0c58ab16df2006a74eb7857aeacd7b4e31dbd33d7faa",
+    "Lk.text": "900624729a9f0bd09322084e4d8cfa613bd6822e3dc0fbb83279cad8a39bca28",
+    "Jn.text": "02e84f9af4b488dd90c24c6fc6f8cb329b92b74048e7807f55a3976725dcb373",
+    "Acts.text": "55fe8a7518196b08d57b1388ff12e75ed43b01e1bba7052bc845e186604ad099",
+    "Jas.text": "1569274972d0360196c997ee6762097a99d9b7dd6d5bee7ccafaa8c7ac0e3e6a",
+    "I_Pet.text": "879a295d94bd2175cea1cfc08d53227ba1049fd0b9da260138f5f67a2e7a30f1",
+    "II_Pet.text": "3d38336f96fcb1922bda1e4f9cc9175b3d38c29e878611a7f7eb17bb53a18d6c",
+    "I_Jn.text": "937908998e2b35cc667f3d7939880569f85f18029f14f99d3a2336b85e8c46e1",
+    "II_Jn.text": "6e69c9d6df76c1612c7ed63e86bd926b5959e09a5b3f43fb810257387a78b7a2",
+    "III_Jn.text": "b515b891ea39e79c79a79fe1c49d2de37315390cfa0da8711714c4e36dc0026f",
+    "Jude.text": "90fca0f99581b23e81f1d633b17f8d8f49ca0b9b6391b117aa236d12f250b36e",
+    "Rom.text": "6d922b3230252f66214df44396e5f9859ef3905cce942459fdc7a5fcd9316553",
+    "I_Cor.text": "b0780c5734c0af6aa8c15a0413f6aa36929ea797c418c11374cd332e5496bca7",
+    "II_Cor.text": "06f30955b39c22620fd3680d3e2b0cd4dabbb6f9893eed0f6b12860c043add8c",
+    "Gal.text": "188e2fc588aa78c0496debcb69f8edf69896d16d0eb7a4f8ee45cb1bb1e42c49",
+    "Eph.text": "8c9d2180673d24f1b2dd951723d6c4421dd3011a56d8fae461f9a6448f5e79bb",
+    "Philip.text": "e5fefb42a69eec99bb992840167bab66ca8db44208a956c9141d2fc96387090e",
+    "Col.text": "9b946acec737af3c6d0d804df3084eef56cea18be8c0b68baa86d157ff28bf14",
+    "I_Thess.text": "3910ff9997a284771d7b702e23658967b2605b169581c4f6a3e3e849a9eda1d6",
+    "II_Thess.text": "b7686dc6964b70ac00163bbf8e52713fdfac76afd5669804c33e89440bd007f1",
+    "I_Tim.text": "7cbb55630aab062bfbabad63e4e05eec30abfefdcdcbde9acb8974c225dcc97c",
+    "II_Tim.text": "0b1dd47da8767d3a8a16b3502553ab4ae83d2dd9a8205bd01c4455309a9c5fe2",
+    "Tit.text": "d6a4e42e2d54817f988615eff5be5b9a48d36ecb97ad73415abb74fbe0951555",
+    "Philemon.text": "19e0d615fb9ecaf335c8d4be80c01d64f03e2904c15e17c2396f389573368865",
+    "Heb.text": "d780afc92a3914df25a665a526d0bd1d3f24b277d4de9ce7a67235a4ffae07ac",
+    "Apoc.text": "09ba02d3fafe015fcdd9b2fef16c9e9dc80f58b877d660e8fc36bc04827054f2"
+  },
+  "totals": {
+    "books": 77,
+    "chapters": 1361,
+    "verses": 36897,
+    "books_with_verse_gaps": 1,
+    "editorial_lines": 1
+  }
+}
