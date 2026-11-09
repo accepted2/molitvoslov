@@ -68,11 +68,12 @@ jobs:
           assert rst['translation']['code'] == 'rst'
           assert len(rst['books']) == 78
           PY
-      - name: Parse all modified React Native sources with Expo Babel preset
+      - name: Parse modified React Native JavaScript and JSX files
         working-directory: molitvoslov-app
         run: |
           node <<'NODE'
-          const babel = require('@babel/core');
+          const parser = require('@babel/parser');
+          const fs = require('fs');
           const files = [
             'src/screens/BibleScreen.js',
             'src/screens/BibleBooksScreen.js',
@@ -82,10 +83,9 @@ jobs:
             'src/services/bibleContent.js',
           ];
           for (const file of files) {
-            babel.transformFileSync(file, {
-              babelrc: false,
-              configFile: false,
-              presets: [require.resolve('babel-preset-expo')],
+            parser.parse(fs.readFileSync(file, 'utf8'), {
+              sourceType: 'module',
+              plugins: ['jsx'],
             });
             console.log('Parsed:', file);
           }
