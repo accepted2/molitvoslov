@@ -1,5 +1,13 @@
 import * as SecureStore from 'expo-secure-store';
 
+const languageListeners = new Set();
+export const subscribeAppLanguage = (listener) => {
+  languageListeners.add(listener);
+  return () => languageListeners.delete(listener);
+};
+const notifyAppLanguage = (value) => {
+  for (const listener of languageListeners) listener(value);
+};
 const APP_LANGUAGE_KEY = 'molitvoslov_app_language';
 const LEGACY_CALENDAR_LANGUAGE_KEY = 'church_calendar_language';
 
@@ -63,5 +71,6 @@ export const setAppLanguage = async (language) => {
     console.log('Не удалось сохранить язык приложения:', error?.message || error);
   }
 
+  notifyAppLanguage(next);
   return next;
 };
