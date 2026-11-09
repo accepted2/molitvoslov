@@ -138,6 +138,23 @@ def existing_match(entry, existing):
     return ""
 
 
+def load_previous_report(path):
+    """Resume the read-only catalog check without repeating completed pages."""
+    if not path.is_file():
+        return {}
+    with path.open("r", encoding="utf-8-sig", newline="") as stream:
+        reader = csv.DictReader(stream)
+        required = {"url", "slug", "status", "details"}
+        if not required.issubset(set(reader.fieldnames or [])):
+            raise CommandError("В старом CSV не хватает полей для продолжения")
+        previous = {}
+        for row in reader:
+            url = row.get("url") or ""
+            if url:
+                previous[url] = row
+        return previous
+
+
 def is_church_text(sections):
     # Conservative guard: a modern Russian-only page must not silently
     # enter the Church Slavonic field. Ambiguous content requires review.
@@ -170,6 +187,10 @@ class Command(BaseCommand):
         parser.add_argument("--write", action="store_true",
                             help="Запись временно отключена: сначала проверяем весь offline-каталог")
         parser.add_argument("--report", default="files/akathists/catalog_cs_report.csv")
+        parser.add_argument("--retry-review", action="store_true",
+                            help="Перепроверить страницы со статусом REVIEW")
+        parser.add_argument("--restart", action="store_true",
+                            help="Перепроверить все страницы, не используя прошлый CSV")
 
     def handle(self, *args, **options):
         # The APK uses its own offlineContent.json, which can contain books
@@ -199,14 +220,27 @@ class Command(BaseCommand):
 
         django_existing = list(Akathist.objects.values("slug", "title"))
         existing = offline_existing + django_existing
+        report = Path(options["report"])
+        previous = {} if options.get("restart") else load_previous_report(report)
         rows = []
         handled = 0
+        resumed = 0
         skipped = 0
         for entry in candidates:
             match = existing_match(entry, existing)
             if match:
                 skipped += 1
                 rows.append({**entry, "status": "EXISTS", "details": match})
+                continue
+            saved = previous.get(entry["url"])
+            if saved and saved.get("slug") == entry["slug"] and (
+                saved.get("status") == "READY_CS" or (
+                    saved.get("status") == "REVIEW" and not options.get("retry_review")
+                )
+            ):
+                resumed += 1
+                rows.append({**entry, "status": saved["status"],
+                             "details": saved.get("details", "")})
                 continue
             if limit and handled >= limit:
                 break
@@ -251,7 +285,6 @@ class Command(BaseCommand):
             finally:
                 time.sleep(delay)
 
-        report = Path(options["report"])
         report.parent.mkdir(parents=True, exist_ok=True)
         with report.open("w", newline="", encoding="utf-8-sig") as stream:
             writer = csv.DictWriter(
@@ -268,7 +301,8 @@ class Command(BaseCommand):
         self.stdout.write(f"Existing app offline akathists: {len(offline_existing)}")
         self.stdout.write(f"Published in offline app: {offline_visible}")
         self.stdout.write(f"Already present skipped: {skipped}")
-        self.stdout.write(f"Missing candidates checked: {handled}")
+        self.stdout.write(f"Previously audited candidates reused: {resumed}")
+        self.stdout.write(f"New candidates checked this run: {handled}")
         self.stdout.write(f"Results: {statuses}")
         self.stdout.write(f"Report: {report}")
         self.stdout.write("PREVIEW ONLY: Django, offline JSON and Supabase unchanged. Writes disabled.")
