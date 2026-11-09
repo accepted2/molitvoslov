@@ -629,6 +629,24 @@ const HTML_TEMPLATE = String.raw`
       font-style: normal;
       white-space: nowrap;
     }
+    body.communion-reading-rule .reader-text .communion-count-note {
+      color: var(--liturgical) !important;
+      font-weight: 650;
+      font-style: normal;
+      white-space: nowrap;
+    }
+    /* Short liturgical invocations may share a single Text item.
+       Display quiet dividers between them, as for separate prayers.
+       Do not insert dividers into long Communion prayers or the canon. */
+    body.communion-preparation .reader-text .communion-short-prayer-divider {
+      display: block;
+      width: 100%;
+      height: 0;
+      margin: 9px 0 10px;
+      padding: 0;
+      border: 0;
+      border-top: 1px solid var(--border);
+    }
     /* Keep the complete source DOM for selection offsets. Display one
        Alleluia invocation and the brown count instead of its repeats. */
     body.communion-reading-rule .reader-text .communion-alleluia-count {
@@ -3891,6 +3909,10 @@ const HTML_TEMPLATE = String.raw`
           Array.isArray(communionTypography?.breakBefore)
             ? communionTypography.breakBefore : []
         );
+        const communionSeparatorBefore = new Set(
+          Array.isArray(communionTypography?.separatorBefore)
+            ? communionTypography.separatorBefore : []
+        );
 
         const eveningItemKind =
           isEveningMinorLiturgical
@@ -4500,6 +4522,7 @@ const HTML_TEMPLATE = String.raw`
           boundaries.add(range.end);
         });
         communionBreakBefore.forEach(offset => boundaries.add(offset));
+        communionSeparatorBefore.forEach(offset => boundaries.add(offset));
 
         if (leadingCue) {
           boundaries.add(
@@ -4700,6 +4723,12 @@ const HTML_TEMPLATE = String.raw`
 
           if (communionBreakBefore.has(start)) {
             fragment.appendChild(document.createElement('br'));
+          }
+          if (communionSeparatorBefore.has(start)) {
+            const divider = document.createElement('div');
+            divider.className = 'communion-short-prayer-divider';
+            divider.setAttribute('aria-hidden', 'true');
+            fragment.appendChild(divider);
           }
           const span =
             document.createElement(
@@ -7814,7 +7843,7 @@ const buildHtml = ({
             : source.content;
       if (String(value || '').trim()) {
         communionTypographyByItem[String(item.id)] = {
-          ...buildCommunionTypography(value, {continuousPrayer}),
+          ...buildCommunionTypography(value, {continuousPrayer, communionKind}),
           continuousPrayer,
         };
       }
