@@ -41,6 +41,7 @@ import {
 } from '../services/churchCalendar';
 import {CALENDAR_MONTHS, calendarText} from '../services/calendarPreferences';
 import {useLanguage} from '../context/LanguageContext';
+import {useInterfaceScale} from '../context/InterfaceScaleContext';
 import {LANGUAGE_OPTIONS, getCalendarDataLanguage} from '../services/languagePreferences';
 import {getLocalizedField} from '../services/localizedContent';
 import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
@@ -214,10 +215,11 @@ const BellGlyph = () => (
 );
 
 const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress}) => {
+  const uiScale = useInterfaceScale();
   return (
   <Pressable
     onPress={onPress}
-    style={({pressed}) => [styles.libraryCard, pressed && styles.pressed]}
+    style={({pressed}) => [styles.libraryCard, {minHeight: 80 * uiScale}, pressed && styles.pressed]}
   >
     <ImageBackground
       source={artwork}
@@ -264,12 +266,12 @@ const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress})
     </View>
 
     <View style={styles.libraryText}>
-      <Text style={styles.libraryTitle} numberOfLines={2}>
+      <Text style={[styles.libraryTitle, {fontSize: 17 * uiScale, lineHeight: 20 * uiScale}]} numberOfLines={2}>
         {title}
       </Text>
 
       {!!subtitle && (
-        <Text style={styles.librarySubtitle} numberOfLines={2}>
+        <Text style={[styles.librarySubtitle, {fontSize: 11 * uiScale, lineHeight: 14 * uiScale}]} numberOfLines={2}>
           {subtitle}
         </Text>
       )}
@@ -341,6 +343,7 @@ const CalendarReadingText = ({readings, style}) => {
 };
 
 export const MenuScreen = ({navigation}) => {
+  const uiScale = useInterfaceScale();
   const {language: calendarLanguage, setLanguage: setAppLanguage, t} = useLanguage();
   useEffect(() => {
     let mounted = true;
@@ -1468,7 +1471,7 @@ export const MenuScreen = ({navigation}) => {
                     style={({pressed}) => [styles.readingHeadingWrap, pressed && styles.pressed]}
                   >
                     <Text style={styles.readingBook}>▤</Text>
-                    <Text style={styles.readingSectionTitle}>{t('menu.continueReading')}</Text>
+                    <Text style={[styles.readingSectionTitle, {fontSize: 17 * uiScale}]}>{t('menu.continueReading')}</Text>
                   </Pressable>
 
                   {!!activeReadings.length && (
@@ -1506,7 +1509,7 @@ export const MenuScreen = ({navigation}) => {
                       </View>
 
                       <View style={styles.latestReadingText}>
-                        <Text style={styles.latestReadingTitle} numberOfLines={2}>
+                        <Text style={[styles.latestReadingTitle, {fontSize: 16 * uiScale}]} numberOfLines={2}>
                           {latestReading.title}
                         </Text>
 
@@ -1630,10 +1633,10 @@ export const MenuScreen = ({navigation}) => {
                       style={({pressed}) => [styles.extraCard, pressed && styles.pressed]}
                     >
                       <View>
-                        <Text style={styles.extraCardTitle}>
+                        <Text style={[styles.extraCardTitle, {fontSize: 16 * uiScale}]}>
                           {getLocalizedField(category, 'name', calendarLanguage)}
                         </Text>
-                        <Text style={styles.extraCardSubtitle}>
+                        <Text style={[styles.extraCardSubtitle, {fontSize: 11 * uiScale}]}>
                           {getSubcategories(category).length > 0
                             ? t('menu.sectionsCount', {
                                 count: getSubcategories(category).length,
