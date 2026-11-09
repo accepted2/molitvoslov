@@ -1,0 +1,39 @@
+name: Validate account preferences Django API
+
+on:
+  push:
+    branches:
+      - feature/global-reader-settings-sync-20261109
+    paths:
+      - 'molitvoslov-backend/**'
+      - '.github/workflows/account-preferences-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-account-preferences:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: molitvoslov-backend/requirements.txt
+      - name: Install locked backend dependencies
+        run: python -m pip install -r molitvoslov-backend/requirements.txt
+      - name: Check Django migrations and project
+        working-directory: molitvoslov-backend
+        run: |
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+          python manage.py migrate --noinput
+          python manage.py showmigrations api | tail -8
+      - name: Test account API authentication, scopes, and merge precedence
+        working-directory: molitvoslov-backend
+        run: python manage.py test api.test_account_preferences --verbosity 2
