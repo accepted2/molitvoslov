@@ -18,6 +18,20 @@ export const getCommunionRuleKind = rule => {
   return null;
 };
 
+
+// Communion prayer headings are separate "section" items followed by a
+// "text" item with an empty title. Strip Church Slavonic stress marks so the
+// same rule also recognizes headings such as "Моли́тва 1-я" and "Его́ же, 8-я".
+export const isCommunionPrayerHeading = value => {
+  const heading = String(value || '')
+    .normalize('NFD').replace(/\p{M}/gu, '')
+    .toLowerCase().replace(/ё/g, 'е')
+    .replace(/\s+/gu, ' ').trim();
+  return /^молитв(?:а|ы)(?:\s|$|[:.,])/u.test(heading) ||
+    /^благодарственн\w*\s+молитв\w*/u.test(heading) ||
+    /^его\s+же\s*,?\s*\d{1,2}\s*[-‑–]?[ая]?\b/u.test(heading);
+};
+
 const mappedText = value => {
   const source = String(value || '');
   let normalized = '';
@@ -74,7 +88,7 @@ export const compactCommunionAlleluiaDisplay = value => {
   return result;
 };
 
-export const buildCommunionTypography = value => {
+export const buildCommunionTypography = (value, {continuousPrayer = false} = {}) => {
   const {source, normalized, positions} = mappedText(value);
   const ranges = getCommunionAlleluiaCompaction(value);
   const breakBefore = new Set();
@@ -136,8 +150,13 @@ export const buildCommunionTypography = value => {
   }
 
   addInitial(0);
-  for (const match of source.matchAll(/\n[ \t]*\r?\n/gu)) {
-    addInitial(match.index + match[0].length);
+  // A long Communion prayer is one uninterrupted prayer, even when its
+  // source contains editorial blank lines. Preserve a single first initial;
+  // do not decorate every paragraph start as a separate prayer.
+  if (!continuousPrayer) {
+    for (const match of source.matchAll(/\n[ \t]*\r?\n/gu)) {
+      addInitial(match.index + match[0].length);
+    }
   }
   const unique = new Map();
   for (const range of ranges) {
