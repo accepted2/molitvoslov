@@ -239,7 +239,7 @@ export const AccountScreen = ({navigation}) => {
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.screen}>
         <ScrollView style={{flex: 1}} contentContainerStyle={[styles.content, {flex: undefined, flexGrow: 1, paddingBottom: 110}]}>
-          <Text style={styles.title}>Аккаунт</Text>
+          <Text style={[styles.title, {fontSize:28*uiScale}]}>Аккаунт</Text>
 
           {loading ? (
             <View style={styles.card}>
@@ -300,23 +300,23 @@ export const AccountScreen = ({navigation}) => {
             </View>
           )}
           <View style={[styles.card, {marginTop: 16, gap: 12}]}>
-            <Text style={styles.sectionTitle}>Настройки приложения</Text>
-            <Text style={styles.settingCaption}>Язык интерфейса</Text>
+            <Text style={[styles.sectionTitle, {fontSize:20*uiScale}]}>Настройки приложения</Text>
+            <Text style={[styles.settingCaption, {fontSize:15*uiScale}]}>Язык интерфейса</Text>
             <View style={styles.optionRow}>
               {[{value: 'ru', label: 'Русский'}, {value: 'uk', label: 'Українська'}].map((option) => (
                 <Pressable key={option.value} onPress={() => setLanguage(option.value)} style={[styles.settingOption, language === option.value && styles.optionSelected]}>
-                  <Text style={styles.settingText}>{option.label}</Text>
+                  <Text style={[styles.settingText, {fontSize:14*uiScale}]}>{option.label}</Text>
                 </Pressable>
               ))}
             </View>
-            <Text style={styles.settingCaption}>Язык чтения по умолчанию</Text>
+            <Text style={[styles.settingCaption, {fontSize:15*uiScale}]}>Язык чтения по умолчанию</Text>
             {MODE_CHOICES.map((option) => (
               <Pressable key={option.value} onPress={() => changeReadingSettings({defaultMode: option.value})} style={[styles.settingOption, readingSettings.defaultMode === option.value && styles.optionSelected]}>
-                <Text style={styles.settingText}>{readingSettings.defaultMode === option.value ? '●  ' : '○  '}{option.label}</Text>
+                <Text style={[styles.settingText, {fontSize:14*uiScale}]}>{readingSettings.defaultMode === option.value ? '●  ' : '○  '}{option.label}</Text>
               </Pressable>
             ))}
-            <Text style={styles.settingHint}>Если выбранный перевод отсутствует, будет показан доступный текст. Индивидуально сохранённый режим книги имеет приоритет.</Text>
-            <Text style={styles.settingCaption}>Размер шрифта интерфейса</Text>
+            <Text style={[styles.settingHint, {fontSize:12*uiScale,lineHeight:19*uiScale}]}>Если выбранный перевод отсутствует, будет показан доступный текст. Индивидуально сохранённый режим книги имеет приоритет.</Text>
+            <Text style={[styles.settingCaption, {fontSize:15*uiScale}]}>Размер шрифта интерфейса</Text>
             <View style={styles.optionRow}>
               {[1, 1.1, 1.25].map(scale => (
                 <Pressable
@@ -330,11 +330,11 @@ export const AccountScreen = ({navigation}) => {
                 </Pressable>
               ))}
             </View>
-            <Text style={styles.settingHint}>Масштабирует подписи интерфейса отдельно от текста молитв.</Text>
-            <Text style={styles.settingCaption}>Размер текста молитв по умолчанию: {readingSettings.fontSize}</Text>
+            <Text style={[styles.settingHint, {fontSize:12*uiScale,lineHeight:19*uiScale}]}>Масштабирует подписи интерфейса отдельно от текста молитв.</Text>
+            <Text style={[styles.settingCaption, {fontSize:15*uiScale}]}>Размер текста молитв по умолчанию: {readingSettings.fontSize}</Text>
             <View style={styles.fontSizeRow}>
               <Pressable style={styles.settingOption} onPress={() => changeReadingSettings({fontSize: Math.max(14, readingSettingsRef.current.fontSize - 1)})}>
-                <Text style={styles.settingText}>A−</Text>
+                <Text style={[styles.settingText, {fontSize:14*uiScale}]}>A−</Text>
               </Pressable>
               <View
                 style={styles.fontSlider}
@@ -355,10 +355,10 @@ export const AccountScreen = ({navigation}) => {
                 <View pointerEvents="none" style={[styles.fontSliderThumb, {left: (readingSettings.fontSize - 14) / 14 * 100 + '%'}]}/>
               </View>
               <Pressable style={styles.settingOption} onPress={() => changeReadingSettings({fontSize: Math.min(28, readingSettingsRef.current.fontSize + 1)})}>
-                <Text style={styles.settingText}>A+</Text>
+                <Text style={[styles.settingText, {fontSize:14*uiScale}]}>A+</Text>
               </Pressable>
             </View>
-            <Text style={styles.settingCaption}>Цветовая тема чтения</Text>
+            <Text style={[styles.settingCaption, {fontSize:15*uiScale}]}>Цветовая тема чтения</Text>
             <View style={styles.palettePresetRow}>
               {PALETTES.filter(option => option.value !== 'custom').map(option => (
                 <Pressable key={option.value} accessibilityRole="button"
@@ -383,7 +383,7 @@ export const AccountScreen = ({navigation}) => {
                   <View style={[styles.colorChip, {backgroundColor: option.key === 'customBackground'
                     ? resolveReaderAppearance(readingSettings).background
                     : resolveReaderAppearance(readingSettings).text}]}/>
-                  <Text style={styles.settingText}>{option.label}</Text>
+                  <Text style={[styles.settingText, {fontSize:14*uiScale}]}>{option.label}</Text>
                 </Pressable>
               ))}
             </View>
@@ -419,7 +419,7 @@ export const AccountScreen = ({navigation}) => {
                 queueAccountPreferencePatch({settings: {...reset, language: 'ru'}}).catch(console.warn);
               }}]
             )}>
-              <Text style={styles.settingText}>Сбросить настройки чтения и языка</Text>
+              <Text style={[styles.settingText, {fontSize:14*uiScale}]}>Сбросить настройки чтения и языка</Text>
             </Pressable>
           </View>
         </ScrollView>
