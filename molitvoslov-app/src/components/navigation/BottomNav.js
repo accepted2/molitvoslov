@@ -40,10 +40,18 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
   const {width: windowWidth, fontScale} = useWindowDimensions();
   const {t} = useLanguage();
 
-  // Keep controls usable on narrow / high-density Android phones. Font scale
-  // grows the row instead of shrinking long navigation labels.
-  const iconSize = windowWidth < 350 ? 20 : 22;
-  const rowHeight = Math.max(64, Math.ceil(34 + 30 * Math.max(1, fontScale)));
+  // Logical window width (dp), not device pixel count: grow the entire bar
+  // gradually on larger phones without making it huge on tablets.
+  // At 390dp: 22dp icons, 12sp labels, 64dp row;
+  // at >=468dp: 26dp icons, ~14sp labels, >=76dp row.
+  const navScale = Math.min(1.2, Math.max(1, windowWidth / 390));
+  const iconSize = Math.round(22 * navScale);
+  const labelSize = Math.round(12 * navScale * 10) / 10;
+  const labelLineHeight = Math.round(15 * navScale * 10) / 10;
+  const rowHeight = Math.ceil(Math.max(
+    64 * navScale,
+    (34 + 30 * Math.max(1, fontScale)) * navScale,
+  ));
   const itemHeight = rowHeight - 4;
 
   const openRootTab = (route) => {
@@ -58,7 +66,7 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
       pointerEvents={readingHidden ? 'none' : 'box-none'}
       style={[
         styles.wrapper,
-        {transform: [{translateY: visibility.interpolate({inputRange: [0, 1], outputRange: [0, 100]})}], opacity: visibility.interpolate({inputRange: [0, 1], outputRange: [1, 0]})},
+        {transform: [{translateY: visibility.interpolate({inputRange: [0, 1], outputRange: [0, rowHeight + 40]})}], opacity: visibility.interpolate({inputRange: [0, 1], outputRange: [1, 0]})},
         {
           bottom: Math.max(insets.bottom + 4, 7),
         },
@@ -89,13 +97,13 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
                 ]}
               >
                 <View style={styles.itemContent}>
-                  <View style={styles.navIconWrap}>
+                  <View style={[styles.navIconWrap, {width: iconSize + 4, height: iconSize + 4}]}>
                     <NavIcon type={item.icon} active={isActive} size={iconSize} />
                   </View>
 
                   <Text
                     numberOfLines={2}
-                    style={[styles.label, isActive && styles.labelActive]}
+                    style={[styles.label, {fontSize: labelSize, lineHeight: labelLineHeight}, isActive && styles.labelActive]}
                   >
                     {t(item.labelKey)}
                   </Text>
@@ -115,7 +123,7 @@ const styles = StyleSheet.create({
     left: 8,
     right: 8,
     zIndex: 30,
-    maxWidth: 480,
+    maxWidth: 520,
     alignSelf: 'center',
   },
 
