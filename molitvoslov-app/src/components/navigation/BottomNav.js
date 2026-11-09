@@ -4,6 +4,7 @@ import {CommonActions} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useLanguage} from '../../context/LanguageContext';
+import {useInterfaceScale} from '../../context/InterfaceScaleContext';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 const ITEMS = [
@@ -14,7 +15,7 @@ const ITEMS = [
   {key: 'account', route: 'Account', labelKey: 'nav.account', icon: 'account'},
 ];
 
-const NavIcon = ({type, active}) => {
+const NavIcon = ({type, active, size = 17}) => {
   const color = active ? '#2C170B' : '#F5DCB5';
 
   const iconNames = {
@@ -25,10 +26,10 @@ const NavIcon = ({type, active}) => {
   };
 
   if (type === 'candle') {
-    return <MaterialCommunityIcons name="candle" size={17} color={color} />;
+    return <MaterialCommunityIcons name="candle" size={size} color={color} />;
   }
 
-  return <Feather name={iconNames[type] || 'circle'} size={17} color={color} />;
+  return <Feather name={iconNames[type] || 'circle'} size={size} color={color} />;
 };
 
 export const BottomNav = ({navigation, active, readingHidden = false}) => {
@@ -38,6 +39,10 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
   }, [readingHidden, visibility]);
   const insets = useSafeAreaInsets();
   const {t} = useLanguage();
+  const uiScale = useInterfaceScale();
+  const iconSize = Math.round(17 * uiScale);
+  const rowHeight = Math.round(46 + (uiScale - 1) * 56);
+  const itemHeight = rowHeight - 5;
 
   const openRootTab = (route) => {
     navigation.dispatch(CommonActions.reset({
@@ -51,7 +56,7 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
       pointerEvents={readingHidden ? 'none' : 'box-none'}
       style={[
         styles.wrapper,
-        {transform: [{translateY: visibility.interpolate({inputRange: [0, 1], outputRange: [0, 100]})}], opacity: visibility.interpolate({inputRange: [0, 1], outputRange: [1, 0]})},
+        {transform: [{translateY: visibility.interpolate({inputRange: [0, 1], outputRange: [0, 100 + rowHeight - 46]})}], opacity: visibility.interpolate({inputRange: [0, 1], outputRange: [1, 0]})},
         {
           bottom: Math.max(insets.bottom + 4, 7),
         },
@@ -63,7 +68,7 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
         end={{x: 1, y: 1}}
         style={styles.container}
       >
-        <View style={styles.itemsRow}>
+        <View style={[styles.itemsRow, {height: rowHeight}]}>
           {ITEMS.map((item) => {
             const isActive = item.key === active;
 
@@ -76,20 +81,24 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
                 onPress={() => openRootTab(item.route)}
                 style={({pressed}) => [
                   styles.item,
+                  {height: itemHeight},
                   isActive && styles.itemActive,
                   pressed && styles.pressed,
                 ]}
               >
                 <View style={styles.itemContent}>
-                  <View style={styles.navIconWrap}>
-                    <NavIcon type={item.icon} active={isActive} />
+                  <View style={[styles.navIconWrap, {width: Math.round(22 * uiScale), height: Math.round(22 * uiScale)}]}>
+                    <NavIcon type={item.icon} active={isActive} size={iconSize} />
                   </View>
 
                   <Text
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
+                    numberOfLines={uiScale === 1 ? 1 : 2}
+                    adjustsFontSizeToFit={uiScale === 1}
                     minimumFontScale={0.8}
-                    style={[styles.label, isActive && styles.labelActive]}
+                    style={[styles.label, {
+                      fontSize: 10 * uiScale,
+                      lineHeight: 12 * uiScale,
+                    }, isActive && styles.labelActive]}
                   >
                     {t(item.labelKey)}
                   </Text>
