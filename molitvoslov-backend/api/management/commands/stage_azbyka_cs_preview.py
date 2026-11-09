@@ -103,7 +103,8 @@ def text_payload(slug, section_type, number, source, uid):
         "categories": [],
         "description_position": "before",
         "language": "cu",
-        "slug": f"{slug}-{section_type}-{number}",
+        "slug": (f"{slug}-{section_type}-{number}" if number != "" else
+                 f"{slug}-{'kontakion-before' if section_type == 'kontakion_before' else 'troparion'}"),
     }
 
 
