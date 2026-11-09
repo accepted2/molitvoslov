@@ -16,6 +16,7 @@ import {savedTextFontFamily} from '../services/savedTextTypography';
 
 import {colors, radius, spacing} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
+import {useInterfaceScale} from '../context/InterfaceScaleContext';
 
 const TAB_SAVED = 'saved';
 const TAB_PLACES = 'places';
@@ -34,6 +35,7 @@ const FRAGMENT_SAVE_TYPES = new Set(['word', 'sentence', 'paragraph', 'fragment'
 const isPonomarPreview = item => savedTextFontFamily(item) === 'Ponomar';
 
 export const FavoritesScreen = ({route, navigation}) => {
+  const uiScale = useInterfaceScale();
   const {t} = useLanguage();
   const initialTab = TABS.some((tab) => tab.key === route.params?.tab)
     ? route.params.tab
@@ -285,7 +287,7 @@ export const FavoritesScreen = ({route, navigation}) => {
       <View style={styles.screen}>
         <View style={[styles.headerRow, {paddingTop: insets.top + 2}]}>
           <View style={styles.headerTitleBlock}>
-            <Text style={styles.headerTitle} numberOfLines={1}>{t('favorites.title')}</Text>
+            <Text style={[styles.headerTitle, {fontSize: 21 * uiScale}]} numberOfLines={1}>{t('favorites.title')}</Text>
             <View style={styles.headerOrnament}>
               <View style={styles.headerLine} />
               <Text style={styles.headerStar}>✦</Text>
@@ -336,7 +338,7 @@ export const FavoritesScreen = ({route, navigation}) => {
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={[styles.tabText, active && styles.tabTextActive]}>
+                  <Text style={[styles.tabText, {fontSize: 12 * uiScale}, active && styles.tabTextActive]}>
                     {t(tab.labelKey)}
                   </Text>
                   {!!tabCount(tab.key) && (
@@ -371,8 +373,8 @@ export const FavoritesScreen = ({route, navigation}) => {
             ListEmptyComponent={
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyHeart}>{emptyCopy.icon}</Text>
-                <Text style={styles.emptyTitle}>{emptyCopy.title}</Text>
-                {!!emptyCopy.text && <Text style={styles.emptyText}>{emptyCopy.text}</Text>}
+                <Text style={[styles.emptyTitle, {fontSize: 19 * uiScale}]}>{emptyCopy.title}</Text>
+                {!!emptyCopy.text && <Text style={[styles.emptyText, {fontSize: 14 * uiScale}]}>{emptyCopy.text}</Text>}
               </View>
             }
             renderItem={({item}) => (
@@ -397,7 +399,7 @@ export const FavoritesScreen = ({route, navigation}) => {
                   onPress={() => openItem(item)}
                   style={({pressed}) => [styles.cardBody, pressed && styles.pressed]}
                 >
-                  <Text style={styles.cardTitle}>{getItemTitle(item)}</Text>
+                  <Text style={[styles.cardTitle, {fontSize: 17 * uiScale}]}>{getItemTitle(item)}</Text>
 
                   {activeTab === TAB_PLACES ? (
                     <Text style={styles.placeMeta}>
@@ -407,7 +409,7 @@ export const FavoritesScreen = ({route, navigation}) => {
                         : ''}
                     </Text>
                   ) : item.source_type === 'bible' && item.save_type === 'chapter' ? (
-                    <Text style={styles.quote}>
+                    <Text style={[styles.quote, {fontSize: 15 * uiScale}]}>
                       {t('favorites.wholeChapter')}
                       {item.metadata?.verse_count
                         ? ' · ' + t('favorites.verses', {count: item.metadata.verse_count})
@@ -415,7 +417,7 @@ export const FavoritesScreen = ({route, navigation}) => {
                     </Text>
                   ) : (
                     !!item.text && (
-                      <Text style={[styles.quote, isPonomarPreview(item) && ponomarLoaded && styles.quoteChurch]} numberOfLines={8}>
+                      <Text style={[styles.quote, {fontSize: 15 * uiScale}, isPonomarPreview(item) && ponomarLoaded && styles.quoteChurch]} numberOfLines={8}>
                         «{item.text}»
                       </Text>
                     )
