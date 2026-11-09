@@ -16,6 +16,7 @@ import {PrayerBeadsLoader} from './src/components/feedback/PrayerBeadsLoader';
 
 import {TextSelectionProvider} from './src/context/TextSelectionContext';
 import {LanguageProvider} from './src/context/LanguageContext';
+import {InterfaceScaleProvider} from './src/context/InterfaceScaleContext';
 
 import {initDatabase} from './src/db/database';
 
@@ -236,9 +237,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <LanguageProvider>
+        <InterfaceScaleProvider>
         <TextSelectionProvider>
           {showOnboarding ? <OnboardingScreen onComplete={completeOnboarding} /> : <AppNavigator />}
         </TextSelectionProvider>
+        </InterfaceScaleProvider>
       </LanguageProvider>
     </SafeAreaProvider>
   );
