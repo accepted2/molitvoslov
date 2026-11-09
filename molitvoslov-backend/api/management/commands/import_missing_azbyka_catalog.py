@@ -277,11 +277,18 @@ class Command(BaseCommand):
                     "details": f"13 kontakia, 12 ikoses, "
                                f"{sum(s['type'] == 'prayer' for s in sections)} prayers",
                 })
-            except (Exception) as exc:
+            except Exception as exc:
                 rows.append({
                     **entry, "status": "REVIEW",
                     "details": f"{type(exc).__name__}: {exc}"[:240],
                 })
+                if isinstance(exc, requests.HTTPError) and getattr(
+                    exc.response, "status_code", None
+                ) in (429, 503):
+                    self.stderr.write(
+                        "Azbyka returned HTTP 429/503. Stopping this batch to avoid rate limiting."
+                    )
+                    break
             finally:
                 time.sleep(delay)
 
