@@ -111,7 +111,7 @@ BOOK_NAME_OVERRIDES = {
     "2ES": ("Третья книга Ездры", "3Ездр."),
 }
 CHAPTER_PATTERN = re.compile(r"^#([1-9]\d*)$")
-VERSE_PATTERN = re.compile(r"^([1-9]\d*)\|\s*(.*)$")
+VERSE_PATTERN = re.compile(r"^(\d+)\|\s*(.*)$")
 NONVERSE_COLOPHON = re.compile(r"^Коне́цъ\b")
 
 
@@ -151,6 +151,11 @@ def parse_source(source, code):
                 raise ValueError(f"{code}:{index}: verse before chapter")
             number = int(match.group(1))
             text = unicodedata.normalize("NFC", match.group(2).strip())
+            if number == 0:
+                # Psalm headings and other unnumbered superscriptions are not
+                # verse zero: keep them as chapter metadata, not a fake verse.
+                current["heading"] = (current.get("heading", "") + " " + text).strip()
+                continue
             if not text:
                 raise ValueError(f"{code} {current['number']}:{number}: empty verse")
             if number in seen_verses:
@@ -264,6 +269,7 @@ def build(args):
             book["chapters"].append({
                 "id": get_client_id("chapter", order, chapter=n),
                 "number": n,
+                **({"heading": chapter["heading"]} if chapter.get("heading") else {}),
                 "verses": [
                     {
                         "id": get_client_id("verse", order, chapter=n, verse=v["number"]),
