@@ -25,7 +25,17 @@ const isDarkReaderBackground = hex => {
   const [r, g, b] = hexRgb(hex).map(v => v / 255);
   return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.48;
 };
-const source = read(files[0]).replace(/^import .*\n/m, '').replace(/export const /g, 'const ');
+// Windows Git checkouts commonly use CRLF; a regex that requires LF directly
+// after the import line leaves the import in place and crashes node:vm.
+const stripImports = text => text
+  .split(/\r?\n/)
+  .filter(line => !line.trimStart().startsWith('import '))
+  .join('\n')
+  .replace(/export const /g, 'const ');
+const originalSource = read(files[0]);
+const source = stripImports(originalSource);
+// Explicitly check both checkout line-ending styles.
+assert.ok(!stripImports(originalSource.replace(/\r?\n/g, '\r\n')).includes("from './scopedReaderAppearance'"));
 const moduleContext = {
   withOpacity, isDarkReaderBackground, output: {},
 };
