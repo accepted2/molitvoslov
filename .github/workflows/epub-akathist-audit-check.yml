@@ -9,6 +9,8 @@ on:
       - 'molitvoslov-backend/api/test_audit_akathist_epubs.py'
       - 'molitvoslov-backend/api/management/commands/import_missing_azbyka_catalog.py'
       - 'molitvoslov-backend/api/test_import_missing_azbyka_catalog.py'
+      - 'molitvoslov-backend/api/management/commands/stage_azbyka_cs_preview.py'
+      - 'molitvoslov-backend/api/test_stage_azbyka_cs_preview.py'
       - '.github/workflows/epub-akathist-audit-check.yml'
   workflow_dispatch:
 
@@ -32,7 +34,7 @@ jobs:
         working-directory: molitvoslov-backend
         run: |
           python manage.py check
-          python manage.py test api.test_audit_akathist_epubs api.test_import_missing_azbyka_catalog --verbosity 2
+          python manage.py test api.test_audit_akathist_epubs api.test_import_missing_azbyka_catalog api.test_stage_azbyka_cs_preview --verbosity 2
       - name: Set up Node for bundled app catalogue verification
         uses: actions/setup-node@v4
         with:
