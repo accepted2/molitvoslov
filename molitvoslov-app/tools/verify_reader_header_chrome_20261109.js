@@ -46,9 +46,10 @@ for (const chrome of [dark, parchment, custom]) {
   assert.equal(chrome.gradient.length, 4);
   assert.ok(chrome.gradient.every(color => /^rgba\(\d+,\d+,\d+,(?:0|0?\.\d+|1)\)$/.test(color)));
   assert.ok(chrome.gradient.at(-1).endsWith(',0)'));
-  assert.notEqual(chrome.frost, parchment.frost || '', 'light and dark surfaces should differ');
+  assert.ok(chrome.frost.startsWith('rgba('));
   assert.ok(/^#[0-9A-F]{6}$/.test(chrome.pill));
 }
+assert.notEqual(dark.frost, parchment.frost);
 assert.notEqual(dark.gradient[0], parchment.gradient[0]);
 assert.notEqual(custom.gradient[0], parchment.gradient[0]);
 
