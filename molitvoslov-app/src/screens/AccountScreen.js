@@ -316,29 +316,111 @@ export const AccountScreen = ({navigation}) => {
               </Pressable>
             ))}
             <Text style={styles.settingHint}>Если выбранный перевод отсутствует, будет показан доступный текст. Индивидуально сохранённый режим книги имеет приоритет.</Text>
-            <Text style={styles.settingCaption}>Размер текста по умолчанию</Text>
+            <Text style={styles.settingCaption}>Размер шрифта интерфейса</Text>
             <View style={styles.optionRow}>
-              <Pressable style={styles.settingOption} onPress={() => changeReadingSettings({fontSize: readingSettings.fontSize - 1})}><Text style={styles.settingText}>A−</Text></Pressable>
-              <Text style={styles.settingText}>{readingSettings.fontSize}</Text>
-              <Pressable style={styles.settingOption} onPress={() => changeReadingSettings({fontSize: readingSettings.fontSize + 1})}><Text style={styles.settingText}>A+</Text></Pressable>
+              {[1, 1.1, 1.25].map(scale => (
+                <Pressable
+                  key={String(scale)}
+                  accessibilityRole="button"
+                  accessibilityState={{selected: readingSettings.interfaceScale === scale}}
+                  style={[styles.settingOption, readingSettings.interfaceScale === scale && styles.optionSelected]}
+                  onPress={() => changeReadingSettings({interfaceScale: scale})}
+                >
+                  <Text style={[styles.settingText, {fontSize: 14 * uiScale}]}>{Math.round(scale * 100)}%</Text>
+                </Pressable>
+              ))}
             </View>
-            <Text style={styles.settingCaption}>Цветовая палитра чтения</Text>
+            <Text style={styles.settingHint}>Масштабирует подписи интерфейса отдельно от текста молитв.</Text>
+            <Text style={styles.settingCaption}>Размер текста молитв по умолчанию: {readingSettings.fontSize}</Text>
+            <View style={styles.fontSizeRow}>
+              <Pressable style={styles.settingOption} onPress={() => changeReadingSettings({fontSize: Math.max(14, readingSettingsRef.current.fontSize - 1)})}>
+                <Text style={styles.settingText}>A−</Text>
+              </Pressable>
+              <View
+                style={styles.fontSlider}
+                accessibilityRole="adjustable"
+                accessibilityLabel="Размер текста молитв"
+                accessibilityValue={{min: 14, max: 28, now: readingSettings.fontSize}}
+                accessibilityActions={[{name:'increment'}, {name:'decrement'}]}
+                onAccessibilityAction={event => changeReadingSettings({
+                  fontSize: Math.max(14, Math.min(28, readingSettingsRef.current.fontSize + (event.nativeEvent.actionName === 'increment' ? 1 : -1))),
+                })}
+                onLayout={event => setFontSliderWidth(event.nativeEvent.layout.width)}
+                onStartShouldSetResponder={() => true}
+                onMoveShouldSetResponder={() => true}
+                onResponderGrant={changeFontFromGesture}
+                onResponderMove={changeFontFromGesture}
+              >
+                <View pointerEvents="none" style={[styles.fontSliderFill, {width: (readingSettings.fontSize - 14) / 14 * 100 + '%'}]}/>
+                <View pointerEvents="none" style={[styles.fontSliderThumb, {left: (readingSettings.fontSize - 14) / 14 * 100 + '%'}]}/>
+              </View>
+              <Pressable style={styles.settingOption} onPress={() => changeReadingSettings({fontSize: Math.min(28, readingSettingsRef.current.fontSize + 1)})}>
+                <Text style={styles.settingText}>A+</Text>
+              </Pressable>
+            </View>
+            <Text style={styles.settingCaption}>Цветовая тема чтения</Text>
+            <View style={styles.palettePresetRow}>
+              {PALETTES.filter(option => option.value !== 'custom').map(option => (
+                <Pressable key={option.value} accessibilityRole="button"
+                  accessibilityState={{selected: readingSettings.palette === option.value}}
+                  onPress={() => changeReadingSettings({palette: option.value})}
+                  style={styles.palettePreset}
+                >
+                  <View style={[styles.paletteCircle, {backgroundColor: option.color},
+                    readingSettings.palette === option.value && styles.paletteSelected]}/>
+                  <Text style={styles.paletteName}>{option.label}</Text>
+                </Pressable>
+              ))}
+            </View>
             <View style={styles.optionRow}>
-              {PALETTES.map((option) => <Pressable key={option.value} accessibilityLabel={option.label} onPress={() => changeReadingSettings({palette: option.value})} style={[styles.paletteCircle, {backgroundColor: option.color}, readingSettings.palette === option.value && styles.paletteSelected]} />)}
+              {[{key:'customBackground',label:'Цвет фона'}, {key:'customText',label:'Цвет текста'}].map(option => (
+                <Pressable
+                  key={option.key}
+                  accessibilityRole="button"
+                  onPress={() => setShowColorPicker(value => value === option.key ? null : option.key)}
+                  style={styles.colorPickerButton}
+                >
+                  <View style={[styles.colorChip, {backgroundColor: option.key === 'customBackground'
+                    ? resolveReaderAppearance(readingSettings).background
+                    : resolveReaderAppearance(readingSettings).text}]}/>
+                  <Text style={styles.settingText}>{option.label}</Text>
+                </Pressable>
+              ))}
             </View>
-            {readingSettings.palette === 'custom' && (
-              <View style={{gap: 12}}>
-                <ColorPalettePicker title="Цвет фона" color={readingSettings.customBackground} onChange={(color) => changeReadingSettings({customBackground: color})} />
-                <ColorPalettePicker title="Цвет текста" color={readingSettings.customText} onChange={(color) => changeReadingSettings({customText: color})} />
+            {showColorPicker && (
+              <View style={styles.colorPickerPanel}>
+                <ColorPalettePicker
+                  key={showColorPicker}
+                  title={showColorPicker === 'customBackground' ? 'Выбрать фон' : 'Выбрать цвет текста'}
+                  color={showColorPicker === 'customBackground'
+                    ? resolveReaderAppearance(readingSettings).background
+                    : resolveReaderAppearance(readingSettings).text}
+                  onChange={color => changeCustomColor(showColorPicker, color)}
+                />
               </View>
             )}
-            <View style={[styles.readerPreview, {backgroundColor: readingSettings.palette === 'custom' ? readingSettings.customBackground : (PALETTES.find((x) => x.value === readingSettings.palette)?.color || '#FFF4DE')}] }>
-              <Text style={{fontFamily: 'serif', fontSize: readingSettings.fontSize, lineHeight: readingSettings.fontSize * 1.65, color: readingSettings.palette === 'custom' ? readingSettings.customText : readingSettings.palette === 'night' ? '#F4E7D2' : '#3E2A1D'}}>Господи, научи меня творить волю Твою. Образец текста для чтения.</Text>
+            <View style={[styles.readerPreview, {backgroundColor: resolveReaderAppearance(readingSettings).background}]}>
+              <Text style={{
+                fontFamily: 'serif',
+                fontSize: readingSettings.fontSize,
+                lineHeight: readingSettings.fontSize * 1.65,
+                color: resolveReaderAppearance(readingSettings).text,
+              }}>Господи, научи меня творить волю Твою.</Text>
             </View>
-            <Pressable style={styles.settingOption} onPress={() => Alert.alert('Сбросить настройки?', 'Будет восстановлен русский язык интерфейса, церковнославянский текст и исходное оформление чтения.', [{text: 'Отмена', style: 'cancel'}, {text: 'Сбросить', onPress: async () => {await setLanguage('ru'); const settings = await resetReadingSettings(); await saveReadingSettings({...settings, defaultMode: 'church'}); setReadingSettings({...settings, defaultMode: 'church'});}}])}>
+            <Pressable style={styles.settingOption} onPress={() => Alert.alert(
+              'Сбросить общие настройки?',
+              'Общие настройки вернутся к исходным. Индивидуальные настройки каждой читалки сохранятся.',
+              [{text: 'Отмена', style: 'cancel'}, {text: 'Сбросить', onPress: async () => {
+                await setLanguage('ru');
+                const reset = await resetReadingSettings();
+                await saveReadingSettings(reset);
+                readingSettingsRef.current = reset;
+                setReadingSettings(reset);
+                queueAccountPreferencePatch({settings: {...reset, language: 'ru'}}).catch(console.warn);
+              }}]
+            )}>
               <Text style={styles.settingText}>Сбросить настройки чтения и языка</Text>
             </Pressable>
-            <Text style={styles.settingHint}>Настройки сохраняются на устройстве. Применение палитры и размера ко всем видам чтения, а также синхронизация через аккаунт требуют отдельного подключения.</Text>
           </View>
         </ScrollView>
 
@@ -349,7 +431,17 @@ export const AccountScreen = ({navigation}) => {
 };
 
 const styles = StyleSheet.create({
-  readerPreview: {padding: 18, borderRadius: 13, minHeight: 100, borderWidth: 1, borderColor: '#AE9070'},
+  readerPreview: {padding: 18, borderRadius: 13, minHeight: 85, borderWidth: 1, borderColor: '#AE9070'},
+  fontSizeRow: {flexDirection:'row',alignItems:'center',gap:8},
+  fontSlider: {flex:1,height:26,borderRadius:12,backgroundColor:'#EFE1CB',borderWidth:1,borderColor:'#D7B991',justifyContent:'center',overflow:'hidden'},
+  fontSliderFill: {position:'absolute',top:0,bottom:0,left:0,backgroundColor:'#B38A51'},
+  fontSliderThumb: {position:'absolute',height:20,width:15,marginLeft:-7,borderRadius:10,backgroundColor:'#694126',borderWidth:2,borderColor:'#FFF4DE'},
+  palettePresetRow: {flexDirection:'row',gap:5,justifyContent:'space-between'},
+  palettePreset: {flex:1,alignItems:'center',gap:4},
+  paletteName: {fontSize:11,color:'#69472B',textAlign:'center'},
+  colorPickerButton: {flex:1,flexDirection:'row',alignItems:'center',gap:8,padding:9,borderRadius:10,backgroundColor:'#F2E0C5'},
+  colorChip: {height:23,width:23,borderRadius:6,borderColor:'#A88762',borderWidth:1},
+  colorPickerPanel: {padding:10,borderRadius:14,backgroundColor:'#F5E3C6',borderWidth:1,borderColor:'#B19168'},
   hexInput: {borderWidth: 1, borderColor: '#D6BC94', borderRadius: 10, backgroundColor: '#FFF8EB', padding: 10, color: '#3E2A1D'},
   sectionTitle: {fontSize: 20, fontWeight: '700', color: '#503524'},
   settingCaption: {fontSize: 15, fontWeight: '700', color: '#684229'},
