@@ -74,8 +74,14 @@ try {
         throw "Merge failed. Check saved backup at: $backup"
     }
 
-    & $python -X utf8 -c 'import json,sys; p=json.load(open(sys.argv[1],encoding="utf-8-sig")); print("Published Akathists:",sum(x.get("is_visible") is True for x in p["akathists"]["list"]))' $offline
-    if ($LASTEXITCODE -ne 0) { throw "Cannot inspect resulting JSON" }
+    # Windows PowerShell 5.1 strips quotes from Python -c arguments.
+    # Parse the resulting JSON in PowerShell itself to avoid false failures
+    # after a successful additive merge.
+    $updatedContent = Get-Content -LiteralPath $offline -Encoding UTF8 -Raw | ConvertFrom-Json
+    $allAkathists = @($updatedContent.akathists.list)
+    $published = @($allAkathists | Where-Object { $_.is_visible -eq $true }).Count
+    if ($published -lt 20) { throw "Published Akathist count is unexpectedly small: $published" }
+    Write-Host "Published Akathists: $published"
 
     Write-Host "LOCAL PREVIEW INSTALLED. Existing Akathists retained." -ForegroundColor Green
     Write-Host "Backup folder: $backup"
