@@ -1,12 +1,18 @@
+from django.core.management.base import CommandError
 from django.test import SimpleTestCase
 
 from api.management.commands.import_missing_azbyka_catalog import (
-    catalogue_entries, existing_match, is_church_text,
+    Command, catalogue_entries, existing_match, is_church_text,
     normalize_slug, only_church, source_only,
 )
 
 
 class CatalogChurchOnlyTests(SimpleTestCase):
+    def test_write_disabled_until_bundled_app_content_is_checked(self):
+        # This must fail before downloading or querying Django.
+        with self.assertRaisesRegex(CommandError, "offlineContent.json"):
+            Command().handle(write=True)
+
     def test_catalogue_only_section_links_and_deduplicates(self):
         html = """
         <h1>Сборник акафистов</h1>
