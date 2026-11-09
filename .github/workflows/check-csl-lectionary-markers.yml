@@ -1,0 +1,33 @@
+name: Church Slavonic Bible lectionary-marker cleanup
+
+on:
+  push:
+    branches:
+      - feature/bible-csl-traditional-20261109
+    paths:
+      - 'molitvoslov-app/tools/build_csl_ponomar_bible.py'
+      - 'molitvoslov-app/tools/csl_lectionary_markers.py'
+      - 'molitvoslov-app/tools/clean_offline_csl_lectionary.py'
+      - 'molitvoslov-app/tools/test_csl_lectionary_cleanup.py'
+      - '.github/workflows/check-csl-lectionary-markers.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Verify text is preserved, and remove annotations in memory only
+        working-directory: molitvoslov-app
+        run: |
+          python tools/test_csl_lectionary_cleanup.py
+          python -X utf8 tools/clean_offline_csl_lectionary.py --check
+      - name: Verify source bundle has not changed
+        run: git diff --exit-code -- molitvoslov-app/src/data/offlineBibleCslTraditional.json
