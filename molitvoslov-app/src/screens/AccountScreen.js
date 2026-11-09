@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 
 import {ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
 
@@ -24,6 +24,10 @@ import {useLanguage} from '../context/LanguageContext';
 import {getReadingSettings, saveReadingSettings, resetReadingSettings, DEFAULT_READING_SETTINGS} from '../services/readerPreferences';
 import {READER_LANGUAGE_MODES} from '../services/readerLanguageModes';
 import ColorPalettePicker from '../components/settings/ColorPalettePicker';
+import {resolveReaderAppearance} from '../services/scopedReaderAppearance';
+import {queueAccountPreferencePatch, syncAccountPreferences} from '../services/accountPreferencesSync';
+import {subscribeReadingSettings} from '../services/readerPreferences';
+import {useInterfaceScale} from '../context/InterfaceScaleContext';
 
 const MODE_CHOICES = [
   {value: READER_LANGUAGE_MODES.CHURCH, label: 'Церковнославянский'},
@@ -42,12 +46,46 @@ const PALETTES = [
 export const AccountScreen = ({navigation}) => {
   const {language, setLanguage} = useLanguage();
   const [readingSettings, setReadingSettings] = useState(DEFAULT_READING_SETTINGS);
-  useEffect(() => { getReadingSettings().then(setReadingSettings).catch(console.warn); }, []);
+  const readingSettingsRef = useRef(DEFAULT_READING_SETTINGS);
+  const [showColorPicker, setShowColorPicker] = useState(null);
+  const [fontSliderWidth, setFontSliderWidth] = useState(200);
+  const uiScale = useInterfaceScale();
+  useEffect(() => {
+    let active = true;
+    const apply = settings => {
+      if (!active) return;
+      readingSettingsRef.current = settings;
+      setReadingSettings(settings);
+    };
+    const unsub = subscribeReadingSettings(apply);
+    getReadingSettings().then(apply).catch(console.warn);
+    return () => {active = false; unsub();};
+  }, []);
   const changeReadingSettings = async (patch) => {
-    const next = {...readingSettings, ...patch};
+    const next = {...readingSettingsRef.current, ...patch};
+    readingSettingsRef.current = next;
     setReadingSettings(next);
-    try { await saveReadingSettings(next); }
-    catch (error) { console.warn('Reading settings:', error); }
+    try {
+      await saveReadingSettings(next);
+      queueAccountPreferencePatch({settings: patch}).catch(console.warn);
+    } catch (error) {
+      console.warn('[account preferences] local save:', error);
+    }
+  };
+  const changeCustomColor = (field, color) => {
+    const resolved = resolveReaderAppearance(readingSettingsRef.current);
+    changeReadingSettings({
+      palette: 'custom',
+      customBackground: resolved.background,
+      customText: resolved.text,
+      [field]: color,
+    });
+  };
+  const changeFontFromGesture = event => {
+    const position = Math.max(0, Math.min(fontSliderWidth, event.nativeEvent.locationX));
+    changeReadingSettings({
+      fontSize: Math.max(14, Math.min(28, Math.round(14 + 14 * position / Math.max(fontSliderWidth, 1)))),
+    });
   };
   const [googleUser, setGoogleUser] = useState(null);
 
@@ -122,18 +160,21 @@ export const AccountScreen = ({navigation}) => {
         readingProgressSyncResult,
         memorialsSyncResult,
         prayerBooksSyncResult,
+        preferencesSyncResult,
       ] = await Promise.all([
         syncSavedItems(),
         syncReadingProgress(),
         syncMemorials(),
         syncPrayerBooks(),
+        syncAccountPreferences(),
       ]);
 
       if (
         savedItemsSyncResult?.success &&
         readingProgressSyncResult?.success &&
         memorialsSyncResult?.success &&
-        prayerBooksSyncResult?.success
+        prayerBooksSyncResult?.success &&
+        preferencesSyncResult?.success
       ) {
         console.log('Cloud sync OK: google-login');
       } else {
@@ -141,13 +182,15 @@ export const AccountScreen = ({navigation}) => {
           savedItemsSyncResult?.error ||
           readingProgressSyncResult?.error ||
           memorialsSyncResult?.error ||
-          prayerBooksSyncResult?.error;
+          prayerBooksSyncResult?.error ||
+          preferencesSyncResult?.error;
 
         const reason =
           savedItemsSyncResult?.reason ||
           readingProgressSyncResult?.reason ||
           memorialsSyncResult?.reason ||
-          prayerBooksSyncResult?.reason;
+          prayerBooksSyncResult?.reason ||
+          preferencesSyncResult?.reason;
 
         console.log('Cloud sync после Google-входа отложен', error?.message || reason || 'unknown');
       }
@@ -175,6 +218,7 @@ export const AccountScreen = ({navigation}) => {
        * уже вызывает logoutFromBackend()
        * внутри googleAuth.js.
        */
+      await syncAccountPreferences().catch(console.warn);
       await signOutFromGoogle();
     } finally {
       setGoogleUser(null);
