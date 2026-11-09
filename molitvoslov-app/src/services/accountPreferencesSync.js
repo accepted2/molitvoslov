@@ -90,16 +90,21 @@ const initialSnapshot = async (userId) => {
         String(appearance?.[key]) === String(reference[key])
       );
       // Do not upload implicit inherited snapshots from old app versions.
-      if (!equals(settings) && !equals({
-        fontSize: 17, palette: 'parchment',
-        customBackground: '#FFF4DE', customText: '#3E2A1D',
-      })) overrides[scope] = appearance;
+      if (appearance?.__explicitOverride === true || (
+        !equals(settings) && !equals({
+          fontSize: 17, palette: 'parchment',
+          customBackground: '#FFF4DE', customText: '#3E2A1D',
+        })
+      )) {
+        // Local marker is not an API field, only the appearance values sync.
+        overrides[scope] = Object.fromEntries(fields.map(field => [field, appearance[field]]));
+      }
     }
   }
   const oldModeKeys = keys.filter(key => key.startsWith(MODE_OLD));
   for (const key of oldModeKeys) {
     const raw = await AsyncStorage.getItem(key);
-    if (raw) modes[key.slice(MODE_OLD.length)] = raw;
+    if (raw) modes[key.slice(MODE_OLD.length + 1)] = raw;
   }
   const accountModePrefix = `@molitvoslov/reader-language-mode/v2:account-${encodeURIComponent(String(userId))}:`;
   for (const key of keys.filter(k => k.startsWith(accountModePrefix))) {
@@ -124,7 +129,9 @@ const applySnapshot = async (userId, remote) => {
     }
   }
   for (const [scope, appearance] of Object.entries(appearances)) {
-    await AsyncStorage.setItem(accountAppearanceKey(userId, scope), JSON.stringify(appearance));
+    await AsyncStorage.setItem(accountAppearanceKey(userId, scope), JSON.stringify({
+      ...appearance, __explicitOverride: true,
+    }));
   }
   for (const scope of previous.modes || []) {
     if (!(scope in modes)) await AsyncStorage.removeItem(getAccountReaderModeStorageKey(userId, scope));
