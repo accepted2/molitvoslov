@@ -1,0 +1,37 @@
+name: Verify mobile account preferences
+
+on:
+  push:
+    branches:
+      - feature/global-reader-settings-sync-20261109
+    paths:
+      - 'molitvoslov-app/**'
+      - '.github/workflows/validate-mobile-account-settings.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-mobile-preferences:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+          cache: npm
+          cache-dependency-path: molitvoslov-app/package-lock.json
+      - name: Install app dependencies
+        working-directory: molitvoslov-app
+        run: npm ci
+      - name: Validate settings and React hooks
+        working-directory: molitvoslov-app
+        run: |
+          node tools/verify_global_preferences_20261109.js
+          node tools/verify_react_hook_imports.js
+      - name: Bundle Android JS for release
+        working-directory: molitvoslov-app
+        run: npx expo export --platform android --output-dir .preferences-ci
