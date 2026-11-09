@@ -1700,3 +1700,22 @@ class PublicAppAsset(models.Model):
     def __str__(self):
         return self.key
 
+
+class AccountPreferences(models.Model):
+    """Per-user sync snapshot for reading/interface preferences.
+
+    Local reader overrides are addressed by stable source type/id; they are
+    never replaced by a change to the global settings object.
+    """
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="app_preferences",
+    )
+    settings = models.JSONField(default=dict, blank=True)
+    reader_overrides = models.JSONField(default=dict, blank=True)
+    reader_modes = models.JSONField(default=dict, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Настройки приложения"
+        verbose_name_plural = "Настройки приложения"
+
