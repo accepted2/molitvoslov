@@ -67,11 +67,11 @@ class CatalogChurchOnlyTests(SimpleTestCase):
         with TemporaryDirectory() as folder:
             report = Path(folder) / "catalog_cs_report.csv"
             report.write_text(
-                "url,slug,title,category,status,details\\n"
+                "url,slug,title,category,status,details\n"
                 "https://azbyka.ru/molitvoslov/akafist-new.html,akafist-new,"
-                "New,Feasts,READY_CS,13 kontakia\\n"
+                "New,Feasts,READY_CS,13 kontakia\n"
                 "https://azbyka.ru/molitvoslov/akafist-bad.html,akafist-bad,"
-                "Bad,Feasts,REVIEW,parse failed\\n",
+                "Bad,Feasts,REVIEW,parse failed\n",
                 encoding="utf-8",
             )
             previous = load_previous_report(report)
@@ -88,7 +88,7 @@ class CatalogChurchOnlyTests(SimpleTestCase):
     def test_corrupt_resume_report_fails_safely(self):
         with TemporaryDirectory() as folder:
             report = Path(folder) / "catalog_cs_report.csv"
-            report.write_text("one,two\\na,b\\n", encoding="utf-8")
+            report.write_text("one,two\na,b\n", encoding="utf-8")
             with self.assertRaisesRegex(CommandError, "CSV"):
                 load_previous_report(report)
 
