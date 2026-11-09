@@ -43,8 +43,10 @@ export const getReaderLanguageModePreference = async ({sourceType, sourceId}) =>
       getAccountReaderModeStorageKey(user.id, makeReaderPreferenceId(sourceType, sourceId)),
     );
     if (SUPPORTED_MODES.has(accountMode)) return accountMode;
+    // A signed-in account with no local override inherits its cloud/global mode.
+    return (await getReadingSettings()).defaultMode;
   }
-  // Legacy preferences are readable, but are not written for new accounts.
+  // Legacy guest preferences remain readable.
   const legacy = await AsyncStorage.getItem(buildStorageKey({sourceType, sourceId}));
   if (SUPPORTED_MODES.has(legacy)) return legacy;
   return (await getReadingSettings()).defaultMode;
