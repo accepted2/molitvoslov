@@ -83,7 +83,7 @@ class ChurchSlavonicPilotValidationTests(SimpleTestCase):
 
 
 
-    def test_bundled_sample_ids_are_stable(self):
+    def test_bundled_complete_unicode_bible_ids_are_stable(self):
         from django.conf import settings
 
         path = (
@@ -96,7 +96,25 @@ class ChurchSlavonicPilotValidationTests(SimpleTestCase):
         self.assertEqual(payload["translation"]["id"], 500000)
         self.assertEqual(
             [(b["code"], len(b["chapters"])) for b in payload["books"]],
-            [("GEN", 50), ("PSA", 150), ("MAT", 28)],
+            [
+                (book["code"], len(book["chapters"]))
+                for book in payload["books"]
+            ],
+        )
+        self.assertEqual(len(payload["books"]), 77)
+        chapters_by_code = {
+            book["code"]: book["chapters"] for book in payload["books"]
+        }
+        self.assertEqual(len(chapters_by_code["GEN"]), 50)
+        self.assertEqual(len(chapters_by_code["PSA"]), 151)
+        self.assertEqual(len(chapters_by_code["2ES"]), 16)
+        self.assertEqual(len(chapters_by_code["MAT"]), 28)
+        self.assertEqual(
+            len({book["code"] for book in payload["books"]}), 77,
+        )
+        self.assertEqual(
+            payload["translation"]["source_revision"],
+            "0af645f438856f45c22026912d2e4a9ce495e531",
         )
         total = 0
         ids = set()
@@ -120,7 +138,7 @@ class ChurchSlavonicPilotValidationTests(SimpleTestCase):
                     self.assertNotIn(verse["id"], ids)
                     ids.add(verse["id"])
                     total += 1
-        self.assertEqual(total, 5131)
+        self.assertEqual(total, 36897)
 
 class ChurchSlavonicPilotDatabaseTests(TestCase):
     def test_import_and_export_do_not_change_synodal_ids(self):

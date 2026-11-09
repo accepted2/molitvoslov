@@ -152,7 +152,11 @@ export const BibleChapterScreen = ({route, navigation}) => {
       return focusTarget;
     }
 
-    const targetChapter = bibleContent.getChapter(bookId, focusTarget.metadata?.chapter_number);
+    const targetChapter = bibleContent.getChapter(
+      bookId,
+      focusTarget.metadata?.chapter_number,
+      translationCode
+    );
 
     const firstVerse = targetChapter?.verses?.[0];
 
@@ -171,7 +175,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
       end_offset: null,
     };
-  }, [focusTarget, bookId]);
+  }, [focusTarget, bookId, translationCode]);
 
   const chapterStartTarget = useMemo(() => {
     if (normalizedFocusTarget || resume || !requestedChapter) {

@@ -67,6 +67,11 @@ jobs:
           assert csl['translation']['code'] == 'csl_traditional'
           assert rst['translation']['code'] == 'rst'
           assert len(rst['books']) == 78
+          assert len(csl['books']) == 77
+          books = {b['code']: b for b in csl['books']}
+          assert len(books['PSA']['chapters']) == 151
+          assert len(books['2ES']['chapters']) == 16
+          assert sum(len(c['verses']) for b in csl['books'] for c in b['chapters']) == 36897
           PY
       - name: Parse modified React Native JavaScript and JSX files
         working-directory: molitvoslov-app
