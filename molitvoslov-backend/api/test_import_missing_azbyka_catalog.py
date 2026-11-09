@@ -6,7 +6,7 @@ from django.core.management.base import CommandError
 from django.test import SimpleTestCase
 
 from api.management.commands.import_missing_azbyka_catalog import (
-    Command, catalogue_entries, existing_match, is_church_text, load_offline_inventory,
+    Command, catalogue_entries, existing_match, is_church_text, load_offline_inventory, load_previous_report,
     normalize_slug, only_church, source_only,
 )
 
@@ -62,6 +62,35 @@ class CatalogChurchOnlyTests(SimpleTestCase):
             path.write_text('{"akathists":{"list":[],"by_slug":{}}}', encoding="utf-8")
             with self.assertRaisesRegex(CommandError, "неполный"):
                 load_offline_inventory(path)
+
+    def test_resume_report_reuses_prior_checks(self):
+        with TemporaryDirectory() as folder:
+            report = Path(folder) / "catalog_cs_report.csv"
+            report.write_text(
+                "url,slug,title,category,status,details\\n"
+                "https://azbyka.ru/molitvoslov/akafist-new.html,akafist-new,"
+                "New,Feasts,READY_CS,13 kontakia\\n"
+                "https://azbyka.ru/molitvoslov/akafist-bad.html,akafist-bad,"
+                "Bad,Feasts,REVIEW,parse failed\\n",
+                encoding="utf-8",
+            )
+            previous = load_previous_report(report)
+            self.assertEqual(len(previous), 2)
+            self.assertEqual(
+                previous["https://azbyka.ru/molitvoslov/akafist-new.html"]["status"],
+                "READY_CS",
+            )
+            self.assertEqual(
+                previous["https://azbyka.ru/molitvoslov/akafist-bad.html"]["status"],
+                "REVIEW",
+            )
+
+    def test_corrupt_resume_report_fails_safely(self):
+        with TemporaryDirectory() as folder:
+            report = Path(folder) / "catalog_cs_report.csv"
+            report.write_text("one,two\\na,b\\n", encoding="utf-8")
+            with self.assertRaisesRegex(CommandError, "CSV"):
+                load_previous_report(report)
 
     def test_catalogue_only_section_links_and_deduplicates(self):
         html = """
