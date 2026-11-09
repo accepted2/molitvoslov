@@ -94,13 +94,8 @@ class ChurchSlavonicPilotValidationTests(SimpleTestCase):
         payload = json.loads(path.read_text(encoding="utf-8"))
         self.assertEqual(payload["translation"]["code"], "csl_traditional")
         self.assertEqual(payload["translation"]["id"], 500000)
-        self.assertEqual(
-            [(b["code"], len(b["chapters"])) for b in payload["books"]],
-            [
-                (book["code"], len(book["chapters"]))
-                for book in payload["books"]
-            ],
-        )
+        self.assertEqual(payload["books"][0]["code"], "GEN")
+        self.assertEqual(payload["books"][-1]["code"], "REV")
         self.assertEqual(len(payload["books"]), 77)
         chapters_by_code = {
             book["code"]: book["chapters"] for book in payload["books"]
