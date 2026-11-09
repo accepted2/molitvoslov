@@ -88,10 +88,40 @@ export const compactCommunionAlleluiaDisplay = value => {
   return result;
 };
 
-export const buildCommunionTypography = (value, {continuousPrayer = false} = {}) => {
+
+// Short prayers in the Communion preparation can contain two or three
+// separate liturgical invocations inside one database Text item. Add visual
+// dividers at their source offsets, without modifying selectable source text.
+export const getCommunionLiturgicalSeparators = value => {
+  const source = String(value || '');
+  const gaps = [...source.matchAll(/\r?\n[ \t]*\r?\n[ \t]*/gu)];
+  if (!gaps.length || gaps.length > 5) return [];
+
+  const parts = [];
+  let cursor = 0;
+  for (const gap of gaps) {
+    parts.push(source.slice(cursor, gap.index));
+    cursor = gap.index + gap[0].length;
+  }
+  parts.push(source.slice(cursor));
+
+  const isShortInvocation = part => {
+    const normalized = part.normalize('NFD').replace(/\p{M}/gu, '')
+      .trim().toLowerCase().replace(/ё/g, 'е');
+    return /^(?:святый\s+боже|пресвятая\s+троице|господи\s*,?\s*помилуй|слава\s+отцу|и\s+ныне(?:\s|,|:))/u.test(normalized);
+  };
+  return parts.every(isShortInvocation)
+    ? gaps.map(gap => gap.index + gap[0].length)
+    : [];
+};
+
+export const buildCommunionTypography = (value, {continuousPrayer = false, communionKind = null} = {}) => {
   const {source, normalized, positions} = mappedText(value);
   const ranges = getCommunionAlleluiaCompaction(value);
   const breakBefore = new Set();
+  const separatorBefore = communionKind === 'preparation' && !continuousPrayer
+    ? getCommunionLiturgicalSeparators(source)
+    : [];
 
   const addRange = (from, to, kind) => {
     if (to <= from || !Number.isInteger(positions[from]) ||
@@ -144,9 +174,13 @@ export const buildCommunionTypography = (value, {continuousPrayer = false} = {})
     }
   }
 
-  const note = /[\[(]\s*(?:тр[иії]жды|дважды|единожды|поклон(?:ы)?|12\s*раз(?:а)?|40\s*раз(?:а)?)\s*\.?\s*[\])]/gimu;
+  // Some imported prayer editions contain a Latin 'T' in "(Tрижды)".
+  // Recognize both spellings for display only; never rewrite the text.
+  const note = /[\[(]\s*(?:[тt]р[иії]жды|дважды|единожды|поклон(?:ы)?|12\s*раз(?:а)?|40\s*раз(?:а)?)\s*\.?\s*[\])]/gimu;
   for (const match of normalized.matchAll(note)) {
-    addRange(match.index, match.index + match[0].length, 'note');
+    const isThrice = /[тt]р[иії]жды/iu.test(match[0]);
+    addRange(match.index, match.index + match[0].length,
+      isThrice ? 'count-note' : 'note');
   }
 
   addInitial(0);
@@ -166,5 +200,6 @@ export const buildCommunionTypography = (value, {continuousPrayer = false} = {})
   return {
     ranges: [...unique.values()].sort((a, b) => a.start - b.start || a.end - b.end),
     breakBefore: [...breakBefore].sort((a, b) => a - b),
+    separatorBefore,
   };
 };
