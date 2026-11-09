@@ -35,7 +35,7 @@ import {
   saveReaderLanguageModePreference,
 } from '../services/readerPreferences';
 
-import {resolveReaderAppearance} from '../services/scopedReaderAppearance';
+import {isDarkReaderBackground, resolveReaderAppearance} from '../services/scopedReaderAppearance';
 
 export const ReaderScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
@@ -423,9 +423,10 @@ export const ReaderScreen = ({route, navigation}) => {
     );
   }
 
+  const readerBackground = resolveReaderAppearance(appearance).background;
   return (
-    <View style={styles.screen}>
-      <StatusBar style="light" translucent backgroundColor="transparent" />
+    <View style={[styles.screen, {backgroundColor: readerBackground}]}>
+      <StatusBar style={isDarkReaderBackground(readerBackground) ? 'light' : 'dark'} translucent backgroundColor="transparent" />
 
       <SelectableDocumentReader
         ref={readerRef}
@@ -450,7 +451,7 @@ export const ReaderScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
-        gradientColor={resolveReaderAppearance(appearance).background}
+        gradientColor={readerBackground}
         onHeaderHeightChange={setHeaderHeight}
         title={getLocalizedTextTitle(text, language) || t('common.reading')}
         navigation={navigation}

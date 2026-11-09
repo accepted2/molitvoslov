@@ -22,7 +22,7 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
 import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
-import {resolveReaderAppearance} from '../services/scopedReaderAppearance';
+import {isDarkReaderBackground, resolveReaderAppearance} from '../services/scopedReaderAppearance';
 import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from '../services/readerLanguageModes';
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
@@ -243,9 +243,10 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     );
   }
 
+  const readerBackground = resolveReaderAppearance(appearance).background;
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" translucent backgroundColor="transparent" />
+    <View style={[styles.container, {backgroundColor: readerBackground}]}>
+      <StatusBar style={isDarkReaderBackground(readerBackground) ? 'light' : 'dark'} translucent backgroundColor="transparent" />
 
       <PrayerRuleReader
         ref={readerRef}
@@ -281,7 +282,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
-        gradientColor={resolveReaderAppearance(appearance).background}
+        gradientColor={readerBackground}
         onHeaderHeightChange={setHeaderHeight}
         title={getLocalizedField(rule, 'name', language) || t('reading.prayerRule')}
         navigation={navigation}

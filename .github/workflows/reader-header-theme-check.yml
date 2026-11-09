@@ -1,0 +1,40 @@
+name: Reader header theme and safe-area checks
+
+on:
+  push:
+    branches:
+      - fix/reader-header-theme-safearea-20261109
+    paths:
+      - 'molitvoslov-app/src/components/navigation/FixedSectionHeader.js'
+      - 'molitvoslov-app/src/services/readerHeaderChrome.js'
+      - 'molitvoslov-app/src/screens/**'
+      - 'molitvoslov-app/tools/verify_reader_header_chrome_20261109.js'
+      - '.github/workflows/reader-header-theme-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-reader-header:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.21.0'
+          cache: npm
+          cache-dependency-path: molitvoslov-app/package-lock.json
+      - name: Install JS dependencies without absent local search seed
+        working-directory: molitvoslov-app
+        run: npm ci --ignore-scripts
+      - name: Verify header theme and safe areas
+        working-directory: molitvoslov-app
+        run: node tools/verify_reader_header_chrome_20261109.js
+      - name: Verify global reading preferences and React hooks
+        working-directory: molitvoslov-app
+        run: |
+          node tools/verify_global_preferences_20261109.js
+          node tools/verify_react_hook_imports.js

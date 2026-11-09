@@ -2,7 +2,8 @@ import React, {useEffect, useRef, useState} from 'react';
 import {Animated, Easing, Modal, Pressable, StyleSheet, Text, View} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import {isDarkReaderBackground, withOpacity} from '../../services/scopedReaderAppearance';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {buildReaderHeaderChrome} from '../../services/readerHeaderChrome';
 import {useInterfaceScale} from '../../context/InterfaceScaleContext';
 
 export const FixedSectionHeader = ({
@@ -25,13 +26,21 @@ export const FixedSectionHeader = ({
   onHeaderHeightChange,
 }) => {
   const uiScale = useInterfaceScale();
+  const insets = useSafeAreaInsets();
   const visibility = useRef(new Animated.Value(0)).current;
   const [languageOpen, setLanguageOpen] = useState(false);
   const chromeBackground = gradientColor || (dark ? '#171310' : '#FFF4DE');
-  const chromeDark = dark || isDarkReaderBackground(chromeBackground);
+  const chrome = buildReaderHeaderChrome(chromeBackground, dark);
+  const chromeDark = chrome.dark;
   const [titleLines, setTitleLines] = useState(1);
   const extraTitleHeight = showTitle ? Math.max(0, titleLines - 1) * Math.ceil((compactReading ? 20 : 25) * uiScale) : 0;
-  const headerHeight = topInset + (minimal ? 45 : 36) + extraTitleHeight;
+  // Readers extend under the translucent status bar; the native safe-area
+  // inset accounts for different camera cutouts without device-specific px.
+  // Category screens deliberately keep their original header layout.
+  const safeTop = compactReading ? Math.max(insets.top, topInset, 0) : topInset;
+  const contentTop = safeTop + (compactReading ? 4 : 0);
+  const headerHeight = contentTop + (compactReading ? 44 : (minimal ? 45 : 36)) + extraTitleHeight;
+  const gradientHeight = Math.max(headerHeight + 14, safeTop + 74);
   useEffect(() => {
     onHeaderHeightChange?.(headerHeight);
   }, [headerHeight, onHeaderHeightChange]);
@@ -56,15 +65,11 @@ export const FixedSectionHeader = ({
       {!minimal && compactReading && (
         <LinearGradient
           pointerEvents="none"
-          colors={[
-            chromeBackground,
-            withOpacity(chromeBackground, 0.82),
-            withOpacity(chromeBackground, 0),
-          ]}
-          locations={[0, 0.42, 1]}
+          colors={chrome.gradient}
+          locations={[0, 0.43, 0.72, 1]}
           start={{x: 0.5, y: 0}}
           end={{x: 0.5, y: 1}}
-          style={[styles.fixedGradient, {height: 95}]}
+          style={[styles.fixedGradient, {height: gradientHeight}]}
         />
       )}
 
@@ -86,8 +91,7 @@ export const FixedSectionHeader = ({
             pointerEvents="none"
             style={[
               styles.readerHeaderFrost,
-              chromeDark && styles.readerHeaderFrostDark,
-              {height: headerHeight},
+              {height: headerHeight, backgroundColor: chrome.frost, borderBottomColor: chrome.border},
             ]}
           />
         )}
@@ -98,7 +102,7 @@ export const FixedSectionHeader = ({
             styles.headerContent,
             {
               height: headerHeight,
-              paddingTop: topInset,
+              paddingTop: contentTop,
             },
           ]}
         >
@@ -108,7 +112,6 @@ export const FixedSectionHeader = ({
               onPress={() => navigation.goBack()}
               style={({pressed}) => [
                 styles.backButton,
-                compactReading && styles.backButtonReading,
                 minimal && styles.backButtonMinimal,
                 pressed && styles.pressed,
               ]}
@@ -153,7 +156,7 @@ export const FixedSectionHeader = ({
                     accessibilityLabel="Выбрать язык чтения"
                     accessibilityState={{expanded: languageOpen}}
                     onPress={() => setLanguageOpen(true)}
-                    style={({pressed}) => [styles.languagePill, chromeDark && styles.languagePillDark, pressed && styles.pressed]}
+                    style={({pressed}) => [styles.languagePill, {backgroundColor: chrome.pill, borderColor: chrome.border}, pressed && styles.pressed]}
                   >
                     <Text style={[styles.languagePillText, {fontSize: 10 * uiScale, lineHeight: 14 * uiScale}, chromeDark && styles.languagePillTextDark]} numberOfLines={1}>{selectedLanguage.label}</Text>
                     <Ionicons name="chevron-down" size={13} color={chromeDark ? '#D7B88C' : '#744A2B'} style={styles.languageChevronIcon} />
@@ -167,7 +170,7 @@ export const FixedSectionHeader = ({
                     hitSlop={8}
                     style={({pressed}) => [
                       styles.headerActionButton,
-                      chromeDark && styles.headerActionButtonDark,
+                      {backgroundColor: chrome.pill, borderColor: chrome.border},
                       pressed && styles.pressed,
                     ]}
                   >
@@ -197,7 +200,6 @@ export const FixedSectionHeader = ({
                 styles.menuButton,
                 !showTitle && styles.menuButtonWithoutTitle,
                 minimal && styles.menuButtonMinimal,
-                compactReading && styles.menuButtonReading,
                 pressed && styles.pressed,
               ]}
             >
@@ -219,7 +221,7 @@ export const FixedSectionHeader = ({
       >
         <Pressable style={styles.languageModalDismiss} onPress={() => setLanguageOpen(false)}>
           <View style={[styles.languageDropdownPosition, {top: headerHeight + 2}]}>
-            <View style={styles.languageDropdown}>
+            <View style={[styles.languageDropdown, {backgroundColor: chrome.dropdown, borderColor: chrome.border}]}>
               {languageOptions.map((option) => (
                 <Pressable
                   key={option.key}
@@ -232,12 +234,12 @@ export const FixedSectionHeader = ({
                   }}
                   style={({pressed}) => [
                     styles.languageDropdownItem,
-                    option.key === languageSwitcher?.activeKey && styles.languageDropdownActive,
+                    option.key === languageSwitcher?.activeKey && {backgroundColor: chrome.active},
                     option.disabled && styles.languageDropdownDisabled,
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={styles.languageDropdownText}>{option.label}</Text>
+                  <Text style={[styles.languageDropdownText, {color: chrome.foreground}]}>{option.label}</Text>
                 </Pressable>
               ))}
             </View>
@@ -263,13 +265,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(255, 244, 222, 0.78)',
     borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(120, 80, 40, 0.12)',
-  },
-  readerHeaderFrostDark: {
-    backgroundColor: 'rgba(23, 19, 16, 0.78)',
-    borderBottomColor: 'rgba(205, 163, 108, 0.12)',
   },
   fixedHeader: {
     position: 'absolute',
@@ -281,15 +277,6 @@ const styles = StyleSheet.create({
     zIndex: 1000,
     elevation: 20,
   },
-  headerFrost: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(255, 244, 222, 0.78)',
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(120, 80, 40, 0.12)',
-  },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -299,13 +286,9 @@ const styles = StyleSheet.create({
 
   // The three compact controls use the same 44px line box and vertical
   // offset. The ornament is positioned separately so it cannot lift the text.
-  backButtonReading: {
-    transform: [{translateY: -6}],
-  },
   titleWrapReading: {
     height: 44,
     marginLeft: 5,
-    transform: [{translateY: -5}],
     paddingTop: 0,
     paddingRight: 0,
     alignItems: 'stretch',
@@ -376,10 +359,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(126, 82, 38, 0.25)',
     backgroundColor: '#F4E4CA',
   },
-  headerActionButtonDark: {
-    backgroundColor: '#413831',
-    borderColor: 'rgba(205, 163, 108, 0.40)',
-  },
   headerActionText: {
     color: '#744A2B',
     fontSize: 11,
@@ -400,10 +379,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(126,82,38,0.22)',
     backgroundColor: '#FFF4DE',
-  },
-  languagePillDark: {
-    backgroundColor: '#413831',
-    borderColor: 'rgba(205, 163, 108, 0.40)',
   },
   languagePillTextDark: {
     color: '#EADBC7',
@@ -445,9 +420,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 10,
     borderRadius: 8,
-  },
-  languageDropdownActive: {
-    backgroundColor: '#E8DCCB',
   },
   languageDropdownDisabled: {
     opacity: 0.4,
@@ -498,9 +470,6 @@ const styles = StyleSheet.create({
 
   menuButtonMinimal: {
     marginTop: -5,
-  },
-  menuButtonReading: {
-    transform: [{translateY: -11}],
   },
 
   menuText: {
