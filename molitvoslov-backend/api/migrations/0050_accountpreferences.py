@@ -10,6 +10,22 @@ def enable_rls(apps, schema_editor):
         schema_editor.execute(
             "ALTER TABLE api_accountpreferences ENABLE ROW LEVEL SECURITY"
         )
+        # This table is only accessed by authenticated Django on Render,
+        # not by the public Supabase Data API. Explicitly revoke direct
+        # client role privileges even on projects with broad default grants.
+        schema_editor.execute(
+            """
+            DO $
+            BEGIN
+              IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+                REVOKE ALL PRIVILEGES ON TABLE public.api_accountpreferences FROM anon;
+              END IF;
+              IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+                REVOKE ALL PRIVILEGES ON TABLE public.api_accountpreferences FROM authenticated;
+              END IF;
+            END $;
+            """
+        )
 
 
 def disable_rls(apps, schema_editor):
