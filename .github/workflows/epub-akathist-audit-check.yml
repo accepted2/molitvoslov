@@ -11,6 +11,8 @@ on:
       - 'molitvoslov-backend/api/test_import_missing_azbyka_catalog.py'
       - 'molitvoslov-backend/api/management/commands/stage_azbyka_cs_preview.py'
       - 'molitvoslov-backend/api/test_stage_azbyka_cs_preview.py'
+      - 'molitvoslov-app/tools/preview_new_cs_akathists_20261109.ps1'
+      - 'molitvoslov-app/tools/azbyka_akathist_batch.py'
       - '.github/workflows/epub-akathist-audit-check.yml'
   workflow_dispatch:
 
@@ -35,6 +37,19 @@ jobs:
         run: |
           python manage.py check
           python manage.py test api.test_audit_akathist_epubs api.test_import_missing_azbyka_catalog api.test_stage_azbyka_cs_preview --verbosity 2
+      - name: Test safe additive offline preview merge
+        working-directory: molitvoslov-app/tools
+        run: python test_azbyka_akathist_batch.py
+      - name: Syntax-check the local PowerShell installer
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("molitvoslov-app/tools/preview_new_cs_akathists_20261109.ps1", [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -ne 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
       - name: Set up Node for bundled app catalogue verification
         uses: actions/setup-node@v4
         with:
