@@ -9,7 +9,7 @@ import {useLanguage} from '../../context/LanguageContext';
 import {getReadingSettings, DEFAULT_READING_SETTINGS} from '../../services/readerPreferences';
 import {applyReaderAppearance, resolveReaderAppearance} from '../../services/scopedReaderAppearance';
 import {getCachedPonomarFontDataUri, loadPonomarFontDataUri} from '../../services/ponomarFont';
-import {getCommunionRuleKind, isCommunionPrayerHeading, buildCommunionTypography, compactCommunionAlleluiaDisplay} from '../../services/communionRuleTypography';
+import {getCommunionRuleKind, isCommunionPrayerHeading, isCommunionDoxologyPair, buildCommunionTypography, compactCommunionAlleluiaDisplay} from '../../services/communionRuleTypography';
 
 const scriptSafeJson = (value) =>
   JSON.stringify(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
@@ -593,6 +593,14 @@ const HTML_TEMPLATE = String.raw`
       margin-bottom: 12px;
       padding-bottom: 12px;
       border-bottom: 1px solid var(--border);
+    }
+    /* The first "Слава..." text and next "И ныне..." text form one
+       troparion. No line between them; the second item retains the
+       ordinary divider after the whole two-part hymn. */
+    body.communion-preparation .rule-item.communion-joined-troparion-first {
+      border-bottom: 0;
+      padding-bottom: 0;
+      margin-bottom: 5px;
     }
     body.communion-reading-rule .reader-text {
       text-align: justify;
@@ -2880,6 +2888,17 @@ const HTML_TEMPLATE = String.raw`
       }
 
       const allItems = DATA.rule.items || [];
+      const communionJoinedTroparionIds = new Set();
+      if (DATA.communionKind === 'preparation') {
+        for (let i = 0; i + 1 < allItems.length; i += 1) {
+          const first = allItems[i];
+          const second = allItems[i + 1];
+          if (first?.item_type !== 'text' || second?.item_type !== 'text') continue;
+          if (isCommunionDoxologyPair(first.text?.content, second.text?.content)) {
+            communionJoinedTroparionIds.add(Number(first.id));
+          }
+        }
+      }
 
       // "Ангел вопияше" and "Светися, светися" are consecutive Text
       // objects. Identify both by source text, or by known Text IDs,
@@ -2941,6 +2960,9 @@ const HTML_TEMPLATE = String.raw`
           }
           if (paschalContinuationItemIds.has(Number(item.id))) {
             wrapper.classList.add('paschal-hymn-continuation');
+          }
+          if (communionJoinedTroparionIds.has(Number(item.id))) {
+            wrapper.classList.add('communion-joined-troparion-first');
           }
 
           if (
