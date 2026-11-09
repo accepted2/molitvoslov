@@ -5,6 +5,7 @@ Default mode is preview only; --write must be supplied for database inserts.
 It uses the existing HTML akathist parser, without downloading EPUB files.
 """
 import csv
+import json
 import re
 import time
 import unicodedata
@@ -14,7 +15,6 @@ from urllib.parse import urljoin, urlsplit, urlunsplit
 import requests
 from bs4 import BeautifulSoup
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
 
 from api.akathist_curated import CURATED_AKATHISTS, normalize_akathist_title
 from api.management.commands.import_akathist import Command as ExistingAkathistParser
@@ -73,6 +73,53 @@ def fold(value):
     return "".join(char for char in value if unicodedata.category(char) != "Mn")
 
 
+def load_offline_inventory(path):
+    """Read the actual APK catalogue: skip all slugs, visible or hidden.
+
+    We must compare the live Azbyka catalogue against BOTH local Django
+    and the app's bundled offlineContent.json, never against Supabase alone.
+    A missing or incomplete snapshot must fail closed.
+    """
+    if not path:
+        raise CommandError(
+            "Укажите --offline-file с путем к текущему "
+            "molitvoslov-app/src/data/offlineContent.json"
+        )
+    snapshot = Path(path)
+    if not snapshot.is_file():
+        raise CommandError(f"Не найден offlineContent.json: {snapshot}")
+    try:
+        data = json.loads(snapshot.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError) as exc:
+        raise CommandError(f"Не удалось открыть offlineContent.json: {exc}") from exc
+    akathists = data.get("akathists")
+    if not isinstance(akathists, dict):
+        raise CommandError("В offlineContent.json отсутствует раздел akathists")
+    rows = akathists.get("list")
+    details = akathists.get("by_slug")
+    if not isinstance(rows, list) or not isinstance(details, dict) or not rows:
+        raise CommandError("В offlineContent.json неполный каталог акафистов")
+    collected = {}
+    for item in rows:
+        if not isinstance(item, dict) or not item.get("slug") or not item.get("title"):
+            raise CommandError("В offlineContent.json найдена неполная запись акафиста")
+        slug = str(item["slug"])
+        if slug in collected:
+            raise CommandError("Повтор slug в offlineContent.json: " + slug)
+        if slug not in details:
+            raise CommandError("Нет полного текста в offlineContent.json: " + slug)
+        collected[slug] = {"slug": slug, "title": str(item["title"])}
+    for slug, detail in details.items():
+        if slug not in collected:
+            # Also reserve detail-only slugs: older/hidden snapshots might
+            # contain an akathist absent from the visible listing.
+            collected[slug] = {
+                "slug": slug,
+                "title": str(detail.get("title") or "") if isinstance(detail, dict) else "",
+            }
+    return list(collected.values()), sum(item.get("is_visible") is True for item in rows)
+
+
 def existing_match(entry, existing):
     slug = entry["slug"]
     title = normalize_akathist_title(entry["title"])
@@ -118,8 +165,10 @@ class Command(BaseCommand):
         parser.add_argument("--limit", type=int, default=10,
                             help="Max missing candidates to check (0 = all)")
         parser.add_argument("--delay", type=float, default=1.5)
+        parser.add_argument("--offline-file", required=True,
+                            help="Текущий molitvoslov-app/src/data/offlineContent.json")
         parser.add_argument("--write", action="store_true",
-                            help="Insert NEW akathists; never update existing ones")
+                            help="Запись временно отключена: сначала проверяем весь offline-каталог")
         parser.add_argument("--report", default="files/akathists/catalog_cs_report.csv")
 
     def handle(self, *args, **options):
@@ -131,6 +180,7 @@ class Command(BaseCommand):
                 "Запись отключена: сначала требуется сверить каталог "
                 "с полным offlineContent.json из приложения, а не только с Django."
             )
+        offline_existing, offline_visible = load_offline_inventory(options.get("offline_file"))
         limit = options["limit"]
         if limit < 0:
             raise CommandError("--limit must not be negative")
@@ -147,7 +197,8 @@ class Command(BaseCommand):
         if not candidates:
             raise CommandError("No catalogue links found: HTML format may have changed")
 
-        existing = list(Akathist.objects.values("slug", "title"))
+        django_existing = list(Akathist.objects.values("slug", "title"))
+        existing = offline_existing + django_existing
         rows = []
         handled = 0
         skipped = 0
@@ -186,22 +237,7 @@ class Command(BaseCommand):
                 if not is_church_text(sections):
                     raise ValueError("Church Slavonic source uncertain; review manually")
 
-                if options["write"]:
-                    with transaction.atomic():
-                        # The check is repeated immediately before saving.
-                        fresh = list(Akathist.objects.values("slug", "title"))
-                        if existing_match(entry, fresh):
-                            rows.append({**entry, "status": "EXISTS", "details": "rechecked"})
-                            continue
-                        parser.save_akathist(
-                            sections=sections,
-                            troparion=source_only(pre_troparion),
-                            kontakion_before=source_only(pre_kontakion),
-                        )
-                        existing.append({"slug": entry["slug"], "title": entry["title"]})
-                    status = "ADDED_CS"
-                else:
-                    status = "READY_CS"
+                status = "READY_CS"
                 rows.append({
                     **entry, "status": status,
                     "details": f"13 kontakia, 12 ikoses, "
@@ -228,10 +264,11 @@ class Command(BaseCommand):
         for row in rows:
             statuses[row["status"]] = statuses.get(row["status"], 0) + 1
         self.stdout.write(f"Catalog unique links: {len(candidates)}")
-        self.stdout.write(f"Existing database akathists: {len(Akathist.objects.all())}")
+        self.stdout.write(f"Existing Django akathists: {len(django_existing)}")
+        self.stdout.write(f"Existing app offline akathists: {len(offline_existing)}")
+        self.stdout.write(f"Published in offline app: {offline_visible}")
         self.stdout.write(f"Already present skipped: {skipped}")
         self.stdout.write(f"Missing candidates checked: {handled}")
         self.stdout.write(f"Results: {statuses}")
         self.stdout.write(f"Report: {report}")
-        if not options["write"]:
-            self.stdout.write("PREVIEW ONLY: no database writes. Use --write to add missing.")
+        self.stdout.write("PREVIEW ONLY: Django, offline JSON and Supabase unchanged. Writes disabled.")
