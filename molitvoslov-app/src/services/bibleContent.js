@@ -96,6 +96,8 @@ export const bibleContent = {
     }
 
     if (translationCode === 'csl_traditional') {
+      // Keep the original CSL book text, but correct the source's mixed-language Matthew title.
+      if (book.code === 'MAT') return 'Евангеліе от Матѳеа';
       return book.name || book.short_name || 'Библия';
     }
     return BIBLE_BOOK_DISPLAY_TITLES[book.code] || book.name || book.short_name || 'Библия';
