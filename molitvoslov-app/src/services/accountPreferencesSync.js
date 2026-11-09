@@ -83,7 +83,18 @@ const initialSnapshot = async (userId) => {
     if (parts.length < 4) continue;
     const scope = parts.slice(-2).join(':');
     const raw = await AsyncStorage.getItem(key);
-    if (raw) overrides[scope] = parse(raw);
+    if (raw) {
+      const appearance = parse(raw);
+      const fields = ['fontSize', 'palette', 'customBackground', 'customText'];
+      const equals = reference => fields.every(key =>
+        String(appearance?.[key]) === String(reference[key])
+      );
+      // Do not upload implicit inherited snapshots from old app versions.
+      if (!equals(settings) && !equals({
+        fontSize: 17, palette: 'parchment',
+        customBackground: '#FFF4DE', customText: '#3E2A1D',
+      })) overrides[scope] = appearance;
+    }
   }
   const oldModeKeys = keys.filter(key => key.startsWith(MODE_OLD));
   for (const key of oldModeKeys) {
