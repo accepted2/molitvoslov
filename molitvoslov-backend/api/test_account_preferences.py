@@ -52,3 +52,46 @@ class AccountPreferencesTests(APITestCase):
         self.client.force_authenticate(user=self.owner)
         self.assertEqual(self.client.patch(self.url, {"settings": {"palette": "unknown"}}, format="json").status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(self.client.patch(self.url, {"reader_overrides": {"../../secret": {"fontSize": 20}}}, format="json").status_code, status.HTTP_400_BAD_REQUEST)
+
+
+from importlib import import_module
+from unittest.mock import MagicMock
+
+from django.test import SimpleTestCase
+
+
+class AccountPreferencesMigrationSQLTests(SimpleTestCase):
+    def _run_migration(self, vendor, available_roles):
+        editor = MagicMock()
+        editor.connection.vendor = vendor
+        editor.connection.cursor.return_value.__enter__.return_value.fetchall.return_value = [
+            (role,) for role in available_roles
+        ]
+        module = import_module("api.migrations.0050_accountpreferences")
+        module.enable_rls(None, editor)
+        return editor
+
+    def test_postgresql_role_revokes_use_valid_single_statements(self):
+        editor = self._run_migration("postgresql", ["anon", "authenticated"])
+        queries = [item.args[0] for item in editor.execute.call_args_list]
+        self.assertEqual(
+            queries,
+            [
+                "ALTER TABLE api_accountpreferences ENABLE ROW LEVEL SECURITY",
+                'REVOKE ALL PRIVILEGES ON TABLE "public"."api_accountpreferences" FROM "anon"',
+                'REVOKE ALL PRIVILEGES ON TABLE "public"."api_accountpreferences" FROM "authenticated"',
+            ],
+        )
+        cursor = editor.connection.cursor.return_value.__enter__.return_value
+        cursor.execute.assert_called_once()
+        self.assertNotIn("DO $", "\n".join(queries))
+
+    def test_roles_not_installed_in_plain_postgresql_are_ignored(self):
+        editor = self._run_migration("postgresql", [])
+        self.assertEqual(editor.execute.call_count, 1)
+        self.assertIn("ENABLE ROW LEVEL SECURITY", editor.execute.call_args.args[0])
+
+    def test_sqlite_migration_skips_postgresql_only_statements(self):
+        editor = self._run_migration("sqlite", [])
+        editor.execute.assert_not_called()
+        editor.connection.cursor.assert_not_called()
