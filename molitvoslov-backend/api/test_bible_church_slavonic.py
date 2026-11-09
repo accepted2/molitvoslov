@@ -3,8 +3,10 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from django.core.management import call_command
 from django.core.management.base import CommandError
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
+from api.models import BibleBook, BibleChapter, BibleTranslation, BibleVerse
 
 from api.management.commands.import_bible_church_slavonic import read_pilot
 
@@ -77,3 +79,42 @@ class ChurchSlavonicPilotValidationTests(SimpleTestCase):
         payload["translation"]["code"] = "rst"
         with self.assertRaises(CommandError):
             self.run_fixture(payload)
+
+
+class ChurchSlavonicPilotDatabaseTests(TestCase):
+    def test_import_and_export_do_not_change_synodal_ids(self):
+        rst = BibleTranslation.objects.create(
+            code="rst", name="Синодальный перевод", language="ru"
+        )
+        rst_book = BibleBook.objects.create(
+            translation=rst, code="GEN", name="Бытие", short_name="Быт.",
+            slug="genesis", canonical_order=1, testament="old", section="old"
+        )
+        rst_chapter = BibleChapter.objects.create(book=rst_book, number=1)
+        rst_verse = BibleVerse.objects.create(
+            chapter=rst_chapter, number=1, text="В начале сотворил Бог небо и землю."
+        )
+
+        with TemporaryDirectory() as temp:
+            path = Path(temp) / "candidate.json"
+            path.write_text(json.dumps(fixture(), ensure_ascii=False), encoding="utf-8")
+            call_command("import_bible_church_slavonic", input=str(path))
+            csl = BibleTranslation.objects.get(code="csl_traditional")
+            self.assertEqual(csl.language, "cu")
+            self.assertEqual(csl.script_variant, "church_traditional")
+            self.assertEqual(BibleBook.objects.filter(translation=csl).count(), 3)
+
+            export_path = Path(temp) / "offlineBibleCslTraditional.json"
+            call_command(
+                "export_bible_content", translation="csl_traditional",
+                output=str(export_path),
+            )
+            payload = json.loads(export_path.read_text(encoding="utf-8"))
+            self.assertEqual(payload["translation"]["code"], "csl_traditional")
+            self.assertEqual({b["code"] for b in payload["books"]}, {"GEN", "PSA", "MAT"})
+            self.assertTrue(all(b["chapters"] for b in payload["books"]))
+            self.assertNotIn(rst_book.id, {b["id"] for b in payload["books"]})
+
+        rst_verse.refresh_from_db()
+        self.assertEqual(rst_verse.text, "В начале сотворил Бог небо и землю.")
+        self.assertEqual(rst_verse.chapter.book.id, rst_book.id)
