@@ -25,7 +25,7 @@ import {
   saveReaderLanguageModePreference,
 } from '../services/readerPreferences';
 
-import {resolveReaderAppearance} from '../services/scopedReaderAppearance';
+import {isDarkReaderBackground, resolveReaderAppearance} from '../services/scopedReaderAppearance';
 import {
   READER_LANGUAGE_MODES,
   buildReaderLanguageOptions,
@@ -938,9 +938,10 @@ export const CanonScreen = ({route, navigation}) => {
     );
   }
 
+  const readerBackground = resolveReaderAppearance(appearance).background;
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" translucent backgroundColor="transparent" />
+    <View style={[styles.container, {backgroundColor: readerBackground}]}>
+      <StatusBar style={isDarkReaderBackground(readerBackground) ? 'light' : 'dark'} translucent backgroundColor="transparent" />
 
       <SelectableDocumentReader
         ref={readerRef}
@@ -973,7 +974,7 @@ export const CanonScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
-        gradientColor={resolveReaderAppearance(appearance).background}
+        gradientColor={readerBackground}
         onHeaderHeightChange={setHeaderHeight}
         title={getLocalizedField(canon, 'title', language) || title || t('reading.canon')}
         navigation={navigation}
