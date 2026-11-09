@@ -13,6 +13,8 @@ on:
       - 'molitvoslov-backend/api/test_stage_azbyka_cs_preview.py'
       - 'molitvoslov-app/tools/preview_new_cs_akathists_20261109.ps1'
       - 'molitvoslov-app/tools/azbyka_akathist_batch.py'
+      - 'molitvoslov-app/src/components/reader/selectableDocumentReader/runtime.js'
+      - 'molitvoslov-app/tools/verify_akathist_presentation_20261104.js'
       - '.github/workflows/epub-akathist-audit-check.yml'
   workflow_dispatch:
 
@@ -60,3 +62,6 @@ jobs:
       - name: Verify published akathist list in APK offline JSON
         working-directory: molitvoslov-app
         run: node tools/verify_akathist_content.js
+      - name: Verify response line breaks and all CS Alleluia spellings
+        working-directory: molitvoslov-app
+        run: node tools/verify_akathist_presentation_20261104.js
