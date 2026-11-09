@@ -73,7 +73,7 @@ def read_candidates(path, max_count):
         for row in reader:
             if row.get("status") != "READY_CS":
                 continue
-            url, slug, title = (row.get(k) or "").strip() for k in ("url", "slug", "title")
+            url, slug, title = ((row.get(k) or "").strip() for k in ("url", "slug", "title"))
             if not check_url(url, slug) or not title:
                 raise CommandError(f"Некорректная ссылка/slug в CSV: {url}")
             if url in seen:
