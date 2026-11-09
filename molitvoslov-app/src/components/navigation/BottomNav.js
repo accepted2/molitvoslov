@@ -1,5 +1,5 @@
 import React, {useEffect, useRef} from 'react';
-import {Animated, Easing, Pressable, StyleSheet, Text, View} from 'react-native';
+import {Animated, Easing, Pressable, StyleSheet, Text, View, useWindowDimensions} from 'react-native';
 import {CommonActions} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {LinearGradient} from 'expo-linear-gradient';
@@ -14,7 +14,7 @@ const ITEMS = [
   {key: 'account', route: 'Account', labelKey: 'nav.account', icon: 'account'},
 ];
 
-const NavIcon = ({type, active}) => {
+const NavIcon = ({type, active, size}) => {
   const color = active ? '#2C170B' : '#F5DCB5';
 
   const iconNames = {
@@ -25,10 +25,10 @@ const NavIcon = ({type, active}) => {
   };
 
   if (type === 'candle') {
-    return <MaterialCommunityIcons name="candle" size={17} color={color} />;
+    return <MaterialCommunityIcons name="candle" size={size} color={color} />;
   }
 
-  return <Feather name={iconNames[type] || 'circle'} size={17} color={color} />;
+  return <Feather name={iconNames[type] || 'circle'} size={size} color={color} />;
 };
 
 export const BottomNav = ({navigation, active, readingHidden = false}) => {
@@ -37,7 +37,14 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
     Animated.timing(visibility, {toValue: readingHidden ? 1 : 0, duration: 340, easing: Easing.out(Easing.cubic), useNativeDriver: true}).start();
   }, [readingHidden, visibility]);
   const insets = useSafeAreaInsets();
+  const {width: windowWidth, fontScale} = useWindowDimensions();
   const {t} = useLanguage();
+
+  // Keep controls usable on narrow / high-density Android phones. Font scale
+  // grows the row instead of shrinking long navigation labels.
+  const iconSize = windowWidth < 350 ? 20 : 22;
+  const rowHeight = Math.max(64, Math.ceil(34 + 30 * Math.max(1, fontScale)));
+  const itemHeight = rowHeight - 4;
 
   const openRootTab = (route) => {
     navigation.dispatch(CommonActions.reset({
@@ -63,7 +70,7 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
         end={{x: 1, y: 1}}
         style={styles.container}
       >
-        <View style={styles.itemsRow}>
+        <View style={[styles.itemsRow, {height: rowHeight}]}>
           {ITEMS.map((item) => {
             const isActive = item.key === active;
 
@@ -76,19 +83,18 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
                 onPress={() => openRootTab(item.route)}
                 style={({pressed}) => [
                   styles.item,
+                  {height: itemHeight},
                   isActive && styles.itemActive,
                   pressed && styles.pressed,
                 ]}
               >
                 <View style={styles.itemContent}>
                   <View style={styles.navIconWrap}>
-                    <NavIcon type={item.icon} active={isActive} />
+                    <NavIcon type={item.icon} active={isActive} size={iconSize} />
                   </View>
 
                   <Text
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.8}
+                    numberOfLines={2}
                     style={[styles.label, isActive && styles.labelActive]}
                   >
                     {t(item.labelKey)}
@@ -109,7 +115,7 @@ const styles = StyleSheet.create({
     left: 8,
     right: 8,
     zIndex: 30,
-    maxWidth: 410,
+    maxWidth: 480,
     alignSelf: 'center',
   },
 
@@ -129,7 +135,7 @@ const styles = StyleSheet.create({
 
   itemsRow: {
     width: '100%',
-    height: 46,
+    height: 64,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -140,8 +146,8 @@ const styles = StyleSheet.create({
   },
 
   navIconWrap: {
-    width: 22,
-    height: 22,
+    width: 26,
+    height: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -149,7 +155,7 @@ const styles = StyleSheet.create({
   item: {
     flex: 1,
     minWidth: 0,
-    height: 41,
+    height: 60,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 0,
@@ -252,8 +258,8 @@ const styles = StyleSheet.create({
     color: '#F5DCB5',
     fontFamily: 'serif',
     paddingHorizontal: 1,
-    fontSize: 10,
-    lineHeight: 12,
+    fontSize: 12,
+    lineHeight: 15,
     fontWeight: '600',
     textAlign: 'center',
     includeFontPadding: false,
