@@ -122,10 +122,13 @@ class Command(BaseCommand):
 
             data["books"].append(book_data)
 
-        if len(data["books"]) != 78:
+        if translation_code == "rst" and len(data["books"]) != 78:
             raise CommandError(
                 "Ожидалось 78 машинных книг/единиц, " f'получено {len(data["books"])}.'
             )
+
+        if not data["books"]:
+            raise CommandError(f"Нет книг для экспорта перевода {translation_code}.")
 
         version_source = json.dumps(
             data,
@@ -152,7 +155,7 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(
                 f"Библия экспортирована: {output_path}\n"
-                f"78 книг/единиц, {total_chapters} глав, "
+                f"{len(data['books'])} книг/единиц, {total_chapters} глав, "
                 f"{total_verses} стихов."
             )
         )
