@@ -1,0 +1,99 @@
+name: Validate Church Slavonic Bible pilot
+
+on:
+  push:
+    branches:
+      - feature/bible-csl-traditional-20261109
+    paths:
+      - .github/workflows/validate-csl-pilot.yml
+      - molitvoslov-backend/api/management/commands/import_bible_church_slavonic.py
+      - molitvoslov-backend/api/management/commands/export_bible_content.py
+      - molitvoslov-backend/api/test_bible_church_slavonic.py
+      - molitvoslov-app/src/services/bibleStore.js
+      - molitvoslov-app/src/services/bibleContent.js
+      - molitvoslov-app/src/screens/BibleScreen.js
+      - molitvoslov-app/src/screens/BibleBooksScreen.js
+      - molitvoslov-app/src/screens/BibleBookScreen.js
+      - molitvoslov-app/src/screens/BibleChapterScreen.js
+      - molitvoslov-app/src/data/offlineBibleCslTraditional.json
+
+permissions:
+  contents: read
+
+jobs:
+  django-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: molitvoslov-backend/requirements.txt
+      - name: Install requirements
+        run: python -m pip install -r molitvoslov-backend/requirements.txt
+      - name: Validate Python syntax
+        run: |
+          python -m compileall -q molitvoslov-backend/api/management/commands/import_bible_church_slavonic.py
+          python -m compileall -q molitvoslov-backend/api/test_bible_church_slavonic.py
+      - name: Run guarded pilot importer tests
+        working-directory: molitvoslov-backend
+        run: python manage.py test api.test_bible_church_slavonic --verbosity 2
+
+  expo-source-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: molitvoslov-app/package-lock.json
+      - name: Install dependencies without unrelated search-seed postinstall
+        working-directory: molitvoslov-app
+        run: |
+          npm ci --ignore-scripts
+          npx patch-package
+      - name: Check base and pilot bundles
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('molitvoslov-app/src/data/offlineBibleCslTraditional.json')
+          csl = json.loads(p.read_text(encoding='utf-8'))
+          rst = json.loads(Path('molitvoslov-app/src/data/offlineBible.json').read_text(encoding='utf-8'))
+          assert csl['translation']['code'] == 'csl_traditional'
+          assert rst['translation']['code'] == 'rst'
+          assert len(rst['books']) == 78
+          assert len(csl['books']) == 77
+          books = {b['code']: b for b in csl['books']}
+          assert len(books['PSA']['chapters']) == 151
+          assert len(books['2ES']['chapters']) == 16
+          assert sum(len(c['verses']) for b in csl['books'] for c in b['chapters']) == 36897
+          PY
+      - name: Parse modified React Native JavaScript and JSX files
+        working-directory: molitvoslov-app
+        run: |
+          node <<'NODE'
+          const parser = require('@babel/parser');
+          const fs = require('fs');
+          const files = [
+            'src/screens/BibleScreen.js',
+            'src/screens/BibleBooksScreen.js',
+            'src/screens/BibleBookScreen.js',
+            'src/screens/BibleChapterScreen.js',
+            'src/services/bibleStore.js',
+            'src/services/bibleContent.js',
+          ];
+          for (const file of files) {
+            parser.parse(fs.readFileSync(file, 'utf8'), {
+              sourceType: 'module',
+              plugins: ['jsx'],
+            });
+            console.log('Parsed:', file);
+          }
+          NODE
+      - name: Explain why a full APK is not built in CI
+        run: echo "Android bundling is blocked by the pre-existing missing search_seed_v10.db asset; this job validates edited source only."

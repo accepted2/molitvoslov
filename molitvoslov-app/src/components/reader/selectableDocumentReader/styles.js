@@ -1600,6 +1600,41 @@ export const READER_STYLES = String.raw`
       text-justify: inter-word;
     }
 
+    /* The book-mode rule above is more specific than the generic reader
+       language rule. Apply Ponomar explicitly to CSL Bible glyphs and
+       diacritics, otherwise Android WebView falls back to Georgia. */
+    body.book-mode .reader-language-traditional .reader-text.bible-verse {
+      font-family: 'Ponomar', Georgia, serif;
+      font-weight: 400;
+      font-synthesis: none;
+      font-variant-ligatures: common-ligatures;
+      overflow-wrap: normal;
+      word-break: normal;
+      -webkit-hyphens: manual;
+      hyphens: manual;
+    }
+    body.book-mode .reader-language-traditional .bible-drop-cap {
+      font-family: 'Ponomar', Georgia, serif;
+      font-weight: 400;
+      font-synthesis: none;
+    }
+    body.book-mode .reader-language-traditional .reader-inline-label {
+      font-family: 'Ponomar', Georgia, serif;
+      font-weight: 400;
+    }
+
+    body.book-mode .bible-chapter-start.csl-bible-verse .note {
+      font-family: 'Ponomar', Georgia, serif;
+      font-size: 15px;
+      line-height: 1.5;
+      font-weight: 400;
+      color: #765238;
+      padding-bottom: 3px;
+    }
+    body.book-mode .bible-chapter-start.csl-bible-verse .prayer-title {
+      font-family: 'Ponomar', Georgia, serif;
+      font-weight: 400;
+    }
     body.book-mode .bible-verse-section + .bible-verse-section {
       margin-top: 0 !important;
     }

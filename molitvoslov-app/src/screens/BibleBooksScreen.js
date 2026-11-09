@@ -19,6 +19,9 @@ export const BibleBooksScreen = ({route, navigation}) => {
   const {t} = useLanguage();
   const bibleGeneration = useBibleContentGeneration();
   const testament = route.params?.testament === 'new' ? 'new' : 'old';
+  const translationCode = route.params?.translationCode === 'csl_traditional'
+    ? 'csl_traditional'
+    : 'rst';
 
   const [readingProgress, setReadingProgress] = useState([]);
 
@@ -42,7 +45,10 @@ export const BibleBooksScreen = ({route, navigation}) => {
     [readingProgress]
   );
 
-  const books = useMemo(() => bibleContent.getBooks(testament), [testament, bibleGeneration]);
+  const books = useMemo(
+    () => bibleContent.getBooks(testament, translationCode),
+    [testament, translationCode, bibleGeneration]
+  );
 
   const sections = useMemo(() => {
     const sectionTitles = {
@@ -101,6 +107,7 @@ export const BibleBooksScreen = ({route, navigation}) => {
               onPress={() =>
                 navigation.navigate('BibleBook', {
                   bookId: item.id,
+                  translationCode,
                 })
               }
               style={({pressed}) => [
@@ -112,7 +119,7 @@ export const BibleBooksScreen = ({route, navigation}) => {
               ]}
             >
               <View style={styles.itemText}>
-                <Text style={styles.bookName}>{bibleContent.getDisplayName(item)}</Text>
+                <Text style={styles.bookName}>{bibleContent.getDisplayName(item, translationCode)}</Text>
 
                 <Text style={styles.chapterCount}>
                   {t('bible.chapters', {count: item.chapters?.length || 0})}

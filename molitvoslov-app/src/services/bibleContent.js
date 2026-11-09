@@ -1,15 +1,16 @@
 import {getCurrentBibleContent} from './bibleStore';
 
-const currentBible = () => getCurrentBibleContent('rst') || {};
+const currentBible = (translationCode = 'rst') =>
+  getCurrentBibleContent(translationCode) || {};
 
-const currentBooks = () => {
-  const payload = currentBible();
+const currentBooks = (translationCode = 'rst') => {
+  const payload = currentBible(translationCode);
 
   return Array.isArray(payload?.books) ? payload.books : [];
 };
 
-const currentIndexes = () => {
-  const books = currentBooks();
+const currentIndexes = (translationCode = 'rst') => {
+  const books = currentBooks(translationCode);
 
   return {
     books,
@@ -61,8 +62,12 @@ export const bibleContent = {
     return currentBible()?.translation || null;
   },
 
-  getBooks(testament = null) {
-    const books = currentBooks();
+  getTranslation(translationCode = 'rst') {
+    return currentBible(translationCode)?.translation || null;
+  },
+
+  getBooks(testament = null, translationCode = 'rst') {
+    const books = currentBooks(translationCode);
 
     if (!testament) {
       return books;
@@ -71,8 +76,8 @@ export const bibleContent = {
     return books.filter((book) => book.testament === testament);
   },
 
-  getBook(bookIdOrSlug) {
-    const {byId, bySlug} = currentIndexes();
+  getBook(bookIdOrSlug, translationCode = 'rst') {
+    const {byId, bySlug} = currentIndexes(translationCode);
 
     if (typeof bookIdOrSlug === 'string' && bySlug.has(bookIdOrSlug)) {
       return bySlug.get(bookIdOrSlug);
@@ -81,18 +86,23 @@ export const bibleContent = {
     return byId.get(Number(bookIdOrSlug)) || null;
   },
 
-  getDisplayName(bookIdOrObject) {
-    const book = typeof bookIdOrObject === 'object' ? bookIdOrObject : this.getBook(bookIdOrObject);
+  getDisplayName(bookIdOrObject, translationCode = 'rst') {
+    const book = typeof bookIdOrObject === 'object'
+      ? bookIdOrObject
+      : this.getBook(bookIdOrObject, translationCode);
 
     if (!book) {
       return 'Библия';
     }
 
+    if (translationCode === 'csl_traditional') {
+      return book.name || book.short_name || 'Библия';
+    }
     return BIBLE_BOOK_DISPLAY_TITLES[book.code] || book.name || book.short_name || 'Библия';
   },
 
-  getChapter(bookIdOrSlug, chapterNumber) {
-    const book = this.getBook(bookIdOrSlug);
+  getChapter(bookIdOrSlug, chapterNumber, translationCode = 'rst') {
+    const book = this.getBook(bookIdOrSlug, translationCode);
 
     if (!book) {
       return null;

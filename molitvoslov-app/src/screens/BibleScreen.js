@@ -14,18 +14,25 @@ import {useLanguage} from '../context/LanguageContext';
 export const BibleScreen = ({navigation}) => {
   const {t} = useLanguage();
   const bibleGeneration = useBibleContentGeneration();
+  const [translationCode, setTranslationCode] = React.useState('rst');
   const insets = useSafeAreaInsets();
 
   const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
   React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
-  const oldBooks = useMemo(() => bibleContent.getBooks('old'), [bibleGeneration]);
-
-  const newBooks = useMemo(() => bibleContent.getBooks('new'), [bibleGeneration]);
+  const oldBooks = useMemo(
+    () => bibleContent.getBooks('old', translationCode),
+    [bibleGeneration, translationCode]
+  );
+  const newBooks = useMemo(
+    () => bibleContent.getBooks('new', translationCode),
+    [bibleGeneration, translationCode]
+  );
 
   const openTestament = (testament) => {
     navigation.navigate('BibleBooks', {
       testament,
+      translationCode,
     });
   };
 
@@ -42,8 +49,29 @@ export const BibleScreen = ({navigation}) => {
           },
         ]}
       >
+        <View style={styles.translationPicker}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Русская Синодальная Библия"
+            onPress={() => setTranslationCode('rst')}
+            style={[styles.translationOption, translationCode === 'rst' && styles.translationSelected]}
+          >
+            <Text style={styles.translationOptionText}>RU</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Церковнославянская Библия"
+            onPress={() => setTranslationCode('csl_traditional')}
+            style={[
+              styles.translationOption,
+              translationCode === 'csl_traditional' && styles.translationSelected,
+            ]}
+          >
+            <Text style={styles.translationOptionText}>ЦС традиционный</Text>
+          </Pressable>
+        </View>
         <Text style={styles.translation}>
-          {bibleContent.translation?.name || t('bible.synodalTranslation')}
+          {bibleContent.getTranslation(translationCode)?.name || t('bible.synodalTranslation')}
         </Text>
 
         <Pressable
@@ -71,7 +99,11 @@ export const BibleScreen = ({navigation}) => {
         </Pressable>
 
         {!oldBooks.length && !newBooks.length && (
-          <Text style={styles.empty}>{t('bible.dataMissing')}</Text>
+          <Text style={styles.empty}>
+            {translationCode === 'csl_traditional'
+              ? 'Церковнославянский текст ещё не включён в эту сборку.'
+              : t('bible.dataMissing')}
+          </Text>
         )}
       </View>
 
@@ -89,6 +121,30 @@ const styles = StyleSheet.create({
     gap: 10,
   },
 
+  translationPicker: {
+    flexDirection: 'row',
+    alignSelf: 'flex-start',
+    gap: 8,
+    marginHorizontal: 4,
+    marginBottom: 3,
+  },
+  translationOption: {
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(126, 82, 38, 0.22)',
+    backgroundColor: 'rgba(248, 233, 207, 0.65)',
+  },
+  translationSelected: {
+    borderColor: colors.accentDark,
+    backgroundColor: 'rgba(223, 193, 147, 0.95)',
+  },
+  translationOptionText: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '700',
+  },
   translation: {
     marginHorizontal: 4,
     marginBottom: 4,

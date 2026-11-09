@@ -1,0 +1,64 @@
+name: Generate complete Church Slavonic Bible
+
+on:
+  push:
+    branches:
+      - feature/bible-csl-traditional-20261109
+    paths:
+      - molitvoslov-app/tools/build_csl_ponomar_bible.py
+      - .github/workflows/generate-complete-csl-bible.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout selected feature branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Fetch pinned GPL-licensed Unicode source and export all 77 books
+        run: python molitvoslov-app/tools/build_csl_ponomar_bible.py
+
+      - name: Assert full offline corpus and stable source IDs
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          csl = json.loads(Path("molitvoslov-app/src/data/offlineBibleCslTraditional.json").read_text("utf-8"))
+          rst = json.loads(Path("molitvoslov-app/src/data/offlineBible.json").read_text("utf-8"))
+          assert len(csl["books"]) == 77, len(csl["books"])
+          assert csl["translation"]["code"] == "csl_traditional"
+          lookup = {x["code"]: x for x in csl["books"]}
+          assert len(lookup["PSA"]["chapters"]) == 151
+          assert len(lookup["2ES"]["chapters"]) == 16
+          assert [x["code"] for x in csl["books"]][-1] == "REV"
+          assert lookup["GEN"]["chapters"][0]["verses"][0]["id"] == 101001001
+          assert len(rst["books"]) == 78
+          assert sum(len(c["verses"]) for b in csl["books"] for c in b["chapters"]) > 36000
+          print("Complete offline CSL verified (77 books); Synodal unchanged")
+          PY
+
+      - name: Commit complete text and audit to this feature branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add molitvoslov-app/src/data/offlineBibleCslTraditional.json molitvoslov-app/tools/csl_import_audit.json
+          if git diff --cached --quiet; then
+            echo "Complete CSL bundle is already current"
+            exit 0
+          fi
+          git commit -m "data(bible): bundle complete 77-book Ponomar Church Slavonic Bible"
+          git pull --rebase origin feature/bible-csl-traditional-20261109
+          git push origin HEAD:feature/bible-csl-traditional-20261109

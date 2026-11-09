@@ -19,14 +19,19 @@ export const BibleChapterScreen = ({route, navigation}) => {
   const {t} = useLanguage();
   useBibleContentGeneration();
   const {bookId, chapterNumber, focusTarget = null, resume = false} = route.params || {};
+  const translationCode = route.params?.translationCode === 'csl_traditional'
+    ? 'csl_traditional'
+    : 'rst';
+  const isTraditional = translationCode === 'csl_traditional';
 
-  const book = bibleContent.getBook(bookId);
+  const book = bibleContent.getBook(bookId, translationCode);
 
-  const displayName = bibleContent.getDisplayName(book);
+  const displayName = bibleContent.getDisplayName(book, translationCode);
 
   const chapters = book?.chapters || [];
 
-  const requestedChapter = bibleContent.getChapter(bookId, chapterNumber) || chapters[0] || null;
+  const requestedChapter =
+    bibleContent.getChapter(bookId, chapterNumber, translationCode) || chapters[0] || null;
 
   const [savedItems, setSavedItems] = useState([]);
 
@@ -147,7 +152,11 @@ export const BibleChapterScreen = ({route, navigation}) => {
       return focusTarget;
     }
 
-    const targetChapter = bibleContent.getChapter(bookId, focusTarget.metadata?.chapter_number);
+    const targetChapter = bibleContent.getChapter(
+      bookId,
+      focusTarget.metadata?.chapter_number,
+      translationCode
+    );
 
     const firstVerse = targetChapter?.verses?.[0];
 
@@ -166,7 +175,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
       end_offset: null,
     };
-  }, [focusTarget, bookId]);
+  }, [focusTarget, bookId, translationCode]);
 
   const chapterStartTarget = useMemo(() => {
     if (normalizedFocusTarget || resume || !requestedChapter) {
@@ -320,6 +329,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
         return (chapter.verses || []).map((verse, verseIndex) => ({
           className: [
             'bible-verse-section',
+            isTraditional ? 'csl-bible-verse' : '',
 
             verseIndex === 0 ? 'bible-chapter-start' : '',
 
@@ -333,6 +343,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
           chapterNumber: verseIndex === 0 ? Number(chapter.number) : null,
 
           title: verseIndex === 0 ? t('bible.chapter', {number: chapter.number}) : '',
+          note: verseIndex === 0 && isTraditional ? (chapter.heading || '') : '',
 
           action:
             verseIndex === 0
@@ -385,6 +396,8 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
                   metadata: {
                     book_id: book.id,
+                    language: isTraditional ? 'traditional' : 'russian',
+                    translation_code: translationCode,
 
                     book_slug: book.slug,
 
@@ -403,7 +416,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
         }));
       }),
     };
-  }, [book, chapters, savedItems, verseInfo.ids, displayName, t]);
+  }, [book, chapters, savedItems, verseInfo.ids, displayName, t, isTraditional, translationCode]);
 
   const readerProgress = resume && !effectiveFocusTarget ? savedProgress : null;
 
@@ -512,7 +525,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
     let position = getCurrentProgress() || getStableProgress();
 
     if (!position?.anchorId) {
-      const chapter = bibleContent.getChapter(bookId, currentChapterNumber);
+      const chapter = bibleContent.getChapter(bookId, currentChapterNumber, translationCode);
       const firstVerse = chapter?.verses?.[0];
 
       if (firstVerse) {
@@ -563,6 +576,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
     navigation.replace('BibleChapter', {
       bookId: book.id,
       chapterNumber: Number(chapter.number),
+      translationCode,
       resume: false,
     });
   };
@@ -571,6 +585,50 @@ export const BibleChapterScreen = ({route, navigation}) => {
     setBookmarkPosition(getCurrentProgress());
     setStablePosition(getStableProgress());
     setReaderMenuVisible(true);
+  };
+
+  const otherTranslationCode = isTraditional ? 'rst' : 'csl_traditional';
+  const matchingOtherBook = bibleContent.getBooks(null, otherTranslationCode)
+    .find((candidate) => candidate.code === book?.code);
+  const canSwitchTranslation = !!matchingOtherBook &&
+    !!bibleContent.getChapter(matchingOtherBook.id, currentChapterNumber, otherTranslationCode);
+
+  const changeBibleTranslation = (mode) => {
+    const targetCode = mode === 'traditional' ? 'csl_traditional' : 'rst';
+    if (!book || targetCode === translationCode) {
+      setReaderMenuVisible(false);
+      return;
+    }
+    const targetBook = bibleContent.getBooks(null, targetCode)
+      .find((candidate) => candidate.code === book.code);
+    const targetChapter = targetBook &&
+      bibleContent.getChapter(targetBook.id, currentChapterNumber, targetCode);
+    if (!targetChapter) {
+      return;
+    }
+
+    const progress = getCurrentProgress() || getStableProgress();
+    const activeVerse = progress && verseInfo.byId.get(Number(progress.anchorId));
+    const targetVerse = (targetChapter.verses || [])
+      .find((verse) => Number(verse.number) === Number(activeVerse?.verseNumber)) ||
+      targetChapter.verses?.[0];
+    setReaderMenuVisible(false);
+    navigation.replace('BibleChapter', {
+      bookId: targetBook.id,
+      chapterNumber: Number(targetChapter.number),
+      translationCode: targetCode,
+      resume: false,
+      focusTarget: targetVerse ? {
+        save_type: 'verse',
+        anchor_type: 'bible_verse',
+        anchor_id: Number(targetVerse.id),
+        metadata: {
+          book_id: Number(targetBook.id),
+          chapter_number: Number(targetChapter.number),
+          verse_number: Number(targetVerse.number),
+        },
+      } : null,
+    });
   };
 
   const bookmarkVerse = bookmarkPosition
@@ -627,9 +685,14 @@ export const BibleChapterScreen = ({route, navigation}) => {
           {key: 'russian', label: t('readerModes.russian')},
           {key: 'church', label: t('readerModes.church'), disabled: true},
           {key: 'both', label: t('readerModes.both'), disabled: true},
-          {key: 'traditional', label: t('readerModes.traditional'), disabled: true},
+          {
+            key: 'traditional',
+            label: t('readerModes.traditional'),
+            disabled: !isTraditional && !canSwitchTranslation,
+          },
         ]}
-        activeLanguage="russian"
+        activeLanguage={isTraditional ? 'traditional' : 'russian'}
+        onLanguageChange={changeBibleTranslation}
         canReturnToProgress={!!stablePosition}
         onReturnToProgress={() => {
           readerRef.current?.goToProgress(stablePosition);
