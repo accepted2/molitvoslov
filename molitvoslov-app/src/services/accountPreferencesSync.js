@@ -145,9 +145,28 @@ const syncOnce = async () => {
   await writeQueue;
   let remote = await request('GET');
   let pending = await readPending(id);
-  if (!Object.keys(remote.settings || {}).length && !Object.keys(remote.reader_overrides || {}).length &&
-      !Object.keys(remote.reader_modes || {}).length) {
+  const cloudIsEmpty = !Object.keys(remote.settings || {}).length &&
+    !Object.keys(remote.reader_overrides || {}).length &&
+    !Object.keys(remote.reader_modes || {}).length;
+  const lastSynced = await AsyncStorage.getItem(LAST_SCOPES + String(id));
+  if (cloudIsEmpty) {
     pending = mergePatch(await initialSnapshot(id), pending);
+  } else if (!lastSynced) {
+    // First login from an older app: import only document preferences absent
+    // from the cloud. Never overwrite existing cloud overrides or settings.
+    const legacy = await initialSnapshot(id);
+    const missingOverrides = Object.fromEntries(
+      Object.entries(legacy.reader_overrides).filter(([scope]) =>
+        !Object.prototype.hasOwnProperty.call(remote.reader_overrides || {}, scope))
+    );
+    const missingModes = Object.fromEntries(
+      Object.entries(legacy.reader_modes).filter(([scope]) =>
+        !Object.prototype.hasOwnProperty.call(remote.reader_modes || {}, scope))
+    );
+    pending = mergePatch({
+      reader_overrides: missingOverrides,
+      reader_modes: missingModes,
+    }, pending);
   }
   if (Object.keys(pending).length) {
     remote = await request('PATCH', pending);
