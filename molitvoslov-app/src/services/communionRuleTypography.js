@@ -105,16 +105,32 @@ export const getCommunionLiturgicalSeparators = value => {
   }
   parts.push(source.slice(cursor));
 
-  const isShortInvocation = part => {
-    // Unicode NFD also decomposes й into и + breve; accept both forms
-    // after stripping accent marks from Church Slavonic source text.
-    const normalized = part.normalize('NFD').replace(/\p{M}/gu, '')
-      .trim().toLowerCase().replace(/ё/g, 'е');
-    return /^(?:святы[йи]\s+боже|пресвятая\s+троице|господи\s*,?\s*помилу[йи]|слава\s+отцу|и\s+ныне(?:\s|,|:))/u.test(normalized);
-  };
-  return parts.every(isShortInvocation)
-    ? gaps.map(gap => gap.index + gap[0].length)
-    : [];
+  const fold = text => String(text || '').normalize('NFD')
+    .replace(/\p{M}/gu, '').trim().toLowerCase().replace(/ё/g, 'е');
+
+  const shortInvocation = part =>
+    /^(?:святы[йи]\s+боже|пресвятая\s+троице|господи\s*,?\s*помилу[йи]|слава\s+отцу|и\s+ныне(?:\s|,|:))/u.test(fold(part));
+
+  // Several Trisagion invocations are sometimes stored in one Text item.
+  if (parts.every(shortInvocation)) {
+    return gaps.map(gap => gap.index + gap[0].length);
+  }
+  if (parts.length === 2) {
+    const first = fold(parts[0]);
+    const second = fold(parts[1]);
+    // Canon ode 8: "Припев: ... слава Тебе." followed by the next stanza.
+    if (/^припев\s*:/u.test(first) && second.length > 0) {
+      return [gaps[0].index + gaps[0][0].length];
+    }
+    // "Господи, помилуй (12 раз)" and the following "Приидите".
+    if (/^господи\s*,?\s*помилу[йи][\s\S]*\(\s*12\s*раз(?:а)?\s*\)$/u.test(first) &&
+        /^приидите/u.test(second)) {
+      return [gaps[0].index + gaps[0][0].length];
+    }
+  }
+  // Introductory "Слава Отцу" / "И ныне" are RUBRICS, not dividers:
+  // highlight them in the reader but keep their following prayer together.
+  return [];
 };
 
 export const buildCommunionTypography = (value, {continuousPrayer = false, communionKind = null} = {}) => {
@@ -144,6 +160,16 @@ export const buildCommunionTypography = (value, {continuousPrayer = false, commu
     while (end < source.length && MARK.test(source[end])) end += 1;
     ranges.push({start: at, end, kind: 'initial'});
   };
+
+  // A doxology at the start of a troparion is a red liturgical rubric,
+  // not a paragraph boundary. Preserve the next words on the same line.
+  const introductoryDoxology =
+    /^\s*(слава\s+отцу\s*,?\s+и\s+сыну\s*,?\s+и\s+святому\s+духу\s*[.!?:;]?|и\s+ныне\s*,?\s+и\s+присно\s*,?\s+и\s+во\s+веки\s+веков\s*,?\s+аминь\s*[.!?:;]?)(?=\s|$)/iu.exec(normalized);
+  if (introductoryDoxology) {
+    const from = introductoryDoxology.index +
+      introductoryDoxology[0].indexOf(introductoryDoxology[1]);
+    addRange(from, from + introductoryDoxology[1].length, 'response');
+  }
 
   // Only a real rubric at the start of a physical line gets red typography.
   // The same words inside a prayer paragraph remain untouched.
