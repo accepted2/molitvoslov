@@ -28,8 +28,8 @@ export const isCommunionPrayerHeading = value => {
     .toLowerCase().replace(/ё/g, 'е')
     .replace(/\s+/gu, ' ').trim();
   return /^молитв(?:а|ы)(?:\s|$|[:.,])/u.test(heading) ||
-    /^благодарственн\w*\s+молитв\w*/u.test(heading) ||
-    /^его\s+же\s*,?\s*\d{1,2}\s*[-‑–]?[ая]?\b/u.test(heading);
+    /^благодарственн[а-я]*\s+молитв[а-я]*/u.test(heading) ||
+    /^его\s+же\s*,?\s*\d{1,2}\s*[-‑–]?[ая]?(?:\s|$|[.,:])/u.test(heading);
 };
 
 const mappedText = value => {
