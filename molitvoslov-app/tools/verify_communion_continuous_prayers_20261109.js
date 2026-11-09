@@ -76,7 +76,7 @@ assert.equal(buildCommunionTypography('Го́споди, поми́луй. (12 �
 
 assert.ok(reader.includes('followingTextIsPrayer = isCommunionPrayerHeading(item.title || item.content)'));
 assert.ok(reader.includes('isCommunionPrayerHeading(item.text.title)'));
-assert.ok(reader.includes('...buildCommunionTypography(value, {continuousPrayer})'));
+assert.ok(reader.includes('...buildCommunionTypography(value, {continuousPrayer, communionKind})'));
 assert.ok(reader.includes('const continuousCommunionPrayer = !!communionTypography?.continuousPrayer'));
 assert.ok(reader.includes('if (!continuousRussianEveningPrayer && !continuousCommunionPrayer)'));
 assert.ok(reader.includes('compactParagraphGaps(root);'));
