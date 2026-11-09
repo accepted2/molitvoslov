@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "translation": {
+    "id": null,
+    "code": "csl_traditional",
+    "name": "Церковнославянский (традиционный)",
+    "language": "cu",
+    "script_variant": "church_traditional",
+    "source_url": "",
+    "source_revision": "",
+    "license": "Правовой статус цифрового корпуса не подтверждён"
+  },
+  "books": [],
+  "content_version": "PILOT_NOT_YET_EXPORTED"
+}

@@ -1,12 +1,20 @@
 import bundledBible from '../data/offlineBible.json';
+import bundledChurchBible from '../data/offlineBibleCslTraditional.json';
 import {getDatabase} from '../db/database';
 
 const CACHE_PREFIX = 'bible-content-v1:';
 
 const bundledCode = String(bundledBible?.translation?.code || 'rst');
+const bundledChurchCode = String(bundledChurchBible?.translation?.code || 'csl_traditional');
+const bundledByCode = new Map([
+  [bundledCode, bundledBible],
+  [bundledChurchCode, bundledChurchBible],
+]);
 
-const currentByCode = new Map([[bundledCode, bundledBible]]);
-const versionByCode = new Map([[bundledCode, bundledBible?.content_version || null]]);
+const currentByCode = new Map(bundledByCode);
+const versionByCode = new Map(
+  Array.from(bundledByCode, ([code, payload]) => [code, payload?.content_version || null])
+);
 
 let generation = 0;
 const listeners = new Set();
@@ -53,14 +61,15 @@ const activateBibleContent = (payload, version, {notify = true} = {}) => {
 // BIBLE_CONTENT_BUNDLED_ONLY_V1: fresh APK data supersedes old OTA cache.
 export const hydrateBibleContent = async (code = 'rst') => {
   const normalizedCode = String(code || 'rst').trim() || 'rst';
-  if (normalizedCode !== bundledCode) {
+  const bundle = bundledByCode.get(normalizedCode);
+  if (!bundle) {
     return {success: true, source: 'none', version: null};
   }
-  if (!isValidBibleContent(bundledBible, bundledCode)) {
-    throw new Error('Некорректный комплект offlineBible.json в APK');
+  if (!isValidBibleContent(bundle, normalizedCode)) {
+    throw new Error('Некорректный комплект Библии в APK: ' + normalizedCode);
   }
-  activateBibleContent(bundledBible, bundledBible.content_version || null, {notify: false});
-  return {success: true, source: 'bundle', version: bundledBible.content_version || null};
+  activateBibleContent(bundle, bundle.content_version || null, {notify: false});
+  return {success: true, source: 'bundle', version: bundle.content_version || null};
 };
 
 export const saveSyncedBibleContent = async (payload, version) => {
@@ -107,7 +116,7 @@ export const getCurrentBibleContent = (code = 'rst') => {
     return currentByCode.get(normalizedCode);
   }
 
-  return normalizedCode === bundledCode ? bundledBible : null;
+  return bundledByCode.get(normalizedCode) || null;
 };
 
 export const getCurrentBibleContentVersion = (code = 'rst') =>

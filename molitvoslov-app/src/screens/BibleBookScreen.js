@@ -18,11 +18,14 @@ import {useLanguage} from '../context/LanguageContext';
 export const BibleBookScreen = ({route, navigation}) => {
   const {t} = useLanguage();
   useBibleContentGeneration();
-  const book = bibleContent.getBook(route.params?.bookId);
+  const translationCode = route.params?.translationCode === 'csl_traditional'
+    ? 'csl_traditional'
+    : 'rst';
+  const book = bibleContent.getBook(route.params?.bookId, translationCode);
 
   const [bookProgress, setBookProgress] = useState(null);
 
-  const displayName = bibleContent.getDisplayName(book);
+  const displayName = bibleContent.getDisplayName(book, translationCode);
   const artwork = getBibleArtwork(book);
 
   const insets = useSafeAreaInsets();
@@ -72,6 +75,7 @@ export const BibleBookScreen = ({route, navigation}) => {
     navigation.navigate('BibleChapter', {
       bookId: book.id,
       chapterNumber: chapter.number,
+      translationCode,
       resume: isResumeChapter,
     });
   };
@@ -84,6 +88,7 @@ export const BibleBookScreen = ({route, navigation}) => {
     navigation.navigate('BibleChapter', {
       bookId: book.id,
       chapterNumber: progressChapter,
+      translationCode,
       resume: true,
     });
   };
