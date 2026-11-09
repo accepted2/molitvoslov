@@ -20,7 +20,7 @@ import {useLanguage} from '../context/LanguageContext';
 const cleanTraditionalVerse = (value, isFirstVerse) => {
   const text = String(value || '');
   if (!isFirstVerse) return text;
-  return text.replace(/^\\s*(?:\\(\\s*)?за[\\u0300-\\u036f]*чало\\s*(?:№\\s*)?\\d+\\s*\\)?[\\s.:—–-]*/iu, '');
+  return text.replace(/^\s*(?:\(\s*)?за[\u0300-\u036f]*чало\s*(?:№\s*)?\d+\s*\)?[\s.:—–-]*/iu, '');
 };
 
 export const BibleChapterScreen = ({route, navigation}) => {
