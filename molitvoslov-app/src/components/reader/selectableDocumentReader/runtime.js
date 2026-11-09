@@ -752,9 +752,19 @@ const computeFocusHighlightRanges = () => {
           return !before || /[.!?…;:\n][»”"']?$/u.test(before);
         });
     };
+    // The same address can be a vocative inside ordinary prose:
+    // "Возсиял еси Божественною славою, Иисусе, егда..."
+    // Only a clause-leading invocation is a litany response. A comma
+    // alone is NOT a response boundary; colon/semicolon/full stop/newline
+    // preserve the previously supported genuine "Радуйся" refrains.
+    const isAkathistResponseStart = (value, start) => {
+      const prefix = String(value || '').slice(0, start).trimEnd();
+      return !prefix || /[.!?…;:\n][»”"']?$/u.test(prefix);
+    };
     const collectAkathistInvocationRanges = value => [
       ...collectAkathistWordRanges(value,
-        /(?:Радуйтеся|Радуйся|Радꙋйсѧ|Иисусе|Іисусе|И\s+исусе|Исусе|Ісусе|Прииди|Приди|Прийди)/giu),
+        /(?:Радуйтеся|Радуйся|Радꙋйсѧ|Иисусе|Іисусе|И\s+исусе|Исусе|Ісусе|Прииди|Приди|Прийди)/giu)
+        .filter(range => isAkathistResponseStart(value, range.start)),
       ...collectAkathistDoxologyRanges(value),
       ...collectAkathistLordMyRanges(value),
     ];
@@ -807,8 +817,12 @@ const computeFocusHighlightRanges = () => {
           other.end >= range.end && (other.start < range.start || other.end > range.end))
       );
     };
+    // Original and Church Slavonic spellings, including accented vowels and
+    // round /u/ (ꙋ), map to the source text's original character offsets.
+    // Highlight acclamations wherever they occur within an Akathist; they
+    // are not restricted to Kontakion sections.
     const collectAkathistAlleluiaRanges = value =>
-      collectAkathistWordRanges(value, /(?:Аллилуиа|Аллилуия|Алилуиа|Алілуя|Аллілуя)/giu, true);
+      collectAkathistWordRanges(value, /А(?:лл|л)[иі]л[уꙋ][иіїй]?[ая]/giu, true);
     const collectAkathistJoyBreaks = (value, extraResponses = false) =>
       new Set(collectAkathistRefrainRanges(value, extraResponses).map(range => range.start).filter(at => at > 0));
     const collectAkathistInitialRanges = (value, includeInvocations = true, extraResponses = false) => {
@@ -1553,7 +1567,7 @@ const collectPsalterRubricRanges = value => {
           ? collectAkathistJoyBreaks(text, isAkathistIkos) : new Set();
         const akathistInitialRanges = isAkathist
           ? collectAkathistInitialRanges(text, hasAkathistInvocations, isAkathistIkos) : [];
-        const akathistAlleluiaRanges = isAkathistKontakion ? collectAkathistAlleluiaRanges(text) : [];
+        const akathistAlleluiaRanges = isAkathist ? collectAkathistAlleluiaRanges(text) : [];
  const isPsalterPrayer =
   String(itemConfig?.className || '')
     .includes('psalter-prayer');
