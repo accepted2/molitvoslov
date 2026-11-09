@@ -62,6 +62,14 @@ const spacedOld = 'И ису́се пречудный; Радꙋйсѧ, Мати
 assert.deepEqual(Array.from(inv(spacedOld), range => spacedOld.slice(range.start,range.end)), ['И ису́се','Радꙋйсѧ']);
 const response = 'Поем Тебе Аллилуиа! И паки: Аллилуия.';
 assert.deepEqual(Array.from(alleluia(response), range => response.slice(range.start,range.end)), ['Аллилуиа!','Аллилуия.']);
+const alleluiaSpellings =
+  'Аллилуиа! Аллилуия. Алилуиа; Алілуя, Аллілуя: Аллилуіа! Аллилꙋ́їа. А҆ллилꙋ́їа!';
+assert.deepEqual(
+  Array.from(alleluia(alleluiaSpellings), range => alleluiaSpellings.slice(range.start, range.end)),
+  ['Аллилуиа!', 'Аллилуия.', 'Алилуиа;', 'Алілуя,', 'Аллілуя:', 'Аллилуіа!', 'Аллилꙋ́їа.', 'А҆ллилꙋ́їа!'],
+  'All encountered CS variants must retain their punctuation and original Unicode',
+);
+assert.equal(alleluia('Предал­лилуия').length, 0, 'Never highlight a substring of another word');
 assert.equal(inv('НеРадуйся').length, 0, 'Never decorate inside another word');
 
 // Some Azbyka texts contain a LATIN accented vowel inside a Cyrillic refrain.
@@ -79,8 +87,43 @@ assert.deepEqual(
   ['Радуйcя'], 'Latin lookalike c inside a Cyrillic word is recognized',
 );
 assert.equal(inv('НеРáдуйся').length, 0, 'Do not style a substring of another word');
-assert.equal(inv('Cacao, радуйся').length, 1, 'Standalone Latin words are not rewritten');
+assert.equal(inv('Cacao, радуйся').length, 0, 'Comma inside prose must not trigger a refrain');
 console.log('PASS: Cyrillic and Latin-accented Радуйся recognized with original offsets');
+
+// Regression: the Ikos 6 of the Akathist to the Ascension has a vocative
+// inside the sentence, not a new standalone invocation. Preserve its
+// original whitespace, layout, ink and selection offsets.
+const ascensionIkos = 'Возсиял еси Божественною славою, Иисусе, егда естество человеческое, в немже облеклся еси.';
+const narrativeJesusAt = ascensionIkos.indexOf('Иисусе');
+assert.equal(inv(ascensionIkos).length, 0, 'Do not accent narrative Иисусе after comma');
+assert.deepEqual([...breaks(ascensionIkos, true)], [],
+  'Do not insert BR before Иисусе inside Ascension Ikos 6');
+assert.deepEqual(
+  Array.from(initials(ascensionIkos, true, true), range =>
+    ascensionIkos.slice(range.start, range.end)),
+  ['В'],
+  'Only the ordinary opening letter is accented in the sentence',
+);
+assert.equal(initials(ascensionIkos, true, true).some(range => range.start === narrativeJesusAt), false);
+const narrativeJoy = 'Слава Тебе, Радуйся, зову, и Иисусе, яко Господь.';
+assert.deepEqual([...breaks(narrativeJoy, true)], [],
+  'Do not break within commas at either Радуйся or Иисусе');
+assert.equal(inv(narrativeJoy).length, 0,
+  'Comma vocatives in a running sentence retain normal ink');
+// Genuine invocations after colon, semicolon, newline or full stop still
+// start their own red lines, including their accented CS forms.
+const trueAcclamations = 'Вопием Ти: Иису́се, Спасе; ра́дуйся, Мати! Прииди́, Утешителю.';
+assert.deepEqual(
+  Array.from(inv(trueAcclamations), range =>
+    trueAcclamations.slice(range.start, range.end)),
+  ['Иису́се', 'ра́дуйся', 'Прииди́'],
+);
+assert.deepEqual([...breaks(trueAcclamations)], [
+  trueAcclamations.indexOf('Иису́се'),
+  trueAcclamations.indexOf('ра́дуйся'),
+  trueAcclamations.indexOf('Прииди́'),
+]);
+console.log('PASS: narrative Иисусе and Радуйся stay inline; true responses are still separated');
 
 // A narrative quotation in an Ikos is not a list refrain. Keep the
 // archangel's greeting inline, without the red word and forced line break.
@@ -180,7 +223,7 @@ assert.match(runtime, /const isAkathistIkos = isAkathist && itemConfig\?\.metada
 assert.match(runtime, /const isAkathistKontakion = isAkathist && \(/);
 assert.match(runtime, /hasAkathistInvocations\s*\? collectAkathistJoyBreaks\(text, isAkathistIkos\) : new Set\(\)/);
 assert.match(runtime, /collectAkathistInitialRanges\(text, hasAkathistInvocations, isAkathistIkos\)/);
-assert.match(runtime, /isAkathistKontakion \? collectAkathistAlleluiaRanges\(text\) : \[\]/);
+assert.match(runtime, /isAkathist \? collectAkathistAlleluiaRanges\(text\) : \[\]/);
 assert.match(screen, /accentWords: \[\]/);
 assert.equal((screen.match(/section_type: section\.section_type/g) || []).length, 3,
   'Every Akathist text language must pass its section type');
