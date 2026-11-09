@@ -78,7 +78,7 @@ assert.ok(reader.includes('followingTextIsPrayer = isCommunionPrayerHeading(item
 assert.ok(reader.includes('isCommunionPrayerHeading(item.text.title)'));
 assert.ok(reader.includes('...buildCommunionTypography(value, {continuousPrayer, communionKind})'));
 assert.ok(reader.includes('const continuousCommunionPrayer = !!communionTypography?.continuousPrayer'));
-assert.ok(reader.includes('if (!continuousRussianEveningPrayer && !continuousCommunionPrayer)'));
+assert.ok(reader.includes('communionSeparatorBefore.size === 0'));
 assert.ok(reader.includes('compactParagraphGaps(root);'));
 assert.ok(reader.includes('communionSeparatorBefore.forEach(offset => boundaries.add(offset))'));
 assert.ok(reader.includes("divider.className = 'communion-short-prayer-divider'"));
