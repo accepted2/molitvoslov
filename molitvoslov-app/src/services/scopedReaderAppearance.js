@@ -54,7 +54,18 @@ export const loadScopedAppearance = async (scope) => {
   } catch (error) {
     console.warn('[reader appearance] load:', error?.message || error);
   }
-  return {key, value: normalizeReaderAppearance({...globalSettings, ...(saved || {})}), inherited: !saved};
+  // Older releases cached inherited values as document overrides. Treat a
+  // snapshot identical to a default/global appearance as inherited instead.
+  const plain = saved && normalizeReaderAppearance(saved);
+  const inherited = !plain ||
+    JSON.stringify(plain) === JSON.stringify(normalizeReaderAppearance(globalSettings)) ||
+    JSON.stringify(plain) === JSON.stringify(normalizeReaderAppearance(DEFAULT_READING_SETTINGS));
+  return {
+    key,
+    value: inherited ? normalizeReaderAppearance(globalSettings)
+      : normalizeReaderAppearance({...globalSettings, ...saved}),
+    inherited,
+  };
 };
 const cloudScopeFromKey = (key) => {
   const match = String(key || '').match(/^@molitvoslov\/scoped-reader-appearance\/v1:account-[^:]+:([^:]+):(.+)$/);
