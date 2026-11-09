@@ -11,6 +11,7 @@ const LAST_SCOPES = '@molitvoslov/account-prefs-last-scopes/v1:';
 const APPEARANCE = '@molitvoslov/scoped-reader-appearance/v1:';
 const MODE_OLD = '@molitvoslov/reader-language-mode/v1:';
 const SECTIONS = ['settings', 'reader_overrides', 'reader_modes'];
+const VALID_READER_MODES = new Set(['church', 'russian', 'both', 'traditional']);
 let timer = null;
 let running = null;
 let writeQueue = Promise.resolve();
@@ -77,7 +78,8 @@ const initialSnapshot = async (userId) => {
   // Migrate only explicitly customised documents; never upload a derived
   // copy of the global appearance as a document override.
   const scopes = keys.filter(key => key.startsWith(APPEARANCE + 'guest:') ||
-    key.startsWith(APPEARANCE + 'account-' + encodeURIComponent(String(userId)) + ':'));
+    key.startsWith(APPEARANCE + 'account-' + encodeURIComponent(String(userId)) + ':'))
+    .sort((left, right) => Number(left.includes(':guest:')) - Number(right.includes(':guest:')));
   for (const key of scopes) {
     const parts = key.split(':');
     if (parts.length < 4) continue;
@@ -104,12 +106,12 @@ const initialSnapshot = async (userId) => {
   const oldModeKeys = keys.filter(key => key.startsWith(MODE_OLD));
   for (const key of oldModeKeys) {
     const raw = await AsyncStorage.getItem(key);
-    if (raw) modes[key.slice(MODE_OLD.length + 1)] = raw;
+    if (VALID_READER_MODES.has(raw)) modes[key.slice(MODE_OLD.length + 1)] = raw;
   }
   const accountModePrefix = `@molitvoslov/reader-language-mode/v2:account-${encodeURIComponent(String(userId))}:`;
   for (const key of keys.filter(k => k.startsWith(accountModePrefix))) {
     const raw = await AsyncStorage.getItem(key);
-    if (raw) modes[key.slice(accountModePrefix.length)] = raw;
+    if (VALID_READER_MODES.has(raw)) modes[key.slice(accountModePrefix.length)] = raw;
   }
   return {settings: {...settings, language}, reader_overrides: overrides, reader_modes: modes};
 };
