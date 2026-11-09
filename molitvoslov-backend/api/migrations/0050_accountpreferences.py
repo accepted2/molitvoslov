@@ -13,19 +13,21 @@ def enable_rls(apps, schema_editor):
         # This table is only accessed by authenticated Django on Render,
         # not by the public Supabase Data API. Explicitly revoke direct
         # client role privileges even on projects with broad default grants.
-        schema_editor.execute(
-            """
-            DO $
-            BEGIN
-              IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
-                REVOKE ALL PRIVILEGES ON TABLE public.api_accountpreferences FROM anon;
-              END IF;
-              IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
-                REVOKE ALL PRIVILEGES ON TABLE public.api_accountpreferences FROM authenticated;
-              END IF;
-            END $;
-            """
-        )
+        # Avoid anonymous PL/pgSQL DO blocks: malformed dollar quoting
+        # can abort the entire atomic migration on PostgreSQL. Check whether
+        # Supabase's optional client roles exist, then revoke only those roles.
+        with schema_editor.connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT rolname FROM pg_roles "
+                "WHERE rolname IN ('anon', 'authenticated')"
+            )
+            existing_roles = {row[0] for row in cursor.fetchall()}
+
+        for role in ("anon", "authenticated"):
+            if role in existing_roles:
+                schema_editor.execute(
+                    f'REVOKE ALL PRIVILEGES ON TABLE "public"."api_accountpreferences" FROM "{role}"'
+                )
 
 
 def disable_rls(apps, schema_editor):
