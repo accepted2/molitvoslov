@@ -35,7 +35,7 @@ RUNTIME_EDITS = (
     // preserve the previously supported genuine "Радуйся" refrains.
     const isAkathistResponseStart = (value, start) => {
       const prefix = String(value || '').slice(0, start).trimEnd();
-      return !prefix || /[.!?…;:\n][»”"']?$/u.test(prefix);
+      return !prefix || /[.!?…;:\n][»”“"']*$/u.test(prefix);
     };
     const collectAkathistInvocationRanges = value => [
       ...collectAkathistWordRanges(value,
