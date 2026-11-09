@@ -105,7 +105,7 @@ assert.deepEqual(
   'Only the ordinary opening letter is accented in the sentence',
 );
 assert.equal(initials(ascensionIkos, true, true).some(range => range.start === narrativeJesusAt), false);
-const narrativeJoy = 'Слава Тебе, Радуйся, зову, и Иисусе, яко Господь.';
+const narrativeJoy = 'Вспомню Тебе, Радуйся, воззову, и Иисусе, яко Господь.';
 assert.deepEqual([...breaks(narrativeJoy, true)], [],
   'Do not break within commas at either Радуйся or Иисусе');
 assert.equal(inv(narrativeJoy).length, 0,
