@@ -26,12 +26,12 @@ jobs:
           cache-dependency-path: molitvoslov-app/package-lock.json
       - name: Install app dependencies
         working-directory: molitvoslov-app
-        run: npm ci
+        run: npm ci --ignore-scripts
       - name: Validate settings and React hooks
         working-directory: molitvoslov-app
         run: |
           node tools/verify_global_preferences_20261109.js
           node tools/verify_react_hook_imports.js
-      - name: Bundle Android JS for release
-        working-directory: molitvoslov-app
-        run: npx expo export --platform android --output-dir .preferences-ci
+      # Full APK bundling must use the verified local v10 search seed.
+      # That binary is deliberately not committed to this Git branch.
+      # The build is tested on Windows using the app's release build script.
