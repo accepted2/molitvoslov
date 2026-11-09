@@ -15,12 +15,18 @@ import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {colors} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
 
-// A lectionary reference is a rubric, never part of the first Bible verse.
-// Strip only a leading numbered rubric in CSL; keep the verse's own diacritics.
+// A numbered lectionary rubric may arrive before the first CSL verse as
+// "Зачало 1", "°°(Зачало 1)°°" or "З°°(ачало 1)°°".  The final variant
+// previously became the (incorrect) red chapter initial.
+// Match only a numbered rubric at the very start of a chapter; preserve all
+// genuine Church Slavonic letters, accents and titla in the verse itself.
 const cleanTraditionalVerse = (value, isFirstVerse) => {
   const text = String(value || '');
   if (!isFirstVerse) return text;
-  return text.replace(/^\s*(?:\(\s*)?за[\u0300-\u036f]*чало\s*(?:№\s*)?\d+\s*\)?[\s.:—–-]*/iu, '');
+  return text.replace(
+    /^[\s\p{P}\p{S}]*з[\s\p{P}\p{S}\p{M}]*(?:а[\s\p{P}\p{S}\p{M}]*)?ч[\s\p{P}\p{S}\p{M}]*а[\s\p{P}\p{S}\p{M}]*л[\s\p{P}\p{S}\p{M}]*о\s*(?:№\s*)?\d+[\s\p{P}\p{S}]*/iu,
+    ''
+  );
 };
 
 export const BibleChapterScreen = ({route, navigation}) => {
