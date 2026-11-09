@@ -1,4 +1,4 @@
-name: Akathist EPUB no-write audit
+name: Akathist content import safety checks
 
 on:
   push:
@@ -7,6 +7,8 @@ on:
     paths:
       - 'molitvoslov-backend/api/management/commands/audit_akathist_epubs.py'
       - 'molitvoslov-backend/api/test_audit_akathist_epubs.py'
+      - 'molitvoslov-backend/api/management/commands/import_missing_azbyka_catalog.py'
+      - 'molitvoslov-backend/api/test_import_missing_azbyka_catalog.py'
       - '.github/workflows/epub-akathist-audit-check.yml'
   workflow_dispatch:
 
@@ -26,8 +28,8 @@ jobs:
           cache-dependency-path: molitvoslov-backend/requirements.txt
       - name: Install Django backend dependencies
         run: python -m pip install -r molitvoslov-backend/requirements.txt
-      - name: Check Django and test read-only EPUB structure extraction
+      - name: Check Django and verify EPUB/catalog safe importers
         working-directory: molitvoslov-backend
         run: |
           python manage.py check
-          python manage.py test api.test_audit_akathist_epubs --verbosity 2
+          python manage.py test api.test_audit_akathist_epubs api.test_import_missing_azbyka_catalog --verbosity 2
