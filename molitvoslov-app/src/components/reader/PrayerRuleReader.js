@@ -5097,7 +5097,10 @@ const HTML_TEMPLATE = String.raw`
         // For continuous Russian evening prayers, do not wrap \n\n in
         // artificial 8px paragraph-gap elements: default white-space
         // rendering folds them into ordinary inter-word spacing.
-        if (!continuousRussianEveningPrayer && !continuousCommunionPrayer) {
+        // The thin divider replaces the generic blank-line gap in short
+        // Communion invocations; avoid stacking an extra 8px spacer above it.
+        if (!continuousRussianEveningPrayer && !continuousCommunionPrayer &&
+            communionSeparatorBefore.size === 0) {
           compactParagraphGaps(root);
         }
         pairEveningKondakChurch(root);
