@@ -113,6 +113,47 @@ BOOK_NAME_OVERRIDES = {
 CHAPTER_PATTERN = re.compile(r"^#([1-9]\d*)$")
 VERSE_PATTERN = re.compile(r"^(\d+)\|\s*(.*)$")
 NONVERSE_COLOPHON = re.compile(r"^Коне́цъ\b")
+# Ponomar's Elizabeth Bible has lectionary boundary notes inside verses:
+#   **(Зача́ло 1)** Зача́ло є҆ѵⷢ҇лїа...
+#   ... **(Заⷱ҇ 2)** И҆ бы́сть...
+# The asterisks are source Markdown, and the parenthesis gives the
+# pericope number. They are NOT words of Scripture.
+LECTIONARY_MARKER = re.compile(r"\*\*\(\s*([^()\n]{1,45}?)\s*\)\*\*")
+
+
+def strip_lectionary_annotations(value):
+    """Remove only numbered lectionary markers, never biblical verse words.
+
+    The genuine opening 'Зача́ло є҆ѵⷢ҇лїа' at Mark 1:1 remains intact.
+    """
+    text = str(value)
+    def is_lectionary(label):
+        folded = "".join(
+            char for char in unicodedata.normalize("NFD", label)
+            if unicodedata.category(char) not in ("Mn", "Me", "Mc")
+        )
+        return bool(re.fullmatch(r"(?:Зачало|За)\s+[0-9]{1,4}", folded, re.I))
+
+    matches = [
+        match for match in LECTIONARY_MARKER.finditer(text)
+        if is_lectionary(match.group(1))
+    ]
+    if not matches:
+        return text, 0
+
+    # Keep the original text and spacing untouched except where a marker
+    # occupied the boundary. In particular, preserve all titla/accents.
+    pieces = []
+    cursor = 0
+    for match in matches:
+        before = text[cursor:match.start()]
+        pieces.append(before)
+        cursor = match.end()
+    pieces.append(text[cursor:])
+    cleaned = "".join(pieces)
+    cleaned = re.sub(r" {2,}", " ", cleaned).strip()
+    return cleaned, len(matches)
+
 
 
 def get_client_id(kind, order, chapter=0, verse=0):
@@ -150,7 +191,9 @@ def parse_source(source, code):
             if current is None:
                 raise ValueError(f"{code}:{index}: verse before chapter")
             number = int(match.group(1))
-            text = unicodedata.normalize("NFC", match.group(2).strip())
+            text, _removed_markers = strip_lectionary_annotations(
+                unicodedata.normalize("NFC", match.group(2).strip())
+            )
             if number == 0:
                 # Psalm headings and other unnumbered superscriptions are not
                 # verse zero: keep them as chapter metadata, not a fake verse.
