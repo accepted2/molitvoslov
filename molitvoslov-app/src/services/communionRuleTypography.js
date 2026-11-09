@@ -106,9 +106,11 @@ export const getCommunionLiturgicalSeparators = value => {
   parts.push(source.slice(cursor));
 
   const isShortInvocation = part => {
+    // Unicode NFD also decomposes й into и + breve; accept both forms
+    // after stripping accent marks from Church Slavonic source text.
     const normalized = part.normalize('NFD').replace(/\p{M}/gu, '')
       .trim().toLowerCase().replace(/ё/g, 'е');
-    return /^(?:святый\s+боже|пресвятая\s+троице|господи\s*,?\s*помилуй|слава\s+отцу|и\s+ныне(?:\s|,|:))/u.test(normalized);
+    return /^(?:святы[йи]\s+боже|пресвятая\s+троице|господи\s*,?\s*помилуй|слава\s+отцу|и\s+ныне(?:\s|,|:))/u.test(normalized);
   };
   return parts.every(isShortInvocation)
     ? gaps.map(gap => gap.index + gap[0].length)
