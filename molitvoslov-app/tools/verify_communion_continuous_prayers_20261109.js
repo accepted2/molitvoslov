@@ -16,10 +16,10 @@ parser.parse(reader, {sourceType: 'module', plugins: ['jsx']});
 const sandbox = {};
 vm.runInNewContext(
   typography.replace(/export const /g, 'const ') +
-    '\nexposed = {isCommunionPrayerHeading, buildCommunionTypography, getCommunionLiturgicalSeparators};',
+    '\nexposed = {isCommunionPrayerHeading, isCommunionDoxologyPair, buildCommunionTypography, getCommunionLiturgicalSeparators};',
   sandbox
 );
-const {isCommunionPrayerHeading, buildCommunionTypography, getCommunionLiturgicalSeparators} = sandbox.exposed;
+const {isCommunionPrayerHeading, isCommunionDoxologyPair, buildCommunionTypography, getCommunionLiturgicalSeparators} = sandbox.exposed;
 
 for (const title of [
   'Моли́тва 1-я, свт. Васи́лия Великого',
@@ -86,7 +86,8 @@ for (const troparion of [
 ]) {
   const result = buildCommunionTypography(troparion, {communionKind: 'preparation'});
   assert.equal(result.separatorBefore.length, 0, 'doxology must not create divider');
-  assert.equal(result.breakBefore.length, 0, 'doxology must not create line break');
+  assert.equal(result.breakBefore.length, 1, 'continuation must begin on its own line');
+  assert.equal(result.breakBefore[0], troparion.indexOf(' ', troparion.indexOf('.')) + 1, 'break starts at first word following doxology');
   const leadingRubric = result.ranges.find(range => range.kind === 'response' && range.start === 0);
   assert.ok(leadingRubric, 'doxology must have liturgical style');
   assert.ok(/[.!?]$/.test(troparion.slice(leadingRubric.start, leadingRubric.end)));
@@ -94,6 +95,29 @@ for (const troparion of [
 assert.equal(buildCommunionTypography(
   'Го́споди, поми́луй. (40 ра́з) И покло́ны, ско́лько хочешь.',
   {communionKind: 'preparation'}).separatorBefore.length, 0);
+
+
+const pairedChurch = [
+  [
+    'Сла́ва Отцу, и Сы́ну, и Свято́му Ду́ху. Во прича́стие святы́нь Твои́х ка́ко дерзну́.',
+    'И ны́не, и при́сно, и во ве́ки веко́в, ами́нь. Мно́гая мно́жества мои́х.',
+  ],
+  [
+    'Сла́ва Отцу, и Сы́ну, и Свято́му Ду́ху. Го́споди, поми́луй на́с, на Тя́ бо упова́хом.',
+    'И ны́не, и при́сно, и во ве́ки веко́в, ами́нь. Милосе́рдия две́ри отве́рзи на́м.',
+  ],
+];
+for (const [first, second] of pairedChurch) {
+  assert.ok(isCommunionDoxologyPair(first, second));
+  assert.equal(isCommunionDoxologyPair(second, first), false);
+}
+assert.equal(isCommunionDoxologyPair('Сла́ва Отцу...', 'Псало́м 50'), false);
+assert.ok(reader.includes("const communionJoinedTroparionIds = new Set(DATA.communionJoinedTroparionIds || [])"));
+assert.ok(reader.includes("communionJoinedTroparionIds.push(Number(first.id))"));
+assert.ok(reader.includes("communionJoinedTroparionIds,"));
+assert.ok(reader.includes("wrapper.classList.add('communion-joined-troparion-first')"));
+assert.ok(reader.includes("body.communion-preparation .rule-item.communion-joined-troparion-first"));
+assert.ok(reader.includes('border-bottom: 0;'));
 
 assert.ok(reader.includes('followingTextIsPrayer = isCommunionPrayerHeading(item.title || item.content)'));
 assert.ok(reader.includes('isCommunionPrayerHeading(item.text.title)'));
@@ -109,4 +133,5 @@ assert.ok(reader.includes('buildCommunionTypography(value, {continuousPrayer, co
 console.log('PASS: communion prayer headings including accented Cyrillic and Его же');
 console.log('PASS: only one prayer initial; psalms, canons and chants keep paragraph markup');
 console.log('PASS: Latin/Cyrillic T in Трижды, text-safe dividers within liturgical blocks');
+console.log('PASS: paired Слава / И ныне troparia without inner divider, text begins on new line');
 console.log('PASS: original text and offsets preserved; no editorial gap elements in prayer bodies');
