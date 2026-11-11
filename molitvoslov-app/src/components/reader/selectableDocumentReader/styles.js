@@ -1577,6 +1577,33 @@ export const READER_STYLES = String.raw`
 
       vertical-align: super;
     }
+    /* Small cross-reference icon stays next to the verse number and does
+       not become part of the selectable Scripture text. */
+    body.book-mode .bible-crossref-button {
+      display: inline-block;
+      min-width: 15px;
+      min-height: 17px;
+      margin-left: 2px;
+      padding: 0 2px;
+      border: none;
+      background: transparent;
+      color: #93693E;
+      font-family: Georgia, serif;
+      font-size: 12px;
+      font-style: normal;
+      font-weight: 600;
+      line-height: 1.1;
+      vertical-align: baseline;
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    body.book-mode.book-night .bible-crossref-button {
+      color: #D3A16E;
+    }
+    body.book-mode .bible-chapter-start .reader-inline.has-bible-crossrefs {
+      padding-left: 28px;
+    }
     body.book-mode .reader-text {
       touch-action: none;
 
