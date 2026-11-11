@@ -61,10 +61,18 @@ export const getBibleCrossReferences = (code, chapter, verse, limit = Infinity) 
   if (!address) return [];
   const links = rows[makeKey(code, address.chapter, address.verse)] || [];
   const maxEntries = Number.isFinite(Number(limit)) ? Math.max(0, Math.floor(Number(limit))) : Infinity;
+  const seen = new Set();
   return links
     .filter((item) => Array.isArray(item) && item.length >= 6 && Number(item[5]) > 0)
     .map(mapTargetToBible)
-    .filter(Boolean)
+    .filter((item) => {
+      if (!item) return false;
+      // Distinct English references can resolve to the same Septuagint verse.
+      const key = [item.bookCode, item.chapter, item.verse, item.endChapter, item.endVerse].join('.');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
     .slice(0, maxEntries);
 };
 
