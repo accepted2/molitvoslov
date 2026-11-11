@@ -4,6 +4,7 @@ import {applyYearMarkers, applyYearMarkersToMonth, loadYearMarkers} from './cale
 
 import {API_BASE_URL} from './backendAuth';
 import {bibleContent} from './bibleContent';
+import {formatBibleNumber, bibleUiText} from './bibleUi';
 import {
   getOfflineCalendarDay,
   getOfflineCalendarMonth,
@@ -377,7 +378,8 @@ const romanToNumber = (value) => {
   return total || null;
 };
 
-const findBookByCode = (code) => bibleContent.getBooks().find((book) => book.code === code) || null;
+const findBookByCode = (code, translationCode = 'rst') =>
+  bibleContent.getBooks(null, translationCode).find((book) => book.code === code) || null;
 
 const matchesBookAlias = (normalized, alias) => {
   const pattern = new RegExp(`(^|\\s)${escapeRegExp(alias)}(?=\\s|$)`, 'i');
@@ -472,7 +474,7 @@ const parseReadingSegments = (title) => {
   return segments;
 };
 
-export const resolveBibleReference = (title) => {
+export const resolveBibleReference = (title, translationCode = 'rst') => {
   if (!title) {
     return null;
   }
@@ -487,7 +489,7 @@ export const resolveBibleReference = (title) => {
     return null;
   }
 
-  const book = findBookByCode(alias.code);
+  const book = findBookByCode(alias.code, translationCode);
   const ranges = parseReadingSegments(title);
   const range = ranges[0];
 
@@ -495,16 +497,14 @@ export const resolveBibleReference = (title) => {
     return null;
   }
 
-  const chapter = bibleContent.getChapter(book.id, range.startChapter);
+  const chapter = bibleContent.getChapter(book.id, range.startChapter, translationCode);
 
   if (!chapter) {
     return null;
   }
 
   const verse =
-    (chapter.verses || []).find((item) => Number(item.number) === Number(range.startVerse)) ||
-    chapter.verses?.[0] ||
-    null;
+    (chapter.verses || []).find((item) => Number(item.number) === Number(range.startVerse)) || null;
 
   if (!verse) {
     return null;
@@ -524,8 +524,8 @@ export const resolveBibleReference = (title) => {
   };
 };
 
-export const getBibleReadingVerses = (title) => {
-  const target = resolveBibleReference(title);
+export const getBibleReadingVerses = (title, translationCode = 'rst') => {
+  const target = resolveBibleReference(title, translationCode);
 
   if (!target) {
     return [];
@@ -543,7 +543,7 @@ export const getBibleReadingVerses = (title) => {
     }
 
     for (let chapterNumber = startChapter; chapterNumber <= endChapter; chapterNumber += 1) {
-      const chapter = bibleContent.getChapter(target.book.id, chapterNumber);
+      const chapter = bibleContent.getChapter(target.book.id, chapterNumber, translationCode);
       if (!chapter) continue;
 
       const startVerse = chapterNumber === startChapter ? Number(range.startVerse) : 1;
@@ -564,8 +564,8 @@ export const getBibleReadingVerses = (title) => {
   return result;
 };
 
-export const getBibleReadingText = (title) => {
-  const verses = getBibleReadingVerses(title);
+export const getBibleReadingText = (title, translationCode = 'rst') => {
+  const verses = getBibleReadingVerses(title, translationCode);
 
   if (!verses.length) {
     return '';
@@ -580,18 +580,18 @@ export const getBibleReadingText = (title) => {
       if (parts.length) {
         parts.push('');
       }
-      parts.push(`Глава ${verse.chapterNumber}`);
+      parts.push(bibleUiText(translationCode, 'chapter', `Глава ${verse.chapterNumber}`, {number: verse.chapterNumber}));
       previousChapter = verse.chapterNumber;
     }
 
-    parts.push(`${verse.verseNumber} ${verse.text}`);
+    parts.push(`${formatBibleNumber(translationCode, verse.verseNumber)} ${verse.text}`);
   });
 
   return parts.join('\n').trim();
 };
 
-export const openCalendarBibleReference = (navigation, title) => {
-  const target = resolveBibleReference(title);
+export const openCalendarBibleReference = (navigation, title, translationCode = 'rst') => {
+  const target = resolveBibleReference(title, translationCode);
 
   if (!target) {
     return false;
@@ -600,6 +600,7 @@ export const openCalendarBibleReference = (navigation, title) => {
   navigation.push('BibleChapter', {
     bookId: target.book.id,
     chapterNumber: target.chapterNumber,
+    translationCode,
     focusTarget: {
       save_type: 'verse',
       anchor_type: 'bible_verse',
