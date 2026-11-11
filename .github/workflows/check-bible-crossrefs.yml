@@ -1,0 +1,60 @@
+name: Validate Bible cross-reference integration
+on:
+  push:
+    branches:
+      - fix/csl-bible-chapter-rubrics-20261109
+    paths:
+      - molitvoslov-app/src/screens/BibleChapterScreen.js
+      - molitvoslov-app/src/components/reader/BibleCrossReferencesSheet.js
+      - molitvoslov-app/src/components/reader/SelectableDocumentReader.js
+      - molitvoslov-app/src/components/reader/selectableDocumentReader/runtime.js
+      - molitvoslov-app/src/components/reader/selectableDocumentReader/styles.js
+      - molitvoslov-app/src/services/bibleCrossReferences.js
+      - molitvoslov-app/src/data/bibleCrossReferences.json
+      - .github/workflows/check-bible-crossrefs.yml
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: molitvoslov-app/package-lock.json
+      - name: Install app dependencies (no postinstall changes)
+        working-directory: molitvoslov-app
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify JSX and reader runtime grammar
+        working-directory: molitvoslov-app
+        run: |
+          node <<'JS'
+          const fs = require('node:fs');
+          const parser = require('@babel/parser');
+          const paths = [
+            'src/screens/BibleChapterScreen.js',
+            'src/components/reader/BibleCrossReferencesSheet.js',
+            'src/components/reader/SelectableDocumentReader.js',
+            'src/components/reader/selectableDocumentReader/runtime.js',
+            'src/components/reader/selectableDocumentReader/styles.js',
+            'src/services/bibleCrossReferences.js'
+          ];
+          paths.forEach(path => {
+            parser.parse(fs.readFileSync(path, 'utf8'), {
+              sourceType: 'module', plugins: ['jsx']
+            });
+            console.log('Syntax OK:', path);
+          });
+          const data = JSON.parse(fs.readFileSync('src/data/bibleCrossReferences.json', 'utf8'));
+          if (data.indexedLinks < 300000 || !data.references['JHN.3.16']) {
+            throw Error('Full Bible cross-reference dataset is missing');
+          }
+          const refs = data.references['JHN.3.16'];
+          if (!refs.some(x => x[0] === 'ROM' && x[1] === 5 && x[2] === 8)) {
+            throw Error('John 3:16 to Romans 5:8 link not found');
+          }
+          console.log('Data OK:', data.indexedLinks, 'links');
+          JS
