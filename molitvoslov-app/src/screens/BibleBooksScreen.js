@@ -12,7 +12,7 @@ import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {getReadingProgress} from '../services/readingProgress';
 import {colors} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
-import {bibleUiText, isTraditionalBible, traditionalBibleTextStyle} from '../services/bibleUi';
+import {bibleUiText, isTraditionalBible, traditionalBibleTextStyle, formatBibleNumber} from '../services/bibleUi';
 
 const NEW_SECTION_ORDER = ['gospels', 'acts', 'epistles', 'revelation'];
 
@@ -135,7 +135,7 @@ export const BibleBooksScreen = ({route, navigation}) => {
 
               {!!progress && (
                 <Text style={[styles.progressPercent, isTraditional && traditionalBibleTextStyle]}>
-                  {Number(progress.progress_percent || 0)}%
+                  {formatBibleNumber(translationCode, Number(progress.progress_percent || 0))}%
                 </Text>
               )}
 
