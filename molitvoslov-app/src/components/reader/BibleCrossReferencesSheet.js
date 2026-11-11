@@ -279,7 +279,8 @@ export const BibleCrossReferencesSheet = ({
               </Pressable>
             )}
             <Text style={[styles.license, isNight && styles.secondaryLight]}>
-              Параллельные места: OpenBible.info (CC BY 4.0) и Catholic Cross References (общественное достояние).\n              Нумерация псалмов: STEP Bible / Tyndale House (CC BY 4.0).
+              Параллельные места: OpenBible.info (CC BY 4.0) и Catholic Cross References (общественное достояние).
+              Нумерация псалмов: STEP Bible / Tyndale House (CC BY 4.0).
             </Text>
             <Pressable
               accessibilityRole="link"
