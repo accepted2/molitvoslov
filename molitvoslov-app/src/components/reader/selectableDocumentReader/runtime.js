@@ -284,6 +284,8 @@ export const READER_RUNTIME = String.raw`
                       inline.classList.add('canon-long-label');
                     }
                     const inlineLabel = el( 'span', 'reader-inline-label', block.inlineLabel );
+                    inline.appendChild(inlineLabel);
+                    inline.appendChild(textElement);
                     if (block.crossReferenceKey) {
                       inline.classList.add('has-bible-crossrefs');
                       const referencesButton = el('button', 'bible-crossref-button', '↗');
@@ -300,10 +302,8 @@ export const READER_RUNTIME = String.raw`
                           key: referencesButton.dataset.crossReferenceKey,
                         });
                       });
-                      inlineLabel.appendChild(referencesButton);
+                      inline.appendChild(referencesButton);
                     }
-                    inline.appendChild(inlineLabel);
-                    inline.appendChild( textElement );
                     column.appendChild( inline );
                   } else {
                     column.appendChild( textElement );
