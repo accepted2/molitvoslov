@@ -14,3 +14,15 @@ export const getPreferredBibleTranslation = async () => {
 
 export const savePreferredBibleTranslation = (code) =>
   AsyncStorage.setItem(STORAGE_KEY, normalize(code));
+
+// Calendar Bible translation is independent of the reader's preferred translation.
+const CALENDAR_STORAGE_KEY = 'calendar.bible.translationCode.v1';
+export const getCalendarBibleTranslation = async () => {
+  try {
+    return normalize(await AsyncStorage.getItem(CALENDAR_STORAGE_KEY));
+  } catch {
+    return 'rst';
+  }
+};
+export const saveCalendarBibleTranslation = (code) =>
+  AsyncStorage.setItem(CALENDAR_STORAGE_KEY, normalize(code));
