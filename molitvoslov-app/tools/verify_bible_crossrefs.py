@@ -48,7 +48,7 @@ def add_csl_manasseh(bible):
         verses.append({
             "id": 179001001 + i,
             "number": i + 1,
-            "text": (prefix + source[marker.end():end]).strip(),
+            "text": (prefix + source[marker.end():end].lstrip()).strip(),
         })
     man = {
         "id": 500079,
