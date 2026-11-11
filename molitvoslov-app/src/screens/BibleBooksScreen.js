@@ -44,10 +44,17 @@ export const BibleBooksScreen = ({route, navigation}) => {
     }, [])
   );
 
-  const progressByBook = useMemo(
-    () => new Map(readingProgress.map((item) => [Number(item.source_id), item])),
-    [readingProgress]
-  );
+  const progressByBook = useMemo(() => {
+    const results = new Map();
+    // getReadingProgress() returns newest first. Resolve progress across
+    // translations by canonical code/slug, not by per-edition record ID.
+    readingProgress.forEach((item) => {
+      for (const key of [item.anchor_info?.book_code, item.anchor_info?.book_slug, Number(item.source_id)]) {
+        if (key !== undefined && key !== null && !results.has(key)) results.set(key, item);
+      }
+    });
+    return results;
+  }, [readingProgress]);
 
   const books = useMemo(
     () => bibleContent.getBooks(testament, translationCode),
@@ -102,7 +109,7 @@ export const BibleBooksScreen = ({route, navigation}) => {
           </View>
         )}
         renderItem={({item}) => {
-          const progress = progressByBook.get(Number(item.id));
+          const progress = progressByBook.get(item.code) || progressByBook.get(item.slug) || progressByBook.get(Number(item.id));
 
           const info = progress?.anchor_info || {};
 
