@@ -50,6 +50,12 @@ const stripInlineLectionaryMarkers = (value) =>
           ? ' '
           : match
     )
+    // Some sources keep the two ornamental circles on either side of
+    // a removed rubric. These are standalone source markers, not accents.
+    .replace(
+      /(^|[\s\u00a0])(?:[°º˚◦∘○◌◯⁰][\s\u00a0\u200b\u2060]*){2,}/gu,
+      '$1'
+    )
     .replace(/[ \t]{2,}/g, ' ')
     .trim();
 
