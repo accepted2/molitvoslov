@@ -6,11 +6,13 @@ import {StatusBar} from 'expo-status-bar';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 import {ReaderBookmarkMenu} from '../components/reader/ReaderBookmarkMenu';
+import {BibleCrossReferencesSheet} from '../components/reader/BibleCrossReferencesSheet';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {useReadingProgress} from '../hooks/useReadingProgress';
 import {saveReadingBookmark} from '../services/readerBookmarks';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {bibleContent} from '../services/bibleContent';
+import {getBibleCrossReferences, hasBibleCrossReferences} from '../services/bibleCrossReferences';
 import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {colors} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
@@ -96,6 +98,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
   );
   const [bookmarkFeedback, setBookmarkFeedback] = useState('');
   const [fontPanelVisible, setFontPanelVisible] = useState(false);
+  const [crossReferenceOrigin, setCrossReferenceOrigin] = useState(null);
   const [readerFontSize, setReaderFontSize] = useState(18);
   const [readerTheme, setReaderTheme] = useState('paper');
   const bookmarkFeedbackTimerRef = useRef(null);
@@ -427,6 +430,9 @@ export const BibleChapterScreen = ({route, navigation}) => {
                   label: '',
 
                   inlineLabel: String(verse.number),
+                  crossReferenceKey: hasBibleCrossReferences(
+                    book.code, chapter.number, verse.number, translationCode
+                  ) ? [book.code, chapter.number, verse.number].join('.') : null,
 
                   className: 'bible-verse',
 
@@ -631,6 +637,44 @@ export const BibleChapterScreen = ({route, navigation}) => {
     });
   };
 
+  const crossReferenceItems = useMemo(
+    () => crossReferenceOrigin
+      ? getBibleCrossReferences(book?.code, crossReferenceOrigin.chapter, crossReferenceOrigin.verse)
+      : [],
+    [book?.code, crossReferenceOrigin]
+  );
+
+  const openCrossReferences = React.useCallback((key) => {
+    const [source, chapter, verse] = String(key || '').split('.');
+    const ch = Number(chapter);
+    const v = Number(verse);
+    if (source !== book?.code || !Number.isInteger(ch) || !Number.isInteger(v)) return;
+    setCrossReferenceOrigin({chapter: ch, verse: v});
+  }, [book?.code]);
+
+  const openCrossReferenceTarget = (target) => {
+    setCrossReferenceOrigin(null);
+    const chapter = bibleContent.getChapter(
+      target.book.id, target.chapter, target.translationCode
+    );
+    const verse = chapter?.verses?.find((item) => Number(item.number) === target.verse);
+    if (!verse) return;
+    const params = {
+      bookId: target.book.id,
+      chapterNumber: target.chapter,
+      translationCode: target.translationCode,
+      resume: false,
+      focusTarget: {
+        save_type: 'verse',
+        anchor_type: 'bible_verse',
+        anchor_id: Number(verse.id),
+        metadata: {book_id: target.book.id, chapter_number: target.chapter, verse_number: target.verse},
+      },
+    };
+    if (typeof navigation.push === 'function') navigation.push('BibleChapter', params);
+    else navigation.navigate('BibleChapter', params);
+  };
+
   const openReaderMenu = () => {
     setBookmarkPosition(getCurrentProgress());
     setStablePosition(getStableProgress());
@@ -723,7 +767,20 @@ export const BibleChapterScreen = ({route, navigation}) => {
         backgroundColor={readerTheme === 'night' ? '#171310' : '#FBF0D9'}
         onProgress={handleProgress}
         onAction={handleAction}
+        onCrossReference={openCrossReferences}
         onReady={applyReaderAppearance}
+      />
+
+      <BibleCrossReferencesSheet
+        visible={!!crossReferenceOrigin}
+        originBook={book}
+        originChapter={crossReferenceOrigin?.chapter}
+        originVerse={crossReferenceOrigin?.verse}
+        references={crossReferenceItems}
+        translationCode={translationCode}
+        onClose={() => setCrossReferenceOrigin(null)}
+        onOpen={openCrossReferenceTarget}
+        isNight={readerTheme === 'night'}
       />
 
       <ReaderBookmarkMenu
