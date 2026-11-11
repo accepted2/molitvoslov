@@ -9,15 +9,15 @@ export const CSL_BIBLE_BOOK_TITLES = {
   JOS: 'Книга Іисуса Навина',
   JDG: 'Книга Судей Израилевыхъ',
   RUT: 'Книга Руѳи',
-  '1SA': 'Первая книга Царствъ',
-  '2SA': 'Вторая книга Царствъ',
-  '1KI': 'Третія книга Царствъ',
-  '2KI': 'Четвертая книга Царствъ',
-  '1CH': 'Первая книга Паралипоменонъ',
-  '2CH': 'Вторая книга Паралипоменонъ',
-  EZR: 'Первая книга Ездры',
+  '1SA': 'Пе́рваѧ кни́га Ца́рствъ',
+  '2SA': 'Втора́ѧ кни́га Ца́рствъ',
+  '1KI': 'Тре́тіѧ кни́га Ца́рствъ',
+  '2KI': 'Четве́ртаѧ кни́га Ца́рствъ',
+  '1CH': 'Пе́рваѧ кни́га Паралипоме́нонъ',
+  '2CH': 'Втора́ѧ кни́га Паралипоме́нонъ',
+  EZR: 'Пе́рваѧ кни́га Е́здры',
   NEH: 'Книга Нееміи',
-  '1ES': 'Вторая книга Ездры',
+  '1ES': 'Втора́ѧ кни́га Е́здры',
   TOB: 'Книга Товита',
   JDT: 'Книга Іудиѳи',
   EST: 'Книга Есѳири',
@@ -47,10 +47,10 @@ export const CSL_BIBLE_BOOK_TITLES = {
   HAG: 'Книга пророка Аггея',
   ZEC: 'Книга пророка Захаріи',
   MAL: 'Книга пророка Малахіи',
-  '1MA': 'Первая книга Маккавейская',
-  '2MA': 'Вторая книга Маккавейская',
-  '3MA': 'Третія книга Маккавейская',
-  '2ES': 'Третія книга Ездры',
+  '1MA': 'Пе́рваѧ кни́га Маккаве́йскаѧ',
+  '2MA': 'Втора́ѧ кни́га Маккаве́йскаѧ',
+  '3MA': 'Тре́тіѧ кни́га Маккаве́йскаѧ',
+  '2ES': 'Тре́тіѧ кни́га Е́здры',
   MAN: 'Молитва Манассіи',
   MAT: 'Еѵангеліе ѿ Матѳея',
   MRK: 'Еѵангеліе ѿ Марка',
@@ -84,6 +84,33 @@ export const CSL_BIBLE_BOOK_TITLES = {
 export const isTraditionalBible = (code) => code === 'csl_traditional';
 export const traditionalBibleTextStyle = {fontFamily: 'Ponomar', fontWeight: '400'};
 
+
+const CSL_UNITS = ['', 'а', 'в', 'г', 'д', 'є', 'ѕ', 'з', 'и', 'ѳ'];
+const CSL_TENS = ['', 'і', 'к', 'л', 'м', 'н', 'ѯ', 'ѻ', 'п', 'ч'];
+const CSL_HUNDREDS = ['', 'р', 'с', 'т', 'у', 'ф', 'х', 'ѱ', 'ѿ', 'ц'];
+const cslNumberLetters = (n) => {
+  const rest = n % 100;
+  const ending = rest >= 11 && rest <= 19
+    ? CSL_UNITS[rest - 10] + 'і'
+    : CSL_TENS[Math.floor(rest / 10)] + CSL_UNITS[rest % 10];
+  return CSL_HUNDREDS[Math.floor(n / 100)] + ending;
+};
+const addTitlo = (value) => {
+  const index = Math.max(0, value.length - 2);
+  return value.slice(0, index + 1) + '҃' + value.slice(index + 1);
+};
+// Numerals are a presentation only: DB IDs, anchors, and verse lookups
+// remain ordinary integers. Church Slavonic uses units before ten in 11–19.
+export const formatBibleNumber = (code, value) => {
+  if (!isTraditionalBible(code)) return String(value);
+  const n = Number(value);
+  if (!Number.isSafeInteger(n) || n <= 0 || n > 9999) return String(value);
+  if (n < 1000) return addTitlo(cslNumberLetters(n));
+  const thousand = Math.floor(n / 1000);
+  const rest = n % 1000;
+  return '҂' + CSL_UNITS[thousand] + (rest ? addTitlo(cslNumberLetters(rest)) : '҃');
+};
+
 export const getCslBibleBookName = (book) =>
   CSL_BIBLE_BOOK_TITLES[book?.code] || book?.name || book?.short_name || 'Библи́я';
 
@@ -91,7 +118,7 @@ const CSL_BIBLE_LABELS = {
   bible: 'Библи́я',
   translationName: 'Церковнославѧ́нскаѧ (Елисаве́тинскаѧ Библи́я)',
   source: ({book}) => `Библи́я: ${book}`,
-  wholeChapterTitle: ({book, chapter}) => `${book}. Глава́ ${chapter}`,
+  wholeChapterTitle: ({book, chapter}) => `${book}. Глава́ ${formatBibleNumber('csl_traditional', chapter)}`,
   oldTestament: 'Ве́тхій Завѣ́тъ',
   newTestament: 'Но́вый Завѣ́тъ',
   sectionOld: 'Кни́ги Ве́тхаго Завѣ́та',
@@ -99,16 +126,16 @@ const CSL_BIBLE_LABELS = {
   sectionActs: 'Дѣя́нія святы́хъ Апо́столъ',
   sectionEpistles: 'Посла́нія',
   sectionRevelation: 'Открове́ніе',
-  books: ({count}) => `${count} кни́гъ`,
-  booksAndSections: ({count}) => `${count} кни́гъ и раздѣ́ловъ`,
-  chapters: ({count}) => `${count} гла́въ`,
-  stoppedChapter: ({chapter}) => `Остано́влено на главѣ́ ${chapter}`,
-  chapter: ({number}) => `Глава́ ${number}`,
+  books: ({count}) => `${formatBibleNumber('csl_traditional', count)} кни́гъ`,
+  booksAndSections: ({count}) => `${formatBibleNumber('csl_traditional', count)} кни́гъ и раздѣ́ловъ`,
+  chapters: ({count}) => `${formatBibleNumber('csl_traditional', count)} гла́въ`,
+  stoppedChapter: ({chapter}) => `Остано́влено на главѣ́ ${formatBibleNumber('csl_traditional', chapter)}`,
+  chapter: ({number}) => `Глава́ ${formatBibleNumber('csl_traditional', number)}`,
   continueReading: 'Продолжи́ть чте́ніе',
-  pageOf: ({page, count}) => `страни́ца ${page} изъ ${count}`,
+  pageOf: ({page, count}) => `страни́ца ${formatBibleNumber('csl_traditional', page)} изъ ${formatBibleNumber('csl_traditional', count)}`,
   crossReferences: 'Паралле́льныя мѣста',
   noCrossReferences: 'Для сего́ стиха́ нѣ́сть досту́пныхъ паралле́льныхъ мѣстъ.',
-  showMore: ({count, remaining}) => `Показа́ть еще́ ${count} (оста́лось ${remaining})`,
+  showMore: ({count, remaining}) => `Показа́ть еще́ ${formatBibleNumber('csl_traditional', count)} (оста́лось ${formatBibleNumber('csl_traditional', remaining)})`,
   synodalFallback: 'Те́кстъ по Синода́льному перево́ду',
 };
 
