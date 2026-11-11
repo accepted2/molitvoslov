@@ -1655,6 +1655,12 @@ export const READER_STYLES = String.raw`
       font-family: 'Ponomar', Georgia, serif;
       font-weight: 400;
     }
+    /* Traditional numbering and the inline parallel-place marker must use
+       the same installed Church Slavonic typeface as the verse body. */
+    body.book-mode .reader-language-traditional .bible-crossref-button {
+      font-family: 'Ponomar', Georgia, serif;
+      font-weight: 400;
+    }
 
     body.book-mode .bible-chapter-start.csl-bible-verse .note {
       font-family: 'Ponomar', Georgia, serif;
