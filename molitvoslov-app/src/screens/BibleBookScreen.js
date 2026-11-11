@@ -78,7 +78,7 @@ export const BibleBookScreen = ({route, navigation}) => {
   const progressPercent = Number(bookProgress?.progress_percent || 0);
   const savedCode = bookProgress?.anchor_info?.translation_code;
   const progressTranslation = savedCode === 'rst' || savedCode === 'csl_traditional' ? savedCode : translationCode;
-  const resumeBook = progressTranslation === translationCode ? book :
+  const resumeBook = !book ? null : progressTranslation === translationCode ? book :
     bibleContent.getBooks(null, progressTranslation).find((candidate) => candidate.code === book.code);
 
   const openChapter = (chapter) => {
