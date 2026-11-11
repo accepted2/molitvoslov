@@ -1,4 +1,5 @@
 import {getCurrentBibleContent} from './bibleStore';
+import {getCslBibleBookName} from './bibleUi';
 
 const currentBible = (translationCode = 'rst') =>
   getCurrentBibleContent(translationCode) || {};
@@ -96,12 +97,7 @@ export const bibleContent = {
     }
 
     if (translationCode === 'csl_traditional') {
-      // The navigation header uses Russian book titles in both Bible tabs.
-      // Keep the original Church Slavonic orthography in the actual verses.
-      if (['MAT', 'MRK', 'LUK', 'JHN'].includes(book.code)) {
-        return BIBLE_BOOK_DISPLAY_TITLES[book.code];
-      }
-      return book.name || book.short_name || 'Библия';
+      return getCslBibleBookName(book);
     }
     return BIBLE_BOOK_DISPLAY_TITLES[book.code] || book.name || book.short_name || 'Библия';
   },
