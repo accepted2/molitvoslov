@@ -1,0 +1,59 @@
+name: Build Bible cross-reference index (offline)
+on:
+  push:
+    branches:
+      - fix/csl-bible-chapter-rubrics-20261109
+    paths:
+      - molitvoslov-app/tools/build_bible_crossrefs.py
+      - .github/workflows/build-bible-crossrefs.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout existing fix branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Download SHA256-verified OpenBible dataset and build offline index
+        run: python -X utf8 molitvoslov-app/tools/build_bible_crossrefs.py
+
+      - name: Validate generated manifest
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("molitvoslov-app/src/data/bibleCrossReferences.json")
+          value = json.loads(p.read_text("utf-8"))
+          assert value["schemaVersion"] == 1
+          assert value["indexedLinks"] > 300000, value["indexedLinks"]
+          assert len(value["references"]) > 23000
+          assert "JHN.3.16" in value["references"]
+          assert all(len(edge) == 6 for edges in value["references"].values() for edge in edges)
+          print("Offline cross references verified:", value["indexedLinks"])
+          PY
+
+      - name: Commit cross-reference data in the same branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add molitvoslov-app/src/data/bibleCrossReferences.json
+          if git diff --cached --quiet; then
+            echo "Cross references unchanged"
+            exit 0
+          fi
+          git commit -m "data(bible): bundle verified offline OpenBible cross references"
+          git pull --rebase origin fix/csl-bible-chapter-rubrics-20261109
+          git push origin HEAD:fix/csl-bible-chapter-rubrics-20261109
