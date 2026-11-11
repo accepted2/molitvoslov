@@ -74,11 +74,12 @@ def valid_target(edge, available, psalms):
     return (code, ch, verse) in available and (code, end_ch, end_verse) in available
 
 
-def audit(bible, fallback, refs, psalms, language):
+def audit(bible, fallback, refs, supplementary, psalms, language):
     primary, titles = index_verses(bible)
     russian, _ = index_verses(fallback)
     available = primary | russian if language == "CS" else primary
     rows = refs.get("references", {})
+    extra = supplementary.get("references", {})
     summary = {}
     totals = {"verses": 0, "with_links": 0, "usable_links": 0}
     for (code, chapter, verse) in primary:
@@ -90,7 +91,14 @@ def audit(bible, fallback, refs, psalms, language):
         source = source_key(code, chapter, verse, psalms)
         usable = 0
         if source:
-            for edge in rows.get(source, []):
+            edges = rows.get(source, []) + extra.get(source, [])
+            seen = set()
+            for edge in edges:
+                # The UI deduplicates both sources by the displayed passage.
+                signature = tuple(edge[:5])
+                if signature in seen:
+                    continue
+                seen.add(signature)
                 if valid_target(edge, available, psalms):
                     usable += 1
         if usable:
@@ -108,11 +116,12 @@ def main():
     args = parser.parse_args()
     refs = load("bibleCrossReferences.json")
     psalms = load("biblePsalmVersification.json")
+    supplementary = load("bibleCrossReferencesSupplement.json")
     rst = load("offlineBible.json")
     csl = load("offlineBibleCslTraditional.json")
     all_records = []
     for language, bible in (("RU", rst), ("CS", csl)):
-        records, totals = audit(bible, rst, refs, psalms, language)
+        records, totals = audit(bible, rst, refs, supplementary, psalms, language)
         all_records.extend(records)
         covered = 100 * totals["with_links"] / max(1, totals["verses"])
         print(f"{language}: books={len(records)}, verses={totals['verses']}, "
