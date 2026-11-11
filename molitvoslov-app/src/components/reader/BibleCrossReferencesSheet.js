@@ -2,7 +2,7 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {Linking, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {bibleContent} from '../../services/bibleContent';
-import {BIBLE_CROSS_REFERENCE_ATTRIBUTION, BIBLE_PSALM_VERSIFICATION_ATTRIBUTION} from '../../services/bibleCrossReferences';
+import {BIBLE_CROSS_REFERENCE_ATTRIBUTION, BIBLE_CATHOLIC_CROSS_REFERENCE_ATTRIBUTION, BIBLE_PSALM_VERSIFICATION_ATTRIBUTION} from '../../services/bibleCrossReferences';
 
 const cleanPreview = (value) =>
   String(value || '')
@@ -279,7 +279,7 @@ export const BibleCrossReferencesSheet = ({
               </Pressable>
             )}
             <Text style={[styles.license, isNight && styles.secondaryLight]}>
-              Параллельные места: OpenBible.info (CC BY 4.0).\n              Псалтирь: таблица соответствия стихов STEP Bible / Tyndale House (CC BY 4.0).
+              Параллельные места: OpenBible.info (CC BY 4.0) и Catholic Cross References (общественное достояние).\n              Нумерация псалмов: STEP Bible / Tyndale House (CC BY 4.0).
             </Text>
             <Pressable
               accessibilityRole="link"
@@ -287,6 +287,14 @@ export const BibleCrossReferencesSheet = ({
             >
               <Text style={[styles.source, isNight && styles.sourceNight]}>
                 Источник параллельных мест и лицензия
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => Linking.openURL(BIBLE_CATHOLIC_CROSS_REFERENCE_ATTRIBUTION.url)}
+            >
+              <Text style={[styles.source, isNight && styles.sourceNight]}>
+                Catholic Cross References: дополнительные источники
               </Text>
             </Pressable>
             <Pressable
