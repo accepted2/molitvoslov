@@ -1,4 +1,4 @@
-import React, {useMemo, useRef} from 'react';
+import React, {useMemo} from 'react';
 import {Linking, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {bibleContent} from '../../services/bibleContent';
@@ -12,6 +12,97 @@ const cleanPreview = (value) =>
     })
     .replace(/\s{2,}/g, ' ')
     .trim();
+
+// Display Church Slavonic book titles only inside the cross-reference sheet.
+// Keep bibleContent.getDisplayName unchanged: other navigation screens
+// intentionally use Russian book names even in the traditional Bible tab.
+const CSL_REFERENCE_BOOK_TITLES = {
+  GEN: 'Книга Бытія',
+  EXO: 'Книга Исходъ',
+  LEV: 'Книга Левитъ',
+  NUM: 'Книга Числъ',
+  DEU: 'Книга Второзаконія',
+  JOS: 'Книга Іисуса Навина',
+  JDG: 'Книга Судей Израилевыхъ',
+  RUT: 'Книга Руѳи',
+  '1SA': 'Первая книга Царствъ',
+  '2SA': 'Вторая книга Царствъ',
+  '1KI': 'Третія книга Царствъ',
+  '2KI': 'Четвертая книга Царствъ',
+  '1CH': 'Первая книга Паралипоменонъ',
+  '2CH': 'Вторая книга Паралипоменонъ',
+  EZR: 'Первая книга Ездры',
+  NEH: 'Книга Нееміи',
+  '1ES': 'Вторая книга Ездры',
+  TOB: 'Книга Товита',
+  JDT: 'Книга Іудиѳи',
+  EST: 'Книга Есѳири',
+  JOB: 'Книга Іова',
+  PSA: 'Псалтирь',
+  PRO: 'Притчи Соломоновы',
+  ECC: 'Книга Екклесіаста',
+  SNG: 'Пѣснь пѣсней Соломона',
+  WIS: 'Премудрость Соломонова',
+  SIR: 'Премудрость Іисуса сына Сирахова',
+  ISA: 'Книга пророка Исаіи',
+  JER: 'Книга пророка Іереміи',
+  LAM: 'Плачъ Іереміинъ',
+  LJE: 'Посланіе Іереміино',
+  BAR: 'Книга пророка Варуха',
+  EZK: 'Книга пророка Іезекіиля',
+  DAN: 'Книга пророка Даніила',
+  HOS: 'Книга пророка Осіи',
+  JOL: 'Книга пророка Іоиля',
+  AMO: 'Книга пророка Амоса',
+  OBA: 'Книга пророка Авдія',
+  JON: 'Книга пророка Іоны',
+  MIC: 'Книга пророка Михея',
+  NAM: 'Книга пророка Наума',
+  HAB: 'Книга пророка Аввакума',
+  ZEP: 'Книга пророка Софоніи',
+  HAG: 'Книга пророка Аггея',
+  ZEC: 'Книга пророка Захаріи',
+  MAL: 'Книга пророка Малахіи',
+  '1MA': 'Первая книга Маккавейская',
+  '2MA': 'Вторая книга Маккавейская',
+  '3MA': 'Третія книга Маккавейская',
+  '2ES': 'Третія книга Ездры',
+  MAT: 'Еѵангеліе ѿ Матѳея',
+  MRK: 'Еѵангеліе ѿ Марка',
+  LUK: 'Еѵангеліе ѿ Луки',
+  JHN: 'Еѵангеліе ѿ Іоанна',
+  ACT: 'Дѣянія святыхъ Апостолъ',
+  JAS: 'Соборное посланіе Іакова',
+  '1PE': 'Первое соборное посланіе Петра',
+  '2PE': 'Второе соборное посланіе Петра',
+  '1JN': 'Первое соборное посланіе Іоанна',
+  '2JN': 'Второе соборное посланіе Іоанна',
+  '3JN': 'Третіе соборное посланіе Іоанна',
+  JUD: 'Соборное посланіе Іуды',
+  ROM: 'Посланіе къ Римляномъ',
+  '1CO': 'Первое посланіе къ Коринѳяномъ',
+  '2CO': 'Второе посланіе къ Коринѳяномъ',
+  GAL: 'Посланіе къ Галатомъ',
+  EPH: 'Посланіе къ Ефесеемъ',
+  PHP: 'Посланіе къ Филипписіемъ',
+  COL: 'Посланіе къ Колоссаемъ',
+  '1TH': 'Первое посланіе къ Солуняномъ',
+  '2TH': 'Второе посланіе къ Солуняномъ',
+  '1TI': 'Первое посланіе къ Тимоѳею',
+  '2TI': 'Второе посланіе къ Тимоѳею',
+  TIT: 'Посланіе къ Титу',
+  PHM: 'Посланіе къ Филимону',
+  HEB: 'Посланіе ко Евреемъ',
+  REV: 'Откровеніе Іоанна Богослова',
+};
+
+const getReferenceBookTitle = (book, translationCode) => {
+  if (translationCode !== 'csl_traditional') {
+    return bibleContent.getDisplayName(book, translationCode);
+  }
+  return CSL_REFERENCE_BOOK_TITLES[book?.code] || book?.name ||
+    bibleContent.getDisplayName(book, 'rst');
+};
 
 const formatRange = (item) => {
   const origin = item.chapter + ':' + item.verse;
@@ -81,7 +172,7 @@ export const BibleCrossReferencesSheet = ({
         ...ref,
         book,
         translationCode: code,
-        title: bibleContent.getDisplayName(book, code) + ' ' + formatRange(ref),
+        title: getReferenceBookTitle(book, translationCode) + ' ' + formatRange(ref),
         text: verseTexts.join(' ') + (hasMore ? '…' : ''),
         russianPsalter: useRussian,
       };
@@ -89,7 +180,7 @@ export const BibleCrossReferencesSheet = ({
   }, [references, translationCode]);
 
   const origin = originBook
-    ? bibleContent.getDisplayName(originBook, translationCode) +
+    ? getReferenceBookTitle(originBook, translationCode) +
       ' ' + originChapter + ':' + originVerse
     : '';
 
@@ -115,7 +206,7 @@ export const BibleCrossReferencesSheet = ({
           <View style={styles.headingRow}>
             <View style={styles.headingText}>
               <Text style={[styles.heading, isNight && styles.lightText]}>Параллельные места</Text>
-              <Text style={[styles.origin, isNight && styles.secondaryLight]} numberOfLines={2}>
+              <Text style={[styles.origin, translationCode === 'csl_traditional' && styles.originTraditional, isNight && styles.secondaryLight]} numberOfLines={2}>
                 {origin}
               </Text>
             </View>
@@ -140,14 +231,21 @@ export const BibleCrossReferencesSheet = ({
                 style={[styles.reference, isNight && styles.referenceNight]}
                 onPress={() => onOpen(entry)}
               >
-                <View style={styles.refTitleRow}>
-                  <Text style={[styles.refTitle, isNight && styles.refTitleNight]}>
-                    {entry.title}
-                  </Text>
-                  <Ionicons name="arrow-forward-outline" size={17}
-                    color={isNight ? '#D4A97A' : '#865A34'} />
-                </View>
-                <Text style={[styles.refText, isNight && styles.lightText]}>{entry.text}</Text>
+                <Text style={[
+                  styles.refTitle,
+                  translationCode === 'csl_traditional' && styles.refTitleTraditional,
+                  isNight && styles.refTitleNight,
+                ]}>
+                  {entry.title}
+                </Text>
+                <Text style={[
+                  styles.refText,
+                  entry.translationCode === 'csl_traditional' && styles.refTextTraditional,
+                  isNight && styles.lightText,
+                ]}>
+                  {entry.text}
+                  <Text style={[styles.inlineArrow, isNight && styles.inlineArrowNight]}> →</Text>
+                </Text>
                 {entry.russianPsalter && (
                   <Text style={[styles.translationHint, isNight && styles.secondaryLight]}>
                     Нумерация по Синодальному переводу
@@ -192,13 +290,17 @@ const styles = StyleSheet.create({
   headingText: {flex: 1, paddingRight: 14},
   heading: {fontFamily: 'serif', fontSize: 20, fontWeight: '700', color: '#51351F'},
   origin: {fontSize: 12, marginTop: 4, color: '#876C53'},
+  originTraditional: {fontFamily: 'Ponomar', fontSize: 13, lineHeight: 21},
   list: {paddingHorizontal: 18, paddingBottom: 24},
   reference: {paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#CDB89B'},
   referenceNight: {borderColor: '#4A392A'},
-  refTitleRow: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8},
-  refTitle: {color: '#81522E', fontWeight: '700', fontSize: 15, flex: 1},
+  refTitle: {color: '#81522E', fontWeight: '700', fontSize: 15},
+  refTitleTraditional: {fontFamily: 'Ponomar', fontWeight: '400', fontSize: 17, lineHeight: 25},
   refTitleNight: {color: '#E0B786'},
   refText: {color: '#3E2A1D', fontFamily: 'serif', fontSize: 16, lineHeight: 24, marginTop: 5},
+  refTextTraditional: {fontFamily: 'Ponomar', fontSize: 18, lineHeight: 31},
+  inlineArrow: {fontFamily: 'serif', fontSize: 17, color: '#865A34'},
+  inlineArrowNight: {color: '#D4A97A'},
   lightText: {color: '#E7D7C6'},
   secondaryLight: {color: '#BDA791'},
   translationHint: {fontSize: 11, color: '#826A51', marginTop: 5},
