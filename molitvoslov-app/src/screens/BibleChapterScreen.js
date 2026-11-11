@@ -502,6 +502,8 @@ export const BibleChapterScreen = ({route, navigation}) => {
       metadata: {
         book_id: book.id,
 
+        book_code: book.code,
+
         book_slug: book.slug,
 
         book_name: displayName,
