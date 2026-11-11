@@ -1,13 +1,16 @@
 import crossReferences from '../data/bibleCrossReferences.json';
 import supplementaryReferences from '../data/bibleCrossReferencesSupplement.json';
+import curatedOrthodoxReferences from '../data/bibleCrossReferencesCurated.json';
 import psalmVersification from '../data/biblePsalmVersification.json';
 
 const rows = crossReferences?.references || {};
 const supplementaryRows = supplementaryReferences?.references || {};
+const curatedRows = curatedOrthodoxReferences?.references || {};
 const rowsAt = (key) => {
   const original = rows[key] || [];
   const extra = supplementaryRows[key] || [];
-  return extra.length ? [...original, ...extra] : original;
+  const curated = curatedRows[key] || [];
+  return extra.length || curated.length ? [...original, ...extra, ...curated] : original;
 };
 const makeKey = (code, chapter, verse) =>
   [String(code || '').toUpperCase(), Number(chapter), Number(verse)].join('.');
