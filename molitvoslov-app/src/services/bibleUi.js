@@ -89,6 +89,9 @@ export const getCslBibleBookName = (book) =>
 
 const CSL_BIBLE_LABELS = {
   bible: 'Библи́я',
+  translationName: 'Церковнославѧ́нскаѧ (Елисаве́тинскаѧ Библи́я)',
+  source: ({book}) => `Библи́я: ${book}`,
+  wholeChapterTitle: ({book, chapter}) => `${book}. Глава́ ${chapter}`,
   oldTestament: 'Ве́тхій Завѣ́тъ',
   newTestament: 'Но́вый Завѣ́тъ',
   sectionOld: 'Кни́ги Ве́тхаго Завѣ́та',
