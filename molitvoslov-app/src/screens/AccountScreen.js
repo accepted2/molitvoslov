@@ -23,6 +23,7 @@ import {BottomNav} from '../components/navigation/BottomNav';
 import {useLanguage} from '../context/LanguageContext';
 import {getReadingSettings, saveReadingSettings, resetReadingSettings, DEFAULT_READING_SETTINGS} from '../services/readerPreferences';
 import {READER_LANGUAGE_MODES} from '../services/readerLanguageModes';
+import {getCalendarBibleTranslation, saveCalendarBibleTranslation} from '../services/bibleTranslationPreference';
 import ColorPalettePicker from '../components/settings/ColorPalettePicker';
 
 const MODE_CHOICES = [
@@ -43,6 +44,14 @@ export const AccountScreen = ({navigation}) => {
   const {language, setLanguage} = useLanguage();
   const [readingSettings, setReadingSettings] = useState(DEFAULT_READING_SETTINGS);
   useEffect(() => { getReadingSettings().then(setReadingSettings).catch(console.warn); }, []);
+  const [calendarBibleTranslationCode, setCalendarBibleTranslationCode] = useState('rst');
+  useEffect(() => {
+    getCalendarBibleTranslation().then(setCalendarBibleTranslationCode).catch(console.warn);
+  }, []);
+  const changeCalendarBibleTranslation = (code) => {
+    setCalendarBibleTranslationCode(code);
+    saveCalendarBibleTranslation(code).catch(console.warn);
+  };
   const changeReadingSettings = async (patch) => {
     const next = {...readingSettings, ...patch};
     setReadingSettings(next);
@@ -265,6 +274,24 @@ export const AccountScreen = ({navigation}) => {
                 </Pressable>
               ))}
             </View>
+            <Text style={styles.settingCaption}>Текст Библии в церковном календаре</Text>
+            <View style={styles.optionRow}>
+              {[
+                {value: 'rst', label: 'Русский (Синодальный перевод)'},
+                {value: 'csl_traditional', label: 'Церковнославянский (Елизаветинская Библия)'},
+              ].map((option) => (
+                <Pressable
+                  key={option.value}
+                  accessibilityRole="radio"
+                  accessibilityState={{selected: calendarBibleTranslationCode === option.value}}
+                  onPress={() => changeCalendarBibleTranslation(option.value)}
+                  style={[styles.settingOption, calendarBibleTranslationCode === option.value && styles.optionSelected]}
+                >
+                  <Text style={styles.settingText}>{calendarBibleTranslationCode === option.value ? '●  ' : '○  '}{option.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text style={styles.settingHint}>Евангелие, Апостол и другие библейские чтения календаря. Язык чтения в самой Библии сохраняется отдельно.</Text>
             <Text style={styles.settingCaption}>Язык чтения по умолчанию</Text>
             {MODE_CHOICES.map((option) => (
               <Pressable key={option.value} onPress={() => changeReadingSettings({defaultMode: option.value})} style={[styles.settingOption, readingSettings.defaultMode === option.value && styles.optionSelected]}>
