@@ -34,6 +34,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     onSaved,
     onProgress,
     onAction,
+    onCrossReference,
     onMemorialOpen,
     onViewModeChange,
     onPageTurn,
@@ -295,6 +296,11 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         pageCount: Number.isFinite(Number(message.pageCount)) ? Number(message.pageCount) : null,
       });
 
+      return;
+    }
+
+    if (message.type === 'bible-cross-reference') {
+      onCrossReference?.(String(message.key || ''));
       return;
     }
 
