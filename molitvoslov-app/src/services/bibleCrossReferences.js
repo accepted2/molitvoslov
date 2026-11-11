@@ -1,7 +1,14 @@
 import crossReferences from '../data/bibleCrossReferences.json';
+import supplementaryReferences from '../data/bibleCrossReferencesSupplement.json';
 import psalmVersification from '../data/biblePsalmVersification.json';
 
 const rows = crossReferences?.references || {};
+const supplementaryRows = supplementaryReferences?.references || {};
+const rowsAt = (key) => {
+  const original = rows[key] || [];
+  const extra = supplementaryRows[key] || [];
+  return extra.length ? [...original, ...extra] : original;
+};
 const makeKey = (code, chapter, verse) =>
   [String(code || '').toUpperCase(), Number(chapter), Number(verse)].join('.');
 
@@ -51,7 +58,7 @@ const mapTargetToBible = ([bookCode, chapter, verse, endChapter, endVerse, votes
 export const hasBibleCrossReferences = (code, chapter, verse, translationCode = 'rst') => {
   const address = getSourceAddress(code, chapter, verse);
   if (!address) return false;
-  const links = rows[makeKey(code, address.chapter, address.verse)];
+  const links = rowsAt(makeKey(code, address.chapter, address.verse));
   return Array.isArray(links) && links.some((edge) => Array.isArray(edge) &&
     Number(edge[5]) > 0 && mapTargetToBible(edge) !== null);
 };
@@ -59,7 +66,7 @@ export const hasBibleCrossReferences = (code, chapter, verse, translationCode = 
 export const getBibleCrossReferences = (code, chapter, verse, limit = Infinity) => {
   const address = getSourceAddress(code, chapter, verse);
   if (!address) return [];
-  const links = rows[makeKey(code, address.chapter, address.verse)] || [];
+  const links = rowsAt(makeKey(code, address.chapter, address.verse));
   const maxEntries = Number.isFinite(Number(limit)) ? Math.max(0, Math.floor(Number(limit))) : Infinity;
   const seen = new Set();
   return links
@@ -80,6 +87,12 @@ export const BIBLE_CROSS_REFERENCE_ATTRIBUTION = {
   name: 'OpenBible.info',
   url: 'https://www.openbible.info/labs/cross-references/',
   license: 'CC BY 4.0',
+};
+
+export const BIBLE_CATHOLIC_CROSS_REFERENCE_ATTRIBUTION = {
+  name: 'Catholic Cross References (Douay-Rheims / Haydock)',
+  url: 'https://github.com/jesuslovestyler/Catholic-Cross-References',
+  license: 'Public domain (Unlicense / CC0)',
 };
 
 export const BIBLE_PSALM_VERSIFICATION_ATTRIBUTION = {
