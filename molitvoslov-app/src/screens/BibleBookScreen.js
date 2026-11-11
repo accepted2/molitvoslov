@@ -47,7 +47,11 @@ export const BibleBookScreen = ({route, navigation}) => {
 
     setBookProgress(
       progress.find(
-        (item) => item.source_type === 'bible' && Number(item.source_id) === Number(book.id)
+        (item) => item.source_type === 'bible' && (
+          Number(item.source_id) === Number(book.id) ||
+          item.anchor_info?.book_code === book.code ||
+          item.anchor_info?.book_slug === book.slug
+        )
       ) || null
     );
   }, [book?.id]);
@@ -78,7 +82,8 @@ export const BibleBookScreen = ({route, navigation}) => {
     bibleContent.getBooks(null, progressTranslation).find((candidate) => candidate.code === book.code);
 
   const openChapter = (chapter) => {
-    const isResumeChapter = !!bookProgress && progressTranslation === translationCode && Number(chapter.number) === progressChapter;
+    const isResumeChapter = !!bookProgress && progressTranslation === translationCode &&
+      Number(bookProgress.source_id) === Number(book.id) && Number(chapter.number) === progressChapter;
 
     navigation.navigate('BibleChapter', {
       bookId: book.id,
@@ -94,11 +99,26 @@ export const BibleBookScreen = ({route, navigation}) => {
       return;
     }
 
+    const storedIdMatches = Number(bookProgress.source_id) === Number(resumeBook.id);
+    const chapter = bibleContent.getChapter(resumeBook.id, progressChapter, progressTranslation);
+    const verseNumber = Number(progressInfo.verse_number || 1);
+    const verse = chapter?.verses?.find((item) => Number(item.number) === verseNumber)
+      || chapter?.verses?.[0];
     navigation.navigate('BibleChapter', {
       bookId: resumeBook.id,
       chapterNumber: progressChapter,
       translationCode: progressTranslation,
-      resume: true,
+      resume: storedIdMatches,
+      // Older progress may refer to another translation's record IDs.
+      // If IDs differ, navigate by chapter/verse rather than a stale anchor ID.
+      ...(!storedIdMatches && verse ? {
+        focusTarget: {
+          save_type: 'verse',
+          anchor_type: 'bible_verse',
+          anchor_id: Number(verse.id),
+          metadata: {book_id: Number(resumeBook.id), chapter_number: progressChapter, verse_number: Number(verse.number)},
+        },
+      } : {}),
     });
   };
 
