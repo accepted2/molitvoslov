@@ -16,7 +16,7 @@ import {getBibleCrossReferences, hasBibleCrossReferences} from '../services/bibl
 import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {colors} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
-import {bibleUiText, traditionalBibleTextStyle} from '../services/bibleUi';
+import {bibleUiText, traditionalBibleTextStyle, formatBibleNumber} from '../services/bibleUi';
 import {savePreferredBibleTranslation} from '../services/bibleTranslationPreference';
 
 // A numbered lectionary rubric may arrive before the first CSL verse as
@@ -290,7 +290,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
       }
 
       const text = (chapter.verses || [])
-        .map((verse) => verse.number + ' ' + (verse.text || ''))
+        .map((verse) => formatBibleNumber(translationCode, verse.number) + ' ' + (verse.text || ''))
         .join('\n');
 
       const saved = await saveItem({
@@ -434,7 +434,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
                   label: '',
 
-                  inlineLabel: String(verse.number),
+                  inlineLabel: formatBibleNumber(translationCode, verse.number),
                   crossReferenceKey: hasBibleCrossReferences(
                     book.code, chapter.number, verse.number, translationCode
                   ) ? [book.code, chapter.number, verse.number].join('.') : null,
@@ -451,7 +451,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
                   sourceTitle: ui('source', t('bible.source', {book: displayName}), {book: displayName}),
 
-                  itemTitle: displayName + ' ' + chapter.number + ':' + verse.number,
+                  itemTitle: displayName + ' ' + formatBibleNumber(translationCode, chapter.number) + ':' + formatBibleNumber(translationCode, verse.number),
 
                   fullSaveType: 'verse',
 
@@ -508,6 +508,8 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
         book_short_name: book.short_name,
 
+        translation_code: translationCode,
+
         chapter_number: current.chapterNumber,
 
         verse_number: current.verseNumber,
@@ -553,7 +555,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
       sourceType: 'bible',
       sourceId: Number(book.id),
       sourceTitle: ui('source', t('bible.source', {book: displayName}), {book: displayName}),
-      itemTitle: displayName + ' ' + verse.chapterNumber + ':' + verse.verseNumber,
+      itemTitle: displayName + ' ' + formatBibleNumber(translationCode, verse.chapterNumber) + ':' + formatBibleNumber(translationCode, verse.verseNumber),
       position,
       metadata: {
         book_id: Number(book.id),
