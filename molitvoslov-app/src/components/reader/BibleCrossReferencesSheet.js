@@ -6,11 +6,11 @@ import {BIBLE_CROSS_REFERENCE_ATTRIBUTION} from '../../services/bibleCrossRefere
 
 const cleanPreview = (value) =>
   String(value || '')
-    .replace(/\\*{2}\\(\\s*([^()]*)\\s*\\)\\*{2}/gu, (full, label) => {
-      const normalized = label.normalize('NFD').replace(/[\\p{M}\\p{Cf}]/gu, '').trim();
-      return /^(?:за|зачало)\\s*\\d+$/iu.test(normalized) ? ' ' : full;
+    .replace(/\*{2}\(\s*([^()]*)\s*\)\*{2}/gu, (full, label) => {
+      const normalized = label.normalize('NFD').replace(/[\p{M}\p{Cf}]/gu, '').trim();
+      return /^(?:за|зачало)\s*\d+$/iu.test(normalized) ? ' ' : full;
     })
-    .replace(/\\s{2,}/g, ' ')
+    .replace(/\s{2,}/g, ' ')
     .trim();
 
 const formatRange = (item) => {
