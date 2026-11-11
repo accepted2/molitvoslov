@@ -12,11 +12,14 @@ export const hasBibleCrossReferences = (code, chapter, verse, translationCode = 
   return Array.isArray(links) && links.some((edge) => Number(edge[5]) > 0);
 };
 
-export const getBibleCrossReferences = (code, chapter, verse, limit = 24) => {
+export const getBibleCrossReferences = (code, chapter, verse, limit = Infinity) => {
   const links = rows[makeKey(code, chapter, verse)] || [];
+  // Load every available cross-reference. The bottom sheet renders them in
+  // small batches; truncating here silently hid valid connections after #24.
+  const maxEntries = Number.isFinite(Number(limit)) ? Math.max(0, Math.floor(Number(limit))) : Infinity;
   return links
     .filter((item) => Array.isArray(item) && item.length >= 6 && Number(item[5]) > 0)
-    .slice(0, Math.max(0, Math.min(60, Number(limit) || 0)))
+    .slice(0, maxEntries)
     .map(([bookCode, chapterStart, verseStart, chapterEnd, verseEnd, votes]) => ({
       bookCode,
       chapter: Number(chapterStart),
