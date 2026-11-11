@@ -42,7 +42,7 @@ const normalizeLectionaryLabel = (value) =>
 const stripInlineLectionaryMarkers = (value) =>
   String(value || '')
     .replace(
-      /[°º˚◦∘○]*[ \t]*\([ \t]*([^()]*)[ \t]*\)[ \t]*[°º˚◦∘○]*/gu,
+      /(?:\*{2}[ \t]*)?[°º˚◦∘○]*[ \t]*\([ \t]*([^()\n]*)[ \t]*\)[ \t]*[°º˚◦∘○]*(?:[ \t]*\*{2})?/gu,
       (match, label) =>
         /^(?:за\s*(?:№\s*)?\d+|зач(?:ало|\.)?\s*(?:№\s*)?\d*)$/iu.test(
           normalizeLectionaryLabel(label)
@@ -50,6 +50,10 @@ const stripInlineLectionaryMarkers = (value) =>
           ? ' '
           : match
     )
+    // The Ponomar source encodes lectionary rubrics as **(Заⷱ҇ 2)**.
+    // Remove both Markdown asterisks with the rubric; otherwise Ponomar
+    // displays the detached ** pairs as little circles.
+    .replace(/(^|[\s\u00a0])(?:\*{2}[ \t]*){2,}(?=$|[\s\u00a0])/gu, '$1')
     // Some sources keep the two ornamental circles on either side of
     // a removed rubric. These are standalone source markers, not accents.
     .replace(
