@@ -15,7 +15,7 @@ const path = require('node:path');
     1: 'а҃', 2: 'в҃', 5: 'є҃', 8: 'и҃', 9: 'ѳ҃',
     10: 'і҃', 11: 'а҃і', 12: 'в҃і', 19: 'ѳ҃і',
     20: 'к҃', 21: 'к҃а', 32: 'л҃в', 50: 'н҃', 51: 'н҃а',
-    100: 'р҃', 101: 'р҃а', 150: 'рн҃', 176: 'рѻ҃ѕ', 1000: '҂а҃',
+    100: 'р҃', 101: 'р҃а', 150: 'р҃н', 176: 'рѻ҃ѕ', 1000: '҂а҃',
   };
   for (const [arabic, csl] of Object.entries(samples)) {
     assert.equal(formatBibleNumber('csl_traditional', Number(arabic)), csl, arabic);
