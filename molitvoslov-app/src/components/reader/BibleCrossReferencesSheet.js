@@ -1,4 +1,4 @@
-import React, {useMemo} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {Linking, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {bibleContent} from '../../services/bibleContent';
@@ -122,6 +122,11 @@ export const BibleCrossReferencesSheet = ({
   onOpen,
   isNight = false,
 }) => {
+  const [visibleCount, setVisibleCount] = useState(24);
+  useEffect(() => {
+    setVisibleCount(24);
+  }, [visible, originBook?.code, originChapter, originVerse]);
+
   const gesture = useMemo(
     () => PanResponder.create({
       onMoveShouldSetPanResponder: (_, move) =>
@@ -179,6 +184,9 @@ export const BibleCrossReferencesSheet = ({
     }).filter(Boolean);
   }, [references, translationCode]);
 
+  const visibleEntries = entries.slice(0, visibleCount);
+  const remainingCount = Math.max(0, entries.length - visibleEntries.length);
+
   const origin = originBook
     ? getReferenceBookTitle(originBook, translationCode) +
       ' ' + originChapter + ':' + originVerse
@@ -223,7 +231,7 @@ export const BibleCrossReferencesSheet = ({
               <Text style={[styles.empty, isNight && styles.secondaryLight]}>
                 Для этого стиха нет доступных параллельных мест.
               </Text>
-            ) : entries.map((entry, index) => (
+            ) : visibleEntries.map((entry, index) => (
               <Pressable
                 key={entry.bookCode + '.' + formatRange(entry) + ':' + index}
                 accessibilityRole="button"
@@ -253,6 +261,18 @@ export const BibleCrossReferencesSheet = ({
                 )}
               </Pressable>
             ))}
+            {remainingCount > 0 && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={'Показать ещё параллельные места. Осталось ' + remainingCount}
+                onPress={() => setVisibleCount((count) => count + 24)}
+                style={styles.loadMore}
+              >
+                <Text style={[styles.loadMoreText, isNight && styles.refTitleNight]}>
+                  {'Показать ещё ' + Math.min(24, remainingCount) + ' (осталось ' + remainingCount + ')'}
+                </Text>
+              </Pressable>
+            )}
             <Text style={[styles.license, isNight && styles.secondaryLight]}>
               Параллельные места: OpenBible.info (CC BY 4.0).
             </Text>
@@ -305,6 +325,8 @@ const styles = StyleSheet.create({
   secondaryLight: {color: '#BDA791'},
   translationHint: {fontSize: 11, color: '#826A51', marginTop: 5},
   empty: {color: '#826A51', fontSize: 14, paddingVertical: 22},
+  loadMore: {paddingVertical: 18, alignItems: 'center'},
+  loadMoreText: {fontSize: 14, color: '#81522E', fontWeight: '600'},
   license: {marginTop: 18, fontSize: 11, color: '#826A51'},
   source: {paddingVertical: 9, fontSize: 12, color: '#825426', textDecorationLine: 'underline'},
   sourceNight: {color: '#D2A472'},
