@@ -283,7 +283,26 @@ export const READER_RUNTIME = String.raw`
                     if (block.sourceType === 'canon' && block.canonTypography?.standaloneInlineLabel) {
                       inline.classList.add('canon-long-label');
                     }
-                    inline.appendChild( el( 'span', 'reader-inline-label', block.inlineLabel ) );
+                    const inlineLabel = el( 'span', 'reader-inline-label', block.inlineLabel );
+                    if (block.crossReferenceKey) {
+                      inline.classList.add('has-bible-crossrefs');
+                      const referencesButton = el('button', 'bible-crossref-button', '↗');
+                      referencesButton.type = 'button';
+                      referencesButton.dataset.crossReferenceKey = String(block.crossReferenceKey);
+                      referencesButton.setAttribute('aria-label', 'Параллельные места');
+                      referencesButton.title = 'Параллельные места';
+                      referencesButton.addEventListener('pointerdown', event => event.stopPropagation());
+                      referencesButton.addEventListener('click', event => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        post({
+                          type: 'bible-cross-reference',
+                          key: referencesButton.dataset.crossReferenceKey,
+                        });
+                      });
+                      inlineLabel.appendChild(referencesButton);
+                    }
+                    inline.appendChild(inlineLabel);
                     inline.appendChild( textElement );
                     column.appendChild( inline );
                   } else {
