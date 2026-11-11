@@ -420,13 +420,25 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
                 return (
                   <View key={`${verse.chapterNumber}-${verse.verseNumber}-${index}`}>
                     {showChapter && (
-                      <Text style={styles.readingChapter}>
+                      <Text style={[
+                          styles.readingChapter,
+                          isTraditionalBible(translationCode) && styles.readingChapterCsl,
+                        ]}>
                         {bibleUiText(translationCode, 'chapter', `${copy.chapter} ${verse.chapterNumber}`, {number: verse.chapterNumber})}
                       </Text>
                     )}
 
-                    <Text style={[styles.readingVerseText, isTraditionalBible(translationCode) && traditionalBibleTextStyle]} selectable>
-                      <Text style={styles.readingVerseNumber}>{formatBibleNumber(translationCode, verse.verseNumber)} </Text>
+                    <Text
+                      style={[
+                        styles.readingVerseText,
+                        isTraditionalBible(translationCode) && styles.readingVerseTextCsl,
+                        isTraditionalBible(translationCode) && traditionalBibleTextStyle,
+                      ]}
+                      selectable
+                    >
+                      <Text style={[styles.readingVerseNumber, isTraditionalBible(translationCode) && styles.readingVerseNumberCsl]}>
+                        {formatBibleNumber(translationCode, verse.verseNumber)}{' '}
+                      </Text>
                       {verse.text}
                     </Text>
                   </View>
@@ -1450,6 +1462,12 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     fontWeight: '700',
   },
+  readingChapterCsl: {
+    fontFamily: 'Ponomar',
+    fontSize: 17,
+    lineHeight: 27,
+    fontWeight: '400',
+  },
   readingVerseText: {
     marginBottom: 6,
     color: '#3E2A1D',
@@ -1458,12 +1476,22 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     textAlign: 'justify',
   },
+  readingVerseTextCsl: {
+    fontSize: 18,
+    lineHeight: 32,
+  },
   readingVerseNumber: {
     color: '#A16E35',
     fontFamily: 'serif',
     fontSize: 11,
     lineHeight: 16,
     fontWeight: '700',
+  },
+  readingVerseNumberCsl: {
+    fontFamily: 'Ponomar',
+    fontSize: 14,
+    lineHeight: 23,
+    fontWeight: '400',
   },
   readingMore: {
     minHeight: 42,
