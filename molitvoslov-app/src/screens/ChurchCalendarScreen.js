@@ -13,6 +13,7 @@ import {StatusBar} from 'expo-status-bar';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
+import {useFocusEffect} from '@react-navigation/native';
 
 import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
@@ -41,6 +42,8 @@ import {
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {colors} from '../theme';
 import {CalendarSaveWholeButton, CalendarSelectableBody, makeCalendarSaveContext} from '../components/reader/CalendarSaveText';
+import {getCalendarBibleTranslation} from '../services/bibleTranslationPreference';
+import {bibleUiText, formatBibleNumber, isTraditionalBible, traditionalBibleTextStyle} from '../services/bibleUi';
 
 const buildCells = (year, month) => {
   const first = new Date(year, month - 1, 1);
@@ -347,7 +350,7 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, 
   );
 };
 
-const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, onLayout, initiallyExpanded = false}) => {
+const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, translationCode = 'rst', onLayout, initiallyExpanded = false}) => {
   const [expanded, setExpanded] = useState(initiallyExpanded);
   useEffect(() => {
     if (initiallyExpanded) setExpanded(true);
@@ -355,8 +358,8 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
 
   if (!title) return null;
 
-  const target = resolveBibleReference(title);
-  const verses = getBibleReadingVerses(title);
+  const target = resolveBibleReference(title, translationCode);
+  const verses = getBibleReadingVerses(title, translationCode);
   const chapters = new Set(verses.map((verse) => verse.chapterNumber));
   let previousChapter = null;
 
@@ -364,7 +367,7 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
     <View style={styles.readingCard} onLayout={onLayout}>
       <Pressable
         disabled={!target}
-        onPress={() => openCalendarBibleReference(navigation, title)}
+        onPress={() => openCalendarBibleReference(navigation, title, translationCode)}
         style={({pressed}) => [
           styles.readingLink,
           !target && styles.readingLinkDisabled,
@@ -418,12 +421,12 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
                   <View key={`${verse.chapterNumber}-${verse.verseNumber}-${index}`}>
                     {showChapter && (
                       <Text style={styles.readingChapter}>
-                        {copy.chapter} {verse.chapterNumber}
+                        {bibleUiText(translationCode, 'chapter', `${copy.chapter} ${verse.chapterNumber}`, {number: verse.chapterNumber})}
                       </Text>
                     )}
 
-                    <Text style={styles.readingVerseText} selectable>
-                      <Text style={styles.readingVerseNumber}>{verse.verseNumber} </Text>
+                    <Text style={[styles.readingVerseText, isTraditionalBible(translationCode) && traditionalBibleTextStyle]} selectable>
+                      <Text style={styles.readingVerseNumber}>{formatBibleNumber(translationCode, verse.verseNumber)} </Text>
                       {verse.text}
                     </Text>
                   </View>
@@ -437,7 +440,7 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
   );
 };
 
-const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout, expandFirst = false}) => {
+const ReadingGroup = ({kind, readings, navigation, copy, language, translationCode = 'rst', onLayout, expandFirst = false}) => {
   const [showAll, setShowAll] = useState(false);
 
   if (!readings.length) {
@@ -460,6 +463,7 @@ const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout, exp
           navigation={navigation}
           copy={copy}
           language={language}
+          translationCode={translationCode}
         />
       ))}
 
@@ -482,6 +486,14 @@ const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout, exp
 
 export const ChurchCalendarScreen = ({route, navigation}) => {
   const {language} = useLanguage();
+  const [calendarBibleTranslationCode, setCalendarBibleTranslationCode] = useState('rst');
+  useFocusEffect(React.useCallback(() => {
+    let active = true;
+    getCalendarBibleTranslation().then((code) => {
+      if (active) setCalendarBibleTranslationCode(code);
+    }).catch(console.warn);
+    return () => {active = false;};
+  }, []));
   const dataLanguage = getCalendarDataLanguage(language);
   const insets = useSafeAreaInsets();
   const {width} = useWindowDimensions();
@@ -925,6 +937,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
               readings={gospelReadings}
               navigation={navigation}
               copy={copy}
+              translationCode={calendarBibleTranslationCode}
               language={language}
               onLayout={(event) => saveReadingLayout('gospel', event.nativeEvent.layout.y)}
             />
@@ -935,6 +948,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
               readings={apostleReadings}
               navigation={navigation}
               copy={copy}
+              translationCode={calendarBibleTranslationCode}
               language={language}
               onLayout={(event) => saveReadingLayout('apostle', event.nativeEvent.layout.y)}
             />
@@ -944,6 +958,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
               readings={oldTestamentReadings}
               navigation={navigation}
               copy={copy}
+              translationCode={calendarBibleTranslationCode}
               language={language}
             />
 
