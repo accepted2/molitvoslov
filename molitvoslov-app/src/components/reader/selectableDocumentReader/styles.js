@@ -1577,8 +1577,16 @@ export const READER_STYLES = String.raw`
 
       vertical-align: super;
     }
-    /* Small cross-reference icon stays next to the verse number and does
-       not become part of the selectable Scripture text. */
+    /* Keep the cross-reference button outside the selectable Scripture text,
+       but flow it after the last word of the verse (not after its number). */
+    body.book-mode .reader-inline.has-bible-crossrefs {
+      text-align: justify;
+      text-align-last: auto;
+      text-justify: inter-word;
+    }
+    body.book-mode .reader-inline.has-bible-crossrefs .reader-text.bible-verse {
+      display: inline;
+    }
     body.book-mode .bible-crossref-button {
       display: inline-block;
       min-width: 15px;
@@ -1594,15 +1602,13 @@ export const READER_STYLES = String.raw`
       font-weight: 600;
       line-height: 1.1;
       vertical-align: baseline;
+      white-space: nowrap;
       touch-action: manipulation;
       -webkit-user-select: none;
       user-select: none;
     }
     body.book-mode.book-night .bible-crossref-button {
       color: #D3A16E;
-    }
-    body.book-mode .bible-chapter-start .reader-inline.has-bible-crossrefs {
-      padding-left: 28px;
     }
     body.book-mode .reader-text {
       touch-action: none;
@@ -1681,6 +1687,11 @@ export const READER_STYLES = String.raw`
 
     body.book-mode .bible-chapter-start .reader-inline .reader-text.bible-verse {
       display: block;
+    }
+    /* The opening verse uses an indented/drop-cap layout, but its
+       cross-reference still needs to follow the verse text in the same line. */
+    body.book-mode .bible-chapter-start .reader-inline.has-bible-crossrefs .reader-text.bible-verse {
+      display: inline;
     }
 
     body.book-mode .bible-drop-cap {
