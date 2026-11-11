@@ -5,6 +5,7 @@ import {applyYearMarkers, applyYearMarkersToMonth, loadYearMarkers} from './cale
 import {API_BASE_URL} from './backendAuth';
 import {bibleContent} from './bibleContent';
 import {formatBibleNumber, bibleUiText} from './bibleUi';
+import {cleanCalendarTraditionalBibleVerse} from './calendarBibleVersePresentation';
 import {
   getOfflineCalendarDay,
   getOfflineCalendarMonth,
@@ -556,7 +557,13 @@ export const getBibleReadingVerses = (title, translationCode = 'rst') => {
         const key = `${chapterNumber}:${verseNumber}`;
         if (seen.has(key)) continue;
         seen.add(key);
-        result.push({chapterNumber, verseNumber, text: String(verse.text || '').trim()});
+        result.push({
+          chapterNumber,
+          verseNumber,
+          text: translationCode === 'csl_traditional'
+            ? cleanCalendarTraditionalBibleVerse(verse.text)
+            : String(verse.text || '').trim(),
+        });
       }
     }
   }
