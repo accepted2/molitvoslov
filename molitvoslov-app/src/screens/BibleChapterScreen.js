@@ -15,6 +15,13 @@ import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {colors} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
 
+// Liturgical reading markers belong to lectionary metadata, not to the verse body.
+const stripLectionaryMarkers = (value) =>
+  String(value || '')
+    .replace(/\(\s*(?:За\s*\d+|Зач(?:ало)?\.?\s*\d*)\s*\)/giu, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+
 export const BibleChapterScreen = ({route, navigation}) => {
   const {t} = useLanguage();
   useBibleContentGeneration();
@@ -43,7 +50,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
   );
   const [bookmarkFeedback, setBookmarkFeedback] = useState('');
   const [fontPanelVisible, setFontPanelVisible] = useState(false);
-  const [readerFontSize, setReaderFontSize] = useState(16.5);
+  const [readerFontSize, setReaderFontSize] = useState(18);
   const [readerTheme, setReaderTheme] = useState('paper');
   const bookmarkFeedbackTimerRef = useRef(null);
 
@@ -360,7 +367,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
                 {
                   id: Number(verse.id),
 
-                  text: verse.text || '',
+                  text: stripLectionaryMarkers(verse.text),
 
                   label: '',
 
