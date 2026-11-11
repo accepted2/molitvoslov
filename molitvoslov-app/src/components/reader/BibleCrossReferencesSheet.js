@@ -2,7 +2,7 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {Linking, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {bibleContent} from '../../services/bibleContent';
-import {bibleUiText, isTraditionalBible, traditionalBibleTextStyle} from '../../services/bibleUi';
+import {bibleUiText, isTraditionalBible, traditionalBibleTextStyle, formatBibleNumber} from '../../services/bibleUi';
 import {BIBLE_CROSS_REFERENCE_ATTRIBUTION, BIBLE_CATHOLIC_CROSS_REFERENCE_ATTRIBUTION, BIBLE_PSALM_VERSIFICATION_ATTRIBUTION} from '../../services/bibleCrossReferences';
 
 const cleanPreview = (value) =>
@@ -19,11 +19,12 @@ const cleanPreview = (value) =>
 // intentionally use Russian book names even in the traditional Bible tab.
 
 
-const formatRange = (item) => {
-  const origin = item.chapter + ':' + item.verse;
+const formatRange = (item, code = 'rst') => {
+  const number = (value) => formatBibleNumber(code, value);
+  const origin = number(item.chapter) + ':' + number(item.verse);
   if (item.endChapter === item.chapter && item.endVerse === item.verse) return origin;
-  if (item.endChapter === item.chapter) return origin + '–' + item.endVerse;
-  return origin + '–' + item.endChapter + ':' + item.endVerse;
+  if (item.endChapter === item.chapter) return origin + '–' + number(item.endVerse);
+  return origin + '–' + number(item.endChapter) + ':' + number(item.endVerse);
 };
 
 export const BibleCrossReferencesSheet = ({
@@ -97,7 +98,7 @@ export const BibleCrossReferencesSheet = ({
         ...ref,
         book,
         translationCode: code,
-        title: bibleContent.getDisplayName(book, translationCode) + ' ' + formatRange(ref),
+        title: bibleContent.getDisplayName(book, translationCode) + ' ' + formatRange(ref, translationCode),
         text: verseTexts.join(' ') + (hasMore ? '…' : ''),
         russianPsalter: code === 'rst' && translationCode === 'csl_traditional',
       };
@@ -109,7 +110,7 @@ export const BibleCrossReferencesSheet = ({
 
   const origin = originBook
     ? bibleContent.getDisplayName(originBook, translationCode) +
-      ' ' + originChapter + ':' + originVerse
+      ' ' + formatBibleNumber(translationCode, originChapter) + ':' + formatBibleNumber(translationCode, originVerse)
     : '';
 
   return (
