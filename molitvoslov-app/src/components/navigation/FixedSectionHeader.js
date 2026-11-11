@@ -6,6 +6,7 @@ import {isDarkReaderBackground, withOpacity} from '../../services/scopedReaderAp
 
 export const FixedSectionHeader = ({
   title,
+  titleTextStyle = null,
   navigation,
   topInset = 0,
   showBack = true,
@@ -134,7 +135,7 @@ export const FixedSectionHeader = ({
             >
               <View style={styles.titleLine}>
                 <Text
-                  style={[styles.title, styles.titleFlex, compactReading && styles.titleReading, chromeDark && styles.titleDark]}
+                  style={[styles.title, styles.titleFlex, compactReading && styles.titleReading, chromeDark && styles.titleDark, titleTextStyle]}
                   onTextLayout={(event) => {
                     const count = event.nativeEvent?.lines?.length || 1;
                     setTitleLines((previous) => previous === count ? previous : count);
