@@ -9,6 +9,7 @@ Reads bundled Bibles and the cross-reference files; never modifies them.
 import argparse
 import csv
 import json
+import re
 from pathlib import Path
 
 APP = Path(__file__).resolve().parent.parent
@@ -17,6 +18,53 @@ DATA = APP / "src" / "data"
 
 def load(name):
     return json.loads((DATA / name).read_text(encoding="utf-8"))
+
+
+
+def add_csl_manasseh(bible):
+    """Mirror the app's non-destructive 2 Chr 36:24 -> MAN catalog view."""
+    books = bible.get("books", [])
+    if any(book.get("code") == "MAN" for book in books):
+        return bible
+    chronicles = next((book for book in books if book.get("code") == "2CH"), None)
+    if not chronicles:
+        return bible
+    chapter = next((ch for ch in chronicles["chapters"] if int(ch["number"]) == 36), None)
+    appendix = next((v for v in (chapter or {}).get("verses", []) if int(v["number"]) == 24), None)
+    if not appendix:
+        return bible
+    source = appendix["text"]
+    markers = list(re.finditer(r"\((\d{1,2})\)", source))
+    if len(markers) != 11 or [int(m[1]) for m in markers] != list(range(1, 12)):
+        return bible
+    introduction = source[:markers[0].start()].strip()
+    heading, separator, invocation = introduction.partition(". ")
+    if not separator or not invocation.startswith("Гд"):
+        return bible
+    verses = []
+    for i, marker in enumerate(markers):
+        end = markers[i + 1].start() if i + 1 < len(markers) else len(source)
+        prefix = invocation + " " if i == 0 else ""
+        verses.append({
+            "id": 179001001 + i,
+            "number": i + 1,
+            "text": (prefix + source[marker.end():end].lstrip()).strip(),
+        })
+    man = {
+        "id": 500079,
+        "code": "MAN",
+        "testament": "old",
+        "section": "old",
+        "name": "Молитва Манассіи",
+        "short_name": "Молитва Манассіи",
+        "slug": "prayerofmanasseh",
+        "canonical_order": 14.5,
+        "is_appendix": True,
+        "chapters": [{"id": 10079001, "number": 1, "heading": heading + ".", "verses": verses}],
+    }
+    idx = next(i for i, book in enumerate(books) if book["code"] == "2CH") + 1
+    bible["books"] = books[:idx] + [man] + books[idx:]
+    return bible
 
 
 def index_verses(bible):
@@ -120,7 +168,7 @@ def main():
     supplementary = load("bibleCrossReferencesSupplement.json")
     curated = load("bibleCrossReferencesCurated.json")
     rst = load("offlineBible.json")
-    csl = load("offlineBibleCslTraditional.json")
+    csl = add_csl_manasseh(load("offlineBibleCslTraditional.json"))
     all_records = []
     for language, bible in (("RU", rst), ("CS", csl)):
         records, totals = audit(bible, rst, refs, supplementary, curated, psalms, language)

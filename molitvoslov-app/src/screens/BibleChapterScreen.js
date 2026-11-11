@@ -16,6 +16,8 @@ import {getBibleCrossReferences, hasBibleCrossReferences} from '../services/bibl
 import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {colors} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
+import {bibleUiText, traditionalBibleTextStyle} from '../services/bibleUi';
+import {savePreferredBibleTranslation} from '../services/bibleTranslationPreference';
 
 // A numbered lectionary rubric may arrive before the first CSL verse as
 // "Зачало 1", "°°(Зачало 1)°°" or "З°°(ачало 1)°°".  The final variant
@@ -73,6 +75,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
     ? 'csl_traditional'
     : 'rst';
   const isTraditional = translationCode === 'csl_traditional';
+  const ui = (key, fallback, params) => bibleUiText(translationCode, key, fallback, params);
 
   const book = bibleContent.getBook(bookId, translationCode);
 
@@ -301,9 +304,9 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
         anchor_id: chapterId,
 
-        source_title: t('bible.source', {book: displayName}),
+        source_title: ui('source', t('bible.source', {book: displayName}), {book: displayName}),
 
-        item_title: t('bible.wholeChapterTitle', {book: displayName, chapter: chapter.number}),
+        item_title: ui('wholeChapterTitle', t('bible.wholeChapterTitle', {book: displayName, chapter: chapter.number}), {book: displayName, chapter: chapter.number}),
 
         text,
 
@@ -342,7 +345,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
   const documentData = useMemo(() => {
     if (!book) {
       return {
-        title: t('bible.title'),
+        title: ui('bible', t('bible.title')),
         description: '',
         progressAnchorType: 'bible_verse',
         savedItems: [],
@@ -393,7 +396,9 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
           chapterNumber: verseIndex === 0 ? Number(chapter.number) : null,
 
-          title: verseIndex === 0 ? t('bible.chapter', {number: chapter.number}) : '',
+          title: verseIndex === 0
+            ? ui('chapter', t('bible.chapter', {number: chapter.number}), {number: chapter.number})
+            : '',
           note: verseIndex === 0 && isTraditional ? (chapter.heading || '') : '',
 
           action:
@@ -444,7 +449,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
                   anchorId: verse.id,
 
-                  sourceTitle: t('bible.source', {book: displayName}),
+                  sourceTitle: ui('source', t('bible.source', {book: displayName}), {book: displayName}),
 
                   itemTitle: displayName + ' ' + chapter.number + ':' + verse.number,
 
@@ -547,7 +552,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
     return {
       sourceType: 'bible',
       sourceId: Number(book.id),
-      sourceTitle: t('bible.source', {book: displayName}),
+      sourceTitle: ui('source', t('bible.source', {book: displayName}), {book: displayName}),
       itemTitle: displayName + ' ' + verse.chapterNumber + ':' + verse.verseNumber,
       position,
       metadata: {
@@ -707,6 +712,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
       .find((verse) => Number(verse.number) === Number(activeVerse?.verseNumber)) ||
       targetChapter.verses?.[0];
     setReaderMenuVisible(false);
+    savePreferredBibleTranslation(targetCode).catch(() => {});
     navigation.replace('BibleChapter', {
       bookId: targetBook.id,
       chapterNumber: Number(targetChapter.number),
@@ -810,6 +816,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
       <FixedSectionHeader
         onHeaderHeightChange={(height) => setReaderTopInset(height + 8)}
         title={displayName}
+        titleTextStyle={isTraditional ? traditionalBibleTextStyle : null}
         navigation={navigation}
         topInset={insets.top}
         showTitle
@@ -905,10 +912,10 @@ export const BibleChapterScreen = ({route, navigation}) => {
           >
             ‹
           </Text>
-          <Text style={[styles.chapterNavText, readerTheme === 'night' && styles.toolbarTextNight]}>
+          <Text style={[styles.chapterNavText, readerTheme === 'night' && styles.toolbarTextNight, isTraditional && traditionalBibleTextStyle]}>
             {previousChapter
-              ? t('bible.chapter', {number: previousChapter.number})
-              : t('bible.chapter', {number: currentChapterNumber})}
+              ? ui('chapter', t('bible.chapter', {number: previousChapter.number}), {number: previousChapter.number})
+              : ui('chapter', t('bible.chapter', {number: currentChapterNumber}), {number: currentChapterNumber})}
           </Text>
         </Pressable>
 
@@ -976,11 +983,12 @@ export const BibleChapterScreen = ({route, navigation}) => {
               styles.chapterNavText,
               styles.chapterNavTextRight,
               readerTheme === 'night' && styles.toolbarTextNight,
+              isTraditional && traditionalBibleTextStyle,
             ]}
           >
             {nextChapter
-              ? t('bible.chapter', {number: nextChapter.number})
-              : t('bible.chapter', {number: currentChapterNumber})}
+              ? ui('chapter', t('bible.chapter', {number: nextChapter.number}), {number: nextChapter.number})
+              : ui('chapter', t('bible.chapter', {number: currentChapterNumber}), {number: currentChapterNumber})}
           </Text>
           <Text
             style={[styles.chapterNavArrow, readerTheme === 'night' && styles.toolbarIconTextNight]}

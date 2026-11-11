@@ -1,5 +1,6 @@
 import bundledBible from '../data/offlineBible.json';
 import bundledChurchBible from '../data/offlineBibleCslTraditional.json';
+import {withSeparateCslManasseh} from './bibleManasseh';
 import {getDatabase} from '../db/database';
 
 const CACHE_PREFIX = 'bible-content-v1:';
@@ -8,7 +9,7 @@ const bundledCode = String(bundledBible?.translation?.code || 'rst');
 const bundledChurchCode = String(bundledChurchBible?.translation?.code || 'csl_traditional');
 const bundledByCode = new Map([
   [bundledCode, bundledBible],
-  [bundledChurchCode, bundledChurchBible],
+  [bundledChurchCode, withSeparateCslManasseh(bundledChurchBible)],
 ]);
 
 const currentByCode = new Map(bundledByCode);
@@ -37,7 +38,7 @@ const activateBibleContent = (payload, version, {notify = true} = {}) => {
     return false;
   }
 
-  currentByCode.set(code, payload);
+  currentByCode.set(code, code === bundledChurchCode ? withSeparateCslManasseh(payload) : payload);
   versionByCode.set(code, version || payload.content_version || null);
   generation += 1;
 
