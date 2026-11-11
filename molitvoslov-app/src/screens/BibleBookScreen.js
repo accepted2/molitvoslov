@@ -14,6 +14,7 @@ import {getBibleArtwork} from '../data/bibleArtwork';
 import {homeArtwork} from '../data/homeArtwork';
 import {colors} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
+import {bibleUiText, isTraditionalBible, traditionalBibleTextStyle} from '../services/bibleUi';
 
 export const BibleBookScreen = ({route, navigation}) => {
   const {t} = useLanguage();
@@ -21,6 +22,9 @@ export const BibleBookScreen = ({route, navigation}) => {
   const translationCode = route.params?.translationCode === 'csl_traditional'
     ? 'csl_traditional'
     : 'rst';
+  const isTraditional = isTraditionalBible(translationCode);
+  const ui = (key, fallback, params) => bibleUiText(translationCode, key, fallback, params);
+
   const book = bibleContent.getBook(route.params?.bookId, translationCode);
 
   const [bookProgress, setBookProgress] = useState(null);
@@ -142,7 +146,7 @@ export const BibleBookScreen = ({route, navigation}) => {
           }}
           ListHeaderComponent={
             <View>
-              <Text style={[styles.fullName, artwork?.background && styles.fullNameArtwork]}>
+              <Text style={[styles.fullName, artwork?.background && styles.fullNameArtwork, isTraditional && traditionalBibleTextStyle]}>
                 {displayName}
               </Text>
 
@@ -157,20 +161,21 @@ export const BibleBookScreen = ({route, navigation}) => {
                 >
                   <View style={styles.resumeText}>
                     <Text
-                      style={[styles.resumeLabel, artwork?.background && styles.resumeLabelArtwork]}
+                      style={[styles.resumeLabel, artwork?.background && styles.resumeLabelArtwork, isTraditional && traditionalBibleTextStyle]}
                     >
-                      {t('bible.continueReading')}
+                      {ui('continueReading', t('bible.continueReading'))}
                     </Text>
 
                     <Text
                       style={[
                         styles.resumePosition,
                         artwork?.background && styles.resumePositionArtwork,
+                        isTraditional && traditionalBibleTextStyle,
                       ]}
                     >
-                      {t('bible.chapter', {number: progressChapter})}
+                      {ui('chapter', t('bible.chapter', {number: progressChapter}), {number: progressChapter})}
                       {progressPage && progressPageCount
-                        ? ' · ' + t('bible.pageOf', {page: progressPage, count: progressPageCount})
+                        ? ' · ' + ui('pageOf', t('bible.pageOf', {page: progressPage, count: progressPageCount}), {page: progressPage, count: progressPageCount})
                         : ''}
                     </Text>
                   </View>
@@ -179,6 +184,7 @@ export const BibleBookScreen = ({route, navigation}) => {
                     style={[
                       styles.resumePercent,
                       artwork?.background && styles.resumePercentArtwork,
+                    isTraditional && traditionalBibleTextStyle,
                     ]}
                   >
                     {progressPercent}%
@@ -218,6 +224,7 @@ export const BibleBookScreen = ({route, navigation}) => {
                     artwork?.background && styles.chapterNumberArtwork,
 
                     isCurrent && styles.chapterNumberCurrent,
+                    isTraditional && traditionalBibleTextStyle,
                   ]}
                 >
                   {item.number}
@@ -229,7 +236,7 @@ export const BibleBookScreen = ({route, navigation}) => {
           }}
         />
 
-        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={displayName} navigation={navigation} topInset={insets.top} />
+        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={displayName} titleTextStyle={isTraditional ? traditionalBibleTextStyle : null} navigation={navigation} topInset={insets.top} />
 
         <BottomNav navigation={navigation} active={null} />
       </ImageBackground>
