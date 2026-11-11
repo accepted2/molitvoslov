@@ -29,6 +29,17 @@ const cleanTraditionalVerse = (value, isFirstVerse) => {
   );
 };
 
+// Parenthetical lectionary references may appear inside any CSL verse,
+// including the middle of a chapter. Hide them only in the reader output.
+const stripInlineLectionaryMarkers = (value) =>
+  String(value || '')
+    .replace(
+      /[°º˚◦]*\s*\(\s*(?:За\s*№?\s*\d+|Зач(?:ало|\.)?\s*(?:№?\s*\d+)?)\s*\)\s*[°º˚◦]*/giu,
+      ' '
+    )
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+
 export const BibleChapterScreen = ({route, navigation}) => {
   const {t} = useLanguage();
   useBibleContentGeneration();
@@ -62,7 +73,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
   );
   const [bookmarkFeedback, setBookmarkFeedback] = useState('');
   const [fontPanelVisible, setFontPanelVisible] = useState(false);
-  const [readerFontSize, setReaderFontSize] = useState(16.5);
+  const [readerFontSize, setReaderFontSize] = useState(18);
   const [readerTheme, setReaderTheme] = useState('paper');
   const bookmarkFeedbackTimerRef = useRef(null);
 
@@ -386,7 +397,9 @@ export const BibleChapterScreen = ({route, navigation}) => {
                 {
                   id: Number(verse.id),
 
-                  text: isTraditional ? cleanTraditionalVerse(verse.text, verseIndex === 0) : (verse.text || ''),
+                  text: isTraditional
+                    ? stripInlineLectionaryMarkers(cleanTraditionalVerse(verse.text, verseIndex === 0))
+                    : (verse.text || ''),
 
                   label: '',
 
