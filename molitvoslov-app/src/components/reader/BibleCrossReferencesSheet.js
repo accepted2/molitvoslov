@@ -2,7 +2,7 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {Linking, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {bibleContent} from '../../services/bibleContent';
-import {BIBLE_CROSS_REFERENCE_ATTRIBUTION} from '../../services/bibleCrossReferences';
+import {BIBLE_CROSS_REFERENCE_ATTRIBUTION, BIBLE_PSALM_VERSIFICATION_ATTRIBUTION} from '../../services/bibleCrossReferences';
 
 const cleanPreview = (value) =>
   String(value || '')
@@ -146,19 +146,24 @@ export const BibleCrossReferencesSheet = ({
       bibleContent.getBooks(null, 'rst').map((book) => [book.code, book])
     );
     return (references || []).map((ref) => {
-      // Septuagint and Hebrew/KJV Psalter chapter numbers differ.
-      // Referenced Psalms are shown in RST, not at an incorrect CSL address.
-      const useRussian = ref.bookCode === 'PSA' && translationCode === 'csl_traditional';
-      const book = (useRussian ? russianBooks : requestedBooks).get(ref.bookCode)
-        || russianBooks.get(ref.bookCode);
+      // Psalm references have already been converted from KJV to Septuagint
+      // chapter AND verse numbering by bibleCrossReferences.js. Prefer CSL
+      // text in CSL mode, falling back to RST only when a verse is missing.
+      let book = requestedBooks.get(ref.bookCode) || russianBooks.get(ref.bookCode);
       if (!book) return null;
-      const code = book === requestedBooks.get(ref.bookCode) ? translationCode : 'rst';
-      const chapter = bibleContent.getChapter(book.id, ref.chapter, code);
-      if (!chapter) return null;
-      const first = (chapter.verses || []).find((verse) => Number(verse.number) === ref.verse);
+      let code = book === requestedBooks.get(ref.bookCode) ? translationCode : 'rst';
+      let chapter = bibleContent.getChapter(book.id, ref.chapter, code);
+      let first = (chapter?.verses || []).find((verse) => Number(verse.number) === ref.verse);
+      if (!first && code !== 'rst' && russianBooks.has(ref.bookCode)) {
+        book = russianBooks.get(ref.bookCode);
+        code = 'rst';
+        chapter = bibleContent.getChapter(book.id, ref.chapter, code);
+        first = (chapter?.verses || []).find((verse) => Number(verse.number) === ref.verse);
+      }
       if (!first) return null;
 
       const verseTexts = [];
+      let lastShown = null;
       const endChapter = Math.min(ref.endChapter, ref.chapter + 1);
       for (let n = ref.chapter; n <= endChapter && verseTexts.length < 12; n += 1) {
         const target = bibleContent.getChapter(book.id, n, code);
@@ -167,19 +172,19 @@ export const BibleCrossReferencesSheet = ({
           if (n === ref.chapter && Number(verse.number) < ref.verse) continue;
           if (n === ref.endChapter && Number(verse.number) > ref.endVerse) break;
           verseTexts.push(cleanPreview(verse.text));
+          lastShown = {chapter: n, verse: Number(verse.number)};
           if (verseTexts.length >= 12) break;
         }
       }
-      const hasMore = ref.endChapter > endChapter ||
-        (ref.endChapter === endChapter &&
-          ref.endVerse > Number((chapter.verses || [])[chapter.verses.length - 1]?.number || 0));
+      const hasMore = lastShown && (lastShown.chapter < ref.endChapter ||
+        (lastShown.chapter === ref.endChapter && lastShown.verse < ref.endVerse));
       return {
         ...ref,
         book,
         translationCode: code,
         title: getReferenceBookTitle(book, translationCode) + ' ' + formatRange(ref),
         text: verseTexts.join(' ') + (hasMore ? '…' : ''),
-        russianPsalter: useRussian,
+        russianPsalter: code === 'rst' && translationCode === 'csl_traditional',
       };
     }).filter(Boolean);
   }, [references, translationCode]);
@@ -256,7 +261,7 @@ export const BibleCrossReferencesSheet = ({
                 </Text>
                 {entry.russianPsalter && (
                   <Text style={[styles.translationHint, isNight && styles.secondaryLight]}>
-                    Нумерация по Синодальному переводу
+                    Текст приведён по Синодальному переводу
                   </Text>
                 )}
               </Pressable>
@@ -274,14 +279,22 @@ export const BibleCrossReferencesSheet = ({
               </Pressable>
             )}
             <Text style={[styles.license, isNight && styles.secondaryLight]}>
-              Параллельные места: OpenBible.info (CC BY 4.0).
+              Параллельные места: OpenBible.info (CC BY 4.0).\n              Псалтирь: таблица соответствия стихов STEP Bible / Tyndale House (CC BY 4.0).
             </Text>
             <Pressable
               accessibilityRole="link"
               onPress={() => Linking.openURL(BIBLE_CROSS_REFERENCE_ATTRIBUTION.url)}
             >
               <Text style={[styles.source, isNight && styles.sourceNight]}>
-                Источник данных и лицензия
+                Источник параллельных мест и лицензия
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => Linking.openURL(BIBLE_PSALM_VERSIFICATION_ATTRIBUTION.url)}
+            >
+              <Text style={[styles.source, isNight && styles.sourceNight]}>
+                STEP Bible: нумерация псалмов и лицензия
               </Text>
             </Pressable>
           </ScrollView>
