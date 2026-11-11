@@ -37,7 +37,7 @@ export const withSeparateCslManasseh = (payload) => {
       source.slice(
         match.index + match[0].length,
         markers[index + 1]?.index ?? source.length
-      )
+      ).trimStart()
     ).trim(),
   }));
 
