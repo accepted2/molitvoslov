@@ -73,6 +73,7 @@ def build():
     grouped = {}
     rows = 0
     skipped = 0
+    reverse_candidates = 0
     for record in csv.reader(io.StringIO(text), delimiter="\t"):
         if len(record) != 3 or not record[0] or record[0].startswith("#"):
             continue
@@ -93,11 +94,22 @@ def build():
         key = f"{source[0]}.{source[1]}.{source[2]}"
         edge = [dest[0], dest[1], dest[2], finish[1], finish[2], votes]
         grouped.setdefault(key, []).append(edge)
+        # OpenBible records are directed. A positively scored, single-verse
+        # parallel is also useful from its other endpoint. Preserve exactly
+        # the same source vote count; never invent theologically new links.
+        # Do not expand passage ranges: the source does not assert a link
+        # to every verse within an entire referenced range.
+        if votes > 0 and source != dest and dest == finish:
+            reverse_key = f"{dest[0]}.{dest[1]}.{dest[2]}"
+            reverse_edge = [source[0], source[1], source[2], source[1], source[2], votes]
+            grouped.setdefault(reverse_key, []).append(reverse_edge)
+            reverse_candidates += 1
     if rows < 330000 or len(grouped) < 23000:
         raise RuntimeError(f"Incomplete source: rows={rows}, indexed verses={len(grouped)}")
 
     ordered = {}
     total = 0
+    # All reciprocal candidates are deduplicated with the original edges.
     for key in sorted(grouped):
         unique = {}
         for edge in grouped[key]:
@@ -110,7 +122,7 @@ def build():
         total += len(entries)
 
     payload = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "source": "OpenBible.info cross references",
         "sourceUrl": "https://www.openbible.info/labs/cross-references/",
         "license": "CC BY 4.0",
@@ -118,6 +130,7 @@ def build():
         "sourceRows": rows,
         "indexedLinks": total,
         "skippedRows": skipped,
+        "reverseCandidates": reverse_candidates,
         "references": ordered,
     }
     if total < 300000:
@@ -127,7 +140,8 @@ def build():
     temp.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n",
                     encoding="utf-8")
     temp.replace(OUTPUT)
-    print(f"OK: {rows} rows, {total} indexed links, {len(ordered)} source verses, {skipped} skipped")
+    print(f"OK: {rows} source rows, {total} indexed links, {len(ordered)} source verses, {skipped} skipped")
+    print(f"Reciprocal single-verse candidates: {reverse_candidates} (duplicates removed)")
     print(f"Created: {OUTPUT} ({OUTPUT.stat().st_size} bytes)")
 
 
