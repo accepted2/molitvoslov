@@ -2,6 +2,7 @@ import React, {useMemo} from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
+import {useFocusEffect} from '@react-navigation/native';
 
 import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
@@ -20,11 +21,11 @@ export const BibleScreen = ({navigation}) => {
   const isTraditional = isTraditionalBible(translationCode);
   const ui = (key, fallback, params) => bibleUiText(translationCode, key, fallback, params);
 
-  React.useEffect(() => {
+  useFocusEffect(React.useCallback(() => {
     let active = true;
     getPreferredBibleTranslation().then((code) => {if (active) setTranslationCode(code);});
     return () => {active = false;};
-  }, []);
+  }, []));
   const selectTranslation = (code) => {
     setTranslationCode(code);
     savePreferredBibleTranslation(code).catch(() => {});
