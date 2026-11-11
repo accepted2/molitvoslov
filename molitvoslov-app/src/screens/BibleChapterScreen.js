@@ -31,11 +31,24 @@ const cleanTraditionalVerse = (value, isFirstVerse) => {
 
 // Parenthetical lectionary references may appear inside any CSL verse,
 // including the middle of a chapter. Hide them only in the reader output.
+// Compare a normalized copy of the parenthesized rubric, never alter verse letters.
+const normalizeLectionaryLabel = (value) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\p{M}\p{Cf}]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
 const stripInlineLectionaryMarkers = (value) =>
   String(value || '')
     .replace(
-      /[°º˚◦]*\s*\(\s*(?:За\s*№?\s*\d+|Зач(?:ало|\.)?\s*(?:№?\s*\d+)?)\s*\)\s*[°º˚◦]*/giu,
-      ' '
+      /[°º˚◦∘○]*[ \t]*\([ \t]*([^()]*)[ \t]*\)[ \t]*[°º˚◦∘○]*/gu,
+      (match, label) =>
+        /^(?:за\s*(?:№\s*)?\d+|зач(?:ало|\.)?\s*(?:№\s*)?\d*)$/iu.test(
+          normalizeLectionaryLabel(label)
+        )
+          ? ' '
+          : match
     )
     .replace(/[ \t]{2,}/g, ' ')
     .trim();
