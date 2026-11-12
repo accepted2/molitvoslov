@@ -1959,6 +1959,77 @@ export const READER_STYLES = String.raw`
       font-weight: 600;
       text-align: left;
     }
+    /* Subtle inline dropdowns for optional First Hour sequences.
+       Content remains in the native selectable document when expanded. */
+    .rule-item.hours-section.hours-collapsible {
+      margin: 11px 0 14px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion {
+      margin: 0;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 49px;
+      padding: 12px 14px;
+      color: var(--accent-dark);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 16px;
+      line-height: 22px;
+      font-weight: 700;
+      list-style: none;
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: manipulation;
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion-toggle::-webkit-details-marker {
+      display: none;
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion-toggle::after {
+      content: "⌄";
+      flex: 0 0 auto;
+      color: var(--accent-dark);
+      font-size: 22px;
+      line-height: 18px;
+      font-weight: 400;
+      transform: rotate(0deg);
+      transition: transform 140ms ease;
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion[open] > .hours-accordion-toggle::after {
+      transform: rotate(180deg);
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion[open] > .hours-accordion-toggle {
+      border-bottom: 1px solid var(--border);
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion-content {
+      padding: 12px 14px 14px;
+      background: transparent;
+    }
+    .rule-item.hours-section.hours-section-instruction .reader-text.hours-text {
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--secondary);
+      text-align: left;
+      text-align-last: left;
+    }
+    .rule-item.hours-section.hours-section-postpsalm {
+      margin-top: 14px;
+      border-top: 1px solid var(--border);
+      padding-top: 13px;
+    }
+    .rule-item.hours-section.hours-section-hymn .reader-text.hours-heading {
+      color: var(--accent-dark);
+    }
     .rule-item.hours-section.hours-section-opening .reader-text {
       text-align: left;
       text-align-last: left;
