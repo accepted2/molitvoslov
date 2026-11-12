@@ -1,177 +1,174 @@
-import React, {useMemo, useRef, useState} from 'react';
-import {ActivityIndicator, Linking, Pressable, StyleSheet, Text, View} from 'react-native';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {StyleSheet, Text, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
-import {WebView} from 'react-native-webview';
 
-import {BottomNav} from '../components/navigation/BottomNav';
+import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
+import {ReaderAppearanceSheet} from '../components/reader/ReaderAppearanceSheet';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {BottomNav} from '../components/navigation/BottomNav';
+import {useReadingChrome} from '../hooks/useReadingChrome';
+import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
+import {useReadingProgress} from '../hooks/useReadingProgress';
+import {
+  getReaderLanguageModePreference,
+  saveReaderLanguageModePreference,
+} from '../services/readerPreferences';
+import {READER_LANGUAGE_MODES} from '../services/readerLanguageModes';
+import {isDarkReaderBackground, resolveReaderAppearance} from '../services/scopedReaderAppearance';
+import {buildHoursDocument, getOfflineHoursText} from '../services/hoursDocument';
 import {getHoursEntry} from '../data/hoursCatalog';
 
-// Some source documents contain all four Hours on one page. Locate the
-// requested hour after loading rather than assuming an unstable URL fragment.
-const makeHeadingScript = (heading) => {
-  if (!heading) return 'true;';
-  return `(function() {
-    var requested = ${JSON.stringify(heading)}.toLocaleLowerCase('ru');
-    var headings = document.querySelectorAll('h1, h2, h3, h4, h5, strong');
-    var target = Array.prototype.find.call(headings, function(node) {
-      var name = String(node.textContent || '').replace(/\\s+/g, ' ').trim().toLocaleLowerCase('ru');
-      return name === requested || name.indexOf(requested + ' ') === 0;
-    });
-    if (target) {
-      target.scrollIntoView({block: 'start', behavior: 'auto'});
-    }
-  })(); true;`;
-};
+const VALID_MODES = [
+  READER_LANGUAGE_MODES.CHURCH,
+  READER_LANGUAGE_MODES.RUSSIAN,
+  READER_LANGUAGE_MODES.BOTH,
+  READER_LANGUAGE_MODES.TRADITIONAL,
+];
 
 export const HoursReadingScreen = ({route, navigation}) => {
   const entry = getHoursEntry(route.params?.entryId);
+  const entryId = entry?.id || null;
   const insets = useSafeAreaInsets();
-  const webRef = useRef(null);
-  const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const headingScript = useMemo(() => makeHeadingScript(entry?.focusHeading), [entry?.focusHeading]);
+  const readerRef = useRef(null);
 
-  const openExternal = () => {
-    if (entry?.sourceUrl) {
-      Linking.openURL(entry.sourceUrl).catch((error) => {
-        console.warn('Unable to open Hours source:', error?.message || error);
-      });
+  const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
+  const [appearanceVisible, setAppearanceVisible] = useState(false);
+  const [viewMode, setViewMode] = useState(READER_LANGUAGE_MODES.CHURCH);
+  const {readingChromeHidden, handleReadingScroll, handleNativeReadingScroll} = useReadingChrome();
+  const {appearance, changeAppearance, resetAppearance} =
+    useScopedReaderAppearance('hours', entryId);
+  const {savedProgress, progressReady, scheduleSave} = useReadingProgress({
+    sourceType: 'hours',
+    sourceId: entry?.sourceId || null,
+  });
+
+  useEffect(() => {
+    readerRef.current?.applyAppearance(appearance);
+  }, [appearance]);
+
+  useEffect(() => {
+    let active = true;
+    setViewMode(READER_LANGUAGE_MODES.CHURCH);
+    if (entryId) {
+      getReaderLanguageModePreference({sourceType: 'hours', sourceId: entryId})
+        .then((saved) => {
+          if (active && VALID_MODES.includes(saved)) setViewMode(saved);
+        })
+        .catch((error) => console.warn('[hours] reader mode:', error?.message || error));
+    }
+    return () => {active = false;};
+  }, [entryId]);
+
+  const handleViewModeChange = (nextMode) => {
+    if (!VALID_MODES.includes(nextMode)) return;
+    setViewMode(nextMode);
+    if (entryId) {
+      saveReaderLanguageModePreference({
+        sourceType: 'hours',
+        sourceId: entryId,
+        mode: nextMode,
+      }).catch((error) => console.warn('[hours] save reader mode:', error?.message || error));
     }
   };
+
+  const content = useMemo(() => getOfflineHoursText(entryId), [entryId]);
+  const documentData = useMemo(() => (
+    entry ? buildHoursDocument({entry, content, viewMode}) : null
+  ), [entry, content, viewMode]);
+  const readerBackground = resolveReaderAppearance(appearance).background;
 
   if (!entry) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorTitle}>Последование не найдено</Text>
-        <Pressable onPress={() => navigation.goBack()} style={styles.sourceButton}>
-          <Text style={styles.sourceButtonText}>Назад к списку часов</Text>
-        </Pressable>
+        <Text style={styles.emptyHeading}>Последование не найдено</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="dark" translucent backgroundColor="transparent" />
-      <View style={[
-        styles.body,
-        {paddingTop: headerHeight + 14, paddingBottom: 78 + insets.bottom},
-      ]}>
-        <View style={styles.sourcePanel}>
-          <View style={styles.sourceCopy}>
-            <Text style={styles.sourceLabel} numberOfLines={2}>
-              Источник: {entry.source}
-            </Text>
-            {!!entry.sourceNote && (
-              <Text style={styles.sourceNote} numberOfLines={3}>{entry.sourceNote}</Text>
-            )}
-            <Text style={styles.sourceNote}>Онлайн-текст. Требуется интернет.</Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Открыть источник в браузере"
-            onPress={openExternal}
-            style={({pressed}) => [styles.sourceButton, pressed && styles.pressed]}
-          >
-            <Text style={styles.sourceButtonText}>Браузер</Text>
-          </Pressable>
-        </View>
+    <View style={[styles.screen, {backgroundColor: readerBackground}]}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        style={isDarkReaderBackground(readerBackground) ? 'light' : 'dark'}
+      />
 
-        <View style={styles.readerSurface}>
-          {!loadError && (
-            <WebView
-              ref={webRef}
-              source={{uri: entry.sourceUrl}}
-              originWhitelist={['https://*']}
-              javaScriptEnabled
-              domStorageEnabled
-              startInLoadingState
-              style={styles.webview}
-              onLoadStart={() => {setLoading(true); setLoadError(false);}}
-              onLoadEnd={() => {
-                setLoading(false);
-                webRef.current?.injectJavaScript(headingScript);
-              }}
-              onError={() => {setLoading(false); setLoadError(true);}}
-              onHttpError={({nativeEvent}) => {
-                if (nativeEvent.url === entry.sourceUrl && nativeEvent.statusCode >= 400) {
-                  setLoadError(true);
-                }
-              }}
-              renderLoading={() => (
-                <View style={styles.center}>
-                  <ActivityIndicator color="#80532E" size="large" />
-                </View>
-              )}
-            />
-          )}
-          {loadError && (
-            <View style={styles.center}>
-              <Text style={styles.errorTitle}>Не удалось загрузить текст</Text>
-              <Text style={styles.errorText}>
-                Проверь подключение к интернету или открой источник в браузере.
-              </Text>
-              <Pressable onPress={openExternal} style={styles.sourceButton}>
-                <Text style={styles.sourceButtonText}>Открыть источник</Text>
-              </Pressable>
-              <Pressable onPress={() => setLoadError(false)} style={styles.retryButton}>
-                <Text style={styles.retryText}>Повторить загрузку</Text>
-              </Pressable>
-            </View>
-          )}
-          {loading && !loadError && (
-            <View style={styles.loadingOverlay} pointerEvents="none">
-              <ActivityIndicator color="#80532E" size="small" />
-            </View>
-          )}
+      {content?.sections?.length ? (
+        <SelectableDocumentReader
+          ref={readerRef}
+          documentData={documentData}
+          savedProgress={progressReady ? savedProgress : null}
+          topContentInset={headerHeight}
+          bottomContentInset={90}
+          onReadingScroll={handleReadingScroll}
+          onNativeReadingScroll={handleNativeReadingScroll}
+          onProgress={scheduleSave}
+          onViewModeChange={handleViewModeChange}
+          onReady={() => readerRef.current?.applyAppearance(appearance)}
+        />
+      ) : (
+        <View style={[styles.center, {paddingTop: headerHeight}]}>
+          <Text style={[styles.emptyHeading,
+            {color: isDarkReaderBackground(readerBackground) ? '#F4E7D2' : '#533723'}]}>
+            {entry.title}
+          </Text>
+          <Text style={[styles.emptyText,
+            {color: isDarkReaderBackground(readerBackground) ? '#D0BA9C' : '#80634B'}]}>
+            Полный текст этого последования пока не включён в локальную библиотеку.
+          </Text>
         </View>
-      </View>
+      )}
+
+      <ReaderAppearanceSheet
+        visible={appearanceVisible}
+        onClose={() => setAppearanceVisible(false)}
+        appearance={appearance}
+        onChange={changeAppearance}
+        onReset={resetAppearance}
+      />
+
       <FixedSectionHeader
+        gradientColor={readerBackground}
+        onHeaderHeightChange={setHeaderHeight}
         title={entry.title}
         navigation={navigation}
-        onHeaderHeightChange={setHeaderHeight}
         topInset={insets.top}
+        showTitle
+        compactReading
+        readingHidden={readingChromeHidden}
+        showMenu
+        onMenuPress={() => setAppearanceVisible(true)}
+        languageSwitcher={documentData?.viewSwitcher}
+        onLanguageChange={(mode) => {
+          if (readerRef.current) readerRef.current.changeViewMode(mode);
+          else handleViewModeChange(mode);
+        }}
       />
-      <BottomNav navigation={navigation} active={null} />
+
+      <BottomNav navigation={navigation} active={null} readingHidden={readingChromeHidden} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#FFF4DE'},
-  body: {flex: 1, paddingHorizontal: 8, gap: 8},
-  readerSurface: {flex: 1, borderRadius: 9, overflow: 'hidden', backgroundColor: '#FFF8EB'},
-  webview: {flex: 1, backgroundColor: '#FFF8EB'},
-  sourcePanel: {
-    minHeight: 55,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 11,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: '#F3E4CB',
-  },
-  sourceCopy: {flex: 1, gap: 3},
-  sourceLabel: {color: '#4E3522', fontSize: 12, fontWeight: '600', lineHeight: 18},
-  sourceNote: {color: '#80654A', fontSize: 11, lineHeight: 16},
-  sourceButton: {
-    backgroundColor: '#8F6039',
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 9,
+  screen: {flex: 1, backgroundColor: '#FFF4DE'},
+  center: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 28,
+    gap: 15,
   },
-  sourceButtonText: {fontSize: 12, fontWeight: '700', color: '#FFF6E6'},
-  retryButton: {padding: 12, alignItems: 'center'},
-  retryText: {color: '#8F6039', fontWeight: '600', fontSize: 13},
-  center: {flex: 1, alignItems: 'center', justifyContent: 'center', padding: 18, gap: 12},
-  errorTitle: {color: '#52361F', fontSize: 16, fontWeight: '700', textAlign: 'center'},
-  errorText: {color: '#75573B', fontSize: 13, lineHeight: 21, textAlign: 'center'},
-  loadingOverlay: {position: 'absolute', right: 12, top: 10},
-  pressed: {opacity: 0.65},
+  emptyHeading: {
+    fontSize: 19,
+    fontFamily: 'serif',
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  emptyText: {
+    fontSize: 15,
+    lineHeight: 24,
+    textAlign: 'center',
+  },
 });
