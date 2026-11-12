@@ -16,6 +16,84 @@ const identifyPsalm = (section) => {
   return match ? Number(match[1]) : null;
 };
 
+// Remove only clearly identifiable *service text* accidentally imported
+// into the final Psalm section. Scripture remains intact up to the cue.
+const accentlessWithOffsets = (value) => {
+  let plain = '';
+  const positions = [];
+  const source = String(value || '');
+  for (let i = 0; i < source.length;) {
+    const beginning = i;
+    const cp = String.fromCodePoint(source.codePointAt(i));
+    i += cp.length;
+    let cluster = cp;
+    while (i < source.length && /[\u0300-\u036f\u0483-\u0489]/u.test(source[i])) {
+      cluster += source[i];
+      i++;
+    }
+    const normalized = clean(cluster);
+    for (const char of normalized) {
+      plain += char;
+      positions.push(beginning);
+    }
+  }
+  return {plain, positions};
+};
+
+const locateOldAfterPsalm = (text, following = '') => {
+  const current = accentlessWithOffsets(text);
+  const next = clean(following);
+  const phrase = /слава\s*,?\s*и\s*ныне\s*[:：]?/gu;
+  for (const match of current.plain.matchAll(phrase)) {
+    const tail = current.plain.slice(match.index) + ' ' + next;
+    if (/аллилу[иі](?:а|я)/u.test(tail.slice(0, 250))) {
+      return current.positions[match.index] ?? -1;
+    }
+  }
+  // Some imports already start a new cell at the Alleluia.
+  if (/^\s*аллилу[иі](?:а|я)(?:\s*[,;.!]|\s+)/u.test(current.plain) &&
+      /(?:господи|слава|трижды|поклон)/u.test(current.plain + ' ' + next)) {
+    return 0;
+  }
+  return -1;
+};
+
+export const trimImportedPsalmAppendix = (lastPsalm) => {
+  const rows = Array.isArray(lastPsalm?.rows) ? lastPsalm.rows : [];
+  let trimmed = false;
+  const kept = [];
+  for (let index = 0; index < rows.length; index++) {
+    const row = rows[index];
+    const next = rows.slice(index + 1, index + 3);
+    const churchNext = next.map(item => item.church || '').join(' ');
+    const russianNext = next.map(item => item.russian || '').join(' ');
+    const churchCut = locateOldAfterPsalm(row.church, churchNext);
+    const russianCut = locateOldAfterPsalm(row.russian, russianNext);
+    if (churchCut < 0 && russianCut < 0) {
+      kept.push({...row});
+      continue;
+    }
+    // A matching cue is a reliable boundary. Drop subsequent liturgical
+    // verses, but never erase any earlier Psalm rows or mutate source JSON.
+    trimmed = true;
+    const first = {
+      ...row,
+      church: churchCut >= 0
+        ? String(row.church || '').slice(0, churchCut).trimEnd()
+        : '',
+      russian: russianCut >= 0
+        ? String(row.russian || '').slice(0, russianCut).trimEnd()
+        : '',
+    };
+    if (first.church?.trim() || first.russian?.trim()) kept.push(first);
+    break;
+  }
+  return {
+    section: {...lastPsalm, rows: kept},
+    trimmed,
+  };
+};
+
 export const getEditedFirstHour = (content) => {
   const original = content?.sections;
   if (!Array.isArray(original) || !original.length) {
@@ -43,6 +121,8 @@ export const getEditedFirstHour = (content) => {
   const [firstIndex, , lastIndex] = indexes;
   // Preserve existing Scripture and its paired Russian translation exactly.
   const psalmSections = original.slice(firstIndex, lastIndex + 1);
+  const lastPsalm = trimImportedPsalmAppendix(psalmSections[psalmSections.length - 1]);
+  psalmSections[psalmSections.length - 1] = lastPsalm.section;
   const before = original.slice(0, firstIndex);
   const after = original.slice(lastIndex + 1);
 
@@ -73,5 +153,6 @@ export const getEditedFirstHour = (content) => {
     sections: churchSections,
     russianUnpaired,
     preservedPsalms: psalms,
+    removedImportedPostPsalmAppendix: lastPsalm.trimmed,
   };
 };
