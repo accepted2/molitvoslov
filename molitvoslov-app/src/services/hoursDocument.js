@@ -96,6 +96,7 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
   const createBlock = ({
     id, language, text, title, sectionKind = 'general', opening = false,
     presentation = '', redInitial = false, accentPrefix = '',
+    preserveLineBreaks = false,
   }) => {
     const kind = classifyHoursRow({text, sectionKind});
     const visualNote = [
@@ -134,7 +135,12 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
         'hours-text',
         'hours-' + language,
         'hours-' + kind,
-        language === 'russian' ? 'secondary' : '',
+        language === 'russian' && viewMode === READER_LANGUAGE_MODES.BOTH
+          ? 'secondary hours-russian-parallel'
+          : language === 'russian'
+            ? 'hours-russian-primary'
+            : '',
+        preserveLineBreaks === true ? 'hours-preserve-line-breaks' : '',
         opening && kind === 'psalm' ? 'hours-psalm-opening' : '',
         visualNote ? 'hours-presentation-' + visualNote : '',
       ].filter(Boolean).join(' '),
@@ -196,6 +202,9 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
           accentPrefix: field === 'russian'
             ? (row.russianAccentPrefix || row.accentPrefix || '')
             : row.accentPrefix || '',
+          preserveLineBreaks: field === 'russian'
+            ? (row.russianPreserveLineBreaks ?? (row.preserveLineBreaks === true))
+            : row.preserveLineBreaks === true,
         });
       };
       let blocks;
