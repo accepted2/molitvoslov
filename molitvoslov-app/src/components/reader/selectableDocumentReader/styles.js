@@ -2212,6 +2212,53 @@ export const READER_STYLES = String.raw`
       margin-bottom: 2px !important;
     }
 
+    /* First Hour: the Trisagion rubric flows directly into weekday choices.
+       No horizontal rule or excessive whitespace before their accordions. */
+    .rule-item.hours-section.hours-no-bottom-divider {
+      margin-bottom: 4px !important;
+      padding-bottom: 0 !important;
+      border-bottom: 0 !important;
+    }
+    .rule-item.hours-section.hours-no-bottom-divider + .rule-item.hours-collapsible {
+      margin-top: 5px !important;
+    }
+    .rule-item.hours-section-rubric .reader-text.hours-presentation-liturgical-label {
+      color: var(--liturgical) !important;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 16px !important;
+      line-height: 1.48 !important;
+      font-weight: 600 !important;
+      font-style: normal !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    /* Tropar and kondak placeholders share the same italic brown treatment. */
+    .rule-item.hours-section-rubric .reader-text.hours-presentation-placeholder,
+    .rule-item.hours-section-hymn .reader-text.hours-presentation-placeholder {
+      color: var(--accent-dark) !important;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 15px !important;
+      line-height: 1.44 !important;
+      font-style: italic !important;
+      font-weight: 600 !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    .rule-item.hours-section-rubric .reader-text.hours-presentation-comment {
+      color: var(--secondary) !important;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 14px !important;
+      line-height: 1.48 !important;
+      font-style: italic !important;
+      font-weight: 400 !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    .rule-item.hours-section-conditional .reader-text .hours-mark-cue {
+      color: var(--liturgical) !important;
+      font-weight: 700 !important;
+    }
+
     #reader-scroll-track {
       position: fixed;
       top: 10px;
