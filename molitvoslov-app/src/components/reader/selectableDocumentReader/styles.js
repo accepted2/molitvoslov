@@ -1936,16 +1936,36 @@ export const READER_STYLES = String.raw`
       font-size: 18px;
       font-weight: 700;
     }
+    /* Hours titles have no underline or trailing decorative rule. */
     .rule-item.hours-section .section-header::after {
-      content: "";
-      position: absolute;
-      bottom: -7px;
-      left: 50%;
-      width: 62px;
-      height: 1px;
-      transform: translateX(-50%);
-      background: var(--border);
-      pointer-events: none;
+      content: none !important;
+      display: none !important;
+    }
+    .rule-item.hours-section .section-header .prayer-title {
+      text-decoration: none !important;
+      border-bottom: 0 !important;
+      box-shadow: none !important;
+    }
+    .rule-item.hours-section.hours-section-conditional {
+      margin: 16px 0;
+      padding: 6px 0 14px 12px;
+      border-left: 2px solid var(--border);
+      border-bottom: 0;
+    }
+    .rule-item.hours-section.hours-section-conditional .section-header .prayer-title {
+      color: var(--secondary);
+      font-size: 16px;
+      line-height: 23px;
+      font-weight: 600;
+      text-align: left;
+    }
+    .rule-item.hours-section.hours-section-opening .reader-text {
+      text-align: left;
+      text-align-last: left;
+    }
+    .rule-item.hours-section.hours-section-rubric .reader-text.hours-rubric {
+      color: var(--accent-dark);
+      font-style: normal;
     }
     .rule-item.hours-section .reader-row {
       margin-bottom: 11px;
@@ -2019,12 +2039,15 @@ export const READER_STYLES = String.raw`
       text-align: left;
       text-align-last: left;
     }
-    .rule-item.hours-section .reader-text.hours-psalm-opening::first-letter {
-      float: left;
-      margin: 0.075em 0.08em 0 0;
-      color: var(--liturgical);
-      font-size: 2.2em;
-      line-height: 0.80;
+    /* Ordinary-sized red first letter, never a decorative drop cap. */
+    .rule-item.hours-section .reader-text.hours-psalm-opening::first-letter,
+    .rule-item.hours-section.hours-section-opening .reader-text::first-letter {
+      float: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      color: var(--liturgical) !important;
+      font-size: inherit !important;
+      line-height: inherit !important;
       font-weight: 700;
     }
     .rule-item.hours-section .reader-text.hours-traditional.hours-psalm-opening::first-letter {
