@@ -32,6 +32,29 @@ export const getHoursLanguageAvailability = (content) => {
   };
 };
 
+// Highlight complete doxologies in the *standalone Russian First Hour*.
+// All marks are source offsets: no words are inserted and the original text
+// remains selectable. Explicit commentary is never liturgically accented.
+export const getFirstHourRussianRedMarks = (text) => {
+  const patterns = [
+    /Слава\s+Отцу,?\s+и\s+Сыну,?\s+и\s+Святому\s+Духу(?:,?\s+и\s+ныне\s+и\s+присно\s+и\s+во\s+веки\s+веков\.?\s+Аминь\.?)?/giu,
+    /И\s+ныне\s+и\s+присно\s+и\s+во\s+веки\s+веков\.?\s+Аминь\.?/giu,
+    /слава\s+Тебе,?\s+Боже/giu,
+  ];
+  const found = patterns.flatMap(pattern =>
+    [...text.matchAll(pattern)].map(match => ({
+      start: match.index,
+      end: match.index + match[0].length,
+      kind: 'devotional',
+    }))
+  );
+  // When an entire Glory-and-Now is red, don't add its inner Now twice.
+  return found.sort((a, b) => a.start - b.start || b.end - a.end)
+    .filter((mark, index, all) => !all.slice(0, index).some(
+      previous => previous.start <= mark.start && previous.end >= mark.end
+    ));
+};
+
 export const buildHoursDocument = ({entry, content, viewMode}) => {
   const isFirstHour = entry.id === 'ordinary-1';
   const available = {
@@ -104,10 +127,23 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
       'liturgical-red', 'left-response', 'liturgical-prayers',
     ].includes(presentation) ? presentation : '';
     // Left-aligned responses retain their normal inline word annotations.
+    const isComment = visualNote === 'comment';
     const hoursMarks = visualNote &&
       !['left-response', 'liturgical-prayers'].includes(visualNote)
       ? []
       : collectHoursTextMarks(text);
+    if (isFirstHour && language === 'russian' &&
+        viewMode === READER_LANGUAGE_MODES.RUSSIAN && !isComment) {
+      for (const mark of getFirstHourRussianRedMarks(text)) {
+        // Prefer the complete rubric over shorter, overlapping highlights.
+        for (let index = hoursMarks.length - 1; index >= 0; index--) {
+          if (hoursMarks[index].start < mark.end &&
+              mark.start < hoursMarks[index].end) hoursMarks.splice(index, 1);
+        }
+        hoursMarks.push(mark);
+      }
+      hoursMarks.sort((a, b) => a.start - b.start || a.end - b.end);
+    }
     // Only a specifically indicated cue is colored. Source punctuation,
     // paragraph text, and the original UTF-16 selection indices are unchanged.
     if (accentPrefix && text.startsWith(accentPrefix)) {
