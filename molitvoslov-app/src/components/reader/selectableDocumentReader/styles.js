@@ -1633,6 +1633,20 @@ export const READER_STYLES = String.raw`
       text-justify: inter-word;
     }
 
+    /* A calendar link briefly highlights the whole referenced Scripture
+       passage, not just its opening verse. The animation finishes with a
+       transparent background and does not mutate saved selections. */
+    @keyframes bible-calendar-passage-flash {
+      0%, 47% { background-color: rgba(201, 166, 88, 0.29); }
+      100% { background-color: transparent; }
+    }
+    body.book-mode .bible-verse-section.calendar-passage-verse .reader-text.bible-verse {
+      animation: bible-calendar-passage-flash 2100ms ease-out both;
+      -webkit-box-decoration-break: clone;
+      box-decoration-break: clone;
+      border-radius: 2px;
+    }
+
     /* The book-mode rule above is more specific than the generic reader
        language rule. Apply Ponomar explicitly to CSL Bible glyphs and
        diacritics, otherwise Android WebView falls back to Georgia. */
