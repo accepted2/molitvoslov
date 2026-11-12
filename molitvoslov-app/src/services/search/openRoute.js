@@ -20,10 +20,11 @@ export const resolveSearchOpenRoute = (item, publicContent) => {
 
     // The search index may have been built from an older Bible bundle.
     // Stable book/chapter/verse coordinates take precedence over row IDs.
-    const book = bibleContent.getBook(params.bookId, translationCode) ||
-      (metadata.book_slug
-        ? bibleContent.getBook(metadata.book_slug, translationCode)
-        : null);
+    const bookById = bibleContent.getBook(params.bookId, translationCode);
+    const bookBySlug = metadata.book_slug
+      ? bibleContent.getBook(metadata.book_slug, translationCode)
+      : null;
+    const book = bookBySlug || bookById;
     if (!book) return route;
 
     const requestedChapter = Number(metadata.chapter_number || params.chapterNumber);
