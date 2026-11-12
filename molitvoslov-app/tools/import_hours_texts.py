@@ -139,8 +139,10 @@ def parse_paired(html_bytes, default_hour=None, group=None):
     root = article_node(soup)
     tables = paired_table_rows(root)
     if not tables:
-        # Try page-wide tables, but reject an unrelated sidebar.
+        # The article selector sometimes matches a summary rather than
+        # the real bilingual table. Fall back to the full document.
         tables = paired_table_rows(soup)
+        root = soup
     if not tables:
         raise ValueError("Нет двуязычной таблицы ЦС / РУС")
 
@@ -167,6 +169,12 @@ def parse_paired(html_bytes, default_hour=None, group=None):
             continue
         cells = node.find_all(["td", "th"], recursive=False)
         if len(cells) < 2:
+            # A full-width row may be the beginning of a royal Hour.
+            if cells and group:
+                candidate = cells[0].find(["h2", "h3", "h4", "h5"])
+                h = get_hour(candidate.get_text(" ", strip=True)) if candidate else None
+                if h:
+                    current = h
             continue
         left, right = cells[0], cells[1]
         heading, is_hour = heading_from_cell(left)
@@ -185,10 +193,14 @@ def parse_paired(html_bytes, default_hour=None, group=None):
             continue
         short_heading = heading if heading and not get_hour(heading) else right_heading
         if short_heading and not get_hour(short_heading):
-            for cell in (left, right):
+            # Work on cloned cells: removing headings must not mutate the
+            # document while iterating the original descendant stream.
+            left_copy = BeautifulSoup(str(left), "html.parser")
+            right_copy = BeautifulSoup(str(right), "html.parser")
+            for cell in (left_copy, right_copy):
                 for htag in cell.find_all(["h2", "h3", "h4", "h5"]):
                     htag.decompose()
-            church, russian = clean_cell(left), clean_cell(right)
+            church, russian = clean_cell(left_copy), clean_cell(right_copy)
         if church or russian:
             append_row(sections_by_hour[current], church, russian,
                        title=short_heading)
