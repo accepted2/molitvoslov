@@ -2068,6 +2068,25 @@ export const READER_STYLES = String.raw`
       font-size: 17px;
       line-height: 1.59;
     }
+    /* Russian-only must be as dark, full-sized and justified as the ЦС tab.
+       Only the parallel translation uses a secondary shade. */
+    .rule-item.hours-section .reader-text.hours-russian-primary {
+      color: var(--text) !important;
+      font-size: 17px;
+      line-height: 1.59;
+      white-space: normal !important;
+      text-align: justify !important;
+      text-align-last: left !important;
+    }
+    .rule-item.hours-section .reader-text.hours-russian-parallel {
+      color: var(--secondary) !important;
+      white-space: normal !important;
+    }
+    /* Preserve line breaks only where two different speakers appear or
+       where the Alleluia response was explicitly broken after line one. */
+    .rule-item.hours-section .reader-text.hours-preserve-line-breaks {
+      white-space: pre-line !important;
+    }
     .rule-item.hours-section .reader-text.hours-traditional {
       font-family: 'Ponomar', Georgia, serif;
       font-size: 20px;
