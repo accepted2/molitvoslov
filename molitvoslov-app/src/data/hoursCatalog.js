@@ -70,5 +70,9 @@ export const HOURS_GROUPS = [
 
 export const HOURS_ENTRIES = HOURS_GROUPS.flatMap((group) =>
   group.items.map((item) => ({...item, groupId: group.id, groupTitle: group.title}))
-);
+).map((entry, index) => ({
+  ...entry,
+  // Reading progress storage and sync use numeric identifiers.
+  sourceId: 910000 + index + 1,
+}));
 export const getHoursEntry = (id) => HOURS_ENTRIES.find((entry) => entry.id === id) || null;
