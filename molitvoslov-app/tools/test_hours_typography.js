@@ -151,6 +151,40 @@ assert.match(liturgical.sections[2].rows[1].blocks[0].className,
 assert.match(liturgical.sections[2].rows[2].blocks[0].className,
   /hours-presentation-comment/);
 
+// The end of the First Hour uses explicit row metadata. The choir's
+// proclamation stays normal text; only the speaker cue is red.
+const closing = buildHoursDocument({
+  entry,
+  content: {sections: [
+    {title:'',kind:'prayer',dividerBefore:true,rows:[
+      {church:'Господи, помилуй. (40)',presentation:'left-response',dividerAfter:true},
+      {church:'Иже на всякое время.',redInitial:true,dividerAfter:true},
+      {church:'Честне́йшую Херувим.',redInitial:true,dividerAfter:true},
+      {church:'Именем Господним благослови, отче.',
+        presentation:'liturgical-red',dividerAfter:true},
+      {church:'Хор: Слава Отцу и Сыну и Святому Духу.',
+        dividerAfter:true},
+      {church:'Благослови.',presentation:'liturgical-red'},
+    ]},
+  ]},
+  viewMode:'church',
+});
+const closingSection = closing.sections[0];
+assert.match(closingSection.className, /hours-divider-before/);
+assert.equal(closingSection.rows[0].dividerAfter,true);
+assert.match(closingSection.rows[0].blocks[0].className,
+  /hours-presentation-left-response/);
+assert.deepEqual(marksOf(closingSection.rows[1].blocks[0]),
+  [{kind:'initial',text:'И'}]);
+assert.deepEqual(marksOf(closingSection.rows[2].blocks[0]),
+  [{kind:'initial',text:'Ч'}]);
+assert.match(closingSection.rows[3].blocks[0].className,
+  /hours-presentation-liturgical-red/);
+assert.deepEqual(marksOf(closingSection.rows[4].blocks[0]),
+  [{kind:'speaker',text:'Хор:'}]);
+assert.match(closingSection.rows[5].blocks[0].className,
+  /hours-presentation-liturgical-red/);
+
 const runtime = read('src/components/reader/selectableDocumentReader/runtime.js');
 const styles = read('src/components/reader/selectableDocumentReader/styles.js');
 assert.match(runtime, /itemConfig\?\.sourceType === 'hours'/);
@@ -159,4 +193,8 @@ assert.match(styles, /HOURS_READER_TYPOGRAPHY_V1/);
 assert.match(styles, /\.rule-item\.hours-section \.reader-text\.hours-text/);
 assert.match(styles, /\.hours-mark-doxology/);
 assert.match(styles, /\.hours-mark-mercy/);
+assert.match(styles, /\.hours-divider-before/);
+assert.match(styles, /\.hours-presentation-left-response/);
+assert.match(styles, /\.hours-presentation-liturgical-red/);
+assert.match(styles, /\.hours-presentation-liturgical-label/);
 console.log('PASS: Hours typography, Cyrillic accents, original text/selection indices, four language modes');
