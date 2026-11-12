@@ -3,8 +3,11 @@
 // change word order, infer missing translations, or change selection offsets.
 
 const removeStress = (value) =>
+  // Do not remove U+0306 (й) or U+0308 (ё); both are letters,
+  // not pronunciation marks. Recompose before Cyrillic matching.
   String(value || '').normalize('NFD')
-    .replace(/[\u0300-\u036f\u0483-\u0489]/gu, '');
+    .replace(/[\u0300\u0301\u0340\u0341\u0483-\u0489]/gu, '')
+    .normalize('NFC');
 
 const canonical = (value) =>
   removeStress(value).replace(/\s+/gu, ' ').trim().toLocaleLowerCase('ru');
@@ -46,14 +49,19 @@ const mappedText = (value) => {
   let normalized = '';
   const offsets = [];
   for (let i = 0; i < original.length;) {
-    const cp = String.fromCodePoint(original.codePointAt(i));
-    const part = cp.normalize('NFD');
-    for (const char of part) {
-      if (/[\u0300-\u036f\u0483-\u0489]/u.test(char)) continue;
-      normalized += char;
-      offsets.push(i);
+    const start = i;
+    // Take a base code point plus any combining marks as one cluster.
+    let cluster = String.fromCodePoint(original.codePointAt(i));
+    i += cluster.length;
+    while (i < original.length && /[\u0300-\u036f\u0483-\u0489]/u.test(original[i])) {
+      cluster += original[i];
+      i += 1;
     }
-    i += cp.length;
+    const clean = removeStress(cluster);
+    for (let j = 0; j < clean.length; j += 1) {
+      normalized += clean[j];
+      offsets.push(start);
+    }
   }
   return {normalized, offsets};
 };
@@ -65,7 +73,7 @@ export const collectHoursTextMarks = (value) => {
   const push = (start, end, kind) => {
     if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
     // Include trailing combining accents in the styled word.
-    while (end < value.length && /[\u0300-\u036f\u0483-\u0489]/u.test(value[end])) end += 1;
+    while (end < value.length && /[\u0300\u0301\u0340\u0341\u0483-\u0489]/u.test(value[end])) end += 1;
     ranges.push({start, end, kind});
   };
   const add = (pattern, kind, locate = (m) => [m.index, m.index + m[0].length]) => {
@@ -92,7 +100,7 @@ export const collectHoursTextMarks = (value) => {
     'doxology');
   add(/господи,?\s+помилуй/giu, 'mercy');
   add(/аллилуи[ая]/giu, 'alleluia');
-  add(/\(\s*(?:3|12|40|трижды|поклон(?:ы)?|три\s+раза)\s*[.]?\s*\)|(?=\s|[:.,;!?]|$)трижды(?=\s|[:.,;!?]|$)/giu,
+  add(/\(\s*(?:3|12|40|трижды|поклон(?:ы)?|три\s+раза)\s*[.]?\s*\)|трижды(?=\s|[:.,;!?]|$)/giu,
     'repeat');
   add(/(?:^|\n)\s*(тропарь|кондак|богородичен|стихира|прокимен|паремия|паримия|глас|молитва|кафизма|священник|чтец)(?=\s|[:.,;!?]|$)[^\n:]{0,45}:/gimu,
     'cue',
