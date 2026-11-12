@@ -79,6 +79,40 @@ assert.deepEqual(after[5].rows.map(x => x.presentation), [
   'liturgical-label', 'placeholder', 'comment',
 ]);
 assert.equal(after[5].noBottomDivider, true);
+assert.equal(after[2].rows[4].redInitial, true,
+  'The first letter of Что Тя наречем is red but not enlarged');
+assert.equal(after[5].rows[0].dividerAfter, true,
+  'Divider after the Trisagion / Our Father rubric');
+assert.equal(after[9].dividerBefore, true,
+  'Divider immediately after Saturday Bogorodichen dropdown');
+assert.deepEqual(after[9].rows.map(r => r.dividerAfter === true),
+  [true, true, true, true, true, true, false]);
+assert.deepEqual(after[9].rows.filter(r => r.redInitial).map(r => r.church[0]),
+  ['И', 'Ч']);
+assert.equal(after[9].rows[0].presentation, 'left-response');
+assert.equal(after[9].rows[2].presentation, 'left-response');
+assert.equal(after[9].rows[5].presentation, 'liturgical-red');
+assert.equal(after[10].rows.length, 7);
+assert.ok(after[10].rows.every(r => r.redInitial === true),
+  'All St. Ephrem paragraphs have a red normal-size first letter');
+assert.deepEqual(after[10].rows.map(r => r.dividerAfter === true),
+  [true, true, true, true, true, true, false]);
+assert.deepEqual(after[11].rows.map(r => r.church), [
+  'Трисвятое. И по Отче наш:',
+  'Господи, помилуй. (12)',
+  ...[after[11].rows[2].church, after[11].rows[3].church],
+  'Господи, помилуй. (Трижды)',
+  'Благослови.',
+  'Иерей произносит отпуст.',
+]);
+assert.ok(after[11].rows[2].church.startsWith('Иерей: Христе́, Све́те истинный'));
+assert.ok(after[11].rows[3].church.startsWith('Хор: Сла́ва Отцу́'));
+assert.deepEqual(after[11].rows.slice(0,5).map(r => r.dividerAfter),
+  [true, true, true, true, true]);
+assert.deepEqual(after[11].rows.map(r => r.presentation || ''), [
+  'liturgical-label', 'left-response', '', '', 'left-response',
+  'liturgical-red', 'liturgical-red',
+]);
 assert.match(after[9].rows[0].church, /^Господи, помилуй\. \(40\)/);
 assert.match(after[9].rows[1].church, /^Иже на всякое время/);
 assert.match(after[10].rows[1].church, /^Го́споди и Влады́ко/);
@@ -169,4 +203,4 @@ assert.match(styles,/hours-presentation-rubric-label/);
 assert.match(styles,/\.reader-row\.hours-row-divider-after/);
 assert.match(styles,/\.reader-row\.hours-row-compact-after/);
 assert.doesNotMatch(styles,/hours-psalm-opening::first-letter/);
-console.log('PASS: First Hour — Lenten tropar verses, red initials, Trisagion rubric, kondak, comments and five dropdowns');
+console.log('PASS: First Hour complete conclusion, separated responses, red cues, five dropdowns and original Psalms preserved');
