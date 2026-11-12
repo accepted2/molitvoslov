@@ -220,7 +220,7 @@ assert.deepEqual(marked(russianDoc.sections[6].rows[2].blocks[0],'devotional'),
   ['И ныне и присно и во веки веков. Аминь.']);
 assert.deepEqual(marked(russianDoc.sections[15].rows[15].blocks[0],'devotional'),
   ['Слава Отцу и Сыну и Святому Духу, и ныне и присно и во веки веков. Аминь.']);
-assert.deepEqual(marked(russianDoc.sections[8].rows[3].blocks[0],'devotional'),
+assert.deepEqual(marked(russianDoc.sections[7].rows[3].blocks[0],'devotional'),
   ['Слава Отцу, и Сыну, и Святому Духу']);
 for(const section of russianDoc.sections) {
   for(const row of section.rows) for(const block of row.blocks) {
