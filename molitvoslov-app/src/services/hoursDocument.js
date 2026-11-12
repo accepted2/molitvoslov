@@ -80,8 +80,12 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
     const kind = classifyHoursRow({text, sectionKind});
     const visualNote = [
       'comment', 'placeholder', 'rubric-label', 'liturgical-label',
+      'liturgical-red', 'left-response',
     ].includes(presentation) ? presentation : '';
-    const hoursMarks = visualNote ? [] : collectHoursTextMarks(text);
+    // Left-aligned responses retain their normal inline word annotations.
+    const hoursMarks = visualNote && visualNote !== 'left-response'
+      ? []
+      : collectHoursTextMarks(text);
     // Only a specifically indicated cue is colored. Source punctuation,
     // paragraph text, and the original UTF-16 selection indices are unchanged.
     if (accentPrefix && text.startsWith(accentPrefix)) {
@@ -197,6 +201,7 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
         className: ['hours-section', 'hours-section-' + sectionKind,
           viewMode === READER_LANGUAGE_MODES.TRADITIONAL ? 'hours-traditional-section' : '',
           section.noBottomDivider === true ? 'hours-no-bottom-divider' : '',
+          section.dividerBefore === true ? 'hours-divider-before' : '',
         ].filter(Boolean).join(' '),
         progressAnchorId: sectionIndex + 1,
         trackProgress: true,
