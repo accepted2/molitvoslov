@@ -1,78 +1,122 @@
 #!/usr/bin/env node
 'use strict';
-// From molitvoslov-app: node tools/test_hours_first_hour_editorial.js
+// Run from molitvoslov-app: node tools/test_hours_first_hour_editorial.js
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const read = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+const read = name => fs.readFileSync(path.join(__dirname, '..', name), 'utf8');
+const edition = JSON.parse(read('src/data/hoursFirstHourEditorial.json'));
+const service = new Function('editedFirstHour',
+  read('src/services/hoursFirstHourEditorial.js')
+    .replace(/^import[\s\S]*?from ['"][^'"]+['"];\s*/gm, '')
+    .replace(/\bexport const /g, 'const ') +
+  '\nreturn {getEditedFirstHour,trimImportedPsalmAppendix};'
+)(edition);
+const {getEditedFirstHour,trimImportedPsalmAppendix} = service;
 
-const editable = JSON.parse(read('src/data/hoursFirstHourEditorial.json'));
-const code = read('src/services/hoursFirstHourEditorial.js')
-  .replace(/^import[\s\S]*?from ['"][^'"]+['"];\s*/gm, '')
-  .replace(/\bexport const /g, 'const ');
-const {getEditedFirstHour} = new Function('editedFirstHour', code +
-  '\nreturn {getEditedFirstHour};')(editable);
-
-assert.equal(editable.entryId, 'ordinary-1');
-const editorialString = JSON.stringify(editable);
-assert.doesNotMatch(editorialString, /[áéíóúýÁÉÓ]/u,
-  'No Latin accented letters inside Cyrillic source text');
-assert.ok((editorialString.match(/[\u0300\u0301\u0340\u0341]/gu) || []).length > 50,
-  'Accent marks must be present in the supplied editorial text');
-assert.equal(editable.opening.rows.length, 3);
-assert.equal(editable.opening.rows[0].church,
+assert.equal(edition.entryId, 'ordinary-1');
+assert.equal(edition.opening.rows.length, 3);
+assert.equal(edition.opening.rows[0].church,
   'Прииди́те, поклони́мся Царе́ви на́шему Бо́гу.');
-assert.equal(editable.opening.rows[2].church,
-  'Прииди́те, поклони́мся и припаде́м Самому́ Христу́, Царе́ви и Бо́гу на́шему.');
-assert.ok(editable.afterPsalms.length >= 12);
-assert.match(JSON.stringify(editable.afterPsalms), /Сла́ва Отцу́ и Сы́ну/);
-assert.match(JSON.stringify(editable.afterPsalms), /Аллилу́иа/);
-assert.match(JSON.stringify(editable.afterPsalms), /Го́споди, поми́луй/);
-assert.match(JSON.stringify(editable.afterPsalms), /молитва св. Ефрема Сирина/);
-assert.match(JSON.stringify(editable.afterPsalms), /понедельник, вторник и четверг/);
-assert.match(JSON.stringify(editable.afterPsalms), /среда и пятница/);
-assert.match(JSON.stringify(editable.afterPsalms), /Богородичен — суббота/);
-assert.match(JSON.stringify(editable.afterPsalms), /Иерей произносит отпуст/);
+assert.ok((JSON.stringify(edition).match(/[\u0300\u0301]/gu) || []).length > 50);
+assert.doesNotMatch(JSON.stringify(edition), /[áéíóúýÁÉÓ]/u);
 
-const psalm = (num, s) => ({
-  title: 'Псалом ' + num + ':',
-  rows: [{church:'Церковнославянский псалом ' + num + ': ' + s,
-    russian:'Русский псалом ' + num + ': ' + s}],
-});
-const fixture = {sections: [
-  {title:'Начало часа',rows:[
-    {church:'Старое начало',russian:'Русское начало'}]},
-  psalm(5,'Глаго́лы моя'),
-  psalm(89,'Отче наш'),
-  psalm(100,'Милость и суд'),
-  {title:'Исходное окончание',rows:[
-    {church:'Прежнее окончание',russian:'Русское окончание'}]},
-]};
-const before = JSON.stringify(fixture);
-const result = getEditedFirstHour(fixture);
-assert.equal(result.applied, true);
-assert.deepEqual(result.preservedPsalms, [5,89,100]);
-assert.equal(result.sections.length, 1 + 3 + editable.afterPsalms.length);
-assert.deepEqual(result.sections.slice(1,4), fixture.sections.slice(1,4));
-assert.equal(result.sections[0].rows[0].church, editable.opening.rows[0].church);
-assert.equal(result.sections[4].title, 'После псалмов');
-assert.equal(result.sections[4].rows[0].church,
+const after = edition.afterPsalms;
+assert.equal(after.length, 12);
+assert.deepEqual(after.map(s => s.title), [
+  '', '', '', 'Если Великий пост — тропарь, глас 6',
+  '', '', 'В понедельник, вторник и четверг',
+  'В среду и пятницу', 'В субботу', '',
+  'Если Великий пост — молитва святого Ефрема Сирина', '',
+]);
+assert.equal(after[0].rows.length, 3);
+assert.equal(after[0].rows[0].church,
   'Сла́ва Отцу́ и Сы́ну и Свято́му Ду́ху, и ны́не и при́сно и во ве́ки веко́в. Ами́нь.');
-assert.ok(result.russianUnpaired.some(section =>
-  section.rows.some(row => row.russian === 'Русское окончание')));
-assert.equal(JSON.stringify(fixture), before, 'Do not rewrite 20 imported local texts');
+assert.equal(after[0].rows[1].church,
+  'Аллилу́иа, аллилу́иа, аллилу́иа, сла́ва Тебе́ Бо́же. (трижды)');
+assert.equal(after[0].rows[2].church, 'Го́споди, поми́луй. (трижды)');
+assert.match(after[1].rows[0].church, /Если один тропарь/);
+assert.match(after[1].rows[1].church, /Если два тропаря/);
+assert.equal(after[2].rows[0].church, 'Сла́ва Отцу́ и Сы́ну и Свято́му Ду́ху:');
+assert.equal(after[2].rows[1].church, 'Тропарь дня.');
+assert.equal(after[2].rows[2].church,
+  'И ны́не и при́сно и во ве́ки веко́в. Ами́нь.');
+assert.equal(after[2].rows[3].church, 'Богородичен:');
+assert.match(after[2].rows[4].church, /^Что Тя нарече́м, о Благода́тная\?/);
+assert.match(after[2].rows[4].church, /Того́ моли́ спасти́ся душа́м на́шим\.$/);
+assert.match(after[3].rows[0].church, /^Зау́тра услыши/);
+assert.match(after[4].rows[0].church, /^Стопы́ моя направи/);
+assert.match(after[4].rows[1].church, /^Да испо́лнятся/);
+assert.match(after[5].rows[0].church, /Кондак праздника/);
+assert.match(after[5].rows[1].church, /Если кондака нет/);
+assert.match(after[9].rows[0].church, /^Господи, помилуй\. \(40\)/);
+assert.match(after[9].rows[1].church, /^Иже на всякое время/);
+assert.match(after[10].rows[1].church, /^Го́споди и Влады́ко/);
+assert.match(after[11].rows[0].church, /^Трисвятое/);
+assert.match(after[11].rows.at(-1).church, /Иерей произносит отпуст/);
+assert.deepEqual(after.filter(s => s.collapsible).map(s => s.accordionId), [
+  'first-hour-lent-tropar', 'first-hour-monday',
+  'first-hour-wednesday', 'first-hour-saturday', 'first-hour-ephrem',
+]);
+assert.ok(!after.some(s => s.title === 'После псалмов'));
+assert.ok(!after.some(s => s.title.includes('Тропари по уставу')));
+assert.ok(!JSON.stringify(after).includes('Первый тропарь (!)'));
 
-const missing = getEditedFirstHour({sections: [fixture.sections[1],fixture.sections[2]]});
-assert.equal(missing.applied, false);
-assert.match(missing.reason, /Psalms 5, 89, 100/);
+const original = {sections:[
+  {title:'Старое начало',rows:[{church:'До псалмов',russian:'Opening Russian'}]},
+  {title:'Псалом 5',rows:[{church:'Пятый псалом',russian:'5th Psalm'}]},
+  {title:'Псалом 89',rows:[{church:'89-й псалом',russian:'89th Psalm'}]},
+  {title:'Псалом 100',rows:[
+    {church:'Последний стих псалма 100.',russian:'Psalm 100 final verse.'},
+    {church:'Слава, и ныне: Аллилуиа, аллилуиа, аллилуиа. Господи, помилуй.',
+      russian:'Слава, и ныне: Аллилуиа, аллилуиа, аллилуиа.'},
+    {church:'И аще убо Бог Господь поется, глаголем:',russian:'Following rubric'},
+  ]},
+  {title:'После старого окончания',rows:[
+    {church:'Старое окончание',russian:'Russian unedited ending'}]},
+]};
+const unchanged = JSON.stringify(original);
+const result = getEditedFirstHour(original);
+assert.equal(result.applied,true);
+assert.equal(result.removedImportedPostPsalmAppendix,true);
+assert.deepEqual(result.preservedPsalms,[5,89,100]);
+assert.equal(result.sections.length, 1 + 3 + after.length);
+assert.deepEqual(result.sections[1],original.sections[1]);
+assert.deepEqual(result.sections[2],original.sections[2]);
+assert.deepEqual(result.sections[3].rows,original.sections[3].rows.slice(0,1));
+assert.equal(result.sections[4].title,'');
+assert.equal(result.sections[4].rows[0].church,after[0].rows[0].church);
+assert.ok(!JSON.stringify(result.sections).includes('И аще убо Бог Господь'));
+assert.ok(!JSON.stringify(result.sections).includes('Русское старое окончание'));
+assert.ok(!JSON.stringify(result.sections).includes('Старое окончание'));
+assert.equal(JSON.stringify(original), unchanged, 'Source corpus must not change');
 
-const css = read('src/components/reader/selectableDocumentReader/styles.js');
-assert.match(css, /hours-section \.section-header::after\s*\{\s*content: none/);
-assert.match(css, /\.reader-text\.hours-psalm-opening::first-letter/);
-assert.match(css, /font-size: inherit !important/);
-assert.doesNotMatch(css, /hours-psalm-opening::first-letter\s*\{[^}]*font-size:\s*2\.2em/s);
-const document = read('src/services/hoursDocument.js');
-assert.match(document, /getEditedFirstHour\(content\)/);
-assert.match(document, /cleanHeading\(section.title\)/);
-assert.match(document, /viewMode === READER_LANGUAGE_MODES.BOTH/);
-console.log('PASS: first-hour prayers, three Psalms preserved, accents, rubrics, no drop cap or underline');
+const inline = trimImportedPsalmAppendix({title:'Псалом 100',rows:[
+  {church:'Стихи псалма. Слава, и ныне: Аллилуиа, аллилуиа, аллилуиа.',
+    russian:'Russian psalm. Слава, и ныне: Аллилуиа, аллилуиа.'},
+]});
+assert.equal(inline.trimmed,true);
+assert.deepEqual(inline.section.rows,[{church:'Стихи псалма.',russian:'Russian psalm.'}]);
+
+const noRite = trimImportedPsalmAppendix({title:'Псалом 100',rows:[
+  {church:'Стихи псалма. Слава, и ныне: обыкновенный оборот без аллилуиа рядом.',russian:'Psalm'},
+]});
+assert.equal(noRite.trimmed,false);
+
+const missing = getEditedFirstHour({sections:original.sections.slice(1,3)});
+assert.equal(missing.applied,false);
+
+const doc = read('src/services/hoursDocument.js');
+const runtime = read('src/components/reader/selectableDocumentReader/runtime.js');
+const styles = read('src/components/reader/selectableDocumentReader/styles.js');
+assert.match(doc,/collapsible: section\.collapsible === true/);
+assert.match(doc,/accordionId: section\.accordionId \|\| null/);
+assert.doesNotMatch(doc,/firstHourEdit\.russianUnpaired/);
+assert.match(runtime,/const details = el\('details', 'hours-accordion'\)/);
+assert.match(runtime,/const summary = el\('summary', 'hours-accordion-toggle', section\.title\)/);
+assert.match(runtime,/rowsContainer\.appendChild\( rowNode \)/);
+assert.match(styles,/\.hours-accordion-toggle/);
+assert.match(styles,/\.hours-accordion\[open\]/);
+assert.match(styles,/hours-section \.section-header::after\s*\{\s*content: none/);
+assert.match(styles,/font-size: inherit !important/);
+console.log('PASS: First Hour order, psalm cleanup, five dropdowns, no stale ending or duplicate headings');
