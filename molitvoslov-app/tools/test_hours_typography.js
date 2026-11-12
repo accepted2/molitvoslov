@@ -37,6 +37,7 @@ for (let i = 1; i < marks.length; i += 1) {
   assert.ok(marks[i].start >= marks[i-1].end, 'Overlapping typography ranges');
 }
 assert.deepEqual(collectHoursTextMarks('Глаго́лы моѧ́ внꙋшѝ, Гд҃и.'), []);
+assert.equal(classifyHoursRow({text:'Глаго́лы мои',sectionKind:'psalm'}),'psalm');
 
 const MODE = {CHURCH:'church',RUSSIAN:'russian',BOTH:'both',TRADITIONAL:'traditional'};
 const languageOptions = () => [
@@ -82,7 +83,11 @@ assert.equal(rus.sections[0].rows[0].blocks[0].text, content.sections[0].rows[0]
 assert.equal(both.sections[0].rows[0].blocks.length, 2);
 assert.equal(both.sections[0].rows[0].blocks[0].text, content.sections[0].rows[0].church);
 assert.equal(both.sections[0].rows[0].blocks[1].text, content.sections[0].rows[0].russian);
-assert.equal(both.sections[0].rows[0].blocks[0].hoursMarks.length, 0);
+assert.deepEqual(both.sections[0].rows[0].blocks[0].hoursMarks.map(mark => mark.kind),
+  ['initial']);
+assert.equal(both.sections[0].rows[0].blocks[0].text.slice(
+  both.sections[0].rows[0].blocks[0].hoursMarks[0].start,
+  both.sections[0].rows[0].blocks[0].hoursMarks[0].end), 'В');
 assert.deepEqual(both.sections[0].rows[1].blocks[0].hoursMarks.map(m=>m.kind),
   ['speaker','mercy','repeat']);
 assert.equal(csl.sections[0].progressAnchorId, rus.sections[0].progressAnchorId,
