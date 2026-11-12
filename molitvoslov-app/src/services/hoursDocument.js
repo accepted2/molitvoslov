@@ -6,6 +6,10 @@ import {
   collectHoursTextMarks,
 } from './hoursTypography';
 import {getEditedFirstHour} from './hoursFirstHourEditorial';
+import {
+  getFirstHourRussianSections,
+  pairFirstHourSections,
+} from './hoursFirstHourRussian';
 
 const MISSING = {
   church: 'Церковнославянский текст этого часа пока не добавлен.',
@@ -29,7 +33,11 @@ export const getHoursLanguageAvailability = (content) => {
 };
 
 export const buildHoursDocument = ({entry, content, viewMode}) => {
-  const available = getHoursLanguageAvailability(content);
+  const isFirstHour = entry.id === 'ordinary-1';
+  const available = {
+    ...getHoursLanguageAvailability(content),
+    ...(isFirstHour ? {hasRussian: true} : {}),
+  };
   const options = buildReaderLanguageOptions({
     hasChurch: true,
     hasRussian: true,
@@ -54,17 +62,29 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
       ? available.hasTraditional
       : available.hasChurch;
 
-  const firstHourEdit = entry.id === 'ordinary-1'
+  const firstHourEdit = isFirstHour
     ? getEditedFirstHour(content)
     : {applied: false};
+  const firstHourRussian = isFirstHour ? getFirstHourRussianSections() : null;
   const useFirstHourEdit = firstHourEdit.applied &&
     (viewMode === READER_LANGUAGE_MODES.CHURCH ||
       viewMode === READER_LANGUAGE_MODES.BOTH);
+  const bilingualFirstHour = useFirstHourEdit &&
+    viewMode === READER_LANGUAGE_MODES.BOTH && firstHourRussian
+      ? pairFirstHourSections({
+          churchSections: firstHourEdit.sections,
+          russianSections: firstHourRussian,
+        })
+      : null;
   const sourceSections = viewMode === READER_LANGUAGE_MODES.TRADITIONAL
     ? content?.traditionalSections
-    : useFirstHourEdit
-      ? firstHourEdit.sections
-      : content?.sections;
+    : isFirstHour && viewMode === READER_LANGUAGE_MODES.RUSSIAN
+      ? firstHourRussian
+      : bilingualFirstHour?.every(Boolean)
+        ? bilingualFirstHour
+        : useFirstHourEdit
+          ? firstHourEdit.sections
+          : content?.sections;
   // Only section headings lose their incidental underline/colon.
   // Punctuation inside prayers, verses and dialogue is never edited.
   const cleanHeading = value => String(value || '')
@@ -80,10 +100,11 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
     const kind = classifyHoursRow({text, sectionKind});
     const visualNote = [
       'comment', 'placeholder', 'rubric-label', 'liturgical-label',
-      'liturgical-red', 'left-response',
+      'liturgical-red', 'left-response', 'liturgical-prayers',
     ].includes(presentation) ? presentation : '';
     // Left-aligned responses retain their normal inline word annotations.
-    const hoursMarks = visualNote && visualNote !== 'left-response'
+    const hoursMarks = visualNote &&
+      !['left-response', 'liturgical-prayers'].includes(visualNote)
       ? []
       : collectHoursTextMarks(text);
     // Only a specifically indicated cue is colored. Source punctuation,
@@ -166,9 +187,15 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
           title,
           sectionKind,
           opening: rowIndex === 0,
-          presentation: row.presentation,
-          redInitial: row.redInitial === true,
-          accentPrefix: row.accentPrefix || '',
+          presentation: field === 'russian'
+            ? (row.russianPresentation || row.presentation)
+            : row.presentation,
+          redInitial: field === 'russian'
+            ? (row.russianRedInitial ?? (row.redInitial === true))
+            : row.redInitial === true,
+          accentPrefix: field === 'russian'
+            ? (row.russianAccentPrefix || row.accentPrefix || '')
+            : row.accentPrefix || '',
         });
       };
       let blocks;
@@ -217,7 +244,7 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
   const incompleteTranslation =
     (viewMode === READER_LANGUAGE_MODES.BOTH || viewMode === READER_LANGUAGE_MODES.RUSSIAN) &&
     missingRussianRows;
-  const missingNote = useFirstHourEdit && viewMode === READER_LANGUAGE_MODES.BOTH
+  const missingNote = bilingualFirstHour?.every(Boolean)
     ? ''
     : incompleteTranslation
       ? (available.hasRussian
