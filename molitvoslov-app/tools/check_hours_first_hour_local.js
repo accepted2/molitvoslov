@@ -33,6 +33,12 @@ if (!source.entries?.['ordinary-1']) {
     process.exitCode = 1;
   } else {
     console.log('Сохранены псалмы:', merged.preservedPsalms.join(', '));
+    console.log('Старый хвост после 100-го псалма:',
+      merged.removedImportedPostPsalmAppendix
+        ? 'отсечён от текста'
+        : 'не обнаружен внутри псалма');
+    console.log('Раскрывающихся уставных блоков:',
+      merged.sections.filter(section => section.collapsible).length);
     console.log('Секции до и после:',
       original.sections?.length || 0, '→', merged.sections.length);
     const countAccents = text =>
