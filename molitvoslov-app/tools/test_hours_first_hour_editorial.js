@@ -193,8 +193,10 @@ const runtime = read('src/components/reader/selectableDocumentReader/runtime.js'
 const styles = read('src/components/reader/selectableDocumentReader/styles.js');
 assert.match(doc,/collapsible: section\.collapsible === true/);
 assert.match(doc,/dividerAfter: row\.dividerAfter === true/);
-assert.match(doc,/redInitial: row\.redInitial === true/);
-assert.match(doc,/accentPrefix: row\.accentPrefix \|\| ''/);
+assert.match(doc,/redInitial: field === 'russian'/);
+assert.match(doc,/accentPrefix: field === 'russian'/);
+assert.match(doc,/russianRedInitial/);
+assert.match(doc,/russianAccentPrefix/);
 assert.match(doc,/section\.noBottomDivider === true/);
 assert.match(doc,/compactAfter: row\.compactAfter === true/);
 assert.match(doc,/hours-presentation-/);
