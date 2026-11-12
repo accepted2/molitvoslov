@@ -55,9 +55,10 @@
           "dividerAfter": true
         },
         {
-          "russian": "Аллилуия, аллилуия, аллилуия, слава Тебе, Боже. (3)",
+          "russian": "Аллилуия, аллилуия, аллилуия,\nслава Тебе, Боже. (3)",
           "presentation": "left-response",
-          "dividerAfter": true
+          "dividerAfter": true,
+          "preserveLineBreaks": true
         },
         {
           "russian": "Господи, помилуй. (3)",
