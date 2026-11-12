@@ -49,15 +49,17 @@ const documentCode = read('src/services/hoursDocument.js')
 const factory = new Function(
   'hoursTexts', 'READER_LANGUAGE_MODES', 'buildReaderLanguageOptions',
   'classifyHoursRow', 'classifyHoursSection', 'collectHoursTextMarks',
-  'getEditedFirstHour',
+  'getEditedFirstHour', 'getFirstHourRussianSections', 'pairFirstHourSections',
   documentCode + '\nreturn {buildHoursDocument};'
 );
 const {buildHoursDocument} = factory(
   {entries:{}}, MODE, languageOptions,
   classifyHoursRow, classifyHoursSection, collectHoursTextMarks,
-  () => ({applied: false})
+  () => ({applied: false}),
+  () => [{title:'',kind:'psalm',rows:[{russian:'Русский отрывок.'}]}],
+  () => null
 );
-const entry = {id:'ordinary-1',groupId:'ordinary',title:'Первый час',sourceId:910001};
+const entry = {id:'ordinary-3',groupId:'ordinary',title:'Третий час',sourceId:910003};
 const content = {sections: [
   {title:'Псалом 5',rows:[
     {church:'Внуши, Господи, глаголы моя.',
