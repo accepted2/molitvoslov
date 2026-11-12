@@ -255,8 +255,10 @@ assert.deepEqual(marked(lentRu[4].blocks[0],'devotional'),[],
   'The Lenten priest prayer must remain normal text.');
 assert.deepEqual(marked(lentRu[6].blocks[0],'devotional'),[],
   'The Lenten reader prayer must remain normal text.');
-assert.deepEqual(marked(lentRu[3].blocks[0],'speaker'),['Священник:']);
-assert.deepEqual(marked(lentRu[5].blocks[0],'speaker'),['Чтец:']);
+assert.deepEqual(lentRu[3].blocks[0].hoursMarks,[],
+  'The red role label is styled by its liturgical-red block class.');
+assert.deepEqual(lentRu[5].blocks[0].hoursMarks,[],
+  'The red role label is styled by its liturgical-red block class.');
 assert.equal(russianDoc.sections[9].rows[0].blocks[0].text,
   'Святый Боже, Святый Крепкий, Святый Безсмертный, помилуй нас.');
 assert.equal(russianDoc.sections[15].rows[0].blocks[0].text,
