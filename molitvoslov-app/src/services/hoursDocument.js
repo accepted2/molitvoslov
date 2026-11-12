@@ -193,7 +193,7 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
     (viewMode === READER_LANGUAGE_MODES.BOTH || viewMode === READER_LANGUAGE_MODES.RUSSIAN) &&
     missingRussianRows;
   const missingNote = useFirstHourEdit && viewMode === READER_LANGUAGE_MODES.BOTH
-    ? 'Редакторские исправления ЦС пока не сопоставлены построчно с русским переводом. Исходный русский текст других частей приведён отдельно.'
+    ? ''
     : incompleteTranslation
       ? (available.hasRussian
         ? 'Часть фрагментов русского перевода пока отсутствует.'
