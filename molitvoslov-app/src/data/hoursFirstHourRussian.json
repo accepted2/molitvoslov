@@ -126,9 +126,23 @@
           "dividerAfter": true
         },
         {
-          "russian": "Священник: Слава Отцу, и Сыну, и Святому Духу.\nЧтец: И ныне, и всегда, и во веки веков. Аминь.",
-          "dividerAfter": true,
-          "preserveLineBreaks": true
+          "russian": "Священник:",
+          "presentation": "liturgical-red",
+          "compactAfter": true
+        },
+        {
+          "russian": "Слава Отцу, и Сыну, и Святому Духу.",
+          "presentation": "plain-prayer"
+        },
+        {
+          "russian": "Чтец:",
+          "presentation": "liturgical-red",
+          "compactAfter": true
+        },
+        {
+          "russian": "И ныне, и всегда, и во веки веков. Аминь.",
+          "presentation": "plain-prayer",
+          "dividerAfter": true
         },
         {
           "russian": "Богородичен: Как назвать нам Тебя, о Благодатная? Небом? Ибо чрез Тебя воссияло Солнце правды. Раем? Ибо израстила Ты Цвет нетления. Девой? Ибо Ты пребыла нетленной. Чистой Матерью? Ибо держала во святых Твоих объятиях Сына, всех Бога. Его моли о спасении душ наших.",
@@ -157,11 +171,6 @@
       "title": "",
       "kind": "rubric",
       "rows": [
-        {
-          "russian": "Трисвятое. И по Отче наш:",
-          "presentation": "liturgical-label",
-          "dividerAfter": true
-        },
         {
           "russian": "Святый Боже, Святый Крепкий, Святый Безсмертный, помилуй нас.",
           "redInitial": true,
