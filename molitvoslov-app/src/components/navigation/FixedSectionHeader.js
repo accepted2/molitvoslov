@@ -50,6 +50,8 @@ export const FixedSectionHeader = ({
   // Freeze the reading header while the language menu is open. A scroll/idle
   // hide event must not dismiss the menu before the user can choose a language.
   const headerHidden = readingHidden && !languageOpen;
+  // Category headers overlay decorative artwork; reading chrome is unchanged.
+  const categoryHeaderContrast = !compactReading && !minimal && showTitle;
   useEffect(() => {
     Animated.timing(visibility, {
       toValue: headerHidden ? 1 : 0,
@@ -85,8 +87,32 @@ export const FixedSectionHeader = ({
         ]}
       >
 
-        {/* A subtle matte backing prevents prayer text from showing through
-            the controls. It is intentionally absent in category screens. */}
+        {/* A warm fade provides legible text over decorative parchment
+            without hiding the artwork or intercepting touches. */}
+        {categoryHeaderContrast && (
+          <LinearGradient
+            pointerEvents="none"
+            colors={chromeDark
+              ? [
+                  'rgba(24, 19, 15, 0.83)',
+                  'rgba(24, 19, 15, 0.66)',
+                  'rgba(24, 19, 15, 0.22)',
+                  'rgba(24, 19, 15, 0)',
+                ]
+              : [
+                  'rgba(250, 236, 207, 0.82)',
+                  'rgba(250, 236, 207, 0.69)',
+                  'rgba(250, 236, 207, 0.24)',
+                  'rgba(250, 236, 207, 0)',
+                ]}
+            locations={[0, 0.42, 0.74, 1]}
+            start={{x: 0.5, y: 0}}
+            end={{x: 0.5, y: 1}}
+            style={[styles.categoryContrastGradient, {height: headerHeight + 38}]}
+          />
+        )}
+
+        {/* Keep the existing matte backing only in reading screens. */}
         {compactReading && (
           <View
             pointerEvents="none"
@@ -120,7 +146,11 @@ export const FixedSectionHeader = ({
               {compactReading ? (
                 <Ionicons name="chevron-back" size={23} color={chromeDark ? '#D7B88C' : '#6F4727'} />
               ) : (
-                <Text style={[styles.backArrow, chromeDark && styles.backArrowDark]}>‹</Text>
+                <Text style={[
+                    styles.backArrow,
+                    chromeDark && styles.backArrowDark,
+                    categoryHeaderContrast && (chromeDark ? styles.categoryArrowContrastDark : styles.categoryArrowContrast),
+                  ]}>‹</Text>
               )}
             </Pressable>
           )}
@@ -143,7 +173,9 @@ export const FixedSectionHeader = ({
                   style={[styles.title, styles.titleFlex, compactReading && styles.titleReading, chromeDark && styles.titleDark, {
                     fontSize: (compactReading ? 17 : 21) * uiScale,
                     lineHeight: (compactReading ? 20 : 25) * uiScale,
-                  }, titleTextStyle]}
+                  },
+                    categoryHeaderContrast && (chromeDark ? styles.categoryTitleContrastDark : styles.categoryTitleContrast),
+                    titleTextStyle]}
                   onTextLayout={(event) => {
                     const count = event.nativeEvent?.lines?.length || 1;
                     setTitleLines((previous) => previous === count ? previous : count);
@@ -207,7 +239,11 @@ export const FixedSectionHeader = ({
               {compactReading ? (
                 <Ionicons name="ellipsis-vertical" size={20} color={chromeDark ? '#D7B88C' : '#6F4727'} />
               ) : (
-                <Text style={[styles.menuText, chromeDark && styles.menuTextDark]}>⋮</Text>
+                <Text style={[
+                    styles.menuText,
+                    chromeDark && styles.menuTextDark,
+                    categoryHeaderContrast && (chromeDark ? styles.categoryArrowContrastDark : styles.categoryArrowContrast),
+                  ]}>⋮</Text>
               )}
             </Pressable>
           )}
@@ -260,6 +296,12 @@ const styles = StyleSheet.create({
     // Independent from header animation. Never blocks reader scroll/taps.
     zIndex: 999,
     elevation: 19,
+  },
+  categoryContrastGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
   },
   readerHeaderFrost: {
     position: 'absolute',
@@ -329,6 +371,19 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
     fontSize: 34,
     lineHeight: 46,
+  },
+  // A small light halo retains letter edges over detailed backgrounds.
+  categoryArrowContrast: {
+    color: '#432819',
+    textShadowColor: 'rgba(255, 246, 222, 0.97)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 3,
+  },
+  categoryArrowContrastDark: {
+    color: '#F2E2C9',
+    textShadowColor: 'rgba(0, 0, 0, 0.82)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 3,
   },
 
   titleWrap: {
@@ -437,6 +492,18 @@ const styles = StyleSheet.create({
     lineHeight: 25,
     fontWeight: '700',
     flexWrap: 'wrap',
+  },
+  categoryTitleContrast: {
+    color: '#382419',
+    textShadowColor: 'rgba(255, 246, 222, 0.96)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 3,
+  },
+  categoryTitleContrastDark: {
+    color: '#F2E2C9',
+    textShadowColor: 'rgba(0, 0, 0, 0.82)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 3,
   },
 
   ornament: {
