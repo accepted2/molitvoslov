@@ -1603,6 +1603,14 @@ export const MenuScreen = ({navigation}) => {
                   onPress={() => navigation.navigate('Psalter')}
                 />
                 <DecorativeCard
+                  title="Часы"
+                  subtitle="Вседневные, великопостные, царские, пасхальные"
+                  symbol="✦"
+                  iconSource={CATEGORY_ICONS.canons}
+                  artwork={homeArtwork.canons}
+                  onPress={() => navigation.navigate('Hours')}
+                />
+                <DecorativeCard
                   title={t('menu.miscTitle')}
                   subtitle={t('menu.miscSubtitle')}
                   symbol="✦"
