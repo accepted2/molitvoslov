@@ -73,8 +73,23 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
     .replace(/[:：]+\s*$/u, '')
     .trim();
 
-  const createBlock = ({id, language, text, title, sectionKind = 'general', opening = false}) => {
+  const createBlock = ({
+    id, language, text, title, sectionKind = 'general', opening = false,
+    presentation = '',
+  }) => {
     const kind = classifyHoursRow({text, sectionKind});
+    const visualNote = ['comment', 'placeholder', 'rubric-label'].includes(presentation)
+      ? presentation
+      : '';
+    const hoursMarks = visualNote ? [] : collectHoursTextMarks(text);
+    // Color the initial glyph inline instead of using ::first-letter:
+    // a pseudo-letter can become a separate floated glyph in Android WebView.
+    const colorInitial = (opening && kind === 'psalm') || sectionKind === 'opening';
+    if (colorInitial && !hoursMarks.some(mark => mark.start === 0) && text) {
+      let end = String.fromCodePoint(text.codePointAt(0)).length;
+      while (end < text.length && /[\u0300-\u036f\u0483-\u0489]/u.test(text[end])) end++;
+      hoursMarks.unshift({start: 0, end, kind: 'initial'});
+    }
     return {
       id,
       text,
@@ -84,8 +99,9 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
         'hours-' + kind,
         language === 'russian' ? 'secondary' : '',
         opening && kind === 'psalm' ? 'hours-psalm-opening' : '',
+        visualNote ? 'hours-presentation-' + visualNote : '',
       ].filter(Boolean).join(' '),
-      hoursMarks: collectHoursTextMarks(text),
+      hoursMarks,
       sourceType: 'hours',
       sourceId: entry.sourceId,
       anchorType: 'hours_row',
@@ -134,6 +150,7 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
           title,
           sectionKind,
           opening: rowIndex === 0,
+          presentation: row.presentation,
         });
       };
       let blocks;
@@ -153,7 +170,12 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
       }
       // Do not repeat an invented translation for every absent paragraph.
       blocks = blocks.filter(Boolean);
-      if (blocks.length) rows.push({layout: 'stack', blocks});
+      if (blocks.length) rows.push({
+        layout: 'stack',
+        blocks,
+        dividerAfter: row.dividerAfter === true,
+        compactAfter: row.compactAfter === true,
+      });
     }
     if (rows.length) {
       sections.push({
