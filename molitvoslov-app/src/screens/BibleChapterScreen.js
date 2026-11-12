@@ -71,6 +71,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
   const {t} = useLanguage();
   useBibleContentGeneration();
   const {bookId, chapterNumber, focusTarget = null, resume = false} = route.params || {};
+  const calendarPassageRanges = route.params?.calendarPassageRanges || null;
   const translationCode = route.params?.translationCode === 'csl_traditional'
     ? 'csl_traditional'
     : 'rst';
@@ -202,34 +203,48 @@ export const BibleChapterScreen = ({route, navigation}) => {
   }, [chapters]);
 
   const normalizedFocusTarget = useMemo(() => {
-    if (!focusTarget || focusTarget.anchor_type !== 'bible_chapter') {
+    if (!focusTarget) return null;
+
+    const anchorType = focusTarget.anchor_type || focusTarget.anchorType;
+    if (anchorType !== 'bible_verse' && anchorType !== 'bible_chapter') {
       return focusTarget;
     }
 
+    const metadata = focusTarget.metadata || {};
     const targetChapter = bibleContent.getChapter(
       bookId,
-      focusTarget.metadata?.chapter_number,
+      metadata.chapter_number || chapterNumber,
       translationCode
     );
+    if (!targetChapter) return focusTarget;
 
-    const firstVerse = targetChapter?.verses?.[0];
-
-    if (!firstVerse) {
-      return focusTarget;
-    }
+    // Search seed rows can have old verse IDs after Bible content refreshes.
+    // Rebuild the anchor from the stable book/chapter/verse address.
+    const verse = anchorType === 'bible_chapter'
+      ? targetChapter.verses?.[0]
+      : (targetChapter.verses || []).find((item) =>
+          Number(item.number) === Number(metadata.verse_number)
+        ) || (targetChapter.verses || []).find((item) =>
+          Number(item.id) === Number(focusTarget.anchor_id ?? focusTarget.anchorId)
+        );
+    if (!verse) return focusTarget;
 
     return {
       ...focusTarget,
-
       anchor_type: 'bible_verse',
-
-      anchor_id: Number(firstVerse.id),
-
-      start_offset: null,
-
-      end_offset: null,
+      anchor_id: Number(verse.id),
+      metadata: {
+        ...metadata,
+        chapter_number: Number(targetChapter.number),
+        verse_number: Number(verse.number),
+      },
+      // A chapter target focuses its first verse; search verse offsets,
+      // when supplied, are left intact.
+      ...(anchorType === 'bible_chapter'
+        ? {start_offset: null, end_offset: null}
+        : {}),
     };
-  }, [focusTarget, bookId, translationCode]);
+  }, [focusTarget, bookId, chapterNumber, translationCode]);
 
   const chapterStartTarget = useMemo(() => {
     if (normalizedFocusTarget || resume || !requestedChapter) {
@@ -342,6 +357,20 @@ export const BibleChapterScreen = ({route, navigation}) => {
     [book, chapters, displayName, t]
   );
 
+  const isInCalendarPassage = (chapterNumberToCheck, verseNumberToCheck) =>
+    Array.isArray(calendarPassageRanges) && calendarPassageRanges.some((range) => {
+      const chapter = Number(chapterNumberToCheck);
+      const verse = Number(verseNumberToCheck);
+      const firstChapter = Number(range.startChapter);
+      const lastChapter = Number(range.endChapter || range.startChapter);
+      const firstVerse = Number(range.startVerse);
+      const lastVerse = Number(range.endVerse);
+      return Number.isFinite(firstChapter) && Number.isFinite(lastChapter) &&
+        chapter >= firstChapter && chapter <= lastChapter &&
+        (chapter !== firstChapter || verse >= firstVerse) &&
+        (chapter !== lastChapter || verse <= lastVerse);
+    });
+
   const documentData = useMemo(() => {
     if (!book) {
       return {
@@ -384,6 +413,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
           className: [
             'bible-verse-section',
             isTraditional ? 'csl-bible-verse' : '',
+            isInCalendarPassage(chapter.number, verse.number) ? 'calendar-passage-verse' : '',
 
             verseIndex === 0 ? 'bible-chapter-start' : '',
 
@@ -477,7 +507,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
         }));
       }),
     };
-  }, [book, chapters, savedItems, verseInfo.ids, displayName, t, isTraditional, translationCode]);
+  }, [book, chapters, savedItems, verseInfo.ids, displayName, t, isTraditional, translationCode, calendarPassageRanges]);
 
   const readerProgress = resume && !effectiveFocusTarget ? savedProgress : null;
 
