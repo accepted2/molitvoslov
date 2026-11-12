@@ -45,8 +45,8 @@ const locateOldAfterPsalm = (text, following = '') => {
   const next = clean(following);
   const phrase = /слава\s*,?\s*и\s*ныне\s*[:：]?/gu;
   for (const match of current.plain.matchAll(phrase)) {
-    const tail = current.plain.slice(match.index) + ' ' + next;
-    if (/аллилу[иі](?:а|я)/u.test(tail.slice(0, 250))) {
+    const tail = current.plain.slice(match.index + match[0].length) + ' ' + next;
+    if (/^\s*аллилу[иі](?:а|я)/u.test(tail)) {
       return current.positions[match.index] ?? -1;
     }
   }
