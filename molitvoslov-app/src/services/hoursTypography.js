@@ -29,9 +29,11 @@ export const classifyHoursRow = ({text, sectionKind = 'general'}) => {
   // heading merely because the very first words are "Псалом 5".
   if (value.length <= 100 &&
       /^(?:псалом|ѱалом|псалм)\s*[\dа-яѣіѳѡ]{1,10}[:.]?$/u.test(value)) return 'heading';
-  if (value.length <= 135 &&
-      /^(?:(?:тропарь|кондак|богородичен|стихира|кафизма|прокимен|паремия|паримия|молитва|глас|седален)(?=\s|[:.,;!?]|$)[^.!?]{0,60}:?)[.]?$/u.test(value) &&
-      !/господи\s*(?:,|\s)\s*помилуй/u.test(value)) return 'rubric';
+  // A brief standalone heading is a rubric. If prayer words follow the
+  // colon, keep the *whole block* as prose and color only its leading cue.
+  if (value.length <= 100 &&
+      /^(?:тропарь|кондак|богородичен|стихира|кафизма|прокимен|паремия|паримия|молитва|глас|седален)(?=\s|[:.,;!?]|$)[^.!?]{0,65}$/u.test(value) &&
+      (!value.includes(':') || /:\s*$/u.test(value))) return 'rubric';
   if (value.length <= 150 &&
       /^(?:господи[,\s]+помилуй|аллилуи[ая]|аминь(?=\s|[:.,;!?]|$))/u.test(value)) return 'response';
   if (/^(?:иерей|священник|диакон|чтец|лик|хор|певцы|народ|мы же)\s*:/u.test(value)) return 'dialogue';
