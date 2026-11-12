@@ -2340,6 +2340,30 @@ export const READER_STYLES = String.raw`
       margin-bottom: 3px !important;
     }
 
+    /* Standalone RU uses the same red liturgical accents as the ЦС reader.
+       In CS+RU the Russian translation keeps its secondary color scheme. */
+    .rule-item.hours-section .reader-text.hours-russian-primary .hours-mark-devotional,
+    .rule-item.hours-section-postpsalm .reader-text.hours-russian-primary .hours-mark-alleluia,
+    .rule-item.hours-section-postpsalm .reader-text.hours-russian-primary .hours-mark-mercy {
+      color: var(--liturgical) !important;
+      font-weight: 700 !important;
+      font-style: normal !important;
+    }
+    /* A note quoting "Слава Отцу..." is still a NOTE, never prayer-red.
+       Also guard against generic reader inline mark styles. */
+    .rule-item.hours-section .reader-text.hours-presentation-comment,
+    .rule-item.hours-section .reader-text.hours-presentation-comment span {
+      color: var(--secondary) !important;
+      font-style: italic !important;
+      font-weight: 400 !important;
+    }
+    .rule-item.hours-section .reader-text.hours-presentation-comment .hours-mark-devotional,
+    .rule-item.hours-section .reader-text.hours-presentation-comment .hours-mark-mercy,
+    .rule-item.hours-section .reader-text.hours-presentation-comment .hours-mark-doxology {
+      color: var(--secondary) !important;
+      font-weight: 400 !important;
+    }
+
     #reader-scroll-track {
       position: fixed;
       top: 10px;
