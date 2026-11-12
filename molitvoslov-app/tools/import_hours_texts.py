@@ -79,12 +79,13 @@ def clean_cell(cell):
     clone = BeautifulSoup(str(cell), "html.parser")
     for node in clone.select("script, style, sup, .footnote, .note-number"):
         node.decompose()
+    marker = "\uE000"
     for node in clone.select("br"):
-        node.replace_with("\n")
+        node.replace_with(marker)
     for node in clone.select("p, h2, h3, h4, h5, li, blockquote"):
-        node.insert_before("\n")
-        node.insert_after("\n")
-    return norm(clone.get_text(" ", strip=True).replace(" \n ", "\n"))
+        node.insert_before(marker)
+        node.insert_after(marker)
+    return norm(clone.get_text(" ", strip=True).replace(marker, "\n"))
 
 def heading_from_cell(cell):
     for head in cell.find_all(["h2", "h3", "h4", "h5"]):
@@ -151,6 +152,7 @@ def parse_paired(html_bytes, default_hour=None, group=None):
     allowed_table_ids = {id(table) for table in tables}
     sections_by_hour = {hour: new_sections() for hour in HOURS}
     current = default_hour
+    seen = set()
     row_count = 0
     for node in root.descendants:
         if not isinstance(node, Tag):
@@ -161,6 +163,11 @@ def parse_paired(html_bytes, default_hour=None, group=None):
             h = get_hour(node.get_text(" ", strip=True))
             if h and group:
                 current = h
+                seen.add(h)
+            elif group and current and seen == set(HOURS):
+                heading = norm(node.get_text(" ", strip=True)).lower()
+                if any(word in heading for word in ("изобразительн", "вечерн", "литург", "утрен")):
+                    break
             continue
         if node.name != "tr":
             continue
@@ -175,6 +182,7 @@ def parse_paired(html_bytes, default_hour=None, group=None):
                 h = get_hour(candidate.get_text(" ", strip=True)) if candidate else None
                 if h:
                     current = h
+                    seen.add(h)
             continue
         left, right = cells[0], cells[1]
         heading, is_hour = heading_from_cell(left)
@@ -182,6 +190,7 @@ def parse_paired(html_bytes, default_hour=None, group=None):
         h = get_hour(heading) or get_hour(right_heading)
         if h is not None and group:
             current = h
+            seen.add(h)
         if current is None:
             continue
         if is_hour or right_is_hour:
@@ -227,6 +236,11 @@ def parse_single_lenten(html_bytes):
             hour = get_hour(node.get_text(" ", strip=True))
             if hour:
                 current = hour
+            elif current and node.name == "h2" and re.search(
+                r"изобразительн|вечерн|литург|повечери|полунощниц",
+                norm(node.get_text(" ", strip=True)), re.I
+            ):
+                break
             elif current and 2 < len(node.get_text(" ", strip=True)) < 90:
                 text = norm(node.get_text(" ", strip=True))
                 if sections[current][-1]["rows"]:
