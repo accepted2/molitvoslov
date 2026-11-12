@@ -2362,7 +2362,20 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
             });
           }
         }
+        // Hours' liturgical accents use exact original UTF-16 offsets.
+        // Styling never changes source text, selection, or bookmarks.
+        const hoursMarks = itemConfig?.sourceType === 'hours' &&
+          Array.isArray(itemConfig?.hoursMarks)
+            ? itemConfig.hoursMarks.filter(range =>
+                Number.isFinite(range.start) && Number.isFinite(range.end) &&
+                range.start >= 0 && range.end <= text.length &&
+                range.end > range.start)
+            : [];
         const boundaries = new Set([ 0, text.length, ]);
+        hoursMarks.forEach(range => {
+          boundaries.add(range.start);
+          boundaries.add(range.end);
+        });
         canonRanges.forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
@@ -2567,6 +2580,11 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         if (parallelTroparBreak === start) fragment.appendChild(document.createElement('br'));
 
         const span = document.createElement('span');
+        const hoursMark = hoursMarks.find(range =>
+          midpoint >= range.start && midpoint < range.end);
+        if (hoursMark) {
+          span.classList.add('hours-mark-' + hoursMark.kind);
+        }
         if (canonRanges.length) {
           for (const range of canonRanges) {
             if (start >= range.start && end <= range.end) {
