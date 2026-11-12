@@ -2023,9 +2023,10 @@ export const READER_STYLES = String.raw`
       text-align-last: left;
     }
     .rule-item.hours-section.hours-section-postpsalm {
-      margin-top: 14px;
-      border-top: 1px solid var(--border);
-      padding-top: 13px;
+      /* The final Psalm already has a bottom rule. Never double it. */
+      margin-top: 0;
+      border-top: 0;
+      padding-top: 0;
     }
     .rule-item.hours-section.hours-section-hymn .reader-text.hours-heading {
       color: var(--accent-dark);
@@ -2110,10 +2111,18 @@ export const READER_STYLES = String.raw`
       text-align: left;
       text-align-last: left;
     }
-    /* Ordinary-sized red first letter, never a decorative drop cap. */
-    .rule-item.hours-section .reader-text.hours-psalm-opening::first-letter,
-    .rule-item.hours-section.hours-section-opening .reader-text::first-letter {
+    /* Psalm first letters are part of the word itself, not drop caps. */
+    .rule-item.hours-section .reader-text.hours-text::first-letter {
       float: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      font-size: inherit !important;
+      line-height: inherit !important;
+    }
+    .rule-item.hours-section .reader-text .hours-mark-initial {
+      display: inline !important;
+      float: none !important;
+      vertical-align: baseline !important;
       margin: 0 !important;
       padding: 0 !important;
       color: var(--liturgical) !important;
@@ -2121,7 +2130,7 @@ export const READER_STYLES = String.raw`
       line-height: inherit !important;
       font-weight: 700;
     }
-    .rule-item.hours-section .reader-text.hours-traditional.hours-psalm-opening::first-letter {
+    .rule-item.hours-section .reader-text.hours-traditional .hours-mark-initial {
       font-weight: 400;
     }
     .rule-item.hours-section .reader-text .hours-mark-speaker,
@@ -2146,6 +2155,61 @@ export const READER_STYLES = String.raw`
       font-weight: 400;
       font-style: normal !important;
       white-space: nowrap;
+    }
+
+    /* Only the explicitly marked rows of the First Hour receive rules. */
+    .rule-item.hours-section .reader-row.hours-row-divider-after {
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    /* Align the post-Psalm Alleluia and mercy on the normal left margin. */
+    .rule-item.hours-section-postpsalm .reader-text.hours-response {
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    .rule-item.hours-section-postpsalm .reader-text .hours-mark-alleluia,
+    .rule-item.hours-section-postpsalm .reader-text .hours-mark-mercy {
+      color: var(--text) !important;
+      font-weight: 400 !important;
+    }
+    .rule-item.hours-section-postpsalm .reader-text .hours-mark-repeat {
+      font-size: 1.05em;
+      font-weight: 500;
+    }
+    /* Liturgical instructions are brief marginal notes, not prayers. */
+    .rule-item.hours-section-instruction .reader-text.hours-presentation-comment {
+      color: var(--secondary) !important;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 14px !important;
+      line-height: 1.45 !important;
+      font-style: italic !important;
+      font-weight: 400 !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    .rule-item.hours-section-hymn .reader-text.hours-presentation-placeholder {
+      color: var(--accent-dark) !important;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 15px !important;
+      line-height: 1.42 !important;
+      font-style: italic !important;
+      font-weight: 400 !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    .rule-item.hours-section-hymn .reader-text.hours-presentation-rubric-label {
+      color: var(--accent-dark) !important;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 15px !important;
+      line-height: 1.4 !important;
+      font-style: italic !important;
+      font-weight: 500 !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    .rule-item.hours-section-hymn .reader-row.hours-row-compact-after {
+      margin-bottom: 2px !important;
     }
 
     #reader-scroll-track {
