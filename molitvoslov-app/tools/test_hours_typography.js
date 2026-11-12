@@ -100,6 +100,57 @@ const incompleteBoth = buildHoursDocument({entry,content:incomplete,viewMode:'bo
 assert.equal(incompleteBoth.sections[0].rows[0].blocks.length, 1);
 assert.match(incompleteBoth.description, /часть фрагментов/i);
 
+// Editorial flags must be transformed to inline color marks and CSS classes
+// without adding punctuation or changing the source prayer sentences.
+const liturgical = buildHoursDocument({
+  entry,
+  content: {sections: [
+    {title:'Если Великий пост — тропарь, глас 6',
+      kind:'conditional',
+      collapsible:true,
+      accordionId:'test-lent',
+      rows:[
+        {church:'Зау́тра услыши глас мой.',redInitial:true,dividerAfter:true},
+        {church:'Стих 1: Глаголы моя внуши́.',accentPrefix:'Стих 1:',dividerAfter:true},
+        {church:'Стих 2: Яко к Тебе помолюся.',accentPrefix:'Стих 2:',dividerAfter:true},
+        {church:'Слава, и ныне:',dividerAfter:true},
+        {church:'Богородичен: Что Тя наречем.',accentPrefix:'Богородичен:'},
+      ]},
+    {title:'',kind:'prayer',rows:[
+      {church:'Стопы́ моя направи.',redInitial:true,dividerAfter:true},
+      {church:'Да испо́лнятся уста́ моя.',redInitial:true},
+    ]},
+    {title:'',kind:'rubric',noBottomDivider:true,rows:[
+      {church:'Трисвятое. И по Отче наш:',presentation:'liturgical-label'},
+      {church:'Кондак праздника',presentation:'placeholder'},
+      {church:'Если кондака нет, читаем Богородичен:',presentation:'comment'},
+    ]},
+  ]},
+  viewMode:'church',
+});
+const marksOf = (block) =>
+  block.hoursMarks.map(m => ({kind:m.kind, text:block.text.slice(m.start,m.end)}));
+const lentRows = liturgical.sections[0].rows;
+assert.equal(liturgical.sections[0].collapsible,true);
+assert.equal(liturgical.sections[0].accordionId,'test-lent');
+assert.deepEqual(marksOf(lentRows[0].blocks[0]),[{kind:'initial',text:'З'}]);
+assert.deepEqual(marksOf(lentRows[1].blocks[0]),[{kind:'cue',text:'Стих 1:'}]);
+assert.deepEqual(marksOf(lentRows[2].blocks[0]),[{kind:'cue',text:'Стих 2:'}]);
+assert.equal(lentRows[3].dividerAfter,true);
+assert.deepEqual(marksOf(lentRows[4].blocks[0]),
+  [{kind:'cue',text:'Богородичен:'}]);
+assert.deepEqual(marksOf(liturgical.sections[1].rows[0].blocks[0]),
+  [{kind:'initial',text:'С'}]);
+assert.deepEqual(marksOf(liturgical.sections[1].rows[1].blocks[0]),
+  [{kind:'initial',text:'Д'}]);
+assert.match(liturgical.sections[2].className, /hours-no-bottom-divider/);
+assert.match(liturgical.sections[2].rows[0].blocks[0].className,
+  /hours-presentation-liturgical-label/);
+assert.match(liturgical.sections[2].rows[1].blocks[0].className,
+  /hours-presentation-placeholder/);
+assert.match(liturgical.sections[2].rows[2].blocks[0].className,
+  /hours-presentation-comment/);
+
 const runtime = read('src/components/reader/selectableDocumentReader/runtime.js');
 const styles = read('src/components/reader/selectableDocumentReader/styles.js');
 assert.match(runtime, /itemConfig\?\.sourceType === 'hours'/);
