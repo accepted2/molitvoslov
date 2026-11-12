@@ -52,11 +52,33 @@ assert.equal(after[2].rows[3].presentation, 'rubric-label');
 assert.equal(after[2].rows[3].compactAfter, true);
 assert.match(after[2].rows[4].church, /^Что Тя нарече́м, о Благода́тная\?/);
 assert.match(after[2].rows[4].church, /Того́ моли́ спасти́ся душа́м на́шим\.$/);
+assert.equal(after[3].rows.length, 5);
 assert.match(after[3].rows[0].church, /^Зау́тра услыши/);
+assert.equal(after[3].rows[0].redInitial, true);
+assert.equal(after[3].rows[0].dividerAfter, true);
+assert.equal(after[3].rows[1].accentPrefix, 'Стих 1:');
+assert.equal(after[3].rows[1].dividerAfter, true);
+assert.equal(after[3].rows[2].accentPrefix, 'Стих 2:');
+assert.equal(after[3].rows[2].dividerAfter, true);
+assert.equal(after[3].rows[3].church, 'Слава, и ныне:');
+assert.equal(after[3].rows[3].dividerAfter, true);
+assert.equal(after[3].rows[4].accentPrefix, 'Богородичен:');
+assert.equal(after[3].rows[4].church, 'Богородичен: ' + after[2].rows[4].church);
+assert.equal(after[3].collapsible, true);
 assert.match(after[4].rows[0].church, /^Стопы́ моя направи/);
+assert.equal(after[4].rows[0].redInitial, true);
+assert.equal(after[4].rows[0].dividerAfter, true);
 assert.match(after[4].rows[1].church, /^Да испо́лнятся/);
-assert.match(after[5].rows[0].church, /Кондак праздника/);
-assert.match(after[5].rows[1].church, /Если кондака нет/);
+assert.equal(after[4].rows[1].redInitial, true);
+assert.deepEqual(after[5].rows.map(x => x.church), [
+  'Трисвятое. И по Отче наш:',
+  'Кондак праздника',
+  'Если кондака нет, или Великий пост, читаем Богородичен:',
+]);
+assert.deepEqual(after[5].rows.map(x => x.presentation), [
+  'liturgical-label', 'placeholder', 'comment',
+]);
+assert.equal(after[5].noBottomDivider, true);
 assert.match(after[9].rows[0].church, /^Господи, помилуй\. \(40\)/);
 assert.match(after[9].rows[1].church, /^Иже на всякое время/);
 assert.match(after[10].rows[1].church, /^Го́споди и Влады́ко/);
@@ -119,6 +141,9 @@ const runtime = read('src/components/reader/selectableDocumentReader/runtime.js'
 const styles = read('src/components/reader/selectableDocumentReader/styles.js');
 assert.match(doc,/collapsible: section\.collapsible === true/);
 assert.match(doc,/dividerAfter: row\.dividerAfter === true/);
+assert.match(doc,/redInitial: row\.redInitial === true/);
+assert.match(doc,/accentPrefix: row\.accentPrefix \|\| ''/);
+assert.match(doc,/section\.noBottomDivider === true/);
 assert.match(doc,/compactAfter: row\.compactAfter === true/);
 assert.match(doc,/hours-presentation-/);
 assert.match(doc,/accordionId: section\.accordionId \|\| null/);
@@ -137,8 +162,11 @@ assert.match(styles,/\.hours-mark-initial/);
 assert.match(styles,/hours-section-postpsalm \.reader-text\.hours-response/);
 assert.match(styles,/hours-presentation-comment/);
 assert.match(styles,/hours-presentation-placeholder/);
+assert.match(styles,/hours-presentation-liturgical-label/);
+assert.match(styles,/hours-no-bottom-divider/);
+assert.match(styles,/hours-section-rubric \.reader-text\.hours-presentation-comment/);
 assert.match(styles,/hours-presentation-rubric-label/);
 assert.match(styles,/\.reader-row\.hours-row-divider-after/);
 assert.match(styles,/\.reader-row\.hours-row-compact-after/);
 assert.doesNotMatch(styles,/hours-psalm-opening::first-letter/);
-console.log('PASS: First Hour editorial polish, left-aligned responses, inline initials, clean separators, notes and five dropdowns');
+console.log('PASS: First Hour — Lenten tropar verses, red initials, Trisagion rubric, kondak, comments and five dropdowns');
