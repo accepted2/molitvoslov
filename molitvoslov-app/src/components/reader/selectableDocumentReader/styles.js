@@ -1903,6 +1903,157 @@ export const READER_STYLES = String.raw`
     #selection-save:disabled {
       opacity: 0.4;
     }
+
+    /* HOURS_READER_TYPOGRAPHY_V1 — only the new Hours reader.
+       Text is plain and selectable; headings and rubrics use source metadata.
+       Existing Psalter, prayer-rule, akathist and canon styles are unchanged. */
+    .rule-item.hours-section {
+      margin-bottom: 18px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .rule-item.hours-section:last-child {
+      border-bottom: 0;
+    }
+    body:not(.book-mode) .rule-item.hours-section .section-header {
+      margin: 8px 0 14px;
+      min-height: 28px;
+      justify-content: center;
+    }
+    body:not(.book-mode) .rule-item.hours-section .section-header .prayer-title {
+      color: var(--accent-dark);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 19px;
+      line-height: 26px;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 0;
+      margin: 0;
+      padding: 0 8px;
+    }
+    .rule-item.hours-section.hours-section-psalm .section-header .prayer-title {
+      color: var(--accent-dark);
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .rule-item.hours-section .section-header::after {
+      content: "";
+      position: absolute;
+      bottom: -7px;
+      left: 50%;
+      width: 62px;
+      height: 1px;
+      transform: translateX(-50%);
+      background: var(--border);
+      pointer-events: none;
+    }
+    .rule-item.hours-section .reader-row {
+      margin-bottom: 11px;
+    }
+    .rule-item.hours-section .reader-row:last-child {
+      margin-bottom: 0;
+    }
+    .rule-item.hours-section .reader-text.hours-text {
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 17px;
+      line-height: 1.59;
+      font-style: normal;
+      font-weight: 400;
+      white-space: pre-line;
+      text-align: justify;
+      text-align-last: left;
+      text-justify: inter-word;
+      overflow-wrap: break-word;
+      word-break: normal;
+      -webkit-hyphens: auto;
+      hyphens: auto;
+    }
+    .rule-item.hours-section .reader-text.hours-russian {
+      color: var(--secondary);
+      font-size: 16px;
+      line-height: 1.59;
+    }
+    .rule-item.hours-section .reader-text.hours-traditional {
+      font-family: 'Ponomar', Georgia, serif;
+      font-size: 20px;
+      line-height: 1.75;
+      font-weight: 400;
+      -webkit-hyphens: manual;
+      hyphens: manual;
+    }
+    .rule-item.hours-traditional-section .section-header .prayer-title {
+      font-family: 'Ponomar', Georgia, serif !important;
+      font-size: 22px !important;
+      font-weight: 400 !important;
+    }
+    .rule-item.hours-section .reader-text.hours-heading {
+      font-size: 18px;
+      line-height: 1.42;
+      font-weight: 700;
+      color: var(--accent-dark);
+      text-align: center;
+      text-align-last: center;
+      margin-top: 8px;
+    }
+    .rule-item.hours-section .reader-text.hours-rubric {
+      font-size: 14px;
+      line-height: 1.53;
+      font-weight: 600;
+      color: var(--accent-dark);
+      text-align: left;
+      text-align-last: left;
+      padding-top: 4px;
+    }
+    .rule-item.hours-section .reader-text.hours-dialogue {
+      text-align: left;
+      text-align-last: left;
+    }
+    .rule-item.hours-section .reader-text.hours-response {
+      text-align: center;
+      text-align-last: center;
+      line-height: 1.65;
+    }
+    .rule-item.hours-section .reader-text.hours-doxology {
+      color: var(--text);
+      text-align: left;
+      text-align-last: left;
+    }
+    .rule-item.hours-section .reader-text.hours-psalm-opening::first-letter {
+      float: left;
+      margin: 0.075em 0.08em 0 0;
+      color: var(--liturgical);
+      font-size: 2.2em;
+      line-height: 0.80;
+      font-weight: 700;
+    }
+    .rule-item.hours-section .reader-text.hours-traditional.hours-psalm-opening::first-letter {
+      font-weight: 400;
+    }
+    .rule-item.hours-section .reader-text .hours-mark-speaker,
+    .rule-item.hours-section .reader-text .hours-mark-cue {
+      color: var(--liturgical) !important;
+      font-style: normal !important;
+      font-weight: 700;
+    }
+    .rule-item.hours-section .reader-text .hours-mark-mercy,
+    .rule-item.hours-section .reader-text .hours-mark-alleluia {
+      color: var(--liturgical) !important;
+      font-style: normal !important;
+      font-weight: 700;
+    }
+    .rule-item.hours-section .reader-text .hours-mark-doxology {
+      color: var(--accent-dark) !important;
+      font-weight: 600;
+      font-style: normal !important;
+    }
+    .rule-item.hours-section .reader-text .hours-mark-repeat {
+      color: var(--secondary) !important;
+      font-weight: 400;
+      font-style: normal !important;
+      white-space: nowrap;
+    }
+
     #reader-scroll-track {
       position: fixed;
       top: 10px;
