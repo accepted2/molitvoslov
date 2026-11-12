@@ -40,7 +40,7 @@ assert.deepEqual(ru.afterPsalms.filter(x=>x.collapsible).map(x=>x.accordionId),e
 assert.deepEqual(cs.afterPsalms.filter(x=>x.collapsible).map(x=>x.accordionId),expectedIds);
 assert.equal(ru.afterPsalms[0].rows.length,3);
 assert.equal(ru.afterPsalms[0].rows[1].russian,
-  'Аллилуия, аллилуия, аллилуия,\nслава Тебе, Боже. (3)');
+  'Аллилуия, аллилуия, аллилуия,\nслава Тебе, Боже. (Трижды)');
 assert.deepEqual(ru.afterPsalms[1].rows.map(x=>x.presentation),['comment','comment']);
 assert.equal(ru.afterPsalms[2].rows[0].russian,
   'Слава Отцу и Сыну и Святому Духу:');
@@ -72,6 +72,9 @@ assert.match(ru.afterPsalms[7].rows[0].russian,/^Скоро предстань �
 assert.match(ru.afterPsalms[8].rows[0].russian,/^Как первые плоды природы/);
 assert.match(ru.afterPsalms[9].rows[1].russian,/^Во всякое время и на всякий час/);
 assert.match(ru.afterPsalms[9].rows[6].russian,/^Священник: Боже, сжалься/);
+assert.equal(ru.afterPsalms[10].rows[0].russian,
+  'Если Великий пост — молитва святого Ефрема Сирина с тремя великими поклонами:');
+assert.equal(ru.afterPsalms[10].rows[0].presentation,'comment');
 assert.equal(ru.afterPsalms[10].rows.length,9);
 assert.deepEqual(ru.afterPsalms[10].rows.map(r=>r.presentation || ''),
   ['comment','','','','comment','','comment','','comment']);
@@ -88,7 +91,7 @@ assert.equal(ru.afterPsalms[11].rows[12].presentation,'comment');
 assert.match(ru.afterPsalms[11].rows[13].russian,/Обороняющей нас Военачальнице/);
 assert.match(ru.afterPsalms[11].rows[14].russian,/Слава Тебе, Христе Боже/);
 assert.match(ru.afterPsalms[11].rows[15].russian,/^Хор: Слава Отцу/);
-assert.equal(ru.afterPsalms[11].rows[16].russian,'Господи, помилуй. (3)');
+assert.equal(ru.afterPsalms[11].rows[16].russian,'Господи, помилуй. (Трижды)');
 assert.equal(ru.afterPsalms[11].rows[17].russian,'Благослови.');
 assert.equal(ru.afterPsalms[11].rows[18].russian,'Иерей произносит отпуст.');
 const allRussian = getFirstHourRussianSections();
@@ -104,6 +107,9 @@ const originalSourceRows = [ru.opening,...ru.psalms,...ru.afterPsalms]
 assert.ok(!originalSourceRows.some(row =>
   /[⁰¹²³⁴⁵⁶⁷⁸⁹]|(?:^|\s)Пс\s*\d+\s*:\s*\d+/u.test(row.russian)),
   'No publisher footnotes or embedded Psalm citations in prayer text.');
+assert.ok(!originalSourceRows.some(row => /\(3\)/u.test(row.russian)),
+  'Threefold responses must read (Трижды) throughout First Hour.');
+assert.equal(originalSourceRows.filter(row => row.russian.includes('(Трижды)')).length,6);
 assert.ok(!originalSourceRows.some(row =>
   row.russian.includes('\n') && row.preserveLineBreaks !== true),
   'Only explicitly requested Alleluia/speaker line breaks remain.');
