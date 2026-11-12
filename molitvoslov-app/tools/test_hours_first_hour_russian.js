@@ -201,6 +201,46 @@ assert.ok(!russianText.includes('СТАРЫЙ ИМПОРТ'));
 assert.ok(!russianText.includes('СТАРЫЙ ОТПУСТ'));
 assert.match(russianText,/Чтец: Святый Боже/);
 assert.match(russianText,/Обороняющей нас Военачальнице/);
+// Full doxologies are red in standalone РУС, not in quoted instructions.
+const marked = (block, kind) =>
+  block.hoursMarks.filter(m => m.kind === kind)
+    .map(m => block.text.slice(m.start, m.end));
+const glory = russianDoc.sections[4].rows[0].blocks[0];
+assert.deepEqual(marked(glory,'devotional'),[ru.afterPsalms[0].rows[0].russian]);
+const alleluia = russianDoc.sections[4].rows[1].blocks[0];
+assert.equal(marked(alleluia,'alleluia').length,3);
+assert.deepEqual(marked(alleluia,'devotional'),['слава Тебе, Боже']);
+assert.equal(russianDoc.sections[4].rows[2].blocks[0].text,
+  'Господи, помилуй. (Трижды)');
+assert.deepEqual(marked(russianDoc.sections[4].rows[2].blocks[0],'mercy'),
+  ['Господи, помилуй']);
+assert.deepEqual(marked(russianDoc.sections[6].rows[0].blocks[0],'devotional'),
+  ['Слава Отцу и Сыну и Святому Духу']);
+assert.deepEqual(marked(russianDoc.sections[6].rows[2].blocks[0],'devotional'),
+  ['И ныне и присно и во веки веков. Аминь.']);
+assert.deepEqual(marked(russianDoc.sections[15].rows[15].blocks[0],'devotional'),
+  ['Слава Отцу и Сыну и Святому Духу, и ныне и присно и во веки веков. Аминь.']);
+assert.deepEqual(marked(russianDoc.sections[8].rows[3].blocks[0],'devotional'),
+  ['Слава Отцу, и Сыну, и Святому Духу']);
+for(const section of russianDoc.sections) {
+  for(const row of section.rows) for(const block of row.blocks) {
+    if (block.className.includes('hours-presentation-comment')) {
+      assert.deepEqual(block.hoursMarks,[],
+        'Quoted glory in Russian rubrics must not be red.');
+    }
+  }
+}
+const repeatRows=[ru.opening,...ru.psalms,...ru.afterPsalms]
+  .flatMap(s=>s.rows).filter(r=>r.russian.includes('(Трижды)'));
+assert.equal(repeatRows.length,6);
+assert.ok(!russianText.includes('(3)'));
+assert.equal(ru.afterPsalms[10].rows[0].russian,
+  'Если Великий пост — молитва святого Ефрема Сирина с тремя великими поклонами:');
+const colorsCss=read('src/components/reader/selectableDocumentReader/styles.js');
+assert.match(colorsCss,/hours-russian-primary \.hours-mark-devotional/);
+assert.match(colorsCss,/hours-russian-primary \.hours-mark-mercy/);
+assert.match(colorsCss,/hours-presentation-comment span/);
+
 const bothDoc=buildHoursDocument({entry,content:src,viewMode:MODE.BOTH});
 assert.equal(bothDoc.sections.length,16);
 assert.deepEqual(bothDoc.sections.filter(s=>s.collapsible).map(s=>s.accordionId),expectedIds);
@@ -218,5 +258,11 @@ assert.equal(bothDoc.description,'');
 const churchDoc=buildHoursDocument({entry,content:src,viewMode:MODE.CHURCH});
 assert.equal(churchDoc.sections[1].rows[0].blocks[0].text,
   'Слова церковнославянского псалма 5.');
+for (const row of churchDoc.sections[5].rows) {
+  const block=row.blocks[0];
+  assert.ok(block.className.includes('hours-presentation-comment'));
+  assert.deepEqual(block.hoursMarks,[],
+    'ЦС commentary quoting "Слава Отцу" must not receive red spans.');
+}
 assert.equal(JSON.stringify(src),saved);
-console.log('PASS: Russian First Hour typography, full tropar doxology, prayer wrapping, no footnotes, and parallel appearance');
+console.log('PASS: First Hour RU doxologies red, 6 repeated mercies spelled out, ЦС comments subdued, five accordions intact');
