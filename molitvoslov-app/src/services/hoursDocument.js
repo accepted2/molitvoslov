@@ -75,16 +75,28 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
 
   const createBlock = ({
     id, language, text, title, sectionKind = 'general', opening = false,
-    presentation = '',
+    presentation = '', redInitial = false, accentPrefix = '',
   }) => {
     const kind = classifyHoursRow({text, sectionKind});
-    const visualNote = ['comment', 'placeholder', 'rubric-label'].includes(presentation)
-      ? presentation
-      : '';
+    const visualNote = [
+      'comment', 'placeholder', 'rubric-label', 'liturgical-label',
+    ].includes(presentation) ? presentation : '';
     const hoursMarks = visualNote ? [] : collectHoursTextMarks(text);
+    // Only a specifically indicated cue is colored. Source punctuation,
+    // paragraph text, and the original UTF-16 selection indices are unchanged.
+    if (accentPrefix && text.startsWith(accentPrefix)) {
+      const prefixEnd = accentPrefix.length;
+      for (let i = hoursMarks.length - 1; i >= 0; i--) {
+        if (hoursMarks[i].start < prefixEnd && hoursMarks[i].end > 0) {
+          hoursMarks.splice(i, 1);
+        }
+      }
+      hoursMarks.unshift({start: 0, end: prefixEnd, kind: 'cue'});
+    }
     // Color the initial glyph inline instead of using ::first-letter:
     // a pseudo-letter can become a separate floated glyph in Android WebView.
-    const colorInitial = (opening && kind === 'psalm') || sectionKind === 'opening';
+    const colorInitial = redInitial === true ||
+      (opening && kind === 'psalm') || sectionKind === 'opening';
     if (colorInitial && !hoursMarks.some(mark => mark.start === 0) && text) {
       let end = String.fromCodePoint(text.codePointAt(0)).length;
       while (end < text.length && /[\u0300-\u036f\u0483-\u0489]/u.test(text[end])) end++;
@@ -151,6 +163,8 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
           sectionKind,
           opening: rowIndex === 0,
           presentation: row.presentation,
+          redInitial: row.redInitial === true,
+          accentPrefix: row.accentPrefix || '',
         });
       };
       let blocks;
@@ -182,6 +196,7 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
         title,
         className: ['hours-section', 'hours-section-' + sectionKind,
           viewMode === READER_LANGUAGE_MODES.TRADITIONAL ? 'hours-traditional-section' : '',
+          section.noBottomDivider === true ? 'hours-no-bottom-divider' : '',
         ].filter(Boolean).join(' '),
         progressAnchorId: sectionIndex + 1,
         trackProgress: true,
