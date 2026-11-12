@@ -10,6 +10,8 @@ import {ReaderScreen} from '../screens/ReaderScreen';
 import {BookScreen} from '../screens/BookScreen';
 import {PrayerRuleScreen} from '../screens/PrayerRuleScreen';
 import PsalterScreen from '../screens/PsalterScreen';
+import {HoursScreen} from '../screens/HoursScreen';
+import {HoursReadingScreen} from '../screens/HoursReadingScreen';
 import KathismaScreen from '../screens/KathismaScreen';
 import {AkathistListScreen} from '../screens/AkathistListScreen';
 import {AkathistScreen} from '../screens/AkathistScreen';
@@ -207,6 +209,16 @@ export const AppNavigator = () => {
           options={{
             headerShown: false,
           }}
+        />
+        <Stack.Screen
+          name="Hours"
+          component={HoursScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="HoursReading"
+          component={HoursReadingScreen}
+          options={{headerShown: false}}
         />
 
         <Stack.Screen
