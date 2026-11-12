@@ -2407,6 +2407,15 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
           boundaries.add(range.start);
           boundaries.add(range.end);
         });
+        // On narrow Android screens the first red glyph and its following
+        // letters can visually separate under justified text. Keep the
+        // entire opening word on one visual line; its original source text,
+        // offsets and red initial mark are not modified.
+        const hoursInitialWordEnd = itemConfig?.sourceType === 'hours' &&
+          hoursMarks.some(mark => mark.kind === 'initial' && mark.start === 0)
+            ? (text.match(/^\S+/u)?.[0]?.length || 0)
+            : 0;
+        if (hoursInitialWordEnd > 1) boundaries.add(hoursInitialWordEnd);
         canonRanges.forEach(range => {
           boundaries.add(range.start);
           boundaries.add(range.end);
@@ -2564,6 +2573,7 @@ const psalterVerseNumberRanges = isPsalterText ? collectPsalterVerseNumberRanges
         let civilAfterTroparToneWrapper = null;
         let parallelAfterRepeatWrapper = null;
         let akathistAlleluiaWrapper = null;
+        let hoursInitialWordWrapper = null;
         for ( let index = 0;
           index < points.length - 1;
           index += 1 ) {
@@ -3178,8 +3188,16 @@ if (isStandaloneTraditionalPsalterPrayer &&
       } else {
         civilAfterMercyWrapper = null;
         // A whole Alleluia and its punctuation may wrap only as one unit.
+        const withinInitialHoursWord = hoursInitialWordEnd > 1 &&
+          start >= 0 && end <= hoursInitialWordEnd;
         const withinAlleluia = isAkathist && akathistAlleluiaRanges.some(range => start >= range.start && end <= range.end);
-        if (withinAlleluia) {
+        if (withinInitialHoursWord) {
+          if (!hoursInitialWordWrapper) {
+            hoursInitialWordWrapper = el('span', 'hours-initial-word');
+            fragment.appendChild(hoursInitialWordWrapper);
+          }
+          hoursInitialWordWrapper.appendChild(span);
+        } else if (withinAlleluia) {
           if (!akathistAlleluiaWrapper) {
             akathistAlleluiaWrapper = el('span', 'akathist-alleluia');
             fragment.appendChild(akathistAlleluiaWrapper);
