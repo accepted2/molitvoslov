@@ -29,12 +29,20 @@ const options = ({hasChurch,hasRussian,hasTraditional}) => [
   ...(hasRussian ? [{key:'russian'}, {key:'both'}] : []),
   ...(hasTraditional ? [{key:'traditional'}] : []),
 ];
+const typographyCode = read('src/services/hoursTypography.js')
+  .replace(/\bexport const /g, 'const ');
+const {classifyHoursRow, classifyHoursSection, collectHoursTextMarks} =
+  new Function(typographyCode +
+    '\nreturn {classifyHoursRow, classifyHoursSection, collectHoursTextMarks};')();
 const code = read('src/services/hoursDocument.js')
-  .replace(/^import .*;\s*$/gm, '')
+  .replace(/^import[\s\S]*?from ['"][^'"]+['"];\s*/gm, '')
   .replace(/\bexport const /g, 'const ');
 const fn = new Function('hoursTexts', 'READER_LANGUAGE_MODES', 'buildReaderLanguageOptions',
+  'classifyHoursRow', 'classifyHoursSection', 'collectHoursTextMarks',
   code + '\nreturn {buildHoursDocument, getHoursLanguageAvailability};');
-const {buildHoursDocument, getHoursLanguageAvailability} = fn(data, MODE, options);
+const {buildHoursDocument, getHoursLanguageAvailability} = fn(
+  data, MODE, options, classifyHoursRow, classifyHoursSection, collectHoursTextMarks
+);
 const fixture = {
   sections: [{title:'Псалом 5', rows:[
     {church:'Церковнославянский отрывок.', russian:'Русский отрывок.'},
