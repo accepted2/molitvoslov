@@ -122,7 +122,9 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
       };
       let blocks;
       if (viewMode === READER_LANGUAGE_MODES.RUSSIAN) {
-        blocks = [block('russian', 2)];
+        const russian = block('russian', 2);
+        if (!russian && isText(row?.church)) missingRussianRows += 1;
+        blocks = [russian];
       } else if (viewMode === READER_LANGUAGE_MODES.TRADITIONAL) {
         blocks = [block('traditional', 3)];
       } else if (viewMode === READER_LANGUAGE_MODES.BOTH) {
@@ -150,7 +152,9 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
     }
   }
 
-  const missingNote = viewMode === READER_LANGUAGE_MODES.BOTH && missingRussianRows
+  const missingNote =
+    (viewMode === READER_LANGUAGE_MODES.BOTH || viewMode === READER_LANGUAGE_MODES.RUSSIAN) &&
+    missingRussianRows
     ? (available.hasRussian
       ? 'Часть фрагментов русского перевода пока отсутствует.'
       : 'Русский текст этого часа пока не добавлен.')
