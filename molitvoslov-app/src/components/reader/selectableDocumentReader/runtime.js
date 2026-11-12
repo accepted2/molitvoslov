@@ -166,6 +166,7 @@ export const READER_RUNTIME = String.raw`
       );
       container.appendChild( wrapper );
     };
+    const expandedHoursAccordions = new Set();
     const renderDocument = () => {
       reader.classList.toggle('psalter-kathisma-reader',
         (DATA.document.sections || []).some(section => section.className === 'psalter-psalm-section'));
@@ -226,7 +227,31 @@ export const READER_RUNTIME = String.raw`
           wrapper.dataset.actionKey = section.action?.key || '';
           wrapper.dataset.highlightGroupKey = section.highlightGroupKey || '';
           wrapper.dataset.chapterNumber = section.chapterNumber ? String( section.chapterNumber ) : '';
-          if ( section.title || section.action ) {
+          // Hours-only native disclosure. The summary is outside selectable
+          // prayer text, so toggling never changes saved ranges or offsets.
+          const hoursExpandable = section.collapsible === true &&
+            String(section.className || '').includes('hours-section') &&
+            !!section.title;
+          let rowsContainer = wrapper;
+          if (hoursExpandable) {
+            wrapper.classList.add('hours-collapsible');
+            const details = el('details', 'hours-accordion');
+            const accordionId = String(section.accordionId || section.progressAnchorId);
+            details.dataset.accordionId = accordionId;
+            details.open = expandedHoursAccordions.has(accordionId);
+            const summary = el('summary', 'hours-accordion-toggle', section.title);
+            summary.setAttribute('aria-label', section.title);
+            summary.addEventListener('click', event => event.stopPropagation());
+            details.appendChild(summary);
+            const content = el('div', 'hours-accordion-content');
+            details.appendChild(content);
+            details.addEventListener('toggle', () => {
+              if (details.open) expandedHoursAccordions.add(accordionId);
+              else expandedHoursAccordions.delete(accordionId);
+            });
+            wrapper.appendChild(details);
+            rowsContainer = content;
+          } else if ( section.title || section.action ) {
             const header = el( 'div', 'section-header' );
             if ( section.title ) {
               header.appendChild( titleEl( 'h2', 'prayer-title', section.title ) );
@@ -242,11 +267,11 @@ export const READER_RUNTIME = String.raw`
             wrapper.appendChild( header );
           }
           if ( section.note ) {
-            wrapper.appendChild( el( 'div', 'note', section.note ) );
+            rowsContainer.appendChild( el( 'div', 'note', section.note ) );
           }
           ( section.rows || [] ).forEach( row => {
             if (row.sharedTitle) {
-              wrapper.appendChild(
+              rowsContainer.appendChild(
                 el(
                   'div',
                   'psalter-shared-rubric',
@@ -317,7 +342,7 @@ export const READER_RUNTIME = String.raw`
               if ((row.blocks || []).some(block => block.anchorType === 'kathisma_glory')) {
                 rowNode.classList.add('psalter-glory-row');
               }
-              wrapper.appendChild( rowNode );
+              rowsContainer.appendChild( rowNode );
             }
           );
           reader.appendChild( wrapper );
