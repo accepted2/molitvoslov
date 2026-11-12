@@ -124,7 +124,7 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
     const kind = classifyHoursRow({text, sectionKind});
     const visualNote = [
       'comment', 'placeholder', 'rubric-label', 'liturgical-label',
-      'liturgical-red', 'left-response', 'liturgical-prayers',
+      'liturgical-red', 'left-response', 'liturgical-prayers', 'plain-prayer',
     ].includes(presentation) ? presentation : '';
     // Left-aligned responses retain their normal inline word annotations.
     const isComment = visualNote === 'comment';
@@ -133,7 +133,8 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
       ? []
       : collectHoursTextMarks(text);
     if (isFirstHour && language === 'russian' &&
-        viewMode === READER_LANGUAGE_MODES.RUSSIAN && !isComment) {
+        viewMode === READER_LANGUAGE_MODES.RUSSIAN &&
+        !isComment && visualNote !== 'plain-prayer') {
       for (const mark of getFirstHourRussianRedMarks(text)) {
         // Prefer the complete rubric over shorter, overlapping highlights.
         for (let index = hoursMarks.length - 1; index >= 0; index--) {
