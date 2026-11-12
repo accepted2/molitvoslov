@@ -298,6 +298,14 @@ def validate(entry_id, sections):
         return False, "Слишком мало абзацев (%d)" % len(rows)
     if not re.search(r"[А-Яа-яЁёѣѡіꙋ]", text):
         return False, "Нет кириллического текста"
+    # Bilingual editions must include both text columns. A page with only
+    # one column must not silently pass as a bilingual source.
+    if family not in ("lenten", "paschal"):
+        church = sum(len(row.get("church", "")) for row in rows)
+        russian = sum(len(row.get("russian", "")) for row in rows)
+        if church < 200 or russian < 200:
+            return False, ("Неполный двуязычный текст (ЦС %d, РУС %d)"
+                           % (church, russian))
     return True, "строк: %d; символов: %d" % (len(rows), total)
 
 def read_traditional(entry_id, directory):
