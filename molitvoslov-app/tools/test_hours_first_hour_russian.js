@@ -42,9 +42,18 @@ assert.equal(ru.afterPsalms[0].rows.length,3);
 assert.equal(ru.afterPsalms[0].rows[1].russian,
   'Аллилуия, аллилуия, аллилуия,\nслава Тебе, Боже. (3)');
 assert.deepEqual(ru.afterPsalms[1].rows.map(x=>x.presentation),['comment','comment']);
+assert.equal(ru.afterPsalms[2].rows[0].russian,
+  'Слава Отцу и Сыну и Святому Духу:');
 assert.equal(ru.afterPsalms[2].rows[1].russian,'Тропарь дня');
+assert.equal(ru.afterPsalms[2].rows[2].russian,
+  'И ныне и присно и во веки веков. Аминь.');
+assert.equal(ru.afterPsalms[2].rows[2].dividerAfter,true);
 assert.equal(ru.afterPsalms[2].rows[1].presentation,'placeholder');
 assert.match(ru.afterPsalms[2].rows[4].russian,/^Как назвать нам Тебя, о Благодатная/);
+assert.ok(!ru.afterPsalms[2].rows[4].russian.includes('\n'),
+  'The Bogorodichen must wrap naturally without hard breaks after sentences.');
+assert.match(ru.afterPsalms[2].rows[4].russian,
+  /Солнце правды\. Раем\? Ибо израстила Ты Цвет нетления/);
 assert.equal(ru.afterPsalms[3].rows[1].accentPrefix,'Стих 1:');
 assert.equal(ru.afterPsalms[3].rows[2].accentPrefix,'Стих 2:');
 assert.match(ru.afterPsalms[3].rows[3].russian,/^Священник: Слава Отцу/);
@@ -90,6 +99,20 @@ assert.ok(allRussian.every(section=>(section.rows||[]).every(row => typeof row.r
 const countWords = allRussian.flatMap(s=>s.rows).map(r=>r.russian.split(/\s+/).length)
   .reduce((a,b)=>a+b,0);
 assert.ok(countWords > 1500,'Full user-provided text must not be reduced to shortened sample prayers');
+const originalSourceRows = [ru.opening,...ru.psalms,...ru.afterPsalms]
+  .flatMap(section=>section.rows);
+assert.ok(!originalSourceRows.some(row =>
+  /[⁰¹²³⁴⁵⁶⁷⁸⁹]|(?:^|\s)Пс\s*\d+\s*:\s*\d+/u.test(row.russian)),
+  'No publisher footnotes or embedded Psalm citations in prayer text.');
+assert.ok(!originalSourceRows.some(row =>
+  row.russian.includes('\n') && row.preserveLineBreaks !== true),
+  'Only explicitly requested Alleluia/speaker line breaks remain.');
+assert.equal(ru.afterPsalms[0].rows[1].preserveLineBreaks,true);
+assert.ok(ru.afterPsalms[6].rows[0].russian.includes('молится непрестанно'));
+assert.ok(!ru.afterPsalms[6].rows[0].russian.includes('\n'));
+assert.ok(!ru.afterPsalms[7].rows[0].russian.includes('\n'));
+assert.ok(!ru.afterPsalms[8].rows[0].russian.includes('\n'));
+assert.ok(!ru.afterPsalms[9].rows[4].russian.includes('\n'));
 const orig = JSON.stringify(ru);
 allRussian[0].rows[0].russian = 'mutated in test';
 assert.equal(JSON.stringify(ru),orig,'The imported Russian text remains immutable');
@@ -155,6 +178,13 @@ assert.equal(russianDoc.sections.length,16);
 assert.deepEqual(russianDoc.sections.filter(s=>s.collapsible).map(s=>s.accordionId),expectedIds);
 assert.equal(russianDoc.sections[0].rows[0].blocks[0].text,
   'Придите, поклонимся Цареви нашему Богу.');
+assert.match(russianDoc.sections[0].rows[0].blocks[0].className,
+  /hours-russian-primary/);
+assert.ok(!russianDoc.sections[0].rows[0].blocks[0].className.includes('secondary'));
+assert.equal(russianDoc.sections[6].rows[4].blocks[0].text,
+  ru.afterPsalms[2].rows[4].russian);
+assert.match(russianDoc.sections[4].rows[1].blocks[0].className,
+  /hours-preserve-line-breaks/);
 assert.equal(russianDoc.sections[1].rows[0].blocks[0].text,ru.psalms[0].rows[0].russian);
 assert.equal(russianDoc.sections[3].rows[0].blocks[0].text,ru.psalms[2].rows[0].russian);
 assert.equal(russianDoc.sections[15].rows.at(-1).blocks[0].text,
@@ -170,6 +200,11 @@ assert.equal(bothDoc.sections.length,16);
 assert.deepEqual(bothDoc.sections.filter(s=>s.collapsible).map(s=>s.accordionId),expectedIds);
 assert.equal(bothDoc.sections[0].rows[0].blocks.length,2);
 assert.equal(bothDoc.sections[0].rows[0].blocks[1].text,ru.opening.rows[0].russian);
+assert.match(bothDoc.sections[0].rows[0].blocks[1].className,
+  /hours-russian-parallel/);
+assert.match(bothDoc.sections[0].rows[0].blocks[1].className,/secondary/);
+assert.match(bothDoc.sections[4].rows[1].blocks[1].className,
+  /hours-preserve-line-breaks/);
 assert.equal(bothDoc.sections[1].rows[0].blocks[1].text,ru.psalms[0].rows[0].russian);
 assert.ok(!bothDoc.sections.flatMap(s=>s.rows).flatMap(r=>r.blocks)
   .some(b=>b.text.includes('СТАРЫЙ ИМПОРТ') || b.text.includes('СТАРЫЙ ОТПУСТ')));
@@ -178,4 +213,4 @@ const churchDoc=buildHoursDocument({entry,content:src,viewMode:MODE.CHURCH});
 assert.equal(churchDoc.sections[1].rows[0].blocks[0].text,
   'Слова церковнославянского псалма 5.');
 assert.equal(JSON.stringify(src),saved);
-console.log('PASS: complete Russian First Hour (3 Psalms, 5 dropdowns, 12 sections) and independent CS/RU/BOTH source integrity');
+console.log('PASS: Russian First Hour typography, full tropar doxology, prayer wrapping, no footnotes, and parallel appearance');
