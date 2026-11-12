@@ -55,13 +55,13 @@
           "dividerAfter": true
         },
         {
-          "russian": "Аллилуия, аллилуия, аллилуия,\nслава Тебе, Боже. (3)",
+          "russian": "Аллилуия, аллилуия, аллилуия,\nслава Тебе, Боже. (Трижды)",
           "presentation": "left-response",
           "dividerAfter": true,
           "preserveLineBreaks": true
         },
         {
-          "russian": "Господи, помилуй. (3)",
+          "russian": "Господи, помилуй. (Трижды)",
           "presentation": "left-response"
         }
       ]
@@ -177,7 +177,7 @@
           "dividerAfter": true
         },
         {
-          "russian": "Господи, помилуй. (3)",
+          "russian": "Господи, помилуй. (Трижды)",
           "presentation": "left-response",
           "dividerAfter": true
         },
@@ -256,7 +256,7 @@
           "dividerAfter": true
         },
         {
-          "russian": "Господи, помилуй. (3)",
+          "russian": "Господи, помилуй. (Трижды)",
           "presentation": "left-response",
           "dividerAfter": true
         },
@@ -286,7 +286,7 @@
       "kind": "conditional",
       "rows": [
         {
-          "russian": "Если пост, и пели «Аллилуия», священник произносит молитву св. Ефрема Сирина с поклонами:",
+          "russian": "Если Великий пост — молитва святого Ефрема Сирина с тремя великими поклонами:",
           "presentation": "comment",
           "compactAfter": true
         },
@@ -355,7 +355,7 @@
           "dividerAfter": true
         },
         {
-          "russian": "Господи, помилуй. (3)",
+          "russian": "Господи, помилуй. (Трижды)",
           "presentation": "left-response",
           "dividerAfter": true
         },
@@ -409,7 +409,7 @@
           "dividerAfter": true
         },
         {
-          "russian": "Господи, помилуй. (3)",
+          "russian": "Господи, помилуй. (Трижды)",
           "presentation": "left-response",
           "dividerAfter": true
         },
