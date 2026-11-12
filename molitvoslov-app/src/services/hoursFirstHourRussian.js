@@ -18,7 +18,10 @@ const sameRowCount = (a, b) =>
   Array.isArray(a?.rows) && Array.isArray(b?.rows) &&
   a.rows.length === b.rows.length;
 
-const copyRows = rows => (rows || []).map(row => ({...row}));
+// Drop stale translations from the original imported columns when row
+// counts differ. Each language comes only from its own curated source.
+const copyChurchRows = rows => (rows || []).map(({russian, ...row}) => ({...row}));
+const copyRussianRows = rows => (rows || []).map(({church, ...row}) => ({...row}));
 
 export const pairFirstHourSections = ({churchSections, russianSections}) => {
   if (!Array.isArray(churchSections) || !Array.isArray(russianSections) ||
@@ -49,8 +52,8 @@ export const pairFirstHourSections = ({churchSections, russianSections}) => {
             ru.rows[rowIndex].compactAfter === true,
         }))
       : [
-          ...copyRows(cs.rows),
-          ...copyRows(ru.rows),
+          ...copyChurchRows(cs.rows),
+          ...copyRussianRows(ru.rows),
         ];
     return {
       ...cs,
