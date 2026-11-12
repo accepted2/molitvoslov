@@ -326,8 +326,14 @@ def read_traditional(entry_id, directory):
     return result
 
 def fetch_url(url, html_dir, session, force=False):
-    key = hashlib.sha256(url.encode("utf-8")).hexdigest()[:16]
-    cached = html_dir / (key + ".html")
+    # Friendly cache names also allow manually saved browser HTML when a
+    # site blocks scripted HTTP requests. No need to guess a hash filename.
+    named = {address: entry_id for entry_id, address in PAIRED.items()}
+    named.update({address: group for group, address in ROYAL.items()})
+    named[LENTEN] = "lenten"
+    named[PASCHAL] = "paschal"
+    name = named.get(url, hashlib.sha256(url.encode("utf-8")).hexdigest()[:16])
+    cached = html_dir / (name + ".html")
     if cached.is_file() and not force:
         return cached.read_bytes()
     result = session.get(url, timeout=35)
