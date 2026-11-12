@@ -2,6 +2,7 @@ import React, {useMemo} from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
+import {useFocusEffect} from '@react-navigation/native';
 
 import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
@@ -10,11 +11,25 @@ import {bibleContent} from '../services/bibleContent';
 import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {colors, radius} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
+import {bibleUiText, isTraditionalBible, traditionalBibleTextStyle} from '../services/bibleUi';
+import {getPreferredBibleTranslation, savePreferredBibleTranslation} from '../services/bibleTranslationPreference';
 
 export const BibleScreen = ({navigation}) => {
   const {t} = useLanguage();
   const bibleGeneration = useBibleContentGeneration();
   const [translationCode, setTranslationCode] = React.useState('rst');
+  const isTraditional = isTraditionalBible(translationCode);
+  const ui = (key, fallback, params) => bibleUiText(translationCode, key, fallback, params);
+
+  useFocusEffect(React.useCallback(() => {
+    let active = true;
+    getPreferredBibleTranslation().then((code) => {if (active) setTranslationCode(code);});
+    return () => {active = false;};
+  }, []));
+  const selectTranslation = (code) => {
+    setTranslationCode(code);
+    savePreferredBibleTranslation(code).catch(() => {});
+  };
   const insets = useSafeAreaInsets();
 
   const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
@@ -53,35 +68,49 @@ export const BibleScreen = ({navigation}) => {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Русская Синодальная Библия"
-            onPress={() => setTranslationCode('rst')}
+            onPress={() => selectTranslation('rst')}
             style={[styles.translationOption, translationCode === 'rst' && styles.translationSelected]}
           >
-            <Text style={styles.translationOptionText}>RU</Text>
+            <Text style={styles.translationOptionText}>РУ</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Церковнославянская Библия"
-            onPress={() => setTranslationCode('csl_traditional')}
+            onPress={() => selectTranslation('csl_traditional')}
             style={[
               styles.translationOption,
               translationCode === 'csl_traditional' && styles.translationSelected,
             ]}
           >
-            <Text style={styles.translationOptionText}>ЦС традиционный</Text>
+            <Text style={[styles.translationOptionText, isTraditional && traditionalBibleTextStyle]}>ЦС традиционный</Text>
           </Pressable>
         </View>
-        <Text style={styles.translation}>
-          {bibleContent.getTranslation(translationCode)?.name || t('bible.synodalTranslation')}
-        </Text>
+        {/*<Text style={[*/}
+        {/*  styles.translation,*/}
+        {/*  isTraditional && traditionalBibleTextStyle,*/}
+        {/*  isTraditional && styles.translationCsl,*/}
+        {/*]}>*/}
+        {/*  {ui('translationName', bibleContent.getTranslation(translationCode)?.name || t('bible.synodalTranslation'))}*/}
+        {/*</Text>*/}
 
         <Pressable
           onPress={() => openTestament('old')}
           style={({pressed}) => [styles.card, pressed && styles.pressed]}
         >
           <View style={styles.cardText}>
-            <Text style={styles.cardTitle}>{t('bible.oldTestament')}</Text>
-            <Text style={styles.cardSubtitle}>
-              {t('bible.booksAndSections', {count: oldBooks.length})}
+            <Text style={[
+              styles.cardTitle,
+              isTraditional && traditionalBibleTextStyle,
+              isTraditional && styles.cardTitleCsl,
+            ]}>
+              {ui('oldTestament', t('bible.oldTestament'))}
+            </Text>
+            <Text style={[
+              styles.cardSubtitle,
+              isTraditional && traditionalBibleTextStyle,
+              isTraditional && styles.cardSubtitleCsl,
+            ]}>
+              {ui('booksAndSections', t('bible.booksAndSections', {count: oldBooks.length}), {count: oldBooks.length})}
             </Text>
           </View>
           <Text style={styles.arrow}>›</Text>
@@ -92,8 +121,16 @@ export const BibleScreen = ({navigation}) => {
           style={({pressed}) => [styles.card, pressed && styles.pressed]}
         >
           <View style={styles.cardText}>
-            <Text style={styles.cardTitle}>{t('bible.newTestament')}</Text>
-            <Text style={styles.cardSubtitle}>{t('bible.books', {count: newBooks.length})}</Text>
+            <Text style={[
+              styles.cardTitle,
+              isTraditional && traditionalBibleTextStyle,
+              isTraditional && styles.cardTitleCsl,
+            ]}>{ui('newTestament', t('bible.newTestament'))}</Text>
+            <Text style={[
+              styles.cardSubtitle,
+              isTraditional && traditionalBibleTextStyle,
+              isTraditional && styles.cardSubtitleCsl,
+            ]}>{ui('books', t('bible.books', {count: newBooks.length}), {count: newBooks.length})}</Text>
           </View>
           <Text style={styles.arrow}>›</Text>
         </Pressable>
@@ -107,7 +144,13 @@ export const BibleScreen = ({navigation}) => {
         )}
       </View>
 
-      <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={t('bible.title')} navigation={navigation} topInset={insets.top} />
+      <FixedSectionHeader
+        onHeaderHeightChange={setHeaderHeight}
+        title="Библия"
+        navigation={navigation}
+        topInset={insets.top}
+      />
+
 
       <BottomNav navigation={navigation} active={null} />
     </AppBackground>
@@ -198,5 +241,32 @@ const styles = StyleSheet.create({
 
   pressed: {
     opacity: 0.65,
+  },
+
+  // Дополнительные стили только для ЦС
+  translationCsl: {
+    fontSize: 17,
+    lineHeight: 27,
+    fontWeight: '500',
+    color: '#341a09',
+    alignSelf:'flex-end'
+  },
+
+  cardCsl: {
+    minHeight: 98,
+  },
+
+  cardTitleCsl: {
+    fontSize: 24,
+    lineHeight: 37,
+    fontWeight: '400',
+    color: '#382516',
+  },
+
+  cardSubtitleCsl: {
+    fontSize: 17,
+    lineHeight: 27,
+    fontWeight: '500',
+    color: '#62462B',
   },
 });

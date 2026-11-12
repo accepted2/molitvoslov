@@ -14,6 +14,7 @@ import {getBibleArtwork} from '../data/bibleArtwork';
 import {homeArtwork} from '../data/homeArtwork';
 import {colors} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
+import {bibleUiText, isTraditionalBible, traditionalBibleTextStyle, formatBibleNumber} from '../services/bibleUi';
 
 export const BibleBookScreen = ({route, navigation}) => {
   const {t} = useLanguage();
@@ -21,6 +22,9 @@ export const BibleBookScreen = ({route, navigation}) => {
   const translationCode = route.params?.translationCode === 'csl_traditional'
     ? 'csl_traditional'
     : 'rst';
+  const isTraditional = isTraditionalBible(translationCode);
+  const ui = (key, fallback, params) => bibleUiText(translationCode, key, fallback, params);
+
   const book = bibleContent.getBook(route.params?.bookId, translationCode);
 
   const [bookProgress, setBookProgress] = useState(null);
@@ -43,7 +47,11 @@ export const BibleBookScreen = ({route, navigation}) => {
 
     setBookProgress(
       progress.find(
-        (item) => item.source_type === 'bible' && Number(item.source_id) === Number(book.id)
+        (item) => item.source_type === 'bible' && (
+          Number(item.source_id) === Number(book.id) ||
+          item.anchor_info?.book_code === book.code ||
+          item.anchor_info?.book_slug === book.slug
+        )
       ) || null
     );
   }, [book?.id]);
@@ -68,9 +76,14 @@ export const BibleBookScreen = ({route, navigation}) => {
   const progressPage = Number(progressInfo.page_number || 0);
   const progressPageCount = Number(progressInfo.page_count || 0);
   const progressPercent = Number(bookProgress?.progress_percent || 0);
+  const savedCode = bookProgress?.anchor_info?.translation_code;
+  const progressTranslation = savedCode === 'rst' || savedCode === 'csl_traditional' ? savedCode : translationCode;
+  const resumeBook = !book ? null : progressTranslation === translationCode ? book :
+    bibleContent.getBooks(null, progressTranslation).find((candidate) => candidate.code === book.code);
 
   const openChapter = (chapter) => {
-    const isResumeChapter = !!bookProgress && Number(chapter.number) === progressChapter;
+    const isResumeChapter = !!bookProgress && progressTranslation === translationCode &&
+      Number(bookProgress.source_id) === Number(book.id) && Number(chapter.number) === progressChapter;
 
     navigation.navigate('BibleChapter', {
       bookId: book.id,
@@ -81,15 +94,31 @@ export const BibleBookScreen = ({route, navigation}) => {
   };
 
   const resumeReading = () => {
-    if (!bookProgress || !progressChapter) {
+    if (!bookProgress || !progressChapter || !resumeBook ||
+      !bibleContent.getChapter(resumeBook.id, progressChapter, progressTranslation)) {
       return;
     }
 
+    const storedIdMatches = Number(bookProgress.source_id) === Number(resumeBook.id);
+    const chapter = bibleContent.getChapter(resumeBook.id, progressChapter, progressTranslation);
+    const verseNumber = Number(progressInfo.verse_number || 1);
+    const verse = chapter?.verses?.find((item) => Number(item.number) === verseNumber)
+      || chapter?.verses?.[0];
     navigation.navigate('BibleChapter', {
-      bookId: book.id,
+      bookId: resumeBook.id,
       chapterNumber: progressChapter,
-      translationCode,
-      resume: true,
+      translationCode: progressTranslation,
+      resume: storedIdMatches,
+      // Older progress may refer to another translation's record IDs.
+      // If IDs differ, navigate by chapter/verse rather than a stale anchor ID.
+      ...(!storedIdMatches && verse ? {
+        focusTarget: {
+          save_type: 'verse',
+          anchor_type: 'bible_verse',
+          anchor_id: Number(verse.id),
+          metadata: {book_id: Number(resumeBook.id), chapter_number: progressChapter, verse_number: Number(verse.number)},
+        },
+      } : {}),
     });
   };
 
@@ -142,7 +171,7 @@ export const BibleBookScreen = ({route, navigation}) => {
           }}
           ListHeaderComponent={
             <View>
-              <Text style={[styles.fullName, artwork?.background && styles.fullNameArtwork]}>
+              <Text style={[styles.fullName, artwork?.background && styles.fullNameArtwork, isTraditional && traditionalBibleTextStyle]}>
                 {displayName}
               </Text>
 
@@ -157,20 +186,21 @@ export const BibleBookScreen = ({route, navigation}) => {
                 >
                   <View style={styles.resumeText}>
                     <Text
-                      style={[styles.resumeLabel, artwork?.background && styles.resumeLabelArtwork]}
+                      style={[styles.resumeLabel, artwork?.background && styles.resumeLabelArtwork, isTraditional && traditionalBibleTextStyle]}
                     >
-                      {t('bible.continueReading')}
+                      {ui('continueReading', t('bible.continueReading'))}
                     </Text>
 
                     <Text
                       style={[
                         styles.resumePosition,
                         artwork?.background && styles.resumePositionArtwork,
+                        isTraditional && traditionalBibleTextStyle,
                       ]}
                     >
-                      {t('bible.chapter', {number: progressChapter})}
+                      {ui('chapter', t('bible.chapter', {number: progressChapter}), {number: progressChapter})}
                       {progressPage && progressPageCount
-                        ? ' · ' + t('bible.pageOf', {page: progressPage, count: progressPageCount})
+                        ? ' · ' + ui('pageOf', t('bible.pageOf', {page: progressPage, count: progressPageCount}), {page: progressPage, count: progressPageCount})
                         : ''}
                     </Text>
                   </View>
@@ -179,9 +209,10 @@ export const BibleBookScreen = ({route, navigation}) => {
                     style={[
                       styles.resumePercent,
                       artwork?.background && styles.resumePercentArtwork,
+                    isTraditional && traditionalBibleTextStyle,
                     ]}
                   >
-                    {progressPercent}%
+                    {formatBibleNumber(translationCode, progressPercent)}%
                   </Text>
 
                   <Text
@@ -218,9 +249,10 @@ export const BibleBookScreen = ({route, navigation}) => {
                     artwork?.background && styles.chapterNumberArtwork,
 
                     isCurrent && styles.chapterNumberCurrent,
+                    isTraditional && traditionalBibleTextStyle,
                   ]}
                 >
-                  {item.number}
+                  {formatBibleNumber(translationCode, item.number)}
                 </Text>
 
                 {isCurrent && <View style={styles.currentDot} />}
@@ -229,7 +261,7 @@ export const BibleBookScreen = ({route, navigation}) => {
           }}
         />
 
-        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={displayName} navigation={navigation} topInset={insets.top} />
+        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={displayName} titleTextStyle={isTraditional ? traditionalBibleTextStyle : null} navigation={navigation} topInset={insets.top} />
 
         <BottomNav navigation={navigation} active={null} />
       </ImageBackground>

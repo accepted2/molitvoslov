@@ -12,6 +12,7 @@ import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {getReadingProgress} from '../services/readingProgress';
 import {colors} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
+import {bibleUiText, isTraditionalBible, traditionalBibleTextStyle, formatBibleNumber} from '../services/bibleUi';
 
 const NEW_SECTION_ORDER = ['gospels', 'acts', 'epistles', 'revelation'];
 
@@ -22,6 +23,9 @@ export const BibleBooksScreen = ({route, navigation}) => {
   const translationCode = route.params?.translationCode === 'csl_traditional'
     ? 'csl_traditional'
     : 'rst';
+  const isTraditional = isTraditionalBible(translationCode);
+  const ui = (key, fallback, params) => bibleUiText(translationCode, key, fallback, params);
+
 
   const [readingProgress, setReadingProgress] = useState([]);
 
@@ -40,10 +44,17 @@ export const BibleBooksScreen = ({route, navigation}) => {
     }, [])
   );
 
-  const progressByBook = useMemo(
-    () => new Map(readingProgress.map((item) => [Number(item.source_id), item])),
-    [readingProgress]
-  );
+  const progressByBook = useMemo(() => {
+    const results = new Map();
+    // getReadingProgress() returns newest first. Resolve progress across
+    // translations by canonical code/slug, not by per-edition record ID.
+    readingProgress.forEach((item) => {
+      for (const key of [item.anchor_info?.book_code, item.anchor_info?.book_slug, Number(item.source_id)]) {
+        if (key !== undefined && key !== null && !results.has(key)) results.set(key, item);
+      }
+    });
+    return results;
+  }, [readingProgress]);
 
   const books = useMemo(
     () => bibleContent.getBooks(testament, translationCode),
@@ -52,11 +63,11 @@ export const BibleBooksScreen = ({route, navigation}) => {
 
   const sections = useMemo(() => {
     const sectionTitles = {
-      old: t('bible.sectionOld'),
-      gospels: t('bible.sectionGospels'),
-      acts: t('bible.sectionActs'),
-      epistles: t('bible.sectionEpistles'),
-      revelation: t('bible.sectionRevelation'),
+      old: ui('sectionOld', t('bible.sectionOld')),
+      gospels: ui('sectionGospels', t('bible.sectionGospels')),
+      acts: ui('sectionActs', t('bible.sectionActs')),
+      epistles: ui('sectionEpistles', t('bible.sectionEpistles')),
+      revelation: ui('sectionRevelation', t('bible.sectionRevelation')),
     };
 
     if (testament === 'old') {
@@ -74,9 +85,11 @@ export const BibleBooksScreen = ({route, navigation}) => {
       title: sectionTitles[key],
       data: books.filter((book) => book.section === key),
     })).filter((section) => section.data.length);
-  }, [books, testament, t]);
+  }, [books, testament, t, translationCode]);
 
-  const title = testament === 'new' ? t('bible.newTestament') : t('bible.oldTestament');
+  const title = testament === 'new'
+    ? ui('newTestament', t('bible.newTestament'))
+    : ui('oldTestament', t('bible.oldTestament'));
 
   return (
     <AppBackground imageOpacity={0.72}>
@@ -92,11 +105,11 @@ export const BibleBooksScreen = ({route, navigation}) => {
         }}
         renderSectionHeader={({section}) => (
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
+            <Text style={[styles.sectionTitle, isTraditional && traditionalBibleTextStyle]}>{section.title}</Text>
           </View>
         )}
         renderItem={({item}) => {
-          const progress = progressByBook.get(Number(item.id));
+          const progress = progressByBook.get(item.code) || progressByBook.get(item.slug) || progressByBook.get(Number(item.id));
 
           const info = progress?.anchor_info || {};
 
@@ -119,17 +132,17 @@ export const BibleBooksScreen = ({route, navigation}) => {
               ]}
             >
               <View style={styles.itemText}>
-                <Text style={styles.bookName}>{bibleContent.getDisplayName(item, translationCode)}</Text>
+                <Text style={[styles.bookName, isTraditional && traditionalBibleTextStyle]}>{bibleContent.getDisplayName(item, translationCode)}</Text>
 
-                <Text style={styles.chapterCount}>
-                  {t('bible.chapters', {count: item.chapters?.length || 0})}
-                  {chapterNumber ? ' · ' + t('bible.stoppedChapter', {chapter: chapterNumber}) : ''}
+                <Text style={[styles.chapterCount, isTraditional && traditionalBibleTextStyle]}>
+                  {ui('chapters', t('bible.chapters', {count: item.chapters?.length || 0}), {count: item.chapters?.length || 0})}
+                  {chapterNumber ? ' · ' + ui('stoppedChapter', t('bible.stoppedChapter', {chapter: chapterNumber}), {chapter: chapterNumber}) : ''}
                 </Text>
               </View>
 
               {!!progress && (
-                <Text style={styles.progressPercent}>
-                  {Number(progress.progress_percent || 0)}%
+                <Text style={[styles.progressPercent, isTraditional && traditionalBibleTextStyle]}>
+                  {formatBibleNumber(translationCode, Number(progress.progress_percent || 0))}%
                 </Text>
               )}
 
@@ -139,7 +152,7 @@ export const BibleBooksScreen = ({route, navigation}) => {
         }}
       />
 
-      <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={title} navigation={navigation} topInset={insets.top} />
+      <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={title} titleTextStyle={isTraditional ? traditionalBibleTextStyle : null} navigation={navigation} topInset={insets.top} />
 
       <BottomNav navigation={navigation} active={null} />
     </AppBackground>

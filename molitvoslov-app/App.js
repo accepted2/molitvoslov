@@ -16,6 +16,7 @@ import {PrayerBeadsLoader} from './src/components/feedback/PrayerBeadsLoader';
 
 import {TextSelectionProvider} from './src/context/TextSelectionContext';
 import {LanguageProvider} from './src/context/LanguageContext';
+import {InterfaceScaleProvider} from './src/context/InterfaceScaleContext';
 
 import {initDatabase} from './src/db/database';
 
@@ -28,6 +29,7 @@ import {syncMemorials} from './src/services/memorials';
 import {syncPrayerBooks} from './src/services/prayerBooks';
 import {hydratePublicContent} from './src/services/contentStore';
 import {getCachedBackendUser} from './src/services/backendAuth';
+import {syncAccountPreferences} from './src/services/accountPreferencesSync';
 import {hydrateBibleContent} from './src/services/bibleStore';
 
 
@@ -142,7 +144,13 @@ export default function App() {
         // PUBLIC_CONTENT_BUNDLED_ONLY_V1: public texts ship in the APK.
         // Personal backups may still sync independently when the user signs in.
         const user = await getCachedBackendUser();
-        if (!user?.id || personalSyncing) return;
+        if (!user?.id) return;
+        // Preferences are lightweight and may have changed on another device.
+        // Keep their sync independent of the 24h personal-content throttle.
+        syncAccountPreferences().catch(error =>
+          console.warn('[preferences] cloud sync pending:', error?.message || error)
+        );
+        if (personalSyncing) return;
         const stampKey = '@molitvoslov/personal-last-pull-v1:' + String(user.id);
         // Avoid pulling every private list again on each app launch.
         // Network reconnection can still push unsent offline edits immediately.
@@ -236,9 +244,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <LanguageProvider>
+        <InterfaceScaleProvider>
         <TextSelectionProvider>
           {showOnboarding ? <OnboardingScreen onComplete={completeOnboarding} /> : <AppNavigator />}
         </TextSelectionProvider>
+        </InterfaceScaleProvider>
       </LanguageProvider>
     </SafeAreaProvider>
   );

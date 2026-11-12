@@ -20,7 +20,12 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
 import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
-import {resolveReaderAppearance} from '../services/scopedReaderAppearance';
+import {
+  getReaderLanguageModePreference,
+  saveReaderLanguageModePreference,
+} from '../services/readerPreferences';
+
+import {isDarkReaderBackground, resolveReaderAppearance} from '../services/scopedReaderAppearance';
 import {
   READER_LANGUAGE_MODES,
   buildReaderLanguageOptions,
@@ -124,6 +129,15 @@ export const AkathistScreen = ({route, navigation}) => {
   useEffect(() => {readerRef.current?.applyAppearance(appearance);}, [appearance]);
 
   const [viewMode, setViewMode] = useState(MODE_CHURCH);
+  const changeViewMode = nextMode => {
+    setViewMode(nextMode);
+    if (akathistId) {
+      saveReaderLanguageModePreference({
+        sourceType: 'akathist', sourceId: akathistId, mode: nextMode,
+      }).catch(error => console.warn('[reader language] save:', error?.message || error));
+    }
+  };
+
 
   const [loading, setLoading] = useState(true);
 
@@ -243,6 +257,21 @@ export const AkathistScreen = ({route, navigation}) => {
     }
 
     setViewMode(nextMode);
+    if (!preferred && akathistId) {
+      let active = true;
+      getReaderLanguageModePreference({sourceType: 'akathist', sourceId: akathistId})
+        .then(savedMode => {
+          if (!active) return;
+          const supported = (savedMode === 'russian' || savedMode === 'both')
+            ? (hasRussianTranslation ? savedMode : 'church')
+            : savedMode === 'traditional'
+              ? (hasTraditionalTranslation ? savedMode : 'church')
+              : 'church';
+          setViewMode(supported);
+        })
+        .catch(error => console.warn('[reader language] load:', error?.message || error));
+      return () => { active = false; };
+    }
   }, [
     language,
     akathist,
@@ -898,9 +927,10 @@ export const AkathistScreen = ({route, navigation}) => {
     );
   }
 
+  const readerBackground = resolveReaderAppearance(appearance).background;
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" translucent backgroundColor="transparent" />
+    <View style={[styles.container, {backgroundColor: readerBackground}]}>
+      <StatusBar style={isDarkReaderBackground(readerBackground) ? 'light' : 'dark'} translucent backgroundColor="transparent" />
 
       <SelectableDocumentReader
         ref={readerRef}
@@ -913,7 +943,7 @@ export const AkathistScreen = ({route, navigation}) => {
         onNativeReadingScroll={handleNativeReadingScroll}
         onProgress={scheduleSave}
         onAction={handleAction}
-        onViewModeChange={setViewMode}
+        onViewModeChange={changeViewMode}
         onReady={() => readerRef.current?.applyAppearance(appearance)}
       />
 
@@ -933,7 +963,7 @@ export const AkathistScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
-        gradientColor={resolveReaderAppearance(appearance).background}
+        gradientColor={readerBackground}
         onHeaderHeightChange={setHeaderHeight}
         title={getLocalizedField(akathist, 'title', language) || title || t('reading.akathist')}
         navigation={navigation}

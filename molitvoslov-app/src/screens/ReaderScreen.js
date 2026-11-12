@@ -30,7 +30,12 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
 import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
-import {resolveReaderAppearance} from '../services/scopedReaderAppearance';
+import {
+  getReaderLanguageModePreference,
+  saveReaderLanguageModePreference,
+} from '../services/readerPreferences';
+
+import {isDarkReaderBackground, resolveReaderAppearance} from '../services/scopedReaderAppearance';
 
 export const ReaderScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
@@ -53,6 +58,15 @@ export const ReaderScreen = ({route, navigation}) => {
   useEffect(() => {readerRef.current?.applyAppearance(appearance);}, [appearance]);
 
   const [viewMode, setViewMode] = useState(READER_LANGUAGE_MODES.CHURCH);
+  const changeViewMode = nextMode => {
+    setViewMode(nextMode);
+    if (slug) {
+      saveReaderLanguageModePreference({
+        sourceType: 'text', sourceId: slug, mode: nextMode,
+      }).catch(error => console.warn('[reader language] save:', error?.message || error));
+    }
+  };
+
 
   const [loading, setLoading] = useState(true);
 
@@ -136,6 +150,21 @@ export const ReaderScreen = ({route, navigation}) => {
     }
 
     setViewMode(nextMode);
+    if (!preferred && slug) {
+      let active = true;
+      getReaderLanguageModePreference({sourceType: 'text', sourceId: slug})
+        .then(savedMode => {
+          if (!active) return;
+          const supported = (savedMode === 'russian' || savedMode === 'both')
+            ? (hasRussianTranslation ? savedMode : 'church')
+            : savedMode === 'traditional'
+              ? (hasTraditionalTranslation ? savedMode : 'church')
+              : 'church';
+          setViewMode(supported);
+        })
+        .catch(error => console.warn('[reader language] load:', error?.message || error));
+      return () => { active = false; };
+    }
   }, [
     language,
     text,
@@ -394,9 +423,10 @@ export const ReaderScreen = ({route, navigation}) => {
     );
   }
 
+  const readerBackground = resolveReaderAppearance(appearance).background;
   return (
-    <View style={styles.screen}>
-      <StatusBar style="light" translucent backgroundColor="transparent" />
+    <View style={[styles.screen, {backgroundColor: readerBackground}]}>
+      <StatusBar style={isDarkReaderBackground(readerBackground) ? 'light' : 'dark'} translucent backgroundColor="transparent" />
 
       <SelectableDocumentReader
         ref={readerRef}
@@ -408,7 +438,7 @@ export const ReaderScreen = ({route, navigation}) => {
         onReadingScroll={handleReadingScroll}
         onNativeReadingScroll={handleNativeReadingScroll}
         onAction={handleAction}
-        onViewModeChange={setViewMode}
+        onViewModeChange={changeViewMode}
         onReady={() => readerRef.current?.applyAppearance(appearance)}
       />
 
@@ -421,7 +451,7 @@ export const ReaderScreen = ({route, navigation}) => {
       />
 
       <FixedSectionHeader
-        gradientColor={resolveReaderAppearance(appearance).background}
+        gradientColor={readerBackground}
         onHeaderHeightChange={setHeaderHeight}
         title={getLocalizedTextTitle(text, language) || t('common.reading')}
         navigation={navigation}

@@ -3,7 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  FlatList,
+  PanResponder,
   Modal,
   Pressable,
   StyleSheet,
@@ -15,7 +15,6 @@ import {StatusBar} from 'expo-status-bar';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
-import {ThinScrollIndicator} from '../components/reader/ThinScrollIndicator';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
 import {colors} from '../theme';
@@ -45,34 +44,115 @@ const notifySaveError = () => {
   );
 };
 
+
+// A narrow, draggable reading-style thumb. Only its 22px-wide handle takes
+// gestures; the surrounding text continues to receive regular scroll swipes.
+const ConfessionScrollThumb = ({
+  scrollY, offsetRef, draggingRef, viewportHeight, contentHeight,
+  topInset, bottomInset, scrollTo,
+}) => {
+  const trackHeight = Math.max(0, viewportHeight - topInset - bottomInset);
+  const maxScroll = Math.max(0, contentHeight - viewportHeight);
+  const thumbHeight = Math.min(trackHeight, Math.max(46,
+    contentHeight > 0 ? trackHeight * viewportHeight / contentHeight : trackHeight));
+  const thumbTravel = Math.max(0, trackHeight - thumbHeight);
+  const dragStartRef = useRef(0);
+
+  const panResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: () => {
+      draggingRef.current = true;
+      dragStartRef.current = offsetRef.current;
+    },
+    onPanResponderMove: (_event, gesture) => {
+      if (maxScroll <= 0 || thumbTravel <= 0) return;
+      const next = Math.max(0, Math.min(maxScroll,
+        dragStartRef.current + gesture.dy * maxScroll / thumbTravel));
+      scrollTo(next);
+    },
+    onPanResponderRelease: () => { draggingRef.current = false; },
+    onPanResponderTerminate: () => { draggingRef.current = false; },
+    onPanResponderTerminationRequest: () => false,
+  }), [draggingRef, maxScroll, offsetRef, scrollTo, thumbTravel]);
+
+  const translateY = scrollY.interpolate({
+    inputRange: [0, Math.max(1, maxScroll)],
+    outputRange: [0, thumbTravel],
+    extrapolate: 'clamp',
+  });
+
+  if (viewportHeight <= 0 || contentHeight <= viewportHeight + 5 || trackHeight < 80) {
+    return null;
+  }
+
+  return (
+    <View
+      pointerEvents="box-none"
+      style={[styles.scrollThumbTrack, {top: topInset, bottom: bottomInset}]}
+    >
+      <Animated.View
+        {...panResponder.panHandlers}
+        style={[styles.scrollThumbTouch, {
+          height: thumbHeight,
+          transform: [{translateY}],
+        }]}
+        accessible
+        accessibilityRole="adjustable"
+        accessibilityLabel="Прокрутка текста. Перетащите ползунок вверх или вниз."
+      >
+        <View pointerEvents="none" style={styles.scrollThumb} />
+      </Animated.View>
+    </View>
+  );
+};
+
 export const ConfessionPreparationScreen = ({navigation}) => {
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
   const [viewMode, setViewMode] = useState('catalog');
   const scrollRef = useRef(null);
   const scrollY = useRef(new Animated.Value(0)).current;
+  const scrollOffsetRef = useRef(0);
+  const thumbDraggingRef = useRef(false);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
   const {readingChromeHidden, handleReadingScroll, handleNativeReadingScroll} = useReadingChrome();
+
+  // Drive the thumb directly from the native scroll position, avoiding
+  // per-frame JS updates that make the handle stutter during fast swipes.
   const handleListScroll = useCallback(event => {
     handleNativeReadingScroll(event);
-    scrollY.setValue(Math.max(0, event.nativeEvent.contentOffset?.y || 0));
-  }, [handleNativeReadingScroll, scrollY]);
+    const raw = event.nativeEvent?.contentOffset?.y;
+    if (!Number.isFinite(raw) || thumbDraggingRef.current) return;
+    scrollOffsetRef.current = Math.max(0, raw);
+  }, [handleNativeReadingScroll]);
+
+  const nativeScrollHandler = useMemo(() => Animated.event(
+    [{nativeEvent: {contentOffset: {y: scrollY}}}],
+    {useNativeDriver: true, listener: handleListScroll},
+  ), [handleListScroll, scrollY]);
+
   const scrollToPosition = useCallback(offset => {
-    scrollRef.current?.scrollToOffset({offset, animated: false});
+    const position = Math.max(0, offset);
+    scrollOffsetRef.current = position;
+    const scrollView = scrollRef.current;
+    if (typeof scrollView?.scrollTo === 'function') {
+      scrollView.scrollTo({y: position, animated: false});
+    } else {
+      scrollView?.getNode?.()?.scrollTo?.({y: position, animated: false});
+    }
   }, []);
-  const scrollToTop = useCallback(() => {
-    scrollRef.current?.scrollToOffset({offset: 0, animated: true});
-    // Match morning prayers: reveal both reading bars when going to top.
-    handleReadingScroll('top');
-  }, [handleReadingScroll]);
+
   const switchView = useCallback(nextMode => {
-    // Remount the destination list at its start with visible reading chrome.
+    if (nextMode === viewMode) return;
     handleReadingScroll('top');
+    thumbDraggingRef.current = false;
+    scrollOffsetRef.current = 0;
     scrollY.setValue(0);
     setContentHeight(0);
     setViewMode(nextMode);
-  }, [handleReadingScroll, scrollY]);
+  }, [handleReadingScroll, scrollY, viewMode]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]);
   const [menuSinId, setMenuSinId] = useState(null);
@@ -366,47 +446,49 @@ export const ConfessionPreparationScreen = ({navigation}) => {
             <ActivityIndicator color={colors.accent} size="large" />
           </View>
         ) : (
-          <FlatList
+          <Animated.ScrollView
             ref={scrollRef}
-            key={`confession-list:${viewMode}`}
-            data={source}
-            keyExtractor={(item, index) => item.id || 'doc-' + index}
-            renderItem={catalogMode ? renderDocumentBlock : renderSelectedItem}
-            ListHeaderComponent={listHeader}
-            ListEmptyComponent={
-              <Text style={styles.empty}>
-                {catalogMode
-                  ? 'В справочнике пока нет записей.'
-                  : 'Пока ничего не выбрано. Откройте "Все грехи" и добавьте нужные пункты.'}
-              </Text>
-            }
+            key={`confession-scroll:${viewMode}`}
+            style={styles.scroll}
             contentContainerStyle={[
               styles.content,
               {paddingTop: headerHeight + 18, paddingBottom: insets.bottom + 95},
             ]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
-            onScroll={handleListScroll}
+            onScroll={nativeScrollHandler}
             scrollEventThrottle={16}
             onLayout={event => setViewportHeight(event.nativeEvent.layout.height)}
             onContentSizeChange={(_width, height) => setContentHeight(height)}
             showsVerticalScrollIndicator={false}
-            initialNumToRender={10}
-            maxToRenderPerBatch={12}
-            windowSize={7}
-          />
+            nestedScrollEnabled
+            overScrollMode="never"
+          >
+            {listHeader}
+            {source.length ? source.map((item, index) => (
+              <React.Fragment key={item.id || `doc-${index}`}>
+                {catalogMode
+                  ? renderDocumentBlock({item, index})
+                  : renderSelectedItem({item, index})}
+              </React.Fragment>
+            )) : (
+              <Text style={styles.empty}>
+                {catalogMode
+                  ? 'В справочнике пока нет записей.'
+                  : 'Пока ничего не выбрано. Откройте "Все грехи" и добавьте нужные пункты.'}
+              </Text>
+            )}
+          </Animated.ScrollView>
         )}
-        <ThinScrollIndicator
-          key={`confession-scrollbar:${viewMode}`}
+        <ConfessionScrollThumb
           scrollY={scrollY}
+          offsetRef={scrollOffsetRef}
+          draggingRef={thumbDraggingRef}
           viewportHeight={viewportHeight}
           contentHeight={contentHeight}
           topInset={headerHeight + 8}
           bottomInset={Math.max(insets.bottom + 69, 76)}
           scrollTo={scrollToPosition}
-          autoHide
-          showScrollTop
-          onScrollTop={scrollToTop}
         />
         <FixedSectionHeader
           title="Подготовка к исповеди"
@@ -484,7 +566,19 @@ const styles = StyleSheet.create({
   page: {flex: 1, backgroundColor: '#FFF4DE'},
   screen: {flex: 1, backgroundColor: '#FFF4DE'},
   loading: {flex: 1, justifyContent: 'center', alignItems: 'center'},
-  content: {paddingHorizontal: 12},
+  scroll: {flex: 1},
+  content: {paddingLeft: 12, paddingRight: 20},
+  scrollThumbTrack: {
+    position: 'absolute', right: 2, width: 22, zIndex: 20,
+  },
+  scrollThumbTouch: {
+    position: 'absolute', top: 0, right: 0, width: 22,
+    alignItems: 'flex-end', paddingRight: 7,
+  },
+  scrollThumb: {
+    width: 4, height: '100%', borderRadius: 4,
+    backgroundColor: 'rgba(100, 61, 35, 0.64)',
+  },
   listHeader: {marginBottom: 10},
   title: {
     fontFamily: 'serif', fontSize: 24, lineHeight: 30,

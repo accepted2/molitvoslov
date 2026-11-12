@@ -336,7 +336,14 @@ const SearchContent = ({navigation}) => {
     if (!item?.route?.name) return;
     rememberQuery();
     const target = resolveSearchOpenRoute(item, getCurrentContent());
-    navigation.navigate(target.name, target.params || {});
+    if (!target?.name) return;
+    // Opening a verse must mount a fresh Bible reader rather than reuse
+    // an existing stack instance at its previous book/page position.
+    if (target.name === 'BibleChapter' && typeof navigation.push === 'function') {
+      navigation.push(target.name, target.params || {});
+    } else {
+      navigation.navigate(target.name, target.params || {});
+    }
   };
 
   const submitSearch = () => {

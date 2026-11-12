@@ -6,23 +6,77 @@ import {StatusBar} from 'expo-status-bar';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 import {ReaderBookmarkMenu} from '../components/reader/ReaderBookmarkMenu';
+import {BibleCrossReferencesSheet} from '../components/reader/BibleCrossReferencesSheet';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {useReadingProgress} from '../hooks/useReadingProgress';
 import {saveReadingBookmark} from '../services/readerBookmarks';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {bibleContent} from '../services/bibleContent';
+import {getBibleCrossReferences, hasBibleCrossReferences} from '../services/bibleCrossReferences';
 import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {colors} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
+import {bibleUiText, traditionalBibleTextStyle, formatBibleNumber} from '../services/bibleUi';
+import {savePreferredBibleTranslation} from '../services/bibleTranslationPreference';
+
+// A numbered lectionary rubric may arrive before the first CSL verse as
+// "Зачало 1", "°°(Зачало 1)°°" or "З°°(ачало 1)°°".  The final variant
+// previously became the (incorrect) red chapter initial.
+// Match only a numbered rubric at the very start of a chapter; preserve all
+// genuine Church Slavonic letters, accents and titla in the verse itself.
+const cleanTraditionalVerse = (value, isFirstVerse) => {
+  const text = String(value || '');
+  if (!isFirstVerse) return text;
+  return text.replace(
+    /^[\s\p{P}\p{S}]*з[\s\p{P}\p{S}\p{M}]*(?:а[\s\p{P}\p{S}\p{M}]*)?ч[\s\p{P}\p{S}\p{M}]*а[\s\p{P}\p{S}\p{M}]*л[\s\p{P}\p{S}\p{M}]*о\s*(?:№\s*)?\d+[\s\p{P}\p{S}]*/iu,
+    ''
+  );
+};
+
+// Parenthetical lectionary references may appear inside any CSL verse,
+// including the middle of a chapter. Hide them only in the reader output.
+// Compare a normalized copy of the parenthesized rubric, never alter verse letters.
+const normalizeLectionaryLabel = (value) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\p{M}\p{Cf}]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const stripInlineLectionaryMarkers = (value) =>
+  String(value || '')
+    .replace(
+      /(?:\*{2}[ \t]*)?[°º˚◦∘○]*[ \t]*\([ \t]*([^()\n]*)[ \t]*\)[ \t]*[°º˚◦∘○]*(?:[ \t]*\*{2})?/gu,
+      (match, label) =>
+        /^(?:за\s*(?:№\s*)?\d+|зач(?:ало|\.)?\s*(?:№\s*)?\d*)$/iu.test(
+          normalizeLectionaryLabel(label)
+        )
+          ? ' '
+          : match
+    )
+    // The Ponomar source encodes lectionary rubrics as **(Заⷱ҇ 2)**.
+    // Remove both Markdown asterisks with the rubric; otherwise Ponomar
+    // displays the detached ** pairs as little circles.
+    .replace(/(^|[\s\u00a0])(?:\*{2}[ \t]*){2,}(?=$|[\s\u00a0])/gu, '$1')
+    // Some sources keep the two ornamental circles on either side of
+    // a removed rubric. These are standalone source markers, not accents.
+    .replace(
+      /(^|[\s\u00a0])(?:[°º˚◦∘○◌◯⁰][\s\u00a0\u200b\u2060]*){2,}/gu,
+      '$1'
+    )
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
 
 export const BibleChapterScreen = ({route, navigation}) => {
   const {t} = useLanguage();
   useBibleContentGeneration();
   const {bookId, chapterNumber, focusTarget = null, resume = false} = route.params || {};
+  const calendarPassageRanges = route.params?.calendarPassageRanges || null;
   const translationCode = route.params?.translationCode === 'csl_traditional'
     ? 'csl_traditional'
     : 'rst';
   const isTraditional = translationCode === 'csl_traditional';
+  const ui = (key, fallback, params) => bibleUiText(translationCode, key, fallback, params);
 
   const book = bibleContent.getBook(bookId, translationCode);
 
@@ -48,7 +102,8 @@ export const BibleChapterScreen = ({route, navigation}) => {
   );
   const [bookmarkFeedback, setBookmarkFeedback] = useState('');
   const [fontPanelVisible, setFontPanelVisible] = useState(false);
-  const [readerFontSize, setReaderFontSize] = useState(16.5);
+  const [crossReferenceOrigin, setCrossReferenceOrigin] = useState(null);
+  const [readerFontSize, setReaderFontSize] = useState(18);
   const [readerTheme, setReaderTheme] = useState('paper');
   const bookmarkFeedbackTimerRef = useRef(null);
 
@@ -148,34 +203,48 @@ export const BibleChapterScreen = ({route, navigation}) => {
   }, [chapters]);
 
   const normalizedFocusTarget = useMemo(() => {
-    if (!focusTarget || focusTarget.anchor_type !== 'bible_chapter') {
+    if (!focusTarget) return null;
+
+    const anchorType = focusTarget.anchor_type || focusTarget.anchorType;
+    if (anchorType !== 'bible_verse' && anchorType !== 'bible_chapter') {
       return focusTarget;
     }
 
+    const metadata = focusTarget.metadata || {};
     const targetChapter = bibleContent.getChapter(
       bookId,
-      focusTarget.metadata?.chapter_number,
+      metadata.chapter_number || chapterNumber,
       translationCode
     );
+    if (!targetChapter) return focusTarget;
 
-    const firstVerse = targetChapter?.verses?.[0];
-
-    if (!firstVerse) {
-      return focusTarget;
-    }
+    // Search seed rows can have old verse IDs after Bible content refreshes.
+    // Rebuild the anchor from the stable book/chapter/verse address.
+    const verse = anchorType === 'bible_chapter'
+      ? targetChapter.verses?.[0]
+      : (targetChapter.verses || []).find((item) =>
+          Number(item.number) === Number(metadata.verse_number)
+        ) || (targetChapter.verses || []).find((item) =>
+          Number(item.id) === Number(focusTarget.anchor_id ?? focusTarget.anchorId)
+        );
+    if (!verse) return focusTarget;
 
     return {
       ...focusTarget,
-
       anchor_type: 'bible_verse',
-
-      anchor_id: Number(firstVerse.id),
-
-      start_offset: null,
-
-      end_offset: null,
+      anchor_id: Number(verse.id),
+      metadata: {
+        ...metadata,
+        chapter_number: Number(targetChapter.number),
+        verse_number: Number(verse.number),
+      },
+      // A chapter target focuses its first verse; search verse offsets,
+      // when supplied, are left intact.
+      ...(anchorType === 'bible_chapter'
+        ? {start_offset: null, end_offset: null}
+        : {}),
     };
-  }, [focusTarget, bookId, translationCode]);
+  }, [focusTarget, bookId, chapterNumber, translationCode]);
 
   const chapterStartTarget = useMemo(() => {
     if (normalizedFocusTarget || resume || !requestedChapter) {
@@ -236,7 +305,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
       }
 
       const text = (chapter.verses || [])
-        .map((verse) => verse.number + ' ' + (verse.text || ''))
+        .map((verse) => formatBibleNumber(translationCode, verse.number) + ' ' + (verse.text || ''))
         .join('\n');
 
       const saved = await saveItem({
@@ -250,9 +319,9 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
         anchor_id: chapterId,
 
-        source_title: t('bible.source', {book: displayName}),
+        source_title: ui('source', t('bible.source', {book: displayName}), {book: displayName}),
 
-        item_title: t('bible.wholeChapterTitle', {book: displayName, chapter: chapter.number}),
+        item_title: ui('wholeChapterTitle', t('bible.wholeChapterTitle', {book: displayName, chapter: chapter.number}), {book: displayName, chapter: chapter.number}),
 
         text,
 
@@ -288,10 +357,24 @@ export const BibleChapterScreen = ({route, navigation}) => {
     [book, chapters, displayName, t]
   );
 
+  const isInCalendarPassage = (chapterNumberToCheck, verseNumberToCheck) =>
+    Array.isArray(calendarPassageRanges) && calendarPassageRanges.some((range) => {
+      const chapter = Number(chapterNumberToCheck);
+      const verse = Number(verseNumberToCheck);
+      const firstChapter = Number(range.startChapter);
+      const lastChapter = Number(range.endChapter || range.startChapter);
+      const firstVerse = Number(range.startVerse);
+      const lastVerse = Number(range.endVerse);
+      return Number.isFinite(firstChapter) && Number.isFinite(lastChapter) &&
+        chapter >= firstChapter && chapter <= lastChapter &&
+        (chapter !== firstChapter || verse >= firstVerse) &&
+        (chapter !== lastChapter || verse <= lastVerse);
+    });
+
   const documentData = useMemo(() => {
     if (!book) {
       return {
-        title: t('bible.title'),
+        title: ui('bible', t('bible.title')),
         description: '',
         progressAnchorType: 'bible_verse',
         savedItems: [],
@@ -330,6 +413,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
           className: [
             'bible-verse-section',
             isTraditional ? 'csl-bible-verse' : '',
+            isInCalendarPassage(chapter.number, verse.number) ? 'calendar-passage-verse' : '',
 
             verseIndex === 0 ? 'bible-chapter-start' : '',
 
@@ -342,7 +426,9 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
           chapterNumber: verseIndex === 0 ? Number(chapter.number) : null,
 
-          title: verseIndex === 0 ? t('bible.chapter', {number: chapter.number}) : '',
+          title: verseIndex === 0
+            ? ui('chapter', t('bible.chapter', {number: chapter.number}), {number: chapter.number})
+            : '',
           note: verseIndex === 0 && isTraditional ? (chapter.heading || '') : '',
 
           action:
@@ -372,11 +458,16 @@ export const BibleChapterScreen = ({route, navigation}) => {
                 {
                   id: Number(verse.id),
 
-                  text: verse.text || '',
+                  text: isTraditional
+                    ? stripInlineLectionaryMarkers(cleanTraditionalVerse(verse.text, verseIndex === 0))
+                    : (verse.text || ''),
 
                   label: '',
 
-                  inlineLabel: String(verse.number),
+                  inlineLabel: formatBibleNumber(translationCode, verse.number),
+                  crossReferenceKey: hasBibleCrossReferences(
+                    book.code, chapter.number, verse.number, translationCode
+                  ) ? [book.code, chapter.number, verse.number].join('.') : null,
 
                   className: 'bible-verse',
 
@@ -388,9 +479,9 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
                   anchorId: verse.id,
 
-                  sourceTitle: t('bible.source', {book: displayName}),
+                  sourceTitle: ui('source', t('bible.source', {book: displayName}), {book: displayName}),
 
-                  itemTitle: displayName + ' ' + chapter.number + ':' + verse.number,
+                  itemTitle: displayName + ' ' + formatBibleNumber(translationCode, chapter.number) + ':' + formatBibleNumber(translationCode, verse.number),
 
                   fullSaveType: 'verse',
 
@@ -416,7 +507,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
         }));
       }),
     };
-  }, [book, chapters, savedItems, verseInfo.ids, displayName, t, isTraditional, translationCode]);
+  }, [book, chapters, savedItems, verseInfo.ids, displayName, t, isTraditional, translationCode, calendarPassageRanges]);
 
   const readerProgress = resume && !effectiveFocusTarget ? savedProgress : null;
 
@@ -441,11 +532,15 @@ export const BibleChapterScreen = ({route, navigation}) => {
       metadata: {
         book_id: book.id,
 
+        book_code: book.code,
+
         book_slug: book.slug,
 
         book_name: displayName,
 
         book_short_name: book.short_name,
+
+        translation_code: translationCode,
 
         chapter_number: current.chapterNumber,
 
@@ -491,8 +586,8 @@ export const BibleChapterScreen = ({route, navigation}) => {
     return {
       sourceType: 'bible',
       sourceId: Number(book.id),
-      sourceTitle: t('bible.source', {book: displayName}),
-      itemTitle: displayName + ' ' + verse.chapterNumber + ':' + verse.verseNumber,
+      sourceTitle: ui('source', t('bible.source', {book: displayName}), {book: displayName}),
+      itemTitle: displayName + ' ' + formatBibleNumber(translationCode, verse.chapterNumber) + ':' + formatBibleNumber(translationCode, verse.verseNumber),
       position,
       metadata: {
         book_id: Number(book.id),
@@ -581,6 +676,44 @@ export const BibleChapterScreen = ({route, navigation}) => {
     });
   };
 
+  const crossReferenceItems = useMemo(
+    () => crossReferenceOrigin
+      ? getBibleCrossReferences(book?.code, crossReferenceOrigin.chapter, crossReferenceOrigin.verse)
+      : [],
+    [book?.code, crossReferenceOrigin]
+  );
+
+  const openCrossReferences = React.useCallback((key) => {
+    const [source, chapter, verse] = String(key || '').split('.');
+    const ch = Number(chapter);
+    const v = Number(verse);
+    if (source !== book?.code || !Number.isInteger(ch) || !Number.isInteger(v)) return;
+    setCrossReferenceOrigin({chapter: ch, verse: v});
+  }, [book?.code]);
+
+  const openCrossReferenceTarget = (target) => {
+    setCrossReferenceOrigin(null);
+    const chapter = bibleContent.getChapter(
+      target.book.id, target.chapter, target.translationCode
+    );
+    const verse = chapter?.verses?.find((item) => Number(item.number) === target.verse);
+    if (!verse) return;
+    const params = {
+      bookId: target.book.id,
+      chapterNumber: target.chapter,
+      translationCode: target.translationCode,
+      resume: false,
+      focusTarget: {
+        save_type: 'verse',
+        anchor_type: 'bible_verse',
+        anchor_id: Number(verse.id),
+        metadata: {book_id: target.book.id, chapter_number: target.chapter, verse_number: target.verse},
+      },
+    };
+    if (typeof navigation.push === 'function') navigation.push('BibleChapter', params);
+    else navigation.navigate('BibleChapter', params);
+  };
+
   const openReaderMenu = () => {
     setBookmarkPosition(getCurrentProgress());
     setStablePosition(getStableProgress());
@@ -613,6 +746,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
       .find((verse) => Number(verse.number) === Number(activeVerse?.verseNumber)) ||
       targetChapter.verses?.[0];
     setReaderMenuVisible(false);
+    savePreferredBibleTranslation(targetCode).catch(() => {});
     navigation.replace('BibleChapter', {
       bookId: targetBook.id,
       chapterNumber: Number(targetChapter.number),
@@ -673,7 +807,20 @@ export const BibleChapterScreen = ({route, navigation}) => {
         backgroundColor={readerTheme === 'night' ? '#171310' : '#FBF0D9'}
         onProgress={handleProgress}
         onAction={handleAction}
+        onCrossReference={openCrossReferences}
         onReady={applyReaderAppearance}
+      />
+
+      <BibleCrossReferencesSheet
+        visible={!!crossReferenceOrigin}
+        originBook={book}
+        originChapter={crossReferenceOrigin?.chapter}
+        originVerse={crossReferenceOrigin?.verse}
+        references={crossReferenceItems}
+        translationCode={translationCode}
+        onClose={() => setCrossReferenceOrigin(null)}
+        onOpen={openCrossReferenceTarget}
+        isNight={readerTheme === 'night'}
       />
 
       <ReaderBookmarkMenu
@@ -703,6 +850,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
       <FixedSectionHeader
         onHeaderHeightChange={(height) => setReaderTopInset(height + 8)}
         title={displayName}
+        titleTextStyle={isTraditional ? traditionalBibleTextStyle : null}
         navigation={navigation}
         topInset={insets.top}
         showTitle
@@ -798,10 +946,10 @@ export const BibleChapterScreen = ({route, navigation}) => {
           >
             ‹
           </Text>
-          <Text style={[styles.chapterNavText, readerTheme === 'night' && styles.toolbarTextNight]}>
+          <Text style={[styles.chapterNavText, readerTheme === 'night' && styles.toolbarTextNight, isTraditional && traditionalBibleTextStyle]}>
             {previousChapter
-              ? t('bible.chapter', {number: previousChapter.number})
-              : t('bible.chapter', {number: currentChapterNumber})}
+              ? ui('chapter', t('bible.chapter', {number: previousChapter.number}), {number: previousChapter.number})
+              : ui('chapter', t('bible.chapter', {number: currentChapterNumber}), {number: currentChapterNumber})}
           </Text>
         </Pressable>
 
@@ -869,11 +1017,12 @@ export const BibleChapterScreen = ({route, navigation}) => {
               styles.chapterNavText,
               styles.chapterNavTextRight,
               readerTheme === 'night' && styles.toolbarTextNight,
+              isTraditional && traditionalBibleTextStyle,
             ]}
           >
             {nextChapter
-              ? t('bible.chapter', {number: nextChapter.number})
-              : t('bible.chapter', {number: currentChapterNumber})}
+              ? ui('chapter', t('bible.chapter', {number: nextChapter.number}), {number: nextChapter.number})
+              : ui('chapter', t('bible.chapter', {number: currentChapterNumber}), {number: currentChapterNumber})}
           </Text>
           <Text
             style={[styles.chapterNavArrow, readerTheme === 'night' && styles.toolbarIconTextNight]}

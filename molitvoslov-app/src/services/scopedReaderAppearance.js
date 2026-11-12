@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {getCachedBackendUser} from './backendAuth';
 import {getReadingSettings, DEFAULT_READING_SETTINGS} from './readerPreferences';
+import {queueAccountPreferencePatch} from './accountPreferencesSync';
 
 const PREFIX = '@molitvoslov/scoped-reader-appearance/v1';
 export const READER_PALETTES = Object.freeze({
@@ -53,13 +54,37 @@ export const loadScopedAppearance = async (scope) => {
   } catch (error) {
     console.warn('[reader appearance] load:', error?.message || error);
   }
-  return {key, value: normalizeReaderAppearance({...globalSettings, ...(saved || {})}), inherited: !saved};
+  // Older releases cached inherited values as document overrides. Treat a
+  // snapshot identical to a default/global appearance as inherited instead.
+  const plain = saved && normalizeReaderAppearance(saved);
+  const inherited = !plain || (saved?.__explicitOverride !== true && (
+    JSON.stringify(plain) === JSON.stringify(normalizeReaderAppearance(globalSettings)) ||
+    JSON.stringify(plain) === JSON.stringify(normalizeReaderAppearance(DEFAULT_READING_SETTINGS))
+  ));
+  return {
+    key,
+    value: inherited ? normalizeReaderAppearance(globalSettings)
+      : normalizeReaderAppearance({...globalSettings, ...saved}),
+    inherited,
+  };
+};
+const cloudScopeFromKey = (key) => {
+  const match = String(key || '').match(/^@molitvoslov\/scoped-reader-appearance\/v1:account-[^:]+:([^:]+):(.+)$/);
+  return match ? match[1] + ':' + match[2] : null;
 };
 export const storeScopedAppearance = async (key, appearance) => {
-  if (key) await AsyncStorage.setItem(key, JSON.stringify(normalizeReaderAppearance(appearance)));
+  if (!key) return;
+  const value = normalizeReaderAppearance(appearance);
+  await AsyncStorage.setItem(key, JSON.stringify({...value, __explicitOverride: true}));
+  const scope = cloudScopeFromKey(key);
+  if (scope) queueAccountPreferencePatch({reader_overrides: {[scope]: value}}).catch(console.warn);
 };
 export const resetScopedAppearance = async (key) => {
-  if (key) await AsyncStorage.removeItem(key);
+  if (key) {
+    await AsyncStorage.removeItem(key);
+    const scope = cloudScopeFromKey(key);
+    if (scope) queueAccountPreferencePatch({reader_overrides: {[scope]: null}}).catch(console.warn);
+  }
   return normalizeReaderAppearance(await getReadingSettings().catch(() => DEFAULT_READING_SETTINGS));
 };
 /** Apply theme and text size without flattening the liturgical color hierarchy.

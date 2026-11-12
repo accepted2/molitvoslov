@@ -1577,6 +1577,39 @@ export const READER_STYLES = String.raw`
 
       vertical-align: super;
     }
+    /* Keep the cross-reference button outside the selectable Scripture text,
+       but flow it after the last word of the verse (not after its number). */
+    body.book-mode .reader-inline.has-bible-crossrefs {
+      text-align: justify;
+      text-align-last: auto;
+      text-justify: inter-word;
+    }
+    body.book-mode .reader-inline.has-bible-crossrefs .reader-text.bible-verse {
+      display: inline;
+    }
+    body.book-mode .bible-crossref-button {
+      display: inline-block;
+      min-width: 15px;
+      min-height: 17px;
+      margin-left: 2px;
+      padding: 0 2px;
+      border: none;
+      background: transparent;
+      color: #93693E;
+      font-family: Georgia, serif;
+      font-size: 12px;
+      font-style: normal;
+      font-weight: 600;
+      line-height: 1.1;
+      vertical-align: baseline;
+      white-space: nowrap;
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    body.book-mode.book-night .bible-crossref-button {
+      color: #D3A16E;
+    }
     body.book-mode .reader-text {
       touch-action: none;
 
@@ -1600,6 +1633,16 @@ export const READER_STYLES = String.raw`
       text-justify: inter-word;
     }
 
+    @keyframes bible-calendar-passage-flash {
+      0%, 47% { background-color: rgba(201, 166, 88, 0.29); }
+      100% { background-color: transparent; }
+    }
+    body.book-mode .bible-verse-section.calendar-passage-verse .reader-text.bible-verse {
+      animation: bible-calendar-passage-flash 2100ms ease-out both;
+      -webkit-box-decoration-break: clone;
+      box-decoration-break: clone;
+      border-radius: 2px;
+    }
     /* The book-mode rule above is more specific than the generic reader
        language rule. Apply Ponomar explicitly to CSL Bible glyphs and
        diacritics, otherwise Android WebView falls back to Georgia. */
@@ -1619,6 +1662,12 @@ export const READER_STYLES = String.raw`
       font-synthesis: none;
     }
     body.book-mode .reader-language-traditional .reader-inline-label {
+      font-family: 'Ponomar', Georgia, serif;
+      font-weight: 400;
+    }
+    /* Traditional numbering and the inline parallel-place marker must use
+       the same installed Church Slavonic typeface as the verse body. */
+    body.book-mode .reader-language-traditional .bible-crossref-button {
       font-family: 'Ponomar', Georgia, serif;
       font-weight: 400;
     }
@@ -1654,6 +1703,11 @@ export const READER_STYLES = String.raw`
 
     body.book-mode .bible-chapter-start .reader-inline .reader-text.bible-verse {
       display: block;
+    }
+    /* The opening verse uses an indented/drop-cap layout, but its
+       cross-reference still needs to follow the verse text in the same line. */
+    body.book-mode .bible-chapter-start .reader-inline.has-bible-crossrefs .reader-text.bible-verse {
+      display: inline;
     }
 
     body.book-mode .bible-drop-cap {

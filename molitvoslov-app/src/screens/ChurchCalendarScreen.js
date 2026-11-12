@@ -13,6 +13,7 @@ import {StatusBar} from 'expo-status-bar';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
+import {useFocusEffect} from '@react-navigation/native';
 
 import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
@@ -41,6 +42,8 @@ import {
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {colors} from '../theme';
 import {CalendarSaveWholeButton, CalendarSelectableBody, makeCalendarSaveContext} from '../components/reader/CalendarSaveText';
+import {getCalendarBibleTranslation} from '../services/bibleTranslationPreference';
+import {bibleUiText, formatBibleNumber, isTraditionalBible, traditionalBibleTextStyle} from '../services/bibleUi';
 
 const buildCells = (year, month) => {
   const first = new Date(year, month - 1, 1);
@@ -347,16 +350,29 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, 
   );
 };
 
-const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, onLayout, initiallyExpanded = false}) => {
+const CALENDAR_BIBLE_TRANSLATIONS = [
+  {code: 'rst', label: 'RU', accessibilityLabel: 'Русский Синодальный перевод'},
+  {code: 'csl_traditional', label: 'ЦС', accessibilityLabel: 'Церковнославянский текст'},
+];
+
+const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, translationCode = 'rst', onLayout, initiallyExpanded = false}) => {
   const [expanded, setExpanded] = useState(initiallyExpanded);
+  // Local to this reading: switching a translation does not change
+  // the default in Account or another opened calendar reading.
+  const [activeTranslationCode, setActiveTranslationCode] = useState(translationCode);
   useEffect(() => {
     if (initiallyExpanded) setExpanded(true);
   }, [initiallyExpanded, title]);
+  useEffect(() => {
+    setActiveTranslationCode(translationCode);
+  }, [translationCode, title]);
 
   if (!title) return null;
 
-  const target = resolveBibleReference(title);
-  const verses = getBibleReadingVerses(title);
+  const target = resolveBibleReference(title, activeTranslationCode);
+  const verses = getBibleReadingVerses(title, activeTranslationCode);
+  const alternateTranslationCode = activeTranslationCode === 'rst' ? 'csl_traditional' : 'rst';
+  const alternateVerses = getBibleReadingVerses(title, alternateTranslationCode);
   const chapters = new Set(verses.map((verse) => verse.chapterNumber));
   let previousChapter = null;
 
@@ -364,7 +380,7 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
     <View style={styles.readingCard} onLayout={onLayout}>
       <Pressable
         disabled={!target}
-        onPress={() => openCalendarBibleReference(navigation, title)}
+        onPress={() => openCalendarBibleReference(navigation, title, activeTranslationCode)}
         style={({pressed}) => [
           styles.readingLink,
           !target && styles.readingLinkDisabled,
@@ -397,15 +413,53 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
         {!!target && <Text style={styles.readingArrow}>›</Text>}
       </Pressable>
 
-      {!!verses.length && (
+      {!!(verses.length || alternateVerses.length) && (
         <>
-          <Pressable
-            onPress={() => setExpanded((value) => !value)}
-            style={({pressed}) => [styles.readingExpand, pressed && styles.pressed]}
-          >
-            <Text style={styles.readingExpandText}>{expanded ? copy.hideText : copy.readText}</Text>
-            <SoftChevron expanded={expanded} />
-          </Pressable>
+          <View style={styles.readingExpandRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={expanded ? copy.hideText : copy.readText}
+              onPress={() => setExpanded((value) => !value)}
+              style={({pressed}) => [styles.readingExpand, pressed && styles.pressed]}
+            >
+              <Text style={styles.readingExpandText}>{expanded ? copy.hideText : copy.readText}</Text>
+            </Pressable>
+
+            {expanded && (
+              <View style={styles.readingTranslationToggle}>
+                {CALENDAR_BIBLE_TRANSLATIONS.map((option) => (
+                  <Pressable
+                    key={option.code}
+                    accessibilityRole="button"
+                    accessibilityLabel={option.accessibilityLabel}
+                    accessibilityState={{selected: activeTranslationCode === option.code}}
+                    onPress={() => setActiveTranslationCode(option.code)}
+                    style={({pressed}) => [
+                      styles.readingTranslationButton,
+                      activeTranslationCode === option.code && styles.readingTranslationButtonSelected,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Text style={[
+                      styles.readingTranslationButtonText,
+                      activeTranslationCode === option.code && styles.readingTranslationButtonTextSelected,
+                    ]}>
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={expanded ? copy.hideText : copy.readText}
+              onPress={() => setExpanded((value) => !value)}
+              style={({pressed}) => [styles.readingExpandChevron, pressed && styles.pressed]}
+            >
+              <SoftChevron expanded={expanded} />
+            </Pressable>
+          </View>
 
           {expanded && (
             <View style={styles.readingContent}>
@@ -417,13 +471,25 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
                 return (
                   <View key={`${verse.chapterNumber}-${verse.verseNumber}-${index}`}>
                     {showChapter && (
-                      <Text style={styles.readingChapter}>
-                        {copy.chapter} {verse.chapterNumber}
+                      <Text style={[
+                          styles.readingChapter,
+                          isTraditionalBible(activeTranslationCode) && styles.readingChapterCsl,
+                        ]}>
+                        {bibleUiText(activeTranslationCode, 'chapter', `${copy.chapter} ${verse.chapterNumber}`, {number: verse.chapterNumber})}
                       </Text>
                     )}
 
-                    <Text style={styles.readingVerseText} selectable>
-                      <Text style={styles.readingVerseNumber}>{verse.verseNumber} </Text>
+                    <Text
+                      style={[
+                        styles.readingVerseText,
+                        isTraditionalBible(activeTranslationCode) && styles.readingVerseTextCsl,
+                        isTraditionalBible(activeTranslationCode) && traditionalBibleTextStyle,
+                      ]}
+                      selectable
+                    >
+                      <Text style={[styles.readingVerseNumber, isTraditionalBible(activeTranslationCode) && styles.readingVerseNumberCsl]}>
+                        {formatBibleNumber(activeTranslationCode, verse.verseNumber)}{' '}
+                      </Text>
                       {verse.text}
                     </Text>
                   </View>
@@ -437,7 +503,7 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
   );
 };
 
-const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout, expandFirst = false}) => {
+const ReadingGroup = ({kind, readings, navigation, copy, language, translationCode = 'rst', onLayout, expandFirst = false}) => {
   const [showAll, setShowAll] = useState(false);
 
   if (!readings.length) {
@@ -460,6 +526,7 @@ const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout, exp
           navigation={navigation}
           copy={copy}
           language={language}
+          translationCode={translationCode}
         />
       ))}
 
@@ -482,6 +549,14 @@ const ReadingGroup = ({kind, readings, navigation, copy, language, onLayout, exp
 
 export const ChurchCalendarScreen = ({route, navigation}) => {
   const {language} = useLanguage();
+  const [calendarBibleTranslationCode, setCalendarBibleTranslationCode] = useState('rst');
+  useFocusEffect(React.useCallback(() => {
+    let active = true;
+    getCalendarBibleTranslation().then((code) => {
+      if (active) setCalendarBibleTranslationCode(code);
+    }).catch(console.warn);
+    return () => {active = false;};
+  }, []));
   const dataLanguage = getCalendarDataLanguage(language);
   const insets = useSafeAreaInsets();
   const {width} = useWindowDimensions();
@@ -925,6 +1000,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
               readings={gospelReadings}
               navigation={navigation}
               copy={copy}
+              translationCode={calendarBibleTranslationCode}
               language={language}
               onLayout={(event) => saveReadingLayout('gospel', event.nativeEvent.layout.y)}
             />
@@ -935,6 +1011,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
               readings={apostleReadings}
               navigation={navigation}
               copy={copy}
+              translationCode={calendarBibleTranslationCode}
               language={language}
               onLayout={(event) => saveReadingLayout('apostle', event.nativeEvent.layout.y)}
             />
@@ -944,6 +1021,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
               readings={oldTestamentReadings}
               navigation={navigation}
               copy={copy}
+              translationCode={calendarBibleTranslationCode}
               language={language}
             />
 
@@ -1404,16 +1482,54 @@ const styles = StyleSheet.create({
   readingArrowExpanded: {
     transform: [{rotate: '90deg'}],
   },
-  readingExpand: {
+  readingExpandRow: {
     minHeight: 42,
-    paddingLeft: 12,
-    paddingRight: 4,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(123,79,36,0.16)',
     backgroundColor: '#DFC59D',
+  },
+  readingExpand: {
+    flex: 1,
+    minHeight: 42,
+    paddingLeft: 12,
+    justifyContent: 'center',
+  },
+  readingExpandChevron: {
+    width: 29,
+    minHeight: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Compact segmented RU / CSL control next to the accordion chevron.
+  readingTranslationToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 8,
+    padding: 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#B78F65',
+    backgroundColor: '#D2B68F',
+  },
+  readingTranslationButton: {
+    minWidth: 31,
+    minHeight: 26,
+    paddingHorizontal: 5,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  readingTranslationButtonSelected: {
+    backgroundColor: '#FFF4DE',
+  },
+  readingTranslationButtonText: {
+    color: '#795537',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  readingTranslationButtonTextSelected: {
+    color: '#57341D',
   },
   readingExpandText: {
     color: '#6C472B',
@@ -1435,6 +1551,12 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     fontWeight: '700',
   },
+  readingChapterCsl: {
+    fontFamily: 'Ponomar',
+    fontSize: 17,
+    lineHeight: 27,
+    fontWeight: '400',
+  },
   readingVerseText: {
     marginBottom: 6,
     color: '#3E2A1D',
@@ -1443,12 +1565,22 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     textAlign: 'justify',
   },
+  readingVerseTextCsl: {
+    fontSize: 18,
+    lineHeight: 32,
+  },
   readingVerseNumber: {
     color: '#A16E35',
     fontFamily: 'serif',
     fontSize: 11,
     lineHeight: 16,
     fontWeight: '700',
+  },
+  readingVerseNumberCsl: {
+    fontFamily: 'Ponomar',
+    fontSize: 14,
+    lineHeight: 23,
+    fontWeight: '400',
   },
   readingMore: {
     minHeight: 42,

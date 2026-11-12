@@ -1,4 +1,5 @@
 import {getCurrentBibleContent} from './bibleStore';
+import {getCslBibleBookName} from './bibleUi';
 
 const currentBible = (translationCode = 'rst') =>
   getCurrentBibleContent(translationCode) || {};
@@ -96,7 +97,7 @@ export const bibleContent = {
     }
 
     if (translationCode === 'csl_traditional') {
-      return book.name || book.short_name || 'Библия';
+      return getCslBibleBookName(book);
     }
     return BIBLE_BOOK_DISPLAY_TITLES[book.code] || book.name || book.short_name || 'Библия';
   },

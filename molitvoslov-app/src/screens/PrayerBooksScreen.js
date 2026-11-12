@@ -10,8 +10,10 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {createPrayerBook, getPrayerBooks, syncPrayerBooks} from '../services/prayerBooks';
 import {colors, radius, spacing} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
+import {useInterfaceScale} from '../context/InterfaceScaleContext';
 
 export const PrayerBooksScreen = ({navigation}) => {
+  const uiScale = useInterfaceScale();
   const {t} = useLanguage();
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
@@ -72,8 +74,8 @@ export const PrayerBooksScreen = ({navigation}) => {
           ListHeaderComponent={
             <View>
               <View style={styles.intro}>
-                <Text style={styles.introTitle}>{t('prayerBooks.introTitle')}</Text>
-                <Text style={styles.introText}>{t('prayerBooks.introText')}</Text>
+                <Text style={[styles.introTitle, {fontSize: 20 * uiScale}]}>{t('prayerBooks.introTitle')}</Text>
+                <Text style={[styles.introText, {fontSize: 14 * uiScale}]}>{t('prayerBooks.introText')}</Text>
               </View>
 
               <Pressable
@@ -81,19 +83,19 @@ export const PrayerBooksScreen = ({navigation}) => {
                 style={({pressed}) => [styles.createButton, pressed && styles.pressed]}
               >
                 <Text style={styles.createIcon}>＋</Text>
-                <Text style={styles.createButtonText}>{t('prayerBooks.newBook')}</Text>
+                <Text style={[styles.createButtonText, {fontSize: 15 * uiScale}]}>{t('prayerBooks.newBook')}</Text>
               </Pressable>
 
               {!!books.length && (
-                <Text style={styles.sectionLabel}>{t('prayerBooks.myBooks')}</Text>
+                <Text style={[styles.sectionLabel, {fontSize: 11 * uiScale}]}>{t('prayerBooks.myBooks')}</Text>
               )}
             </View>
           }
           ListEmptyComponent={
             <View style={styles.emptyCard}>
               <Text style={styles.emptyMark}>✦</Text>
-              <Text style={styles.emptyTitle}>{t('prayerBooks.emptyTitle')}</Text>
-              <Text style={styles.emptyText}>{t('prayerBooks.emptyText')}</Text>
+              <Text style={[styles.emptyTitle, {fontSize: 18 * uiScale}]}>{t('prayerBooks.emptyTitle')}</Text>
+              <Text style={[styles.emptyText, {fontSize: 14 * uiScale}]}>{t('prayerBooks.emptyText')}</Text>
             </View>
           }
           renderItem={({item}) => (
@@ -105,8 +107,8 @@ export const PrayerBooksScreen = ({navigation}) => {
                 <Text style={styles.bookIconText}>✚</Text>
               </View>
               <View style={styles.cardText}>
-                <Text style={styles.title}>{item.title}</Text>
-                <Text style={styles.meta}>
+                <Text style={[styles.title, {fontSize: 17 * uiScale}]}>{item.title}</Text>
+                <Text style={[styles.meta, {fontSize: 12 * uiScale}]}>
                   {t('prayerBooks.prayersCount', {count: item.items?.length || 0})}
                   {item.description ? ` · ${item.description}` : ''}
                 </Text>
@@ -132,7 +134,7 @@ export const PrayerBooksScreen = ({navigation}) => {
         >
           <View style={styles.modalBackdrop}>
             <View style={styles.modalCard}>
-              <Text style={styles.modalTitle}>{t('prayerBooks.newBook')}</Text>
+              <Text style={[styles.modalTitle, {fontSize: 20 * uiScale}]}>{t('prayerBooks.newBook')}</Text>
               <TextInput
                 value={title}
                 onChangeText={setTitle}

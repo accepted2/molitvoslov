@@ -5,9 +5,11 @@ import {
   getAppLanguage,
   normalizeAppLanguage,
   setAppLanguage,
+  subscribeAppLanguage,
 } from '../services/languagePreferences';
 import {translate} from '../i18n/translations';
 import {getReadingSettings} from '../services/readerPreferences';
+import {queueAccountPreferencePatch} from '../services/accountPreferencesSync';
 
 const LanguageContext = createContext({
   language: APP_LANGUAGES.RU,
@@ -40,12 +42,14 @@ export const LanguageProvider = ({children}) => {
     };
   }, []);
 
+  useEffect(() => subscribeAppLanguage(setLanguageState), []);
+
   const setLanguage = useCallback(async (nextLanguage) => {
     const normalized = normalizeAppLanguage(nextLanguage);
 
     setLanguageState(normalized);
     await setAppLanguage(normalized);
-
+    queueAccountPreferencePatch({settings: {language: normalized}}).catch(console.warn);
     return normalized;
   }, []);
 

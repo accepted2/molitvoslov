@@ -56,6 +56,23 @@ export const withHighlight = (route, query, matchedTextLanguage, highlightSectio
   if (!route?.name || !query) return route;
   const params = route.params || {};
   const existing = params.focusTarget;
+  // A chapter-title hit such as "Марк 8" is a navigation address,
+  // not a text fragment. A generic highlight query has no anchor and
+  // causes the Bible reader to land at its previous/top position.
+  if (route.name === 'BibleChapter' && params.chapterNumber != null &&
+      !(existing?.anchor_type || existing?.anchorType)) {
+    return {
+      ...route,
+      params: {
+        ...params,
+        focusTarget: {
+          save_type: 'chapter',
+          anchor_type: 'bible_chapter',
+          metadata: {chapter_number: Number(params.chapterNumber)},
+        },
+      },
+    };
+  }
   const preferredLanguage = matchedTextLanguage || 'russian';
   const focusTarget = existing
     ? {

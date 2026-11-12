@@ -1,10 +1,11 @@
 import * as SecureStore from 'expo-secure-store';
 
-// EXPO_PUBLIC_API_BASE_URL can target a physical Android phone via adb reverse
-// (http://127.0.0.1:8000), or a LAN server. Without an override, retain
-// Android emulator behavior.
+// Both Dev Client and release use the deployed Django API by default.
+// A local Django server may still be explicitly selected for development
+// with EXPO_PUBLIC_API_BASE_URL (e.g., http://10.0.2.2:8000).
+// Keep release pinned to the production backend.
 export const API_BASE_URL = (__DEV__ && process.env.EXPO_PUBLIC_API_BASE_URL?.trim())
-  || (__DEV__ ? 'http://10.0.2.2:8000' : 'https://molitvoslov-3o9d.onrender.com');
+  || 'https://molitvoslov-3o9d.onrender.com';
 
 const API_TOKEN_KEY = 'molitvoslov_api_token';
 const API_USER_KEY = 'molitvoslov_api_user';
