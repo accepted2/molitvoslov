@@ -39,11 +39,13 @@ const code = read('src/services/hoursDocument.js')
   .replace(/\bexport const /g, 'const ');
 const fn = new Function('hoursTexts', 'READER_LANGUAGE_MODES', 'buildReaderLanguageOptions',
   'classifyHoursRow', 'classifyHoursSection', 'collectHoursTextMarks',
-  'getEditedFirstHour',
+  'getEditedFirstHour', 'getFirstHourRussianSections', 'pairFirstHourSections',
   code + '\nreturn {buildHoursDocument, getHoursLanguageAvailability};');
 const {buildHoursDocument, getHoursLanguageAvailability} = fn(
   data, MODE, options, classifyHoursRow, classifyHoursSection, collectHoursTextMarks,
-  () => ({applied: false})
+  () => ({applied: false}),
+  () => [{title:'',kind:'psalm',rows:[{russian:'Русский отрывок.'}]}],
+  () => null
 );
 const fixture = {
   sections: [{title:'Псалом 5', rows:[
