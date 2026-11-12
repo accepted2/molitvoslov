@@ -2364,6 +2364,14 @@ export const READER_STYLES = String.raw`
       font-weight: 400 !important;
     }
 
+    /* An ordinary prayer spoken by the priest/reader in the First Hour.
+       Explicitly neutralize red full-doxology styling in this dialogue only. */
+    .rule-item.hours-section .reader-text.hours-presentation-plain-prayer,
+    .rule-item.hours-section .reader-text.hours-presentation-plain-prayer span {
+      color: var(--text) !important;
+      font-style: normal !important;
+    }
+
     #reader-scroll-track {
       position: fixed;
       top: 10px;
