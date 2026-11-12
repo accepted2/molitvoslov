@@ -170,27 +170,8 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
     }
   }
 
-  if (useFirstHourEdit && viewMode === READER_LANGUAGE_MODES.BOTH &&
-      firstHourEdit.russianUnpaired.length) {
-    const russianSections = firstHourEdit.russianUnpaired.map((section, index) => ({
-      title: index === 0
-        ? 'Русский текст остальных частей первого часа'
-        : cleanHeading(section.title),
-      className: 'hours-section hours-section-translation',
-      progressAnchorId: sourceSections.length + index + 1,
-      trackProgress: true,
-      rows: section.rows.map((row, rowIndex) => ({
-        layout: 'stack',
-        blocks: [createBlock({
-          id: (sourceSections.length + index + 1) * 10000 + (rowIndex + 1) * 10 + 2,
-          language: 'russian',
-          text: row.russian.trim(),
-          title: cleanHeading(section.title),
-        })],
-      })),
-    }));
-    sections.push(...russianSections);
-  }
+  // No extra copy of the importer’s old ending in the combined reader.
+  // Russian-only mode still reads its original offline source unchanged.
   const incompleteTranslation =
     (viewMode === READER_LANGUAGE_MODES.BOTH || viewMode === READER_LANGUAGE_MODES.RUSSIAN) &&
     missingRussianRows;
