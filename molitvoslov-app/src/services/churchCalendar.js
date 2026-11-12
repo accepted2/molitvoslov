@@ -608,6 +608,9 @@ export const openCalendarBibleReference = (navigation, title, translationCode = 
     bookId: target.book.id,
     chapterNumber: target.chapterNumber,
     translationCode,
+    // Display-only: briefly mark every verse in the complete calendar
+    // reading, including discontiguous segments and cross-chapter ranges.
+    calendarPassageRanges: target.ranges,
     focusTarget: {
       save_type: 'verse',
       anchor_type: 'bible_verse',
