@@ -2061,9 +2061,11 @@ export const READER_STYLES = String.raw`
       -webkit-hyphens: auto;
       hyphens: auto;
     }
+    /* Full Russian Hours are a primary reading language too, not a
+       dimmed translation or web-page preview. */
     .rule-item.hours-section .reader-text.hours-russian {
-      color: var(--secondary);
-      font-size: 16px;
+      color: var(--text);
+      font-size: 17px;
       line-height: 1.59;
     }
     .rule-item.hours-section .reader-text.hours-traditional {
