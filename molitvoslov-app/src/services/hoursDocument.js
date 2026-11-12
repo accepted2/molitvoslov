@@ -5,6 +5,7 @@ import {
   classifyHoursSection,
   collectHoursTextMarks,
 } from './hoursTypography';
+import {getEditedFirstHour} from './hoursFirstHourEditorial';
 
 const MISSING = {
   church: 'Церковнославянский текст этого часа пока не добавлен.',
@@ -53,9 +54,24 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
       ? available.hasTraditional
       : available.hasChurch;
 
+  const firstHourEdit = entry.id === 'ordinary-1'
+    ? getEditedFirstHour(content)
+    : {applied: false};
+  const useFirstHourEdit = firstHourEdit.applied &&
+    (viewMode === READER_LANGUAGE_MODES.CHURCH ||
+      viewMode === READER_LANGUAGE_MODES.BOTH);
   const sourceSections = viewMode === READER_LANGUAGE_MODES.TRADITIONAL
     ? content?.traditionalSections
-    : content?.sections;
+    : useFirstHourEdit
+      ? firstHourEdit.sections
+      : content?.sections;
+  // Only section headings lose their incidental underline/colon.
+  // Punctuation inside prayers, verses and dialogue is never edited.
+  const cleanHeading = value => String(value || '')
+    .replace(/[\u0332\u0333]/gu, '')
+    .replace(/^[_\s]+|[_\s]+$/gu, '')
+    .replace(/[:：]+\s*$/u, '')
+    .trim();
 
   const createBlock = ({id, language, text, title, sectionKind = 'general', opening = false}) => {
     const kind = classifyHoursRow({text, sectionKind});
@@ -104,8 +120,8 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
   const sections = [];
   let missingRussianRows = 0;
   for (const [sectionIndex, section] of sourceSections.entries()) {
-    const title = String(section.title || '').trim();
-    const sectionKind = classifyHoursSection(title);
+    const title = cleanHeading(section.title);
+    const sectionKind = section.kind || classifyHoursSection(title);
     const rows = [];
     for (const [rowIndex, row] of (section.rows || []).entries()) {
       const id = (sectionIndex + 1) * 10000 + (rowIndex + 1) * 10;
@@ -152,12 +168,36 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
     }
   }
 
-  const missingNote =
+  if (useFirstHourEdit && viewMode === READER_LANGUAGE_MODES.BOTH &&
+      firstHourEdit.russianUnpaired.length) {
+    const russianSections = firstHourEdit.russianUnpaired.map((section, index) => ({
+      title: index === 0
+        ? 'Русский текст остальных частей первого часа'
+        : cleanHeading(section.title),
+      className: 'hours-section hours-section-translation',
+      progressAnchorId: sourceSections.length + index + 1,
+      trackProgress: true,
+      rows: section.rows.map((row, rowIndex) => ({
+        layout: 'stack',
+        blocks: [createBlock({
+          id: (sourceSections.length + index + 1) * 10000 + (rowIndex + 1) * 10 + 2,
+          language: 'russian',
+          text: row.russian.trim(),
+          title: cleanHeading(section.title),
+        })],
+      })),
+    }));
+    sections.push(...russianSections);
+  }
+  const incompleteTranslation =
     (viewMode === READER_LANGUAGE_MODES.BOTH || viewMode === READER_LANGUAGE_MODES.RUSSIAN) &&
-    missingRussianRows
-    ? (available.hasRussian
-      ? 'Часть фрагментов русского перевода пока отсутствует.'
-      : 'Русский текст этого часа пока не добавлен.')
-    : '';
+    missingRussianRows;
+  const missingNote = useFirstHourEdit && viewMode === READER_LANGUAGE_MODES.BOTH
+    ? 'Редакторские исправления ЦС пока не сопоставлены построчно с русским переводом. Исходный русский текст других частей приведён отдельно.'
+    : incompleteTranslation
+      ? (available.hasRussian
+        ? 'Часть фрагментов русского перевода пока отсутствует.'
+        : 'Русский текст этого часа пока не добавлен.')
+      : '';
   return {...base, description: missingNote, sections, available};
 };
