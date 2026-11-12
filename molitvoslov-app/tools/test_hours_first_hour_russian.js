@@ -130,7 +130,7 @@ assert.ok(!originalSourceRows.some(row =>
   'No publisher footnotes or embedded Psalm citations in prayer text.');
 assert.ok(!originalSourceRows.some(row => /\(3\)/u.test(row.russian)),
   'Threefold responses must read (Трижды) throughout First Hour.');
-assert.equal(originalSourceRows.filter(row => row.russian.includes('(Трижды)')).length,6);
+assert.equal(originalSourceRows.filter(row => row.russian.includes('(Трижды)')).length,8);
 assert.ok(!originalSourceRows.some(row =>
   row.russian.includes('\n') && row.preserveLineBreaks !== true),
   'Only explicitly requested Alleluia/speaker line breaks remain.');
