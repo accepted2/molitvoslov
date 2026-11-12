@@ -14,6 +14,11 @@ const {getEditedFirstHour} = new Function('editedFirstHour', code +
   '\nreturn {getEditedFirstHour};')(editable);
 
 assert.equal(editable.entryId, 'ordinary-1');
+const editorialString = JSON.stringify(editable);
+assert.doesNotMatch(editorialString, /[áéíóúýÁÉÓ]/u,
+  'No Latin accented letters inside Cyrillic source text');
+assert.ok((editorialString.match(/[\u0300\u0301\u0340\u0341]/gu) || []).length > 50,
+  'Accent marks must be present in the supplied editorial text');
 assert.equal(editable.opening.rows.length, 3);
 assert.equal(editable.opening.rows[0].church,
   'Прииди́те, поклони́мся Царе́ви на́шему Бо́гу.');
