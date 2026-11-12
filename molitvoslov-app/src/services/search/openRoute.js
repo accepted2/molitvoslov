@@ -35,9 +35,30 @@ export const resolveSearchOpenRoute = (item, publicContent) => {
 
     const anchorType = focus?.anchor_type || focus?.anchorType;
     if (anchorType !== 'bible_verse') {
-      return {...route, params: {
-        ...params, bookId: book.id, chapterNumber: Number(chapter.number), translationCode,
-      }};
+      // Handle both new chapter targets and legacy results already indexed
+      // with a generic {save_type:'fragment', highlightQuery:'марк 8'}.
+      // Keep exact verse matches below unchanged.
+      return {
+        ...route,
+        params: {
+          ...params,
+          bookId: book.id,
+          chapterNumber: Number(chapter.number),
+          translationCode,
+          resume: false,
+          highlightQuery: undefined,
+          focusTarget: {
+            save_type: 'chapter',
+            anchor_type: 'bible_chapter',
+            metadata: {
+              ...metadata,
+              book_id: Number(book.id),
+              book_slug: book.slug,
+              chapter_number: Number(chapter.number),
+            },
+          },
+        },
+      };
     }
 
     const verseNumber = Number(metadata.verse_number);
