@@ -92,11 +92,29 @@ assert.deepEqual(after[9].rows.filter(r => r.redInitial).map(r => r.church[0]),
 assert.equal(after[9].rows[0].presentation, 'left-response');
 assert.equal(after[9].rows[2].presentation, 'left-response');
 assert.equal(after[9].rows[5].presentation, 'liturgical-red');
-assert.equal(after[10].rows.length, 7);
-assert.ok(after[10].rows.every(r => r.redInitial === true),
-  'All St. Ephrem paragraphs have a red normal-size first letter');
+assert.equal(after[10].rows.length, 9);
+assert.deepEqual(after[10].rows.map(r => r.presentation || ''), [
+  'comment', '', '', '', 'comment', '', 'comment', '', 'comment',
+]);
+assert.deepEqual(after[10].rows.map(r => r.redInitial === true),
+  [false, true, true, true, false, true, false, true, false]);
 assert.deepEqual(after[10].rows.map(r => r.dividerAfter === true),
-  [true, true, true, true, true, true, false]);
+  [false, true, true, true, false, true, false, true, false]);
+assert.equal(after[10].rows[0].compactAfter, true);
+assert.equal(after[10].rows[4].compactAfter, true);
+assert.equal(after[10].rows[6].compactAfter, true);
+assert.equal(after[10].rows[4].church,
+  'Таже малых 12, глаголюще на кийждо поклон:');
+assert.equal(after[10].rows[5].church,'Бо́же, очи́сти мя гре́шнаго.');
+assert.equal(after[10].rows[6].church,'И паки последи молитву всю:');
+assert.equal(after[10].rows[8].church,'И поклон един великий.');
+assert.deepEqual(after[10].rows.slice(4,9).map(r => r.church),[
+  'Таже малых 12, глаголюще на кийждо поклон:',
+  'Бо́же, очи́сти мя гре́шнаго.',
+  'И паки последи молитву всю:',
+  after[10].rows[7].church,
+  'И поклон един великий.',
+]);
 assert.deepEqual(after[11].rows.map(r => r.church), [
   'Трисвятое. И по Отче наш:',
   'Господи, помилуй. (12)',
@@ -189,6 +207,10 @@ assert.match(runtime,/hours-row-divider-after/);
 assert.match(runtime,/hours-row-compact-after/);
 assert.match(styles,/\.hours-accordion-toggle/);
 assert.match(styles,/\.hours-accordion\[open\]/);
+assert.match(styles,/\.hours-initial-word/);
+assert.match(styles,/hours-collapsible \.reader-text\.hours-presentation-comment/);
+assert.match(runtime,/hoursInitialWordEnd/);
+assert.match(runtime,/hoursInitialWordWrapper\.appendChild\(span\)/);
 assert.match(styles,/hours-section \.section-header::after\s*\{\s*content: none/);
 assert.match(styles,/font-size: inherit !important/);
 assert.match(styles,/hours-section-postpsalm\s*\{[^}]*border-top: 0/s);
@@ -203,4 +225,4 @@ assert.match(styles,/hours-presentation-rubric-label/);
 assert.match(styles,/\.reader-row\.hours-row-divider-after/);
 assert.match(styles,/\.reader-row\.hours-row-compact-after/);
 assert.doesNotMatch(styles,/hours-psalm-opening::first-letter/);
-console.log('PASS: First Hour complete conclusion, separated responses, red cues, five dropdowns and original Psalms preserved');
+console.log('PASS: First Hour — St Ephrem comments split, clean twelve-bow prayer, Psalm initial word unbroken');
