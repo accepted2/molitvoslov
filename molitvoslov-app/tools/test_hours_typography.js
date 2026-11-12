@@ -48,11 +48,13 @@ const documentCode = read('src/services/hoursDocument.js')
 const factory = new Function(
   'hoursTexts', 'READER_LANGUAGE_MODES', 'buildReaderLanguageOptions',
   'classifyHoursRow', 'classifyHoursSection', 'collectHoursTextMarks',
+  'getEditedFirstHour',
   documentCode + '\nreturn {buildHoursDocument};'
 );
 const {buildHoursDocument} = factory(
   {entries:{}}, MODE, languageOptions,
-  classifyHoursRow, classifyHoursSection, collectHoursTextMarks
+  classifyHoursRow, classifyHoursSection, collectHoursTextMarks,
+  () => ({applied: false})
 );
 const entry = {id:'ordinary-1',groupId:'ordinary',title:'Первый час',sourceId:910001};
 const content = {sections: [
