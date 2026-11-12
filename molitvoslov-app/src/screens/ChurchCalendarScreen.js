@@ -350,16 +350,29 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, 
   );
 };
 
+const CALENDAR_BIBLE_TRANSLATIONS = [
+  {code: 'rst', label: 'RU', accessibilityLabel: 'Русский Синодальный перевод'},
+  {code: 'csl_traditional', label: 'ЦС', accessibilityLabel: 'Церковнославянский текст'},
+];
+
 const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, translationCode = 'rst', onLayout, initiallyExpanded = false}) => {
   const [expanded, setExpanded] = useState(initiallyExpanded);
+  // Local to this reading: switching a translation does not change
+  // the default in Account or another opened calendar reading.
+  const [activeTranslationCode, setActiveTranslationCode] = useState(translationCode);
   useEffect(() => {
     if (initiallyExpanded) setExpanded(true);
   }, [initiallyExpanded, title]);
+  useEffect(() => {
+    setActiveTranslationCode(translationCode);
+  }, [translationCode, title]);
 
   if (!title) return null;
 
-  const target = resolveBibleReference(title, translationCode);
-  const verses = getBibleReadingVerses(title, translationCode);
+  const target = resolveBibleReference(title, activeTranslationCode);
+  const verses = getBibleReadingVerses(title, activeTranslationCode);
+  const alternateTranslationCode = activeTranslationCode === 'rst' ? 'csl_traditional' : 'rst';
+  const alternateVerses = getBibleReadingVerses(title, alternateTranslationCode);
   const chapters = new Set(verses.map((verse) => verse.chapterNumber));
   let previousChapter = null;
 
@@ -367,7 +380,7 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
     <View style={styles.readingCard} onLayout={onLayout}>
       <Pressable
         disabled={!target}
-        onPress={() => openCalendarBibleReference(navigation, title, translationCode)}
+        onPress={() => openCalendarBibleReference(navigation, title, activeTranslationCode)}
         style={({pressed}) => [
           styles.readingLink,
           !target && styles.readingLinkDisabled,
@@ -400,15 +413,53 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
         {!!target && <Text style={styles.readingArrow}>›</Text>}
       </Pressable>
 
-      {!!verses.length && (
+      {!!(verses.length || alternateVerses.length) && (
         <>
-          <Pressable
-            onPress={() => setExpanded((value) => !value)}
-            style={({pressed}) => [styles.readingExpand, pressed && styles.pressed]}
-          >
-            <Text style={styles.readingExpandText}>{expanded ? copy.hideText : copy.readText}</Text>
-            <SoftChevron expanded={expanded} />
-          </Pressable>
+          <View style={styles.readingExpandRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={expanded ? copy.hideText : copy.readText}
+              onPress={() => setExpanded((value) => !value)}
+              style={({pressed}) => [styles.readingExpand, pressed && styles.pressed]}
+            >
+              <Text style={styles.readingExpandText}>{expanded ? copy.hideText : copy.readText}</Text>
+            </Pressable>
+
+            {expanded && (
+              <View style={styles.readingTranslationToggle}>
+                {CALENDAR_BIBLE_TRANSLATIONS.map((option) => (
+                  <Pressable
+                    key={option.code}
+                    accessibilityRole="button"
+                    accessibilityLabel={option.accessibilityLabel}
+                    accessibilityState={{selected: activeTranslationCode === option.code}}
+                    onPress={() => setActiveTranslationCode(option.code)}
+                    style={({pressed}) => [
+                      styles.readingTranslationButton,
+                      activeTranslationCode === option.code && styles.readingTranslationButtonSelected,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Text style={[
+                      styles.readingTranslationButtonText,
+                      activeTranslationCode === option.code && styles.readingTranslationButtonTextSelected,
+                    ]}>
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={expanded ? copy.hideText : copy.readText}
+              onPress={() => setExpanded((value) => !value)}
+              style={({pressed}) => [styles.readingExpandChevron, pressed && styles.pressed]}
+            >
+              <SoftChevron expanded={expanded} />
+            </Pressable>
+          </View>
 
           {expanded && (
             <View style={styles.readingContent}>
@@ -422,22 +473,22 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
                     {showChapter && (
                       <Text style={[
                           styles.readingChapter,
-                          isTraditionalBible(translationCode) && styles.readingChapterCsl,
+                          isTraditionalBible(activeTranslationCode) && styles.readingChapterCsl,
                         ]}>
-                        {bibleUiText(translationCode, 'chapter', `${copy.chapter} ${verse.chapterNumber}`, {number: verse.chapterNumber})}
+                        {bibleUiText(activeTranslationCode, 'chapter', `${copy.chapter} ${verse.chapterNumber}`, {number: verse.chapterNumber})}
                       </Text>
                     )}
 
                     <Text
                       style={[
                         styles.readingVerseText,
-                        isTraditionalBible(translationCode) && styles.readingVerseTextCsl,
-                        isTraditionalBible(translationCode) && traditionalBibleTextStyle,
+                        isTraditionalBible(activeTranslationCode) && styles.readingVerseTextCsl,
+                        isTraditionalBible(activeTranslationCode) && traditionalBibleTextStyle,
                       ]}
                       selectable
                     >
-                      <Text style={[styles.readingVerseNumber, isTraditionalBible(translationCode) && styles.readingVerseNumberCsl]}>
-                        {formatBibleNumber(translationCode, verse.verseNumber)}{' '}
+                      <Text style={[styles.readingVerseNumber, isTraditionalBible(activeTranslationCode) && styles.readingVerseNumberCsl]}>
+                        {formatBibleNumber(activeTranslationCode, verse.verseNumber)}{' '}
                       </Text>
                       {verse.text}
                     </Text>
@@ -1431,16 +1482,54 @@ const styles = StyleSheet.create({
   readingArrowExpanded: {
     transform: [{rotate: '90deg'}],
   },
-  readingExpand: {
+  readingExpandRow: {
     minHeight: 42,
-    paddingLeft: 12,
-    paddingRight: 4,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(123,79,36,0.16)',
     backgroundColor: '#DFC59D',
+  },
+  readingExpand: {
+    flex: 1,
+    minHeight: 42,
+    paddingLeft: 12,
+    justifyContent: 'center',
+  },
+  readingExpandChevron: {
+    width: 29,
+    minHeight: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Compact segmented RU / CSL control next to the accordion chevron.
+  readingTranslationToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 8,
+    padding: 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#B78F65',
+    backgroundColor: '#D2B68F',
+  },
+  readingTranslationButton: {
+    minWidth: 31,
+    minHeight: 26,
+    paddingHorizontal: 5,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  readingTranslationButtonSelected: {
+    backgroundColor: '#FFF4DE',
+  },
+  readingTranslationButtonText: {
+    color: '#795537',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  readingTranslationButtonTextSelected: {
+    color: '#57341D',
   },
   readingExpandText: {
     color: '#6C472B',
