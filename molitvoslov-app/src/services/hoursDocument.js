@@ -163,6 +163,8 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
         ].filter(Boolean).join(' '),
         progressAnchorId: sectionIndex + 1,
         trackProgress: true,
+        collapsible: section.collapsible === true,
+        accordionId: section.accordionId || null,
         rows,
       });
     }
