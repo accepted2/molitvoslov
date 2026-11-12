@@ -46,6 +46,7 @@ export const pairFirstHourSections = ({churchSections, russianSections}) => {
           russianPresentation: ru.rows[rowIndex].presentation || '',
           russianAccentPrefix: ru.rows[rowIndex].accentPrefix || '',
           russianRedInitial: ru.rows[rowIndex].redInitial === true,
+          russianPreserveLineBreaks: ru.rows[rowIndex].preserveLineBreaks === true,
           dividerAfter: row.dividerAfter === true ||
             ru.rows[rowIndex].dividerAfter === true,
           compactAfter: row.compactAfter === true ||
