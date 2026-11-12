@@ -123,9 +123,6 @@ export const getEditedFirstHour = (content) => {
   const psalmSections = original.slice(firstIndex, lastIndex + 1);
   const lastPsalm = trimImportedPsalmAppendix(psalmSections[psalmSections.length - 1]);
   psalmSections[psalmSections.length - 1] = lastPsalm.section;
-  const before = original.slice(0, firstIndex);
-  const after = original.slice(lastIndex + 1);
-
   const churchSections = [
     {...editedFirstHour.opening, rows: editedFirstHour.opening.rows.map(row => ({...row}))},
     ...psalmSections,
@@ -135,23 +132,11 @@ export const getEditedFirstHour = (content) => {
     })),
   ];
 
-  // A translation was not supplied for the revised prayers. Keep all
-  // imported Russian paragraphs intact, but show them separately in
-  // ЦС+РУС rather than incorrectly pairing unrelated sentences.
-  const russianUnpaired = [...before, ...after]
-    .map(section => ({
-      title: section.title || '',
-      kind: section.kind || '',
-      rows: (section.rows || [])
-        .filter(row => typeof row.russian === 'string' && row.russian.trim())
-        .map(row => ({russian: row.russian})),
-    }))
-    .filter(section => section.rows.length);
-
+  // RU-only mode keeps reading the untouched imported Russian source.
+  // The combined reader never appends unmatched older rubrics after this ending.
   return {
     applied: true,
     sections: churchSections,
-    russianUnpaired,
     preservedPsalms: psalms,
     removedImportedPostPsalmAppendix: lastPsalm.trimmed,
   };
