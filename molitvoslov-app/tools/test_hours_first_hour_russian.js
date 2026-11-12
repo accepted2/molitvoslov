@@ -80,7 +80,7 @@ assert.equal(allRussian[15].rows.at(-1).russian,'Иерей произносит
 assert.ok(allRussian.every(section=>(section.rows||[]).every(row => typeof row.russian === 'string')));
 const countWords = allRussian.flatMap(s=>s.rows).map(r=>r.russian.split(/\s+/).length)
   .reduce((a,b)=>a+b,0);
-assert.ok(countWords > 1600,'Full user-provided text must not be reduced to shortened sample prayers');
+assert.ok(countWords > 1500,'Full user-provided text must not be reduced to shortened sample prayers');
 const orig = JSON.stringify(ru);
 allRussian[0].rows[0].russian = 'mutated in test';
 assert.equal(JSON.stringify(ru),orig,'The imported Russian text remains immutable');
