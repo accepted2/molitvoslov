@@ -2119,6 +2119,14 @@ export const READER_STYLES = String.raw`
       font-size: inherit !important;
       line-height: inherit !important;
     }
+    /* Prevent justification and Android WebView breaking the initial glyph
+       away from its first word (e.g. Глаголы in Psalm 5). */
+    .rule-item.hours-section .reader-text .hours-initial-word {
+      display: inline !important;
+      white-space: nowrap !important;
+      word-spacing: normal !important;
+      letter-spacing: normal !important;
+    }
     .rule-item.hours-section .reader-text .hours-mark-initial {
       display: inline !important;
       float: none !important;
@@ -2293,6 +2301,22 @@ export const READER_STYLES = String.raw`
     /* The choir's words remain normal text; only "Хор:" is rubric red. */
     .rule-item.hours-section .reader-text.hours-dialogue {
       color: var(--text);
+    }
+
+    /* A rubric inside the optional St Ephrem prayer is a comment, never
+       main prayer text or an enlarged red initial. */
+    .rule-item.hours-section.hours-collapsible .reader-text.hours-presentation-comment {
+      color: var(--secondary) !important;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 14px !important;
+      line-height: 1.48 !important;
+      font-weight: 400 !important;
+      font-style: italic !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    .rule-item.hours-section.hours-collapsible .reader-row.hours-row-compact-after {
+      margin-bottom: 3px !important;
     }
 
     #reader-scroll-track {
