@@ -2259,6 +2259,42 @@ export const READER_STYLES = String.raw`
       font-weight: 700 !important;
     }
 
+    /* First Hour, final rubrics: a single rule after the Saturday option. */
+    .rule-item.hours-section.hours-divider-before {
+      border-top: 1px solid var(--border) !important;
+      padding-top: 12px !important;
+      margin-top: 10px !important;
+    }
+    /* The 40 / 12 / thrice responses belong to the normal left text edge. */
+    .rule-item.hours-section .reader-text.hours-presentation-left-response {
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    /* Editorially marked service cues: no italics, normal font size. */
+    .rule-item.hours-section .reader-text.hours-presentation-liturgical-red {
+      color: var(--liturgical) !important;
+      font-size: 16px !important;
+      line-height: 1.5 !important;
+      font-style: normal !important;
+      font-weight: 600 !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    /* Trisagion label is also used in the concluding prayer section. */
+    .rule-item.hours-section .reader-text.hours-presentation-liturgical-label {
+      color: var(--liturgical) !important;
+      font-size: 16px !important;
+      line-height: 1.48 !important;
+      font-weight: 600 !important;
+      font-style: normal !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    /* The choir's words remain normal text; only "Хор:" is rubric red. */
+    .rule-item.hours-section .reader-text.hours-dialogue {
+      color: var(--text);
+    }
+
     #reader-scroll-track {
       position: fixed;
       top: 10px;
