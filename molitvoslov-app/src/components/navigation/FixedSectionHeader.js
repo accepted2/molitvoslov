@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {Animated, Easing, Modal, Pressable, StyleSheet, Text, View} from 'react-native';
+import {Animated, Easing, Modal, Pressable, StyleSheet, Text, View, useWindowDimensions} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -28,12 +28,14 @@ export const FixedSectionHeader = ({
 }) => {
   const uiScale = useInterfaceScale();
   const insets = useSafeAreaInsets();
+  const {width: screenWidth} = useWindowDimensions();
   const visibility = useRef(new Animated.Value(0)).current;
   const [languageOpen, setLanguageOpen] = useState(false);
   const chromeBackground = gradientColor || (dark ? '#171310' : '#FFF4DE');
   const chrome = buildReaderHeaderChrome(chromeBackground, dark);
   const chromeDark = chrome.dark;
   const [titleLines, setTitleLines] = useState(1);
+  const [measuredTitleWidth, setMeasuredTitleWidth] = useState(0);
   const extraTitleHeight = showTitle ? Math.max(0, titleLines - 1) * Math.ceil((compactReading ? 20 : 25) * uiScale) : 0;
   // Readers extend under the translucent status bar; the native safe-area
   // inset accounts for different camera cutouts without device-specific px.
@@ -41,7 +43,12 @@ export const FixedSectionHeader = ({
   const safeTop = compactReading ? Math.max(insets.top, topInset, 0) : topInset;
   const contentTop = safeTop + (compactReading ? 4 : 0);
   const headerHeight = contentTop + (compactReading ? 44 : (minimal ? 45 : 36)) + extraTitleHeight;
-  const gradientHeight = Math.max(headerHeight + 14, safeTop + 74);
+  // Feathered local halo follows the measured width of the heading.
+  const haloWidth = Math.min(
+    Math.max(92, screenWidth - 16),
+    Math.max(144, measuredTitleWidth + 91 + (languageSwitcher?.activeKey ? 66 : 0))
+  );
+  const haloHeight = (compactReading ? 54 : 52) + extraTitleHeight;
   useEffect(() => {
     onHeaderHeightChange?.(headerHeight);
   }, [headerHeight, onHeaderHeightChange]);
@@ -50,8 +57,8 @@ export const FixedSectionHeader = ({
   // Freeze the reading header while the language menu is open. A scroll/idle
   // hide event must not dismiss the menu before the user can choose a language.
   const headerHidden = readingHidden && !languageOpen;
-  // Category headers overlay decorative artwork; reading chrome is unchanged.
-  const categoryHeaderContrast = !compactReading && !minimal && showTitle;
+  // Same localized contrast for category menus and compact prayer readers.
+  const headerHaloActive = !minimal && showTitle;
   useEffect(() => {
     Animated.timing(visibility, {
       toValue: headerHidden ? 1 : 0,
@@ -63,19 +70,6 @@ export const FixedSectionHeader = ({
 
   return (
     <>
-      {/* Background treatments belong to reading screens only. Ordinary
-          category menus must keep their own artwork visible in the header. */}
-      {!minimal && compactReading && (
-        <LinearGradient
-          pointerEvents="none"
-          colors={chrome.gradient}
-          locations={[0, 0.43, 0.72, 1]}
-          start={{x: 0.5, y: 0}}
-          end={{x: 0.5, y: 1}}
-          style={[styles.fixedGradient, {height: gradientHeight}]}
-        />
-      )}
-
       <Animated.View
         pointerEvents={headerHidden ? 'none' : 'box-none'}
         style={[
@@ -87,39 +81,33 @@ export const FixedSectionHeader = ({
         ]}
       >
 
-        {/* A warm fade provides legible text over decorative parchment
-            without hiding the artwork or intercepting touches. */}
-        {categoryHeaderContrast && (
+        {/* Feathered parchment only behind the arrow and heading.
+            It does not intercept taps or darken the rest of the artwork. */}
+        {headerHaloActive && (
           <LinearGradient
             pointerEvents="none"
             colors={chromeDark
               ? [
-                  'rgba(24, 19, 15, 0.83)',
-                  'rgba(24, 19, 15, 0.66)',
-                  'rgba(24, 19, 15, 0.22)',
-                  'rgba(24, 19, 15, 0)',
+                  'rgba(26, 20, 15, 0)',
+                  'rgba(26, 20, 15, 0.75)',
+                  'rgba(26, 20, 15, 0.78)',
+                  'rgba(26, 20, 15, 0)',
                 ]
               : [
-                  'rgba(250, 236, 207, 0.82)',
-                  'rgba(250, 236, 207, 0.69)',
-                  'rgba(250, 236, 207, 0.24)',
-                  'rgba(250, 236, 207, 0)',
+                  'rgba(250, 239, 213, 0)',
+                  'rgba(250, 239, 213, 0.82)',
+                  'rgba(250, 239, 213, 0.84)',
+                  'rgba(250, 239, 213, 0)',
                 ]}
-            locations={[0, 0.42, 0.74, 1]}
-            start={{x: 0.5, y: 0}}
-            end={{x: 0.5, y: 1}}
-            style={[styles.categoryContrastGradient, {height: headerHeight + 38}]}
-          />
-        )}
-
-        {/* Keep the existing matte backing only in reading screens. */}
-        {compactReading && (
-          <View
-            pointerEvents="none"
-            style={[
-              styles.readerHeaderFrost,
-              {height: headerHeight, backgroundColor: chrome.frost, borderBottomColor: chrome.border},
-            ]}
+            locations={[0, 0.13, 0.75, 1]}
+            start={{x: 0, y: 0.5}}
+            end={{x: 1, y: 0.5}}
+            style={[styles.localHeaderHalo, {
+              left: 4,
+              top: Math.max(0, contentTop - 6),
+              width: haloWidth,
+              height: haloHeight,
+            }]}
           />
         )}
 
@@ -149,7 +137,7 @@ export const FixedSectionHeader = ({
                 <Text style={[
                     styles.backArrow,
                     chromeDark && styles.backArrowDark,
-                    categoryHeaderContrast && (chromeDark ? styles.categoryArrowContrastDark : styles.categoryArrowContrast),
+                    headerHaloActive && (chromeDark ? styles.categoryArrowContrastDark : styles.categoryArrowContrast),
                   ]}>‹</Text>
               )}
             </Pressable>
@@ -174,11 +162,17 @@ export const FixedSectionHeader = ({
                     fontSize: (compactReading ? 17 : 21) * uiScale,
                     lineHeight: (compactReading ? 20 : 25) * uiScale,
                   },
-                    categoryHeaderContrast && (chromeDark ? styles.categoryTitleContrastDark : styles.categoryTitleContrast),
+                    headerHaloActive && (chromeDark ? styles.categoryTitleContrastDark : styles.categoryTitleContrast),
                     titleTextStyle]}
                   onTextLayout={(event) => {
                     const count = event.nativeEvent?.lines?.length || 1;
                     setTitleLines((previous) => previous === count ? previous : count);
+                  }}
+                  onLayout={(event) => {
+                    const width = Math.ceil(event.nativeEvent?.layout?.width || 0);
+                    if (width > 0) {
+                      setMeasuredTitleWidth((previous) => previous === width ? previous : width);
+                    }
                   }}
                 >
                   {title}
@@ -242,7 +236,7 @@ export const FixedSectionHeader = ({
                 <Text style={[
                     styles.menuText,
                     chromeDark && styles.menuTextDark,
-                    categoryHeaderContrast && (chromeDark ? styles.categoryArrowContrastDark : styles.categoryArrowContrast),
+                    headerHaloActive && (chromeDark ? styles.categoryArrowContrastDark : styles.categoryArrowContrast),
                   ]}>⋮</Text>
               )}
             </Pressable>
@@ -288,27 +282,10 @@ export const FixedSectionHeader = ({
 };
 
 const styles = StyleSheet.create({
-  fixedGradient: {
+  localHeaderHalo: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    // Independent from header animation. Never blocks reader scroll/taps.
-    zIndex: 999,
-    elevation: 19,
-  },
-  categoryContrastGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-  },
-  readerHeaderFrost: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    borderBottomWidth: 0.5,
+    borderRadius: 23,
+    overflow: 'hidden',
   },
   fixedHeader: {
     position: 'absolute',
