@@ -40,7 +40,7 @@ export const classifyHoursRow = ({text, sectionKind = 'general'}) => {
   if (value.length <= 125 &&
       /^(?:слава[,\s]+и[,\s]+ныне|слава\s+отцу|и\s+ныне)\s*:/u.test(value)) return 'doxology';
   if (value.length <= 155 &&
-      /^(?:и\s+паки|по\s+отче\s+наш|поклоны|трижды|трисвятое|приидите,?\s+поклонимся)(?=\s|[:.,;!?]|$)/u.test(value)) return 'rubric';
+      /^(?:и\s+паки|по\s+отче\s+наш|поклоны|трижды|трисвятое)(?=\s|[:.,;!?]|$)/u.test(value)) return 'rubric';
   return sectionKind === 'psalm' ? 'psalm' : 'prose';
 };
 
