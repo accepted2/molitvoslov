@@ -73,15 +73,21 @@ assert.match(ru.afterPsalms[4].rows[0].russian,/^Стопы мои направ�
 assert.match(ru.afterPsalms[4].rows[1].russian,/Да наполнятся уста мои/);
 assert.equal(ru.afterPsalms[5].rows.length,9);
 assert.equal(ru.afterPsalms[5].rows[0].russian,
-  'Святый Боже, Святый Крепкий, Святый Безсмертный, помилуй нас.');
+  'Святый Боже, Святый Крепкий, Святый Безсмертный, помилуй нас. (Трижды)');
 assert.ok(!ru.afterPsalms[5].rows.some(r=>r.russian==='Трисвятое. И по Отче наш:'));
 assert.match(ru.afterPsalms[5].rows[2].russian,/Пресвятая Троица/);
 assert.match(ru.afterPsalms[5].rows[5].russian,/Отче наш, Иже еси на небесех/);
 assert.equal(ru.afterPsalms[5].rows[3].presentation,'left-response');
+assert.equal(ru.afterPsalms[5].rows[5].redInitial,true);
+assert.equal(ru.afterPsalms[11].rows[5].redInitial,true);
+const completePriest='Священник: Яко Твое есть царство, и сила, и слава Отца и Сына и Святаго Духа ныне и присно и во веки веков.';
+assert.equal(ru.afterPsalms[5].rows[6].russian,completePriest);
+assert.equal(ru.afterPsalms[11].rows[6].russian,completePriest);
+assert.equal(ru.afterPsalms[11].rows[7].russian,'Чтец: Аминь.');
 assert.equal(ru.afterPsalms[5].rows[7].presentation,'placeholder');
 assert.match(ru.afterPsalms[5].rows[8].russian,/Если же пели «Аллилуия»/);
-assert.equal(ru.afterPsalms[11].rows[0].russian,'Трисвятое. И по Отче наш:',
-  'The concluding Trisagion heading must remain unchanged');
+assert.ok(!ru.afterPsalms[11].rows.some(r=>r.russian==='Трисвятое. И по Отче наш:'),
+  'The redundant Trisagion heading is removed after St Ephrem too.');
 assert.match(ru.afterPsalms[6].rows[0].russian,/^Преславную Божию Матерь/);
 assert.match(ru.afterPsalms[7].rows[0].russian,/^Скоро предстань нам на помощь/);
 assert.match(ru.afterPsalms[8].rows[0].russian,/^Как первые плоды природы/);
@@ -96,19 +102,19 @@ assert.deepEqual(ru.afterPsalms[10].rows.map(r=>r.presentation || ''),
 assert.equal(ru.afterPsalms[10].rows[5].russian,'Боже, очисти меня, грешного.');
 assert.match(ru.afterPsalms[10].rows[7].russian,/^Господи и Владыка жизни моей!/);
 assert.match(ru.afterPsalms[10].rows[8].russian,/И один великий поклон/);
-assert.equal(ru.afterPsalms[11].rows.length,19);
-assert.equal(ru.afterPsalms[11].rows[0].russian,'Трисвятое. И по Отче наш:');
-assert.match(ru.afterPsalms[11].rows[1].russian,/Чтец: Святый Боже/);
-assert.equal(ru.afterPsalms[11].rows[9].russian,'Господи, помилуй. (12)');
-assert.equal(ru.afterPsalms[11].rows[10].presentation,'comment');
-assert.match(ru.afterPsalms[11].rows[11].russian,/Христе, Свет истинный/);
-assert.equal(ru.afterPsalms[11].rows[12].presentation,'comment');
-assert.match(ru.afterPsalms[11].rows[13].russian,/Обороняющей нас Военачальнице/);
-assert.match(ru.afterPsalms[11].rows[14].russian,/Слава Тебе, Христе Боже/);
-assert.match(ru.afterPsalms[11].rows[15].russian,/^Хор: Слава Отцу/);
-assert.equal(ru.afterPsalms[11].rows[16].russian,'Господи, помилуй. (Трижды)');
-assert.equal(ru.afterPsalms[11].rows[17].russian,'Благослови.');
-assert.equal(ru.afterPsalms[11].rows[18].russian,'Иерей произносит отпуст.');
+assert.equal(ru.afterPsalms[11].rows.length,18);
+assert.equal(ru.afterPsalms[11].rows[0].russian,
+  'Чтец: Святый Боже, Святый Крепкий, Святый Безсмертный, помилуй нас. (Трижды)');
+assert.equal(ru.afterPsalms[11].rows[8].russian,'Господи, помилуй. (12)');
+assert.equal(ru.afterPsalms[11].rows[9].presentation,'comment');
+assert.match(ru.afterPsalms[11].rows[10].russian,/Христе, Свет истинный/);
+assert.equal(ru.afterPsalms[11].rows[11].presentation,'comment');
+assert.match(ru.afterPsalms[11].rows[12].russian,/Обороняющей нас Военачальнице/);
+assert.match(ru.afterPsalms[11].rows[13].russian,/Слава Тебе, Христе Боже/);
+assert.match(ru.afterPsalms[11].rows[14].russian,/^Хор: Слава Отцу/);
+assert.equal(ru.afterPsalms[11].rows[15].russian,'Господи, помилуй. (Трижды)');
+assert.equal(ru.afterPsalms[11].rows[16].russian,'Благослови.');
+assert.equal(ru.afterPsalms[11].rows[17].russian,'Иерей произносит отпуст.');
 const allRussian = getFirstHourRussianSections();
 assert.equal(allRussian.length,16);
 assert.equal(allRussian[0].rows[0].russian,ru.opening.rows[0].russian);
@@ -241,7 +247,7 @@ assert.deepEqual(marked(russianDoc.sections[6].rows[0].blocks[0],'devotional'),
   ['Слава Отцу и Сыну и Святому Духу']);
 assert.deepEqual(marked(russianDoc.sections[6].rows[2].blocks[0],'devotional'),
   ['И ныне и присно и во веки веков. Аминь.']);
-assert.deepEqual(marked(russianDoc.sections[15].rows[15].blocks[0],'devotional'),
+assert.deepEqual(marked(russianDoc.sections[15].rows[14].blocks[0],'devotional'),
   ['Слава Отцу и Сыну и Святому Духу, и ныне и присно и во веки веков. Аминь.']);
 const lentRu=russianDoc.sections[7].rows;
 assert.equal(lentRu.length,8);
@@ -260,9 +266,13 @@ assert.deepEqual(lentRu[3].blocks[0].hoursMarks,[],
 assert.deepEqual(lentRu[5].blocks[0].hoursMarks,[],
   'The red role label is styled by its liturgical-red block class.');
 assert.equal(russianDoc.sections[9].rows[0].blocks[0].text,
-  'Святый Боже, Святый Крепкий, Святый Безсмертный, помилуй нас.');
+  'Святый Боже, Святый Крепкий, Святый Безсмертный, помилуй нас. (Трижды)');
 assert.equal(russianDoc.sections[15].rows[0].blocks[0].text,
-  'Трисвятое. И по Отче наш:');
+  'Чтец: Святый Боже, Святый Крепкий, Святый Безсмертный, помилуй нас. (Трижды)');
+assert.deepEqual(marked(russianDoc.sections[9].rows[5].blocks[0],'initial'),['О']);
+assert.deepEqual(marked(russianDoc.sections[15].rows[5].blocks[0],'initial'),['О']);
+assert.equal(russianDoc.sections[9].rows[6].blocks[0].text,completePriest);
+assert.equal(russianDoc.sections[15].rows[6].blocks[0].text,completePriest);
 for(const section of russianDoc.sections) {
   for(const row of section.rows) for(const block of row.blocks) {
     if (block.className.includes('hours-presentation-comment')) {
@@ -273,7 +283,7 @@ for(const section of russianDoc.sections) {
 }
 const repeatRows=[ru.opening,...ru.psalms,...ru.afterPsalms]
   .flatMap(s=>s.rows).filter(r=>r.russian.includes('(Трижды)'));
-assert.equal(repeatRows.length,6);
+assert.equal(repeatRows.length,8);
 assert.ok(!russianText.includes('(3)'));
 assert.equal(ru.afterPsalms[10].rows[0].russian,
   'Если Великий пост — молитва святого Ефрема Сирина с тремя великими поклонами:');
@@ -307,4 +317,4 @@ for (const row of churchDoc.sections[5].rows) {
     'ЦС commentary quoting "Слава Отцу" must not receive red spans.');
 }
 assert.equal(JSON.stringify(src),saved);
-console.log('PASS: First Hour RU separate red speaker cues, plain priest/reader prayers, one removed Trisagion heading and five accordions intact');
+console.log('PASS: First Hour RU both Trisagion thriced, no duplicate heading, red initial Our Father and full priestly exclamation');
