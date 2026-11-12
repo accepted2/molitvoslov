@@ -281,6 +281,12 @@ export const READER_RUNTIME = String.raw`
             }
               const rowNode = el( 'div', row.layout === 'parallel' ? 'reader-row reader-row-parallel'
                     : 'reader-row' );
+              // Scoped to Hours: decorative separators and compact liturgical
+              // labels never alter the source text or selection offsets.
+              if (String(section.className || '').includes('hours-section')) {
+                if (row.dividerAfter === true) rowNode.classList.add('hours-row-divider-after');
+                if (row.compactAfter === true) rowNode.classList.add('hours-row-compact-after');
+              }
               ( row.blocks || [] ).forEach( block => {
                   const itemId = Number( block.id );
                   itemTextMap.set( itemId, block.text || '' );
