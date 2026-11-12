@@ -14,7 +14,7 @@ const canonical = (value) =>
 
 export const classifyHoursSection = (title) => {
   const name = canonical(title);
-  if (/^(?:псалом|ѱалом|псалм|псалмы)(?=\s|[:.,;!?]|$)/u.test(name)) return 'psalm';
+  if (/^(?:псалом|ѱалом|псалм|псалмы)(?:ъ)?(?=\s|[:.,;!?]|$)/u.test(name)) return 'psalm';
   if (/^(?:молитва|молитвы|молитвословие)(?=\s|[:.,;!?]|$)/u.test(name)) return 'prayer';
   if (/^(?:тропарь|тропари|кондак|кондаки|богородичен|стихира|прокимен|причастен|седален)(?=\s|[:.,;!?]|$)/u.test(name)) return 'hymn';
   if (/^(?:паремия|паримия|пророчество|апостол|евангелие|чтение)(?=\s|[:.,;!?]|$)/u.test(name)) return 'reading';
@@ -28,7 +28,7 @@ export const classifyHoursRow = ({text, sectionKind = 'general'}) => {
   // Headings must be short and standalone. Never style a whole psalm like a
   // heading merely because the very first words are "Псалом 5".
   if (value.length <= 100 &&
-      /^(?:псалом|ѱалом|псалм)\s*[\dа-яѣіѳѡ]{1,10}[:.]?$/u.test(value)) return 'heading';
+      /^(?:псалом|ѱалом|псалм)(?:ъ)?\s*[\dа-яѣіѳѡ]{1,10}[:.]?$/u.test(value)) return 'heading';
   // A brief standalone heading is a rubric. If prayer words follow the
   // colon, keep the *whole block* as prose and color only its leading cue.
   if (value.length <= 100 &&
