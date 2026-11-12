@@ -35,9 +35,9 @@ const {pathToFileURL} = require('node:url');
 
   assert.match(calendarService, /translationCode === 'csl_traditional'\s*\?\s*cleanCalendarTraditionalBibleVerse\(verse\.text\)/);
   assert.match(calendarService, /: String\(verse\.text \|\| ''\)\.trim\(\)/);
-  assert.match(calendarScreen, /isTraditionalBible\(translationCode\) && styles\.readingVerseTextCsl/);
-  assert.match(calendarScreen, /isTraditionalBible\(translationCode\) && styles\.readingVerseNumberCsl/);
-  assert.match(calendarScreen, /isTraditionalBible\(translationCode\) && styles\.readingChapterCsl/);
+  assert.match(calendarScreen, /isTraditionalBible\(activeTranslationCode\) && styles\.readingVerseTextCsl/);
+  assert.match(calendarScreen, /isTraditionalBible\(activeTranslationCode\) && styles\.readingVerseNumberCsl/);
+  assert.match(calendarScreen, /isTraditionalBible\(activeTranslationCode\) && styles\.readingChapterCsl/);
   assert.match(calendarScreen, /readingVerseTextCsl: \{\s*fontSize: 18,\s*lineHeight: 32/);
 
   console.log('PASS: CSL calendar lectionary rubrics/circles removed; Russian verses untouched; CSL text enlarged');
