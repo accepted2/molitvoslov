@@ -39,10 +39,6 @@ export const HoursScreen = ({navigation}) => {
             Первый, третий, шестой и девятый часы. В особые дни используются
             великопостный, царский или пасхальный чины. Междочасия приведены отдельно.
           </Text>
-          <Text style={[styles.onlineNote, {fontSize: 12 * uiScale}]}>
-            Полные тексты открываются внутри приложения с сайта источника.
-            Для чтения нужен интернет; офлайн-тексты пока не импортированы.
-          </Text>
         </View>
 
         {HOURS_GROUPS.map((group) => {
@@ -134,7 +130,6 @@ const styles = StyleSheet.create({
   },
   introTitle: {color: '#482D1E', fontWeight: '700', fontFamily: 'serif'},
   introText: {color: '#624A34', lineHeight: 21, textAlign: 'justify'},
-  onlineNote: {color: '#7D5D3C', lineHeight: 19},
   group: {
     borderRadius: 14,
     overflow: 'hidden',
