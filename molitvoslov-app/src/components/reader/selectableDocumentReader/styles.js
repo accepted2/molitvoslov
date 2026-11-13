@@ -1842,7 +1842,7 @@ export const READER_STYLES = String.raw`
       position: fixed;
       left: 14px;
       right: 14px;
-      bottom: 22px;
+      bottom: calc(104px + env(safe-area-inset-bottom, 0px));
       z-index: 1002;
       min-height: 52px;
       padding: 7px 8px 7px 12px;
@@ -1886,8 +1886,20 @@ export const READER_STYLES = String.raw`
       font-size: 25px;
       line-height: 34px;
     }
+    #selection-share {
+      min-width: 70px;
+      height: 36px;
+      padding: 0 7px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: transparent;
+      color: var(--accent-dark);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    #selection-share:disabled { opacity: .42; }
     #selection-save {
-      min-width: 96px;
+      min-width: 80px;
       height: 36px;
       padding: 0 14px;
       border: 0;

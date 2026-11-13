@@ -9,6 +9,7 @@ export const READER_RUNTIME = String.raw`
     const selectionCount = document.getElementById( 'selection-count' );
     const selectionHint = document.getElementById( 'selection-hint' );
     const saveButton = document.getElementById( 'selection-save' );
+    const shareButton = document.getElementById('selection-share');
     const cancelButton = document.getElementById( 'selection-cancel' );
     const startHandle = document.getElementById( 'start-handle' );
     const endHandle = document.getElementById( 'end-handle' );
@@ -3803,6 +3804,7 @@ if (
         saveButton.textContent = savedRange ? 'Удалить' : 'Сохранить';
         saveButton.classList.toggle('delete-mode', !!savedRange);
         saveButton.disabled = count <= 0 || state.savePending;
+        shareButton.disabled = count <= 0 || state.savePending;
         if (DATA.document.embedded) {
           post({type:'embedded-selection-info', active:true, count,
             pending:state.savePending, removable:!!savedRange});
@@ -4374,6 +4376,16 @@ if (
         clearSelection();
       }
     );
+    shareButton.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      if(!state.active || state.savePending)return;
+      const text=selectionText(state.active);
+      const first=state.active.segments?.[0];
+      if(!text||!first)return;
+      post({type:'share-selection',itemId:Number(first.itemId),text,
+        itemTitle:itemTitleMap.get(Number(first.itemId)) || DATA.document.title || 'Цитата'});
+    });
     saveButton.addEventListener( 'click', event => {
         event.preventDefault();
         event.stopPropagation();
@@ -4951,6 +4963,7 @@ if (
 
     window.readerApi = {
       saveEmbeddedSelection: () => { if (DATA.document.embedded) saveButton.click(); },
+      shareEmbeddedSelection: () => { if (DATA.document.embedded) shareButton.click(); },
       clearEmbeddedSelection: () => { if (DATA.document.embedded) clearSelection(); },
       changeViewMode: key => {
         post({type: 'view-mode', value: key, progress: snapshotForViewSwitch()});
