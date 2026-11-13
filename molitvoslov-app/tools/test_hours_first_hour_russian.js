@@ -332,6 +332,12 @@ assert.match(colorsCss,/hours-russian-primary\.hours-presentation-final-trinity/
 assert.match(colorsCss,/hours-russian-primary\.hours-presentation-choir-response/);
 const runtimeCode=read('src/components/reader/selectableDocumentReader/runtime.js');
 assert.match(runtimeCode,/const isFirstHourPrimaryRussian/);
+assert.match(runtimeCode,/const isFirstHourFinalChoir/);
+assert.match(runtimeCode,/hours-presentation-choir-response/);
+assert.match(runtimeCode,/span\.querySelectorAll\('\*'\)/);
+assert.match(colorsCss,/hours-presentation-choir-response span:not\(\.hours-mark-speaker\)/);
+assert.match(colorsCss,/hours-presentation-choir-response \.hours-mark-speaker/);
+
 assert.match(runtimeCode,/blockClasses\.includes\('hours-presentation-final-trinity'\)/);
 assert.match(runtimeCode,/blockClasses\.includes\('hours-presentation-choir-response'\)/);
 assert.match(runtimeCode,/span\.style\.setProperty\('color', 'var\(--liturgical\)', 'important'\)/);
@@ -425,6 +431,10 @@ assert.equal(sharedChoir.text,
 assert.deepEqual(marked(sharedChoir,'speaker'),['Хор:']);
 assert.deepEqual(marked(sharedChoir,'devotional'),[],
   'No red full Glory in the concluding choir response');
+assert.deepEqual(sharedChoir.hoursMarks.map(mark=>mark.kind),['speaker'],
+  'Only the cue is highlighted in the parallel ending');
+assert.equal(sharedChoir.hoursMarks[0].start,0);
+assert.equal(sharedChoir.hoursMarks[0].end,'Хор:'.length);
 assert.match(sharedChoir.className,/choir-response/);
 assert.equal(bothDoc.sections[15].rows[14].blocks.length,1);
 
@@ -508,6 +518,8 @@ assert.ok(churchEnding[4].blocks[0].text.endsWith('радуйся, Невест�
 assert.deepEqual(marked(churchEnding[2].blocks[0],'initial'),['Х']);
 assert.deepEqual(marked(churchEnding[4].blocks[0],'initial'),['В']);
 assert.deepEqual(marked(churchEnding[5].blocks[0],'speaker'),['Хор:']);
+assert.deepEqual(churchEnding[5].blocks[0].hoursMarks.map(mark=>mark.kind),['speaker'],
+  'Only Хор: can be liturgical-red in the CS ending');
 assert.deepEqual(marked(churchEnding[5].blocks[0],'devotional'),[],
   'Concluding CS Glory must remain ordinary colored text');
 assert.match(churchEnding[5].blocks[0].className,/choir-response/);
