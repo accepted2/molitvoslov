@@ -9,7 +9,7 @@ import {BottomNav} from '../components/navigation/BottomNav';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {createPrayerBook, getPrayerBooks, syncPrayerBooks} from '../services/prayerBooks';
 import {colors, radius, spacing} from '../theme';
-import {shareContent} from '../services/contentSharing';
+import {shareImportableContent} from '../services/shareInvitations';
 import {ContentContextMenu} from '../components/share/ContentContextMenu';
 import {useLanguage} from '../context/LanguageContext';
 import {useInterfaceScale} from '../context/InterfaceScaleContext';
@@ -134,12 +134,14 @@ export const PrayerBooksScreen = ({navigation}) => {
           title={contextItem?.title||'Мой молитвослов'}
           onClose={()=>setContextItem(null)}
           onOpen={contextItem ? ()=>navigation.navigate('PrayerBook',{bookSyncId:contextItem.sync_id}) : null}
-          onShare={contextItem ? ()=>shareContent({
+          onShare={contextItem ? ()=>shareImportableContent({
+            kind:'prayerbook',
+            sourceSyncId:contextItem.sync_id,
             title:contextItem.title||'Мой молитвослов',
-            text:(contextItem.items||[]).map(i=>[
+            fallbackText:(contextItem.items||[]).map(i=>[
               i.prayer?.title||'',i.prayer?.text||''
             ].filter(Boolean).join('\n')).join('\n\n'),
-            privateContent:true,confirmPrivate:true,
+            privateContent:true,
           }) : null}
         />
 

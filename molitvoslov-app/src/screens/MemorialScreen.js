@@ -11,7 +11,7 @@ import {StatusBar} from 'expo-status-bar';
 import {AppBackground} from '../components/layout/AppBackground';
 
 import {BottomNav} from '../components/navigation/BottomNav';
-import {shareContent} from '../services/contentSharing';
+import {shareImportableContent} from '../services/shareInvitations';
 import {ContentContextMenu} from '../components/share/ContentContextMenu';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
@@ -208,11 +208,13 @@ export const MemorialScreen = ({navigation}) => {
           title={contextItem?.title||'Помянник'}
           onClose={()=>setContextItem(null)}
           onOpen={contextItem ? ()=>navigation.navigate('MemorialBook',{bookSyncId:contextItem.sync_id}) : null}
-          onShare={contextItem ? ()=>shareContent({
+          onShare={contextItem ? ()=>shareImportableContent({
+            kind:'memorial',
+            sourceSyncId:contextItem.sync_id,
             title:contextItem.title||'Помянник',
-            text:['О здравии:',...(contextItem.health_names||[]),
+            fallbackText:['О здравии:',...(contextItem.health_names||[]),
               '', 'О упокоении:',...(contextItem.repose_names||[])].join('\n'),
-            privateContent:true,confirmPrivate:true,
+            privateContent:true,
           }) : null}
         />
       </View>

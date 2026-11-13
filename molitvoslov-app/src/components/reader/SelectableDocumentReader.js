@@ -10,6 +10,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 
 import {deleteSavedItem, saveItem} from '../../services/savedItems';
 import {shareContent, isPrivateShareSource, resolveSelectedShareTarget} from '../../services/contentSharing';
+import {shareImportableContent} from '../../services/shareInvitations';
 import {getCachedPonomarFontDataUri, loadPonomarFontDataUri} from '../../services/ponomarFont';
 
 import {buildHtml, scriptSafeJson} from './selectableDocumentReader/buildHtml';
@@ -387,13 +388,13 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     if (message.type === 'share-selection') {
       const itemConfig=itemConfigMap.get(Number(message.itemId));
       if(!itemConfig || !String(message.text||'').trim())return;
-      await shareContent({
+      await shareImportableContent({
+        kind:'quote',
         title:message.itemTitle || itemConfig.itemTitle ||
           itemConfig.sourceTitle || documentData.title || 'Цитата',
         text:message.text,
-        ...resolveSelectedShareTarget(itemConfig),
         privateContent:isPrivateShareSource(itemConfig.sourceType),
-        confirmPrivate:isPrivateShareSource(itemConfig.sourceType),
+        fallbackText:message.text,
       });
       return;
     }

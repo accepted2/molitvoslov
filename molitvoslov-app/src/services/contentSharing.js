@@ -1,4 +1,5 @@
 import {Alert, Share} from 'react-native';
+import {shareImportableContent} from './shareInvitations';
 
 // Public links resolve to a read-only landing page. Private content is sent
 // only as explicit plain text; never expose account UUIDs in a public URL.
@@ -140,6 +141,15 @@ export const shareSavedItem = item => {
     calendar:['SaintDetail',{date:meta.date,focusSection:meta.section}],
   };
   const [screen,params]=mapping[type]||[null,{}];
+  if(String(item?.text||'').trim()){
+    return shareImportableContent({
+      kind:'quote',
+      title:item?.item_title||item?.source_title||'Цитата',
+      text:item.text,
+      privateContent:isPrivateShareSource(type),
+      fallbackText:item.text,
+    });
+  }
   return shareContent({
     title:item?.item_title||item?.source_title||'Избранное',
     text:item?.text||'',
