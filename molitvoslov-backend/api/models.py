@@ -1746,3 +1746,56 @@ class AccountDeletionRequest(models.Model):
 
     def __str__(self):
         return f"{self.get_kind_display()}: {self.email}"
+
+
+class SharedContentInvitation(models.Model):
+    """Owner-approved immutable text snapshot accessible only with a secret token.
+
+    No photos or original account identifiers are copied. Links expire and
+    can be revoked; imported recipient copies have their own ownership.
+    """
+    KIND_CHOICES = [
+        ("quote", "Цитата"),
+        ("memorial", "Помянник"),
+        ("prayerbook", "Личный молитвослов"),
+    ]
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="shared_content_invitations",
+    )
+    token_hash = models.CharField(max_length=64, unique=True, db_index=True)
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES)
+    title = models.CharField(max_length=180)
+    snapshot = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.get_kind_display()
+
+
+class SharedContentImport(models.Model):
+    """Idempotency record. The recipient's imported data remains independent."""
+    invitation = models.ForeignKey(
+        SharedContentInvitation, on_delete=models.CASCADE,
+        related_name="imports",
+    )
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="content_imports",
+    )
+    kind = models.CharField(max_length=20)
+    imported_sync_id = models.UUIDField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["invitation", "recipient"],
+                name="unique_shared_content_import",
+            ),
+        ]
