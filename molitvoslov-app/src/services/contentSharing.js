@@ -31,10 +31,15 @@ export const sharePathFor = (screen,params={}) => {
     case 'Canon':
       id=slug(params.canonId || params.slug);
       return id?'canon/'+id:null;
-    case 'Kathisma':
+    case 'Kathisma':{
       chapter=Number(params.kathismaNumber);
-      return Number.isInteger(chapter)&&chapter>=1&&chapter<=20
-        ? 'kathisma/'+chapter:null;
+      if(!Number.isInteger(chapter)||chapter<1||chapter>20)return null;
+      const psalm=Number(params.psalmNumber);
+      if(!Number.isInteger(psalm)||psalm<1||psalm>151)return 'kathisma/'+chapter;
+      const mode=['church','russian','traditional','both'].includes(params.readerMode)
+        ? params.readerMode:'church';
+      return 'kathisma/'+chapter+'/'+psalm+'/'+mode;
+    }
     case 'PrayerRule': id=slug(params.slug);return id?'prayer/'+id:null;
     case 'Reader': id=slug(params.slug);return id?'reader/'+id:null;
     case 'HoursReading':id=slug(params.entryId);return id?'hours/'+id:null;
@@ -139,7 +144,11 @@ export const resolveSelectedShareTarget = config => {
       return {screen:'Reader',params:{slug:meta.slug}};
     case 'psalter':
       return meta.kathisma_number
-        ? {screen:'Kathisma',params:{kathismaNumber:meta.kathisma_number}}
+        ? {screen:'Kathisma',params:{
+            kathismaNumber:meta.kathisma_number,
+            psalmNumber:meta.psalm_number,
+            readerMode:meta.reader_mode||meta.language,
+          }}
         : {screen:'Psalter',params:{}};
     case 'hours':
       return {screen:'HoursReading',params:{entryId:meta.entry_id||meta.entryId}};
@@ -164,7 +173,9 @@ export const shareSavedItem = item => {
     akathist:['Akathist',{akathistId:item.source_id,slug:meta.slug}],
     canon:['Canon',{canonId:item.source_id,slug:meta.slug}],
     psalter:meta.kathisma_number
-      ? ['Kathisma',{kathismaNumber:meta.kathisma_number}]
+      ? ['Kathisma',{kathismaNumber:meta.kathisma_number,
+          psalmNumber:meta.psalm_number,
+          readerMode:meta.reader_mode||meta.language}]
       : ['Psalter',{}],
     prayer_rule:['PrayerRule',{slug:meta.slug}],
     text:['Reader',{slug:meta.slug}],
