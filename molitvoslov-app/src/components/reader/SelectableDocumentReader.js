@@ -223,6 +223,9 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         };
         inject('window.readerApi && window.readerApi.saveEmbeddedSelection()');
       }),
+      shareEmbeddedSelection: () => {
+        if(embedded)inject('window.readerApi && window.readerApi.shareEmbeddedSelection()');
+      },
       clearEmbeddedSelection: () => {
         inject('window.readerApi && window.readerApi.clearEmbeddedSelection()');
       },

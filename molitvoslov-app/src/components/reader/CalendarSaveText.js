@@ -173,6 +173,7 @@ export const CalendarSelectableBody = ({text, saveContext, textStyle}) => {
       actionLabel: info.removable ? 'Удалить' : 'Сохранить',
       onSave: () => readerRef.current?.saveEmbeddedSelection() ||
         Promise.resolve({ok: false, message: 'Читатель не готов'}),
+      onShare: () => readerRef.current?.shareEmbeddedSelection(),
       onClear: () => readerRef.current?.clearEmbeddedSelection(),
     });
   }, [activateSelection, clearSelection]);

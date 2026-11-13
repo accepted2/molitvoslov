@@ -103,7 +103,7 @@ export const TextSelectionProvider = ({children}) => {
             style={[
               styles.bar,
               {
-                bottom: Math.max(insets.bottom, 10) + 10,
+                bottom: Math.max(insets.bottom, 10) + 98,
               },
             ]}
           >
@@ -128,6 +128,19 @@ export const TextSelectionProvider = ({children}) => {
             >
               <Text style={styles.closeText}>×</Text>
             </Pressable>
+
+            {!!activeSelection.onShare && (
+              <Pressable
+                hitSlop={8}
+                disabled={saving || activeSelection.count <= 0}
+                accessibilityRole="button"
+                accessibilityLabel="Поделиться выделенным текстом"
+                onPress={() => activeRef.current?.onShare?.()}
+                style={({pressed}) => [styles.shareButton,pressed && styles.pressed]}
+              >
+                <Text style={styles.shareText}>Поделиться</Text>
+              </Pressable>
+            )}
 
             <Pressable
               disabled={!activeSelection.canSave || saving}
@@ -233,8 +246,12 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
 
+  shareButton:{minHeight:38,paddingHorizontal:8,alignItems:'center',
+    justifyContent:'center',borderRadius:10,borderWidth:1,borderColor:colors.borderStrong},
+  shareText:{fontSize:12,fontWeight:'700',color:colors.accentDark},
+
   saveButton: {
-    minWidth: 104,
+    minWidth: 83,
     height: 38,
     paddingHorizontal: 14,
     alignItems: 'center',
