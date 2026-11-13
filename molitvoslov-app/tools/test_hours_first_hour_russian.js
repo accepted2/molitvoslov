@@ -338,11 +338,46 @@ assert.match(runtimeCode,/span\.querySelectorAll\('\*'\)/);
 assert.match(colorsCss,/hours-presentation-choir-response span:not\(\.hours-mark-speaker\)/);
 assert.match(colorsCss,/hours-presentation-choir-response \.hours-mark-speaker/);
 
-assert.match(runtimeCode,/blockClasses\.includes\('hours-presentation-final-trinity'\)/);
-assert.match(runtimeCode,/blockClasses\.includes\('hours-presentation-choir-response'\)/);
+assert.match(runtimeCode,/includes\('hours-presentation-final-trinity'\)/);
+assert.match(runtimeCode,/includes\('hours-presentation-choir-response'\)/);
 assert.match(runtimeCode,/span\.style\.setProperty\('color', 'var\(--liturgical\)', 'important'\)/);
 assert.match(runtimeCode,/span\.style\.setProperty\('color', choirColor, 'important'\)/);
 assert.match(runtimeCode,/child\.style\.setProperty\('color', choirColor, 'important'\)/);
+
+// Execute the scoped DOM color policy with a fake span to catch the exact
+// regression: CS and CS + RU were left red because only RU primary was forced.
+const choirRuntimeSource=runtimeCode.match(
+  /const isFirstHourFinalChoir = [\s\S]*?span\.querySelectorAll\('\*'\)\.forEach\(child => \{[\s\S]*?\}\);\s*\}/u
+)?.[0];
+assert.ok(choirRuntimeSource,'final choir color enforcement must remain present');
+const renderChoirSegment=new Function(
+  'itemConfig','hoursMark','text','start','end','span',choirRuntimeSource);
+const captureColor=(language,className,isSpeaker,entryId='ordinary-1')=>{
+  const props={};
+  const inner={style:{setProperty:(key,value)=>{props['inner-'+key]=value;}}};
+  const span={style:{setProperty:(key,value)=>{props[key]=value;}},
+    querySelectorAll:()=>[inner]};
+  const itemConfig={sourceType:'hours',metadata:{entryId,language},className};
+  const text=isSpeaker?'Хор: Слава Отцу...':'Хор: Слава Отцу...';
+  renderChoirSegment(itemConfig,isSpeaker?{kind:'speaker'}:undefined,
+    text,isSpeaker?0:5,isSpeaker?4:10,span);
+  return props;
+};
+for (const [language,className] of [
+  ['church','hours-church hours-presentation-choir-response'],
+  ['russian','hours-russian-primary hours-presentation-choir-response'],
+  ['russian','secondary hours-russian-parallel hours-presentation-choir-response'],
+]) {
+  const cue=captureColor(language,className,true);
+  assert.equal(cue.color,'var(--liturgical)','Only Хор: red in '+className);
+  assert.equal(cue['inner-color'],'var(--liturgical)');
+  const prayer=captureColor(language,className,false);
+  assert.equal(prayer.color,'var(--text)','Glory neutral in '+className);
+  assert.equal(prayer['inner-color'],'var(--text)');
+  assert.equal(prayer['font-weight'],'400');
+}
+assert.deepEqual(captureColor('church','hours-church hours-presentation-shared-doxology',
+  false),{},'Earlier Glory must retain its existing red style');
 
 const bothDoc=buildHoursDocument({entry,content:src,viewMode:MODE.BOTH});
 assert.equal(bothDoc.sections.length,16);
