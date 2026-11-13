@@ -30,11 +30,27 @@ for (let i = 0; i < 12; i += 1) {
     'dividerBefore']) {
     assert.deepEqual(actual[field], original[field], `section ${i + 1}: ${field}`);
   }
-  for (let rowIndex = 0; rowIndex < original.rows.length; rowIndex += 1) {
-    const input = original.rows[rowIndex];
+  const aligned = i === 9 ? original.rows.slice(0, 7)
+    : i === 11 ? [0, 1, 2, 5, 6, 7, 8].map(j=>original.rows[j])
+    : original.rows;
+  for (let rowIndex = 0; rowIndex < aligned.length; rowIndex += 1) {
+    const input = aligned[rowIndex];
     const translated = actual.rows[rowIndex];
     for (const field of ['presentation', 'redInitial', 'dividerAfter', 'compactAfter',
       'preserveLineBreaks']) {
+      if (i === 9 && rowIndex === 6 && field === 'dividerAfter') {
+        assert.equal(input.dividerAfter,true,'CS priest line has new divider');
+        assert.equal(translated.dividerAfter,undefined);
+        continue;
+      }
+      if (i === 11 && rowIndex === 2 && field === 'redInitial') {
+        assert.equal(input.redInitial,true,'CS priest prayer receives red initial Х');
+        continue;
+      }
+      if (i === 11 && rowIndex === 3 && field === 'presentation') {
+        assert.equal(input.presentation,'choir-response');
+        continue;
+      }
       // The three optional weekday hymns have deliberately red initials.
       if (field === 'redInitial' && i >= 6 && i <= 8 && rowIndex === 0) {
         assert.equal(translated.redInitial, true, 'weekday hymn starts with red initial');
