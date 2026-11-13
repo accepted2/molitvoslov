@@ -2,6 +2,7 @@ import {getCalendarBibleTranslation, saveCalendarBibleTranslation} from '../serv
 import React, {useEffect, useRef, useState} from 'react';
 
 import {ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import {SafeAreaView} from 'react-native-safe-area-context';
 
@@ -129,6 +130,7 @@ export const AccountScreen = ({navigation}) => {
 
   const [googleError, setGoogleError] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [sourcesExpanded,setSourcesExpanded] = useState(false);
   const [settingsCloudStatus,setSettingsCloudStatus]=useState('');
   const openPolicyPage = path => Linking.openURL(API_BASE_URL + '/api/' + path)
     .catch(error => Alert.alert('Не удалось открыть страницу',error?.message||'Попробуйте позже'));
@@ -506,6 +508,41 @@ export const AccountScreen = ({navigation}) => {
             удаления требуется подтверждение принадлежности аккаунта.
           </Text>
         </View>
+        <View style={{marginTop:12,padding:14,borderRadius:12,
+          backgroundColor:'#F7E8CF',borderWidth:1,borderColor:'#E2CCAA'}}>
+          <Pressable accessibilityRole="button"
+            accessibilityState={{expanded:sourcesExpanded}}
+            onPress={()=>setSourcesExpanded(value=>!value)}
+            style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',
+              minHeight:38}}>
+            <Text style={[styles.settingText,{fontWeight:'700'}]}>Источники и лицензии</Text>
+            <Ionicons name={sourcesExpanded?'chevron-up':'chevron-down'}
+              size={19} color="#875627"/>
+          </Pressable>
+          {sourcesExpanded && (
+            <View style={{gap:9,marginTop:9}}>
+              <Text style={styles.settingHint}>
+                Перекрёстные ссылки: OpenBible.info (CC BY 4.0),
+                Catholic Cross References (Unlicense / CC0).
+                Соответствие нумерации псалмов: STEP Bible / Tyndale House (CC BY 4.0).
+              </Text>
+              {[
+                {name:'OpenBible.info — перекрёстные ссылки',
+                  url:'https://www.openbible.info/labs/cross-references/'},
+                {name:'Catholic Cross References — дополнительные ссылки',
+                  url:'https://github.com/jesuslovestyler/Catholic-Cross-References'},
+                {name:'STEP Bible — нумерация псалмов',
+                  url:'https://www.STEPBible.org'},
+              ].map(link => (
+                <Pressable key={link.url} accessibilityRole="link"
+                  onPress={()=>Linking.openURL(link.url).catch(()=>{})}>
+                  <Text style={[styles.settingText,{textDecorationLine:'underline',
+                    color:'#80502C'}]}>{link.name}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </View>
         <View style={{
   marginTop: 16,
   marginBottom: 12,
@@ -531,7 +568,7 @@ export const AccountScreen = ({navigation}) => {
     },
     {
       value: 'csl_traditional',
-      label: 'Церковнославянский (Елизаветинская Библия)',
+      label: 'Церковнославянский',
     },
   ].map((option) => (
     <Pressable
