@@ -49,15 +49,15 @@ const linking = {
     screens: {
       SharedImport: {path:'shared/:token'},
       BibleBook: {path:'bible-book/:bookId/:translationCode?'},
-      BibleChapter: {path:'bible/:bookId/:chapterNumber/:translationCode?',
-        parse:{chapterNumber:Number}},
+      BibleChapter: {path:'bible/:bookId/:chapterNumber/:translationCode?/:verseNumber?',
+        parse:{chapterNumber:Number,verseNumber:Number}},
       Akathist: {path:'akathist/:akathistId'},
       Canon: {path:'canon/:canonId'},
       Kathisma: {path:'kathisma/:kathismaNumber',parse:{kathismaNumber:Number}},
       PrayerRule: {path:'prayer/:slug'},
       Reader: {path:'reader/:slug'},
       HoursReading: {path:'hours/:entryId'},
-      SaintDetail: {path:'saint/:date/:focusSection'},
+      SaintDetail: {path:'saint/:date/:focusSection/:feastUid?'},
       Psalter: {path:'psalter'},
       ChurchCalendar: {
         path: 'calendar/:date',
