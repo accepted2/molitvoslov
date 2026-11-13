@@ -3,7 +3,7 @@
     "name": "Молитвослов",
     "slug": "molitvoslov",
     "scheme": "molitvoslov",
-    "version": "1.0.23",
+    "version": "1.0.24",
     "orientation": "portrait",
     "icon": "./assets/branding/app-icon.png",
     "userInterfaceStyle": "light",
@@ -17,7 +17,7 @@
         "foregroundImage": "./assets/branding/app-icon-foreground.png"
       },
       "package": "com.accepted2.molitvoslov",
-      "versionCode": 24,
+      "versionCode": 25,
       "icon": "./assets/branding/app-icon-foreground.png"
     },
     "web": {
