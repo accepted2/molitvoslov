@@ -1,4 +1,6 @@
 import React from 'react';
+import {Linking} from 'react-native';
+import {normalizeIncomingAppLink} from '../services/appLinks';
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 
@@ -44,6 +46,18 @@ const Stack = createStackNavigator();
 
 const linking = {
   prefixes: ['molitvoslov://'],
+  // Android delivers the verified HTTPS link to our activity without first
+  // loading Render. Preserve custom-scheme support for older shared links.
+  async getInitialURL(){
+    return normalizeIncomingAppLink(await Linking.getInitialURL());
+  },
+  subscribe(listener){
+    const subscription=Linking.addEventListener('url',({url})=>{
+      const target=normalizeIncomingAppLink(url);
+      if(target)listener(target);
+    });
+    return ()=>subscription.remove();
+  },
 
   config: {
     screens: {
