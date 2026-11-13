@@ -113,8 +113,10 @@ def _copy_photo(source, *, user, book=None, prayer=None, uploaded):
     else:
         target=(f"user-{user.pk}/personal-prayers/"
                 f"{prayer.sync_id}/{photo_id}{extension}")
-    upload_bytes(target,bytes_value,content_type)
+    # Register before upload: a timed-out Storage request might still have
+    # written the object, and compensation should remove that orphan too.
     uploaded.append(target)
+    upload_bytes(target,bytes_value,content_type)
     attrs={
         "sync_id": photo_id,
         "storage_path": target,
@@ -330,7 +332,9 @@ def import_shared_invitation(request, token):
         if not isinstance(exc,(StorageConfigurationError,ValueError,RuntimeError)):
             raise
         return Response(
-            {"detail":"Не удалось перенести фотографии: "+str(exc)},
+            {"detail":"Не удалось перенести фотографии. "
+                      "Проверьте доступность файлов и повторите импорт. "
+                      "Если отправитель удалил фотографии, попросите новую ссылку."},
             status=status.HTTP_503_SERVICE_UNAVAILABLE,
         )
 
