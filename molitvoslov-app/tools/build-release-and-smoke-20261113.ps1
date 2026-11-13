@@ -24,7 +24,8 @@ try {
       "test_shared_content_links_20261113.js",
       "test_dual_share_release_20261113.js",
       "test_bible_lists_actions_20261113.js",
-      "test_psalter_context_share_font_20261113.js"
+      "test_psalter_context_share_font_20261113.js",
+      "test_bible_crossrefs_appearance_bookmarks_20261113.js"
     )
     foreach ($test in $tests) {
       Write-Host "TEST: $test"
