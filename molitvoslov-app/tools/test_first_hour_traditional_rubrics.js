@@ -46,6 +46,13 @@ assert.ok(inLent.some(r => r.kind === 'devotional' && r.start === 0), 'Lent Glor
 const alleluias = accents(rows[4].rows[1].traditional)
   .filter(r => r.kind === 'alleluia');
 assert.equal(alleluias.length, 3, 'all three alleluias red');
+assert.ok(alleluias.every(r => r.start >= 0 && r.end > r.start));
+const gloryToGod = rows[4].rows[1].traditional;
+const gloryOffset = gloryToGod.indexOf('сла́ва тебѣ̀ бж҃е');
+assert.ok(gloryOffset >= 0, 'post-Alleluia Glory is present');
+assert.ok(accents(gloryToGod).some(r => r.kind === 'alleluia' &&
+  r.start === gloryOffset && r.end === gloryOffset + 'сла́ва тебѣ̀ бж҃е'.length),
+  'Glory to Thee O God is also red');
 const choir = accents(rows[15].rows[3].traditional);
 assert.ok(choir.some(r => r.kind === 'speaker' && r.start === 0));
 assert.ok(!choir.some(r => r.kind === 'devotional'), 'choir Glory must be normal text');

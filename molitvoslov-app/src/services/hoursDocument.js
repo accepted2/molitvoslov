@@ -84,7 +84,7 @@ export const getFirstHourTraditionalMarks = (text, presentation = '') => {
   add(/Сла́ва, и҆ ны́нѣ:/gu, 'devotional');
   add(/І҆ере́й:|Хо́ръ:/gu, 'speaker');
   add(/Гдⷭ҇и, поми́лꙋй/gu, 'mercy');
-  add(/[Аа]҆ллилꙋ́їа|Сла́ва тебѣ̀ бж҃е/gu, 'alleluia');
+  add(/[Аа]҆ллилꙋ́їа|[Сс]ла́ва тебѣ̀ бж҃е/gu, 'alleluia');
   add(/\((?:Три́жды|Покло́нъ|м҃|ві҃)\)/gu, 'repeat');
   // The longest devotional phrase wins over its nested "И ныне" fragment.
   return ranges.sort((a, b) => a.start - b.start || b.end - a.end)
