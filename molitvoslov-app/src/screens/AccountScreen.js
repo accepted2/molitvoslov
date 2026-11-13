@@ -1,11 +1,11 @@
 import {getCalendarBibleTranslation, saveCalendarBibleTranslation} from '../services/bibleTranslationPreference';
 import React, {useEffect, useRef, useState} from 'react';
 
-import {ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
+import {ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
 
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import {getCurrentBackendUser, deleteBackendAccount} from '../services/backendAuth';
+import {getCurrentBackendUser, deleteBackendAccount, API_BASE_URL} from '../services/backendAuth';
 
 import {signInWithGoogle, signOutFromGoogle} from '../services/googleAuth';
 
@@ -129,15 +129,33 @@ export const AccountScreen = ({navigation}) => {
 
   const [googleError, setGoogleError] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [settingsCloudStatus,setSettingsCloudStatus]=useState('');
+  const openPolicyPage = path => Linking.openURL(API_BASE_URL + '/api/' + path)
+    .catch(error => Alert.alert('Не удалось открыть страницу',error?.message||'Попробуйте позже'));
+  const verifyCloudSettings = async () => {
+    setSettingsCloudStatus('Проверка...');
+    try {
+      const result=await syncAccountPreferences();
+      setSettingsCloudStatus(result?.success
+        ? result.pending?'Есть изменения, ожидающие отправки':'Настройки синхронизированы'
+        : 'Синхронизация недоступна: '+(result?.reason||'проверьте интернет'));
+    } catch(error) {
+      setSettingsCloudStatus('Ошибка синхронизации: '+(error?.message||'попробуйте позже'));
+    }
+  };
   const deleteAccount = () => Alert.alert(
     'Удалить аккаунт?',
     'Серверный аккаунт, избранное, прогресс чтения, помянники и личные молитвословы будут удалены без возможности восстановления. Локальные данные на устройстве могут сохраниться.',
     [{text: 'Отмена', style: 'cancel'}, {text: 'Удалить навсегда', style: 'destructive', onPress: async () => {
       setDeletingAccount(true);
       try {
-        await deleteBackendAccount();
+        const result=await deleteBackendAccount();
+        await signOutFromGoogle().catch(error=>console.warn('[account] Google signout:',error?.message||error));
         setGoogleUser(null);
-        Alert.alert('Аккаунт удалён', 'Серверный аккаунт и связанные с ним данные удалены.');
+        setSettingsCloudStatus('');
+        Alert.alert('Аккаунт удалён',result.localClean
+          ? 'Серверный аккаунт, синхронизированные данные и локальные записи этого аккаунта удалены.'
+          : 'Серверный аккаунт удалён. Часть локальных данных могла сохраниться: очистите данные приложения на устройстве.');
       } catch (error) {
         Alert.alert('Ошибка удаления', error.message || 'Проверьте подключение к интернету.');
       } finally { setDeletingAccount(false); }
@@ -290,6 +308,13 @@ export const AccountScreen = ({navigation}) => {
               {!!googleUser.name && <Text style={styles.username}>{googleUser.name}</Text>}
 
               {!!googleUser.email && <Text style={styles.googleEmail}>{googleUser.email}</Text>}
+              <Pressable onPress={verifyCloudSettings}
+                accessibilityRole="button" style={styles.settingOption}>
+                <Text style={styles.settingText}>Проверить синхронизацию тем и настроек</Text>
+              </Pressable>
+              {!!settingsCloudStatus && (
+                <Text style={styles.settingHint}>{settingsCloudStatus}</Text>
+              )}
 
               <Pressable disabled={deletingAccount} onPress={deleteAccount} style={{paddingVertical: 12, marginTop: 14}}>
                 <Text style={{color: '#A33A32', fontWeight: '700'}}>Удалить аккаунт и облачные данные</Text>
@@ -459,6 +484,28 @@ export const AccountScreen = ({navigation}) => {
               <Text style={[styles.settingText, {fontSize:14*uiScale}]}>Сбросить общие настройки</Text>
             </Pressable>
           </View>
+        <View style={{marginTop:16,padding:14,borderRadius:12,
+          backgroundColor:'#F7E8CF',borderWidth:1,borderColor:'#E2CCAA',gap:12}}>
+          <Text style={[styles.settingCaption,{fontSize:15*uiScale}]}>
+            Конфиденциальность и удаление данных
+          </Text>
+          <Pressable accessibilityRole="link"
+            onPress={()=>openPolicyPage('privacy-policy/')}>
+            <Text style={[styles.settingText,{textDecorationLine:'underline'}]}>
+              Политика конфиденциальности
+            </Text>
+          </Pressable>
+          <Pressable accessibilityRole="link"
+            onPress={()=>openPolicyPage('account-deletion/')}>
+            <Text style={[styles.settingText,{textDecorationLine:'underline'}]}>
+              Запросить удаление аккаунта через сайт
+            </Text>
+          </Pressable>
+          <Text style={styles.settingHint}>
+            Запрос доступен без установки приложения. Для защиты от чужого
+            удаления требуется подтверждение принадлежности аккаунта.
+          </Text>
+        </View>
         <View style={{
   marginTop: 16,
   marginBottom: 12,
