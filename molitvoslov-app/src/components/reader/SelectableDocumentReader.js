@@ -15,7 +15,7 @@ import {getCachedPonomarFontDataUri, loadPonomarFontDataUri} from '../../service
 
 import {buildHtml, scriptSafeJson} from './selectableDocumentReader/buildHtml';
 import {getReadingSettings, DEFAULT_READING_SETTINGS} from '../../services/readerPreferences';
-import {applyReaderAppearance, resolveReaderAppearance, withOpacity} from '../../services/scopedReaderAppearance';
+import {applyReaderAppearance, resolveReaderAppearance, isDarkReaderBackground, withOpacity} from '../../services/scopedReaderAppearance';
 
 const PALETTE_COLORS = {
   parchment: {background: '#FFF4DE', surface: '#F8E9CF', text: '#3E2A1D'},
@@ -244,6 +244,19 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
             scriptSafeJson(theme || 'paper') +
             ')'
         );
+      },
+      applyBookAppearance: (appearance) => {
+        if (!appearance) return;
+        const next=resolveReaderAppearance(appearance);
+        appearanceRef.current=appearance;
+        setChromeBackground(current=>current===next.background?current:next.background);
+        applyReaderAppearance(webViewRef.current,appearance);
+        inject('window.readerApi && window.readerApi.setBookAppearance('+
+          scriptSafeJson({
+            fontSize:next.fontSize,palette:next.palette,
+            background:next.background,text:next.text,
+            dark:isDarkReaderBackground(next.background),
+          })+')');
       },
     }),
     []
