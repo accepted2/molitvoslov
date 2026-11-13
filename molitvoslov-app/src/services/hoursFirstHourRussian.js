@@ -8,6 +8,16 @@ const cloneSection = section => ({
 // Keep the archival corpus intact; normalize only the reader's presentation.
 const forReading = section => {
   const value=cloneSection(section);
+  if(value.kind==='prayer' && value.rows.length===7 &&
+     value.rows[6]?.russian?.startsWith('Священник: Боже, сжалься') &&
+     value.rows[6].russian.includes('\nЧтец: Аминь.')) {
+    const [priest,reader]=value.rows[6].russian.split('\n');
+    value.rows=[
+      ...value.rows.slice(0,6),
+      {...value.rows[6],russian:priest,dividerAfter:true},
+      {russian:reader},
+    ];
+  }
   if(value.accordionId==='first-hour-lent-tropar' && value.rows.length===8) {
     value.rows=[
       ...value.rows.slice(0,3),
@@ -118,32 +128,18 @@ const trisagion = (cs,ru) => {
     onlyRussian(ru.rows[8]),            // Different service instruction.
   ];
 };
-const concludingPriest = (cs,ru) => {
-  const church=String(cs.church||'');
-  const russian=String(ru.russian||'');
-  return pair({
-    ...cs,
-    church:/Чтец:\s*Аминь\./u.test(church)
-      ?church:church+'\nЧтец: Аминь.',
-    preserveLineBreaks:true,
-  },{
-    ...ru,russian,preserveLineBreaks:true,
-  });
-};
 const afterPrayers = (cs,ru) => {
-  if(cs.rows?.length!==7||ru.rows?.length!==7)return null;
+  if(cs.rows?.length!==8||ru.rows?.length!==8)return null;
   return [
-    sharedResponse(cs.rows[0]),
-    pair(cs.rows[1],ru.rows[1]),
-    sharedResponse(cs.rows[2]),
-    sharedDoxology(cs.rows[3]),
-    pair(cs.rows[4],ru.rows[4]),
-    shared(cs.rows[5]),                 // In the Lord's name, bless, father.
-    concludingPriest(cs.rows[6],ru.rows[6]),
+    sharedResponse(cs.rows[0]), pair(cs.rows[1],ru.rows[1]),
+    sharedResponse(cs.rows[2]), sharedDoxology(cs.rows[3]),
+    pair(cs.rows[4],ru.rows[4]), shared(cs.rows[5]),
+    pair(cs.rows[6],ru.rows[6]), // Divider after the priest's words.
+    shared(cs.rows[7]),           // Separate "Чтец: Аминь."
   ];
 };
 const dismissal = (cs,ru) => {
-  if(cs.rows?.length!==7||ru.rows?.length!==18)return null;
+  if(cs.rows?.length!==9||ru.rows?.length!==18)return null;
   return [
     shared(ru.rows[0],null,'russian'),    // Trisagion itself, no repeated heading.
     sharedDoxology(ru.rows[1],'russian'),
@@ -155,9 +151,14 @@ const dismissal = (cs,ru) => {
     onlyRussian(ru.rows[7]),             // Reader: Amen.
     sharedResponse(ru.rows[8],'russian'),
     onlyRussian(ru.rows[9]),             // Priest reads a prayer (instruction).
-    pair({...cs.rows[2],church:String(cs.rows[2].church||'').replace(/^І?И?ерей:\s*/u,'')},ru.rows[10]),
-    ...fullRussian(ru.rows.slice(11,14)), // Condak and other unique RU prayers.
-    sharedDoxology(ru.rows[14],'russian'),// One choir response (RU text).
+    pair({...cs.rows[2],
+      church:String(cs.rows[2].church||'').replace(/^Иерей:\s*/u,''),
+      redInitial:true,
+    },ru.rows[10]),
+    shared(cs.rows[3],'shared-heading'),        // Centered once.
+    pair(cs.rows[4],ru.rows[12]),              // Full bilingual hymn.
+    onlyRussian(ru.rows[13]),                  // Separate Russian priest response.
+    shared(ru.rows[14],'choir-response','russian'), // Red "Хор:" only.
     sharedResponse(ru.rows[15],'russian'),
     shared(ru.rows[16],null,'russian'),   // Bless once.
     shared(ru.rows[17],null,'russian'),   // Dismissal instruction once.

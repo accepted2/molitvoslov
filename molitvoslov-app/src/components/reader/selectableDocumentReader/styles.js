@@ -2460,6 +2460,14 @@ export const READER_STYLES = String.raw`
       white-space: nowrap;
     }
 
+    /* First Hour responses with 3/12/40 repetitions start at the left. */
+    .rule-item.hours-section .reader-text.hours-mercy-left,
+    .rule-item.hours-section .reader-text.hours-presentation-shared-mercy,
+    .rule-item.hours-section .reader-text.hours-presentation-left-response {
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+
     /* First Hour ЦС + РУС: shared rubrics and doxologies are not duplicated.
        Both language columns are retained only for genuinely different texts. */
     .rule-item.hours-parallel-first-hour
@@ -2498,7 +2506,7 @@ export const READER_STYLES = String.raw`
     .reader-text.hours-presentation-shared-heading .hours-mark-cue {
       color: var(--liturgical) !important;
     }
-    .rule-item.hours-parallel-first-hour.hours-divider-after-dropdown {
+    .rule-item.hours-section.hours-collapsible.hours-divider-after-dropdown {
       border-bottom: 1px solid var(--border) !important;
       padding-bottom: 15px !important;
       margin-bottom: 18px !important;

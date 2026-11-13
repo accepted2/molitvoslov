@@ -235,10 +235,27 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
       while (end < text.length && /[\u0300-\u036f\u0483-\u0489]/u.test(text[end])) end++;
       hoursMarks.unshift({start: 0, end, kind: 'initial'});
     }
+    if (isFirstHour && language === 'church' && redInitial === true) {
+      const speakerCue = /^(?:Иерей|Хор):\s+(?=\p{L})/u.exec(text);
+      if (speakerCue) {
+        const start=speakerCue[0].length;
+        if (!hoursMarks.some(mark=>mark.start<=start && mark.end>start)) {
+          let end=start+String.fromCodePoint(text.codePointAt(start)).length;
+          while (end<text.length && /[\u0300-\u036f\u0483-\u0489]/u.test(text[end])) end++;
+          hoursMarks.push({start,end,kind:'initial'});
+          hoursMarks.sort((a,b)=>a.start-b.start);
+        }
+      }
+    }
+    const hoursMercyLeft = isFirstHour &&
+      /^господи,?\s+помилуй/u.test(text.normalize('NFD')
+        .replace(/[\u0300\u0301\u0340\u0341\u0483-\u0489]/gu,'')
+        .normalize('NFC').toLocaleLowerCase('ru'));
     return {
       id,
       text,
       className: [
+        hoursMercyLeft ? 'hours-mercy-left' : '',
         'hours-text',
         'hours-' + language,
         'hours-' + kind,
@@ -350,8 +367,8 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
           section.dividerBefore === true ? 'hours-divider-before' : '',
           isFirstHour && viewMode === READER_LANGUAGE_MODES.BOTH
             ? 'hours-parallel-first-hour' : '',
-          section.dividerAfterDropdown === true && viewMode === READER_LANGUAGE_MODES.BOTH
-            ? 'hours-divider-after-dropdown' : '',
+          isFirstHour && ['first-hour-lent-tropar','first-hour-ephrem']
+            .includes(section.accordionId) ? 'hours-divider-after-dropdown' : '',
         ].filter(Boolean).join(' '),
         progressAnchorId: sectionIndex + 1,
         trackProgress: true,
