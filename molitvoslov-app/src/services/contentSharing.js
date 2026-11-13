@@ -19,9 +19,12 @@ export const sharePathFor = (screen,params={}) => {
     case 'BibleChapter':
       id=slug(params.bookId);
       chapter=Number(params.chapterNumber);
-      return id && Number.isInteger(chapter) && chapter>=1 && chapter<=250
-        ? 'bible/'+id+'/'+chapter+'/' +
-          (params.translationCode==='csl_traditional'?'csl_traditional':'rst') : null;
+      if(!id || !Number.isInteger(chapter) || chapter<1 || chapter>250)return null;
+      const verse=Number(params.verseNumber);
+      const suffix=Number.isInteger(verse) && verse>=1 && verse<=250
+        ? '/'+verse : '';
+      return 'bible/'+id+'/'+chapter+'/' +
+        (params.translationCode==='csl_traditional'?'csl_traditional':'rst')+suffix;
     case 'Akathist':
       id=slug(params.akathistId || params.slug);
       return id?'akathist/'+id:null;
@@ -40,7 +43,8 @@ export const sharePathFor = (screen,params={}) => {
       if(!id||!/^20\d\d-\d\d-\d\d$/.test(id))return null;
       const section=['life','troparion','kontakion','prayer'].includes(params.focusSection)
         ? params.focusSection:'life';
-      return 'saint/'+id+'/'+section;
+      const feastUid=slug(params.feastUid);
+      return 'saint/'+id+'/'+section+(feastUid?'/'+feastUid:'');
     }
     case 'Psalter':return 'psalter';
     default:return null;
@@ -122,6 +126,8 @@ export const resolveSelectedShareTarget = config => {
       return {screen:'BibleChapter',params:{
         bookId:meta.book_id||config.sourceId,
         chapterNumber:meta.chapter_number,
+        translationCode:meta.translation_code,
+        verseNumber:meta.verse_number,
       }};
     case 'akathist':
       return {screen:'Akathist',params:{akathistId:config.sourceId,slug:meta.slug}};
@@ -138,7 +144,9 @@ export const resolveSelectedShareTarget = config => {
     case 'hours':
       return {screen:'HoursReading',params:{entryId:meta.entry_id}};
     case 'calendar':
-      return {screen:'SaintDetail',params:{date:meta.date,focusSection:meta.section}};
+      return {screen:'SaintDetail',params:{
+        date:meta.date,focusSection:meta.section,feastUid:meta.feast_uid,
+      }};
     default:return {};
   }
 };
@@ -147,7 +155,8 @@ export const shareSavedItem = item => {
   const type=item?.source_type;
   const mapping={
     bible:['BibleChapter',{bookId:meta.book_id||item.source_id,
-      chapterNumber:meta.chapter_number}],
+      chapterNumber:meta.chapter_number,translationCode:meta.translation_code,
+      verseNumber:meta.verse_number}],
     akathist:['Akathist',{akathistId:item.source_id,slug:meta.slug}],
     canon:['Canon',{canonId:item.source_id,slug:meta.slug}],
     psalter:meta.kathisma_number
@@ -155,9 +164,16 @@ export const shareSavedItem = item => {
       : ['Psalter',{}],
     prayer_rule:['PrayerRule',{slug:meta.slug}],
     text:['Reader',{slug:meta.slug}],
-    calendar:['SaintDetail',{date:meta.date,focusSection:meta.section}],
+    calendar:['SaintDetail',{date:meta.date,focusSection:meta.section,
+      feastUid:meta.feast_uid}],
   };
   const [screen,params]=mapping[type]||[null,{}];
+  if(String(item?.text||'').trim() && !isPrivateShareSource(type)){
+    return shareContent({
+      title:item?.item_title||item?.source_title||'Цитата',
+      text:item.text,screen,params,
+    });
+  }
   if(String(item?.text||'').trim()){
     return shareImportableContent({
       kind:'quote',
