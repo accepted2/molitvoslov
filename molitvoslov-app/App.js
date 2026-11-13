@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 
 import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
 
 import {useFonts} from 'expo-font';
 
@@ -242,6 +243,7 @@ export default function App() {
   }
 
   return (
+    <GestureHandlerRootView style={{flex:1}}>
     <SafeAreaProvider>
       <LanguageProvider>
         <InterfaceScaleProvider>
@@ -251,6 +253,7 @@ export default function App() {
         </InterfaceScaleProvider>
       </LanguageProvider>
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
