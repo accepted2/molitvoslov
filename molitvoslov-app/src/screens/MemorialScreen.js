@@ -7,6 +7,7 @@ import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {StatusBar} from 'expo-status-bar';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import {AppBackground} from '../components/layout/AppBackground';
 
@@ -91,6 +92,15 @@ export const MemorialScreen = ({navigation}) => {
     }
   };
 
+  const shareMemorial = (book) => shareImportableContent({
+    kind:'memorial',
+    sourceSyncId:book.sync_id,
+    title:book.title||'Помянник',
+    fallbackText:['О здравии:',...(book.health_names||[]),
+      '', 'О упокоении:',...(book.repose_names||[])].join('\n'),
+    privateContent:true,
+  });
+
   const renderBook = ({item}) => {
     const healthCount = item.health_names?.length || 0;
 
@@ -99,38 +109,51 @@ export const MemorialScreen = ({navigation}) => {
     const photoCount = item.photos?.length || 0;
 
     return (
-      <Pressable
-        onLongPress={()=>setContextItem(item)}
-        delayLongPress={340}
-        onPress={() =>
-          navigation.navigate('MemorialBook', {
-            bookSyncId: item.sync_id,
-          })
-        }
-        style={({pressed}) => [styles.card, pressed && styles.pressed]}
-      >
-        <View style={styles.cardMark}>
-          <Text style={styles.cardMarkText}>†</Text>
-        </View>
+      <View style={styles.card}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={'Открыть ' + (item.title||t('memorial.my'))}
+          onLongPress={()=>setContextItem(item)}
+          delayLongPress={340}
+          onPress={() =>
+            navigation.navigate('MemorialBook', {
+              bookSyncId: item.sync_id,
+            })
+          }
+          style={({pressed}) => [styles.cardMain, pressed && styles.pressed]}
+        >
+          <View style={styles.cardMark}>
+            <Text style={styles.cardMarkText}>†</Text>
+          </View>
 
-        <View style={styles.cardContent}>
-          <Text style={styles.cardTitle} numberOfLines={1}>
-            {item.title || t('memorial.my')}
-          </Text>
+          <View style={styles.cardContent}>
+            <Text style={styles.cardTitle} numberOfLines={1}>
+              {item.title || t('memorial.my')}
+            </Text>
 
-          <Text style={styles.cardMeta}>
-            {t('memorial.health')}: {healthCount}
-            {'  ·  '}
-            {t('memorial.repose')}: {reposeCount}
-          </Text>
+            <Text style={styles.cardMeta}>
+              {t('memorial.health')}: {healthCount}
+              {'  ·  '}
+              {t('memorial.repose')}: {reposeCount}
+            </Text>
 
-          {!!photoCount && (
-            <Text style={styles.cardPhotos}>{t('memorial.photosCount', {count: photoCount})}</Text>
-          )}
-        </View>
-
-        <Text style={styles.chevron}>›</Text>
-      </Pressable>
+            {!!photoCount && (
+              <Text style={styles.cardPhotos}>{t('memorial.photosCount', {count: photoCount})}</Text>
+            )}
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={'Поделиться помянником ' + (item.title||'')}
+          accessibilityHint="Создать защищённую ссылку для передачи помянника"
+          onPress={() => shareMemorial(item)}
+          hitSlop={5}
+          style={({pressed})=>[styles.shareButton,pressed && styles.pressed]}
+        >
+          <Ionicons name="share-social-outline" size={20} color="#765238"/>
+        </Pressable>
+      </View>
     );
   };
 
@@ -208,14 +231,7 @@ export const MemorialScreen = ({navigation}) => {
           title={contextItem?.title||'Помянник'}
           onClose={()=>setContextItem(null)}
           onOpen={contextItem ? ()=>navigation.navigate('MemorialBook',{bookSyncId:contextItem.sync_id}) : null}
-          onShare={contextItem ? ()=>shareImportableContent({
-            kind:'memorial',
-            sourceSyncId:contextItem.sync_id,
-            title:contextItem.title||'Помянник',
-            fallbackText:['О здравии:',...(contextItem.health_names||[]),
-              '', 'О упокоении:',...(contextItem.repose_names||[])].join('\n'),
-            privateContent:true,
-          }) : null}
+          onShare={contextItem ? ()=>shareMemorial(contextItem) : null}
         />
       </View>
     </AppBackground>
@@ -304,13 +320,23 @@ const styles = StyleSheet.create({
   card: {
     minHeight: 86,
     marginBottom: 10,
-    padding: 14,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.lg,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 240, 216, 0.92)',
+    overflow:'hidden',
+  },
+  cardMain:{
+    flex:1,minWidth:0,minHeight:86,flexDirection:'row',
+    alignItems:'center',padding:14,paddingRight:8,
+  },
+  shareButton:{
+    width:48,minHeight:86,alignSelf:'stretch',
+    alignItems:'center',justifyContent:'center',
+    borderLeftWidth:1,borderLeftColor:'rgba(126,82,38,0.24)',
+    backgroundColor:'rgba(238,220,192,0.48)',
   },
 
   cardMark: {
