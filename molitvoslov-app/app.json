@@ -3,7 +3,7 @@
     "name": "Молитвослов",
     "slug": "molitvoslov",
     "scheme": "molitvoslov",
-    "version": "1.0.27",
+    "version": "1.0.28",
     "orientation": "portrait",
     "icon": "./assets/branding/app-icon.png",
     "userInterfaceStyle": "light",
@@ -17,8 +17,25 @@
         "foregroundImage": "./assets/branding/app-icon-foreground.png"
       },
       "package": "com.accepted2.molitvoslov",
-      "versionCode": 28,
-      "icon": "./assets/branding/app-icon-foreground.png"
+      "versionCode": 29,
+      "icon": "./assets/branding/app-icon-foreground.png",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "molitvoslov-3o9d.onrender.com",
+              "pathPrefix": "/api/share/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/branding/app-icon.png"
