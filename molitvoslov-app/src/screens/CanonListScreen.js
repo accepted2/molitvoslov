@@ -6,6 +6,7 @@ import {StatusBar} from 'expo-status-bar';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {SaveHeartIcon} from '../components/icons/SaveHeartIcon';
+import {Ionicons} from '@expo/vector-icons';
 import {
   ActivityIndicator,
   FlatList,
@@ -222,17 +223,29 @@ export const CanonListScreen = ({navigation}) => {
                   <Text style={styles.arrow}>›</Text>
                 </TouchableOpacity>
 
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    saved ? t('common.removeFromFavorites') : t('common.addFavorite')
-                  }
-                  hitSlop={6}
-                  onPress={() => toggleFavorite(item)}
-                  style={({pressed}) => [styles.favoriteButton, pressed && styles.pressed]}
-                >
-                  <SaveHeartIcon active={saved} size={20} />
-                </Pressable>
+                <View style={styles.itemActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={saved ? t('common.removeFromFavorites') : t('common.addFavorite')}
+                    hitSlop={5}
+                    onPress={() => toggleFavorite(item)}
+                    style={({pressed}) => [styles.favoriteButton, pressed && styles.pressed]}
+                  >
+                    <SaveHeartIcon active={saved} size={19} />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Поделиться каноном"
+                    hitSlop={5}
+                    onPress={() => shareContent({
+                      title:getLocalizedField(item,'title',language),
+                      screen:'Canon',params:{canonId:item.id,slug:item.slug},
+                    })}
+                    style={({pressed}) => [styles.favoriteButton, pressed && styles.pressed]}
+                  >
+                    <Ionicons name="share-social-outline" size={19} color="#765238" />
+                  </Pressable>
+                </View>
               </View>
             );
           }}
@@ -346,8 +359,9 @@ const styles = StyleSheet.create({
     fontSize: 23,
     lineHeight: 25,
   },
+  itemActions:{flexDirection:'row',alignSelf:'stretch',alignItems:'center'},
   favoriteButton: {
-    width: 44,
+    width: 36,
     alignSelf: 'stretch',
     alignItems: 'center',
     justifyContent: 'center',
