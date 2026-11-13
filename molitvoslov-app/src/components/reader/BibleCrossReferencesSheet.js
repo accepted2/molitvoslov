@@ -134,7 +134,7 @@ export const BibleCrossReferencesSheet = ({
           onPress={onClose}
         />
         <View style={[styles.sheet, isNight && styles.sheetNight,
-          {marginBottom:Math.max(insets.bottom+10,14)}]}>
+          {marginBottom:Math.max(insets.bottom,4)}]}>
           <View {...gesture.panHandlers} style={styles.gestureArea}
             accessibilityRole="button" accessibilityLabel="Потяните вниз, чтобы закрыть параллельные места">
             <View style={[styles.handle, isNight && styles.handleNight]} />
@@ -152,7 +152,7 @@ export const BibleCrossReferencesSheet = ({
             </Pressable>
           </View>
           <ScrollView
-            style={[styles.scrollPane,isNight && styles.scrollPaneNight]}
+            style={styles.referencesScroll}
             contentContainerStyle={styles.list}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator
@@ -226,8 +226,9 @@ const styles = StyleSheet.create({
   overlay:{flex:1,justifyContent:'flex-end'},
   backdrop:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(36,22,13,0.49)'},
   sheet:{
-    maxHeight:'79%',minHeight:280,marginHorizontal:12,
-    backgroundColor:'#FFF4DE',borderRadius:22,
+    maxHeight:'79%',minHeight:280,marginHorizontal:0,width:'100%',
+    backgroundColor:'#FFF4DE',borderTopLeftRadius:22,borderTopRightRadius:22,
+    borderBottomLeftRadius:0,borderBottomRightRadius:0,
     borderWidth:1.5,borderColor:'#D6B98C',
     overflow:'hidden',elevation:22,
     shadowColor:'#28160C',shadowOffset:{width:0,height:7},
@@ -246,11 +247,8 @@ const styles = StyleSheet.create({
   heading:{fontFamily:'serif',fontSize:20,fontWeight:'700',color:'#51351F'},
   origin:{fontSize:13,marginTop:5,color:'#876C53'},
   originTraditional:{fontFamily:'Ponomar',fontSize:15,lineHeight:24},
-  scrollPane:{minHeight:90,flexShrink:1,marginHorizontal:11,marginTop:10,
-    borderWidth:1,borderColor:'#E0C7A5',
-    backgroundColor:'#F8E9CF',borderRadius:15},
-  scrollPaneNight:{backgroundColor:'#322922',borderColor:'#5A4938'},
-  list:{paddingHorizontal:9,paddingTop:10,paddingBottom:18,gap:9},
+  referencesScroll:{minHeight:90,flexShrink:1},
+  list:{paddingHorizontal:14,paddingTop:12,paddingBottom:20,gap:10},
   reference:{paddingVertical:13,paddingHorizontal:13,borderRadius:13,
     backgroundColor:'#FFF8EB',borderWidth:1,borderColor:'#DFCAA9'},
   referenceNight:{backgroundColor:'#41352C',borderColor:'#67513D'},
