@@ -86,7 +86,7 @@ assert.equal(after[5].rows[0].dividerAfter, true,
 assert.equal(after[9].dividerBefore, true,
   'Divider immediately after Saturday Bogorodichen dropdown');
 assert.deepEqual(after[9].rows.map(r => r.dividerAfter === true),
-  [true, true, true, true, true, true, false]);
+  [true, true, true, true, true, true, true, false]);
 assert.deepEqual(after[9].rows.filter(r => r.redInitial).map(r => r.church[0]),
   ['И', 'Ч']);
 assert.equal(after[9].rows[0].presentation, 'left-response');
@@ -118,19 +118,30 @@ assert.deepEqual(after[10].rows.slice(4,9).map(r => r.church),[
 assert.deepEqual(after[11].rows.map(r => r.church), [
   'Трисвятое. И по Отче наш:',
   'Господи, помилуй. (12)',
-  ...[after[11].rows[2].church, after[11].rows[3].church],
+  after[11].rows[2].church,
+  'И поется кондак Богородице, глас 8:',
+  after[11].rows[4].church,
+  after[11].rows[5].church,
   'Господи, помилуй. (Трижды)',
   'Благослови.',
   'Иерей произносит отпуст.',
 ]);
 assert.ok(after[11].rows[2].church.startsWith('Иерей: Христе́, Све́те истинный'));
-assert.ok(after[11].rows[3].church.startsWith('Хор: Сла́ва Отцу́'));
-assert.deepEqual(after[11].rows.slice(0,5).map(r => r.dividerAfter),
-  [true, true, true, true, true]);
+assert.equal(after[11].rows[2].redInitial,true,'Prayer of Christ the True Light has red Х');
+assert.ok(after[11].rows[4].church.startsWith('Хор: Взбранной Воеводе победительная'));
+assert.match(after[11].rows[4].church,/радуйся, Невесто Неневестная\.$/);
+assert.ok(after[11].rows[5].church.startsWith('Хор: Сла́ва Отцу́'));
+assert.equal(after[11].rows[5].presentation,'choir-response');
+assert.equal(after[11].rows[4].redInitial,true,'Kontakion begins with red В');
+assert.deepEqual(after[11].rows.slice(0,7).map(r => r.dividerAfter),
+  [true, true, true, false, true, true, true]);
 assert.deepEqual(after[11].rows.map(r => r.presentation || ''), [
-  'liturgical-label', 'left-response', '', '', 'left-response',
-  'liturgical-red', 'liturgical-red',
+  'liturgical-label', 'left-response', '', 'comment', '',
+  'choir-response', 'left-response', 'liturgical-red', 'liturgical-red',
 ]);
+assert.equal(after[9].rows.length,8);
+assert.equal(after[9].rows[6].dividerAfter,true,'Priest response has a divider');
+assert.equal(after[9].rows[7].church,'Чтец: Аминь.');
 assert.match(after[9].rows[0].church, /^Господи, помилуй\. \(40\)/);
 assert.match(after[9].rows[1].church, /^Иже на всякое время/);
 assert.match(after[10].rows[1].church, /^Го́споди и Влады́ко/);
