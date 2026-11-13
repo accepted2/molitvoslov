@@ -165,6 +165,26 @@ class SharedContentTests(APITestCase):
         self.assertFalse(SharedContentImport.objects.filter(recipient=self.recipient).exists())
         upload.assert_not_called()
 
+    @patch("api.shared_invitations.delete_object")
+    @patch("api.shared_invitations.upload_bytes",
+           side_effect=[None,RuntimeError("Second file unavailable")])
+    @patch("api.shared_invitations.download_bytes",return_value=b"prayer-image")
+    def test_partial_photo_copy_cleans_all_and_rolls_back(
+            self,download,upload,delete):
+        token=self.make_share("prayerbook",source_sync_id=str(self.book.sync_id))
+        self.client.force_authenticate(user=self.recipient)
+        response=self.client.post(reverse("shared-import",args=[token]))
+        self.assertEqual(response.status_code,503)
+        self.assertNotIn("private/owner-prayer",str(response.data))
+        self.assertEqual(upload.call_count,2)
+        self.assertEqual(delete.call_count,2)
+        self.assertFalse(PersonalPrayerBook.objects.filter(
+            user=self.recipient).exists())
+        self.assertFalse(PersonalPrayer.objects.filter(
+            user=self.recipient).exists())
+        self.assertFalse(SharedContentImport.objects.filter(
+            recipient=self.recipient).exists())
+
     def test_cannot_share_another_persons_private_book(self):
         self.client.force_authenticate(user=self.stranger)
         for kind,sync_id in [
