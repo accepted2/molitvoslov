@@ -3,7 +3,7 @@ $ErrorActionPreference='Stop'
 $root=Split-Path -Parent $PSScriptRoot
 $manifest=Join-Path $root 'android\app\src\main\AndroidManifest.xml'
 if (-not (Test-Path $manifest)) {
-  throw "AndroidManifest.xml не найден: $manifest. Сначала выполните expo prebuild."
+  throw "AndroidManifest.xml not found: $manifest. Run expo prebuild first."
 }
 
 $hostName='molitvoslov-3o9d.onrender.com'
@@ -11,19 +11,19 @@ $text=[IO.File]::ReadAllText($manifest)
 $expected='android:host="'+$hostName+'"'
 if ($text.Contains($expected)) {
   if ($text -notmatch 'android:autoVerify="true"') {
-    throw "Ссылка уже указана, но autoVerify не подтвержден. Проверьте AndroidManifest.xml."
+    throw "HTTPS link exists but android:autoVerify is missing. Inspect AndroidManifest.xml."
   }
-  Write-Host "OK: HTTPS App Links уже зарегистрированы в AndroidManifest.xml" -ForegroundColor Green
+  Write-Host "OK: AndroidManifest.xml already declares verified HTTPS App Links." -ForegroundColor Green
   exit 0
 }
 if ($CheckOnly) {
-  throw "В AndroidManifest.xml отсутствует HTTPS App Links фильтр."
+  throw "AndroidManifest.xml has no verified HTTPS App Links intent filter."
 }
 
 $pattern='(?s)<activity\b[^>]*android:name="[^"]*MainActivity"[^>]*>[\s\S]*?</activity>'
 $match=[regex]::Match($text,$pattern)
 if (-not $match.Success) {
-  throw "MainActivity не найдена. Файл не изменён."
+  throw "MainActivity not found. Manifest was not modified."
 }
 $close=$match.Value.LastIndexOf('</activity>')
 $insertAt=$match.Index+$close
@@ -39,12 +39,12 @@ $filter=@'
 '@
 $updated=$text.Insert($insertAt,$filter+"`r`n    ")
 try {
-  [xml]$null=$updated
+  [xml]$validated=$updated
 } catch {
-  throw "Проверка XML не прошла. AndroidManifest.xml не изменён: $_"
+  throw "XML validation failed. AndroidManifest.xml was not modified: $_"
 }
 $backup=Join-Path $root 'reports\AndroidManifest.before-app-links.xml'
-New-Item -ItemType Directory -Force (Split-Path $backup) | Out-Null
+New-Item -ItemType Directory -Force -Path (Split-Path $backup) | Out-Null
 if (-not (Test-Path $backup)) {Copy-Item $manifest $backup}
 [IO.File]::WriteAllText($manifest,$updated,(New-Object System.Text.UTF8Encoding($false)))
-Write-Host "OK: в существующий AndroidManifest.xml добавлен HTTPS autoVerify. Виджеты и Kotlin не затронуты." -ForegroundColor Green
+Write-Host "OK: HTTPS autoVerify added to existing AndroidManifest.xml; widgets and Kotlin unchanged." -ForegroundColor Green
