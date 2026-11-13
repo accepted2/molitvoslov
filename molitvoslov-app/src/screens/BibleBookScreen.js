@@ -332,7 +332,7 @@ export const BibleBookScreen = ({route, navigation}) => {
                 </Pressable>
               </View>
             );
-          }
+          }}
         />
 
         <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
