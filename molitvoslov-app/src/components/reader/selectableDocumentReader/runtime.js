@@ -58,6 +58,33 @@ export const READER_RUNTIME = String.raw`
       button.title = active ? 'Убрать из избранного' : 'Добавить в избранное';
       button.setAttribute( 'aria-label', button.title );
     };
+    const createShareButton = (scope, sectionIndex = -1) => {
+      const button = el('button','inline-share-action ' +
+        (scope === 'document' ? 'document-share-action' : 'section-share-action'));
+      button.type = 'button';
+      button.dataset.shareScope = scope;
+      button.dataset.shareSectionIndex = String(sectionIndex);
+      button.title = 'Поделиться';
+      button.setAttribute('aria-label',button.title);
+      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      for(const [name,value] of Object.entries({viewBox:'0 0 24 24',width:'19',
+        height:'19',fill:'none',stroke:'currentColor','stroke-width':'1.8',
+        'stroke-linecap':'round','stroke-linejoin':'round'})){
+        svg.setAttribute(name,value);
+      }
+      const line=document.createElementNS('http://www.w3.org/2000/svg','path');
+      line.setAttribute('d','M8.7 13.5 15.3 17.4 M15.3 6.6 8.7 10.5');
+      svg.appendChild(line);
+      [[18,5],[6,12],[18,19]].forEach(coords => {
+        const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+        dot.setAttribute('cx',String(coords[0]));
+        dot.setAttribute('cy',String(coords[1]));
+        dot.setAttribute('r','3');
+        svg.appendChild(dot);
+      });
+      button.appendChild(svg);
+      return button;
+    };
     const titleEl = ( tag, className, value ) => {
       const node = el( tag, className );
       const text = String( value || '' );
@@ -194,6 +221,9 @@ export const READER_RUNTIME = String.raw`
           action.dataset.actionKey = DATA.document.action.key;
           documentHeader.appendChild( action );
         }
+        if(!DATA.document.embedded) {
+          documentHeader.appendChild(createShareButton('document'));
+        }
         reader.appendChild( documentHeader );
       }
       const viewSwitcher = DATA.document.viewSwitcher;
@@ -221,7 +251,7 @@ export const READER_RUNTIME = String.raw`
       if ( DATA.document.description ) {
         reader.appendChild( el( 'div', 'rule-description', DATA.document.description ) );
       }
-      ( DATA.document.sections || [] ).forEach( section => {
+      ( DATA.document.sections || [] ).forEach( (section, sectionIndex) => {
           const wrapper = el( 'section', 'rule-item ' + ( section.className || '' ) );
           wrapper.dataset.itemId = String( section.progressAnchorId );
           wrapper.dataset.trackProgress = section.trackProgress === false ? 'false' : 'true';
@@ -244,6 +274,9 @@ export const READER_RUNTIME = String.raw`
             summary.setAttribute('aria-label', section.title);
             summary.addEventListener('click', event => event.stopPropagation());
             details.appendChild(summary);
+            if(!DATA.document.embedded) {
+              details.appendChild(createShareButton('section',sectionIndex));
+            }
             const content = el('div', 'hours-accordion-content');
             details.appendChild(content);
             details.addEventListener('toggle', () => {
@@ -264,6 +297,9 @@ export const READER_RUNTIME = String.raw`
               setSaveHeartIcon( action, !!section.action.active );
               action.dataset.actionKey = section.action.key;
               header.appendChild( action );
+            }
+            if(!DATA.document.embedded) {
+              header.appendChild(createShareButton('section',sectionIndex));
             }
             wrapper.appendChild( header );
           }
@@ -4310,6 +4346,14 @@ if (
         clearSelection();
       }, true );
     reader.addEventListener( 'click', event => {
+        const share = event.target.closest('.inline-share-action');
+        if(share){
+          event.preventDefault();
+          event.stopPropagation();
+          post({type:'share-section',wholeDocument:share.dataset.shareScope==='document',
+            sectionIndex:Number(share.dataset.shareSectionIndex)});
+          return;
+        }
         const action = event.target.closest( '.section-action, .document-action' );
         if (!action) {
           return;
