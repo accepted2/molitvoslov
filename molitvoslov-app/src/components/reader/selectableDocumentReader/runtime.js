@@ -5005,7 +5005,7 @@ if (
         return;
       }
 
-      const size = Math.max(14, Math.min(22, Number(rawSize) || 16.5));
+      const size = Math.max(14, Math.min(28, Number(rawSize) || 16.5));
       const lineHeight = size * 1.32;
       const dropCapSize = size * 2.72;
 
@@ -5029,11 +5029,26 @@ if (
     };
 
     const setBookTheme = theme => {
-      if (!bookMode) {
-        return;
-      }
-
+      if (!bookMode) return;
       document.body.classList.toggle('book-night', theme === 'night');
+    };
+
+    const setBookAppearance = settings => {
+      if (!bookMode || !settings) return;
+      const safeColor=value=>/^#[0-9a-fA-F]{6}$/.test(String(value||''));
+      const palette=String(settings.palette||'parchment');
+      const background=safeColor(settings.background)?settings.background:'#FBF0D9';
+      const text=safeColor(settings.text)?settings.text:'#3C2A20';
+      const dark=!!settings.dark;
+      const root=document.documentElement;
+      document.body.classList.toggle('book-night',dark);
+      root.style.setProperty('--book-paper',background);
+      root.style.setProperty('--book-body-color',text);
+      root.style.setProperty('--background',background);
+      root.style.setProperty('--surface',background);
+      root.style.setProperty('--text',text);
+      document.body.classList.toggle('book-custom',palette==='custom');
+      setBookFontSize(settings.fontSize);
     };
 
     window.readerApi = {
@@ -5110,6 +5125,7 @@ if (
       goToProgress: progress => goToProgress( progress ),
       setBookFontSize: size => setBookFontSize(size),
       setBookTheme: theme => setBookTheme(theme),
+      setBookAppearance: settings => setBookAppearance(settings),
       updateAction: ( actionKey, label, active, savedItemId = null ) => {
           const action = document.querySelector( '.section-action[data-action-key="' + actionKey +
               '"], .document-action[data-action-key="' + actionKey + '"]' );
