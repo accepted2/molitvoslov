@@ -79,6 +79,8 @@ assert.match(ru.afterPsalms[5].rows[2].russian,/Пресвятая Троица/
 assert.equal(ru.afterPsalms[5].rows[2].redInitial,true);
 assert.equal(ru.afterPsalms[11].rows[2].redInitial,true,
   'The concluding Presvyataya Troitsa has a red initial P.');
+assert.equal(ru.afterPsalms[11].rows[2].presentation,'final-trinity',
+  'The last Trinity prayer needs an explicit WebView color override.');
 assert.equal(ru.afterPsalms[11].rows[14].presentation,'choir-response');
 assert.match(ru.afterPsalms[5].rows[5].russian,/Отче наш, Иже еси на небесех/);
 assert.equal(ru.afterPsalms[5].rows[3].presentation,'left-response');
@@ -261,6 +263,10 @@ assert.deepEqual(marked(finalChoir,'devotional'), [],
 assert.deepEqual(finalChoir.hoursMarks.map(mark=>mark.kind),['speaker']);
 assert.deepEqual(marked(russianDoc.sections[9].rows[2].blocks[0],'initial'), ['П']);
 assert.deepEqual(marked(russianDoc.sections[15].rows[2].blocks[0],'initial'), ['П']);
+assert.match(russianDoc.sections[15].rows[2].blocks[0].className,
+  /hours-presentation-final-trinity/);
+assert.equal(russianDoc.sections[15].rows[2].blocks[0].hoursMarks[0].start,0);
+assert.equal(russianDoc.sections[15].rows[2].blocks[0].hoursMarks[0].end,1);
 const lentRu=russianDoc.sections[7].rows;
 assert.equal(lentRu.length,8);
 assert.equal(lentRu[3].blocks[0].text,'Священник:');
@@ -305,6 +311,15 @@ assert.match(colorsCss,/hours-russian-primary \.hours-mark-mercy/);
 assert.match(colorsCss,/hours-presentation-comment span/);
 assert.match(colorsCss,/hours-presentation-plain-prayer span/);
 assert.match(colorsCss,/hours-presentation-choir-response \.hours-mark-speaker/);
+assert.match(colorsCss,/hours-russian-primary\.hours-presentation-final-trinity/);
+assert.match(colorsCss,/hours-russian-primary\.hours-presentation-choir-response/);
+const runtimeCode=read('src/components/reader/selectableDocumentReader/runtime.js');
+assert.match(runtimeCode,/const isFirstHourPrimaryRussian/);
+assert.match(runtimeCode,/blockClasses\.includes\('hours-presentation-final-trinity'\)/);
+assert.match(runtimeCode,/blockClasses\.includes\('hours-presentation-choir-response'\)/);
+assert.match(runtimeCode,/span\.style\.setProperty\('color', 'var\(--liturgical\)', 'important'\)/);
+assert.match(runtimeCode,/span\.style\.setProperty\('color', choirColor, 'important'\)/);
+assert.match(runtimeCode,/child\.style\.setProperty\('color', choirColor, 'important'\)/);
 
 const bothDoc=buildHoursDocument({entry,content:src,viewMode:MODE.BOTH});
 assert.equal(bothDoc.sections.length,16);
@@ -330,4 +345,4 @@ for (const row of churchDoc.sections[5].rows) {
     'ЦС commentary quoting "Слава Отцу" must not receive red spans.');
 }
 assert.equal(JSON.stringify(src),saved);
-console.log('PASS: First Hour RU red Presvyataya initials and final choir speaker only, with all earlier doxologies preserved');
+console.log('PASS: First Hour RU final Trinity П red, final Хор alone red, scoped runtime color overrides verified');
