@@ -36,6 +36,7 @@ from .auth_views import (
     DeleteAccountView,
 )
 from .account_preferences import AccountPreferencesView
+from .content_share import public_share_page
 from .mobile_content import MobileContentView
 from .bible_content import BibleContentView
 from .content_updates import OfflineContentUpdatesView, OfflineContentObjectView, OfflineContentManifestView
@@ -91,6 +92,7 @@ router.register(
 )
 
 urlpatterns = [
+    path('share/', public_share_page, name='public-content-share'),
     path("account-preferences/", AccountPreferencesView.as_view(), name="account-preferences"),
     path("mobile-content/", MobileContentView.as_view(), name="mobile-content"),
     path("content-updates/", OfflineContentUpdatesView.as_view(), name="content-updates"),
