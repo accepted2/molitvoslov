@@ -178,17 +178,29 @@ assert.equal(paired[1].rows[2].russian,undefined,'Mercy shared once');
 assert.ok(paired[2].rows.every(r=>r.russian===undefined),'Comments shared once');
 assert.equal(paired[10].rows[0].russian,undefined,'Mercy 40 shared once');
 assert.equal(paired[10].rows[3].russian,undefined,'Doxology after prayer shared once');
-assert.ok(paired[10].rows[6].church.includes('Чтец: Аминь.'),
-  'Reader Amen is added to the left column');
+assert.ok(!paired[10].rows[6].church.includes('Чтец: Аминь.'),
+  'Priest and reader must be separate rows');
+assert.equal(paired[10].rows[6].dividerAfter,true);
+assert.equal(paired[10].rows[7].church,'Чтец: Аминь.');
+assert.equal(paired[10].rows[7].russian,undefined,'Reader Amen is shared once');
 assert.ok(paired[11].rows.filter(r=>r.presentation==='comment').every(r=>!r.russian),
   'St Ephrem instructions are shared');
 assert.ok(!paired[12].rows.some(r=>r.church?.includes('Трисвятое. И по Отче наш')),
   'A redundant rubric before complete prayers is suppressed');
-assert.ok(paired[12].rows.some(r=>r.russian?.startsWith('Обороняющей нас Военачальнице')));
-assert.ok(paired[12].rows.some(r=>r.russian?.startsWith('Хор:') && !r.church),
-  'One final choir response is shown in Russian');
-assert.ok(paired[12].rows.some(r=>r.church?.startsWith('Христе́') && r.russian),
-  'The priest cue is removed on the CS side of the parallel prayer');
+const csKontakion=paired[12].rows.find(r=>
+  r.church?.startsWith('Хор: Взбранной Воеводе'));
+assert.ok(csKontakion?.russian?.startsWith('Обороняющей нас Военачальнице'),
+  'CS and RU Theotokos kontakion are paired');
+assert.ok(paired[12].rows.some(r=>
+  r.presentation==='shared-heading' && r.church==='И поется кондак Богородице, глас 8:'));
+assert.equal(paired[12].rows.filter(r=>
+  r.church==='И поется кондак Богородице, глас 8:').length,1);
+assert.ok(paired[12].rows.some(r=>r.russian?.startsWith('Хор:') &&
+  r.presentation==='choir-response' && !r.church),
+  'Only Хор: is marked red in the concluding shared response');
+assert.ok(paired[12].rows.some(r=>r.church?.startsWith('Христе́') &&
+  r.russian && r.redInitial===true),
+  'CS prayer of Christ is aligned with red initial');
 const wrongLength = pairFirstHourSections({churchSections:[{title:'bad',rows:[]}],russianSections:[]});
 assert.equal(wrongLength,null);
 
@@ -370,7 +382,7 @@ const sharedBlock=(section,row)=>bothDoc.sections[section].rows[row].blocks[0];
 const isFullyRed = block => block.hoursMarks.some(mark=>
   mark.kind==='devotional' && mark.start===0 && mark.end===block.text.length);
 for(const [section,row] of [[4,0],[6,0],[6,2],[7,3],[9,1],[9,4],
-  [13,3],[15,1],[15,4],[15,14]]) {
+  [13,3],[15,1],[15,4]]) {
   const block=sharedBlock(section,row);
   assert.equal(bothDoc.sections[section].rows[row].blocks.length,1,
     'Full doxology cannot have a second language column');
@@ -392,6 +404,26 @@ assert.ok(bothDoc.sections[7].rows[5].blocks[0].text.startsWith('Что Тя'));
 assert.ok(bothDoc.sections[7].rows[5].blocks[1].text.startsWith('Как назвать'));
 assert.ok(bothDoc.sections[15].rows[10].blocks[0].text.startsWith('Христе́'),
   'No Иерей before the prayer');
+assert.deepEqual(marked(bothDoc.sections[15].rows[10].blocks[0],'initial'),['Х']);
+const pairedKontakion=bothDoc.sections[15].rows[12];
+assert.equal(pairedKontakion.layout,'parallel');
+assert.equal(pairedKontakion.blocks.length,2);
+assert.ok(pairedKontakion.blocks[0].text.startsWith('Хор: Взбранной Воеводе'));
+assert.ok(pairedKontakion.blocks[1].text.startsWith('Обороняющей нас Военачальнице'));
+assert.deepEqual(marked(pairedKontakion.blocks[0],'speaker'),['Хор:']);
+assert.deepEqual(marked(pairedKontakion.blocks[0],'initial'),['В']);
+const pairedKontakionHeading=bothDoc.sections[15].rows[11];
+assert.equal(pairedKontakionHeading.blocks.length,1);
+assert.equal(pairedKontakionHeading.blocks[0].text,'И поется кондак Богородице, глас 8:');
+assert.match(pairedKontakionHeading.blocks[0].className,/shared-heading/);
+const sharedChoir=bothDoc.sections[15].rows[14].blocks[0];
+assert.equal(sharedChoir.text,
+  'Хор: Слава Отцу и Сыну и Святому Духу, и ныне и присно и во веки веков. Аминь.');
+assert.deepEqual(marked(sharedChoir,'speaker'),['Хор:']);
+assert.deepEqual(marked(sharedChoir,'devotional'),[],
+  'No red full Glory in the concluding choir response');
+assert.match(sharedChoir.className,/choir-response/);
+assert.equal(bothDoc.sections[15].rows[14].blocks.length,1);
 
 assert.equal(bothDoc.sections[4].rows[0].blocks.length,1,'Glory after Psalms is shared');
 assert.equal(bothDoc.sections[6].rows[0].blocks.length,1,'Glory before tropar is shared');
@@ -408,11 +440,14 @@ assert.ok(!bothDoc.sections[9].rows.some(r=>
 assert.ok(bothDoc.sections[13].rows[3].blocks.length===1,'Prayer doxology once');
 assert.ok(bothDoc.sections[13].rows[5].blocks.length===1,'Name of the Lord once');
 assert.equal(bothDoc.sections[13].rows[6].layout,'parallel');
-assert.match(bothDoc.sections[13].rows[6].blocks[0].text,/Чтец: Аминь\./);
+assert.ok(!bothDoc.sections[13].rows[6].blocks[0].text.includes('Чтец: Аминь.'));
+assert.equal(bothDoc.sections[13].rows[6].dividerAfter,true);
+assert.equal(bothDoc.sections[13].rows[7].blocks[0].text,'Чтец: Аминь.');
+assert.equal(bothDoc.sections[13].rows[7].blocks.length,1);
 assert.ok(!bothDoc.sections[15].rows.some(r=>r.blocks.some(b=>
   b.text==='Трисвятое. И по Отче наш:')),'Second redundant rubric removed');
 assert.ok(bothDoc.sections[15].rows.some(r=>r.blocks.length===1 &&
-  r.blocks[0].text.startsWith('Хор:')),'Final choir appears only once');
+  r.blocks[0].text.startsWith('Хор: Слава')),'Final choir appears only once');
 assert.ok(bothDoc.sections[15].rows.some(r=>r.blocks.length===1 &&
   r.blocks[0].text==='Благослови.'),'Final blessing appears only once');
 assert.ok(bothDoc.sections[15].rows.some(r=>r.blocks.length===2 &&
@@ -441,9 +476,39 @@ assert.ok(bothDoc.sections[9].rows.some(row =>
   row.blocks[0].text.includes('Пресвятая Троица')),
 'Full Russian-only prayers remain available after Trisagion rubric');
 assert.ok(bothDoc.sections[15].rows.some(row =>
-  row.blocks.length===1 && row.blocks[0].text.startsWith('Обороняющей нас Военачальнице')),
-'Russian-only kondak remains intact');
+  row.blocks.length===2 &&
+  row.blocks[0].text.startsWith('Хор: Взбранной Воеводе') &&
+  row.blocks[1].text.startsWith('Обороняющей нас Военачальнице')),
+'Kondak has both CS and Russian columns');
+assert.equal(russianDoc.sections[13].rows.length,8,
+  'Russian priest and reader have separate rows');
+assert.equal(russianDoc.sections[13].rows[6].dividerAfter,true);
+assert.equal(russianDoc.sections[13].rows[7].blocks[0].text,'Чтец: Аминь.');
+for (const section of [13,14]) {
+  assert.match(bothDoc.sections[section].className,/hours-divider-after-dropdown/,
+    'Both Great Lent dropdowns have dividers');
+}
+assert.match(colorsCss,/hours-mercy-left/);
+for(const modeDoc of [bothDoc,russianDoc]) {
+  for(const block of modeDoc.sections.flatMap(s=>s.rows).flatMap(r=>r.blocks)) {
+    if(/^Господи, помилуй/u.test(block.text))
+      assert.match(block.className,/hours-mercy-left/,
+        'Mercy responses must be left aligned');
+  }
+}
 const churchDoc=buildHoursDocument({entry,content:src,viewMode:MODE.CHURCH});
+const churchEnding=churchDoc.sections[15].rows;
+assert.equal(churchEnding.length,9);
+assert.ok(churchEnding[4].blocks[0].text.startsWith('Хор: Взбранной Воеводе'));
+assert.ok(churchEnding[4].blocks[0].text.endsWith('радуйся, Невесто Неневестная.'));
+assert.deepEqual(marked(churchEnding[2].blocks[0],'initial'),['Х']);
+assert.deepEqual(marked(churchEnding[4].blocks[0],'initial'),['В']);
+assert.deepEqual(marked(churchEnding[5].blocks[0],'speaker'),['Хор:']);
+assert.deepEqual(marked(churchEnding[5].blocks[0],'devotional'),[],
+  'Concluding CS Glory must remain ordinary colored text');
+assert.match(churchEnding[5].blocks[0].className,/choir-response/);
+assert.equal(churchDoc.sections[13].rows[7].blocks[0].text,'Чтец: Аминь.');
+assert.equal(churchDoc.sections[13].rows[6].dividerAfter,true);
 assert.equal(churchDoc.sections[1].rows[0].blocks[0].text,
   'Слова церковнославянского псалма 5.');
 for (const row of churchDoc.sections[5].rows) {
