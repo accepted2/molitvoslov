@@ -17,8 +17,11 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from .supabase_storage import (
+    download_bytes, upload_bytes, delete_object, StorageConfigurationError,
+)
 from .models import (
-    MemorialBook,
+    MemorialBook, MemorialPhoto, PersonalPrayerPhoto,
     PersonalPrayer,
     PersonalPrayerBook,
     PersonalPrayerBookItem,
@@ -65,15 +68,78 @@ def _source_uuid(request):
         raise ValueError("Не указан корректный ID для отправки.")
 
 
+# A bounded photo snapshot stays inside the authenticated invitation API.
+# The public landing page never receives storage paths, names, or image data.
+MAX_SHARED_PHOTOS = 12
+PHOTO_MAX_BYTES = 4 * 1024 * 1024
+PHOTO_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/heic": ".heic",
+    "image/heif": ".heif",
+}
+
+
+def _photo_snapshot(photos):
+    photos=list(photos)
+    if len(photos)>MAX_SHARED_PHOTOS:
+        raise ValueError(
+            "Для одной ссылки допускается не более 12 фотографий. "
+            "Удалите лишние или отправьте материалы частями."
+        )
+    result=[]
+    for photo in photos:
+        if photo.content_type not in PHOTO_TYPES or not photo.storage_path:
+            raise ValueError("Некоторые фотографии ещё не загружены или имеют неподдерживаемый формат.")
+        result.append({
+            "storage_path": photo.storage_path,
+            "content_type": photo.content_type,
+            "original_name": photo.original_name,
+            "order": photo.order,
+        })
+    return result
+
+
+def _copy_photo(source, *, user, book=None, prayer=None, uploaded):
+    content_type=source["content_type"]
+    extension=PHOTO_TYPES.get(content_type)
+    if not extension:
+        raise ValueError("Неподдерживаемый формат фотографии.")
+    bytes_value=download_bytes(source["storage_path"], max_bytes=PHOTO_MAX_BYTES)
+    photo_id=uuid.uuid4()
+    if book is not None:
+        target=f"user-{user.pk}/{book.sync_id}/{photo_id}{extension}"
+    else:
+        target=(f"user-{user.pk}/personal-prayers/"
+                f"{prayer.sync_id}/{photo_id}{extension}")
+    upload_bytes(target,bytes_value,content_type)
+    uploaded.append(target)
+    attrs={
+        "sync_id": photo_id,
+        "storage_path": target,
+        "content_type": content_type,
+        "original_name": str(source.get("original_name") or "")[:255],
+        "order": max(0,int(source.get("order",0))),
+    }
+    if book is not None:
+        MemorialPhoto.objects.create(book=book,**attrs)
+    else:
+        PersonalPrayerPhoto.objects.create(prayer=prayer,**attrs)
+
+
 def _memorial(request):
     sync_id = _source_uuid(request)
     book = get_object_or_404(
         MemorialBook, sync_id=sync_id, user=request.user,
         deleted_at__isnull=True,
     )
+    photos=_photo_snapshot(book.photos.filter(
+        deleted_at__isnull=True).order_by("order","id"))
     return _clean_title(book.title, "Помянник"), {
         "health_names": book.health_names,
         "repose_names": book.repose_names,
+        "photos": photos,
     }
 
 
@@ -91,6 +157,7 @@ def _prayerbook(request):
     )
     prayers = []
     size = 0
+    total_photos = 0
     for entry in rows:
         prayer = entry.prayer
         title = _clean_title(prayer.title, "Молитва", 255)
@@ -100,7 +167,12 @@ def _prayerbook(request):
             raise ValueError(
                 "Молитвослов слишком большой для отправки одной ссылкой."
             )
-        prayers.append({"title": title, "text": body})
+        images=_photo_snapshot(prayer.photos.filter(
+            deleted_at__isnull=True).order_by("order","id"))
+        total_photos += len(images)
+        if total_photos > MAX_SHARED_PHOTOS:
+            raise ValueError("Для одной ссылки допускается не более 12 фотографий.")
+        prayers.append({"title": title, "text": body, "photos": images})
     return _clean_title(book.title, "Мой молитвослов"), {
         "description": str(book.description or "")[:2000],
         "prayers": prayers,
@@ -158,10 +230,13 @@ def preview_shared_invitation(request, token):
         {"text": snap["text"]}
         if invite.kind == "quote" else
         {"health_names": snap["health_names"],
-         "repose_names": snap["repose_names"]}
+         "repose_names": snap["repose_names"],
+         "photo_count": len(snap.get("photos",[]))}
         if invite.kind == "memorial" else
         {"description": snap.get("description", ""),
-         "prayers": snap["prayers"]}
+         "prayers": [{"title":item["title"],"text":item["text"],
+                      "photo_count":len(item.get("photos",[]))}
+                     for item in snap["prayers"]]}
     )
     return Response({
         "kind": invite.kind,
@@ -177,65 +252,84 @@ def preview_shared_invitation(request, token):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def import_shared_invitation(request, token):
-    with transaction.atomic():
-        invite = _invitation(token, lock=True)
-        if not invite:
-            return Response({"detail": "Ссылка недействительна или истекла."},
-                            status=status.HTTP_404_NOT_FOUND)
-        existing = SharedContentImport.objects.filter(
-            invitation=invite, recipient=request.user,
-        ).first()
-        if existing:
-            return Response({
-                "kind": existing.kind,
-                "sync_id": str(existing.imported_sync_id),
-                "already_imported": True,
-            })
-        snap = invite.snapshot
-        if invite.kind == "quote":
-            saved = SavedItem.objects.create(
-                user=request.user, save_type="quote",
-                source_type="shared_quote", source_id=0,
-                anchor_type="shared_quote", anchor_id=0,
-                source_title="Полученная цитата",
-                item_title=invite.title, text=snap["text"],
-                metadata={"shared_copy": True},
-            )
-            imported_sync_id = saved.sync_id
-        elif invite.kind == "memorial":
-            memorial = MemorialBook.objects.create(
-                user=request.user, title=invite.title,
-                health_names=list(snap["health_names"]),
-                repose_names=list(snap["repose_names"]),
-            )
-            imported_sync_id = memorial.sync_id
-        else:
-            book = PersonalPrayerBook.objects.create(
-                user=request.user, title=invite.title,
-                description=snap.get("description", ""),
-            )
-            for number, source in enumerate(snap["prayers"]):
-                prayer = PersonalPrayer.objects.create(
-                    user=request.user,
-                    title=source["title"],
-                    text=source["text"],
-                    origin_type="custom",
-                    origin_data={"shared_copy": True},
+    uploaded=[]
+    try:
+        with transaction.atomic():
+            invite=_invitation(token,lock=True)
+            if not invite:
+                return Response(
+                    {"detail":"Ссылка недействительна или истекла."},
+                    status=status.HTTP_404_NOT_FOUND,
                 )
-                PersonalPrayerBookItem.objects.create(
-                    book=book, prayer=prayer, order=number,
+            existing=SharedContentImport.objects.filter(
+                invitation=invite,recipient=request.user,
+            ).first()
+            if existing:
+                return Response({
+                    "kind":existing.kind,
+                    "sync_id":str(existing.imported_sync_id),
+                    "already_imported":True,
+                })
+            snap=invite.snapshot
+            if invite.kind=="quote":
+                saved=SavedItem.objects.create(
+                    user=request.user,save_type="quote",
+                    source_type="shared_quote",source_id=0,
+                    anchor_type="shared_quote",anchor_id=0,
+                    source_title="Полученная цитата",
+                    item_title=invite.title,text=snap["text"],
+                    metadata={"shared_copy":True},
                 )
-            imported_sync_id = book.sync_id
-
-        SharedContentImport.objects.create(
-            invitation=invite, recipient=request.user,
-            kind=invite.kind, imported_sync_id=imported_sync_id,
+                imported_sync_id=saved.sync_id
+            elif invite.kind=="memorial":
+                memorial=MemorialBook.objects.create(
+                    user=request.user,title=invite.title,
+                    health_names=list(snap["health_names"]),
+                    repose_names=list(snap["repose_names"]),
+                )
+                imported_sync_id=memorial.sync_id
+                for photo in snap.get("photos",[]):
+                    _copy_photo(photo,user=request.user,book=memorial,
+                                uploaded=uploaded)
+            else:
+                book=PersonalPrayerBook.objects.create(
+                    user=request.user,title=invite.title,
+                    description=snap.get("description",""),
+                )
+                for number,source in enumerate(snap["prayers"]):
+                    prayer=PersonalPrayer.objects.create(
+                        user=request.user,title=source["title"],
+                        text=source["text"],origin_type="custom",
+                        origin_data={"shared_copy":True},
+                    )
+                    PersonalPrayerBookItem.objects.create(
+                        book=book,prayer=prayer,order=number,
+                    )
+                    for photo in source.get("photos",[]):
+                        _copy_photo(photo,user=request.user,prayer=prayer,
+                                    uploaded=uploaded)
+                imported_sync_id=book.sync_id
+            SharedContentImport.objects.create(
+                invitation=invite,recipient=request.user,
+                kind=invite.kind,imported_sync_id=imported_sync_id,
+            )
+        return Response({
+            "kind":invite.kind,
+            "sync_id":str(imported_sync_id),
+            "already_imported":False,
+        },status=status.HTTP_201_CREATED)
+    except (StorageConfigurationError,ValueError,RuntimeError) as exc:
+        # The DB transaction has rolled back. Storage is not transactional,
+        # so remove any successfully uploaded objects as compensation.
+        for path in uploaded:
+            try:
+                delete_object(path)
+            except Exception:
+                pass
+        return Response(
+            {"detail":"Не удалось перенести фотографии: "+str(exc)},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
         )
-    return Response({
-        "kind": invite.kind,
-        "sync_id": str(imported_sync_id),
-        "already_imported": False,
-    }, status=status.HTTP_201_CREATED)
 
 
 @api_view(["POST"])
