@@ -71,7 +71,15 @@ const stripInlineLectionaryMarkers = (value) =>
 export const BibleChapterScreen = ({route, navigation}) => {
   const {t} = useLanguage();
   useBibleContentGeneration();
-  const {bookId, chapterNumber, focusTarget = null, resume = false} = route.params || {};
+  const {bookId, chapterNumber, focusTarget = null, verseNumber, resume = false} = route.params || {};
+  // Links shared from a selected verse provide a stable chapter/verse address,
+  // not database IDs that can change when offline Bible data is rebuilt.
+  const sharedVerse=Number(verseNumber);
+  const requestedFocusTarget=focusTarget ||
+    (Number.isInteger(sharedVerse) && sharedVerse>=1 && sharedVerse<=250
+      ? {anchor_type:'bible_verse',metadata:{
+          chapter_number:Number(chapterNumber),verse_number:sharedVerse,
+        }} : null);
   const calendarPassageRanges = route.params?.calendarPassageRanges || null;
   const translationCode = route.params?.translationCode === 'csl_traditional'
     ? 'csl_traditional'
@@ -204,20 +212,20 @@ export const BibleChapterScreen = ({route, navigation}) => {
   }, [chapters]);
 
   const normalizedFocusTarget = useMemo(() => {
-    if (!focusTarget) return null;
+    if (!requestedFocusTarget) return null;
 
-    const anchorType = focusTarget.anchor_type || focusTarget.anchorType;
+    const anchorType = requestedFocusTarget.anchor_type || requestedFocusTarget.anchorType;
     if (anchorType !== 'bible_verse' && anchorType !== 'bible_chapter') {
-      return focusTarget;
+      return requestedFocusTarget;
     }
 
-    const metadata = focusTarget.metadata || {};
+    const metadata = requestedFocusTarget.metadata || {};
     const targetChapter = bibleContent.getChapter(
       bookId,
       metadata.chapter_number || chapterNumber,
       translationCode
     );
-    if (!targetChapter) return focusTarget;
+    if (!targetChapter) return requestedFocusTarget;
 
     // Search seed rows can have old verse IDs after Bible content refreshes.
     // Rebuild the anchor from the stable book/chapter/verse address.
@@ -226,12 +234,12 @@ export const BibleChapterScreen = ({route, navigation}) => {
       : (targetChapter.verses || []).find((item) =>
           Number(item.number) === Number(metadata.verse_number)
         ) || (targetChapter.verses || []).find((item) =>
-          Number(item.id) === Number(focusTarget.anchor_id ?? focusTarget.anchorId)
+          Number(item.id) === Number(requestedFocusTarget.anchor_id ?? requestedFocusTarget.anchorId)
         );
-    if (!verse) return focusTarget;
+    if (!verse) return requestedFocusTarget;
 
     return {
-      ...focusTarget,
+      ...requestedFocusTarget,
       anchor_type: 'bible_verse',
       anchor_id: Number(verse.id),
       metadata: {
@@ -245,7 +253,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
         ? {start_offset: null, end_offset: null}
         : {}),
     };
-  }, [focusTarget, bookId, chapterNumber, translationCode]);
+  }, [requestedFocusTarget, bookId, chapterNumber, translationCode]);
 
   const chapterStartTarget = useMemo(() => {
     if (normalizedFocusTarget || resume || !requestedChapter) {
