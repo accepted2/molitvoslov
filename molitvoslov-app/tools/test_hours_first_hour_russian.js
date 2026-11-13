@@ -484,7 +484,7 @@ assert.equal(russianDoc.sections[13].rows.length,8,
   'Russian priest and reader have separate rows');
 assert.equal(russianDoc.sections[13].rows[6].dividerAfter,true);
 assert.equal(russianDoc.sections[13].rows[7].blocks[0].text,'Чтец: Аминь.');
-for (const section of [13,14]) {
+for (const section of [7,14]) {
   assert.match(bothDoc.sections[section].className,/hours-divider-after-dropdown/,
     'Both Great Lent dropdowns have dividers');
 }
