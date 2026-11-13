@@ -1,0 +1,185 @@
+"""Access control and independent-copy tests for invitation sharing."""
+from datetime import timedelta
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APITestCase
+
+from .models import (
+    MemorialBook, MemorialPhoto, PersonalPrayer,
+    PersonalPrayerBook, PersonalPrayerBookItem, PersonalPrayerPhoto,
+    SavedItem, SharedContentImport, SharedContentInvitation,
+)
+
+
+class SharedContentTests(APITestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.owner = User.objects.create_user(
+            username="share-owner", email="owner@example.org"
+        )
+        self.recipient = User.objects.create_user(
+            username="share-recipient", email="recipient@example.org"
+        )
+        self.stranger = User.objects.create_user(
+            username="share-stranger", email="stranger@example.org"
+        )
+        self.memorial = MemorialBook.objects.create(
+            user=self.owner,
+            title="Помянник семьи",
+            health_names=["Анна", "Иоанн"],
+            repose_names=["Мария"],
+        )
+        MemorialPhoto.objects.create(
+            book=self.memorial,
+            storage_path="private/owner-memorial-photo.jpg",
+        )
+        self.book = PersonalPrayerBook.objects.create(
+            user=self.owner, title="Домашние молитвы", description="Молитвы утром"
+        )
+        for index, title in enumerate(["Первая молитва", "Вторая молитва"]):
+            prayer = PersonalPrayer.objects.create(
+                user=self.owner, title=title, text=f"Текст № {index}"
+            )
+            PersonalPrayerBookItem.objects.create(
+                book=self.book, prayer=prayer, order=index
+            )
+            PersonalPrayerPhoto.objects.create(
+                prayer=prayer,
+                storage_path=f"private/owner-prayer-{index}.jpg",
+            )
+
+    def make_share(self, kind, **params):
+        self.client.force_authenticate(user=self.owner)
+        res=self.client.post(reverse("shared-create"), {
+            "kind":kind, **params
+        }, format="json")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.data)
+        self.assertEqual(len(res.data["token"]), 43)
+        self.assertNotIn(self.owner.email, res.data["token"])
+        return res.data["token"]
+
+    def test_needs_authentication_to_create_preview_or_import(self):
+        self.client.force_authenticate(user=None)
+        res=self.client.post(reverse("shared-create"), {
+            "kind":"quote", "title":"Пример", "text":"Текст"
+        }, format="json")
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+        token=self.make_share("quote",title="Пример",text="Текст")
+        self.client.force_authenticate(user=None)
+        self.assertEqual(
+            self.client.get(reverse("shared-preview",args=[token])).status_code,401)
+        self.assertEqual(
+            self.client.post(reverse("shared-import",args=[token])).status_code,401)
+
+    def test_quote_import_is_independent_and_idempotent(self):
+        token=self.make_share("quote",title="Слово",text="Бог есть любовь")
+        invitation=SharedContentInvitation.objects.get()
+        self.assertNotEqual(invitation.token_hash, token)
+        self.assertNotIn(token, str(invitation.snapshot))
+        self.client.force_authenticate(user=self.recipient)
+        preview=self.client.get(reverse("shared-preview",args=[token]))
+        self.assertEqual(preview.status_code, 200)
+        self.assertEqual(preview.data["content"]["text"],"Бог есть любовь")
+        self.assertEqual(preview.data["imported"],False)
+        first=self.client.post(reverse("shared-import",args=[token]))
+        self.assertEqual(first.status_code,201,first.data)
+        copy=SavedItem.objects.get(user=self.recipient)
+        self.assertEqual(copy.text,"Бог есть любовь")
+        self.assertEqual(copy.source_type,"shared_quote")
+        self.assertFalse(SavedItem.objects.filter(user=self.owner).exists())
+        duplicate=self.client.post(reverse("shared-import",args=[token]))
+        self.assertEqual(duplicate.status_code,200)
+        self.assertTrue(duplicate.data["already_imported"])
+        self.assertEqual(first.data["sync_id"],duplicate.data["sync_id"])
+        self.assertEqual(SavedItem.objects.filter(user=self.recipient).count(),1)
+        self.assertEqual(SharedContentImport.objects.count(),1)
+
+    def test_memorial_preview_and_import_do_not_copy_photos_or_owner(self):
+        token=self.make_share("memorial",source_sync_id=str(self.memorial.sync_id))
+        self.client.force_authenticate(user=self.recipient)
+        preview=self.client.get(reverse("shared-preview",args=[token]))
+        self.assertEqual(preview.status_code,200)
+        self.assertNotIn("photos",preview.data["content"])
+        self.assertEqual(preview.data["content"]["health_names"],["Анна","Иоанн"])
+        imported=self.client.post(reverse("shared-import",args=[token]))
+        self.assertEqual(imported.status_code,201)
+        copy=MemorialBook.objects.get(user=self.recipient)
+        self.assertNotEqual(copy.sync_id,self.memorial.sync_id)
+        self.assertEqual(copy.health_names,["Анна","Иоанн"])
+        self.assertEqual(copy.repose_names,["Мария"])
+        self.assertEqual(copy.photos.count(),0)
+        self.assertEqual(self.memorial.photos.count(),1)
+        # Editing the copy never modifies the original names.
+        copy.health_names=["Георгий"]
+        copy.save()
+        self.memorial.refresh_from_db()
+        self.assertEqual(self.memorial.health_names,["Анна","Иоанн"])
+
+    def test_personal_book_import_clones_prayers_without_photos(self):
+        token=self.make_share("prayerbook",source_sync_id=str(self.book.sync_id))
+        self.client.force_authenticate(user=self.recipient)
+        result=self.client.post(reverse("shared-import",args=[token]))
+        self.assertEqual(result.status_code,201)
+        copied=PersonalPrayerBook.objects.get(user=self.recipient)
+        self.assertNotEqual(copied.sync_id,self.book.sync_id)
+        entries=list(copied.items.order_by("order"))
+        self.assertEqual([e.prayer.title for e in entries],
+                         ["Первая молитва","Вторая молитва"])
+        self.assertEqual([e.prayer.text for e in entries],
+                         ["Текст № 0","Текст № 1"])
+        self.assertTrue(all(e.prayer.user_id==self.recipient.pk for e in entries))
+        self.assertTrue(all(e.prayer.photos.count()==0 for e in entries))
+        self.assertEqual(PersonalPrayerPhoto.objects.filter(
+            prayer__user=self.owner).count(),2)
+
+    def test_cannot_share_another_persons_private_book(self):
+        self.client.force_authenticate(user=self.stranger)
+        for kind,sync_id in [
+            ("memorial",self.memorial.sync_id),
+            ("prayerbook",self.book.sync_id),
+        ]:
+            res=self.client.post(reverse("shared-create"),{
+                "kind":kind,"source_sync_id":str(sync_id)
+            },format="json")
+            self.assertEqual(res.status_code,404)
+        invalid=self.client.post(reverse("shared-create"),{
+            "kind":"memorial","source_sync_id":"not-a-uuid"
+        },format="json")
+        self.assertEqual(invalid.status_code,400)
+
+    def test_revocation_and_expiry_block_unimported_recipient(self):
+        token=self.make_share("quote",title="Короткое",text="Молитва")
+        self.client.force_authenticate(user=self.stranger)
+        revoke=self.client.post(reverse("shared-revoke",args=[token]))
+        self.assertEqual(revoke.status_code,404)
+        self.client.force_authenticate(user=self.owner)
+        self.assertEqual(
+            self.client.post(reverse("shared-revoke",args=[token])).status_code,
+            204,
+        )
+        self.client.force_authenticate(user=self.recipient)
+        self.assertEqual(
+            self.client.post(reverse("shared-import",args=[token])).status_code,
+            404,
+        )
+        next_token=self.make_share("quote",title="Ещё",text="Текст")
+        invite=SharedContentInvitation.objects.get(
+            token_hash__isnull=False,kind="quote",revoked_at__isnull=True)
+        invite.expires_at=timezone.now()-timedelta(seconds=1)
+        invite.save()
+        self.client.force_authenticate(user=self.recipient)
+        self.assertEqual(
+            self.client.get(reverse("shared-preview",args=[next_token])).status_code,404)
+
+    def test_public_web_page_does_not_leak_private_names(self):
+        token=self.make_share("memorial",source_sync_id=str(self.memorial.sync_id))
+        self.client.force_authenticate(user=None)
+        response=self.client.get(reverse("public-content-share"),{"invite":token})
+        self.assertEqual(response.status_code,200)
+        self.assertNotContains(response,"Анна")
+        self.assertNotContains(response,"Мария")
+        self.assertContains(response,"molitvoslov://shared/")
+        bad=self.client.get(reverse("public-content-share"),{"invite":"bad"})
+        self.assertEqual(bad.status_code,400)
