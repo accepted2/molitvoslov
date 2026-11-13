@@ -1460,7 +1460,7 @@ export const READER_STYLES = String.raw`
           transparent 92%,
           rgba(151, 98, 43, 0.050) 100%
         ),
-        #FBF0D9;
+        var(--book-paper,#FBF0D9);
       box-shadow: inset 0 0 24px rgba(110, 70, 30, 0.10);
     }
 
@@ -1502,7 +1502,7 @@ export const READER_STYLES = String.raw`
           rgba(0, 0, 0, 0.10) 95%,
           rgba(0, 0, 0, 0.30) 100%
         ),
-        #171310;
+        var(--book-paper,#171310);
       box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.30);
     }
 
@@ -1523,7 +1523,7 @@ export const READER_STYLES = String.raw`
     }
 
     body.book-mode.book-night .reader-text.bible-verse {
-      color: #E7D7C6;
+      color: var(--book-body-color,#E7D7C6);
     }
 
     body.book-mode.book-night .bible-drop-cap {
@@ -1738,7 +1738,7 @@ export const READER_STYLES = String.raw`
 
     }
     body.book-mode .reader-text.bible-verse {
-      color: #3C2A20;
+      color: var(--book-body-color,#3C2A20);
       font-family: Georgia, "Times New Roman", serif;
       font-size: var(--book-font-size);
       line-height: var(--book-line-height);
