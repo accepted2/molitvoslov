@@ -810,6 +810,14 @@ export const READER_STYLES = String.raw`
       letter-spacing: 0.16px;
 
     }
+    body.book-mode .reader-language-traditional .bible-chapter-start .prayer-title,
+    body.book-mode .bible-chapter-start.reader-language-traditional .prayer-title {
+      font-family: 'Ponomar', Georgia, "Times New Roman", serif;
+      font-size: 19px;
+      line-height: 26px;
+      font-weight: 400;
+      letter-spacing: 0;
+    }
     body.book-mode .bible-chapter-start .section-action {
       display: flex;
       min-width: 36px;
