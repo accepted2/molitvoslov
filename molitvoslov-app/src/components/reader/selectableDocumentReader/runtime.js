@@ -274,6 +274,15 @@ export const READER_RUNTIME = String.raw`
             summary.setAttribute('aria-label', section.title);
             summary.addEventListener('click', event => event.stopPropagation());
             details.appendChild(summary);
+            if(section.action) {
+              const favorite=el('button',section.action.active
+                ? 'section-action active hours-accordion-save'
+                : 'section-action hours-accordion-save');
+              favorite.type='button';
+              favorite.dataset.actionKey=section.action.key;
+              setSaveHeartIcon(favorite,!!section.action.active);
+              details.appendChild(favorite);
+            }
             if(!DATA.document.embedded) {
               details.appendChild(createShareButton('section',sectionIndex));
             }
