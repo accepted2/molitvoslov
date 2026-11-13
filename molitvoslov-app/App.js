@@ -16,6 +16,7 @@ import {OnboardingScreen} from './src/screens/OnboardingScreen';
 import {PrayerBeadsLoader} from './src/components/feedback/PrayerBeadsLoader';
 
 import {TextSelectionProvider} from './src/context/TextSelectionContext';
+import {ShareFeedbackHost} from './src/components/share/ShareFeedbackHost';
 import {LanguageProvider} from './src/context/LanguageContext';
 import {InterfaceScaleProvider} from './src/context/InterfaceScaleContext';
 
@@ -249,6 +250,7 @@ export default function App() {
         <InterfaceScaleProvider>
         <TextSelectionProvider>
           {showOnboarding ? <OnboardingScreen onComplete={completeOnboarding} /> : <AppNavigator />}
+          <ShareFeedbackHost />
         </TextSelectionProvider>
         </InterfaceScaleProvider>
       </LanguageProvider>
