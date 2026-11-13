@@ -17,8 +17,10 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
+from api.android_app_links import android_asset_links
 
 urlpatterns = [
+    path('.well-known/assetlinks.json', android_asset_links, name='android-asset-links'),
     path("admin/", admin.site.urls),
     path("api/", include("api.urls")),
 ]
