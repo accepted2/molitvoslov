@@ -95,6 +95,35 @@ export const shareContent = async ({title,text,screen,params,privateContent=fals
   await send();
   return true;
 };
+// A selected quote links to its public source. Offsets stay local:
+ // URL access never exposes the user's saved ranges or account.
+export const resolveSelectedShareTarget = config => {
+  const meta=config?.metadata||{};
+  switch(config?.sourceType){
+    case 'bible':
+      return {screen:'BibleChapter',params:{
+        bookId:meta.book_id||config.sourceId,
+        chapterNumber:meta.chapter_number,
+      }};
+    case 'akathist':
+      return {screen:'Akathist',params:{akathistId:config.sourceId,slug:meta.slug}};
+    case 'canon':
+      return {screen:'Canon',params:{canonId:config.sourceId,slug:meta.slug}};
+    case 'prayer_rule':
+      return {screen:'PrayerRule',params:{slug:meta.slug}};
+    case 'text':
+      return {screen:'Reader',params:{slug:meta.slug}};
+    case 'psalter':
+      return meta.kathisma_number
+        ? {screen:'Kathisma',params:{kathismaNumber:meta.kathisma_number}}
+        : {screen:'Psalter',params:{}};
+    case 'hours':
+      return {screen:'HoursReading',params:{entryId:meta.entry_id}};
+    case 'calendar':
+      return {screen:'SaintDetail',params:{date:meta.date,focusSection:meta.section}};
+    default:return {};
+  }
+};
 export const shareSavedItem = item => {
   const meta=item?.metadata||{};
   const type=item?.source_type;
