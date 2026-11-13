@@ -376,7 +376,7 @@ export const READER_STYLES = String.raw`
       right:0;
       transform:translateY(-50%);
     }
-    .document-header:has(.document-share-action) .rule-title {
+    .document-header .rule-title {
       padding-right:82px;
     }
     .document-header .document-action {
@@ -417,6 +417,23 @@ export const READER_STYLES = String.raw`
       top:7px;
       z-index:2;
     }
+    .rule-item.hours-section.hours-collapsible .hours-accordion > .hours-accordion-save {
+      position:absolute;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      top:7px;
+      right:49px;
+      left:auto;
+      width:34px;
+      height:34px;
+      min-width:34px;
+      min-height:34px;
+      transform:none;
+      z-index:2;
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion:has(.hours-accordion-save)
+      > .hours-accordion-toggle {padding-right:122px;}
 
     .save-heart-icon {
       display: block;
