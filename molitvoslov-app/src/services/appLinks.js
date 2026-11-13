@@ -49,8 +49,9 @@ export const normalizeIncomingAppLink = url => {
   if(!match)return null;
   const query=queryParams(match[1]);
   if(!query)return null;
-  if(typeof query.invite==='string' && /^[A-Za-z0-9_-]{43}$/.test(query.invite)){
-    return APP_SCHEME+'shared/'+query.invite;
+  if(Object.prototype.hasOwnProperty.call(query,'invite')){
+    return /^[A-Za-z0-9_-]{43}$/.test(query.invite)
+      ? APP_SCHEME+'shared/'+query.invite : null;
   }
   if(!isSupportedAppPath(query.path))return null;
   // Encode individual segments, not the slashes needed by navigation.
