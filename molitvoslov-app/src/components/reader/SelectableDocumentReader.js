@@ -36,6 +36,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     onSaved,
     onProgress,
     onAction,
+    onPsalmMenu,
     onCrossReference,
     onMemorialOpen,
     onViewModeChange,
@@ -201,6 +202,13 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       changeViewMode: (key) => {
         inject('window.readerApi && window.readerApi.changeViewMode(' + scriptSafeJson(key) + ')');
       },
+      updateAction: (actionKey,result) => {
+        if(!result)return;
+        inject('window.readerApi && window.readerApi.updateAction('+
+          scriptSafeJson(actionKey)+','+scriptSafeJson(result.label||'')+','+
+          (result.active?'true':'false')+','+
+          (result.savedItem?.id||result.savedItemId||'null')+')');
+      },
 
       applyAppearance: (appearance) => {
         appearanceRef.current = appearance;
@@ -340,6 +348,11 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       return;
     }
 
+    if (message.type === 'psalm-menu') {
+      const psalmId=Number(message.psalmId);
+      if(Number.isInteger(psalmId)&&psalmId>0)onPsalmMenu?.(psalmId);
+      return;
+    }
     if (message.type === 'section-action') {
       if (!onAction) {
         return;
