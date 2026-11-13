@@ -315,6 +315,31 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       return;
     }
 
+    if (message.type === 'share-section') {
+      // Share visible liturgical content immediately, without an API invitation.
+      const sections=Array.isArray(documentData.sections)?documentData.sections:[];
+      const index=Number(message.sectionIndex);
+      const selected=message.wholeDocument?sections:
+        (Number.isInteger(index)&&index>=0&&index<sections.length?[sections[index]]:[]);
+      if(!selected.length && !message.wholeDocument)return;
+      const blocks=selected.flatMap(section=>
+        (section.rows||[]).flatMap(row=>row.blocks||[]));
+      const first=blocks.find(block=>block?.sourceType && block?.metadata)||
+        blocks.find(block=>block?.sourceType);
+      const target=first?resolveSelectedShareTarget(first):{};
+      const title=message.wholeDocument
+        ? (documentData.title||'Молитвослов')
+        : (selected[0]?.title||first?.itemTitle||documentData.title||'Молитва');
+      const text=selected.flatMap(section=>
+        (section.rows||[]).map(row=>{
+          const parts=(row.blocks||[]).map(block=>String(block?.text||'').trim())
+            .filter(Boolean);
+          return [...new Set(parts)].join('\n\n');
+        }).filter(Boolean)).join('\n\n');
+      await shareContent({title,text,screen:target.screen,params:target.params});
+      return;
+    }
+
     if (message.type === 'section-action') {
       if (!onAction) {
         return;
