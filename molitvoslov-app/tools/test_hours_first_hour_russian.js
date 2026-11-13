@@ -165,20 +165,21 @@ assert.equal(paired.length,13);
 assert.ok(paired.every(Boolean));
 assert.deepEqual(paired.filter(s=>s.collapsible).map(s=>s.accordionId),expectedIds);
 assert.equal(paired[0].rows[0].russian,ru.opening.rows[0].russian);
-assert.equal(paired[4].pairedByRow, false,
-  'The expanded dialogue must not pair unrelated CS and RU paragraphs.');
-assert.equal(paired[4].rows.length,
-  cs.afterPsalms[3].rows.length + ru.afterPsalms[3].rows.length);
-assert.ok(paired[4].rows.some(r=>r.russian === 'Священник:'));
-assert.ok(paired[4].rows.some(r=>r.russian === 'Чтец:'));
-assert.ok(paired[4].rows.some(r=>r.russian ===
-  'И ныне, и всегда, и во веки веков. Аминь.'));
-assert.ok(!paired[4].rows.some(r=>r.church && r.russian));
+assert.equal(paired[4].rows.length,5,'Lenten dropdown has aligned parallel rows');
+assert.ok(paired[4].rows.every(r=>r.church&&r.russian));
+assert.match(paired[4].rows[3].russian,/Священник:\nСлава Отцу/);
+assert.match(paired[4].rows[3].russian,/Чтец:\nИ ныне/);
+assert.equal(paired[4].rows[3].russianPreserveLineBreaks,true);
 assert.equal(paired[11].rows[5].russian,ru.afterPsalms[10].rows[5].russian);
-assert.equal(paired[12].pairedByRow,false);
 assert.ok(paired[12].rows.some(r=>r.russian?.startsWith('Обороняющей нас Военачальнице')));
-assert.ok(!paired[12].rows.some(r=>r.church && r.russian),
-  'Mismatched dismissal text must never be falsely paired with unrelated Church Slavonic');
+assert.ok(paired[12].rows.some(r=>r.church?.startsWith('Хор:') &&
+  r.russian?.startsWith('Хор:')), 'Final choir is paired');
+assert.equal(paired[1].rows[1].russian,undefined,'Alleluia shared once');
+assert.equal(paired[1].rows[2].russian,undefined,'Mercy shared once');
+assert.ok(paired[2].rows.every(r=>r.russian===undefined),'Comments are shared once');
+assert.ok(paired[10].rows[0].russian===undefined,'Mercy 40 is shared');
+assert.ok(paired[11].rows.filter(r=>r.presentation==='comment').every(r=>!r.russian),
+  'Lenten explanatory notes are shared once');
 const wrongLength = pairFirstHourSections({churchSections:[{title:'bad',rows:[]}],russianSections:[]});
 assert.equal(wrongLength,null);
 
@@ -198,11 +199,13 @@ const docFactory=new Function(
   'hoursTexts','READER_LANGUAGE_MODES','buildReaderLanguageOptions',
   'classifyHoursRow','classifyHoursSection','collectHoursTextMarks',
   'getEditedFirstHour','getFirstHourRussianSections','pairFirstHourSections',
+  'firstHourTraditional',
   docCode + '\nreturn {buildHoursDocument};');
 const {buildHoursDocument}=docFactory(
   {entries:{}},MODE,()=>[{key:'church'},{key:'russian'},{key:'both'},{key:'traditional'}],
   typography.classifyHoursRow,typography.classifyHoursSection,typography.collectHoursTextMarks,
   getEditedFirstHour,getFirstHourRussianSections,pairFirstHourSections,
+  JSON.parse(read('src/data/hoursFirstHourTraditional.json')),
 );
 const entry={id:'ordinary-1',groupId:'ordinary',title:'Первый час',sourceId:910001};
 const sourcePsalms = [5,89,100].map(n=>({title:'Псалом '+n,rows:[
@@ -329,12 +332,53 @@ assert.equal(bothDoc.sections[0].rows[0].blocks[1].text,ru.opening.rows[0].russi
 assert.match(bothDoc.sections[0].rows[0].blocks[1].className,
   /hours-russian-parallel/);
 assert.match(bothDoc.sections[0].rows[0].blocks[1].className,/secondary/);
-assert.match(bothDoc.sections[4].rows[1].blocks[1].className,
+assert.equal(bothDoc.sections[4].rows[1].blocks.length,1);
+assert.equal(bothDoc.sections[4].rows[1].layout,'stack');
+assert.match(bothDoc.sections[4].rows[1].blocks[0].className,
   /hours-preserve-line-breaks/);
+assert.equal(bothDoc.sections[0].rows[0].layout,'parallel');
+assert.equal(bothDoc.sections[7].rows[0].layout,'parallel');
+assert.equal(bothDoc.sections[7].rows[3].layout,'parallel');
+assert.equal(bothDoc.sections[7].rows[3].blocks.length,2);
+assert.match(bothDoc.sections[7].rows[3].blocks[1].text,/Чтец:\nИ ныне/);
+for (const id of expectedIds) {
+  const disclosure=bothDoc.sections.find(s=>s.accordionId===id);
+  assert.ok(disclosure && disclosure.collapsible,'Missing disclosure '+id);
+  assert.ok(disclosure.rows.some(row=>row.layout==='parallel'),
+    'Disclosure has no parallel translation: '+id);
+}
+assert.ok(bothDoc.sections[14].rows.some(r=>r.blocks.length===1 &&
+  r.blocks[0].className.includes('hours-presentation-comment')),
+  'Ephrem comments are not double translated');
 assert.equal(bothDoc.sections[1].rows[0].blocks[1].text,ru.psalms[0].rows[0].russian);
 assert.ok(!bothDoc.sections.flatMap(s=>s.rows).flatMap(r=>r.blocks)
   .some(b=>b.text.includes('СТАРЫЙ ИМПОРТ') || b.text.includes('СТАРЫЙ ОТПУСТ')));
 assert.equal(bothDoc.description,'');
+assert.ok(bothDoc.sections[4].rows.slice(1).every(r=>r.blocks.length===1),
+  'Alleluia and mercy are displayed once');
+assert.ok(bothDoc.sections[5].rows.every(r=>r.blocks.length===1),
+  'Editorial notes are displayed once');
+assert.ok(bothDoc.sections[13].rows
+  .filter(row=>row.blocks[0].text.startsWith('Господи, помилуй'))
+  .every(row=>row.blocks.length===1),'Mercy 40 and thrice are displayed once');
+assert.ok(bothDoc.sections[15].rows
+  .filter(row=>row.blocks[0].text.startsWith('Господи, помилуй'))
+  .every(row=>row.blocks.length===1),'Concluding mercy stays shared');
+for (const section of bothDoc.sections) for (const row of section.rows) {
+  if (row.blocks.length===2) {
+    assert.equal(row.layout,'parallel','Paired text is side-by-side');
+    assert.equal(row.blocks[0].metadata.language,'church');
+    assert.equal(row.blocks[1].metadata.language,'russian');
+  }
+  if (row.blocks.length===1) assert.equal(row.layout,'stack','Shared/unique text is full width');
+}
+assert.ok(bothDoc.sections[9].rows.some(row =>
+  row.blocks.length===1 && row.blocks[0].metadata.language==='russian' &&
+  row.blocks[0].text.includes('Пресвятая Троица')),
+'Full Russian-only prayers remain available after Trisagion rubric');
+assert.ok(bothDoc.sections[15].rows.some(row =>
+  row.blocks.length===1 && row.blocks[0].text.startsWith('Обороняющей нас Военачальнице')),
+'Russian-only kondak remains intact');
 const churchDoc=buildHoursDocument({entry,content:src,viewMode:MODE.CHURCH});
 assert.equal(churchDoc.sections[1].rows[0].blocks[0].text,
   'Слова церковнославянского псалма 5.');
