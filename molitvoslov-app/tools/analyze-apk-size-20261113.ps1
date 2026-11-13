@@ -32,7 +32,7 @@ function Inspect([string]$path) {
     $rows = @($zip.Entries | Where-Object { $_.Name } | ForEach-Object {
       [pscustomobject]@{
         File = $_.FullName
-        Category = Category $_.FullName
+        Category = (Category $_.FullName)
         CompressedBytes = [double]$_.CompressedLength
         OriginalBytes = [double]$_.Length
       }
@@ -40,8 +40,8 @@ function Inspect([string]$path) {
     $summary = @($rows | Group-Object Category | ForEach-Object {
       [pscustomobject]@{
         Category = $_.Name
-        CompressedMiB = AsMiB (($_.Group | Measure-Object CompressedBytes -Sum).Sum)
-        OriginalMiB = AsMiB (($_.Group | Measure-Object OriginalBytes -Sum).Sum)
+        CompressedMiB = (AsMiB (($_.Group | Measure-Object CompressedBytes -Sum).Sum))
+        OriginalMiB = (AsMiB (($_.Group | Measure-Object OriginalBytes -Sum).Sum))
       }
     } | Sort-Object CompressedMiB -Descending)
     return [pscustomobject]@{
@@ -68,8 +68,8 @@ Write-Host "Largest 25 files INSIDE APK (not source repository):" -ForegroundCol
 $current.Rows | Sort-Object CompressedBytes -Descending | Select-Object -First 25 |
   ForEach-Object {
     [pscustomobject]@{
-      MiB = AsMiB $_.CompressedBytes
-      RawMiB = AsMiB $_.OriginalBytes
+      MiB = (AsMiB $_.CompressedBytes)
+      RawMiB = (AsMiB $_.OriginalBytes)
       File = $_.File
     }
   } | Format-Table -AutoSize
@@ -90,9 +90,9 @@ if ($PreviousApk) {
     $oldBytes = [double]$before[0].Sum
     [pscustomobject]@{
       Category = $cat
-      OldMiB = AsMiB $oldBytes
-      NewMiB = AsMiB $newBytes
-      DeltaMiB = AsMiB ($newBytes - $oldBytes)
+      OldMiB = (AsMiB $oldBytes)
+      NewMiB = (AsMiB $newBytes)
+      DeltaMiB = (AsMiB ($newBytes - $oldBytes))
     }
   }
   $comparison | Sort-Object DeltaMiB -Descending | Format-Table -AutoSize
