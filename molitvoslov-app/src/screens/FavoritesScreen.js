@@ -430,7 +430,7 @@ export const FavoritesScreen = ({route, navigation}) => {
                       onPress={() => setContextItem(item)}
                       style={({pressed}) => [styles.menuButton, pressed && styles.pressed]}
                     >
-                      <Ionicons name="ellipsis-vertical" size={22} color="#785D48" />
+                      <Ionicons name="ellipsis-vertical" size={18} color="#785D48" />
                     </Pressable>
                   </View>
                 </View>
@@ -504,7 +504,7 @@ export const FavoritesScreen = ({route, navigation}) => {
 
 const styles = StyleSheet.create({
   cardTopActions:{flexDirection:'row',alignItems:'center',gap:6},
-  menuButton:{minWidth:36,minHeight:36,alignItems:'center',justifyContent:'center',
+  menuButton:{minWidth:32,minHeight:32,alignItems:'center',justifyContent:'center',
     borderRadius:9,borderWidth:1,borderColor:'#DEC7A4',
     backgroundColor:'rgba(255,248,235,0.72)'},
 
