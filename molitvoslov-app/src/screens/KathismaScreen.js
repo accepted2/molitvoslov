@@ -12,7 +12,7 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 import {ReaderBookmarkMenu} from '../components/reader/ReaderBookmarkMenu';
 import {shareContent} from '../services/contentSharing';
-import {psalmTextForMode, psalterSaveMetadata} from '../services/psalterSharing';
+import {psalmTextForMode, psalmTitleForMode, psalterSaveMetadata} from '../services/psalterSharing';
 import {ContentContextMenu} from '../components/share/ContentContextMenu';
 import {getReaderLanguageModePreference, saveReaderLanguageModePreference} from '../services/readerPreferences';
 import {showShareFeedback} from '../services/shareFeedback';
@@ -376,9 +376,7 @@ export default function KathismaScreen({route, navigation}) {
       anchor_type: 'psalm',
       anchor_id: psalm.id,
       source_title: t('psalter.title'),
-      item_title: viewMode==='traditional'
-        ? 'Ѱало́мъ '+String(psalm.number)
-        : t('psalter.psalm',{number:psalm.number}),
+      item_title: psalmTitleForMode(psalm,viewMode),
       text,
       start_offset:0,
       end_offset:text.length,
