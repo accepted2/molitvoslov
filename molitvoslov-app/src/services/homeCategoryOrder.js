@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {getCachedBackendUser} from './backendAuth';
+import {getCachedBackendUser, getApiToken} from './backendAuth';
 
 const PREFIX = '@molitvoslov/home-category-order/v1:';
 const normalize = keys => Array.isArray(keys)
@@ -36,7 +36,8 @@ export const readHomeOrderForUser = async (userId, {inheritGuest=false}={}) => {
   return [];
 };
 export const getHomeCategoryOrder = async () => {
-  const user=await getCachedBackendUser().catch(()=>null);
+  const token=await getApiToken().catch(()=>null);
+  const user=token ? await getCachedBackendUser().catch(()=>null) : null;
   return readHomeOrderForUser(user?.id,{inheritGuest:true});
 };
 export const setHomeOrderForUser = async (userId, keys) => {
@@ -45,6 +46,7 @@ export const setHomeOrderForUser = async (userId, keys) => {
   return order;
 };
 export const saveHomeCategoryOrder = async keys => {
-  const user=await getCachedBackendUser().catch(()=>null);
+  const token=await getApiToken().catch(()=>null);
+  const user=token ? await getCachedBackendUser().catch(()=>null) : null;
   return setHomeOrderForUser(user?.id,keys);
 };
