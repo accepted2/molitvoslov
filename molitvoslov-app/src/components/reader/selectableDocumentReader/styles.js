@@ -351,6 +351,73 @@ export const READER_STYLES = String.raw`
     .section-action.active {
       color: var(--accent-dark);
     }
+    /* Consistent paired actions across akathists, canons, kathismas,
+       miscellaneous prayers and liturgical hours. No changes to text spans. */
+    .inline-share-action {
+      width: 34px;
+      height: 34px;
+      min-width: 34px;
+      min-height: 34px;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 17px;
+      color: var(--secondary);
+      background: rgba(241,223,194,.94);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .inline-share-action svg {pointer-events:none}
+    .document-header .document-share-action {
+      position:absolute;
+      top:50%;
+      right:0;
+      transform:translateY(-50%);
+    }
+    .document-header:has(.document-share-action) .rule-title {
+      padding-right:82px;
+    }
+    .document-header .document-action {
+      right:39px;
+    }
+    .psalter-kathisma-reader .document-header .document-action {
+      left:0;
+      right:auto;
+    }
+    .section-header .section-share-action {
+      flex:0 0 34px;
+    }
+    body:not(.book-mode) .section-header .section-share-action {
+      position:absolute;
+      top:50%;
+      right:0;
+      transform:translateY(-50%);
+    }
+    body:not(.book-mode) .section-header.has-share-action .section-action {
+      right:39px;
+    }
+    body:not(.book-mode) .psalter-kathisma-reader .section-header.has-share-action .section-action {
+      left:0;
+      right:auto;
+    }
+    body:not(.book-mode) .section-header.has-share-action .prayer-title {
+      padding-right:82px;
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion {
+      position:relative;
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion-toggle {
+      padding-right:82px;
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion > .section-share-action {
+      position:absolute;
+      right:10px;
+      top:7px;
+      z-index:2;
+    }
+
     .save-heart-icon {
       display: block;
       width: 19px;
