@@ -228,10 +228,20 @@ export const FavoritesScreen = ({route, navigation}) => {
       return;
     }
 
+    if (item.source_type === 'bible' && item.anchor_type === 'bible_book') {
+      navigation.push('BibleBook', {
+        bookId:metadata.book_id||item.source_id,
+        translationCode:metadata.translation_code||'rst',
+      });
+      return;
+    }
+
     if (item.source_type === 'bible' && metadata.chapter_number) {
       navigation.push('BibleChapter', {
         bookId: metadata.book_id || item.source_id,
         chapterNumber: Number(metadata.chapter_number),
+        translationCode: metadata.translation_code ||
+          (metadata.language === 'traditional' ? 'csl_traditional' : 'rst'),
         focusTarget,
       });
       return;
@@ -421,7 +431,9 @@ export const FavoritesScreen = ({route, navigation}) => {
                   <Text style={styles.typeBadge}>
                     {activeTab === TAB_PLACES
                       ? t('favorites.bookmark')
-                      : (item.save_type_display || item.save_type).toUpperCase()}
+                      : item.source_type==='bible' && item.anchor_type==='bible_book'
+                        ? 'КНИГА'
+                        : (item.save_type_display || item.save_type).toUpperCase()}
                   </Text>
 
                   <View style={styles.cardTopActions}>
