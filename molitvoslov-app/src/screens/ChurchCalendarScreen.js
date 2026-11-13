@@ -316,7 +316,7 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, 
             title: (sourceTitle || 'Церковный календарь') + ' — ' + title,
             text: normalizeCalendarText(text),
             screen: 'SaintDetail',
-            params: {date, focusSection: section, feastUid: feast?.sync_uid},
+            params: {date, focusSection: section, feastUid: feast?.sync_uid || feast?.id},
           })}
         />
       </View>
