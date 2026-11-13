@@ -21,7 +21,7 @@ import {BottomNav} from '../components/navigation/BottomNav';
 import {SaveHeartIcon} from '../components/icons/SaveHeartIcon';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {shareContent} from '../services/contentSharing';
-import {kathismaTextForMode} from '../services/psalterSharing';
+import {kathismaTextForMode, psalterSaveMetadata} from '../services/psalterSharing';
 import {getReaderLanguageModePreference} from '../services/readerPreferences';
 import {getReaderModeForAppLanguage} from '../services/readerLanguageModes';
 import {showShareFeedback} from '../services/shareFeedback';
@@ -129,6 +129,9 @@ export default function PsalterScreen({navigation}) {
         return;
       }
 
+      const storedMode=await getReaderLanguageModePreference({
+        sourceType:'kathisma',sourceId:kathisma.number,
+      }).catch(()=>null);
       const saved = await saveItem({
         save_type: 'kathisma',
 
@@ -150,6 +153,7 @@ export default function PsalterScreen({navigation}) {
           kathisma_number: kathisma.number,
 
           kathisma_title: getLocalizedField(kathisma, 'title', language) || '',
+          ...(storedMode?psalterSaveMetadata(storedMode):{}),
         },
       });
 
