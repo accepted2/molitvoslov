@@ -133,7 +133,7 @@ assert.match(after[11].rows[4].church,/радуйся, Невесто Ненев
 assert.ok(after[11].rows[5].church.startsWith('Хор: Сла́ва Отцу́'));
 assert.equal(after[11].rows[5].presentation,'choir-response');
 assert.equal(after[11].rows[4].redInitial,true,'Kontakion begins with red В');
-assert.deepEqual(after[11].rows.slice(0,7).map(r => r.dividerAfter),
+assert.deepEqual(after[11].rows.slice(0,7).map(r => r.dividerAfter === true),
   [true, true, true, false, true, true, true]);
 assert.deepEqual(after[11].rows.map(r => r.presentation || ''), [
   'liturgical-label', 'left-response', '', 'comment', '',
