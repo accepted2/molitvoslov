@@ -2529,6 +2529,46 @@ export const READER_STYLES = String.raw`
       margin-bottom: 18px !important;
     }
 
+    /* Third Hour: follow First Hour typography in the Church Slavonic tab.
+       These rules are scoped to ordinary-3 and do not alter the Psalter or
+       the existing First Hour. */
+    .rule-item.hours-third-hour
+    .reader-text.hours-presentation-shared-doxology .hours-mark-devotional,
+    .rule-item.hours-third-hour
+    .reader-text.hours-presentation-shared-alleluia .hours-mark-devotional,
+    .rule-item.hours-third-hour
+    .reader-text.hours-presentation-shared-mercy .hours-mark-devotional {
+      color: var(--liturgical) !important;
+      font-weight: 700 !important;
+      font-style: normal !important;
+    }
+    .rule-item.hours-third-hour
+    .reader-text.hours-presentation-shared-alleluia .hours-mark-repeat,
+    .rule-item.hours-third-hour
+    .reader-text.hours-presentation-shared-mercy .hours-mark-repeat {
+      color: var(--secondary) !important;
+      font-weight: 400 !important;
+      font-style: normal !important;
+    }
+    .rule-item.hours-third-hour .reader-text.hours-presentation-shared-mercy,
+    .rule-item.hours-third-hour .reader-text.hours-response {
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+    .rule-item.hours-third-hour.hours-collapsible .hours-accordion-toggle {
+      color: var(--accent-dark) !important;
+      font-style: normal !important;
+      font-family: Georgia, "Times New Roman", serif;
+    }
+    .rule-item.hours-third-hour.hours-collapsible
+    .reader-text.hours-presentation-rubric-label {
+      color: var(--liturgical) !important;
+      font-weight: 600 !important;
+      font-style: normal !important;
+      text-align: left !important;
+      text-align-last: left !important;
+    }
+
     #reader-scroll-track {
       position: fixed;
       top: 10px;
