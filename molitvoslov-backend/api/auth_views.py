@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.db import transaction
+import logging
 
 from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2 import id_token as google_id_token
@@ -10,10 +12,12 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import GoogleAccount
+from .models import GoogleAccount, MemorialPhoto, PersonalPrayerPhoto
+from .supabase_storage import delete_object
 
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 def serialize_user(user, google_account=None):
@@ -170,5 +174,31 @@ class DeleteAccountView(APIView):
                 {"detail": "Подтвердите удаление аккаунта."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        request.user.delete()
+        # Database ON DELETE CASCADE removes personal text, progress, favorites,
+        # Google identity and account preferences. Files live in Supabase Storage
+        # and must be deleted separately, including soft-deleted photo records.
+        paths = set(MemorialPhoto.objects.filter(
+            book__user=request.user,
+        ).values_list("storage_path", flat=True))
+        paths.update(PersonalPrayerPhoto.objects.filter(
+            prayer__user=request.user,
+        ).values_list("storage_path", flat=True))
+        for path in sorted(value for value in paths if value):
+            try:
+                delete_object(path)
+            except Exception as exc:
+                # Deleted-on-a-prior-attempt objects do not block a retry.
+                if "not found" in str(exc).lower() or "404" in str(exc):
+                    continue
+                logger.exception("Account deletion: failed to remove private object")
+                return Response(
+                    {"detail": "Не удалось удалить все загруженные файлы. "
+                               "Аккаунт сохранён; повторите попытку или "
+                               "обратитесь через форму удаления."},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                )
+        with transaction.atomic():
+            # Lock the identity until database rows have been removed.
+            user = User.objects.select_for_update().get(pk=request.user.pk)
+            user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
