@@ -19,6 +19,12 @@ import ExpandablePrayerBlock from '../components/reader/ExpandablePrayerBlock';
 import {colors, radius, spacing} from '../theme';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {SaveHeartIcon} from '../components/icons/SaveHeartIcon';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import {shareContent} from '../services/contentSharing';
+import {kathismaTextForMode} from '../services/psalterSharing';
+import {getReaderLanguageModePreference} from '../services/readerPreferences';
+import {getReaderModeForAppLanguage} from '../services/readerLanguageModes';
+import {showShareFeedback} from '../services/shareFeedback';
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
 
@@ -150,6 +156,40 @@ export default function PsalterScreen({navigation}) {
       setSavedItems((current) => [saved, ...current]);
     } catch (err) {
       console.log('Ошибка сохранения кафизмы:', err.response?.data || err.message);
+    }
+  };
+
+  const shareKathisma = async (item) => {
+    try {
+      const {data}=await api.get('kathismas/'+item.number+'/');
+      const psalms=data?.psalms||[];
+      const hasRussian=psalms.some(p=>(p.verses||[]).some(v=>!!v.russian));
+      const hasTraditional=psalms.some(p=>(p.verses||[]).some(v=>
+        !!v.church_slavonic_traditional));
+      const storedMode=await getReaderLanguageModePreference({
+        sourceType:'kathisma',sourceId:item.number,
+      }).catch(()=>null);
+      const candidate=storedMode||
+        getReaderModeForAppLanguage(language,{hasRussian,hasTraditional});
+      const mode=['church','russian','traditional','both'].includes(candidate)
+        ? candidate:'church';
+      const text=kathismaTextForMode(data,mode);
+      if(!text.trim()){
+        showShareFeedback({title:'Текст пока недоступен',
+          message:'В выбранном языке нет текста этой кафизмы.'});
+        return;
+      }
+      await shareContent({
+        title:getLocalizedField(item,'title',language)||
+          t('psalter.kathisma',{number:item.number}),
+        text,
+        screen:'Kathisma',
+        params:{kathismaNumber:item.number,readerMode:mode},
+      });
+    }catch(error){
+      console.warn('[psalter] share kathisma:',error?.message||error);
+      showShareFeedback({title:'Не удалось поделиться',
+        message:error?.message||'Попробуйте ещё раз.'});
     }
   };
 
@@ -321,16 +361,26 @@ export default function PsalterScreen({navigation}) {
                   )}
                 </Pressable>
 
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    saved ? t('common.removeFromFavorites') : t('common.addFavorite')
-                  }
-                  onPress={() => toggleKathismaSaved(item)}
-                  style={({pressed}) => [styles.saveButton, pressed && styles.pressed]}
-                >
-                  <SaveHeartIcon active={saved} size={20} />
-                </Pressable>
+                <View style={styles.kathismaActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={saved ? t('common.removeFromFavorites') : t('common.addFavorite')}
+                    onPress={() => toggleKathismaSaved(item)}
+                    style={({pressed}) => [styles.saveButton, pressed && styles.pressed]}
+                    hitSlop={5}
+                  >
+                    <SaveHeartIcon active={saved} size={19}/>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Поделиться кафизмой"
+                    onPress={() => shareKathisma(item)}
+                    style={({pressed}) => [styles.saveButton, pressed && styles.pressed]}
+                    hitSlop={5}
+                  >
+                    <Ionicons name="share-social-outline" size={19} color="#765238"/>
+                  </Pressable>
+                </View>
               </View>
             );
           }}
@@ -457,15 +507,10 @@ const styles = StyleSheet.create({
     color: colors.accent,
   },
 
-  saveButton: {
-    width: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 8,
-    borderLeftWidth: 1,
-    borderLeftColor: colors.border,
-    backgroundColor: 'rgba(238, 220, 192, 0.72)',
-  },
+  kathismaActions:{flexDirection:'row',alignSelf:'stretch',alignItems:'center',
+    borderLeftWidth:1,borderLeftColor:colors.border,
+    backgroundColor:'rgba(238,220,192,0.72)',paddingHorizontal:2},
+  saveButton:{width:34,minHeight:46,alignItems:'center',justifyContent:'center'},
 
   saveButtonText: {
     fontSize: 22,
