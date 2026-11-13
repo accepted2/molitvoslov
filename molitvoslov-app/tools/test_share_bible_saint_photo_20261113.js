@@ -41,7 +41,7 @@ async function main(){
   const menu=app('src/components/share/ContentContextMenu.js');
   assert.match(saint,/menuVariant/);
   assert.match(saint,/onLongPress=\{\(\)=>actionsRef\.current\?\.openMenu\(\)\}/);
-  assert.match(saved,/more-horizontal/);
+  assert.match(saved,/more-vertical/);
   assert.match(menu,/onSave/);
   assert.match(menu,/Сохранить себе/);
   assert.match(saint,/focusSection:section/);
