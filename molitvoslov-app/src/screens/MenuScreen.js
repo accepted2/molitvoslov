@@ -50,6 +50,9 @@ import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {subscribeToContentUpdates, getCurrentContent} from '../services/contentStore';
 import {getCachedPublicImage} from '../services/publicAssetCache';
 import {colors, spacing} from '../theme';
+import {ReorderableCategoryCard} from '../components/navigation/ReorderableCategoryCard';
+import {getHomeCategoryOrder, saveHomeCategoryOrder, mergeCategoryOrder, moveCategoryKey} from '../services/homeCategoryOrder';
+import {queueAccountPreferencePatch} from '../services/accountPreferencesSync';
 import {getBibleArtwork} from '../data/bibleArtwork';
 const CATEGORY_ICONS = {
   morning: 'morning',
@@ -357,6 +360,8 @@ export const MenuScreen = ({navigation}) => {
   }, [homeBannerUrl]);
 
   const [categories, setCategories] = useState([]);
+  const [categoryOrder, setCategoryOrder] = useState([]);
+  const [movingCategory, setMovingCategory] = useState(false);
   const [cachedHomeBanner, setCachedHomeBanner] = useState(null);
   const [homeBannerUrl, setHomeBannerUrl] = useState(() => {
     const asset = getCurrentContent()?.app_assets?.home_banner;
@@ -774,6 +779,16 @@ export const MenuScreen = ({navigation}) => {
     [rootCategories]
   );
 
+  // The user's order is separate from the server's editorial category order.
+  // Rehydrate on focus so an account sync from another device becomes visible.
+  useFocusEffect(useCallback(()=>{
+    let mounted=true;
+    getHomeCategoryOrder()
+      .then(order=>{if(mounted)setCategoryOrder(order);})
+      .catch(error=>console.warn('[menu order] load:',error?.message||error));
+    return ()=>{mounted=false;};
+  }, []));
+
   const getSubcategories = (category) => categories.filter((item) => item.parent === category.id);
 
   const openCategory = (category) => {
@@ -792,6 +807,59 @@ export const MenuScreen = ({navigation}) => {
       categorySlug: category.slug,
       categoryName: getLocalizedField(category, 'name', calendarLanguage),
     });
+  };
+
+
+  const libraryCards = [
+    {key:'morning',title:t('menu.morningTitle'),subtitle:t('menu.morningSubtitle'),
+      symbol:'☀',iconSource:CATEGORY_ICONS.morning,artwork:homeArtwork.morning,
+      onPress:()=>navigation.navigate('PrayerRule',{slug:'molitvy-utrennie'})},
+    {key:'evening',title:t('menu.eveningTitle'),subtitle:t('menu.eveningSubtitle'),
+      symbol:'☾',iconSource:CATEGORY_ICONS.evening,artwork:homeArtwork.evening,
+      onPress:()=>navigation.navigate('PrayerRule',{slug:'molitvy-na-son-griadushchim'})},
+    {key:'akathists',title:t('menu.akathistsTitle'),subtitle:t('menu.akathistsSubtitle'),
+      symbol:'☦',iconSource:CATEGORY_ICONS.akathists,artwork:homeArtwork.akathists,
+      onPress:()=>navigation.navigate('AkathistList')},
+    {key:'canons',title:t('menu.canonsTitle'),subtitle:t('menu.canonsSubtitle'),
+      symbol:'▤',iconSource:CATEGORY_ICONS.canons,artwork:homeArtwork.canons,
+      onPress:()=>navigation.navigate('CanonList')},
+    {key:'communion',title:t('menu.communionTitle'),subtitle:t('menu.communionSubtitle'),
+      symbol:'♱',iconSource:CATEGORY_ICONS.communion,artwork:homeArtwork.communion,
+      onPress:()=>navigation.navigate('CommunionPreparation')},
+    {key:'psalter',title:t('menu.psalterTitle'),subtitle:t('menu.psalterSubtitle'),
+      symbol:'¶',iconSource:CATEGORY_ICONS.psalter,artwork:homeArtwork.psalter,
+      onPress:()=>navigation.navigate('Psalter')},
+    {key:'hours',title:'Часы',subtitle:'Вседневные, великопостные, царские, пасхальные',
+      symbol:'✦',iconSource:CATEGORY_ICONS.canons,artwork:homeArtwork.canons,
+      onPress:()=>navigation.navigate('Hours')},
+    {key:'misc',title:t('menu.miscTitle'),subtitle:t('menu.miscSubtitle'),
+      symbol:'✦',iconSource:CATEGORY_ICONS.misc,artwork:homeArtwork.misc,
+      onPress:()=>navigation.navigate('MiscPrayers')},
+    {key:'bible',title:t('menu.bibleTitle'),subtitle:t('menu.bibleSubtitle'),
+      symbol:'▤',iconSource:CATEGORY_ICONS.bible,artwork:homeArtwork.bible,
+      onPress:()=>navigation.navigate('Bible')},
+    ...libraryCategories.map(category=>({
+      key:'category:'+String(category.id),
+      title:getLocalizedField(category,'name',calendarLanguage),
+      subtitle:getSubcategories(category).length>0
+        ?t('menu.sectionsCount',{count:getSubcategories(category).length}):t('common.open'),
+      symbol:'✦',
+      iconSource:resolveCategoryIcon(category.slug,category.name)||CATEGORY_ICONS.misc,
+      artwork:homeArtwork.misc,
+      onPress:()=>openCategory(category),
+    })),
+  ];
+  const orderedLibraryCards=mergeCategoryOrder(libraryCards,categoryOrder);
+  const handleCategoryDrop=(key,steps)=>{
+    if(!steps)return;
+    const keys=orderedLibraryCards.map(item=>item.key);
+    const next=moveCategoryKey(keys,key,steps);
+    if(next.join('|')===keys.join('|'))return;
+    setCategoryOrder(next);
+    saveHomeCategoryOrder(next).catch(error=>
+      console.warn('[menu order] save:',error?.message||error));
+    queueAccountPreferencePatch({settings:{homeCategoryOrder:next}})
+      .catch(error=>console.warn('[menu order] cloud:',error?.message||error));
   };
 
   const makeReadingItem = (progress) => {
@@ -1064,6 +1132,7 @@ export const MenuScreen = ({navigation}) => {
           resizeMode="cover"
         >
           <ScrollView
+            scrollEnabled={!movingCategory}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[
               styles.content,
@@ -1552,111 +1621,30 @@ export const MenuScreen = ({navigation}) => {
               </View>
 
               <View style={styles.libraryList}>
-                <DecorativeCard
-                  title={t('menu.morningTitle')}
-                  subtitle={t('menu.morningSubtitle')}
-                  symbol="☀"
-                  iconSource={CATEGORY_ICONS.morning}
-                  artwork={homeArtwork.morning}
-                  onPress={() => navigation.navigate('PrayerRule', {slug: 'molitvy-utrennie'})}
-                />
-                <DecorativeCard
-                  title={t('menu.eveningTitle')}
-                  subtitle={t('menu.eveningSubtitle')}
-                  symbol="☾"
-                  iconSource={CATEGORY_ICONS.evening}
-                  artwork={homeArtwork.evening}
-                  onPress={() =>
-                    navigation.navigate('PrayerRule', {slug: 'molitvy-na-son-griadushchim'})
-                  }
-                />
-                <DecorativeCard
-                  title={t('menu.akathistsTitle')}
-                  subtitle={t('menu.akathistsSubtitle')}
-                  symbol="☦"
-                  iconSource={CATEGORY_ICONS.akathists}
-                  artwork={homeArtwork.akathists}
-                  onPress={() => navigation.navigate('AkathistList')}
-                />
-                <DecorativeCard
-                  title={t('menu.canonsTitle')}
-                  subtitle={t('menu.canonsSubtitle')}
-                  symbol="▤"
-                  iconSource={CATEGORY_ICONS.canons}
-                  artwork={homeArtwork.canons}
-                  onPress={() => navigation.navigate('CanonList')}
-                />
-                <DecorativeCard
-                  title={t('menu.communionTitle')}
-                  subtitle={t('menu.communionSubtitle')}
-                  symbol="♱"
-                  iconSource={CATEGORY_ICONS.communion}
-                  artwork={homeArtwork.communion}
-                  onPress={() => navigation.navigate('CommunionPreparation')}
-                />
-                <DecorativeCard
-                  title={t('menu.psalterTitle')}
-                  subtitle={t('menu.psalterSubtitle')}
-                  symbol="¶"
-                  iconSource={CATEGORY_ICONS.psalter}
-                  artwork={homeArtwork.psalter}
-                  onPress={() => navigation.navigate('Psalter')}
-                />
-                <DecorativeCard
-                  title="Часы"
-                  subtitle="Вседневные, великопостные, царские, пасхальные"
-                  symbol="✦"
-                  iconSource={CATEGORY_ICONS.canons}
-                  artwork={homeArtwork.canons}
-                  onPress={() => navigation.navigate('Hours')}
-                />
-                <DecorativeCard
-                  title={t('menu.miscTitle')}
-                  subtitle={t('menu.miscSubtitle')}
-                  symbol="✦"
-                  iconSource={CATEGORY_ICONS.misc}
-                  artwork={homeArtwork.misc}
-                  onPress={() => navigation.navigate('MiscPrayers')}
-                />
-                <DecorativeCard
-                  title={t('menu.bibleTitle')}
-                  subtitle={t('menu.bibleSubtitle')}
-                  iconSource={CATEGORY_ICONS.bible}
-                  artwork={homeArtwork.bible}
-                  onPress={() => navigation.navigate('Bible')}
-                />
+                <Text style={styles.categoryOrderHint}>
+                  Удерживайте категорию и перемещайте её, чтобы изменить порядок
+                </Text>
+                {orderedLibraryCards.map((category,index)=>(
+                  <ReorderableCategoryCard
+                    key={category.key}
+                    itemKey={category.key}
+                    index={index}
+                    total={orderedLibraryCards.length}
+                    rowHeight={80*uiScale+8}
+                    onDrop={handleCategoryDrop}
+                    onDragChange={setMovingCategory}
+                  >
+                    <DecorativeCard
+                      title={category.title}
+                      subtitle={category.subtitle}
+                      symbol={category.symbol}
+                      iconSource={category.iconSource}
+                      artwork={category.artwork}
+                      onPress={category.onPress}
+                    />
+                  </ReorderableCategoryCard>
+                ))}
               </View>
-
-              {!!libraryCategories.length && (
-                <View style={styles.extraSection}>
-                  <View style={styles.extraHeader}>
-                    <Text style={styles.extraTitle}>{t('menu.otherSections')}</Text>
-                    <Text style={styles.extraOrnament}>✦</Text>
-                  </View>
-
-                  {libraryCategories.map((category) => (
-                    <Pressable
-                      key={category.id}
-                      onPress={() => openCategory(category)}
-                      style={({pressed}) => [styles.extraCard, pressed && styles.pressed]}
-                    >
-                      <View>
-                        <Text style={[styles.extraCardTitle, {fontSize: 16 * uiScale}]}>
-                          {getLocalizedField(category, 'name', calendarLanguage)}
-                        </Text>
-                        <Text style={[styles.extraCardSubtitle, {fontSize: 11 * uiScale}]}>
-                          {getSubcategories(category).length > 0
-                            ? t('menu.sectionsCount', {
-                                count: getSubcategories(category).length,
-                              })
-                            : t('common.open')}
-                        </Text>
-                      </View>
-                      <Text style={styles.extraArrow}>›</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              )}
 
               {!!error && (
                 <View style={styles.errorCard}>
@@ -2653,6 +2641,13 @@ const styles = StyleSheet.create({
   libraryList: {
     marginTop: 11,
     gap: 8,
+  },
+  categoryOrderHint: {
+    color:'#785C44',
+    fontSize:12,
+    lineHeight:18,
+    paddingHorizontal:5,
+    paddingBottom:3,
   },
   libraryCard: {
     position: 'relative',
