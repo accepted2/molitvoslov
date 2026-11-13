@@ -142,7 +142,7 @@ export const resolveSelectedShareTarget = config => {
         ? {screen:'Kathisma',params:{kathismaNumber:meta.kathisma_number}}
         : {screen:'Psalter',params:{}};
     case 'hours':
-      return {screen:'HoursReading',params:{entryId:meta.entry_id}};
+      return {screen:'HoursReading',params:{entryId:meta.entry_id||meta.entryId}};
     case 'calendar':
       return {screen:'SaintDetail',params:{
         date:meta.date,focusSection:meta.section,feastUid:meta.feast_uid,
@@ -164,6 +164,7 @@ export const shareSavedItem = item => {
       : ['Psalter',{}],
     prayer_rule:['PrayerRule',{slug:meta.slug}],
     text:['Reader',{slug:meta.slug}],
+    hours:['HoursReading',{entryId:meta.entry_id||meta.entryId}],
     calendar:['SaintDetail',{date:meta.date,focusSection:meta.section,
       feastUid:meta.feast_uid}],
   };
