@@ -76,6 +76,10 @@ assert.equal(ru.afterPsalms[5].rows[0].russian,
   'Святый Боже, Святый Крепкий, Святый Безсмертный, помилуй нас. (Трижды)');
 assert.ok(!ru.afterPsalms[5].rows.some(r=>r.russian==='Трисвятое. И по Отче наш:'));
 assert.match(ru.afterPsalms[5].rows[2].russian,/Пресвятая Троица/);
+assert.equal(ru.afterPsalms[5].rows[2].redInitial,true);
+assert.equal(ru.afterPsalms[11].rows[2].redInitial,true,
+  'The concluding Presvyataya Troitsa has a red initial P.');
+assert.equal(ru.afterPsalms[11].rows[14].presentation,'choir-response');
 assert.match(ru.afterPsalms[5].rows[5].russian,/Отче наш, Иже еси на небесех/);
 assert.equal(ru.afterPsalms[5].rows[3].presentation,'left-response');
 assert.equal(ru.afterPsalms[5].rows[5].redInitial,true);
@@ -247,8 +251,16 @@ assert.deepEqual(marked(russianDoc.sections[6].rows[0].blocks[0],'devotional'),
   ['Слава Отцу и Сыну и Святому Духу']);
 assert.deepEqual(marked(russianDoc.sections[6].rows[2].blocks[0],'devotional'),
   ['И ныне и присно и во веки веков. Аминь.']);
-assert.deepEqual(marked(russianDoc.sections[15].rows[14].blocks[0],'devotional'),
-  ['Слава Отцу и Сыну и Святому Духу, и ныне и присно и во веки веков. Аминь.']);
+const finalChoir = russianDoc.sections[15].rows[14].blocks[0];
+assert.equal(finalChoir.text,
+  'Хор: Слава Отцу и Сыну и Святому Духу, и ныне и присно и во веки веков. Аминь.');
+assert.match(finalChoir.className,/hours-presentation-choir-response/);
+assert.deepEqual(marked(finalChoir,'speaker'), ['Хор:']);
+assert.deepEqual(marked(finalChoir,'devotional'), [],
+  'The final choir Glory stays normal color.');
+assert.deepEqual(finalChoir.hoursMarks.map(mark=>mark.kind),['speaker']);
+assert.deepEqual(marked(russianDoc.sections[9].rows[2].blocks[0],'initial'), ['П']);
+assert.deepEqual(marked(russianDoc.sections[15].rows[2].blocks[0],'initial'), ['П']);
 const lentRu=russianDoc.sections[7].rows;
 assert.equal(lentRu.length,8);
 assert.equal(lentRu[3].blocks[0].text,'Священник:');
@@ -292,6 +304,7 @@ assert.match(colorsCss,/hours-russian-primary \.hours-mark-devotional/);
 assert.match(colorsCss,/hours-russian-primary \.hours-mark-mercy/);
 assert.match(colorsCss,/hours-presentation-comment span/);
 assert.match(colorsCss,/hours-presentation-plain-prayer span/);
+assert.match(colorsCss,/hours-presentation-choir-response \.hours-mark-speaker/);
 
 const bothDoc=buildHoursDocument({entry,content:src,viewMode:MODE.BOTH});
 assert.equal(bothDoc.sections.length,16);
@@ -317,4 +330,4 @@ for (const row of churchDoc.sections[5].rows) {
     'ЦС commentary quoting "Слава Отцу" must not receive red spans.');
 }
 assert.equal(JSON.stringify(src),saved);
-console.log('PASS: First Hour RU both Trisagion thriced, no duplicate heading, red initial Our Father and full priestly exclamation');
+console.log('PASS: First Hour RU red Presvyataya initials and final choir speaker only, with all earlier doxologies preserved');
