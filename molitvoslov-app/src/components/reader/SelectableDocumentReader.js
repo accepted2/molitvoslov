@@ -388,14 +388,22 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     if (message.type === 'share-selection') {
       const itemConfig=itemConfigMap.get(Number(message.itemId));
       if(!itemConfig || !String(message.text||'').trim())return;
-      await shareImportableContent({
-        kind:'quote',
-        title:message.itemTitle || itemConfig.itemTitle ||
-          itemConfig.sourceTitle || documentData.title || 'Цитата',
-        text:message.text,
-        privateContent:isPrivateShareSource(itemConfig.sourceType),
-        fallbackText:message.text,
-      });
+      const title=message.itemTitle || itemConfig.itemTitle ||
+        itemConfig.sourceTitle || documentData.title || 'Цитата';
+      if(isPrivateShareSource(itemConfig.sourceType)){
+        // Private notes may only be imported via an expiring invitation.
+        await shareImportableContent({
+          kind:'quote',title,text:message.text,privateContent:true,
+          fallbackText:message.text,
+        });
+      }else{
+        // Public excerpts do not need authentication, network requests or
+        // a temporary server-side copy. Include the source deep link.
+        const target=resolveSelectedShareTarget(itemConfig);
+        await shareContent({
+          title,text:message.text,screen:target.screen,params:target.params,
+        });
+      }
       return;
     }
 
