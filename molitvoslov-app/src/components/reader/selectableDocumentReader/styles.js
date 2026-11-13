@@ -2405,6 +2405,61 @@ export const READER_STYLES = String.raw`
       font-weight: 700 !important;
     }
 
+
+    /* Traditional First Hour: all rubrics, labels, notes and native accordion
+       summaries are genuine Church Slavonic Unicode rendered with Ponomar.
+       Never change the parallel, ordinary CS or Russian hours readers. */
+    .rule-item.hours-traditional-section.hours-collapsible .hours-accordion-toggle {
+      font-family: 'Ponomar', Georgia, serif !important;
+      color: var(--liturgical) !important;
+      font-size: 19px !important;
+      font-weight: 400 !important;
+      font-style: normal !important;
+      line-height: 1.6 !important;
+    }
+    .rule-item.hours-traditional-section .reader-text.hours-traditional,
+    .rule-item.hours-traditional-section .reader-text.hours-traditional span {
+      font-family: 'Ponomar', Georgia, serif !important;
+      font-style: normal !important;
+    }
+    .rule-item.hours-traditional-section .reader-text.hours-traditional.hours-presentation-comment,
+    .rule-item.hours-traditional-section .reader-text.hours-traditional.hours-presentation-comment span {
+      color: var(--secondary) !important;
+      font-family: 'Ponomar', Georgia, serif !important;
+      font-size: 17px !important;
+      font-style: normal !important;
+      font-weight: 400 !important;
+    }
+    .rule-item.hours-traditional-section .reader-text.hours-traditional.hours-presentation-placeholder,
+    .rule-item.hours-traditional-section .reader-text.hours-traditional.hours-presentation-rubric-label {
+      font-family: 'Ponomar', Georgia, serif !important;
+      font-size: 18px !important;
+      font-style: normal !important;
+      font-weight: 400 !important;
+    }
+    .rule-item.hours-traditional-section .reader-text.hours-traditional.hours-presentation-liturgical-label,
+    .rule-item.hours-traditional-section .reader-text.hours-traditional.hours-presentation-liturgical-red {
+      font-family: 'Ponomar', Georgia, serif !important;
+      font-size: 18px !important;
+      font-style: normal !important;
+      font-weight: 400 !important;
+    }
+    .rule-item.hours-traditional-section .reader-text.hours-traditional .hours-mark-devotional,
+    .rule-item.hours-traditional-section .reader-text.hours-traditional .hours-mark-speaker,
+    .rule-item.hours-traditional-section .reader-text.hours-traditional .hours-mark-cue,
+    .rule-item.hours-traditional-section .reader-text.hours-traditional .hours-mark-mercy,
+    .rule-item.hours-traditional-section .reader-text.hours-traditional .hours-mark-alleluia {
+      color: var(--liturgical) !important;
+      font-weight: 400 !important;
+      font-style: normal !important;
+    }
+    .rule-item.hours-traditional-section .reader-text.hours-traditional .hours-mark-repeat {
+      color: var(--secondary) !important;
+      font-weight: 400 !important;
+      font-style: normal !important;
+      white-space: nowrap;
+    }
+
     #reader-scroll-track {
       position: fixed;
       top: 10px;

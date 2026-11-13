@@ -56,6 +56,37 @@ export const getFirstHourRussianRedMarks = (text) => {
     ));
 };
 
+
+/**
+ * The traditional First Hour uses accent marks, titla and abbreviated
+ * Church Slavonic words, which the civil-Cyrillic classifier cannot match.
+ * Ranges are UTF-16 offsets into the *unchanged* source text, so selection,
+ * bookmarks and copying remain exact.
+ */
+export const getFirstHourTraditionalMarks = (text, presentation = '') => {
+  if (!text || presentation === 'comment') return [];
+  const ranges = [];
+  const add = (pattern, kind) => {
+    for (const match of text.matchAll(pattern)) {
+      ranges.push({start: match.index, end: match.index + match[0].length, kind});
+    }
+  };
+  // Complete Glory, standalone Glory, and Now must be red even after "Хо́ръ:".
+  add(/Сла́ва ѻ҆ц҃ꙋ̀ и҆ сн҃ꙋ̀ и҆ ст҃о́мꙋ дх҃ꙋ(?:, и҆ ны́нѣ и҆ при́снѡ и҆ во вѣ́ки вѣкѡ́въ\. А҆ми́нь\.|:)?/gu,
+    'devotional');
+  add(/И҆ ны́нѣ и҆ при́снѡ и҆ во вѣ́ки вѣкѡ́въ\. А҆ми́нь\./gu,
+    'devotional');
+  add(/Сла́ва, и҆ ны́нѣ:/gu, 'devotional');
+  add(/І҆ере́й:|Хо́ръ:/gu, 'speaker');
+  add(/Гдⷭ҇и, поми́лꙋй/gu, 'mercy');
+  add(/А҆ллилꙋ́їа|Сла́ва тебѣ̀ бж҃е/gu, 'alleluia');
+  add(/\((?:Три́жды|Покло́нъ|м҃|ві҃)\)/gu, 'repeat');
+  // The longest devotional phrase wins over its nested "И ныне" fragment.
+  return ranges.sort((a, b) => a.start - b.start || b.end - a.end)
+    .filter((item, index, list) => !list.slice(0, index).some(previous =>
+      previous.start < item.end && item.start < previous.end));
+};
+
 export const buildHoursDocument = ({entry, content, viewMode}) => {
   const isFirstHour = entry.id === 'ordinary-1';
   const available = {
@@ -141,6 +172,10 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
       : visualNote && !['left-response', 'liturgical-prayers'].includes(visualNote)
         ? []
         : collectHoursTextMarks(text);
+    if (isFirstHour && language === 'traditional') {
+      hoursMarks.splice(0, hoursMarks.length,
+        ...getFirstHourTraditionalMarks(text, presentation));
+    }
     if (isFirstHour && language === 'russian' &&
         viewMode === READER_LANGUAGE_MODES.RUSSIAN &&
         !isComment && visualNote !== 'plain-prayer' &&
