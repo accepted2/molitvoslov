@@ -125,7 +125,7 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
     const visualNote = [
       'comment', 'placeholder', 'rubric-label', 'liturgical-label',
       'liturgical-red', 'left-response', 'liturgical-prayers', 'plain-prayer',
-      'choir-response',
+      'choir-response', 'final-trinity',
     ].includes(presentation) ? presentation : '';
     // For the final choir doxology only the speaker cue is red.
     // Other full doxologies keep their normal liturgical red emphasis.
