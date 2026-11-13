@@ -2460,6 +2460,50 @@ export const READER_STYLES = String.raw`
       white-space: nowrap;
     }
 
+    /* First Hour ЦС + РУС: shared rubrics and doxologies are not duplicated.
+       Both language columns are retained only for genuinely different texts. */
+    .rule-item.hours-parallel-first-hour
+    .reader-text.hours-presentation-shared-doxology .hours-mark-devotional,
+    .rule-item.hours-parallel-first-hour
+    .reader-text.hours-presentation-shared-alleluia .hours-mark-devotional,
+    .rule-item.hours-parallel-first-hour
+    .reader-text.hours-presentation-shared-mercy .hours-mark-devotional {
+      color: var(--liturgical) !important;
+      font-style: normal !important;
+      font-weight: 700 !important;
+    }
+    .rule-item.hours-parallel-first-hour
+    .reader-text.hours-presentation-shared-alleluia .hours-mark-repeat,
+    .rule-item.hours-parallel-first-hour
+    .reader-text.hours-presentation-shared-mercy .hours-mark-repeat {
+      color: var(--secondary) !important;
+      font-style: normal !important;
+      font-weight: 400 !important;
+    }
+    /* One centered Bogorodichen caption sits above the two translated texts,
+       including inside the Great Lent disclosure. */
+    .rule-item.hours-parallel-first-hour
+    .reader-text.hours-presentation-shared-heading {
+      width: 100%;
+      color: var(--liturgical) !important;
+      text-align: center !important;
+      text-align-last: center !important;
+      font-size: 16px !important;
+      line-height: 1.45 !important;
+      font-style: normal !important;
+      font-weight: 600 !important;
+      padding: 3px 0 5px;
+    }
+    .rule-item.hours-parallel-first-hour
+    .reader-text.hours-presentation-shared-heading .hours-mark-cue {
+      color: var(--liturgical) !important;
+    }
+    .rule-item.hours-parallel-first-hour.hours-divider-after-dropdown {
+      border-bottom: 1px solid var(--border) !important;
+      padding-bottom: 15px !important;
+      margin-bottom: 18px !important;
+    }
+
     #reader-scroll-track {
       position: fixed;
       top: 10px;
