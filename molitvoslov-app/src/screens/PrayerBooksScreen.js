@@ -3,6 +3,7 @@ import {Alert, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View} fr
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import {AppBackground} from '../components/layout/AppBackground';
 import {BottomNav} from '../components/navigation/BottomNav';
@@ -44,6 +45,16 @@ export const PrayerBooksScreen = ({navigation}) => {
       load();
     }, [load])
   );
+
+  const shareBook = (book) => shareImportableContent({
+    kind:'prayerbook',
+    sourceSyncId:book.sync_id,
+    title:book.title||'Мой молитвослов',
+    fallbackText:(book.items||[]).map(i=>[
+      i.prayer?.title||'',i.prayer?.text||''
+    ].filter(Boolean).join('\n')).join('\n\n'),
+    privateContent:true,
+  });
 
   const create = async () => {
     if (busy) return;
@@ -102,24 +113,38 @@ export const PrayerBooksScreen = ({navigation}) => {
             </View>
           }
           renderItem={({item}) => (
-            <Pressable
-              onPress={() => navigation.navigate('PrayerBook', {bookSyncId: item.sync_id})}
-              onLongPress={() => setContextItem(item)}
-              delayLongPress={340}
-              style={({pressed}) => [styles.card, pressed && styles.pressed]}
-            >
-              <View style={styles.bookIcon}>
-                <Text style={styles.bookIconText}>✚</Text>
-              </View>
-              <View style={styles.cardText}>
-                <Text style={[styles.title, {fontSize: 17 * uiScale}]}>{item.title}</Text>
-                <Text style={[styles.meta, {fontSize: 12 * uiScale}]}>
-                  {t('prayerBooks.prayersCount', {count: item.items?.length || 0})}
-                  {item.description ? ` · ${item.description}` : ''}
-                </Text>
-              </View>
-              <Text style={styles.chevron}>›</Text>
-            </Pressable>
+            <View style={styles.card}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={'Открыть ' + (item.title||'мой молитвослов')}
+                onPress={() => navigation.navigate('PrayerBook', {bookSyncId: item.sync_id})}
+                onLongPress={() => setContextItem(item)}
+                delayLongPress={340}
+                style={({pressed}) => [styles.cardMain, pressed && styles.pressed]}
+              >
+                <View style={styles.bookIcon}>
+                  <Text style={styles.bookIconText}>✚</Text>
+                </View>
+                <View style={styles.cardText}>
+                  <Text style={[styles.title, {fontSize: 17 * uiScale}]}>{item.title}</Text>
+                  <Text style={[styles.meta, {fontSize: 12 * uiScale}]}>
+                    {t('prayerBooks.prayersCount', {count: item.items?.length || 0})}
+                    {item.description ? ` · ${item.description}` : ''}
+                  </Text>
+                </View>
+                <Text style={styles.chevron}>›</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={'Поделиться молитвословом ' + (item.title||'')}
+                accessibilityHint="Создать защищённую ссылку для передачи личного молитвослова"
+                onPress={() => shareBook(item)}
+                hitSlop={5}
+                style={({pressed}) => [styles.shareButton,pressed && styles.pressed]}
+              >
+                <Ionicons name="share-social-outline" size={20} color="#765238"/>
+              </Pressable>
+            </View>
           )}
         />
 
@@ -134,15 +159,7 @@ export const PrayerBooksScreen = ({navigation}) => {
           title={contextItem?.title||'Мой молитвослов'}
           onClose={()=>setContextItem(null)}
           onOpen={contextItem ? ()=>navigation.navigate('PrayerBook',{bookSyncId:contextItem.sync_id}) : null}
-          onShare={contextItem ? ()=>shareImportableContent({
-            kind:'prayerbook',
-            sourceSyncId:contextItem.sync_id,
-            title:contextItem.title||'Мой молитвослов',
-            fallbackText:(contextItem.items||[]).map(i=>[
-              i.prayer?.title||'',i.prayer?.text||''
-            ].filter(Boolean).join('\n')).join('\n\n'),
-            privateContent:true,
-          }) : null}
+          onShare={contextItem ? ()=>shareBook(contextItem) : null}
         />
 
         <Modal
@@ -233,13 +250,23 @@ const styles = StyleSheet.create({
   card: {
     minHeight: 72,
     marginBottom: 9,
-    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(126,82,38,0.20)',
     backgroundColor: 'rgba(255,244,222,0.96)',
+    overflow:'hidden',
+  },
+  cardMain:{
+    flex:1,minWidth:0,minHeight:72,flexDirection:'row',
+    alignItems:'center',paddingLeft:12,paddingRight:8,
+  },
+  shareButton:{
+    alignSelf:'stretch',width:48,minHeight:72,
+    alignItems:'center',justifyContent:'center',
+    borderLeftWidth:1,borderLeftColor:'rgba(126,82,38,0.24)',
+    backgroundColor:'rgba(238,220,192,0.48)',
   },
   bookIcon: {
     width: 42,
