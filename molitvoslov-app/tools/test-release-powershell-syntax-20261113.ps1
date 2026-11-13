@@ -36,7 +36,7 @@ $builder = [IO.File]::ReadAllText((Join-Path $PSScriptRoot "build-release-and-sm
 if (-not $builder.Contains('Push-Location $androidDir')) {
   throw "Gradle release must change into the Android project directory."
 }
-if (-not $builder.Contains('& ".\gradlew.bat" ":app:assembleRelease" "--no-daemon"')) {
+if (-not $builder.Contains('& ".\gradlew.bat" @gradleArgs')) {
   throw "Gradle wrapper call missing from Android project directory."
 }
 if ($builder.Contains('& ".\android\gradlew.bat" ":app:assembleRelease" "--no-daemon"')) {
@@ -46,4 +46,10 @@ if (-not $builder.Contains('Pop-Location')) {
   throw "Working directory restoration missing."
 }
 Write-Host "PASS: Gradle wrapper runs from android/ and returns to the app directory." -ForegroundColor Green
+if (-not $builder.Contains('[switch]$Arm64Only') -or
+    -not $builder.Contains('-PreactNativeArchitectures=arm64-v8a') -or
+    -not $builder.Contains('$gradleArgs = @(":app:assembleRelease", "--no-daemon")')) {
+  throw "Expected optional ARM64-only Gradle release mode is missing."
+}
+Write-Host "PASS: ARM64 fallback uses reactNativeArchitectures without changing project files." -ForegroundColor Green
 
