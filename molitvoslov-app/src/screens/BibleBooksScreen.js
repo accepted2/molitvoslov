@@ -210,7 +210,7 @@ export const BibleBooksScreen = ({route, navigation}) => {
               </View>
             </View>
           );
-        }
+        }}
       />
 
       <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={title} titleTextStyle={isTraditional ? traditionalBibleTextStyle : null} navigation={navigation} topInset={insets.top} />
