@@ -15,6 +15,7 @@ import {deleteSavedItem, getSavedItems, setSavedItemPinned, sortSavedItems} from
 import {savedTextFontFamily} from '../services/savedTextTypography';
 import {shareSavedItem} from '../services/contentSharing';
 import {ContentContextMenu} from '../components/share/ContentContextMenu';
+import {showShareFeedback} from '../services/shareFeedback';
 
 import {colors, radius, spacing} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
@@ -145,11 +146,26 @@ export const FavoritesScreen = ({route, navigation}) => {
   const removeItem = async (itemId) => {
     try {
       await deleteSavedItem(itemId);
-
       setItems((current) => current.filter((item) => item.id !== itemId));
     } catch (err) {
-      console.log('Ошибка удаления сохранения:', err);
+      console.warn('[favorites] delete:', err?.message || err);
+      showShareFeedback({
+        title: 'Не удалось удалить',
+        message: err?.message || 'Попробуйте ещё раз.',
+      });
     }
+  };
+
+  const confirmRemoveItem = item => {
+    if (!item) return;
+    const title = String(item.item_title || item.source_title || 'Сохранение');
+    showShareFeedback({
+      title: 'Удалить из избранного?',
+      message: '"' + title.slice(0,100) + '" будет удалено из вашего списка.',
+      cancelLabel: 'Отмена',
+      confirmLabel: 'Удалить',
+      onConfirm: () => removeItem(item.id),
+    });
   };
 
   const makeFocusTarget = (item) => ({
@@ -402,25 +418,19 @@ export const FavoritesScreen = ({route, navigation}) => {
                   </Text>
 
                   <View style={styles.cardTopActions}>
+                    {!!item.is_pinned && (
+                      <Ionicons name="pin" size={15} color="#A64D33"
+                        accessibilityLabel="Закреплено" />
+                    )}
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={item.is_pinned?'Открепить избранное':'Закрепить избранное'}
-                      accessibilityHint="Закреплённые сохранения отображаются первыми"
+                      accessibilityLabel="Действия с сохранением"
+                      accessibilityHint="Открыть меню: поделиться, закрепить или удалить"
                       hitSlop={9}
-                      onPress={() => togglePin(item)}
-                      style={({pressed}) => [styles.pinButton,
-                        item.is_pinned && styles.pinButtonActive,
-                        pressed && styles.pressed]}
+                      onPress={() => setContextItem(item)}
+                      style={({pressed}) => [styles.menuButton, pressed && styles.pressed]}
                     >
-                      <Ionicons name={item.is_pinned?'pin':'pin-outline'}
-                        size={19} color={item.is_pinned?'#A64D33':'#785D48'} />
-                    </Pressable>
-                    <Pressable
-                      hitSlop={8}
-                      onPress={() => removeItem(item.id)}
-                      style={({pressed}) => [styles.deleteButton, pressed && styles.pressed]}
-                    >
-                      <Text style={styles.deleteText}>{t('favorites.delete')}</Text>
+                      <Ionicons name="ellipsis-vertical" size={22} color="#785D48" />
                     </Pressable>
                   </View>
                 </View>
@@ -485,6 +495,7 @@ export const FavoritesScreen = ({route, navigation}) => {
           onShare={contextItem ? ()=>shareSavedItem(contextItem) : null}
           onPin={contextItem ? ()=>togglePin(contextItem) : null}
           pinned={!!contextItem?.is_pinned}
+          onDelete={contextItem ? ()=>confirmRemoveItem(contextItem) : null}
         />
       </View>
     </AppBackground>
@@ -492,10 +503,10 @@ export const FavoritesScreen = ({route, navigation}) => {
 };
 
 const styles = StyleSheet.create({
-  cardTopActions:{flexDirection:'row',alignItems:'center',gap:10},
-  pinButton:{minWidth:34,minHeight:32,alignItems:'center',justifyContent:'center',
-    borderRadius:9,borderWidth:1,borderColor:'#DEC7A4'},
-  pinButtonActive:{backgroundColor:'#F1DDC3',borderColor:'#B47B59'},
+  cardTopActions:{flexDirection:'row',alignItems:'center',gap:6},
+  menuButton:{minWidth:36,minHeight:36,alignItems:'center',justifyContent:'center',
+    borderRadius:9,borderWidth:1,borderColor:'#DEC7A4',
+    backgroundColor:'rgba(255,248,235,0.72)'},
 
   screen: {
     flex: 1,
@@ -710,16 +721,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.8,
     color: colors.accent,
-  },
-
-  deleteButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-  },
-
-  deleteText: {
-    fontSize: 11,
-    color: colors.textMuted,
   },
 
   cardBody: {
