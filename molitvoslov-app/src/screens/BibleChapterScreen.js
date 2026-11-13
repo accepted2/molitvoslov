@@ -6,6 +6,7 @@ import {StatusBar} from 'expo-status-bar';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 import {ReaderBookmarkMenu} from '../components/reader/ReaderBookmarkMenu';
+import {shareContent, documentShareText} from '../services/contentSharing';
 import {BibleCrossReferencesSheet} from '../components/reader/BibleCrossReferencesSheet';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {useReadingProgress} from '../hooks/useReadingProgress';
@@ -824,6 +825,11 @@ export const BibleChapterScreen = ({route, navigation}) => {
       />
 
       <ReaderBookmarkMenu
+        onShare={() => shareContent({
+          title:displayName+' · Глава '+currentChapterNumber,
+          text:documentShareText(documentData),
+          screen:'BibleChapter',params:{bookId,chapterNumber:currentChapterNumber},
+        })}
         visible={readerMenuVisible}
         onClose={() => setReaderMenuVisible(false)}
         navigation={navigation}

@@ -10,6 +10,7 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 import {ReaderBookmarkMenu} from '../components/reader/ReaderBookmarkMenu';
+import {shareContent, documentShareText} from '../services/contentSharing';
 
 import {colors} from '../theme';
 
@@ -948,6 +949,11 @@ export const AkathistScreen = ({route, navigation}) => {
       />
 
       <ReaderBookmarkMenu
+        onShare={() => shareContent({
+          title:getLocalizedField(akathist,'title',language)||title||'Акафист',
+          text:documentShareText(documentData),
+          screen:'Akathist',params:{akathistId,slug},
+        })}
         visible={readerMenuVisible}
         onClose={() => setReaderMenuVisible(false)}
         navigation={navigation}

@@ -10,6 +10,7 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 import {ReaderBookmarkMenu} from '../components/reader/ReaderBookmarkMenu';
+import {shareContent, documentShareText} from '../services/contentSharing';
 
 import {colors} from '../theme';
 
@@ -959,6 +960,11 @@ export const CanonScreen = ({route, navigation}) => {
       />
 
       <ReaderBookmarkMenu
+        onShare={() => shareContent({
+          title:getLocalizedField(canon,'title',language)||title||'Канон',
+          text:documentShareText(documentData),
+          screen:'Canon',params:{canonId,slug},
+        })}
         visible={readerMenuVisible}
         onClose={() => setReaderMenuVisible(false)}
         navigation={navigation}

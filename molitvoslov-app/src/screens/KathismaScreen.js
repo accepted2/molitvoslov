@@ -11,6 +11,7 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 import {ReaderBookmarkMenu} from '../components/reader/ReaderBookmarkMenu';
+import {shareContent, documentShareText} from '../services/contentSharing';
 
 import {MemorialQuickSheet} from '../components/memorial/MemorialQuickSheet';
 
@@ -1546,6 +1547,11 @@ export default function KathismaScreen({route, navigation}) {
       />
 
       <ReaderBookmarkMenu
+        onShare={() => shareContent({
+          title:kathismaTitle||'Кафизма '+kathismaNumber,
+          text:documentShareText(documentData),
+          screen:'Kathisma',params:{kathismaNumber},
+        })}
         visible={readerMenuVisible}
         onClose={() => setReaderMenuVisible(false)}
         navigation={navigation}
