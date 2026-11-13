@@ -13,8 +13,14 @@ assert.equal(traditional.sections.length, 16);
 assert.equal(traditional.sections[0].kind, 'opening');
 assert.deepEqual(traditional.sections.slice(1, 4).map(section => section.psalmNumber),
   [5, 89, 100]);
-assert.deepEqual(traditional.sections.slice(4).map(section => section.rows.length),
-  editorial.afterPsalms.map(section => section.rows.length));
+// The civil CS edition now has a separate reader Amen and a Theotokos
+// kontakion that have not yet been transliterated to traditional typography.
+const expectedTraditionalRows = editorial.afterPsalms.map((section,index)=>
+  section.rows.length - (index===9?1:index===11?2:0));
+assert.deepEqual(traditional.sections.slice(4).map(section=>section.rows.length),
+  expectedTraditionalRows);
+assert.equal(editorial.afterPsalms[9].rows[7].church,'Чтец: Аминь.');
+assert.ok(editorial.afterPsalms[11].rows[4].church.startsWith('Хор: Взбранной Воеводе'));
 assert.deepEqual(traditional.sections[0].rows.length, editorial.opening.rows.length);
 
 for (let i = 0; i < 12; i += 1) {
