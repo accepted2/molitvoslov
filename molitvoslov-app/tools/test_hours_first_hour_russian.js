@@ -347,7 +347,7 @@ assert.match(runtimeCode,/child\.style\.setProperty\('color', choirColor, 'impor
 // Execute the scoped DOM color policy with a fake span to catch the exact
 // regression: CS and CS + RU were left red because only RU primary was forced.
 const choirRuntimeSource=runtimeCode.match(
-  /const isFirstHourFinalChoir = [\s\S]*?span\.querySelectorAll\('\*'\)\.forEach\(child => \{[\s\S]*?\}\);\s*\}/u
+  /const isFirstHourFinalChoir =\s*[\s\S]*?span\.querySelectorAll\('\*'\)\.forEach\(child => \{[\s\S]*?\}\);\s*\}/u
 )?.[0];
 assert.ok(choirRuntimeSource,'final choir color enforcement must remain present');
 const renderChoirSegment=new Function(
