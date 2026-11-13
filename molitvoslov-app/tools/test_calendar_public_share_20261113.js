@@ -60,7 +60,7 @@ async function main(){
   const calendar=app('src/screens/ChurchCalendarScreen.js');
   assert.match(calendar,/menuVariant/);
   assert.match(calendar,/onLongPress=\{\(\) => actionsRef\.current\?\.openMenu\(\)\}/);
-  assert.match(calendar,/params: \{date, focusSection: section, feastUid: feast\?\.sync_uid\}/);
+  assert.match(calendar,/params: \{date, focusSection: section, feastUid: feast\?\.sync_uid \|\| feast\?\.id\}/);
   const reader=app('src/components/reader/SelectableDocumentReader.js');
   assert.match(reader,/if\(isPrivateShareSource\(itemConfig\.sourceType\)\)/);
   assert.match(reader,/resolveSelectedShareTarget\(itemConfig\)/);
