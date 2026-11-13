@@ -72,8 +72,21 @@ try {
   if ($LASTEXITCODE -ne 0) { throw "Android App Links manifest sync failed." }
 
   Write-Host "Building Android release APK..." -ForegroundColor Cyan
-  & ".\android\gradlew.bat" ":app:assembleRelease" "--no-daemon"
-  if ($LASTEXITCODE -ne 0) { throw "Gradle assembleRelease failed." }
+  # Gradle looks for settings.gradle in the current working directory.
+  # Running android/gradlew.bat from the Expo root does NOT change that directory.
+  # Preserve existing native Android files, Kotlin and widgets.
+  $androidDir = Join-Path $root "android"
+  $gradleExitCode = -1
+  Push-Location $androidDir
+  try {
+    & ".\gradlew.bat" ":app:assembleRelease" "--no-daemon"
+    $gradleExitCode = $LASTEXITCODE
+  } finally {
+    Pop-Location
+  }
+  if ($gradleExitCode -ne 0) {
+    throw "Gradle assembleRelease failed (exit code $gradleExitCode)."
+  }
 
   $apk = Join-Path $root "android\app\build\outputs\apk\release\app-release.apk"
   if (-not (Test-Path $apk)) { throw "Release APK was not found: $apk" }
