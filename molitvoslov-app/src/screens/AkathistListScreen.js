@@ -381,7 +381,9 @@ const styles = StyleSheet.create({
     lineHeight: 25,
   },
 
-  itemActions:{flexDirection:'row',alignItems:'center',gap:0,paddingRight:4},
+  itemActions:{flexDirection:'row',alignSelf:'stretch',alignItems:'center',
+    borderLeftWidth:1,borderLeftColor:'rgba(126,82,38,0.24)',
+    backgroundColor:'rgba(238,220,192,0.48)',paddingHorizontal:3},
   favoriteButton: {
     width: 34,
     minHeight:40,
