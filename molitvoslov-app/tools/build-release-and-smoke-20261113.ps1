@@ -45,6 +45,22 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Ошибка expo prebuild." }
   }
 
+  # Existing native Android directories are not regenerated/cleaned: keep
+  # custom widget and Kotlin changes. Synchronize only release version fields.
+  $buildGradle=Join-Path $root "android\app\build.gradle"
+  if (Test-Path $buildGradle) {
+    $nativeConfig=[IO.File]::ReadAllText($buildGradle)
+    $updatedConfig=[regex]::Replace($nativeConfig,
+      '(?m)^(\s*versionCode\s+)\d+', ('${1}'+[string]$versionCode))
+    $updatedConfig=[regex]::Replace($updatedConfig,
+      '(?m)^(\s*versionName\s+)"[^"]+"', ('${1}"'+$version+'"'))
+    if ($nativeConfig -ne $updatedConfig) {
+      [IO.File]::WriteAllText($buildGradle,$updatedConfig,
+        (New-Object System.Text.UTF8Encoding($false)))
+      Write-Host "Обновлена версия Android Gradle: $version ($versionCode)"
+    }
+  }
+
   Write-Host "Собираем release APK..." -ForegroundColor Cyan
   & ".\android\gradlew.bat" ":app:assembleRelease" "--no-daemon"
   if ($LASTEXITCODE -ne 0) { throw "Gradle не смог собрать APK." }
