@@ -48,7 +48,9 @@ const linking = {
   config: {
     screens: {
       SharedImport: {path:'shared/:token'},
-      BibleChapter: {path:'bible/:bookId/:chapterNumber',parse:{chapterNumber:Number}},
+      BibleBook: {path:'bible-book/:bookId/:translationCode?'},
+      BibleChapter: {path:'bible/:bookId/:chapterNumber/:translationCode?',
+        parse:{chapterNumber:Number}},
       Akathist: {path:'akathist/:akathistId'},
       Canon: {path:'canon/:canonId'},
       Kathisma: {path:'kathisma/:kathismaNumber',parse:{kathismaNumber:Number}},

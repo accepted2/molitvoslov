@@ -11,6 +11,8 @@ import {bibleContent} from '../services/bibleContent';
 import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {getReadingProgress} from '../services/readingProgress';
 import {colors} from '../theme';
+import {ContentContextMenu} from '../components/share/ContentContextMenu';
+import {shareContent} from '../services/contentSharing';
 import {useLanguage} from '../context/LanguageContext';
 import {bibleUiText, isTraditionalBible, traditionalBibleTextStyle, formatBibleNumber} from '../services/bibleUi';
 
@@ -28,6 +30,7 @@ export const BibleBooksScreen = ({route, navigation}) => {
 
 
   const [readingProgress, setReadingProgress] = useState([]);
+  const [contextBook,setContextBook] = useState(null);
 
   const insets = useSafeAreaInsets();
 
@@ -117,6 +120,8 @@ export const BibleBooksScreen = ({route, navigation}) => {
 
           return (
             <Pressable
+              onLongPress={() => setContextBook(item)}
+              delayLongPress={340}
               onPress={() =>
                 navigation.navigate('BibleBook', {
                   bookId: item.id,
@@ -132,9 +137,11 @@ export const BibleBooksScreen = ({route, navigation}) => {
               ]}
             >
               <View style={styles.itemText}>
-                <Text style={[styles.bookName, isTraditional && traditionalBibleTextStyle]}>{bibleContent.getDisplayName(item, translationCode)}</Text>
+                <Text style={[styles.bookName, isTraditional && traditionalBibleTextStyle,
+                   isTraditional && styles.bookNameChurch]}>{bibleContent.getDisplayName(item, translationCode)}</Text>
 
-                <Text style={[styles.chapterCount, isTraditional && traditionalBibleTextStyle]}>
+                <Text style={[styles.chapterCount, isTraditional && traditionalBibleTextStyle,
+                   isTraditional && styles.chapterCountChurch]}>
                   {ui('chapters', t('bible.chapters', {count: item.chapters?.length || 0}), {count: item.chapters?.length || 0})}
                   {chapterNumber ? ' · ' + ui('stoppedChapter', t('bible.stoppedChapter', {chapter: chapterNumber}), {chapter: chapterNumber}) : ''}
                 </Text>
@@ -155,6 +162,19 @@ export const BibleBooksScreen = ({route, navigation}) => {
       <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={title} titleTextStyle={isTraditional ? traditionalBibleTextStyle : null} navigation={navigation} topInset={insets.top} />
 
       <BottomNav navigation={navigation} active={null} />
+      <ContentContextMenu
+        visible={!!contextBook}
+        title={contextBook ? bibleContent.getDisplayName(contextBook,translationCode) : ''}
+        onClose={()=>setContextBook(null)}
+        onOpen={contextBook ? ()=>navigation.navigate('BibleBook',{
+          bookId:contextBook.id,translationCode,
+        }) : null}
+        onShare={contextBook ? ()=>shareContent({
+          title:bibleContent.getDisplayName(contextBook,translationCode),
+          screen:'BibleBook',
+          params:{bookId:contextBook.id,translationCode},
+        }) : null}
+      />
     </AppBackground>
   );
 };
@@ -199,6 +219,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
   },
+  bookNameChurch:{fontSize:19,lineHeight:27},
+  chapterCountChurch:{fontSize:15,lineHeight:22,color:'#5C3924'},
   chapterCount: {
     marginTop: 2,
     fontSize: 12,

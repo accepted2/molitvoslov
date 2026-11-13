@@ -13,6 +13,8 @@ import {getReadingProgress} from '../services/readingProgress';
 import {getBibleArtwork} from '../data/bibleArtwork';
 import {homeArtwork} from '../data/homeArtwork';
 import {colors} from '../theme';
+import {ContentContextMenu} from '../components/share/ContentContextMenu';
+import {shareContent} from '../services/contentSharing';
 import {useLanguage} from '../context/LanguageContext';
 import {bibleUiText, isTraditionalBible, traditionalBibleTextStyle, formatBibleNumber} from '../services/bibleUi';
 
@@ -28,6 +30,7 @@ export const BibleBookScreen = ({route, navigation}) => {
   const book = bibleContent.getBook(route.params?.bookId, translationCode);
 
   const [bookProgress, setBookProgress] = useState(null);
+  const [contextChapter,setContextChapter] = useState(null);
 
   const displayName = bibleContent.getDisplayName(book, translationCode);
   const artwork = getBibleArtwork(book);
@@ -230,6 +233,8 @@ export const BibleBookScreen = ({route, navigation}) => {
             return (
               <Pressable
                 onPress={() => openChapter(item)}
+                onLongPress={() => setContextChapter(item)}
+                delayLongPress={340}
                 style={({pressed}) => [
                   styles.chapter,
 
@@ -250,6 +255,7 @@ export const BibleBookScreen = ({route, navigation}) => {
 
                     isCurrent && styles.chapterNumberCurrent,
                     isTraditional && traditionalBibleTextStyle,
+                    isTraditional && styles.chapterNumberChurch,
                   ]}
                 >
                   {formatBibleNumber(translationCode, item.number)}
@@ -264,6 +270,24 @@ export const BibleBookScreen = ({route, navigation}) => {
         <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={displayName} titleTextStyle={isTraditional ? traditionalBibleTextStyle : null} navigation={navigation} topInset={insets.top} />
 
         <BottomNav navigation={navigation} active={null} />
+        <ContentContextMenu
+          visible={!!contextChapter}
+          title={contextChapter ? ui('chapter',
+            t('bible.chapter',{number:contextChapter.number}),
+            {number:contextChapter.number}) : ''}
+          onClose={()=>setContextChapter(null)}
+          onOpen={contextChapter ? ()=>openChapter(contextChapter) : null}
+          onShare={contextChapter ? ()=>shareContent({
+            title:displayName+' · '+ui('chapter',
+              t('bible.chapter',{number:contextChapter.number}),
+              {number:contextChapter.number}),
+            text:(contextChapter.verses||[]).map(verse=>
+              formatBibleNumber(translationCode,verse.number)+' '+(verse.text||'')
+            ).join('\n'),
+            screen:'BibleChapter',params:{bookId:book.id,
+              chapterNumber:contextChapter.number,translationCode},
+          }) : null}
+        />
       </ImageBackground>
     </View>
   );
@@ -431,8 +455,8 @@ const styles = StyleSheet.create({
   },
 
   chapterCurrentArtwork: {
-    borderColor: '#E6B65E',
-    backgroundColor: 'rgba(126, 76, 25, 0.92)',
+    borderColor: '#945E36',
+    backgroundColor: '#FFF0CF',
   },
 
   chapterNumber: {
@@ -454,7 +478,14 @@ const styles = StyleSheet.create({
   },
 
   chapterNumberCurrent: {
-    color: '#FFE2A1',
+    color: '#4C2818',
+    textShadowColor:'transparent',
+    textShadowRadius:0,
+  },
+  chapterNumberChurch:{
+    fontSize:24,
+    lineHeight:32,
+    color:'#3C2419',
   },
 
   currentDot: {

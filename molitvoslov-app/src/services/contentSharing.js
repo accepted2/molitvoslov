@@ -12,11 +12,16 @@ const slug = value => {
 export const sharePathFor = (screen,params={}) => {
   let id,chapter;
   switch(screen){
+    case 'BibleBook':
+      id=slug(params.bookId);
+      return id ? 'bible-book/'+id+'/' +
+        (params.translationCode==='csl_traditional'?'csl_traditional':'rst') : null;
     case 'BibleChapter':
       id=slug(params.bookId);
       chapter=Number(params.chapterNumber);
       return id && Number.isInteger(chapter) && chapter>=1 && chapter<=250
-        ? 'bible/'+id+'/'+chapter : null;
+        ? 'bible/'+id+'/'+chapter+'/' +
+          (params.translationCode==='csl_traditional'?'csl_traditional':'rst') : null;
     case 'Akathist':
       id=slug(params.akathistId || params.slug);
       return id?'akathist/'+id:null;
