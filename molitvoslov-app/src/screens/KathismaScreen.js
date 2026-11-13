@@ -11,7 +11,11 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 import {ReaderBookmarkMenu} from '../components/reader/ReaderBookmarkMenu';
-import {shareContent, documentShareText} from '../services/contentSharing';
+import {shareContent} from '../services/contentSharing';
+import {psalmTextForMode, psalterSaveMetadata} from '../services/psalterSharing';
+import {ContentContextMenu} from '../components/share/ContentContextMenu';
+import {getReaderLanguageModePreference, saveReaderLanguageModePreference} from '../services/readerPreferences';
+import {showShareFeedback} from '../services/shareFeedback';
 
 import {MemorialQuickSheet} from '../components/memorial/MemorialQuickSheet';
 
@@ -138,7 +142,7 @@ const toChurchSlavonicNumber = (value) => {
 
 export default function KathismaScreen({route, navigation}) {
   const {language, t} = useLanguage();
-  const {kathismaNumber, kathismaTitle, focusTarget = null} = route.params;
+  const {kathismaNumber, kathismaTitle, focusTarget:inputFocusTarget = null} = route.params;
 
   const insets = useSafeAreaInsets();
 
@@ -146,6 +150,18 @@ export default function KathismaScreen({route, navigation}) {
   useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   const [kathisma, setKathisma] = useState(null);
+  const [selectedPsalmId,setSelectedPsalmId] = useState(null);
+  const focusTarget=useMemo(() => {
+    if(inputFocusTarget)return inputFocusTarget;
+    const psalmNumber=Number(route.params?.psalmNumber);
+    if(!Number.isInteger(psalmNumber) || psalmNumber<1 || !kathisma)return null;
+    const psalm=(kathisma.psalms||[]).find(p=>Number(p.number)===psalmNumber);
+    if(!psalm)return null;
+    return {save_type:'psalm',anchor_type:'psalm',anchor_id:Number(psalm.id),
+      preferredLanguage:route.params?.readerMode,
+      metadata:{psalm_id:Number(psalm.id),psalm_number:Number(psalm.number),
+        kathisma_number:Number(kathisma.number)}};
+  },[inputFocusTarget,kathisma,route.params?.psalmNumber,route.params?.readerMode]);
   const {readingChromeHidden, handleReadingScroll, handleNativeReadingScroll} = useReadingChrome();
 
   const [savedItems, setSavedItems] = useState([]);
@@ -351,29 +367,27 @@ export default function KathismaScreen({route, navigation}) {
       };
     }
 
+    const text=psalmTextForMode(psalm,viewMode);
+    if(!text.trim())return null;
     const saved = await saveItem({
       save_type: 'psalm',
-
       source_type: 'psalter',
-
       source_id: kathisma.psalter,
-
       anchor_type: 'psalm',
-
       anchor_id: psalm.id,
-
       source_title: t('psalter.title'),
-
-      item_title: t('psalter.psalm', {number: psalm.number}),
-
-      text: '',
-
-      metadata: {
-        kathisma_number: kathisma.number,
-
-        kathisma_title: getLocalizedField(kathisma, 'title', language) || '',
-
-        psalm_number: psalm.number,
+      item_title: viewMode==='traditional'
+        ? 'Ѱало́мъ '+String(psalm.number)
+        : t('psalter.psalm',{number:psalm.number}),
+      text,
+      start_offset:0,
+      end_offset:text.length,
+      metadata:{
+        kathisma_number:kathisma.number,
+        kathisma_title:getLocalizedField(kathisma,'title',language)||'',
+        psalm_id:psalm.id,
+        psalm_number:psalm.number,
+        ...psalterSaveMetadata(viewMode),
       },
     });
 
@@ -609,12 +623,24 @@ export default function KathismaScreen({route, navigation}) {
       hasRussian: hasRussianTranslation,
       hasUkrainian: hasUkrainianTranslation,
     });
-    setViewMode(
-      preferred === 'russian' ? (hasRussianTranslation ? READER_LANGUAGE_MODES.RUSSIAN : initial) :
-      preferred === 'ukrainian' ? (hasUkrainianTranslation ? READER_LANGUAGE_MODES.UKRAINIAN : initial) :
-      preferred === 'traditional' ? (hasTraditionalTranslation ? READER_LANGUAGE_MODES.TRADITIONAL : initial) :
-      preferred === 'church' ? READER_LANGUAGE_MODES.CHURCH : initial
-    );
+    const applyPreferred=(savedMode) => {
+      const chosen=preferred||savedMode;
+      setViewMode(
+        chosen === 'russian' ? (hasRussianTranslation ? READER_LANGUAGE_MODES.RUSSIAN : initial) :
+        chosen === 'ukrainian' ? (hasUkrainianTranslation ? READER_LANGUAGE_MODES.UKRAINIAN : initial) :
+        chosen === 'traditional' ? (hasTraditionalTranslation ? READER_LANGUAGE_MODES.TRADITIONAL : initial) :
+        chosen === 'both' ? (hasRussianTranslation ? READER_LANGUAGE_MODES.BOTH : initial) :
+        chosen === 'church' ? READER_LANGUAGE_MODES.CHURCH : initial
+      );
+    };
+    applyPreferred(null);
+    if(!preferred) {
+      let active=true;
+      getReaderLanguageModePreference({sourceType:'kathisma',sourceId:kathismaNumber})
+        .then(mode=>{if(active&&mode)applyPreferred(mode);})
+        .catch(error=>console.warn('[kathisma] language:',error?.message||error));
+      return () => {active=false;};
+    }
   }, [language, kathisma, hasRussianTranslation, hasUkrainianTranslation, hasTraditionalTranslation, focusTarget]);
 
   const documentData = useMemo(() => {
@@ -1411,10 +1437,6 @@ export default function KathismaScreen({route, navigation}) {
       });
     }
 
-    const wholeKathismaSaved = savedItems.some(
-      (item) => item.anchor_type === 'kathisma' && Number(item.anchor_id) === Number(kathisma.id)
-    );
-
     return {
       title:
         viewMode === READER_LANGUAGE_MODES.TRADITIONAL
@@ -1423,14 +1445,8 @@ export default function KathismaScreen({route, navigation}) {
 
       description: getLocalizedField(kathisma, 'title', language) || '',
 
-      action: {
-        key: `kathisma:${kathisma.id}`,
-
-        label: wholeKathismaSaved ? t('common.inFavorites') : t('common.addToFavorites'),
-
-        active: wholeKathismaSaved,
-      },
-
+      // Whole-kathisma controls belong in the Psalter list, not above
+      // the psalms inside the reader.
       viewSwitcher: {
         activeKey: viewMode,
         options: buildReaderLanguageOptions({
@@ -1456,6 +1472,46 @@ export default function KathismaScreen({route, navigation}) {
     language,
     t,
   ]);
+
+  const changeKathismaLanguage=mode => {
+    setViewMode(mode);
+    saveReaderLanguageModePreference({
+      sourceType:'kathisma',sourceId:kathismaNumber,mode,
+    }).catch(error=>console.warn('[kathisma] store language:',error?.message||error));
+  };
+
+  const sharePsalm=async psalmId => {
+    const psalm=(kathisma?.psalms||[]).find(p=>Number(p.id)===Number(psalmId));
+    if(!psalm)return;
+    const text=psalmTextForMode(psalm,viewMode);
+    if(!text.trim()){
+      showShareFeedback({title:'Текст пока недоступен',
+        message:'Нет текста псалма в выбранном языке.'});
+      return;
+    }
+    await shareContent({
+      title:documentData.sections.find(section=>
+        section.className==='psalter-psalm-section' &&
+        Number(section.progressAnchorId)===Number(psalm.id))?.title ||
+        t('psalter.psalm',{number:psalm.number}),
+      text,
+      screen:'Kathisma',
+      params:{kathismaNumber:kathisma.number,psalmNumber:psalm.number,readerMode:viewMode},
+    });
+  };
+
+  const togglePsalmMenuSaved=async psalmId => {
+    try{
+      const result=await handleAction('psalm:'+psalmId);
+      if(result){
+        readerRef.current?.updateAction('psalm:'+psalmId,result);
+      }
+    }catch(error){
+      console.warn('[kathisma] psalm save:',error?.message||error);
+      showShareFeedback({title:'Не удалось сохранить псалом',
+        message:error?.message||'Попробуйте ещё раз.'});
+    }
+  };
 
   const handleProgress = (progress) => {
     if (!kathisma) {
@@ -1535,11 +1591,24 @@ export default function KathismaScreen({route, navigation}) {
         onNativeReadingScroll={handleNativeReadingScroll}
         onProgress={handleProgress}
         onAction={handleAction}
-        onViewModeChange={setViewMode}
+        onViewModeChange={changeKathismaLanguage}
+        onPsalmMenu={(psalmId)=>setSelectedPsalmId(psalmId)}
         onReady={() => readerRef.current?.applyAppearance(appearance)}
         onMemorialOpen={() => setMemorialVisible(true)}
       />
 
+      <ContentContextMenu
+        visible={!!selectedPsalmId}
+        title={selectedPsalmId ?
+          (documentData.sections.find(section=>
+            section.className==='psalter-psalm-section' &&
+            Number(section.progressAnchorId)===Number(selectedPsalmId))?.title ||
+            'Псалом') : ''}
+        onClose={()=>setSelectedPsalmId(null)}
+        onShare={selectedPsalmId ? ()=>sharePsalm(selectedPsalmId) : null}
+        onSave={selectedPsalmId ? ()=>togglePsalmMenuSaved(selectedPsalmId) : null}
+        saved={!!(selectedPsalmId && getSavedPsalm(selectedPsalmId))}
+      />
       <MemorialQuickSheet
         visible={memorialVisible}
         onClose={() => setMemorialVisible(false)}
@@ -1547,11 +1616,6 @@ export default function KathismaScreen({route, navigation}) {
       />
 
       <ReaderBookmarkMenu
-        onShare={() => shareContent({
-          title:kathismaTitle||'Кафизма '+kathismaNumber,
-          text:documentShareText(documentData),
-          screen:'Kathisma',params:{kathismaNumber},
-        })}
         visible={readerMenuVisible}
         onClose={() => setReaderMenuVisible(false)}
         navigation={navigation}
