@@ -33,6 +33,10 @@ try {
     }
   }
 
+  Write-Host "Проверяем экспорт Android JavaScript bundle..." -ForegroundColor Cyan
+  & npx.cmd expo export --platform android --output-dir ".\reports\release-js-smoke"
+  if ($LASTEXITCODE -ne 0) { throw "Expo не смог собрать JS bundle." }
+
   if (-not (Test-Path ".\android\gradlew.bat")) {
     if ($SkipPrebuild) { throw "Нет android\gradlew.bat и указан -SkipPrebuild." }
     Write-Host "Генерируем Android-проект..." -ForegroundColor Cyan
