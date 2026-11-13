@@ -24,6 +24,15 @@ def is_public_path(path):
 
 @require_GET
 def public_share_page(request):
+    invite = str(request.GET.get("invite", ""))
+    if invite:
+        # The public landing never previews private names or texts.
+        if not re.fullmatch(r"[A-Za-z0-9_-]{43}", invite):
+            return HttpResponseBadRequest("Недопустимая ссылка.")
+        return render(request, "api/content_share.html", {
+            "app_uri": "molitvoslov://shared/" + invite,
+            "is_invitation": True,
+        })
     path = str(request.GET.get("path", ""))
     # Query parameters arrive already URL-decoded from Django.
     if not is_public_path(path):

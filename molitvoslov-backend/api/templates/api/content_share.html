@@ -10,7 +10,11 @@ padding:13px 24px;text-decoration:none;font-weight:700}small{display:block;
 margin-top:24px;color:#765E49}</style></head><body><main>
 <div style="font-size:38px">☦</div>
 <h1>Молитвослов</h1>
+{% if is_invitation %}
+<p>Вам прислали текст. Откройте его в Молитвослове, чтобы посмотреть и при желании добавить себе. Для импорта нужен вход в аккаунт.</p>
+{% else %}
 <p>Вам отправили текст из православного молитвослова.</p>
-<p><a href="{{ app_uri }}">Открыть в приложении</a></p>
+{% endif %}
+<p><a href="{{ app_uri }}">{% if is_invitation %}Посмотреть и добавить себе{% else %}Открыть в приложении{% endif %}</a></p>
 <small>Если приложение не установлено, сначала установите его. Ссылка не раскрывает личные молитвословы и помянники.</small>
 </main></body></html>

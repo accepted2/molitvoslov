@@ -24,6 +24,7 @@ import {BibleBooksScreen} from '../screens/BibleBooksScreen';
 import {BibleBookScreen} from '../screens/BibleBookScreen';
 import {BibleChapterScreen} from '../screens/BibleChapterScreen';
 import {FavoritesScreen} from '../screens/FavoritesScreen';
+import {SharedImportScreen} from '../screens/SharedImportScreen';
 import {MiscPrayersScreen} from '../screens/MiscPrayersScreen';
 import {MiscPrayerPlaceholderScreen} from '../screens/MiscPrayerPlaceholderScreen';
 import {ContinueReadingScreen} from '../screens/ContinueReadingScreen';
@@ -46,6 +47,7 @@ const linking = {
 
   config: {
     screens: {
+      SharedImport: {path:'shared/:token'},
       BibleChapter: {path:'bible/:bookId/:chapterNumber',parse:{chapterNumber:Number}},
       Akathist: {path:'akathist/:akathistId'},
       Canon: {path:'canon/:canonId'},
@@ -139,6 +141,9 @@ export const AppNavigator = () => {
             headerShown: false,
           }}
         />
+
+        <Stack.Screen name="SharedImport" component={SharedImportScreen}
+          options={{headerShown: false}} />
 
         <Stack.Screen
           name="Favorites"
