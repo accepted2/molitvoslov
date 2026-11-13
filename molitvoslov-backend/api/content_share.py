@@ -11,7 +11,7 @@ PATTERNS = (
     r"bible/[\w.-]+/[1-9]\d{0,2}(?:/(?:rst|csl_traditional)(?:/[1-9]\d{0,2})?)?",
     r"bible-book/[\w.-]+(?:/(?:rst|csl_traditional))?",
     r"(?:akathist|canon|prayer|reader|hours)/[\w.-]+",
-    r"kathisma/(?:[1-9]|1\d|20)",
+    r"kathisma/(?:[1-9]|1\d|20)(?:/[1-9]\d{0,2}/(?:church|russian|traditional|both))?",
     r"saint/20\d{2}-\d{2}-\d{2}/(?:life|troparion|kontakion|prayer)(?:/[\w.-]+)?",
     r"psalter",
 )
