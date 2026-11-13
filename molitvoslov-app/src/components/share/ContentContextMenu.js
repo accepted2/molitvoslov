@@ -6,9 +6,10 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 // Native transparent modal is above BottomNav even when FlatList clips rows.
 export const ContentContextMenu = ({
   visible,title,onClose,onOpen,onShare,onPin,pinned=false,onSave=null,saved=false,
+  onDelete=null,
 }) => {
   const safe=useSafeAreaInsets();
-  const item=(label,icon,action)=>{
+  const item=(label,icon,action,danger=false)=>{
     if(!action)return null;
     return (
       <Pressable key={label} onPress={()=>{
@@ -18,8 +19,8 @@ export const ContentContextMenu = ({
       }} accessibilityRole="button" style={({pressed})=>[
         styles.action,pressed&&styles.pressed,
       ]}>
-        <Ionicons name={icon} color="#875532" size={21}/>
-        <Text style={styles.actionText}>{label}</Text>
+        <Ionicons name={icon} color={danger ? "#A34738" : "#875532"} size={21}/>
+        <Text style={[styles.actionText,danger && styles.dangerText]}>{label}</Text>
       </Pressable>
     );
   };
@@ -37,6 +38,7 @@ export const ContentContextMenu = ({
             saved?'bookmark':'bookmark-outline',onSave)}
           {item(pinned?'Открепить':'Закрепить',
             pinned?'pin':'pin-outline',onPin)}
+          {item('Удалить из избранного','trash-outline',onDelete,true)}
           <Pressable onPress={onClose} style={styles.cancel}>
             <Text style={styles.cancelText}>Отмена</Text>
           </Pressable>
@@ -59,6 +61,7 @@ const styles=StyleSheet.create({
     minHeight:48,borderTopWidth:0.5,borderColor:'#DFC9AB',paddingHorizontal:8},
   pressed:{opacity:0.65},
   actionText:{fontSize:15,color:'#4F3526',fontWeight:'600'},
+  dangerText:{color:'#A34738'},
   cancel:{alignItems:'center',paddingVertical:12,marginTop:5},
   cancelText:{color:'#875532',fontSize:15,fontWeight:'600'},
 });
