@@ -16,7 +16,7 @@ const colorFields = [
   {id: 'customText', label: 'Текст'},
 ];
 
-export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, onReset}) => {
+export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, onReset, onShare}) => {
   const insets = useSafeAreaInsets();
   const [sliderWidth, setSliderWidth] = useState(240);
   const [showColorPicker, setShowColorPicker] = useState(null);
@@ -133,6 +133,19 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
                 </Pressable>
               ))}
             </View>
+            {!!onShare && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Поделиться текстом"
+                onPress={()=>{
+                  onClose?.();
+                  setTimeout(onShare,200);
+                }}
+                style={styles.shareAction}
+              >
+                <Text style={styles.shareActionText}>⇧ Поделиться текстом</Text>
+              </Pressable>
+            )}
             <Pressable onPress={onReset} style={styles.reset}><Text style={styles.resetText}>Вернуть общие настройки</Text></Pressable>
             </Animated.View>
             {!!showColorPicker && (
@@ -195,5 +208,8 @@ const styles=StyleSheet.create({
   colorButton:{flex:1,flexDirection:'row',gap:8,alignItems:'center',padding:8,borderRadius:9,backgroundColor:'#F2E0C5'},
   colorChip:{width:23,height:23,borderRadius:6,borderColor:'#A88762',borderWidth:1},
   reset:{alignSelf:'center',padding:12},
-  resetText:{fontSize:13,color:'#7E5235',textDecorationLine:'underline'}
+  resetText:{fontSize:13,color:'#7E5235',textDecorationLine:'underline'},
+  shareAction:{padding:11,alignItems:'center',borderRadius:11,
+    borderColor:'#B9946B',borderWidth:1,backgroundColor:'#F1DFC2'},
+  shareActionText:{fontWeight:'700',fontSize:14,color:'#694126'}
 });
