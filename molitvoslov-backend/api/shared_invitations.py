@@ -58,8 +58,15 @@ def _quote(request):
     return _clean_title(request.data.get("title"), "Цитата"), {"text": text}
 
 
+def _source_uuid(request):
+    try:
+        return uuid.UUID(str(request.data.get("source_sync_id")))
+    except (ValueError, TypeError, AttributeError):
+        raise ValueError("Не указан корректный ID для отправки.")
+
+
 def _memorial(request):
-    sync_id = request.data.get("source_sync_id")
+    sync_id = _source_uuid(request)
     book = get_object_or_404(
         MemorialBook, sync_id=sync_id, user=request.user,
         deleted_at__isnull=True,
@@ -71,7 +78,7 @@ def _memorial(request):
 
 
 def _prayerbook(request):
-    sync_id = request.data.get("source_sync_id")
+    sync_id = _source_uuid(request)
     book = get_object_or_404(
         PersonalPrayerBook, sync_id=sync_id, user=request.user,
         deleted_at__isnull=True,
