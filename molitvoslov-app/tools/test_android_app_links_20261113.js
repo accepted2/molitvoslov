@@ -49,6 +49,7 @@ for(const bad of [
   'https://molitvoslov-3o9d.onrender.com/api/share/?path=bible%2F1%2F1%2Frst&path=psalter',
   'https://molitvoslov-3o9d.onrender.com/api/share/?path=%ZZ',
   'https://molitvoslov-3o9d.onrender.com/api/share/?invite=wrong',
+  'https://molitvoslov-3o9d.onrender.com/api/share/?invite=wrong&path=psalter',
   'https://molitvoslov-3o9d.onrender.com/api/share/?path=javascript%3Aalert(1)',
 ]){
   assert.equal(api.normalizeIncomingAppLink(bad),null,'Bad URL accepted: '+bad);
