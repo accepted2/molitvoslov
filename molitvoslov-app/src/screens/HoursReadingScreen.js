@@ -94,7 +94,10 @@ export const HoursReadingScreen = ({route, navigation}) => {
         style={isDarkReaderBackground(readerBackground) ? 'light' : 'dark'}
       />
 
-      {content?.sections?.length ? (
+      {(content?.sections?.length ||
+        (entryId === 'ordinary-1' &&
+          viewMode === READER_LANGUAGE_MODES.TRADITIONAL &&
+          documentData?.available?.hasTraditional)) ? (
         <SelectableDocumentReader
           ref={readerRef}
           documentData={documentData}
