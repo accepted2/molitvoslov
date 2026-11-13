@@ -94,6 +94,7 @@ export const getFirstHourTraditionalMarks = (text, presentation = '') => {
 
 export const buildHoursDocument = ({entry, content, viewMode}) => {
   const isFirstHour = entry.id === 'ordinary-1';
+  const isThirdHour = entry.id === 'ordinary-3';
   const available = {
     ...getHoursLanguageAvailability(content),
     ...(isFirstHour ? {
@@ -180,7 +181,8 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
         : collectHoursTextMarks(text);
     // A shared First Hour doxology/response spans both columns once.
     // The repeat count retains the explanatory color rather than becoming red.
-    if (isFirstHour && viewMode === READER_LANGUAGE_MODES.BOTH &&
+    if (((isFirstHour && viewMode === READER_LANGUAGE_MODES.BOTH) ||
+         (isThirdHour && language === 'church')) &&
         ['shared-doxology', 'shared-alleluia', 'shared-mercy', 'shared-heading']
           .includes(visualNote)) {
       hoursMarks.splice(0, hoursMarks.length);
@@ -247,7 +249,7 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
         }
       }
     }
-    const hoursMercyLeft = isFirstHour &&
+    const hoursMercyLeft = (isFirstHour || isThirdHour) &&
       /^господи,?\s+помилуй/u.test(text.normalize('NFD')
         .replace(/[\u0300\u0301\u0340\u0341\u0483-\u0489]/gu,'')
         .normalize('NFC').toLocaleLowerCase('ru'));
@@ -367,8 +369,11 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
           section.dividerBefore === true ? 'hours-divider-before' : '',
           isFirstHour && viewMode === READER_LANGUAGE_MODES.BOTH
             ? 'hours-parallel-first-hour' : '',
-          isFirstHour && ['first-hour-lent-tropar','first-hour-ephrem']
-            .includes(section.accordionId) ? 'hours-divider-after-dropdown' : '',
+          isThirdHour ? 'hours-third-hour' : '',
+          (isFirstHour && ['first-hour-lent-tropar','first-hour-ephrem']
+            .includes(section.accordionId)) ||
+          (isThirdHour && ['third-hour-lent-tropar','third-hour-fasting-kontakia']
+            .includes(section.accordionId)) ? 'hours-divider-after-dropdown' : '',
         ].filter(Boolean).join(' '),
         progressAnchorId: sectionIndex + 1,
         trackProgress: true,
