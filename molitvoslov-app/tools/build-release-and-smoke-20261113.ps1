@@ -1,6 +1,7 @@
 param(
   [switch]$InstallOnPhone,
   [switch]$SkipTests,
+  [switch]$SkipSmokeExport,
   [switch]$SkipPrebuild
 )
 $ErrorActionPreference = "Stop"
@@ -39,9 +40,16 @@ try {
   }
 
   New-Item -ItemType Directory -Force -Path ".\reports" | Out-Null
-  Write-Host "Exporting Android production JavaScript bundle..." -ForegroundColor Cyan
-  & npx.cmd expo export --platform android --output-dir ".\reports\release-js-smoke"
-  if ($LASTEXITCODE -ne 0) { throw "Expo could not export the Android JavaScript bundle." }
+  if ($SkipSmokeExport) {
+    if (-not (Test-Path ".\reports\release-js-smoke\metadata.json")) {
+      throw "No previous Metro smoke export to reuse. Re-run without -SkipSmokeExport."
+    }
+    Write-Host "Reusing previously successful Metro smoke export." -ForegroundColor Cyan
+  } else {
+    Write-Host "Exporting Android production JavaScript bundle..." -ForegroundColor Cyan
+    & npx.cmd expo export --platform android --output-dir ".\reports\release-js-smoke"
+    if ($LASTEXITCODE -ne 0) { throw "Expo could not export the Android JavaScript bundle." }
+  }
 
   if (-not (Test-Path ".\android\gradlew.bat")) {
     if ($SkipPrebuild) { throw "android\gradlew.bat does not exist and -SkipPrebuild was specified." }
