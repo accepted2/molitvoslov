@@ -256,6 +256,13 @@ export const FavoritesScreen = ({route, navigation}) => {
       return;
     }
 
+    if (item.source_type === 'hours' && (metadata.entry_id||metadata.entryId)) {
+      navigation.push('HoursReading',{
+        entryId:metadata.entry_id||metadata.entryId,
+      });
+      return;
+    }
+
     if (item.source_type === 'daily_quote') {
       navigation.navigate('Menu');
       return;
