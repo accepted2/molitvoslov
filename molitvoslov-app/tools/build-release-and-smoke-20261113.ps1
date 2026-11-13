@@ -25,7 +25,8 @@ try {
       "test_dual_share_release_20261113.js",
       "test_bible_lists_actions_20261113.js",
       "test_psalter_context_share_font_20261113.js",
-      "test_bible_crossrefs_appearance_bookmarks_20261113.js"
+      "test_bible_crossrefs_appearance_bookmarks_20261113.js",
+      "test_android_app_links_20261113.js"
     )
     foreach ($test in $tests) {
       Write-Host "TEST: $test"
@@ -64,6 +65,11 @@ try {
     }
   }
 
+  # Expo config does not automatically modify an already-generated android/
+  # folder. Register HTTPS verification without overwriting native widgets.
+  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\tools\sync-android-app-links-20261113.ps1"
+  if ($LASTEXITCODE -ne 0) { throw "Android App Links manifest sync failed." }
+
   Write-Host "Собираем release APK..." -ForegroundColor Cyan
   & ".\android\gradlew.bat" ":app:assembleRelease" "--no-daemon"
   if ($LASTEXITCODE -ne 0) { throw "Gradle не смог собрать APK." }
@@ -76,6 +82,10 @@ try {
   Copy-Item $apk $releaseApk -Force
   Write-Host "APK: $releaseApk" -ForegroundColor Green
   Get-FileHash $releaseApk -Algorithm SHA256 | Format-Table -AutoSize
+
+  # Print the actual APK certificate SHA-256 to configure Render assetlinks.
+  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\tools\check-android-app-links-20261113.ps1" -ApkPath $releaseApk -CheckServer
+  if ($LASTEXITCODE -ne 0) { throw "APK certificate inspection failed." }
 
   if ($InstallOnPhone) {
     if (-not (Get-Command adb -ErrorAction SilentlyContinue)) {
