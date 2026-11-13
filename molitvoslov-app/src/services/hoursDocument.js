@@ -71,7 +71,12 @@ export const getFirstHourTraditionalMarks = (text, presentation = '') => {
       ranges.push({start: match.index, end: match.index + match[0].length, kind});
     }
   };
-  // Complete Glory, standalone Glory, and Now must be red even after "Хо́ръ:".
+  // The concluding choir response is the only exception: only "Хо́ръ:" is red.
+  if (/^Хо́ръ:/u.test(text)) {
+    add(/^Хо́ръ:/gu, 'speaker');
+    return ranges;
+  }
+  // Elsewhere the complete Glory and Now remain red.
   add(/Сла́ва ѻ҆ц҃ꙋ̀ и҆ сн҃ꙋ̀ и҆ ст҃о́мꙋ дх҃ꙋ(?:, и҆ ны́нѣ и҆ при́снѡ и҆ во вѣ́ки вѣкѡ́въ\. А҆ми́нь\.|:)?/gu,
     'devotional');
   add(/И҆ ны́нѣ и҆ при́снѡ и҆ во вѣ́ки вѣкѡ́въ\. А҆ми́нь\./gu,
@@ -79,7 +84,7 @@ export const getFirstHourTraditionalMarks = (text, presentation = '') => {
   add(/Сла́ва, и҆ ны́нѣ:/gu, 'devotional');
   add(/І҆ере́й:|Хо́ръ:/gu, 'speaker');
   add(/Гдⷭ҇и, поми́лꙋй/gu, 'mercy');
-  add(/А҆ллилꙋ́їа|Сла́ва тебѣ̀ бж҃е/gu, 'alleluia');
+  add(/[Аа]҆ллилꙋ́їа|Сла́ва тебѣ̀ бж҃е/gu, 'alleluia');
   add(/\((?:Три́жды|Покло́нъ|м҃|ві҃)\)/gu, 'repeat');
   // The longest devotional phrase wins over its nested "И ныне" fragment.
   return ranges.sort((a, b) => a.start - b.start || b.end - a.end)

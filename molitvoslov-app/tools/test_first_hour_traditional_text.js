@@ -29,6 +29,11 @@ for (let i = 0; i < 12; i += 1) {
     const translated = actual.rows[rowIndex];
     for (const field of ['presentation', 'redInitial', 'dividerAfter', 'compactAfter',
       'preserveLineBreaks']) {
+      // The three optional weekday hymns have deliberately red initials.
+      if (field === 'redInitial' && i >= 6 && i <= 8 && rowIndex === 0) {
+        assert.equal(translated.redInitial, true, 'weekday hymn starts with red initial');
+        continue;
+      }
       assert.deepEqual(translated[field], input[field],
         `section ${i + 1}, row ${rowIndex + 1}: ${field}`);
     }
