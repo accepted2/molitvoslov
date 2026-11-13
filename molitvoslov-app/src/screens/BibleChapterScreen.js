@@ -827,8 +827,11 @@ export const BibleChapterScreen = ({route, navigation}) => {
       <ReaderBookmarkMenu
         onShare={() => shareContent({
           title:displayName+' · Глава '+currentChapterNumber,
-          text:documentShareText(documentData),
-          screen:'BibleChapter',params:{bookId,chapterNumber:currentChapterNumber},
+          text:(bibleContent.getChapter(bookId,currentChapterNumber,translationCode)?.verses||[])
+            .map(verse=>formatBibleNumber(translationCode,verse.number)+' '+(verse.text||''))
+            .join('\n'),
+          screen:'BibleChapter',params:{bookId,chapterNumber:currentChapterNumber,
+            translationCode},
         })}
         visible={readerMenuVisible}
         onClose={() => setReaderMenuVisible(false)}
