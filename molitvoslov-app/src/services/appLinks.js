@@ -53,7 +53,16 @@ export const normalizeIncomingAppLink = url => {
     return /^[A-Za-z0-9_-]{43}$/.test(query.invite)
       ? APP_SCHEME+'shared/'+query.invite : null;
   }
-  if(!isSupportedAppPath(query.path))return null;
+  let destination=query.path;
+  // Old sharePathFor() percent-encodes non-Latin slugs before encoding the
+  // query string. Decode exactly one additional layer if necessary; validate
+  // the resulting route rather than letting encoded slashes bypass checks.
+  if(!isSupportedAppPath(destination) &&
+    typeof destination==='string' && destination.includes('%')){
+    const decoded=decodeComponent(destination);
+    if(isSupportedAppPath(decoded))destination=decoded;
+  }
+  if(!isSupportedAppPath(destination))return null;
   // Encode individual segments, not the slashes needed by navigation.
-  return APP_SCHEME+query.path.split('/').map(encodeURIComponent).join('/');
+  return APP_SCHEME+destination.split('/').map(encodeURIComponent).join('/');
 };
