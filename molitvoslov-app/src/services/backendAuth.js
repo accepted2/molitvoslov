@@ -191,6 +191,7 @@ export const logoutFromBackend = async () => {
 
 
 export const deleteBackendAccount = async () => {
+  const user=await getCachedBackendUser();
   const response = await authenticatedFetch('/api/auth/delete-account/', {
     method: 'POST',
     body: JSON.stringify({confirmation: 'DELETE'}),
@@ -199,6 +200,39 @@ export const deleteBackendAccount = async () => {
     const data = await response.json().catch(() => ({}));
     throw new Error(data.detail || `Не удалось удалить аккаунт (${response.status})`);
   }
-  await SecureStore.deleteItemAsync(API_TOKEN_KEY);
-  await SecureStore.deleteItemAsync(API_USER_KEY);
+  // The server has successfully deleted the identity and all owned records.
+  // Never re-sync a tombstone or stale offline copy into a different account.
+  let localClean=true;
+  try {
+    if(user?.id){
+      const {getDatabase}=await import('../db/database');
+      const AsyncStorage=(await import('@react-native-async-storage/async-storage')).default;
+      const db=await getDatabase();
+      await db.withTransactionAsync(async ()=>{
+        for(const table of [
+          'saved_items','reading_progress','memorial_books','memorial_photos',
+          'personal_prayer_books','personal_prayers',
+          'personal_prayer_book_items','personal_prayer_photos',
+        ]) {
+          await db.runAsync(`DELETE FROM ${table} WHERE cloud_user_id = ?`,[user.id]);
+        }
+      });
+      const keys=await AsyncStorage.getAllKeys();
+      const accountId=String(user.id);
+      const localKeys=keys.filter(key=>
+        key === '@molitvoslov/account-prefs-pending/v1:'+accountId ||
+        key === '@molitvoslov/account-prefs-last-scopes/v1:'+accountId ||
+        key === '@molitvoslov/home-category-order/v1:account-'+accountId ||
+        key.includes(':account-'+encodeURIComponent(accountId)+':')
+      );
+      if(localKeys.length)await AsyncStorage.multiRemove(localKeys);
+    }
+  } catch(error) {
+    localClean=false;
+    console.warn('[account] cloud deleted; local cleanup incomplete:',error?.message||error);
+  } finally {
+    await SecureStore.deleteItemAsync(API_TOKEN_KEY);
+    await SecureStore.deleteItemAsync(API_USER_KEY);
+  }
+  return {localClean};
 };
