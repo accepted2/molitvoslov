@@ -2382,6 +2382,29 @@ export const READER_STYLES = String.raw`
       font-weight: 700 !important;
     }
 
+    /* Strongly scoped first-hour visual exceptions. They complement
+       the runtime's per-segment color, with no effect on other services. */
+    .rule-item.hours-section
+    .reader-text.hours-russian-primary.hours-presentation-final-trinity
+    .hours-mark-initial {
+      color: var(--liturgical) !important;
+      font-weight: 700 !important;
+      font-size: inherit !important;
+    }
+    .rule-item.hours-section
+    .reader-text.hours-russian-primary.hours-presentation-choir-response,
+    .rule-item.hours-section
+    .reader-text.hours-russian-primary.hours-presentation-choir-response span:not(.hours-mark-speaker) {
+      color: var(--text) !important;
+      font-weight: 400 !important;
+    }
+    .rule-item.hours-section
+    .reader-text.hours-russian-primary.hours-presentation-choir-response
+    .hours-mark-speaker {
+      color: var(--liturgical) !important;
+      font-weight: 700 !important;
+    }
+
     #reader-scroll-track {
       position: fixed;
       top: 10px;
