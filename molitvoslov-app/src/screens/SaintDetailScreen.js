@@ -18,6 +18,7 @@ import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {useLanguage} from '../context/LanguageContext';
 import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
 import {CalendarSaveWholeButton, CalendarSelectableBody, makeCalendarSaveContext} from '../components/reader/CalendarSaveText';
+import {shareContent} from '../services/contentSharing';
 
 const formatDate = (value, language) => {
   if (!value) return '';
@@ -56,6 +57,7 @@ const Accordion = ({
 }) => {
   const [open, setOpen] = useState(initialOpen || focusHighlight);
   const [wholeSaved, setWholeSaved] = useState(false);
+  const actionsRef=React.useRef(null);
   const [hasMoreText, setHasMoreText] = useState(false);
   const [atBottom, setAtBottom] = useState(false);
   const [scrollMetrics, setScrollMetrics] = useState({content: 0, viewport: height, y: 0});
@@ -76,6 +78,8 @@ const Accordion = ({
       <View style={styles.accordionHeaderRow}>
         <Pressable
           onPress={() => setOpen((value) => !value)}
+          onLongPress={()=>actionsRef.current?.openMenu()}
+          delayLongPress={340}
           accessibilityRole="button"
           accessibilityState={{expanded: open}}
           style={[styles.accordionHeader, styles.accordionHeaderTap]}
@@ -89,7 +93,19 @@ const Accordion = ({
         </View>
         <View style={[styles.chevron, open && styles.chevronOpen]} />
         </Pressable>
-        <CalendarSaveWholeButton text={text} saveContext={saveContext} onSavedChange={setWholeSaved} />
+        <CalendarSaveWholeButton
+          ref={actionsRef}
+          text={text}
+          saveContext={saveContext}
+          menuVariant
+          onSavedChange={setWholeSaved}
+          onShare={()=>shareContent({
+            title:(sourceTitle||'Святой дня')+' — '+title,
+            text,
+            screen:'SaintDetail',
+            params:{date,focusSection:section},
+          })}
+        />
       </View>
       {open && (
         <View style={styles.expandedWrap}>

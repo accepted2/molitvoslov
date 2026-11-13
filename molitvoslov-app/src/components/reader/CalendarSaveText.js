@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {ActivityIndicator, Pressable, StyleSheet, Text, View} from 'react-native';
-import {FontAwesome} from '@expo/vector-icons';
+import {FontAwesome,Feather} from '@expo/vector-icons';
+import {ContentContextMenu} from '../share/ContentContextMenu';
 import SelectableDocumentReader from './SelectableDocumentReader';
 import {calendarSectionTitle} from '../../services/personalPrayerPresentation';
 import {useTextSelection} from '../../context/TextSelectionContext';
@@ -50,9 +51,13 @@ export const makeCalendarSaveContext = ({feast, date, section, title, sectionTit
   };
 };
 
-export const CalendarSaveWholeButton = ({text, saveContext, onSavedChange}) => {
+export const CalendarSaveWholeButton = React.forwardRef(({
+  text,saveContext,onSavedChange,menuVariant=false,onShare,
+},ref) => {
   const [saved, setSaved] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [actionOpen,setActionOpen] = useState(false);
+  React.useImperativeHandle(ref,()=>({openMenu:()=>setActionOpen(true)}),[]);
   const [error, setError] = useState('');
   const {sourceType, sourceId, anchorType, anchorId, sourceTitle, itemTitle, fullSaveType, metadata} = saveContext;
   const normalized = normalizeSavedText(text);
@@ -115,11 +120,11 @@ export const CalendarSaveWholeButton = ({text, saveContext, onSavedChange}) => {
   return (
     <View style={styles.saveRow}>
       <Pressable
-        onPress={toggle}
+        onPress={menuVariant?()=>setActionOpen(true):toggle}
         disabled={busy}
         hitSlop={7}
         accessibilityRole="button"
-        accessibilityLabel={saved ? 'Убрать из избранного' : 'Сохранить текст целиком'}
+        accessibilityLabel={menuVariant?'Действия с текстом':saved ? 'Убрать из избранного' : 'Сохранить текст целиком'}
         accessibilityState={{selected: !!saved, disabled: busy}}
         style={({pressed}) => [
           styles.saveButton,
@@ -128,6 +133,8 @@ export const CalendarSaveWholeButton = ({text, saveContext, onSavedChange}) => {
       >
         {busy ? (
           <ActivityIndicator size="small" color="#765238" />
+        ) : menuVariant ? (
+          <Feather name="more-horizontal" size={22} color="#765238"/>
         ) : (
           <FontAwesome
             name={saved ? 'heart' : 'heart-o'}
@@ -139,9 +146,17 @@ export const CalendarSaveWholeButton = ({text, saveContext, onSavedChange}) => {
         )}
       </Pressable>
       {!!error && <Text style={styles.error}>{error}</Text>}
+      {!!menuVariant && <ContentContextMenu
+        visible={actionOpen}
+        title={itemTitle||sourceTitle||'Молитва'}
+        onClose={()=>setActionOpen(false)}
+        onShare={onShare}
+        onSave={toggle}
+        saved={!!saved}
+      />}
     </View>
   );
-};
+});
 
 let calendarInlineSelectionCounter = 0;
 

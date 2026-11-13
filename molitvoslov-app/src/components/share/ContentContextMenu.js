@@ -5,7 +5,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 // Native transparent modal is above BottomNav even when FlatList clips rows.
 export const ContentContextMenu = ({
-  visible,title,onClose,onOpen,onShare,onPin,pinned=false,
+  visible,title,onClose,onOpen,onShare,onPin,pinned=false,onSave=null,saved=false,
 }) => {
   const safe=useSafeAreaInsets();
   const item=(label,icon,action)=>{
@@ -33,6 +33,8 @@ export const ContentContextMenu = ({
           <Text style={styles.title} numberOfLines={2}>{title||'Действия'}</Text>
           {item('Открыть','book-outline',onOpen)}
           {item('Поделиться','share-social-outline',onShare)}
+          {item(saved?'Убрать из избранного':'Сохранить себе',
+            saved?'bookmark':'bookmark-outline',onSave)}
           {item(pinned?'Открепить':'Закрепить',
             pinned?'pin':'pin-outline',onPin)}
           <Pressable onPress={onClose} style={styles.cancel}>
