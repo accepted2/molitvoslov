@@ -1472,6 +1472,9 @@ export default function KathismaScreen({route, navigation}) {
   ]);
 
   const changeKathismaLanguage=mode => {
+    // The native context menu updates the saved-item ref immediately. When
+    // switching languages, reconcile that ref before rebuilding the reader.
+    setSavedItems([...savedItemsRef.current]);
     setViewMode(mode);
     saveReaderLanguageModePreference({
       sourceType:'kathisma',sourceId:kathismaNumber,mode,
