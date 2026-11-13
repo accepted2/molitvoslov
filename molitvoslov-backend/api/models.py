@@ -1719,3 +1719,30 @@ class AccountPreferences(models.Model):
         verbose_name_plural = "Настройки приложения"
 
 
+
+class AccountDeletionRequest(models.Model):
+    """Unauthenticated web request, never itself authorizes account deletion."""
+    KIND_CHOICES = [
+        ("deletion", "Удаление аккаунта"),
+        ("privacy", "Обращение по персональным данным"),
+    ]
+    STATUS_CHOICES = [
+        ("pending", "Ожидает проверки личности"),
+        ("verified", "Личность подтверждена"),
+        ("completed", "Выполнено"),
+        ("closed", "Закрыто"),
+    ]
+    email = models.EmailField()
+    kind = models.CharField(max_length=16, choices=KIND_CHOICES, default="deletion")
+    message = models.TextField(blank=True, max_length=1000)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="pending")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Запрос на удаление / конфиденциальность"
+        verbose_name_plural = "Запросы на удаление и конфиденциальность"
+
+    def __str__(self):
+        return f"{self.get_kind_display()}: {self.email}"
