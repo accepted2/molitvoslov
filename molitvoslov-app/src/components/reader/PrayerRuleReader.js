@@ -5,7 +5,7 @@ import {WebView} from 'react-native-webview';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import {deleteSavedItem, saveItem} from '../../services/savedItems';
-import {shareImportableContent} from '../../services/shareInvitations';
+import {shareContent} from '../../services/contentSharing';
 import {useLanguage} from '../../context/LanguageContext';
 import {getReadingSettings, DEFAULT_READING_SETTINGS} from '../../services/readerPreferences';
 import {applyReaderAppearance, resolveReaderAppearance} from '../../services/scopedReaderAppearance';
@@ -353,6 +353,27 @@ const HTML_TEMPLATE = String.raw`
       border-color: rgba(123, 79, 36, 0.28);
     }
 
+    .section-header.has-prayer-share .prayer-title {
+      padding-left: 80px;
+    }
+    .prayer-share-action {
+      position:absolute;
+      top:50%;
+      left:39px;
+      transform:translateY(-50%);
+      display:flex;
+      width:34px;
+      height:34px;
+      padding:0;
+      justify-content:center;
+      align-items:center;
+      border:1px solid var(--border);
+      border-radius:17px;
+      color:var(--secondary);
+      background:rgba(241,223,194,.94);
+      touch-action:manipulation;
+    }
+    .prayer-share-action svg {pointer-events:none}
     .save-heart-icon {
       display: block;
       width: 19px;
@@ -1258,6 +1279,32 @@ const HTML_TEMPLATE = String.raw`
       );
     };
 
+
+    const makePrayerShareButton = itemId => {
+      const button = el('button','prayer-share-action');
+      button.type='button';
+      button.title='Поделиться молитвой';
+      button.setAttribute('aria-label',button.title);
+      button.dataset.itemId=String(itemId);
+      const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+      for(const [key,value] of Object.entries({
+        viewBox:'0 0 24 24',width:'19',height:'19',fill:'none',
+        stroke:'currentColor','stroke-width':'1.8','stroke-linecap':'round',
+        'stroke-linejoin':'round'
+      })) svg.setAttribute(key,value);
+      const line=document.createElementNS('http://www.w3.org/2000/svg','path');
+      line.setAttribute('d','M8.7 13.5 15.3 17.4 M15.3 6.6 8.7 10.5');
+      svg.appendChild(line);
+      [[18,5],[6,12],[18,19]].forEach(coords=>{
+        const circle=document.createElementNS('http://www.w3.org/2000/svg','circle');
+        circle.setAttribute('cx',String(coords[0]));
+        circle.setAttribute('cy',String(coords[1]));
+        circle.setAttribute('r','3');
+        svg.appendChild(circle);
+      });
+      button.appendChild(svg);
+      return button;
+    };
 
     const titleEl = (
       tag,
@@ -3222,6 +3269,8 @@ const HTML_TEMPLATE = String.raw`
                 header.appendChild(
                   favorite
                 );
+                header.classList.add('has-prayer-share');
+                header.appendChild(makePrayerShareButton(item.id));
               }
 
               wrapper.appendChild(
@@ -6364,6 +6413,16 @@ const HTML_TEMPLATE = String.raw`
     reader.addEventListener(
       'click',
       event => {
+        const prayerShare=event.target.closest('.prayer-share-action');
+        if(prayerShare){
+          event.preventDefault();
+          event.stopPropagation();
+          const itemId=Number(prayerShare.dataset.itemId);
+          post({type:'share-prayer',itemId,
+            itemTitle:itemTitleMap.get(itemId)||DATA.rule.name||'Молитва',
+            text:itemTextMap.get(itemId)||''});
+          return;
+        }
         const favorite =
           event.target.closest(
             '.favorite-action'
@@ -8202,6 +8261,17 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
       return;
     }
 
+    if (message.type === 'share-prayer') {
+      if(String(message.text||'').trim()){
+        await shareContent({
+          title:message.itemTitle||rule.name||'Молитва',
+          text:message.text,
+          screen:'PrayerRule',params:{slug:rule.slug},
+        });
+      }
+      return;
+    }
+
     if (message.type === 'whole-prayer-action') {
       const itemId = Number(message.itemId);
 
@@ -8327,10 +8397,10 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
 
     if(message.type === 'share-selection'){
       if(String(message.text||'').trim()){
-        await shareImportableContent({
-          kind:'quote',
+        await shareContent({
           title:message.itemTitle||rule.name||'Молитва',
           text:message.text,
+          screen:'PrayerRule',params:{slug:rule.slug},
         });
       }
       return;
