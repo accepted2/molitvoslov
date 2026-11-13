@@ -283,6 +283,7 @@ export const BibleBookScreen = ({route, navigation}) => {
                     artwork?.background && styles.chapterNumberArtwork,
 
                     isCurrent && styles.chapterNumberCurrent,
+                    artwork?.background && isCurrent && styles.chapterNumberCurrentArtwork,
                   ]}
                 >
                   {item.number}
@@ -491,6 +492,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
 
+  chapterNumberCurrentArtwork: {color: '#FFF9EC'},
   bookShareButton: {alignSelf: 'center', marginBottom: 12, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 18, backgroundColor: 'rgba(248,233,207,0.92)'},
   bookShareText: {color: '#51341D', fontWeight: '700', fontSize: 13},
   currentDot: {
