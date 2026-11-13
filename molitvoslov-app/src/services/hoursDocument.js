@@ -125,16 +125,20 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
     const visualNote = [
       'comment', 'placeholder', 'rubric-label', 'liturgical-label',
       'liturgical-red', 'left-response', 'liturgical-prayers', 'plain-prayer',
+      'choir-response',
     ].includes(presentation) ? presentation : '';
-    // Left-aligned responses retain their normal inline word annotations.
+    // For the final choir doxology only the speaker cue is red.
+    // Other full doxologies keep their normal liturgical red emphasis.
     const isComment = visualNote === 'comment';
-    const hoursMarks = visualNote &&
-      !['left-response', 'liturgical-prayers'].includes(visualNote)
-      ? []
-      : collectHoursTextMarks(text);
+    const hoursMarks = visualNote === 'choir-response'
+      ? collectHoursTextMarks(text).filter(mark => mark.kind === 'speaker')
+      : visualNote && !['left-response', 'liturgical-prayers'].includes(visualNote)
+        ? []
+        : collectHoursTextMarks(text);
     if (isFirstHour && language === 'russian' &&
         viewMode === READER_LANGUAGE_MODES.RUSSIAN &&
-        !isComment && visualNote !== 'plain-prayer') {
+        !isComment && visualNote !== 'plain-prayer' &&
+        visualNote !== 'choir-response') {
       for (const mark of getFirstHourRussianRedMarks(text)) {
         // Prefer the complete rubric over shorter, overlapping highlights.
         for (let index = hoursMarks.length - 1; index >= 0; index--) {
