@@ -2372,6 +2372,16 @@ export const READER_STYLES = String.raw`
       font-style: normal !important;
     }
 
+    /* Final First Hour choir: only the speaker cue "Хор:" is red.
+       The full Glory after it stays the normal prayer text color. */
+    .rule-item.hours-section .reader-text.hours-presentation-choir-response {
+      color: var(--text) !important;
+    }
+    .rule-item.hours-section .reader-text.hours-presentation-choir-response .hours-mark-speaker {
+      color: var(--liturgical) !important;
+      font-weight: 700 !important;
+    }
+
     #reader-scroll-track {
       position: fixed;
       top: 10px;
