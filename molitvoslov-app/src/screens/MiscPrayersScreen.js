@@ -1,11 +1,16 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
+import {useFocusEffect} from '@react-navigation/native';
+import {Ionicons} from '@expo/vector-icons';
 
 import {AppBackground} from '../components/layout/AppBackground';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {SaveHeartIcon} from '../components/icons/SaveHeartIcon';
+import {shareContent} from '../services/contentSharing';
+import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {contentApi as api} from '../services/contentApi';
 import {LocalSearchField, matchesLocalQuery} from '../components/search/LocalSearchField';
 import {colors, radius, spacing} from '../theme';
@@ -113,6 +118,7 @@ export const MiscPrayersScreen = ({route, navigation}) => {
   const [texts, setTexts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState(''); // MOLITVOSLOV_LOCAL_CATEGORY_SEARCH_V1
+  const [savedTexts,setSavedTexts] = useState([]);
 
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
@@ -177,6 +183,39 @@ export const MiscPrayersScreen = ({route, navigation}) => {
       active = false;
     };
   }, [categorySlug]);
+
+  useFocusEffect(useCallback(() => {
+    let active=true;
+    getSavedItems({source_type:'text',save_type:'text'})
+      .then(rows => {if(active) setSavedTexts(rows);})
+      .catch(error => console.warn('[misc prayers] favorites:',error?.message||error));
+    return () => {active=false;};
+  },[]));
+
+  const toggleTextFavorite=async text => {
+    if(!text || Number(text.id)<=0)return;
+    try {
+      const old=savedTexts.find(row => Number(row.anchor_id)===Number(text.id));
+      if(old){
+        await deleteSavedItem(old.id);
+        setSavedTexts(rows=>rows.filter(row=>row.id!==old.id));
+        return;
+      }
+      const body=String(text.content||text.translation||text.traditional_content||'');
+      if(!body.trim())return;
+      const saved=await saveItem({
+        save_type:'text',source_type:'text',source_id:text.id,
+        anchor_type:'text',anchor_id:text.id,
+        source_title:text.title||'Молитва',
+        item_title:text.title||'Молитва',
+        text:body,start_offset:0,end_offset:body.length,
+        metadata:{slug:text.slug},
+      });
+      setSavedTexts(rows=>[saved,...rows]);
+    } catch(error) {
+      console.warn('[misc prayers] save failed:',error?.message||error);
+    }
+  };
 
   const items = useMemo(
     () =>
@@ -274,23 +313,54 @@ export const MiscPrayersScreen = ({route, navigation}) => {
                 : item.row.text?.title || item.row.text?.description || 'Молитва';
 
               return (
-                <Pressable
-                  onPress={() => openItem(item)}
-                  style={({pressed}) => [styles.card, pressed && styles.pressed]}
-                >
-                  <View style={styles.cardIcon}>
-                    <Text style={styles.cardIconText}>{isCategory ? '▤' : '✦'}</Text>
-                  </View>
-
-                  <View style={styles.cardText}>
-                    <Text style={styles.cardTitle}>{title}</Text>
-                    <Text style={styles.cardSubtitle}>
-                      {isCategory ? 'Раздел молитв' : 'Открыть молитву'}
-                    </Text>
-                  </View>
-
-                  <Text style={styles.arrow}>›</Text>
-                </Pressable>
+                <View style={styles.card}>
+                  <Pressable
+                    onPress={() => openItem(item)}
+                    style={({pressed}) => [styles.cardMain, pressed && styles.pressed]}
+                  >
+                    <View style={styles.cardIcon}>
+                      <Text style={styles.cardIconText}>{isCategory ? '▤' : '✦'}</Text>
+                    </View>
+                    <View style={styles.cardText}>
+                      <Text style={styles.cardTitle}>{title}</Text>
+                      <Text style={styles.cardSubtitle}>
+                        {isCategory ? 'Раздел молитв' : 'Открыть молитву'}
+                      </Text>
+                    </View>
+                    <Text style={styles.arrow}>›</Text>
+                  </Pressable>
+                  {!isCategory && Number(item.row.text?.id)>0 &&
+                    !item.row.text?.is_placeholder && (
+                    <View style={styles.cardActions}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={savedTexts.some(row =>
+                          Number(row.anchor_id)===Number(item.row.text.id))
+                          ? 'Убрать из избранного':'Сохранить молитву'}
+                        hitSlop={5}
+                        style={styles.iconButton}
+                        onPress={() => toggleTextFavorite(item.row.text)}
+                      >
+                        <SaveHeartIcon active={savedTexts.some(row =>
+                          Number(row.anchor_id)===Number(item.row.text.id))} size={19}/>
+                      </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Поделиться молитвой"
+                        hitSlop={5}
+                        style={styles.iconButton}
+                        onPress={() => shareContent({
+                          title,
+                          text:item.row.text.content||
+                            item.row.text.translation||item.row.text.traditional_content||'',
+                          screen:'Reader',params:{slug:item.row.text.slug},
+                        })}
+                      >
+                        <Ionicons name="share-social-outline" size={19} color="#765238"/>
+                      </Pressable>
+                    </View>
+                  )}
+                </View>
               );
             }}
           />
@@ -332,6 +402,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(248, 233, 207, 0.96)',
   },
 
+  cardMain:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center'},
+  cardActions:{flexDirection:'row',alignItems:'center',paddingLeft:6},
+  iconButton:{width:34,minHeight:40,alignItems:'center',justifyContent:'center'},
   cardIcon: {
     width: 38,
     height: 38,
