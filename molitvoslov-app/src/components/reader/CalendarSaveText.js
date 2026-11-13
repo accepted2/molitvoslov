@@ -134,7 +134,7 @@ export const CalendarSaveWholeButton = React.forwardRef(({
         {busy ? (
           <ActivityIndicator size="small" color="#765238" />
         ) : menuVariant ? (
-          <Feather name="more-horizontal" size={22} color="#765238"/>
+          <Feather name="more-vertical" size={22} color="#765238"/>
         ) : (
           <FontAwesome
             name={saved ? 'heart' : 'heart-o'}
