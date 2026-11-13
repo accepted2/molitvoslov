@@ -2,7 +2,8 @@ param(
   [switch]$InstallOnPhone,
   [switch]$SkipTests,
   [switch]$SkipSmokeExport,
-  [switch]$SkipPrebuild
+  [switch]$SkipPrebuild,
+  [switch]$Arm64Only
 )
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
@@ -85,9 +86,16 @@ try {
   # Preserve existing native Android files, Kotlin and widgets.
   $androidDir = Join-Path $root "android"
   $gradleExitCode = -1
+  $gradleArgs = @(":app:assembleRelease", "--no-daemon")
+  if ($Arm64Only) {
+    # ARM64-only fallback when the 32-bit CMake/Ninja build is broken.
+    # For a universal release, build without -Arm64Only after fixing CMake.
+    $gradleArgs += "-PreactNativeArchitectures=arm64-v8a"
+    Write-Host "Building ARM64-only APK (not compatible with 32-bit Android phones)." -ForegroundColor Yellow
+  }
   Push-Location $androidDir
   try {
-    & ".\gradlew.bat" ":app:assembleRelease" "--no-daemon"
+    & ".\gradlew.bat" @gradleArgs
     $gradleExitCode = $LASTEXITCODE
   } finally {
     Pop-Location
