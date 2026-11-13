@@ -403,7 +403,10 @@ const styles = StyleSheet.create({
   },
 
   cardMain:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center'},
-  cardActions:{flexDirection:'row',alignItems:'center',paddingLeft:6},
+  cardActions:{flexDirection:'row',alignSelf:'stretch',alignItems:'center',
+    borderLeftWidth:1,borderLeftColor:'rgba(126,82,38,0.24)',
+    backgroundColor:'rgba(238,220,192,0.48)',paddingHorizontal:4,
+    marginVertical:-11,marginRight:-16,marginLeft:8},
   iconButton:{width:34,minHeight:40,alignItems:'center',justifyContent:'center'},
   cardIcon: {
     width: 38,
