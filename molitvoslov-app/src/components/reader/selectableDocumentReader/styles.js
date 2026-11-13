@@ -351,6 +351,45 @@ export const READER_STYLES = String.raw`
     .section-action.active {
       color: var(--accent-dark);
     }
+    /* Psalms in a kathisma use one small three-dot menu on the left.
+       Other prayer sections retain their paired save/share controls. */
+    .psalter-kathisma-reader .document-header .rule-title {
+      padding-left:0;
+      padding-right:0;
+    }
+    .psalter-kathisma-reader .psalter-psalm-section .psalter-menu-header {
+      position:relative;
+      min-height:34px;
+      justify-content:center;
+    }
+    .psalter-kathisma-reader .psalter-psalm-section
+      .psalter-menu-header .prayer-title {
+      padding-left:42px;
+      padding-right:42px;
+    }
+    .psalter-kathisma-reader .psalter-psalm-section .psalter-psalm-menu {
+      position:absolute;
+      left:0;
+      right:auto;
+      top:50%;
+      transform:translateY(-50%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:32px;
+      min-width:32px;
+      height:32px;
+      padding:0;
+      border-radius:16px;
+      border:1px solid var(--border);
+      background:rgba(241,223,194,.94);
+      color:var(--secondary);
+      font-family:Georgia,serif;
+      font-size:23px;
+      line-height:29px;
+      cursor:pointer;
+      touch-action:manipulation;
+    }
     /* Consistent paired actions across akathists, canons, kathismas,
        miscellaneous prayers and liturgical hours. No changes to text spans. */
     .inline-share-action {
