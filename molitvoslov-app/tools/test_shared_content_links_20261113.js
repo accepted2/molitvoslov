@@ -11,7 +11,12 @@ const cleaned=source.replace(/^import[^\n]*\n/gm,'').replace(/\bexport const /g,
 const helpers=new Function('Alert','Share','shareImportableContent',cleaned+
   '\nreturn {sharePathFor,publicShareUrl,shareMessage,documentShareText,shareSavedItem};'
 )({alert(){}},{share:async()=>{}},async()=>true);
-assert.equal(helpers.sharePathFor('BibleChapter',{bookId:1,chapterNumber:5}),'bible/1/5');
+assert.equal(helpers.sharePathFor('BibleChapter',{bookId:1,chapterNumber:5}),
+  'bible/1/5/rst');
+assert.equal(helpers.sharePathFor('BibleChapter',{bookId:1,chapterNumber:5,
+  translationCode:'csl_traditional'}),'bible/1/5/csl_traditional');
+assert.equal(helpers.sharePathFor('BibleBook',{bookId:1,translationCode:'csl_traditional'}),
+  'bible-book/1/csl_traditional');
 assert.equal(helpers.sharePathFor('Kathisma',{kathismaNumber:20}),'kathisma/20');
 assert.equal(helpers.sharePathFor('Kathisma',{kathismaNumber:21}),null);
 assert.equal(helpers.sharePathFor('Akathist',{akathistId:42}),'akathist/42');
@@ -40,7 +45,9 @@ assert.match(invitations,/kind==='quote'/);
 assert.match(invitations,/syncSavedItems/);
 assert.match(invitations,/syncPrayerBooks/);
 assert.match(invitations,/syncMemorials/);
-assert.match(invitations,/Ссылка действует семь дней/);
+assert.match(invitations,/Ссылка действует 7 дней/);
+assert.match(invitations,/showShareFeedback/);
+assert.match(invitations,/Отправить текст/);
 const importScreen=read('src/screens/SharedImportScreen.js');
 for(const fragment of ['fetchSharedInvitation','importSharedInvitation',
   'Добавить себе','already_imported','PrayerBook','MemorialBook','Favorites']){

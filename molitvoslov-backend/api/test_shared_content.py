@@ -1,5 +1,6 @@
 """Access control and independent-copy tests for invitation sharing."""
 from datetime import timedelta
+from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.urls import reverse
@@ -34,6 +35,7 @@ class SharedContentTests(APITestCase):
         MemorialPhoto.objects.create(
             book=self.memorial,
             storage_path="private/owner-memorial-photo.jpg",
+            content_type="image/jpeg",original_name="family.jpg",
         )
         self.book = PersonalPrayerBook.objects.create(
             user=self.owner, title="Домашние молитвы", description="Молитвы утром"
@@ -48,6 +50,7 @@ class SharedContentTests(APITestCase):
             PersonalPrayerPhoto.objects.create(
                 prayer=prayer,
                 storage_path=f"private/owner-prayer-{index}.jpg",
+                content_type="image/jpeg",original_name="prayer.jpg",
             )
 
     def make_share(self, kind, **params):
@@ -96,12 +99,16 @@ class SharedContentTests(APITestCase):
         self.assertEqual(SavedItem.objects.filter(user=self.recipient).count(),1)
         self.assertEqual(SharedContentImport.objects.count(),1)
 
-    def test_memorial_preview_and_import_do_not_copy_photos_or_owner(self):
+    @patch("api.shared_invitations.upload_bytes")
+    @patch("api.shared_invitations.download_bytes",return_value=b"private-image")
+    def test_memorial_preview_and_import_copy_photos_safely(self,download,upload):
         token=self.make_share("memorial",source_sync_id=str(self.memorial.sync_id))
         self.client.force_authenticate(user=self.recipient)
         preview=self.client.get(reverse("shared-preview",args=[token]))
         self.assertEqual(preview.status_code,200)
         self.assertNotIn("photos",preview.data["content"])
+        self.assertEqual(preview.data["content"]["photo_count"],1)
+        self.assertNotIn("private/owner-memorial-photo.jpg",str(preview.data))
         self.assertEqual(preview.data["content"]["health_names"],["Анна","Иоанн"])
         imported=self.client.post(reverse("shared-import",args=[token]))
         self.assertEqual(imported.status_code,201)
@@ -109,15 +116,24 @@ class SharedContentTests(APITestCase):
         self.assertNotEqual(copy.sync_id,self.memorial.sync_id)
         self.assertEqual(copy.health_names,["Анна","Иоанн"])
         self.assertEqual(copy.repose_names,["Мария"])
-        self.assertEqual(copy.photos.count(),0)
+        self.assertEqual(copy.photos.count(),1)
         self.assertEqual(self.memorial.photos.count(),1)
+        photo=copy.photos.get()
+        self.assertNotEqual(photo.storage_path,
+                            self.memorial.photos.get().storage_path)
+        self.assertIn(f"user-{self.recipient.pk}/",photo.storage_path)
+        download.assert_called_once()
+        upload.assert_called_once()
+        self.assertEqual(upload.call_args.args[1],b"private-image")
         # Editing the copy never modifies the original names.
         copy.health_names=["Георгий"]
         copy.save()
         self.memorial.refresh_from_db()
         self.assertEqual(self.memorial.health_names,["Анна","Иоанн"])
 
-    def test_personal_book_import_clones_prayers_without_photos(self):
+    @patch("api.shared_invitations.upload_bytes")
+    @patch("api.shared_invitations.download_bytes",return_value=b"prayer-image")
+    def test_personal_book_import_clones_prayers_with_photos(self,download,upload):
         token=self.make_share("prayerbook",source_sync_id=str(self.book.sync_id))
         self.client.force_authenticate(user=self.recipient)
         result=self.client.post(reverse("shared-import",args=[token]))
@@ -130,9 +146,24 @@ class SharedContentTests(APITestCase):
         self.assertEqual([e.prayer.text for e in entries],
                          ["Текст № 0","Текст № 1"])
         self.assertTrue(all(e.prayer.user_id==self.recipient.pk for e in entries))
-        self.assertTrue(all(e.prayer.photos.count()==0 for e in entries))
+        self.assertTrue(all(e.prayer.photos.count()==1 for e in entries))
+        self.assertEqual(download.call_count,2)
+        self.assertEqual(upload.call_count,2)
+        self.assertTrue(all(e.prayer.photos.first().storage_path.startswith(
+            f"user-{self.recipient.pk}/personal-prayers/") for e in entries))
         self.assertEqual(PersonalPrayerPhoto.objects.filter(
             prayer__user=self.owner).count(),2)
+
+    @patch("api.shared_invitations.upload_bytes")
+    @patch("api.shared_invitations.download_bytes",side_effect=RuntimeError("Storage failed"))
+    def test_photo_failure_rolls_back_memorial_import(self,download,upload):
+        token=self.make_share("memorial",source_sync_id=str(self.memorial.sync_id))
+        self.client.force_authenticate(user=self.recipient)
+        response=self.client.post(reverse("shared-import",args=[token]))
+        self.assertEqual(response.status_code,503)
+        self.assertFalse(MemorialBook.objects.filter(user=self.recipient).exists())
+        self.assertFalse(SharedContentImport.objects.filter(recipient=self.recipient).exists())
+        upload.assert_not_called()
 
     def test_cannot_share_another_persons_private_book(self):
         self.client.force_authenticate(user=self.stranger)

@@ -72,8 +72,11 @@ export const SharedImportScreen = ({route,navigation}) => {
     ? String(content.text||'').slice(0,1600)
     : info?.kind==='memorial'
       ? ['О здравии: '+(content.health_names||[]).length,
-        'О упокоении: '+(content.repose_names||[]).length].join('\n')
-      : 'Молитв: '+(content.prayers||[]).length;
+        'О упокоении: '+(content.repose_names||[]).length,
+        'Фотографий: '+(content.photo_count||0)].join('\n')
+      : ['Молитв: '+(content.prayers||[]).length,
+         'Фотографий: '+(content.prayers||[]).reduce((count,p)=>
+           count+Number(p.photo_count||0),0)].join('\n');
   return (
     <AppBackground imageOpacity={0.72}>
       <StatusBar style="light" translucent backgroundColor="transparent"/>
@@ -102,7 +105,7 @@ export const SharedImportScreen = ({route,navigation}) => {
               <Text style={styles.name}>{info.title}</Text>
               {!!preview && <Text style={styles.body} numberOfLines={13}>{preview}</Text>}
               {(info.kind==='memorial'||info.kind==='prayerbook')&&(
-                <Text style={styles.notice}>Это отдельная копия. Фотографии и вложения не передаются. У отправителя не будет доступа к вашей копии.</Text>
+                <Text style={styles.notice}>Это отдельная копия. Фотографии из облака будут скопированы в ваш аккаунт (до 12 файлов). Оригиналы отправителя не изменяются. Остальные вложения не передаются.</Text>
               )}
               <Pressable
                 onPress={addToMe}

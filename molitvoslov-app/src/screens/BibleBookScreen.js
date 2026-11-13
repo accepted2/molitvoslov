@@ -31,6 +31,7 @@ export const BibleBookScreen = ({route, navigation}) => {
 
   const [bookProgress, setBookProgress] = useState(null);
   const [contextChapter,setContextChapter] = useState(null);
+  const [bookContextVisible,setBookContextVisible] = useState(false);
 
   const displayName = bibleContent.getDisplayName(book, translationCode);
   const artwork = getBibleArtwork(book);
@@ -256,6 +257,7 @@ export const BibleBookScreen = ({route, navigation}) => {
                     isCurrent && styles.chapterNumberCurrent,
                     isTraditional && traditionalBibleTextStyle,
                     isTraditional && styles.chapterNumberChurch,
+                    isCurrent && styles.chapterNumberCurrent,
                   ]}
                 >
                   {formatBibleNumber(translationCode, item.number)}
@@ -267,9 +269,21 @@ export const BibleBookScreen = ({route, navigation}) => {
           }}
         />
 
-        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={displayName} titleTextStyle={isTraditional ? traditionalBibleTextStyle : null} navigation={navigation} topInset={insets.top} />
+        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
+          title={displayName} titleTextStyle={isTraditional ? traditionalBibleTextStyle : null}
+          navigation={navigation} topInset={insets.top}
+          showMenu onMenuPress={()=>setBookContextVisible(true)}/>
 
         <BottomNav navigation={navigation} active={null} />
+        <ContentContextMenu
+          visible={bookContextVisible}
+          title={displayName}
+          onClose={()=>setBookContextVisible(false)}
+          onShare={()=>shareContent({
+            title:displayName,
+            screen:'BibleBook',params:{bookId:book.id,translationCode},
+          })}
+        />
         <ContentContextMenu
           visible={!!contextChapter}
           title={contextChapter ? ui('chapter',
@@ -485,7 +499,6 @@ const styles = StyleSheet.create({
   chapterNumberChurch:{
     fontSize:24,
     lineHeight:32,
-    color:'#3C2419',
   },
 
   currentDot: {
