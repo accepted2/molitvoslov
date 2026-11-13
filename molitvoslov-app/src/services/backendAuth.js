@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {getDatabase} from '../db/database';
+import * as FileSystem from 'expo-file-system/legacy';
 
 // Both Dev Client and release use the deployed Django API by default.
 // A local Django server may still be explicitly selected for development
@@ -208,6 +209,27 @@ export const deleteBackendAccount = async () => {
   try {
     if(user?.id){
       const db=await getDatabase();
+      // Only delete files that belong to this app's sandbox; never touch a
+      // user's original gallery files referenced by content:// or external URIs.
+      const photos=await db.getAllAsync(
+        `SELECT local_uri FROM memorial_photos WHERE cloud_user_id = ?
+         UNION ALL
+         SELECT local_uri FROM personal_prayer_photos WHERE cloud_user_id = ?`,
+        [user.id,user.id]
+      );
+      const roots=[FileSystem.documentDirectory,FileSystem.cacheDirectory]
+        .filter(value=>typeof value==='string'&&value.startsWith('file://'));
+      let photoClean=true;
+      for(const photo of photos) {
+        const uri=photo?.local_uri;
+        if(typeof uri!=='string'||!roots.some(root=>uri.startsWith(root)))continue;
+        try {
+          await FileSystem.deleteAsync(uri,{idempotent:true});
+        } catch(error) {
+          photoClean=false;
+          console.warn('[account] private cached photo:',error?.message||error);
+        }
+      }
       await db.withTransactionAsync(async ()=>{
         for(const table of [
           'saved_items','reading_progress','memorial_books','memorial_photos',
@@ -226,6 +248,7 @@ export const deleteBackendAccount = async () => {
         key.includes(':account-'+encodeURIComponent(accountId)+':')
       );
       if(localKeys.length)await AsyncStorage.multiRemove(localKeys);
+      if(!photoClean)localClean=false;
     }
   } catch(error) {
     localClean=false;
