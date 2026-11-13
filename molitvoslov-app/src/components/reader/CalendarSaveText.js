@@ -118,23 +118,24 @@ export const CalendarSaveWholeButton = React.forwardRef(({
   };
 
   return (
-    <View style={styles.saveRow}>
+    <View style={[styles.saveRow, menuVariant && styles.saveRowCompact]}>
       <Pressable
         onPress={menuVariant?()=>setActionOpen(true):toggle}
         disabled={busy}
-        hitSlop={7}
+        hitSlop={menuVariant ? 10 : 7}
         accessibilityRole="button"
         accessibilityLabel={menuVariant?'Действия с текстом':saved ? 'Убрать из избранного' : 'Сохранить текст целиком'}
         accessibilityState={{selected: !!saved, disabled: busy}}
         style={({pressed}) => [
           styles.saveButton,
+          menuVariant && styles.saveButtonCompact,
           pressed && !busy && styles.pressed,
         ]}
       >
         {busy ? (
           <ActivityIndicator size="small" color="#765238" />
         ) : menuVariant ? (
-          <Feather name="more-vertical" size={22} color="#765238"/>
+          <Feather name="more-vertical" size={18} color="#765238"/>
         ) : (
           <FontAwesome
             name={saved ? 'heart' : 'heart-o'}
@@ -255,12 +256,14 @@ export const CalendarSelectableBody = ({text, saveContext, textStyle}) => {
 
 const styles = StyleSheet.create({
   saveRow: {flexDirection:'row',alignItems:'center',minHeight:42,paddingVertical:3},
+  saveRowCompact: {minHeight:36,paddingVertical:2},
   saveButton: {
     width:36,height:36,borderRadius:18,borderWidth:1,
     borderColor:'rgba(123, 79, 36, 0.20)',
     backgroundColor:'rgba(241, 223, 194, 0.94)',
     justifyContent:'center',alignItems:'center',
   },
+  saveButtonCompact:{width:30,height:30,borderRadius:15},
   saveButtonActive: {
     backgroundColor:'#F1DFC2',
     borderColor:'rgba(123, 79, 36, 0.28)',
