@@ -299,6 +299,7 @@ export const READER_RUNTIME = String.raw`
               header.appendChild( action );
             }
             if(!DATA.document.embedded) {
+              header.classList.add('has-share-action');
               header.appendChild(createShareButton('section',sectionIndex));
             }
             wrapper.appendChild( header );
