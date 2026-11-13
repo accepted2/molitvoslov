@@ -46,6 +46,15 @@ const linking = {
 
   config: {
     screens: {
+      BibleChapter: {path:'bible/:bookId/:chapterNumber',parse:{chapterNumber:Number}},
+      Akathist: {path:'akathist/:akathistId'},
+      Canon: {path:'canon/:canonId'},
+      Kathisma: {path:'kathisma/:kathismaNumber',parse:{kathismaNumber:Number}},
+      PrayerRule: {path:'prayer/:slug'},
+      Reader: {path:'reader/:slug'},
+      HoursReading: {path:'hours/:entryId'},
+      SaintDetail: {path:'saint/:date/:focusSection'},
+      Psalter: {path:'psalter'},
       ChurchCalendar: {
         path: 'calendar/:date',
       },
