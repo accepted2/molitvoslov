@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
 
   chapterOpen:{flex:1,minHeight:58,width:'100%',alignItems:'center',
     justifyContent:'center',paddingBottom:4},
-  chapterMenu:{position:'absolute',right:0,bottom:0,width:26,height:26,
+  chapterMenu:{position:'absolute',right:0,top:0,width:26,height:26,
     alignItems:'center',justifyContent:'center',zIndex:2},
   chapterSavedMark:{position:'absolute',left:7,top:7},
 
