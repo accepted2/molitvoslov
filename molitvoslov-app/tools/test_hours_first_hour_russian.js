@@ -370,14 +370,14 @@ const sharedBlock=(section,row)=>bothDoc.sections[section].rows[row].blocks[0];
 const isFullyRed = block => block.hoursMarks.some(mark=>
   mark.kind==='devotional' && mark.start===0 && mark.end===block.text.length);
 for(const [section,row] of [[4,0],[6,0],[6,2],[7,3],[9,1],[9,4],
-  [13,3],[15,1],[15,4],[15,13]]) {
+  [13,3],[15,1],[15,4],[15,14]]) {
   const block=sharedBlock(section,row);
   assert.equal(bothDoc.sections[section].rows[row].blocks.length,1,
     'Full doxology cannot have a second language column');
   assert.ok(isFullyRed(block),'One full red doxology: '+section+'/'+row);
 }
 for (const [section,row] of [[4,1],[4,2],[9,3],[13,0],[13,2],[15,3],
-  [15,8],[15,14]]) {
+  [15,8],[15,15]]) {
   const block=sharedBlock(section,row);
   assert.equal(bothDoc.sections[section].rows[row].blocks.length,1,
     'Shared Alleluia or Mercy cannot appear twice');
