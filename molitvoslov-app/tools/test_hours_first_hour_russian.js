@@ -153,10 +153,9 @@ const churchSections = [
   {...cs.opening},
   ...cs.afterPsalms.map(s=>({...s,rows:s.rows.map(r=>({...r}))})),
 ];
-const russianSections = [
-  {...ru.opening},
-  ...ru.afterPsalms.map(s=>({...s,rows:s.rows.map(r=>({...r}))})),
-];
+const normalizedRussianSections = getFirstHourRussianSections();
+const russianSections = [normalizedRussianSections[0],
+  ...normalizedRussianSections.slice(4)];
 const paired = pairFirstHourSections({
   churchSections:churchSections.map(s=>({...s,rows:(s.rows||[]).map(r=>({...r}))})),
   russianSections:russianSections.map(s=>({...s,rows:(s.rows||[]).map(r=>({...r}))})),
@@ -165,21 +164,31 @@ assert.equal(paired.length,13);
 assert.ok(paired.every(Boolean));
 assert.deepEqual(paired.filter(s=>s.collapsible).map(s=>s.accordionId),expectedIds);
 assert.equal(paired[0].rows[0].russian,ru.opening.rows[0].russian);
-assert.equal(paired[4].rows.length,5,'Lenten dropdown has aligned parallel rows');
-assert.ok(paired[4].rows.every(r=>r.church&&r.russian));
-assert.match(paired[4].rows[3].russian,/Священник:\nСлава Отцу/);
-assert.match(paired[4].rows[3].russian,/Чтец:\nИ ныне/);
-assert.equal(paired[4].rows[3].russianPreserveLineBreaks,true);
-assert.equal(paired[11].rows[5].russian,ru.afterPsalms[10].rows[5].russian);
-assert.ok(paired[12].rows.some(r=>r.russian?.startsWith('Обороняющей нас Военачальнице')));
-assert.ok(paired[12].rows.some(r=>r.church?.startsWith('Хор:') &&
-  r.russian?.startsWith('Хор:')), 'Final choir is paired');
+assert.equal(paired[4].rows.length,6,'Lenten dropdown has shared rubrics and translated prayers');
+assert.ok(paired[4].rows[3].church==='Слава, и ныне:');
+assert.equal(paired[4].rows[3].russian,undefined,'Lenten doxology is not doubled');
+assert.equal(paired[4].rows[4].church,'Богородичен:');
+assert.equal(paired[4].rows[4].russian,undefined,'One shared Bogorodichen caption');
+assert.ok(paired[4].rows[5].church.startsWith('Что Тя') &&
+  paired[4].rows[5].russian.startsWith('Как назвать нам Тебя'));
+assert.equal(paired[3].rows[3].russian,undefined,'Ordinary Bogorodichen caption shared');
+assert.equal(paired[1].rows[0].russian,undefined,'After-Psalm Glory is not doubled');
 assert.equal(paired[1].rows[1].russian,undefined,'Alleluia shared once');
 assert.equal(paired[1].rows[2].russian,undefined,'Mercy shared once');
-assert.ok(paired[2].rows.every(r=>r.russian===undefined),'Comments are shared once');
-assert.ok(paired[10].rows[0].russian===undefined,'Mercy 40 is shared');
+assert.ok(paired[2].rows.every(r=>r.russian===undefined),'Comments shared once');
+assert.equal(paired[10].rows[0].russian,undefined,'Mercy 40 shared once');
+assert.equal(paired[10].rows[3].russian,undefined,'Doxology after prayer shared once');
+assert.ok(paired[10].rows[6].church.includes('Чтец: Аминь.'),
+  'Reader Amen is added to the left column');
 assert.ok(paired[11].rows.filter(r=>r.presentation==='comment').every(r=>!r.russian),
-  'Lenten explanatory notes are shared once');
+  'St Ephrem instructions are shared');
+assert.ok(!paired[12].rows.some(r=>r.church?.includes('Трисвятое. И по Отче наш')),
+  'A redundant rubric before complete prayers is suppressed');
+assert.ok(paired[12].rows.some(r=>r.russian?.startsWith('Обороняющей нас Военачальнице')));
+assert.ok(paired[12].rows.some(r=>r.russian?.startsWith('Хор:') && !r.church),
+  'One final choir response is shown in Russian');
+assert.ok(paired[12].rows.some(r=>r.church?.startsWith('Христе́') && r.russian),
+  'The priest cue is removed on the CS side of the parallel prayer');
 const wrongLength = pairFirstHourSections({churchSections:[{title:'bad',rows:[]}],russianSections:[]});
 assert.equal(wrongLength,null);
 
@@ -271,21 +280,11 @@ assert.match(russianDoc.sections[15].rows[2].blocks[0].className,
 assert.equal(russianDoc.sections[15].rows[2].blocks[0].hoursMarks[0].start,0);
 assert.equal(russianDoc.sections[15].rows[2].blocks[0].hoursMarks[0].end,1);
 const lentRu=russianDoc.sections[7].rows;
-assert.equal(lentRu.length,8);
-assert.equal(lentRu[3].blocks[0].text,'Священник:');
-assert.equal(lentRu[5].blocks[0].text,'Чтец:');
+assert.equal(lentRu.length,5);
+assert.equal(lentRu[3].blocks[0].text,'Слава, и ныне:');
 assert.match(lentRu[3].blocks[0].className,/hours-presentation-liturgical-red/);
-assert.match(lentRu[5].blocks[0].className,/hours-presentation-liturgical-red/);
-assert.match(lentRu[4].blocks[0].className,/hours-presentation-plain-prayer/);
-assert.match(lentRu[6].blocks[0].className,/hours-presentation-plain-prayer/);
-assert.deepEqual(marked(lentRu[4].blocks[0],'devotional'),[],
-  'The Lenten priest prayer must remain normal text.');
-assert.deepEqual(marked(lentRu[6].blocks[0],'devotional'),[],
-  'The Lenten reader prayer must remain normal text.');
-assert.deepEqual(lentRu[3].blocks[0].hoursMarks,[],
-  'The red role label is styled by its liturgical-red block class.');
-assert.deepEqual(lentRu[5].blocks[0].hoursMarks,[],
-  'The red role label is styled by its liturgical-red block class.');
+assert.ok(!lentRu.some(row=>/Священник:|Чтец:/u.test(row.blocks[0].text)),
+  'No separate priest/reader lines in the Russian Lent troparion');
 assert.equal(russianDoc.sections[9].rows[0].blocks[0].text,
   'Святый Боже, Святый Крепкий, Святый Безсмертный, помилуй нас. (Трижды)');
 assert.equal(russianDoc.sections[15].rows[0].blocks[0].text,
@@ -310,6 +309,9 @@ assert.equal(ru.afterPsalms[10].rows[0].russian,
   'Если Великий пост — молитва святого Ефрема Сирина с тремя великими поклонами:');
 const colorsCss=read('src/components/reader/selectableDocumentReader/styles.js');
 assert.match(colorsCss,/hours-russian-primary \.hours-mark-devotional/);
+assert.match(colorsCss,/hours-presentation-shared-heading/);
+assert.match(colorsCss,/hours-divider-after-dropdown/);
+
 assert.match(colorsCss,/hours-russian-primary \.hours-mark-mercy/);
 assert.match(colorsCss,/hours-presentation-comment span/);
 assert.match(colorsCss,/hours-presentation-plain-prayer span/);
@@ -338,9 +340,18 @@ assert.match(bothDoc.sections[4].rows[1].blocks[0].className,
   /hours-preserve-line-breaks/);
 assert.equal(bothDoc.sections[0].rows[0].layout,'parallel');
 assert.equal(bothDoc.sections[7].rows[0].layout,'parallel');
-assert.equal(bothDoc.sections[7].rows[3].layout,'parallel');
-assert.equal(bothDoc.sections[7].rows[3].blocks.length,2);
-assert.match(bothDoc.sections[7].rows[3].blocks[1].text,/Чтец:\nИ ныне/);
+assert.equal(bothDoc.sections[7].rows[3].layout,'stack');
+assert.equal(bothDoc.sections[7].rows[3].blocks.length,1);
+assert.equal(bothDoc.sections[7].rows[3].blocks[0].text,'Слава, и ныне:');
+assert.match(bothDoc.sections[7].rows[3].blocks[0].className,
+  /hours-presentation-shared-doxology/);
+assert.equal(bothDoc.sections[7].rows[4].layout,'stack');
+assert.equal(bothDoc.sections[7].rows[4].blocks[0].text,'Богородичен:');
+assert.match(bothDoc.sections[7].rows[4].blocks[0].className,
+  /hours-presentation-shared-heading/);
+assert.equal(bothDoc.sections[7].rows[5].layout,'parallel');
+assert.equal(bothDoc.sections[7].rows[5].blocks.length,2);
+assert.match(bothDoc.sections[7].className,/hours-divider-after-dropdown/);
 for (const id of expectedIds) {
   const disclosure=bothDoc.sections.find(s=>s.accordionId===id);
   assert.ok(disclosure && disclosure.collapsible,'Missing disclosure '+id);
@@ -354,6 +365,31 @@ assert.equal(bothDoc.sections[1].rows[0].blocks[1].text,ru.psalms[0].rows[0].rus
 assert.ok(!bothDoc.sections.flatMap(s=>s.rows).flatMap(r=>r.blocks)
   .some(b=>b.text.includes('СТАРЫЙ ИМПОРТ') || b.text.includes('СТАРЫЙ ОТПУСТ')));
 assert.equal(bothDoc.description,'');
+assert.equal(bothDoc.sections[4].rows[0].blocks.length,1,'Glory after Psalms is shared');
+assert.equal(bothDoc.sections[6].rows[0].blocks.length,1,'Glory before tropar is shared');
+assert.equal(bothDoc.sections[6].rows[2].blocks.length,1,'And Now is shared');
+assert.equal(bothDoc.sections[6].rows[3].blocks.length,1,'Bogorodichen caption shared');
+assert.equal(bothDoc.sections[6].rows[4].blocks.length,2,'Bogorodichen text paired');
+assert.ok(bothDoc.sections[9].rows.some(r=>r.blocks[0].text.startsWith('Святый Боже')),
+  'Full Trisagion is retained');
+assert.ok(bothDoc.sections[9].rows.filter(r=>r.blocks.length===1).some(
+  r=>r.blocks[0].className.includes('shared-doxology')),'Full Glory is shared');
+assert.ok(!bothDoc.sections[9].rows.some(r=>
+  r.blocks.some(b=>b.text==='Трисвятое. И по Отче наш:')),
+  'Repeated Trisagion rubric removed');
+assert.ok(bothDoc.sections[13].rows[3].blocks.length===1,'Prayer doxology once');
+assert.ok(bothDoc.sections[13].rows[5].blocks.length===1,'Name of the Lord once');
+assert.equal(bothDoc.sections[13].rows[6].layout,'parallel');
+assert.match(bothDoc.sections[13].rows[6].blocks[0].text,/Чтец: Аминь\./);
+assert.ok(!bothDoc.sections[15].rows.some(r=>r.blocks.some(b=>
+  b.text==='Трисвятое. И по Отче наш:')),'Second redundant rubric removed');
+assert.ok(bothDoc.sections[15].rows.some(r=>r.blocks.length===1 &&
+  r.blocks[0].text.startsWith('Хор:')),'Final choir appears only once');
+assert.ok(bothDoc.sections[15].rows.some(r=>r.blocks.length===1 &&
+  r.blocks[0].text==='Благослови.'),'Final blessing appears only once');
+assert.ok(bothDoc.sections[15].rows.some(r=>r.blocks.length===2 &&
+  r.blocks[0].text.startsWith('Христе́')),'No Иерей label before prayer');
+
 assert.ok(bothDoc.sections[4].rows.slice(1).every(r=>r.blocks.length===1),
   'Alleluia and mercy are displayed once');
 assert.ok(bothDoc.sections[5].rows.every(r=>r.blocks.length===1),
