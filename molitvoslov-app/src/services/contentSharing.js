@@ -154,9 +154,13 @@ export const shareSavedItem = item => {
   const meta=item?.metadata||{};
   const type=item?.source_type;
   const mapping={
-    bible:['BibleChapter',{bookId:meta.book_id||item.source_id,
-      chapterNumber:meta.chapter_number,translationCode:meta.translation_code,
-      verseNumber:meta.verse_number}],
+    bible:item?.anchor_type==='bible_book'
+      ? ['BibleBook',{bookId:meta.book_id||item.source_id,
+          translationCode:meta.translation_code}]
+      : ['BibleChapter',{bookId:meta.book_id||item.source_id,
+          chapterNumber:meta.chapter_number,translationCode:meta.translation_code||
+            (meta.language==='traditional'?'csl_traditional':'rst'),
+          verseNumber:meta.verse_number}],
     akathist:['Akathist',{akathistId:item.source_id,slug:meta.slug}],
     canon:['Canon',{canonId:item.source_id,slug:meta.slug}],
     psalter:meta.kathisma_number
