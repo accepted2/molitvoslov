@@ -103,7 +103,7 @@ const Accordion = ({
             title:(sourceTitle||'Святой дня')+' — '+title,
             text,
             screen:'SaintDetail',
-            params:{date,focusSection:section},
+            params:{date,focusSection:section,feastUid:feast?.sync_uid},
           })}
         />
       </View>
