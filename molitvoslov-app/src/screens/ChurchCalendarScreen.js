@@ -43,6 +43,7 @@ import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {colors} from '../theme';
 import {CalendarSaveWholeButton, CalendarSelectableBody, makeCalendarSaveContext} from '../components/reader/CalendarSaveText';
 import {getCalendarBibleTranslation} from '../services/bibleTranslationPreference';
+import {shareContent} from '../services/contentSharing';
 import {bibleUiText, formatBibleNumber, isTraditionalBible, traditionalBibleTextStyle} from '../services/bibleUi';
 
 const buildCells = (year, month) => {
@@ -276,6 +277,7 @@ const FormattedCalendarText = ({text}) => {
 const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, section, sourceTitle}) => {
   const [expanded, setExpanded] = useState(false);
   const [wholeSaved, setWholeSaved] = useState(false);
+  const actionsRef = useRef(null);
   const {height: windowHeight} = useWindowDimensions();
   const readerHeight = Math.min(420, windowHeight * 0.78);
   const [lifeOverflows, setLifeOverflows] = useState(false);
@@ -292,6 +294,8 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, 
       <View style={styles.textBlockHeaderRow}>
         <Pressable
           onPress={() => setExpanded((value) => !value)}
+          onLongPress={() => actionsRef.current?.openMenu()}
+          delayLongPress={340}
           accessibilityRole="button"
           accessibilityState={{expanded}}
           style={({pressed}) => [styles.textBlockHeader, styles.textBlockHeaderTap, pressed && styles.pressed]}
@@ -302,7 +306,19 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, 
         </View>
         <SoftChevron expanded={expanded} />
         </Pressable>
-        <CalendarSaveWholeButton text={text} saveContext={saveContext} onSavedChange={setWholeSaved} />
+        <CalendarSaveWholeButton
+          ref={actionsRef}
+          text={text}
+          saveContext={saveContext}
+          menuVariant
+          onSavedChange={setWholeSaved}
+          onShare={() => shareContent({
+            title: (sourceTitle || 'Церковный календарь') + ' — ' + title,
+            text: normalizeCalendarText(text),
+            screen: 'SaintDetail',
+            params: {date, focusSection: section, feastUid: feast?.sync_uid},
+          })}
+        />
       </View>
 
       {expanded && (life ? (
