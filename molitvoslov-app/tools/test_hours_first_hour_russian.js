@@ -365,6 +365,34 @@ assert.equal(bothDoc.sections[1].rows[0].blocks[1].text,ru.psalms[0].rows[0].rus
 assert.ok(!bothDoc.sections.flatMap(s=>s.rows).flatMap(r=>r.blocks)
   .some(b=>b.text.includes('СТАРЫЙ ИМПОРТ') || b.text.includes('СТАРЫЙ ОТПУСТ')));
 assert.equal(bothDoc.description,'');
+
+const sharedBlock=(section,row)=>bothDoc.sections[section].rows[row].blocks[0];
+const isFullyRed = block => block.hoursMarks.some(mark=>
+  mark.kind==='devotional' && mark.start===0 && mark.end===block.text.length);
+for(const [section,row] of [[4,0],[6,0],[6,2],[7,3],[9,1],[9,4],
+  [13,3],[15,1],[15,4],[15,13]]) {
+  const block=sharedBlock(section,row);
+  assert.equal(bothDoc.sections[section].rows[row].blocks.length,1,
+    'Full doxology cannot have a second language column');
+  assert.ok(isFullyRed(block),'One full red doxology: '+section+'/'+row);
+}
+for (const [section,row] of [[4,1],[4,2],[9,3],[13,0],[13,2],[15,3],
+  [15,8],[15,14]]) {
+  const block=sharedBlock(section,row);
+  assert.equal(bothDoc.sections[section].rows[row].blocks.length,1,
+    'Shared Alleluia or Mercy cannot appear twice');
+  assert.ok(block.hoursMarks.some(mark=>mark.kind==='devotional'&&mark.start===0),
+    'Shared response text is red: '+section+'/'+row);
+  assert.ok(block.hoursMarks.some(mark=>mark.kind==='repeat'),
+    'Repeat count stays secondary: '+section+'/'+row);
+}
+assert.equal(bothDoc.sections[6].rows[3].blocks[0].text,'Богородичен:');
+assert.equal(bothDoc.sections[7].rows[4].blocks[0].text,'Богородичен:');
+assert.ok(bothDoc.sections[7].rows[5].blocks[0].text.startsWith('Что Тя'));
+assert.ok(bothDoc.sections[7].rows[5].blocks[1].text.startsWith('Как назвать'));
+assert.ok(bothDoc.sections[15].rows[10].blocks[0].text.startsWith('Христе́'),
+  'No Иерей before the prayer');
+
 assert.equal(bothDoc.sections[4].rows[0].blocks.length,1,'Glory after Psalms is shared');
 assert.equal(bothDoc.sections[6].rows[0].blocks.length,1,'Glory before tropar is shared');
 assert.equal(bothDoc.sections[6].rows[2].blocks.length,1,'And Now is shared');
