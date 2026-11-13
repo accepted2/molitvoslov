@@ -188,7 +188,7 @@ assert.ok(paired[11].rows.filter(r=>r.presentation==='comment').every(r=>!r.russ
 assert.ok(!paired[12].rows.some(r=>r.church?.includes('Трисвятое. И по Отче наш')),
   'A redundant rubric before complete prayers is suppressed');
 const csKontakion=paired[12].rows.find(r=>
-  r.church?.startsWith('Хор: Взбранной Воеводе'));
+  r.church?.startsWith('Взбранной Воеводе'));
 assert.ok(csKontakion?.russian?.startsWith('Обороняющей нас Военачальнице'),
   'CS and RU Theotokos kontakion are paired');
 assert.ok(paired[12].rows.some(r=>
@@ -408,9 +408,12 @@ assert.deepEqual(marked(bothDoc.sections[15].rows[10].blocks[0],'initial'),['Х'
 const pairedKontakion=bothDoc.sections[15].rows[12];
 assert.equal(pairedKontakion.layout,'parallel');
 assert.equal(pairedKontakion.blocks.length,2);
-assert.ok(pairedKontakion.blocks[0].text.startsWith('Хор: Взбранной Воеводе'));
+assert.ok(pairedKontakion.blocks[0].text.startsWith('Взбранной Воеводе'));
+assert.ok(!pairedKontakion.blocks[0].text.includes('Хор:'),
+  'No choir cue before the hymn in parallel CS');
 assert.ok(pairedKontakion.blocks[1].text.startsWith('Обороняющей нас Военачальнице'));
-assert.deepEqual(marked(pairedKontakion.blocks[0],'speaker'),['Хор:']);
+assert.deepEqual(marked(pairedKontakion.blocks[0],'speaker'),[],
+  'The paired CS kontakion has no choir cue');
 assert.deepEqual(marked(pairedKontakion.blocks[0],'initial'),['В']);
 const pairedKontakionHeading=bothDoc.sections[15].rows[11];
 assert.equal(pairedKontakionHeading.blocks.length,1);
@@ -477,7 +480,7 @@ assert.ok(bothDoc.sections[9].rows.some(row =>
 'Full Russian-only prayers remain available after Trisagion rubric');
 assert.ok(bothDoc.sections[15].rows.some(row =>
   row.blocks.length===2 &&
-  row.blocks[0].text.startsWith('Хор: Взбранной Воеводе') &&
+  row.blocks[0].text.startsWith('Взбранной Воеводе') &&
   row.blocks[1].text.startsWith('Обороняющей нас Военачальнице')),
 'Kondak has both CS and Russian columns');
 assert.equal(russianDoc.sections[13].rows.length,8,
@@ -499,7 +502,8 @@ for(const modeDoc of [bothDoc,russianDoc]) {
 const churchDoc=buildHoursDocument({entry,content:src,viewMode:MODE.CHURCH});
 const churchEnding=churchDoc.sections[15].rows;
 assert.equal(churchEnding.length,9);
-assert.ok(churchEnding[4].blocks[0].text.startsWith('Хор: Взбранной Воеводе'));
+assert.ok(churchEnding[4].blocks[0].text.startsWith('Взбранной Воеводе'));
+assert.deepEqual(marked(churchEnding[4].blocks[0],'speaker'),[]);
 assert.ok(churchEnding[4].blocks[0].text.endsWith('радуйся, Невесто Неневестная.'));
 assert.deepEqual(marked(churchEnding[2].blocks[0],'initial'),['Х']);
 assert.deepEqual(marked(churchEnding[4].blocks[0],'initial'),['В']);

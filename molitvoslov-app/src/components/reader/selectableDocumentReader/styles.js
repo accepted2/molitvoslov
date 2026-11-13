@@ -2148,6 +2148,19 @@ export const READER_STYLES = String.raw`
       word-spacing: normal !important;
       letter-spacing: normal !important;
     }
+    /* Android WebView can justify across adjacent styled spans even inside
+       a nowrap inline wrapper. A single inline-block for the FIRST PSALM WORD
+       keeps the red Г visually joined to "лаголы" without modifying text,
+       glyph offsets or coloring. Other liturgical initials are unaffected. */
+    .rule-item.hours-section-psalm .reader-text .hours-initial-word {
+      display: inline-block !important;
+      white-space: nowrap !important;
+      text-align: left !important;
+      text-align-last: left !important;
+      word-spacing: normal !important;
+      letter-spacing: normal !important;
+      vertical-align: baseline !important;
+    }
     .rule-item.hours-section .reader-text .hours-mark-initial {
       display: inline !important;
       float: none !important;

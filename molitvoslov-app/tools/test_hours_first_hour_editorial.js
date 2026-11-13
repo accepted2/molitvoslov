@@ -128,7 +128,9 @@ assert.deepEqual(after[11].rows.map(r => r.church), [
 ]);
 assert.ok(after[11].rows[2].church.startsWith('Иерей: Христе́, Све́те истинный'));
 assert.equal(after[11].rows[2].redInitial,true,'Prayer of Christ the True Light has red Х');
-assert.ok(after[11].rows[4].church.startsWith('Хор: Взбранной Воеводе победительная'));
+assert.ok(after[11].rows[4].church.startsWith('Взбранной Воеводе победительная'));
+assert.ok(!after[11].rows[4].church.startsWith('Хор:'),
+  'Theotokos kontakion is not preceded by a choir cue in CS');
 assert.match(after[11].rows[4].church,/радуйся, Невесто Неневестная\.$/);
 assert.ok(after[11].rows[5].church.startsWith('Хор: Сла́ва Отцу́'));
 assert.equal(after[11].rows[5].presentation,'choir-response');
@@ -221,6 +223,8 @@ assert.match(runtime,/hours-row-compact-after/);
 assert.match(styles,/\.hours-accordion-toggle/);
 assert.match(styles,/\.hours-accordion\[open\]/);
 assert.match(styles,/\.hours-initial-word/);
+assert.match(styles,/hours-section-psalm \.reader-text \.hours-initial-word\s*\{[^}]*display: inline-block !important/s,
+  'Psalm 5 initial and rest of the first word must render as one unit');
 assert.match(styles,/hours-collapsible \.reader-text\.hours-presentation-comment/);
 assert.match(runtime,/hoursInitialWordEnd/);
 assert.match(runtime,/hoursInitialWordWrapper\.appendChild\(span\)/);
