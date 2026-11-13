@@ -1,9 +1,9 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {Linking, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {bibleContent} from '../../services/bibleContent';
 import {bibleUiText, isTraditionalBible, traditionalBibleTextStyle, formatBibleNumber} from '../../services/bibleUi';
-import {BIBLE_CROSS_REFERENCE_ATTRIBUTION, BIBLE_CATHOLIC_CROSS_REFERENCE_ATTRIBUTION, BIBLE_PSALM_VERSIFICATION_ATTRIBUTION} from '../../services/bibleCrossReferences';
 
 const cleanPreview = (value) =>
   String(value || '')
@@ -39,16 +39,21 @@ export const BibleCrossReferencesSheet = ({
   isNight = false,
 }) => {
   const [visibleCount, setVisibleCount] = useState(24);
+  const insets=useSafeAreaInsets();
   useEffect(() => {
     setVisibleCount(24);
   }, [visible, originBook?.code, originChapter, originVerse]);
 
   const gesture = useMemo(
     () => PanResponder.create({
+      // Capture touches immediately on the grip. Previously the tiny handle
+      // could not reliably become responder before the gesture ended.
+      onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, move) =>
-        move.dy > 12 && Math.abs(move.dy) > Math.abs(move.dx),
+        move.dy > 8 && Math.abs(move.dy) > Math.abs(move.dx),
+      onPanResponderTerminationRequest: () => false,
       onPanResponderRelease: (_, move) => {
-        if (move.dy > 70) onClose();
+        if (move.dy > 60 && move.dy > Math.abs(move.dx)) onClose?.();
       },
     }),
     [onClose]
@@ -128,9 +133,12 @@ export const BibleCrossReferencesSheet = ({
           style={styles.backdrop}
           onPress={onClose}
         />
-        <View style={[styles.sheet, isNight && styles.sheetNight]}>
-          <View {...gesture.panHandlers} style={styles.gestureArea}>
+        <View style={[styles.sheet, isNight && styles.sheetNight,
+          {marginBottom:Math.max(insets.bottom+10,14)}]}>
+          <View {...gesture.panHandlers} style={styles.gestureArea}
+            accessibilityRole="button" accessibilityLabel="Потяните вниз, чтобы закрыть параллельные места">
             <View style={[styles.handle, isNight && styles.handleNight]} />
+            <Text style={[styles.swipeLabel,isNight && styles.secondaryLight]}>Потяните вниз, чтобы закрыть</Text>
           </View>
           <View style={styles.headingRow}>
             <View style={styles.headingText}>
@@ -144,9 +152,13 @@ export const BibleCrossReferencesSheet = ({
             </Pressable>
           </View>
           <ScrollView
+            style={[styles.scrollPane,isNight && styles.scrollPaneNight]}
             contentContainerStyle={styles.list}
             keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator
+            persistentScrollbar
+            nestedScrollEnabled
+            scrollEventThrottle={16}
           >
             {entries.length === 0 ? (
               <Text style={[styles.empty, isTraditionalBible(translationCode) && traditionalBibleTextStyle, isNight && styles.secondaryLight]}>
@@ -157,7 +169,8 @@ export const BibleCrossReferencesSheet = ({
                 key={entry.bookCode + '.' + formatRange(entry) + ':' + index}
                 accessibilityRole="button"
                 accessibilityLabel={'Открыть ' + entry.title}
-                style={[styles.reference, isNight && styles.referenceNight]}
+                style={({pressed})=>[styles.reference,isNight && styles.referenceNight,
+                pressed && styles.referencePressed]}
                 onPress={() => onOpen(entry)}
               >
                 <Text style={[
@@ -194,35 +207,15 @@ export const BibleCrossReferencesSheet = ({
                 </Text>
               </Pressable>
             )}
-            <Text style={[styles.license, isNight && styles.secondaryLight]}>
-              Параллельные места: OpenBible.info (CC BY 4.0) и Catholic Cross References (общественное достояние).
-              Нумерация псалмов: STEP Bible / Tyndale House (CC BY 4.0).
-            </Text>
-            <Pressable
-              accessibilityRole="link"
-              onPress={() => Linking.openURL(BIBLE_CROSS_REFERENCE_ATTRIBUTION.url)}
-            >
-              <Text style={[styles.source, isNight && styles.sourceNight]}>
-                Источник параллельных мест и лицензия
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="link"
-              onPress={() => Linking.openURL(BIBLE_CATHOLIC_CROSS_REFERENCE_ATTRIBUTION.url)}
-            >
-              <Text style={[styles.source, isNight && styles.sourceNight]}>
-                Catholic Cross References: дополнительные источники
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="link"
-              onPress={() => Linking.openURL(BIBLE_PSALM_VERSIFICATION_ATTRIBUTION.url)}
-            >
-              <Text style={[styles.source, isNight && styles.sourceNight]}>
-                STEP Bible: нумерация псалмов и лицензия
-              </Text>
-            </Pressable>
+            {/* Attribution is available under Account > Sources and licenses,
+                keeping the verse preview focused on reading. */}
           </ScrollView>
+          <View style={[styles.scrollFooter,isNight && styles.scrollFooterNight]}>
+            <Ionicons name="chevron-down" size={16} color={isNight?'#D0B49A':'#936641'}/>
+            <Text style={[styles.scrollHint,isNight && styles.secondaryLight]}>
+              Листайте вниз, чтобы увидеть другие места
+            </Text>
+          </View>
         </View>
       </View>
     </Modal>
@@ -230,42 +223,54 @@ export const BibleCrossReferencesSheet = ({
 };
 
 const styles = StyleSheet.create({
-  overlay: {flex: 1, justifyContent: 'flex-end'},
-  backdrop: {...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.43)'},
-  sheet: {
-    maxHeight: '83%', minHeight: 280, backgroundColor: '#FBF0D9',
-    borderTopLeftRadius: 22, borderTopRightRadius: 22,
-    paddingBottom: 24, borderTopWidth: 1, borderColor: '#E4D1B5',
+  overlay:{flex:1,justifyContent:'flex-end'},
+  backdrop:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(36,22,13,0.49)'},
+  sheet:{
+    maxHeight:'79%',minHeight:280,marginHorizontal:12,
+    backgroundColor:'#FFF4DE',borderRadius:22,
+    borderWidth:1.5,borderColor:'#D6B98C',
+    overflow:'hidden',elevation:22,
+    shadowColor:'#28160C',shadowOffset:{width:0,height:7},
+    shadowOpacity:0.19,shadowRadius:15,
   },
-  sheetNight: {backgroundColor: '#211A16', borderColor: '#49392A'},
-  gestureArea: {height: 28, alignItems: 'center', justifyContent: 'center'},
-  handle: {height: 4, width: 45, borderRadius: 10, backgroundColor: '#BEA386'},
-  handleNight: {backgroundColor: '#80674E'},
-  headingRow: {
-    flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 19,
-    paddingTop: 6, paddingBottom: 11,
-  },
-  headingText: {flex: 1, paddingRight: 14},
-  heading: {fontFamily: 'serif', fontSize: 20, fontWeight: '700', color: '#51351F'},
-  origin: {fontSize: 12, marginTop: 4, color: '#876C53'},
-  originTraditional: {fontFamily: 'Ponomar', fontSize: 13, lineHeight: 21},
-  list: {paddingHorizontal: 18, paddingBottom: 24},
-  reference: {paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#CDB89B'},
-  referenceNight: {borderColor: '#4A392A'},
-  refTitle: {color: '#81522E', fontWeight: '700', fontSize: 15},
-  refTitleTraditional: {fontFamily: 'Ponomar', fontWeight: '400', fontSize: 17, lineHeight: 25},
-  refTitleNight: {color: '#E0B786'},
-  refText: {color: '#3E2A1D', fontFamily: 'serif', fontSize: 16, lineHeight: 24, marginTop: 5},
-  refTextTraditional: {fontFamily: 'Ponomar', fontSize: 18, lineHeight: 31},
-  inlineArrow: {fontFamily: 'serif', fontSize: 17, color: '#865A34'},
-  inlineArrowNight: {color: '#D4A97A'},
-  lightText: {color: '#E7D7C6'},
-  secondaryLight: {color: '#BDA791'},
-  translationHint: {fontSize: 11, color: '#826A51', marginTop: 5},
-  empty: {color: '#826A51', fontSize: 14, paddingVertical: 22},
-  loadMore: {paddingVertical: 18, alignItems: 'center'},
-  loadMoreText: {fontSize: 14, color: '#81522E', fontWeight: '600'},
-  license: {marginTop: 18, fontSize: 11, color: '#826A51'},
-  source: {paddingVertical: 9, fontSize: 12, color: '#825426', textDecorationLine: 'underline'},
-  sourceNight: {color: '#D2A472'},
+  sheetNight:{backgroundColor:'#29221C',borderColor:'#82694E'},
+  gestureArea:{height:43,alignItems:'center',justifyContent:'flex-start',
+    paddingTop:9,backgroundColor:'rgba(226,197,155,0.22)'},
+  handle:{height:5,width:54,borderRadius:8,backgroundColor:'#B28A60'},
+  handleNight:{backgroundColor:'#C19A72'},
+  swipeLabel:{fontSize:10,color:'#936641',marginTop:5,fontWeight:'600'},
+  headingRow:{flexDirection:'row',alignItems:'center',paddingHorizontal:18,
+    paddingTop:10,paddingBottom:12,
+    borderBottomWidth:1,borderBottomColor:'rgba(163,125,78,0.22)'},
+  headingText:{flex:1,paddingRight:14},
+  heading:{fontFamily:'serif',fontSize:20,fontWeight:'700',color:'#51351F'},
+  origin:{fontSize:13,marginTop:5,color:'#876C53'},
+  originTraditional:{fontFamily:'Ponomar',fontSize:15,lineHeight:24},
+  scrollPane:{minHeight:90,flexShrink:1,marginHorizontal:11,marginTop:10,
+    borderWidth:1,borderColor:'#E0C7A5',
+    backgroundColor:'#F8E9CF',borderRadius:15},
+  scrollPaneNight:{backgroundColor:'#322922',borderColor:'#5A4938'},
+  list:{paddingHorizontal:9,paddingTop:10,paddingBottom:18,gap:9},
+  reference:{paddingVertical:13,paddingHorizontal:13,borderRadius:13,
+    backgroundColor:'#FFF8EB',borderWidth:1,borderColor:'#DFCAA9'},
+  referenceNight:{backgroundColor:'#41352C',borderColor:'#67513D'},
+  referencePressed:{opacity:0.67},
+  refTitle:{color:'#80502C',fontWeight:'700',fontSize:15},
+  refTitleTraditional:{fontFamily:'Ponomar',fontWeight:'400',fontSize:17,lineHeight:25},
+  refTitleNight:{color:'#E0B786'},
+  refText:{color:'#3E2A1D',fontFamily:'serif',fontSize:16,lineHeight:24,marginTop:6},
+  refTextTraditional:{fontFamily:'Ponomar',fontSize:18,lineHeight:31},
+  inlineArrow:{fontFamily:'serif',fontSize:17,color:'#865A34'},
+  inlineArrowNight:{color:'#D4A97A'},
+  lightText:{color:'#F1E2D0'},
+  secondaryLight:{color:'#CFB9A3'},
+  translationHint:{fontSize:11,color:'#826A51',marginTop:5},
+  empty:{color:'#826A51',fontSize:14,paddingVertical:22,paddingHorizontal:8},
+  loadMore:{paddingVertical:13,alignItems:'center',borderRadius:12,
+    backgroundColor:'#EFE0C4'},
+  loadMoreText:{fontSize:14,color:'#81522E',fontWeight:'600'},
+  scrollFooter:{flexDirection:'row',justifyContent:'center',alignItems:'center',
+    gap:5,paddingVertical:11,backgroundColor:'#FFF4DE'},
+  scrollFooterNight:{backgroundColor:'#29221C'},
+  scrollHint:{fontSize:11,color:'#946D4B',fontWeight:'600'},
 });
