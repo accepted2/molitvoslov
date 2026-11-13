@@ -33,6 +33,7 @@ try {
     }
   }
 
+  New-Item -ItemType Directory -Force -Path ".\reports" | Out-Null
   Write-Host "Проверяем экспорт Android JavaScript bundle..." -ForegroundColor Cyan
   & npx.cmd expo export --platform android --output-dir ".\reports\release-js-smoke"
   if ($LASTEXITCODE -ne 0) { throw "Expo не смог собрать JS bundle." }
