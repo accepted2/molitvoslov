@@ -3,7 +3,7 @@ import {useFonts} from 'expo-font';
 import {Ionicons} from '@expo/vector-icons';
 import {LinearGradient} from 'expo-linear-gradient';
 import {AppBackground} from '../components/layout/AppBackground';
-import {ActivityIndicator, FlatList, PanResponder, Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
+import {ActivityIndicator, Alert, FlatList, PanResponder, Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 
@@ -11,7 +11,7 @@ import {useFocusEffect} from '@react-navigation/native';
 
 import {BottomNav} from '../components/navigation/BottomNav';
 
-import {deleteSavedItem, getSavedItems} from '../services/savedItems';
+import {deleteSavedItem, getSavedItems, setSavedItemPinned, sortSavedItems} from '../services/savedItems';
 import {savedTextFontFamily} from '../services/savedTextTypography';
 
 import {colors, radius, spacing} from '../theme';
@@ -126,6 +126,18 @@ export const FavoritesScreen = ({route, navigation}) => {
       });
     },
   }), []);
+
+  const togglePin = async item => {
+    const next=!item.is_pinned;
+    try {
+      const updated=await setSavedItemPinned(item.id,next);
+      setItems(current=>sortSavedItems(current.map(candidate=>
+        candidate.id===item.id?updated:candidate)));
+    } catch(error) {
+      console.warn('[favorites] toggle pin:',error?.message||error);
+      Alert.alert('Не удалось закрепить',error?.message||'Попробуйте ещё раз');
+    }
+  };
 
   const removeItem = async (itemId) => {
     try {
@@ -386,13 +398,28 @@ export const FavoritesScreen = ({route, navigation}) => {
                       : (item.save_type_display || item.save_type).toUpperCase()}
                   </Text>
 
-                  <Pressable
-                    hitSlop={8}
-                    onPress={() => removeItem(item.id)}
-                    style={({pressed}) => [styles.deleteButton, pressed && styles.pressed]}
-                  >
-                    <Text style={styles.deleteText}>{t('favorites.delete')}</Text>
-                  </Pressable>
+                  <View style={styles.cardTopActions}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={item.is_pinned?'Открепить избранное':'Закрепить избранное'}
+                      accessibilityHint="Закреплённые сохранения отображаются первыми"
+                      hitSlop={9}
+                      onPress={() => togglePin(item)}
+                      style={({pressed}) => [styles.pinButton,
+                        item.is_pinned && styles.pinButtonActive,
+                        pressed && styles.pressed]}
+                    >
+                      <Ionicons name={item.is_pinned?'pin':'pin-outline'}
+                        size={19} color={item.is_pinned?'#A64D33':'#785D48'} />
+                    </Pressable>
+                    <Pressable
+                      hitSlop={8}
+                      onPress={() => removeItem(item.id)}
+                      style={({pressed}) => [styles.deleteButton, pressed && styles.pressed]}
+                    >
+                      <Text style={styles.deleteText}>{t('favorites.delete')}</Text>
+                    </Pressable>
+                  </View>
                 </View>
 
                 <Pressable
@@ -451,6 +478,11 @@ export const FavoritesScreen = ({route, navigation}) => {
 };
 
 const styles = StyleSheet.create({
+  cardTopActions:{flexDirection:'row',alignItems:'center',gap:10},
+  pinButton:{minWidth:34,minHeight:32,alignItems:'center',justifyContent:'center',
+    borderRadius:9,borderWidth:1,borderColor:'#DEC7A4'},
+  pinButtonActive:{backgroundColor:'#F1DDC3',borderColor:'#B47B59'},
+
   screen: {
     flex: 1,
     backgroundColor: 'transparent',

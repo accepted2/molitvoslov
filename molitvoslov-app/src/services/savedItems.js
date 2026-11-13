@@ -114,12 +114,27 @@ const toTimestamp = (value) => {
   return Number.isFinite(timestamp) ? timestamp : 0;
 };
 
+export const sortSavedItems = items => [...items].sort((left,right)=>{
+  const lm=parseMetadata(left.metadata);
+  const rm=parseMetadata(right.metadata);
+  const lp=lm.is_pinned===true ? 1:0;
+  const rp=rm.is_pinned===true ? 1:0;
+  if(lp!==rp)return rp-lp;
+  if(lp && rp){
+    const pinnedTime=toTimestamp(rm.pinned_at)-toTimestamp(lm.pinned_at);
+    if(pinnedTime)return pinnedTime;
+  }
+  const time=toTimestamp(right.created_at)-toTimestamp(left.created_at);
+  return time||Number(right.id||0)-Number(left.id||0);
+});
+
 const prepareItem = (item) => ({
   ...item,
 
   metadata: parseMetadata(item.metadata),
 
   save_type_display: SAVE_TYPE_NAMES[item.save_type] || item.save_type,
+  is_pinned: parseMetadata(item.metadata).is_pinned === true,
 });
 
 const readResponseData = async (response) => {
@@ -200,11 +215,18 @@ const pushSavedItem = async (db, user, localItem) => {
    * но телефон не получил ответ, повторная
    * отправка не должна создать второй SavedItem.
    */
-  const createResponse = await authenticatedFetch('/api/saved-items/', {
-    method: 'POST',
-
-    body: JSON.stringify(savedItemToServerPayload(item)),
-  });
+  // A pin/unpin changes the metadata of an existing saved item. A POST is
+  // idempotent and returns the old record: use PATCH for already synced rows.
+  const isRemoteUpdate = item.server_id != null;
+  const createResponse = await authenticatedFetch(
+    isRemoteUpdate ? `/api/saved-items/${item.sync_id}/` : '/api/saved-items/',
+    {
+      method: isRemoteUpdate ? 'PATCH' : 'POST',
+      body: JSON.stringify(isRemoteUpdate
+        ? {metadata: parseMetadata(item.metadata)}
+        : savedItemToServerPayload(item)),
+    }
+  );
 
   if (!createResponse.ok) {
     await throwResponseError(createResponse, 'Ошибка синхронизации сохранения');
@@ -599,18 +621,37 @@ export const getSavedItems = async (params = {}) => {
     values
   );
 
-  return items
-    .sort((left, right) => {
-      const timeDifference = toTimestamp(right.created_at) - toTimestamp(left.created_at);
-
-      if (timeDifference !== 0) {
-        return timeDifference;
-      }
-
-      return Number(right.id || 0) - Number(left.id || 0);
-    })
-    .map(prepareItem);
+  return sortSavedItems(items).map(prepareItem);
 };
+// Pinning is a property of the saved copy, not of the underlying text.
+// Keep it on the same UUID so it syncs to the user's other devices.
+export const setSavedItemPinned = async (itemId, pinned) => {
+  const db=await getDatabase();
+  const cloud=await getCachedBackendUser();
+  const owner=cloud?.id ? null:await getOrCreateLocalOwner(db);
+  const where=cloud?.id
+    ? 'id = ? AND cloud_user_id = ? AND deleted_at IS NULL'
+    : 'id = ? AND cloud_user_id IS NULL AND user_id = ? AND deleted_at IS NULL';
+  const args=[itemId,cloud?.id||owner?.id];
+  const existing=await db.getFirstAsync(
+    `SELECT * FROM saved_items WHERE ${where} LIMIT 1`,args);
+  if(!existing)throw new Error('Сохранение не найдено');
+  const metadata=parseMetadata(existing.metadata);
+  const now=new Date().toISOString();
+  const next={...metadata,is_pinned:!!pinned};
+  if(pinned)next.pinned_at=now;
+  else delete next.pinned_at;
+  await db.runAsync(
+    `UPDATE saved_items SET metadata=?, updated_at=?, sync_status=?
+     WHERE ${where}`,
+    [stringifyMetadata(next),now,cloud?.id?'pending':'legacy',...args]
+  );
+  if(cloud?.id)syncSavedItems().catch(error=>
+    console.warn('[saved] pin sync deferred:',error?.message||error));
+  return prepareItem({...existing,metadata:next,updated_at:now,
+    sync_status:cloud?.id?'pending':'legacy'});
+};
+
 export const saveItem = async (payload) => {
   const cloudUser = await getCachedBackendUser();
 
