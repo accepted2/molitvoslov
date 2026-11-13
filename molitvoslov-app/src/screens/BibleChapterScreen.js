@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {ActivityIndicator, Pressable, StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, Alert, Pressable, Share, StyleSheet, Text, View} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
@@ -579,6 +579,18 @@ export const BibleChapterScreen = ({route, navigation}) => {
   const bookmarkConfig =
     book && bookmarkPosition && bookmarkVerse ? buildBookmarkConfig(bookmarkPosition) : null;
 
+  const shareCurrentChapter = async () => {
+    const chapter = chapters.find((item) => Number(item.number) === Number(currentChapterNumber)) || requestedChapter;
+    if (!chapter) return;
+    const heading = displayName + ', ' + t('bible.chapter', {number: chapter.number});
+    const content = (chapter.verses || []).map((verse) => verse.number + ' ' + (verse.text || '')).join('\n');
+    try {
+      await Share.share({title: heading, message: heading + '\n\n' + content});
+    } catch (error) {
+      Alert.alert('Не удалось поделиться', error?.message || 'Попробуйте ещё раз.');
+    }
+  };
+
   if (!book || !requestedChapter) {
     return (
       <View style={styles.center}>
@@ -750,6 +762,19 @@ export const BibleChapterScreen = ({route, navigation}) => {
         >
           <Ionicons
             name="bookmark-outline"
+            size={20}
+            color={readerTheme === 'night' ? '#E0C39B' : '#55351F'}
+          />
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Поделиться текущей главой"
+          onPress={shareCurrentChapter}
+          style={({pressed}) => [styles.toolbarIconButton, pressed && styles.toolbarPressed]}
+        >
+          <Ionicons
+            name="share-social-outline"
             size={20}
             color={readerTheme === 'night' ? '#E0C39B' : '#55351F'}
           />
