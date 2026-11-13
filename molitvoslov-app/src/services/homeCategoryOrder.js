@@ -16,6 +16,27 @@ export const mergeCategoryOrder = (entries, savedOrder) => {
     .map(({__sortIndex,...entry})=>entry);
 };
 
+// Live drag-and-drop targets an absolute slot, not an offset based on the
+// already-changing index of the dragged card.
+export const moveCategoryKeyToIndex = (keys, key, targetIndex) => {
+  const list=normalize(keys);
+  const from=list.indexOf(key);
+  if(from<0||!Number.isFinite(targetIndex))return list;
+  const to=Math.max(0,Math.min(list.length-1,Math.trunc(targetIndex)));
+  if(from===to)return list;
+  list.splice(from,1);
+  list.splice(to,0,key);
+  return list;
+};
+
+export const getCategoryDragTarget = (startIndex, translationY, stride, total) => {
+  if(total<=0||!Number.isFinite(startIndex))return 0;
+  if(!Number.isFinite(translationY)||!Number.isFinite(stride)||stride<=0)
+    return Math.max(0,Math.min(total-1,Math.trunc(startIndex)));
+  const slot=Math.round(startIndex+translationY/stride);
+  return Math.max(0,Math.min(total-1,slot));
+};
+
 export const moveCategoryKey = (keys, key, offset) => {
   const list=normalize(keys);
   const from=list.indexOf(key);

@@ -51,7 +51,7 @@ import {subscribeToContentUpdates, getCurrentContent} from '../services/contentS
 import {getCachedPublicImage} from '../services/publicAssetCache';
 import {colors, spacing} from '../theme';
 import {ReorderableCategoryCard} from '../components/navigation/ReorderableCategoryCard';
-import {getHomeCategoryOrder, saveHomeCategoryOrder, mergeCategoryOrder, moveCategoryKey} from '../services/homeCategoryOrder';
+import {getHomeCategoryOrder, saveHomeCategoryOrder, mergeCategoryOrder, moveCategoryKeyToIndex} from '../services/homeCategoryOrder';
 import {queueAccountPreferencePatch} from '../services/accountPreferencesSync';
 import {getBibleArtwork} from '../data/bibleArtwork';
 const CATEGORY_ICONS = {
@@ -217,12 +217,13 @@ const BellGlyph = () => (
   </View>
 );
 
-const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress}) => {
+const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress, disabled=false}) => {
   const uiScale = useInterfaceScale();
   return (
   <Pressable
     onPress={onPress}
-    style={({pressed}) => [styles.libraryCard, {minHeight: 80 * uiScale}, pressed && styles.pressed]}
+    disabled={disabled}
+    style={({pressed}) => [styles.libraryCard, {minHeight: 80 * uiScale, height: 80 * uiScale}, pressed && styles.pressed]}
   >
     <ImageBackground
       source={artwork}
@@ -362,6 +363,9 @@ export const MenuScreen = ({navigation}) => {
   const [categories, setCategories] = useState([]);
   const [categoryOrder, setCategoryOrder] = useState([]);
   const [movingCategory, setMovingCategory] = useState(false);
+  const [draggedCategoryKey, setDraggedCategoryKey] = useState(null);
+  const dragOrderRef = useRef(null);
+  const dragDidMoveRef = useRef(false);
   const [cachedHomeBanner, setCachedHomeBanner] = useState(null);
   const [homeBannerUrl, setHomeBannerUrl] = useState(() => {
     const asset = getCurrentContent()?.app_assets?.home_banner;
@@ -850,15 +854,39 @@ export const MenuScreen = ({navigation}) => {
     })),
   ];
   const orderedLibraryCards=mergeCategoryOrder(libraryCards,categoryOrder);
-  const handleCategoryDrop=(key,steps)=>{
-    if(!steps)return;
-    const keys=orderedLibraryCards.map(item=>item.key);
-    const next=moveCategoryKey(keys,key,steps);
-    if(next.join('|')===keys.join('|'))return;
+  const categoryStride=80*uiScale+8;
+
+  const startCategoryDrag=(key)=>{
+    dragOrderRef.current=orderedLibraryCards.map(card=>card.key);
+    dragDidMoveRef.current=false;
+    setDraggedCategoryKey(key);
+    setMovingCategory(true);
+  };
+  const previewCategoryDrag=(key,targetIndex)=>{
+    const original=dragOrderRef.current || orderedLibraryCards.map(card=>card.key);
+    const next=moveCategoryKeyToIndex(original,key,targetIndex);
+    if(next.join('|')===original.join('|'))return;
+    dragDidMoveRef.current=true;
+    dragOrderRef.current=next;
+    // React displays the new order immediately. Reanimated animates the
+    // displaced siblings; the held card stays under the finger.
     setCategoryOrder(next);
-    saveHomeCategoryOrder(next).catch(error=>
+  };
+  const finishCategoryDrag=(key,targetIndex)=>{
+    const before=dragOrderRef.current || orderedLibraryCards.map(card=>card.key);
+    const finished=moveCategoryKeyToIndex(before,key,targetIndex);
+    const changed=dragDidMoveRef.current ||
+      finished.join('|')!==before.join('|');
+    dragOrderRef.current=null;
+    dragDidMoveRef.current=false;
+    setMovingCategory(false);
+    setDraggedCategoryKey(null);
+    if(!changed)return;
+    setCategoryOrder(finished);
+    // Persist on finger release, never on each hover.
+    saveHomeCategoryOrder(finished).catch(error=>
       console.warn('[menu order] save:',error?.message||error));
-    queueAccountPreferencePatch({settings:{homeCategoryOrder:next}})
+    queueAccountPreferencePatch({settings:{homeCategoryOrder:finished}})
       .catch(error=>console.warn('[menu order] cloud:',error?.message||error));
   };
 
@@ -1620,19 +1648,21 @@ export const MenuScreen = ({navigation}) => {
                 )}
               </View>
 
-              <View style={styles.libraryList}>
-                <Text style={styles.categoryOrderHint}>
-                  Удерживайте категорию и перемещайте её, чтобы изменить порядок
-                </Text>
+              <View style={[styles.libraryList, {
+                height: Math.max(0, orderedLibraryCards.length*categoryStride-8),
+              }]}>
                 {orderedLibraryCards.map((category,index)=>(
                   <ReorderableCategoryCard
                     key={category.key}
                     itemKey={category.key}
                     index={index}
                     total={orderedLibraryCards.length}
-                    rowHeight={80*uiScale+8}
-                    onDrop={handleCategoryDrop}
-                    onDragChange={setMovingCategory}
+                    rowHeight={categoryStride}
+                    cardHeight={80*uiScale}
+                    activeKey={draggedCategoryKey}
+                    onDragStart={startCategoryDrag}
+                    onDragHover={previewCategoryDrag}
+                    onDragFinish={finishCategoryDrag}
                   >
                     <DecorativeCard
                       title={category.title}
@@ -1641,6 +1671,7 @@ export const MenuScreen = ({navigation}) => {
                       iconSource={category.iconSource}
                       artwork={category.artwork}
                       onPress={category.onPress}
+                      disabled={movingCategory}
                     />
                   </ReorderableCategoryCard>
                 ))}
@@ -2640,14 +2671,7 @@ const styles = StyleSheet.create({
   },
   libraryList: {
     marginTop: 11,
-    gap: 8,
-  },
-  categoryOrderHint: {
-    color:'#785C44',
-    fontSize:12,
-    lineHeight:18,
-    paddingHorizontal:5,
-    paddingBottom:3,
+    position: 'relative',
   },
   libraryCard: {
     position: 'relative',

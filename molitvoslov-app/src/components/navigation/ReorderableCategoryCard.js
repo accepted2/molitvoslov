@@ -1,67 +1,129 @@
-import React, {useMemo, useRef, useState} from 'react';
-import {Animated, View} from 'react-native';
+import React, {useEffect, useMemo, useRef} from 'react';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import {getCategoryDragTarget} from '../../services/homeCategoryOrder';
+
+const SHIFT_MS = 135;
+const SETTLE_MS = 105;
 
 /**
- * A real press-and-hold gesture, leaving ordinary swipes to the main ScrollView.
- * Drops across cards; the card floats with the user's finger until release.
+ * Absolute slots make the dragged card independent of React's list order:
+ * it follows the finger while crossed cards animate into their new positions.
+ * The gesture object never changes while held, even as the index changes.
  */
 export const ReorderableCategoryCard = ({
-  itemKey, index, rowHeight, total, onDrop, onDragChange, children,
+  itemKey,
+  index,
+  rowHeight,
+  cardHeight,
+  total,
+  activeKey,
+  onDragStart,
+  onDragHover,
+  onDragFinish,
+  children,
 }) => {
-  const offset=useRef(new Animated.Value(0)).current;
-  const dragRef=useRef(false);
-  // The parent rerenders when drag begins (scroll lock). Keep the gesture
-  // object alive through that render instead of replacing the handler.
-  const onDropRef=useRef(onDrop);
-  onDropRef.current=onDrop;
-  const onDragChangeRef=useRef(onDragChange);
-  onDragChangeRef.current=onDragChange;
-  const [dragging,setDragging]=useState(false);
-  const [targetIndex,setTargetIndex]=useState(index);
-  const drag=useMemo(()=>Gesture.Pan()
-    .activateAfterLongPress(370)
-    .onStart(()=>{
-      dragRef.current=true;
-      setDragging(true);
-      onDragChangeRef.current(true);
+  const currentIndex = useRef(index);
+  const currentStep = useRef(rowHeight);
+  const currentCount = useRef(total);
+  const callbacks = useRef({onDragStart, onDragHover, onDragFinish});
+  currentIndex.current = index;
+  currentStep.current = rowHeight;
+  currentCount.current = total;
+  callbacks.current = {onDragStart, onDragHover, onDragFinish};
+
+  const gestureActive = useRef(false);
+  const originIndex = useRef(index);
+  const hoverIndex = useRef(index);
+  const slotY = useSharedValue(index * rowHeight);
+  const fingerY = useSharedValue(0);
+  const originY = useSharedValue(index * rowHeight);
+  const dragging = useSharedValue(false);
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+
+  useEffect(() => {
+    slotY.value = withTiming(index * rowHeight, {duration: SHIFT_MS});
+  }, [index, rowHeight, slotY]);
+
+  useEffect(() => {
+    const otherCardIsMoving = !!activeKey && activeKey !== itemKey;
+    scale.value = withTiming(
+      otherCardIsMoving ? 0.965 : activeKey === itemKey ? 1.025 : 1,
+      {duration: SHIFT_MS},
+    );
+    opacity.value = withTiming(otherCardIsMoving ? 0.9 : 1, {
+      duration: SHIFT_MS,
+    });
+  }, [activeKey, itemKey, opacity, scale]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: cardHeight,
+    zIndex: dragging.value ? 100 : 0,
+    elevation: dragging.value ? 18 : 0,
+    opacity: opacity.value,
+    borderRadius: 17,
+    borderColor: '#9B643B',
+    borderWidth: dragging.value ? 1.5 : 0,
+    transform: [
+      {translateY: dragging.value ? originY.value + fingerY.value : slotY.value},
+      {scale: scale.value},
+    ],
+  }), [cardHeight]);
+
+  const gesture = useMemo(() => Gesture.Pan()
+    .activateAfterLongPress(320)
+    .onStart(() => {
+      gestureActive.current = true;
+      originIndex.current = currentIndex.current;
+      hoverIndex.current = originIndex.current;
+      originY.value = slotY.value;
+      fingerY.value = 0;
+      dragging.value = true;
+      callbacks.current.onDragStart(itemKey);
     })
-    .onUpdate(event=>{
-      if(!dragRef.current)return;
-      offset.setValue(event.translationY);
-      setTargetIndex(Math.max(0,Math.min(total-1,
-        index+Math.round(event.translationY/Math.max(1,rowHeight)))));
+    .onUpdate(event => {
+      if (!gestureActive.current) return;
+      fingerY.value = event.translationY;
+      const target = getCategoryDragTarget(
+        originIndex.current,
+        event.translationY,
+        currentStep.current,
+        currentCount.current,
+      );
+      if (target !== hoverIndex.current) {
+        hoverIndex.current = target;
+        // Shift adjacent cards as soon as the finger crosses a slot boundary.
+        callbacks.current.onDragHover(itemKey, target);
+      }
     })
-    .onEnd(event=>{
-      if(dragRef.current)onDropRef.current(itemKey,Math.round(event.translationY/Math.max(1,rowHeight)));
+    .onFinalize(() => {
+      if (!gestureActive.current) return;
+      gestureActive.current = false;
+      // Immediately adopt the final slot; no delayed reorder after release.
+      slotY.value = withTiming(hoverIndex.current * currentStep.current, {
+        duration: SETTLE_MS,
+      });
+      dragging.value = false;
+      fingerY.value = 0;
+      callbacks.current.onDragFinish(itemKey, hoverIndex.current);
     })
-    .onFinalize(()=>{
-      dragRef.current=false;
-      offset.setValue(0);
-      setDragging(false);
-      onDragChangeRef.current(false);
-    })
-    .runOnJS(true),
-  [itemKey,index,rowHeight,total,offset]);
+    .runOnJS(true), [dragging, fingerY, itemKey, originY, slotY]);
+
   return (
-    <GestureDetector gesture={drag}>
+    <GestureDetector gesture={gesture}>
       <Animated.View
-        accessibilityHint="Удерживайте карточку и перемещайте вверх или вниз для изменения порядка"
-        style={{
-          transform:[{translateY:offset}],
-          zIndex:dragging?100:0,
-          elevation:dragging?12:0,
-          opacity:dragging?0.96:1,
-          borderRadius:18,
-          borderWidth:dragging?2:0,
-          borderColor:'#AC7849',
-        }}
+        style={animatedStyle}
+        accessibilityHint="Удерживайте карточку, чтобы изменить порядок категорий"
       >
-        <View pointerEvents="none" style={{
-          position:'absolute',right:12,top:4,zIndex:15,
-          width:5,height:5,borderRadius:3,
-          backgroundColor:dragging?'#9B5635':'transparent',
-        }}/>
         {children}
       </Animated.View>
     </GestureDetector>
