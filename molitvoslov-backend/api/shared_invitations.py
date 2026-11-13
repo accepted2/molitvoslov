@@ -318,14 +318,17 @@ def import_shared_invitation(request, token):
             "sync_id":str(imported_sync_id),
             "already_imported":False,
         },status=status.HTTP_201_CREATED)
-    except (StorageConfigurationError,ValueError,RuntimeError) as exc:
+    except Exception as exc:
         # The DB transaction has rolled back. Storage is not transactional,
-        # so remove any successfully uploaded objects as compensation.
+        # so remove any successfully uploaded objects as compensation even
+        # after an unexpected database error.
         for path in uploaded:
             try:
                 delete_object(path)
             except Exception:
                 pass
+        if not isinstance(exc,(StorageConfigurationError,ValueError,RuntimeError)):
+            raise
         return Response(
             {"detail":"Не удалось перенести фотографии: "+str(exc)},
             status=status.HTTP_503_SERVICE_UNAVAILABLE,
