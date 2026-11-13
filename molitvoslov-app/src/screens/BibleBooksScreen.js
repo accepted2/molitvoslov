@@ -1,5 +1,6 @@
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback, useMemo, useRef, useState} from 'react';
 import {Pressable, SectionList, StyleSheet, Text, View} from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
@@ -13,6 +14,10 @@ import {getReadingProgress} from '../services/readingProgress';
 import {colors} from '../theme';
 import {ContentContextMenu} from '../components/share/ContentContextMenu';
 import {shareContent} from '../services/contentSharing';
+import {SaveHeartIcon} from '../components/icons/SaveHeartIcon';
+import {deleteSavedItem, getSavedItems} from '../services/savedItems';
+import {findSavedBibleBook, saveBibleBook} from '../services/bibleListFavorites';
+import {showShareFeedback} from '../services/shareFeedback';
 import {useLanguage} from '../context/LanguageContext';
 import {bibleUiText, isTraditionalBible, traditionalBibleTextStyle, formatBibleNumber} from '../services/bibleUi';
 
@@ -31,6 +36,8 @@ export const BibleBooksScreen = ({route, navigation}) => {
 
   const [readingProgress, setReadingProgress] = useState([]);
   const [contextBook,setContextBook] = useState(null);
+  const [savedBooks,setSavedBooks] = useState([]);
+  const savingRef=useRef(new Set());
 
   const insets = useSafeAreaInsets();
 
@@ -46,6 +53,40 @@ export const BibleBooksScreen = ({route, navigation}) => {
         .catch(() => setReadingProgress([]));
     }, [])
   );
+
+  useFocusEffect(useCallback(() => {
+    let active=true;
+    getSavedItems({source_type:'bible'})
+      .then(rows => {if(active)setSavedBooks(rows);})
+      .catch(error => console.warn('[bible books] saved:',error?.message||error));
+    return () => {active=false;};
+  },[]));
+
+  const toggleBookSaved=async book => {
+    if(!book?.id || savingRef.current.has(book.id))return;
+    savingRef.current.add(book.id);
+    try {
+      const existing=findSavedBibleBook(savedBooks,book,translationCode);
+      if(existing){
+        await deleteSavedItem(existing.id);
+        setSavedBooks(current=>current.filter(item=>item.id!==existing.id));
+      } else {
+        const saved=await saveBibleBook({
+          book,translationCode,title:bibleContent.getDisplayName(book,translationCode),
+        });
+        setSavedBooks(current=>[saved,...current]);
+      }
+    }catch(error){
+      console.warn('[bible books] save:',error?.message||error);
+      showShareFeedback({title:'Не удалось сохранить книгу',
+        message:error?.message||'Попробуйте ещё раз.'});
+    }finally{savingRef.current.delete(book.id);}
+  };
+
+  const shareBook=book=>shareContent({
+    title:bibleContent.getDisplayName(book,translationCode),
+    screen:'BibleBook',params:{bookId:book.id,translationCode},
+  });
 
   const progressByBook = useMemo(() => {
     const results = new Map();
@@ -112,51 +153,64 @@ export const BibleBooksScreen = ({route, navigation}) => {
           </View>
         )}
         renderItem={({item}) => {
-          const progress = progressByBook.get(item.code) || progressByBook.get(item.slug) || progressByBook.get(Number(item.id));
-
-          const info = progress?.anchor_info || {};
-
-          const chapterNumber = Number(info.chapter_number || 0);
-
+          const progress=progressByBook.get(item.code) ||
+            progressByBook.get(item.slug) || progressByBook.get(Number(item.id));
+          const chapterNumber=Number(progress?.anchor_info?.chapter_number||0);
+          const saved=!!findSavedBibleBook(savedBooks,item,translationCode);
           return (
-            <Pressable
-              onLongPress={() => setContextBook(item)}
-              delayLongPress={340}
-              onPress={() =>
-                navigation.navigate('BibleBook', {
-                  bookId: item.id,
-                  translationCode,
-                })
-              }
-              style={({pressed}) => [
-                styles.item,
-
-                !!progress && styles.itemStarted,
-
-                pressed && styles.pressed,
-              ]}
-            >
-              <View style={styles.itemText}>
-                <Text style={[styles.bookName, isTraditional && traditionalBibleTextStyle,
-                   isTraditional && styles.bookNameChurch]}>{bibleContent.getDisplayName(item, translationCode)}</Text>
-
-                <Text style={[styles.chapterCount, isTraditional && traditionalBibleTextStyle,
-                   isTraditional && styles.chapterCountChurch]}>
-                  {ui('chapters', t('bible.chapters', {count: item.chapters?.length || 0}), {count: item.chapters?.length || 0})}
-                  {chapterNumber ? ' · ' + ui('stoppedChapter', t('bible.stoppedChapter', {chapter: chapterNumber}), {chapter: chapterNumber}) : ''}
-                </Text>
+            <View style={[styles.item,!!progress && styles.itemStarted]}>
+              <Pressable
+                onLongPress={() => setContextBook(item)}
+                delayLongPress={340}
+                onPress={() => navigation.navigate('BibleBook',{
+                  bookId:item.id,translationCode,
+                })}
+                style={({pressed}) => [styles.itemMain,pressed && styles.pressed]}
+              >
+                <View style={styles.itemText}>
+                  <Text style={[styles.bookName,isTraditional && traditionalBibleTextStyle,
+                    isTraditional && styles.bookNameChurch]}>
+                    {bibleContent.getDisplayName(item,translationCode)}
+                  </Text>
+                  <Text style={[styles.chapterCount,isTraditional && traditionalBibleTextStyle,
+                    isTraditional && styles.chapterCountChurch]}>
+                    {ui('chapters',t('bible.chapters',{count:item.chapters?.length||0}),
+                      {count:item.chapters?.length||0})}
+                    {chapterNumber ? ' · ' + ui('stoppedChapter',
+                      t('bible.stoppedChapter',{chapter:chapterNumber}),
+                      {chapter:chapterNumber}) : ''}
+                  </Text>
+                </View>
+                {!!progress && (
+                  <Text style={[styles.progressPercent,isTraditional && traditionalBibleTextStyle]}>
+                    {formatBibleNumber(translationCode,Number(progress.progress_percent||0))}%
+                  </Text>
+                )}
+                <Text style={styles.arrow}>›</Text>
+              </Pressable>
+              <View style={styles.itemActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={saved?'Убрать книгу из избранного':'Сохранить книгу'}
+                  onPress={() => toggleBookSaved(item)}
+                  hitSlop={5}
+                  style={({pressed}) => [styles.actionButton,pressed && styles.pressed]}
+                >
+                  <SaveHeartIcon active={saved} size={19}/>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Поделиться книгой"
+                  onPress={() => shareBook(item)}
+                  hitSlop={5}
+                  style={({pressed}) => [styles.actionButton,pressed && styles.pressed]}
+                >
+                  <Ionicons name="share-social-outline" size={19} color="#765238"/>
+                </Pressable>
               </View>
-
-              {!!progress && (
-                <Text style={[styles.progressPercent, isTraditional && traditionalBibleTextStyle]}>
-                  {formatBibleNumber(translationCode, Number(progress.progress_percent || 0))}%
-                </Text>
-              )}
-
-              <Text style={styles.arrow}>›</Text>
-            </Pressable>
+            </View>
           );
-        }}
+        }
       />
 
       <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={title} titleTextStyle={isTraditional ? traditionalBibleTextStyle : null} navigation={navigation} topInset={insets.top} />
@@ -169,11 +223,9 @@ export const BibleBooksScreen = ({route, navigation}) => {
         onOpen={contextBook ? ()=>navigation.navigate('BibleBook',{
           bookId:contextBook.id,translationCode,
         }) : null}
-        onShare={contextBook ? ()=>shareContent({
-          title:bibleContent.getDisplayName(contextBook,translationCode),
-          screen:'BibleBook',
-          params:{bookId:contextBook.id,translationCode},
-        }) : null}
+        onShare={contextBook ? ()=>shareBook(contextBook) : null}
+        onSave={contextBook ? ()=>toggleBookSaved(contextBook) : null}
+        saved={!!(contextBook && findSavedBibleBook(savedBooks,contextBook,translationCode))}
       />
     </AppBackground>
   );
@@ -196,15 +248,23 @@ const styles = StyleSheet.create({
     minHeight: 58,
     marginHorizontal: 10,
     marginVertical: 2,
-    paddingLeft: 14,
-    paddingRight: 10,
+    paddingLeft: 0,
+    paddingRight: 0,
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 13,
     borderWidth: 1,
     borderColor: 'rgba(126, 82, 38, 0.18)',
     backgroundColor: 'rgba(248, 233, 207, 0.96)',
+    overflow: 'hidden',
   },
+
+  itemMain:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',
+    paddingLeft:14,paddingRight:7,paddingVertical:9,minHeight:58},
+  itemActions:{flexDirection:'row',alignSelf:'stretch',alignItems:'center',
+    borderLeftWidth:1,borderLeftColor:'rgba(126,82,38,0.20)',
+    paddingHorizontal:2,backgroundColor:'rgba(238,220,192,0.54)'},
+  actionButton:{width:34,minHeight:42,alignItems:'center',justifyContent:'center'},
 
   itemStarted: {
     borderColor: 'rgba(126, 82, 38, 0.30)',
