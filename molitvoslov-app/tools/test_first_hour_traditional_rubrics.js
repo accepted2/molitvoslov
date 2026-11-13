@@ -45,7 +45,10 @@ const inLent = accents(rows[7].rows[3].traditional);
 assert.ok(inLent.some(r => r.kind === 'devotional' && r.start === 0), 'Lent Glory/Now red');
 const alleluias = accents(rows[4].rows[1].traditional)
   .filter(r => r.kind === 'alleluia');
-assert.equal(alleluias.length, 3, 'all three alleluias red');
+assert.equal(alleluias.length, 4, 'three Alleluias and Glory to Thee must be red');
+assert.equal(alleluias.filter(r =>
+  /ллилꙋ́їа/u.test(rows[4].rows[1].traditional.slice(r.start, r.end))
+).length, 3, 'all three Alleluias must be highlighted independently');
 assert.ok(alleluias.every(r => r.start >= 0 && r.end > r.start));
 const gloryToGod = rows[4].rows[1].traditional;
 const gloryOffset = gloryToGod.indexOf('сла́ва тебѣ̀ бж҃е');
