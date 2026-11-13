@@ -5,6 +5,7 @@ import {StatusBar} from 'expo-status-bar';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 import {ReaderAppearanceSheet} from '../components/reader/ReaderAppearanceSheet';
+import {shareContent, documentShareText} from '../services/contentSharing';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
@@ -124,6 +125,11 @@ export const HoursReadingScreen = ({route, navigation}) => {
       )}
 
       <ReaderAppearanceSheet
+        onShare={() => shareContent({
+          title:entry.title,
+          text:documentShareText(documentData),
+          screen:'HoursReading',params:{entryId},
+        })}
         visible={appearanceVisible}
         onClose={() => setAppearanceVisible(false)}
         appearance={appearance}

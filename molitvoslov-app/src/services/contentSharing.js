@@ -69,6 +69,18 @@ export const documentShareText = document => {
   }
   return parts.join('\n\n');
 };
+export const prayerRuleShareText = (rule,mode='church') =>
+  (rule?.items||[]).map(entry=>{
+    if(entry?.item_type==='text' && entry.text){
+      const body=entry.text;
+      const value=mode==='russian'?body.translation
+        :mode==='traditional'?body.traditional_content:body.content;
+      return [body.title,value||body.content||body.translation]
+        .filter(Boolean).join('\n');
+    }
+    return entry.content||'';
+  }).filter(Boolean).join('\n\n');
+
 export const isPrivateShareSource = source =>
   ['personal_prayer','personal_prayer_book','memorial','memorial_book']
     .includes(String(source||''));
