@@ -11,6 +11,12 @@ export const ReorderableCategoryCard = ({
 }) => {
   const offset=useRef(new Animated.Value(0)).current;
   const dragRef=useRef(false);
+  // The parent rerenders when drag begins (scroll lock). Keep the gesture
+  // object alive through that render instead of replacing the handler.
+  const onDropRef=useRef(onDrop);
+  onDropRef.current=onDrop;
+  const onDragChangeRef=useRef(onDragChange);
+  onDragChangeRef.current=onDragChange;
   const [dragging,setDragging]=useState(false);
   const [targetIndex,setTargetIndex]=useState(index);
   const drag=useMemo(()=>Gesture.Pan()
@@ -18,7 +24,7 @@ export const ReorderableCategoryCard = ({
     .onStart(()=>{
       dragRef.current=true;
       setDragging(true);
-      onDragChange(true);
+      onDragChangeRef.current(true);
     })
     .onUpdate(event=>{
       if(!dragRef.current)return;
@@ -27,16 +33,16 @@ export const ReorderableCategoryCard = ({
         index+Math.round(event.translationY/Math.max(1,rowHeight)))));
     })
     .onEnd(event=>{
-      if(dragRef.current)onDrop(itemKey,Math.round(event.translationY/Math.max(1,rowHeight)));
+      if(dragRef.current)onDropRef.current(itemKey,Math.round(event.translationY/Math.max(1,rowHeight)));
     })
     .onFinalize(()=>{
       dragRef.current=false;
       offset.setValue(0);
       setDragging(false);
-      onDragChange(false);
+      onDragChangeRef.current(false);
     })
     .runOnJS(true),
-  [itemKey,index,rowHeight,total,onDrop,onDragChange,offset]);
+  [itemKey,index,rowHeight,total,offset]);
   return (
     <GestureDetector gesture={drag}>
       <Animated.View
