@@ -579,8 +579,8 @@ const styles = StyleSheet.create({
   currentDot: {
     position: 'absolute',
 
-    top: 7,
-    right: 8,
+    bottom: 7,
+    left: 8,
 
     width: 6,
     height: 6,
