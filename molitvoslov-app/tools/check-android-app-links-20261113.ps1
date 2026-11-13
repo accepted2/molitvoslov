@@ -10,7 +10,7 @@ if (-not $ApkPath) {
     $config.expo.version,$config.expo.android.versionCode)
 }
 if (-not (Test-Path $ApkPath)) {
-  throw "APK не найден: $ApkPath"
+  throw "APK not found: $ApkPath"
 }
 $ApkPath=(Resolve-Path $ApkPath).Path
 
@@ -31,27 +31,27 @@ foreach ($sdk in $sdkPaths) {
   if($apksigner){break}
 }
 if(-not $apksigner){
-  throw "Не найден apksigner.bat в Android SDK build-tools."
+  throw "apksigner.bat not found in Android SDK build-tools."
 }
 
 $output=@(& $apksigner verify --print-certs $ApkPath 2>&1)
 if($LASTEXITCODE -ne 0) {
-  throw "Подпись APK не прошла проверку: $($output -join ' ')"
+  throw "APK signature verification failed: $($output -join ' ')"
 }
 $details=$output -join "`n"
 $match=[regex]::Match($details,
   '(?im)Signer\s*#?1\s*certificate SHA-256 digest:\s*([0-9a-fA-F]{64})')
 if(-not $match.Success){
-  throw "Не удалось получить SHA-256 сертификата подписи APK. Вывод: $details"
+  throw "Unable to find SHA-256 of the APK signing certificate. apksigner output: $details"
 }
 $sha=$match.Groups[1].Value.ToUpperInvariant()
 $pairs=@(for($i=0;$i -lt 64;$i+=2){$sha.Substring($i,2)})
 $fingerprint=$pairs -join ':'
-Write-Host "`nSHA-256 сертификата APK:" -ForegroundColor Cyan
+Write-Host "`nAPK signing certificate SHA-256:" -ForegroundColor Cyan
 Write-Host $fingerprint -ForegroundColor Green
-Write-Host "`nRender -> Environment, добавить/обновить:"
+Write-Host "`nRender > Environment > add/update:"
 Write-Host "ANDROID_APP_LINK_SHA256_CERT_FINGERPRINTS=$fingerprint" -ForegroundColor Yellow
-Write-Host "После публикации в Google Play следует добавить к этой переменной и Play App Signing SHA-256, если он отличается."
+Write-Host "For Google Play releases, also add Play App Signing SHA-256 if it differs from the APK certificate."
 
 if($CheckServer){
   $url='https://molitvoslov-3o9d.onrender.com/.well-known/assetlinks.json'
@@ -59,11 +59,11 @@ if($CheckServer){
     $response=Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 20
     $serverCerts=@($response[0].target.sha256_cert_fingerprints)
     if($serverCerts -contains $fingerprint){
-      Write-Host "OK: сервер подтвердил текущую подпись APK." -ForegroundColor Green
+      Write-Host "OK: Render assetlinks.json includes this APK signing certificate." -ForegroundColor Green
     }else{
-      Write-Host "ВНИМАНИЕ: сервер ещё не содержит SHA-256 этого APK. Прямые App Links не будут проверены." -ForegroundColor Yellow
+      Write-Host "WARNING: Render does not list this APK certificate yet; Android App Links cannot verify." -ForegroundColor Yellow
     }
   }catch{
-    Write-Host "Проверка сервера не удалась: $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host "Server check unavailable: $($_.Exception.Message)" -ForegroundColor Yellow
   }
 }
