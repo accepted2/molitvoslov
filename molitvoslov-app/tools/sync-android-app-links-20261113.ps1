@@ -37,7 +37,7 @@ $filter=@'
           android:pathPrefix="/api/share/"/>
       </intent-filter>
 '@
-$updated=$text.Insert($insertAt,$filter+"\r\n    ")
+$updated=$text.Insert($insertAt,$filter+"`r`n    ")
 try {
   [xml]$null=$updated
 } catch {
