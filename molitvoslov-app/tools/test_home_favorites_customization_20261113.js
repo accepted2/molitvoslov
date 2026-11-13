@@ -19,7 +19,7 @@ async function main(){
   const token=async()=>loggedIn?'access-token':null;
   const menu=new Function('AsyncStorage','getCachedBackendUser','getApiToken',
     clean(read('src/services/homeCategoryOrder.js'))+
-    '\nreturn {mergeCategoryOrder,moveCategoryKey,getHomeCategoryOrder,saveHomeCategoryOrder};'
+    '\nreturn {mergeCategoryOrder,moveCategoryKey,moveCategoryKeyToIndex,getCategoryDragTarget,getHomeCategoryOrder,saveHomeCategoryOrder};'
   )(AsyncStorage,user,token);
   const cards=[{key:'morning'},{key:'hours'},{key:'bible'},{key:'category:27'}];
   assert.deepEqual(menu.mergeCategoryOrder(cards,['bible','morning','category:27']).map(x=>x.key),
@@ -28,6 +28,20 @@ async function main(){
     ['bible','morning','hours','category:27']);
   assert.deepEqual(menu.moveCategoryKey(cards.map(x=>x.key),'morning',-20),
     cards.map(x=>x.key),'Out-of-range drags must clamp');
+  // Live targets do not depend on the dragged item's index after a swap.
+  assert.equal(menu.getCategoryDragTarget(2, -176, 88, 4),0);
+  assert.equal(menu.getCategoryDragTarget(2, -46, 88, 4),1);
+  assert.equal(menu.getCategoryDragTarget(2, -20, 88, 4),2);
+  assert.equal(menu.getCategoryDragTarget(2, 11000, 88, 4),3);
+  assert.equal(menu.getCategoryDragTarget(0, -200, 88, 4),0);
+  let preview=cards.map(x=>x.key);
+  preview=menu.moveCategoryKeyToIndex(preview,'bible',1);
+  assert.deepEqual(preview,['morning','bible','hours','category:27']);
+  preview=menu.moveCategoryKeyToIndex(preview,'bible',0);
+  assert.deepEqual(preview,['bible','morning','hours','category:27']);
+  preview=menu.moveCategoryKeyToIndex(preview,'bible',2);
+  assert.deepEqual(preview,['morning','hours','bible','category:27'],
+    'Crossing back should immediately restore the natural order');
   await menu.saveHomeCategoryOrder(['bible','hours']);
   assert.deepEqual(await menu.getHomeCategoryOrder(),['bible','hours']);
   loggedIn=true;
@@ -76,12 +90,21 @@ async function main(){
   const sync=read('src/services/accountPreferencesSync.js');
   assert.match(menuScreen,/orderedLibraryCards\.map/);
   assert.match(menuScreen,/ReorderableCategoryCard/);
-  assert.match(read('src/components/navigation/ReorderableCategoryCard.js'),
-    /activateAfterLongPress\(370\)/);
+  const reorder=read('src/components/navigation/ReorderableCategoryCard.js');
+  assert.match(reorder,/activateAfterLongPress\(320\)/);
+  assert.match(reorder,/getCategoryDragTarget/);
+  assert.match(reorder,/onDragHover/);
+  assert.match(reorder,/withTiming/);
+  assert.match(reorder,/useSharedValue/);
+  assert.match(menuScreen,/onDragHover=\{previewCategoryDrag\}/);
+  assert.match(menuScreen,/onDragFinish=\{finishCategoryDrag\}/);
+  assert.match(menuScreen,/disabled=\{movingCategory\}/);
+  assert.doesNotMatch(menuScreen,/Удерживайте категорию и перемещайте её, чтобы изменить порядок/);
+  assert.doesNotMatch(menuScreen,/categoryOrderHint/);
   assert.match(favoritesScreen,/setSavedItemPinned/);
   assert.match(favoritesScreen,/pin-outline/);
   assert.match(sync,/homeCategoryOrder/);
   assert.match(read('src/services/savedItems.js'),/method: isRemoteUpdate \? 'PATCH' : 'POST'/);
-  console.log('PASS: long-press home order, per-account persistence, pinned favorites and cloud PATCH');
+  console.log('PASS: live drag swapping, 320 ms hold, sibling animation, account order, pins and cloud PATCH');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});
