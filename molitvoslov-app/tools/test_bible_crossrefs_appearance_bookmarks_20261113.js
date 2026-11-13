@@ -13,14 +13,17 @@ const reader=app('src/components/reader/SelectableDocumentReader.js');
 const readerCss=app('src/components/reader/selectableDocumentReader/styles.js');
 const runtimeSource=app('src/components/reader/selectableDocumentReader/runtime.js');
 
-// Cross-references: draggable from the handle, scrollable cards in a distinct frame.
+// Cross-references: draggable from the handle, scrollable cards in the full-width sheet.
 assert.match(sheet,/onStartShouldSetPanResponder:\s*\(\) => true/);
 assert.match(sheet,/onPanResponderRelease:/);
 assert.match(sheet,/move\.dy > 60/);
 assert.match(sheet,/persistentScrollbar/);
 assert.match(sheet,/showsVerticalScrollIndicator/);
 assert.match(sheet,/nestedScrollEnabled/);
-assert.match(sheet,/styles\.scrollPane/);
+assert.match(sheet,/style=\{styles\.referencesScroll\}/);
+assert.doesNotMatch(sheet,/styles\.scrollPane|styles\.scrollPaneNight|scrollPane:/);
+assert.match(sheet,/marginHorizontal:0,width:'100%'/);
+assert.match(sheet,/list:\{paddingHorizontal:14,paddingTop:12,paddingBottom:20,gap:10\}/);
 assert.match(sheet,/styles\.referenceNight/);
 assert.match(sheet,/Листайте вниз, чтобы увидеть другие места/);
 assert.doesNotMatch(sheet,/Linking\.openURL/);
