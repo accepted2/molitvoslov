@@ -167,7 +167,8 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
     const visualNote = [
       'comment', 'placeholder', 'rubric-label', 'liturgical-label',
       'liturgical-red', 'left-response', 'liturgical-prayers', 'plain-prayer',
-      'choir-response', 'final-trinity',
+      'choir-response', 'final-trinity', 'shared-doxology',
+      'shared-alleluia', 'shared-mercy', 'shared-heading',
     ].includes(presentation) ? presentation : '';
     // For the final choir doxology only the speaker cue is red.
     // Other full doxologies keep their normal liturgical red emphasis.
@@ -177,6 +178,25 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
       : visualNote && !['left-response', 'liturgical-prayers'].includes(visualNote)
         ? []
         : collectHoursTextMarks(text);
+    // A shared First Hour doxology/response spans both columns once.
+    // The repeat count retains the explanatory color rather than becoming red.
+    if (isFirstHour && viewMode === READER_LANGUAGE_MODES.BOTH &&
+        ['shared-doxology', 'shared-alleluia', 'shared-mercy', 'shared-heading']
+          .includes(visualNote)) {
+      hoursMarks.splice(0, hoursMarks.length);
+      if (visualNote === 'shared-heading') {
+        hoursMarks.push({start: 0, end: text.length, kind: 'cue'});
+      } else {
+        const countStart = /\s*\((?:Трижды|3|12|40|м҃|ві҃)\)\s*$/u.exec(text);
+        const end = countStart ? countStart.index : text.length;
+        if (end > 0) hoursMarks.push({
+          start: 0, end, kind: 'devotional',
+        });
+        if (countStart) hoursMarks.push({
+          start: countStart.index, end: text.length, kind: 'repeat',
+        });
+      }
+    }
     if (isFirstHour && language === 'traditional') {
       hoursMarks.splice(0, hoursMarks.length,
         ...getFirstHourTraditionalMarks(text, presentation));
@@ -328,6 +348,10 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
           viewMode === READER_LANGUAGE_MODES.TRADITIONAL ? 'hours-traditional-section' : '',
           section.noBottomDivider === true ? 'hours-no-bottom-divider' : '',
           section.dividerBefore === true ? 'hours-divider-before' : '',
+          isFirstHour && viewMode === READER_LANGUAGE_MODES.BOTH
+            ? 'hours-parallel-first-hour' : '',
+          section.dividerAfterDropdown === true && viewMode === READER_LANGUAGE_MODES.BOTH
+            ? 'hours-divider-after-dropdown' : '',
         ].filter(Boolean).join(' '),
         progressAnchorId: sectionIndex + 1,
         trackProgress: true,
