@@ -17,6 +17,7 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {useLanguage} from '../context/LanguageContext';
 import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
+import {findSaintForSharedLink} from '../services/saintShareResolver';
 import {CalendarSaveWholeButton, CalendarSelectableBody, makeCalendarSaveContext} from '../components/reader/CalendarSaveText';
 import {shareContent} from '../services/contentSharing';
 
@@ -169,45 +170,35 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const {language} = useLanguage();
   const {feast, date, focusSection, feastId, feastUid, feastTitle} = route.params || {};
   const [calendarFeast, setCalendarFeast] = useState(feast || null);
+  const [sharedCardLoading, setSharedCardLoading] = useState(!feast && !!date);
+  const [sharedCardNotFound, setSharedCardNotFound] = useState(false);
   useEffect(() => {
     let active = true;
     setCalendarFeast(feast || null);
-    if (!date) return undefined;
-    const findFeast = (day) => {
-      const list = [day?.main_feast, ...(day?.all_feasts || [])].filter(Boolean);
-      const identity = feastUid || feast?.sync_uid;
-      const id = feastId ?? feast?.id;
-      const name = feastTitle || feast?.title;
-      const candidates = list.filter((entry) =>
-        (identity && String(entry.sync_uid) === String(identity)) ||
-        (id != null && String(entry.id) === String(id)) ||
-        (name && entry.title === name)
-      );
-      const fullness = (entry) =>
-        Number(Boolean(entry.life_content || entry.life_content_uk)) * 8 +
-        Number(Boolean(entry.icon_url)) * 4 +
-        Number(Boolean(entry.troparion_content)) * 2 +
-        Number(Boolean(entry.kontakion_content));
-      return candidates.sort((a, b) => fullness(b) - fullness(a))[0] || null;
-    };
-    const update = (day) => {
-      if (!active || !day) return;
-      const matched = findFeast(day);
-      if (matched) setCalendarFeast((previous) => {
-        const merged = {...(feast || {}), ...(previous || {})};
-        for (const [key, value] of Object.entries(matched)) {
-          if (value !== null && value !== undefined && value !== '') merged[key] = value;
-        }
-        return merged;
+    const shouldLoad = !feast && !!date;
+    setSharedCardLoading(shouldLoad);
+    setSharedCardNotFound(false);
+    if (!shouldLoad) return () => {active = false;};
+    // A direct HTTPS/Telegram link contains a date and optional feast identity,
+    // but not the full feast. Restore the card from bundled offline calendar.
+    getOfflineCalendarDay(date, language)
+      .then(day => {
+        if (!active) return;
+        const matched = findSaintForSharedLink(day, {
+          feastUid, feastId, feastTitle, focusSection,
+        });
+        if (matched) setCalendarFeast(matched);
+        else setSharedCardNotFound(true);
+      })
+      .catch(error => {
+        if (active) setSharedCardNotFound(true);
+        console.warn('Saint card offline:', error?.message || error);
+      })
+      .finally(() => {
+        if (active) setSharedCardLoading(false);
       });
-    };
-    if (!feast) getOfflineCalendarDay(date, language).then(update).catch((error) =>
-      console.warn('Saint card offline:', error?.message || error)
-    );
-    // The search result already passes its complete calendar card. Do not
-    // overwrite it with a second, potentially older server record.
     return () => {active = false;};
-  }, [date, feastId, feastUid, feastTitle, language, feast]);
+  }, [date, feastId, feastUid, feastTitle, focusSection, language, feast]);
   const resolvedFeast = calendarFeast || feast || {};
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const {width, height} = useWindowDimensions();
@@ -291,7 +282,12 @@ export const SaintDetailScreen = ({route, navigation}) => {
           feast={resolvedFeast} date={date} sourceTitle={title} section="prayer" />}
         {!life && !troparion && !kontakion && !prayer && (
           <Text style={styles.empty}>
-            {uk ? 'Додаткових текстів поки немає.' : 'Дополнительных текстов пока нет.'}
+            {sharedCardLoading
+              ? (uk ? 'Завантаження відомостей...' : 'Загружаем сведения...')
+              : sharedCardNotFound
+                ? (uk ? 'Не вдалося знайти цю пам’ять. Відкрийте календар на вибрану дату.'
+                  : 'Не удалось найти эту запись. Откройте календарь на выбранную дату.')
+                : (uk ? 'Додаткових текстів поки немає.' : 'Дополнительных текстов пока нет.')}
           </Text>
         )}
       </ScrollView>
