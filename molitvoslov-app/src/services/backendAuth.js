@@ -1,4 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {getDatabase} from '../db/database';
 
 // Both Dev Client and release use the deployed Django API by default.
 // A local Django server may still be explicitly selected for development
@@ -205,8 +207,6 @@ export const deleteBackendAccount = async () => {
   let localClean=true;
   try {
     if(user?.id){
-      const {getDatabase}=await import('../db/database');
-      const AsyncStorage=(await import('@react-native-async-storage/async-storage')).default;
       const db=await getDatabase();
       await db.withTransactionAsync(async ()=>{
         for(const table of [
