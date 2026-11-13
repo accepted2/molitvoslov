@@ -75,11 +75,11 @@ export const BibleChapterScreen = ({route, navigation}) => {
   // Links shared from a selected verse provide a stable chapter/verse address,
   // not database IDs that can change when offline Bible data is rebuilt.
   const sharedVerse=Number(verseNumber);
-  const requestedFocusTarget=focusTarget ||
+  const requestedFocusTarget=useMemo(() => focusTarget ||
     (Number.isInteger(sharedVerse) && sharedVerse>=1 && sharedVerse<=250
       ? {anchor_type:'bible_verse',metadata:{
           chapter_number:Number(chapterNumber),verse_number:sharedVerse,
-        }} : null);
+        }} : null),[focusTarget,sharedVerse,chapterNumber]);
   const calendarPassageRanges = route.params?.calendarPassageRanges || null;
   const translationCode = route.params?.translationCode === 'csl_traditional'
     ? 'csl_traditional'
