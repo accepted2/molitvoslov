@@ -9,6 +9,8 @@ import {BottomNav} from '../components/navigation/BottomNav';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {createPrayerBook, getPrayerBooks, syncPrayerBooks} from '../services/prayerBooks';
 import {colors, radius, spacing} from '../theme';
+import {shareContent} from '../services/contentSharing';
+import {ContentContextMenu} from '../components/share/ContentContextMenu';
 import {useLanguage} from '../context/LanguageContext';
 import {useInterfaceScale} from '../context/InterfaceScaleContext';
 
@@ -19,6 +21,7 @@ export const PrayerBooksScreen = ({navigation}) => {
   const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
   React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
   const [books, setBooks] = useState([]);
+  const [contextItem,setContextItem]=useState(null);
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState('');
   const [busy, setBusy] = useState(false);
@@ -101,6 +104,8 @@ export const PrayerBooksScreen = ({navigation}) => {
           renderItem={({item}) => (
             <Pressable
               onPress={() => navigation.navigate('PrayerBook', {bookSyncId: item.sync_id})}
+              onLongPress={() => setContextItem(item)}
+              delayLongPress={340}
               style={({pressed}) => [styles.card, pressed && styles.pressed]}
             >
               <View style={styles.bookIcon}>
@@ -125,6 +130,18 @@ export const PrayerBooksScreen = ({navigation}) => {
           showBack={false}
         />
         <BottomNav navigation={navigation} active="prayerbooks" />
+        <ContentContextMenu visible={!!contextItem}
+          title={contextItem?.title||'Мой молитвослов'}
+          onClose={()=>setContextItem(null)}
+          onOpen={contextItem ? ()=>navigation.navigate('PrayerBook',{bookSyncId:contextItem.sync_id}) : null}
+          onShare={contextItem ? ()=>shareContent({
+            title:contextItem.title||'Мой молитвослов',
+            text:(contextItem.items||[]).map(i=>[
+              i.prayer?.title||'',i.prayer?.text||''
+            ].filter(Boolean).join('\n')).join('\n\n'),
+            privateContent:true,confirmPrivate:true,
+          }) : null}
+        />
 
         <Modal
           visible={creating}

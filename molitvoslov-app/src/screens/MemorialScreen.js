@@ -11,6 +11,8 @@ import {StatusBar} from 'expo-status-bar';
 import {AppBackground} from '../components/layout/AppBackground';
 
 import {BottomNav} from '../components/navigation/BottomNav';
+import {shareContent} from '../services/contentSharing';
+import {ContentContextMenu} from '../components/share/ContentContextMenu';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 
@@ -27,6 +29,7 @@ export const MemorialScreen = ({navigation}) => {
   React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
 
   const [books, setBooks] = useState([]);
+  const [contextItem,setContextItem]=useState(null);
 
   const [loading, setLoading] = useState(true);
 
@@ -97,6 +100,8 @@ export const MemorialScreen = ({navigation}) => {
 
     return (
       <Pressable
+        onLongPress={()=>setContextItem(item)}
+        delayLongPress={340}
         onPress={() =>
           navigation.navigate('MemorialBook', {
             bookSyncId: item.sync_id,
@@ -199,6 +204,17 @@ export const MemorialScreen = ({navigation}) => {
         />
 
         <BottomNav navigation={navigation} active="memorial" />
+        <ContentContextMenu visible={!!contextItem}
+          title={contextItem?.title||'Помянник'}
+          onClose={()=>setContextItem(null)}
+          onOpen={contextItem ? ()=>navigation.navigate('MemorialBook',{bookSyncId:contextItem.sync_id}) : null}
+          onShare={contextItem ? ()=>shareContent({
+            title:contextItem.title||'Помянник',
+            text:['О здравии:',...(contextItem.health_names||[]),
+              '', 'О упокоении:',...(contextItem.repose_names||[])].join('\n'),
+            privateContent:true,confirmPrivate:true,
+          }) : null}
+        />
       </View>
     </AppBackground>
   );

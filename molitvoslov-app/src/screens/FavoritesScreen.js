@@ -13,6 +13,8 @@ import {BottomNav} from '../components/navigation/BottomNav';
 
 import {deleteSavedItem, getSavedItems, setSavedItemPinned, sortSavedItems} from '../services/savedItems';
 import {savedTextFontFamily} from '../services/savedTextTypography';
+import {shareSavedItem} from '../services/contentSharing';
+import {ContentContextMenu} from '../components/share/ContentContextMenu';
 
 import {colors, radius, spacing} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
@@ -42,6 +44,7 @@ export const FavoritesScreen = ({route, navigation}) => {
     : TAB_SAVED;
 
   const [items, setItems] = useState([]);
+  const [contextItem,setContextItem]=useState(null);
   const [search, setSearch] = useState('');
   const [ponomarLoaded] = useFonts({
     FavoritesPonomar: require('../../assets/fonts/Ponomar-Regular.ttf'),
@@ -424,6 +427,8 @@ export const FavoritesScreen = ({route, navigation}) => {
 
                 <Pressable
                   onPress={() => openItem(item)}
+                  onLongPress={() => setContextItem(item)}
+                  delayLongPress={340}
                   style={({pressed}) => [styles.cardBody, pressed && styles.pressed]}
                 >
                   <Text style={[styles.cardTitle, {fontSize: 17 * uiScale}]}>{getItemTitle(item)}</Text>
@@ -472,6 +477,15 @@ export const FavoritesScreen = ({route, navigation}) => {
         </View>
 
         <BottomNav navigation={navigation} active="favorites" />
+        <ContentContextMenu
+          visible={!!contextItem}
+          title={contextItem ? getItemTitle(contextItem) : ''}
+          onClose={()=>setContextItem(null)}
+          onOpen={contextItem ? ()=>openItem(contextItem) : null}
+          onShare={contextItem ? ()=>shareSavedItem(contextItem) : null}
+          onPin={contextItem ? ()=>togglePin(contextItem) : null}
+          pinned={!!contextItem?.is_pinned}
+        />
       </View>
     </AppBackground>
   );

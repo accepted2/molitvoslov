@@ -26,11 +26,14 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {colors} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
+import {shareContent} from '../services/contentSharing';
+import {ContentContextMenu} from '../components/share/ContentContextMenu';
 import {LocalSearchField, filterByTitle} from '../components/search/LocalSearchField';
 
 export const CanonListScreen = ({navigation}) => {
   const {language, t} = useLanguage();
   const [canons, setCanons] = useState([]);
+  const [contextItem,setContextItem]=useState(null);
 
   const [savedCanons, setSavedCanons] = useState([]);
 
@@ -201,6 +204,8 @@ export const CanonListScreen = ({navigation}) => {
                   style={styles.itemMain}
                   activeOpacity={0.7}
                   onPress={() => openCanon(item)}
+                  onLongPress={() => setContextItem(item)}
+                  delayLongPress={340}
                 >
                   <View style={styles.textContainer}>
                     <Text style={styles.title}>{getLocalizedField(item, 'title', language)}</Text>
@@ -244,6 +249,16 @@ export const CanonListScreen = ({navigation}) => {
         />
 
         <BottomNav navigation={navigation} active={null} />
+        <ContentContextMenu
+          visible={!!contextItem}
+          title={contextItem?getLocalizedField(contextItem,'title',language):''}
+          onClose={()=>setContextItem(null)}
+          onOpen={contextItem ? ()=>openCanon(contextItem) : null}
+          onShare={contextItem ? ()=>shareContent({
+            title:getLocalizedField(contextItem,'title',language),
+            screen:'Canon',params:{canonId:contextItem.id,slug:contextItem.slug},
+          }) : null}
+        />
       </View>
     </AppBackground>
   );

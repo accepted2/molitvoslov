@@ -22,6 +22,8 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {colors} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
 import {getLocalizedField} from '../services/localizedContent';
+import {shareContent} from '../services/contentSharing';
+import {ContentContextMenu} from '../components/share/ContentContextMenu';
 import {LocalSearchField, filterByTitle} from '../components/search/LocalSearchField';
 
 export const AkathistListScreen = ({navigation}) => {
@@ -30,6 +32,7 @@ export const AkathistListScreen = ({navigation}) => {
   const headerHeight = insets.top + 56;
 
   const [akathists, setAkathists] = useState([]);
+  const [contextItem,setContextItem]=useState(null);
   const [savedAkathists, setSavedAkathists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState(''); // MOLITVOSLOV_CATEGORY_TITLE_SEARCH_V1
@@ -174,6 +177,8 @@ export const AkathistListScreen = ({navigation}) => {
                   style={styles.itemMain}
                   activeOpacity={0.7}
                   onPress={() => handlePress(item)}
+                  onLongPress={() => setContextItem(item)}
+                  delayLongPress={340}
                 >
                   <Text style={styles.title}>{getLocalizedField(item, 'title', language)}</Text>
 
@@ -255,6 +260,16 @@ export const AkathistListScreen = ({navigation}) => {
         </View>
 
         <BottomNav navigation={navigation} active={null} />
+        <ContentContextMenu
+          visible={!!contextItem}
+          title={contextItem?getLocalizedField(contextItem,'title',language):''}
+          onClose={()=>setContextItem(null)}
+          onOpen={contextItem ? ()=>handlePress(contextItem) : null}
+          onShare={contextItem ? ()=>shareContent({
+            title:getLocalizedField(contextItem,'title',language),
+            screen:'Akathist',params:{akathistId:contextItem.id,slug:contextItem.slug},
+          }) : null}
+        />
       </View>
     </AppBackground>
   );
