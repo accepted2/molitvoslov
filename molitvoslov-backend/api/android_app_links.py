@@ -5,6 +5,7 @@ directly, while devices without it receive the existing web landing.
 The signing-certificate SHA-256 fingerprint is NOT a secret, but it must be
 taken from the actual APK signing certificate (and later Google Play signing).
 """
+
 import os
 import re
 
@@ -19,7 +20,7 @@ def normalize_fingerprint(value):
     candidate = re.sub(r"[:\s]", "", str(value or "")).upper()
     if not re.fullmatch(r"[0-9A-F]{64}", candidate):
         return None
-    return ":".join(candidate[i:i + 2] for i in range(0, 64, 2))
+    return ":".join(candidate[i : i + 2] for i in range(0, 64, 2))
 
 
 def configured_fingerprints():
@@ -45,15 +46,18 @@ def android_asset_links(request):
         response["Cache-Control"] = "no-store"
         return response
 
-    response = JsonResponse([
-        {
-            "relation": ["delegate_permission/common.handle_all_urls"],
-            "target": {
-                "namespace": "android_app",
-                "package_name": PACKAGE_NAME,
-                "sha256_cert_fingerprints": fingerprints,
+    response = JsonResponse(
+        [
+            {
+                "relation": ["delegate_permission/common.handle_all_urls"],
+                "target": {
+                    "namespace": "android_app",
+                    "package_name": PACKAGE_NAME,
+                    "sha256_cert_fingerprints": fingerprints,
+                },
             },
-        },
-    ], safe=False)
+        ],
+        safe=False,
+    )
     response["Cache-Control"] = "public, max-age=3600"
     return response

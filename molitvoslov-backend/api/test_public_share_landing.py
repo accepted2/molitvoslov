@@ -1,4 +1,5 @@
 """Smoke tests for public share URLs on the deployment branch."""
+
 from django.test import SimpleTestCase
 
 
@@ -10,9 +11,7 @@ class PublicShareLandingTests(SimpleTestCase):
         self.assertContains(response, "Открыть в приложении")
 
     def test_psalm_link(self):
-        response = self.client.get(
-            "/api/share/?path=kathisma%2F4%2F27%2Ftraditional"
-        )
+        response = self.client.get("/api/share/?path=kathisma%2F4%2F27%2Ftraditional")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "molitvoslov://kathisma/4/27/traditional")
 

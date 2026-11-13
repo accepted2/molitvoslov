@@ -1,4 +1,5 @@
 """Regression tests for verified HTTPS App Links and legacy web fallback."""
+
 from unittest.mock import patch
 
 from django.test import SimpleTestCase
@@ -21,8 +22,7 @@ class AndroidAppLinksTests(SimpleTestCase):
 
     @patch.dict(
         "os.environ",
-        {"ANDROID_APP_LINK_SHA256_CERT_FINGERPRINTS":
-         ("ab" * 32) + "," + (":".join(["cd"] * 32))},
+        {"ANDROID_APP_LINK_SHA256_CERT_FINGERPRINTS": ("ab" * 32) + "," + (":".join(["cd"] * 32))},
     )
     def test_assetlinks_directly_served_at_domain_root(self):
         response = self.client.get("/.well-known/assetlinks.json")
@@ -33,9 +33,10 @@ class AndroidAppLinksTests(SimpleTestCase):
         self.assertEqual(payload[0]["relation"], ["delegate_permission/common.handle_all_urls"])
         self.assertEqual(payload[0]["target"]["namespace"], "android_app")
         self.assertEqual(payload[0]["target"]["package_name"], "com.accepted2.molitvoslov")
-        self.assertEqual(payload[0]["target"]["sha256_cert_fingerprints"], [
-            ":".join(["AB"] * 32), ":".join(["CD"] * 32)
-        ])
+        self.assertEqual(
+            payload[0]["target"]["sha256_cert_fingerprints"],
+            [":".join(["AB"] * 32), ":".join(["CD"] * 32)],
+        )
 
     def test_invalid_method(self):
         response = self.client.post("/.well-known/assetlinks.json")

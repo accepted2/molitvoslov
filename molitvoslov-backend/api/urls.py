@@ -89,7 +89,7 @@ router.register(
 )
 
 urlpatterns = [
-    path('share/', public_share_page, name='public-content-share'),
+    path("share/", public_share_page, name="public-content-share"),
     path("mobile-content/", MobileContentView.as_view(), name="mobile-content"),
     path("bible-content/", BibleContentView.as_view(), name="bible-content"),
     path("calendar/", include("api.calendar_urls")),

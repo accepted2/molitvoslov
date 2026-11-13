@@ -1,4 +1,5 @@
 """Public landing for shared liturgical content, without private user data."""
+
 import os
 import re
 from urllib.parse import unquote
@@ -19,8 +20,10 @@ PATTERNS = (
 
 
 def is_public_path(path):
-    return isinstance(path, str) and len(path) <= 240 and any(
-        re.fullmatch(p, path, flags=re.UNICODE) for p in PATTERNS
+    return (
+        isinstance(path, str)
+        and len(path) <= 240
+        and any(re.fullmatch(p, path, flags=re.UNICODE) for p in PATTERNS)
     )
 
 
@@ -29,27 +32,35 @@ def public_share_page(request):
     # The fallback page is only seen when Android App Links are not verified,
     # the APK is missing, or the messenger opens links inside its own browser.
     # Do not advertise an unpublished Play Store listing.
-    store_url = os.environ.get('MOLITVOSLOV_PLAY_STORE_URL', '').strip()
+    store_url = os.environ.get("MOLITVOSLOV_PLAY_STORE_URL", "").strip()
     if not store_url.startswith(
-        'https://play.google.com/store/apps/details?id=com.accepted2.molitvoslov'
+        "https://play.google.com/store/apps/details?id=com.accepted2.molitvoslov"
     ):
-        store_url = ''
+        store_url = ""
     invite = str(request.GET.get("invite", ""))
     if invite:
         # The public landing never previews private names or texts.
         if not re.fullmatch(r"[A-Za-z0-9_-]{43}", invite):
             return HttpResponseBadRequest("Недопустимая ссылка.")
-        return render(request, "api/content_share.html", {
-            "app_uri": "molitvoslov://shared/" + invite,
-            "is_invitation": True,
-            "store_url": store_url,
-        })
+        return render(
+            request,
+            "api/content_share.html",
+            {
+                "app_uri": "molitvoslov://shared/" + invite,
+                "is_invitation": True,
+                "store_url": store_url,
+            },
+        )
     path = str(request.GET.get("path", ""))
     # Query parameters arrive already URL-decoded from Django.
     if not is_public_path(path):
         return HttpResponseBadRequest("Недопустимая ссылка.")
-    return render(request, "api/content_share.html", {
-        "app_uri": "molitvoslov://" + path,
-        "share_type": path.split("/", 1)[0],
-        "store_url": store_url,
-    })
+    return render(
+        request,
+        "api/content_share.html",
+        {
+            "app_uri": "molitvoslov://" + path,
+            "share_type": path.split("/", 1)[0],
+            "store_url": store_url,
+        },
+    )
