@@ -232,7 +232,21 @@ const pushSavedItem = async (db, user, localItem) => {
     await throwResponseError(createResponse, 'Ошибка синхронизации сохранения');
   }
 
-  const serverItem = await readResponseData(createResponse);
+  let serverItem = await readResponseData(createResponse);
+  // If an older local copy lacked server_id, idempotent POST can return the
+  // old metadata. Follow up with PATCH so a pin change is not silently lost.
+  if(!isRemoteUpdate && serverItem.sync_id &&
+      JSON.stringify(parseMetadata(serverItem.metadata)) !==
+      JSON.stringify(parseMetadata(item.metadata))) {
+    const updateResponse=await authenticatedFetch(
+      `/api/saved-items/${serverItem.sync_id}/`, {
+        method:'PATCH',
+        body:JSON.stringify({metadata:parseMetadata(item.metadata)}),
+      });
+    if(!updateResponse.ok)
+      await throwResponseError(updateResponse,'Ошибка синхронизации закрепления');
+    serverItem=await readResponseData(updateResponse);
+  }
 
   /*
    * Сервер может вернуть другой sync_id,
@@ -570,7 +584,8 @@ export const syncSavedItems = async () => {
 };
 
 export const getSavedItems = async (params = {}) => {
-  const cloudUser = await getCachedBackendUser();
+  const token = await getApiToken();
+  const cloudUser = token ? await getCachedBackendUser() : null;
 
   const db = await getDatabase();
 
@@ -627,7 +642,8 @@ export const getSavedItems = async (params = {}) => {
 // Keep it on the same UUID so it syncs to the user's other devices.
 export const setSavedItemPinned = async (itemId, pinned) => {
   const db=await getDatabase();
-  const cloud=await getCachedBackendUser();
+  const token=await getApiToken();
+  const cloud=token ? await getCachedBackendUser() : null;
   const owner=cloud?.id ? null:await getOrCreateLocalOwner(db);
   const where=cloud?.id
     ? 'id = ? AND cloud_user_id = ? AND deleted_at IS NULL'
@@ -653,7 +669,8 @@ export const setSavedItemPinned = async (itemId, pinned) => {
 };
 
 export const saveItem = async (payload) => {
-  const cloudUser = await getCachedBackendUser();
+  const token = await getApiToken();
+  const cloudUser = token ? await getCachedBackendUser() : null;
 
   const db = await getDatabase();
 
@@ -787,7 +804,8 @@ export const saveItem = async (payload) => {
 };
 
 export const deleteSavedItem = async (itemId) => {
-  const cloudUser = await getCachedBackendUser();
+  const token = await getApiToken();
+  const cloudUser = token ? await getCachedBackendUser() : null;
 
   const db = await getDatabase();
 
