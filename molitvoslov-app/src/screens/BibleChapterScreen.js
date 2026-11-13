@@ -6,6 +6,9 @@ import {StatusBar} from 'expo-status-bar';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 import {ReaderBookmarkMenu} from '../components/reader/ReaderBookmarkMenu';
+import {ReaderAppearanceSheet} from '../components/reader/ReaderAppearanceSheet';
+import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
+import {resolveReaderAppearance,isDarkReaderBackground} from '../services/scopedReaderAppearance';
 import {shareContent, documentShareText} from '../services/contentSharing';
 import {BibleCrossReferencesSheet} from '../components/reader/BibleCrossReferencesSheet';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
@@ -110,10 +113,15 @@ export const BibleChapterScreen = ({route, navigation}) => {
     Number(requestedChapter?.number || 1)
   );
   const [bookmarkFeedback, setBookmarkFeedback] = useState('');
-  const [fontPanelVisible, setFontPanelVisible] = useState(false);
+  const [appearanceSheetVisible, setAppearanceSheetVisible] = useState(false);
+  const [currentBookmarkAnchor,setCurrentBookmarkAnchor] = useState(null);
+  const [currentBookmarkOffset,setCurrentBookmarkOffset] = useState(0);
   const [crossReferenceOrigin, setCrossReferenceOrigin] = useState(null);
-  const [readerFontSize, setReaderFontSize] = useState(18);
-  const [readerTheme, setReaderTheme] = useState('paper');
+  const {appearance,changeAppearance,resetAppearance} =
+    useScopedReaderAppearance('bible',book?.code || bookId);
+  const readerPalette=resolveReaderAppearance(appearance);
+  const isDarkTheme=isDarkReaderBackground(readerPalette.background);
+  const readerTheme=isDarkTheme?'night':'paper';
   const bookmarkFeedbackTimerRef = useRef(null);
 
   const insets = useSafeAreaInsets();
@@ -173,12 +181,8 @@ export const BibleChapterScreen = ({route, navigation}) => {
   );
 
   useEffect(() => {
-    readerRef.current?.setBookFontSize(readerFontSize);
-  }, [readerFontSize]);
-
-  useEffect(() => {
-    readerRef.current?.setBookTheme(readerTheme);
-  }, [readerTheme]);
+    readerRef.current?.applyBookAppearance(appearance);
+  }, [appearance]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -536,6 +540,10 @@ export const BibleChapterScreen = ({route, navigation}) => {
     setCurrentChapterNumber((previous) =>
       previous === current.chapterNumber ? previous : current.chapterNumber
     );
+    setCurrentBookmarkAnchor(old=>old===Number(progress.anchorId)
+      ? old:Number(progress.anchorId));
+    const offset=Math.max(0,Number(progress.offset||0));
+    setCurrentBookmarkOffset(old=>Math.abs(old-offset)<4?old:offset);
 
     scheduleSave({
       ...progress,
@@ -612,19 +620,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
   };
 
   const applyReaderAppearance = () => {
-    readerRef.current?.setBookFontSize(readerFontSize);
-    readerRef.current?.setBookTheme(readerTheme);
-  };
-
-  const changeFontSize = (delta) => {
-    setReaderFontSize((current) =>
-      Math.max(14, Math.min(22, Math.round((current + delta) * 2) / 2))
-    );
-  };
-
-  const toggleReaderTheme = () => {
-    setReaderTheme((current) => (current === 'night' ? 'paper' : 'night'));
-    setFontPanelVisible(false);
+    readerRef.current?.applyBookAppearance(appearance);
   };
 
   const addCurrentBookmark = async () => {
@@ -657,6 +653,13 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
     try {
       const result = await saveReadingBookmark(bookmark);
+      const saved=result?.item;
+      if(saved && !savedItemsRef.current.some(item=>item.id===saved.id)){
+        savedItemsRef.current=[saved,...savedItemsRef.current];
+        setSavedItems(current=>[saved,...current]);
+      }
+      setCurrentBookmarkAnchor(Number(position.anchorId));
+      setCurrentBookmarkOffset(Math.max(0,Number(position.offset||0)));
       showBookmarkFeedback(result.created ? 'Закладка добавлена' : 'Закладка уже есть');
     } catch (error) {
       console.log('Ошибка добавления закладки Библии:', error.message);
@@ -779,6 +782,15 @@ export const BibleChapterScreen = ({route, navigation}) => {
   const bookmarkVerse = bookmarkPosition
     ? verseInfo.byId.get(Number(bookmarkPosition.anchorId))
     : null;
+  const displayedBookmarkAnchor=Number(currentBookmarkAnchor ||
+    (savedProgress?.anchorId ?? savedProgress?.anchor_id) || 0);
+  const isCurrentPlaceBookmarked=savedItems.some(item=>
+    item.save_type==='bookmark' &&
+    item.anchor_type==='bible_verse' &&
+    Number(item.anchor_id)===displayedBookmarkAnchor &&
+    Math.abs(Number(item.metadata?.bookmark_offset||0)-
+      Number(currentBookmarkOffset||0))<32
+  );
 
   const bookmarkConfig =
     book && bookmarkPosition && bookmarkVerse ? buildBookmarkConfig(bookmarkPosition) : null;
@@ -815,7 +827,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
         topContentInset={readerTopInset}
         bottomContentInset={readerBottomInset}
         respectBottomSafeArea={false}
-        backgroundColor={readerTheme === 'night' ? '#171310' : '#FBF0D9'}
+        backgroundColor={readerPalette.background}
         onProgress={handleProgress}
         onAction={handleAction}
         onCrossReference={openCrossReferences}
@@ -864,6 +876,17 @@ export const BibleChapterScreen = ({route, navigation}) => {
           readerRef.current?.goToProgress(stablePosition);
           setReaderMenuVisible(false);
         }}
+        appearance={appearance}
+        onAppearanceChange={changeAppearance}
+        onAppearanceReset={resetAppearance}
+        openBookmarksLabel="Открыть все закладки"
+      />
+      <ReaderAppearanceSheet
+        visible={appearanceSheetVisible}
+        onClose={()=>setAppearanceSheetVisible(false)}
+        appearance={appearance}
+        onChange={changeAppearance}
+        onReset={resetAppearance}
       />
 
       <FixedSectionHeader
@@ -881,64 +904,6 @@ export const BibleChapterScreen = ({route, navigation}) => {
       {!!bookmarkFeedback && (
         <View pointerEvents="none" style={styles.bookmarkFeedback}>
           <Text style={styles.bookmarkFeedbackText}>{bookmarkFeedback}</Text>
-        </View>
-      )}
-
-      {fontPanelVisible && (
-        <View
-          style={[
-            styles.fontPanel,
-            readerTheme === 'night' && styles.fontPanelNight,
-            {
-              bottom: 58 + Math.max(insets.bottom, 7),
-            },
-          ]}
-        >
-          <Pressable
-            disabled={readerFontSize <= 14}
-            onPress={() => changeFontSize(-1)}
-            style={({pressed}) => [
-              styles.fontPanelButton,
-              readerTheme === 'night' && styles.fontPanelButtonNight,
-              readerFontSize <= 14 && styles.toolbarButtonDisabled,
-              pressed && readerFontSize > 14 && styles.toolbarPressed,
-            ]}
-          >
-            <Text
-              style={[
-                styles.fontPanelButtonText,
-                readerTheme === 'night' && styles.fontPanelTextNight,
-              ]}
-            >
-              A−
-            </Text>
-          </Pressable>
-
-          <Text
-            style={[styles.fontPanelValue, readerTheme === 'night' && styles.fontPanelTextNight]}
-          >
-            {readerFontSize.toFixed(1)}
-          </Text>
-
-          <Pressable
-            disabled={readerFontSize >= 22}
-            onPress={() => changeFontSize(1)}
-            style={({pressed}) => [
-              styles.fontPanelButton,
-              readerTheme === 'night' && styles.fontPanelButtonNight,
-              readerFontSize >= 22 && styles.toolbarButtonDisabled,
-              pressed && readerFontSize < 22 && styles.toolbarPressed,
-            ]}
-          >
-            <Text
-              style={[
-                styles.fontPanelButtonText,
-                readerTheme === 'night' && styles.fontPanelTextNight,
-              ]}
-            >
-              A+
-            </Text>
-          </Pressable>
         </View>
       )}
 
@@ -981,7 +946,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
           style={({pressed}) => [styles.toolbarIconButton, pressed && styles.toolbarPressed]}
         >
           <Ionicons
-            name="bookmark-outline"
+            name={isCurrentPlaceBookmarked?'bookmark':'bookmark-outline'}
             size={20}
             color={readerTheme === 'night' ? '#E0C39B' : '#55351F'}
           />
@@ -990,10 +955,10 @@ export const BibleChapterScreen = ({route, navigation}) => {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Настройки шрифта"
-          onPress={() => setFontPanelVisible((visible) => !visible)}
+          onPress={() => setAppearanceSheetVisible(true)}
           style={({pressed}) => [
             styles.toolbarIconButton,
-            fontPanelVisible && styles.toolbarIconButtonActive,
+            appearanceSheetVisible && styles.toolbarIconButtonActive,
             pressed && styles.toolbarPressed,
           ]}
         >
@@ -1004,8 +969,8 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Сменить тему чтения"
-          onPress={toggleReaderTheme}
+          accessibilityLabel="Выбор цветовой темы чтения"
+          onPress={() => setAppearanceSheetVisible(true)}
           style={({pressed}) => [
             styles.toolbarIconButton,
             readerTheme === 'night' && styles.toolbarIconButtonActiveNight,
@@ -1013,7 +978,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
           ]}
         >
           <Ionicons
-            name={readerTheme === 'night' ? 'sunny-outline' : 'moon-outline'}
+            name="color-palette-outline"
             size={20}
             color={readerTheme === 'night' ? '#E0C39B' : '#55351F'}
           />
