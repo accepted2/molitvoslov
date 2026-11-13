@@ -48,7 +48,7 @@ export const sharePathFor = (screen,params={}) => {
       if(!id||!/^20\d\d-\d\d-\d\d$/.test(id))return null;
       const section=['life','troparion','kontakion','prayer'].includes(params.focusSection)
         ? params.focusSection:'life';
-      const feastUid=slug(params.feastUid);
+      const feastUid=slug(params.feastUid || params.feastId);
       return 'saint/'+id+'/'+section+(feastUid?'/'+feastUid:'');
     }
     case 'Psalter':return 'psalter';
@@ -154,7 +154,7 @@ export const resolveSelectedShareTarget = config => {
       return {screen:'HoursReading',params:{entryId:meta.entry_id||meta.entryId}};
     case 'calendar':
       return {screen:'SaintDetail',params:{
-        date:meta.date,focusSection:meta.section,feastUid:meta.feast_uid,
+        date:meta.date,focusSection:meta.section,feastUid:meta.feast_uid||meta.feast_id,
       }};
     default:return {};
   }
@@ -181,7 +181,7 @@ export const shareSavedItem = item => {
     text:['Reader',{slug:meta.slug}],
     hours:['HoursReading',{entryId:meta.entry_id||meta.entryId}],
     calendar:['SaintDetail',{date:meta.date,focusSection:meta.section,
-      feastUid:meta.feast_uid}],
+      feastUid:meta.feast_uid||meta.feast_id}],
   };
   const [screen,params]=mapping[type]||[null,{}];
   if(String(item?.text||'').trim() && !isPrivateShareSource(type)){
