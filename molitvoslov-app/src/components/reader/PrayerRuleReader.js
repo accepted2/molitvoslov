@@ -5,6 +5,7 @@ import {WebView} from 'react-native-webview';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import {deleteSavedItem, saveItem} from '../../services/savedItems';
+import {shareImportableContent} from '../../services/shareInvitations';
 import {useLanguage} from '../../context/LanguageContext';
 import {getReadingSettings, DEFAULT_READING_SETTINGS} from '../../services/readerPreferences';
 import {applyReaderAppearance, resolveReaderAppearance} from '../../services/scopedReaderAppearance';
@@ -833,7 +834,7 @@ const HTML_TEMPLATE = String.raw`
       position: fixed;
       left: 14px;
       right: 14px;
-      bottom: 22px;
+      bottom: calc(104px + env(safe-area-inset-bottom, 0px));
       z-index: 1002;
       min-height: 52px;
       padding: 7px 8px 7px 12px;
@@ -885,8 +886,20 @@ const HTML_TEMPLATE = String.raw`
       line-height: 34px;
     }
 
+    #selection-share {
+      height: 36px;
+      min-width: 72px;
+      padding: 0 7px;
+      border-radius: 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--accent-dark);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    #selection-share:disabled {opacity: 0.38;}
     #selection-save {
-      min-width: 96px;
+      min-width: 78px;
       height: 36px;
       padding: 0 14px;
       border: 0;
@@ -1011,6 +1024,7 @@ const HTML_TEMPLATE = String.raw`
       ×
     </button>
 
+    <button id="selection-share" type="button">Поделиться</button>
     <button
       id="selection-save"
       type="button"
@@ -1045,6 +1059,7 @@ const HTML_TEMPLATE = String.raw`
       document.getElementById(
         'selection-save'
       );
+    const shareButton = document.getElementById('selection-share');
 
     const cancelButton =
       document.getElementById(
@@ -5665,6 +5680,7 @@ const HTML_TEMPLATE = String.raw`
         saveButton.disabled =
           count <= 0 ||
           state.savePending;
+        shareButton.disabled = count <= 0 || state.savePending;
       };
 
 
@@ -6602,6 +6618,17 @@ const HTML_TEMPLATE = String.raw`
       }
     );
 
+
+    shareButton.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      if(!state.active || state.savePending)return;
+      const selected = (itemTextMap.get(state.active.itemId)||'')
+        .slice(state.active.start,state.active.end).trim();
+      if(!selected)return;
+      post({type:'share-selection',text:selected,
+        itemTitle:itemTitleMap.get(state.active.itemId)||'Молитва'});
+    });
 
     saveButton.addEventListener(
       'click',
@@ -8298,6 +8325,16 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
       return;
     }
 
+    if(message.type === 'share-selection'){
+      if(String(message.text||'').trim()){
+        await shareImportableContent({
+          kind:'quote',
+          title:message.itemTitle||rule.name||'Молитва',
+          text:message.text,
+        });
+      }
+      return;
+    }
     if (message.type !== 'save-selection') {
       return;
     }
