@@ -1688,3 +1688,20 @@ class PublicAppAssetAdmin(admin.ModelAdmin):
     list_editable = ("enabled",)
     search_fields = ("key", "title")
     readonly_fields = ("updated_at",)
+
+
+from .models import AccountDeletionRequest, AccountPreferences
+
+@admin.register(AccountDeletionRequest)
+class AccountDeletionRequestAdmin(admin.ModelAdmin):
+    list_display = ("email", "kind", "status", "created_at", "updated_at")
+    list_filter = ("kind", "status", "created_at")
+    search_fields = ("email", "message")
+    readonly_fields = ("email", "kind", "message", "created_at", "updated_at")
+    list_editable = ("status",)
+
+@admin.register(AccountPreferences)
+class AccountPreferencesAdmin(admin.ModelAdmin):
+    list_display = ("user", "updated_at")
+    search_fields = ("user__email", "user__username")
+    readonly_fields = ("user", "settings", "reader_overrides", "reader_modes", "updated_at")
