@@ -46,7 +46,7 @@ export const SharedImportScreen = ({route,navigation}) => {
   useFocusEffect(useCallback(()=>{load();},[load]));
 
   const addToMe=async()=>{
-    if(importing||imported)return;
+    if(importing)return;
     try{
       setImporting(true);
       setError('');
@@ -106,13 +106,13 @@ export const SharedImportScreen = ({route,navigation}) => {
               )}
               <Pressable
                 onPress={addToMe}
-                disabled={importing||imported}
+                disabled={importing}
                 accessibilityRole="button"
                 style={[styles.action,(importing||imported)&&styles.disabled]}
               >
                 {importing?<ActivityIndicator color="#FFF4DE"/>:
                   <Text style={styles.actionText}>
-                    {imported?'Уже добавлено':'Добавить себе'}
+                    {imported?'Открыть добавленное':'Добавить себе'}
                   </Text>}
               </Pressable>
               <Text style={styles.notice}>После добавления текст появится в вашем избранном, помянниках или личных молитвословах и будет доступен для редактирования независимо от отправителя.</Text>
