@@ -63,6 +63,14 @@ ${READER_STYLES}
     </button>
 
     <button
+      id="selection-share"
+      type="button"
+      aria-label="Поделиться выделенным текстом"
+    >
+      Поделиться
+    </button>
+
+    <button
       id="selection-save"
       type="button"
     >
