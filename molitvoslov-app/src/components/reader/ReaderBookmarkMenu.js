@@ -14,6 +14,7 @@ export const ReaderBookmarkMenu = ({
   bookmark,
   canReturnToProgress = false,
   onReturnToProgress,
+  onShare = null,
   languageOptions = [],
   activeLanguage = null,
   onLanguageChange,
@@ -144,6 +145,24 @@ export const ReaderBookmarkMenu = ({
             </Pressable>
           )}
 
+          {!!onShare && (
+            <Pressable
+              onPress={() => {
+                onClose?.();
+                setTimeout(() => onShare(), 200);
+              }}
+              accessibilityRole="button"
+              style={({pressed})=>[styles.action,pressed&&styles.pressed]}
+            >
+              <View style={styles.iconWrap}>
+                <Ionicons name="share-social-outline" size={22} color={colors.accent}/>
+              </View>
+              <View style={styles.actionTextWrap}>
+                <Text style={styles.actionTitle}>Поделиться</Text>
+                <Text style={styles.actionSubtitle}>Переслать текст или ссылку</Text>
+              </View>
+            </Pressable>
+          )}
           <Pressable
             disabled={!bookmark || saving}
             onPress={addBookmark}
