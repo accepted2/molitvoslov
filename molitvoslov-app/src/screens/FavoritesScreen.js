@@ -284,7 +284,8 @@ export const FavoritesScreen = ({route, navigation}) => {
           kathismaNumber: metadata.kathisma_number,
           kathismaTitle:
             metadata.kathisma_title || t('psalter.kathisma', {number: metadata.kathisma_number}),
-          focusTarget,
+          focusTarget:{...focusTarget,
+            preferredLanguage:metadata.reader_mode||metadata.language||undefined},
         });
         return;
       }
