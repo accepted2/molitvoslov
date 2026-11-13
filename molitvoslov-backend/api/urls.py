@@ -36,6 +36,7 @@ from .auth_views import (
     DeleteAccountView,
 )
 from .account_preferences import AccountPreferencesView
+from .account_deletion_web import account_deletion_page, privacy_policy_page
 from .mobile_content import MobileContentView
 from .bible_content import BibleContentView
 from .content_updates import OfflineContentUpdatesView, OfflineContentObjectView, OfflineContentManifestView
@@ -91,6 +92,8 @@ router.register(
 )
 
 urlpatterns = [
+    path("account-deletion/", account_deletion_page, name="account-deletion-web"),
+    path("privacy-policy/", privacy_policy_page, name="privacy-policy"),
     path("account-preferences/", AccountPreferencesView.as_view(), name="account-preferences"),
     path("mobile-content/", MobileContentView.as_view(), name="mobile-content"),
     path("content-updates/", OfflineContentUpdatesView.as_view(), name="content-updates"),
