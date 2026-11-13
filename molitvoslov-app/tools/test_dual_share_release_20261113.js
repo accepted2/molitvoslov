@@ -64,7 +64,7 @@ contains('src/screens/FavoritesScreen.js',/minWidth:32,minHeight:32/);
 
 // Build code is incremented, and the Windows build helper is present.
 const config=JSON.parse(read('app.json'));
-assert.equal(config.expo.version,'1.0.27');
-assert.equal(config.expo.android.versionCode,28);
+assert.equal(config.expo.version,'1.0.28');
+assert.equal(config.expo.android.versionCode,29);
 assert.ok(fs.existsSync(path.join(__dirname,'build-release-and-smoke-20261113.ps1')));
 console.log('PASS: paired save/share controls, akathist header, hours favorites, runtime syntax, APK build preparation');
