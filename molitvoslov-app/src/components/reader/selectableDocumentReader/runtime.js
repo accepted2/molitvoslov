@@ -3037,6 +3037,37 @@ appendStyledSegment(
   isCanonChurch && start === 0 && !canonRanges.some(range => range.kind.endsWith('-cue'))
 );
 
+// The Russian First Hour has two editorial exceptions. Apply the colors
+// to the exact rendered segment, not just to a CSS class on the data model:
+// Android WebView can keep old generic prayer/doxology emphasis otherwise.
+// The underlying text and selection offsets are not changed.
+const isFirstHourPrimaryRussian =
+  itemConfig?.sourceType === 'hours' &&
+  itemConfig?.metadata?.entryId === 'ordinary-1' &&
+  itemConfig?.metadata?.language === 'russian' &&
+  String(itemConfig?.className || '').includes('hours-russian-primary');
+if (isFirstHourPrimaryRussian) {
+  const blockClasses = String(itemConfig?.className || '').split(/\\s+/u);
+  if (blockClasses.includes('hours-presentation-final-trinity') &&
+      hoursMark?.kind === 'initial' && start === 0 &&
+      text.slice(start, end).startsWith('П')) {
+    span.style.setProperty('color', 'var(--liturgical)', 'important');
+    span.style.setProperty('font-weight', '700', 'important');
+  }
+  if (blockClasses.includes('hours-presentation-choir-response')) {
+    const isSpeaker = hoursMark?.kind === 'speaker' &&
+      text.slice(start, end).startsWith('Хор:');
+    const choirColor = isSpeaker ? 'var(--liturgical)' : 'var(--text)';
+    span.style.setProperty('color', choirColor, 'important');
+    span.style.setProperty('font-weight', isSpeaker ? '700' : '400', 'important');
+    // Nested generic liturgical spans must not re-color the doxology.
+    span.querySelectorAll('span').forEach(child => {
+      child.style.setProperty('color', choirColor, 'important');
+      child.style.setProperty('font-weight', isSpeaker ? '700' : '400', 'important');
+    });
+  }
+}
+
 const psalterPrayerAccentText =
   isPsalterPrayerAccent
     ? text.slice(start, end).trim()
