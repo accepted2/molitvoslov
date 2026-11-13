@@ -33,6 +33,12 @@ expect('hours/hour-1');
 expect('saint/2026-11-13/troparion/a1bc-def');
 expect('psalter');
 expect('reader/Слово_Божие');
+// The existing share helper encodes Cyrillic slugs before the query URL is
+// encoded; that legacy link must still open without loading the website.
+const legacyDoubleEncoded=api.APP_LINK_ORIGIN+'/api/share/?path='+
+  encodeURIComponent('reader/'+encodeURIComponent('Молитва_утренняя'));
+assert.equal(api.normalizeIncomingAppLink(legacyDoubleEncoded),
+  'molitvoslov://reader/'+encodeURIComponent('Молитва_утренняя'));
 const invite='a'.repeat(43);
 assert.equal(api.normalizeIncomingAppLink(
   api.APP_LINK_ORIGIN+'/api/share/?invite='+invite),
