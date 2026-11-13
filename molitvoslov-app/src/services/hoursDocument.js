@@ -1,4 +1,5 @@
 import hoursTexts from '../data/hoursTexts.json';
+import firstHourTraditional from '../data/hoursFirstHourTraditional.json';
 import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from './readerLanguageModes';
 import {
   classifyHoursRow,
@@ -59,7 +60,12 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
   const isFirstHour = entry.id === 'ordinary-1';
   const available = {
     ...getHoursLanguageAvailability(content),
-    ...(isFirstHour ? {hasRussian: true} : {}),
+    ...(isFirstHour ? {
+      hasRussian: true,
+      hasTraditional: firstHourTraditional.sections.some(section =>
+        section.rows?.some(row => isText(row.traditional))
+      ),
+    } : {}),
   };
   const options = buildReaderLanguageOptions({
     hasChurch: true,
@@ -100,7 +106,7 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
         })
       : null;
   const sourceSections = viewMode === READER_LANGUAGE_MODES.TRADITIONAL
-    ? content?.traditionalSections
+    ? (isFirstHour ? firstHourTraditional.sections : content?.traditionalSections)
     : isFirstHour && viewMode === READER_LANGUAGE_MODES.RUSSIAN
       ? firstHourRussian
       : bilingualFirstHour?.every(Boolean)
