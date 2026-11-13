@@ -1,5 +1,5 @@
 import React, {useCallback, useState} from 'react';
-import {FlatList, ImageBackground, Pressable, StyleSheet, Text, View} from 'react-native';
+import {Alert, FlatList, ImageBackground, Pressable, Share, StyleSheet, Text, View} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import {BottomNav} from '../components/navigation/BottomNav';
 import {bibleContent} from '../services/bibleContent';
 import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {getReadingProgress} from '../services/readingProgress';
+import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {getBibleArtwork} from '../data/bibleArtwork';
 import {homeArtwork} from '../data/homeArtwork';
 import {colors} from '../theme';
@@ -21,6 +22,7 @@ export const BibleBookScreen = ({route, navigation}) => {
   const book = bibleContent.getBook(route.params?.bookId);
 
   const [bookProgress, setBookProgress] = useState(null);
+  const [savedChapters, setSavedChapters] = useState([]);
 
   const displayName = bibleContent.getDisplayName(book);
   const artwork = getBibleArtwork(book);
@@ -44,11 +46,20 @@ export const BibleBookScreen = ({route, navigation}) => {
     );
   }, [book?.id]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadProgress();
-    }, [loadProgress])
-  );
+  const loadSavedChapters = useCallback(async () => {
+    if (!book?.id) return;
+    try {
+      const items = await getSavedItems({source_type: 'bible', source_id: book.id});
+      setSavedChapters(items.filter((item) => item.anchor_type === 'bible_chapter' && item.save_type === 'chapter'));
+    } catch (error) {
+      console.log('Ошибка загрузки избранных глав:', error?.message || error);
+    }
+  }, [book?.id]);
+
+  useFocusEffect(useCallback(() => {
+    loadProgress();
+    loadSavedChapters();
+  }, [loadProgress, loadSavedChapters]));
 
   if (!book) {
     return (
@@ -73,6 +84,60 @@ export const BibleBookScreen = ({route, navigation}) => {
       chapterNumber: chapter.number,
       resume: isResumeChapter,
     });
+  };
+
+  const shareChapter = async (chapter) => {
+    const heading = displayName + ', ' + t('bible.chapter', {number: chapter.number});
+    const body = (chapter.verses || []).map((verse) => verse.number + ' ' + (verse.text || '')).join('\n');
+    try {
+      await Share.share({message: heading + '\n\n' + body, title: heading});
+    } catch (error) {
+      Alert.alert('Не удалось поделиться', error?.message || 'Попробуйте ещё раз.');
+    }
+  };
+
+  const toggleChapterSaved = async (chapter) => {
+    try {
+      const existing = savedChapters.find((item) => Number(item.anchor_id) === Number(chapter.id));
+      if (existing) {
+        await deleteSavedItem(existing.id);
+      } else {
+        const body = (chapter.verses || []).map((verse) => verse.number + ' ' + (verse.text || '')).join('\n');
+        await saveItem({
+          save_type: 'chapter', source_type: 'bible', source_id: Number(book.id),
+          anchor_type: 'bible_chapter', anchor_id: Number(chapter.id),
+          source_title: t('bible.source', {book: displayName}),
+          item_title: t('bible.wholeChapterTitle', {book: displayName, chapter: chapter.number}),
+          text: body, start_offset: 0, end_offset: body.length,
+          metadata: {
+            book_id: Number(book.id), book_slug: book.slug, book_name: displayName,
+            book_short_name: book.short_name, chapter_id: Number(chapter.id),
+            chapter_number: Number(chapter.number), verse_count: (chapter.verses || []).length,
+          },
+        });
+      }
+      await loadSavedChapters();
+    } catch (error) {
+      Alert.alert('Не удалось сохранить', error?.message || 'Попробуйте ещё раз.');
+    }
+  };
+
+  const openChapterActions = (chapter) => {
+    const isSaved = savedChapters.some((item) => Number(item.anchor_id) === Number(chapter.id));
+    Alert.alert(displayName + ' · ' + t('bible.chapter', {number: chapter.number}), 'Выберите действие', [
+      {text: 'Читать', onPress: () => openChapter(chapter)},
+      {text: isSaved ? 'Убрать из избранного' : 'Сохранить в избранное', onPress: () => toggleChapterSaved(chapter)},
+      {text: 'Поделиться', onPress: () => shareChapter(chapter)},
+      {text: 'Отмена', style: 'cancel'},
+    ]);
+  };
+
+  const shareBook = async () => {
+    try {
+      await Share.share({message: displayName + '\n' + (book.chapters || []).length + ' глав', title: displayName});
+    } catch (error) {
+      Alert.alert('Не удалось поделиться', error?.message || 'Попробуйте ещё раз.');
+    }
   };
 
   const resumeReading = () => {
@@ -136,9 +201,12 @@ export const BibleBookScreen = ({route, navigation}) => {
           }}
           ListHeaderComponent={
             <View>
-              <Text style={[styles.fullName, artwork?.background && styles.fullNameArtwork]}>
-                {displayName}
-              </Text>
+              <Pressable onLongPress={shareBook} delayLongPress={350} accessibilityHint="Удерживайте, чтобы поделиться книгой">
+                <Text style={[styles.fullName, artwork?.background && styles.fullNameArtwork]}>{displayName}</Text>
+              </Pressable>
+              <Pressable onPress={shareBook} style={styles.bookShareButton} accessibilityRole="button">
+                <Text style={styles.bookShareText}>Поделиться книгой</Text>
+              </Pressable>
 
               {!!bookProgress && !!progressChapter && (
                 <Pressable
@@ -193,6 +261,9 @@ export const BibleBookScreen = ({route, navigation}) => {
             return (
               <Pressable
                 onPress={() => openChapter(item)}
+                 onLongPress={() => openChapterActions(item)}
+                 delayLongPress={350}
+                 accessibilityHint="Удерживайте, чтобы сохранить или поделиться главой"
                 style={({pressed}) => [
                   styles.chapter,
 
@@ -416,9 +487,12 @@ const styles = StyleSheet.create({
   },
 
   chapterNumberCurrent: {
-    color: '#FFE2A1',
+    color: '#3C2416',
+    fontSize: 20,
   },
 
+  bookShareButton: {alignSelf: 'center', marginBottom: 12, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 18, backgroundColor: 'rgba(248,233,207,0.92)'},
+  bookShareText: {color: '#51341D', fontWeight: '700', fontSize: 13},
   currentDot: {
     position: 'absolute',
 
