@@ -304,7 +304,7 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
       } else if (viewMode === READER_LANGUAGE_MODES.BOTH) {
         const church = block('church', 1);
         const russian = block('russian', 2);
-        if (!russian && church) missingRussianRows += 1;
+        if (!russian && church && row.sharedOnce !== true) missingRussianRows += 1;
         blocks = [church, russian];
       } else {
         blocks = [block('church', 1)];
@@ -312,7 +312,10 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
       // Do not repeat an invented translation for every absent paragraph.
       blocks = blocks.filter(Boolean);
       if (blocks.length) rows.push({
-        layout: 'stack',
+        // Two actual translations use the same two-column reader layout as
+        // elsewhere; shared notes/responses occupy a full-width single row.
+        layout: isFirstHour && viewMode === READER_LANGUAGE_MODES.BOTH &&
+          blocks.length === 2 ? 'parallel' : 'stack',
         blocks,
         dividerAfter: row.dividerAfter === true,
         compactAfter: row.compactAfter === true,
