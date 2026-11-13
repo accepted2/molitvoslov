@@ -349,6 +349,8 @@ export const BibleChapterScreen = ({route, navigation}) => {
 
           chapter_id: chapterId,
 
+          translation_code: translationCode,
+
           chapter_number: Number(chapter.number),
 
           verse_count: (chapter.verses || []).length,
