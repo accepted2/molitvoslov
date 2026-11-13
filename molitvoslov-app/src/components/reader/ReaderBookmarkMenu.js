@@ -15,6 +15,7 @@ export const ReaderBookmarkMenu = ({
   canReturnToProgress = false,
   onReturnToProgress,
   onShare = null,
+  openBookmarksLabel = null,
   languageOptions = [],
   activeLanguage = null,
   onLanguageChange,
@@ -213,7 +214,7 @@ export const ReaderBookmarkMenu = ({
             </View>
 
             <View style={styles.actionTextWrap}>
-              <Text style={styles.actionTitle}>{t('bookmarkMenu.openPlaces')}</Text>
+              <Text style={styles.actionTitle}>{openBookmarksLabel || t('bookmarkMenu.openPlaces')}</Text>
               <Text style={styles.actionSubtitle}>{t('bookmarkMenu.openPlacesHint')}</Text>
             </View>
           </Pressable>
