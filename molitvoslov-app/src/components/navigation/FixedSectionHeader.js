@@ -24,6 +24,7 @@ export const FixedSectionHeader = ({
   languageSwitcher = null,
   onLanguageChange,
   headerAction = null,
+  rightContent = null,
   onHeaderHeightChange,
 }) => {
   const uiScale = useInterfaceScale();
@@ -193,6 +194,10 @@ export const FixedSectionHeader = ({
             </View>
           )}
 
+          {!!rightContent && (
+            <View style={styles.rightContent}>{rightContent}</View>
+          )}
+
           {showMenu && (
             <Pressable
               hitSlop={12}
@@ -331,6 +336,13 @@ const styles = StyleSheet.create({
     lineHeight: 46,
   },
 
+  rightContent: {
+    flexShrink: 0,
+    width: '48%',
+    minWidth: 115,
+    maxWidth: 250,
+    justifyContent: 'center',
+  },
   titleWrap: {
     flex: 1,
     minWidth: 0,
