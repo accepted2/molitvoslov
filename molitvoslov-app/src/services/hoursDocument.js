@@ -1,4 +1,5 @@
 import hoursTexts from '../data/hoursTexts.json';
+import thirdHourChurch from '../data/hoursThirdHourEditorial.json';
 import firstHourTraditional from '../data/hoursFirstHourTraditional.json';
 import {READER_LANGUAGE_MODES, buildReaderLanguageOptions} from './readerLanguageModes';
 import {
@@ -21,7 +22,10 @@ const isText = (value) => typeof value === 'string' && !!value.trim();
 const allRows = (sections) =>
   (Array.isArray(sections) ? sections : []).flatMap((section) => section.rows || []);
 
-export const getOfflineHoursText = (entryId) => hoursTexts.entries?.[entryId] || null;
+// A curated Third Hour replaces any legacy imported text for ordinary-3;
+ // other entries, including local First Hour imports, remain untouched.
+export const getOfflineHoursText = (entryId) =>
+  entryId === 'ordinary-3' ? thirdHourChurch : hoursTexts.entries?.[entryId] || null;
 
 export const getHoursLanguageAvailability = (content) => {
   const rows = allRows(content?.sections);

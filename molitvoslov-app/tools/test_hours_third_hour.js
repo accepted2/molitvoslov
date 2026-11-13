@@ -7,8 +7,11 @@ const path = require('node:path');
 const read = rel => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
 const source = JSON.parse(read('src/data/hoursTexts.json'));
 const firstHour = JSON.parse(read('src/data/hoursFirstHourEditorial.json'));
-const third = source.entries['ordinary-3'];
+const third = JSON.parse(read('src/data/hoursThirdHourEditorial.json'));
 assert.ok(third,'Third Hour must be available offline');
+assert.equal(third.entryId,'ordinary-3');
+assert.equal(source.entries['ordinary-3'],undefined,
+  'Third Hour is a standalone file: do not overwrite local imported hoursTexts');
 assert.equal(third.sections.length,13);
 assert.deepEqual(third.sections.slice(1,4).map(s=>s.title),
   ['Псалом 16','Псалом 24','Псалом 50']);
@@ -49,17 +52,17 @@ const docCode=read('src/services/hoursDocument.js')
   .replace(/^import[\s\S]*?from ['"][^'"]+['"];\s*/gm,'')
   .replace(/\bexport const /g,'const ');
 const builder=new Function(
-  'hoursTexts','firstHourTraditional','READER_LANGUAGE_MODES',
+  'hoursTexts','thirdHourChurch','firstHourTraditional','READER_LANGUAGE_MODES',
   'buildReaderLanguageOptions','classifyHoursRow','classifyHoursSection',
   'collectHoursTextMarks','getEditedFirstHour','getFirstHourRussianSections',
   'pairFirstHourSections',docCode +
   '\nreturn {buildHoursDocument,getOfflineHoursText,getHoursLanguageAvailability};'
-)(source,{sections:[]},MODE,opts,
+)(source,third,{sections:[]},MODE,opts,
   typography.classifyHoursRow,typography.classifyHoursSection,
   typography.collectHoursTextMarks,
   ()=>({applied:false}),()=>[],()=>null
 );
-const entry={id:'ordinary-3',groupId:'ordinary',title:'Третий час',sourceId:910003};
+const entry={id:'ordinary-3',groupId:'ordinary',title:'Третий час',sourceId:910002};
 const content=builder.getOfflineHoursText(entry.id);
 assert.equal(content,third);
 const available=builder.getHoursLanguageAvailability(content);
