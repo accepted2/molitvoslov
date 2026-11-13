@@ -26,7 +26,13 @@ const isShared = row => {
     .normalize('NFC').trim().toLowerCase();
   return /^(?:аллилу|господи,?\s+помилуй)/u.test(clean);
 };
-const shared = row => ({...onlyChurch(row), sharedOnce:true});
+const shared = row => ({
+  ...onlyChurch(row),
+  // The shared Alleluia retains its existing line break after the response.
+  preserveLineBreaks: row.preserveLineBreaks === true ||
+    String(row.church || '').includes('\n'),
+  sharedOnce: true,
+});
 const pair = (cs, ru) => {
   if (!ru?.russian?.trim() || isShared(cs)) return shared(cs);
   return {
