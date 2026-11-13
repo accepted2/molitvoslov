@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {authenticatedFetch, getApiToken, getCachedBackendUser} from './backendAuth';
 import {getAppLanguage, setAppLanguage} from './languagePreferences';
+import {readHomeOrderForUser, setHomeOrderForUser} from './homeCategoryOrder';
 import {
   getReadingSettings, saveReadingSettings,
   getAccountReaderModeStorageKey,
@@ -70,8 +71,9 @@ const accountAppearanceKey = (id, scope) => {
 };
 
 const initialSnapshot = async (userId) => {
-  const [settings, language, keys] = await Promise.all([
+  const [settings, language, keys, homeCategoryOrder] = await Promise.all([
     getReadingSettings(), getAppLanguage(), AsyncStorage.getAllKeys(),
+    readHomeOrderForUser(userId, {inheritGuest:true}),
   ]);
   const overrides = {};
   const modes = {};
@@ -113,13 +115,15 @@ const initialSnapshot = async (userId) => {
     const raw = await AsyncStorage.getItem(key);
     if (VALID_READER_MODES.has(raw)) modes[key.slice(accountModePrefix.length)] = raw;
   }
-  return {settings: {...settings, language}, reader_overrides: overrides, reader_modes: modes};
+  return {settings: {...settings, language, homeCategoryOrder}, reader_overrides: overrides, reader_modes: modes};
 };
 
 const applySnapshot = async (userId, remote) => {
   if (remote.settings && Object.keys(remote.settings).length) {
     await saveReadingSettings(remote.settings);
     if (remote.settings.language) await setAppLanguage(remote.settings.language);
+    if (Array.isArray(remote.settings.homeCategoryOrder))
+      await setHomeOrderForUser(userId, remote.settings.homeCategoryOrder);
   }
   const previousKey = LAST_SCOPES + String(userId);
   const previous = parse(await AsyncStorage.getItem(previousKey), {appearance: [], modes: []});
@@ -173,6 +177,10 @@ const syncOnce = async () => {
         !Object.prototype.hasOwnProperty.call(remote.reader_modes || {}, scope))
     );
     pending = mergePatch({
+      ...(remote.settings?.homeCategoryOrder === undefined &&
+        legacy.settings.homeCategoryOrder?.length
+        ? {settings:{homeCategoryOrder:legacy.settings.homeCategoryOrder}}
+        : {}),
       reader_overrides: missingOverrides,
       reader_modes: missingModes,
     }, pending);
