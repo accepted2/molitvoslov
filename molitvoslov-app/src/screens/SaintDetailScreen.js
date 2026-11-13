@@ -1,7 +1,9 @@
 import React, {useState} from 'react';
 import {
+  Alert,
   Image,
   Pressable,
+  Share,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +15,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {useLanguage} from '../context/LanguageContext';
+import {saveItem} from '../services/savedItems';
 
 const formatDate = (value, language) => {
   if (!value) return '';
@@ -32,6 +35,7 @@ const Accordion = ({
   initialOpen = false,
   innerScroll = false,
   height = 320,
+  onMore,
 }) => {
   const [open, setOpen] = useState(initialOpen);
   if (!text) return null;
@@ -61,6 +65,11 @@ const Accordion = ({
         </View>
         <Text style={styles.chevron}>{open ? '⌃' : '⌄'}</Text>
       </Pressable>
+      {!!onMore && (
+        <Pressable accessibilityRole="button" accessibilityLabel={'Действия: ' + title} onPress={onMore} style={styles.moreButton}>
+          <Text style={styles.moreButtonText}>•••</Text>
+        </Pressable>
+      )}
       {open && (
         <>
           {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
@@ -103,6 +112,46 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const heroImageWidth = large ? 180 : Math.min(132, width * 0.34);
   const lifeHeight = Math.max(235, Math.min(390, height * 0.39));
 
+  const openContentActions = (sectionTitle, content, kind) => {
+    const heading = title + ' — ' + sectionTitle;
+    const share = async () => {
+      try {
+        await Share.share({title: heading, message: heading + '\n\n' + content});
+      } catch (error) {
+        Alert.alert('Не удалось поделиться', error?.message || 'Попробуйте ещё раз.');
+      }
+    };
+    const save = async () => {
+      try {
+        if (!feast?.id) {
+          Alert.alert('Не удалось сохранить', 'У этой записи нет идентификатора.');
+          return;
+        }
+        await saveItem({
+          save_type: 'text',
+          source_type: 'calendar',
+          source_id: Number(feast.id),
+          anchor_type: 'calendar_feast_text',
+          anchor_id: Number(feast.id),
+          source_title: title,
+          item_title: heading,
+          text: content,
+          start_offset: 0,
+          end_offset: content.length,
+          metadata: {feast_id: feast.id, kind, date: date || null},
+        });
+        Alert.alert('Сохранено', 'Текст добавлен в избранное.');
+      } catch (error) {
+        Alert.alert('Не удалось сохранить', error?.message || 'Попробуйте ещё раз.');
+      }
+    };
+    Alert.alert(heading, 'Выберите действие', [
+      {text: 'Сохранить', onPress: save},
+      {text: 'Поделиться', onPress: share},
+      {text: 'Отмена', style: 'cancel'},
+    ]);
+  };
+
   return (
     <View style={styles.screen}>
       <StatusBar style="dark" translucent backgroundColor="transparent" />
@@ -134,6 +183,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
           title={uk ? 'Житіє' : 'Житие'}
           icon="▤"
           text={life}
+          onMore={() => openContentActions('Житие', life, 'life')}
           initialOpen
           innerScroll={String(life || '').length > 550}
           height={lifeHeight}
@@ -142,15 +192,18 @@ export const SaintDetailScreen = ({route, navigation}) => {
           title={uk ? 'Тропар' : 'Тропарь'}
           icon="♫"
           text={troparion}
+          onMore={() => openContentActions('Тропарь', troparion, 'troparion')}
           subtitle={feast?.troparion_echo ? 'Глас ' + feast.troparion_echo : feast?.troparion_title}
         />
         <Accordion
           title="Кондак"
           icon="▦"
           text={kontakion}
+          onMore={() => openContentActions('Кондак', kontakion, 'kontakion')}
           subtitle={feast?.kontakion_echo ? 'Глас ' + feast.kontakion_echo : feast?.kontakion_title}
         />
-        {!!prayer && <Accordion title={uk ? 'Молитва' : 'Молитва'} icon="☦" text={prayer} />}
+        {!!prayer && <Accordion title={uk ? 'Молитва' : 'Молитва'} icon="☦" text={prayer}
+          onMore={() => openContentActions('Молитва', prayer, 'prayer')} />}
         {!!date && (
           <View style={styles.dateCard}>
             <Text style={styles.dateIcon}>▣</Text>
@@ -228,6 +281,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     fontSize: 11,
   },
+  moreButton: {position: 'absolute', top: 12, right: 44, zIndex: 2, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 14, backgroundColor: '#F1DFC2', borderWidth: 1, borderColor: '#E8D5B4'},
+  moreButtonText: {fontWeight: '800', color: '#704529', fontSize: 13, letterSpacing: 2},
   accordion: {
     backgroundColor: '#FFF8EB',
     borderRadius: 19,
