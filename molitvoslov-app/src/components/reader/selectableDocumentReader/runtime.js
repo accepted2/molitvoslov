@@ -3047,7 +3047,7 @@ const isFirstHourPrimaryRussian =
   itemConfig?.metadata?.language === 'russian' &&
   String(itemConfig?.className || '').includes('hours-russian-primary');
 if (isFirstHourPrimaryRussian) {
-  const blockClasses = String(itemConfig?.className || '').split(/\\s+/u);
+  const blockClasses = String(itemConfig?.className || '').split(' ');
   if (blockClasses.includes('hours-presentation-final-trinity') &&
       hoursMark?.kind === 'initial' && start === 0 &&
       text.slice(start, end).startsWith('П')) {
