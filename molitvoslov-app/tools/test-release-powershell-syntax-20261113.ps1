@@ -31,3 +31,19 @@ foreach ($name in $files) {
   Write-Host ("PASS: " + $name) -ForegroundColor Green
 }
 Write-Host "PASS: all Android release PowerShell scripts parse in this Windows PowerShell." -ForegroundColor Green
+# Regression guard: Gradle must run inside android/ rather than the app root.
+$builder = [IO.File]::ReadAllText((Join-Path $PSScriptRoot "build-release-and-smoke-20261113.ps1"))
+if (-not $builder.Contains('Push-Location $androidDir')) {
+  throw "Gradle release must change into the Android project directory."
+}
+if (-not $builder.Contains('& ".\gradlew.bat" ":app:assembleRelease" "--no-daemon"')) {
+  throw "Gradle wrapper call missing from Android project directory."
+}
+if ($builder.Contains('& ".\android\gradlew.bat" ":app:assembleRelease" "--no-daemon"')) {
+  throw "Old Gradle invocation from Expo root is still present."
+}
+if (-not $builder.Contains('Pop-Location')) {
+  throw "Working directory restoration missing."
+}
+Write-Host "PASS: Gradle wrapper runs from android/ and returns to the app directory." -ForegroundColor Green
+
