@@ -1,0 +1,42 @@
+name: Verify First Hour offline fallback and prayer-only menus
+
+on:
+  pull_request:
+    branches:
+      - fix/reader-theme-gradient-sync-20261114
+    paths:
+      - 'molitvoslov-app/**'
+      - '.github/workflows/verify-hours-local-dropdown-20261114.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hours-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: molitvoslov-app/package-lock.json
+      - name: First Hour backup, historical import and prayer-only menus
+        working-directory: molitvoslov-app
+        run: |
+          node tools/test_hours_local_first_dropdown_actions_20261114.js
+          node tools/test_hours_first_hour_editorial.js
+          node tools/test_hours_first_hour_russian.js
+          node tools/test_hours_first_hour_traditional.js
+      - name: Install Expo dependencies
+        working-directory: molitvoslov-app
+        run: |
+          npm ci --ignore-scripts
+          npx patch-package
+      - name: Export Android JS to catch JSX and WebView runtime issues
+        working-directory: molitvoslov-app
+        run: npx expo export --platform android --output-dir /tmp/molitvoslov-hours-fix
