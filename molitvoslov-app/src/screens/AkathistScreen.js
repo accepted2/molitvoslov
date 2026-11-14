@@ -283,6 +283,33 @@ export const AkathistScreen = ({route, navigation}) => {
   ]);
 
   const handleAction = async (actionKey) => {
+    if (akathist && String(actionKey || '').startsWith('akathist-section:')) {
+      const id=Number(String(actionKey).split(':')[1]);
+      const section=documentData?.sections?.find(row=>
+        Number(row.progressAnchorId)===id && id>0);
+      if(!section)return null;
+      const previous=savedItemsRef.current.find(item=>
+        item.anchor_type==='akathist_section' &&
+        Number(item.anchor_id)===id && item.save_type==='section');
+      if(previous){
+        await deleteSavedItem(previous.id);
+        savedItemsRef.current=savedItemsRef.current.filter(item=>item.id!==previous.id);
+        return {active:false,label:t('common.addToFavorites')};
+      }
+      const body=(section.rows||[]).flatMap(row=>
+        (row.blocks||[]).map(block=>String(block.text||'').trim())).filter(Boolean).join('\n\n');
+      if(!body)return null;
+      const saved=await saveItem({
+        save_type:'section',source_type:'akathist',source_id:akathist.id,
+        anchor_type:'akathist_section',anchor_id:id,
+        source_title:getLocalizedField(akathist,'title',language)||title||'Акафист',
+        item_title:section.title||'Часть акафиста',text:body,
+        start_offset:0,end_offset:body.length,
+        metadata:{slug:akathist.slug||slug,language:viewMode},
+      });
+      savedItemsRef.current=[saved,...savedItemsRef.current];
+      return {active:true,label:t('common.inFavorites'),savedItem:saved};
+    }
     if (!actionKey?.startsWith('akathist:') || !akathist) {
       return null;
     }
@@ -779,6 +806,15 @@ export const AkathistScreen = ({route, navigation}) => {
         className: 'akathist-section',
 
         title: sectionTitle,
+        ...(repeated || !Number(section.id) || missingLanguage ? {} : {
+          action: {
+            key:'akathist-section:'+Number(section.id),
+            active:savedItems.some(saved=>
+              saved.anchor_type==='akathist_section' &&
+              Number(saved.anchor_id)===Number(section.id) &&
+              saved.save_type==='section'),
+          },
+        }),
 
         note: getLocalizedField(section, 'note', language),
 
