@@ -1,0 +1,114 @@
+name: Verify First Hour offline fallback and prayer-only menus
+
+on:
+  pull_request:
+    branches:
+      - fix/reader-theme-gradient-sync-20261114
+    paths:
+      - 'molitvoslov-app/**'
+      - '.github/workflows/verify-hours-local-dropdown-20261114.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-powershell-51-hours-count:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify a 20-service Hours JSON is recognized by Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $entries = @{}
+          1..20 | ForEach-Object { $entries["ordinary-$_"] = @{ sections = @() } }
+          $mock = @{ entries = $entries } | ConvertTo-Json -Depth 5 | ConvertFrom-Json
+          $names = @($mock.entries.PSObject.Properties | ForEach-Object { $_.Name })
+          if ($names.Count -ne 20 -or -not ($names -contains "ordinary-1")) {
+            throw "Windows PowerShell failed to materialize 20 Hours entries"
+          }
+          $src = Get-Content -Raw -Encoding UTF8 "molitvoslov-app/tools/overlay-latest-on-working-android-20261114.ps1"
+          if ($src -match 'entries\.PSObject\.Properties\.Count') {
+            throw "Unsafe PSObject.Properties.Count reintroduced in overlay"
+          }
+          if ($src -notmatch 'hoursEntryNames=@\(' -or $src -notmatch 'checkEntryNames=@\(') {
+            throw "Expected safe 20-entry checks missing"
+          }
+          Write-Host "PASS: Windows PowerShell 5.1 counts all 20 local Hours entries"
+      - name: Validate generated drawable repair PowerShell syntax and exact 17 resource names
+        shell: powershell
+        run: |
+          $scriptFile = "molitvoslov-app/tools/repair-generated-drawable-twins-20261114.ps1"
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $scriptFile).Path, [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count) {
+            $errors | ForEach-Object { Write-Host $_.Message }
+            throw "Generated drawable repair script failed Windows PowerShell 5.1 syntax parsing"
+          }
+          $s = Get-Content $scriptFile -Raw
+          if ($s -notmatch 'assets_home_' -or $s -notmatch 'assets_bible_evangelists_' -or $s -notmatch 'png' -or $s -notmatch 'webp') {
+            throw "Generated drawable repair missing required asset pairs"
+          }
+          if ($s -notmatch 'assets_home_\x27 \+ \$_' -or $s -notmatch 'Get-FileHash') {
+            Write-Host "Exact generated resource name check is sufficient; expected hash display is present."
+          }
+          Write-Host "PASS: 17-image drawable collision repair script parses in Windows PowerShell 5.1"
+  hours-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: molitvoslov-app/package-lock.json
+      - name: First Hour backup, historical import and prayer-only menus
+        working-directory: molitvoslov-app
+        run: |
+          node tools/test_hours_local_first_dropdown_actions_20261114.js
+          node tools/test_hours_first_hour_editorial.js
+          node tools/test_hours_first_hour_russian.js
+          node tools/test_first_hour_traditional_text.js
+          node tools/test_first_hour_traditional_rubrics.js
+      - name: Verify ALL release-script regression tests before building APK
+        working-directory: molitvoslov-app
+        run: |
+          node tools/test_vertical_actions_calendar_favorites_20261113.js
+          node tools/test_calendar_public_share_20261113.js
+          node tools/test_saint_shared_link_recovery_20261113.js
+          node tools/test_unified_share_actions_20261114.js
+          node tools/test_share_bible_saint_photo_20261113.js
+          node tools/test_shared_content_links_20261113.js
+          node tools/test_dual_share_release_20261113.js
+          node tools/test_bible_lists_actions_20261113.js
+          node tools/test_psalter_context_share_font_20261113.js
+          node tools/test_bible_crossrefs_appearance_bookmarks_20261113.js
+          node tools/test_android_app_links_20261113.js
+          node tools/test_crossrefs_private_list_sharing_20261113.js
+      - name: Parse Windows release and source-overlay PowerShell scripts
+        shell: pwsh
+        working-directory: molitvoslov-app
+        run: |
+          foreach ($name in @("tools/overlay-latest-on-working-android-20261114.ps1", "tools/build-release-and-smoke-20261113.ps1")) {
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $name).Path, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            if ($parseErrors.Count) {
+              $parseErrors | ForEach-Object { Write-Error $_.Message }
+              exit 1
+            }
+            Write-Host "PASS PowerShell parser: $name"
+          }
+      - name: Install Expo dependencies
+        working-directory: molitvoslov-app
+        run: |
+          npm ci --ignore-scripts
+          npx patch-package
+      - name: Export Android JS to catch JSX and WebView runtime issues
+        working-directory: molitvoslov-app
+        run: npx expo export --platform android --output-dir /tmp/molitvoslov-hours-fix

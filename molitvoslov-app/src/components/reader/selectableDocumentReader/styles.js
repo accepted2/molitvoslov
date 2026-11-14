@@ -448,32 +448,6 @@ export const READER_STYLES = String.raw`
     .rule-item.hours-section.hours-collapsible .hours-accordion {
       position:relative;
     }
-    .rule-item.hours-section.hours-collapsible .hours-accordion-toggle {
-      padding-right:82px;
-    }
-    .rule-item.hours-section.hours-collapsible .hours-accordion > .section-share-action {
-      position:absolute;
-      right:10px;
-      top:7px;
-      z-index:2;
-    }
-    .rule-item.hours-section.hours-collapsible .hours-accordion > .hours-accordion-save {
-      position:absolute;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      top:7px;
-      right:49px;
-      left:auto;
-      width:34px;
-      height:34px;
-      min-width:34px;
-      min-height:34px;
-      transform:none;
-      z-index:2;
-    }
-    .rule-item.hours-section.hours-collapsible .hours-accordion:has(.hours-accordion-save)
-      > .hours-accordion-toggle {padding-right:122px;}
 
     .save-heart-icon {
       display: block;
@@ -2114,7 +2088,7 @@ export const READER_STYLES = String.raw`
     }
     .rule-item.hours-section.hours-collapsible .hours-accordion {
       margin: 0;
-      overflow: hidden;
+      overflow: visible;
       border: 1px solid var(--border);
       border-radius: 10px;
       background: var(--surface);
@@ -2136,6 +2110,9 @@ export const READER_STYLES = String.raw`
       -webkit-user-select: none;
       user-select: none;
       touch-action: manipulation;
+      white-space: normal;
+      overflow-wrap: break-word;
+      min-width: 0;
     }
     .rule-item.hours-section.hours-collapsible .hours-accordion-toggle::-webkit-details-marker {
       display: none;
@@ -2159,6 +2136,39 @@ export const READER_STYLES = String.raw`
     .rule-item.hours-section.hours-collapsible .hours-accordion-content {
       padding: 12px 14px 14px;
       background: transparent;
+    }
+    /* The text-filled Hours dropdown keeps full width. Only individual
+       prayer paragraphs have a three-dot menu and reserve a narrow left rail. */
+    .rule-item.hours-section .reader-row.hours-prayer-action-row {
+      position: relative;
+      padding-left: 38px;
+    }
+    .rule-item.hours-section .hours-prayer-action-row > .reader-action-container {
+      top: 0;
+      transform: none;
+      z-index: 60;
+    }
+    body:not(.book-mode) .rule-item.hours-section .hours-prayer-action-row .reader-action-menu .hours-row-save,
+    body:not(.book-mode) .rule-item.hours-section .hours-prayer-action-row .reader-action-menu .hours-row-share {
+      width: 100%;
+      min-height: 42px;
+      padding: 0 11px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: #4B301D;
+      text-align: left;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      touch-action: manipulation;
+    }
+    .rule-item.hours-section .reader-text.hours-fallback-traditional {
+      font-family: 'Ponomar', Georgia, serif;
+      font-weight: 400;
+      font-synthesis: none;
+      font-variant-ligatures: common-ligatures;
     }
     .rule-item.hours-section.hours-section-instruction .reader-text.hours-text {
       font-size: 14px;

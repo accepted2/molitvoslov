@@ -216,6 +216,19 @@ export const READER_RUNTIME = String.raw`
       wrapper.appendChild(menu);
       return wrapper;
     };
+    const createHoursPrayerRowMenu = itemId => {
+      const save=el('button','hours-row-save','Сохранить себе');
+      save.type='button';
+      save.dataset.itemId=String(itemId);
+      const share=el('button','hours-row-share','Поделиться');
+      share.type='button';
+      share.dataset.itemId=String(itemId);
+      const menu=createReaderActionMenu(save,share);
+      menu.classList.add('hours-prayer-actions');
+      menu.querySelector('.reader-action-trigger')
+        ?.setAttribute('aria-label','Действия с молитвой');
+      return menu;
+    };
     const renderDocument = () => {
       reader.classList.toggle('psalter-kathisma-reader',
         (DATA.document.sections || []).some(section => section.className === 'psalter-psalm-section'));
@@ -303,22 +316,8 @@ export const READER_RUNTIME = String.raw`
             summary.setAttribute('aria-label', section.title);
             summary.addEventListener('click', event => event.stopPropagation());
             details.appendChild(summary);
-            let hoursSave=null;
-            if(section.action){
-              hoursSave=el('button',section.action.active
-                ?'section-action active hours-accordion-save'
-                :'section-action hours-accordion-save');
-              hoursSave.type='button';
-              hoursSave.dataset.actionKey=section.action.key;
-              setSaveHeartIcon(hoursSave,!!section.action.active);
-            }
-            if(!DATA.document.embedded){
-              details.classList.add('has-reader-action-menu');
-              details.appendChild(createReaderActionMenu(
-                hoursSave,createShareButton('section',sectionIndex)));
-            }else if(hoursSave){
-              details.appendChild(hoursSave);
-            }
+            // Hours accordions are navigation, not entire prayers:
+            // no save heart, share icon, or three-dot menu in their titles.
             const content = el('div', 'hours-accordion-content');
             details.appendChild(content);
             details.addEventListener('toggle', () => {
@@ -329,6 +328,7 @@ export const READER_RUNTIME = String.raw`
             rowsContainer = content;
           } else if ( section.title || section.action ) {
             const psalmMenu=String(section.className||'').includes('psalter-psalm-section');
+            const hoursSection=String(section.className||'').includes('hours-section');
             const header = el( 'div', 'section-header' );
             if ( section.title ) {
               header.appendChild( titleEl( 'h2', 'prayer-title', section.title ) );
@@ -344,6 +344,8 @@ export const READER_RUNTIME = String.raw`
             if(psalmMenu){
               header.classList.add('psalter-menu-header');
               header.appendChild(createPsalmMenuButton(section.progressAnchorId));
+            }else if(hoursSection){
+              // Leave the full heading width for liturgical Hours.
             }else if(!bookMode && !DATA.document.embedded){
               header.classList.add('has-reader-action-menu');
               header.appendChild(createReaderActionMenu(
@@ -433,6 +435,17 @@ export const READER_RUNTIME = String.raw`
                   rowNode.appendChild( column );
                 }
               );
+              // Individual long prayer paragraphs receive their own ⋮
+              // actions; dropdown titles remain full-width and action-free.
+              const hoursPrayer=(row.blocks||[]).find(block =>
+                block.sourceType==='hours' &&
+                /(?:^|\\s)hours-prose(?:\\s|$)/.test(block.className||'') &&
+                String(block.text||'').trim().length>=45);
+              if(!DATA.document.embedded && hoursPrayer &&
+                  ['prayer','conditional'].includes(section.sectionKind)){
+                rowNode.classList.add('hours-prayer-action-row', 'has-reader-action-menu');
+                rowNode.appendChild(createHoursPrayerRowMenu(hoursPrayer.id));
+              }
               if ((row.blocks || []).some(block => block.anchorType === 'psalm_text')) {
                 rowNode.classList.add('psalter-psalm-verses-row');
               }
@@ -4420,6 +4433,24 @@ if (
           event.preventDefault();
           event.stopPropagation();
           post({type:'psalm-menu',psalmId:Number(psalmMenu.dataset.psalmId)});
+          return;
+        }
+        const hoursSave=event.target.closest('.hours-row-save');
+        const hoursShare=event.target.closest('.hours-row-share');
+        if(hoursSave || hoursShare){
+          event.preventDefault();
+          event.stopPropagation();
+          const itemId=Number((hoursSave||hoursShare).dataset.itemId);
+          const itemConfig=itemConfigMap.get(itemId);
+          if(!itemConfig||!String(itemConfig.text||'').trim())return;
+          if(hoursSave){
+            post({type:'save-selection',itemId,
+              start:0,end:itemConfig.text.length,text:itemConfig.text,
+              saveType:'hours_row'});
+          }else{
+            post({type:'share-selection',itemId,
+              text:itemConfig.text,itemTitle:itemConfig.itemTitle});
+          }
           return;
         }
         const share = event.target.closest('.inline-share-action');

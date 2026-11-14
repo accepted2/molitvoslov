@@ -32,11 +32,21 @@ const runtime=new Function(source.replace('export const READER_RUNTIME',
 new vm.Script(runtime,{filename:'selectable-reader-runtime.js'});
 assert.match(runtime,/share-section/);
 assert.match(runtime,/createShareButton\('section',sectionIndex\)/);
-assert.match(runtime,/hours-accordion-save/);
+// Hours dropdowns intentionally have no heart/share: they must remain
+// full-width. Individual prayer paragraphs expose one three-dot menu.
+assert.doesNotMatch(runtime,/hours-accordion-save/);
+assert.match(runtime,/createHoursPrayerRowMenu\(hoursPrayer\.id\)/);
+assert.match(runtime,/classList\.add\('hours-prayer-action-row'/);
+assert.match(runtime,/type:'save-selection',itemId/);
+assert.match(runtime,/type:'share-selection',itemId/);
 const css=read('src/components/reader/selectableDocumentReader/styles.js');
 assert.match(css,/inline-share-action/);
 assert.match(css,/section-header\.has-share-action/);
-assert.match(css,/hours-accordion-save/);
+assert.doesNotMatch(css,/hours-accordion-save/);
+assert.match(css,/hours-prayer-action-row/);
+assert.match(css,/hours-row-save/);
+assert.match(css,/hours-row-share/);
+assert.doesNotMatch(css,/\.hours-accordion-toggle\s*\{[^}]*padding-right\s*:\s*82px/);
 const reader=read('src/components/reader/SelectableDocumentReader.js');
 assert.match(reader,/message\.type === 'share-section'/);
 assert.match(reader,/resolveSelectedShareTarget\(first\)/);
@@ -50,11 +60,13 @@ assert.match(rules,/message\.type === 'share-prayer'/);
 assert.match(rules,/screen:'PrayerRule',params:\{slug:rule\.slug,anchorId:message\.itemId\}/);
 assert.doesNotMatch(rules,/shareImportableContent/);
 
-// Hours favorites use a supported SavedItem type and are reopenable.
+// Hours favorites are now saved per prayer via the normal selection API,
+// not at the accordion-section level. Existing hours favorites remain openable.
 const hours=read('src/screens/HoursReadingScreen.js');
-assert.match(hours,/save_type:'section',source_type:'hours'/);
-assert.match(hours,/onAction=\{handleSectionAction\}/);
-assert.match(hours,/anchor_type:'hours_section'/);
+assert.doesNotMatch(hours,/hours-section:|handleSectionAction|savedSections/);
+assert.match(hours,/getOfflineHoursText\(entryId\)/);
+assert.match(runtime,/saveType:'hours_row'/);
+assert.match(runtime,/dataset\.itemId=String\(itemId\)/);
 contains('src/screens/FavoritesScreen.js',/item\.source_type === 'hours'/);
 contains('src/services/contentSharing.js',/entryId:meta\.entry_id\|\|meta\.entryId/);
 
@@ -67,4 +79,4 @@ const config=JSON.parse(read('app.json'));
 assert.equal(config.expo.version,'1.0.30');
 assert.equal(config.expo.android.versionCode,31);
 assert.ok(fs.existsSync(path.join(__dirname,'build-release-and-smoke-20261113.ps1')));
-console.log('PASS: paired save/share controls, akathist header, hours favorites, runtime syntax, APK build preparation');
+console.log('PASS: paired save/share controls, akathist header, Hours prayer-only menus, runtime syntax, APK build preparation');

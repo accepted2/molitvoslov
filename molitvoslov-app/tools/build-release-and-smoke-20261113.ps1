@@ -82,6 +82,19 @@ try {
   & powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\tools\sync-android-app-links-20261113.ps1"
   if ($LASTEXITCODE -ne 0) { throw "Android App Links manifest sync failed." }
 
+  # Do NOT delete react-native-nitro-google-signin/android/.cxx here:
+  # deleting it did not fix the endless build.ninja regeneration, and erases
+  # Ninja's evidence of which CMake dependency has a bad timestamp.
+  # The read-only diagnostic script can show the exact problematic input.
+  $nitroModuleAndroid = Join-Path $root "node_modules\react-native-nitro-google-signin\android"
+  $nitroCmakeLists = Join-Path $nitroModuleAndroid "CMakeLists.txt"
+  if (Test-Path -LiteralPath $nitroCmakeLists) {
+    $inputTime = (Get-Item -LiteralPath $nitroCmakeLists).LastWriteTimeUtc
+    if ($inputTime -gt [DateTime]::UtcNow.AddMinutes(2)) {
+      Write-Warning "NitroGoogleSignin CMakeLists.txt has a future timestamp ($inputTime UTC). Diagnose before rebuilding."
+    }
+  }
+
   Write-Host "Building Android release APK..." -ForegroundColor Cyan
   # Gradle looks for settings.gradle in the current working directory.
   # Running android/gradlew.bat from the Expo root does NOT change that directory.
@@ -103,6 +116,11 @@ try {
     Pop-Location
   }
   if ($gradleExitCode -ne 0) {
+    $nitroNinjaDiag = Join-Path $root "tools\diagnose-nitro-ninja-20261114.ps1"
+    if (Test-Path -LiteralPath $nitroNinjaDiag) {
+      Write-Host "Diagnosing Nitro CMake/Ninja timestamps after failed Gradle build..." -ForegroundColor Yellow
+      & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $nitroNinjaDiag
+    }
     throw "Gradle assembleRelease failed (exit code $gradleExitCode)."
   }
 
