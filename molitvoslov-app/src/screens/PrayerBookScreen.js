@@ -6,6 +6,7 @@ import {StatusBar} from 'expo-status-bar';
 
 import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {shareImportableContent} from '../services/shareInvitations';
 import {
   addPrayerToBook,
   createPersonalPrayer,
@@ -676,7 +677,12 @@ export const PrayerBookScreen = ({route, navigation}) => {
           </Pressable>
         </View>
 
-        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={book.title} navigation={navigation} topInset={insets.top} />
+        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
+          title={book.title} navigation={navigation} topInset={insets.top}
+          headerAction={{label:'Поделиться',onPress:()=>shareImportableContent({
+            kind:'prayerbook',sourceSyncId:book.sync_id,
+            title:book.title||'Мой молитвослов',
+          })}} />
 
         <SavedPickerModal
           visible={savedPicker}
