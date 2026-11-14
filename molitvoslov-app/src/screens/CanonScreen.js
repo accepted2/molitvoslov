@@ -171,7 +171,10 @@ const getCanonInlineLabel = (section, text, t) => {
 
 export const CanonScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
-  const {canonId, slug, title, focusTarget = null} = route.params;
+  const {canonId, slug, title, focusTarget: explicitFocusTarget = null, anchorId} = route.params;
+  const focusTarget = useMemo(() => explicitFocusTarget ||
+    (Number(anchorId)>0 ? {anchorType:'canon_section',anchorId:Number(anchorId)} : null),
+    [explicitFocusTarget,anchorId]);
 
   const insets = useSafeAreaInsets();
 
