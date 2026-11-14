@@ -24,7 +24,7 @@ assert.match(misc,/SaveHeartIcon active=\{/);
 assert.match(misc,/!item\.row\.text\?\.is_placeholder/);
 assert.match(misc,/toggleTextFavorite/);
 
-// General WebView reader: hearts and share buttons remain distinct.
+// General WebView reader: save/share actions are collected into one left menu.
 // Compile the embedded runtime to catch syntax errors inside String.raw.
 const source=read('src/components/reader/selectableDocumentReader/runtime.js');
 const runtime=new Function(source.replace('export const READER_RUNTIME',
@@ -42,12 +42,12 @@ assert.match(reader,/message\.type === 'share-section'/);
 assert.match(reader,/resolveSelectedShareTarget\(first\)/);
 assert.match(reader,/await shareContent\(\{title,text/);
 
-// Prayer rules have separate heart/share actions per prayer.
+// Prayer rule actions use one left-side three-dot popup per prayer.
 const rules=read('src/components/reader/PrayerRuleReader.js');
 assert.match(rules,/makePrayerShareButton\(item\.id\)/);
 assert.match(rules,/type:'share-prayer'/);
 assert.match(rules,/message\.type === 'share-prayer'/);
-assert.match(rules,/screen:'PrayerRule',params:\{slug:rule\.slug\}/);
+assert.match(rules,/screen:'PrayerRule',params:\{slug:rule\.slug,anchorId:message\.itemId\}/);
 assert.doesNotMatch(rules,/shareImportableContent/);
 
 // Hours favorites use a supported SavedItem type and are reopenable.
@@ -64,7 +64,7 @@ contains('src/screens/FavoritesScreen.js',/minWidth:32,minHeight:32/);
 
 // Build code is incremented, and the Windows build helper is present.
 const config=JSON.parse(read('app.json'));
-assert.equal(config.expo.version,'1.0.29');
-assert.equal(config.expo.android.versionCode,30);
+assert.equal(config.expo.version,'1.0.30');
+assert.equal(config.expo.android.versionCode,31);
 assert.ok(fs.existsSync(path.join(__dirname,'build-release-and-smoke-20261113.ps1')));
 console.log('PASS: paired save/share controls, akathist header, hours favorites, runtime syntax, APK build preparation');
