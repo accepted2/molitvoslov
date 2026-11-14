@@ -87,26 +87,41 @@ def check_source() -> dict:
 def verify_packaged(files, expected: dict, location: str):
     """Every chosen image must be present in the actual build output."""
     outstanding = set(expected.values())
+    original_pngs = {digest(ROOT / relative): relative for relative in expected}
     matched = set()
+    duplicates = set()
     found_webp = 0
     samples = []
     for name, data in files:
-        if not name.lower().endswith(".webp"):
+        # Android/Metro may export resources under extensionless hash names.
+        # Identify the actual binary format, never trust the ZIP entry name.
+        is_webp = data[:4] == b"RIFF" and data[8:12] == b"WEBP"
+        is_png = data[:8] == bytes.fromhex("89504e470d0a1a0a")
+        if not (is_webp or is_png):
             continue
-        found_webp += 1
-        if len(samples) < 10:
-            samples.append(name)
         signature = hashlib.sha256(data).hexdigest()
-        if signature in outstanding:
-            matched.add(signature)
+        if is_png and signature in original_pngs:
+            duplicates.add(original_pngs[signature])
+        if is_webp:
+            found_webp += 1
+            if len(samples) < 10:
+                samples.append(name)
+            if signature in outstanding:
+                matched.add(signature)
     if len(matched) != len(outstanding):
         missing = [file for file, signature in expected.items() if signature not in matched]
         raise RuntimeError(
             f"{location}: only {len(matched)}/{len(outstanding)} exact optimised "
             f"WebPs found. Missing: {missing}. Examples: {samples}"
         )
+    if duplicates:
+        raise RuntimeError(
+            f"{location}: {len(duplicates)} original PNGs are ALSO packaged, "
+            f"so lossless WebP does not reduce package size. Duplicates: "
+            f"{sorted(duplicates)}"
+        )
     print(f"WEBP PACKAGE PASS: {len(matched)}/17 exact WebP files in {location} "
-          f"({found_webp} WebP entries total)")
+          f"({found_webp} WebP binaries, no original PNG duplicates)")
 
 
 def main():
