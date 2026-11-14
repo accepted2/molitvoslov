@@ -1512,16 +1512,15 @@ export const READER_STYLES = String.raw`
       background: var(--book-paper, #FFF4DE);
       box-shadow: none;
     }
-    body.book-mode.book-custom::after {
-      box-shadow: none;
-    }
-
     body.book-mode.book-night::after {
       box-shadow:
         inset 12px 0 20px -15px rgba(0, 0, 0, 0.72),
         inset -12px 0 20px -15px rgba(0, 0, 0, 0.72),
         inset 0 10px 20px -17px rgba(0, 0, 0, 0.56),
         inset 0 -10px 20px -17px rgba(0, 0, 0, 0.56);
+    }
+    body.book-mode.book-custom::after {
+      box-shadow: none;
     }
 
     body.book-mode.book-night .bible-chapter-start .prayer-title {
