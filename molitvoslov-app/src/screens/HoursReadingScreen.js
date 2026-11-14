@@ -5,8 +5,7 @@ import {StatusBar} from 'expo-status-bar';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 import {ReaderAppearanceSheet} from '../components/reader/ReaderAppearanceSheet';
-import {shareContent, documentShareText} from '../services/contentSharing';
-import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
+import {shareContent} from '../services/contentSharing';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
@@ -40,7 +39,6 @@ export const HoursReadingScreen = ({route, navigation}) => {
   const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
   const [appearanceVisible, setAppearanceVisible] = useState(false);
   const [viewMode, setViewMode] = useState(READER_LANGUAGE_MODES.CHURCH);
-  const [savedSections,setSavedSections] = useState([]);
   const {readingChromeHidden, handleReadingScroll, handleNativeReadingScroll} = useReadingChrome();
   const {appearance, changeAppearance, resetAppearance} =
     useScopedReaderAppearance('hours', entryId);
@@ -79,64 +77,10 @@ export const HoursReadingScreen = ({route, navigation}) => {
   };
 
   const content = useMemo(() => getOfflineHoursText(entryId), [entryId]);
-  useEffect(() => {
-    let active=true;
-    setSavedSections([]);
-    if(entry?.sourceId) {
-      getSavedItems({source_type:'hours',source_id:entry.sourceId})
-        .then(rows => {
-          if(active) setSavedSections(rows.filter(row =>
-            row.anchor_type==='hours_section' && row.save_type==='section'));
-        })
-        .catch(error => console.warn('[hours] load saved sections:',error?.message||error));
-    }
-    return () => {active=false;};
-  },[entryId,entry?.sourceId]);
-
-  const baseDocument=useMemo(() => (
-    entry ? buildHoursDocument({entry, content, viewMode}) : null
-  ), [entryId, content, viewMode]);
-  const documentData=useMemo(() => baseDocument ? ({
-    ...baseDocument,
-    sections:(baseDocument.sections||[]).map(section => {
-      if(!section.title || !section.rows?.length)return section;
-      const saved=savedSections.find(item =>
-        Number(item.anchor_id)===Number(section.progressAnchorId));
-      return {...section,action:{
-        key:'hours-section:'+section.progressAnchorId,
-        label:saved?'Убрать из избранного':'Сохранить себе',
-        active:!!saved,
-        savedItemId:saved?.id||null,
-      }};
-    }),
-  }) : null,[baseDocument,savedSections]);
-
-  const handleSectionAction=async key => {
-    if(!String(key||'').startsWith('hours-section:') || !entry)return null;
-    const anchorId=Number(String(key).split(':')[1]);
-    const section=documentData?.sections?.find(part =>
-      Number(part.progressAnchorId)===anchorId);
-    if(!section)return null;
-    const existing=savedSections.find(item =>
-      Number(item.anchor_id)===anchorId);
-    if(existing){
-      await deleteSavedItem(existing.id);
-      setSavedSections(current=>current.filter(item=>item.id!==existing.id));
-      return {active:false,removedSavedItemId:existing.id};
-    }
-    const text=(section.rows||[]).map(row=>
-      String(row.blocks?.[0]?.text||'').trim()).filter(Boolean).join('\n\n');
-    if(!text)return null;
-    const saved=await saveItem({
-      save_type:'section',source_type:'hours',source_id:entry.sourceId,
-      anchor_type:'hours_section',anchor_id:anchorId,
-      source_title:entry.title,item_title:section.title||entry.title,
-      text,start_offset:0,end_offset:text.length,
-      metadata:{entry_id:entryId,section_number:anchorId,language:viewMode},
-    });
-    setSavedSections(current=>[saved,...current]);
-    return {active:true,savedItem:saved};
-  };
+  // Actions belong beside individual prayer texts, never on Hours dropdowns.
+  const documentData = useMemo(() => entry
+    ? buildHoursDocument({entry, content, viewMode})
+    : null, [entry, content, viewMode]);
   const readerBackground = resolveReaderAppearance(appearance).background;
 
   if (!entry) {
@@ -155,10 +99,7 @@ export const HoursReadingScreen = ({route, navigation}) => {
         style={isDarkReaderBackground(readerBackground) ? 'light' : 'dark'}
       />
 
-      {(content?.sections?.length ||
-        (entryId === 'ordinary-1' &&
-          viewMode === READER_LANGUAGE_MODES.TRADITIONAL &&
-          documentData?.available?.hasTraditional)) ? (
+      {(documentData?.sections?.length && content?.sections?.length) ? (
         <SelectableDocumentReader
           ref={readerRef}
           documentData={documentData}
@@ -169,7 +110,6 @@ export const HoursReadingScreen = ({route, navigation}) => {
           onReadingScroll={handleReadingScroll}
           onNativeReadingScroll={handleNativeReadingScroll}
           onProgress={scheduleSave}
-          onAction={handleSectionAction}
           onViewModeChange={handleViewModeChange}
           onReady={() => readerRef.current?.applyAppearance(appearance)}
         />
