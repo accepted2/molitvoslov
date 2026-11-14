@@ -313,7 +313,8 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
       sourceTitle: entry.title,
       itemTitle: title || entry.title,
       fullSaveType: 'hours_row',
-      metadata: {language, entryId: entry.id, groupId: entry.groupId},
+      metadata: {language: fallbackTraditional ? 'traditional' : language,
+        entryId: entry.id, groupId: entry.groupId},
     };
   };
 
