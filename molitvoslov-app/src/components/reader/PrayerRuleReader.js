@@ -380,7 +380,9 @@ const HTML_TEMPLATE = String.raw`
       position:absolute;left:0;top:50%;transform:translateY(-50%);
       width:35px;height:35px;display:flex;align-items:center;justify-content:center;
       border-radius:18px;border:1px solid var(--border);background:rgba(241,223,194,.96);
-      color:var(--secondary);font-size:27px;line-height:1;z-index:2;
+      /* Keep dark dots legible on the existing cream button, even when the
+         reader's --secondary becomes light in night/custom mode. */
+      color:#4B301D;font-size:27px;line-height:1;z-index:2;
     }
     .prayer-actions-menu {
       display:none;position:absolute;left:0;top:calc(50% + 18px);
@@ -393,6 +395,7 @@ const HTML_TEMPLATE = String.raw`
       position:relative;top:auto;left:auto;transform:none;width:100%;height:43px;
       display:flex;align-items:center;justify-content:flex-start;gap:10px;
       padding:0 11px;border:0;border-radius:9px;background:transparent;
+      color:#4B301D;
       font-size:14px;font-weight:600;text-align:left;
     }
     .prayer-actions-menu .prayer-action-label { flex:1; }
