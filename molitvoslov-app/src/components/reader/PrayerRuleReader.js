@@ -6769,6 +6769,7 @@ const HTML_TEMPLATE = String.raw`
         .slice(state.active.start,state.active.end).trim();
       if(!selected)return;
       post({type:'share-selection',text:selected,
+        itemId:state.active.itemId,
         itemTitle:itemTitleMap.get(state.active.itemId)||'Молитва'});
     });
 
