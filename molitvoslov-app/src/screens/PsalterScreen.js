@@ -186,7 +186,7 @@ export default function PsalterScreen({navigation}) {
       await shareContent({
         title:getLocalizedField(item,'title',language)||
           t('psalter.kathisma',{number:item.number}),
-        text,
+        linkOnly:true,
         screen:'Kathisma',
         params:{kathismaNumber:item.number,readerMode:mode},
       });
