@@ -351,6 +351,82 @@ export const READER_STYLES = String.raw`
     .section-action.active {
       color: var(--accent-dark);
     }
+    /* Unified left-hand menu for whole documents and individual sections.
+       Menus are WebView-local, so they open without native modal delays. */
+    body:not(.book-mode) .document-header .rule-title,
+    body:not(.book-mode) .section-header.has-reader-actions .prayer-title {
+      padding-left: 48px;
+      padding-right: 22px;
+    }
+    .reader-actions-wrap {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 25;
+      width: 36px;
+      height: 36px;
+    }
+    .reader-actions-trigger {
+      display: flex;
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--surface);
+      color: var(--secondary);
+      font-family: Georgia, serif;
+      font-size: 24px;
+      line-height: 30px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .reader-actions-popover {
+      position: absolute;
+      top: 38px;
+      left: 0;
+      z-index: 90;
+      width: 190px;
+      padding: 5px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(40, 27, 19, 0.2);
+    }
+    .reader-actions-popover[hidden] { display: none !important; }
+    .reader-actions-popover button {
+      display: block;
+      width: 100%;
+      min-height: 42px;
+      padding: 8px 11px;
+      text-align: left;
+      color: var(--text);
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: system-ui, sans-serif;
+    }
+    .reader-actions-popover button:active {
+      background: rgba(161, 110, 53, .16);
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion > .reader-actions-wrap {
+      top: 7px;
+      left: 8px;
+      transform: none;
+      z-index: 30;
+    }
+    .rule-item.hours-section.hours-collapsible .hours-accordion-toggle {
+      padding-left: 48px;
+      padding-right: 15px;
+    }
+    body:not(.book-mode) .psalter-kathisma-reader .document-header .reader-actions-wrap {
+      left: 0;
+      right: auto;
+    }
     /* Psalms in a kathisma use one small three-dot menu on the left.
        Other prayer sections retain their paired save/share controls. */
     .psalter-kathisma-reader .document-header .rule-title {
