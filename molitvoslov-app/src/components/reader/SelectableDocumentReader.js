@@ -33,6 +33,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     bottomContentInset = 0,
     respectBottomSafeArea = true,
     backgroundColor = '#FFF4DE',
+    initialAppearance = null,
     onSaved,
     onProgress,
     onAction,
@@ -69,7 +70,14 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
   }, []);
 
   const webViewRef = useRef(null);
-  const appearanceRef = useRef(null);
+  const appearanceRef = useRef(initialAppearance);
+  // Update the book's initial theme only when its HTML actually changes.
+  // Colour-slider gestures must NOT re-create the Bible's paginated WebView.
+  const initialBookAppearanceRef = useRef(initialAppearance);
+  if (documentData.readerMode === 'book' && initialAppearance) {
+    appearanceRef.current = initialAppearance;
+    initialBookAppearanceRef.current = initialAppearance;
+  }
   const languageProgressRef = useRef(null);
   const scrollFallbackRef = useRef(null);
 
@@ -131,6 +139,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
     return result;
   }, [documentData.sections]);
 
+  const htmlReadingSettings = documentData.readerMode === 'book' ? null : readingSettings;
   const html = useMemo(() => {
     console.warn('[reader] incoming FT =', JSON.stringify(focusTarget));
     const captured = languageProgressRef.current;
@@ -145,6 +154,12 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       topContentInset,
       bottomContentInset,
       ponomarFontDataUri,
+      bookAppearance: documentData.readerMode === 'book' && initialBookAppearanceRef.current
+        ? (() => {
+            const resolved = resolveReaderAppearance(initialBookAppearanceRef.current);
+            return {...resolved, dark: isDarkReaderBackground(resolved.background)};
+          })()
+        : null,
     });
     // Preserve separate pagination and per-book themes for Bible/book readers.
     if (documentData.readerMode === 'book') return markup;
@@ -156,11 +171,11 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
           text-align: ${embeddedTextStyle?.textAlign === 'center' ? 'center' : 'justify'};
         }`
       : '';
-    const palette = !embedded && readingSettings.palette === 'custom'
-      ? {background: readingSettings.customBackground, text: readingSettings.customText, surface: readingSettings.customBackground}
+    const palette = !embedded && htmlReadingSettings?.palette === 'custom'
+      ? {background: htmlReadingSettings.customBackground, text: htmlReadingSettings.customText, surface: htmlReadingSettings.customBackground}
       : (embedded ? PALETTE_COLORS.parchment
-        : (PALETTE_COLORS[readingSettings.palette] || PALETTE_COLORS.parchment));
-    const size = Math.max(14, Math.min(28, Number(readingSettings.fontSize) || 17));
+        : (PALETTE_COLORS[htmlReadingSettings?.palette] || PALETTE_COLORS.parchment));
+    const size = Math.max(14, Math.min(28, Number(htmlReadingSettings?.fontSize) || 17));
     // One reading-size source for every non-book document category.
     // Ponomar glyphs are visually smaller than civil Cyrillic at the same px size.
     const traditionalSize = Math.min(30, size + 2);
@@ -174,7 +189,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       body:not(.book-mode) .reader-text.psalter-glory,
       body:not(.book-mode) .reader-text.psalter-prayer {line-height: 1.7 !important;}`;
     return markup.replace('</style>', `${css}${embeddedCss}</style>`);
-  }, [documentData, savedProgress, focusTarget, topContentInset, bottomContentInset, ponomarFontDataUri, readingSettings, embedded, embeddedTextStyle]);
+  }, [documentData, savedProgress, focusTarget, topContentInset, bottomContentInset, ponomarFontDataUri, htmlReadingSettings, embedded, embeddedTextStyle]);
 
   const inject = (script) => {
     webViewRef.current?.injectJavaScript(script + '; true;');
@@ -565,7 +580,12 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         onScroll={onNativeReadingScroll}
         scrollEventThrottle={16}
         onLoadEnd={(event) => {
-          if (appearanceRef.current && !embedded) applyReaderAppearance(webViewRef.current, appearanceRef.current);
+          // Bible pages already have their scoped colours in the initial HTML.
+          // The screen's onReady applies the latest palette after the bridge is
+          // ready; a generic late injection must never overwrite book textures.
+          if (appearanceRef.current && !embedded && documentData.readerMode !== 'book') {
+            applyReaderAppearance(webViewRef.current, appearanceRef.current);
+          }
           if (embedded) {
             inject("(function(){var node=document.getElementById('reader');" +
               "if(!node)return;var send=function(){" +

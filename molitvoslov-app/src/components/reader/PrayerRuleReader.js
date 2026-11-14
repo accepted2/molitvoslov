@@ -380,7 +380,9 @@ const HTML_TEMPLATE = String.raw`
       position:absolute;left:0;top:50%;transform:translateY(-50%);
       width:35px;height:35px;display:flex;align-items:center;justify-content:center;
       border-radius:18px;border:1px solid var(--border);background:rgba(241,223,194,.96);
-      color:var(--secondary);font-size:27px;line-height:1;z-index:2;
+      /* Keep dark dots legible on the existing cream button, even when the
+         reader's --secondary becomes light in night/custom mode. */
+      color:#4B301D;font-size:27px;line-height:1;z-index:2;
     }
     .prayer-actions-menu {
       display:none;position:absolute;left:0;top:calc(50% + 18px);
@@ -393,6 +395,7 @@ const HTML_TEMPLATE = String.raw`
       position:relative;top:auto;left:auto;transform:none;width:100%;height:43px;
       display:flex;align-items:center;justify-content:flex-start;gap:10px;
       padding:0 11px;border:0;border-radius:9px;background:transparent;
+      color:#4B301D;
       font-size:14px;font-weight:600;text-align:left;
     }
     .prayer-actions-menu .prayer-action-label { flex:1; }
@@ -8094,6 +8097,7 @@ const buildHtml = ({
 };
 
 const PrayerRuleReader = forwardRef(function PrayerRuleReader({
+  initialAppearance = null,
   rule,
   savedItems,
   savedProgress,
@@ -8121,7 +8125,11 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
   }, []);
 
   const webViewRef = useRef(null);
-  const appearanceRef = useRef(null);
+  // The screen may finish loading the scoped theme before the WebView exists.
+  // Seed the ref so onLoadEnd never falls back to an old global palette.
+  const appearanceRef = useRef(initialAppearance);
+  const initialAppearanceRef = useRef(initialAppearance);
+  if (initialAppearance) initialAppearanceRef.current = initialAppearance;
   const progressSourceRef = useRef(null);
   const sessionProgressRef = useRef(null);
   const [ponomarFontDataUri, setPonomarFontDataUri] = useState(getCachedPonomarFontDataUri());
@@ -8176,7 +8184,10 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
     [language, t]
   );
 
-  const readerBg = scopedBackground || (readingSettings.palette === 'custom' ? readingSettings.customBackground : ({night:'#29231F',warm:'#DEBE94',ivory:'#FFFDF3'}[readingSettings.palette] || '#FFF4DE'));
+  const readerBg = scopedBackground || (initialAppearance
+    ? resolveReaderAppearance(initialAppearance).background
+    : (readingSettings.palette === 'custom' ? readingSettings.customBackground
+      : ({night:'#29231F',warm:'#DEBE94',ivory:'#FFFDF3'}[readingSettings.palette] || '#FFF4DE')));
   const html = useMemo(
     () => {
       const markup = buildHtml({
@@ -8198,10 +8209,17 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
         ivory: ['#FFFDF3', '#F5EFE0', '#352D26'],
         night: ['#29231F', '#413831', '#F4E7D2'],
       };
-      const [bg, surface, fg] = readingSettings.palette === 'custom'
-        ? [readingSettings.customBackground, readingSettings.customBackground, readingSettings.customText]
-        : (palettes[readingSettings.palette] || palettes.parchment);
-      const size = Math.max(14, Math.min(28, Number(readingSettings.fontSize) || 17));
+      // Initial page colours come from the document's own saved override.
+      // Keep this out of useMemo dependencies: dragging a colour picker should
+      // apply the new theme live, not reload the whole prayer rule.
+      const scoped = initialAppearanceRef.current
+        ? resolveReaderAppearance(initialAppearanceRef.current) : null;
+      const [bg, surface, fg] = scoped
+        ? [scoped.background, scoped.surface, scoped.text]
+        : (readingSettings.palette === 'custom'
+          ? [readingSettings.customBackground, readingSettings.customBackground, readingSettings.customText]
+          : (palettes[readingSettings.palette] || palettes.parchment));
+      const size = Math.max(14, Math.min(28, Number(scoped?.fontSize || readingSettings.fontSize) || 17));
       const traditionalSize = Math.min(30, size + 2);
       const css = `:root {--background:${bg}; --surface:${surface}; --text:${fg}; --reading-font-size:${size}px; --traditional-reading-font-size:${traditionalSize}px;}
         .reader-text {font-size:var(--reading-font-size) !important;line-height:1.7 !important;}

@@ -383,7 +383,8 @@ export const READER_STYLES = String.raw`
       border-radius:16px;
       border:1px solid var(--border);
       background:rgba(241,223,194,.94);
-      color:var(--secondary);
+      /* Fixed dark glyph on the existing light control background. */
+      color:#4B301D;
       font-family:Georgia,serif;
       font-size:23px;
       line-height:29px;
@@ -1506,12 +1507,21 @@ export const READER_STYLES = String.raw`
       box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.30);
     }
 
+    /* A user-selected colour must be flat: no old parchment/brown texture
+       bleeding through on chapter switches or when changing the palette. */
+    body.book-mode.book-custom {
+      background: var(--book-paper, #FFF4DE);
+      box-shadow: none;
+    }
     body.book-mode.book-night::after {
       box-shadow:
         inset 12px 0 20px -15px rgba(0, 0, 0, 0.72),
         inset -12px 0 20px -15px rgba(0, 0, 0, 0.72),
         inset 0 10px 20px -17px rgba(0, 0, 0, 0.56),
         inset 0 -10px 20px -17px rgba(0, 0, 0, 0.56);
+    }
+    body.book-mode.book-custom::after {
+      box-shadow: none;
     }
 
     body.book-mode.book-night .bible-chapter-start .prayer-title {
@@ -2786,7 +2796,8 @@ export const READER_STYLES = String.raw`
       border-radius: 17px;
       border: 1px solid var(--border);
       background: rgba(241,223,194,.96);
-      color: var(--secondary);
+      /* The reader's --secondary may be nearly white in dark/custom themes. */
+      color: #4B301D;
       font-size: 25px;
       line-height: 29px;
       display: flex;

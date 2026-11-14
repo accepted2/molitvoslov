@@ -42,7 +42,10 @@ export const FixedSectionHeader = ({
   const safeTop = compactReading ? Math.max(insets.top, topInset, 0) : topInset;
   const contentTop = safeTop + (compactReading ? 4 : 0);
   const headerHeight = contentTop + (compactReading ? 44 : (minimal ? 45 : 36)) + extraTitleHeight;
-  const gradientHeight = Math.max(headerHeight + 14, safeTop + 74);
+  // The fixed top veil stays visible while controls slide away. Use about
+  // two lines of total height rather than a solid header-height overlay plus
+  // a second fade. Preserve the historical gradient colours/visual language.
+  const gradientHeight = Math.max(48, Math.round(headerHeight * 0.65));
   useEffect(() => {
     onHeaderHeightChange?.(headerHeight);
   }, [headerHeight, onHeaderHeightChange]);
@@ -68,7 +71,7 @@ export const FixedSectionHeader = ({
         <LinearGradient
           pointerEvents="none"
           colors={chrome.gradient}
-          locations={[0, 0.43, 0.72, 1]}
+          locations={[0, 0.2, 0.5, 1]}
           start={{x: 0.5, y: 0}}
           end={{x: 0.5, y: 1}}
           style={[styles.fixedGradient, {height: gradientHeight}]}
@@ -262,7 +265,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    // Independent from header animation. Never blocks reader scroll/taps.
+    // Fixed independently of the header; never blocks scrolling or taps.
     zIndex: 999,
     elevation: 19,
   },
