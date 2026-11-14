@@ -32,9 +32,9 @@ export const buildReaderHeaderChrome = (background, forceDark = false) => {
     foreground: dark ? '#EADBC7' : '#54351C',
     frost: withOpacity(surface, 0.95),
     gradient: [
-      withOpacity(surface, 0.99),
-      withOpacity(surface, 0.91),
-      withOpacity(background, 0.54),
+      withOpacity(surface, 0.96),
+      withOpacity(surface, 0.73),
+      withOpacity(background, 0.28),
       withOpacity(background, 0),
     ],
     pill,
