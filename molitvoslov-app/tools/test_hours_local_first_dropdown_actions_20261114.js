@@ -68,6 +68,7 @@ assert.match(runtime,/type:'save-selection',itemId/);
 assert.match(runtime,/type:'share-selection',itemId/);
 const styles=read('src/components/reader/selectableDocumentReader/styles.js');
 assert.doesNotMatch(styles,/padding-right:122px|hours-accordion-save/);
+assert.doesNotMatch(styles,/\.hours-accordion-toggle\s*\{[^}]*padding-right\s*:\s*82px/);
 assert.match(styles,/hours-prayer-action-row/);
 assert.match(styles,/hours-fallback-traditional/);
 console.log('PASS: first hour offline fallback + 16 editorial sections; original imports preferred; dropdowns full-width, three-dot actions only beside prayers');
