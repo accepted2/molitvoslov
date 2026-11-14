@@ -1,6 +1,6 @@
 import React, {forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react';
 
-import {StyleSheet, View} from 'react-native';
+import {Alert, StyleSheet, View} from 'react-native';
 
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
@@ -8,7 +8,7 @@ import {WebView} from 'react-native-webview';
 
 import {LinearGradient} from 'expo-linear-gradient';
 
-import {deleteSavedItem, saveItem} from '../../services/savedItems';
+import {deleteSavedItem, getSavedItems, saveItem} from '../../services/savedItems';
 import {shareContent, isPrivateShareSource, resolveSelectedShareTarget} from '../../services/contentSharing';
 import {shareImportableContent} from '../../services/shareInvitations';
 import {getCachedPonomarFontDataUri, loadPonomarFontDataUri} from '../../services/ponomarFont';
@@ -357,7 +357,57 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
             .filter(Boolean);
           return [...new Set(parts)].join('\n\n');
         }).filter(Boolean)).join('\n\n');
-      await shareContent({title,text,screen:target.screen,params:target.params});
+      await shareContent({title,text,screen:target.screen,params:target.params,
+        scope:message.wholeDocument?'whole':'fragment'});
+      return;
+    }
+
+    if (message.type === 'save-section') {
+      const sections=Array.isArray(documentData.sections)?documentData.sections:[];
+      const index=Number(message.sectionIndex);
+      const selected=index===-1?sections:
+        (Number.isInteger(index)&&index>=0&&index<sections.length?[sections[index]]:[]);
+      if(!selected.length)return;
+      const blocks=selected.flatMap(section=>
+        (section.rows||[]).flatMap(row=>row.blocks||[]));
+      const source=blocks.find(block=>block?.sourceType&&block?.sourceId!=null);
+      if(!source){
+        Alert.alert('Невозможно сохранить','Для этого раздела не найден источник.');
+        return;
+      }
+      const anchor=index===-1 ? 0 :
+        Number(sections[index]?.progressAnchorId||index+1);
+      const sectionTitle=index===-1?documentData.title:
+        (sections[index]?.title||source.itemTitle||documentData.title);
+      const type=index===-1?'document':'reader_section';
+      try{
+        const existing=(await getSavedItems({
+          source_type:source.sourceType,source_id:source.sourceId,
+        })).find(item=>item.anchor_type===type&&
+          Number(item.anchor_id)===anchor&&
+          item.metadata?.reader_menu===true);
+        if(existing){
+          await deleteSavedItem(existing.id);
+        }else{
+          const contents=selected.flatMap(section=>(section.rows||[]).flatMap(row=>
+            (row.blocks||[]).map(block=>String(block?.text||'').trim())
+          )).filter(Boolean).join('\n\n');
+          await saveItem({
+            save_type:index===-1?'text':'section',
+            source_type:source.sourceType,source_id:source.sourceId,
+            anchor_type:type,anchor_id:anchor,
+            source_title:source.sourceTitle||documentData.title||'Молитвослов',
+            item_title:sectionTitle||'Раздел',
+            text:index===-1?'':contents,
+            start_offset:0,end_offset:index===-1?0:contents.length,
+            metadata:{...(source.metadata||{}),reader_menu:true,section_index:index},
+          });
+        }
+        inject('window.readerApi && window.readerApi.updateGenericSectionAction('+
+          Number(index)+','+(existing?'false':'true')+')');
+      }catch(error){
+        Alert.alert('Не удалось сохранить',error?.message||'Повторите попытку.');
+      }
       return;
     }
 
@@ -453,6 +503,7 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
         const target=resolveSelectedShareTarget(itemConfig);
         await shareContent({
           title,text:message.text,screen:target.screen,params:target.params,
+          scope:'fragment',
         });
       }
       return;
