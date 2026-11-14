@@ -708,7 +708,7 @@ export const MemorialBookScreen = ({navigation, route}) => {
           title={title || t('memorial.title')}
           navigation={navigation}
           topInset={insets.top}
-          headerAction={{label:'Поделиться',onPress:shareCurrentBook}}
+          headerAction={book?{label:'Поделиться',onPress:shareCurrentBook}:null}
         />
       </KeyboardAvoidingView>
 
