@@ -33,9 +33,17 @@ from .auth_views import (
     GoogleAuthView,
     CurrentUserView,
     LogoutView,
+    DeleteAccountView,
+)
+from .account_preferences import AccountPreferencesView
+from .content_share import public_share_page
+from .shared_invitations import (
+    create_shared_invitation, preview_shared_invitation,
+    import_shared_invitation, revoke_shared_invitation, preview_shared_photo,
 )
 from .mobile_content import MobileContentView
 from .bible_content import BibleContentView
+from .content_updates import OfflineContentUpdatesView, OfflineContentObjectView, OfflineContentManifestView
 
 router = DefaultRouter()
 
@@ -88,7 +96,17 @@ router.register(
 )
 
 urlpatterns = [
+    path('share/', public_share_page, name='public-content-share'),
+    path("shared/create/", create_shared_invitation, name="shared-create"),
+    path("shared/<str:token>/", preview_shared_invitation, name="shared-preview"),
+    path("shared/<str:token>/photo/<int:index>/", preview_shared_photo, name="shared-photo"),
+    path("shared/<str:token>/import/", import_shared_invitation, name="shared-import"),
+    path("shared/<str:token>/revoke/", revoke_shared_invitation, name="shared-revoke"),
+    path("account-preferences/", AccountPreferencesView.as_view(), name="account-preferences"),
     path("mobile-content/", MobileContentView.as_view(), name="mobile-content"),
+    path("content-updates/", OfflineContentUpdatesView.as_view(), name="content-updates"),
+    path("content-updates/manifest/", OfflineContentManifestView.as_view(), name="content-update-manifest"),
+    path("content-updates/item/", OfflineContentObjectView.as_view(), name="content-update-item"),
     path("bible-content/", BibleContentView.as_view(), name="bible-content"),
     path("calendar/", include("api.calendar_urls")),
     path(
@@ -101,6 +119,7 @@ urlpatterns = [
         CurrentUserView.as_view(),
         name="current-user",
     ),
+    path("auth/delete-account/", DeleteAccountView.as_view(), name="delete-account"),
     path(
         "auth/logout/",
         LogoutView.as_view(),

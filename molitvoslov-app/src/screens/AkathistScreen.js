@@ -228,16 +228,11 @@ export const AkathistScreen = ({route, navigation}) => {
     let nextMode = getReaderModeForAppLanguage(language, {
       hasRussian: hasRussianTranslation,
       hasUkrainian: hasUkrainianTranslation,
+      hasTraditional: hasTraditionalTranslation,
     });
 
     const preferred = focusTarget?.preferredLanguage;
 
-    console.error(
-      '[akathist] preferred =', preferred,
-      '| hasRussian =', hasRussianTranslation,
-      '| initial =', nextMode,
-      '| MODE_RUSSIAN =', MODE_RUSSIAN
-    );
 
     if (preferred === 'russian') {
       nextMode = hasRussianTranslation ? MODE_RUSSIAN : MODE_CHURCH;
@@ -250,7 +245,6 @@ export const AkathistScreen = ({route, navigation}) => {
     }
 
     setViewMode(nextMode);
-    console.error('[akathist] final mode =', nextMode);
   }, [
     language,
     akathist,
@@ -344,6 +338,13 @@ export const AkathistScreen = ({route, navigation}) => {
     const showUkrainian = viewMode === MODE_UKRAINIAN;
 
     const showTraditional = viewMode === MODE_TRADITIONAL;
+
+    const missingLanguage =
+      ((viewMode === MODE_RUSSIAN || viewMode === MODE_BOTH) && !hasRussianTranslation)
+        ? 'russian'
+        : viewMode === MODE_TRADITIONAL && !hasTraditionalTranslation
+          ? 'traditional'
+          : null;
 
     const attachSaved = ({syntheticId, anchorType, anchorId, language, segment, special}) => {
       savedItems
@@ -753,6 +754,28 @@ export const AkathistScreen = ({route, navigation}) => {
 
     addSpecial(akathist.common_rule?.ending, 'Окончание чтения акафиста', 'ending');
 
+    // Keep all reading tabs visible, even when a translation is not provided.
+    // Never substitute the church text for a missing translation.
+    if (missingLanguage) {
+      sections.length = 0;
+      sections.push({
+        progressAnchorId: 0,
+        trackProgress: false,
+        title: '',
+        rows: [{
+          layout: 'stack',
+          blocks: [{
+            id: nextBlockId++,
+            text: missingLanguage === 'traditional'
+              ? 'Те́кстъ въ традиціо́нномъ начерта́ніи отсꙋ́тствꙋетъ.'
+              : 'Перевод пока отсутствует.',
+            className: missingLanguage === 'traditional' ? 'akathist-church' : 'akathist-russian',
+            metadata: {language: missingLanguage},
+          }],
+        }],
+      });
+    }
+
     const wholeAkathistSaved = savedItems.some(
       (item) =>
         item.anchor_type === 'akathist' &&
@@ -763,7 +786,7 @@ export const AkathistScreen = ({route, navigation}) => {
     return {
       title: getLocalizedField(akathist, 'title', language) || title || t('reading.akathist'),
 
-      description: getLocalizedField(akathist, 'description', language),
+      description: missingLanguage ? '' : getLocalizedField(akathist, 'description', language),
 
       action: {
         key: `akathist:${akathist.id}`,
@@ -776,8 +799,8 @@ export const AkathistScreen = ({route, navigation}) => {
       viewSwitcher: {
         activeKey: viewMode,
         options: buildReaderLanguageOptions({
-          hasRussian: hasRussianTranslation,
-          hasTraditional: hasTraditionalTranslation,
+          hasRussian: true,
+          hasTraditional: true,
         }),
       },
 

@@ -138,8 +138,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         year = options["year"]
-        if not 2027 <= year <= 2030:
-            raise CommandError("В этой версии разрешены только 2027–2030 годы")
+        if not (year == 2025 or 2027 <= year <= 2030):
+            raise CommandError("В этой версии разрешены 2025 и 2027–2030 годы")
         if connections["default"].vendor != "sqlite":
             raise CommandError("Для безопасности требуется локальная SQLite")
         easter = pascha(year)
@@ -157,9 +157,18 @@ class Command(BaseCommand):
             if source_day.main_feast_id:
                 source_main[source_day.main_feast_id] += 1
 
+        # The 2026 year is the canonical card registry. Never generate
+        # a new year from orphaned 2025 / Church Site feast records.
+        canonical_ids = set(CalendarDay.objects.filter(date_gregorian__year=2026)
+            .values_list('feasts__id', flat=True))
+        canonical_ids.update(CalendarDay.objects.filter(date_gregorian__year=2026)
+            .values_list('main_feast_id', flat=True))
+        canonical_ids.discard(None)
+        if not canonical_ids:
+            raise CommandError('Канонический набор карточек 2026 пуст')
         target = defaultdict(set)
         unclassified = []
-        for feast in CalendarFeast.objects.all().iterator():
+        for feast in CalendarFeast.objects.filter(pk__in=canonical_ids).iterator():
             destinations = set()
             if feast.easter_offset is not None:
                 dest = easter + timedelta(days=feast.easter_offset)

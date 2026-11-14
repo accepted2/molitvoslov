@@ -1,6 +1,10 @@
+import bundledBaseline from '../data/offlineContent.json';
 import {getDailyQuote} from './dailyQuote';
 import {isCuratedAkathist} from '../data/curatedAkathists';
 import {getCurrentContent} from './contentStore';
+
+const baselineAkathistSlugs = new Set(Object.keys(bundledBaseline?.akathists?.by_slug || {}));
+const isVisibleAkathist = (item) => !!item && (isCuratedAkathist(item) || (!!item.slug && !baselineAkathistSlugs.has(String(item.slug))));
 
 const response = (data) => ({data});
 
@@ -81,14 +85,14 @@ const getLocal = (rawPath) => {
   }
 
   if (path === 'akathists/') {
-    return (bundledContent.akathists?.list || []).filter(isCuratedAkathist);
+    return (bundledContent.akathists?.list || []).filter(isVisibleAkathist);
   }
 
   match = path.match(/^akathists\/([^/]+)\/$/);
   if (match) {
     const item = bundledContent.akathists?.by_slug?.[match[1]];
 
-    if (!item || !isCuratedAkathist(item)) {
+    if (!item || !isVisibleAkathist(item)) {
       throw notFound(path);
     }
 

@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {getDatabase} from '../db/database';
 import {
   applyYearMarkers,
   applyYearMarkersToMonth,
@@ -9,6 +10,18 @@ import {
 const STORAGE_PREFIX = 'calendar-day-v3';
 
 const bundledMonthLoaders = {
+  '2025-01': () => require('../data/calendar/2025-01.json'),
+  '2025-02': () => require('../data/calendar/2025-02.json'),
+  '2025-03': () => require('../data/calendar/2025-03.json'),
+  '2025-04': () => require('../data/calendar/2025-04.json'),
+  '2025-05': () => require('../data/calendar/2025-05.json'),
+  '2025-06': () => require('../data/calendar/2025-06.json'),
+  '2025-07': () => require('../data/calendar/2025-07.json'),
+  '2025-08': () => require('../data/calendar/2025-08.json'),
+  '2025-09': () => require('../data/calendar/2025-09.json'),
+  '2025-10': () => require('../data/calendar/2025-10.json'),
+  '2025-11': () => require('../data/calendar/2025-11.json'),
+  '2025-12': () => require('../data/calendar/2025-12.json'),
   '2026-01': () => require('../data/calendar/2026-01.json'),
   '2026-02': () => require('../data/calendar/2026-02.json'),
   '2026-03': () => require('../data/calendar/2026-03.json'),
@@ -21,6 +34,18 @@ const bundledMonthLoaders = {
   '2026-10': () => require('../data/calendar/2026-10.json'),
   '2026-11': () => require('../data/calendar/2026-11.json'),
   '2026-12': () => require('../data/calendar/2026-12.json'),
+  '2027-01': () => require('../data/calendar/2027-01.json'),
+  '2027-02': () => require('../data/calendar/2027-02.json'),
+  '2027-03': () => require('../data/calendar/2027-03.json'),
+  '2027-04': () => require('../data/calendar/2027-04.json'),
+  '2027-05': () => require('../data/calendar/2027-05.json'),
+  '2027-06': () => require('../data/calendar/2027-06.json'),
+  '2027-07': () => require('../data/calendar/2027-07.json'),
+  '2027-08': () => require('../data/calendar/2027-08.json'),
+  '2027-09': () => require('../data/calendar/2027-09.json'),
+  '2027-10': () => require('../data/calendar/2027-10.json'),
+  '2027-11': () => require('../data/calendar/2027-11.json'),
+  '2027-12': () => require('../data/calendar/2027-12.json'),
 };
 
 const bundledMonthCache = new Map();
@@ -111,6 +136,13 @@ export const getStoredCalendarDay = async (date, language = 'ru') => {
   }
 
   try {
+    // Delta days are committed atomically with public/Bible snapshots in SQLite.
+    const db = await getDatabase();
+    const row = await db.getFirstAsync(
+      'SELECT payload FROM content_delta_calendar WHERE date = ? AND language = ?',
+      [normalizeDate(date), normalizeLanguage(language)]
+    );
+    if (row?.payload) return JSON.parse(row.payload);
     const raw = await AsyncStorage.getItem(key);
 
     if (!raw) {
@@ -224,6 +256,18 @@ export const getOfflineCalendarMonth = async (year, month, language = 'ru') => {
     );
   } catch (error) {
     console.log('Ошибка чтения calendar month cache:', error?.message || error);
+  }
+
+  // Atomic SQLite overrides take precedence over the older AsyncStorage cache.
+  try {
+    const db = await getDatabase();
+    const rows = await db.getAllAsync(
+      'SELECT date, payload FROM content_delta_calendar WHERE date >= ? AND date <= ? AND language = ?',
+      [dateKeys[0], dateKeys[dateKeys.length - 1], lang]
+    );
+    for (const row of rows) storedByDate.set(row.date, JSON.parse(row.payload));
+  } catch (error) {
+    console.log('Ошибка чтения атомарного calendar cache:', error?.message || error);
   }
 
   const bundledMonth = getBundledMonthPayload(year, month);

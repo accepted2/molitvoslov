@@ -233,6 +233,8 @@ const pushSavedItem = async (db, user, localItem) => {
         deleted_at = ?
       WHERE id = ?
       AND cloud_user_id = ?
+      AND sync_status IN ('pending', 'deleted')
+      AND updated_at = ?
     `,
     [
       serverSyncId,
@@ -242,6 +244,7 @@ const pushSavedItem = async (db, user, localItem) => {
       serverItem.deleted_at ?? item.deleted_at ?? null,
       item.id,
       user.id,
+      item.updated_at,
     ]
   );
 

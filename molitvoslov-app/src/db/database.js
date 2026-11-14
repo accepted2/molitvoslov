@@ -16,6 +16,17 @@ export const initDatabase = async () => {
   await db.execAsync(`
     PRAGMA journal_mode = WAL;
 
+    CREATE TABLE IF NOT EXISTS content_delta_state (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      cursor INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS content_delta_calendar (
+      date TEXT NOT NULL,
+      language TEXT NOT NULL,
+      payload TEXT NOT NULL,
+      PRIMARY KEY (date, language)
+    );
+
     CREATE TABLE IF NOT EXISTS local_users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT NOT NULL UNIQUE,

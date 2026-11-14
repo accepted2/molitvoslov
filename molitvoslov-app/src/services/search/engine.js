@@ -96,11 +96,21 @@ export const isPersistentSearchReady = async (language = 'ru', database = null) 
   }
 };
 
-const runMatch = async (db, language, group, match, limit, offset) => {
-  const where =
+const runMatch = async (db, language, group, match, limit, offset, titleMatch = null, genericPrayerQuery = false, bookOnlyQuery = false) => {
+  let where =
     group === SEARCH_GROUPS.ALL
       ? 'p.language = ? AND search_documents MATCH ?'
       : 'p.language = ? AND p.group_key = ? AND search_documents MATCH ?';
+  // Exclude generic labels from a broad "молитва" query regardless of
+  // record kind or length. Specific text queries remain unchanged.
+  if (genericPrayerQuery) {
+    where += " AND NOT (lower(trim(json_extract(p.payload, '$.title'), ' .:;!?')) " +
+      "IN ('молитва','молитвы','молитви') AND " +
+      "CAST(coalesce(json_extract(p.payload, '$.bodyWordCount'), 0) AS INTEGER) < 40)";
+  }
+  if (bookOnlyQuery) {
+    where += " AND (p.group_key != 'scripture' OR p.kind = 'bible-book')";
+  }
   const args = group === SEARCH_GROUPS.ALL ? [language, match] : [language, group, match];
 
   let total = null;
@@ -138,22 +148,31 @@ const runMatch = async (db, language, group, match, limit, offset) => {
   const rows = await db.getAllAsync(
     'SELECT p.payload AS payload, p.boost AS boost, ' +
     'bm25(search_documents, ' + BM25_WEIGHTS + ') AS rank, ' +
+    (titleMatch
+      ? 'CASE WHEN search_documents.rowid IN ' +
+        '(SELECT rowid FROM search_documents WHERE search_documents MATCH ?) THEN 1 ELSE 0 END AS title_hit, '
+      : '0 AS title_hit, ') +
     'search_documents.rowid AS rowid ' +
     'FROM search_documents JOIN search_payloads AS p ' +
     'ON p.rowid = search_documents.rowid WHERE ' + where +
-    ' ORDER BY rank ASC LIMIT ? OFFSET ?',
-    [...args, Math.min(limit, 500), offset]
+    ' ORDER BY title_hit DESC, CASE WHEN p.group_key = \'calendar\' THEN 0 ELSE 1 END, rank ASC' +
+    ' LIMIT ? OFFSET ?',
+    [...(titleMatch ? [titleMatch] : []), ...args, Math.min(limit, 500), offset]
   );
 
   // 2) Snippet отдельно по rowid (FTS без JOIN — snippet вокруг совпадения)
   if (rows.length) {
     const snippets = await db.getAllAsync(
-      'SELECT rowid, snippet(search_documents, -1, "[", "]", "...", 30) AS snippet ' +
+      'SELECT rowid, snippet(search_documents, 2, "[", "]", "...", 38) AS snippet ' +
       'FROM search_documents WHERE search_documents MATCH ?',
       [match]
     );
     const snippetByRowid = new Map(snippets.map((s) => [s.rowid, s.snippet]));
-    rows.forEach((r) => { r.snippet = snippetByRowid.get(r.rowid) || null; });
+    rows.forEach((r) => {
+      const fragment = snippetByRowid.get(r.rowid) || '';
+      // Title/source-only matches have no body hit; do not show a misleading preview.
+      r.snippet = /\[[^\]]+\]/.test(fragment) ? fragment : null;
+    });
   }
   console.error('[search] timing: group =', group, '| rows =', Date.now() - t1, 'ms | rows =', rows.length);
   console.error('[search] runMatch:', 'group =', group, '| row0_snippet_len =', rows[0]?.snippet?.length, '| row0_snippet =', (rows[0]?.snippet || '').slice(0, 80));
@@ -184,12 +203,12 @@ const detectLanguageFromQuery = (query) => {
   return 'russian';
 };
 
-const withHighlight = (route, query, snippet) => {
+const withHighlight = (route, query, snippet, matchedTextLanguage = null, highlightSectionStart = false) => {
   if (!route?.name || !query) return route;
   const params = route.params || {};
   const existingFocus = params.focusTarget;
 
-  const preferredLanguage =
+  const preferredLanguage = matchedTextLanguage ||
     detectLanguageFromSnippet(snippet) ||
     detectLanguageFromQuery(query);
 
@@ -198,11 +217,13 @@ const withHighlight = (route, query, snippet) => {
       ...existingFocus,
       save_type: existingFocus.save_type || existingFocus.saveType || 'fragment',
       highlightQuery: query,
-      preferredLanguage: existingFocus.preferredLanguage || preferredLanguage,
+      highlightSectionStart,
+      preferredLanguage,
     }
     : {
       save_type: 'fragment',
       highlightQuery: query,
+      highlightSectionStart,
       preferredLanguage,
     };
 
@@ -226,13 +247,18 @@ export const searchPersistent = async (
     return { items: [], total: 0, hasMore: false, unavailable: true };
   }
   const db = database || (await getSearchDb());
+  // FTS title hits are always ranked ahead of body-only matches.
+  const titleMatch = 'title : (' + buildAndQuery(words) + ')';
+  const bookOnlyQuery = words.length === 1 && ['книга', 'книги', 'книгу', 'книге'].includes(words[0]);
+  const genericPrayerQuery = words.length === 1 &&
+    ['молитва', 'молитвы', 'молитву', 'молитве', 'молитви', 'молитву'].includes(words[0]);
 
   if (words.length === 1) {
-    const found = await runMatch(db, language, group, buildPhraseQuery(words), limit, offset);
+    const found = await runMatch(db, language, group, buildPhraseQuery(words), limit, offset, titleMatch, genericPrayerQuery, bookOnlyQuery);
     const first = found.rows[0];
     if (first) {
       const p = JSON.parse(first.payload);
-      const ft = withHighlight(p.route, query, p.snippet).params?.focusTarget;
+      const ft = withHighlight(p.route, query, p.snippet, p.matchedTextLanguage).params?.focusTarget;
       console.warn('[search] FT(single) =', JSON.stringify(ft));
     }
     return {
@@ -241,8 +267,9 @@ export const searchPersistent = async (
         const snippet = row.snippet || p.snippet;
         return {
           ...p,
-          snippet: row.snippet || p.snippet,
-          route: withHighlight(p.route, query, snippet),
+          titleMatched: !!row.title_hit,
+          snippet: p.group === 'prayers' ? (p.snippet || '') : (row.snippet || ''),
+          route: withHighlight(p.route, query, snippet, p.matchedTextLanguage, (p.group === 'psalter' || (!!row.title_hit && ['akathists', 'canons', 'prayers'].includes(p.group)))),
         };
       }),
       total: found.total,
@@ -252,7 +279,7 @@ export const searchPersistent = async (
 
   const phraseLimit = Math.max(limit, 120);
   const phrase = await runMatch(
-    db, language, group, buildPhraseQuery(words), phraseLimit, offset
+    db, language, group, buildPhraseQuery(words), phraseLimit, offset, titleMatch, genericPrayerQuery, bookOnlyQuery
   );
 
   const phraseIds = new Set(phrase.rows.map((r) => JSON.parse(r.payload).id));
@@ -261,7 +288,7 @@ export const searchPersistent = async (
   let andTotal = 0;
   if (needMore) {
     const and = await runMatch(
-      db, language, group, buildAndQuery(words), limit, 0
+      db, language, group, buildAndQuery(words), limit, 0, titleMatch, genericPrayerQuery, bookOnlyQuery
     );
     andTotal = and.total;
     andRows = and.rows.filter((r) => {
@@ -270,11 +297,13 @@ export const searchPersistent = async (
     });
   }
 
-  const combined = [...phrase.rows, ...andRows].slice(0, limit);
+  const combined = [...phrase.rows, ...andRows]
+    .sort((a, b) => Number(b.title_hit || 0) - Number(a.title_hit || 0) || Number(JSON.parse(b.payload).group === 'calendar') - Number(JSON.parse(a.payload).group === 'calendar'))
+    .slice(0, limit);
   const total = Math.max(phrase.total, andTotal);
   if (combined[0]) {
     const p = JSON.parse(combined[0].payload);
-    const ft = withHighlight(p.route, query, p.snippet).params?.focusTarget;
+    const ft = withHighlight(p.route, query, p.snippet, p.matchedTextLanguage).params?.focusTarget;
     console.warn('[search] FT(multi) =', JSON.stringify(ft));
   }
   return {
@@ -283,8 +312,9 @@ export const searchPersistent = async (
       const snippet = row.snippet || p.snippet;
       return {
         ...p,
-        snippet: row.snippet || p.snippet,
-        route: withHighlight(p.route, query, snippet)
+        titleMatched: !!row.title_hit,
+        snippet: p.group === 'prayers' ? (p.snippet || '') : (row.snippet || ''),
+        route: withHighlight(p.route, query, snippet, p.matchedTextLanguage)
       };
     }),
     total,

@@ -149,3 +149,8 @@ export const subscribeToBibleContentUpdates = (listener) => {
     listeners.delete(listener);
   };
 };
+
+// Activate a snapshot already committed with the delta cursor in SQLite.
+export const activateCommittedBibleContent = (payload, version) => {
+  if (!activateBibleContent(payload, version)) throw new Error('Invalid committed Bible content');
+};

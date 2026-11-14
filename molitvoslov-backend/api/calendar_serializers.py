@@ -117,7 +117,7 @@ class CalendarReadingSerializer(serializers.ModelSerializer):
 
 class CalendarDaySerializer(serializers.ModelSerializer):
     main_feast = CalendarFeastSerializer(read_only=True)
-    all_feasts = CalendarFeastSerializer(source="feasts", many=True, read_only=True)
+    all_feasts = serializers.SerializerMethodField()
     readings = serializers.SerializerMethodField()
     date_str = serializers.SerializerMethodField()
     weekday = serializers.SerializerMethodField()
@@ -166,6 +166,12 @@ class CalendarDaySerializer(serializers.ModelSerializer):
             "apostolic_title",
             "apostolic_reading",
         ]
+
+    def get_all_feasts(self, obj):
+        # Stable tie-breaker for feasts with identical titles. PostgreSQL does
+        # not guarantee row order when ORDER BY title contains duplicates.
+        feasts = sorted(obj.feasts.all(), key=lambda feast: (feast.title, feast.pk))
+        return CalendarFeastSerializer(feasts, many=True, context=self.context).data
 
     def _language(self):
         return _language_from_context(self.context)

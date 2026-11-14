@@ -14,6 +14,7 @@ import {StatusBar} from 'expo-status-bar';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {CategoryIcon} from '../components/icons/CategoryIcon';
+import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 
 const SLIDE_COUNT = 10;
 
@@ -28,7 +29,9 @@ const artwork = {
   akathists: require('../../assets/home/akathists.png'),
   canons: require('../../assets/home/canons.png'),
   psalter: require('../../assets/home/psalter.png'),
-  calendarSaint: require('../../assets/calendar-icons/331e36b994aad994b582.webp'),
+  // Keep the onboarding saint tied to the generated offline icon manifest.
+  // Direct references to hashed filenames break whenever the icons are rebuilt.
+  calendarSaint: getBundledCalendarIconSource({source_id: 3210}),
 
   calendarScreen1: require('../../assets/onboarding/calendar_full_1.jpg'),
   calendarScreen2: require('../../assets/onboarding/calendar_full_2.jpg'),

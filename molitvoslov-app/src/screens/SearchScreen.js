@@ -21,6 +21,7 @@ import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {subscribeToContentUpdates} from '../services/contentStore';
 import {addSearchHistory, clearSearchHistory, getSearchHistory} from '../services/searchHistory';
 import {isPersistentSearchReady, searchPersistent} from '../services/search/engine';
+import {searchCalendarNames} from '../services/search/calendarNames';
 import {
   SEARCH_GROUPS,
   SEARCH_GROUP_OPTIONS,
@@ -48,6 +49,8 @@ const copyForLanguage = (language) =>
         psalter: 'Псалтир',
         canons: 'Канони',
         scripture: 'Писання',
+        calendar_stories: 'Житія та історії',
+        calendar_hymns: 'Тропарі та кондаки',
       },
     }
     : {
@@ -68,32 +71,57 @@ const copyForLanguage = (language) =>
         psalter: 'Псалтирь',
         canons: 'Каноны',
         scripture: 'Писание',
+        calendar_stories: 'Жития и истории',
+        calendar_hymns: 'Тропари и кондаки',
       },
     };
 
-// Вырезает предложение вокруг совпадения (поиска) из snippet
-const extractSentence = (snippet, query) => {
-  const text = (snippet || '').trim();
-  if (!text) return '';
-  const q = (query || '').toLowerCase().trim();
-  if (!q) return text;
+// FTS5 encloses actual matched tokens in brackets. Select the context around
+// these hits instead of looking for the literal user query (which may include
+// several words, inflections or removed accent marks).
+const extractSentence = (snippet) => {
+  const raw = String(snippet || '').trim();
+  if (!raw) return '';
+  const hits = [...raw.matchAll(/\[([^\]]+)\]/g)];
+  if (!hits.length) return '';
+  const clean = raw.replace(/\[([^\]]+)\]/g, '$1');
+  const first = hits[0];
+  const at = raw.slice(0, first.index).replace(/\[([^\]]+)\]/g, '$1').length;
+  const prev = clean.slice(0, at);
+  const next = clean.slice(at);
+  const boundary = Math.max(prev.lastIndexOf('. '), prev.lastIndexOf('! '), prev.lastIndexOf('? '), prev.lastIndexOf('… '));
+  let start = boundary < 0 ? 0 : boundary + 2;
+  const nextBoundary = next.search(/[.!?…](?:\s|$)/);
+  let end = nextBoundary < 0 ? clean.length : at + nextBoundary + 1;
+  // Keep at least the matched span visible when the query has several tokens.
+  const last = hits[hits.length - 1];
+  const lastEnd = raw.slice(0, last.index + last[0].length)
+    .replace(/\[([^\]]+)\]/g, '$1').length;
+  end = Math.max(end, lastEnd);
+  // The bundled Bible index includes book/chapter metadata before verse text.
+  // Discard remote metadata when it is far from the actual matched word.
+  if (at - start > 85) start = Math.max(start, at - 65);
+  if (end - start > 250) {
+    start = Math.max(0, at - 65);
+    end = Math.min(clean.length, Math.max(lastEnd + 55, at + 160));
+  }
+  return (start ? '…' : '') + clean.slice(start, end).trim() + (end < clean.length ? '…' : '');
+};
 
-  const lower = text.toLowerCase();
-  const idx = lower.indexOf(q);
-  if (idx < 0) return text;
+// Resolve parent title without changing the real section heading or its route.
+const sourceForSearchResult = (item) => {
+  const parent = item?.route?.params?.parentTitle || item?.route?.params?.title || item?.source || '';
+  const source = String(parent).trim();
+  const lowered = source.toLowerCase();
+  if (!source || ['akathists', 'canons', 'prayers', 'акафисты', 'каноны', 'молитвы',
+    'писание', 'псалтирь', 'акaфист', 'канон'].includes(lowered)) return '';
+  return source === item?.title ? '' : source;
+};
 
-  // Начало предложения: последняя точка/!/?/… до совпадения
-  const before = text.slice(0, idx);
-  const startMatch = before.match(/[.!?…]\s+([^.!?…]*)$/);
-  const start = startMatch ? before.length - startMatch[1].length : 0;
-
-  // Конец предложения: первая точка/!/?/… после совпадения
-  const after = text.slice(idx);
-  const endMatch = after.match(/[.!?…]/);
-  const end = endMatch ? idx + endMatch.index + 1 : text.length;
-
-  const sentence = text.slice(start, end).trim();
-  return sentence || text;
+const isGenericSectionHeading = (title) => {
+  const value = String(title || '').trim().replace(/[.:;!?]+$/, '');
+  return /^(?:молитва|молитвы|молитви|тропарь|тропар[ьи]|кондак|кондаки)(?:\s*(?:№\s*)?\d+|\s+[ivxlcdm]+)?$/i.test(value) ||
+    /^песнь\s+\d+\s*[—-]\s*тропар[ьи]$/i.test(value);
 };
 
 const HighlightedText = ({text, query, style, highlightStyle, numberOfLines}) => {
@@ -133,6 +161,7 @@ const SearchContent = ({navigation}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [result, setResult] = useState({ items: [], total: 0 });
+  const [calendarResults, setCalendarResults] = useState([]);
   const [history, setHistory] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -182,7 +211,7 @@ const SearchContent = ({navigation}) => {
   useEffect(() => {
     let cancelled = false;
     const trimmed = searchQuery.trim();
-    if (paused || !seedReady || trimmed.length < 2) {
+    if (paused || !seedReady || trimmed.length < 2 || activeGroup.startsWith('calendar_')) {
       if (!paused) setSearchLoading(false);
       return () => {
         cancelled = true;
@@ -231,8 +260,20 @@ const SearchContent = ({navigation}) => {
     };
   }, [searchQuery, activeGroup, language, seedReady, paused]);
 
+  useEffect(() => {
+    let active = true;
+    setCalendarResults([]);
+    const text = searchQuery.trim();
+    if (!paused && text.length >= 3 && (activeGroup === SEARCH_GROUPS.ALL || activeGroup.startsWith('calendar_'))) {
+      searchCalendarNames(text, language, activeGroup === 'calendar_stories' ? 'stories' : activeGroup === 'calendar_hymns' ? 'hymns' : 'all')
+        .then((items) => {if (active) setCalendarResults(items);})
+        .catch((error) => console.warn('Calendar name search:', error?.message || error));
+    }
+    return () => {active = false;};
+  }, [searchQuery, language, activeGroup, paused]);
+
   const loadMore = async () => {
-    if (loadingMore || !hasMore || paused || !seedReady) return;
+    if (calendarOnly || loadingMore || !hasMore || paused || !seedReady) return;
     setLoadingMore(true);
     try {
       const nextOffset = result.items.length;
@@ -267,7 +308,9 @@ const SearchContent = ({navigation}) => {
 
   const tabs = useMemo(
     () =>
-      SEARCH_GROUP_OPTIONS.map((item) => ({
+      [...SEARCH_GROUP_OPTIONS.filter((item) => item.key !== 'prayers'),
+        {key: 'calendar_stories', label: copy.tabs.calendar_stories},
+        {key: 'calendar_hymns', label: copy.tabs.calendar_hymns}].map((item) => ({
         ...item,
         label: copy.tabs[item.key] || item.label,
       })),
@@ -304,45 +347,34 @@ const SearchContent = ({navigation}) => {
       onPress={() => openResult(item)}
       style={({ pressed }) => [styles.resultCard, pressed && styles.pressed]}
     >
-      <View style={styles.resultTopLine}>
+      {item.group !== 'calendar' && <View style={styles.resultTopLine}>
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>{copy.tabs[item.group] || item.groupLabel}</Text>
+          <Text style={styles.badgeText}>{copy.tabs[item.group] || item.groupLabel || item.group}</Text>
         </View>
         {!!item.matchedLanguageLabel && (
           <Text style={styles.languageLabel}>{item.matchedLanguageLabel}</Text>
         )}
-      </View>
+      </View>}
 
       <HighlightedText
         text={item.title}
         query={searchQuery}
         style={styles.resultTitle}
         highlightStyle={styles.highlightTitle}
-        numberOfLines={2}
+        numberOfLines={3}
       />
 
-      {!!item.source && (
-        <HighlightedText
-          text={item.source}
-          query={searchQuery}
-          style={styles.resultSource}
-          highlightStyle={styles.highlightSource}
-          numberOfLines={2}
-        />
+      {!!sourceForSearchResult(item) && (isGenericSectionHeading(item.title) ||
+        (item.group === 'prayers' && !item.titleMatched)) && (
+        <Text style={styles.resultSource} numberOfLines={3}>
+          {sourceForSearchResult(item)}
+        </Text>
       )}
 
-      {!!item.snippet && (
+      {!!item.snippet && (item.group === 'prayers' || item.group === 'calendar' || (!item.titleMatched && extractSentence(item.snippet))) && (
         <HighlightedText
-          text={extractSentence(
-            (item.snippet || '')
-              .replace(/\[([^\]]+)\]/g, '$1')
-              .replace(
-                new RegExp('^' + (item.title || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*', 'i'),
-                ''
-              ),
-            searchQuery
-          )}
-          query={searchQuery}
+          text={(item.group === 'prayers' || item.group === 'calendar') ? item.snippet.replace(/\\[[^\\]]+\\]/g, (match) => match.slice(1, -1)).slice(0, 190) : extractSentence(item.snippet)}
+          query={item.group === 'calendar' && item.titleMatched ? '' : searchQuery}
           style={styles.resultSnippet}
           highlightStyle={styles.highlightSnippet}
           numberOfLines={4}
@@ -358,7 +390,8 @@ const SearchContent = ({navigation}) => {
   const waitingForQuery = !trimmedQuery;
   const queryTooShort = !!trimmedQuery && trimmedQuery.length < 2;
   const displayScope = `${language}:${activeGroup}:${searchQuery}`;
-  const resultsCurrent = (paused || searchQuery === query) && displayScope === searchScope;
+  const calendarOnly = activeGroup === 'calendar_stories' || activeGroup === 'calendar_hymns';
+  const resultsCurrent = calendarOnly ? (paused || searchQuery === query) : (paused || searchQuery === query) && displayScope === searchScope;
   const visibleResults = useMemo(() => {
     const filtered = resultsCurrent
       ? activeGroup === SEARCH_GROUPS.ALL
@@ -369,16 +402,19 @@ const SearchContent = ({navigation}) => {
       const groups = [...new Set(result.items.map((i) => i.group))];
       console.error('[search-ui] visibleResults: activeGroup =', activeGroup, '| groups in result.items =', groups, '| filtered =', filtered.length);
     }
-    return filtered;
-  }, [result.items, activeGroup, resultsCurrent]);
+    const extras = (activeGroup === SEARCH_GROUPS.ALL || calendarOnly) && resultsCurrent ? calendarResults : [];
+    // In “Все”, retain the established fast full-text ranking; calendar
+    // entries are available in their own dedicated tabs.
+    return calendarOnly ? extras : [...filtered, ...extras];
+  }, [result.items, activeGroup, resultsCurrent, calendarResults, calendarOnly]);
 
   const showEmpty =
     resultsCurrent &&
-    !indexLoading &&
-    !searchLoading &&
+    (calendarOnly || !indexLoading) &&
+    (calendarOnly || !searchLoading) &&
     !waitingForQuery &&
     !queryTooShort &&
-    result.total === 0;
+    (calendarOnly || result.total === 0) && calendarResults.length === 0;
 
   return (
     <AppBackground imageOpacity={0.42}>
@@ -480,14 +516,14 @@ const SearchContent = ({navigation}) => {
                   <ActivityIndicator size="small" color="#A16E35" />
                   <Text style={styles.countText}>Ищем…</Text>
                 </>
-              ) : result.total > 0 ? (
+              ) : visibleResults.length > 0 ? (
                 <Text style={styles.countText}>
                   {copy.found(
-                    hasMore
-                      ? `${result.total}+`
-                      : result.total >= 500
+                    hasMore && !calendarOnly
+                      ? `${result.total + calendarResults.length}+`
+                      : result.total >= 500 && !calendarOnly
                         ? '500+'
-                        : result.total
+                        : (calendarOnly ? calendarResults.length : result.total + calendarResults.length)
                   )}
                 </Text>
               ) : null}
@@ -501,7 +537,7 @@ const SearchContent = ({navigation}) => {
                   }}
                   hitSlop={8}
                 >
-                  <Text style={styles.countText}>Стоп</Text>
+                  <Text style={styles.stopText}>Остановить поиск</Text>
                 </Pressable>
               )}
               {paused && <Text style={styles.countText}>Поиск остановлен</Text>}
@@ -658,7 +694,9 @@ const styles = StyleSheet.create({
     gap: 7,
     marginTop: 7,
     marginHorizontal: 3,
+    justifyContent: 'space-between',
   },
+  stopText: {color: '#765238', fontSize: 11, fontWeight: '700'},
   countText: {color: '#8A6B53', fontSize: 11, fontWeight: '600'},
   results: {paddingHorizontal: 10, paddingTop: 8},
   resultCard: {

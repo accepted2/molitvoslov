@@ -31,17 +31,10 @@ const MODE_RUSSIAN = READER_LANGUAGE_MODES.RUSSIAN;
 const MODE_BOTH = READER_LANGUAGE_MODES.BOTH;
 const MODE_TRADITIONAL = READER_LANGUAGE_MODES.TRADITIONAL;
 
-const resolveAvailableViewMode = (mode, {hasRussian, hasTraditional}) => {
-  if ((mode === MODE_RUSSIAN || mode === MODE_BOTH) && hasRussian) {
-    return mode;
-  }
-
-  if (mode === MODE_TRADITIONAL && hasTraditional) {
-    return mode;
-  }
-
-  return MODE_CHURCH;
-};
+const resolveAvailableViewMode = (mode) =>
+  [MODE_CHURCH, MODE_RUSSIAN, MODE_BOTH, MODE_TRADITIONAL].includes(mode)
+    ? mode
+    : MODE_CHURCH;
 
 export const PrayerRuleScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
@@ -95,8 +88,8 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     () => ({
       activeKey: viewMode,
       options: buildReaderLanguageOptions({
-        hasRussian: hasRussianTranslation,
-        hasTraditional: hasTraditionalTranslation,
+        hasRussian: true,
+        hasTraditional: true,
       }),
     }),
     [viewMode, hasRussianTranslation, hasTraditionalTranslation]
@@ -124,7 +117,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
         }
 
         setViewMode(
-          resolveAvailableViewMode(savedMode, {
+          focusTarget?.highlightQuery ? MODE_CHURCH : resolveAvailableViewMode(savedMode, {
             hasRussian: hasRussianTranslation,
             hasTraditional: hasTraditionalTranslation,
           })
@@ -149,7 +142,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     return () => {
       active = false;
     };
-  }, [rule, slug, hasRussianTranslation, hasTraditionalTranslation]);
+  }, [rule, slug, hasRussianTranslation, hasTraditionalTranslation, focusTarget]);
 
   const handleViewModeChange = useCallback(
     (nextMode) => {

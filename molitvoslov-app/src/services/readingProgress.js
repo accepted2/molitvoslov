@@ -140,6 +140,8 @@ const pushPendingReadingProgress = async (db, user) => {
 
             WHERE id = ?
             AND cloud_user_id = ?
+            AND sync_status = 'pending'
+            AND updated_at = ?
           `,
         [
           serverItem.id ?? null,
@@ -159,6 +161,7 @@ const pushPendingReadingProgress = async (db, user) => {
 
           row.id,
           user.id,
+          row.updated_at,
         ]
       );
     } catch (error) {

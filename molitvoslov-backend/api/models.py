@@ -1679,3 +1679,124 @@ class GoogleAccount(models.Model):
 
 # Церковный календарь, перенесённый из Church Site.
 from .calendar_models import CalendarFeast, CalendarDay
+
+# Public offline-content publication feed.
+from .content_update_models import OfflineContentSnapshot, OfflineContentChange
+
+
+class PublicAppAsset(models.Model):
+    """Versioned public presentation asset; URLs are never private user content."""
+    key = models.SlugField(max_length=100, unique=True)
+    image_url = models.URLField(max_length=2048, blank=True)
+    title = models.CharField(max_length=255, blank=True)
+    enabled = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["key"]
+        verbose_name = "Ресурс приложения"
+        verbose_name_plural = "Ресурсы приложения"
+
+    def __str__(self):
+        return self.key
+
+
+class AccountPreferences(models.Model):
+    """Per-user sync snapshot for reading/interface preferences.
+
+    Local reader overrides are addressed by stable source type/id; they are
+    never replaced by a change to the global settings object.
+    """
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="app_preferences",
+    )
+    settings = models.JSONField(default=dict, blank=True)
+    reader_overrides = models.JSONField(default=dict, blank=True)
+    reader_modes = models.JSONField(default=dict, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Настройки приложения"
+        verbose_name_plural = "Настройки приложения"
+
+
+class AccountDeletionRequest(models.Model):
+    """Unauthenticated web request, never itself authorizes account deletion."""
+    KIND_CHOICES = [
+        ("deletion", "Удаление аккаунта"),
+        ("privacy", "Обращение по персональным данным"),
+    ]
+    STATUS_CHOICES = [
+        ("pending", "Ожидает проверки личности"),
+        ("verified", "Личность подтверждена"),
+        ("completed", "Выполнено"),
+        ("closed", "Закрыто"),
+    ]
+    email = models.EmailField()
+    kind = models.CharField(max_length=16, choices=KIND_CHOICES, default="deletion")
+    message = models.TextField(blank=True, max_length=1000)
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="pending")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Запрос на удаление / конфиденциальность"
+        verbose_name_plural = "Запросы на удаление и конфиденциальность"
+
+    def __str__(self):
+        return f"{self.get_kind_display()}: {self.email}"
+
+
+class SharedContentInvitation(models.Model):
+    """Owner-approved immutable text snapshot accessible only with a secret token.
+
+    Photo paths remain private; recipients get independent copies. Links expire and
+    can be revoked; imported recipient copies have their own ownership.
+    """
+    KIND_CHOICES = [
+        ("quote", "Цитата"),
+        ("memorial", "Помянник"),
+        ("prayerbook", "Личный молитвослов"),
+    ]
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="shared_content_invitations",
+    )
+    token_hash = models.CharField(max_length=64, unique=True, db_index=True)
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES)
+    title = models.CharField(max_length=180)
+    snapshot = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.get_kind_display()
+
+
+class SharedContentImport(models.Model):
+    """Idempotency record. The recipient's imported data remains independent."""
+    invitation = models.ForeignKey(
+        SharedContentInvitation, on_delete=models.CASCADE,
+        related_name="imports",
+    )
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="content_imports",
+    )
+    kind = models.CharField(max_length=20)
+    imported_sync_id = models.UUIDField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["invitation", "recipient"],
+                name="unique_shared_content_import",
+            ),
+        ]
+

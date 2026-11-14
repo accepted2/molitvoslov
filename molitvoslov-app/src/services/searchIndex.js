@@ -4,6 +4,7 @@ import {getCurrentContent} from './contentStore';
 
 export const SEARCH_GROUPS = {
   ALL: 'all',
+  CALENDAR: 'calendar',
   PRAYERS: 'prayers',
   AKATHISTS: 'akathists',
   PSALTER: 'psalter',

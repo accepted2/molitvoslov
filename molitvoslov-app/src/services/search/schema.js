@@ -1,6 +1,6 @@
-export const SEARCH_SCHEMA_VERSION = '8';
+export const SEARCH_SCHEMA_VERSION = '9';
 export const SEARCH_GROUPS = Object.freeze({
-  ALL: 'all', PRAYERS: 'prayers', SCRIPTURE: 'scripture',
+  ALL: 'all', CALENDAR: 'calendar', PRAYERS: 'prayers', SCRIPTURE: 'scripture',
   PSALTER: 'psalter', AKATHISTS: 'akathists', CANONS: 'canons',
 });
 export const CREATE_SCHEMA_SQL = `

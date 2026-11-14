@@ -111,13 +111,18 @@ export const BookScreen = ({route, navigation}) => {
   );
 
   useEffect(() => {
+    const initial = getReaderModeForAppLanguage(language, {
+      hasRussian: hasRussianTranslation,
+      hasUkrainian: hasUkrainianTranslation,
+    });
+    const preferred = focusTarget?.preferredLanguage;
     setViewMode(
-      getReaderModeForAppLanguage(language, {
-        hasRussian: hasRussianTranslation,
-        hasUkrainian: hasUkrainianTranslation,
-      })
+      preferred === 'russian' ? (hasRussianTranslation ? READER_LANGUAGE_MODES.RUSSIAN : initial) :
+      preferred === 'ukrainian' ? (hasUkrainianTranslation ? READER_LANGUAGE_MODES.UKRAINIAN : initial) :
+      preferred === 'traditional' ? (hasTraditionalTranslation ? READER_LANGUAGE_MODES.TRADITIONAL : initial) :
+      preferred === 'church' ? READER_LANGUAGE_MODES.CHURCH : initial
     );
-  }, [language, hasRussianTranslation, hasUkrainianTranslation]);
+  }, [language, hasRussianTranslation, hasUkrainianTranslation, hasTraditionalTranslation, focusTarget]);
 
   const handleAction = async (actionKey) => {
     if (!actionKey?.startsWith('category-text:')) {
@@ -200,6 +205,21 @@ export const BookScreen = ({route, navigation}) => {
       savedItem: saved,
     };
   };
+
+  const normalizedFocusTarget = useMemo(() => {
+    if (!focusTarget?.text_id) return focusTarget;
+    const item = texts.find((entry) => Number(entry.text?.id) === Number(focusTarget.text_id));
+    if (!item) return focusTarget;
+    return {
+      ...focusTarget,
+      anchor_type: 'category_text',
+      anchor_id: Number(item.id),
+      metadata: {
+        ...(focusTarget.metadata || {}),
+        language: focusTarget.preferredLanguage || focusTarget.metadata?.language,
+      },
+    };
+  }, [focusTarget, texts]);
 
   const documentData = useMemo(() => {
     const showChurch =
@@ -329,6 +349,17 @@ export const BookScreen = ({route, navigation}) => {
           );
         }
 
+        if (!blocks.length && (showRussian || showTraditional)) {
+          blocks.push({
+            id: Number(item.id) * 10 + 9,
+            text: showTraditional
+              ? 'Те́кстъ въ традиціо́нномъ начерта́ніи отсꙋ́тствꙋетъ.'
+              : 'Перевод пока отсутствует.',
+            className: showTraditional ? 'akathist-church' : 'secondary',
+            metadata: {language: showTraditional ? 'traditional' : 'russian'},
+          });
+        }
+
         return {
           progressAnchorId: Number(item.id),
 
@@ -362,8 +393,8 @@ export const BookScreen = ({route, navigation}) => {
       viewSwitcher: {
         activeKey: viewMode,
         options: buildReaderLanguageOptions({
-          hasRussian: hasRussianTranslation,
-          hasTraditional: hasTraditionalTranslation,
+          hasRussian: true,
+          hasTraditional: true,
         }),
       },
 
@@ -412,7 +443,7 @@ export const BookScreen = ({route, navigation}) => {
       <SelectableDocumentReader
         documentData={documentData}
         savedProgress={savedProgress}
-        focusTarget={focusTarget}
+        focusTarget={normalizedFocusTarget}
         topContentInset={headerHeight}
         onProgress={scheduleSave}
         onAction={handleAction}
