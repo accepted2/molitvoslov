@@ -10,6 +10,7 @@ import uuid
 from datetime import timedelta
 
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
@@ -46,8 +47,7 @@ def _invitation(token, *, lock=False):
     return query.filter(
         token_hash=_hash(token),
         revoked_at__isnull=True,
-        expires_at__gt=timezone.now(),
-    ).first()
+    ).filter(Q(expires_at__isnull=True) | Q(expires_at__gt=timezone.now())).first()
 
 
 def _clean_title(value, fallback, limit=180):
@@ -207,7 +207,7 @@ def create_shared_invitation(request):
         return Response({"detail": str(exc)},
                         status=status.HTTP_400_BAD_REQUEST)
     token = secrets.token_urlsafe(32)  # 256 random bits, URL-safe
-    expires_at = timezone.now() + timedelta(days=3650)
+    expires_at = None  # Public share links remain valid until explicitly revoked.
     SharedContentInvitation.objects.create(
         owner=request.user, token_hash=_hash(token),
         kind=kind, title=title, snapshot=snapshot, expires_at=expires_at,
@@ -216,7 +216,7 @@ def create_shared_invitation(request):
         "token": token,
         "kind": kind,
         "title": title,
-        "expires_at": expires_at.isoformat(),
+        "expires_at": None,
     }, status=status.HTTP_201_CREATED)
 
 
@@ -244,7 +244,7 @@ def preview_shared_invitation(request, token):
         "kind": invite.kind,
         "title": invite.title,
         "content": summary,
-        "expires_at": invite.expires_at.isoformat(),
+        "expires_at": invite.expires_at.isoformat() if invite.expires_at else None,
         "imported": (SharedContentImport.objects.filter(
             invitation=invite, recipient=request.user,
         ).exists() if request.user.is_authenticated else False),
