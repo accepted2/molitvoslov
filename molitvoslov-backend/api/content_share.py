@@ -15,7 +15,7 @@ PATTERNS = (
     r"(?:akathist|canon|prayer|reader|hours)/[\w.-]+(?:/[1-9]\d{0,8})?",
     r"kathisma/(?:[1-9]|1\d|20)(?:/[1-9]\d{0,2}/(?:church|russian|traditional|both))?",
     r"saint/20\d{2}-\d{2}-\d{2}/(?:life|troparion|kontakion|prayer)(?:/[\w.-]+)?",
-    r"category/[1-9]\\d{0,5}/[\\w.-]+(?:/[1-9]\\d{0,8})?",
+    r"category/[1-9]\d{0,5}/[\w.-]+(?:/[1-9]\d{0,8})?",
     r"psalter",
 )
 
