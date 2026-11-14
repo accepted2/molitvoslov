@@ -105,7 +105,7 @@ export const READER_RUNTIME = String.raw`
       trigger.setAttribute('aria-expanded','false');
       const menu=el('div','reader-actions-popover');
       menu.hidden=true;
-      if(action || scope==='section'){
+      if(action || scope==='section' || scope==='document'){
         const save=el('button','reader-actions-save',
           action?.active?'Убрать из избранного':'Сохранить себе');
         save.type='button';
@@ -5180,7 +5180,19 @@ if (
             action.classList .toggle( 'active', !!active );
             setSaveHeartIcon( action, !!active );
           }
+          reader.querySelectorAll('.reader-actions-save').forEach(button => {
+            if(button.dataset.actionKey===actionKey){
+              button.textContent=active?'Убрать из избранного':'Сохранить себе';
+            }
+          });
           setSectionWholeHighlight( actionKey, savedItemId, !!active );
+        },
+      updateGenericSectionAction: (index, active) => {
+          reader.querySelectorAll('.reader-actions-save').forEach(button => {
+            if(!button.dataset.actionKey && Number(button.dataset.sectionIndex)===Number(index)){
+              button.textContent=active?'Убрать из избранного':'Сохранить себе';
+            }
+          });
         },
       saveFailed: message => {
           state.savePending = false;
