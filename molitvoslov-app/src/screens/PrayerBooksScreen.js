@@ -50,10 +50,7 @@ export const PrayerBooksScreen = ({navigation}) => {
     kind:'prayerbook',
     sourceSyncId:book.sync_id,
     title:book.title||'Мой молитвослов',
-    fallbackText:(book.items||[]).map(i=>[
-      i.prayer?.title||'',i.prayer?.text||''
-    ].filter(Boolean).join('\n')).join('\n\n'),
-    privateContent:true,
+    // Share only the URL to the complete, independently importable book.
   });
 
   const create = async () => {
@@ -137,12 +134,12 @@ export const PrayerBooksScreen = ({navigation}) => {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={'Поделиться молитвословом ' + (item.title||'')}
-                accessibilityHint="Создать защищённую ссылку для передачи личного молитвослова"
-                onPress={() => shareBook(item)}
+                accessibilityHint="Открыть меню действий с молитвословом"
+                onPress={() => setContextItem(item)}
                 hitSlop={5}
                 style={({pressed}) => [styles.shareButton,pressed && styles.pressed]}
               >
-                <Ionicons name="share-social-outline" size={20} color="#765238"/>
+                <Ionicons name="ellipsis-vertical" size={20} color="#765238"/>
               </Pressable>
             </View>
           )}
