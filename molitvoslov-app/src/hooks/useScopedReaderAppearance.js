@@ -8,8 +8,17 @@ import {
 import {DEFAULT_READING_SETTINGS, subscribeReadingSettings} from '../services/readerPreferences';
 
 /** Per account + per document, stored on device (never deleted by sign-out). */
-export const useScopedReaderAppearance = (sourceType, sourceId) => {
-  const [appearance, setAppearance] = useState(() => normalizeReaderAppearance(DEFAULT_READING_SETTINGS));
+export const useScopedReaderAppearance = (sourceType, sourceId, initialFontSize = null) => {
+  // An optional reader-specific default applies only if there is no saved
+  // override and the global font size is still the application default.
+  const inheritedSize = settings => ({
+    ...settings,
+    fontSize: initialFontSize &&
+      Number(settings.fontSize) === DEFAULT_READING_SETTINGS.fontSize
+      ? initialFontSize : settings.fontSize,
+  });
+  const [appearance, setAppearance] = useState(() =>
+    normalizeReaderAppearance(inheritedSize(DEFAULT_READING_SETTINGS)));
   const [ready, setReady] = useState(false);
   const keyRef = useRef(null);
   const inheritedRef = useRef(true);
@@ -35,23 +44,24 @@ export const useScopedReaderAppearance = (sourceType, sourceId) => {
       if (!active) return;
       keyRef.current = key;
       inheritedRef.current = inherited;
-      latestRef.current = value;
-      setAppearance(value);
+      const effective = inherited ? normalizeReaderAppearance(inheritedSize(value)) : value;
+      latestRef.current = effective;
+      setAppearance(effective);
       setReady(true);
     }).catch((error) => {
       console.warn('[reader appearance] load:', error?.message || error);
       if (active) setReady(true);
     });
     return () => {active = false; persist();};
-  }, [sourceType, sourceId, persist]);
+  }, [sourceType, sourceId, initialFontSize, persist]);
 
   // Existing readers without a custom override follow global changes live.
   useEffect(() => subscribeReadingSettings(settings => {
     if (!inheritedRef.current) return;
-    const next = normalizeReaderAppearance(settings);
+    const next = normalizeReaderAppearance(inheritedSize(settings));
     latestRef.current = next;
     setAppearance(next);
-  }), []);
+  }), [initialFontSize]);
 
   const changeAppearance = useCallback((patch) => {
     inheritedRef.current = false;
