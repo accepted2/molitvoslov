@@ -357,7 +357,8 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
             .filter(Boolean);
           return [...new Set(parts)].join('\n\n');
         }).filter(Boolean)).join('\n\n');
-      await shareContent({title,text,screen:target.screen,params:target.params});
+      await shareContent({title,text:message.wholeDocument?'':text,
+        linkOnly:!!message.wholeDocument,screen:target.screen,params:target.params});
       return;
     }
 
