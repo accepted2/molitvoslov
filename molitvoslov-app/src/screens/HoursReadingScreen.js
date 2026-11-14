@@ -185,7 +185,7 @@ export const HoursReadingScreen = ({route, navigation}) => {
       <ReaderAppearanceSheet
         onShare={() => shareContent({
           title:entry.title,
-          text:documentShareText(documentData),
+          linkOnly:true,
           screen:'HoursReading',params:{entryId},
         })}
         visible={appearanceVisible}
