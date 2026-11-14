@@ -10,7 +10,7 @@ const publicPatterns=[
   new RegExp(String.raw`^bible/${SEGMENT}/[1-9]\d{0,2}(?:/(?:rst|csl_traditional)(?:/[1-9]\d{0,2})?)?$`,'u'),
   new RegExp(String.raw`^bible-book/${SEGMENT}(?:/(?:rst|csl_traditional))?$`,'u'),
   new RegExp(String.raw`^(?:akathist|canon|hours)/${SLUG}(?:/[1-9]\d{0,8})?$`,'u'),
-  new RegExp(String.raw`^prayer/${SLUG}(?:/[1-9]\\d{0,8})?$`,'u'),
+  new RegExp(String.raw`^prayer/${SLUG}(?:/[1-9]\d{0,8})?$`,'u'),
   new RegExp(String.raw`^reader/${SLUG}$`,'u'),
   /^kathisma\/(?:[1-9]|1\d|20)(?:\/[1-9]\d{0,2}\/(?:church|russian|traditional|both))?$/,
   new RegExp(String.raw`^saint/20\d{2}-\d{2}-\d{2}/(?:life|troparion|kontakion|prayer)(?:/${SLUG})?$`,'u'),
