@@ -962,7 +962,7 @@ export const CanonScreen = ({route, navigation}) => {
       <ReaderBookmarkMenu
         onShare={() => shareContent({
           title:getLocalizedField(canon,'title',language)||title||'Канон',
-          text:documentShareText(documentData),
+          linkOnly:true,
           screen:'Canon',params:{canonId,slug},
         })}
         visible={readerMenuVisible}
