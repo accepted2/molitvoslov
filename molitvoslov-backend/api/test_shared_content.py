@@ -63,7 +63,7 @@ class SharedContentTests(APITestCase):
         self.assertNotIn(self.owner.email, res.data["token"])
         return res.data["token"]
 
-    def test_needs_authentication_to_create_preview_or_import(self):
+    def test_link_holder_can_preview_without_login_but_cannot_import(self):
         self.client.force_authenticate(user=None)
         res=self.client.post(reverse("shared-create"), {
             "kind":"quote", "title":"Пример", "text":"Текст"
@@ -71,10 +71,40 @@ class SharedContentTests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
         token=self.make_share("quote",title="Пример",text="Текст")
         self.client.force_authenticate(user=None)
-        self.assertEqual(
-            self.client.get(reverse("shared-preview",args=[token])).status_code,401)
+        preview=self.client.get(reverse("shared-preview",args=[token]))
+        self.assertEqual(preview.status_code, 200, preview.data)
+        self.assertEqual(preview.data["content"]["text"], "Текст")
+        self.assertFalse(preview.data["imported"])
         self.assertEqual(
             self.client.post(reverse("shared-import",args=[token])).status_code,401)
+
+    def test_anonymous_memorial_and_prayerbook_preview_without_storage_leak(self):
+        for kind, source in (
+            ("memorial", self.memorial), ("prayerbook", self.book)
+        ):
+            token=self.make_share(kind,source_sync_id=str(source.sync_id))
+            self.client.force_authenticate(user=None)
+            res=self.client.get(reverse("shared-preview",args=[token]))
+            self.assertEqual(res.status_code, 200, res.data)
+            self.assertFalse(res.data["imported"])
+            self.assertNotIn("storage_path", str(res.data))
+            self.assertNotIn("private/owner-", str(res.data))
+            if kind == "memorial":
+                self.assertEqual(res.data["content"]["health_names"], ["Анна", "Иоанн"])
+                self.assertEqual(res.data["content"]["repose_names"], ["Мария"])
+            else:
+                self.assertEqual(
+                    [entry["title"] for entry in res.data["content"]["prayers"]],
+                    ["Первая молитва", "Вторая молитва"],
+                )
+                self.assertEqual(
+                    [entry["text"] for entry in res.data["content"]["prayers"]],
+                    ["Текст № 0", "Текст № 1"],
+                )
+            self.assertEqual(
+                self.client.post(reverse("shared-import", args=[token])).status_code,
+                status.HTTP_401_UNAUTHORIZED,
+            )
 
     def test_quote_import_is_independent_and_idempotent(self):
         token=self.make_share("quote",title="Слово",text="Бог есть любовь")
