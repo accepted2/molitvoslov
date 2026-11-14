@@ -33,7 +33,7 @@ $images = @(
     [pscustomobject]@{
       Source = ('assets\home\' + $_ + '.webp')
       CodeFile = 'src\data\homeArtwork.js'
-      Id = ('assets_home_' + ($_ -replace '[^a-z0-9]', ''))
+      Id = ('assets_home_' + $_)
       ImageName = $_
     }
   })
