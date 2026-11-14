@@ -33,6 +33,21 @@ jobs:
           node tools/test_hours_first_hour_russian.js
           node tools/test_first_hour_traditional_text.js
           node tools/test_first_hour_traditional_rubrics.js
+      - name: Verify ALL release-script regression tests before building APK
+        working-directory: molitvoslov-app
+        run: |
+          node tools/test_vertical_actions_calendar_favorites_20261113.js
+          node tools/test_calendar_public_share_20261113.js
+          node tools/test_saint_shared_link_recovery_20261113.js
+          node tools/test_unified_share_actions_20261114.js
+          node tools/test_share_bible_saint_photo_20261113.js
+          node tools/test_shared_content_links_20261113.js
+          node tools/test_dual_share_release_20261113.js
+          node tools/test_bible_lists_actions_20261113.js
+          node tools/test_psalter_context_share_font_20261113.js
+          node tools/test_bible_crossrefs_appearance_bookmarks_20261113.js
+          node tools/test_android_app_links_20261113.js
+          node tools/test_crossrefs_private_list_sharing_20261113.js
       - name: Install Expo dependencies
         working-directory: molitvoslov-app
         run: |
