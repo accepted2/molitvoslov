@@ -118,7 +118,8 @@ export const BibleChapterScreen = ({route, navigation}) => {
   const [currentBookmarkOffset,setCurrentBookmarkOffset] = useState(0);
   const [crossReferenceOrigin, setCrossReferenceOrigin] = useState(null);
   const {appearance,changeAppearance,resetAppearance} =
-    useScopedReaderAppearance('bible',book?.code || bookId);
+    useScopedReaderAppearance('bible',book?.code || bookId,
+      isTraditional ? 19 : null);
   const readerPalette=resolveReaderAppearance(appearance);
   const isDarkTheme=isDarkReaderBackground(readerPalette.background);
   const readerTheme=isDarkTheme?'night':'paper';
@@ -849,9 +850,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
       <ReaderBookmarkMenu
         onShare={() => shareContent({
           title:displayName+' · Глава '+currentChapterNumber,
-          text:(bibleContent.getChapter(bookId,currentChapterNumber,translationCode)?.verses||[])
-            .map(verse=>formatBibleNumber(translationCode,verse.number)+' '+(verse.text||''))
-            .join('\n'),
+          linkOnly:true,
           screen:'BibleChapter',params:{bookId,chapterNumber:currentChapterNumber,
             translationCode},
         })}

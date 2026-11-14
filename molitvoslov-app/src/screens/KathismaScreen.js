@@ -1617,6 +1617,12 @@ export default function KathismaScreen({route, navigation}) {
       />
 
       <ReaderBookmarkMenu
+        onShare={() => shareContent({
+          title:t('psalter.kathisma',{number:kathisma.number}),
+          screen:'Kathisma',
+          params:{kathismaNumber:kathisma.number,readerMode:viewMode},
+          linkOnly:true,
+        })}
         visible={readerMenuVisible}
         onClose={() => setReaderMenuVisible(false)}
         navigation={navigation}

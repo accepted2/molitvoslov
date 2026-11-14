@@ -32,7 +32,7 @@ async function main(){
   assert.match(chapters,/backgroundColor: '#FFF0CF'/);
   assert.match(chapters,/color: '#4C2818'/);
   assert.match(chapters,/fontSize:24/);
-  assert.match(chapter,/bibleContent\.getChapter\(bookId,currentChapterNumber,translationCode\)/);
+  assert.match(chapter,/bibleContent\.getChapter\(bookId,\s*currentChapterNumber,\s*translationCode\)/);
   assert.doesNotMatch(chapter,/text:documentShareText\(documentData\),\s*screen:'BibleChapter'/);
   assert.match(chapter,/translationCode\},/);
 

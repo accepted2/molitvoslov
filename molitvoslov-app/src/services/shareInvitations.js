@@ -17,8 +17,9 @@ const inviteUrl = token =>
   API_BASE_URL+'/api/share/?invite='+encodeURIComponent(token);
 
 export const fetchSharedInvitation = async token => {
-  const response=await authenticatedFetch(
-    '/api/shared/'+encodeURIComponent(token)+'/');
+  // Any holder of the public sharing link can preview its snapshot.
+  // Importing a copy still requires a destination account.
+  const response=await fetch(API_BASE_URL+'/api/shared/'+encodeURIComponent(token)+'/');
   if(!response.ok)return readableError(response);
   return response.json();
 };
@@ -51,20 +52,6 @@ const createInvite = async (kind,rest) => {
   return response.json();
 };
 
-const promptPrivate=(title,action)=>new Promise(resolve=>{
-  showShareFeedback({
-    title:'Поделиться личным содержимым',
-    message:'Вы создадите временную ссылку на отдельную копию "'+
-      String(title||'').slice(0,70)+
-      '". Получатель сможет добавить её себе. Ссылка действует 7 дней. '+
-      'Фотографии передаются только при создании отдельной копии.',
-    cancelLabel:'Отмена',
-    confirmLabel:'Создать ссылку',
-    onConfirm:()=>resolve(true),
-    onCancel:()=>resolve(false),
-  });
-}).then(ok=>ok?action():false);
-
 const shareAsText=async(title,text)=>{
   const message='☦ '+String(title||'Молитвослов')+'\n\n'+String(text||'');
   await new Promise(resolve=>setTimeout(resolve,160));
@@ -78,7 +65,7 @@ export const shareImportableContent=async({
   kind,title,text='',sourceSyncId,privateContent=false,fallbackText='',
 })=>{
   const token=await getApiToken();
-  const usableText=String(fallbackText||text||'').trim();
+  const usableText=kind==='quote'?String(fallbackText||text||'').trim():'';
   if(!token){
     showShareFeedback({
       title:'Для ссылки нужен аккаунт',
@@ -102,9 +89,8 @@ export const shareImportableContent=async({
       const url=inviteUrl(invite.token);
       const message=[
         '☦ '+String(title||invite.title||'Молитвослов'),
-        kind==='quote'?String(text).slice(0,1200):'Приглашение из приложения "Молитвослов".',
-        'Посмотреть и добавить себе:\n'+url,
-        'Ссылка действует 7 дней.',
+        kind==='quote'?String(text).slice(0,1200):'',
+        'Открыть и добавить себе:\n'+url,
       ].filter(Boolean).join('\n\n');
       hideShareFeedback();
       await new Promise(resolve=>setTimeout(resolve,160));
@@ -122,5 +108,6 @@ export const shareImportableContent=async({
       return false;
     }
   };
-  return privateContent?promptPrivate(title,send):send();
+  // A public link does not require approval from its owner after sharing.
+  return send();
 };

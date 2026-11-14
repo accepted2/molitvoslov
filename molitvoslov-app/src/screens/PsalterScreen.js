@@ -163,35 +163,21 @@ export default function PsalterScreen({navigation}) {
     }
   };
 
+  // A whole kathisma is a link, never an expensive text export.
   const shareKathisma = async (item) => {
     try {
-      const {data}=await api.get('kathismas/'+item.number+'/');
-      const psalms=data?.psalms||[];
-      const hasRussian=psalms.some(p=>(p.verses||[]).some(v=>!!v.russian));
-      const hasTraditional=psalms.some(p=>(p.verses||[]).some(v=>
-        !!v.church_slavonic_traditional));
       const storedMode=await getReaderLanguageModePreference({
         sourceType:'kathisma',sourceId:item.number,
       }).catch(()=>null);
-      const candidate=storedMode||
-        getReaderModeForAppLanguage(language,{hasRussian,hasTraditional});
-      const mode=['church','russian','traditional','both'].includes(candidate)
-        ? candidate:'church';
-      const text=kathismaTextForMode(data,mode);
-      if(!text.trim()){
-        showShareFeedback({title:'Текст пока недоступен',
-          message:'В выбранном языке нет текста этой кафизмы.'});
-        return;
-      }
+      const mode=['church','russian','traditional','both'].includes(storedMode)
+        ? storedMode : 'church';
       await shareContent({
         title:getLocalizedField(item,'title',language)||
           t('psalter.kathisma',{number:item.number}),
-        text,
-        screen:'Kathisma',
+        linkOnly:true,screen:'Kathisma',
         params:{kathismaNumber:item.number,readerMode:mode},
       });
     }catch(error){
-      console.warn('[psalter] share kathisma:',error?.message||error);
       showShareFeedback({title:'Не удалось поделиться',
         message:error?.message||'Попробуйте ещё раз.'});
     }

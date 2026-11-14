@@ -31,6 +31,9 @@ const VALID_MODES = [
 export const HoursReadingScreen = ({route, navigation}) => {
   const entry = getHoursEntry(route.params?.entryId);
   const entryId = entry?.id || null;
+  const anchorId=Number(route.params?.anchorId);
+  const linkFocusTarget=useMemo(() => Number.isInteger(anchorId)&&anchorId>0
+    ? {anchorType:'hours_row',anchorId} : null,[anchorId]);
   const insets = useSafeAreaInsets();
   const readerRef = useRef(null);
 
@@ -159,6 +162,7 @@ export const HoursReadingScreen = ({route, navigation}) => {
         <SelectableDocumentReader
           ref={readerRef}
           documentData={documentData}
+          focusTarget={linkFocusTarget}
           savedProgress={progressReady ? savedProgress : null}
           topContentInset={headerHeight}
           bottomContentInset={90}
@@ -185,7 +189,7 @@ export const HoursReadingScreen = ({route, navigation}) => {
       <ReaderAppearanceSheet
         onShare={() => shareContent({
           title:entry.title,
-          text:documentShareText(documentData),
+          linkOnly:true,
           screen:'HoursReading',params:{entryId},
         })}
         visible={appearanceVisible}

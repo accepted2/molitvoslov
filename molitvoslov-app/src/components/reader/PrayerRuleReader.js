@@ -374,6 +374,30 @@ const HTML_TEMPLATE = String.raw`
       touch-action:manipulation;
     }
     .prayer-share-action svg {pointer-events:none}
+    /* Left-side context menu for a single prayer. */
+    .section-header.has-prayer-share .prayer-title { padding-left: 43px; }
+    .prayer-actions-trigger {
+      position:absolute;left:0;top:50%;transform:translateY(-50%);
+      width:35px;height:35px;display:flex;align-items:center;justify-content:center;
+      border-radius:18px;border:1px solid var(--border);background:rgba(241,223,194,.96);
+      color:var(--secondary);font-size:27px;line-height:1;z-index:2;
+    }
+    .prayer-actions-menu {
+      display:none;position:absolute;left:0;top:calc(50% + 18px);
+      width:206px;padding:5px;border-radius:13px;background:#FFF4DE;
+      border:1px solid var(--border);box-shadow:0 6px 16px rgba(48,27,12,.22);z-index:30;
+    }
+    .prayer-actions-menu.is-open {display:flex;flex-direction:column;}
+    .prayer-actions-menu .favorite-action,
+    .prayer-actions-menu .prayer-share-action {
+      position:relative;top:auto;left:auto;transform:none;width:100%;height:43px;
+      display:flex;align-items:center;justify-content:flex-start;gap:10px;
+      padding:0 11px;border:0;border-radius:9px;background:transparent;
+      font-size:14px;font-weight:600;text-align:left;
+    }
+    .prayer-actions-menu .prayer-action-label { flex:1; }
+    .prayer-actions-menu .save-heart-icon,
+    .prayer-actions-menu .prayer-share-action svg {width:18px;height:18px;}
     .save-heart-icon {
       display: block;
       width: 19px;
@@ -1267,6 +1291,12 @@ const HTML_TEMPLATE = String.raw`
       button.replaceChildren(
         svg
       );
+      if (button.classList.contains('prayer-action-menu-save')) {
+        const label=document.createElement('span');
+        label.className='prayer-action-label';
+        label.textContent=active?'Убрать из избранного':'Добавить к себе';
+        button.appendChild(label);
+      }
 
       button.title =
         active
@@ -1303,6 +1333,10 @@ const HTML_TEMPLATE = String.raw`
         svg.appendChild(circle);
       });
       button.appendChild(svg);
+      const label=document.createElement('span');
+      label.className='prayer-action-label';
+      label.textContent='Поделиться';
+      button.appendChild(label);
       return button;
     };
 
@@ -3242,8 +3276,8 @@ const HTML_TEMPLATE = String.raw`
                   el(
                     'button',
                     wholeSaved
-                      ? 'favorite-action active'
-                      : 'favorite-action'
+                      ? 'favorite-action active prayer-action-menu-save'
+                      : 'favorite-action prayer-action-menu-save'
                   );
 
                 favorite.type =
@@ -3266,11 +3300,19 @@ const HTML_TEMPLATE = String.raw`
                       )
                     : '';
 
-                header.appendChild(
-                  favorite
-                );
+                const trigger=el('button','prayer-actions-trigger');
+                trigger.type='button';
+                trigger.dataset.itemId=String(item.id);
+                trigger.textContent='⋮';
+                trigger.title='Действия с молитвой';
+                trigger.setAttribute('aria-label',trigger.title);
+                const menu=el('div','prayer-actions-menu');
+                menu.dataset.itemId=String(item.id);
+                menu.appendChild(favorite);
+                menu.appendChild(makePrayerShareButton(item.id));
                 header.classList.add('has-prayer-share');
-                header.appendChild(makePrayerShareButton(item.id));
+                header.appendChild(trigger);
+                header.appendChild(menu);
               }
 
               wrapper.appendChild(
@@ -6413,8 +6455,20 @@ const HTML_TEMPLATE = String.raw`
     reader.addEventListener(
       'click',
       event => {
+        const actionsTrigger=event.target.closest('.prayer-actions-trigger');
+        if(actionsTrigger){
+          event.preventDefault();
+          event.stopPropagation();
+          const menu=actionsTrigger.parentElement.querySelector('.prayer-actions-menu');
+          const opening=!menu?.classList.contains('is-open');
+          document.querySelectorAll('.prayer-actions-menu.is-open').forEach(node=>
+            node.classList.remove('is-open'));
+          if(opening)menu?.classList.add('is-open');
+          return;
+        }
         const prayerShare=event.target.closest('.prayer-share-action');
         if(prayerShare){
+          prayerShare.closest('.prayer-actions-menu')?.classList.remove('is-open');
           event.preventDefault();
           event.stopPropagation();
           const itemId=Number(prayerShare.dataset.itemId);
@@ -6429,8 +6483,11 @@ const HTML_TEMPLATE = String.raw`
           );
 
         if (!favorite) {
+          document.querySelectorAll('.prayer-actions-menu.is-open').forEach(node=>
+            node.classList.remove('is-open'));
           return;
         }
+        favorite.closest('.prayer-actions-menu')?.classList.remove('is-open');
 
         event.preventDefault();
         event.stopPropagation();
@@ -6685,7 +6742,7 @@ const HTML_TEMPLATE = String.raw`
       const selected = (itemTextMap.get(state.active.itemId)||'')
         .slice(state.active.start,state.active.end).trim();
       if(!selected)return;
-      post({type:'share-selection',text:selected,
+      post({type:'share-selection',text:selected,itemId:state.active.itemId,
         itemTitle:itemTitleMap.get(state.active.itemId)||'Молитва'});
     });
 
@@ -8266,7 +8323,7 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
         await shareContent({
           title:message.itemTitle||rule.name||'Молитва',
           text:message.text,
-          screen:'PrayerRule',params:{slug:rule.slug},
+          screen:'PrayerRule',params:{slug:rule.slug,anchorId:message.itemId},
         });
       }
       return;
@@ -8400,7 +8457,7 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
         await shareContent({
           title:message.itemTitle||rule.name||'Молитва',
           text:message.text,
-          screen:'PrayerRule',params:{slug:rule.slug},
+          screen:'PrayerRule',params:{slug:rule.slug,anchorId:message.itemId},
         });
       }
       return;

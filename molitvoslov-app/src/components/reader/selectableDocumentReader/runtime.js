@@ -204,6 +204,18 @@ export const READER_RUNTIME = String.raw`
       container.appendChild( wrapper );
     };
     const expandedHoursAccordions = new Set();
+    const createReaderActionMenu = (saveAction, shareAction) => {
+      const wrapper=el('div','reader-action-container');
+      const trigger=el('button','reader-action-trigger','⋮');
+      trigger.type='button';
+      trigger.setAttribute('aria-label','Действия с текстом');
+      wrapper.appendChild(trigger);
+      const menu=el('div','reader-action-menu');
+      if(saveAction)menu.appendChild(saveAction);
+      if(shareAction)menu.appendChild(shareAction);
+      wrapper.appendChild(menu);
+      return wrapper;
+    };
     const renderDocument = () => {
       reader.classList.toggle('psalter-kathisma-reader',
         (DATA.document.sections || []).some(section => section.className === 'psalter-psalm-section'));
@@ -222,17 +234,24 @@ export const READER_RUNTIME = String.raw`
         if ( DATA.document.title ) {
           documentHeader.appendChild( titleEl( 'h1', 'rule-title', DATA.document.title ) );
         }
-        if ( DATA.document.action ) {
-          const action = el( 'button', DATA.document.action.active ? 'document-action active'
-                : 'document-action' );
-          action.type = 'button';
-          setSaveHeartIcon( action, !!DATA.document.action.active );
-          action.dataset.actionKey = DATA.document.action.key;
-          documentHeader.appendChild( action );
+        let documentSave=null;
+        if(DATA.document.action){
+          documentSave=el('button',DATA.document.action.active
+            ?'document-action active':'document-action');
+          documentSave.type='button';
+          setSaveHeartIcon(documentSave,!!DATA.document.action.active);
+          documentSave.dataset.actionKey=DATA.document.action.key;
         }
-        if(!DATA.document.embedded &&
-           !reader.classList.contains('psalter-kathisma-reader')) {
-          documentHeader.appendChild(createShareButton('document'));
+        if(!bookMode && !DATA.document.embedded &&
+           !reader.classList.contains('psalter-kathisma-reader')){
+          documentHeader.classList.add('has-reader-action-menu');
+          documentHeader.appendChild(createReaderActionMenu(
+            documentSave,createShareButton('document')));
+        }else{
+          if(documentSave)documentHeader.appendChild(documentSave);
+          if(!DATA.document.embedded &&
+             !reader.classList.contains('psalter-kathisma-reader'))
+            documentHeader.appendChild(createShareButton('document'));
         }
         reader.appendChild( documentHeader );
       }
@@ -284,17 +303,21 @@ export const READER_RUNTIME = String.raw`
             summary.setAttribute('aria-label', section.title);
             summary.addEventListener('click', event => event.stopPropagation());
             details.appendChild(summary);
-            if(section.action) {
-              const favorite=el('button',section.action.active
-                ? 'section-action active hours-accordion-save'
-                : 'section-action hours-accordion-save');
-              favorite.type='button';
-              favorite.dataset.actionKey=section.action.key;
-              setSaveHeartIcon(favorite,!!section.action.active);
-              details.appendChild(favorite);
+            let hoursSave=null;
+            if(section.action){
+              hoursSave=el('button',section.action.active
+                ?'section-action active hours-accordion-save'
+                :'section-action hours-accordion-save');
+              hoursSave.type='button';
+              hoursSave.dataset.actionKey=section.action.key;
+              setSaveHeartIcon(hoursSave,!!section.action.active);
             }
-            if(!DATA.document.embedded) {
-              details.appendChild(createShareButton('section',sectionIndex));
+            if(!DATA.document.embedded){
+              details.classList.add('has-reader-action-menu');
+              details.appendChild(createReaderActionMenu(
+                hoursSave,createShareButton('section',sectionIndex)));
+            }else if(hoursSave){
+              details.appendChild(hoursSave);
             }
             const content = el('div', 'hours-accordion-content');
             details.appendChild(content);
@@ -310,20 +333,27 @@ export const READER_RUNTIME = String.raw`
             if ( section.title ) {
               header.appendChild( titleEl( 'h2', 'prayer-title', section.title ) );
             }
-            if ( section.action && !psalmMenu ) {
-              const action = el( 'button', section.action.active ? 'section-action active' : 'section-action'
-                );
-              action.type = 'button';
-              setSaveHeartIcon( action, !!section.action.active );
-              action.dataset.actionKey = section.action.key;
-              header.appendChild( action );
+            let sectionSave=null;
+            if(section.action && !psalmMenu){
+              sectionSave=el('button',section.action.active
+                ?'section-action active':'section-action');
+              sectionSave.type='button';
+              setSaveHeartIcon(sectionSave,!!section.action.active);
+              sectionSave.dataset.actionKey=section.action.key;
             }
             if(psalmMenu){
               header.classList.add('psalter-menu-header');
               header.appendChild(createPsalmMenuButton(section.progressAnchorId));
-            }else if(!DATA.document.embedded) {
-              header.classList.add('has-share-action');
-              header.appendChild(createShareButton('section',sectionIndex));
+            }else if(!bookMode && !DATA.document.embedded){
+              header.classList.add('has-reader-action-menu');
+              header.appendChild(createReaderActionMenu(
+                sectionSave,createShareButton('section',sectionIndex)));
+            }else{
+              if(sectionSave)header.appendChild(sectionSave);
+              if(!DATA.document.embedded){
+                header.classList.add('has-share-action');
+                header.appendChild(createShareButton('section',sectionIndex));
+              }
             }
             wrapper.appendChild( header );
           }
@@ -4370,6 +4400,21 @@ if (
         clearSelection();
       }, true );
     reader.addEventListener( 'click', event => {
+        const trigger=event.target.closest('.reader-action-trigger');
+        if(trigger){
+          event.preventDefault();
+          event.stopPropagation();
+          const menu=trigger.parentElement.querySelector('.reader-action-menu');
+          const opening=!menu?.classList.contains('is-open');
+          reader.querySelectorAll('.reader-action-menu.is-open').forEach(node=>
+            node.classList.remove('is-open'));
+          if(opening)menu?.classList.add('is-open');
+          return;
+        }
+        const actionMenu=event.target.closest('.reader-action-menu');
+        if(actionMenu)actionMenu.classList.remove('is-open');
+        else reader.querySelectorAll('.reader-action-menu.is-open').forEach(node=>
+          node.classList.remove('is-open'));
         const psalmMenu=event.target.closest('.psalter-psalm-menu');
         if(psalmMenu){
           event.preventDefault();

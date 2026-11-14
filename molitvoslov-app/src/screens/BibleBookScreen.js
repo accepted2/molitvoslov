@@ -363,7 +363,7 @@ export const BibleBookScreen = ({route, navigation}) => {
             title:displayName+' · '+ui('chapter',
               t('bible.chapter',{number:contextChapter.number}),
               {number:contextChapter.number}),
-            text:bibleChapterText(contextChapter,translationCode),
+            linkOnly:true,
             screen:'BibleChapter',params:{bookId:book.id,
               chapterNumber:contextChapter.number,translationCode},
           }) : null}

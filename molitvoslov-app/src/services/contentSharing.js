@@ -26,11 +26,14 @@ export const sharePathFor = (screen,params={}) => {
       return 'bible/'+id+'/'+chapter+'/' +
         (params.translationCode==='csl_traditional'?'csl_traditional':'rst')+suffix;
     case 'Akathist':
-      id=slug(params.akathistId || params.slug);
-      return id?'akathist/'+id:null;
-    case 'Canon':
-      id=slug(params.canonId || params.slug);
-      return id?'canon/'+id:null;
+    case 'Canon': {
+      id=slug(screen==='Akathist'?(params.akathistId || params.slug):
+        (params.canonId || params.slug));
+      if(!id)return null;
+      const anchor=Number(params.anchorId);
+      return (screen==='Akathist'?'akathist/':'canon/')+id+
+        (Number.isInteger(anchor)&&anchor>0&&anchor<=999999999?'/'+anchor:'');
+    }
     case 'Kathisma':{
       chapter=Number(params.kathismaNumber);
       if(!Number.isInteger(chapter)||chapter<1||chapter>20)return null;
@@ -40,9 +43,17 @@ export const sharePathFor = (screen,params={}) => {
         ? params.readerMode:'church';
       return 'kathisma/'+chapter+'/'+psalm+'/'+mode;
     }
-    case 'PrayerRule': id=slug(params.slug);return id?'prayer/'+id:null;
-    case 'Reader': id=slug(params.slug);return id?'reader/'+id:null;
-    case 'HoursReading':id=slug(params.entryId);return id?'hours/'+id:null;
+    case 'PrayerRule':
+    case 'Reader':
+    case 'HoursReading': {
+      id=slug(screen==='HoursReading'?params.entryId:params.slug);
+      if(!id)return null;
+      const prefix=screen==='PrayerRule'?'prayer/':
+        screen==='Reader'?'reader/':'hours/';
+      const anchor=Number(params.anchorId);
+      return prefix+id+(Number.isInteger(anchor)&&anchor>0&&anchor<=999999999
+        ?'/'+anchor:'');
+    }
     case 'SaintDetail':{
       id=slug(params.date);
       if(!id||!/^20\d\d-\d\d-\d\d$/.test(id))return null;
@@ -98,16 +109,22 @@ export const prayerRuleShareText = (rule,mode='church') =>
 export const isPrivateShareSource = source =>
   ['personal_prayer','personal_prayer_book','memorial','memorial_book']
     .includes(String(source||''));
-export const shareContent = async ({title,text,screen,params,privateContent=false,
-  confirmPrivate=false}) => {
+// linkOnly: share entire book/rule/akathist/kathisma by URL, not full text.
+// Individual verses, prayers and excerpts retain their text + source URL.
+export const shareContent = async ({title,text='',screen,params,privateContent=false,
+  confirmPrivate=false,linkOnly=false}) => {
   const url=privateContent?null:publicShareUrl(screen,params);
+  if(linkOnly && !url){
+    Alert.alert('Ссылка недоступна','Не удалось подготовить ссылку на этот раздел.');
+    return false;
+  }
   if(!String(text||'').trim()&&!url){
     Alert.alert('Нет содержимого','Выберите текст для отправки.');
     return false;
   }
   const send=async()=>{
     try{
-      await Share.share({message:shareMessage({title,text,url,privateContent}),
+      await Share.share({message:shareMessage({title,text:linkOnly?'':text,url,privateContent}),
         title:String(title||'Молитвослов')});
     }catch(error){
       Alert.alert('Не удалось поделиться',error?.message||'Попробуйте ещё раз.');
@@ -135,11 +152,13 @@ export const resolveSelectedShareTarget = config => {
         verseNumber:meta.verse_number,
       }};
     case 'akathist':
-      return {screen:'Akathist',params:{akathistId:config.sourceId,slug:meta.slug}};
+      return {screen:'Akathist',params:{akathistId:config.sourceId,slug:meta.slug,
+        anchorId:config.anchorId||meta.anchor_id}};
     case 'canon':
-      return {screen:'Canon',params:{canonId:config.sourceId,slug:meta.slug}};
+      return {screen:'Canon',params:{canonId:config.sourceId,slug:meta.slug,
+        anchorId:config.anchorId||meta.anchor_id}};
     case 'prayer_rule':
-      return {screen:'PrayerRule',params:{slug:meta.slug}};
+      return {screen:'PrayerRule',params:{slug:meta.slug,anchorId:config.anchorId||meta.anchor_id}};
     case 'text':
       return {screen:'Reader',params:{slug:meta.slug}};
     case 'psalter':
@@ -151,7 +170,8 @@ export const resolveSelectedShareTarget = config => {
           }}
         : {screen:'Psalter',params:{}};
     case 'hours':
-      return {screen:'HoursReading',params:{entryId:meta.entry_id||meta.entryId}};
+      return {screen:'HoursReading',params:{entryId:meta.entry_id||meta.entryId,
+        anchorId:config.anchorId||meta.anchor_id}};
     case 'calendar':
       return {screen:'SaintDetail',params:{
         date:meta.date,focusSection:meta.section,feastUid:meta.feast_uid||meta.feast_id,

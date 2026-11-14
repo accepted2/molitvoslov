@@ -23,6 +23,7 @@ try {
       "test_vertical_actions_calendar_favorites_20261113.js",
       "test_calendar_public_share_20261113.js",
       "test_saint_shared_link_recovery_20261113.js",
+      "test_unified_share_actions_20261114.js",
       "test_share_bible_saint_photo_20261113.js",
       "test_shared_content_links_20261113.js",
       "test_dual_share_release_20261113.js",
