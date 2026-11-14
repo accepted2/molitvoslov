@@ -215,6 +215,58 @@ class SharedContentTests(APITestCase):
         self.assertFalse(SharedContentImport.objects.filter(
             recipient=self.recipient).exists())
 
+    @patch("api.shared_invitations.download_bytes",return_value=b"private-image")
+    def test_anonymous_photo_preview_requires_live_token(self, download):
+        token=self.make_share("memorial",source_sync_id=str(self.memorial.sync_id))
+        self.client.force_authenticate(user=None)
+        response=self.client.get(reverse("shared-photo",args=[token,0]))
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.content,b"private-image")
+        self.assertEqual(response["Content-Type"],"image/jpeg")
+        self.assertEqual(response["Cache-Control"],"no-store")
+        self.assertNotIn(b"private/owner",response.content)
+        download.assert_called_once()
+        self.assertEqual(download.call_args.args[0],
+                         "private/owner-memorial-photo.jpg")
+        self.assertEqual(
+            self.client.get(reverse("shared-photo",args=[token,1])).status_code,
+            404,
+        )
+        prayer_token=self.make_share(
+            "prayerbook",source_sync_id=str(self.book.sync_id))
+        self.client.force_authenticate(user=None)
+        self.assertEqual(
+            self.client.get(reverse("shared-photo",args=[prayer_token,1])).status_code,
+            200,
+        )
+        self.client.force_authenticate(user=self.owner)
+        self.assertEqual(
+            self.client.post(reverse("shared-revoke",args=[token])).status_code,
+            204,
+        )
+        self.client.force_authenticate(user=None)
+        self.assertEqual(
+            self.client.get(reverse("shared-photo",args=[token,0])).status_code,
+            404,
+        )
+
+    @patch("api.shared_invitations.upload_bytes")
+    @patch("api.shared_invitations.download_bytes",return_value=b"private-image")
+    def test_memorial_and_prayerbook_add_to_me_is_idempotent(self, download, upload):
+        for kind, source, model in (
+            ("memorial",self.memorial,MemorialBook),
+            ("prayerbook",self.book,PersonalPrayerBook),
+        ):
+            token=self.make_share(kind,source_sync_id=str(source.sync_id))
+            self.client.force_authenticate(user=self.recipient)
+            first=self.client.post(reverse("shared-import",args=[token]))
+            self.assertEqual(first.status_code,201,first.data)
+            second=self.client.post(reverse("shared-import",args=[token]))
+            self.assertEqual(second.status_code,200,second.data)
+            self.assertTrue(second.data["already_imported"])
+            self.assertEqual(first.data["sync_id"],second.data["sync_id"])
+            self.assertEqual(model.objects.filter(user=self.recipient).count(),1)
+
     def test_cannot_share_another_persons_private_book(self):
         self.client.force_authenticate(user=self.stranger)
         for kind,sync_id in [
