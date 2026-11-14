@@ -31,7 +31,8 @@ jobs:
           node tools/test_hours_local_first_dropdown_actions_20261114.js
           node tools/test_hours_first_hour_editorial.js
           node tools/test_hours_first_hour_russian.js
-          node tools/test_hours_first_hour_traditional.js
+          node tools/test_first_hour_traditional_text.js
+          node tools/test_first_hour_traditional_rubrics.js
       - name: Install Expo dependencies
         working-directory: molitvoslov-app
         run: |
