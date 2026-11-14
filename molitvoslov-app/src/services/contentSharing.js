@@ -9,6 +9,10 @@ const slug = value => {
   return s && s.length<=120 && /^[\p{L}\p{N}._-]+$/u.test(s)
     ? encodeURIComponent(s) : null;
 };
+const sectionSuffix = value => {
+  const id=Number(value);
+  return Number.isInteger(id)&&id>=1&&id<=999999999?'/'+id:'';
+};
 export const sharePathFor = (screen,params={}) => {
   let id,chapter;
   switch(screen){
@@ -27,10 +31,10 @@ export const sharePathFor = (screen,params={}) => {
         (params.translationCode==='csl_traditional'?'csl_traditional':'rst')+suffix;
     case 'Akathist':
       id=slug(params.akathistId || params.slug);
-      return id?'akathist/'+id:null;
+      return id?'akathist/'+id+sectionSuffix(params.sectionAnchor):null;
     case 'Canon':
       id=slug(params.canonId || params.slug);
-      return id?'canon/'+id:null;
+      return id?'canon/'+id+sectionSuffix(params.sectionAnchor):null;
     case 'Kathisma':{
       chapter=Number(params.kathismaNumber);
       if(!Number.isInteger(chapter)||chapter<1||chapter>20)return null;
@@ -42,7 +46,8 @@ export const sharePathFor = (screen,params={}) => {
     }
     case 'PrayerRule': id=slug(params.slug);return id?'prayer/'+id:null;
     case 'Reader': id=slug(params.slug);return id?'reader/'+id:null;
-    case 'HoursReading':id=slug(params.entryId);return id?'hours/'+id:null;
+    case 'HoursReading':id=slug(params.entryId);
+      return id?'hours/'+id+sectionSuffix(params.sectionAnchor):null;
     case 'SaintDetail':{
       id=slug(params.date);
       if(!id||!/^20\d\d-\d\d-\d\d$/.test(id))return null;
@@ -55,7 +60,7 @@ export const sharePathFor = (screen,params={}) => {
       const categoryId=Number(params.categoryId);
       const categorySlug=slug(params.categorySlug);
       return Number.isInteger(categoryId)&&categoryId>=1&&categoryId<=999999&&categorySlug
-        ? 'category/'+categoryId+'/'+categorySlug : null;
+        ? 'category/'+categoryId+'/'+categorySlug+sectionSuffix(params.sectionAnchor) : null;
     }
     case 'Psalter':return 'psalter';
     default:return null;
