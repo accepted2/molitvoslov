@@ -37,7 +37,11 @@ import {resolveReaderAppearance} from '../services/scopedReaderAppearance';
 
 export const BookScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
-  const {categoryId, categorySlug, categoryName, focusTarget = null} = route.params;
+  const {categoryId, categorySlug, categoryName,
+    focusTarget: originalFocusTarget = null, sectionAnchor = null} = route.params;
+  const focusTarget = originalFocusTarget ||
+    (Number(sectionAnchor)>0 ? {anchor_type:'reader_section',
+      anchor_id:Number(sectionAnchor),metadata:{section_id:Number(sectionAnchor)}} : null);
 
   const insets = useSafeAreaInsets();
 
