@@ -98,16 +98,29 @@ export const prayerRuleShareText = (rule,mode='church') =>
 export const isPrivateShareSource = source =>
   ['personal_prayer','personal_prayer_book','memorial','memorial_book']
     .includes(String(source||''));
+// Large, complete liturgical documents are links, never pasted into a
+// messenger. A single prayer, psalm, hymn, verse or selected excerpt includes
+// its text and source link. `scope` makes this explicit for nested readers.
+export const WHOLE_SHARE_SCREENS = Object.freeze([
+  'BibleBook', 'BibleChapter', 'Akathist', 'Canon', 'Kathisma',
+  'Psalter', 'PrayerRule', 'HoursReading', 'Book',
+]);
+export const shareTextForScope = ({text,screen,scope}) => {
+  if(scope==='fragment')return String(text||'');
+  if(scope==='whole' || WHOLE_SHARE_SCREENS.includes(screen))return '';
+  return String(text||'');
+};
 export const shareContent = async ({title,text,screen,params,privateContent=false,
-  confirmPrivate=false}) => {
+  confirmPrivate=false,scope=null}) => {
   const url=privateContent?null:publicShareUrl(screen,params);
-  if(!String(text||'').trim()&&!url){
+  const sharedText=shareTextForScope({text,screen,scope});
+  if(!sharedText.trim()&&!url){
     Alert.alert('Нет содержимого','Выберите текст для отправки.');
     return false;
   }
   const send=async()=>{
     try{
-      await Share.share({message:shareMessage({title,text,url,privateContent}),
+      await Share.share({message:shareMessage({title,text:sharedText,url,privateContent}),
         title:String(title||'Молитвослов')});
     }catch(error){
       Alert.alert('Не удалось поделиться',error?.message||'Попробуйте ещё раз.');
@@ -187,7 +200,7 @@ export const shareSavedItem = item => {
   if(String(item?.text||'').trim() && !isPrivateShareSource(type)){
     return shareContent({
       title:item?.item_title||item?.source_title||'Цитата',
-      text:item.text,screen,params,
+      text:item.text,screen,params,scope:'fragment',
     });
   }
   if(String(item?.text||'').trim()){
