@@ -33,6 +33,7 @@ jobs:
         run: |
           python -m compileall -q api
           python manage.py check
+          python manage.py shell -c "from django.urls import resolve; assert resolve('/api/shared/create/').url_name == 'shared-create'; assert resolve('/api/shared/test-token/import/').url_name == 'shared-import'; assert resolve('/api/shared/test-token/photo/0/').url_name == 'shared-photo'"
           python manage.py makemigrations --check --dry-run
           python manage.py migrate --noinput
           python manage.py test api.test_shared_content --verbosity 2
