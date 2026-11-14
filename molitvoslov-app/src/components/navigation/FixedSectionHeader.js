@@ -42,7 +42,8 @@ export const FixedSectionHeader = ({
   const safeTop = compactReading ? Math.max(insets.top, topInset, 0) : topInset;
   const contentTop = safeTop + (compactReading ? 4 : 0);
   const headerHeight = contentTop + (compactReading ? 44 : (minimal ? 45 : 36)) + extraTitleHeight;
-  const gradientHeight = Math.max(headerHeight + 14, safeTop + 74);
+  // Fade begins near the controls rather than covering another large block of text.
+  const gradientHeight = Math.max(headerHeight + 7, safeTop + 57);
   useEffect(() => {
     onHeaderHeightChange?.(headerHeight);
   }, [headerHeight, onHeaderHeightChange]);
@@ -65,14 +66,21 @@ export const FixedSectionHeader = ({
       {/* Background treatments belong to reading screens only. Ordinary
           category menus must keep their own artwork visible in the header. */}
       {!minimal && compactReading && (
-        <LinearGradient
+        <Animated.View
           pointerEvents="none"
-          colors={chrome.gradient}
-          locations={[0, 0.43, 0.72, 1]}
-          start={{x: 0.5, y: 0}}
-          end={{x: 0.5, y: 1}}
-          style={[styles.fixedGradient, {height: gradientHeight}]}
-        />
+          style={[styles.fixedGradient, {height: gradientHeight}, {
+            opacity: visibility.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
+          }]}
+        >
+          <LinearGradient
+            pointerEvents="none"
+            colors={chrome.gradient}
+            locations={[0, 0.23, 0.55, 1]}
+            start={{x: 0.5, y: 0}}
+            end={{x: 0.5, y: 1}}
+            style={StyleSheet.absoluteFillObject}
+          />
+        </Animated.View>
       )}
 
       <Animated.View
@@ -262,7 +270,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    // Independent from header animation. Never blocks reader scroll/taps.
+    // Follows the header visibility and never blocks reader scroll/taps.
     zIndex: 999,
     elevation: 19,
   },
