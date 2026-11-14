@@ -270,7 +270,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
       <ReaderAppearanceSheet
         onShare={() => shareContent({
           title:getLocalizedField(rule,'name',language)||'Молитвенное правило',
-          text:prayerRuleShareText(rule,viewMode),
+          linkOnly:true,
           screen:'PrayerRule',params:{slug},
         })}
         visible={appearanceVisible}
