@@ -899,8 +899,6 @@ export const BibleChapterScreen = ({route, navigation}) => {
         showMenu
         onMenuPress={openReaderMenu}
         dark={readerTheme === 'night'}
-        compactReading
-        gradientColor={readerPalette.background}
       />
 
       {!!bookmarkFeedback && (
