@@ -354,7 +354,57 @@ const HTML_TEMPLATE = String.raw`
     }
 
     .section-header.has-prayer-share .prayer-title {
-      padding-left: 80px;
+      padding-left: 48px;
+    }
+    .prayer-actions-wrap {
+      position:absolute;
+      top:50%;
+      left:0;
+      width:36px;
+      height:36px;
+      z-index:30;
+      transform:translateY(-50%);
+    }
+    .prayer-actions-trigger {
+      display:flex;
+      width:36px;
+      height:36px;
+      padding:0;
+      align-items:center;
+      justify-content:center;
+      border:1px solid var(--border);
+      border-radius:18px;
+      background:var(--surface);
+      color:var(--secondary);
+      font-family:Georgia,serif;
+      font-size:24px;
+      touch-action:manipulation;
+    }
+    .prayer-actions-popover {
+      position:absolute;
+      top:38px;
+      left:0;
+      z-index:90;
+      width:190px;
+      padding:5px;
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:12px;
+      box-shadow:0 6px 20px rgba(40,27,19,.20);
+    }
+    .prayer-actions-popover[hidden] {display:none !important;}
+    .prayer-actions-popover button {
+      display:block;
+      min-height:42px;
+      width:100%;
+      padding:8px 11px;
+      border:0;
+      border-radius:8px;
+      background:transparent;
+      color:var(--text);
+      text-align:left;
+      font-size:14px;
+      font-family:system-ui,sans-serif;
     }
     .prayer-share-action {
       position:absolute;
@@ -1306,6 +1356,37 @@ const HTML_TEMPLATE = String.raw`
       return button;
     };
 
+    const makePrayerActionsMenu = (itemId, saved) => {
+      const wrap=el('div','prayer-actions-wrap');
+      const trigger=el('button','prayer-actions-trigger','⋮');
+      trigger.type='button';
+      trigger.setAttribute('aria-label','Сохранить или поделиться молитвой');
+      trigger.setAttribute('aria-expanded','false');
+      const menu=el('div','prayer-actions-popover');
+      menu.hidden=true;
+      const save=el('button','prayer-menu-save',
+        saved?'Убрать из избранного':'Сохранить себе');
+      save.type='button';
+      save.dataset.itemId=String(itemId);
+      save.dataset.savedItemId=saved?String(saved.id):'';
+      const share=el('button','prayer-menu-share','Поделиться');
+      share.type='button';
+      share.dataset.itemId=String(itemId);
+      menu.appendChild(save);
+      menu.appendChild(share);
+      wrap.appendChild(trigger);
+      wrap.appendChild(menu);
+      return wrap;
+    };
+    const closePrayerActions = (except = null) => {
+      reader.querySelectorAll('.prayer-actions-wrap').forEach(wrap => {
+        if(wrap===except)return;
+        const menu=wrap.querySelector('.prayer-actions-popover');
+        const trigger=wrap.querySelector('.prayer-actions-trigger');
+        if(menu)menu.hidden=true;
+        if(trigger)trigger.setAttribute('aria-expanded','false');
+      });
+    };
     const titleEl = (
       tag,
       className,
@@ -3235,42 +3316,9 @@ const HTML_TEMPLATE = String.raw`
                 );
               }
 
-              if (
-                allowWholeSave
-              ) {
-                const favorite =
-                  el(
-                    'button',
-                    wholeSaved
-                      ? 'favorite-action active'
-                      : 'favorite-action'
-                  );
-
-                favorite.type =
-                  'button';
-
-                setSaveHeartIcon(
-                  favorite,
-                  !!wholeSaved
-                );
-
-                favorite.dataset.itemId =
-                  String(
-                    item.id
-                  );
-
-                favorite.dataset.savedItemId =
-                  wholeSaved
-                    ? String(
-                        wholeSaved.id
-                      )
-                    : '';
-
-                header.appendChild(
-                  favorite
-                );
+              if (allowWholeSave) {
                 header.classList.add('has-prayer-share');
-                header.appendChild(makePrayerShareButton(item.id));
+                header.appendChild(makePrayerActionsMenu(item.id, wholeSaved));
               }
 
               wrapper.appendChild(
@@ -6413,6 +6461,41 @@ const HTML_TEMPLATE = String.raw`
     reader.addEventListener(
       'click',
       event => {
+        const trigger=event.target.closest('.prayer-actions-trigger');
+        if(trigger){
+          event.preventDefault();
+          event.stopPropagation();
+          const wrap=trigger.closest('.prayer-actions-wrap');
+          const menu=wrap.querySelector('.prayer-actions-popover');
+          const willOpen=menu.hidden;
+          closePrayerActions();
+          menu.hidden=!willOpen;
+          trigger.setAttribute('aria-expanded',String(willOpen));
+          return;
+        }
+        const save=event.target.closest('.prayer-menu-save');
+        if(save){
+          event.preventDefault();
+          event.stopPropagation();
+          closePrayerActions();
+          post({type:'whole-prayer-action',
+            itemId:Number(save.dataset.itemId),
+            savedItemId:save.dataset.savedItemId?
+              Number(save.dataset.savedItemId):null});
+          return;
+        }
+        const share=event.target.closest('.prayer-menu-share');
+        if(share){
+          event.preventDefault();
+          event.stopPropagation();
+          closePrayerActions();
+          const itemId=Number(share.dataset.itemId);
+          post({type:'share-prayer',itemId,
+            itemTitle:itemTitleMap.get(itemId)||DATA.rule.name||'Молитва',
+            text:itemTextMap.get(itemId)||''});
+          return;
+        }
+        closePrayerActions();
         const prayerShare=event.target.closest('.prayer-share-action');
         if(prayerShare){
           event.preventDefault();
@@ -7816,26 +7899,28 @@ const HTML_TEMPLATE = String.raw`
               '"]'
             );
 
-          if (!button) {
+          const menuButton = document.querySelector(
+            '.prayer-menu-save[data-item-id="' + itemId + '"]'
+          );
+          if (menuButton) {
+            menuButton.dataset.savedItemId = savedItemId ? String(savedItemId) : '';
+            menuButton.textContent = active ? 'Убрать из избранного' : 'Сохранить себе';
+          }
+          if (!button && !menuButton) {
             return;
           }
 
-          button.dataset.savedItemId =
+          if(button)button.dataset.savedItemId =
             savedItemId
               ? String(
                   savedItemId
                 )
               : '';
 
-          button.classList.toggle(
-            'active',
-            !!active
-          );
-
-          setSaveHeartIcon(
-            button,
-            !!active
-          );
+          if(button){
+            button.classList.toggle('active',!!active);
+            setSaveHeartIcon(button,!!active);
+          }
 
           document
             .querySelector(
@@ -8266,7 +8351,8 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
         await shareContent({
           title:message.itemTitle||rule.name||'Молитва',
           text:message.text,
-          screen:'PrayerRule',params:{slug:rule.slug},
+          screen:'PrayerRule',params:{slug:rule.slug,prayerItemId:message.itemId},
+          scope:'fragment',
         });
       }
       return;
@@ -8400,7 +8486,8 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
         await shareContent({
           title:message.itemTitle||rule.name||'Молитва',
           text:message.text,
-          screen:'PrayerRule',params:{slug:rule.slug},
+          screen:'PrayerRule',params:{slug:rule.slug,prayerItemId:message.itemId},
+          scope:'fragment',
         });
       }
       return;
