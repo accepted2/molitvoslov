@@ -49,13 +49,20 @@ assert.ok(styles.lastIndexOf('body.book-mode.book-custom::after') >
   styles.lastIndexOf('body.book-mode.book-night::after'),
   'Custom background must override the book-night edge shadow');
 
-// Ensure header and actual WebView use the same local colour, not a stale preset.
+// The reading fade stays fixed even while the header animates out of view.
+// It reaches only 4px below the controls and blends softly into the page.
 const header=read('src/components/navigation/FixedSectionHeader.js');
-assert.match(header, /gradientHeight = Math\.max\(headerHeight \+ 7, safeTop \+ 57\)/);
-assert.match(header, /<Animated\.View[\s\S]*?opacity: visibility\.interpolate/);
-assert.match(header, /locations=\{\[0, 0\.23, 0\.55, 1\]\}/);
+assert.match(header, /gradientHeight = headerHeight \+ 4;/);
+assert.match(header, /gradientFadeStart = Math\.max\(0, \(headerHeight - 4\) \/ gradientHeight\)/);
+assert.match(header, /locations=\{\[0, gradientFadeStart, gradientFadeMiddle, 1\]\}/);
+assert.match(header, /style=\{\[styles\.fixedGradient, \{height: gradientHeight\}\]\}/);
+assert.doesNotMatch(header, /styles\.fixedGradient[\s\S]{0,120}opacity: visibility\.interpolate/);
 const bible=read('src/screens/BibleChapterScreen.js');
-assert.match(bible, /gradientColor=\{readerPalette\.background\}/);
+// The Bible retains its original, non-compact book header.
+const bibleHeader=bible.split('<FixedSectionHeader')[1]?.split('/>')[0] || '';
+assert.match(bibleHeader, /dark=\{readerTheme === 'night'\}/);
+assert.doesNotMatch(bibleHeader, /compactReading/);
+assert.doesNotMatch(bibleHeader, /gradientColor/);
 assert.match(bible, /initialAppearance=\{appearance\}/);
 assert.match(bible, /!appearanceReady/);
 const rules=read('src/screens/PrayerRuleScreen.js');
@@ -68,4 +75,4 @@ const appearance=read('src/services/scopedReaderAppearance.js');
 assert.match(appearance, /body:not\(\.book-mode\) \{background:/);
 assert.doesNotMatch(appearance, /"var css='body \{background:/);
 
-console.log('PASS: custom Bible palette seeded before paint; page stable; short theme-matched gradient; prayer-rule scoped theme');
+console.log('PASS: Bible palette stays stable; original Bible header preserved; top fade persists and extends only 4px below prayer header');
