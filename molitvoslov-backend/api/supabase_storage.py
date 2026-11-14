@@ -21,7 +21,7 @@ def _storage_config():
     return base_url, secret_key, bucket
 
 
-def _request(method, path, data=None, content_type=None, extra_headers=None):
+def _request(method, path, data=None, content_type=None, extra_headers=None, max_bytes=None):
     base_url, secret_key, _bucket = _storage_config()
 
     headers = {
@@ -50,7 +50,9 @@ def _request(method, path, data=None, content_type=None, extra_headers=None):
 
     try:
         with urllib_request.urlopen(request, timeout=30) as response:
-            raw = response.read()
+            raw = response.read(max_bytes + 1) if max_bytes is not None else response.read()
+            if max_bytes is not None and len(raw) > max_bytes:
+                raise ValueError("Фото превышает допустимый размер для передачи.")
 
             if not raw:
                 return {}
@@ -137,3 +139,21 @@ def create_signed_download_url(storage_path, expires_in=3600):
         signed_url = "/" + signed_url
 
     return f"{base_url}/storage/v1{signed_url}"
+
+
+def download_bytes(storage_path, max_bytes=4 * 1024 * 1024):
+    """Read a private object via the server's Storage credential.
+
+    No Supabase signed URL is disclosed to the invitation recipient.
+    Limit response bytes to avoid unbounded RAM use when importing.
+    """
+    _base_url, _secret_key, bucket = _storage_config()
+    encoded_bucket = urllib_parse.quote(bucket, safe="")
+    encoded_path = urllib_parse.quote(storage_path, safe="/")
+    contents = _request(
+        "GET", f"/object/authenticated/{encoded_bucket}/{encoded_path}",
+        max_bytes=max_bytes,
+    )
+    if not isinstance(contents, bytes):
+        raise RuntimeError("Фото не удалось прочитать из облачного хранилища.")
+    return contents
