@@ -10,8 +10,13 @@ const json=rel=>JSON.parse(read(rel));
 
 const traditional=json('src/data/hoursFirstHourTraditional.json');
 const base=json('src/data/hoursTexts.json');
-assert.equal(Object.keys(base.entries).length,0,
-  'This test documents the missing imported local First Hour in Git');
+// A clean Git checkout may have empty imports; the user's proven working
+// Android checkout contains the full 20 local services. Support BOTH.
+assert.ok(base.entries && typeof base.entries === 'object');
+const existingEntries=Object.keys(base.entries);
+assert.ok(existingEntries.length === 0 ||
+  (existingEntries.length >= 20 && existingEntries.includes('ordinary-1')),
+  'Hours must be either the clean bundled fallback or the original local library');
 
 // Run the ACTUAL fallback functions with the published local corpora.
 const source=read('src/services/hoursDocument.js');
