@@ -443,7 +443,7 @@ export const READER_RUNTIME = String.raw`
                 String(block.text||'').trim().length>=45);
               if(!DATA.document.embedded && hoursPrayer &&
                   ['prayer','conditional'].includes(section.sectionKind)){
-                rowNode.classList.add('hours-prayer-action-row');
+                rowNode.classList.add('hours-prayer-action-row', 'has-reader-action-menu');
                 rowNode.appendChild(createHoursPrayerRowMenu(hoursPrayer.id));
               }
               if ((row.blocks || []).some(block => block.anchorType === 'psalm_text')) {
