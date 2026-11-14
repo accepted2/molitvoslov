@@ -448,9 +448,6 @@ export const READER_STYLES = String.raw`
     .rule-item.hours-section.hours-collapsible .hours-accordion {
       position:relative;
     }
-    .rule-item.hours-section.hours-collapsible .hours-accordion-toggle {
-      padding-right:82px;
-    }
 
     .save-heart-icon {
       display: block;
