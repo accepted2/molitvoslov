@@ -96,9 +96,7 @@ export const MemorialScreen = ({navigation}) => {
     kind:'memorial',
     sourceSyncId:book.sync_id,
     title:book.title||'Помянник',
-    fallbackText:['О здравии:',...(book.health_names||[]),
-      '', 'О упокоении:',...(book.repose_names||[])].join('\n'),
-    privateContent:true,
+    // Names and photos stay in the transfer snapshot, not in Telegram text.
   });
 
   const renderBook = ({item}) => {
@@ -146,12 +144,12 @@ export const MemorialScreen = ({navigation}) => {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={'Поделиться помянником ' + (item.title||'')}
-          accessibilityHint="Создать защищённую ссылку для передачи помянника"
-          onPress={() => shareMemorial(item)}
+          accessibilityHint="Открыть меню действий с помянником"
+          onPress={() => setContextItem(item)}
           hitSlop={5}
           style={({pressed})=>[styles.shareButton,pressed && styles.pressed]}
         >
-          <Ionicons name="share-social-outline" size={20} color="#765238"/>
+          <Ionicons name="ellipsis-vertical" size={20} color="#765238"/>
         </Pressable>
       </View>
     );
