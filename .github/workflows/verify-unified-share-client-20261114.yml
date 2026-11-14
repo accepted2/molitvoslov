@@ -1,0 +1,42 @@
+name: Verify unified document sharing and Bible font
+
+on:
+  pull_request:
+    branches:
+      - fix/saint-share-link-content-20261113
+    paths:
+      - 'molitvoslov-app/**'
+      - '.github/workflows/verify-unified-share-client-20261114.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-android-js:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run sharing and deep-link regression suite
+        working-directory: molitvoslov-app
+        run: |
+          node tools/test_unified_share_actions_20261114.js
+          node tools/test_android_app_links_20261113.js
+          node tools/test_dual_share_release_20261113.js
+          node tools/test_shared_content_links_20261113.js
+          node tools/test_crossrefs_private_list_sharing_20261113.js
+          node tools/test_bible_lists_actions_20261113.js
+          node tools/test_share_bible_saint_photo_20261113.js
+          node tools/test_calendar_public_share_20261113.js
+          node tools/test_psalter_context_share_font_20261113.js
+          node tools/test_saint_shared_link_recovery_20261113.js
+      - name: Install Expo dependencies
+        working-directory: molitvoslov-app
+        run: npm ci
+      - name: Verify full Android JavaScript bundle (no native build)
+        working-directory: molitvoslov-app
+        run: npx expo export --platform android --output-dir /tmp/molitvoslov-unified-share
