@@ -148,6 +148,32 @@ def _memorial(request):
     }
 
 
+def _prayer_presentation(prayer):
+    """Preserve church/Russian reading style without sharing private origin IDs."""
+    raw=prayer.origin_data if isinstance(prayer.origin_data,dict) else {}
+    metadata=raw.get("metadata")
+    if not isinstance(metadata,dict):
+        metadata={}
+    allowed=("language","section","feast_title","search_source")
+    presentation={
+        key:raw[key][:255] for key in allowed
+        if isinstance(raw.get(key),str)
+    }
+    safe_meta={
+        key:metadata[key][:255] for key in ("language","section","feast_title")
+        if isinstance(metadata.get(key),str)
+    }
+    if safe_meta:
+        presentation["metadata"]=safe_meta
+    if raw.get("auto_generated_title") is True:
+        presentation["auto_generated_title"]=True
+    return {
+        "origin_type":prayer.origin_type
+            if prayer.origin_type in ("custom","saved","library") else "custom",
+        "origin_data":presentation,
+    }
+
+
 def _prayerbook(request):
     sync_id = _source_uuid(request)
     book = get_object_or_404(
@@ -177,7 +203,10 @@ def _prayerbook(request):
         total_photos += len(images)
         if total_photos > MAX_SHARED_PHOTOS:
             raise ValueError("Для одной ссылки допускается не более 12 фотографий.")
-        prayers.append({"title": title, "text": body, "photos": images})
+        prayers.append({
+            "title":title, "text":body, "photos":images,
+            **_prayer_presentation(prayer),
+        })
     return _clean_title(book.title, "Мой молитвослов"), {
         "description": str(book.description or "")[:2000],
         "prayers": prayers,
@@ -347,8 +376,12 @@ def import_shared_invitation(request, token):
                 for number,source in enumerate(snap["prayers"]):
                     prayer=PersonalPrayer.objects.create(
                         user=request.user,title=source["title"],
-                        text=source["text"],origin_type="custom",
-                        origin_data={"shared_copy":True},
+                        text=source["text"],
+                        origin_type=source.get("origin_type","custom"),
+                        origin_data={
+                            **source.get("origin_data",{}),
+                            "shared_copy":True,
+                        },
                     )
                     PersonalPrayerBookItem.objects.create(
                         book=book,prayer=prayer,order=number,
