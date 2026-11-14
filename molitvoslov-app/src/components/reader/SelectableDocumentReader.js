@@ -348,6 +348,13 @@ const SelectableDocumentReader = forwardRef(function SelectableDocumentReader(
       const first=blocks.find(block=>block?.sourceType && block?.metadata)||
         blocks.find(block=>block?.sourceType);
       const target=first?resolveSelectedShareTarget(first):{};
+      if(!message.wholeDocument && target.params &&
+         ['Akathist','Canon','HoursReading','Book'].includes(target.screen)){
+        const anchor=Number(selected[0]?.progressAnchorId);
+        if(Number.isInteger(anchor)&&anchor>0){
+          target.params={...target.params,sectionAnchor:anchor};
+        }
+      }
       const title=message.wholeDocument
         ? (documentData.title||'Молитвослов')
         : (selected[0]?.title||first?.itemTitle||documentData.title||'Молитва');
