@@ -7,9 +7,9 @@ import {showShareFeedback,hideShareFeedback} from './shareFeedback';
 
 const readableError = async response => {
   const result=await response.json().catch(()=>({}));
-  const error=new Error(
-    response.status===404 ? 'Сервер ещё не поддерживает ссылки на получаемые материалы.'
-      : result?.detail || 'Ошибка сервера ('+response.status+')');
+  const error=new Error(result?.detail ||
+    (response.status===404 ? 'Сервер пока не поддерживает обмен по ссылке.'
+      : 'Ошибка сервера ('+response.status+')'));
   error.status=response.status;
   throw error;
 };
@@ -17,7 +17,9 @@ const inviteUrl = token =>
   API_BASE_URL+'/api/share/?invite='+encodeURIComponent(token);
 
 export const fetchSharedInvitation = async token => {
-  const response=await authenticatedFetch(
+  // Preview is public: anyone with the link can view the shared copy.
+  // Import still requires an account so it has a persistent owner.
+  const response=await fetch(API_BASE_URL+
     '/api/shared/'+encodeURIComponent(token)+'/');
   if(!response.ok)return readableError(response);
   return response.json();
@@ -56,7 +58,7 @@ const promptPrivate=(title,action)=>new Promise(resolve=>{
     title:'Поделиться личным содержимым',
     message:'Вы создадите временную ссылку на отдельную копию "'+
       String(title||'').slice(0,70)+
-      '". Получатель сможет добавить её себе. Ссылка действует 7 дней. '+
+      '". Получатель сможет добавить её себе по ссылке. '+
       'Фотографии передаются только при создании отдельной копии.',
     cancelLabel:'Отмена',
     confirmLabel:'Создать ссылку',
@@ -78,7 +80,8 @@ export const shareImportableContent=async({
   kind,title,text='',sourceSyncId,privateContent=false,fallbackText='',
 })=>{
   const token=await getApiToken();
-  const usableText=String(fallbackText||text||'').trim();
+  // Never fall back to dumping a complete prayerbook or memorial into Telegram.
+  const usableText=kind==='quote'?String(fallbackText||text||'').trim():'';
   if(!token){
     showShareFeedback({
       title:'Для ссылки нужен аккаунт',
@@ -92,7 +95,7 @@ export const shareImportableContent=async({
   }
   const send=async()=>{
     showShareFeedback({loading:true,title:'Подготавливаем ссылку',
-      message:'Создаём безопасную копию и ссылку для получателя...'});
+      message:'Создаём копию и ссылку для получателя...'});
     try{
       if(kind==='memorial')await syncMemorials();
       if(kind==='prayerbook')await syncPrayerBooks();
@@ -102,9 +105,9 @@ export const shareImportableContent=async({
       const url=inviteUrl(invite.token);
       const message=[
         '☦ '+String(title||invite.title||'Молитвослов'),
-        kind==='quote'?String(text).slice(0,1200):'Приглашение из приложения "Молитвослов".',
+        kind==='quote'?String(text).slice(0,1200):'',
         'Посмотреть и добавить себе:\n'+url,
-        'Ссылка действует 7 дней.',
+        invite.expires_at ? 'Ссылка действует до '+String(invite.expires_at).slice(0,10)+'.' : '',
       ].filter(Boolean).join('\n\n');
       hideShareFeedback();
       await new Promise(resolve=>setTimeout(resolve,160));
