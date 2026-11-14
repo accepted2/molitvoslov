@@ -58,6 +58,7 @@ try {
   Python @('.\tools\test_webp_lossless_20261113.py')
   Python @('.\tools\prepare_webp_lossless_20261113.py','--apply')
   Python @('.\tools\prepare_webp_lossless_20261113.py','--check')
+  Python @('.\tools\activate_webp_references_20261114.py')
   Python @('.\tools\verify_phone_webp_assets_20261114.py')
 
   Write-Host '[3/6] Verify reader fixes, sharing and offline bundle' -ForegroundColor Cyan
