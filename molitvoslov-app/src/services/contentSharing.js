@@ -98,16 +98,22 @@ export const prayerRuleShareText = (rule,mode='church') =>
 export const isPrivateShareSource = source =>
   ['personal_prayer','personal_prayer_book','memorial','memorial_book']
     .includes(String(source||''));
-export const shareContent = async ({title,text,screen,params,privateContent=false,
-  confirmPrivate=false}) => {
+// linkOnly: share entire book/rule/akathist/kathisma by URL, not full text.
+// Individual verses, prayers and excerpts retain their text + source URL.
+export const shareContent = async ({title,text='',screen,params,privateContent=false,
+  confirmPrivate=false,linkOnly=false}) => {
   const url=privateContent?null:publicShareUrl(screen,params);
+  if(linkOnly && !url){
+    Alert.alert('Ссылка недоступна','Не удалось подготовить ссылку на этот раздел.');
+    return false;
+  }
   if(!String(text||'').trim()&&!url){
     Alert.alert('Нет содержимого','Выберите текст для отправки.');
     return false;
   }
   const send=async()=>{
     try{
-      await Share.share({message:shareMessage({title,text,url,privateContent}),
+      await Share.share({message:shareMessage({title,text:linkOnly?'':text,url,privateContent}),
         title:String(title||'Молитвослов')});
     }catch(error){
       Alert.alert('Не удалось поделиться',error?.message||'Попробуйте ещё раз.');
