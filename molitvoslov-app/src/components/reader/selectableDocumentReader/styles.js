@@ -1506,6 +1506,16 @@ export const READER_STYLES = String.raw`
       box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.30);
     }
 
+    /* A user-selected colour must be flat: no old parchment/brown texture
+       bleeding through on chapter switches or when changing the palette. */
+    body.book-mode.book-custom {
+      background: var(--book-paper, #FFF4DE);
+      box-shadow: none;
+    }
+    body.book-mode.book-custom::after {
+      box-shadow: none;
+    }
+
     body.book-mode.book-night::after {
       box-shadow:
         inset 12px 0 20px -15px rgba(0, 0, 0, 0.72),
