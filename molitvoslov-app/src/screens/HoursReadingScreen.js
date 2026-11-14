@@ -31,6 +31,10 @@ const VALID_MODES = [
 export const HoursReadingScreen = ({route, navigation}) => {
   const entry = getHoursEntry(route.params?.entryId);
   const entryId = entry?.id || null;
+  const sectionAnchor=Number(route.params?.sectionAnchor);
+  const sectionFocusTarget=Number.isInteger(sectionAnchor)&&sectionAnchor>0
+    ? {anchor_type:'reader_section',anchor_id:sectionAnchor,
+       metadata:{section_id:sectionAnchor}} : null;
   const insets = useSafeAreaInsets();
   const readerRef = useRef(null);
 
@@ -159,6 +163,7 @@ export const HoursReadingScreen = ({route, navigation}) => {
         <SelectableDocumentReader
           ref={readerRef}
           documentData={documentData}
+          focusTarget={sectionFocusTarget}
           savedProgress={progressReady ? savedProgress : null}
           topContentInset={headerHeight}
           bottomContentInset={90}
