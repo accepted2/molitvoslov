@@ -2765,4 +2765,99 @@ export const READER_STYLES = String.raw`
         transform: translateY(0);
       }
     }
+    /* Single action menu on the left. Ponomar/reader text styles unchanged. */
+    body:not(.book-mode) .has-reader-action-menu {
+      position: relative;
+      overflow: visible;
+    }
+    body:not(.book-mode) .reader-action-container {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 50;
+      font-family: system-ui, sans-serif;
+    }
+    body:not(.book-mode) .has-reader-action-menu .reader-action-trigger {
+      position: relative;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 17px;
+      border: 1px solid var(--border);
+      background: rgba(241,223,194,.96);
+      color: var(--secondary);
+      font-size: 25px;
+      line-height: 29px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+    body:not(.book-mode) .reader-action-menu {
+      display: none;
+      position: absolute;
+      top: 34px;
+      left: 0;
+      width: 210px;
+      padding: 5px;
+      background: #FFF4DE;
+      border: 1px solid rgba(120,80,42,.3);
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(47,27,15,.25);
+      z-index: 65;
+    }
+    body:not(.book-mode) .reader-action-menu.is-open {
+      display: flex;
+      flex-direction: column;
+    }
+    body:not(.book-mode) .reader-action-menu .section-action,
+    body:not(.book-mode) .reader-action-menu .document-action,
+    body:not(.book-mode) .reader-action-menu .inline-share-action {
+      position: relative !important;
+      top: auto !important;
+      left: auto !important;
+      right: auto !important;
+      transform: none !important;
+      width: 100% !important;
+      height: 42px !important;
+      min-height: 42px !important;
+      margin: 0 !important;
+      padding: 0 11px !important;
+      border: 0 !important;
+      border-radius: 8px !important;
+      background: transparent !important;
+      color: #70482E !important;
+      display: flex !important;
+      justify-content: flex-start !important;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: left;
+    }
+    body:not(.book-mode) .reader-action-menu .section-action::after,
+    body:not(.book-mode) .reader-action-menu .document-action::after {
+      content: 'Добавить к себе';
+    }
+    body:not(.book-mode) .reader-action-menu .section-action.active::after,
+    body:not(.book-mode) .reader-action-menu .document-action.active::after {
+      content: 'Убрать из избранного';
+    }
+    body:not(.book-mode) .reader-action-menu .inline-share-action::after {
+      content: 'Поделиться';
+    }
+    body:not(.book-mode) .document-header.has-reader-action-menu .rule-title,
+    body:not(.book-mode) .section-header.has-reader-action-menu .prayer-title {
+      padding-left: 45px !important;
+      padding-right: 45px !important;
+    }
+    body:not(.book-mode) .hours-accordion.has-reader-action-menu .reader-action-container {
+      top: 7px;
+      left: 9px;
+      transform: none;
+    }
+    body:not(.book-mode) .hours-accordion.has-reader-action-menu .hours-accordion-toggle {
+      padding-left: 53px;
+      padding-right: 15px;
+    }
   `;
