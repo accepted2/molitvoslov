@@ -23,8 +23,17 @@ if (-not (Test-Path (Join-Path $targetPath "android\gradlew.bat"))) {
 $oldJson=Join-Path $targetPath "src\data\hoursTexts.json"
 if (-not (Test-Path $oldJson)) { throw "Original hoursTexts.json is missing: abort." }
 $hours=Get-Content -LiteralPath $oldJson -Raw -Encoding UTF8 | ConvertFrom-Json
-if (-not $hours.entries.PSObject.Properties["ordinary-1"]) {
-  throw "Original First Hour is not present. Do not replace it with an empty hoursTexts.json."
+if (-not $hours.entries.PSObject.Properties["ordinary-1"] -or
+    $hours.entries.PSObject.Properties.Count -lt 20) {
+  throw "Original full Hours library is missing or incomplete. Expected First Hour and at least 20 services."
+}
+$photoNames=@("akathists","canons","communion","evening","hero","morning","page_bg2","page_bg3","psalter")
+$evangelists=@("john-bg","john-icon","luke-bg","luke-icon","mark-bg","mark-icon","matthew-bg","matthew-icon")
+$photoPaths=@($photoNames | ForEach-Object { Join-Path $targetPath ("assets\home\"+$_+".webp") }) +
+  @($evangelists | ForEach-Object { Join-Path $targetPath ("assets\bible\evangelists\"+$_+".webp") })
+$missingPhotos=@($photoPaths | Where-Object { -not (Test-Path -LiteralPath $_) })
+if ($missingPhotos.Count) {
+  throw "Expected 17 original optimized WebPs in the working project. Missing: $($missingPhotos -join ', ')"
 }
 $protected=@(
   "src\data\hoursTexts.json",
@@ -34,6 +43,17 @@ $protected=@(
 )
 $targetVersion=Get-Content -LiteralPath (Join-Path $targetPath "app.json") -Raw -Encoding UTF8 | ConvertFrom-Json
 $sourceVersion=Get-Content -LiteralPath (Join-Path $source "app.json") -Raw -Encoding UTF8 | ConvertFrom-Json
+# Native packages stay installed as yesterday; don't combine new JS with
+# incompatible React Native / Expo / Google Sign-In dependency versions.
+$oldPackages=Get-Content -LiteralPath (Join-Path $targetPath "package.json") -Raw -Encoding UTF8 | ConvertFrom-Json
+$newPackages=Get-Content -LiteralPath (Join-Path $source "package.json") -Raw -Encoding UTF8 | ConvertFrom-Json
+foreach($name in @("react-native","expo","react-native-nitro-google-signin","react-native-nitro-modules")) {
+  $oldVersion=$oldPackages.dependencies.PSObject.Properties[$name].Value
+  $newVersion=$newPackages.dependencies.PSObject.Properties[$name].Value
+  if ($oldVersion -ne $newVersion) {
+    throw ("Native dependency mismatch for " + $name + ": working=" + $oldVersion + ", latest=" + $newVersion)
+  }
+}
 if ($sourceVersion.expo.version -ne "1.0.30" -or
     [int]$sourceVersion.expo.android.versionCode -ne 31) {
   throw "Unexpected source version: $($sourceVersion.expo.version) ($($sourceVersion.expo.android.versionCode))"
@@ -119,8 +139,12 @@ foreach($file in $changes){
   Copy-Item -LiteralPath $file.Source -Destination $file.Destination -Force
 }
 $check=Get-Content -LiteralPath $oldJson -Raw -Encoding UTF8 | ConvertFrom-Json
-if (-not $check.entries.PSObject.Properties["ordinary-1"]) {
-  throw "Post-overlay safety check failed: First Hour disappeared."
+if (-not $check.entries.PSObject.Properties["ordinary-1"] -or
+    $check.entries.PSObject.Properties.Count -lt 20) {
+  throw "Post-overlay safety check failed: complete Hours library disappeared."
+}
+if (@($photoPaths | Where-Object { -not (Test-Path -LiteralPath $_) }).Count) {
+  throw "Post-overlay safety check failed: one of the 17 optimized WebPs disappeared."
 }
 if (-not (Test-Path (Join-Path $targetPath "android\gradlew.bat"))) {
   throw "Post-overlay safety check failed: Gradle wrapper missing."
