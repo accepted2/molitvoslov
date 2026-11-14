@@ -82,6 +82,31 @@ try {
   & powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\tools\sync-android-app-links-20261113.ps1"
   if ($LASTEXITCODE -ne 0) { throw "Android App Links manifest sync failed." }
 
+  # Windows + Ninja can loop forever regenerating a stale build.ninja
+  # (often caused by timestamps or previous CMake configuration). This
+  # specific module failed in the prior Android ARM64 release; remove ONLY
+  # its generated CMake cache before Gradle starts. Never clean the app's
+  # native project, other node_modules, local content, or signing keys.
+  $nitroModuleAndroid = Join-Path $root "node_modules\react-native-nitro-google-signin\android"
+  $nitroCmakeCache = Join-Path $nitroModuleAndroid ".cxx"
+  if (Test-Path -LiteralPath $nitroCmakeCache) {
+    Write-Host "Refreshing NitroGoogleSignin CMake/Ninja cache (build.ninja dirty fix)..." -ForegroundColor Cyan
+    Remove-Item -LiteralPath $nitroCmakeCache -Recurse -Force -ErrorAction Stop
+    if (Test-Path -LiteralPath $nitroCmakeCache) {
+      throw "Failed to remove stale Nitro CMake cache: $nitroCmakeCache"
+    }
+  }
+
+  # A file from the future will force Ninja to rebuild its manifest forever.
+  # Report these without silently changing source timestamps or the system clock.
+  $nitroCmakeLists = Join-Path $nitroModuleAndroid "CMakeLists.txt"
+  if (Test-Path -LiteralPath $nitroCmakeLists) {
+    $inputTime = (Get-Item -LiteralPath $nitroCmakeLists).LastWriteTimeUtc
+    if ($inputTime -gt [DateTime]::UtcNow.AddMinutes(2)) {
+      Write-Warning "NitroGoogleSignin CMakeLists.txt has a future timestamp ($inputTime UTC). Sync Windows date/time before building if Ninja still loops."
+    }
+  }
+
   Write-Host "Building Android release APK..." -ForegroundColor Cyan
   # Gradle looks for settings.gradle in the current working directory.
   # Running android/gradlew.bat from the Expo root does NOT change that directory.
