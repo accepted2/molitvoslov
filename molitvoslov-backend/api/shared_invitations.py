@@ -2,13 +2,16 @@
 
 Anyone holding an unexpired token can preview its snapshot. Only a signed-in
 recipient can import an independent copy; the owner's live account is private.
-Photos are intentionally NEVER included.
+Photo storage paths are never returned to link holders. Bounded photo bytes
+may be viewed through the expiring token and are copied to the recipient
+account on import.
 """
 import hashlib
 import secrets
 import uuid
 from datetime import timedelta
 
+from django.http import HttpResponse
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -240,7 +243,7 @@ def preview_shared_invitation(request, token):
                       "photo_count":len(item.get("photos",[]))}
                      for item in snap["prayers"]]}
     )
-    return Response({
+    response=Response({
         "kind": invite.kind,
         "title": invite.title,
         "content": summary,
@@ -252,6 +255,46 @@ def preview_shared_invitation(request, token):
             ).exists()
         ),
     })
+    response["Cache-Control"]="no-store"
+    return response
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def preview_shared_photo(request, token, index):
+    """Read a shared image without revealing its private storage location.
+
+    The same opaque token controls image access and expires or is revoked
+    with the text preview. No object-store credential reaches the client.
+    """
+    invite=_invitation(token)
+    if not invite or index < 0 or index >= MAX_SHARED_PHOTOS:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    snapshot=invite.snapshot
+    if invite.kind=="memorial":
+        photos=snapshot.get("photos", [])
+    elif invite.kind=="prayerbook":
+        photos=[
+            photo for prayer in snapshot.get("prayers", [])
+            for photo in prayer.get("photos", [])
+        ]
+    else:
+        photos=[]
+    if index>=len(photos):
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    photo=photos[index]
+    if photo.get("content_type") not in PHOTO_TYPES:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    try:
+        payload=download_bytes(photo["storage_path"],max_bytes=PHOTO_MAX_BYTES)
+    except (StorageConfigurationError, ValueError, RuntimeError):
+        return Response({"detail":"Фотография временно недоступна."},
+                        status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    response=HttpResponse(payload,content_type=photo["content_type"])
+    response["Cache-Control"]="no-store"
+    response["X-Content-Type-Options"]="nosniff"
+    response["Content-Disposition"]="inline"
+    return response
 
 
 @api_view(["POST"])
