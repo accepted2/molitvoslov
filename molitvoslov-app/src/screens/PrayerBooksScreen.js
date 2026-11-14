@@ -50,10 +50,6 @@ export const PrayerBooksScreen = ({navigation}) => {
     kind:'prayerbook',
     sourceSyncId:book.sync_id,
     title:book.title||'Мой молитвослов',
-    fallbackText:(book.items||[]).map(i=>[
-      i.prayer?.title||'',i.prayer?.text||''
-    ].filter(Boolean).join('\n')).join('\n\n'),
-    privateContent:true,
   });
 
   const create = async () => {
