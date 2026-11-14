@@ -1,7 +1,7 @@
 """Opt-in expiring shares of texts, memorials and personal prayer books.
 
-Token possession grants preview to an authenticated recipient, not access to
-the owner's live account. A new independent copy is created on import.
+Anyone holding an unexpired token can preview its snapshot. Only a signed-in
+recipient can import an independent copy; the owner's live account is private.
 Photos are intentionally NEVER included.
 """
 import hashlib
@@ -14,7 +14,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from .supabase_storage import (
@@ -221,7 +221,7 @@ def create_shared_invitation(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def preview_shared_invitation(request, token):
     invite = _invitation(token)
     if not invite:
@@ -245,9 +245,12 @@ def preview_shared_invitation(request, token):
         "title": invite.title,
         "content": summary,
         "expires_at": invite.expires_at.isoformat(),
-        "imported": SharedContentImport.objects.filter(
-            invitation=invite, recipient=request.user,
-        ).exists(),
+        "imported": (
+            request.user.is_authenticated and
+            SharedContentImport.objects.filter(
+                invitation=invite, recipient=request.user,
+            ).exists()
+        ),
     })
 
 
