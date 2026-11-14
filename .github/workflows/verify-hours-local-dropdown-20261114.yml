@@ -48,6 +48,20 @@ jobs:
           node tools/test_bible_crossrefs_appearance_bookmarks_20261113.js
           node tools/test_android_app_links_20261113.js
           node tools/test_crossrefs_private_list_sharing_20261113.js
+      - name: Parse Windows release and source-overlay PowerShell scripts
+        shell: pwsh
+        working-directory: molitvoslov-app
+        run: |
+          foreach ($name in @("tools/overlay-latest-on-working-android-20261114.ps1", "tools/build-release-and-smoke-20261113.ps1")) {
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $name).Path, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            if ($parseErrors.Count) {
+              $parseErrors | ForEach-Object { Write-Error $_.Message }
+              exit 1
+            }
+            Write-Host "PASS PowerShell parser: $name"
+          }
       - name: Install Expo dependencies
         working-directory: molitvoslov-app
         run: |
