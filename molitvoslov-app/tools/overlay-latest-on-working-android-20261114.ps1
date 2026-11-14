@@ -23,9 +23,15 @@ if (-not (Test-Path (Join-Path $targetPath "android\gradlew.bat"))) {
 $oldJson=Join-Path $targetPath "src\data\hoursTexts.json"
 if (-not (Test-Path $oldJson)) { throw "Original hoursTexts.json is missing: abort." }
 $hours=Get-Content -LiteralPath $oldJson -Raw -Encoding UTF8 | ConvertFrom-Json
-if (-not $hours.entries.PSObject.Properties["ordinary-1"] -or
-    $hours.entries.PSObject.Properties.Count -lt 20) {
-  throw "Original full Hours library is missing or incomplete. Expected First Hour and at least 20 services."
+# Windows PowerShell 5.1 does not reliably provide a Count member on
+# PSObject.Properties. Materialize the names into a proper array first.
+$hoursEntryNames=@($hours.entries.PSObject.Properties | ForEach-Object { $_.Name })
+Write-Host ("Original local Hours services: " + $hoursEntryNames.Count) -ForegroundColor Cyan
+if ($hoursEntryNames.Count -lt 20 -or
+    -not ($hoursEntryNames -contains "ordinary-1")) {
+  throw ("Original full Hours library is missing or incomplete. Found " +
+    $hoursEntryNames.Count + " services; First Hour present=" +
+    ($hoursEntryNames -contains "ordinary-1") + ". Expected at least 20 with ordinary-1.")
 }
 $photoNames=@("akathists","canons","communion","evening","hero","morning","page_bg2","page_bg3","psalter")
 $evangelists=@("john-bg","john-icon","luke-bg","luke-icon","mark-bg","mark-icon","matthew-bg","matthew-icon")
@@ -140,8 +146,9 @@ foreach($file in $changes){
   Copy-Item -LiteralPath $file.Source -Destination $file.Destination -Force
 }
 $check=Get-Content -LiteralPath $oldJson -Raw -Encoding UTF8 | ConvertFrom-Json
-if (-not $check.entries.PSObject.Properties["ordinary-1"] -or
-    $check.entries.PSObject.Properties.Count -lt 20) {
+$checkEntryNames=@($check.entries.PSObject.Properties | ForEach-Object { $_.Name })
+if ($checkEntryNames.Count -lt 20 -or
+    -not ($checkEntryNames -contains "ordinary-1")) {
   throw "Post-overlay safety check failed: complete Hours library disappeared."
 }
 if (@($photoPaths | Where-Object { -not (Test-Path -LiteralPath $_) }).Count) {
