@@ -44,7 +44,10 @@ const resolveAvailableViewMode = (mode) =>
 
 export const PrayerRuleScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
-  const {slug, focusTarget = null} = route.params;
+  const {slug, focusTarget: originalFocusTarget = null, prayerItemId = null} = route.params;
+  const focusTarget = originalFocusTarget ||
+    (Number(prayerItemId)>0 ? {anchor_type:'prayer_rule_item',
+      anchor_id:Number(prayerItemId)} : null);
 
   const insets = useSafeAreaInsets();
 
