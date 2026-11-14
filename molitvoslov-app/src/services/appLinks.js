@@ -9,70 +9,11 @@ const SEGMENT=String.raw`[\p{L}\p{N}._-]+`;
 const publicPatterns=[
   new RegExp(String.raw`^bible/${SEGMENT}/[1-9]\d{0,2}(?:/(?:rst|csl_traditional)(?:/[1-9]\d{0,2})?)?$`,'u'),
   new RegExp(String.raw`^bible-book/${SEGMENT}(?:/(?:rst|csl_traditional))?$`,'u'),
-  new RegExp(String.raw`^(?:akathist|canon|hours)/${SLUG}(?:/[1-9]\\d{0,8})?// Universal HTTPS links remain clickable in Telegram and other messengers.
-// When Android verifies our host, this adapter routes the original HTTPS intent
-// directly to React Navigation without opening the Render landing page.
-export const APP_LINK_HOST='molitvoslov-3o9d.onrender.com';
-export const APP_LINK_ORIGIN='https://'+APP_LINK_HOST;
-const APP_SCHEME='molitvoslov://';
-const SLUG=String.raw`[\p{L}\p{N}._-]+`;
-const SEGMENT=String.raw`[\p{L}\p{N}._-]+`;
-const publicPatterns=[
-  new RegExp(String.raw`^bible/${SEGMENT}/[1-9]\d{0,2}(?:/(?:rst|csl_traditional)(?:/[1-9]\d{0,2})?)?$`,'u'),
-  new RegExp(String.raw`^bible-book/${SEGMENT}(?:/(?:rst|csl_traditional))?$`,'u'),
-,'u'),
-  new RegExp(String.raw`^(?:prayer|reader)/${SLUG}// Universal HTTPS links remain clickable in Telegram and other messengers.
-// When Android verifies our host, this adapter routes the original HTTPS intent
-// directly to React Navigation without opening the Render landing page.
-export const APP_LINK_HOST='molitvoslov-3o9d.onrender.com';
-export const APP_LINK_ORIGIN='https://'+APP_LINK_HOST;
-const APP_SCHEME='molitvoslov://';
-const SLUG=String.raw`[\p{L}\p{N}._-]+`;
-const SEGMENT=String.raw`[\p{L}\p{N}._-]+`;
-const publicPatterns=[
-  new RegExp(String.raw`^bible/${SEGMENT}/[1-9]\d{0,2}(?:/(?:rst|csl_traditional)(?:/[1-9]\d{0,2})?)?$`,'u'),
-  new RegExp(String.raw`^bible-book/${SEGMENT}(?:/(?:rst|csl_traditional))?$`,'u'),
-,'u'),
+  new RegExp(String.raw`^(?:akathist|canon|hours)/${SLUG}(?:/[1-9]\d{0,8})?$`,'u'),
+  new RegExp(String.raw`^(?:prayer|reader)/${SLUG}$`,'u'),
   /^kathisma\/(?:[1-9]|1\d|20)(?:\/[1-9]\d{0,2}\/(?:church|russian|traditional|both))?$/,
   new RegExp(String.raw`^saint/20\d{2}-\d{2}-\d{2}/(?:life|troparion|kontakion|prayer)(?:/${SLUG})?$`,'u'),
-  new RegExp(String.raw`^category/[1-9]\\d{0,5}/${SLUG}(?:/[1-9]\\d{0,8})?// Universal HTTPS links remain clickable in Telegram and other messengers.
-// When Android verifies our host, this adapter routes the original HTTPS intent
-// directly to React Navigation without opening the Render landing page.
-export const APP_LINK_HOST='molitvoslov-3o9d.onrender.com';
-export const APP_LINK_ORIGIN='https://'+APP_LINK_HOST;
-const APP_SCHEME='molitvoslov://';
-const SLUG=String.raw`[\p{L}\p{N}._-]+`;
-const SEGMENT=String.raw`[\p{L}\p{N}._-]+`;
-const publicPatterns=[
-  new RegExp(String.raw`^bible/${SEGMENT}/[1-9]\d{0,2}(?:/(?:rst|csl_traditional)(?:/[1-9]\d{0,2})?)?$`,'u'),
-  new RegExp(String.raw`^bible-book/${SEGMENT}(?:/(?:rst|csl_traditional))?$`,'u'),
-  new RegExp(String.raw`^(?:akathist|canon|hours)/${SLUG}(?:/[1-9]\\d{0,8})?// Universal HTTPS links remain clickable in Telegram and other messengers.
-// When Android verifies our host, this adapter routes the original HTTPS intent
-// directly to React Navigation without opening the Render landing page.
-export const APP_LINK_HOST='molitvoslov-3o9d.onrender.com';
-export const APP_LINK_ORIGIN='https://'+APP_LINK_HOST;
-const APP_SCHEME='molitvoslov://';
-const SLUG=String.raw`[\p{L}\p{N}._-]+`;
-const SEGMENT=String.raw`[\p{L}\p{N}._-]+`;
-const publicPatterns=[
-  new RegExp(String.raw`^bible/${SEGMENT}/[1-9]\d{0,2}(?:/(?:rst|csl_traditional)(?:/[1-9]\d{0,2})?)?$`,'u'),
-  new RegExp(String.raw`^bible-book/${SEGMENT}(?:/(?:rst|csl_traditional))?$`,'u'),
-,'u'),
-  new RegExp(String.raw`^(?:prayer|reader)/${SLUG}// Universal HTTPS links remain clickable in Telegram and other messengers.
-// When Android verifies our host, this adapter routes the original HTTPS intent
-// directly to React Navigation without opening the Render landing page.
-export const APP_LINK_HOST='molitvoslov-3o9d.onrender.com';
-export const APP_LINK_ORIGIN='https://'+APP_LINK_HOST;
-const APP_SCHEME='molitvoslov://';
-const SLUG=String.raw`[\p{L}\p{N}._-]+`;
-const SEGMENT=String.raw`[\p{L}\p{N}._-]+`;
-const publicPatterns=[
-  new RegExp(String.raw`^bible/${SEGMENT}/[1-9]\d{0,2}(?:/(?:rst|csl_traditional)(?:/[1-9]\d{0,2})?)?$`,'u'),
-  new RegExp(String.raw`^bible-book/${SEGMENT}(?:/(?:rst|csl_traditional))?$`,'u'),
-,'u'),
-  /^kathisma\/(?:[1-9]|1\d|20)(?:\/[1-9]\d{0,2}\/(?:church|russian|traditional|both))?$/,
-  new RegExp(String.raw`^saint/20\d{2}-\d{2}-\d{2}/(?:life|troparion|kontakion|prayer)(?:/${SLUG})?$`,'u'),
-,'u'),
+  new RegExp(String.raw`^category/[1-9]\d{0,5}/${SLUG}(?:/[1-9]\d{0,8})?$`,'u'),
   /^psalter$/,
 ];
 
