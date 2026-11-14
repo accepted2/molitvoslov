@@ -6742,7 +6742,7 @@ const HTML_TEMPLATE = String.raw`
       const selected = (itemTextMap.get(state.active.itemId)||'')
         .slice(state.active.start,state.active.end).trim();
       if(!selected)return;
-      post({type:'share-selection',text:selected,
+      post({type:'share-selection',text:selected,itemId:state.active.itemId,
         itemTitle:itemTitleMap.get(state.active.itemId)||'Молитва'});
     });
 
@@ -8323,7 +8323,7 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
         await shareContent({
           title:message.itemTitle||rule.name||'Молитва',
           text:message.text,
-          screen:'PrayerRule',params:{slug:rule.slug},
+          screen:'PrayerRule',params:{slug:rule.slug,anchorId:message.itemId},
         });
       }
       return;
@@ -8457,7 +8457,7 @@ const PrayerRuleReader = forwardRef(function PrayerRuleReader({
         await shareContent({
           title:message.itemTitle||rule.name||'Молитва',
           text:message.text,
-          screen:'PrayerRule',params:{slug:rule.slug},
+          screen:'PrayerRule',params:{slug:rule.slug,anchorId:message.itemId},
         });
       }
       return;
