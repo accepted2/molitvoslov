@@ -13,6 +13,65 @@ const TITLES = {
   quote:'Цитата',memorial:'Помянник',prayerbook:'Личный молитвослов',
 };
 
+// Read-only view of the exact invitation snapshot. Nothing is added until
+// the recipient explicitly chooses "Добавить себе".
+const SharedSnapshotPreview = ({info}) => {
+  const content=info?.content||{};
+  if(info?.kind==='quote'){
+    return <Text style={styles.body}>{String(content.text||'')}</Text>;
+  }
+  if(info?.kind==='memorial'){
+    const sections=[
+      {key:'health',label:'О здравии',names:content.health_names||[]},
+      {key:'repose',label:'Об упокоении',names:content.repose_names||[]},
+    ];
+    return (
+      <View style={styles.preview}>
+        {sections.map(section=>(
+          <View key={section.key} style={styles.previewSection}>
+            <Text style={styles.sectionHeading}>{section.label}</Text>
+            {section.names.length ? section.names.map((name,index)=>(
+              <Text key={section.key+'-'+index} style={styles.nameRow}>
+                {String(name)}
+              </Text>
+            )) : <Text style={styles.emptyHint}>Нет имён</Text>}
+          </View>
+        ))}
+        {!!content.photo_count&&(
+          <Text style={styles.photoInfo}>
+            Прикреплённых фотографий: {content.photo_count}
+          </Text>
+        )}
+      </View>
+    );
+  }
+  if(info?.kind==='prayerbook'){
+    const prayers=Array.isArray(content.prayers)?content.prayers:[];
+    return (
+      <View style={styles.preview}>
+        {!!content.description&&(
+          <Text style={styles.description}>{String(content.description)}</Text>
+        )}
+        <Text style={styles.sectionHeading}>Молитвы ({prayers.length})</Text>
+        {prayers.length ? prayers.map((prayer,index)=>(
+          <View key={'prayer-'+index} style={styles.prayerPreview}>
+            <Text style={styles.prayerHeading}>{index+1}. {String(prayer.title||'Молитва')}</Text>
+            {!!prayer.text&&(
+              <Text style={styles.body}>{String(prayer.text)}</Text>
+            )}
+            {!!prayer.photo_count&&(
+              <Text style={styles.photoInfo}>
+                Фотографий: {prayer.photo_count}
+              </Text>
+            )}
+          </View>
+        )) : <Text style={styles.emptyHint}>В этом молитвослове пока нет молитв</Text>}
+      </View>
+    );
+  }
+  return null;
+};
+
 export const SharedImportScreen = ({route,navigation}) => {
   const token=route?.params?.token||'';
   const insets=useSafeAreaInsets();
@@ -64,16 +123,6 @@ export const SharedImportScreen = ({route,navigation}) => {
     }
   };
 
-  const content=info?.content||{};
-  const preview=info?.kind==='quote'
-    ? String(content.text||'').slice(0,1600)
-    : info?.kind==='memorial'
-      ? ['О здравии: '+(content.health_names||[]).length,
-        'О упокоении: '+(content.repose_names||[]).length,
-        'Фотографий: '+(content.photo_count||0)].join('\n')
-      : ['Молитв: '+(content.prayers||[]).length,
-         'Фотографий: '+(content.prayers||[]).reduce((count,p)=>
-           count+Number(p.photo_count||0),0)].join('\n');
   return (
     <AppBackground imageOpacity={0.72}>
       <StatusBar style="light" translucent backgroundColor="transparent"/>
@@ -89,14 +138,13 @@ export const SharedImportScreen = ({route,navigation}) => {
             <View style={styles.card}>
               <Text style={styles.label}>{TITLES[info.kind]||'Текст'}</Text>
               <Text style={styles.name}>{info.title}</Text>
-              {!!preview && <Text style={styles.body} numberOfLines={13}>{preview}</Text>}
+              <SharedSnapshotPreview info={info}/>
               {(info.kind==='memorial'||info.kind==='prayerbook')&&(
-                <Text style={styles.notice}>Это отдельная копия. Фотографии из облака будут скопированы в ваш аккаунт (до 12 файлов). Оригиналы отправителя не изменяются. Остальные вложения не передаются.</Text>
+                <Text style={styles.notice}>Перед добавлением можно просмотреть имена и молитвы. Фотографии будут скопированы в ваш аккаунт (не более 12) при добавлении. Оригинал отправителя не изменится.</Text>
               )}
               {signedOut&&(
                 <Text style={styles.notice}>
-                  Содержимое доступно по ссылке без входа.
-                  Чтобы добавить копию в свой аккаунт, войдите через Google.
+                  Материал можно просматривать без входа. Чтобы сохранить свою копию, войдите через Google, затем вернитесь на эту страницу.
                 </Text>
               )}
               <Pressable
@@ -138,6 +186,15 @@ const styles=StyleSheet.create({
   label:{color:'#A15740',fontSize:12,fontWeight:'700'},
   name:{fontSize:21,fontWeight:'700',fontFamily:'serif',color:'#4A2D20'},
   body:{fontSize:15,lineHeight:24,color:'#503829'},
+  preview:{gap:14,marginTop:3},
+  previewSection:{gap:5,paddingTop:9,borderTopWidth:1,borderTopColor:'#E4D1B8'},
+  sectionHeading:{fontSize:16,fontWeight:'700',color:'#68432E'},
+  nameRow:{fontSize:16,lineHeight:26,color:'#503829'},
+  emptyHint:{fontSize:13,color:'#8A725F',fontStyle:'italic'},
+  prayerPreview:{gap:7,paddingTop:11,borderTopWidth:1,borderTopColor:'#E4D1B8'},
+  prayerHeading:{fontSize:16,fontWeight:'700',color:'#68432E'},
+  description:{fontSize:14,lineHeight:22,color:'#785641'},
+  photoInfo:{fontSize:12,lineHeight:18,color:'#856D55'},
   notice:{fontSize:12,lineHeight:18,color:'#806550'},
   action:{padding:14,alignItems:'center',borderRadius:12,
     backgroundColor:'#6D442E',marginTop:8},
