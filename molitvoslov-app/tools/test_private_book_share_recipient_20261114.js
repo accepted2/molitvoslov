@@ -31,4 +31,8 @@ assert.doesNotMatch(importScreen,/numberOfLines=\{13\}/);
 assert.match(linking,/shared\//);
 assert.match(prayerList,/shareImportableContent/);
 assert.match(memorialList,/shareImportableContent/);
+assert.match(read('src/screens/MemorialBookScreen.js'),/shareCurrentBook/);
+assert.match(read('src/screens/MemorialBookScreen.js'),/saveDraft\(\)/);
+assert.match(read('src/screens/PrayerBookScreen.js'),/headerAction=\{\{/);
+assert.match(read('src/screens/PrayerBookScreen.js'),/kind:'prayerbook'/);
 console.log('PASS: link, full read-only preview, photos, sync, add-to-me, duplicate recovery');
