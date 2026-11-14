@@ -71,6 +71,7 @@ const linking = {
         parse:{kathismaNumber:Number,psalmNumber:Number}},
       PrayerRule: {path:'prayer/:slug'},
       Reader: {path:'reader/:slug'},
+      Book: {path:'category/:categoryId/:categorySlug',parse:{categoryId:Number}},
       HoursReading: {path:'hours/:entryId'},
       SaintDetail: {path:'saint/:date/:focusSection/:feastUid?'},
       Psalter: {path:'psalter'},
