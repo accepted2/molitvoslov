@@ -10,6 +10,7 @@ import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 
 import SelectableDocumentReader from '../components/reader/SelectableDocumentReader';
 import {ReaderAppearanceSheet} from '../components/reader/ReaderAppearanceSheet';
+import {shareContent} from '../services/contentSharing';
 
 import {
   READER_LANGUAGE_MODES,
@@ -467,6 +468,11 @@ export const BookScreen = ({route, navigation}) => {
       />
 
       <ReaderAppearanceSheet
+        onShare={() => shareContent({
+          title:categoryName||categorySlug||'Молитвенный раздел',
+          text:'',screen:'Book',params:{categoryId,categorySlug},
+          scope:'whole',
+        })}
         visible={appearanceVisible}
         onClose={() => setAppearanceVisible(false)}
         appearance={appearance}
