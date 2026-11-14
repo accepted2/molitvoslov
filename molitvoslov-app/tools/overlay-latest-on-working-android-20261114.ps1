@@ -38,6 +38,7 @@ if ($missingPhotos.Count) {
 $protected=@(
   "src\data\hoursTexts.json",
   "src\data\hoursFirstHourTraditional.json",
+  "src\data\search_seed.db",
   "src\data\homeArtwork.js",
   "src\data\bibleArtwork.js"
 )
@@ -111,7 +112,7 @@ Write-Host "Source branch: $sourceBranch" -ForegroundColor Cyan
 Write-Host "Working Android: $targetPath" -ForegroundColor Cyan
 Write-Host "Files to update/add: $($changes.Count) / $($all.Count)"
 Write-Host "PRESERVED: android/, node_modules/, backend/, package*.json," -ForegroundColor Yellow
-Write-Host "  local hoursTexts.json, hoursFirstHourTraditional.json," -ForegroundColor Yellow
+Write-Host "  local hoursTexts.json, hoursFirstHourTraditional.json, search_seed.db," -ForegroundColor Yellow
 Write-Host "  homeArtwork.js and bibleArtwork.js (17 optimized WebPs remain)." -ForegroundColor Yellow
 if (-not $Apply) {
   $changes | Select-Object -First 50 Relative | Format-Table -AutoSize
