@@ -28,12 +28,9 @@ export const SharedImportScreen = ({route,navigation}) => {
     setLoading(true);
     setError('');
     try{
-      if(!await getApiToken()){
-        setSignedOut(true);
-        setInfo(null);
-        return;
-      }
-      setSignedOut(false);
+      // Preview is public for anyone with a link; only adding to an
+      // account requires authentication.
+      setSignedOut(!(await getApiToken()));
       const response=await fetchSharedInvitation(token);
       setInfo(response);
       setImported(!!response.imported);
@@ -88,17 +85,6 @@ export const SharedImportScreen = ({route,navigation}) => {
           <Text style={styles.hint}>Вам отправили из Молитвослова</Text>
           {loading ? (
             <ActivityIndicator color={colors.accent} size="large"/>
-          ) : signedOut ? (
-            <View style={styles.card}>
-              <Text style={styles.name}>Войдите в аккаунт</Text>
-              <Text style={styles.body}>Для безопасного просмотра и добавления полученных личных материалов нужно войти через Google. После входа вернитесь по этой ссылке.</Text>
-              <Pressable onPress={()=>navigation.navigate('Account')} style={styles.action}>
-                <Text style={styles.actionText}>Перейти в аккаунт</Text>
-              </Pressable>
-              <Pressable onPress={load} style={styles.secondary}>
-                <Text style={styles.secondaryText}>Я уже вошёл — обновить</Text>
-              </Pressable>
-            </View>
           ) : info ? (
             <View style={styles.card}>
               <Text style={styles.label}>{TITLES[info.kind]||'Текст'}</Text>
@@ -107,15 +93,22 @@ export const SharedImportScreen = ({route,navigation}) => {
               {(info.kind==='memorial'||info.kind==='prayerbook')&&(
                 <Text style={styles.notice}>Это отдельная копия. Фотографии из облака будут скопированы в ваш аккаунт (до 12 файлов). Оригиналы отправителя не изменяются. Остальные вложения не передаются.</Text>
               )}
+              {signedOut&&(
+                <Text style={styles.notice}>
+                  Содержимое доступно по ссылке без входа.
+                  Чтобы добавить копию в свой аккаунт, войдите через Google.
+                </Text>
+              )}
               <Pressable
-                onPress={addToMe}
+                onPress={signedOut?()=>navigation.navigate('Account'):addToMe}
                 disabled={importing}
                 accessibilityRole="button"
                 style={[styles.action,(importing||imported)&&styles.disabled]}
               >
                 {importing?<ActivityIndicator color="#FFF4DE"/>:
                   <Text style={styles.actionText}>
-                    {imported?'Открыть добавленное':'Добавить себе'}
+                    {signedOut?'Войти и добавить себе':
+                      imported?'Открыть добавленное':'Добавить себе'}
                   </Text>}
               </Pressable>
               <Text style={styles.notice}>После добавления текст появится в вашем избранном, помянниках или личных молитвословах и будет доступен для редактирования независимо от отправителя.</Text>
