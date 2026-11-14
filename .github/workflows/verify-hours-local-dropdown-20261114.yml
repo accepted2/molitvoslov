@@ -13,6 +13,29 @@ permissions:
   contents: read
 
 jobs:
+  windows-powershell-51-hours-count:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify a 20-service Hours JSON is recognized by Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $entries = @{}
+          1..20 | ForEach-Object { $entries["ordinary-$_"] = @{ sections = @() } }
+          $mock = @{ entries = $entries } | ConvertTo-Json -Depth 5 | ConvertFrom-Json
+          $names = @($mock.entries.PSObject.Properties | ForEach-Object { $_.Name })
+          if ($names.Count -ne 20 -or -not ($names -contains "ordinary-1")) {
+            throw "Windows PowerShell failed to materialize 20 Hours entries"
+          }
+          $src = Get-Content -Raw -Encoding UTF8 "molitvoslov-app/tools/overlay-latest-on-working-android-20261114.ps1"
+          if ($src -match 'entries\.PSObject\.Properties\.Count') {
+            throw "Unsafe PSObject.Properties.Count reintroduced in overlay"
+          }
+          if ($src -notmatch 'hoursEntryNames=@\(' -or $src -notmatch 'checkEntryNames=@\(') {
+            throw "Expected safe 20-entry checks missing"
+          }
+          Write-Host "PASS: Windows PowerShell 5.1 counts all 20 local Hours entries"
   hours-regression:
     runs-on: ubuntu-latest
     timeout-minutes: 30
