@@ -28,12 +28,7 @@ export const SharedImportScreen = ({route,navigation}) => {
     setLoading(true);
     setError('');
     try{
-      if(!await getApiToken()){
-        setSignedOut(true);
-        setInfo(null);
-        return;
-      }
-      setSignedOut(false);
+      setSignedOut(!(await getApiToken()));
       const response=await fetchSharedInvitation(token);
       setInfo(response);
       setImported(!!response.imported);
@@ -47,6 +42,10 @@ export const SharedImportScreen = ({route,navigation}) => {
 
   const addToMe=async()=>{
     if(importing)return;
+    if(signedOut){
+      navigation.navigate('Account');
+      return;
+    }
     try{
       setImporting(true);
       setError('');
@@ -76,7 +75,9 @@ export const SharedImportScreen = ({route,navigation}) => {
         'Фотографий: '+(content.photo_count||0)].join('\n')
       : ['Молитв: '+(content.prayers||[]).length,
          'Фотографий: '+(content.prayers||[]).reduce((count,p)=>
-           count+Number(p.photo_count||0),0)].join('\n');
+           count+Number(p.photo_count||0),0),
+         ...(content.prayers||[]).slice(0,100).map((p,index)=>
+           (index+1)+'. '+String(p.title||'Молитва'))].join('\n');
   return (
     <AppBackground imageOpacity={0.72}>
       <StatusBar style="light" translucent backgroundColor="transparent"/>
@@ -88,17 +89,6 @@ export const SharedImportScreen = ({route,navigation}) => {
           <Text style={styles.hint}>Вам отправили из Молитвослова</Text>
           {loading ? (
             <ActivityIndicator color={colors.accent} size="large"/>
-          ) : signedOut ? (
-            <View style={styles.card}>
-              <Text style={styles.name}>Войдите в аккаунт</Text>
-              <Text style={styles.body}>Для безопасного просмотра и добавления полученных личных материалов нужно войти через Google. После входа вернитесь по этой ссылке.</Text>
-              <Pressable onPress={()=>navigation.navigate('Account')} style={styles.action}>
-                <Text style={styles.actionText}>Перейти в аккаунт</Text>
-              </Pressable>
-              <Pressable onPress={load} style={styles.secondary}>
-                <Text style={styles.secondaryText}>Я уже вошёл — обновить</Text>
-              </Pressable>
-            </View>
           ) : info ? (
             <View style={styles.card}>
               <Text style={styles.label}>{TITLES[info.kind]||'Текст'}</Text>
@@ -115,9 +105,16 @@ export const SharedImportScreen = ({route,navigation}) => {
               >
                 {importing?<ActivityIndicator color="#FFF4DE"/>:
                   <Text style={styles.actionText}>
-                    {imported?'Открыть добавленное':'Добавить себе'}
+                    {signedOut?'Войти, чтобы добавить себе':
+                      imported?'Открыть добавленное':'Добавить себе'}
                   </Text>}
               </Pressable>
+              {signedOut&&(
+                <Text style={styles.notice}>
+                  Просмотр доступен по ссылке без входа. Для сохранения копии
+                  войдите в аккаунт и вернитесь сюда.
+                </Text>
+              )}
               <Text style={styles.notice}>После добавления текст появится в вашем избранном, помянниках или личных молитвословах и будет доступен для редактирования независимо от отправителя.</Text>
             </View>
           ) : null}
