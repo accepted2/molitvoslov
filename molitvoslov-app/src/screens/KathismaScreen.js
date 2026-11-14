@@ -1498,6 +1498,7 @@ export default function KathismaScreen({route, navigation}) {
       text,
       screen:'Kathisma',
       params:{kathismaNumber:kathisma.number,psalmNumber:psalm.number,readerMode:viewMode},
+      scope:'fragment',
     });
   };
 
