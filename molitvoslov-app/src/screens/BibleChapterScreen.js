@@ -849,9 +849,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
       <ReaderBookmarkMenu
         onShare={() => shareContent({
           title:displayName+' · Глава '+currentChapterNumber,
-          text:(bibleContent.getChapter(bookId,currentChapterNumber,translationCode)?.verses||[])
-            .map(verse=>formatBibleNumber(translationCode,verse.number)+' '+(verse.text||''))
-            .join('\n'),
+          linkOnly:true,
           screen:'BibleChapter',params:{bookId,chapterNumber:currentChapterNumber,
             translationCode},
         })}
