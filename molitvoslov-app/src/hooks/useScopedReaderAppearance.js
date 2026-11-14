@@ -78,10 +78,11 @@ export const useScopedReaderAppearance = (sourceType, sourceId, initialFontSize 
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = null;
     const next = await resetScopedAppearance(keyRef.current);
+    const effective = normalizeReaderAppearance(inheritedSize(next));
     inheritedRef.current = true;
-    latestRef.current = next;
-    setAppearance(next);
-  }, []);
+    latestRef.current = effective;
+    setAppearance(effective);
+  }, [initialFontSize]);
 
   return {appearance, appearanceReady: ready, changeAppearance, resetAppearance};
 };
