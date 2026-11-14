@@ -56,7 +56,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
 
   const [rule, setRule] = useState(null);
   const readerRef = useRef(null);
-  const {appearance, changeAppearance, resetAppearance} = useScopedReaderAppearance('prayer_rule', slug);
+  const {appearance, appearanceReady, changeAppearance, resetAppearance} = useScopedReaderAppearance('prayer_rule', slug);
   const [appearanceVisible, setAppearanceVisible] = useState(false);
   useEffect(() => {readerRef.current?.applyAppearance(appearance);}, [appearance]);
   const {readingChromeHidden, handleReadingScroll, handleNativeReadingScroll} = useReadingChrome();
@@ -229,7 +229,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
     }
   };
 
-  if (loading || (rule && (!progressReady || !viewModeReady))) {
+  if (loading || (rule && (!progressReady || !viewModeReady || !appearanceReady))) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.accent} />
@@ -254,6 +254,7 @@ export const PrayerRuleScreen = ({route, navigation}) => {
 
       <PrayerRuleReader
         ref={readerRef}
+        initialAppearance={appearance}
         rule={rule}
         savedItems={savedItems}
         savedProgress={savedProgress}
