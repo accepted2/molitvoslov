@@ -24,6 +24,7 @@ import * as ImagePicker from 'expo-image-picker';
 import {AppBackground} from '../components/layout/AppBackground';
 
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
+import {shareImportableContent} from '../services/shareInvitations';
 
 import {MemorialPhotoViewer} from '../components/memorial/MemorialPhotoViewer';
 
@@ -396,6 +397,16 @@ export const MemorialBookScreen = ({navigation, route}) => {
     }
   }, [bookSyncId, saving, t]);
 
+  const shareCurrentBook = async () => {
+    // Do not send a stale version when the sender is still editing names.
+    if(dirtyRef.current && !(await saveDraft()))return;
+    await shareImportableContent({
+      kind:'memorial',
+      sourceSyncId:bookSyncId,
+      title:title||'Помянник',
+    });
+  };
+
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
       if (allowLeaveRef.current || !dirtyRef.current || leavingRef.current) {
@@ -697,6 +708,7 @@ export const MemorialBookScreen = ({navigation, route}) => {
           title={title || t('memorial.title')}
           navigation={navigation}
           topInset={insets.top}
+          headerAction={{label:'Поделиться',onPress:shareCurrentBook}}
         />
       </KeyboardAvoidingView>
 
