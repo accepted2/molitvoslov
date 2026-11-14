@@ -52,7 +52,7 @@ async function main(){
   assert.match(chapters,/onSave=\{contextChapter \? \(\)=>toggleChapterSaved\(contextChapter\)/);
   assert.match(chapters,/onSave=\{toggleBookSaved\}/);
   assert.match(chapters,/findSavedBibleChapter/);
-  assert.match(chapters,/bibleChapterText\(contextChapter,translationCode\)/);
+  assert.match(chapters,/linkOnly:true/);
   assert.match(source('src/screens/BibleChapterScreen.js'),/translation_code: translationCode/);
   const favorites=source('src/screens/FavoritesScreen.js');
   assert.match(favorites,/anchor_type === 'bible_book'/);
