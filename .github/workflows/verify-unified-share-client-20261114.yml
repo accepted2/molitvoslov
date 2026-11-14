@@ -36,9 +36,12 @@ jobs:
           node tools/test_calendar_public_share_20261113.js
           node tools/test_psalter_context_share_font_20261113.js
           node tools/test_saint_shared_link_recovery_20261113.js
-      - name: Install Expo dependencies
+      - name: Install Expo dependencies without local seed-specific postinstall
         working-directory: molitvoslov-app
-        run: npm ci
+        run: |
+          npm ci --ignore-scripts
+          npx patch-package
+          test -s src/data/search_seed.db
       - name: Verify full Android JavaScript bundle (no native build)
         working-directory: molitvoslov-app
         run: npx expo export --platform android --output-dir /tmp/molitvoslov-unified-share
