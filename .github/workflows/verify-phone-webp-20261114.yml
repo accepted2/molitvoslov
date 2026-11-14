@@ -36,6 +36,7 @@ jobs:
           python tools/test_webp_lossless_20261113.py
           python tools/prepare_webp_lossless_20261113.py --apply
           python tools/prepare_webp_lossless_20261113.py --check
+          python tools/activate_webp_references_20261114.py
           python tools/verify_phone_webp_assets_20261114.py
       - name: Verify version, reader styles and shared books
         working-directory: molitvoslov-app
