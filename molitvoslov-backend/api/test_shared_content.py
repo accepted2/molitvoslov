@@ -63,7 +63,7 @@ class SharedContentTests(APITestCase):
         self.assertNotIn(self.owner.email, res.data["token"])
         return res.data["token"]
 
-    def test_needs_authentication_to_create_preview_or_import(self):
+    def test_link_holder_can_preview_without_login_but_cannot_import(self):
         self.client.force_authenticate(user=None)
         res=self.client.post(reverse("shared-create"), {
             "kind":"quote", "title":"Пример", "text":"Текст"
@@ -71,10 +71,40 @@ class SharedContentTests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
         token=self.make_share("quote",title="Пример",text="Текст")
         self.client.force_authenticate(user=None)
-        self.assertEqual(
-            self.client.get(reverse("shared-preview",args=[token])).status_code,401)
+        preview=self.client.get(reverse("shared-preview",args=[token]))
+        self.assertEqual(preview.status_code, 200, preview.data)
+        self.assertEqual(preview.data["content"]["text"], "Текст")
+        self.assertFalse(preview.data["imported"])
         self.assertEqual(
             self.client.post(reverse("shared-import",args=[token])).status_code,401)
+
+    def test_anonymous_memorial_and_prayerbook_preview_without_storage_leak(self):
+        for kind, source in (
+            ("memorial", self.memorial), ("prayerbook", self.book)
+        ):
+            token=self.make_share(kind,source_sync_id=str(source.sync_id))
+            self.client.force_authenticate(user=None)
+            res=self.client.get(reverse("shared-preview",args=[token]))
+            self.assertEqual(res.status_code, 200, res.data)
+            self.assertFalse(res.data["imported"])
+            self.assertNotIn("storage_path", str(res.data))
+            self.assertNotIn("private/owner-", str(res.data))
+            if kind == "memorial":
+                self.assertEqual(res.data["content"]["health_names"], ["Анна", "Иоанн"])
+                self.assertEqual(res.data["content"]["repose_names"], ["Мария"])
+            else:
+                self.assertEqual(
+                    [entry["title"] for entry in res.data["content"]["prayers"]],
+                    ["Первая молитва", "Вторая молитва"],
+                )
+                self.assertEqual(
+                    [entry["text"] for entry in res.data["content"]["prayers"]],
+                    ["Текст № 0", "Текст № 1"],
+                )
+            self.assertEqual(
+                self.client.post(reverse("shared-import", args=[token])).status_code,
+                status.HTTP_401_UNAUTHORIZED,
+            )
 
     def test_quote_import_is_independent_and_idempotent(self):
         token=self.make_share("quote",title="Слово",text="Бог есть любовь")
@@ -184,6 +214,88 @@ class SharedContentTests(APITestCase):
             user=self.recipient).exists())
         self.assertFalse(SharedContentImport.objects.filter(
             recipient=self.recipient).exists())
+
+    @patch("api.shared_invitations.download_bytes",return_value=b"private-image")
+    def test_anonymous_photo_preview_requires_live_token(self, download):
+        token=self.make_share("memorial",source_sync_id=str(self.memorial.sync_id))
+        self.client.force_authenticate(user=None)
+        response=self.client.get(reverse("shared-photo",args=[token,0]))
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.content,b"private-image")
+        self.assertEqual(response["Content-Type"],"image/jpeg")
+        self.assertEqual(response["Cache-Control"],"no-store")
+        self.assertNotIn(b"private/owner",response.content)
+        download.assert_called_once()
+        self.assertEqual(download.call_args.args[0],
+                         "private/owner-memorial-photo.jpg")
+        self.assertEqual(
+            self.client.get(reverse("shared-photo",args=[token,1])).status_code,
+            404,
+        )
+        prayer_token=self.make_share(
+            "prayerbook",source_sync_id=str(self.book.sync_id))
+        self.client.force_authenticate(user=None)
+        self.assertEqual(
+            self.client.get(reverse("shared-photo",args=[prayer_token,1])).status_code,
+            200,
+        )
+        self.client.force_authenticate(user=self.owner)
+        self.assertEqual(
+            self.client.post(reverse("shared-revoke",args=[token])).status_code,
+            204,
+        )
+        self.client.force_authenticate(user=None)
+        self.assertEqual(
+            self.client.get(reverse("shared-photo",args=[token,0])).status_code,
+            404,
+        )
+
+    @patch("api.shared_invitations.upload_bytes")
+    @patch("api.shared_invitations.download_bytes",return_value=b"private-image")
+    def test_memorial_and_prayerbook_add_to_me_is_idempotent(self, download, upload):
+        for kind, source, model in (
+            ("memorial",self.memorial,MemorialBook),
+            ("prayerbook",self.book,PersonalPrayerBook),
+        ):
+            token=self.make_share(kind,source_sync_id=str(source.sync_id))
+            self.client.force_authenticate(user=self.recipient)
+            first=self.client.post(reverse("shared-import",args=[token]))
+            self.assertEqual(first.status_code,201,first.data)
+            second=self.client.post(reverse("shared-import",args=[token]))
+            self.assertEqual(second.status_code,200,second.data)
+            self.assertTrue(second.data["already_imported"])
+            self.assertEqual(first.data["sync_id"],second.data["sync_id"])
+            self.assertEqual(model.objects.filter(user=self.recipient).count(),1)
+
+    @patch("api.shared_invitations.upload_bytes")
+    @patch("api.shared_invitations.download_bytes",return_value=b"private-image")
+    def test_prayer_language_kept_but_private_origin_metadata_removed(
+            self,download,upload):
+        original=self.book.items.order_by("order").first().prayer
+        original.origin_type="library"
+        original.origin_data={
+            "language":"church",
+            "metadata":{"language":"church","section":"troparion",
+                        "feast_title":"Святителю Николаю"},
+            "private_note":"do not share",
+            "owner_account_id":self.owner.pk,
+        }
+        original.save()
+        token=self.make_share("prayerbook",source_sync_id=str(self.book.sync_id))
+        invitation=SharedContentInvitation.objects.get(token_hash__isnull=False)
+        self.assertNotIn("private_note",str(invitation.snapshot))
+        self.assertNotIn("owner_account_id",str(invitation.snapshot))
+        self.client.force_authenticate(user=self.recipient)
+        response=self.client.post(reverse("shared-import",args=[token]))
+        self.assertEqual(response.status_code,201,response.data)
+        cloned=PersonalPrayerBook.objects.get(user=self.recipient)
+        prayer=cloned.items.order_by("order").first().prayer
+        self.assertEqual(prayer.origin_type,"library")
+        self.assertEqual(prayer.origin_data["language"],"church")
+        self.assertEqual(prayer.origin_data["metadata"]["feast_title"],
+                         "Святителю Николаю")
+        self.assertTrue(prayer.origin_data["shared_copy"])
+        self.assertNotIn("private_note",prayer.origin_data)
 
     def test_cannot_share_another_persons_private_book(self):
         self.client.force_authenticate(user=self.stranger)

@@ -1,20 +1,23 @@
 """Opt-in expiring shares of texts, memorials and personal prayer books.
 
-Token possession grants preview to an authenticated recipient, not access to
-the owner's live account. A new independent copy is created on import.
-Photos are intentionally NEVER included.
+Anyone holding an unexpired token can preview its snapshot. Only a signed-in
+recipient can import an independent copy; the owner's live account is private.
+Photo storage paths are never returned to link holders. Bounded photo bytes
+may be viewed through the expiring token and are copied to the recipient
+account on import.
 """
 import hashlib
 import secrets
 import uuid
 from datetime import timedelta
 
+from django.http import HttpResponse
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from .supabase_storage import (
@@ -145,6 +148,32 @@ def _memorial(request):
     }
 
 
+def _prayer_presentation(prayer):
+    """Preserve church/Russian reading style without sharing private origin IDs."""
+    raw=prayer.origin_data if isinstance(prayer.origin_data,dict) else {}
+    metadata=raw.get("metadata")
+    if not isinstance(metadata,dict):
+        metadata={}
+    allowed=("language","section","feast_title","search_source")
+    presentation={
+        key:raw[key][:255] for key in allowed
+        if isinstance(raw.get(key),str)
+    }
+    safe_meta={
+        key:metadata[key][:255] for key in ("language","section","feast_title")
+        if isinstance(metadata.get(key),str)
+    }
+    if safe_meta:
+        presentation["metadata"]=safe_meta
+    if raw.get("auto_generated_title") is True:
+        presentation["auto_generated_title"]=True
+    return {
+        "origin_type":prayer.origin_type
+            if prayer.origin_type in ("custom","saved","library") else "custom",
+        "origin_data":presentation,
+    }
+
+
 def _prayerbook(request):
     sync_id = _source_uuid(request)
     book = get_object_or_404(
@@ -174,7 +203,10 @@ def _prayerbook(request):
         total_photos += len(images)
         if total_photos > MAX_SHARED_PHOTOS:
             raise ValueError("Для одной ссылки допускается не более 12 фотографий.")
-        prayers.append({"title": title, "text": body, "photos": images})
+        prayers.append({
+            "title":title, "text":body, "photos":images,
+            **_prayer_presentation(prayer),
+        })
     return _clean_title(book.title, "Мой молитвослов"), {
         "description": str(book.description or "")[:2000],
         "prayers": prayers,
@@ -221,7 +253,7 @@ def create_shared_invitation(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def preview_shared_invitation(request, token):
     invite = _invitation(token)
     if not invite:
@@ -240,15 +272,58 @@ def preview_shared_invitation(request, token):
                       "photo_count":len(item.get("photos",[]))}
                      for item in snap["prayers"]]}
     )
-    return Response({
+    response=Response({
         "kind": invite.kind,
         "title": invite.title,
         "content": summary,
         "expires_at": invite.expires_at.isoformat(),
-        "imported": SharedContentImport.objects.filter(
-            invitation=invite, recipient=request.user,
-        ).exists(),
+        "imported": (
+            request.user.is_authenticated and
+            SharedContentImport.objects.filter(
+                invitation=invite, recipient=request.user,
+            ).exists()
+        ),
     })
+    response["Cache-Control"]="no-store"
+    return response
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def preview_shared_photo(request, token, index):
+    """Read a shared image without revealing its private storage location.
+
+    The same opaque token controls image access and expires or is revoked
+    with the text preview. No object-store credential reaches the client.
+    """
+    invite=_invitation(token)
+    if not invite or index < 0 or index >= MAX_SHARED_PHOTOS:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    snapshot=invite.snapshot
+    if invite.kind=="memorial":
+        photos=snapshot.get("photos", [])
+    elif invite.kind=="prayerbook":
+        photos=[
+            photo for prayer in snapshot.get("prayers", [])
+            for photo in prayer.get("photos", [])
+        ]
+    else:
+        photos=[]
+    if index>=len(photos):
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    photo=photos[index]
+    if photo.get("content_type") not in PHOTO_TYPES:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    try:
+        payload=download_bytes(photo["storage_path"],max_bytes=PHOTO_MAX_BYTES)
+    except (StorageConfigurationError, ValueError, RuntimeError):
+        return Response({"detail":"Фотография временно недоступна."},
+                        status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    response=HttpResponse(payload,content_type=photo["content_type"])
+    response["Cache-Control"]="no-store"
+    response["X-Content-Type-Options"]="nosniff"
+    response["Content-Disposition"]="inline"
+    return response
 
 
 @api_view(["POST"])
@@ -301,8 +376,12 @@ def import_shared_invitation(request, token):
                 for number,source in enumerate(snap["prayers"]):
                     prayer=PersonalPrayer.objects.create(
                         user=request.user,title=source["title"],
-                        text=source["text"],origin_type="custom",
-                        origin_data={"shared_copy":True},
+                        text=source["text"],
+                        origin_type=source.get("origin_type","custom"),
+                        origin_data={
+                            **source.get("origin_data",{}),
+                            "shared_copy":True,
+                        },
                     )
                     PersonalPrayerBookItem.objects.create(
                         book=book,prayer=prayer,order=number,

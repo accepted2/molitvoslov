@@ -1,16 +1,106 @@
 import React, {useCallback, useState} from 'react';
-import {ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 import {getApiToken} from '../services/backendAuth';
-import {fetchSharedInvitation, importSharedInvitation} from '../services/shareInvitations';
+import {fetchSharedInvitation, importSharedInvitation, sharedPhotoUrl} from '../services/shareInvitations';
 import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {colors} from '../theme';
 
 const TITLES = {
   quote:'Цитата',memorial:'Помянник',prayerbook:'Личный молитвослов',
+};
+
+const SharedPhotoStrip = ({token,count,start=0}) => {
+  const [selected,setSelected]=useState(null);
+  const total=Math.min(12,Math.max(0,Number(count)||0));
+  if(!total)return null;
+  const images=Array.from({length:total},(_,index)=>start+index);
+  return (
+    <View>
+      <Text style={styles.photoInfo}>Фотографий: {total}</Text>
+      <View style={styles.photoGrid}>
+        {images.map(index=>(
+          <Pressable key={index} accessibilityRole="button"
+            accessibilityLabel={'Просмотреть фотографию '+(index-start+1)}
+            onPress={()=>setSelected(index)}>
+            <Image source={{uri:sharedPhotoUrl(token,index)}}
+              style={styles.photoThumb} resizeMode="cover"/>
+          </Pressable>
+        ))}
+      </View>
+      <Modal visible={selected!==null} transparent animationType="fade"
+        onRequestClose={()=>setSelected(null)}>
+        <View style={styles.photoModal}>
+          <Pressable accessibilityRole="button"
+            onPress={()=>setSelected(null)}
+            style={styles.photoClose}>
+            <Text style={styles.photoCloseLabel}>Закрыть ×</Text>
+          </Pressable>
+          {selected!==null&&(
+            <Image source={{uri:sharedPhotoUrl(token,selected)}}
+              style={styles.photoFull} resizeMode="contain"/>
+          )}
+        </View>
+      </Modal>
+    </View>
+  );
+};
+
+// Read-only view of the exact invitation snapshot. Nothing is added until
+// the recipient explicitly chooses "Добавить себе".
+const SharedSnapshotPreview = ({info,token}) => {
+  const content=info?.content||{};
+  if(info?.kind==='quote'){
+    return <Text style={styles.body}>{String(content.text||'')}</Text>;
+  }
+  if(info?.kind==='memorial'){
+    const sections=[
+      {key:'health',label:'О здравии',names:content.health_names||[]},
+      {key:'repose',label:'Об упокоении',names:content.repose_names||[]},
+    ];
+    return (
+      <View style={styles.preview}>
+        {sections.map(section=>(
+          <View key={section.key} style={styles.previewSection}>
+            <Text style={styles.sectionHeading}>{section.label}</Text>
+            {section.names.length ? section.names.map((name,index)=>(
+              <Text key={section.key+'-'+index} style={styles.nameRow}>
+                {String(name)}
+              </Text>
+            )) : <Text style={styles.emptyHint}>Нет имён</Text>}
+          </View>
+        ))}
+        <SharedPhotoStrip token={token} count={content.photo_count||0} start={0}/>
+      </View>
+    );
+  }
+  if(info?.kind==='prayerbook'){
+    const prayers=Array.isArray(content.prayers)?content.prayers:[];
+    return (
+      <View style={styles.preview}>
+        {!!content.description&&(
+          <Text style={styles.description}>{String(content.description)}</Text>
+        )}
+        <Text style={styles.sectionHeading}>Молитвы ({prayers.length})</Text>
+        {prayers.length ? prayers.map((prayer,index)=>(
+          <View key={'prayer-'+index} style={styles.prayerPreview}>
+            <Text style={styles.prayerHeading}>{index+1}. {String(prayer.title||'Молитва')}</Text>
+            {!!prayer.text&&(
+              <Text style={styles.body}>{String(prayer.text)}</Text>
+            )}
+            <SharedPhotoStrip token={token}
+              count={prayer.photo_count||0}
+              start={prayers.slice(0,index).reduce(
+                (total,item)=>total+Number(item.photo_count||0),0)}/>
+          </View>
+        )) : <Text style={styles.emptyHint}>В этом молитвослове пока нет молитв</Text>}
+      </View>
+    );
+  }
+  return null;
 };
 
 export const SharedImportScreen = ({route,navigation}) => {
@@ -64,16 +154,6 @@ export const SharedImportScreen = ({route,navigation}) => {
     }
   };
 
-  const content=info?.content||{};
-  const preview=info?.kind==='quote'
-    ? String(content.text||'').slice(0,1600)
-    : info?.kind==='memorial'
-      ? ['О здравии: '+(content.health_names||[]).length,
-        'О упокоении: '+(content.repose_names||[]).length,
-        'Фотографий: '+(content.photo_count||0)].join('\n')
-      : ['Молитв: '+(content.prayers||[]).length,
-         'Фотографий: '+(content.prayers||[]).reduce((count,p)=>
-           count+Number(p.photo_count||0),0)].join('\n');
   return (
     <AppBackground imageOpacity={0.72}>
       <StatusBar style="light" translucent backgroundColor="transparent"/>
@@ -89,14 +169,13 @@ export const SharedImportScreen = ({route,navigation}) => {
             <View style={styles.card}>
               <Text style={styles.label}>{TITLES[info.kind]||'Текст'}</Text>
               <Text style={styles.name}>{info.title}</Text>
-              {!!preview && <Text style={styles.body} numberOfLines={13}>{preview}</Text>}
+              <SharedSnapshotPreview info={info} token={token}/>
               {(info.kind==='memorial'||info.kind==='prayerbook')&&(
-                <Text style={styles.notice}>Это отдельная копия. Фотографии из облака будут скопированы в ваш аккаунт (до 12 файлов). Оригиналы отправителя не изменяются. Остальные вложения не передаются.</Text>
+                <Text style={styles.notice}>Вы можете просмотреть содержимое и фотографии до добавления. При сохранении фотографии будут скопированы в ваш аккаунт (не более 12). Оригинал отправителя не изменится.</Text>
               )}
               {signedOut&&(
                 <Text style={styles.notice}>
-                  Содержимое доступно по ссылке без входа.
-                  Чтобы добавить копию в свой аккаунт, войдите через Google.
+                  Материал можно просматривать без входа. Чтобы сохранить свою копию, войдите через Google, затем вернитесь на эту страницу.
                 </Text>
               )}
               <Pressable
@@ -138,6 +217,22 @@ const styles=StyleSheet.create({
   label:{color:'#A15740',fontSize:12,fontWeight:'700'},
   name:{fontSize:21,fontWeight:'700',fontFamily:'serif',color:'#4A2D20'},
   body:{fontSize:15,lineHeight:24,color:'#503829'},
+  preview:{gap:14,marginTop:3},
+  previewSection:{gap:5,paddingTop:9,borderTopWidth:1,borderTopColor:'#E4D1B8'},
+  sectionHeading:{fontSize:16,fontWeight:'700',color:'#68432E'},
+  nameRow:{fontSize:16,lineHeight:26,color:'#503829'},
+  emptyHint:{fontSize:13,color:'#8A725F',fontStyle:'italic'},
+  prayerPreview:{gap:7,paddingTop:11,borderTopWidth:1,borderTopColor:'#E4D1B8'},
+  prayerHeading:{fontSize:16,fontWeight:'700',color:'#68432E'},
+  description:{fontSize:14,lineHeight:22,color:'#785641'},
+  photoInfo:{fontSize:12,lineHeight:18,color:'#856D55'},
+  photoGrid:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:8},
+  photoThumb:{width:94,height:94,borderRadius:9,backgroundColor:'#E9D8C3'},
+  photoModal:{flex:1,backgroundColor:'rgba(30,19,14,0.96)',padding:18,
+    paddingTop:55,paddingBottom:40},
+  photoClose:{alignSelf:'flex-end',padding:12},
+  photoCloseLabel:{color:'#FFF0DD',fontSize:16,fontWeight:'600'},
+  photoFull:{flex:1,width:'100%'},
   notice:{fontSize:12,lineHeight:18,color:'#806550'},
   action:{padding:14,alignItems:'center',borderRadius:12,
     backgroundColor:'#6D442E',marginTop:8},
