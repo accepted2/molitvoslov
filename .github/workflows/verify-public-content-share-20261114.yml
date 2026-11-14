@@ -1,0 +1,42 @@
+name: Verify public content share API
+
+on:
+  pull_request:
+    branches:
+      - fix/search-result-focus-language
+    paths:
+      - 'molitvoslov-backend/**'
+      - '.github/workflows/verify-public-content-share-20261114.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-public-sharing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      SUPABASE_DB_PASSWORD: ''
+      DEBUG: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: molitvoslov-backend/requirements.txt
+      - name: Install Django dependencies
+        run: python -m pip install -r molitvoslov-backend/requirements.txt
+      - name: Verify syntax and migrations in a fresh local SQLite database
+        working-directory: molitvoslov-backend
+        run: |
+          python -m compileall -q api
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+          python manage.py migrate --noinput
+          python manage.py showmigrations api | tail -8
+      - name: Test public preview, independent copy, photos and failure rollback
+        working-directory: molitvoslov-backend
+        run: python manage.py test api.test_shared_content --verbosity 2
