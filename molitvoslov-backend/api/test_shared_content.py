@@ -267,6 +267,36 @@ class SharedContentTests(APITestCase):
             self.assertEqual(first.data["sync_id"],second.data["sync_id"])
             self.assertEqual(model.objects.filter(user=self.recipient).count(),1)
 
+    @patch("api.shared_invitations.upload_bytes")
+    @patch("api.shared_invitations.download_bytes",return_value=b"private-image")
+    def test_prayer_language_kept_but_private_origin_metadata_removed(
+            self,download,upload):
+        original=self.book.items.order_by("order").first().prayer
+        original.origin_type="library"
+        original.origin_data={
+            "language":"church",
+            "metadata":{"language":"church","section":"troparion",
+                        "feast_title":"Святителю Николаю"},
+            "private_note":"do not share",
+            "owner_account_id":self.owner.pk,
+        }
+        original.save()
+        token=self.make_share("prayerbook",source_sync_id=str(self.book.sync_id))
+        invitation=SharedContentInvitation.objects.get(token_hash__isnull=False)
+        self.assertNotIn("private_note",str(invitation.snapshot))
+        self.assertNotIn("owner_account_id",str(invitation.snapshot))
+        self.client.force_authenticate(user=self.recipient)
+        response=self.client.post(reverse("shared-import",args=[token]))
+        self.assertEqual(response.status_code,201,response.data)
+        cloned=PersonalPrayerBook.objects.get(user=self.recipient)
+        prayer=cloned.items.order_by("order").first().prayer
+        self.assertEqual(prayer.origin_type,"library")
+        self.assertEqual(prayer.origin_data["language"],"church")
+        self.assertEqual(prayer.origin_data["metadata"]["feast_title"],
+                         "Святителю Николаю")
+        self.assertTrue(prayer.origin_data["shared_copy"])
+        self.assertNotIn("private_note",prayer.origin_data)
+
     def test_cannot_share_another_persons_private_book(self):
         self.client.force_authenticate(user=self.stranger)
         for kind,sync_id in [
