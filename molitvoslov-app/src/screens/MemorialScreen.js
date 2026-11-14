@@ -96,9 +96,6 @@ export const MemorialScreen = ({navigation}) => {
     kind:'memorial',
     sourceSyncId:book.sync_id,
     title:book.title||'Помянник',
-    fallbackText:['О здравии:',...(book.health_names||[]),
-      '', 'О упокоении:',...(book.repose_names||[])].join('\n'),
-    privateContent:true,
   });
 
   const renderBook = ({item}) => {
