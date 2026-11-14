@@ -417,6 +417,33 @@ export const CanonScreen = ({route, navigation}) => {
   ]);
 
   const handleAction = async (actionKey) => {
+    if(canon && String(actionKey||'').startsWith('canon-section:')){
+      const id=Number(String(actionKey).split(':')[1]);
+      const section=documentData?.sections?.find(item=>
+        Number(item.progressAnchorId)===id && id>0);
+      if(!section)return null;
+      const existing=savedItemsRef.current.find(item=>
+        item.anchor_type==='canon_section' &&
+        Number(item.anchor_id)===id && item.save_type==='section');
+      if(existing){
+        await deleteSavedItem(existing.id);
+        savedItemsRef.current=savedItemsRef.current.filter(item=>item.id!==existing.id);
+        return {active:false,label:t('common.addToFavorites')};
+      }
+      const body=(section.rows||[]).flatMap(row=>
+        (row.blocks||[]).map(block=>String(block.text||'').trim())).filter(Boolean).join('\n\n');
+      if(!body)return null;
+      const saved=await saveItem({
+        save_type:'section',source_type:'canon',source_id:canon.id,
+        anchor_type:'canon_section',anchor_id:id,
+        source_title:getLocalizedField(canon,'title',language)||title||'Канон',
+        item_title:section.title||'Часть канона',text:body,
+        start_offset:0,end_offset:body.length,
+        metadata:{slug:canon.slug||slug,variant:primaryVariant,language:viewMode},
+      });
+      savedItemsRef.current=[saved,...savedItemsRef.current];
+      return {active:true,label:t('common.inFavorites'),savedItem:saved};
+    }
     if (!canon || actionKey !== `canon:${canon.id}`) {
       return null;
     }
@@ -770,6 +797,15 @@ export const CanonScreen = ({route, navigation}) => {
         trackProgress: true,
 
         title: sectionTitle,
+        ...(sectionTitle && Number(section.id)>0 ? {
+          action: {
+            key:'canon-section:'+Number(section.id),
+            active:savedItems.some(saved=>
+              saved.anchor_type==='canon_section' &&
+              Number(saved.anchor_id)===Number(section.id) &&
+              saved.save_type==='section'),
+          },
+        } : {}),
 
         rows: blocks.map((block) => ({
           layout: 'stack',
