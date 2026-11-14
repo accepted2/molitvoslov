@@ -951,7 +951,7 @@ export const AkathistScreen = ({route, navigation}) => {
       <ReaderBookmarkMenu
         onShare={() => shareContent({
           title:getLocalizedField(akathist,'title',language)||title||'Акафист',
-          text:documentShareText(documentData),
+          linkOnly:true,
           screen:'Akathist',params:{akathistId,slug},
         })}
         visible={readerMenuVisible}
