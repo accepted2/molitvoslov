@@ -15,6 +15,21 @@ class PublicShareLandingTests(SimpleTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "molitvoslov://kathisma/4/27/traditional")
 
+    def test_category_and_individual_prayer_section_links(self):
+        paths = (
+            "category/12/utrennie/7",
+            "category/12/utrennie",
+            "prayer/molitvy-vechernie/42",
+            "akathist/125/8",
+            "canon/80/14",
+            "hours/ordinary-1/9",
+        )
+        for path in paths:
+            with self.subTest(path=path):
+                response = self.client.get("/api/share/", {"path": path})
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, "molitvoslov://" + path)
+
     def test_private_invitation_landing_never_displays_private_content(self):
         token = "A" * 43
         response = self.client.get("/api/share/?invite=" + token)
