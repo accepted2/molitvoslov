@@ -112,7 +112,10 @@ const getSectionTitle = (section, language, t) => {
 
 export const AkathistScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
-  const {akathistId, slug, title, focusTarget = null} = route.params;
+  const {akathistId, slug, title, focusTarget: explicitFocusTarget = null, anchorId} = route.params;
+  const focusTarget = useMemo(() => explicitFocusTarget ||
+    (Number(anchorId)>0 ? {anchorType:'akathist_section',anchorId:Number(anchorId)} : null),
+    [explicitFocusTarget,anchorId]);
 
   const insets = useSafeAreaInsets();
 
