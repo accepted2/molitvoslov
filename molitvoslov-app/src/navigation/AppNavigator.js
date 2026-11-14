@@ -69,7 +69,7 @@ const linking = {
       Canon: {path:'canon/:canonId/:sectionAnchor?',parse:{sectionAnchor:Number}},
       Kathisma: {path:'kathisma/:kathismaNumber/:psalmNumber?/:readerMode?',
         parse:{kathismaNumber:Number,psalmNumber:Number}},
-      PrayerRule: {path:'prayer/:slug'},
+      PrayerRule: {path:'prayer/:slug/:prayerItemId?',parse:{prayerItemId:Number}},
       Reader: {path:'reader/:slug'},
       Book: {path:'category/:categoryId/:categorySlug/:sectionAnchor?',parse:{categoryId:Number,sectionAnchor:Number}},
       HoursReading: {path:'hours/:entryId/:sectionAnchor?',parse:{sectionAnchor:Number}},
