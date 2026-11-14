@@ -5093,7 +5093,14 @@ if (
       root.style.setProperty('--surface',background);
       root.style.setProperty('--text',text);
       document.body.classList.toggle('book-custom',palette==='custom');
-      setBookFontSize(settings.fontSize);
+      // Theme-only updates must not rebuild pagination or jump to page 1.
+      // The initial HTML already contains the scoped font size; run layout
+      // only when the user actually changes that size.
+      const requestedSize=Math.max(14,Math.min(28,Number(settings.fontSize)||16.5));
+      const currentSize=parseFloat(getComputedStyle(root).getPropertyValue('--book-font-size'));
+      if(!Number.isFinite(currentSize)||Math.abs(currentSize-requestedSize)>0.01){
+        setBookFontSize(requestedSize);
+      }
     };
 
     window.readerApi = {
