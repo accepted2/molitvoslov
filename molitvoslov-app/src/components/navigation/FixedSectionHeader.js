@@ -42,8 +42,12 @@ export const FixedSectionHeader = ({
   const safeTop = compactReading ? Math.max(insets.top, topInset, 0) : topInset;
   const contentTop = safeTop + (compactReading ? 4 : 0);
   const headerHeight = contentTop + (compactReading ? 44 : (minimal ? 45 : 36)) + extraTitleHeight;
-  // Fade begins near the controls rather than covering another large block of text.
-  const gradientHeight = Math.max(headerHeight + 7, safeTop + 57);
+  // Keep the top background even when the reading controls slide away.
+  // The gradient reaches only four pixels below the header; the last eight
+  // pixels provide a gentle fade rather than covering the prayer text.
+  const gradientHeight = headerHeight + 4;
+  const gradientFadeStart = Math.max(0, (headerHeight - 4) / gradientHeight);
+  const gradientFadeMiddle = headerHeight / gradientHeight;
   useEffect(() => {
     onHeaderHeightChange?.(headerHeight);
   }, [headerHeight, onHeaderHeightChange]);
@@ -66,21 +70,14 @@ export const FixedSectionHeader = ({
       {/* Background treatments belong to reading screens only. Ordinary
           category menus must keep their own artwork visible in the header. */}
       {!minimal && compactReading && (
-        <Animated.View
+        <LinearGradient
           pointerEvents="none"
-          style={[styles.fixedGradient, {height: gradientHeight}, {
-            opacity: visibility.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
-          }]}
-        >
-          <LinearGradient
-            pointerEvents="none"
-            colors={chrome.gradient}
-            locations={[0, 0.23, 0.55, 1]}
-            start={{x: 0.5, y: 0}}
-            end={{x: 0.5, y: 1}}
-            style={StyleSheet.absoluteFillObject}
-          />
-        </Animated.View>
+          colors={chrome.gradient}
+          locations={[0, gradientFadeStart, gradientFadeMiddle, 1]}
+          start={{x: 0.5, y: 0}}
+          end={{x: 0.5, y: 1}}
+          style={[styles.fixedGradient, {height: gradientHeight}]}
+        />
       )}
 
       <Animated.View
@@ -270,7 +267,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    // Follows the header visibility and never blocks reader scroll/taps.
+    // Fixed independently of the header; never blocks scrolling or taps.
     zIndex: 999,
     elevation: 19,
   },
