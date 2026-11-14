@@ -171,7 +171,11 @@ const getCanonInlineLabel = (section, text, t) => {
 
 export const CanonScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
-  const {canonId, slug, title, focusTarget = null} = route.params;
+  const {canonId, slug, title, focusTarget: originalFocusTarget = null,
+    sectionAnchor = null} = route.params;
+  const focusTarget = originalFocusTarget ||
+    (Number(sectionAnchor)>0 ? {anchor_type:'reader_section',
+      anchor_id:Number(sectionAnchor),metadata:{section_id:Number(sectionAnchor)}} : null);
 
   const insets = useSafeAreaInsets();
 
