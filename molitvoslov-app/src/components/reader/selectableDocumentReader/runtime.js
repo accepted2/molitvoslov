@@ -259,8 +259,7 @@ export const READER_RUNTIME = String.raw`
         if ( DATA.document.title ) {
           documentHeader.appendChild( titleEl( 'h1', 'rule-title', DATA.document.title ) );
         }
-        if(!DATA.document.embedded &&
-           !reader.classList.contains('psalter-kathisma-reader')) {
+        if(!DATA.document.embedded) {
           documentHeader.appendChild(createReaderActions('document',-1,DATA.document.action));
         }
         reader.appendChild( documentHeader );
