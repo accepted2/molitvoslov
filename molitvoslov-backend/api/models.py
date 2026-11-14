@@ -1768,7 +1768,7 @@ class SharedContentInvitation(models.Model):
     title = models.CharField(max_length=180)
     snapshot = models.JSONField(default=dict)
     created_at = models.DateTimeField(auto_now_add=True)
-    expires_at = models.DateTimeField()
+    expires_at = models.DateTimeField(null=True, blank=True)
     revoked_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
