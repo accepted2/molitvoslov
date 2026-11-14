@@ -118,7 +118,8 @@ export const BibleChapterScreen = ({route, navigation}) => {
   const [currentBookmarkOffset,setCurrentBookmarkOffset] = useState(0);
   const [crossReferenceOrigin, setCrossReferenceOrigin] = useState(null);
   const {appearance,changeAppearance,resetAppearance} =
-    useScopedReaderAppearance('bible',book?.code || bookId);
+    useScopedReaderAppearance('bible',book?.code || bookId,
+      isTraditional ? 19 : null);
   const readerPalette=resolveReaderAppearance(appearance);
   const isDarkTheme=isDarkReaderBackground(readerPalette.background);
   const readerTheme=isDarkTheme?'night':'paper';
