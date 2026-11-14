@@ -51,6 +51,12 @@ export const sharePathFor = (screen,params={}) => {
       const feastUid=slug(params.feastUid || params.feastId);
       return 'saint/'+id+'/'+section+(feastUid?'/'+feastUid:'');
     }
+    case 'Book': {
+      const categoryId=Number(params.categoryId);
+      const categorySlug=slug(params.categorySlug);
+      return Number.isInteger(categoryId)&&categoryId>=1&&categoryId<=999999&&categorySlug
+        ? 'category/'+categoryId+'/'+categorySlug : null;
+    }
     case 'Psalter':return 'psalter';
     default:return null;
   }
@@ -163,6 +169,11 @@ export const resolveSelectedShareTarget = config => {
             readerMode:meta.reader_mode||meta.language,
           }}
         : {screen:'Psalter',params:{}};
+    case 'category':
+      return {screen:'Book',params:{
+        categoryId:config.sourceId,categorySlug:meta.category_slug,
+        categoryName:meta.category_name||config.sourceTitle,
+      }};
     case 'hours':
       return {screen:'HoursReading',params:{entryId:meta.entry_id||meta.entryId}};
     case 'calendar':
@@ -192,6 +203,8 @@ export const shareSavedItem = item => {
       : ['Psalter',{}],
     prayer_rule:['PrayerRule',{slug:meta.slug}],
     text:['Reader',{slug:meta.slug}],
+    category:['Book',{categoryId:item.source_id,
+      categorySlug:meta.category_slug,categoryName:meta.category_name}],
     hours:['HoursReading',{entryId:meta.entry_id||meta.entryId}],
     calendar:['SaintDetail',{date:meta.date,focusSection:meta.section,
       feastUid:meta.feast_uid||meta.feast_id}],
