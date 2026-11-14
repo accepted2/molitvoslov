@@ -49,14 +49,34 @@ assert.ok(styles.lastIndexOf('body.book-mode.book-custom::after') >
   styles.lastIndexOf('body.book-mode.book-night::after'),
   'Custom background must override the book-night edge shadow');
 
-// The reading fade stays fixed even while the header animates out of view.
-// It reaches only 4px below the controls and blends softly into the page.
+// Keep the old palette but use a small, fully fading veil (~two text lines).
+// It stays fixed at the top independently of the disappearing controls.
 const header=read('src/components/navigation/FixedSectionHeader.js');
-assert.match(header, /gradientHeight = headerHeight \+ 4;/);
-assert.match(header, /gradientFadeStart = Math\.max\(0, \(headerHeight - 4\) \/ gradientHeight\)/);
-assert.match(header, /locations=\{\[0, gradientFadeStart, gradientFadeMiddle, 1\]\}/);
+assert.match(header, /gradientHeight = Math\.max\(48, Math\.round\(headerHeight \* 0\.65\)\)/);
+assert.match(header, /locations=\{\[0, 0\.2, 0\.5, 1\]\}/);
 assert.match(header, /style=\{\[styles\.fixedGradient, \{height: gradientHeight\}\]\}/);
 assert.doesNotMatch(header, /styles\.fixedGradient[\s\S]{0,120}opacity: visibility\.interpolate/);
+const chrome=read('src/services/readerHeaderChrome.js');
+assert.match(chrome, /withOpacity\(surface, 0\.99\)/);
+assert.match(chrome, /withOpacity\(surface, 0\.91\)/);
+assert.match(chrome, /withOpacity\(background, 0\.54\)/);
+assert.match(chrome, /withOpacity\(background, 0\)/);
+assert.doesNotMatch(header, /gradientFadeStart|gradientFadeMiddle/);
+
+// The button stays light in dark mode: dots and menu labels must stay dark.
+const controlInk='#4B301D';
+const rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255);
+const lum=h=>rgb(h).map(c=>c<=0.04045?c/12.92:((c+0.055)/1.055)**2.4)
+  .reduce((a,c,i)=>a+c*[0.2126,0.7152,0.0722][i],0);
+const contrast=(a,b)=>(Math.max(lum(a),lum(b))+0.05)/
+  (Math.min(lum(a),lum(b))+0.05);
+assert.ok(contrast(controlInk,'#F1DFC2')>=7, 'Three-dot icon must be readable');
+const ruleCss=read('src/components/reader/PrayerRuleReader.js');
+assert.match(ruleCss, /\.prayer-actions-trigger\s*\{[\s\S]*?color:#4B301D;[\s\S]*?font-size:27px/);
+assert.match(ruleCss, /\.prayer-actions-menu \.favorite-action,[\s\S]*?color:#4B301D;/);
+const sharedCss=read('src/components/reader/selectableDocumentReader/styles.js');
+assert.match(sharedCss, /\.psalter-kathisma-reader \.psalter-psalm-section \.psalter-psalm-menu\s*\{[\s\S]*?color:#4B301D;/);
+assert.match(sharedCss, /\.has-reader-action-menu \.reader-action-trigger\s*\{[\s\S]*?color: #4B301D;/);
 const bible=read('src/screens/BibleChapterScreen.js');
 // The Bible retains its original, non-compact book header.
 const bibleHeader=bible.split('<FixedSectionHeader')[1]?.split('/>')[0] || '';
@@ -75,4 +95,4 @@ const appearance=read('src/services/scopedReaderAppearance.js');
 assert.match(appearance, /body:not\(\.book-mode\) \{background:/);
 assert.doesNotMatch(appearance, /"var css='body \{background:/);
 
-console.log('PASS: Bible palette stays stable; original Bible header preserved; top fade persists and extends only 4px below prayer header');
+console.log('PASS: Bible theme stable, original Bible header, two-line old-style persistent fade, readable 3-dot controls');
