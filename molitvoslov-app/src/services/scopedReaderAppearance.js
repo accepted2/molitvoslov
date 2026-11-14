@@ -44,6 +44,10 @@ export const getScopedAppearanceKey = async ({sourceType, sourceId}) =>
   PREFIX + ':' + (await ownerScope()) + ':' +
   encodeURIComponent(String(sourceType || 'reader')) + ':' +
   encodeURIComponent(String(sourceId || ''));
+const defaultForScope = (settings, sourceType, defaultFontSize) =>
+  defaultFontSize && Number(settings.fontSize) === DEFAULT_READING_SETTINGS.fontSize
+    ? {...settings, fontSize: defaultFontSize}
+    : settings;
 export const loadScopedAppearance = async (scope) => {
   const key = await getScopedAppearanceKey(scope);
   const globalSettings = await getReadingSettings().catch(() => DEFAULT_READING_SETTINGS);
@@ -63,7 +67,9 @@ export const loadScopedAppearance = async (scope) => {
   ));
   return {
     key,
-    value: inherited ? normalizeReaderAppearance(globalSettings)
+    value: inherited
+      ? normalizeReaderAppearance(defaultForScope(
+        globalSettings, scope.sourceType, scope.defaultFontSize))
       : normalizeReaderAppearance({...globalSettings, ...saved}),
     inherited,
   };
@@ -79,13 +85,15 @@ export const storeScopedAppearance = async (key, appearance) => {
   const scope = cloudScopeFromKey(key);
   if (scope) queueAccountPreferencePatch({reader_overrides: {[scope]: value}}).catch(console.warn);
 };
-export const resetScopedAppearance = async (key) => {
+export const resetScopedAppearance = async (key, scope = {}) => {
   if (key) {
     await AsyncStorage.removeItem(key);
     const scope = cloudScopeFromKey(key);
     if (scope) queueAccountPreferencePatch({reader_overrides: {[scope]: null}}).catch(console.warn);
   }
-  return normalizeReaderAppearance(await getReadingSettings().catch(() => DEFAULT_READING_SETTINGS));
+  const settings = await getReadingSettings().catch(() => DEFAULT_READING_SETTINGS);
+  return normalizeReaderAppearance(defaultForScope(
+    settings, scope.sourceType, scope.defaultFontSize));
 };
 /** Apply theme and text size without flattening the liturgical color hierarchy.
  * In every reader, prayer headings are brown, Russian translation is secondary,
