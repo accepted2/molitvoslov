@@ -1,8 +1,8 @@
-"""Shareable read-only snapshots of texts, memorials and personal prayer books.
+"""Copy-by-link for texts, memorials and personal prayer books.
 
-A link opens the snapshot preview without a login, not access to
+Token possession grants preview to an authenticated recipient, not access to
 the owner's live account. A new independent copy is created on import.
-Private photo storage paths stay hidden; recipient imports get independent copies.
+Photos, when present, are copied into the recipient account on import.
 """
 import hashlib
 import secrets
@@ -10,12 +10,11 @@ import uuid
 from datetime import timedelta
 
 from django.db import transaction
-from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .supabase_storage import (
@@ -47,7 +46,8 @@ def _invitation(token, *, lock=False):
     return query.filter(
         token_hash=_hash(token),
         revoked_at__isnull=True,
-    ).filter(Q(expires_at__isnull=True) | Q(expires_at__gt=timezone.now())).first()
+        expires_at__gt=timezone.now(),
+    ).first()
 
 
 def _clean_title(value, fallback, limit=180):
@@ -207,7 +207,7 @@ def create_shared_invitation(request):
         return Response({"detail": str(exc)},
                         status=status.HTTP_400_BAD_REQUEST)
     token = secrets.token_urlsafe(32)  # 256 random bits, URL-safe
-    expires_at = None  # Public share links remain valid until explicitly revoked.
+    expires_at = timezone.now() + timedelta(days=7)
     SharedContentInvitation.objects.create(
         owner=request.user, token_hash=_hash(token),
         kind=kind, title=title, snapshot=snapshot, expires_at=expires_at,
@@ -216,12 +216,12 @@ def create_shared_invitation(request):
         "token": token,
         "kind": kind,
         "title": title,
-        "expires_at": None,
+        "expires_at": expires_at.isoformat(),
     }, status=status.HTTP_201_CREATED)
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def preview_shared_invitation(request, token):
     invite = _invitation(token)
     if not invite:
@@ -244,10 +244,10 @@ def preview_shared_invitation(request, token):
         "kind": invite.kind,
         "title": invite.title,
         "content": summary,
-        "expires_at": invite.expires_at.isoformat() if invite.expires_at else None,
-        "imported": (SharedContentImport.objects.filter(
+        "expires_at": invite.expires_at.isoformat(),
+        "imported": SharedContentImport.objects.filter(
             invitation=invite, recipient=request.user,
-        ).exists() if request.user.is_authenticated else False),
+        ).exists(),
     })
 
 
