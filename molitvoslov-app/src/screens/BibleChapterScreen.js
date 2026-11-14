@@ -117,7 +117,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
   const [currentBookmarkAnchor,setCurrentBookmarkAnchor] = useState(null);
   const [currentBookmarkOffset,setCurrentBookmarkOffset] = useState(0);
   const [crossReferenceOrigin, setCrossReferenceOrigin] = useState(null);
-  const {appearance,changeAppearance,resetAppearance} =
+  const {appearance,appearanceReady,changeAppearance,resetAppearance} =
     useScopedReaderAppearance('bible',book?.code || bookId,
       isTraditional ? 19 : null);
   const readerPalette=resolveReaderAppearance(appearance);
@@ -804,7 +804,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
     );
   }
 
-  if (savedLoading || !progressReady) {
+  if (savedLoading || !progressReady || !appearanceReady) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.accent} />
@@ -813,7 +813,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
   }
 
   return (
-    <View style={[styles.screen, readerTheme === 'night' && styles.screenNight]}>
+    <View style={[styles.screen, {backgroundColor: readerPalette.background}]}>
       <StatusBar
         style={readerTheme === 'night' ? 'light' : 'dark'}
         translucent
@@ -829,6 +829,7 @@ export const BibleChapterScreen = ({route, navigation}) => {
         bottomContentInset={readerBottomInset}
         respectBottomSafeArea={false}
         backgroundColor={readerPalette.background}
+        initialAppearance={appearance}
         onProgress={handleProgress}
         onAction={handleAction}
         onCrossReference={openCrossReferences}
@@ -898,6 +899,8 @@ export const BibleChapterScreen = ({route, navigation}) => {
         showMenu
         onMenuPress={openReaderMenu}
         dark={readerTheme === 'night'}
+        compactReading
+        gradientColor={readerPalette.background}
       />
 
       {!!bookmarkFeedback && (
