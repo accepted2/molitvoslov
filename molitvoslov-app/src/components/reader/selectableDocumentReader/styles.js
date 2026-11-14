@@ -383,7 +383,8 @@ export const READER_STYLES = String.raw`
       border-radius:16px;
       border:1px solid var(--border);
       background:rgba(241,223,194,.94);
-      color:var(--secondary);
+      /* Fixed dark glyph on the existing light control background. */
+      color:#4B301D;
       font-family:Georgia,serif;
       font-size:23px;
       line-height:29px;
@@ -2795,7 +2796,8 @@ export const READER_STYLES = String.raw`
       border-radius: 17px;
       border: 1px solid var(--border);
       background: rgba(241,223,194,.96);
-      color: var(--secondary);
+      /* The reader's --secondary may be nearly white in dark/custom themes. */
+      color: #4B301D;
       font-size: 25px;
       line-height: 29px;
       display: flex;
