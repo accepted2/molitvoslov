@@ -5,11 +5,16 @@ import {syncPrayerBooks} from './prayerBooks';
 import {syncSavedItems} from './savedItems';
 import {showShareFeedback,hideShareFeedback} from './shareFeedback';
 
-const readableError = async response => {
+const readableError = async (response, action='create') => {
   const result=await response.json().catch(()=>({}));
-  const error=new Error(
-    response.status===404 ? 'Сервер ещё не поддерживает ссылки на получаемые материалы.'
-      : result?.detail || 'Ошибка сервера ('+response.status+')');
+  const message=result?.detail || (
+    response.status===401 ? 'Войдите в аккаунт, чтобы добавить этот материал.'
+      : response.status===404 && action==='open'
+        ? 'Ссылка недействительна, отозвана или срок её действия истёк.'
+        : response.status===404
+          ? 'Сервер ещё не поддерживает ссылки на получаемые материалы.'
+          : 'Ошибка сервера ('+response.status+')');
+  const error=new Error(message);
   error.status=response.status;
   throw error;
 };
@@ -20,7 +25,7 @@ export const fetchSharedInvitation = async token => {
   // Any holder of the public sharing link can preview its snapshot.
   // Importing a copy still requires a destination account.
   const response=await fetch(API_BASE_URL+'/api/shared/'+encodeURIComponent(token)+'/');
-  if(!response.ok)return readableError(response);
+  if(!response.ok)return readableError(response,'open');
   return response.json();
 };
 export const importSharedInvitation = async token => {
@@ -28,14 +33,18 @@ export const importSharedInvitation = async token => {
     '/api/shared/'+encodeURIComponent(token)+'/import/', {
       method:'POST',body:JSON.stringify({}),
     });
-  if(!response.ok)return readableError(response);
+  if(!response.ok)return readableError(response,'open');
   const result=await response.json();
   // Server creates the copy under the recipient's account. Pull it into the
   // existing offline database instead of creating a second local copy.
   try{
-    if(result.kind==='quote')await syncSavedItems();
-    else if(result.kind==='memorial')await syncMemorials();
-    else if(result.kind==='prayerbook')await syncPrayerBooks();
+    let syncResult;
+    if(result.kind==='quote')syncResult=await syncSavedItems();
+    else if(result.kind==='memorial')syncResult=await syncMemorials();
+    else if(result.kind==='prayerbook')syncResult=await syncPrayerBooks();
+    if(syncResult?.success===false){
+      throw syncResult.error || new Error('Не удалось обновить локальную копию.');
+    }
   }catch(error){
     console.warn('[sharing] import succeeded remotely; local pull failed:',error);
     return {...result,localPending:true};
@@ -81,8 +90,14 @@ export const shareImportableContent=async({
     showShareFeedback({loading:true,title:'Подготавливаем ссылку',
       message:'Создаём безопасную копию и ссылку для получателя...'});
     try{
-      if(kind==='memorial')await syncMemorials();
-      if(kind==='prayerbook')await syncPrayerBooks();
+      // Share the server snapshot only after all pending local edits and
+      // photographs have actually reached the user's cloud account.
+      const sync=kind==='memorial'?await syncMemorials()
+        :kind==='prayerbook'?await syncPrayerBooks():null;
+      if(sync?.success===false){
+        throw new Error('Не удалось загрузить все данные в облако. '+
+          (sync.error?.message||'Проверьте интернет и повторите.'));
+      }
       if(kind==='quote')await syncSavedItems().catch(()=>{});
       const request=kind==='quote'?{title,text}:{source_sync_id:sourceSyncId};
       const invite=await createInvite(kind,request);
