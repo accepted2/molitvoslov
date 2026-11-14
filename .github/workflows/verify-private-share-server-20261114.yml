@@ -3,7 +3,7 @@ name: Verify sharing APIs for Render
 on:
   pull_request:
     branches:
-      - deploy/share-category-import-20261114
+      - fix/search-result-focus-language
     paths:
       - 'molitvoslov-backend/**'
       - '.github/workflows/verify-private-share-server-20261114.yml'
