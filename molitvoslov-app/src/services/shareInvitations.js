@@ -21,6 +21,12 @@ const readableError = async (response, action='create') => {
 const inviteUrl = token =>
   API_BASE_URL+'/api/share/?invite='+encodeURIComponent(token);
 
+// Image bytes are served by Django only while the same invitation is valid.
+// Do not expose Supabase storage paths or keys to the receiving device.
+export const sharedPhotoUrl = (token,index) =>
+  API_BASE_URL+'/api/shared/'+encodeURIComponent(token)+
+  '/photo/'+String(index)+'/';
+
 export const fetchSharedInvitation = async token => {
   // Any holder of the public sharing link can preview its snapshot.
   // Importing a copy still requires a destination account.
