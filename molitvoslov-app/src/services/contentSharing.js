@@ -44,7 +44,8 @@ export const sharePathFor = (screen,params={}) => {
         ? params.readerMode:'church';
       return 'kathisma/'+chapter+'/'+psalm+'/'+mode;
     }
-    case 'PrayerRule': id=slug(params.slug);return id?'prayer/'+id:null;
+    case 'PrayerRule': id=slug(params.slug);
+      return id?'prayer/'+id+sectionSuffix(params.prayerItemId):null;
     case 'Reader': id=slug(params.slug);return id?'reader/'+id:null;
     case 'HoursReading':id=slug(params.entryId);
       return id?'hours/'+id+sectionSuffix(params.sectionAnchor):null;
@@ -163,7 +164,8 @@ export const resolveSelectedShareTarget = config => {
     case 'canon':
       return {screen:'Canon',params:{canonId:config.sourceId,slug:meta.slug}};
     case 'prayer_rule':
-      return {screen:'PrayerRule',params:{slug:meta.slug}};
+      return {screen:'PrayerRule',params:{slug:meta.slug,
+        prayerItemId:meta.prayer_item_id||meta.item_id}};
     case 'text':
       return {screen:'Reader',params:{slug:meta.slug}};
     case 'psalter':
@@ -206,7 +208,8 @@ export const shareSavedItem = item => {
           psalmNumber:meta.psalm_number,
           readerMode:meta.reader_mode||meta.language}]
       : ['Psalter',{}],
-    prayer_rule:['PrayerRule',{slug:meta.slug}],
+    prayer_rule:['PrayerRule',{slug:meta.slug,
+      prayerItemId:meta.prayer_item_id||meta.item_id||item.anchor_id}],
     text:['Reader',{slug:meta.slug}],
     category:['Book',{categoryId:item.source_id,
       categorySlug:meta.category_slug,categoryName:meta.category_name}],
