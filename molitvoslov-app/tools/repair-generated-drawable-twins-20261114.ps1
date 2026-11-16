@@ -26,18 +26,16 @@ $config = Get-Content -LiteralPath (Join-Path $root 'app.json') -Raw -Encoding U
 if ($config.expo.version -ne '1.0.30' -or [int]$config.expo.android.versionCode -ne 31) {
   throw "Expected release 1.0.30 (31), found $($config.expo.version) ($($config.expo.android.versionCode))."
 }
-$home = @('akathists','canons','communion','evening','hero','morning','page_bg2','page_bg3','psalter')
+$homeImages = @('akathists','canons','communion','evening','hero','morning','page_bg2','page_bg3','psalter')
 $evangelists = @('john-bg','john-icon','luke-bg','luke-icon','mark-bg','mark-icon','matthew-bg','matthew-icon')
-$images = @(
-  @($home | ForEach-Object {
+$images = @($homeImages | ForEach-Object {
     [pscustomobject]@{
       Source = ('assets\home\' + $_ + '.webp')
       CodeFile = 'src\data\homeArtwork.js'
       Id = ('assets_home_' + $_)
       ImageName = $_
     }
-  })
-  @($evangelists | ForEach-Object {
+  }) + @($evangelists | ForEach-Object {
     [pscustomobject]@{
       Source = ('assets\bible\evangelists\' + $_ + '.webp')
       CodeFile = 'src\data\bibleArtwork.js'
@@ -45,7 +43,7 @@ $images = @(
       ImageName = $_
     }
   })
-)
+if ($images.Count -ne 17) { throw "Expected 17 artwork definitions; got $($images.Count)." }
 $dupes = New-Object 'System.Collections.Generic.List[object]'
 foreach ($item in $images) {
   $webpSource = Join-Path $root $item.Source
