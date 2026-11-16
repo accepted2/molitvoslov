@@ -68,11 +68,17 @@ jobs:
             echo "Already corrected; no git commit required"
             exit 0
           fi
-          if [ "$changed" != "$expected" ]; then
-            echo "ERROR: changed paths differ from the explicitly approved four snapshots"
-            printf '%s\n' "$changed"
-            exit 1
-          fi
+          # All changes must belong to the four approved snapshots. On an
+          # idempotent re-run only a subset (e.g. formatting) may change.
+          while IFS= read -r changed_file; do
+            case "$changed_file" in
+              molitvoslov-app/src/data/calendar/2025-04.json|\
+              molitvoslov-app/src/data/calendar/2027-04.json|\
+              molitvoslov-app/src/data/calendar/2027-05.json|\
+              molitvoslov-backend/calendar_2027.json) ;;
+              *) echo "ERROR: unapproved change: $changed_file"; exit 1 ;;
+            esac
+          done <<< "$changed"
           git add -- \
             molitvoslov-app/src/data/calendar/2025-04.json \
             molitvoslov-app/src/data/calendar/2027-04.json \
