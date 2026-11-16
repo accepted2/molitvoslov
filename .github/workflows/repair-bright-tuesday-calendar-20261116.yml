@@ -1,0 +1,84 @@
+name: Repair Paschal Tuesday calendar snapshots (2025 and 2027)
+on:
+  push:
+    branches:
+      - optimize/android-apk-size-20261116
+    paths:
+      - .github/workflows/repair-bright-tuesday-calendar-20261116.yml
+      - molitvoslov-app/tools/repair-bright-tuesday-calendar-20261116.js
+      - molitvoslov-app/tools/test-bright-tuesday-calendar-20261116.js
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  repair-snapshots:
+    if: github.ref == 'refs/heads/optimize/android-apk-size-20261116'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Preflight and expected move report (read-only)
+        run: node molitvoslov-app/tools/repair-bright-tuesday-calendar-20261116.js
+      - name: Apply reversible snapshot repair and SHA backups
+        run: node molitvoslov-app/tools/repair-bright-tuesday-calendar-20261116.js --apply
+      - name: Verify 2025, 2026, 2027 all languages and backend
+        run: |
+          node molitvoslov-app/tools/test-bright-tuesday-calendar-20261116.js
+          node molitvoslov-app/tools/repair-bright-tuesday-calendar-20261116.js
+      - name: Verify source generator's Pascha+2 correction rules
+        working-directory: molitvoslov-backend
+        run: |
+          python - <<'PY'
+          from datetime import date
+          from api.calendar_engine_v2 import Memorial
+          from api.calendar_engine_v3 import classify_v3
+          from api.calendar_engine_v4 import classify_v4, target_v4, orthodox_pascha, choose_main_v4
+          names = {
+            4192: 'Икона Богородицы Одигитрия Шуйская',
+            4189: 'Мученики Христодул и Анастасия Патрские, убиенные в Ахаии',
+            4190: 'Преподобномученики отцы Давидо-Гареджийские',
+          }
+          for key,title in names.items():
+              obj=Memorial(key,title,date(2026,4,14))
+              assert classify_v3(obj).kind=='pascha'
+              rule=classify_v4(obj)
+              assert rule.kind=='pascha' and rule.anchor==2
+              assert target_v4(rule,2026)==date(2026,4,14)
+              assert target_v4(rule,2027)==date(2027,5,4)
+              assert target_v4(rule,2025)==date(2025,4,22)
+          print('PASS: three known movable feasts in engines v3/v4, reference 2026 unchanged')
+          PY
+      - name: Commit only vetted snapshot JSON files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --stat
+          changed="$(git diff --name-only)"
+          expected="$(printf '%s\n' \
+            molitvoslov-app/src/data/calendar/2025-04.json \
+            molitvoslov-app/src/data/calendar/2027-04.json \
+            molitvoslov-app/src/data/calendar/2027-05.json \
+            molitvoslov-backend/calendar_2027.json)"
+          if [ -z "$changed" ]; then
+            echo "Already corrected; no git commit required"
+            exit 0
+          fi
+          if [ "$changed" != "$expected" ]; then
+            echo "ERROR: changed paths differ from the explicitly approved four snapshots"
+            printf '%s\n' "$changed"
+            exit 1
+          fi
+          git add -- \
+            molitvoslov-app/src/data/calendar/2025-04.json \
+            molitvoslov-app/src/data/calendar/2027-04.json \
+            molitvoslov-app/src/data/calendar/2027-05.json \
+            molitvoslov-backend/calendar_2027.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m "fix(calendar): move verified Bright Tuesday feasts to Pascha+2 in 2025 and 2027 snapshots"
+          git push origin HEAD:refs/heads/optimize/android-apk-size-20261116
