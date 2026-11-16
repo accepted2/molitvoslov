@@ -5,7 +5,13 @@ import io
 import pathlib
 import tempfile
 import zipfile
-from audit_apk_image_assets_20261116 import inspect
+import importlib.util
+
+script=pathlib.Path(__file__).with_name("audit-apk-image-assets-20261116.py")
+spec=importlib.util.spec_from_file_location("apk_image_audit",script)
+module=importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+inspect=module.inspect
 
 with tempfile.TemporaryDirectory(prefix="molitvoslov-image-audit-") as tmp:
     root=pathlib.Path(tmp)
