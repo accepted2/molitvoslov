@@ -108,4 +108,43 @@ for(const [label,file]of sources){
    }
  }
 }
+// Concise, diff-friendly report for the requested civil date.
+console.log('\n===== CONCISE MATCH 2027-04-14 =====');
+const localRoot=read(sources[0][1]);
+const localLoaded=localRoot.__molitvoslov_calendar_delta_version
+ ? require('../src/services/calendarMonthCodec').unpackCalendarMonth(localRoot)
+ : localRoot;
+const localDay=localLoaded.days[target];
+const server=read(sources[1][1]);
+const serverDay=server.days[target];
+const localTitles=localDay.ru.all_feasts.map(x=>x.title);
+const backendTitles=serverDay.feasts.map(x=>x.title);
+const backendMain=serverDay.feasts.find(x=>x.key===serverDay.main_feast);
+console.log('BACKEND_MAIN',JSON.stringify({
+  key:serverDay.main_feast,
+  title:backendMain?.title,
+  localId:backendMain?.local_id,
+  reason:serverDay.main_feast_reason,
+},null,2));
+console.log('OFFLINE_MAIN',JSON.stringify({
+ id:localDay.ru.main_feast?.id,
+ title:localDay.ru.main_feast?.title,
+},null,2));
+console.log('OFFLINE_RU_TITLES',JSON.stringify(localTitles,null,2));
+console.log('BACKEND_TITLES',JSON.stringify(backendTitles,null,2));
+console.log('TITLES_ONLY_OFFLINE',JSON.stringify(localTitles.filter(x=>!backendTitles.includes(x))));
+console.log('TITLES_ONLY_BACKEND',JSON.stringify(backendTitles.filter(x=>!localTitles.includes(x))));
+for(const lang of ['ru','uk']){
+ const day=localDay[lang];
+ const attrs=['date_gregorian','julian_day','julian_month','weekday_name',
+   'fast_type_code','fast_type_title','fast_name','fast_description','summary',
+   'short_summary','gospel_title','apostolic_title','calendar_markers'];
+ console.log('OFFLINE_METADATA_'+lang,JSON.stringify(
+  Object.fromEntries(attrs.map(k=>[k,day[k]])),null,2).slice(0,3200));
+ console.log('OFFLINE_READINGS_'+lang,JSON.stringify(
+  day.readings.map(x=>({kind:x.kind,label:x.label,title:x.title,order:x.order})),null,2));
+}
+console.log('BACKEND_FAST',JSON.stringify(serverDay.fast,null,2));
+console.log('BACKEND_READINGS',JSON.stringify(serverDay.readings,null,2));
+console.log('SOURCE_SNAPSHOT_WARNING: backend calendar_2027.json is a repository snapshot, not live Django API/DB.');
 console.log('\nREAD ONLY. No calendar content or APK changed.');
