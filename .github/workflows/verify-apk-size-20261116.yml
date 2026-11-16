@@ -38,6 +38,9 @@ jobs:
       - name: Test read-only mapping of Android APK image resources to originals
         shell: pwsh
         run: python molitvoslov-app/tools/test_audit_apk_image_assets_20261116.py
+      - name: Verify dimensions and redundant APK image bytes audit
+        shell: pwsh
+        run: python molitvoslov-app/tools/test_audit_apk_image_opportunities_20261116.py
       - name: Verify baseline preservation and explicit Gradle flags
         shell: powershell
         run: |
