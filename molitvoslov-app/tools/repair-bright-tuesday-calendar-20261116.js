@@ -136,7 +136,10 @@ function prepare(root){
   for(const file of FILES){
     const x=files[file];
     const out=x.packed?codec.packCalendarMonth(x.data):x.data;
-    const bytes=Buffer.from(JSON.stringify(out)+(x.lf?'\n':''),'utf8');
+    // Keep the backend year snapshot reviewable: its generator writes pretty JSON.
+    const text=file==='molitvoslov-backend/calendar_2027.json'
+      ? JSON.stringify(out,null,2) : JSON.stringify(out);
+    const bytes=Buffer.from(text+(x.lf?'\n':''),'utf8');
     if(!bytes.equals(x.old))
       changes.push({file,old:x.old,bytes,fromSha:hash(x.old),toSha:hash(bytes)});
   }
