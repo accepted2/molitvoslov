@@ -5,11 +5,12 @@ const fs=require('node:fs');
 const path=require('node:path');
 const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8');
 const offline=JSON.parse(read('src/data/offlineContent.json'));
+const threeCombinedCanons=JSON.parse(read('src/data/threeCombinedCanons.json'));
 
 const resolverText=read('src/services/sharedReaderRoute.js')
   .replace(/^import .+;\s*$/gm,'').replace(/\bexport const /g,'const ');
-const resolveRoute=new Function('getCurrentContent',
-  resolverText+'\nreturn resolveSharedReaderRoute;')(()=>offline);
+const resolveRoute=new Function('getCurrentContent','threeCombinedCanons',
+  resolverText+'\nreturn resolveSharedReaderRoute;')(()=>offline,threeCombinedCanons);
 const shareSource=read('src/services/contentSharing.js')
   .replace(/^import .*;\s*$/gm,'').replace(/\bexport const /g,'const ');
 const sharing=new Function('Alert','Share','shareImportableContent',
@@ -50,6 +51,10 @@ for(const [kind,route,plural,idKey] of [
   assert.doesNotMatch(screen,/Promise\.all\(\[\s*api\.get\(/);
   assert.match(screen,/catch \(savedError\)/);
 }
+assert.equal(resolveRoute('canon',{id:String(threeCombinedCanons.id)},offline).slug,
+  threeCombinedCanons.slug,'Legacy numeric link to independently bundled Three Canons');
+assert.equal(resolveRoute('canon',{id:threeCombinedCanons.slug},offline).id,
+  threeCombinedCanons.id,'Stable slug link to independently bundled Three Canons');
 assert.deepEqual(resolveRoute('akathist',{id:'not-a-real-id'},offline),
   {id:null,slug:'not-a-real-id',title:null,found:false});
 for(const [screen,params,expected] of [
