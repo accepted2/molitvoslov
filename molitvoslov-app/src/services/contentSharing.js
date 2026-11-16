@@ -27,8 +27,10 @@ export const sharePathFor = (screen,params={}) => {
         (params.translationCode==='csl_traditional'?'csl_traditional':'rst')+suffix;
     case 'Akathist':
     case 'Canon': {
-      id=slug(screen==='Akathist'?(params.akathistId || params.slug):
-        (params.canonId || params.slug));
+      // A public slug survives offline content rebuilds; a numeric ID does
+      // not. Keep numeric fallback for callers that only know the old ID.
+      id=slug(params.slug) ||
+        slug(screen==='Akathist'?params.akathistId:params.canonId);
       if(!id)return null;
       const anchor=Number(params.anchorId);
       return (screen==='Akathist'?'akathist/':'canon/')+id+
