@@ -13,6 +13,9 @@ try{
   fs.mkdirSync(path.join(root,'src','screens'),{recursive:true});
   fs.writeFileSync(path.join(root,'assets','home','hero.png'),'large PNG artwork');
   fs.writeFileSync(path.join(root,'assets','home','hero_opt.webp'),'small lossless WebP artwork');
+  const generated=path.join(root,'android','app','build','generated','res','react','release');
+  fs.mkdirSync(generated,{recursive:true});
+  fs.writeFileSync(path.join(generated,'stale.png'),'old output');
   const screen=path.join(root,'src','screens','Example.js');
   const source="const image=require('../../assets/home/hero.png');\n"+
     "const untouched=require('../../assets/home/misc_prayers.jpg');\n";
@@ -24,6 +27,7 @@ try{
   assert.match(result.stdout,/Actively imported large PNGs: 1 \/ 17/);
   assert.match(result.stdout,/DRY RUN ONLY/);
   assert.equal(fs.readFileSync(screen,'utf8'),source,'Dry run touched user source');
+  assert.ok(fs.existsSync(generated),'Dry run deleted generated resources');
   result=run(['--apply']);
   assert.equal(result.status,0,result.stderr||result.stdout);
   assert.match(result.stdout,/PASS: 1 source files updated/);
@@ -31,6 +35,7 @@ try{
   assert.match(after,/hero_opt\.webp/);
   assert.doesNotMatch(after,/hero\.png/);
   assert.match(after,/misc_prayers\.jpg/);
+  assert.ok(!fs.existsSync(generated),'Stale generated release assets should be invalidated');
   assert.ok(fs.existsSync(path.join(root,'assets','home','hero.png')));
   assert.ok(fs.existsSync(path.join(root,'assets','home','hero_opt.webp')));
   const backupDirs=fs.readdirSync(path.join(root,'reports')).filter(x=>x.startsWith('artwork-import-backup-'));
