@@ -52,11 +52,17 @@ try{
      for(let i=0;i<15;i++)doc=buildHoursDocument({entry,content,viewMode:mode});
      const ms=(perf.now()-start)/15;
      const str=JSON.stringify(doc);
+     const {buildHtml}=require(textFile('src/components/reader/selectableDocumentReader/buildHtml.js'));
+     const font=mode==='traditional' ? require(textFile('src/services/ponomarFont.js')).getCachedPonomarFontDataUri() : '';
+     const htmlStart=perf.now();
+     let markup;
+     for(let i=0;i<5;i++) markup=buildHtml({documentData:doc, savedProgress:null,focusTarget:null,topContentInset:80,bottomContentInset:90,ponomarFontDataUri:font});
+     const htmlMs=(perf.now()-htmlStart)/5;
      const blocks=(doc.sections||[]).flatMap(s=>s.rows||[]).flatMap(r=>r.blocks||[]);
      console.log(' '+mode+': build avg '+ms.toFixed(2)+'ms, blocks='+blocks.length+
        ', chars='+blocks.reduce((s,b)=>s+(b.text?.length||0),0)+
        ', marks='+blocks.reduce((s,b)=>s+(b.hoursMarks?.length||0),0)+
-       ', serialized='+str.length+' chars');
+       ', serialized='+str.length+' chars'+', html-build='+htmlMs.toFixed(2)+'ms, html='+markup.length+' chars');
    }
  }
 }catch(e){console.log('BENCH ERROR: '+(e.stack||e.message));process.exitCode=1}
