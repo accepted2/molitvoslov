@@ -38,6 +38,23 @@ class Correction:
 # References documented in README. Do not infer movable observances from
 # simply containing a word such as "Собор" or "икона".
 CONFIRMED_CORRECTIONS = (
+    # All three coincided with 1 April (Julian) in 2026 ONLY.
+    # Azbyka confirms the movable observance on Bright Tuesday:
+    # https://azbyka.ru/days/2027-05-04
+    # https://azbyka.ru/days/ikona-odigitrija-shujskaja
+    Correction(
+        4192, "2026-04-14", "Икона Богородицы Одигитрия Шуйская",
+        "pascha", 2, "Вторник Светлой седмицы, Азбука веры",
+    ),
+    Correction(
+        4189, "2026-04-14",
+        "Мученики Христодул и Анастасия Патрские, убиенные в Ахаии",
+        "pascha", 2, "Вторник Светлой седмицы, Азбука веры",
+    ),
+    Correction(
+        4190, "2026-04-14", "Преподобномученики отцы Давидо-Гареджийские",
+        "pascha", 2, "Вторник Светлой седмицы, Азбука веры",
+    ),
     Correction(4627, "2026-06-07", "Всех святых", "pascha", 56, "Неделя 1-я по Пятидесятнице"),
     Correction(
         4631,
@@ -182,6 +199,12 @@ def main_priority_v4(rule: DateRule) -> int:
         return 730
     if "попразднство" in title or "отдание" in title:
         return 650
+    # After moving the three Bright-Tuesday feasts away from 1 April
+    # (Julian), the 2026 source year's reference-main card is gone. Azbyka
+    # puts St Mary of Egypt first among the fixed commemorations on this
+    # date. Explicitly prefer her when no other reference-main card exists.
+    if title == "преподобная мария египетская":
+        return 425
     if rule.is_reference_main:
         return 400
     return 0
