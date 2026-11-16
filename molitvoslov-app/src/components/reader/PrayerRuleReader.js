@@ -6454,7 +6454,7 @@ const buildHtml = ({
 
   return HTML_TEMPLATE.replace(
     '__PONOMAR_FONT_URL__',
-    String(ponomarFontDataUri || '').replace(/"/g, '%22')
+    String(viewMode === 'traditional' ? ponomarFontDataUri || '' : '').replace(/"/g, '%22')
   )
     .replace('__READER_TOP_PADDING__', String(Math.max(16, Number(topContentInset || 0) + 16)))
     .replace('__READER_PAYLOAD__', scriptSafeJson(payload));
