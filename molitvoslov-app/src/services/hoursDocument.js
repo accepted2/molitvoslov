@@ -22,10 +22,40 @@ const isText = (value) => typeof value === 'string' && !!value.trim();
 const allRows = (sections) =>
   (Array.isArray(sections) ? sections : []).flatMap((section) => section.rows || []);
 
-// A curated Third Hour replaces any legacy imported text for ordinary-3;
- // other entries, including local First Hour imports, remain untouched.
-export const getOfflineHoursText = (entryId) =>
-  entryId === 'ordinary-3' ? thirdHourChurch : hoursTexts.entries?.[entryId] || null;
+// The original, edited First Hour imports were supplied locally and may not
+// exist in a fresh Git checkout: hoursTexts.json can contain empty entries.
+// Reuse the three COMPLETE Psalms already shipped in the traditional edition
+// as a safe offline fallback. The editorial opening/ending remain unchanged.
+// Never silently replace an existing imported Church Slavonic First Hour.
+export const getBuiltInFirstHourFallback = () => {
+  const numbers = [5, 89, 100];
+  const sourcePsalms = (firstHourTraditional.sections || [])
+    .filter(section => section.kind === 'psalm');
+  if (sourcePsalms.length !== numbers.length) return null;
+  const sections = sourcePsalms.map((section, index) => {
+    const church = (section.rows || []).map(row =>
+      String(row.traditional || '').trim()).filter(Boolean).join('\n');
+    if (!church) return null;
+    return {
+      title: 'Псалом ' + numbers[index],
+      kind: 'psalm',
+      rows: [{church, fallbackTraditional: true, preserveLineBreaks: true}],
+    };
+  });
+  if (sections.some(section => !section)) return null;
+  return {version: 1, entryId: 'ordinary-1', fallbackTraditionalPsalms: true, sections};
+};
+
+export const getOfflineHoursText = (entryId) => {
+  if (entryId === 'ordinary-3') return thirdHourChurch;
+  const imported = hoursTexts.entries?.[entryId] || null;
+  if (entryId === 'ordinary-1' &&
+      !(imported?.sections || []).some(section =>
+        (section.rows || []).some(row => isText(row.church)))) {
+    return getBuiltInFirstHourFallback();
+  }
+  return imported;
+};
 
 export const getHoursLanguageAvailability = (content) => {
   const rows = allRows(content?.sections);
@@ -166,7 +196,7 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
   const createBlock = ({
     id, language, text, title, sectionKind = 'general', opening = false,
     presentation = '', redInitial = false, accentPrefix = '',
-    preserveLineBreaks = false,
+    preserveLineBreaks = false, fallbackTraditional = false,
   }) => {
     const kind = classifyHoursRow({text, sectionKind});
     const visualNote = [
@@ -262,6 +292,7 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
       text,
       className: [
         hoursMercyLeft ? 'hours-mercy-left' : '',
+        fallbackTraditional ? 'hours-fallback-traditional' : '',
         'hours-text',
         'hours-' + language,
         'hours-' + kind,
@@ -282,7 +313,8 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
       sourceTitle: entry.title,
       itemTitle: title || entry.title,
       fullSaveType: 'hours_row',
-      metadata: {language, entryId: entry.id, groupId: entry.groupId},
+      metadata: {language: fallbackTraditional ? 'traditional' : language,
+        entryId: entry.id, groupId: entry.groupId},
     };
   };
 
@@ -335,6 +367,7 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
           preserveLineBreaks: field === 'russian'
             ? (row.russianPreserveLineBreaks ?? (row.preserveLineBreaks === true))
             : row.preserveLineBreaks === true,
+          fallbackTraditional: field === 'church' && row.fallbackTraditional === true,
         });
       };
       let blocks;
@@ -382,6 +415,7 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
         progressAnchorId: sectionIndex + 1,
         trackProgress: true,
         collapsible: section.collapsible === true,
+        sectionKind,
         accordionId: section.accordionId || null,
         rows,
       });

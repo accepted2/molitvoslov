@@ -3,6 +3,7 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
 
 import {contentApi as api} from '../services/contentApi';
+import {resolveSharedReaderRoute} from '../services/sharedReaderRoute';
 
 import {useReadingProgress} from '../hooks/useReadingProgress';
 
@@ -171,7 +172,13 @@ const getCanonInlineLabel = (section, text, t) => {
 
 export const CanonScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
-  const {canonId, slug, title, focusTarget: explicitFocusTarget = null, anchorId} = route.params;
+  const {canonId: incomingId, slug: incomingSlug, title,
+    focusTarget: explicitFocusTarget = null, anchorId} = route.params || {};
+  // Deep links pass only one segment; internal catalog navigation passes id
+  // and slug separately. Resolve both cases against the bundled offline list.
+  const {id: canonId, slug} = resolveSharedReaderRoute('canon', {
+    id: incomingId, slug: incomingSlug,
+  });
   const focusTarget = useMemo(() => explicitFocusTarget ||
     (Number(anchorId)>0 ? {anchorType:'canon_section',anchorId:Number(anchorId)} : null),
     [explicitFocusTarget,anchorId]);
@@ -233,21 +240,22 @@ export const CanonScreen = ({route, navigation}) => {
 
       savedItemsRef.current = [];
 
-      const [response, saved] = await Promise.all([
-        api.get(`canons/${slug}/`),
-
-        getSavedItems({
-          source_type: 'canon',
-
-          source_id: canonId,
-        }),
-      ]);
-
+      if (!slug) throw new Error('Ссылка не соответствует локальному канону');
+      const response = await api.get(`canons/${slug}/`);
       setCanon(response.data);
 
-      savedItemsRef.current = saved;
-
-      setSavedItems(saved);
+      // Favorites are auxiliary. A SQLite/account error must not prevent a
+      // public offline document from opening via a shared link.
+      try {
+        const saved = await getSavedItems({
+          source_type: 'canon',
+          source_id: response.data.id,
+        });
+        savedItemsRef.current = saved;
+        setSavedItems(saved);
+      } catch (savedError) {
+        console.warn('[canon] favorites unavailable:', savedError?.message || savedError);
+      }
     } catch (loadError) {
       console.log('Ошибка загрузки канона:', loadError.response?.data || loadError.message);
 
