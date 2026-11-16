@@ -47,6 +47,9 @@ jobs:
       - name: Test high-fidelity WebP candidate generation and original preservation
         shell: pwsh
         run: python molitvoslov-app/tools/test_prepare_webp_quality_trial_20261116.py
+      - name: Verify reversible reviewed Q95 home WebP trial safeguards
+        shell: pwsh
+        run: python molitvoslov-app/tools/test_apply_reviewed_home_webp_trial_20261116.py
       - name: Verify baseline preservation and explicit Gradle flags
         shell: powershell
         run: |
