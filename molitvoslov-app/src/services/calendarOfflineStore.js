@@ -7,6 +7,8 @@ import {
   loadYearMarkers,
 } from './calendarYearMarkers';
 
+const {unpackCalendarMonth} = require('./calendarMonthCodec');
+
 const STORAGE_PREFIX = 'calendar-day-v3';
 
 const bundledMonthLoaders = {
@@ -63,7 +65,9 @@ const getBundledMonthPayload = (year, month) => {
     return null;
   }
 
-  const payload = loader();
+  // Lossless on-demand expansion: the release can package large ru/uk
+  // saint texts once. Old uncompressed snapshots remain supported.
+  const payload = unpackCalendarMonth(loader());
   bundledMonthCache.set(key, payload);
 
   return payload;

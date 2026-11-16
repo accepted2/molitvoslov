@@ -1,0 +1,17 @@
+name: Audit offline vs backend calendar 14 April 2027
+on:
+  push:
+    branches:
+      - optimize/android-apk-size-20261116
+  workflow_dispatch:
+jobs:
+  compare-calendar-day:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Compare offline bundle with backend year JSON (read-only)
+        run: node molitvoslov-app/tools/inspect-calendar-day-2027-04-14-20261116.js

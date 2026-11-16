@@ -1,0 +1,71 @@
+name: Verify Android APK size experiment
+on:
+  push:
+    branches:
+      - optimize/android-apk-size-20261116
+  workflow_dispatch:
+
+jobs:
+  native-packaging-script:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse experiment in Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $path='molitvoslov-app/tools/build-compact-apk-trial-20261116.ps1'
+          $tokens=$null
+          $parseErrors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $path).Path,[ref]$tokens,[ref]$parseErrors) | Out-Null
+          if($parseErrors.Count) {
+            $parseErrors | ForEach-Object { Write-Host $_.Message }
+            throw 'Size experiment contains PowerShell parse errors'
+          }
+          Write-Host 'PASS: size-experiment PowerShell 5.1 syntax'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Exercise safe PNG/WebP import dedupe on a fixture
+        shell: pwsh
+        run: node molitvoslov-app/tools/test_apk_size_optimization_20261116.js
+      - name: Check lossless bilingual calendar codec and migration safeguards
+        shell: pwsh
+        run: node molitvoslov-app/tools/test_calendar_month_codec_20261116.js
+      - name: Verify exact lossless roundtrip across all 36 real calendar months
+        shell: pwsh
+        run: node --max-old-space-size=4096 molitvoslov-app/tools/pack-calendar-months-20261116.js
+      - name: Test read-only mapping of Android APK image resources to originals
+        shell: pwsh
+        run: python molitvoslov-app/tools/test_audit_apk_image_assets_20261116.py
+      - name: Verify dimensions and redundant APK image bytes audit
+        shell: pwsh
+        run: python molitvoslov-app/tools/test_audit_apk_image_opportunities_20261116.py
+      - name: Install Pillow for visual WebP trial fixture
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check Pillow
+      - name: Test high-fidelity WebP candidate generation and original preservation
+        shell: pwsh
+        run: python molitvoslov-app/tools/test_prepare_webp_quality_trial_20261116.py
+      - name: Verify reversible reviewed Q95 home WebP trial safeguards
+        shell: pwsh
+        run: python molitvoslov-app/tools/test_apply_reviewed_home_webp_trial_20261116.py
+      - name: Verify baseline preservation and explicit Gradle flags
+        shell: powershell
+        run: |
+          $code=Get-Content 'molitvoslov-app/tools/build-compact-apk-trial-20261116.ps1' -Raw
+          foreach($required in @(
+            '-Pexpo.useLegacyPackaging=true',
+            '-Pandroid.enableMinifyInReleaseBuilds=true',
+            '-Pandroid.enableShrinkResourcesInReleaseBuilds=true',
+            'BaselineApk',
+            'size-trial-',
+            'CompressedLength',
+            'analyze-apk-size-20261113.ps1'
+          )) {
+            if(-not $code.Contains($required)) { throw "Missing required experiment guard: $required" }
+          }
+          if($code -match '(?m)^\s*Remove-Item|(?m)^\s*git\s+(?:reset|clean)|expo\s+prebuild\s+--clean') {
+            throw 'Size experiment must not delete baseline source or clean user worktree'
+          }
+          Write-Host 'PASS: baseline and user files preserved; compact JNI and R8 opt-in'

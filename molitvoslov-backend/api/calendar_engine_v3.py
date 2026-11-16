@@ -26,6 +26,12 @@ from api.calendar_engine_v2 import (
 # Confirmed: Friday of Bright Week (+5), and 3rd Sunday after Pentecost (+70).
 # These titles lacked explicit 'movable' labels in our 2026 card data.
 CURATED_PASCHAL_RULES = (
+    # Azbyka: these three commemorations fall on Bright Tuesday, NOT on
+    # 1 April (Julian) every year. They happen to coincide on 14 April in 2026.
+    # Guarded by the actual 2026 date in classify_v3 below.
+    ("икона богородицы одигитрия шуйская", 2, "Вторник Светлой седмицы"),
+    ("мученики христодул и анастасия патрские, убиенные в ахаии", 2, "Вторник Светлой седмицы"),
+    ("преподобномученики отцы давидо-гареджийские", 2, "Вторник Светлой седмицы"),
     ("икона богородицы живоносный источник", 5, "Пятница Светлой седмицы"),
     ("собор вологодских святых", 70, "Третье воскресенье по Пятидесятнице"),
     ("собор новгородских святых", 70, "Третье воскресенье по Пятидесятнице"),
