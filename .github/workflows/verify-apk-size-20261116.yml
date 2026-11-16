@@ -29,6 +29,9 @@ jobs:
       - name: Exercise safe PNG/WebP import dedupe on a fixture
         shell: pwsh
         run: node molitvoslov-app/tools/test_apk_size_optimization_20261116.js
+      - name: Check lossless bilingual calendar codec and migration safeguards
+        shell: pwsh
+        run: node molitvoslov-app/tools/test_calendar_month_codec_20261116.js
       - name: Verify baseline preservation and explicit Gradle flags
         shell: powershell
         run: |
