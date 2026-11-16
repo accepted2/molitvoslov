@@ -55,6 +55,53 @@ jobs:
             Write-Host "Exact generated resource name check is sufficient; expected hash display is present."
           }
           Write-Host "PASS: 17-image drawable collision repair script parses in Windows PowerShell 5.1"
+      - name: Exercise drawable dry-run and safe repair on Windows PowerShell 5.1
+        shell: powershell
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP 'drawable-repair-fixture'
+          $scriptDir = Join-Path $root 'tools'
+          $res = Join-Path $root 'android\app\build\generated\res\react\release\drawable-mdpi'
+          $bundleDir = Join-Path $root 'android\app\build\generated\assets\react\release'
+          $srcDir = Join-Path $root 'src\data'
+          $homeDir = Join-Path $root 'assets\home'
+          $bibleDir = Join-Path $root 'assets\bible\evangelists'
+          @($scriptDir, $res, $bundleDir, $srcDir, $homeDir, $bibleDir, (Join-Path $root 'android')) | ForEach-Object {
+            New-Item -ItemType Directory -Force -Path $_ | Out-Null
+          }
+          Copy-Item 'molitvoslov-app/tools/repair-generated-drawable-twins-20261114.ps1' $scriptDir
+          Set-Content (Join-Path $root 'app.json') '{"expo":{"version":"1.0.30","android":{"versionCode":31}}}'
+          Set-Content (Join-Path $bundleDir 'index.android.bundle') 'test fixture release bundle'
+          Set-Content (Join-Path $root 'android\gradlew.bat') '@echo off'
+          $homeNames = @('akathists','canons','communion','evening','hero','morning','page_bg2','page_bg3','psalter')
+          $bibleNames = @('john-bg','john-icon','luke-bg','luke-icon','mark-bg','mark-icon','matthew-bg','matthew-icon')
+          $homeNames | ForEach-Object {
+            Add-Content (Join-Path $srcDir 'homeArtwork.js') ($_ + '.webp')
+            Set-Content (Join-Path $homeDir ($_ + '.webp')) 'source-webp'
+            Set-Content (Join-Path $res ('assets_home_' + $_ + '.png')) 'old-generated-png'
+            Set-Content (Join-Path $res ('assets_home_' + $_ + '.webp')) 'new-generated-webp'
+          }
+          $bibleNames | ForEach-Object {
+            Add-Content (Join-Path $srcDir 'bibleArtwork.js') ($_ + '.webp')
+            Set-Content (Join-Path $bibleDir ($_ + '.webp')) 'source-webp'
+            $name = ($_ -replace '[^a-z0-9]', '')
+            Set-Content (Join-Path $res ('assets_bible_evangelists_' + $name + '.png')) 'old-generated-png'
+            Set-Content (Join-Path $res ('assets_bible_evangelists_' + $name + '.webp')) 'new-generated-webp'
+          }
+          $repair = Join-Path $scriptDir 'repair-generated-drawable-twins-20261114.ps1'
+          $dryRun = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $repair
+          if ($LASTEXITCODE -ne 0 -or ($dryRun -join ' ') -notmatch 'Generated PNG/WebP name collisions: 17') {
+            throw "Dry run failed: $($dryRun -join '; ')"
+          }
+          if (@(Get-ChildItem $res -Filter '*.png').Count -ne 17) { throw 'Dry run changed the PNG assets' }
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $repair -Apply
+          if ($LASTEXITCODE -ne 0) { throw 'Repair failed' }
+          if (@(Get-ChildItem $res -Filter '*.png').Count -ne 0) { throw 'Generated PNGs were not removed' }
+          if (@(Get-ChildItem $res -Filter '*.webp').Count -ne 17) { throw 'Generated WebPs were damaged' }
+          $backups = @(Get-ChildItem (Join-Path $root 'reports') -Filter 'generated-png-backup-*' -Directory)
+          if ($backups.Count -ne 1 -or @(Get-ChildItem $backups[0].FullName -Filter '*.png').Count -ne 17) {
+            throw 'Generated PNG originals were not backed up'
+          }
+          Write-Host 'PASS: 17 generated PNG/WebP pairs safely repaired in Windows PowerShell 5.1'
   hours-regression:
     runs-on: ubuntu-latest
     timeout-minutes: 30
