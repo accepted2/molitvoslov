@@ -3,6 +3,7 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
 
 import {contentApi as api} from '../services/contentApi';
+import {resolveSharedReaderRoute} from '../services/sharedReaderRoute';
 
 import {useReadingProgress} from '../hooks/useReadingProgress';
 
@@ -112,7 +113,13 @@ const getSectionTitle = (section, language, t) => {
 
 export const AkathistScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
-  const {akathistId, slug, title, focusTarget: explicitFocusTarget = null, anchorId} = route.params;
+  const {akathistId: incomingId, slug: incomingSlug, title,
+    focusTarget: explicitFocusTarget = null, anchorId} = route.params || {};
+  // Deep links pass only one segment; internal catalog navigation passes id
+  // and slug separately. Resolve both cases against the bundled offline list.
+  const {id: akathistId, slug} = resolveSharedReaderRoute('akathist', {
+    id: incomingId, slug: incomingSlug,
+  });
   const focusTarget = useMemo(() => explicitFocusTarget ||
     (Number(anchorId)>0 ? {anchorType:'akathist_section',anchorId:Number(anchorId)} : null),
     [explicitFocusTarget,anchorId]);
@@ -170,21 +177,22 @@ export const AkathistScreen = ({route, navigation}) => {
       setSavedItems([]);
       savedItemsRef.current = [];
 
-      const [response, saved] = await Promise.all([
-        api.get(`akathists/${slug}/`),
-
-        getSavedItems({
-          source_type: 'akathist',
-
-          source_id: akathistId,
-        }),
-      ]);
-
+      if (!slug) throw new Error('Ссылка не соответствует локальному акафисту');
+      const response = await api.get(`akathists/${slug}/`);
       setAkathist(response.data);
 
-      savedItemsRef.current = saved;
-
-      setSavedItems(saved);
+      // Favorites are auxiliary. A SQLite/account error must not prevent a
+      // public offline document from opening via a shared link.
+      try {
+        const saved = await getSavedItems({
+          source_type: 'akathist',
+          source_id: response.data.id,
+        });
+        savedItemsRef.current = saved;
+        setSavedItems(saved);
+      } catch (savedError) {
+        console.warn('[akathist] favorites unavailable:', savedError?.message || savedError);
+      }
     } catch (loadError) {
       console.log('Ошибка загрузки акафиста:', loadError.response?.data || loadError.message);
 
