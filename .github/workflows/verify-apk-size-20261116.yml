@@ -41,6 +41,12 @@ jobs:
       - name: Verify dimensions and redundant APK image bytes audit
         shell: pwsh
         run: python molitvoslov-app/tools/test_audit_apk_image_opportunities_20261116.py
+      - name: Install Pillow for visual WebP trial fixture
+        shell: pwsh
+        run: python -m pip install --disable-pip-version-check Pillow
+      - name: Test high-fidelity WebP candidate generation and original preservation
+        shell: pwsh
+        run: python molitvoslov-app/tools/test_prepare_webp_quality_trial_20261116.py
       - name: Verify baseline preservation and explicit Gradle flags
         shell: powershell
         run: |
