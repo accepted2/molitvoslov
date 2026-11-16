@@ -23,6 +23,12 @@ jobs:
             throw 'Size experiment contains PowerShell parse errors'
           }
           Write-Host 'PASS: size-experiment PowerShell 5.1 syntax'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Exercise safe PNG/WebP import dedupe on a fixture
+        shell: pwsh
+        run: node molitvoslov-app/tools/test_apk_size_optimization_20261116.js
       - name: Verify baseline preservation and explicit Gradle flags
         shell: powershell
         run: |
