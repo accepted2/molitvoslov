@@ -1,4 +1,5 @@
 import {getCurrentContent} from './contentStore';
+import threeCombinedCanons from '../data/threeCombinedCanons.json';
 
 // A deep link contains one URL segment, not the extra id + slug parameters
 // passed by navigation from the internal catalog. Recover the actual local
@@ -19,6 +20,16 @@ export const resolveSharedReaderRoute = (kind, {id, slug} = {}, content = getCur
   if (!item && requestedId) {
     item = list.find(entry => String(entry?.id ?? '') === requestedId) || null;
     if (item?.slug && bySlug[item.slug]) item = bySlug[item.slug];
+  }
+
+  // The combined Three Canons are bundled independently of the generated
+  // offline catalog; contentApi also exposes them by their stable slug.
+  if (!item && kind === 'canon' && (
+    normalizedSlug === threeCombinedCanons.slug ||
+    requestedId === String(threeCombinedCanons.id) ||
+    requestedId === threeCombinedCanons.slug
+  )) {
+    item = threeCombinedCanons;
   }
 
   const resolvedSlug = item?.slug || normalizedSlug ||
