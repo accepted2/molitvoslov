@@ -41,7 +41,7 @@ const guard=`  // HOURS_STABLE_CONTENT_20261116:
   }
   const stableHoursWebViewSource = useMemo(
     () => ({html: isHoursDocument ? hoursDisplayedHtml : html}),
-    [isHoursDocument, hoursDisplayedHtml, html]
+    [isHoursDocument, isHoursDocument ? hoursDisplayedHtml : html]
   );
 
 `;
