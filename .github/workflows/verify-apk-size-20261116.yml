@@ -35,6 +35,9 @@ jobs:
       - name: Verify exact lossless roundtrip across all 36 real calendar months
         shell: pwsh
         run: node --max-old-space-size=4096 molitvoslov-app/tools/pack-calendar-months-20261116.js
+      - name: Test read-only mapping of Android APK image resources to originals
+        shell: pwsh
+        run: python molitvoslov-app/tools/test_audit_apk_image_assets_20261116.py
       - name: Verify baseline preservation and explicit Gradle flags
         shell: powershell
         run: |
