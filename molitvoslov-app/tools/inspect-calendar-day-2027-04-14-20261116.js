@@ -146,5 +146,40 @@ for(const lang of ['ru','uk']){
 }
 console.log('BACKEND_FAST',JSON.stringify(serverDay.fast,null,2));
 console.log('BACKEND_READINGS',JSON.stringify(serverDay.readings,null,2));
+// Additional cross-year movable-feast probe, to avoid changing correct 2026.
+for (const [year,month,dates] of [
+  [2025,'04',['2025-04-14','2025-04-22']],
+  [2026,'04',['2026-04-14']],
+  [2027,'04',['2027-04-14']],
+  [2027,'05',['2027-05-04']],
+  [2027,'08',['2027-08-10']],
+  [2027,'11',['2027-11-15']],
+]) {
+  const file=path.join(app,'src/data/calendar',year+'-'+month+'.json');
+  const loaded=read(file);
+  const days=loaded.__molitvoslov_calendar_delta_version
+    ? require('../src/services/calendarMonthCodec').unpackCalendarMonth(loaded).days
+    : loaded.days;
+  for(const date of dates){
+   const day=days[date]?.ru;
+   const matches=day?.all_feasts.filter(f=>
+     /шуйск|патрск|давидо-гареджийск/i.test(f.title||''))||[];
+   console.log('PROBE',JSON.stringify({
+    date,monthPacked:!!loaded.__molitvoslov_calendar_delta_version,
+    main:day?.main_feast?.title,
+    allCount:day?.all_feasts.length,
+    related:matches.map(x=>({id:x.id,title:x.title,julian_month:x.julian_month,
+      julian_day:x.julian_day,easter_offset:x.easter_offset}))
+   }));
+  }
+}
+for(const date of ['2027-04-14','2027-05-04']){
+ const day=server.days[date];
+ console.log('BACKEND_PROBE',JSON.stringify({
+  date,main:day.main_feast,
+  related:day.feasts.filter(f=>/шуйск|патрск|давидо-гареджийск/i.test(f.title||''))
+   .map(f=>({key:f.key,local_id:f.local_id,title:f.title,observance:f.observance}))
+ }));
+}
 console.log('SOURCE_SNAPSHOT_WARNING: backend calendar_2027.json is a repository snapshot, not live Django API/DB.');
 console.log('\nREAD ONLY. No calendar content or APK changed.');
