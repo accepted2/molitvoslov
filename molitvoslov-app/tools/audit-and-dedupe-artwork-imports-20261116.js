@@ -112,6 +112,14 @@ for(const [file,replacements] of rewrites){
   results.push({file,output,backup});
 }
 for(const result of results)fs.writeFileSync(result.file,result.output,'utf8');
+// Metro does not guarantee cleanup of stale output when an import is removed.
+// Invalidate ONLY generated Android release resources so the next normal
+// assembleRelease does not carry old PNG files or collide with optimized WebP.
+const generated=path.join(root,'android','app','build','generated','res','react','release');
+if(fs.existsSync(generated)){
+  fs.rmSync(generated,{recursive:true,force:true});
+  console.log('Invalidated only stale generated Android RELEASE resources.');
+}
 console.log('PASS:',results.length,'source files updated. No original PNGs or optimized WebPs deleted.');
 console.log('Source backups:',backupDir);
 console.log('Next: run Expo Android JS export and normal APK builder; compare against saved baseline.');
