@@ -22,8 +22,8 @@ export const resolveSharedReaderRoute = (kind, {id, slug} = {}, content = getCur
   }
 
   const resolvedSlug = item?.slug || normalizedSlug ||
-    (requestedId && !/^\\d+$/.test(requestedId) ? requestedId : '');
-  const numericId = item?.id ?? ( /^\\d+$/.test(requestedId) ? Number(requestedId) : null );
+    (requestedId && !/^\d+$/.test(requestedId) ? requestedId : '');
+  const numericId = item?.id ?? ( /^\d+$/.test(requestedId) ? Number(requestedId) : null );
 
   return {
     id: numericId,
