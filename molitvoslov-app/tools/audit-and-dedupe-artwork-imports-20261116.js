@@ -94,17 +94,21 @@ const results=[];
 for(const [file,replacements] of rewrites){
   let input=fs.readFileSync(file,'utf8');
   let output=input;
-  for(const {from,to} of replacements){
-    // Replace exact quoted paths inside both require and ES module import forms.
-    const forms=[
-      "require('"+from+"')","require(\""+from+"\")",
-      "from '"+from+"'","from \""+from+"\"",
-    ];
-    for(const item of forms){
-      output=output.split(item).join(item.replace(from,to));
-    }
+  let updatedReferences=0;
+  // Reuse the exact parser used during the audit. Unlike a literal string
+  // substitution, this preserves whitespace in require( '...' ) and handles
+  // both require() and ES-import "from" without silently skipping matches.
+  output=input.replace(pattern,(full,reqQuote,reqPath,fromQuote,fromPath)=>{
+    const oldPath=reqPath||fromPath;
+    const replacement=replacements.find(row=>row.from===oldPath);
+    if(!replacement)return full;
+    updatedReferences++;
+    return full.replace(oldPath,replacement.to);
+  });
+  if(updatedReferences!==replacements.length){
+    throw new Error('Expected '+replacements.length+' literal imports, rewritten '+
+      updatedReferences+' in '+file+'. No sources have been written yet.');
   }
-  if(output===input)throw new Error('Unable to find expected literal import in '+file);
   const rel=path.relative(root,file);
   const backup=path.join(backupDir,rel);
   fs.mkdirSync(path.dirname(backup),{recursive:true});
