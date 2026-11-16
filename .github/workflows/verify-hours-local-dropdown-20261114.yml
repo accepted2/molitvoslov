@@ -102,6 +102,54 @@ jobs:
             throw 'Generated PNG originals were not backed up'
           }
           Write-Host 'PASS: 17 generated PNG/WebP pairs safely repaired in Windows PowerShell 5.1'
+      - name: Verify safe source-level artwork alias migration on Windows
+        shell: powershell
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP 'artwork-alias-fixture'
+          $sourceData = Join-Path $root 'src\data'
+          $generated = Join-Path $root 'android\app\build\generated\res\react\release\drawable-mdpi'
+          $homeDir = Join-Path $root 'assets\home'
+          $bibleDir = Join-Path $root 'assets\bible\evangelists'
+          $scriptDir = Join-Path $root 'tools'
+          @($sourceData,$generated,$homeDir,$bibleDir,$scriptDir,(Join-Path $root 'android')) | ForEach-Object {
+            New-Item -ItemType Directory -Force -Path $_ | Out-Null
+          }
+          Copy-Item 'molitvoslov-app/tools/fix-artwork-resource-names-20261116.ps1' $scriptDir
+          Set-Content (Join-Path $root 'app.json') '{"expo":{"version":"1.0.30","android":{"versionCode":31}}}'
+          Set-Content (Join-Path $root 'android\gradlew.bat') '@echo off'
+          $homeNames = @('akathists','canons','communion','evening','hero','morning','page_bg2','page_bg3','psalter')
+          $bibleNames = @('john-bg','john-icon','luke-bg','luke-icon','mark-bg','mark-icon','matthew-bg','matthew-icon')
+          $homeJs = New-Object 'System.Collections.Generic.List[string]'
+          $bibleJs = New-Object 'System.Collections.Generic.List[string]'
+          foreach($name in $homeNames) {
+            $homeJs.Add("const x = require('../../assets/home/" + $name + ".webp');")
+            Set-Content (Join-Path $homeDir ($name+'.webp')) 'original-WebP'
+            Set-Content (Join-Path $generated ('assets_home_'+$name+'.png')) 'PNG'
+            Set-Content (Join-Path $generated ('assets_home_'+$name+'.webp')) 'WebP'
+          }
+          foreach($name in $bibleNames) {
+            $bibleJs.Add("const x = require('../../assets/bible/evangelists/" + $name + ".webp');")
+            Set-Content (Join-Path $bibleDir ($name+'.webp')) 'original-WebP'
+            $base = $name -replace '[^a-zA-Z0-9_]', ''
+            Set-Content (Join-Path $generated ('assets_bible_evangelists_'+$base+'.png')) 'PNG'
+            Set-Content (Join-Path $generated ('assets_bible_evangelists_'+$base+'.webp')) 'WebP'
+          }
+          Set-Content (Join-Path $sourceData 'homeArtwork.js') $homeJs
+          Set-Content (Join-Path $sourceData 'bibleArtwork.js') $bibleJs
+          $script = Join-Path $scriptDir 'fix-artwork-resource-names-20261116.ps1'
+          $dry = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $script
+          if ($LASTEXITCODE -ne 0 -or ($dry -join ' ') -notmatch 'Collision pairs confirmed: 17') {
+            throw "Alias dry-run failed: $($dry -join '; ')"
+          }
+          if (@(Get-ChildItem $homeDir -Filter '*_opt.webp').Count -ne 0) { throw 'Dry run modified source art' }
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $script -Apply
+          if ($LASTEXITCODE -ne 0) { throw 'Alias apply failed' }
+          if (@(Get-ChildItem $homeDir -Filter '*_opt.webp').Count -ne 9) { throw 'Expected 9 aliased home WebPs' }
+          if (@(Get-ChildItem $bibleDir -Filter '*_opt.webp').Count -ne 8) { throw 'Expected 8 aliased Bible WebPs' }
+          if (@(Get-ChildItem $homeDir -Filter '*.webp').Count -ne 18) { throw 'Original home artwork not preserved' }
+          if (Test-Path (Join-Path $root 'android\app\build\generated\res\react\release')) { throw 'Stale generated resources not cleared' }
+          if (@(Get-Content (Join-Path $sourceData 'homeArtwork.js') | Where-Object { $_ -match '_opt\.webp' }).Count -ne 9) { throw 'Home imports not updated' }
+          Write-Host 'PASS: 17 unique WebP aliases, source originals preserved, stale resources invalidated'
   hours-regression:
     runs-on: ubuntu-latest
     timeout-minutes: 30
