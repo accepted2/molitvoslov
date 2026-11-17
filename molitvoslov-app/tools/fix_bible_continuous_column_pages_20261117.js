@@ -141,7 +141,7 @@
  // obsolete absolute page number. New bookmarks keep exact pages when the
  // font/layout count is unchanged.
  once(runtime,
-   `               applyBookPage( bookmarkOffset, false );`,
+   `              applyBookPage( bookmarkOffset, false );`,
    `               const savedPageCount=Number(targetMetadata.bookmark_page_count||0);
                const sameLayout=savedPageCount>0&&savedPageCount===state.bookPageCount;
                applyBookPage(
