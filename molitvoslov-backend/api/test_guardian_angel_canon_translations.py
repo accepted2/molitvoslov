@@ -18,16 +18,16 @@ class GuardianAngelCanonImportTests(SimpleTestCase):
         cls.ru = Path(RU_PATH).read_text(encoding="utf-8-sig")
         cls.trad = Path(TRAD_PATH).read_text(encoding="utf-8-sig")
 
-    def test_81_sections_in_both_files_and_65_64_after_merging(self):
+    def test_81_sections_in_both_files_and_65_65_after_merging(self):
         originals, russian, traditional = parse_and_validate(
             self.ru, self.trad
         )
         self.assertEqual(len(originals), 81)
         self.assertEqual(len(parse_source(self.trad, traditional=True)), 81)
         self.assertEqual(len(russian), 65)
-        self.assertEqual(len(traditional), 64)
+        self.assertEqual(len(traditional), 65)
         self.assertEqual(russian[-1].kind, "prayer")
-        self.assertEqual(traditional[-1].kind, "now")
+        self.assertEqual(traditional[-1].kind, "prayer")
 
     def test_all_eight_glory_and_now_cues_have_their_own_troparia(self):
         _, russian, traditional = parse_and_validate(self.ru, self.trad)
@@ -42,13 +42,28 @@ class GuardianAngelCanonImportTests(SimpleTestCase):
                     if item.ode == ode and item.kind == "now"
                 ), 1)
 
-    def test_cs_final_prayer_is_truncated_and_excluded(self):
+    def test_complete_traditional_final_prayer_matches_user_source(self):
         originals = parse_source(self.trad, traditional=True)
         self.assertEqual(originals[-1].kind, "prayer")
-        self.assertTrue(originals[-1].text.endswith("Кото́рыма ѻ҆чи́ма, а"))
+        self.assertTrue(originals[-1].text.startswith("А҆́гг҃ле Хрⷭ҇то́въ"))
+        self.assertTrue(originals[-1].text.endswith("А҆ми́нь."))
+        self.assertIn("Кото́рыма ѻ҆чи́ма, а҆́гг҃ле", originals[-1].text)
         _, ru, trad = parse_and_validate(self.ru, self.trad)
-        self.assertNotEqual(ru[-1].kind, trad[-1].kind)
-        self.assertNotIn("Кото́рыма ѻ҆чи́ма, а", trad[-1].text)
+        self.assertEqual((len(ru), len(trad)), (65, 65))
+        self.assertEqual((ru[-1].kind, trad[-1].kind), ("prayer", "prayer"))
+
+    def test_previous_incomplete_traditional_source_is_rejected(self):
+        partial = self.trad[:self.trad.index(
+            "Кото́рыма ѻ҆чи́ма, а҆́гг҃ле"
+        )] + "Кото́рыма ѻ҆чи́ма, а"
+        with self.assertRaises(CommandError):
+            parse_and_validate(self.ru, partial)
+
+    def test_incomplete_prayer_with_forged_amen_is_rejected(self):
+        beginning = self.trad[:self.trad.index("Кото́рыма ѻ҆чи́ма, а҆́гг҃ле")]
+        shortened = beginning + "Кото́рыма ѻ҆чи́ма, а҆́гг҃ле. А҆ми́нь."
+        with self.assertRaises(CommandError):
+            parse_and_validate(self.ru, shortened)
 
     def test_source_shift_is_rejected_without_database_write(self):
         broken = self.trad.replace(
