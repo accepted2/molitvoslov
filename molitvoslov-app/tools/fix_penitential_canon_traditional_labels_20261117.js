@@ -53,11 +53,21 @@ const getPenitentialTraditionalLabel = (section, type) => {
 
 `;
   once(canon,"const getCanonInlineLabel = (section, text, t) => {",helper+"const getCanonInlineLabel = (section, text, t) => {",'traditional helpers');
-  once(canon,
+  // Earlier canon-separator patch adds sectionIndex to this callback.
+  // Preserve that parameter in locally patched installations.
+  if (canon.text.includes('    displaySections.forEach((section, sectionIndex) => {')) {
+    once(canon,
+`    displaySections.forEach((section, sectionIndex) => {`,
+`    const isPenitentialTraditional =
+      showTraditional && canon.slug === PENITENTIAL_TRADITIONAL_SLUG;
+    displaySections.forEach((section, sectionIndex) => {`, 'traditional scope');
+  } else {
+    once(canon,
 `    displaySections.forEach((section) => {`,
 `    const isPenitentialTraditional =
       showTraditional && canon.slug === PENITENTIAL_TRADITIONAL_SLUG;
-    displaySections.forEach((section) => {`,'traditional scope');
+    displaySections.forEach((section) => {`, 'traditional scope');
+  }
   once(canon,
 `            language: 'traditional',
             className: 'canon-church',`,
