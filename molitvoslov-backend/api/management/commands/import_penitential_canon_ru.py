@@ -177,7 +177,9 @@ def check_alignment(rows: list[CanonSection], entries: list[Entry]) -> list[str]
             db_kind == entry.kind
             or entry.kind == "glory_now" and db_kind in {"glory", "now"}
         )
-        ode_ok = row.ode_number == entry.ode
+        # Some legacy importers attach the preceding ode to standalone
+        # prayers, so check ode numbers for hymn sections only.
+        ode_ok = entry.ode is None or row.ode_number == entry.ode
         if not compatible or not ode_ok:
             errors.append(
                 f"#{index:02d} (строка {entry.line}):"
