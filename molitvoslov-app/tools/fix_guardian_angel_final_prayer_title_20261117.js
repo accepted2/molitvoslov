@@ -26,7 +26,7 @@
  // Keep the whole liturgical heading in a section header: the source text
  // must start with "А҆́гг҃ле...", not with an inserted label.
  replaceOnce(
-   '      sections.push({\n        className: canon.slug',
+   '      sections.push({\n        className:',
    `      // ${marker}: the final prayer is a standalone section, not an
       // inline "Мл҃тва:" label. Do not affect RU, ordinary CS or other canons.
       if (
@@ -39,7 +39,7 @@
       }
 
       sections.push({
-        className: canon.slug`,
+        className:`,
    'заголовок перед заключительной молитвой'
  );
  if (!code.includes(marker) || !code.includes("case 'prayer': return '';"))
