@@ -222,6 +222,28 @@ export const reconcilePrayerReminders = () => serial(async () => {
   return updated;
 });
 
+
+// An explicit one-shot QA preview; never scheduled without a user action.
+export const previewPrayerReminder = async id => {
+  const records = await readPrayerReminders();
+  const item = records.find(record => record.id === id);
+  if (!item) throw new Error('Напоминание не найдено.');
+  await ensurePermission();
+  return Notifications.scheduleNotificationAsync({
+    content: {
+      title: 'Молитвослов',
+      body: item.title,
+      data: {kind: 'molitvoslov-reminder', reminderId: item.id},
+      sound: false,
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: 8,
+      channelId: CHANNEL,
+    },
+  });
+};
+
 const todayKey = () => {
   const date = new Date();
   return date.getFullYear() + '-' + two(date.getMonth() + 1) + '-' + two(date.getDate());
