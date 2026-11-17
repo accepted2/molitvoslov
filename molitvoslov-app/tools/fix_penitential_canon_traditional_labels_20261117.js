@@ -167,7 +167,9 @@ const getPenitentialTraditionalLabel = (section, type) => {
       margin-right: 6px;
     }
     .rule-item.canon-traditional-penitential-section .reader-inline.prayer-inline .reader-inline-label,
-    .rule-item.canon-traditional-penitential-section .reader-inline.prayer-inline .reader-text {
+    .rule-item.canon-traditional-penitential-section .reader-inline.prayer-inline .reader-text,
+    .rule-item.canon-traditional-penitential-section .reader-inline.canon-long-label .reader-inline-label,
+    .rule-item.canon-traditional-penitential-section .reader-inline.canon-long-label .reader-text {
       display: inline !important;
       margin-bottom: 0;
     }
