@@ -110,8 +110,9 @@
                       useFlowTitle && styles.flowLanguagePill,
                       useFlowTitle && {
                         left: flowPillBelow ? 0 : Math.max(0, lastTitleLineWidth + 6),
-                        top: Math.max(0, (titleLines - 1) * lineHeight - 1) +
-                          (flowPillBelow ? 6 : 0),
+                        top: flowPillBelow
+                          ? titleLines * lineHeight + 3
+                          : Math.max(0, (titleLines - 1) * lineHeight - 1),
                         opacity: flowReady ? 1 : 0,
                       },
                       pressed && styles.pressed,
