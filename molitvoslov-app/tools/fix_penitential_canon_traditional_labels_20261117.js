@@ -81,14 +81,21 @@ const getPenitentialTraditionalLabel = (section, type) => {
               : '',`;
   if(canon.text.includes(oldComment)){
     once(canon,oldComment,newComment,'traditional label and rubric');
-  }else{
-    // Older main has the same fields but no extended explanatory comment.
+  }else if(canon.text.includes("            label: canon.slug === 'tri-sovmeshchennykh-kanona' ? '' : label,")){
     once(canon,
 `            label: canon.slug === 'tri-sovmeshchennykh-kanona' ? '' : label,
             inlineLabel: '',`,
 `            label: isPenitentialTraditional
               ? ''
               : (canon.slug === 'tri-sovmeshchennykh-kanona' ? '' : label),
+            inlineLabel: isPenitentialTraditional
+              ? getPenitentialTraditionalLabel(section, effectiveSectionType)
+              : '',`, 'traditional label and rubric');
+  }else{
+    once(canon,
+`            label,
+            inlineLabel: '',`,
+`            label: isPenitentialTraditional ? '' : label,
             inlineLabel: isPenitentialTraditional
               ? getPenitentialTraditionalLabel(section, effectiveSectionType)
               : '',`, 'traditional label and rubric');
