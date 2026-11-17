@@ -169,6 +169,14 @@ def parse_and_validate(ru_raw: str, cs_raw: str):
 
 
 def section_compatible(row, entry: Entry) -> bool:
+    """Match the existing liturgical structure without changing its records.
+
+    Two explicit importer conventions differ from the supplied text:
+    1. The opening prayer is a troparion of the Theotokos (tone 4).
+    2. The tone-2 troparion AFTER ode 3 is outside the ode numeration.
+    Require the source position, heading AND Church Slavonic opening for
+    these two exceptions so an unrelated row cannot be accepted by accident.
+    """
     expected_kind = entry.kind
     actual_kind = row.section_type
     compatible = (
@@ -177,7 +185,38 @@ def section_compatible(row, entry: Entry) -> bool:
         or expected_kind == "glory_now" and actual_kind in {"glory", "now", "other"}
     )
     ode_ok = entry.ode is None or row.ode_number == entry.ode
-    return compatible and ode_ok
+    if compatible and ode_ok:
+        return True
+
+    title = normalize(row.heading or "")
+    csl = normalize(row.text.content or "")
+    if (
+        entry.group == 0
+        and entry.kind == "prayer"
+        and entry.ode is None
+        and actual_kind == "troparion"
+        and row.ode_number is None
+        and int(row.order) == 1
+        and "богород" in title
+        and "глас" in title
+        and "4" in title
+        and csl.startswith("к богородице прилежно")
+    ):
+        return True
+    if (
+        entry.group == 4
+        and entry.kind == "troparion"
+        and entry.ode == 3
+        and actual_kind == "troparion"
+        and row.ode_number is None
+        and int(row.order) == 22
+        and title.startswith("тропар")
+        and "глас" in title
+        and "2" in title
+        and csl.startswith("моление теплое")
+    ):
+        return True
+    return False
 
 
 def alignment_errors(rows, entries: list[Entry]) -> list[str]:
