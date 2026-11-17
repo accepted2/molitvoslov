@@ -104,7 +104,14 @@
           ]
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "color": "#80502F",
+          "defaultChannel": "prayer-reminders"
+        }
+      ]
     ],
     "owner": "anatoliy1",
     "extra": {
