@@ -196,11 +196,32 @@ def previous_seed_count(path, bible_version):
         return None
 
 
+def missing_calendar_locale_fallbacks(path):
+    """Count Russian calendar rows hidden from the UK locale despite no UK twin.
+
+    New translations must not hide the original Russian calendar entry from
+    its former shared-language search visibility.
+    """
+    with sqlite3.connect("file:" + path.resolve().as_posix() + "?mode=ro",
+                         uri=True) as db:
+        ru_ids = [row[0] for row in db.execute(
+            "SELECT ext FROM doc WHERE grp='calendar' AND lang='ru'"
+        )]
+        uk_ids = {row[0] for row in db.execute(
+            "SELECT ext FROM doc WHERE grp='calendar' AND lang='uk'"
+        )}
+    return sum(ext not in uk_ids for ext in ru_ids)
+
+
 def rebuild_seed(public_version, bible_version):
     count = seed_metadata(SEED, public_version, bible_version)
-    if count:
+    locale_misses = missing_calendar_locale_fallbacks(SEED) if count else 0
+    if count and not locale_misses:
         print("Existing packaged search seed matches source JSON: docs", count)
         return
+    if locale_misses:
+        print("Calendar locale fallback needs rebuild:", locale_misses,
+              "Russian calendar results hidden from Ukrainian search")
     prior_count = previous_seed_count(SEED, bible_version)
     print("Search seed is stale or missing; building complete SQLite from bundled JSON...")
     subprocess.run(
@@ -214,6 +235,13 @@ def rebuild_seed(public_version, bible_version):
     count = seed_metadata(SEED_V10, public_version, bible_version)
     if not count:
         raise RuntimeError("Regenerated search seed does not match the bundled content")
+    locale_misses = missing_calendar_locale_fallbacks(SEED_V10)
+    if locale_misses:
+        raise RuntimeError(
+            "SEARCH LOCALE REGRESSION: %d Russian calendar results still hidden "
+            "from Ukrainian search. Existing packaged search DB preserved."
+            % locale_misses
+        )
     if prior_count is not None and count < prior_count:
         raise RuntimeError(
             "REFUSING REGRESSED SEARCH INDEX: previous bundle had %d documents, "
@@ -313,6 +341,12 @@ def verify_manifest(public_version, bible_version, write):
     count = seed_metadata(SEED, public_version, bible_version)
     if not count:
         raise RuntimeError("Packaged search_seed.db missing, stale or corrupted")
+    locale_misses = missing_calendar_locale_fallbacks(SEED)
+    if locale_misses:
+        raise RuntimeError(
+            "Packaged search index lacks calendar language fallback (%d entries); "
+            "run prepare_offline_apk.py without --verify-only." % locale_misses
+        )
     fingerprint = sha256(SEED)
     expected = {
         "schema_version": 1,
