@@ -100,7 +100,7 @@
     'экрана уведомлений');
 
   once(menu, "onPress={() => showPlaceholder(t('menu.notifications'))}",
-    "onPress={() => navigation.navigate('Notifications')} /* " + MARK + " */",
+    "onPress={() => { /* " + MARK + " */ navigation.navigate('Notifications'); }}",
     'колокольчика');
   // Do not show a permanent "unread" dot when nothing is unread.
   menu.value = menu.value.replace('<View style={styles.notificationDot} />',
