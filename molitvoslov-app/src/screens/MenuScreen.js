@@ -1206,11 +1206,11 @@ export const MenuScreen = ({navigation}) => {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t('menu.notifications')}
-                  onPress={() => showPlaceholder(t('menu.notifications'))}
+                  onPress={() => navigation.navigate('Notifications')}
                   style={({pressed}) => [styles.heroRoundAction, pressed && styles.pressed]}
                 >
                   <BellGlyph />
-                  <View style={styles.notificationDot} />
+                  {/* Уведомления не отмечаются непрочитанными заранее. */}
                 </Pressable>
               </View>
 
