@@ -37,6 +37,10 @@
   const h = angelHeadingNormalized(source);`,
     `const guardianTraditionalHeading = (source) => {
   const h = angelHeadingNormalized(source);
+  // Also catch the literal locale key BEFORE a legacy normalizer converts
+  // Latin "a" to Cyrillic "а", which would hide "calendar.troparion".
+  if (String(source || '').trim().toLowerCase() === 'calendar.troparion')
+    return '';
   // ${marker}: these are inline rubrics or cues, NOT heading sections.
   if (/^(?:слава(?:\\s+и\\s+ныне)?|и\\s+ныне|ирмос|припев|иисусу|богородичен|бгородичен|calendar\\.troparion)(?=$|[\\s:,.])/u.test(h))
     return '';
