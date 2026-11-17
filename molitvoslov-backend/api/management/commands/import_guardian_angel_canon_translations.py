@@ -231,9 +231,11 @@ def target_canon(slug: str | None) -> Canon:
                 and "хранител" in normalize(obj.title)):
             raise CommandError("По slug выбран не канон Ангелу Хранителю.")
         return obj
+    # Do not depend on SQLite's limited casefolding for Cyrillic LIKE.
     candidates = [
-        canon for canon in Canon.objects.filter(title__icontains="Ангел")
-        if "хранител" in normalize(canon.title)
+        canon for canon in Canon.objects.all().only("id", "title", "slug")
+        if "ангел" in normalize(canon.title)
+        and "хранител" in normalize(canon.title)
     ]
     if len(candidates) != 1:
         options = "\n".join(
@@ -367,7 +369,11 @@ class Command(BaseCommand):
                 if changed:
                     row.text.save(update_fields=list(changed))
         self.stdout.write(self.style.SUCCESS(
-            "ГОТОВО: обработано RU 65/65, ЦС-трад 64/65. "
+            ("ГОТОВО: заполнено ЦС-трад 64/65, RU не изменён. "
+             if traditional_only else
+             "ГОТОВО: русский перевод обработан 65/65. " +
+             ("ЦС-трад обработан 64/65. " if partial else
+              "ЦС-трад не изменён. ")) +
             "Основной ЦС и остальные каноны не менялись. "
-            "Обрыв последней молитвы ЦС-трад сохранён вне базы."
+            "Обрыв заключительной молитвы ЦС-трад оставлен вне базы."
         ))
