@@ -187,6 +187,8 @@ class Command(BaseCommand):
             raise CommandError(f"Русский файл не найден: {input_path}")
         entries = parse_source(input_path.read_text(encoding="utf-8-sig"))
         canon = select_canon(options["slug"])
+        if "покаян" not in canon.title.casefold() or "иисус" not in canon.title.casefold():
+            raise CommandError("Выбран не Покаянный канон ко Господу Иисусу Христу.")
         variants = list(
             CanonSection.objects.filter(canon=canon)
             .order_by("variant")
