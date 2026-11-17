@@ -11,6 +11,7 @@ import {
   REMINDER_TARGETS, readPrayerReminders, savePrayerReminder,
   deletePrayerReminder, setPrayerReminderEnabled, reminderTimeValid,
   routeForPrayerReminder, reconcilePrayerReminders, previewPrayerReminder,
+  getPrayerReminderScheduleStatuses,
 } from '../services/localPrayerReminders';
 
 const INK = '#49301D';
@@ -38,6 +39,7 @@ const sortByTime = records => [...records].sort((a, b) => a.time.localeCompare(b
 export const NotificationsScreen = ({navigation, route}) => {
   const insets = useSafeAreaInsets();
   const [items, setItems] = useState([]);
+  const [scheduleStatuses, setScheduleStatuses] = useState({});
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [draft, setDraft] = useState(null);
@@ -46,6 +48,12 @@ export const NotificationsScreen = ({navigation, route}) => {
     try {
       const records = await readPrayerReminders();
       setItems(sortByTime(records));
+      try {
+        const statuses = await getPrayerReminderScheduleStatuses();
+        setScheduleStatuses(Object.fromEntries(statuses.map(status => [status.id, status])));
+      } catch (error) {
+        console.warn('[reminders] schedule status:', error?.message || error);
+      }
     } catch (error) {
       Alert.alert('Напоминания', error?.message || 'Ошибка загрузки');
     } finally {
@@ -58,7 +66,7 @@ export const NotificationsScreen = ({navigation, route}) => {
     load();
     // Restore schedules cancelled by the OS, without requesting permission.
     reconcilePrayerReminders()
-      .then(records => {if (active) setItems(sortByTime(records));})
+      .then(() => {if (active) load();})
       .catch(error => console.warn('[reminders] reconcile:', error?.message || error));
     return () => {active = false;};
   }, [load]));
@@ -229,6 +237,21 @@ export const NotificationsScreen = ({navigation, route}) => {
                     <Text style={styles.reminderTime}>{item.time}</Text>
                     <Text style={styles.reminderTitle}>{item.title}</Text>
                     <Text style={styles.muted}>{periodLabel(item.days)}</Text>
+                    {item.enabled && (() => {
+                      const status = scheduleStatuses[item.id];
+                      const next = status?.nextAt
+                        ? new Date(status.nextAt).toLocaleString('ru-RU', {
+                          weekday: 'short', day: 'numeric', month: 'short',
+                          hour: '2-digit', minute: '2-digit',
+                        }) : null;
+                      const message = !status ? 'Проверяем расписание…'
+                        : !status.permitted ? 'Уведомления запрещены в настройках Android'
+                          : !status.ready ? 'Расписание не подтверждено Android — откройте экран повторно'
+                            : 'Запланировано ' + status.registered + '/' + status.expected +
+                              ' · Следующее: ' + next;
+                      return <Text style={[styles.scheduleStatus,
+                        status && !status.ready && styles.scheduleWarning]}>{message}</Text>;
+                    })()}
                   </View>
                   <Switch
                     accessibilityLabel={item.enabled ? 'Выключить напоминание' : 'Включить напоминание'}
@@ -324,6 +347,8 @@ export const NotificationsScreen = ({navigation, route}) => {
             <Text style={[styles.muted, {marginBottom: 18}]}>
               При первом включении Android запросит разрешение. Нажатие на уведомление
               открывает выбранный раздел приложения. Для "Своего напоминания" откроется список.
+              Звук использует системную громкость уведомлений; режим "Без звука",
+              "Не беспокоить" и энергосбережение могут ограничить доставку.
             </Text>
             <Pressable accessibilityRole="button" disabled={busy}
               onPress={() => save()} style={[styles.primaryButton, busy && {opacity: 0.6}]}>
@@ -365,6 +390,8 @@ const styles = StyleSheet.create({
     borderRadius: 14, padding: 14, marginBottom: 10},
   reminderTop: {flexDirection: 'row', alignItems: 'center'},
   reminderTime: {fontSize: 26, fontWeight: '600', color: '#76502F', marginBottom: 4},
+  scheduleStatus: {fontSize: 12, lineHeight: 18, color: '#5E724B', marginTop: 5},
+  scheduleWarning: {color: '#A4583D'},
   reminderTitle: {fontSize: 15, fontWeight: '600', color: INK, lineHeight: 21},
   cardActions: {flexDirection: 'row', flexWrap: 'wrap', gap: 17, marginTop: 12,
     paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: BORDER},
