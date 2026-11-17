@@ -55,6 +55,7 @@ function patchPreflight(original) {
     return original;
   }
   const beforeFunction = 'def rebuild_seed(public_version, bible_version):\n';
+  s = replaceOnce(s, 'import argparse\n', 'import argparse\nfrom contextlib import closing\n', 'contextlib import');
   const functionBlock = [
     'def missing_calendar_locale_fallbacks(path):',
     '    """Count Russian calendar rows hidden from the UK locale despite no UK twin.',
@@ -62,8 +63,8 @@ function patchPreflight(original) {
     '    New translations must not hide the original Russian calendar entry from',
     '    its former shared-language search visibility.',
     '    """',
-    '    with sqlite3.connect("file:" + path.resolve().as_posix() + "?mode=ro",',
-    '                         uri=True) as db:',
+    '    with closing(sqlite3.connect("file:" + path.resolve().as_posix() + "?mode=ro",',
+    '                         uri=True)) as db:',
     '        ru_ids = [row[0] for row in db.execute(',
     '            "SELECT ext FROM doc WHERE grp=\x27calendar\x27 AND lang=\x27ru\x27"',
     '        )]',
