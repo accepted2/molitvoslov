@@ -6,7 +6,9 @@ const assert = require('assert');
 
 const sourceFile = path.join(__dirname, '../src/services/localPrayerReminders.js');
 const source = fs.readFileSync(sourceFile, 'utf8')
-  .replace(/^import .*;\n/gm, '')
+  // Windows Git checkouts use CRLF. Normalize before stripping ES-module imports.
+  .replace(/\r\n?/g, '\n')
+  .replace(/^import[^\n]*;\n/gm, '')
   .replace(/export const /g, 'const ');
 
 const memory = new Map();
