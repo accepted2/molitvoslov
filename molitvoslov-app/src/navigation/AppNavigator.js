@@ -1,4 +1,6 @@
 import React from 'react';
+import * as Notifications from 'expo-notifications';
+import {routeForNotificationResponse} from '../services/localPrayerReminders';
 import {Linking} from 'react-native';
 import {normalizeIncomingAppLink} from '../services/appLinks';
 import {NavigationContainer} from '@react-navigation/native';
@@ -6,6 +8,7 @@ import {createStackNavigator} from '@react-navigation/stack';
 
 import {MenuScreen} from '../screens/MenuScreen';
 import {SearchScreen} from '../screens/SearchScreen';
+import {NotificationsScreen} from '../screens/NotificationsScreen';
 import {CategoryMenuScreen} from '../screens/CategoryMenuScreen';
 import {TextsListScreen} from '../screens/TextsListScreen';
 import {ReaderScreen} from '../screens/ReaderScreen';
@@ -109,8 +112,46 @@ const transitionTiming = {
 };
 
 export const AppNavigator = () => {
+  const navigationRef = React.useRef(null);
+  const pendingReminderRoute = React.useRef(null);
+  React.useEffect(() => {
+    let active = true;
+    const processed = new Set();
+    const handleResponse = async response => {
+      if (!response) return;
+      const identifier = response.notification?.request?.identifier;
+      if (identifier && processed.has(identifier)) return;
+      if (identifier) processed.add(identifier);
+      try {
+        const destination = await routeForNotificationResponse(response);
+        if (!active || !destination) return;
+        if (navigationRef.current?.isReady()) {
+          navigationRef.current.navigate(destination.name, destination.params);
+        } else {
+          pendingReminderRoute.current = destination;
+        }
+        await Notifications.clearLastNotificationResponseAsync();
+      } catch (error) {
+        console.warn('[reminders] open notification:', error?.message || error);
+      }
+    };
+    const subscription = Notifications.addNotificationResponseReceivedListener(handleResponse);
+    Notifications.getLastNotificationResponseAsync()
+      .then(handleResponse)
+      .catch(error => console.warn('[reminders] initial response:', error?.message || error));
+    return () => {active = false; subscription.remove();};
+  }, []);
+
+  const onNavigationReady = () => {
+    const destination = pendingReminderRoute.current;
+    pendingReminderRoute.current = null;
+    if (destination && navigationRef.current?.isReady()) {
+      navigationRef.current.navigate(destination.name, destination.params);
+    }
+  };
+
   return (
-    <NavigationContainer linking={linking}>
+    <NavigationContainer linking={linking} ref={navigationRef} onReady={onNavigationReady}>
       <Stack.Navigator
         screenOptions={{
           headerStyle: {
@@ -158,6 +199,8 @@ export const AppNavigator = () => {
             headerShown: false,
           }}
         />
+        <Stack.Screen name="Notifications" component={NotificationsScreen}
+          options={{headerShown: false}} />
 
         <Stack.Screen name="SharedImport" component={SharedImportScreen}
           options={{headerShown: false}} />
