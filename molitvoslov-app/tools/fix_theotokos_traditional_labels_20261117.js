@@ -46,7 +46,7 @@ const THEOTOKOS_TRADITIONAL_TITLE =
 const theotokosNormalizeHeading = (heading) =>
   String(heading || '').normalize('NFD')
     .replace(/[\\u0300-\\u036f\\u0483-\\u0487]/g, '')
-    .replace(/ё/g, 'е').toLowerCase().trim();
+    .replace(/ё/g, 'е').replace(/a/g, 'а').toLowerCase().trim();
 const getTheotokosTraditionalHeading = (heading) => {
   const h = theotokosNormalizeHeading(heading);
   if (/^(?:канон|канѡн)/u.test(h) && /феостирик|ѳеостирик/u.test(h))
