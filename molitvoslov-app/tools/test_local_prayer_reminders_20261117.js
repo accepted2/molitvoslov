@@ -29,6 +29,7 @@ const expoNotifications = {
   DEFAULT_ACTION_IDENTIFIER: 'expo.modules.notifications.actions.DEFAULT',
   setNotificationHandler: () => {},
   setNotificationChannelAsync: async (id, options) => { channels.set(id, options); },
+  getNotificationChannelAsync: async id => channels.get(id) || null,
   getNextTriggerDateAsync: async () => Date.now() + 5 * 60 * 1000,
   getPermissionsAsync: async () => ({granted: permitted, canAskAgain: false}),
   requestPermissionsAsync: async () => ({granted: false}),
@@ -66,6 +67,7 @@ const reminders = load(storage, expoNotifications, {OS: 'android'},
   const status = await reminders.getPrayerReminderScheduleStatuses();
   assert.strictEqual(status[0].ready, true);
   assert.strictEqual(status[0].registered, 1);
+  assert.strictEqual(status[0].channelAudible, true);
 
   const next = await reminders.savePrayerReminder({...first, days: [1, 3, 5]});
   assert.strictEqual(next.notificationIds.length, 3);
