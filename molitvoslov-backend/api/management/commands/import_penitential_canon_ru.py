@@ -111,6 +111,58 @@ def parse_source(source: str) -> list[Entry]:
     return entries
 
 
+def combine_glory_and_now(entries: list[Entry]) -> list[Entry]:
+    """Align the Russian editor's separate rubrics with Django's CS sections.
+
+    Each ode has a combined 'Glory + next troparion' and
+    'And now + next troparion' in one existing CanonSection. Only
+    those exact adjacent pairs are joined; all source wording remains.
+    Standalone post-sedalen 'Glory and now' stays a separate section.
+    """
+    merged: list[Entry] = []
+    counts: dict[tuple[int, str], int] = {}
+    index = 0
+    while index < len(entries):
+        entry = entries[index]
+        if entry.ode is not None and entry.kind in {"glory", "now"}:
+            following = entries[index + 1] if index + 1 < len(entries) else None
+            if not following or following.kind != "troparion" or following.group != entry.group:
+                raise CommandError(
+                    f"После {entry.kind!r} в {entry.group} (строка {entry.line}) "
+                    "ожидался тропарь того же песнопения."
+                )
+            merged.append(
+                Entry(
+                    group=entry.group,
+                    kind=entry.kind,
+                    text=entry.text + " " + following.text,
+                    line=entry.line,
+                )
+            )
+            counts[(entry.ode, entry.kind)] = (
+                counts.get((entry.ode, entry.kind), 0) + 1
+            )
+            index += 2
+        else:
+            merged.append(entry)
+            index += 1
+
+    expected_odes = (1, 3, 4, 5, 6, 7, 8, 9)
+    for ode in expected_odes:
+        for kind in ("glory", "now"):
+            if counts.get((ode, kind), 0) != 1:
+                raise CommandError(
+                    f"В песне {ode} ожидается одно объединение {kind}, "
+                    f"получено {counts.get((ode, kind), 0)}."
+                )
+    if len(entries) != 76 or len(merged) != 60:
+        raise CommandError(
+            f"Неверное число фрагментов после объединения: "
+            f"источник={len(entries)}, Django={len(merged)} (ожидается 76/60)."
+        )
+    return merged
+
+
 def check_alignment(rows: list[CanonSection], entries: list[Entry]) -> list[str]:
     errors: list[str] = []
     if len(rows) != len(entries):
@@ -125,7 +177,7 @@ def check_alignment(rows: list[CanonSection], entries: list[Entry]) -> list[str]
             db_kind == entry.kind
             or entry.kind == "glory_now" and db_kind in {"glory", "now"}
         )
-        ode_ok = entry.ode is None or row.ode_number == entry.ode
+        ode_ok = row.ode_number == entry.ode
         if not compatible or not ode_ok:
             errors.append(
                 f"#{index:02d} (строка {entry.line}):"
@@ -185,7 +237,8 @@ class Command(BaseCommand):
         input_path = Path(options["input"]).expanduser().resolve()
         if not input_path.is_file():
             raise CommandError(f"Русский файл не найден: {input_path}")
-        entries = parse_source(input_path.read_text(encoding="utf-8-sig"))
+        original_entries = parse_source(input_path.read_text(encoding="utf-8-sig"))
+        entries = combine_glory_and_now(original_entries)
         canon = select_canon(options["slug"])
         if "покаян" not in canon.title.casefold() or "иисус" not in canon.title.casefold():
             raise CommandError("Выбран не Покаянный канон ко Господу Иисусу Христу.")
@@ -247,6 +300,7 @@ class Command(BaseCommand):
         self.stdout.write(
             f"Канон: {canon.title}; slug={canon.slug}; вариант={primary}\n"
             f"Соответствие ЦС-разметке: {len(rows)}/{len(entries)}; "
+            f"русских исходных фрагментов: {len(original_entries)}; "
             f"будет обновлено: {len(changed)}; без изменений: {len(rows) - len(changed)}"
         )
         if not options["apply"]:
