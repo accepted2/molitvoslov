@@ -244,10 +244,18 @@ class Command(BaseCommand):
         if not variants:
             raise CommandError("В каноне нет секций.")
         primary_variant = min(variants)
-        rows = list(
+        all_rows = list(
             CanonSection.objects.filter(canon=canon, variant=primary_variant)
             .select_related("text").order_by("order", "pk")
         )
+        # The Django importer may keep empty title-only "other" sections.
+        # They are presentation headings, not hymns; never write over them.
+        def is_empty_heading(row):
+            return (row.section_type == "other"
+                    and bool((row.heading or "").strip())
+                    and not (row.text.content or "").strip())
+
+        rows = [row for row in all_rows if not is_empty_heading(row)]
         errors = alignment_errors(rows, ru_entries)
         if errors:
             self.stderr.write("\n".join(errors[:40]))
@@ -289,7 +297,8 @@ class Command(BaseCommand):
             if value is not None and getattr(row.text, field) != value
         ]
         self.stdout.write(
-            f"Канон: {canon.title}; slug={canon.slug}; вариант={primary_variant}\n"
+            f"Канон: {canon.title}; slug={canon.slug}; вариант={primary_variant}; "
+            f"отдельных заголовков без текста: {len(all_rows)-len(rows)}\n"
             f"RU: {len(originals)} исходных → {len(ru_entries)} секций; "
             f"ЦС-трад: {len(cs_entries)} завершённых секций (не весь канон).\n"
             f"Отличающихся текстовых полей для обновления: {len(changes)}. "
@@ -311,11 +320,12 @@ class Command(BaseCommand):
             return
 
         with transaction.atomic():
-            locked = list(
+            locked_all = list(
                 CanonSection.objects.filter(
                     canon=canon, variant=primary_variant,
                 ).select_related("text").select_for_update().order_by("order", "pk")
             )
+            locked = [r for r in locked_all if not is_empty_heading(r)]
             if [r.pk for r in locked] != [r.pk for r in rows] or alignment_errors(
                 locked, ru_entries,
             ):
