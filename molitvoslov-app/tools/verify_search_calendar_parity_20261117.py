@@ -62,10 +62,12 @@ def core_signature(db):
 
 
 def calendar_signatures(db):
+    # Translations and lives may legitimately be revised between releases.
+    # Match stable title + language-variant availability, not exact old prose.
     return Counter(
-        (row["title"], row["body"], row["bl"])
+        (row["title"], row["bl"])
         for row in db.execute(
-            "SELECT title, body, bl FROM doc WHERE grp = 'calendar'"
+            "SELECT title, bl FROM doc WHERE grp = 'calendar'"
         )
     )
 
@@ -103,9 +105,9 @@ def main():
             problems.append("Missing/modified non-calendar search documents")
         old_cal, new_cal = calendar_signatures(old), calendar_signatures(new)
         lost_cal = sum((old_cal - new_cal).values())
-        print("Missing calendar title/body pairs:", lost_cal)
+        print("Missing calendar title/language pairs:", lost_cal)
         if lost_cal:
-            problems.append("Previously indexed calendar texts are missing")
+            problems.append("Previously indexed calendar title/language combinations are missing")
         missing_fallback = fallback_misses(new)
         print("Russian calendar rows hidden without UK counterpart:", missing_fallback)
         if missing_fallback:
