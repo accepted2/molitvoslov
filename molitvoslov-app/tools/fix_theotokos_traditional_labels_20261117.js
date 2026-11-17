@@ -173,12 +173,21 @@ const getTheotokosTraditionalInlineLabel = (section, sectionType) => {
 
   canon.content = canon.content.slice(0, intro) + traditionalBlock + canon.content.slice(end);
 
-  once(canon,
-    `        sectionTitle = t('reading.ode', {number: odeNumber});`,
-    `        sectionTitle = isTheotokosTraditional
+  if (canon.content.includes('        sectionTitle = isPenitentialTraditional')) {
+    once(canon,
+      `        sectionTitle = isPenitentialTraditional`,
+      `        sectionTitle = isTheotokosTraditional
+          ? 'Пѣ́снь ' + (THEOTOKOS_TRADITIONAL_ODE[odeNumber] || String(odeNumber))
+          : isPenitentialTraditional`,
+      'заголовки песней после Покаянного канона');
+  } else {
+    once(canon,
+      `        sectionTitle = t('reading.ode', {number: odeNumber});`,
+      `        sectionTitle = isTheotokosTraditional
           ? 'Пѣ́снь ' + (THEOTOKOS_TRADITIONAL_ODE[odeNumber] || String(odeNumber))
           : t('reading.ode', {number: odeNumber});`,
-    'заголовки песней');
+      'заголовки песней');
+  }
   once(canon,
     `          sectionTitle = effectiveHeading;`,
     `          sectionTitle = isTheotokosTraditional
