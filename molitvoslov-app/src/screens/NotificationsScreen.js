@@ -249,8 +249,16 @@ export const NotificationsScreen = ({navigation, route}) => {
                           : !status.ready ? 'Расписание не подтверждено Android — откройте экран повторно'
                             : 'Запланировано ' + status.registered + '/' + status.expected +
                               ' · Следующее: ' + next;
-                      return <Text style={[styles.scheduleStatus,
-                        status && !status.ready && styles.scheduleWarning]}>{message}</Text>;
+                      return <View>
+                        <Text style={[styles.scheduleStatus,
+                          status && !status.ready && styles.scheduleWarning]}>{message}</Text>
+                        {status?.ready && !status.channelAudible && (
+                          <Text style={[styles.scheduleStatus, styles.scheduleWarning]}>
+                            Android отключил звук канала. Проверьте звук уведомлений
+                            для "Молитвослова" в настройках телефона.
+                          </Text>
+                        )}
+                      </View>;
                     })()}
                   </View>
                   <Switch
