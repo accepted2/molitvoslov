@@ -24,19 +24,40 @@ class TheotokosParaklesisImportTests(SimpleTestCase):
 
     def test_source_count_and_joined_doxologies(self):
         originals, russian, church = parse_and_validate(self.ru, self.cs)
-        self.assertEqual((len(originals), len(russian), len(church)), (93, 77, 57))
+        self.assertEqual((len(originals), len(russian), len(church)), (93, 77, 77))
         self.assertEqual(russian[0].kind, "prayer")
         self.assertEqual(russian[-1].kind, "prayer")
-        self.assertEqual(church[-1].kind, "troparion")
+        self.assertEqual(church[-1].kind, "prayer")
 
-    def test_csl_source_is_partial_and_ending_is_excluded(self):
+    def test_csl_source_is_complete_and_follows_russian_structure(self):
         parsed = parse_source(self.cs, traditional=True)
-        self.assertEqual(len(parsed), 70)
-        self.assertEqual(parsed[-1].kind, "refrain")
-        self.assertTrue(parsed[-1].text.endswith("сп҃си́"))
-        _, _, aligned = parse_and_validate(self.ru, self.cs)
-        self.assertEqual(len(aligned), 57)
-        self.assertFalse(aligned[-1].text.endswith("сп҃си́"))
+        self.assertEqual(len(parsed), 93)
+        self.assertEqual(parsed[-1].kind, "prayer")
+        self.assertTrue(parsed[-1].text.startswith("КЪ комꙋ̀ возопїю̀"))
+        self.assertTrue(parsed[-1].text.endswith("Гдⷭ҇ь съ Тобо́ю."))
+        _, russian, church = parse_and_validate(self.ru, self.cs)
+        self.assertEqual(len(church), 77)
+        self.assertEqual(
+            [(x.group, x.kind, x.ode) for x in russian],
+            [(x.group, x.kind, x.ode) for x in church],
+        )
+
+    def test_earlier_partial_source_is_rejected(self):
+        partial = self.cs[:self.cs.index(
+            "[Припѣ́въ] Прест҃а́ѧ Бцⷣе, сп҃си́ на́съ.",
+            self.cs.index("### Пѣ́снь и҃"),
+        )] + "[Припѣ́въ] Прест҃а́ѧ Бцⷣе, сп҃си́"
+        with self.assertRaises(CommandError):
+            parse_and_validate(self.ru, partial)
+
+    def test_truncated_final_prayer_is_rejected(self):
+        prefix, sep, prayer = self.cs.rpartition(
+            "[Мл҃тва] КЪ комꙋ̀ возопїю̀"
+        )
+        self.assertTrue(sep)
+        corrupted = prefix + sep + prayer[:130]
+        with self.assertRaises(CommandError):
+            parse_and_validate(self.ru, corrupted)
 
     def test_glory_and_now_stay_with_their_troparia(self):
         ru = combine_doxologies(parse_source(self.ru))
