@@ -1,10 +1,9 @@
-"""Import the supplied Russian and partial traditional-script text of the
-Theotokos Paraklesis canon into existing Django Text rows.
+"""Import aligned Russian and complete traditional-script texts of the
+Theotokos Paraklesis canon into the existing Django Text rows.
 
-Safety: dry-run by default; never create sections, move IDs, or overwrite CS
-source. Russian translation covers the whole provided text; traditional source
-is incomplete at the fourth entry of ode 8, so only its verified prefix is
-eligible for an explicitly authorized partial import.
+The supplied traditional text was completed after an earlier partial import.
+Dry run by default. --traditional-only writes only traditional_content and
+preserves translation, content, IDs, order, and headings.
 """
 from __future__ import annotations
 
@@ -21,7 +20,7 @@ from api.models import Canon, CanonSection
 
 DATA_DIR = Path(settings.BASE_DIR) / "api" / "data"
 RU_SOURCE = DATA_DIR / "canon_bogoroditse_prilezhno_ru_20261117.txt"
-CS_SOURCE = DATA_DIR / "canon_bogoroditse_prilezhno_csl_20261117_PARTIAL.txt"
+CS_SOURCE = DATA_DIR / "canon_bogoroditse_prilezhno_csl_20261117.txt"
 
 ENTRY_PATTERN = re.compile(r"^(?:\[([^\]]+)\]|\*\*([^*]+):\*\*)\s+(.+)$")
 RU_ODE = re.compile(r"^Песнь\s+([1-9])$", flags=re.I)
@@ -133,30 +132,33 @@ def combine_doxologies(entries: list[Entry]) -> list[Entry]:
 def parse_and_validate(ru_raw: str, cs_raw: str):
     ru_original = parse_source(ru_raw)
     cs_original = parse_source(cs_raw, traditional=True)
-    if len(ru_original) != 93:
-        raise CommandError(f"Ожидалось 93 русских элемента, получено {len(ru_original)}.")
-    if len(cs_original) != 70:
-        raise CommandError(f"Ожидалось 70 ЦС-фрагментов, получено {len(cs_original)}.")
-    if len({e.group for e in ru_original}) != 14:
-        raise CommandError("Число русских содержательных разделов отличается от оригинала.")
-    for i, (ru, cs) in enumerate(zip(ru_original, cs_original), 1):
-        if ru.group != cs.group or ru.kind != cs.kind:
-            raise CommandError(
-                f"Смещение ЦС от RU в элементе #{i}: {ru.group}/{ru.kind} "
-                f"!= {cs.group}/{cs.kind}. Никаких изменений."
-            )
-    if not cs_original[-1].text.endswith("сп҃си́"):
+    if len(ru_original) != 93 or len(cs_original) != 93:
         raise CommandError(
-            "ЦС-источник теперь отличается. Проверьте конец файла перед импортом."
+            "Для полного импорта необходимы 93 исходных фрагмента в обеих версиях; "
+            f"получено RU={len(ru_original)}, ЦС-трад={len(cs_original)}. "
+            "Частичный источник запрещено записывать."
         )
-    # The last supplied refrain is truncated mid-sentence; do not import it.
-    cs_complete = cs_original[:-1]
+    if len({e.group for e in ru_original}) != 14 or len({e.group for e in cs_original}) != 14:
+        raise CommandError("Неверное количество содержательных разделов канона.")
+    for i, (ru, cs) in enumerate(zip(ru_original, cs_original), 1):
+        if (ru.group, ru.kind, ru.ode) != (cs.group, cs.kind, cs.ode):
+            raise CommandError(
+                f"Смещение ЦС от RU в элементе #{i}: "
+                f"{ru.group}/{ru.kind}/{ru.ode} "
+                f"!= {cs.group}/{cs.kind}/{cs.ode}. Никаких изменений."
+            )
+    if (
+        ru_original[-1].kind != "prayer"
+        or cs_original[-1].kind != "prayer"
+        or not cs_original[-1].text.endswith("Гдⷭ҇ь съ Тобо́ю.")
+    ):
+        raise CommandError("Заключительная молитва ЦС-трад не полная.")
     ru_merged = combine_doxologies(ru_original)
-    cs_merged = combine_doxologies(cs_complete)
-    if len(ru_merged) != 77 or len(cs_merged) != 57:
+    cs_merged = combine_doxologies(cs_original)
+    if len(ru_merged) != 77 or len(cs_merged) != 77:
         raise CommandError(
-            f"Неожиданная структура: RU={len(ru_merged)}/77, "
-            f"ЦС={len(cs_merged)}/57."
+            f"Объединённая структура неверна: RU={len(ru_merged)}/77, "
+            f"ЦС={len(cs_merged)}/77."
         )
     for i, (ru, cs) in enumerate(zip(ru_merged, cs_merged), 1):
         if (ru.group, ru.kind, ru.ode) != (cs.group, cs.kind, cs.ode):
@@ -267,14 +269,15 @@ def target_field_values(
 
 
 class Command(BaseCommand):
-    help = "Безопасный импорт полного RU и частичного ЦС-трад канона Феостирикта."
+    help = "Безопасный импорт полного RU и ЦС-трад канона Феостирикта."
 
     def add_arguments(self, parser):
         parser.add_argument("--slug", default=None)
         parser.add_argument("--ru", default=str(RU_SOURCE))
         parser.add_argument("--cs", default=str(CS_SOURCE))
         parser.add_argument("--apply", action="store_true")
-        parser.add_argument("--allow-partial-csl", action="store_true")
+        parser.add_argument("--allow-partial-csl", action="store_true",
+            help="Совместимость со старой командой; при полном источнике импортируются 77/77.")
         parser.add_argument("--traditional-only", action="store_true",
             help="Обновлять исключительно traditional_content, сохраняя русский перевод.")
         parser.add_argument("--replace-existing", action="store_true")
@@ -323,15 +326,12 @@ class Command(BaseCommand):
         ).exclude(canon=canon, variant=primary_variant).exists():
             raise CommandError("Text используются в других канонах/вариантах.")
 
-        partial = bool(options["allow_partial_csl"])
         traditional_only = bool(options["traditional_only"])
-        if traditional_only and not partial:
-            raise CommandError(
-                "Традиционный исходник неполный. Для безопасного частичного импорта "
-                "явно добавьте --allow-partial-csl."
-            )
+        # The fully completed source now contains all 77 sections. Existing
+        # calls with --allow-partial-csl remain accepted for compatibility.
+        include_traditional = traditional_only or bool(options["allow_partial_csl"])
         targets = [
-            (row, ru.text, cs_entries[i].text if partial and i < len(cs_entries) else None)
+            (row, ru.text, cs_entries[i].text if include_traditional else None)
             for i, (row, ru) in enumerate(zip(rows, ru_entries))
         ]
         conflicting = [
@@ -356,7 +356,7 @@ class Command(BaseCommand):
             f"Канон: {canon.title}; slug={canon.slug}; вариант={primary_variant}; "
             f"отдельных заголовков без текста: {len(all_rows)-len(rows)}\n"
             f"RU: {len(originals)} исходных → {len(ru_entries)} секций; "
-            f"ЦС-трад: {len(cs_entries)} завершённых секций (не весь канон).\n"
+            f"ЦС-трад: {len(cs_entries)} из {len(ru_entries)} секций (полный канон).\n"
             f"Режим: {'только ЦС-трад' if traditional_only else 'RU + по запросу ЦС-трад'}.\n"
             f"Отличающихся текстовых полей для обновления: {len(changes)}. "
             f"Конфликтов: {len(conflicting)}."
@@ -372,7 +372,7 @@ class Command(BaseCommand):
         if not options["apply"]:
             self.stdout.write(self.style.WARNING(
                 "ПРОВЕРКА: база не изменена. "
-                "Для применения: --apply; для частичного ЦС: --allow-partial-csl."
+                "Для записи только ЦС-трад: --apply --traditional-only."
             ))
             return
 
@@ -388,7 +388,7 @@ class Command(BaseCommand):
             ):
                 raise CommandError("Структура изменилась до записи — отменено.")
             for i, row in enumerate(locked):
-                cs_value = cs_entries[i].text if partial and i < len(cs_entries) else None
+                cs_value = cs_entries[i].text if include_traditional else None
                 values = target_field_values(
                     ru_entries[i].text, cs_value,
                     traditional_only=traditional_only,
@@ -407,10 +407,10 @@ class Command(BaseCommand):
                     row.text.save(update_fields=list(updated))
 
         self.stdout.write(self.style.SUCCESS(
-            ("ГОТОВО: обновлено только ЦС-трад (57 завершённых секций); "
-             "русский и основной ЦС не изменены. Продолжение ЦС требуется."
+            ("ГОТОВО: ЦС-трад полностью заполнен (77/77); "
+             "русский и основной ЦС не изменены."
              if traditional_only else
              "ГОТОВО: русский перевод обновлён. " +
-             ("ЦС-трад завершённый префикс обновлён; продолжение требуется."
-              if partial else "ЦС-трад не изменён из-за неполного источника."))
+             ("Полный ЦС-трад также обновлён (77/77)."
+              if include_traditional else "ЦС-трад не изменён."))
         ))
