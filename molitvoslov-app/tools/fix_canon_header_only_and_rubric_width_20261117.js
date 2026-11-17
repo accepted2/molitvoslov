@@ -27,8 +27,8 @@
  "      // "+tag+": only the fixed reading header has save/share actions.\n      hideInlineActions: true,\n      action: {\n        key: `canon:${canon.id}`,",
  'flag for all canon views');
  once(canon,
- "        savedItemsRef.current = savedItemsRef.current.filter((item) => item.id !== existing.id);\n\n        return {",
- "        savedItemsRef.current = savedItemsRef.current.filter((item) => item.id !== existing.id);\n        setSavedItems(savedItemsRef.current);\n\n        return {",
+ "      savedItemsRef.current = savedItemsRef.current.filter((item) => item.id !== existing.id);\n\n      return {",
+ "      savedItemsRef.current = savedItemsRef.current.filter((item) => item.id !== existing.id);\n      setSavedItems(savedItemsRef.current);\n\n      return {",
  'refresh whole canon saved status after removal');
  once(canon,
  "    savedItemsRef.current = [saved, ...savedItemsRef.current];\n\n    return {",
