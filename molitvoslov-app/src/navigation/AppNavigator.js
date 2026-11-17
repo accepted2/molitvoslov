@@ -119,9 +119,14 @@ export const AppNavigator = () => {
     const processed = new Set();
     const handleResponse = async response => {
       if (!response) return;
+      // Repeating reminders reuse a scheduled identifier on later days.
+      // Deduplicate only a single delivery, not all future taps.
       const identifier = response.notification?.request?.identifier;
-      if (identifier && processed.has(identifier)) return;
-      if (identifier) processed.add(identifier);
+      const deliveryKey = identifier
+        ? identifier + ':' + String(response.notification?.date || '')
+        : null;
+      if (deliveryKey && processed.has(deliveryKey)) return;
+      if (deliveryKey) processed.add(deliveryKey);
       try {
         const destination = await routeForNotificationResponse(response);
         if (!active || !destination) return;
