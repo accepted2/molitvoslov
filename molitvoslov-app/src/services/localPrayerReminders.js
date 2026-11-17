@@ -252,9 +252,13 @@ export const getPrayerReminderScheduleStatuses = async () => {
   const permitted = hasPermission(await Notifications.getPermissionsAsync());
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   const nativeById = new Map(scheduled.map(entry => [entry.identifier, entry]));
+  const channel = Platform.OS === 'android'
+    ? await Notifications.getNotificationChannelAsync(CHANNEL) : null;
+  const channelAudible = Platform.OS !== 'android' ||
+    !!(channel && channel.sound && channel.importance >= Notifications.AndroidImportance.DEFAULT);
   return Promise.all(current.map(async item => {
     if (!item.enabled) return {id: item.id, enabled: false, registered: 0,
-      expected: 0, nextAt: null, ready: false, permitted};
+      expected: 0, nextAt: null, ready: false, permitted, channelAudible};
     const expected = item.days.length === 7 ? 1 : item.days.length;
     const registered = item.notificationIds.filter(id => nativeById.has(id)).length;
     const migrated = item.notificationIds.every(id => {
@@ -270,6 +274,7 @@ export const getPrayerReminderScheduleStatuses = async () => {
     const future = dates.filter(ts => typeof ts === 'number' && ts > Date.now());
     const nextAt = future.length ? Math.min(...future) : null;
     return {id: item.id, enabled: true, registered, expected, nextAt, permitted,
+      channelAudible,
       ready: permitted && registered === expected && migrated && nextAt != null};
   }));
 };
