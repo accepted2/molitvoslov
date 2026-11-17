@@ -86,7 +86,25 @@ function compatible(section,entry){
   const typeOk=typ===entry.kind ||
     ['psalm','stichira'].includes(entry.kind)&&typ==='other' ||
     entry.kind==='glory_now'&&['glory','now','other'].includes(typ);
-  return typeOk && (entry.ode==null||Number(section.ode_number)===entry.ode);
+  if(typeOk&&(entry.ode==null||Number(section.ode_number)===entry.ode))
+    return true;
+  // Precisely the two historical exceptions of the Theotokos canon,
+  // validated by group, position, rubric and the existing CS text.
+  const heading=normalize(section.heading||'');
+  const church=normalize(section.text?.content||'');
+  if(entry.group===0&&entry.kind==='prayer'&&entry.ode==null&&
+    typ==='troparion'&&section.ode_number==null&&
+    Number(section.order)===1&&heading.includes('богород')&&
+    heading.includes('глас')&&heading.includes('4')&&
+    church.startsWith('к богородице прилежно'))
+    return true;
+  if(entry.group===4&&entry.kind==='troparion'&&entry.ode===3&&
+    typ==='troparion'&&section.ode_number==null&&
+    Number(section.order)===22&&heading.startsWith('тропар')&&
+    heading.includes('глас')&&heading.includes('2')&&
+    church.startsWith('моление теплое'))
+    return true;
+  return false;
 }
 
 function main(){
