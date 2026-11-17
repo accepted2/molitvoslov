@@ -4,6 +4,7 @@ import unittest
 import sqlite3
 import tempfile
 from pathlib import Path
+from contextlib import closing
 
 from search_seed_lib import merge_languages
 from prepare_offline_apk import missing_calendar_locale_fallbacks
@@ -78,7 +79,7 @@ class CalendarLanguageFallbackTests(unittest.TestCase):
     def test_build_gate_detects_old_missing_fallback(self):
         with tempfile.TemporaryDirectory() as directory:
             filename = Path(directory) / "test.db"
-            with sqlite3.connect(filename) as db:
+            with closing(sqlite3.connect(filename)) as db:
                 db.execute("CREATE TABLE doc(grp TEXT, lang TEXT, ext TEXT)")
                 db.executemany("INSERT INTO doc VALUES(?,?,?)", [
                     ("calendar", "ru", "calendar:saint-1"),
@@ -88,7 +89,7 @@ class CalendarLanguageFallbackTests(unittest.TestCase):
                 ])
                 db.commit()
             self.assertEqual(missing_calendar_locale_fallbacks(filename), 1)
-            with sqlite3.connect(filename) as db:
+            with closing(sqlite3.connect(filename)) as db:
                 db.execute("UPDATE doc SET lang='' WHERE ext='calendar:saint-1'")
                 db.commit()
             self.assertEqual(missing_calendar_locale_fallbacks(filename), 0)
