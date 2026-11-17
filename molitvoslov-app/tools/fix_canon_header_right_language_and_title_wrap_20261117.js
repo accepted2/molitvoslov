@@ -53,8 +53,10 @@
   `Бцⷣѣ,\\u00A0пое́мый во всѧ́кой`,
   'неразрывное сочетание в длинном церковнославянском названии');
  const markerText='/* CANON_FLOWING_LONG_HEADER_JUSTIFIED_TRAD_TITLE_20261117: traditional Theotokos title, distinct from the native header. */';
- const start=css.source.indexOf(markerText);
- if(start<0)throw Error('Не найден CSS длинного церковнославянского заголовка.');
+ const markerIndex=css.source.indexOf(markerText);
+ const titleRule='.canon-traditional-document-justified .document-header .rule-title {';
+ const start=css.source.indexOf(titleRule,markerIndex);
+ if(markerIndex<0||start<0)throw Error('Не найден CSS длинного церковнославянского заголовка.');
  const ending=css.source.indexOf('\n    }',start);
  if(ending<0)throw Error('Не найден CSS конец заголовка.');
  const block=css.source.slice(start,ending);
