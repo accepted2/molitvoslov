@@ -1,4 +1,4 @@
-"""Regression tests for guarded import of the attached CS-graphic canon."""
+"""Regression tests for the CS-graphic Penitential Canon importer."""
 from pathlib import Path
 
 from django.conf import settings
@@ -8,7 +8,6 @@ from api.management.commands.import_penitential_canon_cs_trad import (
     complete_final_prayer,
     imported_entries,
 )
-
 
 SOURCE = (
     Path(settings.BASE_DIR)
@@ -26,8 +25,8 @@ class PenitentialCanonTraditionalTests(SimpleTestCase):
         original, combined, ready, complete = imported_entries(self.source)
         self.assertEqual(len(original), 76)
         self.assertEqual(len(combined), 60)
-        self.assertEqual(len(ready), 59)
-        self.assertFalse(complete)
+        self.assertEqual(len(ready), 60)
+        self.assertTrue(complete)
 
     def test_glory_and_now_cues_are_kept_with_troparia(self):
         _, sections, _, _ = imported_entries(self.source)
@@ -41,16 +40,19 @@ class PenitentialCanonTraditionalTests(SimpleTestCase):
         self.assertIn("Сла́ва", sections[5].text)
         self.assertIn("Безꙋ́мный", sections[5].text)
 
-    def test_truncated_final_prayer_is_not_marked_complete(self):
+    def test_completed_final_prayer_is_importable(self):
         _, sections, ready, complete = imported_entries(self.source)
-        self.assertFalse(complete_final_prayer(sections[-1].text))
-        self.assertTrue(sections[-1].text.endswith("сокр"))
-        self.assertEqual(ready[-1].kind, "now")
-
-    def test_completed_long_prayer_can_be_imported_in_full(self):
-        full = self.source.rstrip() + (
-            "ꙋшє́нїѧ, и҆ о҆чи́сти ме́нѧ ѿ грѣхо́въ моихъ. " * 24
-        ) + "А҆ми́нь."
-        originals, combined, ready, complete = imported_entries(full)
         self.assertTrue(complete)
-        self.assertEqual((len(originals), len(combined), len(ready)), (76, 60, 60))
+        self.assertEqual(len(ready), 60)
+        self.assertEqual(ready[-1].kind, "prayer")
+        self.assertTrue(complete_final_prayer(sections[-1].text))
+        self.assertTrue(sections[-1].text.startswith("Влⷣко Хрⷭ҇тѐ"))
+        self.assertTrue(sections[-1].text.endswith("А҆ми́нь."))
+
+    def test_truncation_still_blocks_incomplete_final_prayer(self):
+        prefix, sep, last = self.source.rpartition("[Молитва] ")
+        self.assertTrue(sep)
+        corrupted = prefix + sep + last[:110].rstrip() + "сокр"
+        originals, combined, ready, complete = imported_entries(corrupted)
+        self.assertFalse(complete)
+        self.assertEqual((len(originals), len(combined), len(ready)), (76, 60, 59))
