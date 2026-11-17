@@ -3,9 +3,9 @@
 This is the user's Russian-language rendering in CS glyphs; it is NOT claimed
 to be an independently verified Church Slavonic liturgical translation.
 
-The final prayer of the uploaded source is truncated. By default --apply
-REFUSES to write an incomplete canon. Explicit --allow-partial imports only
-the 59 complete sections and leaves the unfinished prayer untouched.
+The final prayer has been completed from the user's follow-up. A source
+truncation guard remains: --apply refuses partial sources unless the user
+explicitly supplies --allow-partial.
 """
 from __future__ import annotations
 
