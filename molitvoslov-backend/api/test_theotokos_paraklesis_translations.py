@@ -8,6 +8,7 @@ from api.management.commands.import_theotokos_paraklesis_translations import (
     CS_SOURCE,
     alignment_errors,
     section_compatible,
+    target_field_values,
     combine_doxologies,
     parse_and_validate,
     parse_source,
@@ -100,3 +101,29 @@ class TheotokosParaklesisImportTests(SimpleTestCase):
         row.text.content = "Моле́ние те́плое, и стена́ необори́мая."
         row.ode_number = 4
         self.assertFalse(section_compatible(row, entry))
+
+    def test_traditional_only_updates_no_other_field(self):
+        values = target_field_values(
+            "Существующий русский перевод",
+            "ЦС традиционный текст",
+            traditional_only=True,
+        )
+        self.assertEqual(values, {"traditional_content": "ЦС традиционный текст"})
+        self.assertNotIn("translation", values)
+
+    def test_traditional_only_skips_missing_source(self):
+        values = target_field_values(
+            "Русский текст, который нельзя изменять",
+            None,
+            traditional_only=True,
+        )
+        self.assertEqual(values, {})
+
+    def test_standard_import_retains_existing_behavior(self):
+        values = target_field_values(
+            "Русский текст", "ЦС текст", traditional_only=False
+        )
+        self.assertEqual(
+            values,
+            {"translation": "Русский текст", "traditional_content": "ЦС текст"},
+        )
