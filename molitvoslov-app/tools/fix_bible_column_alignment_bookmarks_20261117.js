@@ -85,6 +85,7 @@
   once(
     screen,
     '    setCurrentBookmarkOffset(old=>Math.abs(old-offset)<4?old:offset);',
+    '    // ' + MARK + ': track every page turn for the icon.\n' +
     '    setCurrentBookmarkOffset(old=>old===offset?old:offset);',
     'смена активной закладки при каждом перелистывании'
   );
