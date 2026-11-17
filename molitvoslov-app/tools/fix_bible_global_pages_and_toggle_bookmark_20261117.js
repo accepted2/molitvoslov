@@ -15,7 +15,9 @@
  `  const [currentBookmarkOffset,setCurrentBookmarkOffset] = useState(0);
   // ${marker}: global pagination for the entire loaded Bible book.
   const [bookPageProgress,setBookPageProgress] = useState({index:null,total:null});
-  const bookmarkActionBusyRef = useRef(false);`,
+  const bookmarkActionBusyRef = useRef(false);
+  // Refresh only the native bookmark icon, never rebuild all Bible verses.
+  const [,refreshBookmarkIcon] = useState(0);`,
  'положение и состояние закладок'
  );
  once(
@@ -94,7 +96,7 @@
       if(existing){
         await deleteSavedItem(existing.id);
         savedItemsRef.current=savedItemsRef.current.filter(item=>item.id!==existing.id);
-        setSavedItems(current=>current.filter(item=>item.id!==existing.id));
+        refreshBookmarkIcon(value=>value+1);
         showBookmarkFeedback('Закладка снята');
         return;
       }
@@ -103,7 +105,7 @@
       const saved=result?.item;
       if(saved && !savedItemsRef.current.some(item=>item.id===saved.id)){
         savedItemsRef.current=[saved,...savedItemsRef.current];
-        setSavedItems(current=>[saved,...current]);
+        refreshBookmarkIcon(value=>value+1);
       }
       setCurrentBookmarkAnchor(Number(position.anchorId));
       setCurrentBookmarkOffset(Math.max(0,Number(position.offset||0)));
@@ -116,6 +118,11 @@
     }
   };`,
  'переключение текущей закладки'
+ );
+ once(
+ `  const isCurrentPlaceBookmarked=savedItems.some(item=>`,
+ `  const isCurrentPlaceBookmarked=savedItemsRef.current.some(item=>`,
+ 'выделение закладки без перестройки списка стихов'
  );
  once(
  `        <Pressable
