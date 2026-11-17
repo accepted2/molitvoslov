@@ -10,7 +10,7 @@ import Feather from '@expo/vector-icons/Feather';
 import {
   REMINDER_TARGETS, readPrayerReminders, savePrayerReminder,
   deletePrayerReminder, setPrayerReminderEnabled, reminderTimeValid,
-  routeForPrayerReminder, reconcilePrayerReminders,
+  routeForPrayerReminder, reconcilePrayerReminders, previewPrayerReminder,
 } from '../services/localPrayerReminders';
 
 const INK = '#49301D';
@@ -166,6 +166,19 @@ export const NotificationsScreen = ({navigation, route}) => {
     );
   };
 
+  const preview = async item => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await previewPrayerReminder(item.id);
+      Alert.alert('Пробное уведомление', 'Уведомление появится приблизительно через 8 секунд.');
+    } catch (error) {
+      Alert.alert('Не удалось проверить', String(error?.message || error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const openLinkedText = item => {
     const dest = routeForPrayerReminder(item);
     if (dest.name !== 'Notifications') navigation.navigate(dest.name, dest.params);
@@ -236,6 +249,10 @@ export const NotificationsScreen = ({navigation, route}) => {
                       <Text style={styles.linkText}>Открыть</Text>
                     </Pressable>
                   )}
+                  <Pressable accessibilityRole="button" onPress={() => preview(item)} style={styles.linkAction}>
+                    <Feather name="bell" size={15} color={ACCENT} />
+                    <Text style={styles.linkText}>Проверить</Text>
+                  </Pressable>
                   <Pressable accessibilityRole="button" onPress={() => remove(item)} style={styles.linkAction}>
                     <Feather name="trash-2" size={15} color="#9B5845" />
                     <Text style={[styles.linkText, {color: '#9B5845'}]}>Удалить</Text>
