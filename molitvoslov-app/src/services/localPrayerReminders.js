@@ -135,7 +135,7 @@ const schedule = async item => {
         content: {
           title: 'Молитвослов',
           body: item.title || target?.body || 'Время для молитвы',
-          data: {kind: 'molitvoslov-reminder', reminderId: item.id},
+          data: {kind: 'molitvoslov-reminder', reminderId: item.id, reminderScheduleVersion: 2},
           sound: 'default',
         },
         trigger,
@@ -226,7 +226,7 @@ export const reconcilePrayerReminders = () => serial(async () => {
     const valid = item.notificationIds.length === expected &&
       item.notificationIds.every(id => {
         const native = known.get(id);
-        return native && native.trigger?.channelId === CHANNEL &&
+        return native && native.content?.data?.reminderScheduleVersion === 2 &&
           native.content?.sound !== false;
       });
     if (valid) continue;
@@ -259,7 +259,7 @@ export const getPrayerReminderScheduleStatuses = async () => {
     const registered = item.notificationIds.filter(id => nativeById.has(id)).length;
     const migrated = item.notificationIds.every(id => {
       const native = nativeById.get(id);
-      return native && native.trigger?.channelId === CHANNEL &&
+      return native && native.content?.data?.reminderScheduleVersion === 2 &&
         native.content?.sound !== false;
     });
     const dates = await Promise.all(
@@ -285,7 +285,7 @@ export const previewPrayerReminder = async id => {
     content: {
       title: 'Молитвослов',
       body: item.title,
-      data: {kind: 'molitvoslov-reminder', reminderId: item.id},
+      data: {kind: 'molitvoslov-reminder', reminderId: item.id, reminderScheduleVersion: 2},
       sound: 'default',
     },
     trigger: {
