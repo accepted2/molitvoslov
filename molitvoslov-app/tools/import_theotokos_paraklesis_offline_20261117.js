@@ -120,8 +120,14 @@ function main(){
     throw Error('Укажите точный --slug=... для канона Феостирикта. Кандидаты: '+
       JSON.stringify(candidates.map(x=>({slug:x.slug,title:x.title}))));
   const primary=Math.min(...(canon.sections||[]).map(x=>Number(x.variant||1)));
-  const sections=canon.sections.filter(s=>Number(s.variant||1)===primary)
+  const sourceSections=canon.sections.filter(s=>Number(s.variant||1)===primary)
     .sort((a,b)=>Number(a.order)-Number(b.order));
+  // Preserve empty "other" sections used only as visual headings.
+  const sections=sourceSections.filter(s=>!(
+    s.section_type==='other' &&
+    !!String(s.heading||'').trim() &&
+    !String(s.text?.content||'').trim()
+  ));
   const problems=[];
   if(sections.length!==russian.length)
     problems.push('Django/офлайн секций '+sections.length+', русских '+russian.length);
@@ -157,6 +163,7 @@ function main(){
   }
   console.log(TAG,'Канон:',canon.title,'| slug=',canon.slug);
   console.log('Сопоставлено:',sections.length+'/'+russian.length,
+    '| заголовков без текста:',sourceSections.length-sections.length,
     '| ЦС полностью готовых:',church.length+'/77',
     '| изменений:',modified,'| конфликтов:',conflicts.length);
   if(conflicts.length&&!replaceExisting)
