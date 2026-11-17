@@ -10,6 +10,7 @@ search_seed.db, allowing expo-sqlite to import a fresh DB on an app upgrade
 instead of silently reusing the previous installed search index.
 """
 import argparse
+from contextlib import closing
 from datetime import datetime
 import hashlib
 import json
@@ -202,8 +203,8 @@ def missing_calendar_locale_fallbacks(path):
     New translations must not hide the original Russian calendar entry from
     its former shared-language search visibility.
     """
-    with sqlite3.connect("file:" + path.resolve().as_posix() + "?mode=ro",
-                         uri=True) as db:
+    with closing(sqlite3.connect("file:" + path.resolve().as_posix() + "?mode=ro",
+                         uri=True)) as db:
         ru_ids = [row[0] for row in db.execute(
             "SELECT ext FROM doc WHERE grp='calendar' AND lang='ru'"
         )]
