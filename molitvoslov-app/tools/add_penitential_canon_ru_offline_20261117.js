@@ -55,6 +55,42 @@ function parseSource(raw) {
   return entries;
 }
 
+// The CS canon stores each 'Glory' or 'And now' and its following troparion
+// as ONE database section. The user's Russian source separates those rubrics.
+// Rejoin only those pairs; keep the sedalen's standalone 'Glory and now' intact.
+function combineGloryAndNow(entries) {
+  const combined = [];
+  const counts = new Map();
+  for (let i = 0; i < entries.length; i++) {
+    const e = entries[i];
+    if (e.ode != null && (e.kind === 'glory' || e.kind === 'now')) {
+      const next = entries[i + 1];
+      if (!next || next.group !== e.group || next.kind !== 'troparion') {
+        throw Error('После ' + e.kind + ' в ' + e.group +
+          ' ожидается тропарь (строка ' + e.line + ').');
+      }
+      combined.push({...e, value: e.value + ' ' + next.value});
+      const key = e.ode + ':' + e.kind;
+      counts.set(key, (counts.get(key) || 0) + 1);
+      i++;
+    } else {
+      combined.push(e);
+    }
+  }
+  for (const ode of [1, 3, 4, 5, 6, 7, 8, 9]) {
+    for (const kind of ['glory','now']) {
+      if (counts.get(ode + ':' + kind) !== 1) {
+        throw Error('Неверное объединение ' + kind + ' для песни ' + ode);
+      }
+    }
+  }
+  if (entries.length !== 76 || combined.length !== 60) {
+    throw Error('Ожидалось 76 исходных и 60 объединённых записей, получено ' +
+      entries.length + '/' + combined.length);
+  }
+  return combined;
+}
+
 function findClose(raw, openIndex, open, close) {
   let nesting = 0, inside = false, escaped = false;
   for (let i = openIndex; i < raw.length; i++) {
@@ -78,7 +114,8 @@ function findClose(raw, openIndex, open, close) {
 function main() {
   if (!fs.existsSync(sourcePath)) throw Error('Не найден русский файл: ' + sourcePath);
   if (!fs.existsSync(offlinePath)) throw Error('Не найден офлайн-контент: ' + offlinePath);
-  const entries = parseSource(fs.readFileSync(sourcePath, 'utf8').replace(/^\uFEFF/, ''));
+  const originalEntries = parseSource(fs.readFileSync(sourcePath, 'utf8').replace(/^\uFEFF/, ''));
+  const entries = combineGloryAndNow(originalEntries);
   const raw = fs.readFileSync(offlinePath, 'utf8');
   const data = JSON.parse(raw);
   const candidates = Object.values(data.canons?.by_slug || {}).filter(item =>
@@ -122,7 +159,7 @@ function main() {
   }
   const modified = sections.filter((s,i) => s.text.translation !== entries[i].value).length;
   console.log(TAG, 'Канон:', target.title, '|', target.slug);
-  console.log('Совпадение разметки:', sections.length + '/76, вариант ' + primary);
+  console.log('Совпадение разметки:', sections.length + '/60, исходных фрагментов ' + originalEntries.length + ', вариант ' + primary);
   console.log('Изменений:', modified, '| прежние отличающиеся:', conflict.length);
   if (!apply) {
     console.log('Проверка завершена. Для записи добавьте --apply.');
