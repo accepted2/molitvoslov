@@ -136,6 +136,61 @@
         let page = createBookPage( 0 );`,
    'постраничные колонки без дублирования стихов');
 
+ // Saved bookmarks from the previous pagination format do not have
+ // bookmark_page_count. Restore them by verse anchor rather than by an
+ // obsolete absolute page number. New bookmarks keep exact pages when the
+ // font/layout count is unchanged.
+ once(runtime,
+   `               applyBookPage( bookmarkOffset, false );`,
+   `               const savedPageCount=Number(targetMetadata.bookmark_page_count||0);
+               const sameLayout=savedPageCount>0&&savedPageCount===state.bookPageCount;
+               applyBookPage(
+                 bookFlowColumns&&!sameLayout ? pageForElement(root) : bookmarkOffset,
+                 false
+               );`,
+   'перенос старых закладок при новой пагинации');
+
+ once(runtime,
+   `           const savedPage =
+             DATA.document .progressOffsetMode === 'page'
+               ? offset
+               : pageForElement( item );`,
+   `           const savedPage =
+             DATA.document .progressOffsetMode === 'page' &&
+             (!bookFlowColumns||
+               Number(progress.metadata?.page_count||0)===state.bookPageCount)
+               ? offset
+               : pageForElement( item );`,
+   'стабильный возврат к сохранённому стиху');
+
+ once(runtime,
+   `           const savedPage = DATA.document .progressOffsetMode === 'page' ? Number( progress.offset || 0 )
+               : pageForElement( item );`,
+   `           const savedPage = DATA.document .progressOffsetMode === 'page' &&
+             (!bookFlowColumns||
+               Number(progress.metadata?.page_count||0)===state.bookPageCount)
+               ? Number( progress.offset || 0 )
+               : pageForElement( item );`,
+   'восстановление прогресса старой версии Библии');
+
+ once(screen,
+   `        chapter_number: verse.chapterNumber,
+        verse_number: verse.verseNumber,
+      },
+    };
+  };
+
+  const applyReaderAppearance`,
+   `        chapter_number: verse.chapterNumber,
+        verse_number: verse.verseNumber,
+        bookmark_page_count: bookPageProgress.total,
+      },
+    };
+  };
+
+  const applyReaderAppearance`,
+   'различение сохранённых закладок при смене шрифта');
+
  once(runtime,
    `    const pageForElement = element => {
         if ( !bookMode || !element ) {
