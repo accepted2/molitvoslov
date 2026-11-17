@@ -117,7 +117,7 @@ function main() {
   if (!fs.existsSync(offlinePath)) throw Error('Не найден офлайн-контент: ' + offlinePath);
   const originalEntries = parseSource(fs.readFileSync(sourcePath, 'utf8').replace(/^\uFEFF/, ''));
   const entries = combineGloryAndNow(originalEntries);
-  // The attached last prayer ends mid-word ("сокр"). Never insert it.
+  // Protect against incomplete copies of the final prayer (now complete).
   const ending = entries.at(-1)?.value || '';
   const prayerComplete = ending.length >= 600 && /[.!?]$/u.test(ending.trim());
   const ready = prayerComplete ? entries : entries.slice(0, -1);
