@@ -1,10 +1,9 @@
-"""Safely import the user-supplied Guardian Angel canon (Russian and partial
-traditional Church Slavonic) into EXISTING CanonSection/Text records.
+"""Safely import the complete Guardian Angel canon (Russian and traditional
+Church Slavonic) into EXISTING CanonSection/Text records.
 
-Dry-run by default. Preserve source Church Slavonic, record IDs, headings,
-order, other canons and translated texts outside the explicitly chosen mode.
-The uploaded traditional final prayer is truncated mid-sentence: refuse to
-write that fragment; it is not completed or invented by this command.
+Dry-run by default. Preserve original Church Slavonic, record IDs, headings,
+order, and translations outside the explicitly chosen mode. After the user's
+final-prayer continuation, both versions have 65 aligned complete sections.
 """
 from __future__ import annotations
 
@@ -21,7 +20,7 @@ from api.models import Canon, CanonSection
 
 DATA = Path(settings.BASE_DIR) / "api" / "data"
 RU_PATH = DATA / "canon_angelu_khranitelyu_ru_20261117.txt"
-TRAD_PATH = DATA / "canon_angelu_khranitelyu_trad_20261117_PARTIAL.txt"
+TRAD_PATH = DATA / "canon_angelu_khranitelyu_trad_20261117.txt"
 EXPECTED_ODE_BY_GROUP = {2: 1, 3: 3, 5: 4, 6: 5, 7: 6, 10: 7, 11: 8, 12: 9}
 RUBRIC = re.compile(r"^(?:\[([^\]]+)\]|\*\*([^*]+):\*\*)\s+(.+)$")
 
@@ -148,30 +147,28 @@ def parse_and_validate(ru_source: str, traditional_source: str):
             )
     if ru[-1].kind != "prayer" or not ru[-1].text.endswith("Аминь."):
         raise CommandError("Русская молитва неполная.")
-    if (trad[-1].kind != "prayer"
-            or not trad[-1].text.endswith("Кото́рыма ѻ҆чи́ма, а")):
-        raise CommandError(
-            "ЦС-трад заканчивается не в известном месте обрыва. "
-            "Проверьте источник до импорта."
-        )
+    if (
+        trad[-1].kind != "prayer"
+        or not trad[-1].text.startswith("А҆́гг҃ле Хрⷭ҇то́въ")
+        or not trad[-1].text.endswith("А҆ми́нь.")
+        or len(trad[-1].text) < 1300
+    ):
+        raise CommandError("Заключительная ЦС-трад молитва неполная или отличается от источника.")
 
     ru_ready = merge_doxologies(ru)
-    # Only 80 complete elements of the supplied 81 traditional fragments;
-    # the last prayer is not written or silently copied from another source.
-    trad_ready = merge_doxologies(trad[:-1])
-    if len(ru_ready) != 65 or len(trad_ready) != 64:
+    trad_ready = merge_doxologies(trad)
+    if len(ru_ready) != 65 or len(trad_ready) != 65:
         raise CommandError(
-            f"После объединения ожидалось RU=65, ЦС=64; "
-            f"получено {len(ru_ready)}, {len(trad_ready)}."
+            f"После объединения ожидалось 65/65; "
+            f"получено RU={len(ru_ready)}, ЦС-трад={len(trad_ready)}."
         )
     if [
-        (x.kind, x.group, x.ode) for x in ru_ready[:64]
+        (x.kind, x.group, x.ode) for x in ru_ready
     ] != [
         (x.kind, x.group, x.ode) for x in trad_ready
     ]:
         raise CommandError("Смещение RU и ЦС после объединения.")
     return ru, ru_ready, trad_ready
-
 
 def empty_heading_only(row) -> bool:
     return (
@@ -249,7 +246,7 @@ def target_canon(slug: str | None) -> Canon:
 
 
 class Command(BaseCommand):
-    help = "Безопасный RU/ЦС-трад импорт канона Ангелу Хранителю (65+64)."
+    help = "Безопасный RU/ЦС-трад импорт полного канона Ангелу Хранителю (65+65)."
 
     def add_arguments(self, parser):
         parser.add_argument("--slug", default=None)
@@ -271,11 +268,9 @@ class Command(BaseCommand):
         )
         traditional_only = bool(options["traditional_only"])
         partial = bool(options["allow_partial_csl"])
-        if traditional_only and not partial:
-            raise CommandError(
-                "ЦС-трад последняя молитва обрывается. "
-                "Разреши только 64 завершённых элемента: --allow-partial-csl."
-            )
+        # Legacy --allow-partial-csl is accepted, but the complete
+        # source is now always validated as 65/65 before ANY write.
+        include_traditional = traditional_only or partial
         canon = target_canon(options["slug"])
         variants = list(
             CanonSection.objects.filter(canon=canon)
@@ -305,7 +300,7 @@ class Command(BaseCommand):
             updates = {}
             if not traditional_only:
                 updates["translation"] = ru_ready[i].text
-            if partial and i < len(trad_ready):
+            if include_traditional:
                 updates["traditional_content"] = trad_ready[i].text
             target.append((row, updates))
 
@@ -323,10 +318,9 @@ class Command(BaseCommand):
         self.stdout.write(
             f"Канон: {canon.title}; slug={canon.slug}; вариант={variant}\n"
             f"RU: 81 исходный фрагмент -> 65 секций (полный перевод)\n"
-            f"ЦС-трад: 80 завершённых фрагментов -> 64 секции; "
-            "последняя молитва оборвана и НЕ будет записана.\n"
+            f"ЦС-трад: 81 исходный фрагмент -> 65 секций (полный текст).\n"
             f"Дополнительных пустых заголовков: {len(all_rows) - len(rows)}. "
-            f"Режим: {'только ЦС-трад' if traditional_only else 'RU'+(' + ЦС-трад' if partial else '')}.\n"
+            f"Режим: {'только ЦС-трад' if traditional_only else 'RU'+(' + ЦС-трад' if include_traditional else '')}.\n"
             f"Изменений: {len(changes)}; конфликтов: {len(conflicts)}."
         )
         if conflicts and not options["replace_existing"]:
@@ -369,11 +363,10 @@ class Command(BaseCommand):
                 if changed:
                     row.text.save(update_fields=list(changed))
         self.stdout.write(self.style.SUCCESS(
-            ("ГОТОВО: заполнено ЦС-трад 64/65, RU не изменён. "
+            ("ГОТОВО: ЦС-трад заполнен 65/65, RU не изменён. "
              if traditional_only else
              "ГОТОВО: русский перевод обработан 65/65. " +
-             ("ЦС-трад обработан 64/65. " if partial else
+             ("ЦС-трад заполнен 65/65. " if include_traditional else
               "ЦС-трад не изменён. ")) +
-            "Основной ЦС и остальные каноны не менялись. "
-            "Обрыв заключительной молитвы ЦС-трад оставлен вне базы."
+            "Основной ЦС и остальные каноны не менялись."
         ))
