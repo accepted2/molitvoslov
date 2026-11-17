@@ -16,6 +16,8 @@ const scheduled = new Map();
 const channels = new Map();
 let seq = 0;
 let permitted = true;
+let triggerDateAvailable = true;
+let fakeNativeRegistration = false;
 
 const storage = {
   getItem: async key => memory.get(key) || null,
@@ -30,12 +32,12 @@ const expoNotifications = {
   setNotificationHandler: () => {},
   setNotificationChannelAsync: async (id, options) => { channels.set(id, options); },
   getNotificationChannelAsync: async id => channels.get(id) || null,
-  getNextTriggerDateAsync: async () => Date.now() + 5 * 60 * 1000,
+  getNextTriggerDateAsync: async () => triggerDateAvailable ? Date.now() + 5 * 60 * 1000 : null,
   getPermissionsAsync: async () => ({granted: permitted, canAskAgain: false}),
   requestPermissionsAsync: async () => ({granted: false}),
   scheduleNotificationAsync: async input => {
     const identifier = 'notification-' + (++seq);
-    scheduled.set(identifier, input);
+    if (!fakeNativeRegistration) scheduled.set(identifier, input);
     return identifier;
   },
   cancelScheduledNotificationAsync: async id => { scheduled.delete(id); },
@@ -98,6 +100,22 @@ const reminders = load(storage, expoNotifications, {OS: 'android'},
   await reminders.deletePrayerReminder(first.id);
   assert.strictEqual((await reminders.readPrayerReminders()).length, 0);
 
+  triggerDateAvailable = false;
+  await assert.rejects(reminders.savePrayerReminder({
+    title: 'Несуществующее расписание', target: 'custom', time: '19:30',
+    days, enabled: true,
+  }), /Android не определил следующее срабатывание/);
+  assert.strictEqual((await reminders.readPrayerReminders()).length, 0);
+  triggerDateAvailable = true;
+
+  fakeNativeRegistration = true;
+  await assert.rejects(reminders.savePrayerReminder({
+    title: 'Сбой регистрации Android', target: 'custom', time: '19:35',
+    days, enabled: true,
+  }), /Android не подтвердил сохранение расписания/);
+  assert.strictEqual((await reminders.readPrayerReminders()).length, 0);
+  fakeNativeRegistration = false;
+
   permitted = false;
   await assert.rejects(reminders.savePrayerReminder({
     title: 'Вечернее правило', target: 'evening', time: '21:00',
@@ -105,7 +123,7 @@ const reminders = load(storage, expoNotifications, {OS: 'android'},
   }), /Уведомления запрещены/);
   assert.strictEqual((await reminders.readPrayerReminders()).length, 0);
   assert.strictEqual(reminders.routeForPrayerReminder({target: 'psalter'}).name, 'Psalter');
-  console.log('PASS: local reminders (daily / weekly / preview / disable / delete / permissions / navigation)');
+  console.log('PASS: local reminders (sound / daily / weekly / preview / migration / native registration / invalid trigger / disable / delete / permissions / navigation)');
 })().catch(error => {
   console.error('FAIL:', error);
   process.exitCode = 1;
