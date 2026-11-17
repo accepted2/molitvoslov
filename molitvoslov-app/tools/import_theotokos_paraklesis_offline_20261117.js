@@ -1,12 +1,12 @@
 // Safe, targeted offline translation import for the Theotokos Paraklesis canon.
-// Source files: full RU + partial CS traditional. Never change Text.content.
+// Source files: complete RU + complete CS traditional (77/77). Never change Text.content.
 const fs = require('fs');
 const path = require('path');
 
 const TAG = 'THEOTOKOS_PARAKLESIS_OFFLINE_20261117';
 const root = path.resolve(__dirname, '..');
 const ruPath = path.resolve(root, '../molitvoslov-backend/api/data/canon_bogoroditse_prilezhno_ru_20261117.txt');
-const csPath = path.resolve(root, '../molitvoslov-backend/api/data/canon_bogoroditse_prilezhno_csl_20261117_PARTIAL.txt');
+const csPath = path.resolve(root, '../molitvoslov-backend/api/data/canon_bogoroditse_prilezhno_csl_20261117.txt');
 const offlinePath = path.resolve(root, 'src/data/offlineContent.json');
 const slug = process.argv.find(s => s.startsWith('--slug='))?.slice('--slug='.length);
 const apply = process.argv.includes('--apply');
@@ -109,27 +109,29 @@ function compatible(section,entry){
 }
 
 function main(){
-  if(traditionalOnly&&!allowPartialCs)
-    throw Error('ЦС-источник неполный. Для импорта 57 завершённых элементов добавьте --allow-partial-csl.');
   for(const p of [ruPath,csPath,offlinePath])
     if(!fs.existsSync(p))throw Error('Файл не найден: '+p);
   const ruOriginal=parse(fs.readFileSync(ruPath,'utf8'),false);
   const csOriginal=parse(fs.readFileSync(csPath,'utf8'),true);
-  if(ruOriginal.length!==93||csOriginal.length!==70)
-    throw Error('Изменена исходная разметка: RU '+ruOriginal.length+', ЦС '+csOriginal.length);
+  if(ruOriginal.length!==93||csOriginal.length!==93)
+    throw Error('Для полного импорта требуются 93 фрагмента в RU и ЦС-трад: RU '+
+      ruOriginal.length+', ЦС '+csOriginal.length);
   for(let i=0;i<csOriginal.length;i++){
     const ru=ruOriginal[i],cs=csOriginal[i];
-    if(ru.kind!==cs.kind||ru.group!==cs.group)
+    if(ru.kind!==cs.kind||ru.group!==cs.group||ru.ode!==cs.ode)
       throw Error('Сдвиг версий на позиции '+(i+1));
   }
-  if(!csOriginal.at(-1).text.endsWith('сп҃си́'))
-    throw Error('ЦС-текст изменился: проверка на обрыв больше не актуальна');
+  if(csOriginal.at(-1).kind!=='prayer'||
+    !csOriginal.at(-1).text.endsWith('Гдⷭ҇ь съ Тобо́ю.'))
+    throw Error('Заключительная молитва ЦС-трад отсутствует или обрывается.');
   const russian=joinGlory(ruOriginal);
-  const church=joinGlory(csOriginal.slice(0,-1));
-  if(russian.length!==77||church.length!==57)
+  const church=joinGlory(csOriginal);
+  if(russian.length!==77||church.length!==77)
     throw Error('Неверное объединение Слава/И ныне: '+russian.length+'/'+church.length);
   for(let i=0;i<church.length;i++)
-    if(russian[i].kind!==church[i].kind||russian[i].group!==church[i].group)
+    if(russian[i].kind!==church[i].kind||
+      russian[i].group!==church[i].group||
+      russian[i].ode!==church[i].ode)
       throw Error('Смещение после объединения на позиции '+(i+1));
 
   const raw=fs.readFileSync(offlinePath,'utf8'), data=JSON.parse(raw);
@@ -168,9 +170,8 @@ function main(){
   sections.forEach((section,i)=>{
     const index=canon.sections.findIndex(s=>String(s.id)===String(section.id));
     if(index<0)throw Error('ID секции не найден');
-    if(traditionalOnly && i>=church.length)return; // Never touch unfinished sections.
     edits.set(index,traditionalOnly?{}:{translation:russian[i].text});
-    if(allowPartialCs&&i<church.length)
+    if(traditionalOnly||allowPartialCs)
       edits.get(index).traditional_content=church[i].text;
   });
   const conflicts=[];
@@ -187,7 +188,7 @@ function main(){
     '| режим:',traditionalOnly?'только ЦС-трад':'RU + опционально ЦС-трад');
   console.log('Сопоставлено:',sections.length+'/'+russian.length,
     '| заголовков без текста:',sourceSections.length-sections.length,
-    '| ЦС полностью готовых:',church.length+'/77',
+    '| ЦС-трад полный:',church.length+'/77',
     '| изменений:',modified,'| конфликтов:',conflicts.length);
   if(conflicts.length&&!replaceExisting)
     throw Error('Существующие переводы отличаются: '+conflicts.slice(0,20).join(', ')+
@@ -237,9 +238,9 @@ function main(){
   fs.copyFileSync(offlinePath,backup);
   fs.writeFileSync(offlinePath,patched,'utf8');
   console.log(traditionalOnly
-    ? 'ГОТОВО: 57 завершённых секций ЦС-трад обработаны, русский текст не изменён.'
+    ? 'ГОТОВО: ЦС-трад обновлён (77/77), русский и основной ЦС не изменены.'
     : 'ГОТОВО: русский перевод обновлён'+
-      (allowPartialCs?' и 57 ЦС-трад секций обновлены':'')+'.');
+      (allowPartialCs?' и ЦС-трад полностью обновлён (77/77)':'')+'.');
   console.log('Резервная копия:',backup);
 }
 try{main();}catch(error){console.error('ERROR:',error.message);process.exitCode=1;}
