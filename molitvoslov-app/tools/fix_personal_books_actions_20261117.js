@@ -272,7 +272,7 @@
  memorialDetail.text=memorialDetail.text.slice(0,methodStart)+memorialDetail.text.slice(methodEnd+1);
  one(memorialDetail,
 `          headerAction={book?{label:'Поделиться',onPress:shareCurrentBook}:null}`,
-`          // PERSONAL_BOOK_ACTIONS_20261117: remove header sharing button`,
+`          `,
  'убрать Поделиться в шапке помянника');
  // Validate final code text and ensure no share action remains in detail.
  if(prayer.text.includes("headerAction={{label:'Поделиться'")||
