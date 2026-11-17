@@ -89,6 +89,8 @@ function main() {
   if (!target) throw Error('Не удалось однозначно найти канон. Кандидаты: ' +
     JSON.stringify(candidates.map(item => ({slug: item.slug, title: item.title}))) +
     '. При необходимости укажите --slug=...');
+  if (!/покаян/i.test(target.title || '') || !/иисус/i.test(target.title || ''))
+    throw Error('Выбран не Покаянный канон ко Господу Иисусу Христу.');
   const variants = (target.sections || []).map(s => Number(s.variant || 1));
   const primary = Math.min(...variants);
   const sections = target.sections.filter(s => Number(s.variant || 1) === primary)
