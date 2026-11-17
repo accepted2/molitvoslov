@@ -1,12 +1,12 @@
 // Safe, targeted offline translation import for the Guardian Angel canon.
-// 65 RU sections + 64 complete traditional; last traditional prayer is truncated and NEVER imported.
+// 65 RU sections + 65 complete traditional, including the user's final prayer.
 const fs = require('fs');
 const path = require('path');
 
 const TAG = 'GUARDIAN_ANGEL_CANON_OFFLINE_20261117';
 const root = path.resolve(__dirname, '..');
 const ruPath = path.resolve(root, '../molitvoslov-backend/api/data/canon_angelu_khranitelyu_ru_20261117.txt');
-const csPath = path.resolve(root, '../molitvoslov-backend/api/data/canon_angelu_khranitelyu_trad_20261117_PARTIAL.txt');
+const csPath = path.resolve(root, '../molitvoslov-backend/api/data/canon_angelu_khranitelyu_trad_20261117.txt');
 const offlinePath = path.resolve(root, 'src/data/offlineContent.json');
 const slug = process.argv.find(s => s.startsWith('--slug='))?.slice('--slug='.length);
 const apply = process.argv.includes('--apply');
@@ -125,14 +125,14 @@ function main(){
     !ruOriginal.at(-1).text.endsWith('Аминь.'))
     throw Error('Русская заключительная молитва не полная.');
   if(csOriginal.at(-1).kind!=='prayer'||
-    !csOriginal.at(-1).text.endsWith('Кото́рыма ѻ҆чи́ма, а'))
-    throw Error('ЦС-трад источник изменился или завершён иначе. Не импортировать.');
+    !csOriginal.at(-1).text.startsWith('А҆́гг҃ле Хрⷭ҇то́въ')||
+    !csOriginal.at(-1).text.endsWith('А҆ми́нь.')||
+    csOriginal.at(-1).text.length<1300)
+    throw Error('Заключительная молитва ЦС-трад неполная или отличается от источника.');
   const russian=joinGlory(ruOriginal);
-  const church=joinGlory(csOriginal.slice(0,-1));
-  if(russian.length!==65||church.length!==64)
-    throw Error('Неверная структура: RU='+russian.length+'/65, ЦС='+church.length+'/64');
-  if(traditionalOnly&&!allowPartialCs)
-    throw Error('ЦС-трад не полный: разреши только 64 фрагмента через --allow-partial-csl.');
+  const church=joinGlory(csOriginal);
+  if(russian.length!==65||church.length!==65)
+    throw Error('Неверная структура: RU='+russian.length+'/65, ЦС='+church.length+'/65');
   for(let i=0;i<church.length;i++)
     if(russian[i].kind!==church[i].kind||
       russian[i].group!==church[i].group||
@@ -176,9 +176,8 @@ function main(){
   sections.forEach((section,i)=>{
     const index=canon.sections.findIndex(s=>String(s.id)===String(section.id));
     if(index<0)throw Error('ID секции не найден');
-    if(traditionalOnly&&i>=church.length)return;
     edits.set(index,traditionalOnly?{}:{translation:russian[i].text});
-    if((traditionalOnly||allowPartialCs)&&i<church.length)
+    if(traditionalOnly||allowPartialCs)
       edits.get(index).traditional_content=church[i].text;
   });
   const conflicts=[];
@@ -195,7 +194,7 @@ function main(){
     '| режим:',traditionalOnly?'только ЦС-трад':'RU + опционально ЦС-трад');
   console.log('Сопоставлено:',sections.length+'/'+russian.length,
     '| заголовков без текста:',sourceSections.length-sections.length,
-    '| ЦС-трад завершено:',church.length+'/65',
+    '| ЦС-трад полный:',church.length+'/65',
     '| изменений:',modified,'| конфликтов:',conflicts.length);
   if(conflicts.length&&!replaceExisting)
     throw Error('Существующие переводы отличаются: '+conflicts.slice(0,20).join(', ')+
@@ -245,9 +244,9 @@ function main(){
   fs.copyFileSync(offlinePath,backup);
   fs.writeFileSync(offlinePath,patched,'utf8');
   console.log(traditionalOnly
-    ? 'ГОТОВО: 64 полных секции ЦС-трад записаны; основной ЦС и RU не менялись.'
+    ? 'ГОТОВО: полный ЦС-трад 65/65 записан; основной ЦС и RU не менялись.'
     : 'ГОТОВО: русский перевод 65/65 записан'+
-      (allowPartialCs?' и 64 секции ЦС-трад также обработаны':'')+'.');
+      (allowPartialCs?' и полный ЦС-трад 65/65 также обработан':'')+'.');
   console.log('Резервная копия:',backup);
 }
 try{main();}catch(error){console.error('ERROR:',error.message);process.exitCode=1;}
