@@ -52,6 +52,10 @@
   `Бцⷣѣ, пое́мый во всѧ́кой`,
   `Бцⷣѣ,\\u00A0пое́мый во всѧ́кой`,
   'неразрывное сочетание в длинном церковнославянском названии');
+ exact(canon,
+  '      justifyTraditionalDocumentTitle: isTheotokosTraditional,',
+  '      // '+marker+'\n      justifyTraditionalDocumentTitle: isTheotokosTraditional,',
+  'маркер отображения церковнославянского заголовка');
  const markerText='/* CANON_FLOWING_LONG_HEADER_JUSTIFIED_TRAD_TITLE_20261117: traditional Theotokos title, distinct from the native header. */';
  const markerIndex=css.source.indexOf(markerText);
  const titleRule='.canon-traditional-document-justified .document-header .rule-title {';
