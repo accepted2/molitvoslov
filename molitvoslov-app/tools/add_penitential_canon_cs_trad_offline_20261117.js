@@ -233,7 +233,7 @@ function main() {
     new Date().toISOString().replace(/[:.]/g,'-') + '.json');
   fs.copyFileSync(offlinePath, backup);
   fs.writeFileSync(offlinePath, patched, 'utf8');
-  console.log('ГОТОВО: традиционная графика обновлена в ${ready.length} секциях. ЦС и RU не изменены.');
+  console.log('ГОТОВО: традиционная графика обновлена в ' + ready.length + ' секциях. ЦС и RU не изменены.');
   console.log('Резервная копия:', backup);
 }
 
