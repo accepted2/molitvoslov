@@ -6,7 +6,9 @@ import * as Crypto from 'expo-crypto';
 // All reminders are private and stored on this device. Do not request a push token.
 // A notification only carries a random ID; personal text stays in local storage.
 const STORAGE_KEY = 'molitvoslov:local-prayer-reminders:v1';
-const CHANNEL = 'prayer-reminders';
+// Android notification channels are immutable after creation. Use a NEW ID
+// to migrate the original silent channel without clearing any app data.
+const CHANNEL = 'prayer-reminders-audible-v2';
 const ALL_DAYS = [1, 2, 3, 4, 5, 6, 7]; // Monday ... Sunday
 let writeQueue = Promise.resolve();
 
@@ -65,7 +67,7 @@ Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
     shouldShowList: true,
-    shouldPlaySound: false,
+    shouldPlaySound: true,
     shouldSetBadge: false,
   }),
 });
@@ -75,8 +77,8 @@ const channelReady = async () => {
     await Notifications.setNotificationChannelAsync(CHANNEL, {
       name: 'Молитвенные напоминания',
       description: 'Напоминания о молитвенных правилах и чтениях',
-      importance: Notifications.AndroidImportance.DEFAULT,
-      sound: null,
+      importance: Notifications.AndroidImportance.HIGH,
+      sound: 'default',
     });
   }
 };
@@ -113,6 +115,8 @@ const triggerFor = (item, day) => {
   };
 };
 
+// Validation is for the ACTUAL system calendar trigger, not just valid HH:MM.
+// A one-off "Проверить" does not verify daily/weekly scheduling.
 const schedule = async item => {
   if (!item.enabled) return [];
   await ensurePermission();
@@ -121,16 +125,29 @@ const schedule = async item => {
   const target = REMINDER_TARGETS.find(entry => entry.key === item.target);
   try {
     for (const day of item.days.length === 7 ? [null] : item.days) {
+      const trigger = triggerFor(item, day);
+      const next = await Notifications.getNextTriggerDateAsync(trigger);
+      if (typeof next !== 'number' || !Number.isFinite(next) || next <= Date.now()) {
+        throw new Error('Android не определил следующее срабатывание для ' +
+          item.time + '. Проверьте дату, время и часовой пояс телефона.');
+      }
       const id = await Notifications.scheduleNotificationAsync({
         content: {
           title: 'Молитвослов',
           body: item.title || target?.body || 'Время для молитвы',
           data: {kind: 'molitvoslov-reminder', reminderId: item.id},
-          sound: false,
+          sound: 'default',
         },
-        trigger: triggerFor(item, day),
+        trigger,
       });
       ids.push(id);
+    }
+    const registered = new Set(
+      (await Notifications.getAllScheduledNotificationsAsync())
+        .map(entry => entry.identifier)
+    );
+    if (ids.some(id => !registered.has(id))) {
+      throw new Error('Android не подтвердил сохранение расписания. Попробуйте ещё раз.');
     }
     return ids;
   } catch (error) {
@@ -194,33 +211,68 @@ export const deletePrayerReminder = id => serial(async () => {
   await cancel(old.notificationIds);
 });
 
+// Upgrade silent v1 scheduled notifications in place, or restore missing
+// schedules. New alarms are committed BEFORE old ones are cancelled, so
+// a failure never loses a previously saved reminder.
 export const reconcilePrayerReminders = () => serial(async () => {
-  const current = await readPrayerReminders();
+  let current = await readPrayerReminders();
   const permitted = hasPermission(await Notifications.getPermissionsAsync());
   if (!permitted) return current; // Never prompt in the background
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  const known = new Set(scheduled.map(entry => entry.identifier));
-  let changed = false;
-  const updated = [];
+  const known = new Map(scheduled.map(entry => [entry.identifier, entry]));
   for (const item of current) {
-    if (!item.enabled) {
-      updated.push(item);
-      continue;
-    }
-    if (item.notificationIds.length > 0 &&
-        item.notificationIds.every(id => known.has(id))) {
-      updated.push(item);
-      continue;
-    }
-    // Partial scheduling after a crash: cancel only our own IDs.
-    await cancel(item.notificationIds);
+    if (!item.enabled) continue;
+    const expected = item.days.length === 7 ? 1 : item.days.length;
+    const valid = item.notificationIds.length === expected &&
+      item.notificationIds.every(id => {
+        const native = known.get(id);
+        return native && native.trigger?.channelId === CHANNEL &&
+          native.content?.sound !== false;
+      });
+    if (valid) continue;
     const ids = await schedule(item);
-    updated.push({...item, notificationIds: ids});
-    changed = true;
+    const updated = current.map(entry => entry.id === item.id
+      ? {...entry, notificationIds: ids} : entry);
+    try {
+      await writeReminders(updated);
+    } catch (error) {
+      await cancel(ids);
+      throw error;
+    }
+    await cancel(item.notificationIds);
+    current = updated;
   }
-  if (changed) await writeReminders(updated);
-  return updated;
+  return current;
 });
+
+// Read-only diagnostics: number of native scheduled alarms and the next
+// system-resolved delivery time. OS battery policies can still delay delivery.
+export const getPrayerReminderScheduleStatuses = async () => {
+  const current = await readPrayerReminders();
+  const permitted = hasPermission(await Notifications.getPermissionsAsync());
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  const nativeById = new Map(scheduled.map(entry => [entry.identifier, entry]));
+  return Promise.all(current.map(async item => {
+    if (!item.enabled) return {id: item.id, enabled: false, registered: 0,
+      expected: 0, nextAt: null, ready: false, permitted};
+    const expected = item.days.length === 7 ? 1 : item.days.length;
+    const registered = item.notificationIds.filter(id => nativeById.has(id)).length;
+    const migrated = item.notificationIds.every(id => {
+      const native = nativeById.get(id);
+      return native && native.trigger?.channelId === CHANNEL &&
+        native.content?.sound !== false;
+    });
+    const dates = await Promise.all(
+      (item.days.length === 7 ? [null] : item.days).map(day =>
+        Notifications.getNextTriggerDateAsync(triggerFor(item, day))
+          .catch(() => null))
+    );
+    const future = dates.filter(ts => typeof ts === 'number' && ts > Date.now());
+    const nextAt = future.length ? Math.min(...future) : null;
+    return {id: item.id, enabled: true, registered, expected, nextAt, permitted,
+      ready: permitted && registered === expected && migrated && nextAt != null};
+  }));
+};
 
 
 // An explicit one-shot QA preview; never scheduled without a user action.
@@ -234,7 +286,7 @@ export const previewPrayerReminder = async id => {
       title: 'Молитвослов',
       body: item.title,
       data: {kind: 'molitvoslov-reminder', reminderId: item.id},
-      sound: false,
+      sound: 'default',
     },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
