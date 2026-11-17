@@ -27,6 +27,14 @@
  "      // "+tag+": only the fixed reading header has save/share actions.\n      hideInlineActions: true,\n      action: {\n        key: `canon:${canon.id}`,",
  'flag for all canon views');
  once(canon,
+ "        savedItemsRef.current = savedItemsRef.current.filter((item) => item.id !== existing.id);\n\n        return {",
+ "        savedItemsRef.current = savedItemsRef.current.filter((item) => item.id !== existing.id);\n        setSavedItems(savedItemsRef.current);\n\n        return {",
+ 'refresh whole canon saved status after removal');
+ once(canon,
+ "    savedItemsRef.current = [saved, ...savedItemsRef.current];\n\n    return {",
+ "    savedItemsRef.current = [saved, ...savedItemsRef.current];\n    setSavedItems(savedItemsRef.current);\n\n    return {",
+ 'refresh whole canon saved status after add');
+ once(canon,
  "      <ReaderBookmarkMenu\n        onShare={() => shareContent({",
  "      <ReaderBookmarkMenu\n        onSave={() => handleAction(`canon:${canon.id}`)}\n        isSaved={!!documentData.action?.active}\n        onShare={() => shareContent({",
  'header save canon action');
