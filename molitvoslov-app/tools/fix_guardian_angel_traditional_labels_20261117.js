@@ -129,10 +129,12 @@ const guardianAngelTraditionalInlineLabel = (section, sectionType, tradText) => 
   canon.code = canon.code.slice(0, blockStart)+tradBlock+canon.code.slice(blockEnd);
 
   replaceOnce(canon,
-    `        sectionTitle = isTheotokosTraditional`,
+    `        sectionTitle = isTheotokosTraditional
+          ? 'Пѣ́снь '`,
     `        sectionTitle = isGuardianAngelTraditional
           ? 'Пѣ́снь ' + (GUARDIAN_ANGEL_ODE_NUMERALS[odeNumber] || String(odeNumber))
-          : isTheotokosTraditional`,
+          : isTheotokosTraditional
+          ? 'Пѣ́снь '`,
     'названия песней в ЦС-трад');
   replaceOnce(canon,
     `          sectionTitle = isTheotokosTraditional`,
