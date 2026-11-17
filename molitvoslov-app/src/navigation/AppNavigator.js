@@ -1,7 +1,7 @@
 import React from 'react';
 import * as Notifications from 'expo-notifications';
-import {routeForNotificationResponse} from '../services/localPrayerReminders';
-import {Linking} from 'react-native';
+import {routeForNotificationResponse, reconcilePrayerReminders} from '../services/localPrayerReminders';
+import {AppState, Linking} from 'react-native';
 import {normalizeIncomingAppLink} from '../services/appLinks';
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
@@ -114,6 +114,22 @@ const transitionTiming = {
 export const AppNavigator = () => {
   const navigationRef = React.useRef(null);
   const pendingReminderRoute = React.useRef(null);
+
+  // Android keeps local schedules across app restarts. Repair missing alarms
+  // and migrate silent v1 reminders once, without prompting for permission.
+  React.useEffect(() => {
+    let active = true;
+    const repair = () => {
+      if (!active) return;
+      reconcilePrayerReminders().catch(error =>
+        console.warn('[reminders] restore schedules:', error?.message || error));
+    };
+    repair();
+    const state = AppState.addEventListener('change', next => {
+      if (next === 'active') repair();
+    });
+    return () => {active = false; state.remove();};
+  }, []);
   React.useEffect(() => {
     let active = true;
     const processed = new Set();
