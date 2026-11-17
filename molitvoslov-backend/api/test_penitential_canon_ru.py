@@ -31,7 +31,7 @@ class PenitentialCanonRussianTests(SimpleTestCase):
             e.ode for e in self.entries if e.ode is not None
         ))
         self.assertEqual(odes, [1, 3, 4, 5, 6, 7, 8, 9])
-        self.assertEqual(self.entries[0].text[:12], "Как по суше")
+        self.assertTrue(self.entries[0].text.startswith("Как по суше"))
         self.assertTrue(self.entries[-1].text.endswith("Аминь."))
 
     def test_alignment_preserves_order_and_ode(self):
