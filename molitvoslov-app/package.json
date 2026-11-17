@@ -36,11 +36,13 @@
   },
   "scripts": {
     "start": "expo start",
-    "android": "expo run:android",
+    "android": "node scripts/prepare-search-index.js && node scripts/copy-search-seed.js && expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "postinstall": "patch-package && node scripts/copy-search-seed.js",
-    "prebuild": "expo prebuild && node scripts/copy-search-seed.js"
+    "postinstall": "patch-package",
+    "prebuild": "node scripts/prepare-search-index.js && expo prebuild && node scripts/copy-search-seed.js",
+    "search:prepare": "node scripts/prepare-search-index.js",
+    "search:verify": "node scripts/prepare-search-index.js --verify-only && node scripts/copy-search-seed.js"
   },
   "private": true,
   "devDependencies": {
