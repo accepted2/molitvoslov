@@ -255,6 +255,17 @@ def find_target(slug: str | None) -> Canon:
     )
 
 
+def target_field_values(
+    ru_text: str, traditional_text: str | None,
+    *, traditional_only: bool = False,
+) -> dict[str, str]:
+    """Build only the fields explicitly requested by the import mode."""
+    values = {} if traditional_only else {"translation": ru_text}
+    if traditional_text is not None:
+        values["traditional_content"] = traditional_text
+    return values
+
+
 class Command(BaseCommand):
     help = "Безопасный импорт полного RU и частичного ЦС-трад канона Феостирикта."
 
@@ -264,6 +275,8 @@ class Command(BaseCommand):
         parser.add_argument("--cs", default=str(CS_SOURCE))
         parser.add_argument("--apply", action="store_true")
         parser.add_argument("--allow-partial-csl", action="store_true")
+        parser.add_argument("--traditional-only", action="store_true",
+            help="Обновлять исключительно traditional_content, сохраняя русский перевод.")
         parser.add_argument("--replace-existing", action="store_true")
 
     def handle(self, *args, **options):
@@ -311,6 +324,12 @@ class Command(BaseCommand):
             raise CommandError("Text используются в других канонах/вариантах.")
 
         partial = bool(options["allow_partial_csl"])
+        traditional_only = bool(options["traditional_only"])
+        if traditional_only and not partial:
+            raise CommandError(
+                "Традиционный исходник неполный. Для безопасного частичного импорта "
+                "явно добавьте --allow-partial-csl."
+            )
         targets = [
             (row, ru.text, cs_entries[i].text if partial and i < len(cs_entries) else None)
             for i, (row, ru) in enumerate(zip(rows, ru_entries))
@@ -318,10 +337,9 @@ class Command(BaseCommand):
         conflicting = [
             (row, field)
             for row, ru_text, cs_text in targets
-            for field, new_value in (
-                ("translation", ru_text),
-                ("traditional_content", cs_text),
-            )
+            for field, new_value in target_field_values(
+                ru_text, cs_text, traditional_only=traditional_only
+            ).items()
             if new_value is not None
             and (getattr(row.text, field) or "").strip()
             and getattr(row.text, field) != new_value
@@ -329,10 +347,9 @@ class Command(BaseCommand):
         changes = [
             (row, field, value)
             for row, ru_text, cs_text in targets
-            for field, value in (
-                ("translation", ru_text),
-                ("traditional_content", cs_text),
-            )
+            for field, value in target_field_values(
+                ru_text, cs_text, traditional_only=traditional_only
+            ).items()
             if value is not None and getattr(row.text, field) != value
         ]
         self.stdout.write(
@@ -340,6 +357,7 @@ class Command(BaseCommand):
             f"отдельных заголовков без текста: {len(all_rows)-len(rows)}\n"
             f"RU: {len(originals)} исходных → {len(ru_entries)} секций; "
             f"ЦС-трад: {len(cs_entries)} завершённых секций (не весь канон).\n"
+            f"Режим: {'только ЦС-трад' if traditional_only else 'RU + по запросу ЦС-трад'}.\n"
             f"Отличающихся текстовых полей для обновления: {len(changes)}. "
             f"Конфликтов: {len(conflicting)}."
         )
@@ -370,9 +388,11 @@ class Command(BaseCommand):
             ):
                 raise CommandError("Структура изменилась до записи — отменено.")
             for i, row in enumerate(locked):
-                values = {"translation": ru_entries[i].text}
-                if partial and i < len(cs_entries):
-                    values["traditional_content"] = cs_entries[i].text
+                cs_value = cs_entries[i].text if partial and i < len(cs_entries) else None
+                values = target_field_values(
+                    ru_entries[i].text, cs_value,
+                    traditional_only=traditional_only,
+                )
                 updated = {}
                 for field, value in values.items():
                     before = getattr(row.text, field)
@@ -387,7 +407,10 @@ class Command(BaseCommand):
                     row.text.save(update_fields=list(updated))
 
         self.stdout.write(self.style.SUCCESS(
-            "ГОТОВО: русский перевод обновлён. " +
-            ("ЦС-трад завершённый префикс обновлён; продолжение требуется."
-             if partial else "ЦС-трад не изменён из-за неполного источника.")
+            ("ГОТОВО: обновлено только ЦС-трад (57 завершённых секций); "
+             "русский и основной ЦС не изменены. Продолжение ЦС требуется."
+             if traditional_only else
+             "ГОТОВО: русский перевод обновлён. " +
+             ("ЦС-трад завершённый префикс обновлён; продолжение требуется."
+              if partial else "ЦС-трад не изменён из-за неполного источника."))
         ))
