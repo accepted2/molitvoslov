@@ -11,6 +11,7 @@ const offlinePath = path.resolve(root, 'src/data/offlineContent.json');
 const slug = process.argv.find(s => s.startsWith('--slug='))?.slice('--slug='.length);
 const apply = process.argv.includes('--apply');
 const allowPartialCs = process.argv.includes('--allow-partial-csl');
+const traditionalOnly = process.argv.includes('--traditional-only');
 const replaceExisting = process.argv.includes('--replace-existing');
 
 function normalize(input) {
@@ -108,6 +109,8 @@ function compatible(section,entry){
 }
 
 function main(){
+  if(traditionalOnly&&!allowPartialCs)
+    throw Error('ЦС-источник неполный. Для импорта 57 завершённых элементов добавьте --allow-partial-csl.');
   for(const p of [ruPath,csPath,offlinePath])
     if(!fs.existsSync(p))throw Error('Файл не найден: '+p);
   const ruOriginal=parse(fs.readFileSync(ruPath,'utf8'),false);
@@ -165,7 +168,8 @@ function main(){
   sections.forEach((section,i)=>{
     const index=canon.sections.findIndex(s=>String(s.id)===String(section.id));
     if(index<0)throw Error('ID секции не найден');
-    edits.set(index,{translation:russian[i].text});
+    if(traditionalOnly && i>=church.length)return; // Never touch unfinished sections.
+    edits.set(index,traditionalOnly?{}:{translation:russian[i].text});
     if(allowPartialCs&&i<church.length)
       edits.get(index).traditional_content=church[i].text;
   });
@@ -179,7 +183,8 @@ function main(){
       if(before!==val)modified++;
     }
   }
-  console.log(TAG,'Канон:',canon.title,'| slug=',canon.slug);
+  console.log(TAG,'Канон:',canon.title,'| slug=',canon.slug,
+    '| режим:',traditionalOnly?'только ЦС-трад':'RU + опционально ЦС-трад');
   console.log('Сопоставлено:',sections.length+'/'+russian.length,
     '| заголовков без текста:',sourceSections.length-sections.length,
     '| ЦС полностью готовых:',church.length+'/77',
@@ -231,8 +236,10 @@ function main(){
     new Date().toISOString().replace(/[:.]/g,'-')+'.json');
   fs.copyFileSync(offlinePath,backup);
   fs.writeFileSync(offlinePath,patched,'utf8');
-  console.log('ГОТОВО: русский перевод обновлён'+
-    (allowPartialCs?' и 57 ЦС-трад секций обновлены':'')+'.');
+  console.log(traditionalOnly
+    ? 'ГОТОВО: 57 завершённых секций ЦС-трад обработаны, русский текст не изменён.'
+    : 'ГОТОВО: русский перевод обновлён'+
+      (allowPartialCs?' и 57 ЦС-трад секций обновлены':'')+'.');
   console.log('Резервная копия:',backup);
 }
 try{main();}catch(error){console.error('ERROR:',error.message);process.exitCode=1;}
