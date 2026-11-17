@@ -1,11 +1,13 @@
 """Structural, non-database tests for the Theotokos Russian/CS import."""
 from django.test import SimpleTestCase
 from django.core.management.base import CommandError
+from types import SimpleNamespace
 
 from api.management.commands.import_theotokos_paraklesis_translations import (
     RU_SOURCE,
     CS_SOURCE,
     alignment_errors,
+    section_compatible,
     combine_doxologies,
     parse_and_validate,
     parse_source,
@@ -53,3 +55,48 @@ class TheotokosParaklesisImportTests(SimpleTestCase):
         wrong = self.cs.replace("[Мл҃тва]", "[Тропа́рь]", 1)
         with self.assertRaises(CommandError):
             parse_and_validate(self.ru, wrong)
+
+    def test_opening_prayer_matches_theotokos_troparion_only(self):
+        _, entries, _ = parse_and_validate(self.ru, self.cs)
+        entry = entries[0]
+        row = SimpleNamespace(
+            order=1,
+            section_type="troparion",
+            ode_number=None,
+            heading="Тропaрь Богородице, глас 4-й",
+            text=SimpleNamespace(
+                content="К Богоро́дице приле́жно ны́не притеце́м, гре́шнии."
+            ),
+        )
+        self.assertTrue(section_compatible(row, entry))
+        row.heading = "Тропарь иного праздника, глас 4-й"
+        self.assertFalse(section_compatible(row, entry))
+        row.heading = "Тропaрь Богородице, глас 4-й"
+        row.text.content = "Другое песнопение без нужного начала"
+        self.assertFalse(section_compatible(row, entry))
+
+    def test_tone_two_troparion_follows_ode_three_without_ode_number(self):
+        _, entries, _ = parse_and_validate(self.ru, self.cs)
+        entry = next(
+            e for e in entries
+            if e.group == 4 and e.kind == "troparion"
+            and e.text.startswith("Горячее ходатайство")
+        )
+        row = SimpleNamespace(
+            order=22,
+            section_type="troparion",
+            ode_number=None,
+            heading="Тропа́рь, гла́с 2-й",
+            text=SimpleNamespace(
+                content="Моле́ние те́плое, и стена́ необори́мая."
+            ),
+        )
+        self.assertTrue(section_compatible(row, entry))
+        row.heading = "Тропарь, глас 4-й"
+        self.assertFalse(section_compatible(row, entry))
+        row.heading = "Тропа́рь, гла́с 2-й"
+        row.text.content = "Другая молитва."
+        self.assertFalse(section_compatible(row, entry))
+        row.text.content = "Моле́ние те́плое, и стена́ необори́мая."
+        row.ode_number = 4
+        self.assertFalse(section_compatible(row, entry))
