@@ -151,10 +151,10 @@
    'перенос старых закладок при новой пагинации');
 
  once(runtime,
-   `           const savedPage =
-             DATA.document .progressOffsetMode === 'page'
-               ? offset
-               : pageForElement( item );`,
+   `          const savedPage =
+            DATA.document .progressOffsetMode === 'page'
+              ? offset
+              : pageForElement( item );`,
    `           const savedPage =
              DATA.document .progressOffsetMode === 'page' &&
              (!bookFlowColumns||
@@ -164,8 +164,8 @@
    'стабильный возврат к сохранённому стиху');
 
  once(runtime,
-   `           const savedPage = DATA.document .progressOffsetMode === 'page' ? Number( progress.offset || 0 )
-               : pageForElement( item );`,
+   `          const savedPage = DATA.document .progressOffsetMode === 'page' ? Number( progress.offset || 0 )
+              : pageForElement( item );`,
    `           const savedPage = DATA.document .progressOffsetMode === 'page' &&
              (!bookFlowColumns||
                Number(progress.metadata?.page_count||0)===state.bookPageCount)
