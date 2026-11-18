@@ -184,8 +184,25 @@ const reconcileLocalHome = original => {
   if (oldCount === 1 && newCount === 0) {
     text = text.replace(previous, replacement);
   } else if (newCount !== 1) {
-    throw Error('MenuScreen.js: custom calendar callback differs; refusing ' +
-      'to overwrite it. NO FILES MODIFIED.');
+    // Local whitespace/comments may differ. Only replace a callback which
+    // still performs the exact legacy ChurchCalendar widget redraw.
+    const starts = [...text.matchAll(/^[ \t]*const updateCalendarWidget = useCallback\(/gm)];
+    const marker = '  // The native Android widget update can be expensive.';
+    if (starts.length !== 1) {
+      throw Error('MenuScreen.js: calendar callback is not unique. NO FILES MODIFIED.');
+    }
+    const start = starts[0].index;
+    const end = text.indexOf(marker,start);
+    if (end < start || end-start > 3800) {
+      throw Error('MenuScreen.js: cannot isolate calendar callback. NO FILES MODIFIED.');
+    }
+    const existing = text.slice(start,end);
+    if (!/requestWidgetUpdate\s*\(/.test(existing) ||
+        !/widgetName\s*:\s*['"]ChurchCalendar['"]/.test(existing) ||
+        !/renderWidget\s*:/.test(existing)) {
+      throw Error('MenuScreen.js: callback contains custom behavior. NO FILES MODIFIED.');
+    }
+    text = text.slice(0,start) + replacement + text.slice(end);
   }
   const oldImport =
     "import {refreshCalendarWidgetsFromApp} from '../widgets/widgetTaskHandler';";
