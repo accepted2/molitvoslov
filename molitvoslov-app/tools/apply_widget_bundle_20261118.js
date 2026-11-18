@@ -228,8 +228,12 @@ try{
   const exists=fs.existsSync(file);
   const local=exists?fs.readFileSync(file,'utf8'):null;
   const incoming=gitFile(afterRef,name);
-  let updated=incoming;
-  if(exists && local!==incoming){
+  // git restore may write the same Git blob with Windows CRLF (or UTF-8
+  // BOM). Treat these as identical before requesting a three-way merge.
+  const canonical=text => String(text).replace(/^\uFEFF/,'').replace(/\r\n/g,'\n');
+  const alreadyCurrent=exists && canonical(local)===canonical(incoming);
+  let updated=alreadyCurrent ? local : incoming;
+  if(exists && !alreadyCurrent){
    let base=null;
    try{base=gitFile(beforeRef,name)}catch(_error){}
    if(base===null){
