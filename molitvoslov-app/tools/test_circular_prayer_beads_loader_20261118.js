@@ -21,7 +21,7 @@ assert.equal(geometry.COMPACT_BEAD_COUNT, 14);
 
 for (const [name, points, count, cx, cy, rx, ry, diameter, width, height] of [
   ['large', geometry.LARGE_POSITIONS, 24, 54, 50, 40, 34, 11, 108, 139],
-  ['compact', geometry.SMALL_POSITIONS, 14, 19, 15, 12, 9.5, 5, 38, 51],
+  ['compact', geometry.SMALL_POSITIONS, 14, 19, 15, 12, 9.5, 5, 38, 56],
 ]) {
   assert.equal(points.length, count, name + ': wrong number of beads');
   assert.ok(rx > ry, name + ': must be slightly oval, not round');
@@ -47,12 +47,27 @@ const section = name => {
 };
 assert.match(section('thread'), /left: 14,[\s\S]*top: 16,[\s\S]*width: 80,[\s\S]*height: 68,/);
 assert.match(section('threadCompact'), /left: 7,[\s\S]*top: 5\.5,[\s\S]*width: 24,[\s\S]*height: 19,/);
-assert.match(section('pendantLine'), /height: 8,/); // previous 16
-assert.match(section('pendantLineCompact'), /height: 4,/);
-assert.match(section('cross'), /width: 22,[\s\S]*height: 28,/);
-assert.match(section('crossCompact'), /width: 12,[\s\S]*height: 15,/);
-assert.match(section('crossFootBar'), /rotate: '20deg'/);
-assert.match(section('crossFootBarCompact'), /rotate: '20deg'/);
+assert.match(section('pendantLine'), /height: 5,/); // reduced from 8
+assert.match(section('pendantLineCompact'), /height: 2\.5,/);
+assert.match(section('cross'), /width: 20,[\s\S]*height: 24,/);
+assert.match(section('crossCompact'), /width: 9,[\s\S]*height: 12,/);
+assert.match(section('crossFootBar'), /rotate: '14deg'/);
+assert.match(section('crossFootBarCompact'), /rotate: '14deg'/);
+assert.match(section('crossMiddleBar'), /width: 15,/);
+assert.match(section('crossMiddleBarCompact'), /width: 7,/);
+assert.match(section('crossFootBarCompact'), /width: 5\.5,/);
+assert.match(section('crossStemCompact'), /width: 1,/);
+assert.match(section('pendantKnotCompact'), /width: 2\.8,/);
+// Cross and angled footbar must both be fully inside the compact glyph.
+assert.match(section('rosaryCompact'), /height: 56,/);
+assert.match(section('containerCompact'), /minHeight: 56,/);
+assert.match(section('crossCompact'), /top: 31,/);
+const compactHeight = 56, crossTop = 31, footBarEnd = 8 + 1.2 + 1;
+assert.ok(crossTop + 12 < compactHeight);
+assert.ok(crossTop + footBarEnd < compactHeight);
+assert.match(section('cross'), /top: 98,/);
+assert.match(section('pendantLine'), /top: 93,[\s\S]*height: 5,/);
+assert.match(section('pendantLineCompact'), /top: 28\.5,[\s\S]*height: 2\.5,/);
 for(const tag of [
   'pendantKnotCompact','pendantLineCompact','crossCompact',
   'crossStemCompact','crossTopBarCompact','crossMiddleBarCompact','crossFootBarCompact',
@@ -65,5 +80,5 @@ assert.match(source, /accessibilityLabel="Православный крести�
 assert.match(source, /light && styles\.beadLight/);
 assert.doesNotMatch(source, /\{!compact && \(/);
 console.log('PASS: 24-bead and compact 14-bead ovals match the thread and stay in bounds');
-console.log('PASS: half-length pendant, smaller Orthodox crosses on BOTH variants, corrected footbar');
+console.log('PASS: shortened pendant, thinner Orthodox crosses on BOTH variants, corrected footbar');
 console.log('PASS: native-driver animation and accessible progress indicator');
