@@ -302,7 +302,12 @@ def main(args):
                     for row in rows:
                         if isinstance(row.get("category"), dict) and row["category"].get("id") == found["id"]:
                             row["category"]["name"] = name
-                for prayer in index.values():
+                # Row serializers embed their own text copies, so update both
+                # the index entry and nested category-text snapshots.
+                embedded_texts = list(index.values()) + [
+                    row.get("text", {}) for group in all_rows.values() for row in group
+                ]
+                for prayer in embedded_texts:
                     for category_data in prayer.get("categories", []):
                         if category_data.get("id") == found["id"]:
                             category_data["name"] = name
