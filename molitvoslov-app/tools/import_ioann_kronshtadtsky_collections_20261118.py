@@ -135,6 +135,26 @@ def clean(text):
     return re.sub(r" *\n *", "\n", text).strip()
 
 
+def heading_text(node):
+    """Read a prayer heading without Azbyka's back-to-top arrow or footnote links.
+
+    Only heading markup is filtered. References inside prayer text are kept.
+    The numeral in a real title, such as "Том 1", is preserved.
+    """
+    def collect(part):
+        if isinstance(part, str):
+            return part
+        if part.tag in SKIP_TAGS:
+            return ""
+        if part.tag == "a":
+            label = clean(visible_text(part))
+            if label in {"^", "↑", "↩"} or re.fullmatch(r"\\[?\\d{1,3}\\]?", label):
+                return ""
+        return "".join(collect(child) for child in part.children)
+
+    return clean(re.sub(r"^\\s*[\\^↑↩]\\s*", "", collect(node)))
+
+
 def title_key(text):
     text = unicodedata.normalize("NFD", text)
     text = "".join(c for c in text if unicodedata.category(c) != "Mn")
@@ -163,10 +183,10 @@ def extract_sections(html_source):
     dom = DOM()
     dom.feed(html_source)
     headings = [n for n in walk(dom.root) if n.tag == "h2"]
-    first = next((n for n in headings if title_key(clean(visible_text(n))) ==
+    first = next((n for n in headings if title_key(heading_text(n)) ==
                   title_key(EXPECTED_TITLES[0])), None)
     last = next((n for n in headings if "иные молитвы" in
-                 clean(visible_text(n)).lower() and n is not first), None)
+                 heading_text(n).lower() and n is not first), None)
     if first is None or last is None:
         raise ValueError("Source headings changed or page blocked: cannot find prayer boundaries")
     common = common_parent(first, last)
@@ -176,7 +196,7 @@ def extract_sections(html_source):
     events = []
     for n in flat[flat.index(first):]:
         if is_heading(n):
-            events.append(("heading", n.tag, clean(visible_text(n))))
+            events.append(("heading", n.tag, heading_text(n)))
         elif n.tag in {"p", "blockquote", "li"} and not any(
             x.tag in {"p", "li"} for x in walk(n) if x is not n
         ):
