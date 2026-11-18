@@ -29,6 +29,63 @@ try{
 }
 const originalStyle=(text,merged)=>text.includes('\r\n')?
  merged.replace(/\r?\n/g,'\r\n'):merged.replace(/\r\n/g,'\n');
+
+// Quote layouts often have substantial legitimate user edits, so merging
+// the whole layout fails even when both versions are valid. Preserve that
+// exact layout on conflict; change only the font and, when the pre-existing
+// responsive variables are recognizable, add a bounded text-fit calculation.
+const reconcileLocalQuote = original => {
+  const normalized = original.replace(/\r\n/g,'\n');
+  if (!/export\s+const\s+QuoteOfDayWidget\b/.test(normalized) ||
+      !/TextWidget/.test(normalized)) {
+    throw Error('QuoteOfDayWidget.js: unrecognized local component; no files changed.');
+  }
+  // Native Android system font, not Church Slavonic Ponomar.
+  let text = normalized.replace(/(['"])Ponomar(?:-Regular)?\1/gi, "'sans-serif'");
+  const fontStyle = /fontFamily\s*:\s*(['"])([^'"]+)\1/g;
+  text = text.replace(fontStyle, (match, quote, family) =>
+    /ponomar/i.test(family) ? "fontFamily: 'sans-serif'" : match);
+  const hasFitText = /\bfitText\s*\(/.test(text);
+  const canAdaptQuote = !hasFitText &&
+    /const\s+widgetWidth\s*=/.test(text) &&
+    /const\s+widgetHeight\s*=/.test(text) &&
+    /const\s+horizontalPadding\s*=/.test(text) &&
+    /const\s+verticalPadding\s*=/.test(text) &&
+    /const\s+quoteFontSize\s*=/.test(text) &&
+    /const\s+sourceFontSize\s*=/.test(text) &&
+    /fontSize:\s*quoteFontSize\b/.test(text) &&
+    /lineHeight:\s*quoteLineHeight\b/.test(text) &&
+    /return\s*\(\s*<OverlapWidget\b/.test(text);
+  if (canAdaptQuote) {
+    if (!/\bimport\s*\{[^}]*\bfitText\b[^}]*\}\s*from\s*['"]\.\/widgetLayout['"]/.test(text)) {
+      text = "import {fitText} from './widgetLayout';\n" + text;
+    }
+    const expression = [
+      '  // Fit quote text inside the existing local layout without changing its design.',
+      '  const quoteFit = fitText({',
+      "    text: String(text || '').trim(),",
+      '    maxWidth: Math.max(1, widgetWidth - 2 * horizontalPadding - 2),',
+      '    maxHeight: Math.max(1, widgetHeight - 2 * verticalPadding -',
+      '      (source ? sourceFontSize + 8 : 0)),',
+      '    maxFont: quoteFontSize,',
+      '    minFont: 11,',
+      '  });',
+      '',
+    ].join('\n');
+    const target = /  return\s*\(\s*<OverlapWidget\b/;
+    const pos = text.search(target);
+    if (pos<0)throw Error('Could not locate quote render safely.');
+    text = text.slice(0,pos)+expression+text.slice(pos);
+    text = text.replace(/fontSize:\s*quoteFontSize\b/g,'fontSize: quoteFit.fontSize')
+      .replace(/lineHeight:\s*quoteLineHeight\b/g,'lineHeight: quoteFit.lineHeight');
+    console.log('NOTE: preserved customized QuoteOfDayWidget styling; added bounded fitting.');
+  } else {
+    console.log('NOTE: preserved customized QuoteOfDayWidget layout; '+
+      'system font updated. Existing local typography calculations retained.');
+  }
+  return originalStyle(original,text);
+};
+
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'molitvoslov-widgets-'));
 let files=[];
 try{
@@ -58,10 +115,15 @@ try{
       cwd:repoRoot,encoding:'utf8',maxBuffer:20*1024*1024,
     });
     if(merge.status!==0 || /^(<<<<<<<|=======|>>>>>>>)/m.test(merge.stdout)){
-      throw Error(name+': local edit intersects widget changes ('+
-        (merge.stderr||'merge conflict').trim()+'). NO FILES MODIFIED.');
+      if (name==='src/widgets/QuoteOfDayWidget.js') {
+        updated=reconcileLocalQuote(local);
+      } else {
+        throw Error(name+': local edit intersects widget changes ('+
+          (merge.stderr||'merge conflict').trim()+'). NO FILES MODIFIED.');
+      }
+    } else {
+      updated=originalStyle(local,merge.stdout);
     }
-    updated=originalStyle(local,merge.stdout);
    }
   }
   files.push({name,file,exists,original:local,updated});
@@ -70,6 +132,11 @@ try{
  if(!pending.length){
   console.log('PASS: all improved widget sources already installed.');
   process.exit(0);
+ }
+ if (process.argv.includes('--dry-run')) {
+   console.log('DRY RUN: all widget sources validated; NO FILES MODIFIED.');
+   console.log('Would change:',pending.map(x=>x.name).join(', '));
+   process.exit(0);
  }
  const backups=path.resolve(repoRoot,'build-backups',
    'widgets-before-'+new Date().toISOString().replace(/[:.]/g,'-'));
