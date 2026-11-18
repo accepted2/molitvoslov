@@ -1,22 +1,21 @@
 import React, {useEffect, useRef} from 'react';
 import {Animated, Easing, StyleSheet, Text, View} from 'react-native';
 
-// A complete prayer-rope loop instead of the previous curved row of beads.
-// Both sizes use the same moving highlight, with a small hanging cross on the
-// full-size loader. The animation uses the native driver for smooth rendering.
+// Slightly flattened oval, like a prayer rope hanging on a finger.
+// The thread border and bead geometry use the exact same radii.
 const BEAD_COUNT = 24;
 const COMPACT_BEAD_COUNT = 14;
-const circlePositions = (count, centerX, centerY, radius, beadSize) =>
+const ellipsePositions = (count, centerX, centerY, radiusX, radiusY, beadSize) =>
   Array.from({length: count}, (_, index) => {
     const angle = -Math.PI / 2 + (2 * Math.PI * index) / count;
     return {
-      left: centerX + radius * Math.cos(angle) - beadSize / 2,
-      top: centerY + radius * Math.sin(angle) - beadSize / 2,
+      left: centerX + radiusX * Math.cos(angle) - beadSize / 2,
+      top: centerY + radiusY * Math.sin(angle) - beadSize / 2,
     };
   });
 
-const LARGE_POSITIONS = circlePositions(BEAD_COUNT, 56, 55, 43, 11);
-const SMALL_POSITIONS = circlePositions(COMPACT_BEAD_COUNT, 22, 22, 16, 7);
+const LARGE_POSITIONS = ellipsePositions(BEAD_COUNT, 54, 50, 40, 34, 11);
+const SMALL_POSITIONS = ellipsePositions(COMPACT_BEAD_COUNT, 19, 15, 12, 9.5, 5);
 
 export const PrayerBeadsLoader = ({text = '', compact = false, light = false}) => {
   const beads = useRef(Array.from({length: BEAD_COUNT}, () => new Animated.Value(0))).current;
@@ -94,22 +93,36 @@ export const PrayerBeadsLoader = ({text = '', compact = false, light = false}) =
             />
           </View>
         ))}
-        {!compact && (
-          <>
-            <View style={[styles.pendantKnot, light && styles.pendantKnotLight]} />
-            <View style={[styles.pendantLine, light && styles.pendantLineLight]} />
-            <View
-              style={styles.cross}
-              accessible
-              accessibilityLabel="Православный крестик"
-            >
-              <View style={[styles.crossStem, light && styles.crossLight]} />
-              <View style={[styles.crossTopBar, light && styles.crossLight]} />
-              <View style={[styles.crossMiddleBar, light && styles.crossLight]} />
-              <View style={[styles.crossFootBar, light && styles.crossLight]} />
-            </View>
-          </>
-        )}
+        <View style={[
+          styles.pendantKnot, compact && styles.pendantKnotCompact,
+          light && styles.pendantKnotLight,
+        ]} />
+        <View style={[
+          styles.pendantLine, compact && styles.pendantLineCompact,
+          light && styles.pendantLineLight,
+        ]} />
+        <View
+          style={[styles.cross, compact && styles.crossCompact]}
+          accessible
+          accessibilityLabel="Православный крестик"
+        >
+          <View style={[
+            styles.crossStem, compact && styles.crossStemCompact,
+            light && styles.crossLight,
+          ]} />
+          <View style={[
+            styles.crossTopBar, compact && styles.crossTopBarCompact,
+            light && styles.crossLight,
+          ]} />
+          <View style={[
+            styles.crossMiddleBar, compact && styles.crossMiddleBarCompact,
+            light && styles.crossLight,
+          ]} />
+          <View style={[
+            styles.crossFootBar, compact && styles.crossFootBarCompact,
+            light && styles.crossLight,
+          ]} />
+        </View>
       </View>
 
       {!!text && (
@@ -126,39 +139,40 @@ export const PrayerBeadsLoader = ({text = '', compact = false, light = false}) =
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 182,
+    minHeight: 169,
     alignItems: 'center',
     justifyContent: 'center',
   },
   containerCompact: {
-    minHeight: 44,
+    minHeight: 52,
     flexDirection: 'row',
+    alignItems: 'center',
   },
   rosary: {
-    width: 112,
-    height: 159,
+    width: 108,
+    height: 139,
     position: 'relative',
   },
   rosaryCompact: {
-    width: 44,
-    height: 44,
+    width: 38,
+    height: 51,
   },
   thread: {
     position: 'absolute',
-    left: 13,
-    top: 12,
-    width: 86,
-    height: 86,
-    borderRadius: 43,
+    left: 14,
+    top: 16,
+    width: 80,
+    height: 68,
+    borderRadius: 40,
     borderWidth: 1.5,
     borderColor: 'rgba(111, 71, 39, 0.36)',
   },
   threadCompact: {
-    left: 6,
-    top: 6,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    left: 7,
+    top: 5.5,
+    width: 24,
+    height: 19,
+    borderRadius: 12,
     borderWidth: 1,
   },
   threadLight: {
@@ -172,8 +186,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   beadPositionCompact: {
-    width: 7,
-    height: 7,
+    width: 5,
+    height: 5,
   },
   bead: {
     width: 10,
@@ -184,9 +198,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#6D4223',
   },
   beadCompact: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    borderWidth: 0.8,
   },
   beadLight: {
     borderColor: '#F0CF92',
@@ -194,8 +209,8 @@ const styles = StyleSheet.create({
   },
   pendantKnot: {
     position: 'absolute',
-    top: 104,
-    left: 53.5,
+    top: 88,
+    left: 51.5,
     width: 5,
     height: 5,
     borderRadius: 3,
@@ -203,72 +218,117 @@ const styles = StyleSheet.create({
     borderColor: '#B98545',
     backgroundColor: '#6D4223',
   },
+  pendantKnotCompact: {
+    top: 26,
+    left: 17.25,
+    width: 3.5,
+    height: 3.5,
+    borderRadius: 2,
+    borderWidth: 0.8,
+  },
   pendantKnotLight: {
     borderColor: '#F0CF92',
     backgroundColor: '#F7DFB4',
   },
+  // Pendant reduced from 16 to 8 layout pixels.
   pendantLine: {
     position: 'absolute',
-    top: 108,
-    left: 55,
+    top: 93,
+    left: 53,
     width: 2,
-    height: 16,
+    height: 8,
     backgroundColor: 'rgba(111, 71, 39, 0.72)',
+  },
+  pendantLineCompact: {
+    top: 29.5,
+    left: 18.5,
+    width: 1,
+    height: 4,
   },
   pendantLineLight: {
     backgroundColor: 'rgba(255, 239, 207, 0.75)',
   },
-  // Draw the eight-point Orthodox cross with native Views so the symbol
-  // remains legible on Android even without an appropriate symbol font.
+  // Construct the Orthodox cross from native Views; no font dependency.
   cross: {
     position: 'absolute',
-    top: 121,
+    top: 101,
     left: 43,
-    width: 26,
-    height: 35,
+    width: 22,
+    height: 28,
+  },
+  crossCompact: {
+    top: 33.5,
+    left: 13,
+    width: 12,
+    height: 15,
   },
   crossStem: {
     position: 'absolute',
-    top: 1,
-    left: 12,
+    top: 0,
+    left: 10,
     width: 2,
-    height: 32,
+    height: 25,
     borderRadius: 1,
     backgroundColor: '#B98545',
   },
+  crossStemCompact: {
+    top: 0,
+    left: 5.25,
+    width: 1.5,
+    height: 12,
+  },
   crossTopBar: {
     position: 'absolute',
-    top: 6,
-    left: 8,
-    width: 10,
+    top: 4,
+    left: 7,
+    width: 8,
     height: 2,
     borderRadius: 1,
     backgroundColor: '#B98545',
   },
+  crossTopBarCompact: {
+    top: 2.5,
+    left: 4,
+    width: 4,
+    height: 1.5,
+  },
   crossMiddleBar: {
     position: 'absolute',
-    top: 15,
-    left: 3,
-    width: 20,
+    top: 11.5,
+    left: 2,
+    width: 18,
     height: 2.5,
     borderRadius: 1,
     backgroundColor: '#B98545',
   },
+  crossMiddleBarCompact: {
+    top: 5.5,
+    left: 1,
+    width: 10,
+    height: 1.5,
+  },
   crossFootBar: {
     position: 'absolute',
-    top: 25,
-    left: 5,
-    width: 16,
+    top: 19,
+    left: 4,
+    width: 14,
     height: 2,
     borderRadius: 1,
     backgroundColor: '#B98545',
-    transform: [{rotate: '-20deg'}],
+    transform: [{rotate: '20deg'}],
+  },
+  crossFootBarCompact: {
+    top: 9.5,
+    left: 2,
+    width: 8,
+    height: 1.5,
+    transform: [{rotate: '20deg'}],
   },
   crossLight: {
     backgroundColor: '#F3D89F',
   },
   text: {
-    marginTop: 3,
+    marginTop: 6,
     color: '#7B624D',
     fontSize: 13,
     lineHeight: 17,
