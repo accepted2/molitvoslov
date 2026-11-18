@@ -96,8 +96,18 @@ export const PrayerBeadsLoader = ({text = '', compact = false, light = false}) =
         ))}
         {!compact && (
           <>
+            <View style={[styles.pendantKnot, light && styles.pendantKnotLight]} />
             <View style={[styles.pendantLine, light && styles.pendantLineLight]} />
-            <Text style={[styles.cross, light && styles.crossLight]}>☦</Text>
+            <View
+              style={styles.cross}
+              accessible
+              accessibilityLabel="Православный крестик"
+            >
+              <View style={[styles.crossStem, light && styles.crossLight]} />
+              <View style={[styles.crossTopBar, light && styles.crossLight]} />
+              <View style={[styles.crossMiddleBar, light && styles.crossLight]} />
+              <View style={[styles.crossFootBar, light && styles.crossLight]} />
+            </View>
           </>
         )}
       </View>
@@ -116,7 +126,7 @@ export const PrayerBeadsLoader = ({text = '', compact = false, light = false}) =
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 154,
+    minHeight: 182,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -126,7 +136,7 @@ const styles = StyleSheet.create({
   },
   rosary: {
     width: 112,
-    height: 139,
+    height: 159,
     position: 'relative',
   },
   rosaryCompact: {
@@ -182,30 +192,80 @@ const styles = StyleSheet.create({
     borderColor: '#F0CF92',
     backgroundColor: '#F7DFB4',
   },
+  pendantKnot: {
+    position: 'absolute',
+    top: 104,
+    left: 53.5,
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: '#B98545',
+    backgroundColor: '#6D4223',
+  },
+  pendantKnotLight: {
+    borderColor: '#F0CF92',
+    backgroundColor: '#F7DFB4',
+  },
   pendantLine: {
     position: 'absolute',
-    top: 100,
-    left: 55.5,
-    width: 1,
-    height: 13,
-    backgroundColor: 'rgba(111, 71, 39, 0.48)',
+    top: 108,
+    left: 55,
+    width: 2,
+    height: 16,
+    backgroundColor: 'rgba(111, 71, 39, 0.72)',
   },
   pendantLineLight: {
-    backgroundColor: 'rgba(255, 239, 207, 0.55)',
+    backgroundColor: 'rgba(255, 239, 207, 0.75)',
   },
+  // Draw the eight-point Orthodox cross with native Views so the symbol
+  // remains legible on Android even without an appropriate symbol font.
   cross: {
     position: 'absolute',
-    top: 109,
-    left: 44,
-    width: 24,
-    textAlign: 'center',
-    color: '#8E5D32',
-    fontFamily: 'serif',
-    fontSize: 19,
-    lineHeight: 24,
+    top: 121,
+    left: 43,
+    width: 26,
+    height: 35,
+  },
+  crossStem: {
+    position: 'absolute',
+    top: 1,
+    left: 12,
+    width: 2,
+    height: 32,
+    borderRadius: 1,
+    backgroundColor: '#B98545',
+  },
+  crossTopBar: {
+    position: 'absolute',
+    top: 6,
+    left: 8,
+    width: 10,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#B98545',
+  },
+  crossMiddleBar: {
+    position: 'absolute',
+    top: 15,
+    left: 3,
+    width: 20,
+    height: 2.5,
+    borderRadius: 1,
+    backgroundColor: '#B98545',
+  },
+  crossFootBar: {
+    position: 'absolute',
+    top: 25,
+    left: 5,
+    width: 16,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#B98545',
+    transform: [{rotate: '-20deg'}],
   },
   crossLight: {
-    color: '#F3D89F',
+    backgroundColor: '#F3D89F',
   },
   text: {
     marginTop: 3,
