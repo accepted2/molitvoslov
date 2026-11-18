@@ -50,21 +50,34 @@ assert.match(section('threadCompact'), /left: 7,[\s\S]*top: 5\.5,[\s\S]*width: 2
 assert.match(section('pendantLine'), /height: 5,/); // reduced from 8
 assert.match(section('pendantLineCompact'), /height: 2\.5,/);
 assert.match(section('cross'), /width: 20,[\s\S]*height: 24,/);
-assert.match(section('crossCompact'), /width: 9,[\s\S]*height: 12,/);
+assert.match(section('crossCompact'), /width: 10,[\s\S]*height: 20,/);
 assert.match(section('crossFootBar'), /rotate: '14deg'/);
 assert.match(section('crossFootBarCompact'), /rotate: '14deg'/);
 assert.match(section('crossMiddleBar'), /width: 15,/);
 assert.match(section('crossMiddleBarCompact'), /width: 7,/);
-assert.match(section('crossFootBarCompact'), /width: 5\.5,/);
-assert.match(section('crossStemCompact'), /width: 1,/);
+assert.match(section('crossFootBarCompact'), /width: 6\.2,/);
+assert.match(section('crossStemCompact'), /width: 1\.1,[\s\S]*height: 17\.5,/);
 assert.match(section('pendantKnotCompact'), /width: 2\.8,/);
 // Cross and angled footbar must both be fully inside the compact glyph.
 assert.match(section('rosaryCompact'), /height: 56,/);
 assert.match(section('containerCompact'), /minHeight: 56,/);
 assert.match(section('crossCompact'), /top: 31,/);
-const compactHeight = 56, crossTop = 31, footBarEnd = 8 + 1.2 + 1;
-assert.ok(crossTop + 12 < compactHeight);
-assert.ok(crossTop + footBarEnd < compactHeight);
+// Regression: the compact vertical stem must visibly extend *below*
+// the slanted lower bar, but still fit comfortably inside the rosary.
+const compactHeight = 56;
+const crossTop = 31;
+const stemHeight = 17.5;
+const footBarCenter = 10 + 1.2 / 2;
+const footBarHalfWidth = 6.2 / 2;
+const footBarMaxY = footBarCenter +
+  footBarHalfWidth * Math.sin(14 * Math.PI / 180) + 0.6;
+assert.ok(stemHeight - footBarMaxY >= 4,
+  'Compact cross needs at least 4px of lower stem below the slanted bar');
+assert.ok(crossTop + stemHeight <= compactHeight - 4,
+  'Compact cross must fit with bottom breathing room');
+assert.ok(crossTop + 20 <= compactHeight,
+  'Compact cross containing View must stay within compact rosary');
+assert.match(section('crossCompact'), /overflow: 'visible'/);
 assert.match(section('cross'), /top: 98,/);
 assert.match(section('pendantLine'), /top: 93,[\s\S]*height: 5,/);
 assert.match(section('pendantLineCompact'), /top: 28\.5,[\s\S]*height: 2\.5,/);
@@ -80,5 +93,5 @@ assert.match(source, /accessibilityLabel="Православный крести�
 assert.match(source, /light && styles\.beadLight/);
 assert.doesNotMatch(source, /\{!compact && \(/);
 console.log('PASS: 24-bead and compact 14-bead ovals match the thread and stay in bounds');
-console.log('PASS: shortened pendant, thinner Orthodox crosses on BOTH variants, corrected footbar');
+console.log('PASS: compact cross has a visible bottom stem and fits inside loader with margin');
 console.log('PASS: native-driver animation and accessible progress indicator');
