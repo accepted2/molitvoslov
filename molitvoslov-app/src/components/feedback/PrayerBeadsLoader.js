@@ -260,8 +260,9 @@ const styles = StyleSheet.create({
   crossCompact: {
     top: 31,
     left: 14,
-    width: 9,
-    height: 12,
+    width: 10,
+    height: 20,
+    overflow: 'visible',
   },
   crossStem: {
     position: 'absolute',
@@ -272,11 +273,13 @@ const styles = StyleSheet.create({
     borderRadius: 1,
     backgroundColor: '#B98545',
   },
+  // Leave a distinct lower tail BELOW the slanted footrest.
+  // At the old 10px height, that tail disappeared after Android rasterization.
   crossStemCompact: {
     top: 0,
     left: 4.2,
-    width: 1,
-    height: 10,
+    width: 1.1,
+    height: 17.5,
   },
   crossTopBar: {
     position: 'absolute',
@@ -304,7 +307,7 @@ const styles = StyleSheet.create({
   },
   crossMiddleBarCompact: {
     top: 5,
-    left: 0.5,
+    left: 1.2,
     width: 7,
     height: 1.2,
   },
@@ -319,9 +322,9 @@ const styles = StyleSheet.create({
     transform: [{rotate: '14deg'}],
   },
   crossFootBarCompact: {
-    top: 8,
-    left: 1.5,
-    width: 5.5,
+    top: 10,
+    left: 1.8,
+    width: 6.2,
     height: 1.2,
     transform: [{rotate: '14deg'}],
   },
