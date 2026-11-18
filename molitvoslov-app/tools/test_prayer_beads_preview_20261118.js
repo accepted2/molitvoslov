@@ -20,8 +20,9 @@ for (const [name, text] of [['PrayerBeadsLoader.js', loader],
 }
 assert.match(loader, /const BEAD_COUNT = 24;/);
 assert.match(loader, /const COMPACT_BEAD_COUNT = 14;/);
-assert.match(loader, /const LARGE_POSITIONS = circlePositions\(BEAD_COUNT, 56, 55, 43, 11\);/);
-assert.match(loader, /!compact && \(/);
+assert.match(loader, /const LARGE_POSITIONS = ellipsePositions\(BEAD_COUNT, 54, 50, 40, 34, 11\);/);
+assert.match(loader, /compact && styles\.crossCompact/);
+assert.match(loader, /compact && styles\.pendantLineCompact/);
 assert.match(loader, /styles\.pendantKnot/);
 assert.match(loader, /styles\.pendantLine/);
 for (const part of ['crossStem','crossTopBar','crossMiddleBar','crossFootBar']) {
@@ -30,10 +31,12 @@ for (const part of ['crossStem','crossTopBar','crossMiddleBar','crossFootBar']) 
 }
 assert.match(loader, /accessibilityLabel="Православный крестик"/);
 assert.match(loader, /backgroundColor: '#F3D89F'/);
-assert.match(loader, /height: 159/);
-assert.match(loader, /top: 121/);
+assert.match(loader, /height: 139/);
+assert.match(loader, /top: 101/);
+assert.match(loader, /rotate: '20deg'/);
 assert.match(loader, /useNativeDriver: true/);
 assert.match(preview, /<PrayerBeadsLoader/);
+assert.match(preview, /Малые овальные чётки с крестиком/);
 assert.match(preview, /setCompact\(value => !value\)/);
 assert.match(preview, /setLight\(value => !value\)/);
 assert.match(preview, /onPress=\{onContinue\}/);
@@ -49,6 +52,6 @@ assert.ok(previewPos > 0 && previewPos < startupPos,
 const minTimer = app.match(/const MIN_STARTUP_MS = (\d+);/);
 assert.equal(Number(minTimer?.[1]), 650,
   'Normal startup timing must be preserved');
-console.log('PASS: 24-bead loader with visible suspended Orthodox cross');
+console.log('PASS: oval 24-bead loader with shorter suspension and crosses on both sizes');
 console.log('PASS: perpetual emulator preview, full/compact and light/dark controls');
 console.log('PASS: development-only entry with no change to normal startup timing');
