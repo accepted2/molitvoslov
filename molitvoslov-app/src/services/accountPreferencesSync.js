@@ -58,17 +58,22 @@ const request = async (method, patch = null) => {
     ...(patch ? {body: JSON.stringify(patch)} : {}),
   });
   if (!response.ok) {
-    // A 401 means the cached token is no longer usable. Clearing ONLY the
-    // token stops repeated failed requests while keeping all local settings,
-    // the cached user identity and queued preference edits intact.
-    if (response.status === 401) {
+    const data = await response.json().catch(() => ({}));
+    const message = String(data?.detail || data?.error || '');
+    // A 401, or a 403 explicitly reporting an invalid token, means the
+    // saved credential is expired. Do NOT treat all 403s as expired logins.
+    if (response.status === 401 || (
+      response.status === 403 &&
+      /недействительн.*токен|invalid\s+token/i.test(message)
+    )) {
+      // Clear ONLY the credential, not the account identity, local settings,
+      // or queued offline edits. Re-login will obtain a new backend token.
       await deleteApiToken();
       const error = new Error('Для облачной синхронизации требуется повторный вход.');
       error.code = 'reauth-required';
       throw error;
     }
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data?.detail || 'Cloud settings HTTP ' + response.status);
+    throw new Error(message || 'Cloud settings HTTP ' + response.status);
   }
   return response.json();
 };
