@@ -92,8 +92,8 @@ export const widgetTaskHandler = async props => {
     if (!fresh) return;
     // Avoid overwriting a more recent tap with an older asynchronous result.
     const latest = await loadState(widgetId);
-    if (latest && (latest.selected !== next.selected || latest.month !== next.month ||
-        latest.touchedAt !== next.touchedAt)) return;
+    if (!latest || latest.selected !== next.selected || latest.month !== next.month ||
+        latest.touchedAt !== next.touchedAt) return;
     draw(fresh);
   } catch (error) {
     console.warn('[widget] online update:', error?.message || error);
