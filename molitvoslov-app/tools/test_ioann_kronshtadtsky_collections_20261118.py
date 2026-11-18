@@ -19,7 +19,7 @@ spec.loader.exec_module(module)
 
 def fixture_html():
     headings = "".join(
-        f'<h2><a href="#top">^</a> {name}<sup>1</sup></h2>'
+        f'<h2><a href="#top">^</a> {name}<a href="#citation-1">1</a></h2>'
         f'<p>Господи, сотвори милость Твою над нами. '
         f'Да будет мир, да утвердится вера и любовь. Здесь отдельная молитва номер {i}.</p>'
         for i, name in enumerate(module.EXPECTED_TITLES)
@@ -39,12 +39,15 @@ class ImportTests(unittest.TestCase):
         prayers, volumes = module.extract_sections(fixture_html())
         self.assertEqual(len(prayers), 15)
         self.assertEqual(len(volumes), 3)
+        self.assertEqual(prayers[2]['title'], module.EXPECTED_TITLES[2], 'Footnote link must not join heading')
+        self.assertEqual(prayers[3]['title'], module.EXPECTED_TITLES[3], 'Source reference link must be removed')
+        self.assertEqual(volumes[0]['title'], 'Том 1', 'Volume number is genuine title text')
         self.assertTrue(prayers[0]['text'].startswith('Господи'))
         self.assertTrue(volumes[-1]['text'].startswith('Господи'))
 
     def test_abort_when_page_is_incomplete(self):
         with self.assertRaisesRegex(ValueError, "15 titled prayers"):
-            module.extract_sections(fixture_html().replace('<h2><a href="#top">^</a> Молитва утренняя<sup>1</sup></h2>', '<h5>Молитва утренняя</h5>'))
+            module.extract_sections(fixture_html().replace('<h2><a href="#top">^</a> Молитва утренняя<a href="#citation-1">1</a></h2>', '<h5>Молитва утренняя</h5>'))
 
     def test_no_mutations_in_dry_run_and_idempotence(self):
         with TemporaryDirectory() as tmp:
