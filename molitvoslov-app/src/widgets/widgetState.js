@@ -55,7 +55,7 @@ export const reduceState = (state, {widgetAction, clickAction, data}, now = new 
     if (!current.pinned || stale) return today;
     return current;
   }
-  if (widgetAction === 'WIDGET_RESIZED') return current;
+  if (widgetAction === 'WIDGET_RESIZED') return current.pinned ? current : today;
 
   if (widgetAction === 'WIDGET_CLICK') {
     if (clickAction === 'CALENDAR_TODAY') return today;
