@@ -30,7 +30,7 @@ export const PrayerBeadsPreviewScreen = ({onContinue}) => {
             text="Подготавливаем молитвослов..."
           />
           <Text style={[styles.info, !light && styles.infoDark]}>
-            {compact ? 'Компактный круг без крестика' : 'Полный круг с православным крестиком'}
+            {compact ? 'Малые овальные чётки с крестиком' : 'Овальные чётки с православным крестиком'}
           </Text>
         </View>
 
