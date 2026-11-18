@@ -160,7 +160,8 @@ const reconcileLocalCalendar = original => {
 // function name; those functions vary across local versions. Keep it intact.
 const reconcileLocalWidgetTaskHandler = original => {
   const normalized = original.replace(/\r\n/g, '\n');
-  if (!/export\s+const\s+widgetTaskHandler\s*=/.test(normalized) ||
+  const exportedHandler = /export\s+(?:const\s+widgetTaskHandler\s*=|(?:async\s+)?function\s+widgetTaskHandler\b|\{[^}]*widgetTaskHandler[^}]*\})/;
+  if (!exportedHandler.test(normalized) ||
       !/ChurchCalendar/.test(normalized) ||
       !/QuoteOfDay/.test(normalized)) {
     throw Error('widgetTaskHandler.js: unexpected local handler structure. ' +
