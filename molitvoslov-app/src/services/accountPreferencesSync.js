@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {authenticatedFetch, getApiToken, getCachedBackendUser} from './backendAuth';
+import {authenticatedFetch, getApiToken, getCachedBackendUser, deleteApiToken} from './backendAuth';
 import {getAppLanguage, setAppLanguage} from './languagePreferences';
 import {readHomeOrderForUser, setHomeOrderForUser} from './homeCategoryOrder';
 import {
@@ -35,8 +35,9 @@ export const queueAccountPreferencePatch = (patch) => {
   // overwrite a newer color choice in the offline pending queue.
   const enqueue = async () => {
     const user = await getCachedBackendUser().catch(() => null);
-    const token = await getApiToken().catch(() => null);
-    if (!user?.id || !token) return;
+    // Keep offline pending changes even if the server token has expired.
+    // They remain scoped to the cached account ID, never another account.
+    if (!user?.id) return;
     const key = pendingKey(user.id);
     const current = await readPending(user.id);
     await AsyncStorage.setItem(key, JSON.stringify(mergePatch(current, patch)));
@@ -57,6 +58,15 @@ const request = async (method, patch = null) => {
     ...(patch ? {body: JSON.stringify(patch)} : {}),
   });
   if (!response.ok) {
+    // A 401 means the cached token is no longer usable. Clearing ONLY the
+    // token stops repeated failed requests while keeping all local settings,
+    // the cached user identity and queued preference edits intact.
+    if (response.status === 401) {
+      await deleteApiToken();
+      const error = new Error('Для облачной синхронизации требуется повторный вход.');
+      error.code = 'reauth-required';
+      throw error;
+    }
     const data = await response.json().catch(() => ({}));
     throw new Error(data?.detail || 'Cloud settings HTTP ' + response.status);
   }
@@ -210,6 +220,15 @@ const syncOnce = async () => {
 
 export const syncAccountPreferences = () => {
   if (running) return running;
-  running = syncOnce().finally(() => { running = null; });
+  running = syncOnce()
+    .catch(error => {
+      // Authorization is a recoverable state, not a network retry error.
+      // Account UI can prompt for login; do not emit repeating WARN messages.
+      if (error?.code === 'reauth-required') {
+        return {success: false, reason: 'reauth-required'};
+      }
+      throw error;
+    })
+    .finally(() => { running = null; });
   return running;
 };
