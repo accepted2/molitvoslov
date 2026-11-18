@@ -21,7 +21,7 @@ def fixture_html():
     headings = "".join(
         f'<h2><a href="#top">^</a> {name}<a href="#citation-1">1</a></h2>'
         f'<p>Господи, сотвори милость Твою над нами. '
-        f'Да будет мир, да утвердится вера и любовь. Здесь отдельная молитва номер {i}.</p>'
+        f'Да будет мир, да утвердится вера и любовь. Здесь отдельная молитва номер {i}.</p><p>* * *</p>'
         for i, name in enumerate(module.EXPECTED_TITLES)
     )
     sections = "".join(
@@ -42,6 +42,8 @@ class ImportTests(unittest.TestCase):
         self.assertEqual(prayers[2]['title'], module.EXPECTED_TITLES[2], 'Footnote link must not join heading')
         self.assertEqual(prayers[3]['title'], module.EXPECTED_TITLES[3], 'Source reference link must be removed')
         self.assertEqual(volumes[0]['title'], 'Том 1', 'Volume number is genuine title text')
+        self.assertTrue(all("* * *" not in item["text"] for item in prayers),
+                        "Decorative separators must not appear in imported prayers")
         self.assertTrue(prayers[0]['text'].startswith('Господи'))
         self.assertTrue(volumes[-1]['text'].startswith('Господи'))
 
