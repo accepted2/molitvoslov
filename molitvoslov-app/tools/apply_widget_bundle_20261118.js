@@ -174,13 +174,15 @@ const reconcileLocalWidgetTaskHandler = original => {
     'const latest = await loadState(widgetId);',
     'const state = reduceState(',
     '<ChurchCalendarWidget',
-    "widgetInfo.widgetName === 'ChurchCalendar'",
   ];
   for (const anchor of required) {
     if (source.split(anchor).length - 1 !== 1) {
       throw Error('widgetTaskHandler.js: local handler differs at '+anchor+
         '. NO FILES MODIFIED. Send the file for an exact merge.');
     }
+  }
+  if (!source.includes("widgetInfo.widgetName === 'ChurchCalendar'")) {
+    throw Error('widgetTaskHandler.js: calendar dispatch is missing. NO FILES MODIFIED.');
   }
   const insertImport = statement => {
     if (source.includes(statement)) return;
