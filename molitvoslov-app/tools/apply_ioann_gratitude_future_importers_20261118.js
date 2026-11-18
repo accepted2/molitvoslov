@@ -60,7 +60,7 @@ for(const spec of specs){
  for(const [i,p] of spec.steps.entries()){
   const oldCount=source.split(p.old).length-1,doneCount=source.split(p.now).length-1;
   if(oldCount===1&&doneCount===0)source=source.replace(p.old,p.now);
-  else if(oldCount===0&&doneCount===1)continue;
+  else if(doneCount===1&&(oldCount===0||p.now.includes(p.old)))continue;
   else throw Error(spec.relative+': importer code differs at step '+(i+1)+'. NO FILES MODIFIED.');
  }
  let after=bom+source;
