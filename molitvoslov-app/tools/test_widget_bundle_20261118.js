@@ -10,13 +10,15 @@ const load = p => fs.readFileSync(path.join(root, p), 'utf8').replace(/\r\n/g, '
 const layoutSrc = load('src/widgets/widgetLayout.js');
 const stateSrc = load('src/widgets/widgetState.js');
 const handlerSrc = load('src/widgets/widgetTaskHandler.js');
+const refreshSrc = load('src/widgets/widgetCalendarRefresh.js');
 const churchSrc = load('src/widgets/ChurchCalendarWidget.js');
 const quoteSrc = load('src/widgets/QuoteOfDayWidget.js');
 const homeSrc = load('src/screens/MenuScreen.js');
 const appConfig = JSON.parse(load('app.json'));
 for (const [name, code] of [
   ['widgetLayout', layoutSrc], ['widgetState', stateSrc],
-  ['widgetTaskHandler', handlerSrc], ['ChurchCalendarWidget', churchSrc],
+  ['widgetTaskHandler', handlerSrc], ['widgetCalendarRefresh', refreshSrc],
+  ['ChurchCalendarWidget', churchSrc],
   ['QuoteOfDayWidget', quoteSrc], ['MenuScreen', homeSrc],
 ]) {
   assert.doesNotThrow(() => parser.parse(code, {
@@ -168,10 +170,17 @@ assert.match(churchSrc,/clickAction="CALENDAR_PREV_MONTH"/);
 assert.match(churchSrc,/clickAction="CALENDAR_NEXT_MONTH"/);
 assert.match(churchSrc,/clickAction="CALENDAR_TODAY"/);
 assert.match(churchSrc,/molitvoslov:\/\/calendar\//);
-assert.match(handlerSrc,/getWidgetInfo\('ChurchCalendar'\)/);
-assert.match(handlerSrc,/requestWidgetUpdateById/);
-assert.match(handlerSrc,/latest\.touchedAt !== next\.touchedAt/);
-assert.match(handlerSrc,/needsWidgetNetwork|needsNetwork/);
+// The device may already have a customized click handler; never replace
+// its event dispatch merely to satisfy the implementation's symbol names.
+assert.match(handlerSrc,/export const widgetTaskHandler/);
+assert.match(handlerSrc,/ChurchCalendar/);
+assert.match(handlerSrc,/QuoteOfDay/);
+assert.match(refreshSrc,/getWidgetInfo\('ChurchCalendar'\)/);
+assert.match(refreshSrc,/requestWidgetUpdateById/);
+assert.match(refreshSrc,/latest\.touchedAt !== next\.touchedAt/);
+assert.match(refreshSrc,/loadState\(widgetId\)/);
+assert.match(refreshSrc,/saveState\(widgetId, next\)/);
+assert.match(homeSrc,/from '..\/widgets\/widgetCalendarRefresh'/);
 assert.match(homeSrc,/refreshCalendarWidgetsFromApp\(language\)/);
 assert.doesNotMatch(homeSrc,/widgetName: 'ChurchCalendar',\s*renderWidget:/);
 // The installer preserves an existing locally customized quote layout when
