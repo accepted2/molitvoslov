@@ -35,7 +35,7 @@ assert.match(loader, /height: 139/);
 assert.match(loader, /height: 56/);
 assert.match(loader, /top: 98/);
 assert.match(loader, /rotate: '14deg'/);
-assert.match(loader, /height: 17\.5/);
+assert.match(loader, /height: 14\.75/);
 assert.match(loader, /height: 20/);
 assert.match(loader, /overflow: 'visible'/);
 assert.match(loader, /useNativeDriver: true/);
