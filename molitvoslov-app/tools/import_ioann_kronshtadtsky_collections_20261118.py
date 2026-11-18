@@ -148,11 +148,11 @@ def heading_text(node):
             return ""
         if part.tag == "a":
             label = clean(visible_text(part))
-            if label in {"^", "↑", "↩"} or re.fullmatch(r"\\[?\\d{1,3}\\]?", label):
+            if label in {"^", "↑", "↩"} or re.fullmatch(r"\[?\d{1,3}\]?", label):
                 return ""
         return "".join(collect(child) for child in part.children)
 
-    return clean(re.sub(r"^\\s*[\\^↑↩]\\s*", "", collect(node)))
+    return clean(re.sub(r"^\s*[\^↑↩]\s*", "", collect(node)))
 
 
 def title_key(text):
