@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useRef} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {AppState} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 
@@ -31,12 +31,14 @@ export const useCalendarTodayRollover = onDayChanged => {
   const latestCallback = useRef(onDayChanged);
   latestCallback.current = onDayChanged;
   const lastDay = useRef(localCalendarDayKey());
+  const [todayKey, setTodayKey] = useState(lastDay.current);
 
   const checkDay = useCallback(() => {
     const currentDay = localCalendarDayKey();
     const previousDay = lastDay.current;
     if (currentDay === previousDay) return false;
     lastDay.current = currentDay;
+    setTodayKey(currentDay); // Rerender the "today" highlight even on a manually selected day.
     latestCallback.current(previousDay, currentDay);
     return true;
   }, []);
@@ -75,4 +77,6 @@ export const useCalendarTodayRollover = onDayChanged => {
       resume.remove();
     };
   }, [checkDay]);
+
+  return todayKey;
 };
