@@ -30,8 +30,8 @@ if(!((oldVer==='1.0.30'&&oldCode===31)||
 }
 const jsonVersion=new RegExp('("version"\\s*:\\s*")'+oldVer.replace(/\./g,'\\.')+'(")');
 const jsonCode=new RegExp('("versionCode"\\s*:\\s*)'+oldCode+'\\b');
-if(originalApp.split(jsonVersion).length!==3||
-   originalApp.split(jsonCode).length!==3 ||
+if([...originalApp.matchAll(new RegExp(jsonVersion.source,'g'))].length!==1 ||
+   [...originalApp.matchAll(new RegExp(jsonCode.source,'g'))].length!==1 ||
    [...originalNative.matchAll(new RegExp(codeRegex.source,'gm'))].length!==1 ||
    [...originalNative.matchAll(new RegExp(verRegex.source,'gm'))].length!==1){
  throw Error('Could not identify unique version fields safely.');
