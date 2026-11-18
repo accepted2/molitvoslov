@@ -46,6 +46,7 @@ import {LANGUAGE_OPTIONS, getCalendarDataLanguage} from '../services/languagePre
 import {getLocalizedField} from '../services/localizedContent';
 import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
 import {getOfflineCalendarDay, getOfflineCalendarMonth} from '../services/calendarOfflineStore';
+import {useCalendarTodayRollover, shouldAdvanceSelectedDay} from '../hooks/useCalendarTodayRollover';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {subscribeToContentUpdates, getCurrentContent} from '../services/contentStore';
 import {getCachedPublicImage} from '../services/publicAssetCache';
@@ -391,6 +392,24 @@ export const MenuScreen = ({navigation}) => {
   const calendarRequestRef = useRef(0);
   const selectedCalendarDateRef = useRef(calendarSelectedDate);
   selectedCalendarDateRef.current = calendarSelectedDate;
+
+  useCalendarTodayRollover((previousToday, currentToday) => {
+    // Do not override an explicitly selected day other than yesterday's
+    // "today". Avoid changing the visible month if the user browsed away.
+    if (!shouldAdvanceSelectedDay(
+      toCalendarDate(selectedCalendarDateRef.current), previousToday,
+    )) return;
+    const [year, month, day] = currentToday.split('-').map(Number);
+    const nextDate = new Date(year, month - 1, day);
+    selectedCalendarDateRef.current = nextDate;
+    setCalendarSelectedDate(nextDate);
+    setCalendarVisibleMonth(visible => {
+      if (toCalendarDate(visible).slice(0, 7) !== previousToday.slice(0, 7)) {
+        return visible;
+      }
+      return new Date(year, month - 1, 1);
+    });
+  });
   const calendarSnapshot = useMemo(
     () => createCalendarSnapshot(calendarVisibleMonth, calendarSelectedDate, calendarLanguage),
     [calendarVisibleMonth, calendarSelectedDate, calendarLanguage]
