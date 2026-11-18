@@ -115,7 +115,7 @@ const selected = state.reduceState(added,{
 assert.equal(selected.month,'2026-12');
 assert.equal(selected.selected,'2026-12-25');
 
-const weeksSource = churchSrc.slice(
+const weeksSource = 'const ROWS = 6;\n' + churchSrc.slice(
   churchSrc.indexOf('const buildWeeks ='),
   churchSrc.indexOf('export const ChurchCalendarWidget ='),
 );
