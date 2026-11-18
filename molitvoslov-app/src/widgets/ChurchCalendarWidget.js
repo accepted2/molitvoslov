@@ -5,7 +5,7 @@ import {FlexWidget, ImageWidget, OverlapWidget, TextWidget} from 'react-native-a
 import {CALENDAR_MONTHS, calendarText} from '../services/calendarPreferences';
 import {formatFast, getCalendarDayAppearance} from '../services/churchCalendar';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
-import {FONT, clamp, fitOneLine, fitText, getScale, readSize, textWidth} from './widgetLayout';
+import {FONT, clamp, fitOneLine, fitText, textWidth, calendarWidgetGeometry} from './widgetLayout';
 import {parseDateKey, parseMonthKey, toDateKey} from './widgetState';
 
 const BASE = {width: 320, height: 150};
@@ -71,33 +71,11 @@ export const ChurchCalendarWidget = ({
   const shownYear = shown.year;
   const weeks = buildWeeks(shownYear, shownMonth, currentKey, effectiveSelected, monthDays);
 
-  const size = readSize(width, height, BASE);
-  const W = size.width, H = size.height;
-  const scale = getScale(size, BASE, 0.8, 1.5);
-  const pad = Math.round(clamp(10 * scale, 7, 14));
-  const gap = Math.round(clamp(8 * scale, 5, 12));
-  const contentH = Math.max(1, H - pad * 2 - BORDER * 2);
-  const panelPadLeft = Math.round(clamp(8 * scale, 5, 12));
-
-  // Protect both columns even on launchers that report unexpectedly narrow
-  // widget dimensions. The calendar grid retains 7 equal columns.
-  const idealPanel = Math.round(W * 0.46);
-  const maximumPanel = Math.max(7 * MIN_CELL + panelPadLeft + 1,
-    Math.min(240, W - pad * 2 - gap - 85));
-  const panelW = clamp(idealPanel, 7 * MIN_CELL + panelPadLeft + 1, maximumPanel);
-  const leftW = Math.max(1, W - 2 * BORDER - 2 * pad - gap - panelW);
-  const cellW = Math.max(MIN_CELL, Math.floor((panelW - panelPadLeft - 1) / 7));
-  const gridW = cellW * 7;
-
-  const monthHeaderH = Math.round(clamp(22 * scale, 16, 30));
-  const showWeekdays = contentH >= 110;
-  const weekdayH = showWeekdays ? Math.round(clamp(11 * scale, 9, 15)) : 0;
-  const availableRowH = Math.max(1, contentH - monthHeaderH - weekdayH);
-  const rowH = Math.max(1, Math.floor(availableRowH / ROWS));
-  const dayFont = Math.round(clamp(Math.min(rowH, cellW) * 0.58, 7, 15));
-  const bubble = Math.max(6, Math.min(cellW - 2, rowH - 1, 26));
-  const weekdayFont = Math.round(clamp(weekdayH * 0.72, 7, 11));
-  const arrowW = Math.round(cellW * 1.4);
+  const {
+    W, H, scale, pad, gap, contentH, panelPadLeft, panelW, leftW,
+    cellW, gridW, monthHeaderH, showWeekdays, weekdayH, rowH,
+    dayFont, bubble, weekdayFont, arrowW,
+  } = calendarWidgetGeometry(width, height);
 
   const monthTitle = fitOneLine({
     candidates: [
