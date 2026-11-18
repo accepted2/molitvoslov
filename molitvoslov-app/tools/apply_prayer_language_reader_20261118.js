@@ -1,0 +1,29 @@
+#!/usr/bin/env node
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),parser=require('@babel/parser');
+const root=path.resolve(__dirname,'..');
+const spec={"path":"src/screens/ReaderScreen.js","steps":[{"old":"import {useLanguage} from '../context/LanguageContext';","now":"import {useLanguage} from '../context/LanguageContext';\nimport {getPrayerTextAvailability, resolvePrayerMode, isPrayerModeAvailable, buildPrayerModeOptions} from '../services/prayerTextAvailability';"},{"old":"  const changeViewMode = nextMode => {\n    setViewMode(nextMode);\n    if (slug) {\n      saveReaderLanguageModePreference({\n        sourceType: 'text', sourceId: slug, mode: nextMode,\n      }).catch(error => console.warn('[reader language] save:', error?.message || error));\n    }\n  };","now":"  const changeViewMode = nextMode => {\n    const availability = getPrayerTextAvailability(text);\n    if (!isPrayerModeAvailable(nextMode, availability)) return;\n    const resolved = resolvePrayerMode(nextMode, availability);\n    setViewMode(resolved);\n    if (slug) {\n      saveReaderLanguageModePreference({\n        sourceType: 'text', sourceId: slug, mode: resolved,\n      }).catch(error => console.warn('[reader language] save:', error?.message || error));\n    }\n  };"},{"old":"    let nextMode = getReaderModeForAppLanguage(language, {\n      hasRussian: hasRussianTranslation,\n      hasUkrainian: hasUkrainianTranslation,\n      hasTraditional: hasTraditionalTranslation,\n    });\n\n    const preferred = focusTarget?.preferredLanguage;\n\n\n    if (preferred === 'russian') {\n      nextMode = hasRussianTranslation\n        ? READER_LANGUAGE_MODES.RUSSIAN\n        : READER_LANGUAGE_MODES.CHURCH;\n    } else if (preferred === 'ukrainian') {\n      nextMode = hasUkrainianTranslation\n        ? READER_LANGUAGE_MODES.UKRAINIAN\n        : READER_LANGUAGE_MODES.CHURCH;\n    } else if (preferred === 'church') {\n      nextMode = READER_LANGUAGE_MODES.CHURCH;\n    } else if (preferred === 'traditional') {\n      nextMode = hasTraditionalTranslation\n        ? READER_LANGUAGE_MODES.TRADITIONAL\n        : READER_LANGUAGE_MODES.CHURCH;\n    }\n\n","now":"    const availability = getPrayerTextAvailability(text);\n    let nextMode = resolvePrayerMode(getReaderModeForAppLanguage(language, {\n      hasRussian: hasRussianTranslation,\n      hasUkrainian: hasUkrainianTranslation,\n      hasTraditional: hasTraditionalTranslation,\n    }), availability);\n    const preferred = focusTarget?.preferredLanguage;\n    // Respect deep links, but never let an absent translation become active.\n    if (['church', 'russian', 'both', 'traditional'].includes(preferred)) {\n      nextMode = resolvePrayerMode(preferred, availability);\n    } else if (preferred === 'ukrainian') {\n      nextMode = resolvePrayerMode('russian', availability);\n    }\n\n"},{"old":"          const supported = (savedMode === 'russian' || savedMode === 'both')\n            ? (hasRussianTranslation ? savedMode : 'church')\n            : savedMode === 'traditional'\n              ? (hasTraditionalTranslation ? savedMode : 'church')\n              : 'church';\n","now":"          const supported = savedMode\n            ? resolvePrayerMode(savedMode, getPrayerTextAvailability(text))\n            : nextMode;\n"},{"old":"    const wholeTextSaved = savedItems.some(","now":"    const effectiveMode = resolvePrayerMode(viewMode, getPrayerTextAvailability(text));\n    const wholeTextSaved = savedItems.some("},{"old":"viewMode === READER_LANGUAGE_MODES.TRADITIONAL","now":"effectiveMode === READER_LANGUAGE_MODES.TRADITIONAL"},{"old":"viewMode === READER_LANGUAGE_MODES.UKRAINIAN","now":"effectiveMode === READER_LANGUAGE_MODES.UKRAINIAN"},{"old":"viewMode === READER_LANGUAGE_MODES.RUSSIAN","now":"effectiveMode === READER_LANGUAGE_MODES.RUSSIAN"},{"old":"viewMode === READER_LANGUAGE_MODES.BOTH","now":"effectiveMode === READER_LANGUAGE_MODES.BOTH"},{"old":"      title: getLocalizedTextTitle(text, language) || t('common.reading'),","now":"      presentation: 'standalone-prayer',\n      title: getLocalizedTextTitle(text, language) || t('common.reading'),"},{"old":"      viewSwitcher: {\n        activeKey: viewMode,\n        options: buildReaderLanguageOptions({\n          hasRussian: true,\n          hasTraditional: true,\n        }),\n      },","now":"      viewSwitcher: {\n        activeKey: effectiveMode,\n        options: buildPrayerModeOptions(getPrayerTextAvailability(text)),\n      },"}]};
+const file=path.join(root,spec.path),original=fs.readFileSync(file,'utf8');
+const bom=original.startsWith('\uFEFF')?'\uFEFF':'';
+let result=original.slice(bom.length).replace(/\r\n/g,'\n');
+for(let i=0;i<spec.steps.length;i++){
+ const step=spec.steps[i];
+ const oldCount=result.split(step.old).length-1, newCount=result.split(step.now).length-1;
+ if(oldCount===1&&newCount===0)result=result.replace(step.old,step.now);
+ else if(oldCount===0&&newCount===1)continue;
+ else throw Error('ReaderScreen patch '+(i+1)+' conflicts with local changes. NO FILES MODIFIED.');
+}
+parser.parse(result,{sourceType:'module',plugins:['jsx']});
+let updated=bom+result;
+if(original.includes('\r\n'))updated=updated.replace(/\n/g,'\r\n');
+if(process.argv.includes('--dry-run')){
+ console.log('DRY RUN PASS: '+(original===updated?'already installed':'reader patch ready')+'. NO FILES MODIFIED.');
+ process.exit(0);
+}
+if(original===updated){console.log('PASS: standalone prayer reader already fixed.');process.exit(0)}
+const backupDir=path.resolve(root,'..','build-backups','prayer-language-before-'+new Date().toISOString().replace(/[:.]/g,'-'));
+fs.mkdirSync(backupDir,{recursive:true});
+fs.copyFileSync(file,path.join(backupDir,'ReaderScreen.js'));
+fs.writeFileSync(file,updated,'utf8');
+console.log('PASS: prayer reader uses available language, preserves disabled tabs.');
+console.log('Backup: '+backupDir);
