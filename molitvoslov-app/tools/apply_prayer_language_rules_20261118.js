@@ -10,7 +10,7 @@ for(const spec of specs) {
  for(let i=0;i<spec.steps.length;i++){
   const p=spec.steps[i],old=result.split(p.old).length-1,done=result.split(p.now).length-1;
   if(old===1&&done===0)result=result.replace(p.old,p.now);
-  else if(old===0&&done===1)continue;
+  else if(done===1&&(old===0||p.now.includes(p.old)))continue;
   else throw Error(spec.path+' patch '+(i+1)+' conflicts with local work. NO FILES MODIFIED.');
  }
  parser.parse(result,{sourceType:'module',plugins:['jsx']});
