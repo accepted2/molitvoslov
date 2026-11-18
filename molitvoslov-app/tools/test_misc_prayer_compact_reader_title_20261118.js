@@ -24,7 +24,7 @@ assert.match(reader,/title: getLocalizedTextTitle\(text, language\)/);
 assert.match(header,/singleLineTitle = false/);
 assert.match(header,/numberOfLines=\{singleLineTitle \? 1 : undefined\}/);
 assert.match(header,/ellipsizeMode="tail"/);
-assert.match(header,/showTitle && !singleLineTitle \?/);
+assert.match(header,/const extraTitleHeight\s*=\s*singleLineTitle \? 0 : \(/);
 assert.match(header,/accessibilityLabel=\{title\}/);
 assert.match(runtime,/reader\.classList\.toggle\('misc-prayer-compact-title', DATA\.document\.miscPrayerCompactTitle === true\)/);
 assert.match(styles,/#reader\.misc-prayer-compact-title \.document-header \.rule-title/);
