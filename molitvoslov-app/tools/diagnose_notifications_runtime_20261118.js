@@ -50,7 +50,19 @@ const visit = folder => {
   }
 };
 visit(path.join(root, 'src'));
-visit(path.join(root, 'App.js'));
+const appFile = path.join(root, 'App.js');
+if (fs.existsSync(appFile)) {
+  const lines = fs.readFileSync(appFile, 'utf8').split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    for (const check of checks) {
+      check.re.lastIndex = 0;
+      if (check.re.test(lines[i])) {
+        matches.push({kind: check.name, file: 'App.js', line: i + 1,
+          snippet: lines[i].trim().slice(0, 130)});
+      }
+    }
+  }
+}
 console.log('Source matches (not necessarily active at runtime):');
 for (const match of matches.slice(0, 75))
   console.log(match.kind + '  ' + match.file + ':' + match.line + '  ' + match.snippet);
