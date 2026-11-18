@@ -11,7 +11,7 @@ for(const spec of specs){
  for(let i=0;i<spec.steps.length;i++){
   const p=spec.steps[i],old=output.split(p.old).length-1,done=output.split(p.now).length-1;
   if(old===1&&done===0)output=output.replace(p.old,p.now);
-  else if(old===0&&done===1)continue;
+  else if(done===1&&(old===0||p.now.includes(p.old)))continue;
   else throw Error(spec.path+' visual patch '+(i+1)+' conflicts with local edits. NO FILES MODIFIED.');
  }
  parser.parse(output,{sourceType:'module',plugins:['jsx']});
