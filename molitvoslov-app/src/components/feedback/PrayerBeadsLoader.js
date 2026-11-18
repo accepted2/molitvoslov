@@ -273,13 +273,13 @@ const styles = StyleSheet.create({
     borderRadius: 1,
     backgroundColor: '#B98545',
   },
-  // Leave a distinct lower tail BELOW the slanted footrest.
-  // At the old 10px height, that tail disappeared after Android rasterization.
+  // Keep a short but visible stem below the slanted bar.
+  // The exposed lower tail is approximately half its previous length.
   crossStemCompact: {
     top: 0,
     left: 4.2,
     width: 1.1,
-    height: 17.5,
+    height: 14.75,
   },
   crossTopBar: {
     position: 'absolute',
