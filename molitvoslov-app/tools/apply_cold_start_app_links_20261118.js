@@ -71,11 +71,19 @@ function patchNavigator(source) {
     s = s.replace(initialMatches[0][0], initialMatches[0][0].replace(currentBody,nextBody));
   }
 
-  const cfg = /config:\s*\{/g;
-  if (!/initialRouteName:\s*['"]Menu['"]/.test(s)) {
-    const found = [...s.matchAll(cfg)];
+  const configStart = s.indexOf('const linking =');
+  const configEnd = s.indexOf('const solidTransition');
+  if (configStart < 0 || configEnd <= configStart) {
+    throw new Error('AppNavigator.js: cannot isolate React Navigation linking config.');
+  }
+  const linkPart = s.slice(configStart, configEnd);
+  if (!/initialRouteName:\s*['"]Menu['"]/.test(linkPart)) {
+    const cfg = /config:\s*\{/g;
+    const found = [...linkPart.matchAll(cfg)];
     if (found.length !== 1) throw new Error('AppNavigator.js: unexpected linking config.');
-    s = s.replace(found[0][0], found[0][0] + "\n    initialRouteName: 'Menu',");
+    const replacement = linkPart.replace(found[0][0],
+      found[0][0] + "\n    initialRouteName: 'Menu',");
+    s = s.slice(0,configStart) + replacement + s.slice(configEnd);
   }
 
   // Keep any local notification/onReady flow as-is. This is an independent
