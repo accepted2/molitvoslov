@@ -14,6 +14,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 import {useFocusEffect} from '@react-navigation/native';
+import {useCalendarTodayRollover, shouldAdvanceSelectedDay} from '../hooks/useCalendarTodayRollover';
 
 import {AppBackground} from '../components/layout/AppBackground';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
@@ -607,6 +608,22 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const [visibleYear, setVisibleYear] = useState(initial.getFullYear());
   const [visibleMonth, setVisibleMonth] = useState(initial.getMonth() + 1);
   const [selectedDate, setSelectedDate] = useState(toCalendarDate(initial));
+  const selectedDateRef = useRef(selectedDate);
+  selectedDateRef.current = selectedDate;
+
+  useCalendarTodayRollover((previousToday, currentToday) => {
+    // Only advance if this screen was actually displaying the old today.
+    // Historical dates selected manually or opened via a shared link stay put.
+    if (!shouldAdvanceSelectedDay(selectedDateRef.current, previousToday)) return;
+    selectedDateRef.current = currentToday;
+    setSelectedDate(currentToday);
+    if (visibleYear + '-' + String(visibleMonth).padStart(2, '0') ===
+        previousToday.slice(0, 7)) {
+      const [year, month] = currentToday.split('-').map(Number);
+      setVisibleYear(year);
+      setVisibleMonth(month);
+    }
+  });
   const [monthData, setMonthData] = useState(null);
   const [dayData, setDayData] = useState(null);
   const [loadingMonth, setLoadingMonth] = useState(true);
