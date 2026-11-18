@@ -139,7 +139,7 @@ const names=appConfig.expo.plugins
   .find(x=>Array.isArray(x)&&x[0]==='react-native-android-widget')[1]
   .widgets.map(w=>w.name);
 assert.deepEqual(names,['QuoteOfDay','ChurchCalendar']);
-assert.match(churchSrc,/clickAction="CALENDAR_SELECT_DAY"/);
+assert.match(churchSrc,/clickAction=\{cell\.date \? 'CALENDAR_SELECT_DAY'/);
 assert.match(churchSrc,/clickAction="CALENDAR_PREV_MONTH"/);
 assert.match(churchSrc,/clickAction="CALENDAR_NEXT_MONTH"/);
 assert.match(churchSrc,/clickAction="CALENDAR_TODAY"/);
