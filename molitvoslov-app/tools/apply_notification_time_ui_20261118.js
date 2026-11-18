@@ -180,6 +180,38 @@ const edits = [
       },
     ],
   },
+  {
+    name: 'src/services/accountPreferencesSync.js',
+    steps: [
+      {
+        old: "  if (!user?.id || !token) return {success: false, reason: 'no-user'};",
+        now: [
+          "  if (!user?.id) return {success: false, reason: 'no-user'};",
+          "  if (!token) return {success: false, reason: 'reauth-required'};",
+        ].join('\n'),
+      },
+      {
+        old: [
+          "      if (error?.code === 'reauth-required') {",
+          "        return {success: false, reason: 'reauth-required'};",
+          "      }",
+          "      throw error;",
+        ].join('\n'),
+        now: [
+          "      if (error?.code === 'reauth-required') {",
+          "        return {success: false, reason: 'reauth-required'};",
+          "      }",
+          "      // Extra guard if an auth adapter throws the server detail directly.",
+          "      // Do not suppress unrelated 403 or 503 errors.",
+          "      if (/^(?:Недействительный токен|Invalid token)\.?$/i.test(",
+          "        String(error?.message || '').trim())) {",
+          "        return deleteApiToken().then(() => ({success: false, reason: 'reauth-required'}));",
+          "      }",
+          "      throw error;",
+        ].join('\n'),
+      },
+    ],
+  },
 ];
 const nl = data => data.replace(/\r\n/g, '\n');
 const plan = [];
@@ -242,6 +274,6 @@ try {
   for (const entry of written) fs.writeFileSync(entry.file, entry.original, 'utf8');
   throw error;
 }
-console.log('PASS: convenient 24-hour time controls and native reminder v3 migration installed.');
+console.log('PASS: time controls, native reminder v3 migration and re-login fallback installed.');
 console.log('Changed:', changed.map(entry => entry.name).join(', '));
 console.log('Backups:', backupDir);
