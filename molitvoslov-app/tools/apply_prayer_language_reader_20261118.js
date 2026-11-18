@@ -10,7 +10,7 @@ for(let i=0;i<spec.steps.length;i++){
  const step=spec.steps[i];
  const oldCount=result.split(step.old).length-1, newCount=result.split(step.now).length-1;
  if(oldCount===1&&newCount===0)result=result.replace(step.old,step.now);
- else if(oldCount===0&&newCount===1)continue;
+ else if(newCount===1&&(oldCount===0||step.now.includes(step.old)))continue;
  else throw Error('ReaderScreen patch '+(i+1)+' conflicts with local changes. NO FILES MODIFIED.');
 }
 parser.parse(result,{sourceType:'module',plugins:['jsx']});
