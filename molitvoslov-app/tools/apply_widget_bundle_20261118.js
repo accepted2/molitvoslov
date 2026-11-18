@@ -153,6 +153,110 @@ const reconcileLocalCalendar = original => {
 };
 
 
+
+// The original optimized widgets ZIP already provides local day/month state,
+// offline-first redraw and click handling. Preserve that handler in conflict
+// and add ONLY the missing per-instance app refresh and stale response guard.
+// Fail closed if the local handler has an unrecognized shape.
+const reconcileLocalWidgetTaskHandler = original => {
+  let source = original.replace(/\r\n/g, '\n');
+  if (source.includes('export const refreshCalendarWidgetsFromApp = async') &&
+      source.includes("getWidgetInfo('ChurchCalendar')") &&
+      source.includes('latest.touchedAt !== state.touchedAt')) {
+    return originalStyle(original,source);
+  }
+  const required = [
+    'const handleCalendar = async (props) => {',
+    'const loadMonthDays = async (monthKey, language) => {',
+    'const needsNetwork = (widgetAction, clickAction) =>',
+    'export const widgetTaskHandler = async (props) => {',
+    "const language = await getCalendarLanguage();",
+    'const latest = await loadState(widgetId);',
+    'const state = reduceState(',
+    '<ChurchCalendarWidget',
+    "widgetInfo.widgetName === 'ChurchCalendar'",
+  ];
+  for (const anchor of required) {
+    if (source.split(anchor).length - 1 !== 1) {
+      throw Error('widgetTaskHandler.js: local handler differs at '+anchor+
+        '. NO FILES MODIFIED. Send the file for an exact merge.');
+    }
+  }
+  const insertImport = statement => {
+    if (source.includes(statement)) return;
+    const imports = [...source.matchAll(/^import[^\n]*;[ \t]*$/gm)];
+    const last = imports[imports.length - 1];
+    if (!last) throw Error('widgetTaskHandler.js: missing import anchor.');
+    const offset = last.index + last[0].length;
+    source = source.slice(0, offset) + '\n' + statement + source.slice(offset);
+  };
+  insertImport(
+    "import {getWidgetInfo, requestWidgetUpdateById} from 'react-native-android-widget';");
+  insertImport(
+    "import {getCalendarDataLanguage} from '../services/languagePreferences';");
+  const once = (before,after) => {
+    const n = source.split(before).length - 1;
+    if (n === 1) source = source.replace(before,after);
+    else if (source.split(after).length - 1 !== 1) {
+      throw Error('widgetTaskHandler.js: cannot update localized handler safely. '+
+        'NO FILES MODIFIED.');
+    }
+  };
+  once(
+    'const language = await getCalendarLanguage();',
+    'const language = getCalendarDataLanguage(await getCalendarLanguage());');
+  once(
+    'if (latest && (latest.selected !== state.selected || latest.month !== state.month)) {',
+    'if (!latest || latest.selected !== state.selected || '+
+      'latest.month !== state.month || latest.touchedAt !== state.touchedAt) {');
+  const refresh = [
+    '',
+    '// Refresh installed calendar widgets individually without losing the month',
+    '// each user is viewing or overwriting an ongoing browsing session.',
+    'export const refreshCalendarWidgetsFromApp = async languageOverride => {',
+    '  const language = getCalendarDataLanguage(',
+    '    languageOverride || await getCalendarLanguage(),',
+    '  );',
+    "  const widgets = await getWidgetInfo('ChurchCalendar');",
+    '  for (const info of widgets || []) {',
+    '    try {',
+    '      const previous = await loadState(info.widgetId);',
+    "      const next = reduceState(previous, {widgetAction: 'WIDGET_UPDATE'}, new Date());",
+    '      await saveState(info.widgetId, next);',
+    '      const [day, monthDays] = await Promise.all([',
+    '        getOfflineCalendarDay(next.selected, language).catch(() => null),',
+    '        loadMonthDays(next.month, language),',
+    '      ]);',
+    '      await requestWidgetUpdateById({',
+    "        widgetName: 'ChurchCalendar',",
+    '        widgetId: info.widgetId,',
+    '        renderWidget: () => (',
+    '          <ChurchCalendarWidget',
+    '            day={day}',
+    '            monthDays={monthDays}',
+    '            language={language}',
+    '            width={info.width}',
+    '            height={info.height}',
+    '            monthKey={next.month}',
+    '            selectedKey={next.selected}',
+    '          />',
+    '        ),',
+    '      });',
+    '    } catch (error) {',
+    "      console.warn('[widget] app refresh:', info?.widgetId, error?.message || error);",
+    '    }',
+    '  }',
+    '};',
+    '',
+  ].join('\n');
+  if (!source.includes('export const refreshCalendarWidgetsFromApp = async')) {
+    source += refresh;
+  }
+  console.log('NOTE: existing widgetTaskHandler from optimized ZIP preserved; '+
+    'per-ID refresh, system language and stale-response protection integrated.');
+  return originalStyle(original,source);
+};
+
 // The home screen can contain independent local edits. Preserve them and
 // replace only the known calendar-widget refresh callback; leave quote,
 // navigation, favorites and other home screen code entirely untouched.
@@ -214,6 +318,8 @@ try{
         updated=reconcileLocalQuote(local);
       } else if (name==='src/widgets/ChurchCalendarWidget.js') {
         updated=reconcileLocalCalendar(local);
+      } else if (name==='src/widgets/widgetTaskHandler.js') {
+        updated=reconcileLocalWidgetTaskHandler(local);
       } else if (name==='src/screens/MenuScreen.js') {
         updated=reconcileLocalHome(local);
       } else {
