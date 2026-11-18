@@ -1,5 +1,4 @@
 import React from 'react';
-import {getWidgetInfo, requestWidgetUpdateById} from 'react-native-android-widget';
 import {getDailyQuote} from '../services/dailyQuote';
 import {getCalendarDay} from '../services/churchCalendar';
 import {getOfflineCalendarDay, getOfflineCalendarMonth} from '../services/calendarOfflineStore';
@@ -100,40 +99,5 @@ export const widgetTaskHandler = async props => {
   }
 };
 
-// Used by the home screen after a language change or midnight refresh.
-// Update each installed widget by ID with its OWN persisted browsing state,
-// instead of overwriting all instances with one screen-selected day.
-export const refreshCalendarWidgetsFromApp = async languageOverride => {
-  const language = getCalendarDataLanguage(
-    languageOverride || await getCalendarLanguage(),
-  );
-  const widgets = await getWidgetInfo('ChurchCalendar');
-  for (const info of widgets || []) {
-    try {
-      const previous = await loadState(info.widgetId);
-      const next = reduceState(previous, {widgetAction: 'WIDGET_UPDATE'}, new Date());
-      await saveState(info.widgetId, next);
-      const [day, monthDays] = await Promise.all([
-        getOfflineCalendarDay(next.selected, language).catch(() => null),
-        offlineMonth(next.month, language),
-      ]);
-      await requestWidgetUpdateById({
-        widgetName: 'ChurchCalendar',
-        widgetId: info.widgetId,
-        renderWidget: () => (
-          <ChurchCalendarWidget
-            day={day}
-            monthDays={monthDays}
-            language={language}
-            width={info.width}
-            height={info.height}
-            monthKey={next.month}
-            selectedKey={next.selected}
-          />
-        ),
-      });
-    } catch (error) {
-      console.warn('[widget] app refresh:', info?.widgetId, error?.message || error);
-    }
-  }
-};
+// Retain compatibility for callers using the old import path.
+export {refreshCalendarWidgetsFromApp} from './widgetCalendarRefresh';
