@@ -36,9 +36,6 @@ if (indexes.length>1 || already.length>1 || (indexes.length && already.length)) 
     console.log('Target already linked in gratitude; redundant main entry will be unlinked.');
   } else throw Error('Unexpected duplicate prayer links: '+TARGET+'. NO FILES MODIFIED.');
 }
-if (!indexes.length && !already.length) {
-  throw Error('Cannot find "Молитва благодарственная" by original source slug; NO FILES MODIFIED.');
-}
 const source=payload.texts[TARGET];
 if (!source || !source.id || !String(source.title||'').toLowerCase().includes('благодарственн') ||
     !String(source.translation||source.content||'').trim()) {
@@ -53,6 +50,13 @@ if(sourceBody.length<50)throw Error('Cannot deduplicate a suspiciously short pra
 const sameText = thankRows.find(row=>
   row?.text?.slug!==TARGET &&
   norm(body(payload.texts[row?.text?.slug]||row.text))===sourceBody);
+if (!indexes.length && !already.length) {
+  if (sameText) {
+    console.log('PASS: grateful prayer already represented by identical text in gratitude. NO FILES MODIFIED.');
+    process.exit(0);
+  }
+  throw Error('Cannot find "Молитва благодарственная" by original source slug; NO FILES MODIFIED.');
+}
 const requestedAction = already.length ? 'ALREADY_IN_GRATITUDE':
  sameText ? 'EXACT_DUPLICATE_IN_GRATITUDE' : 'MOVE_EXISTING_PRAYER_INTO_GRATITUDE';
 console.log('Prayer: '+source.title);
