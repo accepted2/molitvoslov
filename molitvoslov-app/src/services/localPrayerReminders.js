@@ -78,7 +78,8 @@ const channelReady = async () => {
       name: 'Молитвенные напоминания',
       description: 'Напоминания о молитвенных правилах и чтениях',
       importance: Notifications.AndroidImportance.HIGH,
-      sound: 'default',
+      // Omitting sound uses Android's default notification sound. In Expo SDK 57
+      // the literal "default" is misidentified as an unbundled custom sound.
     });
   }
 };
@@ -136,7 +137,7 @@ const schedule = async item => {
           title: 'Молитвослов',
           body: item.title || target?.body || 'Время для молитвы',
           data: {kind: 'molitvoslov-reminder', reminderId: item.id, reminderScheduleVersion: 2},
-          sound: 'default',
+          sound: Platform.OS === 'android' ? true : 'default',
         },
         trigger,
       });
@@ -291,7 +292,7 @@ export const previewPrayerReminder = async id => {
       title: 'Молитвослов',
       body: item.title,
       data: {kind: 'molitvoslov-reminder', reminderId: item.id, reminderScheduleVersion: 2},
-      sound: 'default',
+      sound: Platform.OS === 'android' ? true : 'default',
     },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
