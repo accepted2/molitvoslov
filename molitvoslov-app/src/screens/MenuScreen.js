@@ -393,7 +393,7 @@ export const MenuScreen = ({navigation}) => {
   const selectedCalendarDateRef = useRef(calendarSelectedDate);
   selectedCalendarDateRef.current = calendarSelectedDate;
 
-  useCalendarTodayRollover((previousToday, currentToday) => {
+  const calendarLocalToday = useCalendarTodayRollover((previousToday, currentToday) => {
     // Do not override an explicitly selected day other than yesterday's
     // "today". Avoid changing the visible month if the user browsed away.
     if (!shouldAdvanceSelectedDay(
@@ -412,7 +412,7 @@ export const MenuScreen = ({navigation}) => {
   });
   const calendarSnapshot = useMemo(
     () => createCalendarSnapshot(calendarVisibleMonth, calendarSelectedDate, calendarLanguage),
-    [calendarVisibleMonth, calendarSelectedDate, calendarLanguage]
+    [calendarVisibleMonth, calendarSelectedDate, calendarLanguage, calendarLocalToday]
   );
   const calendarMonthMap = useMemo(
     () => new Map(calendarMonthDays.map((day) => [day.date_gregorian, day])),
@@ -646,13 +646,20 @@ export const MenuScreen = ({navigation}) => {
   );
 
   const updateCalendarWidget = useCallback(
-    async (day = calendarToday, language = calendarLanguage) => {
+    async (day = null, language = calendarLanguage) => {
       try {
+        // Calendar widget is ALWAYS a today widget. It must not inherit a
+        // historical date selected in the main screen's mini calendar.
+        const todayKey = toCalendarDate(new Date());
+        const widgetDay = day?.date_gregorian === todayKey
+          ? day
+          : await getOfflineCalendarDay(todayKey, getCalendarDataLanguage(language));
+        if (!widgetDay) return;
         await requestWidgetUpdate({
           widgetName: 'ChurchCalendar',
           renderWidget: (widgetInfo) => (
             <ChurchCalendarWidget
-              day={day}
+              day={widgetDay}
               language={language}
               width={widgetInfo.width}
               height={widgetInfo.height}
@@ -663,7 +670,7 @@ export const MenuScreen = ({navigation}) => {
         console.log('Ошибка обновления виджета календаря:', error?.message || error);
       }
     },
-    [calendarToday, calendarLanguage]
+    [calendarLanguage]
   );
 
   // The native Android widget update can be expensive. Do not run it in
@@ -687,7 +694,7 @@ export const MenuScreen = ({navigation}) => {
       clearTimeout(timer);
       interaction?.cancel?.();
     };
-  }, [calendarToday, calendarLanguage, updateCalendarWidget]);
+  }, [calendarToday, calendarLanguage, calendarLocalToday, updateCalendarWidget]);
 
   const changeAppLanguage = async (language) => {
     const next = await setAppLanguage(language);
