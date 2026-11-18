@@ -49,8 +49,10 @@ class ImportTests(unittest.TestCase):
     def test_no_mutations_in_dry_run_and_idempotence(self):
         with TemporaryDirectory() as tmp:
             tmp = Path(tmp)
-            content_file = tmp / "offlineContent.json"
-            manifest = tmp / "first.js"
+            app_root = tmp / "molitvoslov-app"
+            app_root.mkdir()
+            content_file = app_root / "offlineContent.json"
+            manifest = app_root / "first.js"
             original = {
                 'schema_version': 1,
                 'content_version': 'original',
@@ -70,7 +72,7 @@ class ImportTests(unittest.TestCase):
             fake_args = type('Args', (), {'dry_run': True, 'second_html': None})()
             with patch.object(module, 'CONTENT', content_file), \
                  patch.object(module, 'FIRST_IMPORT', manifest), \
-                 patch.object(module, 'ROOT', tmp), \
+                 patch.object(module, 'ROOT', app_root), \
                  patch.object(module, 'fetch_page', return_value=fixture_html()), \
                  contextlib.redirect_stdout(io.StringIO()):
                 before = content_file.read_bytes()
