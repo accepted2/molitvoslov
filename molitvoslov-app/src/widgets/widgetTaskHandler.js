@@ -1,162 +1,99 @@
 import React from 'react';
-
 import {getDailyQuote} from '../services/dailyQuote';
 import {getCalendarDay} from '../services/churchCalendar';
-import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
+import {getOfflineCalendarDay, getOfflineCalendarMonth} from '../services/calendarOfflineStore';
 import {getCalendarLanguage} from '../services/calendarPreferences';
 import {QuoteOfDayWidget} from './QuoteOfDayWidget';
 import {ChurchCalendarWidget} from './ChurchCalendarWidget';
+import {
+  CALENDAR_ACTIONS, clearState, loadState, parseMonthKey, reduceState, saveState,
+} from './widgetState';
 
-const toDateKey = (value) =>
-  value instanceof Date
-    ? `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(
-        value.getDate()
-      ).padStart(2, '0')}`
-    : value;
+const REDRAW_ACTIONS = ['WIDGET_ADDED', 'WIDGET_UPDATE', 'WIDGET_RESIZED'];
+export const needsWidgetNetwork = (action, clickAction) =>
+  action === 'WIDGET_ADDED' || action === 'WIDGET_UPDATE' ||
+  (action === 'WIDGET_CLICK' &&
+    (clickAction === 'CALENDAR_SELECT_DAY' || clickAction === 'CALENDAR_TODAY'));
 
-const parseWidgetDate = (value) => {
-  if (!value) {
-    return null;
-  }
-
-  const parsed = new Date(`${value}T12:00:00`);
-
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
-
-const resolveCalendarDisplayDate = (props) => {
-  if (props.widgetAction !== 'WIDGET_CLICK') {
-    return new Date();
-  }
-
-  if (props.clickAction === 'CALENDAR_TODAY') {
-    return new Date();
-  }
-
-  if (props.clickAction === 'CALENDAR_SELECT_DAY') {
-    return parseWidgetDate(props.clickActionData?.date);
-  }
-
-  if (props.clickAction === 'CALENDAR_PREV_MONTH' || props.clickAction === 'CALENDAR_NEXT_MONTH') {
-    const year = Number(props.clickActionData?.year);
-    const month = Number(props.clickActionData?.month);
-
-    if (Number.isInteger(year) && Number.isInteger(month) && month >= 1 && month <= 12) {
-      return new Date(year, month - 1, 1);
-    }
-  }
-
-  return null;
-};
-
-export const widgetTaskHandler = async (props) => {
-  const {widgetAction, clickAction, clickActionData, widgetInfo, renderWidget} = props;
-
-  if (widgetInfo.widgetName === 'QuoteOfDay') {
-    const shouldRenderQuote = ['WIDGET_ADDED', 'WIDGET_UPDATE', 'WIDGET_RESIZED'].includes(
-      widgetAction
-    );
-
-    if (!shouldRenderQuote) {
-      return;
-    }
-
-    renderWidget(
-      <QuoteOfDayWidget
-        quote={getDailyQuote()}
-        width={widgetInfo.width}
-        height={widgetInfo.height}
-      />
-    );
-
-    return;
-  }
-
-  if (widgetInfo.widgetName !== 'ChurchCalendar') {
-    return;
-  }
-
-  const normalUpdate = ['WIDGET_ADDED', 'WIDGET_UPDATE', 'WIDGET_RESIZED'].includes(widgetAction);
-  const calendarClick =
-    widgetAction === 'WIDGET_CLICK' &&
-    [
-      'CALENDAR_PREV_MONTH',
-      'CALENDAR_NEXT_MONTH',
-      'CALENDAR_TODAY',
-      'CALENDAR_SELECT_DAY',
-    ].includes(clickAction);
-
-  if (!normalUpdate && !calendarClick) {
-    return;
-  }
-
-  const language = await getCalendarLanguage();
-  const displayDate = resolveCalendarDisplayDate(props) || new Date();
-
-  let requestedDayDate = new Date();
-
-  if (widgetAction === 'WIDGET_CLICK' && clickAction === 'CALENDAR_SELECT_DAY') {
-    requestedDayDate = parseWidgetDate(clickActionData?.date) || requestedDayDate;
-  }
-
-  if (widgetAction === 'WIDGET_CLICK' && clickAction === 'CALENDAR_TODAY') {
-    requestedDayDate = new Date();
-  }
-
-  const finalDisplayDate = clickAction === 'CALENDAR_SELECT_DAY' ? requestedDayDate : displayDate;
-
-  const dateKey = toDateKey(requestedDayDate);
-
-  // Сначала обязательно рисуем виджет только из локальных данных.
-  // Сеть никогда не должна задерживать первое появление виджета.
-  let localDay = null;
-
+const offlineMonth = async (key, language) => {
+  const month = parseMonthKey(key);
+  if (!month) return [];
   try {
-    localDay = await getOfflineCalendarDay(dateKey, language);
+    const result = await getOfflineCalendarMonth(month.year, month.month, language);
+    return result?.days || [];
   } catch (error) {
-    console.log('Ошибка локальных данных виджета календаря:', error?.message || error);
+    console.warn('[widget] month cache:', error?.message || error);
+    return [];
+  }
+};
+
+export const widgetTaskHandler = async props => {
+  const {widgetAction, clickAction, clickActionData, widgetInfo, renderWidget} = props;
+  const name = widgetInfo?.widgetName;
+
+  if (widgetAction === 'WIDGET_DELETED') {
+    if (name === 'ChurchCalendar') await clearState(widgetInfo.widgetId);
+    return;
+  }
+  if (name === 'QuoteOfDay') {
+    if (!REDRAW_ACTIONS.includes(widgetAction)) return;
+    renderWidget(
+      <QuoteOfDayWidget quote={getDailyQuote()}
+        width={widgetInfo.width} height={widgetInfo.height} />,
+    );
+    return;
+  }
+  if (name !== 'ChurchCalendar') return;
+  if (widgetAction === 'WIDGET_CLICK' && !CALENDAR_ACTIONS.includes(clickAction)) {
+    // OPEN_URI is processed by Android's link handler.
+    return;
+  }
+  if (widgetAction !== 'WIDGET_CLICK' && !REDRAW_ACTIONS.includes(widgetAction)) {
+    return;
   }
 
-  renderWidget(
+  const widgetId = widgetInfo.widgetId;
+  const previous = await loadState(widgetId);
+  const next = reduceState(previous, {
+    widgetAction, clickAction, data: clickActionData,
+  }, new Date());
+  await saveState(widgetId, next);
+  const language = await getCalendarLanguage();
+  const monthDays = await offlineMonth(next.month, language);
+
+  const draw = day => renderWidget(
     <ChurchCalendarWidget
-      day={localDay}
+      day={day}
+      monthDays={monthDays}
       language={language}
       width={widgetInfo.width}
       height={widgetInfo.height}
-      displayDate={finalDisplayDate}
-    />
+      monthKey={next.month}
+      selectedKey={next.selected}
+    />,
   );
 
-  const monthNavigation =
-    widgetAction === 'WIDGET_CLICK' &&
-    (clickAction === 'CALENDAR_PREV_MONTH' || clickAction === 'CALENDAR_NEXT_MONTH');
-
-  // При перелистывании месяца справа сеть вообще не нужна.
-  if (monthNavigation) {
-    return;
-  }
-
-  // После мгновенной локальной отрисовки можно тихо получить свежий день
-  // и перерисовать тот же виджет. Ошибка сети уже не оставит пустое место.
+  let localDay = null;
   try {
-    const freshDay = await getCalendarDay(dateKey, {
-      language,
-      force: true,
-      skipOffline: true,
-    });
-
-    if (freshDay) {
-      renderWidget(
-        <ChurchCalendarWidget
-          day={freshDay}
-          language={language}
-          width={widgetInfo.width}
-          height={widgetInfo.height}
-          displayDate={finalDisplayDate}
-        />
-      );
-    }
+    localDay = await getOfflineCalendarDay(next.selected, language);
   } catch (error) {
-    console.log('Фоновое обновление виджета календаря:', error?.message || error);
+    console.warn('[widget] day cache:', error?.message || error);
+  }
+  // Display something promptly even without network availability.
+  draw(localDay);
+
+  if (!needsWidgetNetwork(widgetAction, clickAction)) return;
+  try {
+    const fresh = await getCalendarDay(next.selected, {
+      language, force: true, skipOffline: true,
+    });
+    if (!fresh) return;
+    // Avoid overwriting a more recent tap with an older asynchronous result.
+    const latest = await loadState(widgetId);
+    if (latest && (latest.selected !== next.selected || latest.month !== next.month ||
+        latest.touchedAt !== next.touchedAt)) return;
+    draw(fresh);
+  } catch (error) {
+    console.warn('[widget] online update:', error?.message || error);
   }
 };
