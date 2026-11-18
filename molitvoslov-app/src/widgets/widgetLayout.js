@@ -1,5 +1,6 @@
 // Sizing helpers for Android RemoteViews widgets (no React/native imports).
-export const FONT = 'Ponomar-Regular';
+// Android system sans-serif (Roboto on most devices), not Church Slavonic Ponomar.
+export const FONT = 'sans-serif';
 
 export const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -17,7 +18,7 @@ export const getScale = (size, base, min = 0.8, max = 1.6) =>
   clamp(Math.min(size.width / base.width, size.height / base.height), min, max);
 
 // Approximate text measurement for sizing only; maxLines enforces the final
-// Android clipping, because the real Ponomar glyph widths vary.
+// Android clipping, because actual Android glyph widths vary.
 const AVG_CHAR = 0.52;
 export const textWidth = (value, fontSize) => String(value || '').length * fontSize * AVG_CHAR;
 
