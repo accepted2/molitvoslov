@@ -8,7 +8,8 @@ const root = path.resolve(__dirname, '..');
 const source = relative => fs.readFileSync(path.join(root, relative), 'utf8').replace(/\r\n/g, '\n');
 const screen = source('src/screens/NotificationsScreen.js');
 const reminders = source('src/services/localPrayerReminders.js');
-for (const [name, content] of [['NotificationsScreen', screen], ['localPrayerReminders', reminders]]) {
+const prefs = source('src/services/accountPreferencesSync.js');
+for (const [name, content] of [['NotificationsScreen', screen], ['localPrayerReminders', reminders], ['accountPreferencesSync', prefs]]) {
   assert.doesNotThrow(() => parse(content, {sourceType: 'module', plugins: ['jsx']}), name);
 }
 assert.match(screen, /const \[timePickerOpen, setTimePickerOpen\] = useState\(false\)/);
@@ -32,6 +33,9 @@ assert.match(reminders, /const CHANNEL = 'prayer-reminders-audible-v2'/);
 assert.match(reminders, /readPrayerReminders/);
 assert.match(reminders, /reconcilePrayerReminders/);
 assert.match(reminders, /writeReminders/);
+assert.match(prefs, /if \(!token\) return \{success: false, reason: 'reauth-required'\}/);
+assert.match(prefs, /String\(error\?\.message \|\| ''\)\.trim\(\)/);
+assert.match(prefs, /return deleteApiToken\(\)\.then/);
 
 // Ensure the pure time-step formula wraps correctly at midnight, and
 // accepts one-minute precision without losing the old HH:mm format.
@@ -48,4 +52,5 @@ assert.equal(step('07:00', 60), '08:00');
 assert.equal(step('07:00', 1), '07:01');
 console.log('PASS: clock picker, minute-precision controls and save format');
 console.log('PASS: old v2 alarms are detected and rebuilt as v3');
+console.log('PASS: expired-token fallback preserves offline queue and requests re-login');
 console.log('PASS: no changes to stored reminder data, channel ID or reading routes');
