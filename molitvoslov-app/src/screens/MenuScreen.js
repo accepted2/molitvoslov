@@ -44,7 +44,7 @@ import {useLanguage} from '../context/LanguageContext';
 import {useInterfaceScale} from '../context/InterfaceScaleContext';
 import {LANGUAGE_OPTIONS, getCalendarDataLanguage} from '../services/languagePreferences';
 import {getLocalizedField} from '../services/localizedContent';
-import {refreshCalendarWidgetsFromApp} from '../widgets/widgetTaskHandler';
+import {refreshCalendarWidgetsFromApp} from '../widgets/widgetCalendarRefresh';
 import {getOfflineCalendarDay, getOfflineCalendarMonth} from '../services/calendarOfflineStore';
 import {useCalendarTodayRollover, shouldAdvanceSelectedDay} from '../hooks/useCalendarTodayRollover';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
