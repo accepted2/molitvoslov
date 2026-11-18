@@ -32,8 +32,9 @@ for (const part of ['crossStem','crossTopBar','crossMiddleBar','crossFootBar']) 
 assert.match(loader, /accessibilityLabel="Православный крестик"/);
 assert.match(loader, /backgroundColor: '#F3D89F'/);
 assert.match(loader, /height: 139/);
-assert.match(loader, /top: 101/);
-assert.match(loader, /rotate: '20deg'/);
+assert.match(loader, /height: 56/);
+assert.match(loader, /top: 98/);
+assert.match(loader, /rotate: '14deg'/);
 assert.match(loader, /useNativeDriver: true/);
 assert.match(preview, /<PrayerBeadsLoader/);
 assert.match(preview, /Малые овальные чётки с крестиком/);
