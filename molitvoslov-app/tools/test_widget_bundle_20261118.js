@@ -28,7 +28,7 @@ const plain = src => src.replace(/^import[^\n]*\n/gm, '')
   .replace(/\bexport const /g, 'const ');
 const layout = new Function(plain(layoutSrc) + '\nreturn {' +
   'FONT,readSize,countLines,getScale,fitOneLine,fitText,calendarWidgetGeometry};')();
-assert.equal(layout.FONT, 'Ponomar-Regular');
+assert.equal(layout.FONT, 'sans-serif');
 const {calendarWidgetGeometry: geometry} = layout;
 
 for (const [w,h] of [
@@ -152,8 +152,8 @@ assert.match(homeSrc,/refreshCalendarWidgetsFromApp\(language\)/);
 assert.doesNotMatch(homeSrc,/widgetName: 'ChurchCalendar',\s*renderWidget:/);
 assert.match(quoteSrc,/fitText\(/);
 assert.match(quoteSrc,/showSource/);
-assert.match(quoteSrc,/fontFamily: FONT/);
-assert.match(churchSrc,/fontFamily: FONT/);
+assert.doesNotMatch(quoteSrc, /Ponomar(?:-Regular)?/i);
+assert.doesNotMatch(churchSrc, /Ponomar(?:-Regular)?/i);
 
 async function testStateIsolation() {
   await state.saveState(101,browse);
@@ -167,5 +167,5 @@ async function testStateIsolation() {
 testStateIsolation().then(()=>{
  console.log('PASS: widget layouts at 11 sizes and calendar grids across 6 months');
  console.log('PASS: strict calendar dates, per-ID state, resize, timeout and midnight');
- console.log('PASS: existing widget IDs retained, readable font and navigation actions');
+ console.log('PASS: native Android sans-serif font, existing widget IDs and navigation actions');
 }).catch(error=>{console.error(error);process.exitCode=1;});
