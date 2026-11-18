@@ -50,6 +50,8 @@ async function main() {
     },
   });
   const starting = deferred.beginStartupAppLinkCapture();
+  // Native call starts in a microtask, not synchronously.
+  await Promise.resolve();
   eventCallback({url: shareUrl('canon/abc')});
   resolveNative(null);
   assert.equal(await starting, 'molitvoslov://canon/abc');
