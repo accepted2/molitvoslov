@@ -152,6 +152,35 @@ const reconcileLocalCalendar = original => {
   return originalStyle(original,text);
 };
 
+
+// The home screen can contain independent local edits. Preserve them and
+// replace only the known calendar-widget refresh callback; leave quote,
+// navigation, favorites and other home screen code entirely untouched.
+const reconcileLocalHome = original => {
+  let text = original.replace(/\r\n/g, '\n');
+  const previous = "  const updateCalendarWidget = useCallback(\n    async (day = null, language = calendarLanguage) => {\n      try {\n        // Calendar widget is ALWAYS a today widget. It must not inherit a\n        // historical date selected in the main screen's mini calendar.\n        const todayKey = toCalendarDate(new Date());\n        const widgetDay = day?.date_gregorian === todayKey\n          ? day\n          : await getOfflineCalendarDay(todayKey, getCalendarDataLanguage(language));\n        if (!widgetDay) return;\n        await requestWidgetUpdate({\n          widgetName: 'ChurchCalendar',\n          renderWidget: (widgetInfo) => (\n            <ChurchCalendarWidget\n              day={widgetDay}\n              language={language}\n              width={widgetInfo.width}\n              height={widgetInfo.height}\n            />\n          ),\n        });\n      } catch (error) {\n        console.log('Ошибка обновления виджета календаря:', error?.message || error);\n      }\n    },\n    [calendarLanguage]\n  );\n\n";
+  const replacement = "  const updateCalendarWidget = useCallback(\n    async (_unusedDay = null, language = calendarLanguage) => {\n      try {\n        // Every Android calendar widget keeps its own selected day and month.\n        // Do not overwrite a pinned browsing session with the mini-calendar.\n        await refreshCalendarWidgetsFromApp(language);\n      } catch (error) {\n        console.log('Ошибка обновления виджета календаря:', error?.message || error);\n      }\n    },\n    [calendarLanguage]\n  );\n\n";
+  const oldCount = text.split(previous).length - 1;
+  const newCount = text.split(replacement).length - 1;
+  if (oldCount === 1 && newCount === 0) {
+    text = text.replace(previous, replacement);
+  } else if (newCount !== 1) {
+    throw Error('MenuScreen.js: custom calendar callback differs; refusing ' +
+      'to overwrite it. NO FILES MODIFIED.');
+  }
+  const statement =
+    "import {refreshCalendarWidgetsFromApp} from '../widgets/widgetTaskHandler';";
+  if (!text.includes(statement)) {
+    const imports = [...text.matchAll(/^import[^\n]*;[ \t]*$/gm)];
+    const last = imports[imports.length - 1];
+    if (!last) throw Error('MenuScreen.js: imports not recognized; no files changed.');
+    const position = last.index + last[0].length;
+    text = text.slice(0, position) + '\n' + statement + text.slice(position);
+  }
+  console.log('NOTE: customized MenuScreen preserved; only per-widget calendar refresh updated.');
+  return originalStyle(original, text);
+};
+
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'molitvoslov-widgets-'));
 let files=[];
 try{
@@ -185,6 +214,8 @@ try{
         updated=reconcileLocalQuote(local);
       } else if (name==='src/widgets/ChurchCalendarWidget.js') {
         updated=reconcileLocalCalendar(local);
+      } else if (name==='src/screens/MenuScreen.js') {
+        updated=reconcileLocalHome(local);
       } else {
         throw Error(name+': local edit intersects widget changes ('+
           (merge.stderr||'merge conflict').trim()+'). NO FILES MODIFIED.');
