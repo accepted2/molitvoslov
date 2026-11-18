@@ -44,7 +44,7 @@ import {useLanguage} from '../context/LanguageContext';
 import {useInterfaceScale} from '../context/InterfaceScaleContext';
 import {LANGUAGE_OPTIONS, getCalendarDataLanguage} from '../services/languagePreferences';
 import {getLocalizedField} from '../services/localizedContent';
-import {ChurchCalendarWidget} from '../widgets/ChurchCalendarWidget';
+import {refreshCalendarWidgetsFromApp} from '../widgets/widgetTaskHandler';
 import {getOfflineCalendarDay, getOfflineCalendarMonth} from '../services/calendarOfflineStore';
 import {useCalendarTodayRollover, shouldAdvanceSelectedDay} from '../hooks/useCalendarTodayRollover';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
@@ -646,26 +646,11 @@ export const MenuScreen = ({navigation}) => {
   );
 
   const updateCalendarWidget = useCallback(
-    async (day = null, language = calendarLanguage) => {
+    async (_unusedDay = null, language = calendarLanguage) => {
       try {
-        // Calendar widget is ALWAYS a today widget. It must not inherit a
-        // historical date selected in the main screen's mini calendar.
-        const todayKey = toCalendarDate(new Date());
-        const widgetDay = day?.date_gregorian === todayKey
-          ? day
-          : await getOfflineCalendarDay(todayKey, getCalendarDataLanguage(language));
-        if (!widgetDay) return;
-        await requestWidgetUpdate({
-          widgetName: 'ChurchCalendar',
-          renderWidget: (widgetInfo) => (
-            <ChurchCalendarWidget
-              day={widgetDay}
-              language={language}
-              width={widgetInfo.width}
-              height={widgetInfo.height}
-            />
-          ),
-        });
+        // Every Android calendar widget keeps its own selected day and month.
+        // Do not overwrite a pinned browsing session with the mini-calendar.
+        await refreshCalendarWidgetsFromApp(language);
       } catch (error) {
         console.log('Ошибка обновления виджета календаря:', error?.message || error);
       }
