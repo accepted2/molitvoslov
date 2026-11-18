@@ -58,7 +58,13 @@ const reconcileLocalQuote = original => {
     /return\s*\(\s*<OverlapWidget\b/.test(text);
   if (canAdaptQuote) {
     if (!/\bimport\s*\{[^}]*\bfitText\b[^}]*\}\s*from\s*['"]\.\/widgetLayout['"]/.test(text)) {
-      text = "import {fitText} from './widgetLayout';\n" + text;
+      const imports = [...text.matchAll(/^import[^\n]*;[ \t]*$/gm)];
+      const last = imports[imports.length-1];
+      if (!last) throw Error('QuoteOfDayWidget.js has no identifiable import statements.');
+      const position = last.index + last[0].length;
+      text = text.slice(0,position) +
+        "\nimport {fitText} from './widgetLayout';" +
+        text.slice(position);
     }
     const expression = [
       '  // Fit quote text inside the existing local layout without changing its design.',
