@@ -3,7 +3,8 @@ import * as Notifications from 'expo-notifications';
 import {routeForNotificationResponse, reconcilePrayerReminders} from '../services/localPrayerReminders';
 import {AppState, Linking} from 'react-native';
 import {normalizeIncomingAppLink} from '../services/appLinks';
-import {NavigationContainer} from '@react-navigation/native';
+import {readStartupAppLink, completeStartupAppLinkCapture} from '../services/startupAppLink';
+import {NavigationContainer, getStateFromPath} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 
 import {MenuScreen} from '../screens/MenuScreen';
@@ -52,7 +53,10 @@ const linking = {
   // Android delivers the verified HTTPS link to our activity without first
   // loading Render. Preserve custom-scheme support for older shared links.
   async getInitialURL(){
-    return normalizeIncomingAppLink(await Linking.getInitialURL());
+    // Use the link captured before the startup loader. React Navigation mounts
+    // only after offline content and fonts have initialized.
+    return await readStartupAppLink() ||
+      normalizeIncomingAppLink(await Linking.getInitialURL());
   },
   subscribe(listener){
     const subscription=Linking.addEventListener('url',({url})=>{
@@ -63,6 +67,7 @@ const linking = {
   },
 
   config: {
+    initialRouteName: 'Menu',
     screens: {
       SharedImport: {path:'shared/:token'},
       BibleBook: {path:'bible-book/:bookId/:translationCode?'},
@@ -169,6 +174,25 @@ export const AppNavigator = () => {
     if (destination && navigationRef.current?.isReady()) {
       navigationRef.current.navigate(destination.name, destination.params);
     }
+
+    // A second, one-shot safety net for Android cold starts: React Navigation
+    // may have already mounted Menu by the time it consumes the launch URL.
+    // Never override a successfully opened deep link or notification route.
+    readStartupAppLink()
+      .then(url => {
+        const nav = navigationRef.current;
+        if (!url || destination || !nav?.isReady() ||
+            nav.getCurrentRoute()?.name !== 'Menu' ||
+            !url.startsWith('molitvoslov://')) return;
+        const path = url.slice('molitvoslov://'.length);
+        const state = getStateFromPath(path, linking.config);
+        const target = state?.routes?.[state.routes.length - 1];
+        if (!target?.name || target.name === 'Menu') return;
+        console.log('[links] restore cold-start route:', target.name);
+        nav.navigate(target.name, target.params);
+      })
+      .catch(error => console.warn('[links] cold-start route:', error?.message || error))
+      .finally(completeStartupAppLinkCapture);
   };
 
   return (
