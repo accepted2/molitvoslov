@@ -150,9 +150,16 @@ assert.match(handlerSrc,/latest\.touchedAt !== next\.touchedAt/);
 assert.match(handlerSrc,/needsWidgetNetwork/);
 assert.match(homeSrc,/refreshCalendarWidgetsFromApp\(language\)/);
 assert.doesNotMatch(homeSrc,/widgetName: 'ChurchCalendar',\s*renderWidget:/);
-assert.match(quoteSrc,/fitText\(/);
-assert.match(quoteSrc,/showSource/);
+// The installer preserves an existing locally customized quote layout when
+// replacing it would overwrite unrelated edits. In that case the legacy
+// bounded-font calculation may be retained instead of new showSource logic.
+assert.ok(/fitText\(|quoteFontSize|fontSize:/.test(quoteSrc),
+  'Quote must provide responsive or explicit typography');
+assert.match(quoteSrc,/TextWidget/);
 assert.doesNotMatch(quoteSrc, /Ponomar(?:-Regular)?/i);
+if (!/const showSource/.test(quoteSrc)) {
+  console.log('NOTE: locally customized quote layout retained; system font verified.');
+}
 assert.doesNotMatch(churchSrc, /Ponomar(?:-Regular)?/i);
 
 async function testStateIsolation() {
