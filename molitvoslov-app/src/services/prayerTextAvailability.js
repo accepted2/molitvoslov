@@ -1,10 +1,18 @@
 // Availability of each prayer language is determined by its actual text,
 // never by the app's global default. These helpers are shared by the
 // standalone prayer reader, prayer rules, and placeholder readers.
+const hasRealPrayerText = value => {
+  const text = String(value || '').trim();
+  if (!text) return false;
+  // Legacy placeholder records sometimes contain an explanatory sentence in
+  // the source field. Treat only the whole known placeholder as missing.
+  return !/^(?:текст (?:церковнославянской версии|в традиционном написании)(?: пока отсутствует| будет добавлен позже)|русский перевод будет добавлен позже|перевод пока отсутствует)\.?$/i.test(text);
+};
+
 export const getPrayerTextAvailability = text => ({
-  hasChurch: !!String(text?.content || '').trim(),
-  hasRussian: !!String(text?.translation || '').trim(),
-  hasTraditional: !!String(text?.traditional_content || '').trim(),
+  hasChurch: hasRealPrayerText(text?.content),
+  hasRussian: hasRealPrayerText(text?.translation),
+  hasTraditional: hasRealPrayerText(text?.traditional_content),
 });
 
 export const isPrayerModeAvailable = (mode, {hasChurch = false, hasRussian = false, hasTraditional = false} = {}) => {
