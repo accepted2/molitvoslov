@@ -49,8 +49,11 @@ assert.match(source, /compact && styles\.rosaryCompact/);
 assert.match(source, /!compact && \(/);
 assert.match(source, /styles\.pendantLine/);
 assert.match(source, /styles\.cross/);
-assert.match(source, /☦/);
+assert.match(source, /styles\.crossStem/);
+assert.match(source, /styles\.crossTopBar/);
+assert.match(source, /styles\.crossMiddleBar/);
+assert.match(source, /styles\.crossFootBar/);
 assert.doesNotMatch(source, /const CURVE = \[/);
 
 console.log('PASS: closed 24-bead prayer rope and 14-bead compact ring with full 360° coverage');
-console.log('PASS: native-driver traversal, hanging cross, light theme, compact and cleanup');
+console.log('PASS: native-driver traversal, native Orthodox cross, light theme, compact and cleanup');
