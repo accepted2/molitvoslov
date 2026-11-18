@@ -165,19 +165,25 @@ const specs=[
       '<Text style={styles.title}>{title}</Text>',
       '<Text style={styles.title} android_hyphenationFrequency="full" textBreakStrategy="highQuality">{title}</Text> {/* '+tag+' */}',
       this.file);
-   const anchor="  title: {\n    marginTop: 24,";
-   out=replaceOne(out,anchor,"  title: {\n    marginTop: 24,",this.file,true);
-   // The replacement of individual declaration values is anchored to title only.
-   const start=out.indexOf('  title: {\n    marginTop: 24,');
-   const end=out.indexOf('\n  },',start);
-   if(start<0||end<0)throw Error(this.file+': title style differs. NO FILES MODIFIED.');
-   let block=out.slice(start,end);
-   if(!block.includes("fontSize: 24")||!block.includes("textAlign: 'center'"))
-      throw Error(this.file+': title typography differs. NO FILES MODIFIED.');
-   block=block.replace('fontSize: 24','fontSize: 22.5')
-     .replace('lineHeight: 30','lineHeight: 28.5')
-     .replace("textAlign: 'center'","textAlign: 'left'");
-   return out.slice(0,start)+block+out.slice(end);
+   // A previous prayer-language update already made this placeholder title
+   // left-aligned and sometimes added width:100%. Accept both variants.
+   // Only the actual title declaration may be changed.
+   const rule=/^(\s*title\s*:\s*\{)([\s\S]*?)(^\s*\},)/gm;
+   const matches=[...out.matchAll(rule)];
+   if(matches.length!==1) {
+     throw Error(this.file+': expected one title style block, found '+matches.length+'. NO FILES MODIFIED.');
+   }
+   const hit=matches[0],body=hit[2];
+   if(!/fontSize\s*:\s*(?:24|22\.5)\s*,/.test(body) ||
+      !/lineHeight\s*:\s*(?:30|28\.5)\s*,/.test(body) ||
+      !/textAlign\s*:\s*['"](?:left|center)['"]\s*,/.test(body)) {
+     console.error('Current placeholder title style: '+body.trim().slice(0,500));
+     throw Error(this.file+': title typography differs. NO FILES MODIFIED.');
+   }
+   const nextBody=body.replace(/fontSize\s*:\s*(?:24|22\.5)\s*,/,'fontSize: 22.5,')
+     .replace(/lineHeight\s*:\s*(?:30|28\.5)\s*,/,'lineHeight: 28.5,')
+     .replace(/textAlign\s*:\s*['"](?:center|left)['"]\s*,/,"textAlign: 'left',");
+   return out.slice(0,hit.index)+hit[1]+nextBody+hit[3]+out.slice(hit.index+hit[0].length);
   }
  },
 ];
