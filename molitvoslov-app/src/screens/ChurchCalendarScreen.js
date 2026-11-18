@@ -611,7 +611,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const selectedDateRef = useRef(selectedDate);
   selectedDateRef.current = selectedDate;
 
-  useCalendarTodayRollover((previousToday, currentToday) => {
+  const calendarTodayKey = useCalendarTodayRollover((previousToday, currentToday) => {
     // Only advance if this screen was actually displaying the old today.
     // Historical dates selected manually or opened via a shared link stay put.
     if (!shouldAdvanceSelectedDay(selectedDateRef.current, previousToday)) return;
@@ -786,7 +786,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
   const cells = useMemo(() => buildCells(visibleYear, visibleMonth), [visibleMonth, visibleYear]);
 
-  const today = toCalendarDate(new Date());
+  const today = calendarTodayKey;
   const regularFeasts = (dayData?.all_feasts || []).filter((feast) => !isMovableDayCard(feast));
   const suggestedMain = dayData?.main_feast;
   const mainFeast =
