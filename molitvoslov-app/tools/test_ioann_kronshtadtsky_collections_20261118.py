@@ -44,7 +44,7 @@ class ImportTests(unittest.TestCase):
 
     def test_abort_when_page_is_incomplete(self):
         with self.assertRaisesRegex(ValueError, "15 titled prayers"):
-            module.extract_sections(fixture_html().replace('<h2><a href="#top">^</a> Молитва утренняя', '<h5>Молитва утренняя'))
+            module.extract_sections(fixture_html().replace('<h2><a href="#top">^</a> Молитва утренняя<sup>1</sup></h2>', '<h5>Молитва утренняя</h5>'))
 
     def test_no_mutations_in_dry_run_and_idempotence(self):
         with TemporaryDirectory() as tmp:
