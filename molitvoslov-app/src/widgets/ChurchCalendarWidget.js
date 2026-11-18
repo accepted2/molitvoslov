@@ -2,600 +2,325 @@
 
 import React from 'react';
 import {FlexWidget, ImageWidget, OverlapWidget, TextWidget} from 'react-native-android-widget';
-
 import {CALENDAR_MONTHS, calendarText} from '../services/calendarPreferences';
-import {formatFast} from '../services/churchCalendar';
+import {formatFast, getCalendarDayAppearance} from '../services/churchCalendar';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
+import {FONT, clamp, fitOneLine, fitText, getScale, readSize, textWidth} from './widgetLayout';
+import {parseDateKey, parseMonthKey, toDateKey} from './widgetState';
 
-const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+const BASE = {width: 320, height: 150};
+const ROWS = 6;
+const BORDER = 1;
+const MIN_CELL = 15;
+const APPEARANCE_BG = {
+  fast: '#A78AB9',
+  feast: '#ECD2A2',
+  easter: '#ECD2A2',
+  solid: '#DEE4CB',
+  memorial: '#DECDD1',
+};
 
-const buildMonthCells = (date, today, selectedDate) => {
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const total = firstWeekday + daysInMonth <= 35 ? 35 : 42;
-
-  return Array.from({length: total}, (_item, index) => {
-    const day = index - firstWeekday + 1;
-
-    if (day < 1 || day > daysInMonth) {
-      return {
-        day: '',
-        date: null,
-        today: false,
-        selected: false,
-      };
+const buildWeeks = (year, month, todayKey, selectedKey, monthDays = []) => {
+  const first = (new Date(year, month, 1).getDay() + 6) % 7;
+  const count = new Date(year, month + 1, 0).getDate();
+  const markers = new Map(monthDays.map(day => [day.date_gregorian, day]));
+  const weeks = [];
+  for (let row = 0; row < ROWS; row++) {
+    const week = [];
+    for (let col = 0; col < 7; col++) {
+      const day = row * 7 + col - first + 1;
+      if (day < 1 || day > count) {
+        week.push({day: '', date: null, selected: false, today: false, appearance: null});
+        continue;
+      }
+      const date = toDateKey(new Date(year, month, day));
+      week.push({
+        day: String(day),
+        date,
+        selected: date === selectedKey,
+        today: date === todayKey,
+        appearance: getCalendarDayAppearance(markers.get(date)),
+      });
     }
-
-    const dateKey =
-      `${year}-` + `${String(month + 1).padStart(2, '0')}-` + `${String(day).padStart(2, '0')}`;
-
-    return {
-      day: String(day),
-      date: dateKey,
-
-      today: day === today.getDate() && month === today.getMonth() && year === today.getFullYear(),
-
-      selected:
-        day === selectedDate.getDate() &&
-        month === selectedDate.getMonth() &&
-        year === selectedDate.getFullYear(),
-    };
-  });
-};
-
-const chunk = (items, size) => {
-  const rows = [];
-
-  for (let index = 0; index < items.length; index += size) {
-    rows.push(items.slice(index, index + size));
+    weeks.push(week);
   }
-
-  return rows;
+  return weeks;
 };
-
-const shiftMonth = (date, delta) => new Date(date.getFullYear(), date.getMonth() + delta, 1);
 
 export const ChurchCalendarWidget = ({
   day,
+  monthDays = [],
   language = 'ru',
-  width = 320,
-  height = 150,
-  displayDate,
+  width,
+  height,
+  monthKey,
+  selectedKey,
 }) => {
   const lang = language === 'uk' ? 'uk' : 'ru';
-  const copy = calendarText(lang);
   const locale = CALENDAR_MONTHS[lang];
+  const copy = calendarText(lang);
+  const now = new Date();
+  const currentKey = toDateKey(now);
+  const selectedDate = parseDateKey(selectedKey) || now;
+  const effectiveSelected = toDateKey(selectedDate);
+  const shown = parseMonthKey(monthKey) || {
+    year: selectedDate.getFullYear(),
+    month: selectedDate.getMonth() + 1,
+  };
+  const shownMonth = shown.month - 1;
+  const shownYear = shown.year;
+  const weeks = buildWeeks(shownYear, shownMonth, currentKey, effectiveSelected, monthDays);
 
-  const today = new Date();
-  const shownDate =
-    displayDate instanceof Date && !Number.isNaN(displayDate.getTime()) ? displayDate : today;
+  const size = readSize(width, height, BASE);
+  const W = size.width, H = size.height;
+  const scale = getScale(size, BASE, 0.8, 1.5);
+  const pad = Math.round(clamp(10 * scale, 7, 14));
+  const gap = Math.round(clamp(8 * scale, 5, 12));
+  const contentH = Math.max(1, H - pad * 2 - BORDER * 2);
+  const panelPadLeft = Math.round(clamp(8 * scale, 5, 12));
 
-  const selectedDate = day?.date_gregorian ? new Date(`${day.date_gregorian}T12:00:00`) : today;
+  // Protect both columns even on launchers that report unexpectedly narrow
+  // widget dimensions. The calendar grid retains 7 equal columns.
+  const idealPanel = Math.round(W * 0.46);
+  const maximumPanel = Math.max(7 * MIN_CELL + panelPadLeft + 1,
+    Math.min(240, W - pad * 2 - gap - 85));
+  const panelW = clamp(idealPanel, 7 * MIN_CELL + panelPadLeft + 1, maximumPanel);
+  const leftW = Math.max(1, W - 2 * BORDER - 2 * pad - gap - panelW);
+  const cellW = Math.max(MIN_CELL, Math.floor((panelW - panelPadLeft - 1) / 7));
+  const gridW = cellW * 7;
 
-  const selectedDateKey =
-    `${selectedDate.getFullYear()}-` +
-    `${String(selectedDate.getMonth() + 1).padStart(2, '0')}-` +
-    `${String(selectedDate.getDate()).padStart(2, '0')}`;
+  const monthHeaderH = Math.round(clamp(22 * scale, 16, 30));
+  const showWeekdays = contentH >= 110;
+  const weekdayH = showWeekdays ? Math.round(clamp(11 * scale, 9, 15)) : 0;
+  const availableRowH = Math.max(1, contentH - monthHeaderH - weekdayH);
+  const rowH = Math.max(1, Math.floor(availableRowH / ROWS));
+  const dayFont = Math.round(clamp(Math.min(rowH, cellW) * 0.58, 7, 15));
+  const bubble = Math.max(6, Math.min(cellW - 2, rowH - 1, 26));
+  const weekdayFont = Math.round(clamp(weekdayH * 0.72, 7, 11));
+  const arrowW = Math.round(cellW * 1.4);
 
-  const previousMonth = shiftMonth(shownDate, -1);
-  const nextMonth = shiftMonth(shownDate, 1);
-  const cells = buildMonthCells(shownDate, today, selectedDate);
-  const weeks = chunk(cells, 7);
+  const monthTitle = fitOneLine({
+    candidates: [
+      locale.nominative[shownMonth] + ' ' + shownYear,
+      locale.nominative[shownMonth],
+    ],
+    maxWidth: Math.max(1, gridW - arrowW * 2),
+    maxFont: Math.round(clamp(11 * scale, 8, 14)),
+    minFont: 8,
+  });
+  const previous = new Date(shownYear, shownMonth - 1, 1);
+  const next = new Date(shownYear, shownMonth + 1, 1);
 
-  const widgetWidth = Number(width) || 320;
-  const widgetHeight = Number(height) || 150;
+  const titleF = Math.round(clamp(10 * scale, 8, 13));
+  const dateF = Math.round(clamp(13 * scale, 10, 18));
+  const weekdayF = Math.round(clamp(10 * scale, 8, 13));
+  const feastF = Math.round(clamp(12 * scale, 9, 16));
+  const infoF = Math.round(clamp(10.5 * scale, 8, 14));
 
-  const tiny = widgetHeight < 125 || widgetWidth < 255;
-  const roomy = widgetHeight >= 185 && widgetWidth >= 300;
-  const large = widgetHeight >= 215 || widgetWidth >= 360;
+  const titleH = titleF + 5;
+  const dateH = dateF + 4;
+  const feastLineH = feastF + 3;
+  const infoRowH = infoF + 6;
+  const feastMinimum = Math.max(feastLineH, Math.min(2 * feastLineH + 4,
+    contentH - dateH - infoRowH - 3));
 
-  const feast = day?.main_feast?.short_title || day?.main_feast?.title || copy.saintMemory;
+  let used = dateH + 2 + feastMinimum + infoRowH;
+  const showGospel = !!day && used + infoRowH <= contentH;
+  if (showGospel) used += infoRowH;
+  const showApostle = !!day && showGospel && used + infoRowH <= contentH;
+  if (showApostle) used += infoRowH;
+  const showTitle = used + titleH <= contentH;
+  if (showTitle) used += titleH;
+  const feastBlockH = Math.max(feastLineH, feastMinimum + contentH - used);
+
+  const feast = String(day?.main_feast?.short_title ||
+    day?.main_feast?.title || copy.saintMemory);
   const fast = formatFast(day, lang) || copy.noFastData;
-  const bundledIconSource = getBundledCalendarIconSource(day?.main_feast);
-  const iconSource =
-    typeof bundledIconSource === 'number' ? bundledIconSource : bundledIconSource?.uri || null;
-
   const gospel = day?.gospel_title || '—';
   const apostle = day?.apostolic_title || '—';
 
-  const outerPadding = tiny ? 8 : roomy ? 12 : 10;
-  const gap = tiny ? 6 : 9;
+  const bundled = getBundledCalendarIconSource(day?.main_feast);
+  const iconSource = typeof bundled === 'number' ? bundled : bundled?.uri || null;
+  const iconH = Math.min(feastBlockH, Math.round(64 * scale));
+  const showIcon = !!iconSource && leftW >= 140 && iconH >= 34;
+  const iconW = Math.round(iconH * 0.72);
+  const feastTextW = Math.max(1, leftW - (showIcon ? iconW + 6 : 0));
+  const feastFit = fitText({
+    text: feast, maxWidth: feastTextW, maxHeight: feastBlockH,
+    maxFont: feastF, minFont: 9,
+  });
 
-  const calendarPanelWidth = clamp(
-    Math.round(widgetWidth * (tiny ? 0.43 : roomy ? 0.45 : 0.44)),
-    tiny ? 104 : 124,
-    large ? 176 : 158
+  const dateText = selectedDate.getDate() + ' ' + locale.genitive[selectedDate.getMonth()];
+  const weekdayText = locale.weekdays[selectedDate.getDay()];
+  const showWeekday = textWidth(dateText, dateF) +
+    textWidth(weekdayText, weekdayF) + 10 <= leftW;
+  const dateW = showWeekday
+    ? Math.max(1, Math.min(leftW - 1, Math.round(textWidth(dateText, dateF)) + 6))
+    : leftW;
+  const labelW = Math.round(infoF * 3.4);
+  const arrowTextW = infoF + 4;
+
+  const infoRow = (label, value, section) => (
+    <FlexWidget
+      clickAction={section ? 'OPEN_URI' : undefined}
+      clickActionData={section
+        ? {uri: 'molitvoslov://calendar/' + effectiveSelected + '?section=' + section}
+        : undefined}
+      style={{width: leftW, height: infoRowH, marginTop: 0,
+        flexDirection: 'row', alignItems: 'center'}}
+    >
+      <TextWidget
+        text={label} allowFontScaling={false} maxLines={1}
+        style={{width: labelW, color: '#A46D38', fontFamily: FONT,
+          fontSize: infoF, lineHeight: infoF + 3}}
+      />
+      <TextWidget
+        text={String(value || '—')} allowFontScaling={false} maxLines={1}
+        style={{width: Math.max(1, leftW - labelW - (section ? arrowTextW : 0)),
+          color: section ? '#4D3424' : '#6C4A34',
+          fontFamily: FONT, fontSize: infoF, lineHeight: infoF + 3}}
+      />
+      {section ? (
+        <TextWidget text="›" allowFontScaling={false} maxLines={1}
+          style={{width: arrowTextW, fontFamily: FONT, color: '#8B5B30',
+            fontSize: infoF + 3, lineHeight: infoF + 4, textAlign: 'right'}}
+        />
+      ) : null}
+    </FlexWidget>
   );
-
-  const innerCalendarWidth = calendarPanelWidth - (tiny ? 8 : 12);
-  const cellWidth = Math.max(14, Math.floor(innerCalendarWidth / 7));
-  const gridWidth = cellWidth * 7;
-
-  const monthHeaderHeight = tiny ? 22 : large ? 30 : 26;
-  const weekdayHeight = tiny ? 10 : large ? 14 : 12;
-  const availableRowsHeight = Math.max(
-    56,
-    widgetHeight - outerPadding * 2 - monthHeaderHeight - weekdayHeight - 8
-  );
-  const rowHeight = Math.max(tiny ? 11 : 14, Math.floor(availableRowsHeight / weeks.length));
-  const dayBubbleSize = Math.min(cellWidth, rowHeight, large ? 24 : 20);
-
-  const titleSize = tiny ? 8 : large ? 11 : 10;
-
-  const dateSize = tiny ? 9 : large ? 13 : 11;
-  const weekdaySize = tiny ? 8 : large ? 11 : 9;
-
-  const feastSize = tiny ? 9 : large ? 13 : 11;
-  const infoLabelSize = tiny ? 7 : large ? 9 : 8;
-  const infoTextSize = tiny ? 8 : large ? 11 : 10;
-  const monthSize = tiny ? 9 : large ? 13 : 11;
-  const numberSize = tiny ? 7 : large ? 12 : 10;
-  const weekdayHeaderSize = tiny ? 6 : large ? 9 : 8;
-  const arrowSize = tiny ? 15 : large ? 22 : 19;
-  const saintImageWidth = tiny ? 28 : large ? 44 : 36;
-  const saintImageHeight = tiny ? 38 : large ? 60 : 50;
 
   return (
     <OverlapWidget
       accessibilityLabel={copy.widgetName}
-      style={{
-        width: 'match_parent',
-        height: 'match_parent',
-        borderRadius: 22,
-        overflow: 'hidden',
-        backgroundColor: '#F6E3C3',
-      }}
+      style={{width: 'match_parent', height: 'match_parent',
+        borderRadius: 22, overflow: 'hidden', backgroundColor: '#F6E3C3'}}
     >
-      <FlexWidget
-        style={{
-          width: 'match_parent',
-          height: 'match_parent',
-          flexDirection: 'row',
-          padding: outerPadding,
-          flexGap: gap,
-          backgroundColor: '#F6E3C3',
-          borderRadius: 22,
-          borderWidth: 1,
-          borderColor: '#C99A5B',
-        }}
-      >
-        <FlexWidget
-          style={{
-            flex: 1,
-            minWidth: 0,
-            height: 'match_parent',
-            justifyContent: 'flex-start',
-            paddingRight: tiny ? 2 : 4,
-          }}
-        >
-          {/* Заголовок */}
-          <TextWidget
-            text={copy.calendarTitle}
-            allowFontScaling={false}
-            maxLines={1}
-            style={{
-              color: '#7B512F',
-              fontFamily: 'Ponomar',
-              fontSize: titleSize,
-              lineHeight: titleSize + 4,
-              fontWeight: '700',
-            }}
-          />
-
-          {/* Дата + день недели в одну строку */}
-          <FlexWidget
-            style={{
-              marginTop: tiny ? 1 : 3,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <TextWidget
-              text={`${selectedDate.getDate()} ${locale.genitive[selectedDate.getMonth()]}`}
-              allowFontScaling={false}
-              maxLines={1}
-              style={{
-                flex: 1,
-                color: '#2D1C12',
-                fontFamily: 'Ponomar',
-                fontSize: dateSize,
-                lineHeight: dateSize + 4,
-                fontWeight: '700',
-              }}
+      <FlexWidget style={{
+        width: 'match_parent', height: 'match_parent',
+        flexDirection: 'row', padding: pad, backgroundColor: '#F6E3C3',
+        borderRadius: 22, borderWidth: BORDER, borderColor: '#C99A5B',
+      }}>
+        <FlexWidget style={{
+          width: leftW, height: contentH, marginRight: gap, justifyContent: 'flex-start',
+        }}>
+          {showTitle ? (
+            <TextWidget text={copy.calendarTitle} allowFontScaling={false} maxLines={1}
+              style={{width: leftW, color: '#7B512F', fontFamily: FONT,
+                fontSize: titleF, lineHeight: titleF + 4}}
             />
-
-            <TextWidget
-              text={locale.weekdays[selectedDate.getDay()]}
-              allowFontScaling={false}
-              maxLines={1}
-              style={{
-                marginLeft: 12,
-                color: '#765A44',
-                fontFamily: 'Ponomar',
-                fontSize: weekdaySize,
-                lineHeight: weekdaySize + 4,
-                textAlign: 'right',
-              }}
+          ) : null}
+          <FlexWidget style={{
+            width: leftW, height: dateH, flexDirection: 'row', alignItems: 'center',
+          }}>
+            <TextWidget text={dateText} allowFontScaling={false} maxLines={1}
+              style={{width: dateW, color: '#2D1C12', fontFamily: FONT,
+                fontSize: dateF, lineHeight: dateF + 4}}
             />
-          </FlexWidget>
-
-          {/* Икона + святой */}
-          <FlexWidget
-            style={{
-              marginTop: tiny ? 3 : 5,
-              flexDirection: 'row',
-              alignItems: 'center',
-            }}
-          >
-            {iconSource ? (
-              <ImageWidget
-                image={iconSource}
-                imageWidth={saintImageWidth}
-                imageHeight={saintImageHeight}
-                radius={7}
-                resizeMode="cover"
-                style={{
-                  marginRight: tiny ? 4 : 7,
-                }}
+            {showWeekday ? (
+              <TextWidget text={weekdayText} allowFontScaling={false} maxLines={1}
+                style={{width: Math.max(1, leftW - dateW), color: '#765A44',
+                  fontFamily: FONT, fontSize: weekdayF,
+                  lineHeight: weekdayF + 4, textAlign: 'right'}}
               />
-            ) : (
-              <FlexWidget
-                style={{
-                  width: saintImageWidth,
-                  height: saintImageHeight,
-                  marginRight: tiny ? 4 : 7,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: 7,
-                  backgroundColor: '#E7C897',
-                }}
-              >
-                <TextWidget
-                  text="☦"
-                  allowFontScaling={false}
-                  style={{
-                    color: '#8B572D',
-                    fontFamily: 'Ponomar',
-                    fontSize: tiny ? 16 : large ? 22 : 19,
-                    lineHeight: tiny ? 19 : large ? 26 : 23,
-                  }}
-                />
-              </FlexWidget>
-            )}
-
-            <FlexWidget
-              style={{
-                flex: 1,
-                minWidth: 0,
-              }}
-            >
-              <TextWidget
-                text={feast}
-                allowFontScaling={false}
-                maxLines={tiny ? 2 : large ? 4 : 3}
-                style={{
-                  color: '#40291A',
-                  fontFamily: 'Ponomar',
-                  fontSize: feastSize,
-                  lineHeight: feastSize + 3,
-                  fontWeight: '700',
-                }}
+            ) : null}
+          </FlexWidget>
+          <FlexWidget style={{
+            width: leftW, height: feastBlockH, marginTop: 2,
+            flexDirection: 'row', alignItems: 'center',
+          }}>
+            {showIcon ? (
+              <ImageWidget image={iconSource}
+                imageWidth={iconW} imageHeight={iconH}
+                resizeMode="cover" radius={7} style={{marginRight: 6}}
               />
-            </FlexWidget>
-          </FlexWidget>
-
-          {/* Пост */}
-
-          <FlexWidget
-            style={{
-              marginTop: tiny ? 3 : 5,
-              flexDirection: 'row',
-              alignItems: 'center',
-            }}
-          >
-            <TextWidget
-              text={lang === 'uk' ? 'ПІСТ' : 'ПОСТ'}
-              allowFontScaling={false}
-              maxLines={1}
-              style={{
-                width: tiny ? 30 : 38,
-                color: '#A46D38',
-                fontFamily: 'Ponomar-Regular',
-                fontSize: infoLabelSize,
-                lineHeight: infoTextSize + 3,
-                fontWeight: '700',
-              }}
-            />
-
-            <TextWidget
-              text={fast}
-              allowFontScaling={false}
-              maxLines={1}
-              style={{
-                flex: 1,
-                minWidth: 0,
-                color: '#6C4A34',
-                fontFamily: 'Ponomar-Regular',
-                fontSize: infoTextSize,
-                lineHeight: infoTextSize + 3,
-              }}
+            ) : null}
+            <TextWidget text={feast} allowFontScaling={false}
+              maxLines={feastFit.maxLines}
+              style={{width: feastTextW, color: '#40291A', fontFamily: FONT,
+                fontSize: feastFit.fontSize, lineHeight: feastFit.lineHeight}}
             />
           </FlexWidget>
-
-          {/* Евангелие */}
-          <FlexWidget
-            clickAction="OPEN_URI"
-            clickActionData={{
-              uri: `molitvoslov://calendar/${selectedDateKey}?section=gospel`,
-            }}
-            style={{
-              marginTop: tiny ? 2 : 3,
-              flexDirection: 'row',
-              alignItems: 'center',
-            }}
-          >
-            <TextWidget
-              text={lang === 'uk' ? 'ЄВ.' : 'ЕВ.'}
-              allowFontScaling={false}
-              maxLines={1}
-              style={{
-                width: tiny ? 30 : 38,
-                color: '#A46D38',
-                fontFamily: 'Ponomar-Regular',
-                fontSize: infoLabelSize,
-                lineHeight: infoTextSize + 3,
-                fontWeight: '700',
-              }}
-            />
-
-            <TextWidget
-              text={gospel}
-              allowFontScaling={false}
-              maxLines={1}
-              style={{
-                flex: 1,
-                minWidth: 0,
-                color: '#4D3424',
-                fontFamily: 'Ponomar-Regular',
-                fontSize: infoTextSize,
-                lineHeight: infoTextSize + 3,
-              }}
-            />
-            <TextWidget
-              text="›"
-              allowFontScaling={false}
-              style={{
-                marginLeft: 3,
-                color: '#8B5B30',
-                fontFamily: 'Ponomar-Regular',
-                fontSize: infoTextSize + 3,
-                lineHeight: infoTextSize + 4,
-                fontWeight: '700',
-              }}
-            />
-          </FlexWidget>
-
-          {/* Апостол */}
-          <FlexWidget
-            clickAction="OPEN_URI"
-            clickActionData={{
-              uri: `molitvoslov://calendar/${selectedDateKey}?section=apostle`,
-            }}
-            style={{
-              marginTop: tiny ? 2 : 3,
-              flexDirection: 'row',
-              alignItems: 'center',
-            }}
-          >
-            <TextWidget
-              text={lang === 'uk' ? 'АП.' : 'АП.'}
-              allowFontScaling={false}
-              maxLines={1}
-              style={{
-                width: tiny ? 30 : 38,
-                color: '#A46D38',
-                fontFamily: 'Ponomar-Regular',
-                fontSize: infoLabelSize,
-                lineHeight: infoTextSize + 3,
-                fontWeight: '700',
-              }}
-            />
-
-            <TextWidget
-              text={apostle}
-              allowFontScaling={false}
-              maxLines={1}
-              style={{
-                flex: 1,
-                minWidth: 0,
-                color: '#4D3424',
-                fontFamily: 'Ponomar-Regular',
-                fontSize: infoTextSize,
-                lineHeight: infoTextSize + 3,
-              }}
-            />
-            <TextWidget
-              text="›"
-              allowFontScaling={false}
-              style={{
-                marginLeft: 3,
-                color: '#8B5B30',
-                fontFamily: 'Ponomar-Regular',
-                fontSize: infoTextSize + 3,
-                lineHeight: infoTextSize + 4,
-                fontWeight: '700',
-              }}
-            />
-          </FlexWidget>
+          {infoRow(lang === 'uk' ? 'ПІСТ' : 'ПОСТ', fast)}
+          {showGospel ? infoRow(lang === 'uk' ? 'ЄВ.' : 'ЕВ.', gospel, 'gospel') : null}
+          {showApostle ? infoRow('АП.', apostle, 'apostle') : null}
         </FlexWidget>
 
-        <FlexWidget
-          style={{
-            width: calendarPanelWidth,
-            height: 'match_parent',
-            paddingLeft: tiny ? 7 : 10,
-            borderLeftWidth: 1,
-            borderLeftColor: '#D5B487',
-            alignItems: 'center',
-          }}
-        >
-          <FlexWidget
-            style={{
-              width: gridWidth,
-              height: monthHeaderHeight,
-              flexDirection: 'row',
-              alignItems: 'center',
-            }}
-          >
-            <TextWidget
-              text="‹"
-              clickAction="CALENDAR_PREV_MONTH"
-              clickActionData={{
-                year: previousMonth.getFullYear(),
-                month: previousMonth.getMonth() + 1,
-              }}
+        <FlexWidget style={{
+          width: panelW, height: contentH, paddingLeft: panelPadLeft,
+          borderLeftWidth: 1, borderLeftColor: '#D5B487',
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          <FlexWidget style={{
+            width: gridW, height: monthHeaderH,
+            flexDirection: 'row', alignItems: 'center',
+          }}>
+            <TextWidget text="‹" clickAction="CALENDAR_PREV_MONTH"
+              clickActionData={{year: previous.getFullYear(), month: previous.getMonth() + 1}}
               allowFontScaling={false}
-              style={{
-                width: cellWidth,
-                color: '#8A5B31',
-                fontFamily: 'Ponomar',
-                fontSize: arrowSize,
-                lineHeight: monthHeaderHeight,
-                textAlign: 'center',
-                fontWeight: '700',
-              }}
+              style={{width: arrowW, color: '#8A5B31', fontFamily: FONT,
+                fontSize: Math.round(clamp(monthHeaderH * 0.8, 14, 24)),
+                lineHeight: monthHeaderH, textAlign: 'center'}}
             />
-
-            <TextWidget
-              text={`${locale.nominative[shownDate.getMonth()]} ${shownDate.getFullYear()}`}
-              clickAction="CALENDAR_TODAY"
-              allowFontScaling={false}
-              maxLines={1}
-              style={{
-                width: gridWidth - cellWidth * 2,
-                color: '#4C3020',
-                fontFamily: 'Ponomar',
-                fontSize: monthSize,
-                lineHeight: monthHeaderHeight,
-                fontWeight: '700',
-                textAlign: 'center',
-              }}
+            <TextWidget text={monthTitle.text} clickAction="CALENDAR_TODAY"
+              allowFontScaling={false} maxLines={1}
+              style={{width: Math.max(1, gridW - 2 * arrowW), color: '#4C3020',
+                fontFamily: FONT, fontSize: monthTitle.fontSize,
+                lineHeight: monthHeaderH, textAlign: 'center'}}
             />
-
-            <TextWidget
-              text="›"
-              clickAction="CALENDAR_NEXT_MONTH"
-              clickActionData={{
-                year: nextMonth.getFullYear(),
-                month: nextMonth.getMonth() + 1,
-              }}
+            <TextWidget text="›" clickAction="CALENDAR_NEXT_MONTH"
+              clickActionData={{year: next.getFullYear(), month: next.getMonth() + 1}}
               allowFontScaling={false}
-              style={{
-                width: cellWidth,
-                color: '#8A5B31',
-                fontFamily: 'Ponomar',
-                fontSize: arrowSize,
-                lineHeight: monthHeaderHeight,
-                textAlign: 'center',
-                fontWeight: '700',
-              }}
+              style={{width: arrowW, color: '#8A5B31', fontFamily: FONT,
+                fontSize: Math.round(clamp(monthHeaderH * 0.8, 14, 24)),
+                lineHeight: monthHeaderH, textAlign: 'center'}}
             />
           </FlexWidget>
-
-          <FlexWidget
-            style={{
-              width: gridWidth,
-              height: weekdayHeight,
-              flexDirection: 'row',
-            }}
-          >
-            {locale.miniWeekdays.map((weekday, index) => (
-              <TextWidget
-                key={`weekday-${index}`}
-                text={weekday}
-                allowFontScaling={false}
-                maxLines={1}
-                style={{
-                  width: cellWidth,
-                  height: weekdayHeight,
-                  color: index >= 5 ? '#A24C40' : '#8A7462',
-                  fontFamily: 'Ponomar',
-                  fontSize: weekdayHeaderSize,
-                  lineHeight: weekdayHeight,
-                  textAlign: 'center',
-                  fontWeight: '700',
-                }}
-              />
-            ))}
-          </FlexWidget>
-
-          {weeks.map((week, weekIndex) => (
-            <FlexWidget
-              key={`week-${weekIndex}`}
-              style={{
-                width: gridWidth,
-                height: rowHeight,
-                flexDirection: 'row',
-              }}
-            >
-              {week.map((cell, index) => (
-                <FlexWidget
-                  key={`${weekIndex}-${index}`}
-                  clickAction={cell.date ? 'CALENDAR_SELECT_DAY' : undefined}
-                  clickActionData={
-                    cell.date
-                      ? {
-                          date: cell.date,
-                        }
-                      : undefined
-                  }
-                  style={{
-                    width: cellWidth,
-                    height: rowHeight,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <TextWidget
-                    text={cell.day}
-                    allowFontScaling={false}
-                    maxLines={1}
-                    style={{
-                      width: cell.selected || cell.today ? dayBubbleSize : cellWidth,
-
-                      height: cell.selected || cell.today ? dayBubbleSize : rowHeight,
-
-                      color: cell.selected
-                        ? '#FFF8EA'
-                        : cell.today
-                          ? '#8A572D'
-                          : index >= 5
-                            ? '#A24C40'
-                            : '#493225',
-
-                      backgroundColor: cell.selected ? '#B97A32' : '#00000000',
-
-                      borderWidth: cell.today && !cell.selected ? 1 : 0,
-
-                      borderColor: '#B97A32',
-
-                      borderRadius: cell.selected || cell.today ? dayBubbleSize / 2 : 0,
-
-                      fontFamily: 'Ponomar-Regular',
-                      fontSize: numberSize,
-
-                      lineHeight: cell.selected || cell.today ? dayBubbleSize : rowHeight,
-
-                      textAlign: 'center',
-
-                      fontWeight: cell.selected || cell.today ? '800' : '500',
-                    }}
-                  />
-                </FlexWidget>
+          {showWeekdays ? (
+            <FlexWidget style={{width: gridW, height: weekdayH, flexDirection: 'row'}}>
+              {locale.miniWeekdays.map((weekDay, index) => (
+                <TextWidget key={'weekday-' + index}
+                  text={weekDay} allowFontScaling={false} maxLines={1}
+                  style={{width: cellW, height: weekdayH,
+                    color: index >= 5 ? '#A24C40' : '#8A7462',
+                    fontFamily: FONT, fontSize: weekdayFont,
+                    lineHeight: weekdayH, textAlign: 'center'}}
+                />
               ))}
+            </FlexWidget>
+          ) : null}
+          {weeks.map((week, rowIndex) => (
+            <FlexWidget key={'row-' + rowIndex} style={{
+              width: gridW, height: rowH, flexDirection: 'row',
+            }}>
+              {week.map((cell, columnIndex) => {
+                const marked = cell.selected || cell.today || !!cell.appearance;
+                const background = cell.selected ? '#B97A32'
+                  : APPEARANCE_BG[cell.appearance] || '#00000000';
+                return (
+                  <FlexWidget key={rowIndex + '-' + columnIndex}
+                    clickAction={cell.date ? 'CALENDAR_SELECT_DAY' : undefined}
+                    clickActionData={cell.date ? {date: cell.date} : undefined}
+                    style={{width: cellW, height: rowH,
+                      alignItems: 'center', justifyContent: 'center'}}
+                  >
+                    <TextWidget
+                      text={cell.day} allowFontScaling={false} maxLines={1}
+                      style={{width: marked ? bubble : cellW,
+                        height: marked ? bubble : rowH,
+                        color: cell.selected ? '#FFF8EA' :
+                          cell.today ? '#8A572D' :
+                            columnIndex >= 5 ? '#A24C40' : '#493225',
+                        backgroundColor: background,
+                        borderWidth: cell.today && !cell.selected ? 1 : 0,
+                        borderColor: '#B97A32',
+                        borderRadius: marked ? bubble / 2 : 0,
+                        fontFamily: FONT, fontSize: dayFont,
+                        lineHeight: marked ? bubble : rowH,
+                        textAlign: 'center'}}
+                    />
+                  </FlexWidget>
+                );
+              })}
             </FlexWidget>
           ))}
         </FlexWidget>
