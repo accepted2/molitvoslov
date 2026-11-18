@@ -92,6 +92,61 @@ const reconcileLocalQuote = original => {
   return originalStyle(original,text);
 };
 
+
+// Preserve a locally customized calendar's appearance/handlers by adapting
+// its existing component to the new per-widget monthKey/selectedKey contract.
+// This does not replace the JSX and retains all local calendar UI additions.
+const reconcileLocalCalendar = original => {
+  let text = original.replace(/\r\n/g, '\n');
+  const exported = /\bexport\s+const\s+ChurchCalendarWidget\s*=/g;
+  const matches = [...text.matchAll(exported)];
+  if (matches.length !== 1 || !/\bdisplayDate\b/.test(text) ||
+      !/\bday\b/.test(text) ||
+      !/CALENDAR_PREV_MONTH/.test(text) ||
+      !/CALENDAR_NEXT_MONTH/.test(text) ||
+      !/CALENDAR_SELECT_DAY/.test(text)) {
+    throw Error('ChurchCalendarWidget.js: cannot safely adapt custom calendar. ' +
+      'NO FILES MODIFIED. Send the file for an exact merge.');
+  }
+  text = text.replace(exported, 'const PreservedChurchCalendarWidget =');
+  // Keep all existing visual styles, icons, calendar cell click handlers,
+  // locale selection, and reading links; only remove Ponomar fonts.
+  text = text.replace(/(['"])Ponomar(?:-Regular)?\1/gi, "'sans-serif'");
+  const helperImport = "import {parseDateKey, parseMonthKey} from './widgetState';";
+  if (!text.includes(helperImport)) {
+    const imports = [...text.matchAll(/^import[^\n]*;[ \t]*$/gm)];
+    const last = imports[imports.length-1];
+    if (!last) throw Error('ChurchCalendarWidget.js: cannot add widgetState import safely.');
+    const position = last.index + last[0].length;
+    text = text.slice(0,position) + '\n' + helperImport + text.slice(position);
+  }
+  // The previous calendar received displayDate separately, whereas the new
+  // widget task handler sends monthKey and selectedKey for each widget.
+  text += [
+    '',
+    '// Keep the original customized appearance while supporting per-widget state.',
+    'export const ChurchCalendarWidget = props => {',
+    '  const month = parseMonthKey(props.monthKey);',
+    '  const date = parseDateKey(props.selectedKey);',
+    '  const displayDate = month',
+    '    ? new Date(month.year, month.month - 1, 1, 12)',
+    '    : props.displayDate;',
+    '  const day = date',
+    '    ? props.day?.date_gregorian === props.selectedKey',
+    '      ? props.day',
+    '      : {...(props.day || {}), date_gregorian: props.selectedKey}',
+    '    : props.day;',
+    '  return <PreservedChurchCalendarWidget',
+    '    {...props} day={day} displayDate={displayDate} />;',
+    '};',
+    '',
+  ].join('\n');
+  console.log('NOTE: local ChurchCalendarWidget design preserved; ' +
+    'system font and per-instance calendar navigation added. ' +
+    'The new 6-row visual redesign was not forced over custom styling.');
+  return originalStyle(original,text);
+};
+
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'molitvoslov-widgets-'));
 let files=[];
 try{
@@ -123,6 +178,8 @@ try{
     if(merge.status!==0 || /^(<<<<<<<|=======|>>>>>>>)/m.test(merge.stdout)){
       if (name==='src/widgets/QuoteOfDayWidget.js') {
         updated=reconcileLocalQuote(local);
+      } else if (name==='src/widgets/ChurchCalendarWidget.js') {
+        updated=reconcileLocalCalendar(local);
       } else {
         throw Error(name+': local edit intersects widget changes ('+
           (merge.stderr||'merge conflict').trim()+'). NO FILES MODIFIED.');
