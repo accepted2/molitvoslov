@@ -12,6 +12,7 @@ import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {useFonts} from 'expo-font';
 
 import {AppNavigator} from './src/navigation/AppNavigator';
+import {beginStartupAppLinkCapture} from './src/services/startupAppLink';
 import {OnboardingScreen} from './src/screens/OnboardingScreen';
 import {PrayerBeadsLoader} from './src/components/feedback/PrayerBeadsLoader';
 
@@ -35,6 +36,10 @@ import {syncAccountPreferences} from './src/services/accountPreferencesSync';
 import {hydrateBibleContent} from './src/services/bibleStore';
 
 
+
+// Start reading the Android launch intent before SQLite, fonts or onboarding.
+// The navigator may mount seconds later, after all bundled content is hydrated.
+beginStartupAppLinkCapture();
 
 const ONBOARDING_STORAGE_KEY = '@molitvoslov/onboarding-version';
 const ONBOARDING_VERSION = 5;
