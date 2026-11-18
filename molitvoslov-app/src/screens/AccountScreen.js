@@ -140,7 +140,9 @@ export const AccountScreen = ({navigation}) => {
       const result=await syncAccountPreferences();
       setSettingsCloudStatus(result?.success
         ? result.pending?'Есть изменения, ожидающие отправки':'Настройки синхронизированы'
-        : 'Синхронизация недоступна: '+(result?.reason||'проверьте интернет'));
+        : result?.reason === 'reauth-required'
+          ? 'Для синхронизации настроек повторно войдите в аккаунт'
+          : 'Синхронизация недоступна: '+(result?.reason||'проверьте интернет'));
     } catch(error) {
       setSettingsCloudStatus('Ошибка синхронизации: '+(error?.message||'попробуйте позже'));
     }
