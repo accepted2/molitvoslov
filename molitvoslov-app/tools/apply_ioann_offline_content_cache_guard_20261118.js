@@ -18,6 +18,15 @@ if (plain.includes(marker)) {
   console.log('PASS: bundled-content cache version guard already installed.');
   process.exit(0);
 }
+// Newer offline-only builds already make bundled content authoritative,
+// and update only the PUBLIC SQLite cache without touching personal data.
+// For these builds no compatibility patch is necessary.
+if (plain.includes('PUBLIC_CONTENT_BUNDLED_ONLY_V1') &&
+    /activateContent\s*\(\s*bundledContent\s*,\s*bundledVersion\s*,\s*\{\s*notify\s*:\s*false\s*\}\s*\)/.test(plain) &&
+    !/activateContent\s*\(\s*parsed\s*,\s*row\.version/.test(plain)) {
+  console.log('PASS: bundled-only contentStore.js already protects new offline prayers. NO FILES MODIFIED.');
+  process.exit(0);
+}
 if (!/\bbundledContent\b/.test(plain) ||
     !/\bactivateContent\b/.test(plain) ||
     !/\brow\.version\b/.test(plain) ||
