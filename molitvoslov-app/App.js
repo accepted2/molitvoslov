@@ -15,6 +15,7 @@ import {AppNavigator} from './src/navigation/AppNavigator';
 import {beginStartupAppLinkCapture} from './src/services/startupAppLink';
 import {OnboardingScreen} from './src/screens/OnboardingScreen';
 import {PrayerBeadsLoader} from './src/components/feedback/PrayerBeadsLoader';
+import {PrayerBeadsPreviewScreen} from './src/components/feedback/PrayerBeadsPreviewScreen';
 
 import {TextSelectionProvider} from './src/context/TextSelectionContext';
 import {ShareFeedbackHost} from './src/components/share/ShareFeedbackHost';
@@ -66,6 +67,11 @@ const StartupLoadingScreen = () => (
 );
 
 export default function App() {
+  // The endless loader preview is available only in an explicitly requested
+  // development session, never in a release APK.
+  const [previewOpen, setPreviewOpen] = useState(
+    __DEV__ && process.env.EXPO_PUBLIC_PRAYER_BEADS_PREVIEW === '1'
+  );
   const [databaseReady, setDatabaseReady] = useState(false);
   const [onboardingReady, setOnboardingReady] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -243,6 +249,10 @@ export default function App() {
       console.log('Ошибка сохранения onboarding:', error);
     }
   }, []);
+
+  if (__DEV__ && previewOpen) {
+    return <PrayerBeadsPreviewScreen onContinue={() => setPreviewOpen(false)} />;
+  }
 
   if (!appReady || !minimumStartupElapsed) {
     return <StartupLoadingScreen />;
