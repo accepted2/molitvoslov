@@ -51,7 +51,7 @@ for(const duplicate of [false,true]){
    assert(data.texts[TARGET].categories.some(c=>c.id===grat.id));
   }
   const installed=fs.readFileSync(file);
-  assert.match(run(script,app),/already moved/);
+  assert.match(run(script,app),duplicate?/already represented/:/already moved/);
   assert.deepEqual(fs.readFileSync(file),installed,'Running twice must not re-write the catalog');
   console.log('PASS: '+(duplicate?'exact-duplicate link removal':'original link move')+
     ', stable text ID, dry-run, idempotence');
