@@ -18,6 +18,13 @@ assert.equal(resolvePrayerMode('russian',ruOnly),'russian');
 assert.deepEqual(buildPrayerModeOptions(ruOnly).map(({key,disabled})=>[key,disabled]),[
  ['church',true],['russian',false],['both',true],['traditional',true]
 ]);
+const placeholderAndReal = getPrayerTextAvailability({
+  content: 'Текст церковнославянской версии будет добавлен позже.',
+  translation: 'Господи, благослови нас.',
+  traditional_content: 'Текст в традиционном написании будет добавлен позже.',
+});
+assert.deepEqual(placeholderAndReal,{hasChurch:false,hasRussian:true,hasTraditional:false});
+assert.equal(resolvePrayerMode('church',placeholderAndReal),'russian');
 const churchOnly=getPrayerTextAvailability({content:'Господи, помилуй',translation:'',traditional_content:''});
 assert.equal(resolvePrayerMode('russian',churchOnly),'church');
 assert.deepEqual(buildPrayerModeOptions(churchOnly).map(x=>x.disabled),[false,true,true,true]);
