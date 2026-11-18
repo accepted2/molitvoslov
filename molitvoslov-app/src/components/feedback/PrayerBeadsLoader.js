@@ -1,41 +1,54 @@
 import React, {useEffect, useRef} from 'react';
+import {Animated, Easing, StyleSheet, Text, View} from 'react-native';
 
-import {Animated, StyleSheet, Text, View} from 'react-native';
+// A complete prayer-rope loop instead of the previous curved row of beads.
+// Both sizes use the same moving highlight, with a small hanging cross on the
+// full-size loader. The animation uses the native driver for smooth rendering.
+const BEAD_COUNT = 24;
+const COMPACT_BEAD_COUNT = 14;
+const circlePositions = (count, centerX, centerY, radius, beadSize) =>
+  Array.from({length: count}, (_, index) => {
+    const angle = -Math.PI / 2 + (2 * Math.PI * index) / count;
+    return {
+      left: centerX + radius * Math.cos(angle) - beadSize / 2,
+      top: centerY + radius * Math.sin(angle) - beadSize / 2,
+    };
+  });
 
-const BEAD_COUNT = 9;
-const CURVE = [5, 3, 1, 0, 0, 0, 1, 3, 5];
+const LARGE_POSITIONS = circlePositions(BEAD_COUNT, 56, 55, 43, 11);
+const SMALL_POSITIONS = circlePositions(COMPACT_BEAD_COUNT, 22, 22, 16, 7);
 
 export const PrayerBeadsLoader = ({text = '', compact = false, light = false}) => {
   const beads = useRef(Array.from({length: BEAD_COUNT}, () => new Animated.Value(0))).current;
+  const visibleBeads = compact ? beads.slice(0, COMPACT_BEAD_COUNT) : beads;
+  const positions = compact ? SMALL_POSITIONS : LARGE_POSITIONS;
 
   useEffect(() => {
-    const animation = Animated.loop(
-      Animated.stagger(
-        85,
-        beads.map((value) =>
-          Animated.sequence([
-            Animated.timing(value, {
-              toValue: 1,
-              duration: 170,
-              useNativeDriver: true,
-            }),
-            Animated.timing(value, {
-              toValue: 0,
-              duration: 260,
-              useNativeDriver: true,
-            }),
-          ])
-        )
-      )
-    );
-
+    visibleBeads.forEach(value => value.setValue(0));
+    const animation = Animated.loop(Animated.stagger(
+      compact ? 105 : 78,
+      visibleBeads.map(value => Animated.sequence([
+        Animated.timing(value, {
+          toValue: 1,
+          duration: 165,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(value, {
+          toValue: 0,
+          duration: 315,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ])),
+    ));
     animation.start();
 
     return () => {
       animation.stop();
-      beads.forEach((value) => value.stopAnimation());
+      beads.forEach(value => value.stopAnimation());
     };
-  }, [beads]);
+  }, [beads, compact]);
 
   return (
     <View
@@ -43,16 +56,21 @@ export const PrayerBeadsLoader = ({text = '', compact = false, light = false}) =
       accessibilityLabel={text || 'Загрузка'}
       style={[styles.container, compact && styles.containerCompact]}
     >
-      <View style={[styles.thread, compact && styles.threadCompact, light && styles.threadLight]} />
-
-      <View style={styles.beads}>
-        {beads.map((value, index) => (
-          <Animated.View
+      <View style={[styles.rosary, compact && styles.rosaryCompact]}>
+        <View
+          style={[
+            styles.thread,
+            compact && styles.threadCompact,
+            light && styles.threadLight,
+          ]}
+        />
+        {visibleBeads.map((value, index) => (
+          <View
             key={index}
             style={[
-              styles.beadWrap,
-              compact && styles.beadWrapCompact,
-              {transform: [{translateY: CURVE[index]}]},
+              styles.beadPosition,
+              compact && styles.beadPositionCompact,
+              positions[index],
             ]}
           >
             <Animated.View
@@ -63,29 +81,26 @@ export const PrayerBeadsLoader = ({text = '', compact = false, light = false}) =
                 {
                   opacity: value.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [0.46, 1],
+                    outputRange: [0.62, 1],
                   }),
-                  transform: [
-                    {
-                      scale: value.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.82, 1.22],
-                      }),
-                    },
-                  ],
+                  transform: [{
+                    scale: value.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.87, 1.22],
+                    }),
+                  }],
                 },
               ]}
             />
-          </Animated.View>
+          </View>
         ))}
+        {!compact && (
+          <>
+            <View style={[styles.pendantLine, light && styles.pendantLineLight]} />
+            <Text style={[styles.cross, light && styles.crossLight]}>☦</Text>
+          </>
+        )}
       </View>
-
-      {!compact && (
-        <View style={styles.pendant}>
-          <View style={[styles.pendantLine, light && styles.pendantLineLight]} />
-          <Text style={[styles.cross, light && styles.crossLight]}>☦</Text>
-        </View>
-      )}
 
       {!!text && (
         <Text
@@ -101,45 +116,54 @@ export const PrayerBeadsLoader = ({text = '', compact = false, light = false}) =
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 70,
+    minHeight: 154,
     alignItems: 'center',
     justifyContent: 'center',
   },
   containerCompact: {
-    minHeight: 28,
+    minHeight: 44,
     flexDirection: 'row',
+  },
+  rosary: {
+    width: 112,
+    height: 139,
+    position: 'relative',
+  },
+  rosaryCompact: {
+    width: 44,
+    height: 44,
   },
   thread: {
     position: 'absolute',
-    top: 17,
-    width: 128,
-    height: 1,
-    borderRadius: 1,
-    backgroundColor: 'rgba(111, 71, 39, 0.24)',
+    left: 13,
+    top: 12,
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+    borderWidth: 1.5,
+    borderColor: 'rgba(111, 71, 39, 0.36)',
   },
   threadCompact: {
-    position: 'absolute',
-    top: 13,
-    left: 0,
-    width: 74,
+    left: 6,
+    top: 6,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
   },
   threadLight: {
-    backgroundColor: 'rgba(255, 239, 207, 0.30)',
+    borderColor: 'rgba(255, 239, 207, 0.48)',
   },
-  beads: {
-    height: 28,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  beadWrap: {
-    width: 15,
-    height: 20,
+  beadPosition: {
+    position: 'absolute',
+    width: 11,
+    height: 11,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  beadWrapCompact: {
-    width: 9,
-    height: 17,
+  beadPositionCompact: {
+    width: 7,
+    height: 7,
   },
   bead: {
     width: 10,
@@ -150,38 +174,41 @@ const styles = StyleSheet.create({
     backgroundColor: '#6D4223',
   },
   beadCompact: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   beadLight: {
     borderColor: '#F0CF92',
     backgroundColor: '#F7DFB4',
   },
-  pendant: {
-    alignItems: 'center',
-    marginTop: -5,
-  },
   pendantLine: {
+    position: 'absolute',
+    top: 100,
+    left: 55.5,
     width: 1,
-    height: 7,
-    backgroundColor: 'rgba(111, 71, 39, 0.38)',
+    height: 13,
+    backgroundColor: 'rgba(111, 71, 39, 0.48)',
   },
   pendantLineLight: {
-    backgroundColor: 'rgba(255, 239, 207, 0.42)',
+    backgroundColor: 'rgba(255, 239, 207, 0.55)',
   },
   cross: {
-    marginTop: -1,
+    position: 'absolute',
+    top: 109,
+    left: 44,
+    width: 24,
+    textAlign: 'center',
     color: '#8E5D32',
     fontFamily: 'serif',
-    fontSize: 13,
-    lineHeight: 15,
+    fontSize: 19,
+    lineHeight: 24,
   },
   crossLight: {
     color: '#F3D89F',
   },
   text: {
-    marginTop: 5,
+    marginTop: 3,
     color: '#7B624D',
     fontSize: 13,
     lineHeight: 17,
