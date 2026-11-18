@@ -56,7 +56,7 @@ assert.match(section('crossFootBarCompact'), /rotate: '14deg'/);
 assert.match(section('crossMiddleBar'), /width: 15,/);
 assert.match(section('crossMiddleBarCompact'), /width: 7,/);
 assert.match(section('crossFootBarCompact'), /width: 6\.2,/);
-assert.match(section('crossStemCompact'), /width: 1\.1,[\s\S]*height: 17\.5,/);
+assert.match(section('crossStemCompact'), /width: 1\.1,[\s\S]*height: 14\.75,/);
 assert.match(section('pendantKnotCompact'), /width: 2\.8,/);
 // Cross and angled footbar must both be fully inside the compact glyph.
 assert.match(section('rosaryCompact'), /height: 56,/);
@@ -66,13 +66,18 @@ assert.match(section('crossCompact'), /top: 31,/);
 // the slanted lower bar, but still fit comfortably inside the rosary.
 const compactHeight = 56;
 const crossTop = 31;
-const stemHeight = 17.5;
+const stemHeight = 14.75;
+const previousStemHeight = 17.5;
 const footBarCenter = 10 + 1.2 / 2;
 const footBarHalfWidth = 6.2 / 2;
 const footBarMaxY = footBarCenter +
   footBarHalfWidth * Math.sin(14 * Math.PI / 180) + 0.6;
-assert.ok(stemHeight - footBarMaxY >= 4,
-  'Compact cross needs at least 4px of lower stem below the slanted bar');
+const oldTail = previousStemHeight - footBarMaxY;
+const newTail = stemHeight - footBarMaxY;
+assert.ok(Math.abs(newTail / oldTail - 0.5) < 0.03,
+  'Lower visible stem must be approximately half the prior length');
+assert.ok(newTail >= 2.5,
+  'Keep a visible lower stem below the slanted bar');
 assert.ok(crossTop + stemHeight <= compactHeight - 4,
   'Compact cross must fit with bottom breathing room');
 assert.ok(crossTop + 20 <= compactHeight,
@@ -93,5 +98,5 @@ assert.match(source, /accessibilityLabel="Православный крести�
 assert.match(source, /light && styles\.beadLight/);
 assert.doesNotMatch(source, /\{!compact && \(/);
 console.log('PASS: 24-bead and compact 14-bead ovals match the thread and stay in bounds');
-console.log('PASS: compact cross has a visible bottom stem and fits inside loader with margin');
+console.log('PASS: lower compact cross tail is half-sized, visible and not clipped');
 console.log('PASS: native-driver animation and accessible progress indicator');
