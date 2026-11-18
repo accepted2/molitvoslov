@@ -2,126 +2,85 @@
 
 import React from 'react';
 import {FlexWidget, ImageWidget, OverlapWidget, TextWidget} from 'react-native-android-widget';
+import {FONT, clamp, fitText, getScale, readSize} from './widgetLayout';
 
-const QUOTE_BACKGROUND = require('../../assets/home/hero.png');
+// Keep the established bundled background in GitHub. A smaller JPEG from
+// the supplied archive can replace this image when imported locally.
+const BACKGROUND = require('../../assets/home/hero.png');
+const BASE = {width: 240, height: 100};
 
-export const QuoteOfDayWidget = ({quote, width = 240, height = 100}) => {
-  const text = quote?.text || '';
-  const source = quote?.reference || quote?.source || '';
+export const QuoteOfDayWidget = ({quote, width, height}) => {
+  const size = readSize(width, height, BASE);
+  const scale = getScale(size, BASE, 0.85, 1.7);
+  const text = String(quote?.text || '').trim();
+  const source = String(quote?.reference || quote?.source || '').trim();
 
-  const widgetWidth = Math.max(Number(width) || 240, 1);
-  const widgetHeight = Math.max(Number(height) || 100, 1);
-
-  // Отступы тоже немного растут вместе с виджетом.
-  const horizontalPadding = Math.max(10, Math.min(20, Math.round(widgetWidth * 0.045)));
-
-  const verticalPadding = Math.max(7, Math.min(16, Math.round(widgetHeight * 0.05)));
-
-  /*
-   * Базовый размер — 240 × 100.
-   * При увеличении площади виджета увеличивается и шрифт.
-   */
-  const areaScale = Math.sqrt((widgetWidth * widgetHeight) / (240 * 100));
-
-  // Ограничиваем масштаб, чтобы огромный виджет
-  // не получил гигантский текст.
-  const scale = Math.max(0.85, Math.min(1.85, areaScale));
-
-  // Чем длиннее цитата, тем осторожнее увеличиваем шрифт.
-  const textFactor =
-    text.length > 190
-      ? 0.66
-      : text.length > 150
-        ? 0.74
-        : text.length > 110
-          ? 0.84
-          : text.length > 75
-            ? 0.94
-            : 1.08;
-
-  const quoteFontSize = Math.round(Math.max(12, Math.min(28, 15 * scale * textFactor)));
-
-  const quoteLineHeight = Math.round(quoteFontSize * 1.22);
-
-  const sourceFontSize = Math.round(Math.max(9, Math.min(14, quoteFontSize * 0.58)));
-
-  const sourceLineHeight = sourceFontSize + 3;
+  const padH = Math.round(clamp(size.width * 0.05, 8, 22));
+  const padV = Math.round(clamp(size.height * 0.07, 4, 18));
+  const innerW = Math.max(1, size.width - padH * 2 - 2);
+  const innerH = Math.max(1, size.height - padV * 2 - 2);
+  const sourceFont = Math.round(clamp(11 * scale, 9, 15));
+  const sourceBlock = sourceFont + 8;
+  // On a 1-row widget the quotation has priority over its attribution.
+  const showSource = !!source && innerH - sourceBlock >= 28;
+  const availableQuoteH = innerH - (showSource ? sourceBlock : 0);
+  const fit = fitText({
+    text: text || '«Господи, научи меня…»',
+    maxWidth: innerW,
+    maxHeight: availableQuoteH,
+    maxFont: clamp(Math.round(17 * scale), 12, 30),
+    minFont: 11,
+  });
 
   return (
     <OverlapWidget
       clickAction="OPEN_APP"
       accessibilityLabel="Цитата дня. Открыть Молитвослов"
       style={{
-        width: 'match_parent',
-        height: 'match_parent',
-
-        borderRadius: 18,
-        overflow: 'hidden',
-
-        backgroundColor: '#3D2416',
+        width: 'match_parent', height: 'match_parent',
+        borderRadius: 18, overflow: 'hidden', backgroundColor: '#3D2416',
       }}
     >
       <ImageWidget
-        image={QUOTE_BACKGROUND}
-        imageWidth={widgetWidth}
-        imageHeight={widgetHeight}
+        image={BACKGROUND}
+        imageWidth={size.width}
+        imageHeight={size.height}
         resizeMode="cover"
         radius={18}
       />
-
-      <FlexWidget
-        style={{
+      <FlexWidget style={{
+        width: 'match_parent', height: 'match_parent',
+        paddingHorizontal: padH, paddingVertical: padV,
+        backgroundColor: 'rgba(52, 30, 17, 0.42)',
+        borderRadius: 18, borderWidth: 1, borderColor: '#D7A45E40',
+      }}>
+        <FlexWidget style={{
           width: 'match_parent',
-          height: 'match_parent',
-
-          paddingHorizontal: horizontalPadding,
-          paddingTop: verticalPadding,
-          paddingBottom: verticalPadding,
-
-          backgroundColor: 'rgba(52, 30, 17, 0.42)',
-
-          borderRadius: 18,
-          borderWidth: 1,
-          borderColor: '#D7A45E40',
-        }}
-      >
-        <FlexWidget
-          style={{
-            flex: 1,
-            width: 'match_parent',
-            fontFamily: 'Ponomar-Regular',
-            justifyContent: 'center',
-          }}
-        >
+          height: availableQuoteH,
+          justifyContent: 'center',
+        }}>
           <TextWidget
-            text={text}
+            text={text || '«Господи, научи меня…»'}
             allowFontScaling={false}
+            maxLines={fit.maxLines}
             style={{
-              width: 'match_parent',
-              color: '#F8E7C5',
-              fontFamily: 'Ponomar-Regular',
-              fontSize: quoteFontSize,
-              lineHeight: quoteLineHeight,
-              fontWeight: '500',
+              width: innerW, color: '#F8E7C5',
+              fontFamily: FONT, fontSize: fit.fontSize, lineHeight: fit.lineHeight,
             }}
           />
         </FlexWidget>
-
-        {!!source && (
+        {showSource ? (
           <TextWidget
             text={source}
             allowFontScaling={false}
+            maxLines={1}
             style={{
-              marginTop: 4,
-              color: '#E5C58F',
-              fontFamily: 'Ponomar-Regular',
-              fontSize: sourceFontSize,
-              lineHeight: sourceLineHeight,
-
-              fontWeight: '500',
+              width: innerW, marginTop: 4,
+              color: '#E5C58F', fontFamily: FONT,
+              fontSize: sourceFont, lineHeight: sourceFont + 4,
             }}
           />
-        )}
+        ) : null}
       </FlexWidget>
     </OverlapWidget>
   );
