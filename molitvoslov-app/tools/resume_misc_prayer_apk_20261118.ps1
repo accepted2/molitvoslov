@@ -46,6 +46,14 @@ Assert-Exit 'Gratitude prayer location check'
 node .\tools\test_misc_prayer_compact_reader_title_20261118.js
 Assert-Exit 'Reader title test'
 
+Write-Host '[4b/5] Align SDK57 Android reminder sound regression checks'
+node .\tools\apply_reminder_sound_test_sdk57_20261118.js --dry-run
+Assert-Exit 'Reminders sound test patch dry run'
+node .\tools\apply_reminder_sound_test_sdk57_20261118.js
+Assert-Exit 'Reminders sound test patch'
+node .\tools\test_local_prayer_reminders_20261117.js
+Assert-Exit 'Reminders sound test'
+
 Write-Host '[5/5] Continue the original APK build and embedded search checks'
 if ([string]::IsNullOrWhiteSpace($OldSearchSeed)) {
     & .\tools\build_misc_prayer_title_trial_20261118.ps1 -PythonExe $PythonExe
