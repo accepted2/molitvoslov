@@ -5,7 +5,6 @@ import {
   Alert,
   Image,
   ImageBackground,
-  InteractionManager,
   ScrollView,
   Pressable,
   StyleSheet,
@@ -665,19 +664,31 @@ export const MenuScreen = ({navigation}) => {
     if (!calendarToday) return undefined;
 
     let cancelled = false;
-    let interaction = null;
+    let idleHandle = null;
+    let idleKind = null;
     const timer = setTimeout(() => {
-      interaction = InteractionManager.runAfterInteractions(() => {
-        if (!cancelled) {
-          updateCalendarWidget(calendarToday, calendarLanguage);
-        }
-      });
+      const refreshWhenIdle = () => {
+        if (!cancelled) updateCalendarWidget(calendarToday, calendarLanguage);
+      };
+      // React Native 0.86 deprecates InteractionManager. Schedule the widget
+      // refresh when the JS thread is idle without delaying navigation.
+      if (typeof globalThis.requestIdleCallback === 'function') {
+        idleKind = 'idle';
+        idleHandle = globalThis.requestIdleCallback(refreshWhenIdle, {timeout: 3000});
+      } else {
+        idleKind = 'timeout';
+        idleHandle = setTimeout(refreshWhenIdle, 0);
+      }
     }, 1200);
 
     return () => {
       cancelled = true;
       clearTimeout(timer);
-      interaction?.cancel?.();
+      if (idleKind === 'idle' && typeof globalThis.cancelIdleCallback === 'function') {
+        globalThis.cancelIdleCallback(idleHandle);
+      } else if (idleKind === 'timeout') {
+        clearTimeout(idleHandle);
+      }
     };
   }, [calendarToday, calendarLanguage, calendarLocalToday, updateCalendarWidget]);
 
