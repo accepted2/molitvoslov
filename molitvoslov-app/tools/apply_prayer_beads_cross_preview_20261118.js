@@ -15,11 +15,14 @@ if (!fs.existsSync(previewSource) ||
 function transform(original, patch) {
   let s = original.replace(/\r\n/g, '\n');
   for (const [i, change] of patch.changes.entries()) {
+    const afterHits = s.split(change.after).length - 1;
     const beforeHits = s.split(change.before).length - 1;
-    if (beforeHits === 1) {
+    // Some replacement blocks deliberately retain their old import/return
+    // as a prefix. Check the complete resulting block FIRST for idempotency.
+    if (afterHits === 1) {
+      continue;
+    } else if (afterHits === 0 && beforeHits === 1) {
       s = s.replace(change.before, change.after);
-    } else if (beforeHits === 0 && s.includes(change.after)) {
-      continue; // Already applied.
     } else {
       throw Error(patch.path + ': different local code at change #' + (i + 1) +
         '; source files remain untouched. Send this error for safe merging.');
