@@ -213,7 +213,11 @@ def extract_sections(html_source):
                 current = current.parent
             if not skip:
                 paragraph = clean(visible_text(n))
-                if paragraph and not re.fullmatch(r"(?:\d+:)?\d{1,2}:\d{2}|Аудио(?:\s*\d+)?:?", paragraph):
+                # Three-star lines are editorial separators on Azbyka, not
+                # prayer text. Keep inline asterisks and source footnotes.
+                is_separator = bool(re.fullmatch(r"(?:\*\s*){3,}", paragraph))
+                if paragraph and not is_separator and not re.fullmatch(
+                        r"(?:\d+:)?\d{1,2}:\d{2}|Аудио(?:\s*\d+)?:?", paragraph):
                     events.append(("text", n.tag, paragraph))
     named = []
     current = None
