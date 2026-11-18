@@ -54,21 +54,65 @@ const specs=[
  {
   file:'src/components/navigation/FixedSectionHeader.js',
   change(source){
-   let out=replaceOne(source,
-     '  titleTextStyle = null,\n',
-     '  titleTextStyle = null,\n  singleLineTitle = false, // '+tag+'\n',
-     this.file);
-   out=replaceOne(out,
-     'const extraTitleHeight = showTitle ? Math.max(0, titleLines - 1)',
-     'const extraTitleHeight = showTitle && !singleLineTitle ? Math.max(0, titleLines - 1)',
-     this.file);
-   const anchor='                <Text\n                  style={[styles.title, styles.titleFlex,';
-   out=replaceOne(out,anchor,
-     '                <Text\n                  numberOfLines={singleLineTitle ? 1 : undefined}\n'+
-     '                  ellipsizeMode="tail"\n'+
-     '                  accessibilityLabel={title}\n'+
-     '                  style={[styles.title, styles.titleFlex,',
-     this.file);
+   // Local versions may already have titleHyphenation or other changes.
+   // Keep the entire existing header implementation, including its title
+   // height formula: only gate it for the new explicit opt-in.
+   const headerStart=source.indexOf('export const FixedSectionHeader');
+   const headerOpen=source.indexOf('({',headerStart);
+   const headerEnd=source.indexOf('}) =>',headerOpen);
+   if(headerStart<0 || headerOpen<0 || headerEnd<0)
+      throw Error(this.file+': cannot locate component props. NO FILES MODIFIED.');
+   let out=source;
+   const props=out.slice(headerOpen,headerEnd);
+   if(!/\bsingleLineTitle\s*=/.test(props)){
+     const matches=[...props.matchAll(/\btitleTextStyle\s*=\s*null\s*,/g)];
+     if(matches.length!==1)
+       throw Error(this.file+': cannot locate one titleTextStyle prop. NO FILES MODIFIED.');
+     out=out.slice(0,headerOpen)+props.replace(matches[0][0],
+       matches[0][0]+'\n  singleLineTitle = false, // '+tag)+out.slice(headerEnd);
+   }
+   // Replace only the declaration's expression. It can differ in the local
+   // reader since header spacing has undergone several independent edits.
+   const heightPattern=/(\bconst\s+extraTitleHeight\s*=\s*)([\s\S]{1,900}?)(;)/g;
+   const heights=[...out.matchAll(heightPattern)];
+   if(heights.length!==1){
+     console.error('Expected one extraTitleHeight declaration, found '+heights.length);
+     console.error(out.split('\n').filter(l=>l.includes('extraTitleHeight')).slice(0,6).join('\n'));
+     throw Error(this.file+': cannot identify header height calculation. NO FILES MODIFIED.');
+   }
+   const height=heights[0];
+   if(!height[2].includes('singleLineTitle')){
+     const newHeight='singleLineTitle ? 0 : ('+height[2].trim()+')';
+     out=out.slice(0,height.index)+height[1]+newHeight+height[3]+
+       out.slice(height.index+height[0].length);
+   }
+   // Find the one title text belonging to the reading header; other Text
+   // components (language dropdown, menu, back arrow) remain untouched.
+   const stylePattern=/\bstyle\s*=\s*\{\[\s*styles\.title\s*,\s*styles\.titleFlex\b/g;
+   const styles=[...out.matchAll(stylePattern)];
+   if(styles.length!==1){
+      throw Error(this.file+': cannot identify unique reading-title Text. NO FILES MODIFIED.');
+   }
+   const styleIndex=styles[0].index;
+   const start=out.lastIndexOf('<Text',styleIndex);
+   if(start<0 || styleIndex-start>700 || out.slice(start,styleIndex).includes('>') ||
+       out.slice(start,styleIndex).includes('</Text')){
+     throw Error(this.file+': reading-title Text structure differs. NO FILES MODIFIED.');
+   }
+   let tagOpen=out.slice(start,styleIndex);
+   if(!/\bnumberOfLines\s*=/.test(tagOpen)){
+      tagOpen=tagOpen.replace('<Text','<Text\n                  numberOfLines={singleLineTitle ? 1 : undefined}');
+   }else if(!tagOpen.includes('singleLineTitle')){
+      const linePattern=/\bnumberOfLines\s*=\s*\{([^{}]+)\}/;
+      const m=tagOpen.match(linePattern);
+      if(!m)throw Error(this.file+': existing numberOfLines cannot be safely extended. NO FILES MODIFIED.');
+      tagOpen=tagOpen.replace(m[0],'numberOfLines={singleLineTitle ? 1 : ('+m[1]+')}');
+   }
+   if(!/\bellipsizeMode\s*=/.test(tagOpen))
+      tagOpen=tagOpen.replace('<Text','<Text\n                  ellipsizeMode="tail"');
+   if(!/\baccessibilityLabel\s*=/.test(tagOpen))
+      tagOpen=tagOpen.replace('<Text','<Text\n                  accessibilityLabel={title}');
+   out=out.slice(0,start)+tagOpen+out.slice(styleIndex);
    return out;
   }
  },
