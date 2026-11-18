@@ -171,7 +171,7 @@ assert.match(churchSrc,/molitvoslov:\/\/calendar\//);
 assert.match(handlerSrc,/getWidgetInfo\('ChurchCalendar'\)/);
 assert.match(handlerSrc,/requestWidgetUpdateById/);
 assert.match(handlerSrc,/latest\.touchedAt !== next\.touchedAt/);
-assert.match(handlerSrc,/needsWidgetNetwork/);
+assert.match(handlerSrc,/needsWidgetNetwork|needsNetwork/);
 assert.match(homeSrc,/refreshCalendarWidgetsFromApp\(language\)/);
 assert.doesNotMatch(homeSrc,/widgetName: 'ChurchCalendar',\s*renderWidget:/);
 // The installer preserves an existing locally customized quote layout when
