@@ -51,8 +51,12 @@ node .\tools\apply_reminder_sound_test_sdk57_20261118.js --dry-run
 Assert-Exit 'Reminders sound test patch dry run'
 node .\tools\apply_reminder_sound_test_sdk57_20261118.js
 Assert-Exit 'Reminders sound test patch'
+node .\tools\apply_reminder_schedule_version_test_20261118.js --dry-run
+Assert-Exit 'Reminders schedule version test patch dry run'
+node .\tools\apply_reminder_schedule_version_test_20261118.js
+Assert-Exit 'Reminders schedule version test patch'
 node .\tools\test_local_prayer_reminders_20261117.js
-Assert-Exit 'Reminders sound test'
+Assert-Exit 'Reminders sound and schedule version test'
 
 Write-Host '[5/5] Continue the original APK build and embedded search checks'
 if ([string]::IsNullOrWhiteSpace($OldSearchSeed)) {
