@@ -98,6 +98,11 @@ const reconcileLocalQuote = original => {
 // This does not replace the JSX and retains all local calendar UI additions.
 const reconcileLocalCalendar = original => {
   let text = original.replace(/\r\n/g, '\n');
+  if (text.includes('const PreservedChurchCalendarWidget =') &&
+      text.includes('export const ChurchCalendarWidget = props => {')) {
+    return originalStyle(original,
+      text.replace(/(['"])Ponomar(?:-Regular)?\1/gi, "'sans-serif'"));
+  }
   const exported = /\bexport\s+const\s+ChurchCalendarWidget\s*=/g;
   const matches = [...text.matchAll(exported)];
   if (matches.length !== 1 || !/\bdisplayDate\b/.test(text) ||
