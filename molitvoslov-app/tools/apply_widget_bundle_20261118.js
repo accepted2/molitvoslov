@@ -132,6 +132,12 @@ try{
     }
    }
   }
+  // Even a clean 3-way merge may retain a custom Ponomar declaration.
+  // Normalize all explicit widget font literals to Android system font.
+  if (name === 'src/widgets/QuoteOfDayWidget.js' ||
+      name === 'src/widgets/ChurchCalendarWidget.js') {
+    updated=updated.replace(/(['"])Ponomar(?:-Regular)?\1/gi, "'sans-serif'");
+  }
   files.push({name,file,exists,original:local,updated});
  }
  const pending=files.filter(x=>!x.exists||x.updated!==x.original);
