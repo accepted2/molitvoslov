@@ -48,8 +48,9 @@ def canonical_version(payload):
 
 
 def prayer_bodies(text):
-    return [normalized(text.get(field) or "") for field in
-            ("translation", "content", "traditional_content", "translation_uk")]
+    # Image is Russian. A Church-only duplicate cannot stand in for the
+    # missing Russian tab, so reuse only an actual Russian text variant.
+    return [normalized(text.get("translation") or "")]
 
 
 def load_prayer(source=SOURCE):
