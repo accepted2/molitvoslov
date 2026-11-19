@@ -154,7 +154,4 @@ class Command(BaseCommand):
 
 def matches_text(embedded, body, index):
     full = index.get(embedded.get("slug"), embedded)
-    return normalize(body) in {
-        normalize(full.get(key) or "")
-        for key in ("translation", "content", "traditional_content", "translation_uk")
-    }
+    return normalize(body) == normalize(full.get("translation") or "")
