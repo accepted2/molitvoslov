@@ -25,10 +25,7 @@ def verify():
     body = normalized(prayer["text"])
     candidates = [
         (slug, row) for slug, row in catalog.items()
-        if body in [
-            normalized(row.get(k) or "") for k in
-            ("translation", "content", "traditional_content", "translation_uk")
-        ]
+        if body == normalized(row.get("translation") or "")
     ]
     if not candidates:
         raise RuntimeError("Exact full prayer is missing from offline Text records")
