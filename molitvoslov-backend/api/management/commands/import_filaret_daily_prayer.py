@@ -34,10 +34,8 @@ def normalize(value):
 
 def matches(prayer, body):
     value = normalize(body)
-    return value in {
-        normalize(getattr(prayer, field) or "")
-        for field in ("translation", "content", "traditional_content", "translation_uk")
-    }
+    # Preserve the Russian-language tab when reusing existing texts.
+    return value == normalize(getattr(prayer, "translation") or "")
 
 
 class Command(BaseCommand):
