@@ -221,7 +221,7 @@ def install(public_path=PUBLIC, source_path=SOURCE, dry_run=False):
     checked = json.loads(new.decode("utf-8-sig"))
     if checked.get("content_version") != canonical_version(checked):
         raise RuntimeError("New catalog version failed verification; no files modified.")
-    if normalized(checked["texts"][result["slug"]].get("translation", "")) != normalized(manifest["text"]):
+    if normalized(manifest["text"]) not in prayer_bodies(checked["texts"][result["slug"]]):
         raise RuntimeError("The prayer text changed in serialization; no files modified.")
 
     BACKUPS.mkdir(parents=True, exist_ok=True)
