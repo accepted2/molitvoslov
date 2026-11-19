@@ -58,7 +58,7 @@ def load_prayer(source=SOURCE):
             obj.get("category_slug") != "raznye-molitvy" or
             obj.get("language") != "ru" or
             obj.get("slug") != "ezhednevnaya-molitva-svyatitelya-filareta-drozdova" or
-            obj.get("title") != "Ежедневная молитва святителя Филарета (Дроздова)" or
+            obj.get("title") != "Ежедневная молитва Святителя Филарета (Дроздова)" or
             not isinstance(obj.get("text"), str) or len(obj["text"]) < 450 or
             not obj["text"].startswith("Господи, не знаю чего мне просить у Тебя.") or
             not obj["text"].endswith("Сам во мне молись! Аминь.")):
