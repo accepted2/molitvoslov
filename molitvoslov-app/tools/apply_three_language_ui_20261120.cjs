@@ -94,8 +94,8 @@ function patch(source,changes,relative){
   let output=source;
   changes.forEach((h,index)=>{
     if(h.old===h.next)return;
-    if(count(output,h.old)===1)output=output.replace(h.old,h.next);
-    else if(count(output,h.next)===1)return;
+    if(count(output,h.next)===1)return; // already applied
+    else if(count(output,h.old)===1)output=output.replace(h.old,h.next);
     else if(h.coreOld&&count(output,h.coreOld)===1)
       output=output.replace(h.coreOld,h.coreNew);
     else throw Error(relative+' conflict at change '+(index+1)+'/'+changes.length+
