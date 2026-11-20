@@ -22,8 +22,25 @@ const code=extract('const normalizedAkathistTextWithIndex = value =>','const HIG
 const helpers=new Function(code+
  '\nreturn {ranges:collectAkathistRefrainRanges,breaks:collectAkathistJoyBreaks};')();
 const normalize=value=>{
- const source=String(value||'').replace(/\r\n/g,'\n').replace(/\u00ad|\u200b/g,'');
- return source.split('\n').map(s=>s.trim()).filter(Boolean).join('\n');
+ let result=String(value||'').replace(/\r\n/g,'\n').replace(/\u00ad|\u200b/g,'');
+ const notes=result.match(/(?:^|\n)\s*Примечани(?:е|я)\s*(?=\n|$)/iu);
+ if(notes&&notes.index!==undefined)result=result.slice(0,notes.index);
+ const lines=result.split('\n'),normalized=[];
+ for(let i=0;i<lines.length;i++){
+  const current=lines[i].trim();
+  if(!current)continue;
+  const letters=current.normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'').replace(/[^А-Яа-яЁё]/g,'');
+  const next=lines[i+1]?.trim()||'';
+  if(letters.length>0&&letters.length<=2&&next&&
+    /^[А-Яа-яЁё\u0300-\u036f]/u.test(next)){
+    normalized.push(current+next);
+    i++;
+  }else{
+    normalized.push(current);
+  }
+ }
+ return normalized.join('\n').replace(/\n{2,}/g,'\n').trim();
 };
 const akathists=content.akathists?.by_slug||{};
 const entries=Object.entries(akathists);
@@ -80,7 +97,7 @@ for(const [slug,akathist] of entries){
    // A known response word on an unsafe boundary is usually ordinary
    // prose or quotation. Log only if it occurs after ":" or ";" yet
    // the source was NOT colored, for a later editorial pass.
-   const possible=/(?:^|[:;]\s*)((?:Радуйтеся|Радуйся|Радꙋйсѧ|Іисусе|Иисусе|Исусе|Прииди|Приди|Прийди)\b)/gimu;
+   const possible=/(?:^|[:;]\s*)((?:Радуйтеся|Радуйся|Радꙋйсѧ|Іисусе|Иисусе|Исусе|Прииди|Приди|Прийди))(?=[\s,;:.!?…]|$)/gimu;
    for(const match of value.matchAll(possible)){
     const start=(match.index||0)+match[0].lastIndexOf(match[1]);
     if(ranges.some(range=>range.start===start))continue;
