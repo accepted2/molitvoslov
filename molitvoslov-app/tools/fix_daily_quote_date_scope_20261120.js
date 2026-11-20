@@ -58,16 +58,16 @@ for (const required of ['getCurrentContent','curated','longFathers','selectExten
     'Missing imported dependency ' + required + '; local source was NOT changed');
 }
 
-const exports = ast.program.body.filter(node =>
+const quoteExports = ast.program.body.filter(node =>
   node.type === 'ExportNamedDeclaration' &&
   ((node.declaration?.type === 'VariableDeclaration' &&
      node.declaration.declarations.some(item => item.id?.name === 'getDailyQuote')) ||
    (node.declaration?.type === 'FunctionDeclaration' &&
      node.declaration.id?.name === 'getDailyQuote')));
-assert.equal(exports.length, 1,
+assert.equal(quoteExports.length, 1,
   'Expected exactly one exported getDailyQuote; local source was NOT changed');
 
-const target = exports[0];
+const target = quoteExports[0];
 const newSource =
   source.slice(0, target.start) + replacement + source.slice(target.end);
 parse(newSource, {sourceType: 'module'});
