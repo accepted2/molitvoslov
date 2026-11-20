@@ -1282,9 +1282,9 @@ export const MenuScreen = ({navigation}) => {
                             ? styles.heroQuoteTextMedium
                             : null,
                       ]}
-                      numberOfLines={7}
+                      numberOfLines={9}
                       adjustsFontSizeToFit
-                      minimumFontScale={0.78}
+                      minimumFontScale={0.72}
                       ellipsizeMode="tail"
                     >
                       {dailyQuoteText}
@@ -1770,7 +1770,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   hero: {
-    minHeight: 330,
+    minHeight: 360,
     justifyContent: 'flex-start',
     paddingHorizontal: 18,
     paddingBottom: 22,
@@ -2922,7 +2922,7 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
     fontWeight: '500',
     fontSize: 17,
-    lineHeight: 23,
+    lineHeight: 22,
 
     textShadowColor: 'rgba(28, 15, 8, 0.80)',
     textShadowOffset: {
