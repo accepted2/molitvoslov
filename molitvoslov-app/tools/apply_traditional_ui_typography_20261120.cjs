@@ -166,6 +166,111 @@ function patchFixedHeaderDropdown(source) {
     return result;
   },'language dropdown');
 }
+
+// Semantic fallbacks for the shared header. Its JSX and height calculations
+// have local, unrelated changes that must NOT be replaced with a remote copy.
+function patchHeaderTypography(source, index) {
+  const rel='src/components/navigation/FixedSectionHeader.js';
+  function substitute(rx, transform, label) {
+    const matches=[...source.matchAll(rx)];
+    if(matches.length!==1)
+      throw Error(rel+': '+label+' expected one match, found '+matches.length+
+        '. Local changes preserved. NO FILES MODIFIED.');
+    const m=matches[0];
+    return source.slice(0,m.index)+transform(m)+source.slice(m.index+m[0].length);
+  }
+  function alterHeight(declName,delta,test) {
+    const rx=new RegExp('(^[ \\t]*const[ \\t]+'+declName+'[ \\t]*=[ \\t]*)([\\s\\S]*?)(;[ \\t]*$)','gm');
+    return substitute(rx,m=>{
+      if(test(m[2]))return m[0];
+      return m[1]+'('+m[2].trim()+') + '+delta+m[3];
+    },declName);
+  }
+  function patchLabelStyle(name,additional,oldLabel) {
+    const markerRx=new RegExp('\\bstyles\\.'+name+'\\b','gu');
+    const hits=[...source.matchAll(markerRx)];
+    if(hits.length!==1)
+      throw Error(rel+': '+name+' expected once, found '+hits.length+
+        '. NO FILES MODIFIED.');
+    const at=hits[0].index;
+    const begin=source.lastIndexOf('<Text',at);
+    const end=source.indexOf('</Text>',at);
+    if(begin<0||end<0||begin>at)
+      throw Error(rel+': '+name+' JSX changed. NO FILES MODIFIED.');
+    const chunk=source.slice(begin,end+7);
+    const match=chunk.match(/style\s*=\s*\{\[([\s\S]*?)\]\}/u);
+    if(!match||!match[1].includes('styles.'+name))
+      throw Error(rel+': '+name+' style not an array. NO FILES MODIFIED.');
+    let updated=chunk;
+    if(!match[1].includes('traditionalUiTextStyle(')){
+      let contents=match[1];
+      const oldToken=new RegExp('\\b'+oldLabel+'\\b','gu');
+      if(oldLabel && oldToken.test(contents))
+        contents=contents.replace(oldToken,additional);
+      else contents=contents.replace(/\s*$/u,'')+
+        (contents.trimEnd().endsWith(',')?' ':', ')+additional;
+      updated=chunk.replace(match[0],match[0].replace(match[1],contents));
+    }
+    return source.slice(0,begin)+updated+source.slice(end+7);
+  }
+  switch(index) {
+    case 0:
+      if(source.includes("import {traditionalUiTextStyle}"))return source;
+      return substitute(/(^[ \t]*import \{useInterfaceScale\} from ['"][^'"]+['"];[ \t]*$)/gm,
+        m=>m[0]+"\nimport {traditionalUiTextStyle} from '../../services/traditionalUiTypography';",
+        'typography import');
+    case 1: {
+      if(source.includes("const traditionalStyle = traditionalUiTextStyle("))return source;
+      return substitute(/(^[ \t]*const traditionalStyle\s*=\s*)([\s\S]*?)(;[ \t]*$)/gm,m=>{
+        if(!m[2].includes('Ponomar')&&!m[2].includes('csl_traditional'))
+          throw Error(rel+': unfamiliar traditionalStyle. NO FILES MODIFIED.');
+        const prefix=m[1].match(/^[ \t]*/)[0];
+        return prefix+"const traditional = language === 'csl_traditional';\n"+
+          m[1]+'traditionalUiTextStyle(language, (compactReading ? 17 : 21) * uiScale, '+
+          '(compactReading ? 20 : 25) * uiScale)'+m[3];
+      },'traditionalStyle declaration');
+    }
+    case 2: {
+      // Preserve the user's custom line-height formula, merely add extra room
+      // for larger traditional glyphs on multi-line titles.
+      return alterHeight('extraTitleHeight',
+        "(showTitle ? Math.max(0, titleLines - 1) * Math.max(0, "+
+        "(traditionalStyle?.lineHeight || 0) - Math.ceil((compactReading ? 20 : 25) * uiScale)) : 0)",
+        expr=>expr.includes('traditionalStyle?.lineHeight'));
+    }
+    case 3:
+      return alterHeight('headerHeight',"(traditional ? Math.ceil(10 * uiScale) : 0)",
+        expr=>expr.includes("traditional ? Math.ceil(10 * uiScale)"));
+    case 4: {
+      const rx=/(compactReading\s*&&\s*\{\s*height\s*:\s*)([^}]+)(\})/gu;
+      const hits=[...source.matchAll(rx)];
+      if(!hits.length) {
+        // A custom responsive header may no longer need an explicit title height.
+        // headerHeight above still reserves the extra space.
+        return source;
+      }
+      if(hits.length!==1)
+        throw Error(rel+': ambiguous compact reading height. NO FILES MODIFIED.');
+      const m=hits[0];
+      if(m[2].includes('traditional'))return source;
+      return source.slice(0,m.index)+m[1]+'('+m[2].trim()+') + '+
+        '(traditional ? Math.ceil(10 * uiScale) : 0)'+m[3]+
+        source.slice(m.index+m[0].length);
+    }
+    case 5:
+      return patchLabelStyle('languagePillText',
+        'traditionalUiTextStyle(language, 10 * uiScale, 14 * uiScale)',null);
+    case 6:
+      return patchLabelStyle('headerActionText',
+        'traditionalUiTextStyle(language, 11 * uiScale, 15 * uiScale)','traditionalStyle');
+    case 7:
+      return patchLabelStyle('languageDropdownText',
+        'traditionalUiTextStyle(language, 13 * uiScale, 19 * uiScale)','traditionalStyle');
+    default:
+      throw Error(rel+': unexpected edit number '+index+'. NO FILES MODIFIED.');
+  }
+}
+
 function patch(source,changes,relative){
   let output=source;
   changes.forEach((h,index)=>{
@@ -177,6 +282,24 @@ function patch(source,changes,relative){
     else if(relative==='src/screens/HoursReadingScreen.js' &&
       !h.coreOld && h.coreNew.trim()==='titleTextStyle={titleStyle}')
       output=insertHoursTitleTypography(output);
+    else if(relative==='src/components/navigation/FixedSectionHeader.js' &&
+      h.coreNew.includes('traditionalUiTextStyle'))
+      output=patchHeaderTypography(output,index);
+    else if(relative==='src/components/navigation/FixedSectionHeader.js' &&
+      h.coreNew.includes('const extraTitleHeight'))
+      output=patchHeaderTypography(output,index);
+    else if(relative==='src/components/navigation/FixedSectionHeader.js' &&
+      h.coreNew.includes('const headerHeight'))
+      output=patchHeaderTypography(output,index);
+    else if(relative==='src/components/navigation/FixedSectionHeader.js' &&
+      h.coreNew.includes('compactReading && {height:'))
+      output=patchHeaderTypography(output,index);
+    else if(relative==='src/components/navigation/FixedSectionHeader.js' &&
+      h.coreNew.includes("import {traditionalUiTextStyle}"))
+      output=patchHeaderTypography(output,index);
+    else if(relative==='src/components/navigation/FixedSectionHeader.js' &&
+      h.coreNew.includes('const traditionalStyle'))
+      output=patchHeaderTypography(output,index);
     else if(relative==='src/components/navigation/FixedSectionHeader.js' &&
       h.coreNew.includes('labelForReadingMode(selectedLanguage)'))
       output=patchFixedHeaderLanguagePill(output);
