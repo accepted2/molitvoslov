@@ -59,7 +59,10 @@ export const INTERFACE_COMPLETION = {
         "scripture": "Писание",
         "calendar_stories": "Жития и истории",
         "calendar_hymns": "Тропари и кондаки"
-      }
+      },
+      "searching": "Ищем…",
+      "stop": "Остановить поиск",
+      "paused": "Поиск остановлен"
     },
     "notifications": {
       "title": "Уведомления",
@@ -231,7 +234,10 @@ export const INTERFACE_COMPLETION = {
         "scripture": "Писання",
         "calendar_stories": "Житія та історії",
         "calendar_hymns": "Тропарі та кондаки"
-      }
+      },
+      "searching": "Шукаємо…",
+      "stop": "Зупинити пошук",
+      "paused": "Пошук зупинено"
     },
     "notifications": {
       "title": "Сповіщення",
@@ -403,7 +409,10 @@ export const INTERFACE_COMPLETION = {
         "scripture": "Писа́нїе",
         "calendar_stories": "Житїѧ̀ и҆ и҆сто́рїи",
         "calendar_hymns": "Тропа́ри и҆ кондакѝ"
-      }
+      },
+      "searching": "По́искъ…",
+      "stop": "Ѿмѣни́ти по́искъ",
+      "paused": "По́искъ ѡ҆становле́нъ"
     },
     "notifications": {
       "title": "И҆звѣще́нїѧ",
