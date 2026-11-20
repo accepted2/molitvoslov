@@ -16,6 +16,7 @@ import {savedTextFontFamily} from '../services/savedTextTypography';
 import {shareSavedItem} from '../services/contentSharing';
 import {ContentContextMenu} from '../components/share/ContentContextMenu';
 import {showShareFeedback} from '../services/shareFeedback';
+import {openDailyQuoteSource} from '../services/dailyQuoteNavigation';
 
 import {colors, radius, spacing} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
@@ -274,7 +275,9 @@ export const FavoritesScreen = ({route, navigation}) => {
     }
 
     if (item.source_type === 'daily_quote') {
-      navigation.navigate('Menu');
+      // Return to the actual Bible passage, not to the Home quote card.
+      // Patristic sayings without an in-app book have no fake destination.
+      openDailyQuoteSource(navigation, {...metadata, target: metadata.quote_target});
       return;
     }
 
