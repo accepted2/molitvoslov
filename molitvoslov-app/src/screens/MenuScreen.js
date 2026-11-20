@@ -220,6 +220,8 @@ const BellGlyph = () => (
 
 const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress, disabled=false}) => {
   const uiScale = useInterfaceScale();
+  const {language} = useLanguage();
+  const traditionalStyle = language === 'csl_traditional' ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
   return (
   <Pressable
     onPress={onPress}
@@ -271,12 +273,12 @@ const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress, 
     </View>
 
     <View style={styles.libraryText}>
-      <Text style={[styles.libraryTitle, {fontSize: 17 * uiScale, lineHeight: 20 * uiScale}]} numberOfLines={2}>
+      <Text style={[styles.libraryTitle, {fontSize: 17 * uiScale, lineHeight: 20 * uiScale}, traditionalStyle]} numberOfLines={2}>
         {title}
       </Text>
 
       {!!subtitle && (
-        <Text style={[styles.librarySubtitle, {fontSize: 11 * uiScale, lineHeight: 14 * uiScale}]} numberOfLines={2}>
+        <Text style={[styles.librarySubtitle, {fontSize: 11 * uiScale, lineHeight: 14 * uiScale}, traditionalStyle]} numberOfLines={2}>
           {subtitle}
         </Text>
       )}
