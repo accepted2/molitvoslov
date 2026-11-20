@@ -169,9 +169,6 @@ export const PrayerLearningScreen = ({navigation}) => {
                               <Text style={[styles.letterUpper, {color: ink}]}>
                                 {item.upper}
                               </Text>
-                              <Text style={[styles.letterLower, {color: ink}]}>
-                                {item.lower}
-                              </Text>
                             </Pressable>
                           ))}
                         </View>
@@ -274,7 +271,7 @@ const styles = StyleSheet.create({
   },
   grid: {flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP, width: '100%'},
   letter: {
-    height: 82, alignItems: 'center', justifyContent: 'center',
+    height: 69, alignItems: 'center', justifyContent: 'center',
     borderRadius: 8, borderWidth: 1,
   },
   letterUpper: {
