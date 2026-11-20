@@ -30,6 +30,7 @@ import {resolveReaderAppearance} from '../services/scopedReaderAppearance';
 import {queueAccountPreferencePatch, syncAccountPreferences} from '../services/accountPreferencesSync';
 import {subscribeReadingSettings} from '../services/readerPreferences';
 import {useInterfaceScale} from '../context/InterfaceScaleContext';
+import {traditionalUiTextStyle} from '../services/traditionalUiTypography';
 
 const MODE_CHOICES = [
   {value: READER_LANGUAGE_MODES.CHURCH, labelKey: 'modeChurch'},
@@ -86,13 +87,13 @@ export const AccountScreen = ({navigation}) => {
   };
 
   const {language, setLanguage, t} = useLanguage();
-  const cslTypeface = language === 'csl_traditional'
-    ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
+  const traditional = language === 'csl_traditional';
   const [readingSettings, setReadingSettings] = useState(DEFAULT_READING_SETTINGS);
   const readingSettingsRef = useRef(DEFAULT_READING_SETTINGS);
   const [showColorPicker, setShowColorPicker] = useState(null);
   const [fontSliderWidth, setFontSliderWidth] = useState(200);
   const uiScale = useInterfaceScale();
+  const cslText = (size, lineHeight) => traditionalUiTextStyle(language, size * uiScale, (lineHeight || size * 1.45) * uiScale);
   useEffect(() => {
     let active = true;
     const apply = settings => {
@@ -379,7 +380,7 @@ export const AccountScreen = ({navigation}) => {
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.screen}>
         <ScrollView style={{flex: 1}} contentContainerStyle={[styles.content, {flex: undefined, flexGrow: 1, paddingBottom: 110}]}>
-          <Text style={[styles.title, {fontSize:28*uiScale},cslTypeface]}>{t('account.title')}</Text>
+          <Text style={[styles.title, {fontSize:28*uiScale},cslText(28,36)]}>{t('account.title')}</Text>
 
           {loading ? (
             <View style={styles.card}>
@@ -446,23 +447,23 @@ export const AccountScreen = ({navigation}) => {
             </View>
           )}
           <View style={[styles.card, {marginTop: 16, gap: 12}]}>
-            <Text style={[styles.sectionTitle, {fontSize:20*uiScale},cslTypeface]}>{t('accountSettings.settings')}</Text>
-            <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslTypeface]}>{t('accountSettings.interfaceLanguage')}</Text>
+            <Text style={[styles.sectionTitle, {fontSize:20*uiScale},cslText(20,28)]}>{t('accountSettings.settings')}</Text>
+            <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslText(15,22)]}>{t('accountSettings.interfaceLanguage')}</Text>
             <View style={styles.optionRow}>
               {INTERFACE_LANG_CHOICES.map((option) => (
                 <Pressable key={option.value} onPress={() => setLanguage(option.value)} style={[styles.settingOption, language === option.value && styles.optionSelected]}>
-                  <Text style={[styles.settingText, {fontSize:14*uiScale}, cslTypeface, option.value === 'csl_traditional' && {fontFamily:'Ponomar',fontWeight:'400'}]}>{option.label}</Text>
+                  <Text style={[styles.settingText, {fontSize:14*uiScale}, cslText(14,21), option.value === 'csl_traditional' && traditionalUiTextStyle('csl_traditional', 14 * uiScale, 21 * uiScale)]}>{option.label}</Text>
                 </Pressable>
               ))}
             </View>
-            <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslTypeface]}>{t('accountSettings.readerLanguage')}</Text>
+            <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslText(15,22)]}>{t('accountSettings.readerLanguage')}</Text>
             {MODE_CHOICES.map((option) => (
               <Pressable key={option.value} onPress={() => changeReadingSettings({defaultMode: option.value})} style={[styles.settingOption, readingSettings.defaultMode === option.value && styles.optionSelected]}>
-                <Text style={[styles.settingText, {fontSize:14*uiScale}, cslTypeface]}>{readingSettings.defaultMode === option.value ? '●  ' : '○  '}{t('accountSettings.'+option.labelKey)}</Text>
+                <Text style={[styles.settingText, {fontSize:14*uiScale}, cslText(14,21)]}>{readingSettings.defaultMode === option.value ? '●  ' : '○  '}{t('accountSettings.'+option.labelKey)}</Text>
               </Pressable>
             ))}
-            <Text style={[styles.settingHint, {fontSize:12*uiScale,lineHeight:19*uiScale},cslTypeface]}>{t('accountSettings.readerLanguageHint')}</Text>
-            <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslTypeface]}>{t('accountSettings.interfaceSize')}</Text>
+            <Text style={[styles.settingHint, {fontSize:12*uiScale,lineHeight:19*uiScale},cslText(12,19)]}>{t('accountSettings.readerLanguageHint')}</Text>
+            <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslText(15,22)]}>{t('accountSettings.interfaceSize')}</Text>
             <View style={styles.optionRow}>
               {[1, 1.1, 1.25].map(scale => (
                 <Pressable
@@ -476,11 +477,11 @@ export const AccountScreen = ({navigation}) => {
                 </Pressable>
               ))}
             </View>
-            <Text style={[styles.settingHint, {fontSize:12*uiScale,lineHeight:19*uiScale},cslTypeface]}>{t('accountSettings.interfaceSizeHint')}</Text>
-            <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslTypeface]}>{t('accountSettings.prayerFontSize',{size:readingSettings.fontSize})}</Text>
+            <Text style={[styles.settingHint, {fontSize:12*uiScale,lineHeight:19*uiScale},cslText(12,19)]}>{t('accountSettings.interfaceSizeHint')}</Text>
+            <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslText(15,22)]}>{t('accountSettings.prayerFontSize',{size:readingSettings.fontSize})}</Text>
             <View style={styles.fontSizeRow}>
               <Pressable style={styles.settingOption} onPress={() => changeReadingSettings({fontSize: Math.max(14, readingSettingsRef.current.fontSize - 1)})}>
-                <Text style={[styles.settingText, {fontSize:14*uiScale}, cslTypeface]}>A−</Text>
+                <Text style={[styles.settingText, {fontSize:14*uiScale}, cslText(14,21)]}>A−</Text>
               </Pressable>
               <View
                 style={styles.fontSlider}
@@ -503,10 +504,10 @@ export const AccountScreen = ({navigation}) => {
                 <View pointerEvents="none" style={[styles.fontSliderThumb, {left: (readingSettings.fontSize - 14) / 14 * 100 + '%'}]}/>
               </View>
               <Pressable style={styles.settingOption} onPress={() => changeReadingSettings({fontSize: Math.min(28, readingSettingsRef.current.fontSize + 1)})}>
-                <Text style={[styles.settingText, {fontSize:14*uiScale}, cslTypeface]}>A+</Text>
+                <Text style={[styles.settingText, {fontSize:14*uiScale}, cslText(14,21)]}>A+</Text>
               </Pressable>
             </View>
-            <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslTypeface]}>{t('accountSettings.theme')}</Text>
+            <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslText(15,22)]}>{t('accountSettings.theme')}</Text>
             <View style={styles.palettePresetRow}>
               {PALETTES.filter(option => option.value !== 'custom').map(option => (
                 <Pressable key={option.value} accessibilityRole="button"
@@ -516,7 +517,7 @@ export const AccountScreen = ({navigation}) => {
                 >
                   <View style={[styles.paletteCircle, {backgroundColor: option.color},
                     readingSettings.palette === option.value && styles.paletteSelected]}/>
-                  <Text style={[styles.paletteName,cslTypeface]}>{t('accountSettings.'+option.labelKey)}</Text>
+                  <Text style={[styles.paletteName,cslText(11,16)]}>{t('accountSettings.'+option.labelKey)}</Text>
                 </Pressable>
               ))}
             </View>
@@ -531,7 +532,7 @@ export const AccountScreen = ({navigation}) => {
                   <View style={[styles.colorChip, {backgroundColor: option.key === 'customBackground'
                     ? resolveReaderAppearance(readingSettings).background
                     : resolveReaderAppearance(readingSettings).text}]}/>
-                  <Text style={[styles.settingText, {fontSize:14*uiScale}, cslTypeface]}>{t('accountSettings.'+option.labelKey)}</Text>
+                  <Text style={[styles.settingText, {fontSize:14*uiScale}, cslText(14,21)]}>{t('accountSettings.'+option.labelKey)}</Text>
                 </Pressable>
               ))}
             </View>
@@ -568,7 +569,7 @@ export const AccountScreen = ({navigation}) => {
                 queueAccountPreferencePatch({settings: {...reset, language: 'ru'}}).catch(console.warn);
               }}]
             )}>
-              <Text style={[styles.settingText, {fontSize:14*uiScale}, cslTypeface]}>{t('accountSettings.reset')}</Text>
+              <Text style={[styles.settingText, {fontSize:14*uiScale}, cslText(14,21)]}>{t('accountSettings.reset')}</Text>
             </Pressable>
           </View>
         <View style={{marginTop:16,padding:14,borderRadius:12,
@@ -675,7 +676,7 @@ export const AccountScreen = ({navigation}) => {
         },
       ]}
     >
-      <Text style={[{color: '#503524', fontSize: 14},cslTypeface]}>
+      <Text style={[{color: '#503524', fontSize: 14},cslText(14,21)]}>
         {calendarBibleTranslationCode === option.value ? '●  ' : '○  '}
         {option.label}
       </Text>
