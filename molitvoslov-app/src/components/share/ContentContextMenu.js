@@ -2,6 +2,7 @@ import React from 'react';
 import {Modal, Pressable, StyleSheet, Text, View} from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useLanguage} from '../../context/LanguageContext';
 
 // Native transparent modal is above BottomNav even when FlatList clips rows.
 export const ContentContextMenu = ({
@@ -9,6 +10,8 @@ export const ContentContextMenu = ({
   onDelete=null,
 }) => {
   const safe=useSafeAreaInsets();
+  const {language,t}=useLanguage();
+  const cslFont=language==='csl_traditional' ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
   const item=(label,icon,action,danger=false)=>{
     if(!action)return null;
     return (
@@ -20,7 +23,7 @@ export const ContentContextMenu = ({
         styles.action,pressed&&styles.pressed,
       ]}>
         <Ionicons name={icon} color={danger ? "#A34738" : "#875532"} size={21}/>
-        <Text style={[styles.actionText,danger && styles.dangerText]}>{label}</Text>
+        <Text style={[styles.actionText,danger && styles.dangerText,cslFont]}>{label}</Text>
       </Pressable>
     );
   };
@@ -31,16 +34,16 @@ export const ContentContextMenu = ({
         <Pressable style={[styles.panel,{marginBottom:Math.max(28,safe.bottom+22)}]}
           onPress={()=>{}}>
           <View style={styles.handle}/>
-          <Text style={styles.title} numberOfLines={2}>{title||'Действия'}</Text>
-          {item('Открыть','book-outline',onOpen)}
-          {item('Поделиться','share-social-outline',onShare)}
-          {item(saved?'Убрать из избранного':'Сохранить себе',
+          <Text style={[styles.title,cslFont]} numberOfLines={2}>{title||t('contextActions.title')}</Text>
+          {item(t('contextActions.open'),'book-outline',onOpen)}
+          {item(t('contextActions.share'),'share-social-outline',onShare)}
+          {item(t(saved?'contextActions.unsave':'contextActions.save'),
             saved?'bookmark':'bookmark-outline',onSave)}
-          {item(pinned?'Открепить':'Закрепить',
+          {item(t(pinned?'contextActions.unpin':'contextActions.pin'),
             pinned?'pin':'pin-outline',onPin)}
-          {item('Удалить из избранного','trash-outline',onDelete,true)}
+          {item(t('contextActions.delete'),'trash-outline',onDelete,true)}
           <Pressable onPress={onClose} style={styles.cancel}>
-            <Text style={styles.cancelText}>Отмена</Text>
+            <Text style={[styles.cancelText,cslFont]}>{t('contextActions.cancel')}</Text>
           </Pressable>
         </Pressable>
       </Pressable>
