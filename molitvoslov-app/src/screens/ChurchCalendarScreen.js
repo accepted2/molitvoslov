@@ -371,8 +371,8 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, 
 };
 
 const CALENDAR_BIBLE_TRANSLATIONS = [
-  {code: 'rst', label: 'RU', accessibilityLabel: 'Русский Синодальный перевод'},
-  {code: 'csl_traditional', label: 'ЦС', accessibilityLabel: 'Церковнославянский текст'},
+  {code: 'rst', label: 'RU'},
+  {code: 'csl_traditional', label: 'ЦС'},
 ];
 
 const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, translationCode = 'rst', onLayout, initiallyExpanded = false}) => {
