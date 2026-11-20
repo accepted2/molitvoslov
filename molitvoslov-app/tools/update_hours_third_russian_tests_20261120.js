@@ -23,7 +23,7 @@ for(const [name,replacements] of Object.entries(changes)){
     number+' matches). NO FILES MODIFIED.');
   edited=edited.replace(before,after);
  }
- edited="// "+marker+"\n"+edited;
+ edited=edited.replace(/^#![^\n]*\n/u, shebang => shebang+"// "+marker+"\n");
  // Syntax check; never execute the test until the caller requests it.
  new Function('require','__dirname','process','console',
   edited.replace(/^#![^\n]*\n/,''));
