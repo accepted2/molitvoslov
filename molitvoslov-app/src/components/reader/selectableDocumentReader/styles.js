@@ -2724,6 +2724,24 @@ export const READER_STYLES = String.raw`
       text-align-last: left !important;
     }
 
+    /* Third Hour RU + traditional: only the doxology immediately before
+       "Troparion of the day" is bold accent-brown. All other doxologies
+       retain their ordinary liturgical-red treatment. */
+    .rule-item.hours-third-hour
+    .reader-text.hours-presentation-tropar-intro,
+    .rule-item.hours-third-hour
+    .reader-text.hours-presentation-tropar-intro span {
+      color: var(--accent-dark) !important;
+      font-weight: 700 !important;
+      font-style: normal !important;
+    }
+    /* Preserve the intentional break after the third Alleluia in both
+       languages, without forcing a break before the final Amen. */
+    .rule-item.hours-third-hour
+    .reader-text.hours-preserve-line-breaks {
+      white-space: pre-line !important;
+    }
+
     #reader-scroll-track {
       position: fixed;
       top: 10px;
