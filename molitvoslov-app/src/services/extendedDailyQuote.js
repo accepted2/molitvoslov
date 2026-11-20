@@ -1,80 +1,95 @@
 import {bibleContent} from './bibleContent';
 
-// Quotes are built from complete adjacent verses in the locally bundled
-// Synodal Bible. The displayed reference and tap target cover the whole range.
-// Never invent additional text to pad a Bible quotation.
+// Builds scripture quotations exclusively from full adjacent Synodal verses.
+// No generated continuations, no invisible omissions, no shortened sentence.
 export const expandBibleQuote = (quote, books = bibleContent.getBooks()) => {
-  if (quote?.kind !== 'bible' || quote?.target?.type !== 'bible') return quote;
+  if (quote?.kind !== 'bible' || quote?.target?.type !== 'bible') return null;
   const book = books.find(item => item.code === quote.target.bookCode);
-  const chapter = book?.chapters?.find(item => Number(item.number) === Number(quote.target.chapter));
+  const chapter = book?.chapters?.find(item =>
+    Number(item.number) === Number(quote.target.chapter));
   const verses = chapter?.verses || [];
-  const pivot = verses.findIndex(item => Number(item.number) === Number(quote.target.verse));
-  if (pivot < 0) return quote;
+  const anchorIndex = verses.findIndex(item =>
+    Number(item.number) === Number(quote.target.verse));
+  if (anchorIndex < 0) return null;
 
-  const text = verse => String(verse?.text || '').trim().replace(/\s+/gu, ' ');
-  const minLength = 150;
-  const idealLength = 250;
-  const maxLength = 300;
-  let start = pivot;
-  let end = pivot;
-  let currentText = text(verses[pivot]);
-  if (!currentText || currentText.length > maxLength) return quote;
-
-  // Prefer adjoining verses after the cited opening verse.
-  while (end + 1 < verses.length) {
-    const next = verses[end + 1];
-    if (Number(next.number) !== Number(verses[end].number) + 1) break;
-    const nextText = text(next);
-    const merged = currentText + ' ' + nextText;
-    if (!nextText || merged.length > maxLength) break;
-    if (currentText.length >= minLength &&
-        Math.abs(idealLength - merged.length) >= Math.abs(idealLength - currentText.length)) break;
-    currentText = merged;
-    end++;
+  const normalize = verse => String(verse?.text || '')
+    .trim().replace(/\s+/gu, ' ');
+  const preferredEnd = Number(quote.verseEnd || quote.target.verse);
+  const candidates = [];
+  // Include at most four preceding and six following verses while requiring
+  // a contiguous canonical range containing the original chosen verse.
+  for (let from = Math.max(0, anchorIndex - 4); from <= anchorIndex; from++) {
+    let text = '';
+    for (let to = from; to < Math.min(verses.length, anchorIndex + 7); to++) {
+      if (to > from &&
+          Number(verses[to].number) !== Number(verses[to - 1].number) + 1) break;
+      const piece = normalize(verses[to]);
+      if (!piece) break;
+      text += (text ? ' ' : '') + piece;
+      if (text.length > 300) break;
+      if (to < anchorIndex || text.length < 150) continue;
+      const first = Number(verses[from].number);
+      const last = Number(verses[to].number);
+      const missingRequestedEnd = last < preferredEnd;
+      const score = Math.abs(250 - text.length) +
+        (missingRequestedEnd ? 45 : 0) +
+        Math.max(0, quote.target.verse - first) * 7 +
+        Math.max(0, last - preferredEnd) * 3;
+      candidates.push({first, last, text, score});
+    }
   }
-  // Very late verses can borrow the preceding context instead.
-  while (currentText.length < minLength && start > 0) {
-    const previous = verses[start - 1];
-    if (Number(previous.number) !== Number(verses[start].number) - 1) break;
-    const previousText = text(previous);
-    const merged = previousText + ' ' + currentText;
-    if (!previousText || merged.length > maxLength) break;
-    currentText = merged;
-    start--;
-  }
+  candidates.sort((a, b) => a.score - b.score || a.first - b.first);
+  const best = candidates[0];
+  if (!best) return null;
 
-  if (currentText.length < minLength) return quote;
-  const first = Number(verses[start].number);
-  const last = Number(verses[end].number);
-  const refMatch = String(quote.reference || '').match(/^(.+?\s+\d+):\d+(?:[–-]\d+)?$/u);
-  const reference = refMatch
-    ? refMatch[1] + ':' + first + (last !== first ? '–' + last : '')
-    : quote.reference;
+  const raw = String(quote.reference || '');
+  const referencePrefix = raw.match(/^(.+?\s+\d+):\d+(?:[–-]\d+)?$/u)?.[1];
+  const reference = referencePrefix
+    ? referencePrefix + ':' + best.first +
+      (best.last !== best.first ? '–' + best.last : '')
+    : raw;
 
   return {
     ...quote,
-    text: currentText,
+    text: best.text,
     reference,
-    target: {...quote.target, verse: first},
-    verseEnd: last,
+    target: {...quote.target, verse: best.first},
+    verseEnd: best.last,
   };
 };
 
-// Long patristic passages get two out of every three days; the remaining day
-// features an expanded Bible passage. This preserves immutable saved IDs and
-// still provides both patristic and scriptural quotations.
-export const selectExtendedDailyQuote = (dateOrdinal, fathers, bibleQuotes, books = bibleContent.getBooks()) => {
-  const fatherPool = fathers.filter(item => item?.text?.length >= 150 && item.text.length <= 320);
-  const biblePool = bibleQuotes.filter(item => item?.kind === 'bible' && item.target?.type === 'bible');
+// Rotate only long sourced entries. Legacy short quotes remain untouched in
+// the original catalogue for saved favorites but never appear in this pool.
+// Two days of patristic teachings alternate with one day of Scripture.
+export const selectExtendedDailyQuote = (
+  dateOrdinal, fathers, bibleQuotes, books = bibleContent.getBooks()
+) => {
+  const fatherPool = fathers.filter(item =>
+    item?.kind === 'father' &&
+    typeof item.text === 'string' &&
+    item.text.length >= 150 && item.text.length <= 300);
+  const biblePool = bibleQuotes.filter(item =>
+    item?.kind === 'bible' && item.target?.type === 'bible');
+
   const day = ((dateOrdinal % 3) + 3) % 3;
   const group = Math.floor(dateOrdinal / 3);
+
   if (day !== 0 && fatherPool.length) {
-    const index = ((group * 2 + day - 1) % fatherPool.length + fatherPool.length) % fatherPool.length;
+    const index = ((group * 2 + day - 1) % fatherPool.length +
+      fatherPool.length) % fatherPool.length;
     return fatherPool[index];
   }
-  if (biblePool.length) {
-    const index = ((group % biblePool.length) + biblePool.length) % biblePool.length;
-    return expandBibleQuote(biblePool[index], books);
+  for (let offset = 0; offset < biblePool.length; offset++) {
+    const index = ((group + offset) % biblePool.length + biblePool.length) %
+      biblePool.length;
+    const expanded = expandBibleQuote(biblePool[index], books);
+    if (expanded?.text?.length >= 150 && expanded.text.length <= 300)
+      return expanded;
   }
-  return fatherPool[0] || null;
+  // Never fill an unfinished verse with invented text or show a short stub.
+  if (fatherPool.length) {
+    return fatherPool[((group % fatherPool.length) + fatherPool.length) %
+      fatherPool.length];
+  }
+  return null;
 };
