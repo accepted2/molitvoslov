@@ -1,5 +1,6 @@
 import {TRADITIONAL_UI} from './traditionalUi';
 import {EXTRA_COPY} from './extraCopy';
+import {INTERFACE_COMPLETION} from './interfaceCompletion';
 const COPY = {
   ru: {
     common: {
@@ -861,7 +862,8 @@ export const translate = (language, key, params = {}) => {
   const selected = language === 'csl_traditional'
     ? TRADITIONAL_UI
     : COPY[language] || COPY.ru;
-  const value = getPath(EXTRA_COPY[language], key) ??
+  const value = getPath(INTERFACE_COMPLETION[language], key) ??
+    getPath(EXTRA_COPY[language], key) ??
     getPath(selected, key) ??
     getPath(COPY.ru, key) ?? key;
 
