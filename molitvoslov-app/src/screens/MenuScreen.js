@@ -869,11 +869,11 @@ export const MenuScreen = ({navigation}) => {
     {key:'psalter',title:t('menu.psalterTitle'),subtitle:t('menu.psalterSubtitle'),
       symbol:'¶',iconSource:CATEGORY_ICONS.psalter,artwork:homeArtwork.psalter,
       onPress:()=>navigation.navigate('Psalter')},
-    {key:'hours',title:'Часы',subtitle:'Вседневные, великопостные, царские, пасхальные',
+    {key:'hours',title:t('menu.hoursTitle'),subtitle:t('menu.hoursSubtitle'),
       symbol:'✦',iconSource:CATEGORY_ICONS.canons,artwork:homeArtwork.canons,
       onPress:()=>navigation.navigate('Hours')},
-    {key:'prayer-learning',title:'Учимся молиться',
-      subtitle:'Церковнославянская азбука, числа и наставления',
+    {key:'prayer-learning',title:t('menu.learningTitle'),
+      subtitle:t('menu.learningSubtitle'),
       symbol:'Ѣ',iconSource:CATEGORY_ICONS.misc,artwork:homeArtwork.misc,
       onPress:()=>navigation.navigate('PrayerLearning')},
     {key:'misc',title:t('menu.miscTitle'),subtitle:t('menu.miscSubtitle'),
@@ -1472,7 +1472,7 @@ export const MenuScreen = ({navigation}) => {
                           ]}
                         >
                           <Text style={styles.calendarQuickLabel}>
-                            {calendarLanguage === 'uk' ? 'СТАРОЗАВІТНІ ЧИТАННЯ' : 'ВЕТХОЗАВЕТНЫЕ ЧТЕНИЯ'}
+                            {t('calendar.oldTestamentReadings')}
                           </Text>
                           <CalendarReadingText
                             key={`old-testament-${toCalendarDate(calendarSelectedDate)}`}
