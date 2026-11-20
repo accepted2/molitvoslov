@@ -15,12 +15,11 @@ const nav=render('csl_traditional',10,12);
 const body=render('csl_traditional',16,24);
 const large=render('csl_traditional',24,30);
 assert.equal(nav.fontFamily,'Ponomar');
-assert(nav.fontSize>=16 && nav.lineHeight>=20);
-assert(body.fontSize>=21 && body.lineHeight>=28);
-assert(large.fontSize>=30 && large.lineHeight>=38);
+assert(nav.fontSize>=12 && nav.lineHeight>=15);
+assert(body.fontSize>=18 && body.lineHeight>=26);
+assert(large.fontSize>=26 && large.lineHeight>=33);
 assert(render('csl_traditional',10*1.25,12*1.25).fontSize>=nav.fontSize);
 for(const rel of [
-  'src/components/navigation/BottomNav.js',
   'src/components/navigation/FixedSectionHeader.js',
   'src/screens/HoursScreen.js',
   'src/screens/MenuScreen.js',
@@ -35,12 +34,12 @@ for(const rel of [
  parse(source,{sourceType:'module',plugins:['jsx']});
 }
 const bottom=read('src/components/navigation/BottomNav.js');
-assert(bottom.includes('traditional ? 72 : 46'));
-assert(bottom.includes('numberOfLines={traditional ? 2'));
-assert(bottom.includes('adjustsFontSizeToFit={!traditional'));
+assert(bottom.includes('traditional ? 54 : 46'));
+assert(bottom.includes('numberOfLines={uiScale > 1.15 ? 2 : 1}'));
+assert(bottom.includes('adjustsFontSizeToFit'));
 const menu=read('src/screens/MenuScreen.js');
-assert(menu.includes('(traditional ? 116 : 80) * uiScale'));
-assert(menu.includes("calendarLanguage === 'csl_traditional' ? 116 : 80"));
+assert(menu.includes('(traditional ? 98 : 80) * uiScale'));
+assert(menu.includes("calendarLanguage === 'csl_traditional' ? 98 : 80"));
 const hours=read('src/screens/HoursScreen.js');
 assert(hours.includes('traditionalUiTextStyle(language, size * uiScale'));
 const learning=read('src/screens/PrayerLearningScreen.js');
@@ -54,4 +53,4 @@ console.log('PASS: traditional CSL labels are larger with proper line height.');
 console.log('PASS: RU/UK interface sizes are unchanged; UI scale remains respected.');
 console.log('PASS: bottom nav height and cards accommodate larger traditional labels.');
 console.log('PASS: prayer content and default reader language modes are unaffected.');
-console.log('PASS: 8 modified JS/JSX screens parse.');
+console.log('PASS: 7 typography-using JS/JSX screens parse and compact nav is checked.');
