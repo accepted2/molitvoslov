@@ -15,16 +15,24 @@ const getDateOrdinal = date =>
 // entries remain intact for saved hearts; new long Fathers are additionally
 // available offline. Scripture passages are extended from adjacent verses.
 // Manually dated church-calendar quotations still override the rotation.
-export const getDailyQuote = (date = new Date()) => {
-  const today = formatLocalDate(date);
-  const exact = (getCurrentContent()?.daily_quotes || [])
+export const getDailyQuote = (requestedDate = new Date()) => {
+  // Keep the date variable local. Divergent local installers could retain a
+  // different parameter name while referencing a missing global `date`.
+  const currentDate =
+    requestedDate instanceof Date && !Number.isNaN(requestedDate.getTime())
+      ? requestedDate
+      : new Date();
+  const today = formatLocalDate(currentDate);
+  const calendarQuotes = getCurrentContent()?.daily_quotes;
+  const exact = (Array.isArray(calendarQuotes) ? calendarQuotes : [])
     .find(item => item.quote_date === today &&
       typeof item.text === 'string' && item.text.trim());
   if (exact) return {...exact, date: today};
 
   const chosen = selectExtendedDailyQuote(
-    getDateOrdinal(date), longFathers.quotes || [], curated.quotes || []);
+    getDateOrdinal(currentDate), longFathers.quotes || [], curated.quotes || []);
   if (chosen) return {...chosen, date: today};
+
   return {id: null, text: 'Господи, научи меня молиться.',
     reference: '', source: '', date: today};
 };
