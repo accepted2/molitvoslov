@@ -17,8 +17,9 @@ import {
 } from '../services/readerPreferences';
 import {READER_LANGUAGE_MODES} from '../services/readerLanguageModes';
 import {isDarkReaderBackground, resolveReaderAppearance} from '../services/scopedReaderAppearance';
-import {buildHoursDocument, getOfflineHoursText} from '../services/hoursDocument';
-import {getHoursEntry} from '../data/hoursCatalog';
+import {buildHoursDocument, getOfflineHoursText, getHoursLanguageAvailability} from '../services/hoursDocument';
+import {lookupLocalizedHoursEntry} from '../data/hoursLocalization';
+import {useLanguage} from '../context/LanguageContext';
 
 const VALID_MODES = [
   READER_LANGUAGE_MODES.CHURCH,
@@ -28,7 +29,10 @@ const VALID_MODES = [
 ];
 
 export const HoursReadingScreen = ({route, navigation}) => {
-  const entry = getHoursEntry(route.params?.entryId);
+  const {language, t} = useLanguage();
+  const traditional = language === 'csl_traditional';
+  const titleStyle = traditional ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
+  const entry = lookupLocalizedHoursEntry(route.params?.entryId, language);
   const entryId = entry?.id || null;
   const anchorId=Number(route.params?.anchorId);
   const linkFocusTarget=useMemo(() => Number.isInteger(anchorId)&&anchorId>0
@@ -53,7 +57,12 @@ export const HoursReadingScreen = ({route, navigation}) => {
 
   useEffect(() => {
     let active = true;
-    setViewMode(READER_LANGUAGE_MODES.CHURCH);
+    const availableTraditional =
+      entryId === 'ordinary-1' || entryId === 'ordinary-3' ||
+      getHoursLanguageAvailability(getOfflineHoursText(entryId)).hasTraditional;
+    setViewMode(traditional && availableTraditional
+      ? READER_LANGUAGE_MODES.TRADITIONAL
+      : READER_LANGUAGE_MODES.CHURCH);
     if (entryId) {
       getReaderLanguageModePreference({sourceType: 'hours', sourceId: entryId})
         .then((saved) => {
@@ -62,7 +71,7 @@ export const HoursReadingScreen = ({route, navigation}) => {
         .catch((error) => console.warn('[hours] reader mode:', error?.message || error));
     }
     return () => {active = false;};
-  }, [entryId]);
+  }, [entryId, traditional]);
 
   const handleViewModeChange = (nextMode) => {
     if (!VALID_MODES.includes(nextMode)) return;
@@ -86,7 +95,7 @@ export const HoursReadingScreen = ({route, navigation}) => {
   if (!entry) {
     return (
       <View style={styles.center}>
-        <Text style={styles.emptyHeading}>Последование не найдено</Text>
+        <Text style={[styles.emptyHeading, titleStyle]}>{t('hours.notFound')}</Text>
       </View>
     );
   }
@@ -118,12 +127,12 @@ export const HoursReadingScreen = ({route, navigation}) => {
       ) : (
         <View style={[styles.center, {paddingTop: headerHeight}]}>
           <Text style={[styles.emptyHeading,
-            {color: isDarkReaderBackground(readerBackground) ? '#F4E7D2' : '#533723'}]}>
+            {color: isDarkReaderBackground(readerBackground) ? '#F4E7D2' : '#533723'}, titleStyle]}>
             {entry.title}
           </Text>
           <Text style={[styles.emptyText,
-            {color: isDarkReaderBackground(readerBackground) ? '#D0BA9C' : '#80634B'}]}>
-            Полный текст этого последования пока не включён в локальную библиотеку.
+            {color: isDarkReaderBackground(readerBackground) ? '#D0BA9C' : '#80634B'}, titleStyle]}>
+            {t('hours.missingText')}
           </Text>
         </View>
       )}
@@ -145,6 +154,7 @@ export const HoursReadingScreen = ({route, navigation}) => {
         gradientColor={readerBackground}
         onHeaderHeightChange={setHeaderHeight}
         title={entry.title}
+        titleTextStyle={titleStyle}
         navigation={navigation}
         topInset={insets.top}
         showTitle
