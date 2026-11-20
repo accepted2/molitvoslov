@@ -77,8 +77,7 @@ parse(newSource, {sourceType: 'module'});
 const callable = new Function(
   'getCurrentContent', 'selectExtendedDailyQuote', 'longFathers', 'curated',
   replacement.replace('export const getDailyQuote', 'const getDailyQuote') +
-    '
-return getDailyQuote;',
+    '\nreturn getDailyQuote;',
 );
 const build = calendar => callable(
   () => ({daily_quotes: calendar}),
@@ -94,10 +93,7 @@ assert.equal(build([{id:88, text:'Из календаря', quote_date:'2026-11-
 
 console.log('PASS: self-contained date handling; date formatting helpers not required.');
 console.log('PASS: default date, supplied date, invalid input, calendar priority.');
-const output = original.includes('
-') ? newSource.replace(/
-/g, '
-') : newSource;
+const output = original.includes('\r\n') ? newSource.replace(/\n/g, '\r\n') : newSource;
 if (output === original) {
   console.log('NO CHANGES NEEDED.');
   process.exit(0);
