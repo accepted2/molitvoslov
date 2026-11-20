@@ -18,8 +18,8 @@ const result = build(document);
 const originalIds = document.blocks.flatMap(block => block.segments || []).map(s => s.id);
 const compiled = result.blocks.flatMap(block => block.segments || []);
 assert.equal(originalIds.length, 437);
-assert.equal(compiled.length, 387);
-assert.equal(groups.groups.length, 31);
+assert.equal(compiled.length, 366);
+assert.equal(groups.groups.length, 47);
 assert.equal(Object.keys(result.lookup).length, originalIds.length);
 assert.equal(new Set(originalIds).size, originalIds.length);
 for (let i = 0; i < document.blocks.length; i++) {
@@ -59,8 +59,8 @@ assert(content.PRAYER_LEARNING_LESSONS.every(l =>
   l.sourceKeys?.every(k => content.PRAYER_LEARNING_SOURCES[k]?.startsWith('https://'))));
 assert(read('src/navigation/AppNavigator.js').includes('name="PrayerLearning"'));
 assert(read('src/screens/MenuScreen.js').includes("key:'prayer-learning'"));
-console.log('PASS: 437 old fragments -> 387 coherent clickable phrases.');
-console.log('PASS: 31 contiguous groups; original text 100% preserved.');
+console.log('PASS: 437 old fragments -> 366 coherent clickable phrases.');
+console.log('PASS: 47 contiguous groups; original text 100% preserved.');
 console.log('PASS: old saved IDs and note editor code remain addressable.');
 console.log('PASS: 7 lessons, Slavonic alphabet/numerals, cited sources.');
 console.log('PASS: four JS/JSX files parse; screen navigation registered.');
