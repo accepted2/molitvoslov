@@ -101,6 +101,8 @@ assert.equal(translations.getLocalizedPrayerLetters(baseLetters,'uk')
   .find(x=>x.upper==='Ъ').sound,'твердий знак');
 
 for(const rel of [
+ 'src/components/navigation/BottomNav.js',
+ 'src/components/navigation/FixedSectionHeader.js',
  'src/screens/HoursScreen.js','src/screens/HoursReadingScreen.js',
  'src/screens/PrayerLearningScreen.js','src/screens/AccountScreen.js',
  'src/screens/MenuScreen.js','src/screens/CommunionPreparationScreen.js',
@@ -125,4 +127,6 @@ console.log('PASS: every used key exists and interpolation placeholders match.')
 console.log('PASS: 25 Hours entries retain canonical identifiers with UK/CSL titles.');
 console.log('PASS: all six lessons and quoted attributions localize without lost sections.');
 console.log('PASS: language choices separate from prayer source texts and reader overrides.');
-console.log('PASS: all 18 modified JS/JSX files parse.');
+assert(read('src/components/navigation/BottomNav.js').includes('traditionalStyle'));
+assert(read('src/components/navigation/FixedSectionHeader.js').includes('labelForReadingMode'));
+console.log('PASS: all 20 modified JS/JSX files parse and use traditional navigation typography.');
