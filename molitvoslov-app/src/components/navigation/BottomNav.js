@@ -38,7 +38,8 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
     Animated.timing(visibility, {toValue: readingHidden ? 1 : 0, duration: 340, easing: Easing.out(Easing.cubic), useNativeDriver: true}).start();
   }, [readingHidden, visibility]);
   const insets = useSafeAreaInsets();
-  const {t} = useLanguage();
+  const {language,t} = useLanguage();
+  const traditionalStyle = language === 'csl_traditional' ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
   const uiScale = useInterfaceScale();
   const iconSize = Math.round(17 * uiScale);
   const rowHeight = Math.round(46 + (uiScale - 1) * 56);
@@ -98,7 +99,7 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
                     style={[styles.label, {
                       fontSize: 10 * uiScale,
                       lineHeight: 12 * uiScale,
-                    }, isActive && styles.labelActive]}
+                    }, isActive && styles.labelActive, traditionalStyle]}
                   >
                     {t(item.labelKey)}
                   </Text>
