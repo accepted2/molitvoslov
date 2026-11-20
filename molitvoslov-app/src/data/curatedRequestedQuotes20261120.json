@@ -1,0 +1,432 @@
+{
+  "version": 1,
+  "count": 30,
+  "editorialSource": "User-selected source-anchored excerpts; the 21 Scripture texts are read from exact successive verses of bundled Synodal Bible at runtime",
+  "fatherQuotes": [
+    {
+      "number": 1,
+      "id": 810130,
+      "kind": "father",
+      "text": "Молитва – это недоступная никаким ворам сокровищница всякого блага, безопасная от бурь пристань, основа спокойствия, врачебница души; молитва – это псалмопение, освящающее душу и тело.",
+      "source": "свт. Иоанн Златоуст",
+      "reference": "свт. Иоанн Златоуст",
+      "work": "О молитве",
+      "sourceUrl": "https://azbyka.ru/otechnik/Ioann_Zlatoust/o-molitve/",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "number": 2,
+      "id": 810173,
+      "kind": "father",
+      "text": "Надо смиренным быть, а страсть научает гордости и тщеславию; надо кротким быть, а страсть заставляет серчать и гневаться; надо радоваться благополучию других, а страсть возбуждает зависть; надо прощать обиду, а страсть возжигает месть.",
+      "source": "свт. Феофан Затворник",
+      "reference": "свт. Феофан Затворник",
+      "work": "Что есть духовная жизнь и как на неё настроиться, письмо 55",
+      "sourceUrl": "https://azbyka.ru/otechnik/Feofan_Zatvornik/chto-est-dukhovnaja-zhizn-i-kak-na-nee-nastroitsja/55",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "number": 3,
+      "id": 810174,
+      "kind": "father",
+      "text": "Многоглаголание есть признак неразумия, дверь злословия, руководитель к смехотворству, слуга лжи, истребление сердечного умиления, призывание уныния, предтеча сна, расточение внимания, истребление сердечного хранения, охлаждение святой теплоты, помрачение молитвы.",
+      "source": "прп. Иоанн Лествичник",
+      "reference": "прп. Иоанн Лествичник",
+      "work": "Лествица, слово 11, § 2",
+      "sourceUrl": "https://azbyka.ru/otechnik/Ioann_Lestvichnik/lestvitsa-ili-skrizhali-dukhovnye/16",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "number": 4,
+      "id": 810175,
+      "kind": "father",
+      "text": "Если хочешь исправить кого от недостатков, не думай исправить его одними своими средствами: сами мы больше портим дело своими собственными страстями, например гордостью и происходящею оттуда раздражительностью; но «возверзи печаль на Господа» и помолись Ему.",
+      "source": "прав. Иоанн Кронштадтский",
+      "reference": "прав. Иоанн Кронштадтский",
+      "work": "Моя жизнь во Христе, запись 106",
+      "sourceUrl": "https://azbyka.ru/otechnik/Ioann_Kronshtadtskij/moja_gizn_vo_hriste/1_1",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "number": 5,
+      "id": 810176,
+      "kind": "father",
+      "text": "Плоды истинной молитвы: святой мир души, соединенный с тихой, молчаливой радостью, чуждой мечтательности, самомнения и разгоряченных порывов и движений; любовь к ближним, не различающая для любви добрых от злых, достойных от недостойных.",
+      "source": "свт. Игнатий Брянчанинов",
+      "reference": "свт. Игнатий Брянчанинов",
+      "work": "О молитве, § 30",
+      "sourceUrl": "https://azbyka.ru/otechnik/Ignatij_Brjanchaninov/o-molitve/",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "number": 6,
+      "id": 810177,
+      "kind": "father",
+      "text": "Не считай время, посвященное службе Богу, потраченным впустую; также и продолжительное псалмопение. Нет дела более важного, чем это, среди всех добродетелей, совершаемых людьми…",
+      "source": "прп. Исаак Сирин",
+      "reference": "прп. Исаак Сирин",
+      "work": "Изречение из собрания творений (уточнение произведения требуется)",
+      "sourceUrl": "https://azbyka.ru/otechnik/Isaak_Sirin/",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "number": 7,
+      "id": 810178,
+      "kind": "father",
+      "text": "Дабы принять и ощутить в сердце своем свет Христов, надобно, сколько можно, отвлечь себя от видимых предметов. Предочисти душу покаянием и добрыми делами…",
+      "source": "прп. Серафим Саровский",
+      "reference": "прп. Серафим Саровский",
+      "work": "Наставления, § 14",
+      "sourceUrl": "https://azbyka.ru/otechnik/Serafim_Sarovskij/nastavlenija/",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "number": 8,
+      "id": 810179,
+      "kind": "father",
+      "text": "Старайся приобрести духовное благородство, любочестие, чтобы ушла корысть. Корысть препятствует молитве, потому что разлучает человека с Богом, поставляет непроницаемую стену.",
+      "source": "прп. Паисий Святогорец",
+      "reference": "прп. Паисий Святогорец",
+      "work": "Слова, том 6, О молитве, часть 1, глава 3",
+      "sourceUrl": "https://azbyka.ru/otechnik/Paisij_Svjatogorets/o-molitve-tom-6/1",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "number": 9,
+      "id": 810180,
+      "kind": "father",
+      "text": "А ничто столько не прогневляет Бога, ничто так не обнажает человека и не приводит в оставление от Бога, как злословие, или осуждение, или уничижение ближнего.",
+      "source": "прп. авва Дорофей",
+      "reference": "прп. авва Дорофей",
+      "work": "Душеполезные поучения, поучение 6",
+      "sourceUrl": "https://azbyka.ru/quotes/nichto-ne-prognevlyaet-boga-kak-osuzhdenie/",
+      "target": null,
+      "quote_date": null
+    }
+  ],
+  "bibleQuotes": [
+    {
+      "number": 10,
+      "id": 810181,
+      "kind": "bible",
+      "reference": "Притч. 15:29–31",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 15,
+        "verse": 29
+      },
+      "verseEnd": 31,
+      "quote_date": null
+    },
+    {
+      "number": 11,
+      "id": 810182,
+      "kind": "bible",
+      "reference": "Притч. 16:16–17",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 16,
+        "verse": 16
+      },
+      "verseEnd": 17,
+      "quote_date": null
+    },
+    {
+      "number": 12,
+      "id": 810183,
+      "kind": "bible",
+      "reference": "Еккл. 7:14",
+      "source": "Книга Екклесиаста",
+      "target": {
+        "type": "bible",
+        "bookCode": "ECC",
+        "chapter": 7,
+        "verse": 14
+      },
+      "verseEnd": 14,
+      "quote_date": null
+    },
+    {
+      "number": 13,
+      "id": 810184,
+      "kind": "bible",
+      "reference": "Притч. 28:13–14",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 28,
+        "verse": 13
+      },
+      "verseEnd": 14,
+      "quote_date": null
+    },
+    {
+      "number": 14,
+      "id": 810185,
+      "kind": "bible",
+      "reference": "Притч. 10:11–13",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 10,
+        "verse": 11
+      },
+      "verseEnd": 13,
+      "quote_date": null
+    },
+    {
+      "number": 15,
+      "id": 810186,
+      "kind": "bible",
+      "reference": "Мф. 6:6",
+      "source": "Евангелие от Матфея",
+      "target": {
+        "type": "bible",
+        "bookCode": "MAT",
+        "chapter": 6,
+        "verse": 6
+      },
+      "verseEnd": 6,
+      "quote_date": null
+    },
+    {
+      "number": 16,
+      "id": 810187,
+      "kind": "bible",
+      "reference": "Деян. 20:35",
+      "source": "Деяния святых апостолов",
+      "target": {
+        "type": "bible",
+        "bookCode": "ACT",
+        "chapter": 20,
+        "verse": 35
+      },
+      "verseEnd": 35,
+      "quote_date": null
+    },
+    {
+      "number": 17,
+      "id": 810188,
+      "kind": "bible",
+      "reference": "Рим. 12:9–10",
+      "source": "Послание апостола Павла к Римлянам",
+      "target": {
+        "type": "bible",
+        "bookCode": "ROM",
+        "chapter": 12,
+        "verse": 9
+      },
+      "verseEnd": 10,
+      "quote_date": null
+    },
+    {
+      "number": 18,
+      "id": 810189,
+      "kind": "bible",
+      "reference": "1 Кор. 13:4–6",
+      "source": "Первое послание к Коринфянам",
+      "target": {
+        "type": "bible",
+        "bookCode": "1CO",
+        "chapter": 13,
+        "verse": 4
+      },
+      "verseEnd": 6,
+      "quote_date": null
+    },
+    {
+      "number": 19,
+      "id": 810190,
+      "kind": "bible",
+      "reference": "Флп. 4:8",
+      "source": "Послание апостола Павла к Филиппийцам",
+      "target": {
+        "type": "bible",
+        "bookCode": "PHP",
+        "chapter": 4,
+        "verse": 8
+      },
+      "verseEnd": 8,
+      "quote_date": null
+    },
+    {
+      "number": 20,
+      "id": 810191,
+      "kind": "bible",
+      "reference": "Иак. 1:25",
+      "source": "Послание апостола Иакова",
+      "target": {
+        "type": "bible",
+        "bookCode": "JAS",
+        "chapter": 1,
+        "verse": 25
+      },
+      "verseEnd": 25,
+      "quote_date": null
+    },
+    {
+      "number": 21,
+      "id": 810192,
+      "kind": "bible",
+      "reference": "1 Пет. 3:8–9",
+      "source": "Первое послание апостола Петра",
+      "target": {
+        "type": "bible",
+        "bookCode": "1PE",
+        "chapter": 3,
+        "verse": 8
+      },
+      "verseEnd": 9,
+      "quote_date": null
+    },
+    {
+      "number": 22,
+      "id": 810193,
+      "kind": "bible",
+      "reference": "Лк. 6:45",
+      "source": "Евангелие от Луки",
+      "target": {
+        "type": "bible",
+        "bookCode": "LUK",
+        "chapter": 6,
+        "verse": 45
+      },
+      "verseEnd": 45,
+      "quote_date": null
+    },
+    {
+      "number": 23,
+      "id": 810194,
+      "kind": "bible",
+      "reference": "1 Фес. 5:16–20",
+      "source": "Первое послание к Фессалоникийцам",
+      "target": {
+        "type": "bible",
+        "bookCode": "1TH",
+        "chapter": 5,
+        "verse": 16
+      },
+      "verseEnd": 20,
+      "quote_date": null
+    },
+    {
+      "number": 24,
+      "id": 810195,
+      "kind": "bible",
+      "reference": "Гал. 6:1",
+      "source": "Послание апостола Павла к Галатам",
+      "target": {
+        "type": "bible",
+        "bookCode": "GAL",
+        "chapter": 6,
+        "verse": 1
+      },
+      "verseEnd": 1,
+      "quote_date": null
+    },
+    {
+      "number": 25,
+      "id": 810196,
+      "kind": "bible",
+      "reference": "Евр. 4:12",
+      "source": "Послание к Евреям",
+      "target": {
+        "type": "bible",
+        "bookCode": "HEB",
+        "chapter": 4,
+        "verse": 12
+      },
+      "verseEnd": 12,
+      "quote_date": null
+    },
+    {
+      "number": 26,
+      "id": 810197,
+      "kind": "bible",
+      "reference": "2 Тим. 3:16–17",
+      "source": "Второе послание апостола Павла к Тимофею",
+      "target": {
+        "type": "bible",
+        "bookCode": "2TI",
+        "chapter": 3,
+        "verse": 16
+      },
+      "verseEnd": 17,
+      "quote_date": null
+    },
+    {
+      "number": 27,
+      "id": 810198,
+      "kind": "bible",
+      "reference": "2 Пет. 3:9",
+      "source": "Второе послание апостола Петра",
+      "target": {
+        "type": "bible",
+        "bookCode": "2PE",
+        "chapter": 3,
+        "verse": 9
+      },
+      "verseEnd": 9,
+      "quote_date": null
+    },
+    {
+      "number": 28,
+      "id": 810199,
+      "kind": "bible",
+      "reference": "Иак. 4:7–8",
+      "source": "Послание апостола Иакова",
+      "target": {
+        "type": "bible",
+        "bookCode": "JAS",
+        "chapter": 4,
+        "verse": 7
+      },
+      "verseEnd": 8,
+      "quote_date": null
+    },
+    {
+      "number": 29,
+      "id": 810200,
+      "kind": "bible",
+      "reference": "1 Кор. 10:13",
+      "source": "Первое послание к Коринфянам",
+      "target": {
+        "type": "bible",
+        "bookCode": "1CO",
+        "chapter": 10,
+        "verse": 13
+      },
+      "verseEnd": 13,
+      "quote_date": null
+    },
+    {
+      "number": 30,
+      "id": 810201,
+      "kind": "bible",
+      "reference": "1 Пет. 5:5",
+      "source": "Первое послание апостола Петра",
+      "target": {
+        "type": "bible",
+        "bookCode": "1PE",
+        "chapter": 5,
+        "verse": 5
+      },
+      "verseEnd": 5,
+      "quote_date": null
+    }
+  ]
+}
