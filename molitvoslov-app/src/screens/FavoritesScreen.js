@@ -40,7 +40,8 @@ const isPonomarPreview = item => savedTextFontFamily(item) === 'Ponomar';
 
 export const FavoritesScreen = ({route, navigation}) => {
   const uiScale = useInterfaceScale();
-  const {t} = useLanguage();
+  const {language,t} = useLanguage();
+  const cslFont = language === 'csl_traditional' ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
   const initialTab = TABS.some((tab) => tab.key === route.params?.tab)
     ? route.params.tab
     : TAB_SAVED;
@@ -140,7 +141,7 @@ export const FavoritesScreen = ({route, navigation}) => {
         candidate.id===item.id?updated:candidate)));
     } catch(error) {
       console.warn('[favorites] toggle pin:',error?.message||error);
-      Alert.alert('Не удалось закрепить',error?.message||'Попробуйте ещё раз');
+      Alert.alert(t('favoritesExtra.pinFailed'),error?.message||t('favoritesExtra.retry'));
     }
   };
 
@@ -151,20 +152,20 @@ export const FavoritesScreen = ({route, navigation}) => {
     } catch (err) {
       console.warn('[favorites] delete:', err?.message || err);
       showShareFeedback({
-        title: 'Не удалось удалить',
-        message: err?.message || 'Попробуйте ещё раз.',
+        title: t('favoritesExtra.deleteFailed'),
+        message: err?.message || t('favoritesExtra.retry'),
       });
     }
   };
 
   const confirmRemoveItem = item => {
     if (!item) return;
-    const title = String(item.item_title || item.source_title || 'Сохранение');
+    const title = String(item.item_title || item.source_title || t('favoritesExtra.saving'));
     showShareFeedback({
-      title: 'Удалить из избранного?',
-      message: '"' + title.slice(0,100) + '" будет удалено из вашего списка.',
-      cancelLabel: 'Отмена',
-      confirmLabel: 'Удалить',
+      title: t('favoritesExtra.deleteQuestion'),
+      message: t('favoritesExtra.deleteDescription',{title:title.slice(0,100)}),
+      cancelLabel: t('favoritesExtra.cancel'),
+      confirmLabel: t('favoritesExtra.delete'),
       onConfirm: () => removeItem(item.id),
     });
   };
@@ -339,7 +340,7 @@ export const FavoritesScreen = ({route, navigation}) => {
       <View style={styles.screen}>
         <View style={[styles.headerRow, {paddingTop: insets.top + 2}]}>
           <View style={styles.headerTitleBlock}>
-            <Text style={[styles.headerTitle, {fontSize: 21 * uiScale}]} numberOfLines={1}>{t('favorites.title')}</Text>
+            <Text style={[styles.headerTitle, {fontSize: 21 * uiScale},cslFont]} numberOfLines={1}>{t('favorites.title')}</Text>
             <View style={styles.headerOrnament}>
               <View style={styles.headerLine} />
               <Text style={styles.headerStar}>✦</Text>
@@ -390,7 +391,7 @@ export const FavoritesScreen = ({route, navigation}) => {
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={[styles.tabText, {fontSize: 12 * uiScale}, active && styles.tabTextActive]}>
+                  <Text style={[styles.tabText, {fontSize: (language==='csl_traditional' ? 14 : 12) * uiScale}, active && styles.tabTextActive,cslFont]}>
                     {t(tab.labelKey)}
                   </Text>
                   {!!tabCount(tab.key) && (
@@ -425,30 +426,30 @@ export const FavoritesScreen = ({route, navigation}) => {
             ListEmptyComponent={
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyHeart}>{emptyCopy.icon}</Text>
-                <Text style={[styles.emptyTitle, {fontSize: 19 * uiScale}]}>{emptyCopy.title}</Text>
-                {!!emptyCopy.text && <Text style={[styles.emptyText, {fontSize: 14 * uiScale}]}>{emptyCopy.text}</Text>}
+                <Text style={[styles.emptyTitle, {fontSize: 19 * uiScale},cslFont]}>{emptyCopy.title}</Text>
+                {!!emptyCopy.text && <Text style={[styles.emptyText, {fontSize: 14 * uiScale},cslFont]}>{emptyCopy.text}</Text>}
               </View>
             }
             renderItem={({item}) => (
               <View style={styles.card}>
                 <View style={styles.cardTop}>
-                  <Text style={styles.typeBadge}>
+                  <Text style={[styles.typeBadge,cslFont]}>
                     {activeTab === TAB_PLACES
                       ? t('favorites.bookmark')
                       : item.source_type==='bible' && item.anchor_type==='bible_book'
-                        ? 'КНИГА'
-                        : (item.save_type_display || item.save_type).toUpperCase()}
+                        ? t('favoritesExtra.book')
+                        : t('favoritesExtra.'+({quote:'quote',fragment:'fragment',word:'fragment',sentence:'fragment',paragraph:'fragment',chapter:'chapter',bookmark:'bookmark',prayer:'prayer'}[item.save_type]||'unknownType')).toUpperCase()}
                   </Text>
 
                   <View style={styles.cardTopActions}>
                     {!!item.is_pinned && (
                       <Ionicons name="pin" size={15} color="#A64D33"
-                        accessibilityLabel="Закреплено" />
+                        accessibilityLabel={t('favoritesExtra.pinned')} />
                     )}
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel="Действия с сохранением"
-                      accessibilityHint="Открыть меню: поделиться, закрепить или удалить"
+                      accessibilityLabel={t('favoritesExtra.actions')}
+                      accessibilityHint={t('favoritesExtra.actionsHint')}
                       hitSlop={9}
                       onPress={() => setContextItem(item)}
                       style={({pressed}) => [styles.menuButton, pressed && styles.pressed]}
