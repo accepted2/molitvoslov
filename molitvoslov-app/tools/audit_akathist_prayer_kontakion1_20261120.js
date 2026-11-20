@@ -87,8 +87,8 @@ const dest=path.join(app,'reports','akathist-prayer-and-first-kontakion-audit-20
 fs.mkdirSync(path.dirname(dest),{recursive:true});
 fs.writeFileSync(dest,JSON.stringify(report,null,2)+'\n','utf8');
 console.log('AKATHISTS:',akathists.length,'KONTAKION 1:',firstKontakionCount,'PRAYER SECTIONS:',prayerSectionCount);
-console.log('NATIVITY KONTAKION 1:',details[0]?.hasFirstKontakionTarget?'PASS':'NOT CONFIRMED');
-console.log('TRINITY KONTAKION 1:',details[1]?.hasFirstKontakionTarget?'PASS':'NOT CONFIRMED');
+console.log('NATIVITY KONTAKION 1:',details.find(d=>d.slug===slugs[0])?.hasFirstKontakionTarget?'PASS':'NOT CONFIRMED');
+console.log('TRINITY KONTAKION 1:',details.find(d=>d.slug===slugs[1])?.hasFirstKontakionTarget?'PASS':'NOT CONFIRMED');
 console.log('TRINITY SPECIFIC PRAYER IN CANONICAL JSON:',existsInCanonical);
 console.log('TRINITY SPECIFIC PRAYER SUPPLEMENT VISIBLE:',!!trinity&&!existsInCanonical);
 console.log('AUDIT PROBLEMS:',problems.length);
