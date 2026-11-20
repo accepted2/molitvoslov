@@ -104,11 +104,11 @@
     {
       "rows": [
         {
-          "russian": "Слава Отцу, и Сыну, и Святому Духу:",
-          "presentation": "tropar-intro"
+          "russian": "Слава Отцу, и Сыну, и Святому Духу:"
         },
         {
-          "russian": "Тропарь дня"
+          "russian": "Тропарь дня",
+          "presentation": "tropar-intro"
         },
         {
           "russian": "И ныне и присно, и во веки веков. Аминь"
