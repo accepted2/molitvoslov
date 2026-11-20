@@ -50,8 +50,8 @@ assert.deepEqual(label(ikosOnlyProse,
  h.initials(ikosOnlyProse,true,true,false)),['О'],
  'Ikos without a detectable acclamation retains one red initial');
 const accented='А҆́гг҃ели воспевают ныне славу Господню.';
-assert.deepEqual(label(accented,h.initials(accented,true,true,false)),['А'],
- 'Church Slavonic initial should not color the rest of a word');
+assert.deepEqual(label(accented,h.initials(accented,true,true,false)),['А҆́'],
+ 'Church Slavonic initial keeps its accent combining marks but not the rest of the word');
 const kont1='Предвечный Царю веков, Господи, воспоем Тебе: '+
  'Свят, Свят, Свят еси Господи Боже наш.';
 assert.deepEqual(label(kont1,h.initials(kont1,true,false,true)),['Свят'],
