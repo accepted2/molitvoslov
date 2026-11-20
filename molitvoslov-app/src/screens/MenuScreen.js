@@ -1107,7 +1107,7 @@ export const MenuScreen = ({navigation}) => {
   const dailyQuoteDisplayText = dailyQuoteText
     ? dailyQuoteText.startsWith('«') && dailyQuoteText.endsWith('»')
       ? dailyQuoteText
-      : `«${dailyQuoteText}»`
+      : '«' + dailyQuoteText + '»'
     : '';
 
   const toggleDailyQuoteSaved = async () => {
