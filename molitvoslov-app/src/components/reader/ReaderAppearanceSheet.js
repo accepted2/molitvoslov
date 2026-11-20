@@ -2,6 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import ColorPalettePicker from '../settings/ColorPalettePicker';
+import {useLanguage} from '../../context/LanguageContext';
 import {READER_PALETTES, resolveReaderAppearance} from '../../services/scopedReaderAppearance';
 
 const clampSize = (value) => Math.max(14, Math.min(28, Math.round(value)));
@@ -18,6 +19,8 @@ const colorFields = [
 
 export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, onReset, onShare}) => {
   const insets = useSafeAreaInsets();
+  const {language,t}=useLanguage();
+  const cslFont=language==='csl_traditional'?{fontFamily:'Ponomar',fontWeight:'400'}:null;
   const [sliderWidth, setSliderWidth] = useState(240);
   const [showColorPicker, setShowColorPicker] = useState(null);
   const [sliderDragging, setSliderDragging] = useState(false);
@@ -82,20 +85,20 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
           {/* A solid background is the default, independent of animation state.
               Only an active slider gesture makes the real sheet transparent. */}
           <Animated.View pointerEvents={sliderDragging ? 'none' : 'auto'} style={[styles.header, {opacity: sliderPreviewOpacity}]}>
-            <Text style={styles.heading}>Оформление чтения</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Закрыть настройки" onPress={onClose} style={styles.done}>
-              <Text style={styles.doneText}>Готово</Text>
+            <Text style={[styles.heading,cslFont]}>{t('readerAppearance.title')}</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('readerAppearance.close')} onPress={onClose} style={styles.done}>
+              <Text style={[styles.doneText,cslFont]}>{t('readerAppearance.done')}</Text>
             </Pressable>
           </Animated.View>
           <ScrollView style={styles.scrollArea} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-            <Animated.Text style={[styles.label, {opacity: sliderPreviewOpacity}]}>Размер шрифта: {resolved.fontSize}</Animated.Text>
+            <Animated.Text style={[styles.label,cslFont, {opacity: sliderPreviewOpacity}]}>{t('readerAppearance.fontSize',{size:resolved.fontSize})}</Animated.Text>
             <View pointerEvents={sliderDragging && showColorPicker ? 'none' : 'auto'} style={[styles.sizeRow, sliderDragging && showColorPicker && {opacity:0}]}>
               <Animated.View pointerEvents={sliderDragging ? 'none' : 'auto'} style={{opacity: sliderPreviewOpacity}}>
                 <Pressable onPress={() => onChange?.({fontSize: clampSize(resolved.fontSize - 1)})} style={styles.step}><Text style={styles.stepText}>A−</Text></Pressable>
               </Animated.View>
               <View
                 accessibilityRole="adjustable"
-                accessibilityLabel="Размер шрифта"
+                accessibilityLabel={t('readerAppearance.fontSizeShort')}
                 accessibilityValue={{min:14, max:28, now:resolved.fontSize}}
                 onAccessibilityAction={(event) => onChange?.({fontSize:clampSize(resolved.fontSize + (event.nativeEvent.actionName === 'increment' ? 1 : -1))})}
                 accessibilityActions={[{name:'increment'}, {name:'decrement'}]}
@@ -115,13 +118,13 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
               </Animated.View>
             </View>
             <Animated.View pointerEvents={sliderDragging ? 'none' : 'auto'} style={[styles.settingsBlock, {opacity: sliderPreviewOpacity}]}>
-            <Text style={styles.label}>Цветовая тема</Text>
+            <Text style={[styles.label,cslFont]}>{t('readerAppearance.palette')}</Text>
             <View style={styles.paletteRow}>
               {PRESETS.map(item => (
                 <Pressable key={item.id} accessibilityRole="button" accessibilityState={{selected:resolved.palette===item.id}}
                   onPress={() => onChange?.({palette:item.id})} style={styles.preset}>
                   <View style={[styles.swatch, {backgroundColor:READER_PALETTES[item.id].background, borderColor:resolved.palette===item.id?'#8B5828':'#CAB79F',borderWidth:resolved.palette===item.id?3:1}]}/>
-                  <Text style={styles.presetText}>{item.label}</Text>
+                  <Text style={[styles.presetText,cslFont]}>{t('readerAppearance.'+item.id)}</Text>
                 </Pressable>
               ))}
             </View>
@@ -129,24 +132,24 @@ export const ReaderAppearanceSheet = ({visible, onClose, appearance, onChange, o
               {colorFields.map(({id,label}) => (
                 <Pressable key={id} onPress={() => setShowColorPicker(showColorPicker===id ? null : id)} style={styles.colorButton}>
                   <View style={[styles.colorChip,{backgroundColor:id==='customBackground'?resolved.background:resolved.text}]}/>
-                  <Text style={styles.presetText}>{label}: {id==='customBackground'?resolved.background:resolved.text}</Text>
+                  <Text style={[styles.presetText,cslFont]}>{t('readerAppearance.'+(id==='customBackground'?'background':'text'))}: {id==='customBackground'?resolved.background:resolved.text}</Text>
                 </Pressable>
               ))}
             </View>
             {!!onShare && (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Поделиться текстом"
+                accessibilityLabel={t('readerAppearance.share')}
                 onPress={()=>{
                   onClose?.();
                   setTimeout(onShare,200);
                 }}
                 style={styles.shareAction}
               >
-                <Text style={styles.shareActionText}>⇧ Поделиться текстом</Text>
+                <Text style={[styles.shareActionText,cslFont]}>⇧ {t('readerAppearance.share')}</Text>
               </Pressable>
             )}
-            <Pressable onPress={onReset} style={styles.reset}><Text style={styles.resetText}>Вернуть общие настройки</Text></Pressable>
+            <Pressable onPress={onReset} style={styles.reset}><Text style={[styles.resetText,cslFont]}>{t('readerAppearance.reset')}</Text></Pressable>
             </Animated.View>
             {!!showColorPicker && (
               <View style={styles.activeColorPicker}>
