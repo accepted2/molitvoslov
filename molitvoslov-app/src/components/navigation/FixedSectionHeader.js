@@ -5,6 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {buildReaderHeaderChrome} from '../../services/readerHeaderChrome';
 import {useInterfaceScale} from '../../context/InterfaceScaleContext';
+import {useLanguage} from '../../context/LanguageContext';
 
 export const FixedSectionHeader = ({
   title,
@@ -28,6 +29,8 @@ export const FixedSectionHeader = ({
   onHeaderHeightChange,
 }) => {
   const uiScale = useInterfaceScale();
+  const {language,t} = useLanguage();
+  const traditionalStyle = language === 'csl_traditional' ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
   const insets = useSafeAreaInsets();
   const visibility = useRef(new Animated.Value(0)).current;
   const [languageOpen, setLanguageOpen] = useState(false);
@@ -51,6 +54,11 @@ export const FixedSectionHeader = ({
   }, [headerHeight, onHeaderHeightChange]);
   const languageOptions = Array.isArray(languageSwitcher?.options) ? languageSwitcher.options : [];
   const selectedLanguage = languageOptions.find(option => option.key === languageSwitcher?.activeKey);
+  const labelForReadingMode = option => {
+    if (!option) return '';
+    return ['church','russian','both','traditional'].includes(option.key)
+      ? t('readerModes.'+option.key) : option.label;
+  };
   // Freeze the reading header while the language menu is open. A scroll/idle
   // hide event must not dismiss the menu before the user can choose a language.
   const headerHidden = readingHidden && !languageOpen;
@@ -147,7 +155,7 @@ export const FixedSectionHeader = ({
                   style={[styles.title, styles.titleFlex, compactReading && styles.titleReading, chromeDark && styles.titleDark, {
                     fontSize: (compactReading ? 17 : 21) * uiScale,
                     lineHeight: (compactReading ? 20 : 25) * uiScale,
-                  }, titleTextStyle]}
+                  }, traditionalStyle, titleTextStyle]}
                   onTextLayout={(event) => {
                     const count = event.nativeEvent?.lines?.length || 1;
                     setTitleLines((previous) => previous === count ? previous : count);
@@ -158,12 +166,12 @@ export const FixedSectionHeader = ({
                 {!!selectedLanguage && !!onLanguageChange && (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Выбрать язык чтения"
+                    accessibilityLabel={t('common.language')}
                     accessibilityState={{expanded: languageOpen}}
                     onPress={() => setLanguageOpen(true)}
                     style={({pressed}) => [styles.languagePill, {backgroundColor: chrome.pill, borderColor: chrome.border}, pressed && styles.pressed]}
                   >
-                    <Text style={[styles.languagePillText, {fontSize: 10 * uiScale, lineHeight: 14 * uiScale}, chromeDark && styles.languagePillTextDark]} numberOfLines={1}>{selectedLanguage.label}</Text>
+                    <Text style={[styles.languagePillText, {fontSize: 10 * uiScale, lineHeight: 14 * uiScale}, chromeDark && styles.languagePillTextDark]} numberOfLines={1}>{labelForReadingMode(selectedLanguage)}</Text>
                     <Ionicons name="chevron-down" size={13} color={chromeDark ? '#D7B88C' : '#744A2B'} style={styles.languageChevronIcon} />
                   </Pressable>
                 )}
@@ -181,7 +189,7 @@ export const FixedSectionHeader = ({
                   >
                     <Text
                       numberOfLines={1}
-                      style={[styles.headerActionText, {fontSize: 11 * uiScale, lineHeight: 15 * uiScale}, chromeDark && styles.headerActionTextDark]}
+                      style={[styles.headerActionText, {fontSize: 11 * uiScale, lineHeight: 15 * uiScale}, chromeDark && styles.headerActionTextDark, traditionalStyle]}
                     >
                       {headerAction.label}
                     </Text>
@@ -248,7 +256,7 @@ export const FixedSectionHeader = ({
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={[styles.languageDropdownText, {color: chrome.foreground}]}>{option.label}</Text>
+                  <Text style={[styles.languageDropdownText, {color: chrome.foreground},traditionalStyle]}>{labelForReadingMode(option)}</Text>
                 </Pressable>
               ))}
             </View>
