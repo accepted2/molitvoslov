@@ -468,6 +468,8 @@ export const MenuScreen = ({navigation}) => {
   };
 
   const loadLibrary = useCallback(async () => {
+    // The catalogue, daily quote, and its saved status are independent.
+    // Failure to query saved_items must not claim that the whole library failed.
     try {
       const [
         categoriesResponse,
@@ -489,11 +491,23 @@ export const MenuScreen = ({navigation}) => {
       setAkathists(akathistsResponse.data);
       setCanons(canonsResponse.data);
       setPrayerRules(prayerRulesResponse.data);
+      setError(null);
+    } catch (err) {
+      console.error('[home] Library catalogue loading failed:', err);
+      setError(t('menu.libraryError'));
+      return;
+    }
 
-      const quote = getDailyQuote();
-
+    let quote = null;
+    try {
+      quote = getDailyQuote();
       setDailyQuote(quote);
+    } catch (err) {
+      console.error('[home] Daily quote selection failed:', err);
+      return;
+    }
 
+    try {
       if (quote?.id) {
         const savedQuotes = await getSavedItems({
           source_type: 'daily_quote',
@@ -502,16 +516,15 @@ export const MenuScreen = ({navigation}) => {
           anchor_id: quote.id,
           save_type: 'quote',
         });
-
         setSavedDailyQuote(savedQuotes[0] || null);
       } else {
         setSavedDailyQuote(null);
       }
-
-      setError(null);
     } catch (err) {
-      console.log('Ошибка загрузки библиотеки:', err);
-      setError(t('menu.libraryError'));
+      // SQLite or cloud-account state can be temporarily unavailable while
+      // the menu and its offline catalogue are fully functional.
+      console.warn('[home] Could not read saved status of daily quote:', err);
+      setSavedDailyQuote(null);
     }
   }, [t]);
 
