@@ -4,13 +4,13 @@
 export const traditionalUiTextStyle = (language, size, lineHeight) => {
   if (language !== 'csl_traditional') return null;
   const raw = Math.max(8, Number(size) || 16);
-  const factor = raw <= 13 ? 1.40 : raw <= 19 ? 1.34 : 1.27;
-  const fontSize = Math.max(16, Math.ceil(raw * factor));
-  const originalLineHeight = Math.max(raw * 1.35, Number(lineHeight) || 0);
+  const factor = raw <= 13 ? 1.18 : raw <= 19 ? 1.12 : 1.08;
+  const fontSize = Math.ceil(raw * factor);
+  const originalLineHeight = Math.max(raw * 1.30, Number(lineHeight) || 0);
   return {
     fontFamily: 'Ponomar',
     fontWeight: '400',
     fontSize,
-    lineHeight: Math.max(Math.ceil(fontSize * 1.28), Math.ceil(originalLineHeight * factor)),
+    lineHeight: Math.max(Math.ceil(fontSize * 1.26), Math.ceil(originalLineHeight * 1.08)),
   };
 };
