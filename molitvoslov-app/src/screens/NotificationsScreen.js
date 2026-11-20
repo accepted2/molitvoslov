@@ -309,7 +309,7 @@ export const NotificationsScreen = ({navigation, route}) => {
             <Text style={[styles.fieldLabel,cslFont]}>{t('notifications.message')}</Text>
             <TextInput
               accessibilityLabel={t('notifications.messageA11y')}
-              style={styles.textInput} maxLength={110} value={draft.title}
+              style={[styles.textInput,cslFont]} maxLength={110} value={draft.title}
               placeholder={t('notifications.messagePlaceholder')}
               placeholderTextColor="#9F846A"
               onChangeText={title => changeDraft({title})}
