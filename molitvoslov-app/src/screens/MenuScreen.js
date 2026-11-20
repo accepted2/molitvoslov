@@ -1240,15 +1240,15 @@ export const MenuScreen = ({navigation}) => {
                 </Pressable>
               </View>
 
-              <View style={styles.heroQuoteContent}>
+              <View style={[styles.heroQuoteContent, {top: Math.max(insets.top + 48, 76)}]}>
                 <LinearGradient
                   pointerEvents="none"
                   colors={[
-                    'rgba(27, 18, 12, 0.08)',
-                    'rgba(27, 18, 12, 0.66)',
-                    'rgba(27, 18, 12, 0.78)',
-                    'rgba(27, 18, 12, 0.66)',
-                    'rgba(27, 18, 12, 0.08)',
+                    'rgba(52, 30, 17, 0)',
+                    'rgba(52, 30, 17, 0.48)',
+                    'rgba(52, 30, 17, 0.66)',
+                    'rgba(52, 30, 17, 0.48)',
+                    'rgba(52, 30, 17, 0)',
                   ]}
                   locations={[0, 0.14, 0.5, 0.86, 1]}
                   start={{x: 0, y: 0.5}}
@@ -1259,26 +1259,26 @@ export const MenuScreen = ({navigation}) => {
                 <LinearGradient
                   pointerEvents="none"
                   colors={[
-                    'rgba(27, 18, 12, 0.08)',
-                    'rgba(27, 18, 12, 0.52)',
-                    'rgba(27, 18, 12, 0.70)',
-                    'rgba(27, 18, 12, 0.55)',
-                    'rgba(27, 18, 12, 0.12)',
+                    'rgba(52, 30, 17, 0)',
+                    'rgba(52, 30, 17, 0.18)',
+                    'rgba(52, 30, 17, 0.28)',
+                    'rgba(52, 30, 17, 0.18)',
+                    'rgba(52, 30, 17, 0)',
                   ]}
                   locations={[0, 0.18, 0.5, 0.82, 1]}
                   start={{x: 0.5, y: 0}}
                   end={{x: 0.5, y: 1}}
                   style={styles.heroQuoteScrollShade}
                 />
-                <View style={styles.heroQuoteHeading}>
-                  {/*<Text style={styles.heroQuoteMark}>❧</Text>*/}
-                  {/*<Text style={styles.heroQuoteLabel}>Цитата дня</Text>*/}
-                </View>
-
                 <View style={styles.quoteStaircase}>
                   {!!getLocalizedField(dailyQuote, 'text', calendarLanguage) && (
-                    <Text style={styles.heroQuoteText} numberOfLines={5}
-                      adjustsFontSizeToFit minimumFontScale={0.84}>
+                    <Text
+                      style={styles.heroQuoteText}
+                      numberOfLines={7}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.78}
+                      ellipsizeMode="tail"
+                    >
                       {getLocalizedField(dailyQuote, 'text', calendarLanguage)}
                     </Text>
                   )}
@@ -2884,6 +2884,8 @@ const styles = StyleSheet.create({
   },
   heroQuoteContent: {
     position: 'absolute',
+    // Short quotes stay near the bottom; longer ones expand upward.
+    justifyContent: 'flex-end',
     // alignSelf: 'flex-start',
     // maxWidth: '89%',
     paddingVertical: 7,
