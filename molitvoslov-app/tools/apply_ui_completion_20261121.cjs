@@ -10,7 +10,7 @@ const {parse}=require('@babel/parser');
 const root=path.resolve(__dirname,'../..');
 const app=path.join(root,'molitvoslov-app');
 const baseRef='f98a8c434432bcbaef0599da61bcc2da9ffac12f';
-const targetRef='558f7efcbefe06f0f4aed17aecfbf7922669ef85';
+const targetRef='462741a870fc9ee5031a9d86afb4e66be069b677';
 const dry=process.argv.includes('--dry-run');
 const paths=[
   'src/i18n/translations.js',
