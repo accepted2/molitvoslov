@@ -13,6 +13,7 @@ import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
 import {useReadingProgress} from '../hooks/useReadingProgress';
 import {
   getReaderLanguageModePreference,
+  getExplicitReaderLanguageModePreference,
   saveReaderLanguageModePreference,
 } from '../services/readerPreferences';
 import {READER_LANGUAGE_MODES} from '../services/readerLanguageModes';
@@ -64,9 +65,15 @@ export const HoursReadingScreen = ({route, navigation}) => {
       ? READER_LANGUAGE_MODES.TRADITIONAL
       : READER_LANGUAGE_MODES.CHURCH);
     if (entryId) {
-      getReaderLanguageModePreference({sourceType: 'hours', sourceId: entryId})
-        .then((saved) => {
-          if (active && VALID_MODES.includes(saved)) setViewMode(saved);
+      Promise.all([
+        getExplicitReaderLanguageModePreference({sourceType: 'hours', sourceId: entryId}),
+        getReaderLanguageModePreference({sourceType: 'hours', sourceId: entryId}),
+      ])
+        .then(([explicit, defaultMode]) => {
+          const selected = explicit ||
+            (traditional && availableTraditional
+              ? READER_LANGUAGE_MODES.TRADITIONAL : defaultMode);
+          if (active && VALID_MODES.includes(selected)) setViewMode(selected);
         })
         .catch((error) => console.warn('[hours] reader mode:', error?.message || error));
     }
