@@ -271,7 +271,107 @@ function patchHeaderTypography(source, index) {
   }
 }
 
-function patch(source,changes,relative){
+
+// MenuScreen has extensive local revisions. Apply the typography semantically
+// without replacing whole JSX cards, drag/drop handlers or visual styling.
+function patchMenuTypography(source) {
+  const rel='src/screens/MenuScreen.js';
+  let output=source;
+  const importLine="import {traditionalUiTextStyle} from '../services/traditionalUiTypography';";
+  if(!output.includes(importLine)) {
+    const imports=[...output.matchAll(/^import[ \t][^\n]*;[ \t]*$/gm)];
+    if(!imports.length)
+      throw Error(rel+': imports not recognized. NO FILES MODIFIED.');
+    const last=imports[imports.length-1];
+    const at=last.index+last[0].length;
+    output=output.slice(0,at)+'\n'+importLine+output.slice(at);
+  }
+  function patchDecorativeCard(code) {
+    const tree=parse(code,{sourceType:'module',plugins:['jsx']});
+    const found=[];
+    for(const statement of tree.program.body) {
+      if(statement.type!=='VariableDeclaration')continue;
+      for(const declaration of statement.declarations) {
+        if(declaration.id?.name==='DecorativeCard')found.push(declaration);
+      }
+    }
+    if(found.length!==1||found[0].init?.body?.type!=='BlockStatement')
+      throw Error(rel+': DecorativeCard component not found uniquely. NO FILES MODIFIED.');
+    const block=found[0].init.body;
+    let part=code.slice(block.start,block.end);
+    const hook=/^([ \t]*)const\s+\{[^}\n]*\blanguage\b[^}\n]*\}\s*=\s*useLanguage\(\);[ \t]*$/gm;
+    const hooks=[...part.matchAll(hook)];
+    if(hooks.length!==1)
+      throw Error(rel+': DecorativeCard language hook changed. NO FILES MODIFIED.');
+    const indent=hooks[0][1];
+    const additions=[
+      ['traditional', "const traditional = language === 'csl_traditional';"],
+      ['traditionalTitleStyle',"const traditionalTitleStyle = traditionalUiTextStyle(language, 17 * uiScale, 20 * uiScale);"],
+      ['traditionalSubtitleStyle',"const traditionalSubtitleStyle = traditionalUiTextStyle(language, 11 * uiScale, 14 * uiScale);"],
+      ['cardHeight',"const cardHeight = (traditional ? 116 : 80) * uiScale;"],
+    ].filter(([name])=>!new RegExp('\\bconst\\s+'+name+'\\s*=').test(part));
+    if(additions.length) {
+      const at=hooks[0].index+hooks[0][0].length;
+      part=part.slice(0,at)+additions.map(pair=>'\n'+indent+pair[1]).join('')+part.slice(at);
+    }
+    function extendArrayStyle(name,extra) {
+      const styleRx=/style\s*=\s*\{\[([\s\S]*?)\]\}/gu;
+      const matches=[...part.matchAll(styleRx)]
+        .filter(m=>new RegExp('\\bstyles\\.'+name+'\\b').test(m[1]));
+      if(matches.length!==1)
+        throw Error(rel+': DecorativeCard '+name+' style changed. NO FILES MODIFIED.');
+      const m=matches[0];
+      if(m[1].includes(extra))return;
+      const chunk=m[0];
+      const update=chunk.replace(/\]\}$/,', '+extra+']}');
+      part=part.slice(0,m.index)+update+part.slice(m.index+chunk.length);
+    }
+    extendArrayStyle('libraryTitle','traditionalTitleStyle');
+    extendArrayStyle('librarySubtitle','traditionalSubtitleStyle');
+    const styleRx=/style\s*=\s*\{\s*\(\s*\{\s*pressed\s*\}\s*\)\s*=>\s*\[([\s\S]*?)\]\s*\}/gu;
+    const styles=[...part.matchAll(styleRx)].filter(m=>m[1].includes('styles.libraryCard'));
+    if(styles.length!==1)
+      throw Error(rel+': DecorativeCard height layout changed. NO FILES MODIFIED.');
+    const m=styles[0];
+    if(!m[1].includes('traditional && {minHeight: cardHeight, height: cardHeight}')) {
+      const update=m[0].replace(/\]\s*\}$/,
+        ', traditional && {minHeight: cardHeight, height: cardHeight}]}');
+      part=part.slice(0,m.index)+update+part.slice(m.index+m[0].length);
+    }
+    return code.slice(0,block.start)+part+code.slice(block.end);
+  }
+  output=patchDecorativeCard(output);
+  if(!/\bconst\s+categoryHeight\s*=/.test(output)) {
+    const rx=/^([ \t]*)const\s+categoryStride\s*=\s*([^;\n]+);[ \t]*$/gm;
+    const matches=[...output.matchAll(rx)];
+    if(matches.length===1) {
+      const m=matches[0];
+      const original=m[2].trim();
+      const declaration=m[1]+"const categoryHeight=(calendarLanguage === 'csl_traditional' ? 116 : 80)*uiScale;";
+      const newStride=m[1]+'const categoryStride=(calendarLanguage === '+
+        "'csl_traditional' ? Math.max(("+original+"), categoryHeight+8) : ("+original+'));';
+      output=output.slice(0,m.index)+declaration+'\n'+newStride+
+        output.slice(m.index+m[0].length);
+    } else if(matches.length>1)
+      throw Error(rel+': multiple categoryStride declarations. NO FILES MODIFIED.');
+    // An earlier non-draggable category view has no categoryStride.
+  }
+  if(/\bconst\s+categoryHeight\s*=/.test(output)) {
+    const heightProp=/\bcardHeight\s*=\s*\{([^{}\n]+)\}/gu;
+    const props=[...output.matchAll(heightProp)];
+    if(props.length===1) {
+      const m=props[0],value=m[1].trim();
+      if(!value.includes('categoryHeight')) {
+        const desired='cardHeight={Math.max(('+value+'), categoryHeight)}';
+        output=output.slice(0,m.index)+desired+output.slice(m.index+m[0].length);
+      }
+    } else if(props.length>1)
+      throw Error(rel+': more than one draggable cardHeight. NO FILES MODIFIED.');
+  }
+  return output;
+}
+
+function patchByHunks(source,changes,relative){
   let output=source;
   changes.forEach((h,index)=>{
     if(h.old===h.next)return;
@@ -316,6 +416,16 @@ function patch(source,changes,relative){
       'Existing edits preserved. NO FILES MODIFIED.');
   });
   return output;
+}
+function patch(source,changes,relative) {
+  if(relative!=='src/screens/MenuScreen.js')
+    return patchByHunks(source,changes,relative);
+  try {
+    return patchByHunks(source,changes,relative);
+  } catch(error) {
+    if(!String(error?.message||error).includes('conflict at change'))throw error;
+    return patchMenuTypography(source);
+  }
 }
 const writes=[];
 for(const rel of paths){
