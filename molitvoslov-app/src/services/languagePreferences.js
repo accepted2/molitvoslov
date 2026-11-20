@@ -14,16 +14,21 @@ const LEGACY_CALENDAR_LANGUAGE_KEY = 'church_calendar_language';
 export const APP_LANGUAGES = {
   RU: 'ru',
   UK: 'uk',
+  CSL_TRADITIONAL: 'csl_traditional',
 };
 
 export const LANGUAGE_OPTIONS = [
   {value: APP_LANGUAGES.RU, label: 'РУ'},
   {value: APP_LANGUAGES.UK, label: 'УК'},
+  {value: APP_LANGUAGES.CSL_TRADITIONAL, label: 'ЦС трад.'},
 ];
 
 export const normalizeAppLanguage = (language) => {
   if (language === APP_LANGUAGES.UK) {
     return APP_LANGUAGES.UK;
+  }
+  if (language === APP_LANGUAGES.CSL_TRADITIONAL || language === 'traditional') {
+    return APP_LANGUAGES.CSL_TRADITIONAL;
   }
 
   return APP_LANGUAGES.RU;
