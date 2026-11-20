@@ -8,7 +8,12 @@ export const READER_LANGUAGE_MODES = {
 
 let defaultReaderMode = READER_LANGUAGE_MODES.RUSSIAN;
 export const setDefaultReaderMode = (mode) => { defaultReaderMode = mode; };
-export const getReaderModeForAppLanguage = (_language, {hasRussian = false, hasTraditional = false} = {}) => {
+export const getReaderModeForAppLanguage = (language, {hasRussian = false, hasTraditional = false} = {}) => {
+  // The app's UI language chooses the default ONLY. Per-book saved reading
+  // mode remains authoritative, and missing traditional texts are not invented.
+  if (language === 'csl_traditional' && hasTraditional) {
+    return READER_LANGUAGE_MODES.TRADITIONAL;
+  }
   if (defaultReaderMode === READER_LANGUAGE_MODES.RUSSIAN || defaultReaderMode === READER_LANGUAGE_MODES.BOTH) {
     return hasRussian ? defaultReaderMode : READER_LANGUAGE_MODES.CHURCH;
   }
