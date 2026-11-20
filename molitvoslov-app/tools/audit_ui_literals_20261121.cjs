@@ -27,8 +27,11 @@ const scan=(node,filename)=>{
       record('Alert',arg.value,arg.loc?.start);
   for(const [key,val] of Object.entries(node)){
     if(key==='loc'||key==='tokens'||key==='comments'||key==='extra')continue;
-    if(Array.isArray(val))for(const part of val)if(part?.type)scan(part,filename);
-    else if(val?.type)scan(val,filename);
+    if(Array.isArray(val)) {
+      for(const part of val)if(part?.type)scan(part,filename);
+    } else if(val?.type) {
+      scan(val,filename);
+    }
   }
 };
 const walk=(directory)=>{
