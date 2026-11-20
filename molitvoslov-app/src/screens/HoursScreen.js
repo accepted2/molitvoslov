@@ -8,11 +8,16 @@ import {AppBackground} from '../components/layout/AppBackground';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {useInterfaceScale} from '../context/InterfaceScaleContext';
-import {HOURS_GROUPS} from '../data/hoursCatalog';
+import {getLocalizedHoursGroups} from '../data/hoursLocalization';
+import {useLanguage} from '../context/LanguageContext';
 
 export const HoursScreen = ({navigation}) => {
   const insets = useSafeAreaInsets();
   const uiScale = useInterfaceScale();
+  const {language, t} = useLanguage();
+  const traditional = language === 'csl_traditional';
+  const hoursGroups = getLocalizedHoursGroups(language);
+  const cslTextStyle = traditional ? {fontFamily: 'Ponomar', fontWeight: '400'} : null;
   const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
   const [expanded, setExpanded] = useState({ordinary: true});
 
@@ -32,16 +37,15 @@ export const HoursScreen = ({navigation}) => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.intro}>
-          <Text style={[styles.introTitle, {fontSize: 17 * uiScale}]}>
-            Последования богослужебных часов
+          <Text style={[styles.introTitle, {fontSize: 17 * uiScale}, cslTextStyle]}>
+            {t('hours.introTitle')}
           </Text>
-          <Text style={[styles.introText, {fontSize: 13 * uiScale}]}>
-            Первый, третий, шестой и девятый часы. В особые дни используются
-            великопостный, царский или пасхальный чины. Междочасия приведены отдельно.
+          <Text style={[styles.introText, {fontSize: 13 * uiScale}, cslTextStyle]}>
+            {t('hours.introText')}
           </Text>
         </View>
 
-        {HOURS_GROUPS.map((group) => {
+        {hoursGroups.map((group) => {
           const opened = !!expanded[group.id];
           return (
             <View key={group.id} style={styles.group}>
@@ -53,13 +57,13 @@ export const HoursScreen = ({navigation}) => {
                 style={({pressed}) => [styles.groupHeader, pressed && styles.pressed]}
               >
                 <View style={styles.groupHeading}>
-                  <Text style={[styles.groupTitle, {fontSize: 18 * uiScale}]}>
+                  <Text style={[styles.groupTitle, {fontSize: 18 * uiScale}, cslTextStyle]}>
                     {group.title}
                   </Text>
-                  <Text style={[styles.groupCount, {fontSize: 11 * uiScale}]}>
+                  <Text style={[styles.groupCount, {fontSize: 11 * uiScale}, cslTextStyle]}>
                     {group.items.length === 1
-                      ? 'Одно последование'
-                      : group.items.length + ' последования'}
+                      ? t('hours.countOne')
+                      : t('hours.countOther', {count: group.items.length})}
                   </Text>
                 </View>
                 <Ionicons
@@ -71,7 +75,7 @@ export const HoursScreen = ({navigation}) => {
 
               {opened && (
                 <View style={styles.groupBody}>
-                  <Text style={[styles.description, {fontSize: 12 * uiScale}]}>
+                  <Text style={[styles.description, {fontSize: 12 * uiScale}, cslTextStyle]}>
                     {group.description}
                   </Text>
                   {group.items.map((item) => (
@@ -82,11 +86,11 @@ export const HoursScreen = ({navigation}) => {
                       style={({pressed}) => [styles.hourRow, pressed && styles.pressed]}
                     >
                       <View style={styles.hourText}>
-                        <Text style={[styles.hourTitle, {fontSize: 16 * uiScale}]}>
+                        <Text style={[styles.hourTitle, {fontSize: 16 * uiScale}, cslTextStyle]}>
                           {item.title}
                         </Text>
                         {!!item.subtitle && (
-                          <Text style={[styles.hourSubtitle, {fontSize: 12 * uiScale}]}>
+                          <Text style={[styles.hourSubtitle, {fontSize: 12 * uiScale}, cslTextStyle]}>
                             {item.subtitle}
                           </Text>
                         )}
@@ -99,14 +103,13 @@ export const HoursScreen = ({navigation}) => {
             </View>
           );
         })}
-        <Text style={[styles.footer, {fontSize: 12 * uiScale}]}>
-          Изобразительные связаны с часами, но являются отдельным богослужебным
-          последованием. Изменяемые тропари, кондаки и чтения зависят от дня.
+        <Text style={[styles.footer, {fontSize: 12 * uiScale}, cslTextStyle]}>
+          {t('hours.footer')}
         </Text>
       </ScrollView>
 
       <FixedSectionHeader
-        title="Часы"
+        title={t('hours.title')}
         navigation={navigation}
         topInset={insets.top}
         onHeaderHeightChange={setHeaderHeight}
