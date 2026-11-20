@@ -12,23 +12,27 @@ function Assert-Pass([string]$step) {
   }
 }
 
-Write-Host '[1/5] Dry-run: compare current Third Hour with the First Hour template'
+Write-Host '[1/6] Dry-run: compare current Third Hour with the First Hour template'
 node .\tools\apply_hours_third_match_first_20261120.js --dry-run
 Assert-Pass 'Third Hour preflight'
 
-Write-Host '[2/5] Apply editorial layout with automatic backups'
+Write-Host '[2/6] Apply editorial layout with automatic backups'
 node .\tools\apply_hours_third_match_first_20261120.js
 Assert-Pass 'Third Hour layout'
 
-Write-Host '[3/5] Test exact Third Hour text/layout flags'
+Write-Host '[3/6] Test exact Third Hour text/layout flags'
 node .\tools\test_hours_third_match_first_20261120.js
 Assert-Pass 'Third Hour presentation test'
 
-Write-Host '[4/5] Run prior Third Hour content and renderer regression'
+Write-Host '[4/6] Run prior Third Hour content and renderer regression'
 node .\tools\test_hours_third_hour.js
 Assert-Pass 'Existing Third Hour test'
 
-Write-Host '[5/5] Run shared First Hour/Third Hour typography regression'
+Write-Host '[5/6] Refresh two stale assertions in shared Hours regression'
+node .\tools\refresh_hours_typography_test_20261120.js
+Assert-Pass 'Shared Hours test compatibility'
+
+Write-Host '[6/6] Run shared First Hour/Third Hour typography regression'
 node .\tools\test_hours_typography.js
 Assert-Pass 'Shared Hours typography'
 
