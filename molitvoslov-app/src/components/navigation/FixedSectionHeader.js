@@ -5,6 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {buildReaderHeaderChrome} from '../../services/readerHeaderChrome';
 import {useInterfaceScale} from '../../context/InterfaceScaleContext';
+import {traditionalUiTextStyle} from '../../services/traditionalUiTypography';
 import {useLanguage} from '../../context/LanguageContext';
 
 export const FixedSectionHeader = ({
@@ -30,7 +31,8 @@ export const FixedSectionHeader = ({
 }) => {
   const uiScale = useInterfaceScale();
   const {language,t} = useLanguage();
-  const traditionalStyle = language === 'csl_traditional' ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
+  const traditional = language === 'csl_traditional';
+  const traditionalStyle = traditionalUiTextStyle(language, (compactReading ? 17 : 21) * uiScale, (compactReading ? 20 : 25) * uiScale);
   const insets = useSafeAreaInsets();
   const visibility = useRef(new Animated.Value(0)).current;
   const [languageOpen, setLanguageOpen] = useState(false);
@@ -38,13 +40,13 @@ export const FixedSectionHeader = ({
   const chrome = buildReaderHeaderChrome(chromeBackground, dark);
   const chromeDark = chrome.dark;
   const [titleLines, setTitleLines] = useState(1);
-  const extraTitleHeight = showTitle ? Math.max(0, titleLines - 1) * Math.ceil((compactReading ? 20 : 25) * uiScale) : 0;
+  const extraTitleHeight = showTitle ? Math.max(0, titleLines - 1) * (traditionalStyle?.lineHeight || Math.ceil((compactReading ? 20 : 25) * uiScale)) : 0;
   // Readers extend under the translucent status bar; the native safe-area
   // inset accounts for different camera cutouts without device-specific px.
   // Category screens deliberately keep their original header layout.
   const safeTop = compactReading ? Math.max(insets.top, topInset, 0) : topInset;
   const contentTop = safeTop + (compactReading ? 4 : 0);
-  const headerHeight = contentTop + (compactReading ? 44 : (minimal ? 45 : 36)) + extraTitleHeight;
+  const headerHeight = contentTop + (compactReading ? 44 : (minimal ? 45 : 36)) + (traditional ? Math.ceil(10 * uiScale) : 0) + extraTitleHeight;
   // The fixed top veil stays visible while controls slide away. Use about
   // two lines of total height rather than a solid header-height overlay plus
   // a second fade. Preserve the historical gradient colours/visual language.
@@ -143,7 +145,7 @@ export const FixedSectionHeader = ({
               style={[
                 styles.titleWrap,
                 compactReading && styles.titleWrapReading,
-                compactReading && {height: 44 + extraTitleHeight},
+                compactReading && {height: 44 + (traditional ? Math.ceil(10 * uiScale) : 0) + extraTitleHeight},
                 !showBack && styles.titleWrapRoot,
                 titleOffsetY !== 0 && !compactReading && {
                   transform: [{translateY: titleOffsetY}],
@@ -171,7 +173,7 @@ export const FixedSectionHeader = ({
                     onPress={() => setLanguageOpen(true)}
                     style={({pressed}) => [styles.languagePill, {backgroundColor: chrome.pill, borderColor: chrome.border}, pressed && styles.pressed]}
                   >
-                    <Text style={[styles.languagePillText, {fontSize: 10 * uiScale, lineHeight: 14 * uiScale}, chromeDark && styles.languagePillTextDark]} numberOfLines={1}>{labelForReadingMode(selectedLanguage)}</Text>
+                    <Text style={[styles.languagePillText, {fontSize: 10 * uiScale, lineHeight: 14 * uiScale}, chromeDark && styles.languagePillTextDark, traditionalUiTextStyle(language, 10 * uiScale, 14 * uiScale)]} numberOfLines={1}>{labelForReadingMode(selectedLanguage)}</Text>
                     <Ionicons name="chevron-down" size={13} color={chromeDark ? '#D7B88C' : '#744A2B'} style={styles.languageChevronIcon} />
                   </Pressable>
                 )}
@@ -189,7 +191,7 @@ export const FixedSectionHeader = ({
                   >
                     <Text
                       numberOfLines={1}
-                      style={[styles.headerActionText, {fontSize: 11 * uiScale, lineHeight: 15 * uiScale}, chromeDark && styles.headerActionTextDark, traditionalStyle]}
+                      style={[styles.headerActionText, {fontSize: 11 * uiScale, lineHeight: 15 * uiScale}, chromeDark && styles.headerActionTextDark, traditionalUiTextStyle(language, 11 * uiScale, 15 * uiScale)]}
                     >
                       {headerAction.label}
                     </Text>
@@ -256,7 +258,7 @@ export const FixedSectionHeader = ({
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={[styles.languageDropdownText, {color: chrome.foreground},traditionalStyle]}>{labelForReadingMode(option)}</Text>
+                  <Text style={[styles.languageDropdownText, {color: chrome.foreground},traditionalUiTextStyle(language, 13 * uiScale, 19 * uiScale)]}>{labelForReadingMode(option)}</Text>
                 </Pressable>
               ))}
             </View>
