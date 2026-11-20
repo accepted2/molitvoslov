@@ -451,17 +451,17 @@ export const AccountScreen = ({navigation}) => {
             <View style={styles.optionRow}>
               {INTERFACE_LANG_CHOICES.map((option) => (
                 <Pressable key={option.value} onPress={() => setLanguage(option.value)} style={[styles.settingOption, language === option.value && styles.optionSelected]}>
-                  <Text style={[styles.settingText, {fontSize:14*uiScale}, option.value === 'csl_traditional' && {fontFamily:'Ponomar',fontWeight:'400'}]}>{option.label}</Text>
+                  <Text style={[styles.settingText, {fontSize:14*uiScale}, cslTypeface, option.value === 'csl_traditional' && {fontFamily:'Ponomar',fontWeight:'400'}]}>{option.label}</Text>
                 </Pressable>
               ))}
             </View>
             <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslTypeface]}>{t('accountSettings.readerLanguage')}</Text>
             {MODE_CHOICES.map((option) => (
               <Pressable key={option.value} onPress={() => changeReadingSettings({defaultMode: option.value})} style={[styles.settingOption, readingSettings.defaultMode === option.value && styles.optionSelected]}>
-                <Text style={[styles.settingText, {fontSize:14*uiScale}]}>{readingSettings.defaultMode === option.value ? '●  ' : '○  '}{t('accountSettings.'+option.labelKey)}</Text>
+                <Text style={[styles.settingText, {fontSize:14*uiScale}, cslTypeface]}>{readingSettings.defaultMode === option.value ? '●  ' : '○  '}{t('accountSettings.'+option.labelKey)}</Text>
               </Pressable>
             ))}
-            <Text style={[styles.settingHint, {fontSize:12*uiScale,lineHeight:19*uiScale}]}>{t('accountSettings.readerLanguageHint')}</Text>
+            <Text style={[styles.settingHint, {fontSize:12*uiScale,lineHeight:19*uiScale},cslTypeface]}>{t('accountSettings.readerLanguageHint')}</Text>
             <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslTypeface]}>{t('accountSettings.interfaceSize')}</Text>
             <View style={styles.optionRow}>
               {[1, 1.1, 1.25].map(scale => (
@@ -476,11 +476,11 @@ export const AccountScreen = ({navigation}) => {
                 </Pressable>
               ))}
             </View>
-            <Text style={[styles.settingHint, {fontSize:12*uiScale,lineHeight:19*uiScale}]}>{t('accountSettings.interfaceSizeHint')}</Text>
+            <Text style={[styles.settingHint, {fontSize:12*uiScale,lineHeight:19*uiScale},cslTypeface]}>{t('accountSettings.interfaceSizeHint')}</Text>
             <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslTypeface]}>{t('accountSettings.prayerFontSize',{size:readingSettings.fontSize})}</Text>
             <View style={styles.fontSizeRow}>
               <Pressable style={styles.settingOption} onPress={() => changeReadingSettings({fontSize: Math.max(14, readingSettingsRef.current.fontSize - 1)})}>
-                <Text style={[styles.settingText, {fontSize:14*uiScale}]}>A−</Text>
+                <Text style={[styles.settingText, {fontSize:14*uiScale}, cslTypeface]}>A−</Text>
               </Pressable>
               <View
                 style={styles.fontSlider}
@@ -503,7 +503,7 @@ export const AccountScreen = ({navigation}) => {
                 <View pointerEvents="none" style={[styles.fontSliderThumb, {left: (readingSettings.fontSize - 14) / 14 * 100 + '%'}]}/>
               </View>
               <Pressable style={styles.settingOption} onPress={() => changeReadingSettings({fontSize: Math.min(28, readingSettingsRef.current.fontSize + 1)})}>
-                <Text style={[styles.settingText, {fontSize:14*uiScale}]}>A+</Text>
+                <Text style={[styles.settingText, {fontSize:14*uiScale}, cslTypeface]}>A+</Text>
               </Pressable>
             </View>
             <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslTypeface]}>{t('accountSettings.theme')}</Text>
@@ -531,7 +531,7 @@ export const AccountScreen = ({navigation}) => {
                   <View style={[styles.colorChip, {backgroundColor: option.key === 'customBackground'
                     ? resolveReaderAppearance(readingSettings).background
                     : resolveReaderAppearance(readingSettings).text}]}/>
-                  <Text style={[styles.settingText, {fontSize:14*uiScale}]}>{t('accountSettings.'+option.labelKey)}</Text>
+                  <Text style={[styles.settingText, {fontSize:14*uiScale}, cslTypeface]}>{t('accountSettings.'+option.labelKey)}</Text>
                 </Pressable>
               ))}
             </View>
@@ -568,29 +568,28 @@ export const AccountScreen = ({navigation}) => {
                 queueAccountPreferencePatch({settings: {...reset, language: 'ru'}}).catch(console.warn);
               }}]
             )}>
-              <Text style={[styles.settingText, {fontSize:14*uiScale}]}>{t('accountSettings.reset')}</Text>
+              <Text style={[styles.settingText, {fontSize:14*uiScale}, cslTypeface]}>{t('accountSettings.reset')}</Text>
             </Pressable>
           </View>
         <View style={{marginTop:16,padding:14,borderRadius:12,
           backgroundColor:'#F7E8CF',borderWidth:1,borderColor:'#E2CCAA',gap:12}}>
           <Text style={[styles.settingCaption,{fontSize:15*uiScale}]}>
-            Конфиденциальность и удаление данных
+            {t('accountSettings.privacyHeading')}
           </Text>
           <Pressable accessibilityRole="link"
             onPress={()=>openPolicyPage('privacy-policy/')}>
             <Text style={[styles.settingText,{textDecorationLine:'underline'}]}>
-              Политика конфиденциальности
+              {t('accountSettings.privacyPolicy')}
             </Text>
           </Pressable>
           <Pressable accessibilityRole="link"
             onPress={()=>openPolicyPage('account-deletion/')}>
             <Text style={[styles.settingText,{textDecorationLine:'underline'}]}>
-              Запросить удаление аккаунта через сайт
+              {t('accountSettings.onlineDelete')}
             </Text>
           </Pressable>
           <Text style={styles.settingHint}>
-            Запрос доступен без установки приложения. Для защиты от чужого
-            удаления требуется подтверждение принадлежности аккаунта.
+            {t('accountSettings.onlineDeleteHint')}
           </Text>
         </View>
         <View style={{marginTop:12,padding:14,borderRadius:12,
@@ -600,23 +599,23 @@ export const AccountScreen = ({navigation}) => {
             onPress={()=>setSourcesExpanded(value=>!value)}
             style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',
               minHeight:38}}>
-            <Text style={[styles.settingText,{fontWeight:'700'}]}>Источники и лицензии</Text>
+            <Text style={[styles.settingText,{fontWeight:'700'}]}>{t('accountSettings.licenses')}</Text>
             <Ionicons name={sourcesExpanded?'chevron-up':'chevron-down'}
               size={19} color="#875627"/>
           </Pressable>
           {sourcesExpanded && (
             <View style={{gap:9,marginTop:9}}>
               <Text style={styles.settingHint}>
-                Перекрёстные ссылки: OpenBible.info (CC BY 4.0),
+                {t('accountSettings.crossRefs')}: OpenBible.info (CC BY 4.0),
                 Catholic Cross References (Unlicense / CC0).
-                Соответствие нумерации псалмов: STEP Bible / Tyndale House (CC BY 4.0).
+                {t('accountSettings.psalmNumbers')}: STEP Bible / Tyndale House (CC BY 4.0).
               </Text>
               {[
-                {name:'OpenBible.info — перекрёстные ссылки',
+                {name:'OpenBible.info — '+t('accountSettings.crossRefs'),
                   url:'https://www.openbible.info/labs/cross-references/'},
-                {name:'Catholic Cross References — дополнительные ссылки',
+                {name:'Catholic Cross References — '+t('accountSettings.extraCrossRefs'),
                   url:'https://github.com/jesuslovestyler/Catholic-Cross-References'},
-                {name:'STEP Bible — нумерация псалмов',
+                {name:'STEP Bible — '+t('accountSettings.psalmNumbers'),
                   url:'https://www.STEPBible.org'},
               ].map(link => (
                 <Pressable key={link.url} accessibilityRole="link"
@@ -643,17 +642,17 @@ export const AccountScreen = ({navigation}) => {
     fontWeight: '700',
     color: '#503524',
   }}>
-    Текст Библии в церковном календаре
+    {t('accountSettings.calendarBibleTitle')}
   </Text>
 
   {[
     {
       value: 'rst',
-      label: 'Русский (Синодальный перевод)',
+      label: t('accountSettings.calendarRussian'),
     },
     {
       value: 'csl_traditional',
-      label: 'Церковнославянский',
+      label: t('accountSettings.calendarTraditional'),
     },
   ].map((option) => (
     <Pressable
@@ -676,7 +675,7 @@ export const AccountScreen = ({navigation}) => {
         },
       ]}
     >
-      <Text style={{color: '#503524', fontSize: 14}}>
+      <Text style={[{color: '#503524', fontSize: 14},cslTypeface]}>
         {calendarBibleTranslationCode === option.value ? '●  ' : '○  '}
         {option.label}
       </Text>
@@ -688,8 +687,7 @@ export const AccountScreen = ({navigation}) => {
     lineHeight: 19,
     color: '#836A52',
   }}>
-    Выбранный перевод используется для библейских чтений
-    календаря независимо от языка самой Библии.
+    {t('accountSettings.calendarBibleHint')}
   </Text>
 </View>
         </ScrollView>
