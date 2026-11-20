@@ -20,6 +20,8 @@ const russianRows = (churchSection, russianSection, sectionIndex) => {
       russian: russianRow.russian,
       ...(russianRow.heading ? {russianHeading: russianRow.heading} : {}),
       ...(russianRow.presentation ? {russianPresentation: russianRow.presentation} : {}),
+      // Per-language divider overrides never alter the original CS rows.
+      ...(russianRow.dividerAfter === true ? {dividerAfter: true} : {}),
       ...(russianRow.preserveLineBreaks ? {russianPreserveLineBreaks: true} : {}),
     };
   });
@@ -53,20 +55,14 @@ const ephremSection = () => {
   };
 };
 
-// In the user's Russian order the blessing follows the optional kondak/tropar
-// responses. Combined mode keeps the CS sequence to avoid misaligning paired
-// columns; originalSourceIndex preserves every old section/row anchor.
-export const getThirdHourRussianSections = (viewMode = 'russian') => {
+// Both RU and CS+RU follow the same liturgical order:
+// Lenten Third-Hour tropar -> blessing -> Trisagion / Lord's Prayer ->
+// Kontakion -> conditional fasting troparia. "Господь Бог благословен"
+// appears exactly once. originalSectionIndex preserves every old row anchor.
+export const getThirdHourRussianSections = (_viewMode = 'russian') => {
   const sections = originals();
   const ephrem = ephremSection();
-  if (viewMode === 'both') {
-    return [...sections.slice(0,12), ephrem, sections[12]];
-  }
-  return [
-    ...sections.slice(0,8),
-    sections[9], sections[10], sections[8], sections[11],
-    ephrem, sections[12],
-  ];
+  return [...sections.slice(0, 12), ephrem, sections[12]];
 };
 
 export const getThirdHourRussianSource = () => thirdHourRussian;
