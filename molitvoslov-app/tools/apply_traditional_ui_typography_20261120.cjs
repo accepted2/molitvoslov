@@ -428,20 +428,31 @@ function patch(source,changes,relative) {
   }
 }
 const writes=[];
+const conflicts=[];
 for(const rel of paths){
-  const file=path.join(app,rel);
-  if(!fs.existsSync(file))throw Error('File missing: '+rel+'. NO FILES MODIFIED.');
-  const base=git(oldRef,rel);
-  const next=git(newRef,rel);
-  const hunks=createHunks(base,next);
-  if(patch(base,hunks,rel)!==next){
-    throw Error('Patch self-validation failed for '+rel+'. NO FILES MODIFIED.');
+  try {
+    const file=path.join(app,rel);
+    if(!fs.existsSync(file))throw Error('Missing '+rel+'. NO FILES MODIFIED.');
+    const base=git(oldRef,rel);
+    const next=git(newRef,rel);
+    const hunks=createHunks(base,next);
+    if(patch(base,hunks,rel)!==next)
+      throw Error('Patch self-validation failed for '+rel+'. NO FILES MODIFIED.');
+    const source=fs.readFileSync(file,'utf8');
+    const patched=patch(source.replace(/\r\n/g,'\n'),hunks,rel);
+    parse(patched,{sourceType:'module',plugins:['jsx']});
+    const result=source.includes('\r\n')?patched.replace(/\n/g,'\r\n'):patched;
+    if(result!==source)writes.push({file,rel,result});
+  } catch(error) {
+    conflicts.push({file:rel,message:String(error?.message||error)});
   }
-  const source=fs.readFileSync(file,'utf8');
-  const patched=patch(source.replace(/\r\n/g,'\n'),hunks,rel);
-  parse(patched,{sourceType:'module',plugins:['jsx']});
-  const result=source.includes('\r\n')?patched.replace(/\n/g,'\r\n'):patched;
-  if(result!==source)writes.push({file,rel,result});
+}
+if(conflicts.length){
+  console.error('CONFLICTS: '+conflicts.length+' file(s). NO FILES MODIFIED.');
+  for(const item of conflicts)
+    console.error('  '+item.file+': '+item.message);
+  console.error('No changes were applied. Provide all the conflicts above for review.');
+  process.exit(1);
 }
 console.log('PASS: traditional font-size patch prepared in memory; all files parse.');
 console.log('TO UPDATE:',writes.map(x=>x.rel).join(', ')||'none');
