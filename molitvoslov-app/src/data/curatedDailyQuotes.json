@@ -1,7 +1,7 @@
 {
   "version": 1,
   "editorialSource": "App-bundled Synodal Bible, existing verified daily quotations; patristic excerpts cross-checked with works on azbyka.ru",
-  "count": 150,
+  "count": 151,
   "quotes": [
     {
       "id": 810001,
@@ -2056,6 +2056,17 @@
         "chapter": 4,
         "verse": 18
       },
+      "quote_date": null
+    },
+    {
+      "id": 810151,
+      "kind": "father",
+      "text": "Чем проще жизнь, тем лучше. Простота и смирение — два крыла, быстролетность сообщающие.",
+      "source": "свт. Феофан Затворник",
+      "reference": "свт. Феофан Затворник",
+      "work": "Письма. Выпуск 5. Письмо 771",
+      "sourceUrl": "https://azbyka.ru/otechnik/Feofan_Zatvornik/pisma/5",
+      "target": null,
       "quote_date": null
     }
   ]
