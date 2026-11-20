@@ -9,7 +9,7 @@ const formatLocalDate = date =>
 const getDateOrdinal = date =>
   Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000) + 719163;
 
-// Exactly one stable quote per local calendar day. All 150 short entries are
+// Exactly one stable quote per local calendar day. All 151 curated entries are
 // available offline; their IDs stay stable for saved hearts across releases.
 // Manually dated church-calendar quotations can still override the rotation.
 export const getDailyQuote = (date = new Date()) => {
