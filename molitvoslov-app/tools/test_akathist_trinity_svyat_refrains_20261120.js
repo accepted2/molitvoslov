@@ -57,8 +57,8 @@ check('Source newlines preserved',firstIkos,0);
 check('Run-together source gets 7 explicit breaks',
  firstIkos.replace(/\n/gu,' '),7);
 const accented=firstIkos
- .replaceAll('Свят еси','Свя́т еси́')
- .replaceAll('Свят, Свят, Свят','Свя́т, Свя́т, Свя́т');
+ .replaceAll('Свят, Свят, Свят','Свя́т, Свя́т, Свя́т')
+ .replaceAll('Свят еси','Свя́т еси́');
 const accentedRanges=r.red(accented,true);
 assert.equal(accentedRanges.length,7,
  'Accented Church Slavonic spelling: every response');
