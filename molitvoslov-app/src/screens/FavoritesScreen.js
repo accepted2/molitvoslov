@@ -350,7 +350,7 @@ export const FavoritesScreen = ({route, navigation}) => {
           <View style={styles.searchField}>
             <Ionicons name="search-outline" size={17} color={colors.accent} />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput,cslFont]}
               value={search}
               onChangeText={setSearch}
               placeholder={t('favorites.searchPlaceholder')}
