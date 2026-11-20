@@ -225,7 +225,7 @@ const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress, 
   const traditional = language === 'csl_traditional';
   const traditionalTitleStyle = traditionalUiTextStyle(language, 17 * uiScale, 20 * uiScale);
   const traditionalSubtitleStyle = traditionalUiTextStyle(language, 11 * uiScale, 14 * uiScale);
-  const cardHeight = (traditional ? 104 : 80) * uiScale;
+  const cardHeight = (traditional ? 116 : 80) * uiScale;
   return (
   <Pressable
     onPress={onPress}
@@ -900,7 +900,7 @@ export const MenuScreen = ({navigation}) => {
     })),
   ];
   const orderedLibraryCards=mergeCategoryOrder(libraryCards,categoryOrder);
-  const categoryHeight=(calendarLanguage === 'csl_traditional' ? 104 : 80)*uiScale;
+  const categoryHeight=(calendarLanguage === 'csl_traditional' ? 116 : 80)*uiScale;
   const categoryStride=categoryHeight+8;
 
   const startCategoryDrag=(key)=>{
