@@ -32,9 +32,9 @@ export const PrayerLearningScreen = ({navigation}) => {
   const quoteSurface = dark ? '#4E4035' : '#F6E9D2';
   const introSurface = dark ? '#3C332C' : '#FFF4DE';
   const textSize = Math.max(15, reader.fontSize);
-  const cellWidth = gridWidth > 0 ? Math.floor(
-    (gridWidth - (COLUMNS - 1) * GRID_GAP) / COLUMNS
-  ) : undefined;
+  const cellWidth = gridWidth > 0
+    ? (gridWidth - (COLUMNS - 1) * GRID_GAP) / COLUMNS
+    : undefined;
   const selectedLetter = PRAYER_LEARNING_LETTERS.find(x => x.upper === letter);
 
   const toggleSection = id => {
