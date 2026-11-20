@@ -17,7 +17,8 @@ import {useInterfaceScale} from '../context/InterfaceScaleContext';
 
 export const PrayerBooksScreen = ({navigation}) => {
   const uiScale = useInterfaceScale();
-  const {t} = useLanguage();
+  const {language,t} = useLanguage();
+  const cslFont=language==='csl_traditional'?{fontFamily:'Ponomar',fontWeight:'400'}:null;
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
   React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
@@ -84,8 +85,8 @@ export const PrayerBooksScreen = ({navigation}) => {
           ListHeaderComponent={
             <View>
               <View style={styles.intro}>
-                <Text style={[styles.introTitle, {fontSize: 20 * uiScale}]}>{t('prayerBooks.introTitle')}</Text>
-                <Text style={[styles.introText, {fontSize: 14 * uiScale}]}>{t('prayerBooks.introText')}</Text>
+                <Text style={[styles.introTitle, {fontSize: 20 * uiScale},cslFont]}>{t('prayerBooks.introTitle')}</Text>
+                <Text style={[styles.introText, {fontSize: 14 * uiScale},cslFont]}>{t('prayerBooks.introText')}</Text>
               </View>
 
               <Pressable
@@ -93,26 +94,26 @@ export const PrayerBooksScreen = ({navigation}) => {
                 style={({pressed}) => [styles.createButton, pressed && styles.pressed]}
               >
                 <Text style={styles.createIcon}>＋</Text>
-                <Text style={[styles.createButtonText, {fontSize: 15 * uiScale}]}>{t('prayerBooks.newBook')}</Text>
+                <Text style={[styles.createButtonText, {fontSize: 15 * uiScale},cslFont]}>{t('prayerBooks.newBook')}</Text>
               </Pressable>
 
               {!!books.length && (
-                <Text style={[styles.sectionLabel, {fontSize: 11 * uiScale}]}>{t('prayerBooks.myBooks')}</Text>
+                <Text style={[styles.sectionLabel, {fontSize: 11 * uiScale},cslFont]}>{t('prayerBooks.myBooks')}</Text>
               )}
             </View>
           }
           ListEmptyComponent={
             <View style={styles.emptyCard}>
               <Text style={styles.emptyMark}>✦</Text>
-              <Text style={[styles.emptyTitle, {fontSize: 18 * uiScale}]}>{t('prayerBooks.emptyTitle')}</Text>
-              <Text style={[styles.emptyText, {fontSize: 14 * uiScale}]}>{t('prayerBooks.emptyText')}</Text>
+              <Text style={[styles.emptyTitle, {fontSize: 18 * uiScale},cslFont]}>{t('prayerBooks.emptyTitle')}</Text>
+              <Text style={[styles.emptyText, {fontSize: 14 * uiScale},cslFont]}>{t('prayerBooks.emptyText')}</Text>
             </View>
           }
           renderItem={({item}) => (
             <View style={styles.card}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={'Открыть ' + (item.title||'мой молитвослов')}
+                accessibilityLabel={t('common.open')+' '+(item.title||t('prayerBooks.title'))}
                 onPress={() => navigation.navigate('PrayerBook', {bookSyncId: item.sync_id})}
                 onLongPress={() => setContextItem(item)}
                 delayLongPress={340}
@@ -132,8 +133,8 @@ export const PrayerBooksScreen = ({navigation}) => {
               </Pressable>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={'Поделиться молитвословом ' + (item.title||'')}
-                accessibilityHint="Создать защищённую ссылку для передачи личного молитвослова"
+                accessibilityLabel={t('contextActions.share')+' '+(item.title||'')}
+                accessibilityHint={t('contextActions.share')}
                 onPress={() => shareBook(item)}
                 hitSlop={5}
                 style={({pressed}) => [styles.shareButton,pressed && styles.pressed]}
@@ -146,13 +147,14 @@ export const PrayerBooksScreen = ({navigation}) => {
 
         <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
           title={t('prayerBooks.title')}
+          titleTextStyle={cslFont}
           navigation={navigation}
           topInset={insets.top}
           showBack={false}
         />
         <BottomNav navigation={navigation} active="prayerbooks" />
         <ContentContextMenu visible={!!contextItem}
-          title={contextItem?.title||'Мой молитвослов'}
+          title={contextItem?.title||t('prayerBooks.title')}
           onClose={()=>setContextItem(null)}
           onOpen={contextItem ? ()=>navigation.navigate('PrayerBook',{bookSyncId:contextItem.sync_id}) : null}
           onShare={contextItem ? ()=>shareBook(contextItem) : null}
@@ -166,7 +168,7 @@ export const PrayerBooksScreen = ({navigation}) => {
         >
           <View style={styles.modalBackdrop}>
             <View style={styles.modalCard}>
-              <Text style={[styles.modalTitle, {fontSize: 20 * uiScale}]}>{t('prayerBooks.newBook')}</Text>
+              <Text style={[styles.modalTitle, {fontSize: 20 * uiScale},cslFont]}>{t('prayerBooks.newBook')}</Text>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
@@ -177,10 +179,10 @@ export const PrayerBooksScreen = ({navigation}) => {
               />
               <View style={styles.modalActions}>
                 <Pressable onPress={() => setCreating(false)} style={styles.secondaryButton}>
-                  <Text style={styles.secondaryText}>{t('prayerBooks.cancel')}</Text>
+                  <Text style={[styles.secondaryText,cslFont]}>{t('prayerBooks.cancel')}</Text>
                 </Pressable>
                 <Pressable onPress={create} style={styles.primaryButton}>
-                  <Text style={styles.primaryText}>
+                  <Text style={[styles.primaryText,cslFont]}>
                     {busy ? t('prayerBooks.creating') : t('prayerBooks.create')}
                   </Text>
                 </Pressable>
