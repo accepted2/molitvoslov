@@ -21,6 +21,10 @@ if (!source.includes("import {getDailyQuote} from '../services/dailyQuote';") &&
   throw Error('getDailyQuote import not found; NO FILES MODIFIED');
 }
 let section = source.slice(start, end);
+if (!section.includes('quoteResponse')) {
+  console.log('ALREADY FIXED. NO FILES MODIFIED.');
+  process.exit(0);
+}
 const oldQuote = 'const quote = quoteResponse.data;';
 const newQuote = 'const quote = getDailyQuote();';
 const instances = section.split(oldQuote).length - 1;
