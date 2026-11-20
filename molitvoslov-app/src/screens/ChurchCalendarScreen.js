@@ -34,6 +34,7 @@ import {
 } from '../services/churchCalendar';
 import {CALENDAR_MONTHS, calendarText} from '../services/calendarPreferences';
 import {useLanguage} from '../context/LanguageContext';
+import {translate} from '../i18n/translations';
 import {getCalendarDataLanguage} from '../services/languagePreferences';
 import {
   getBundledCalendarMonth,
@@ -276,6 +277,8 @@ const FormattedCalendarText = ({text}) => {
 };
 
 const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, section, sourceTitle}) => {
+  const {language} = useLanguage();
+  const cslFont=language==='csl_traditional'?{fontFamily:'Ponomar',fontWeight:'400'}:null;
   const [expanded, setExpanded] = useState(false);
   const [wholeSaved, setWholeSaved] = useState(false);
   const actionsRef = useRef(null);
@@ -302,7 +305,7 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, 
           style={({pressed}) => [styles.textBlockHeader, styles.textBlockHeaderTap, pressed && styles.pressed]}
         >
         <View style={styles.textBlockHeaderText}>
-          <Text style={styles.textBlockTitle}>{title}</Text>
+          <Text style={[styles.textBlockTitle,cslFont]}>{title}</Text>
           {!!subtitle && <Text style={styles.textBlockSubtitle}>{subtitle}</Text>}
         </View>
         <SoftChevron expanded={expanded} />
@@ -373,6 +376,7 @@ const CALENDAR_BIBLE_TRANSLATIONS = [
 ];
 
 const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, translationCode = 'rst', onLayout, initiallyExpanded = false}) => {
+  const cslFont=language==='csl_traditional'?{fontFamily:'Ponomar',fontWeight:'400'}:null;
   const [expanded, setExpanded] = useState(initiallyExpanded);
   // Local to this reading: switching a translation does not change
   // the default in Account or another opened calendar reading.
@@ -409,11 +413,11 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
         </View>
 
         <View style={styles.readingTextWrap}>
-          <Text style={styles.readingKind}>
+          <Text style={[styles.readingKind,cslFont]}>
             {kind === 'gospel'
               ? copy.gospel
               : kind === 'old_testament'
-                ? 'Ветхий Завет'
+                ? translate(language,'calendarUi.oldTestament')
                 : copy.apostle}
             {!!sequence && ` · ${sequence}`}
           </Text>
@@ -421,9 +425,9 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
           <Text style={styles.readingTitle}>{title}</Text>
 
           {target ? (
-            <Text style={styles.readingHint}>{copy.openBible}</Text>
+            <Text style={[styles.readingHint,cslFont]}>{copy.openBible}</Text>
           ) : (
-            <Text style={styles.readingHintMuted}>{copy.unrecognized}</Text>
+            <Text style={[styles.readingHintMuted,cslFont]}>{copy.unrecognized}</Text>
           )}
         </View>
 
@@ -439,7 +443,7 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
               onPress={() => setExpanded((value) => !value)}
               style={({pressed}) => [styles.readingExpand, pressed && styles.pressed]}
             >
-              <Text style={styles.readingExpandText}>{expanded ? copy.hideText : copy.readText}</Text>
+              <Text style={[styles.readingExpandText,cslFont]}>{expanded ? copy.hideText : copy.readText}</Text>
             </Pressable>
 
             {expanded && (
@@ -448,7 +452,7 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
                   <Pressable
                     key={option.code}
                     accessibilityRole="button"
-                    accessibilityLabel={option.accessibilityLabel}
+                    accessibilityLabel={translate(language,'calendarUi.'+(option.code==='rst'?'rst':'church'))}
                     accessibilityState={{selected: activeTranslationCode === option.code}}
                     onPress={() => setActiveTranslationCode(option.code)}
                     style={({pressed}) => [
@@ -566,6 +570,7 @@ const ReadingGroup = ({kind, readings, navigation, copy, language, translationCo
 
 export const ChurchCalendarScreen = ({route, navigation}) => {
   const {language} = useLanguage();
+  const cslFont=language==='csl_traditional'?{fontFamily:'Ponomar',fontWeight:'400'}:null;
   const [calendarBibleTranslationCode, setCalendarBibleTranslationCode] = useState('rst');
   useFocusEffect(React.useCallback(() => {
     let active = true;
@@ -814,7 +819,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const calendar = (
     <View style={styles.calendarCard}>
       <View style={styles.languageRow}>
-        <Text style={styles.calendarSectionTitle}>{copy.calendarTitle}</Text>
+        <Text style={[styles.calendarSectionTitle,cslFont]}>{copy.calendarTitle}</Text>
       </View>
 
       <View style={styles.calendarHeader}>
@@ -902,7 +907,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
   const feastList = (
     <View style={styles.otherSaintsCard}>
-      <Text style={styles.sectionEyebrow}>{copy.alsoToday}</Text>
+      <Text style={[styles.sectionEyebrow,cslFont]}>{copy.alsoToday}</Text>
 
       {otherFeasts.length ? (
         otherFeasts.map((feast) => (
@@ -922,7 +927,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
           </Pressable>
         ))
       ) : (
-        <Text style={styles.otherSaintEmpty}>{copy.noOtherMemories}</Text>
+        <Text style={[styles.otherSaintEmpty,cslFont]}>{copy.noOtherMemories}</Text>
       )}
     </View>
   );
@@ -959,7 +964,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             </View>
 
             <View style={styles.feastHeroText}>
-              <Text style={styles.feastMemory}>{copy.feastMemory}</Text>
+              <Text style={[styles.feastMemory,cslFont]}>{copy.feastMemory}</Text>
               <Text style={styles.feastTitle}>{displayTitle(mainFeast, copy)}</Text>
 
               {!!formatMemorialDay(dayData, language) && (
@@ -1025,7 +1030,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             style={styles.readingsSection}
             onLayout={(event) => saveReadingLayout('readings', event.nativeEvent.layout.y)}
           >
-            <Text style={styles.sectionEyebrow}>{copy.readings}</Text>
+            <Text style={[styles.sectionEyebrow,cslFont]}>{copy.readings}</Text>
 
             <ReadingGroup
               kind="gospel"
@@ -1059,7 +1064,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             />
 
             {!gospelReadings.length && !apostleReadings.length && !oldTestamentReadings.length && (
-              <Text style={styles.noReadings}>{copy.noReadings}</Text>
+              <Text style={[styles.noReadings,cslFont]}>{copy.noReadings}</Text>
             )}
           </View>
         </>
@@ -1109,6 +1114,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
       <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
         title={copy.calendarTitle}
+        titleTextStyle={cslFont}
         navigation={navigation}
         topInset={insets.top}
       />
