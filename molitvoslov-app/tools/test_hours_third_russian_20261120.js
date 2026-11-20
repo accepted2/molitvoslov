@@ -47,8 +47,8 @@ const paired=helper.getThirdHourRussianSections('both');
 assert.equal(originals.length,14,'Russian third hour + Saint Ephrem accordion');
 assert.equal(paired.length,14,'CS+RU retains matching sections + Saint Ephrem');
 assert.deepEqual(originals.map(s=>s.originalSectionIndex),
- [0,1,2,3,4,5,6,7,9,10,8,11,13,12],
- 'User-provided order: Господь Бог благословен follows the fasting tropares');
+ [0,1,2,3,4,5,6,7,8,9,10,11,13,12],
+ 'Russian liturgical order: the blessing follows the Great Lent dropdown');
 assert.deepEqual(paired.map(s=>s.originalSectionIndex),
  [0,1,2,3,4,5,6,7,8,9,10,11,13,12],
  'CS+RU follows the Church Slavonic sequence and shares pair positions');
@@ -121,11 +121,31 @@ assert.equal(ru.sections[3].rows[0].blocks[0].text,
  russian.sections[3].rows[0].russian);
 assert.deepEqual(ru.sections.slice(1,4).map(s=>s.title),
  ['Псалом 16','Псалом 24','Псалом 50']);
-assert.equal(ru.sections[10].rows[0].blocks[0].text,
+assert.equal(ru.sections[7].accordionId,'third-hour-lent-tropar',
+ 'Great Lent dropdown precedes the blessing');
+assert.equal(ru.sections[8].rows[0].blocks[0].text,
  russian.sections[8].rows[0].russian,
- 'Blessing after optional troparia in Russian reading order');
-assert.equal(ru.sections[10].rows[0].blocks[0].id,90012,
- 'The blessing retains its original stable bookmark id');
+ 'The blessing immediately follows the Great Lent dropdown');
+assert.equal(ru.sections[8].rows[0].blocks[0].id,90012,
+ 'Moving the blessing does not change its saved bookmark id');
+assert.equal(ru.sections[9].rows[0].blocks[0].text,'Трисвятое. И по Отче наш:');
+assert.equal(ru.sections[9].rows[0].dividerAfter,true,
+ 'An actual separator must stand between Trisagion and the feast Kontakion');
+assert.equal(ru.sections[9].rows[1].blocks[0].text,'Кондак праздника');
+assert.equal(ru.sections[10].accordionId,'third-hour-fasting-kontakia',
+ 'The fasting tropar dropdown comes after the feast Kontakion');
+assert.equal(both.sections[9].rows[0].dividerAfter,true,
+ 'Bilingual view also separates the two rubrics');
+assert.equal(cs.sections[9].rows[0].dividerAfter,false,
+ 'Unchanged CS presentation must not acquire a duplicate separator');
+const russianBlessings = document => document.sections
+ .flatMap(section => section.rows).flatMap(row => row.blocks)
+ .filter(block => block.metadata?.language === 'russian' &&
+  block.text.startsWith('Господь Бог благословен'));
+assert.equal(russianBlessings(ru).length,1,
+ 'The blessing must appear exactly once in RU, not at its former position');
+assert.equal(russianBlessings(both).length,1,
+ 'The blessing must appear exactly once in CS+RU');
 assert.equal(ru.sections[12].accordionId,'third-hour-ephrem');
 assert.equal(ru.sections[12].collapsible,true);
 assert.equal(ru.sections[12].rows[1].blocks[0].text,
