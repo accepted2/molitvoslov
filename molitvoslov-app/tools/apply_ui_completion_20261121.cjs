@@ -74,7 +74,8 @@ try {
       if(!fs.existsSync(file))throw Error('Source file missing.');
       const raw=fs.readFileSync(file,'utf8');
       const local=raw.replace(/\r\n/g,'\n');
-      const base=git(baseRef,rel);
+      const base=git(rel==='src/services/traditionalUiTypography.js'
+        ? '952e8b736868073ac0bc99e0b516d05fc3466fbb' : baseRef,rel);
       const target=git(targetRef,rel);
       const merged=mergeThreeWay(local,base,target,rel);
       parse(merged,{sourceType:'module',plugins:['jsx']});
