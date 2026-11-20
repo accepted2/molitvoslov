@@ -245,8 +245,7 @@ export const NotificationsScreen = ({navigation, route}) => {
                       const message = !status ? t('notifications.checking')
                         : !status.permitted ? t('notifications.denied')
                           : !status.ready ? t('notifications.notConfirmed')
-                            : 'Запланировано ' + status.registered + '/' + status.expected +
-                              ' · Следующее: ' + next;
+                            : t('notifications.scheduled',{registered:status.registered,expected:status.expected,next:next||'—'});
                       return <View>
                         <Text style={[styles.scheduleStatus,cslFont,
                           status && !status.ready && styles.scheduleWarning]}>{message}</Text>
@@ -315,7 +314,7 @@ export const NotificationsScreen = ({navigation, route}) => {
               placeholderTextColor="#9F846A"
               onChangeText={title => changeDraft({title})}
             />
-            <Text style={[styles.fieldLabel,cslFont]}>Время</Text>
+            <Text style={[styles.fieldLabel,cslFont]}>{t('notifications.time')}</Text>
             <TextInput
               accessibilityLabel={t('notifications.timeA11y')}
               style={[styles.textInput, {width: 124, textAlign: 'center'}]}
