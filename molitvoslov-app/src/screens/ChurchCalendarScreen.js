@@ -525,6 +525,7 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
 };
 
 const ReadingGroup = ({kind, readings, navigation, copy, language, translationCode = 'rst', onLayout, expandFirst = false}) => {
+  const cslFont=language==='csl_traditional'?{fontFamily:'Ponomar',fontWeight:'400'}:null;
   const [showAll, setShowAll] = useState(false);
 
   if (!readings.length) {
