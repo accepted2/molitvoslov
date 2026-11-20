@@ -18,6 +18,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {AppBackground} from '../components/layout/AppBackground';
 import {useLanguage} from '../context/LanguageContext';
+import {translate} from '../i18n/translations';
 import {useBibleContentGeneration} from '../hooks/useBibleContentGeneration';
 import {getCurrentContent, subscribeToContentUpdates} from '../services/contentStore';
 import {resolveSearchOpenRoute} from '../services/search/openRoute';
@@ -35,52 +36,19 @@ const SEARCH_SQLITE_OPTIONS = Object.freeze({
   finalizeUnusedStatementsBeforeClosing: false,
 });
 
-const copyForLanguage = (language) =>
-  language === 'uk'
-    ? {
-      title: 'Пошук',
-      placeholder: 'Назва або слова з тексту…',
-      hint: 'Пошук не враховує наголоси та надрядкові знаки.',
-      start: 'Почніть вводити назву молитви, акафіста, псалма або слова з тексту.',
-      short: 'Введіть щонайменше 2 символи.',
-      empty: 'Нічого не знайдено.',
-      found: (count) => `Знайдено: ${count}`,
-      more: 'Показано перші результати. Уточніть запит, щоб звузити пошук.',
-      recent: 'Недавні пошуки',
-      clearRecent: 'Очистити',
-      tabs: {
-        all: 'Усе',
-        prayers: 'Молитви',
-        akathists: 'Акафісти',
-        psalter: 'Псалтир',
-        canons: 'Канони',
-        scripture: 'Писання',
-        calendar_stories: 'Житія та історії',
-        calendar_hymns: 'Тропарі та кондаки',
-      },
-    }
-    : {
-      title: 'Поиск',
-      placeholder: 'Название или слова из текста…',
-      hint: 'Поиск не учитывает ударения и надстрочные знаки.',
-      start: 'Начните вводить название молитвы, акафиста, псалма или слова из текста.',
-      short: 'Введите хотя бы 2 символа.',
-      empty: 'Ничего не найдено.',
-      found: (count) => `Найдено: ${count}`,
-      more: 'Показаны первые результаты. Уточните запрос, чтобы сузить поиск.',
-      recent: 'Недавние запросы',
-      clearRecent: 'Очистить',
-      tabs: {
-        all: 'Все',
-        prayers: 'Молитвы',
-        akathists: 'Акафисты',
-        psalter: 'Псалтирь',
-        canons: 'Каноны',
-        scripture: 'Писание',
-        calendar_stories: 'Жития и истории',
-        calendar_hymns: 'Тропари и кондаки',
-      },
-    };
+// Use the same keyed language dictionary as the rest of the UI.
+const copyForLanguage = (language) => {
+  const get = (key,params) => translate(language, 'searchUi.'+key, params);
+  const tabs = {};
+  for (const key of ['all','prayers','akathists','psalter','canons','scripture',
+    'calendar_stories','calendar_hymns']) tabs[key] = get('tabs.'+key);
+  return {
+    title:get('title'),placeholder:get('placeholder'),hint:get('hint'),
+    start:get('start'),short:get('short'),empty:get('empty'),
+    found:count=>get('found',{count}),more:get('more'),
+    recent:get('recent'),clearRecent:get('clearRecent'),tabs,
+  };
+};
 
 // FTS5 encloses actual matched tokens in brackets. Select the context around
 // these hits instead of looking for the literal user query (which may include
@@ -155,6 +123,7 @@ const SearchContent = ({navigation}) => {
   const [seedReady, setSeedReady] = useState(false);
   const [paused, setPaused] = useState(false);
   const { language } = useLanguage();
+  const cslFont=language==='csl_traditional' ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
   React.useEffect(() => {setHeaderHeight(insets.top + 56);}, [insets.top]);
@@ -365,7 +334,7 @@ const SearchContent = ({navigation}) => {
     >
       {item.group !== 'calendar' && <View style={styles.resultTopLine}>
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>{copy.tabs[item.group] || item.groupLabel || item.group}</Text>
+          <Text style={[styles.badgeText,cslFont]}>{copy.tabs[item.group] || item.groupLabel || item.group}</Text>
         </View>
         {!!item.matchedLanguageLabel && (
           <Text style={styles.languageLabel}>{item.matchedLanguageLabel}</Text>
@@ -471,7 +440,7 @@ const SearchContent = ({navigation}) => {
             )}
           </View>
 
-          <Text style={styles.searchHint}>{copy.hint}</Text>
+          <Text style={[styles.searchHint,cslFont]}>{copy.hint}</Text>
 
           <View style={styles.tabsContent}>
             {tabs.map((tab) => {
@@ -566,13 +535,13 @@ const SearchContent = ({navigation}) => {
             {!!history.length ? (
               <View style={styles.historyCard}>
                 <View style={styles.historyHeader}>
-                  <Text style={styles.historyTitle}>{copy.recent}</Text>
+                  <Text style={[styles.historyTitle,cslFont]}>{copy.recent}</Text>
                   <Pressable
                     onPress={clearHistory}
                     hitSlop={8}
                     style={({pressed}) => [styles.historyClear, pressed && styles.pressed]}
                   >
-                    <Text style={styles.historyClearText}>{copy.clearRecent}</Text>
+                    <Text style={[styles.historyClearText,cslFont]}>{copy.clearRecent}</Text>
                   </Pressable>
                 </View>
 
@@ -591,18 +560,18 @@ const SearchContent = ({navigation}) => {
             ) : (
               <>
                 <Text style={styles.emptyGlyph}>⌕</Text>
-                <Text style={styles.centerText}>{copy.start}</Text>
+                <Text style={[styles.centerText,cslFont]}>{copy.start}</Text>
               </>
             )}
           </View>
         ) : queryTooShort ? (
           <View style={styles.center}>
-            <Text style={styles.centerText}>{copy.short}</Text>
+            <Text style={[styles.centerText,cslFont]}>{copy.short}</Text>
           </View>
         ) : showEmpty ? (
           <View style={styles.center}>
             <Text style={styles.emptyGlyph}>⌕</Text>
-            <Text style={styles.centerText}>{copy.empty}</Text>
+            <Text style={[styles.centerText,cslFont]}>{copy.empty}</Text>
           </View>
         ) : (
           <FlatList
@@ -622,13 +591,13 @@ const SearchContent = ({navigation}) => {
               loadingMore ? (
                 <ActivityIndicator size="small" color="#A16E35" />
               ) : hasMore ? (
-                <Text style={styles.moreText}>{copy.more}</Text>
+                <Text style={[styles.moreText,cslFont]}>{copy.more}</Text>
               ) : null
             }
           />
         )}
 
-        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={copy.title} navigation={navigation} topInset={insets.top} />
+        <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title={copy.title} titleTextStyle={cslFont} navigation={navigation} topInset={insets.top} />
       </View>
     </AppBackground>
   );
