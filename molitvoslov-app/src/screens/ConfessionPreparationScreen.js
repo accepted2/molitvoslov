@@ -17,6 +17,8 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
+import {useLanguage} from '../context/LanguageContext';
+import {translate} from '../i18n/translations';
 import {colors} from '../theme';
 import confessionCatalog from '../data/confessionCatalog.json';
 import confessionDocument from '../data/confessionDocument.json';
@@ -45,10 +47,10 @@ for (const [id, group] of Object.entries(SEMANTIC_DOCUMENT.lookup)) {
   }
 }
 
-const notifySaveError = () => {
+const notifySaveError = language => {
   Alert.alert(
-    'Не удалось сохранить',
-    'Проверьте свободное место и повторите действие. Личные записи не отправляются в интернет.'
+    translate(language, 'confession.saveError'),
+    translate(language, 'confession.saveHint')
   );
 };
 
@@ -116,6 +118,13 @@ const ConfessionScrollThumb = ({
 };
 
 export const ConfessionPreparationScreen = ({navigation}) => {
+  const {language,t} = useLanguage();
+  const latestLanguageRef = useRef(language);
+  latestLanguageRef.current = language;
+  const onSaveError = useCallback(
+    () => notifySaveError(latestLanguageRef.current), []);
+  const traditionalStyle = language === 'csl_traditional'
+    ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
   const [viewMode, setViewMode] = useState('catalog');
@@ -180,7 +189,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
         setNotes(data.notes);
         setCustom(data.custom);
       })
-      .catch(() => {if (active) notifySaveError();})
+      .catch(() => {if (active) onSaveError();})
       .finally(() => {if (active) setLoading(false);});
     return () => {active = false;};
   }, []);
@@ -188,7 +197,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
   const persistSelection = useCallback(next => {
     selectedRef.current = next;
     setSelectedIds(next);
-    saveConfessionSelection(next).catch(notifySaveError);
+    saveConfessionSelection(next).catch(onSaveError);
   }, []);
 
   const addSelected = useCallback(id => {
@@ -211,7 +220,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
         return copy;
       });
     }
-    deleteConfessionEntry(id).catch(notifySaveError);
+    deleteConfessionEntry(id).catch(onSaveError);
   }, [persistSelection]);
 
   const changeNote = useCallback((id, value) => {
@@ -219,7 +228,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
     setNotes(previous => ({...previous, [id]: clean}));
     // Queued native encrypted writes preserve typing order, even when the
     // screen is closed shortly after the last keystroke.
-    saveConfessionEntry(id, clean, custom[id] || '').catch(notifySaveError);
+    saveConfessionEntry(id, clean, custom[id] || '').catch(onSaveError);
   }, [custom]);
 
   const addOwn = useCallback(() => {
@@ -229,7 +238,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
       Math.random().toString(36).slice(2, 7);
     setCustom(previous => ({...previous, [id]: title}));
     setNotes(previous => ({...previous, [id]: ''}));
-    saveConfessionEntry(id, '', title).catch(notifySaveError);
+    saveConfessionEntry(id, '', title).catch(onSaveError);
     persistSelection([...selectedRef.current, id]);
     setCustomTitle('');
     setAddingCustom(false);
@@ -238,19 +247,19 @@ export const ConfessionPreparationScreen = ({navigation}) => {
   const clearAll = useCallback(() => {
     if (!selectedRef.current.length) return;
     Alert.alert(
-      'Очистить мой список?',
-      'Все выбранные пункты и личные заметки будут удалены с этого устройства.',
+      t('confession.clearTitle'),
+      t('confession.clearDescription'),
       [
-        {text: 'Отмена', style: 'cancel'},
+        {text: t('confession.cancel'), style: 'cancel'},
         {
-          text: 'Очистить', style: 'destructive',
+          text: t('confession.clearConfirm'), style: 'destructive',
           onPress: () => {
             const oldIds = [...selectedRef.current];
             selectedRef.current = [];
             setSelectedIds([]);
             setNotes({});
             setCustom({});
-            clearConfessionPreparation(oldIds).catch(notifySaveError);
+            clearConfessionPreparation(oldIds).catch(onSaveError);
           },
         },
       ]
@@ -317,7 +326,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
               key={segment.id}
               onPress={() => openSinMenu(segment.id)}
               accessibilityRole="button"
-              accessibilityLabel={'Выбрать грех: ' + (CATALOG_BY_ID[segment.id]?.title || '')}
+              accessibilityLabel={t('confession.selectSin',{title:CATALOG_BY_ID[segment.id]?.title || ''})}
               style={selected ? styles.documentSelected : styles.documentPhrase}
             >
               {segment.text}
@@ -335,7 +344,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
         <Text style={styles.personalTitle}>{item.title}</Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={'Убрать: ' + item.title}
+          accessibilityLabel={t('confession.removeSin',{title:item.title})}
           onPress={() => removeSelected(item.id)}
           hitSlop={8}
           style={styles.removeButton}
@@ -346,17 +355,17 @@ export const ConfessionPreparationScreen = ({navigation}) => {
       {!item.isCustom && !!item.description && (
         <Text style={styles.selectedDescription}>{item.description}</Text>
       )}
-      <Text style={styles.noteLabel}>Мои мысли и обстоятельства</Text>
+      <Text style={[styles.noteLabel,traditionalStyle]}>{t('confession.notesTitle')}</Text>
       <TextInput
         style={styles.noteInput}
         multiline
         textAlignVertical="top"
-        placeholder="Что я хочу сказать на исповеди..."
+        placeholder={t('confession.notesPlaceholder')}
         placeholderTextColor="#A08A72"
         maxLength={CONFESSION_NOTE_MAX_LENGTH}
         value={notes[item.id] || ''}
         onChangeText={value => changeNote(item.id, value)}
-        accessibilityLabel={'Личные заметки: ' + item.title}
+        accessibilityLabel={t('confession.notesA11y',{title:item.title})}
       />
     </View>
   );
@@ -364,7 +373,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
   const listHeader = (
     <View style={styles.listHeader}>
       <Text style={styles.title}>
-        {catalogMode ? 'Подготовка к исповеди' : 'Мой список'}
+        {catalogMode ? t('confession.title') : t('confession.myList')}
       </Text>
       <View style={styles.tabs}>
         <Pressable
@@ -374,7 +383,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
           accessibilityState={{selected: catalogMode}}
         >
           <Text style={[styles.tabText, catalogMode && styles.tabTextActive]}>
-            Все грехи
+            {t('confession.allSins')}
           </Text>
         </Pressable>
         <Pressable
@@ -384,28 +393,26 @@ export const ConfessionPreparationScreen = ({navigation}) => {
           accessibilityState={{selected: !catalogMode}}
         >
           <Text style={[styles.tabText, !catalogMode && styles.tabTextActive]}>
-            Мой список ({selectedIds.length})
+            {t('confession.myListCount',{count:selectedIds.length})}
           </Text>
         </Pressable>
       </View>
       {catalogMode ? (
         <>
           <View style={styles.intro}>
-            <Text style={styles.introTitle}>Что такое исповедь?</Text>
-            <Text style={styles.introText}>{confessionDocument.intro}</Text>
-            <Text style={styles.sourceNote}>{confessionDocument.caution}</Text>
+            <Text style={styles.introTitle}>{t('confession.whatIs')}</Text>
+            <Text style={[styles.introText,traditionalStyle]}>{t('confession.intro')}</Text>
+            <Text style={[styles.sourceNote,traditionalStyle]}>{t('confession.caution')}</Text>
           </View>
-          <Text style={styles.heading}>Грехи с объяснениями</Text>
-          <Text style={styles.explanation}>
-            Нажмите на смысловое выражение в тексте, чтобы добавить
-            этот пункт целиком, вместе с пояснениями, в свой список.
+          <Text style={styles.heading}>{t('confession.explanationTitle')}</Text>
+          <Text style={[styles.explanation,traditionalStyle]}>
+            {t('confession.explanation')}
           </Text>
         </>
       ) : (
         <>
-          <Text style={styles.explanation}>
-            Выбранные пункты и заметки хранятся только на этом устройстве
-            в защищённом хранилище. Они не отправляются на сервер.
+          <Text style={[styles.explanation,traditionalStyle]}>
+            {t('confession.privateHint')}
           </Text>
           <View style={styles.personalActions}>
             <Pressable
@@ -414,7 +421,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
               onPress={() => setAddingCustom(value => !value)}
             >
               <Text style={styles.smallButtonText}>
-                {addingCustom ? 'Отмена' : '+ Добавить'}
+                {addingCustom ? t('confession.cancel') : t('confession.add')}
               </Text>
             </Pressable>
             {selectedIds.length > 0 && (
@@ -423,7 +430,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
                 style={styles.smallButton}
                 onPress={clearAll}
               >
-                <Text style={styles.smallButtonText}>Очистить список</Text>
+                <Text style={styles.smallButtonText}>{t('confession.clear')}</Text>
               </Pressable>
             )}
           </View>
@@ -431,19 +438,19 @@ export const ConfessionPreparationScreen = ({navigation}) => {
             <View style={styles.customBox}>
               <TextInput
                 style={styles.customInput}
-                placeholder="Название своего пункта"
+                placeholder={t('confession.newItem')}
                 placeholderTextColor="#A08A72"
                 value={customTitle}
                 maxLength={CONFESSION_TITLE_MAX_LENGTH}
                 onChangeText={setCustomTitle}
-                accessibilityLabel="Название своего пункта"
+                accessibilityLabel={t('confession.newItem')}
               />
               <Pressable
                 style={[styles.actionButton, !customTitle.trim() && styles.disabled]}
                 disabled={!customTitle.trim()}
                 onPress={addOwn}
               >
-                <Text style={styles.actionText}>Добавить</Text>
+                <Text style={styles.actionText}>{t('confession.addAction')}</Text>
               </Pressable>
             </View>
           )}
@@ -489,8 +496,8 @@ export const ConfessionPreparationScreen = ({navigation}) => {
             )) : (
               <Text style={styles.empty}>
                 {catalogMode
-                  ? 'В справочнике пока нет записей.'
-                  : 'Пока ничего не выбрано. Откройте "Все грехи" и добавьте нужные пункты.'}
+                  ? t('confession.noCatalog')
+                  : t('confession.noSelections')}
               </Text>
             )}
           </Animated.ScrollView>
@@ -506,16 +513,17 @@ export const ConfessionPreparationScreen = ({navigation}) => {
           scrollTo={scrollToPosition}
         />
         <FixedSectionHeader
-          title="Подготовка к исповеди"
+          title={t('confession.title')}
+          titleTextStyle={traditionalStyle}
           gradientColor="#FFF4DE"
           navigation={navigation}
           compactReading
           readingHidden={readingChromeHidden}
           headerAction={{
-            label: catalogMode ? 'Мой список' : 'Все грехи',
+            label: catalogMode ? t('confession.myList') : t('confession.allSins'),
             accessibilityLabel: catalogMode
-              ? 'Перейти в мой список'
-              : 'Перейти ко всем грехам',
+              ? t('confession.openMyList')
+              : t('confession.openAll'),
             onPress: () => switchView(catalogMode ? 'mine' : 'catalog'),
           }}
           topInset={insets.top}
@@ -536,16 +544,16 @@ export const ConfessionPreparationScreen = ({navigation}) => {
             style={StyleSheet.absoluteFillObject}
             onPress={closeSinMenu}
             accessibilityRole="button"
-            accessibilityLabel="Закрыть меню"
+            accessibilityLabel={t('confession.close')}
           />
           <View style={styles.sinMenuCard} accessibilityViewIsModal>
             <View style={styles.sinMenuAccent} />
-            <Text style={styles.sinMenuCaption}>Подготовка к исповеди</Text>
+            <Text style={[styles.sinMenuCaption,traditionalStyle]}>{t('confession.title')}</Text>
             <Text style={styles.sinMenuTitle}>{menuSin?.title}</Text>
             <Text style={styles.sinMenuDescription}>
               {menuAlreadySelected
-                ? 'Этот грех уже добавлен в ваш список.'
-                : 'Добавить выбранный грех в мой список?'}
+                ? t('confession.selected')
+                : t('confession.askAdd')}
             </Text>
             <View style={styles.sinMenuDivider} />
             <Pressable
@@ -558,7 +566,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
               onPress={confirmSinMenu}
             >
               <Text style={styles.sinMenuConfirmText}>
-                {menuAlreadySelected ? 'Убрать из моего списка' : 'Добавить в мой список'}
+                {menuAlreadySelected ? t('confession.removeSelected') : t('confession.addSelected')}
               </Text>
             </Pressable>
             <Pressable
@@ -566,7 +574,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
               style={({pressed}) => [styles.sinMenuCancel, pressed && styles.pressed]}
               onPress={closeSinMenu}
             >
-              <Text style={styles.sinMenuCancelText}>Отмена</Text>
+              <Text style={styles.sinMenuCancelText}>{t('confession.cancel')}</Text>
             </Pressable>
           </View>
         </View>
