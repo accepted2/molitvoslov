@@ -62,11 +62,11 @@ export const HoursReadingScreen = ({route, navigation}) => {
     let active = true;
     setViewMode(READER_LANGUAGE_MODES.CHURCH);
     if (entryId) {
-      getReaderLanguageModePreference({sourceType:'hours', sourceId:entryId})
-        .then(mode => {
-          if (active && VALID_MODES.includes(mode)) setViewMode(mode);
+      getReaderLanguageModePreference({sourceType: 'hours', sourceId: entryId})
+        .then((saved) => {
+          if (active && VALID_MODES.includes(saved)) setViewMode(saved);
         })
-        .catch(error => console.warn('[hours] reader mode:', error?.message || error));
+        .catch((error) => console.warn('[hours] reader mode:', error?.message || error));
     }
     return () => {active = false;};
   }, [entryId]);
