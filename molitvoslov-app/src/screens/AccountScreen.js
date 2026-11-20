@@ -87,7 +87,6 @@ export const AccountScreen = ({navigation}) => {
   };
 
   const {language, setLanguage, t} = useLanguage();
-  const traditional = language === 'csl_traditional';
   const [readingSettings, setReadingSettings] = useState(DEFAULT_READING_SETTINGS);
   const readingSettingsRef = useRef(DEFAULT_READING_SETTINGS);
   const [showColorPicker, setShowColorPicker] = useState(null);
