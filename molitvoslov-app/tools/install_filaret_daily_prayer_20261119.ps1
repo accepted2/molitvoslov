@@ -44,7 +44,7 @@ Write-Host '[2/5] Check the search generator without editing it'
 node .\tools\apply_filaret_daily_prayer_search_20261119.js --dry-run
 CheckExit 'Filaret search patch dry run'
 
-Write-Host '[3/5] Install one prayer in Разные молитвы and update canonical SHA'
+Write-Host '[3/5] Install one prayer in Misc Prayers and update canonical SHA'
 & $PythonExe -X utf8 .\tools\import_filaret_daily_prayer_20261119.py
 CheckExit 'Filaret local offline import'
 
@@ -58,5 +58,5 @@ CheckExit 'Complete offline search'
 & $PythonExe -X utf8 .\tools\verify_filaret_daily_prayer_20261119.py
 CheckExit 'Filaret prayer and index audit'
 
-Write-Host 'PASS: St Philaret prayer is in Разные молитвы and indexed for Russian search.'
+Write-Host 'PASS: St Philaret prayer is in Misc Prayers and indexed for Russian search.'
 Write-Host 'The installed APK has NOT been modified. Rebuild the APK when ready.'
