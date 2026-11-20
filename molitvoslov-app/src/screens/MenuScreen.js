@@ -42,6 +42,7 @@ import {
 import {CALENDAR_MONTHS, calendarText} from '../services/calendarPreferences';
 import {useLanguage} from '../context/LanguageContext';
 import {useInterfaceScale} from '../context/InterfaceScaleContext';
+import {traditionalUiTextStyle} from '../services/traditionalUiTypography';
 import {LANGUAGE_OPTIONS, getCalendarDataLanguage} from '../services/languagePreferences';
 import {getLocalizedField} from '../services/localizedContent';
 import {refreshCalendarWidgetsFromApp} from '../widgets/widgetCalendarRefresh';
@@ -221,12 +222,15 @@ const BellGlyph = () => (
 const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress, disabled=false}) => {
   const uiScale = useInterfaceScale();
   const {language} = useLanguage();
-  const traditionalStyle = language === 'csl_traditional' ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
+  const traditional = language === 'csl_traditional';
+  const traditionalTitleStyle = traditionalUiTextStyle(language, 17 * uiScale, 20 * uiScale);
+  const traditionalSubtitleStyle = traditionalUiTextStyle(language, 11 * uiScale, 14 * uiScale);
+  const cardHeight = (traditional ? 104 : 80) * uiScale;
   return (
   <Pressable
     onPress={onPress}
     disabled={disabled}
-    style={({pressed}) => [styles.libraryCard, {minHeight: 80 * uiScale, height: 80 * uiScale}, pressed && styles.pressed]}
+    style={({pressed}) => [styles.libraryCard, {minHeight: cardHeight, height: cardHeight}, pressed && styles.pressed]}
   >
     <ImageBackground
       source={artwork}
@@ -273,12 +277,12 @@ const DecorativeCard = ({title, subtitle, symbol, iconSource, artwork, onPress, 
     </View>
 
     <View style={styles.libraryText}>
-      <Text style={[styles.libraryTitle, {fontSize: 17 * uiScale, lineHeight: 20 * uiScale}, traditionalStyle]} numberOfLines={2}>
+      <Text style={[styles.libraryTitle, {fontSize: 17 * uiScale, lineHeight: 20 * uiScale}, traditionalTitleStyle]} numberOfLines={2}>
         {title}
       </Text>
 
       {!!subtitle && (
-        <Text style={[styles.librarySubtitle, {fontSize: 11 * uiScale, lineHeight: 14 * uiScale}, traditionalStyle]} numberOfLines={2}>
+        <Text style={[styles.librarySubtitle, {fontSize: 11 * uiScale, lineHeight: 14 * uiScale}, traditionalSubtitleStyle]} numberOfLines={2}>
           {subtitle}
         </Text>
       )}
@@ -896,7 +900,8 @@ export const MenuScreen = ({navigation}) => {
     })),
   ];
   const orderedLibraryCards=mergeCategoryOrder(libraryCards,categoryOrder);
-  const categoryStride=80*uiScale+8;
+  const categoryHeight=(calendarLanguage === 'csl_traditional' ? 104 : 80)*uiScale;
+  const categoryStride=categoryHeight+8;
 
   const startCategoryDrag=(key)=>{
     dragOrderRef.current=orderedLibraryCards.map(card=>card.key);
@@ -1730,7 +1735,7 @@ export const MenuScreen = ({navigation}) => {
                     index={index}
                     total={orderedLibraryCards.length}
                     rowHeight={categoryStride}
-                    cardHeight={80*uiScale}
+                    cardHeight={categoryHeight}
                     activeKey={draggedCategoryKey}
                     onDragStart={startCategoryDrag}
                     onDragHover={previewCategoryDrag}
