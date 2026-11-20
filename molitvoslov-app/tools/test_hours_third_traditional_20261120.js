@@ -141,7 +141,7 @@ assert.equal(t.sections[3].rows[0].blocks[0].text.length,1766);
 assert.equal(t.sections[1].rows[0].blocks[0].hoursMarks[0].kind,'initial');
 assert(t.sections.every(s=>s.className.includes('hours-traditional-section')));
 assert(t.sections.every(s=>s.className.includes('hours-third-hour')));
-assert.equal(t.sections[0].rows[4].sharedTitle,traditional.sections[0].rows[2].traditionalHeading);
+assert.equal(t.sections[0].rows[3].sharedTitle,traditional.sections[0].rows[2].traditionalHeading);
 const blessingCount=t.sections.flatMap(s=>s.rows).flatMap(r=>r.blocks)
  .filter(b=>b.text.startsWith('Гдⷭ҇ь Бг҃ъ блгⷭ҇в́енъ')).length;
 assert.equal(blessingCount,1,'Do not duplicate the traditional blessing');
