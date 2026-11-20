@@ -1,6 +1,7 @@
 import {getCurrentContent} from './contentStore';
 import curated from '../data/curatedDailyQuotes.json';
 import longFathers from '../data/curatedLongFatherQuotes.json';
+import userSelected from '../data/curatedRequestedQuotes20261120.json';
 import {selectExtendedDailyQuote} from './extendedDailyQuote';
 
 const formatLocalDate = date =>
@@ -11,9 +12,9 @@ const formatLocalDate = date =>
 const getDateOrdinal = date =>
   Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000) + 719163;
 
-// Exactly one stable quote per local calendar day. The existing 151 curated
-// entries remain intact for saved hearts; new long Fathers are additionally
-// available offline. Scripture passages are extended from adjacent verses.
+// Exactly one stable quote per local calendar day. All 151 legacy quotes
+// remain available for favorites, but daily rotation now selects only long
+// Fathers and full adjacent Scripture verses from the user-reviewed set.
 // Manually dated church-calendar quotations still override the rotation.
 export const getDailyQuote = (requestedDate = new Date()) => {
   // Keep the date variable local. Divergent local installers could retain a
@@ -29,8 +30,11 @@ export const getDailyQuote = (requestedDate = new Date()) => {
       typeof item.text === 'string' && item.text.trim());
   if (exact) return {...exact, date: today};
 
+  // Remove short quotations from the daily rotation, not from saved content.
+  const fathers = [...(longFathers.quotes || []), ...(userSelected.fatherQuotes || [])];
+  const scripture = userSelected.bibleQuotes || [];
   const chosen = selectExtendedDailyQuote(
-    getDateOrdinal(currentDate), longFathers.quotes || [], curated.quotes || []);
+    getDateOrdinal(currentDate), fathers, scripture);
   if (chosen) return {...chosen, date: today};
 
   return {id: null, text: 'Господи, научи меня молиться.',
