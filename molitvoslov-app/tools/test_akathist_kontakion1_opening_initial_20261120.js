@@ -38,9 +38,9 @@ assert.deepEqual(labels(trinity,h.initials(trinity,true,false,true)),
 assert.deepEqual([...h.breaks(trinity,false,true)],
  [trinity.indexOf('Свят')],
  'Holy Trinity first Kontakion hymn begins new line');
-const firstAlreadyRefrain='Свят, Свят, Свят еси Господи Боже наш.';
+const firstAlreadyRefrain='Радуйся, Пречистая Дево, упование наше.';
 assert.deepEqual(labels(firstAlreadyRefrain,h.initials(firstAlreadyRefrain,true,false,true)),
- ['Свят'],
+ ['Радуйся'],
  'Do not add a duplicated red first letter inside a red hymn word');
 const church='А҆́гг҃ели воспевают радость: Свят, Свят, Свят еси Господи.';
 assert.deepEqual(labels(church,h.initials(church,true,false,true)),
