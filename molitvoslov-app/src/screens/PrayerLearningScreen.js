@@ -6,9 +6,10 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {AppBackground} from '../components/layout/AppBackground';
 import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
+import {useLanguage} from '../context/LanguageContext';
+import {getLocalizedPrayerLessons} from '../data/prayerLearningLocalized';
 import {resolveReaderAppearance, isDarkReaderBackground} from '../services/scopedReaderAppearance';
 import {
-  PRAYER_LEARNING_LESSONS,
   PRAYER_LEARNING_LETTERS,
   PRAYER_LEARNING_NUMBERS,
 } from '../data/prayerLearningContent';
@@ -18,6 +19,10 @@ const GRID_GAP = 7;
 
 export const PrayerLearningScreen = ({navigation}) => {
   const insets = useSafeAreaInsets();
+  const {language, t} = useLanguage();
+  const traditional = language === 'csl_traditional';
+  const lessons = getLocalizedPrayerLessons(language);
+  const typeface = traditional ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
   const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
   const [expanded, setExpanded] = useState({start: true});
   const [letter, setLetter] = useState(null);
@@ -31,7 +36,7 @@ export const PrayerLearningScreen = ({navigation}) => {
   const frame = dark ? '#6D5949' : '#C8A981';
   const quoteSurface = dark ? '#4E4035' : '#F6E9D2';
   const introSurface = dark ? '#3C332C' : '#FFF4DE';
-  const textSize = Math.max(15, reader.fontSize);
+  const textSize = Math.max(traditional ? 18 : 15, reader.fontSize);
   const cellWidth = gridWidth > 0
     ? (gridWidth - (COLUMNS - 1) * GRID_GAP) / COLUMNS
     : undefined;
@@ -55,16 +60,15 @@ export const PrayerLearningScreen = ({navigation}) => {
           showsVerticalScrollIndicator={false}
         >
           <View style={[styles.intro, {backgroundColor: introSurface, borderColor: frame}]}>
-            <Text style={[styles.pageTitle, {color: ink}]}>
-              Учимся молиться
+            <Text style={[styles.pageTitle, {color: ink}, typeface]}>
+              {t('learning.title')}
             </Text>
-            <Text style={[styles.lead, {color: ink}]}>
-              Основы церковнославянского чтения и наставления святых отцов
-              о внимании, благоговении и покаянии.
+            <Text style={[styles.lead, {color: ink}, typeface]}>
+              {t('learning.lead')}
             </Text>
           </View>
 
-          {PRAYER_LEARNING_LESSONS.map((lesson, index) => {
+          {lessons.map((lesson, index) => {
             const isOpen = !!expanded[lesson.id];
             return (
               <View
@@ -79,10 +83,10 @@ export const PrayerLearningScreen = ({navigation}) => {
                 >
                   <Text style={[styles.index, {color: accent}]}>{index + 1}</Text>
                   <View style={styles.headerTexts}>
-                    <Text style={[styles.lessonTitle, {color: ink}]}>
+                    <Text style={[styles.lessonTitle, {color: ink}, typeface]}>
                       {lesson.title}
                     </Text>
-                    <Text style={[styles.lessonSubtitle, {color: muted}]}>
+                    <Text style={[styles.lessonSubtitle, {color: muted}, typeface]}>
                       {lesson.subtitle}
                     </Text>
                   </View>
@@ -96,7 +100,7 @@ export const PrayerLearningScreen = ({navigation}) => {
                       <Text
                         style={[
                           styles.paragraph,
-                          {color: ink, fontSize: textSize, lineHeight: Math.round(textSize * 1.52)},
+                          {color: ink, fontSize: textSize, lineHeight: Math.round(textSize * 1.52)}, typeface,
                         ]}
                         key={paragraphIndex}
                       >
@@ -112,33 +116,38 @@ export const PrayerLearningScreen = ({navigation}) => {
                         }]}
                         key={quoteIndex}
                       >
-                        <Text style={[styles.quoteText, {color: ink, fontSize: textSize}]}>
+                        <Text style={[styles.quoteText, {color: ink, fontSize: textSize, fontStyle: traditional ? 'normal' : 'italic'}, typeface]}>
                           «{quote.text}»
                         </Text>
-                        <Text style={[styles.quoteAttribution, {color: muted}]}>
+                        <Text style={[styles.quoteAttribution, {color: muted}, typeface]}>
                           {quote.author} · {quote.work}
                         </Text>
+                        {quote.translated && (
+                          <Text style={[styles.quoteAttribution, {color: muted}, typeface]}>
+                            {t('learning.note')}
+                          </Text>
+                        )}
                       </View>
                     ))}
 
                     {(lesson.teachings || []).map((teaching, teachingIndex) => (
                       <View style={styles.teaching} key={teachingIndex}>
-                        <Text style={[styles.teachingHeading, {color: accent}]}>
+                        <Text style={[styles.teachingHeading, {color: accent}, typeface]}>
                           {teaching.author}
                         </Text>
                         {(teaching.paragraphs || []).map((paragraph, paragraphIndex) => (
                           <Text
                             style={[
                               styles.paragraph,
-                              {color: ink, fontSize: textSize, lineHeight: Math.round(textSize * 1.52)},
+                              {color: ink, fontSize: textSize, lineHeight: Math.round(textSize * 1.52)}, typeface,
                             ]}
                             key={paragraphIndex}
                           >
                             {paragraph}
                           </Text>
                         ))}
-                        <Text style={[styles.teachingWork, {color: muted}]}>
-                          {teaching.work} · изложение по смыслу
+                        <Text style={[styles.teachingWork, {color: muted}, typeface]}>
+                          {teaching.work} · {t('learning.note')}
                         </Text>
                       </View>
                     ))}
@@ -186,11 +195,11 @@ export const PrayerLearningScreen = ({navigation}) => {
                               </Text>
                             </View>
                             <View style={styles.detailBody}>
-                              <Text style={[styles.detailTitle, {color: ink}]}>
+                              <Text style={[styles.detailTitle, {color: ink}, typeface]}>
                                 {selectedLetter.name}
                               </Text>
-                              <Text style={[styles.detailText, {color: muted}]}>
-                                Чтение: {selectedLetter.sound}
+                              <Text style={[styles.detailText, {color: muted}, typeface]}>
+                                {t('learning.read', {sound: selectedLetter.sound})}
                               </Text>
                             </View>
                           </View>
@@ -221,7 +230,8 @@ export const PrayerLearningScreen = ({navigation}) => {
           })}
         </ScrollView>
         <FixedSectionHeader
-          title="Учимся молиться"
+          title={t('learning.title')}
+          titleTextStyle={typeface}
           gradientColor="#FFF4DE"
           navigation={navigation}
           topInset={insets.top}
