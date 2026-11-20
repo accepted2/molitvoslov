@@ -11,7 +11,7 @@ const {parse}=require('@babel/parser');
 const root=path.resolve(__dirname,'../..');
 const app=path.join(root,'molitvoslov-app');
 const oldRef='6621b8cf1057221b56571b72d97ea902f8d5f260';
-const newRef='c5260b174cb1b4da0cf81e2cb99d9257d1ca4d80';
+const newRef='68534a06057b5ca31fa9be082dd49b8a4e8868b4';
 const dry=process.argv.includes('--dry-run');
 const paths=[
   'src/services/languagePreferences.js',
@@ -28,6 +28,8 @@ const paths=[
   'src/screens/MenuScreen.js',
   'src/screens/CommunionPreparationScreen.js',
   'src/screens/ConfessionPreparationScreen.js',
+  'src/components/navigation/BottomNav.js',
+  'src/components/navigation/FixedSectionHeader.js',
 ];
 const dependencies=[
   'src/i18n/traditionalUi.js',
