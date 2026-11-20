@@ -10,6 +10,7 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {useInterfaceScale} from '../context/InterfaceScaleContext';
 import {getLocalizedHoursGroups} from '../data/hoursLocalization';
 import {useLanguage} from '../context/LanguageContext';
+import {traditionalUiTextStyle} from '../services/traditionalUiTypography';
 
 export const HoursScreen = ({navigation}) => {
   const insets = useSafeAreaInsets();
@@ -17,7 +18,7 @@ export const HoursScreen = ({navigation}) => {
   const {language, t} = useLanguage();
   const traditional = language === 'csl_traditional';
   const hoursGroups = getLocalizedHoursGroups(language);
-  const cslTextStyle = traditional ? {fontFamily: 'Ponomar', fontWeight: '400'} : null;
+  const cslText = size => traditionalUiTextStyle(language, size * uiScale, size * 1.54 * uiScale);
   const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
   const [expanded, setExpanded] = useState({ordinary: true});
 
@@ -37,10 +38,10 @@ export const HoursScreen = ({navigation}) => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.intro}>
-          <Text style={[styles.introTitle, {fontSize: 17 * uiScale}, cslTextStyle]}>
+          <Text style={[styles.introTitle, {fontSize: 17 * uiScale}, cslText(17)]}>
             {t('hours.introTitle')}
           </Text>
-          <Text style={[styles.introText, {fontSize: 13 * uiScale}, cslTextStyle]}>
+          <Text style={[styles.introText, {fontSize: 13 * uiScale}, cslText(13)]}>
             {t('hours.introText')}
           </Text>
         </View>
@@ -57,10 +58,10 @@ export const HoursScreen = ({navigation}) => {
                 style={({pressed}) => [styles.groupHeader, pressed && styles.pressed]}
               >
                 <View style={styles.groupHeading}>
-                  <Text style={[styles.groupTitle, {fontSize: 18 * uiScale}, cslTextStyle]}>
+                  <Text style={[styles.groupTitle, {fontSize: 18 * uiScale}, cslText(18)]}>
                     {group.title}
                   </Text>
-                  <Text style={[styles.groupCount, {fontSize: 11 * uiScale}, cslTextStyle]}>
+                  <Text style={[styles.groupCount, {fontSize: 11 * uiScale}, cslText(11)]}>
                     {group.items.length === 1
                       ? t('hours.countOne')
                       : t('hours.countOther', {count: group.items.length})}
@@ -75,7 +76,7 @@ export const HoursScreen = ({navigation}) => {
 
               {opened && (
                 <View style={styles.groupBody}>
-                  <Text style={[styles.description, {fontSize: 12 * uiScale}, cslTextStyle]}>
+                  <Text style={[styles.description, {fontSize: 12 * uiScale}, cslText(12)]}>
                     {group.description}
                   </Text>
                   {group.items.map((item) => (
@@ -86,11 +87,11 @@ export const HoursScreen = ({navigation}) => {
                       style={({pressed}) => [styles.hourRow, pressed && styles.pressed]}
                     >
                       <View style={styles.hourText}>
-                        <Text style={[styles.hourTitle, {fontSize: 16 * uiScale}, cslTextStyle]}>
+                        <Text style={[styles.hourTitle, {fontSize: 16 * uiScale}, cslText(16)]}>
                           {item.title}
                         </Text>
                         {!!item.subtitle && (
-                          <Text style={[styles.hourSubtitle, {fontSize: 12 * uiScale}, cslTextStyle]}>
+                          <Text style={[styles.hourSubtitle, {fontSize: 12 * uiScale}, cslText(12)]}>
                             {item.subtitle}
                           </Text>
                         )}
@@ -103,7 +104,7 @@ export const HoursScreen = ({navigation}) => {
             </View>
           );
         })}
-        <Text style={[styles.footer, {fontSize: 12 * uiScale}, cslTextStyle]}>
+        <Text style={[styles.footer, {fontSize: 12 * uiScale}, cslText(12)]}>
           {t('hours.footer')}
         </Text>
       </ScrollView>
