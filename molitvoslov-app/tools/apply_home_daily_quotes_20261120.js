@@ -22,9 +22,9 @@ const files=Object.entries(patches).map(([relative,replacements])=>{
  for(const [before,after] of replacements){
    // Pre-existing local modifications are not overwritten. If a specific
    // anchor changed, abort for user review instead of forcing a merge.
+   if(code.includes(after))continue;
    const originalCount=code.split(before).length-1;
    if(originalCount===1)code=code.replace(before,after);
-   else if(originalCount===0&&code.includes(after))continue;
    else throw Error('Local quote patch anchor differs in '+relative+
      ': '+before.slice(0,90)+'. NO FILES MODIFIED.');
  }
