@@ -439,7 +439,11 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
       if (blocks.length) rows.push({
         // Two actual translations use the same two-column reader layout as
         // elsewhere; shared notes/responses occupy a full-width single row.
-        layout: isFirstHour && viewMode === READER_LANGUAGE_MODES.BOTH &&
+        // Saint Ephrem in the Third Hour uses the paired CS + RU source.
+        // Its nine liturgical lines must share the normal two-column layout.
+        layout: (isFirstHour ||
+          (isThirdHour && section.accordionId === 'third-hour-ephrem')) &&
+          viewMode === READER_LANGUAGE_MODES.BOTH &&
           blocks.length === 2 ? 'parallel' : 'stack',
         blocks,
         dividerAfter: row.dividerAfter === true,
