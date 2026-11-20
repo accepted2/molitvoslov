@@ -28,6 +28,32 @@ for (const [relative, patches] of Object.entries(edits)) {
     if (source.includes(after)) continue;
     const matches = source.split(before).length - 1;
     if (matches !== 1) {
+      // Older app branches render home cards with DecorativeCard JSX.
+      // Preserve that layout instead of replacing the entire MenuScreen.
+      const legacyAnchor = [
+        '                <DecorativeCard',
+        "                  title={t('menu.miscTitle')}",
+      ].join('\n');
+      const legacyReplacement = [
+        '                <DecorativeCard',
+        '                  title="Учимся молиться"',
+        '                  subtitle="Буквы, числа и наставления о молитве"',
+        '                  symbol="Ѣ"',
+        '                  iconSource={CATEGORY_ICONS.misc}',
+        '                  artwork={homeArtwork.misc}',
+        "                  onPress={() => navigation.navigate('PrayerLearning')}",
+        '                />',
+        legacyAnchor,
+      ].join('\n');
+      if (relative === 'src/screens/MenuScreen.js' &&
+          before.includes("key:'misc'") &&
+          source.includes(legacyReplacement)) continue;
+      if (relative === 'src/screens/MenuScreen.js' &&
+          before.includes("key:'misc'") &&
+          source.split(legacyAnchor).length === 2) {
+        source = source.replace(legacyAnchor, legacyReplacement);
+        continue;
+      }
       throw Error(relative + ': unexpected anchor count ' + matches +
         ' for ' + before.slice(0, 75) + '. NO FILES MODIFIED.');
     }
