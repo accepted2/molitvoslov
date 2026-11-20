@@ -53,8 +53,7 @@ const localLanguage = language =>
 export const getLocalizedHoursEntry = (entry, language) => {
   if (!entry) return null;
   const locale = localLanguage(language);
-  const number = Number(entry.number ||
-    String(entry.id).match(/(?:^|-)\\d+$/)?.[0]?.slice(1));
+  const number = Number(entry.number || String(entry.id).split('-').at(-1));
   const title = entry.id === 'paschal-hours' ? PASCHAL[locale]
     : entry.id.startsWith('interhour-') ? INTERHOURS[locale][number]
       : HOURS_NAMES[locale][number];
