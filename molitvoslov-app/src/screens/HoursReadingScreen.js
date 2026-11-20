@@ -13,12 +13,11 @@ import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
 import {useReadingProgress} from '../hooks/useReadingProgress';
 import {
   getReaderLanguageModePreference,
-  getExplicitReaderLanguageModePreference,
   saveReaderLanguageModePreference,
 } from '../services/readerPreferences';
 import {READER_LANGUAGE_MODES} from '../services/readerLanguageModes';
 import {isDarkReaderBackground, resolveReaderAppearance} from '../services/scopedReaderAppearance';
-import {buildHoursDocument, getOfflineHoursText, getHoursLanguageAvailability} from '../services/hoursDocument';
+import {buildHoursDocument, getOfflineHoursText} from '../services/hoursDocument';
 import {lookupLocalizedHoursEntry} from '../data/hoursLocalization';
 import {useLanguage} from '../context/LanguageContext';
 
@@ -61,27 +60,16 @@ export const HoursReadingScreen = ({route, navigation}) => {
 
   useEffect(() => {
     let active = true;
-    const availableTraditional =
-      entryId === 'ordinary-1' || entryId === 'ordinary-3' ||
-      getHoursLanguageAvailability(getOfflineHoursText(entryId)).hasTraditional;
-    setViewMode(traditional && availableTraditional
-      ? READER_LANGUAGE_MODES.TRADITIONAL
-      : READER_LANGUAGE_MODES.CHURCH);
+    setViewMode(READER_LANGUAGE_MODES.CHURCH);
     if (entryId) {
-      Promise.all([
-        getExplicitReaderLanguageModePreference({sourceType: 'hours', sourceId: entryId}),
-        getReaderLanguageModePreference({sourceType: 'hours', sourceId: entryId}),
-      ])
-        .then(([explicit, defaultMode]) => {
-          const selected = explicit ||
-            (traditional && availableTraditional
-              ? READER_LANGUAGE_MODES.TRADITIONAL : defaultMode);
-          if (active && VALID_MODES.includes(selected)) setViewMode(selected);
+      getReaderLanguageModePreference({sourceType:'hours', sourceId:entryId})
+        .then(mode => {
+          if (active && VALID_MODES.includes(mode)) setViewMode(mode);
         })
-        .catch((error) => console.warn('[hours] reader mode:', error?.message || error));
+        .catch(error => console.warn('[hours] reader mode:', error?.message || error));
     }
     return () => {active = false;};
-  }, [entryId, traditional]);
+  }, [entryId]);
 
   const handleViewModeChange = (nextMode) => {
     if (!VALID_MODES.includes(nextMode)) return;
