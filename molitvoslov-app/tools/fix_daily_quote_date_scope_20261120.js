@@ -92,10 +92,7 @@ assert.equal(mocked().id, 99);
 assert.equal(mocked(new Date(2026, 10, 20)).date, '2026-11-20');
 assert.equal(mocked('invalid').id, 99);
 
-const output = original.includes('
-') ? updated.replace(/
-/g, '
-') : updated;
+const output = original.includes('\r\n') ? updated.replace(/\n/g, '\r\n') : updated;
 console.log('PASS: getDailyQuote has an explicit date parameter and a clean initial render.');
 console.log('PASS: mocked default date, explicit date, and invalid input.');
 if (output === original) {
