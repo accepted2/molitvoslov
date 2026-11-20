@@ -20,6 +20,7 @@ import {useReadingChrome} from '../hooks/useReadingChrome';
 import {colors} from '../theme';
 import confessionCatalog from '../data/confessionCatalog.json';
 import confessionDocument from '../data/confessionDocument.json';
+import {buildSemanticConfessionDocument} from '../services/confessionSemanticGrouping';
 import {
   loadConfessionPreparation,
   saveConfessionSelection,
@@ -30,12 +31,19 @@ import {
   CONFESSION_TITLE_MAX_LENGTH,
 } from '../services/confessionPreparationStorage';
 
-// Legacy c*** IDs are still readable for saved notes; all new selections
-// use precise individual s**** phrases in the continuous source document.
+// Original passage IDs are never deleted or automatically rewritten.
+// New taps target meaningful clauses rather than arbitrary comma fragments.
+const SEMANTIC_DOCUMENT = buildSemanticConfessionDocument(confessionDocument);
 const CATALOG_BY_ID = Object.fromEntries([
   ...confessionCatalog.items,
   ...confessionDocument.entries,
 ].map(item => [item.id, item]));
+for (const [id, group] of Object.entries(SEMANTIC_DOCUMENT.lookup)) {
+  const original = CATALOG_BY_ID[id];
+  if (original && group.memberIds.length > 1) {
+    CATALOG_BY_ID[id] = {...original, title: group.title};
+  }
+}
 
 const notifySaveError = () => {
   Alert.alert(
@@ -257,10 +265,12 @@ export const ConfessionPreparationScreen = ({navigation}) => {
   );
 
   const catalogMode = viewMode === 'catalog';
-  const source = catalogMode ? confessionDocument.blocks : chosenEntries;
+  const source = catalogMode ? SEMANTIC_DOCUMENT.blocks : chosenEntries;
 
   const openSinMenu = useCallback(id => {
-    if (CATALOG_BY_ID[id]) setMenuSinId(id);
+    const group = SEMANTIC_DOCUMENT.lookup[id];
+    const canonicalId = group?.id || id;
+    if (CATALOG_BY_ID[canonicalId]) setMenuSinId(canonicalId);
   }, []);
 
   const closeSinMenu = useCallback(() => setMenuSinId(null), []);
@@ -268,8 +278,11 @@ export const ConfessionPreparationScreen = ({navigation}) => {
   const confirmSinMenu = useCallback(() => {
     if (!menuSinId) return;
     // Check current selection at confirmation time, not a stale snapshot.
-    if (selectedRef.current.includes(menuSinId)) {
-      removeSelected(menuSinId);
+    const ids = SEMANTIC_DOCUMENT.lookup[menuSinId]?.memberIds || [menuSinId];
+    const alreadyChosen = ids.filter(id => selectedRef.current.includes(id));
+    if (alreadyChosen.length) {
+      // Remove all selected legacy members only after explicit confirmation.
+      for (const id of alreadyChosen) removeSelected(id);
     } else {
       addSelected(menuSinId);
     }
@@ -277,10 +290,12 @@ export const ConfessionPreparationScreen = ({navigation}) => {
   }, [menuSinId, addSelected, removeSelected]);
 
   const menuSin = menuSinId ? CATALOG_BY_ID[menuSinId] : null;
-  const menuAlreadySelected = !!menuSinId && selectedIds.includes(menuSinId);
+  const menuAlreadySelected = !!menuSinId &&
+    (SEMANTIC_DOCUMENT.lookup[menuSinId]?.memberIds || [menuSinId])
+      .some(id => selectedIds.includes(id));
 
-  // Read the source as one continuous text. Only the phrase the reader
-  // actually taps is selected; never its surrounding paragraph.
+  // One press selects the complete semantic phrase, including its
+  // dependent comma-separated explanations. Distinct sins remain separate.
   const renderDocumentBlock = ({item}) => {
     if (item.type === 'heading') {
       return (
@@ -296,7 +311,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
         android_hyphenationFrequency="normal"
       >
         {item.segments.map(segment => {
-          const selected = selectedIds.includes(segment.id);
+          const selected = segment.memberIds.some(id => selectedIds.includes(id));
           return (
             <Text
               key={segment.id}
@@ -382,8 +397,8 @@ export const ConfessionPreparationScreen = ({navigation}) => {
           </View>
           <Text style={styles.heading}>Грехи с объяснениями</Text>
           <Text style={styles.explanation}>
-            Нажмите на конкретное слово или выражение в тексте, чтобы добавить
-            этот грех в свой список.
+            Нажмите на смысловое выражение в тексте, чтобы добавить
+            этот пункт целиком, вместе с пояснениями, в свой список.
           </Text>
         </>
       ) : (
