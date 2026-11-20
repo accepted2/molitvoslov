@@ -1,3 +1,5 @@
+import {TRADITIONAL_UI} from './traditionalUi';
+import {EXTRA_COPY} from './extraCopy';
 const COPY = {
   ru: {
     common: {
@@ -856,8 +858,12 @@ const interpolate = (value, params) =>
   );
 
 export const translate = (language, key, params = {}) => {
-  const selected = COPY[language] || COPY.ru;
-  const value = getPath(selected, key) ?? getPath(COPY.ru, key) ?? key;
+  const selected = language === 'csl_traditional'
+    ? TRADITIONAL_UI
+    : COPY[language] || COPY.ru;
+  const value = getPath(EXTRA_COPY[language], key) ??
+    getPath(selected, key) ??
+    getPath(COPY.ru, key) ?? key;
 
   return interpolate(value, params);
 };
