@@ -384,6 +384,7 @@ export const MenuScreen = ({navigation}) => {
   const [readingProgress, setReadingProgress] = useState([]);
 
   const [dailyQuote, setDailyQuote] = useState(() => getDailyQuote());
+  const [heroActionsBottom, setHeroActionsBottom] = useState(0);
   const [savedDailyQuote, setSavedDailyQuote] = useState(null);
   const [calendarToday, setCalendarToday] = useState(null);
   const [calendarMonthDays, setCalendarMonthDays] = useState([]);
@@ -1233,6 +1234,7 @@ export const MenuScreen = ({navigation}) => {
                 styles.hero,
                 {
                   paddingTop: Math.max(insets.top + 8, 32),
+                  minHeight: Math.max(410, insets.top + 420),
                 },
               ]}
               imageStyle={styles.heroImage}
@@ -1250,7 +1252,13 @@ export const MenuScreen = ({navigation}) => {
                 style={styles.heroBottomGradient}
               />
 
-              <View style={styles.heroTopActions}>
+              <View
+                style={[styles.heroTopActions, {top: Math.max(34, insets.top + 8)}]}
+                onLayout={event => {
+                  const bottom = event.nativeEvent.layout.y + event.nativeEvent.layout.height;
+                  setHeroActionsBottom(current => Math.abs(current - bottom) > 1 ? bottom : current);
+                }}
+              >
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={t('menu.search')}
@@ -1271,7 +1279,7 @@ export const MenuScreen = ({navigation}) => {
                 </Pressable>
               </View>
 
-              <View style={[styles.heroQuoteContent, {top: Math.max(insets.top + 49.5, 77.5)}]}>
+              <View style={[styles.heroQuoteContent, {top: Math.max(heroActionsBottom + 38, insets.top + 95)}]}>
                 <LinearGradient
                   pointerEvents="none"
                   colors={[
@@ -1328,7 +1336,7 @@ export const MenuScreen = ({navigation}) => {
                 ) && (
                   <Pressable
                     accessibilityRole={dailyQuoteBibleTarget ? 'link' : undefined}
-                    accessibilityLabel={dailyQuoteBibleTarget ? 'Открыть источник цитаты в Библии' : undefined}
+                    accessibilityLabel={dailyQuoteBibleTarget ? t('common.open') : undefined}
                     disabled={!dailyQuoteBibleTarget}
                     hitSlop={6}
                     onPress={() => openDailyQuoteSource(navigation, dailyQuote)}
@@ -1345,7 +1353,7 @@ export const MenuScreen = ({navigation}) => {
                   <Pressable
                     onPress={toggleDailyQuoteSaved}
                     accessibilityRole="button"
-                    accessibilityLabel={savedDailyQuote ? 'Убрать цитату из избранного' : 'Сохранить цитату'}
+                    accessibilityLabel={t(savedDailyQuote ? 'common.removeFromFavorites' : 'common.addToFavorites')}
                     hitSlop={8}
                     style={({pressed}) => [styles.heroHeartButton, pressed && styles.pressed]}
                   >
