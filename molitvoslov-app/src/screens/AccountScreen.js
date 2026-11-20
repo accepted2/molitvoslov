@@ -6,7 +6,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import {getCurrentBackendUser, deleteBackendAccount, API_BASE_URL} from '../services/backendAuth';
+import {getCurrentBackendUser, getCachedBackendUser, getApiToken, deleteBackendAccount, API_BASE_URL} from '../services/backendAuth';
 
 import {signInWithGoogle, signOutFromGoogle} from '../services/googleAuth';
 
@@ -44,6 +44,22 @@ const PALETTES = [
   {value: 'night', label: 'Ночная', color: '#29231F'},
   {value: 'custom', label: 'Своя', color: '#E5D6C1'},
 ];
+
+// The bottom navigation resets its stack when changing tabs, so AccountScreen
+// mounts again every time. Preserve only display state across those mounts;
+// SecureStore remains the source of truth for the actual session token.
+const ACCOUNT_PROFILE_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+let displayedAccountUser = null;
+let accountCacheInitialized = false;
+let lastProfileRefreshAt = 0;
+let accountSessionVersion = 0;
+
+const formatAccountUser = user => user?.id ? ({
+  id: user.id,
+  email: user.email,
+  name: user.name || user.first_name || user.username,
+  photo: user.picture_url || user.picture || user.photo || null,
+}) : null;
 
 export const AccountScreen = ({navigation}) => {
   const [calendarBibleTranslationCode, setCalendarBibleTranslationCode] = React.useState('rst');
@@ -122,9 +138,11 @@ export const AccountScreen = ({navigation}) => {
       fontSize: Math.max(14, Math.min(28, Math.round(14 + 14 * position / Math.max(fontSliderWidth, 1)))),
     });
   };
-  const [googleUser, setGoogleUser] = useState(null);
+  const [googleUser, setGoogleUser] = useState(() => displayedAccountUser);
 
-  const [loading, setLoading] = useState(true);
+  // Only the first local SecureStore read may show a loading indicator.
+  // Reopening the tab never waits for the network profile request.
+  const [loading, setLoading] = useState(() => !accountCacheInitialized);
 
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -155,6 +173,10 @@ export const AccountScreen = ({navigation}) => {
       try {
         const result=await deleteBackendAccount();
         await signOutFromGoogle().catch(error=>console.warn('[account] Google signout:',error?.message||error));
+        accountSessionVersion += 1;
+        accountCacheInitialized = true;
+        displayedAccountUser = null;
+        lastProfileRefreshAt = 0;
         setGoogleUser(null);
         setSettingsCloudStatus('');
         Alert.alert('Аккаунт удалён',result.localClean
@@ -167,29 +189,74 @@ export const AccountScreen = ({navigation}) => {
   );
 
   useEffect(() => {
+    let active = true;
+    const version = accountSessionVersion;
+    const stillCurrent = () => active && version === accountSessionVersion;
+    const showUser = user => {
+      if (!stillCurrent()) return;
+      const display = formatAccountUser(user);
+      displayedAccountUser = display;
+      setGoogleUser(display);
+    };
+
     const loadUser = async () => {
       try {
-        const backendUser = await getCurrentBackendUser();
+        // Restoring a stored profile is fast and local. A cached profile is
+        // never proof of an active session unless its token also exists.
+        const [token, cached] = await Promise.all([
+          getApiToken(),
+          getCachedBackendUser(),
+        ]);
+        if (!stillCurrent()) return;
 
-        if (backendUser) {
-          setGoogleUser({
-            id: backendUser.id,
-
-            email: backendUser.email,
-
-            name: backendUser.name || backendUser.first_name || backendUser.username,
-
-            photo: backendUser.picture_url || backendUser.picture || null,
-          });
+        accountCacheInitialized = true;
+        if (!token) {
+          lastProfileRefreshAt = 0;
+          showUser(null);
+          setLoading(false);
+          return;
         }
-      } catch (err) {
-        console.error('LOAD ACCOUNT ERROR', err);
-      } finally {
+
+        if (cached?.id) showUser(cached);
+        setLoading(false);
+
+        // Backend verification is silent, not a blocking auth flow.
+        if (cached?.id &&
+            Date.now() - lastProfileRefreshAt < ACCOUNT_PROFILE_REFRESH_INTERVAL_MS) {
+          return;
+        }
+        try {
+          const backendUser = await getCurrentBackendUser();
+          if (!stillCurrent()) return;
+          if (backendUser?.id) {
+            lastProfileRefreshAt = Date.now();
+            showUser(backendUser);
+          } else {
+            // getCurrentBackendUser removes the token on HTTP 401/403.
+            // Do not display an old cached profile after invalidation.
+            const remainingToken = await getApiToken();
+            if (!stillCurrent()) return;
+            if (!remainingToken) {
+              lastProfileRefreshAt = 0;
+              showUser(null);
+            }
+          }
+        } catch (error) {
+          // Offline/slow Render must not hide an existing signed-in profile.
+          console.warn('[account] Background profile refresh deferred:',
+            error?.message || error);
+        }
+      } catch (error) {
+        if (!stillCurrent()) return;
+        console.warn('[account] Local session restore failed:',
+          error?.message || error);
+        accountCacheInitialized = true;
         setLoading(false);
       }
     };
 
     loadUser();
+    return () => { active = false; };
   }, []);
 
   const googleLogin = async () => {
@@ -204,7 +271,12 @@ export const AccountScreen = ({navigation}) => {
         return;
       }
 
-      setGoogleUser(googleResult.user);
+      accountSessionVersion += 1;
+      accountCacheInitialized = true;
+      displayedAccountUser = formatAccountUser(googleResult.user);
+      lastProfileRefreshAt = Date.now();
+      setGoogleUser(displayedAccountUser);
+      setLoading(false);
       await adoptAnonymousLocalData(googleResult.user.id);
       /*
        * После успешного Google/Django
@@ -277,7 +349,12 @@ export const AccountScreen = ({navigation}) => {
       await syncAccountPreferences().catch(console.warn);
       await signOutFromGoogle();
     } finally {
+      accountSessionVersion += 1;
+      accountCacheInitialized = true;
+      displayedAccountUser = null;
+      lastProfileRefreshAt = 0;
       setGoogleUser(null);
+      setLoading(false);
     }
   };
 
