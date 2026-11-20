@@ -53,21 +53,6 @@ export const getReaderLanguageModePreference = async ({sourceType, sourceId}) =>
   return (await getReadingSettings()).defaultMode;
 };
 
-// Explicit per-document overrides only; unlike getReaderLanguageModePreference,
-// a missing override is null so UI-language defaults can be applied safely.
-export const getExplicitReaderLanguageModePreference = async ({sourceType, sourceId}) => {
-  if (!sourceId) return null;
-  const user = await getCachedBackendUser().catch(() => null);
-  if (user?.id) {
-    const stored = await AsyncStorage.getItem(
-      getAccountReaderModeStorageKey(user.id, makeReaderPreferenceId(sourceType, sourceId))
-    );
-    return SUPPORTED_MODES.has(stored) ? stored : null;
-  }
-  const stored = await AsyncStorage.getItem(buildStorageKey({sourceType, sourceId}));
-  return SUPPORTED_MODES.has(stored) ? stored : null;
-};
-
 export const saveReaderLanguageModePreference = async ({sourceType, sourceId, mode}) => {
   if (!sourceId || !SUPPORTED_MODES.has(mode)) return;
   const user = await getCachedBackendUser().catch(() => null);
