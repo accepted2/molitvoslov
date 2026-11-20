@@ -7,6 +7,7 @@ import {BottomNav} from '../components/navigation/BottomNav';
 import {AppBackground} from '../components/layout/AppBackground';
 import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
 import {useLanguage} from '../context/LanguageContext';
+import {traditionalUiTextStyle} from '../services/traditionalUiTypography';
 import {getLocalizedPrayerLessons, getLocalizedPrayerLetters} from '../data/prayerLearningLocalized';
 import {resolveReaderAppearance, isDarkReaderBackground} from '../services/scopedReaderAppearance';
 import {
@@ -24,6 +25,7 @@ export const PrayerLearningScreen = ({navigation}) => {
   const lessons = getLocalizedPrayerLessons(language);
   const letters = getLocalizedPrayerLetters(PRAYER_LEARNING_LETTERS, language);
   const typeface = traditional ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
+  const cslText = (size, lineHeight) => traditionalUiTextStyle(language, size, lineHeight);
   const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
   const [expanded, setExpanded] = useState({start: true});
   const [letter, setLetter] = useState(null);
@@ -37,7 +39,7 @@ export const PrayerLearningScreen = ({navigation}) => {
   const frame = dark ? '#6D5949' : '#C8A981';
   const quoteSurface = dark ? '#4E4035' : '#F6E9D2';
   const introSurface = dark ? '#3C332C' : '#FFF4DE';
-  const textSize = Math.max(traditional ? 18 : 15, reader.fontSize);
+  const textSize = Math.max(15, reader.fontSize);
   const cellWidth = gridWidth > 0
     ? (gridWidth - (COLUMNS - 1) * GRID_GAP) / COLUMNS
     : undefined;
@@ -61,10 +63,10 @@ export const PrayerLearningScreen = ({navigation}) => {
           showsVerticalScrollIndicator={false}
         >
           <View style={[styles.intro, {backgroundColor: introSurface, borderColor: frame}]}>
-            <Text style={[styles.pageTitle, {color: ink}, typeface]}>
+            <Text style={[styles.pageTitle, {color: ink}, cslText(25, 34)]}>
               {t('learning.title')}
             </Text>
-            <Text style={[styles.lead, {color: ink}, typeface]}>
+            <Text style={[styles.lead, {color: ink}, cslText(16, 24)]}>
               {t('learning.lead')}
             </Text>
           </View>
@@ -84,10 +86,10 @@ export const PrayerLearningScreen = ({navigation}) => {
                 >
                   <Text style={[styles.index, {color: accent}]}>{index + 1}</Text>
                   <View style={styles.headerTexts}>
-                    <Text style={[styles.lessonTitle, {color: ink}, typeface]}>
+                    <Text style={[styles.lessonTitle, {color: ink}, cslText(18, 25)]}>
                       {lesson.title}
                     </Text>
-                    <Text style={[styles.lessonSubtitle, {color: muted}, typeface]}>
+                    <Text style={[styles.lessonSubtitle, {color: muted}, cslText(12, 19)]}>
                       {lesson.subtitle}
                     </Text>
                   </View>
@@ -101,7 +103,7 @@ export const PrayerLearningScreen = ({navigation}) => {
                       <Text
                         style={[
                           styles.paragraph,
-                          {color: ink, fontSize: textSize, lineHeight: Math.round(textSize * 1.52)}, typeface,
+                          {color: ink, fontSize: textSize, lineHeight: Math.round(textSize * 1.52)}, cslText(textSize, textSize * 1.52),
                         ]}
                         key={paragraphIndex}
                       >
@@ -117,14 +119,14 @@ export const PrayerLearningScreen = ({navigation}) => {
                         }]}
                         key={quoteIndex}
                       >
-                        <Text style={[styles.quoteText, {color: ink, fontSize: textSize, fontStyle: traditional ? 'normal' : 'italic'}, typeface]}>
+                        <Text style={[styles.quoteText, {color: ink, fontSize: textSize, fontStyle: traditional ? 'normal' : 'italic'}, cslText(textSize, textSize * 1.52)]}>
                           «{quote.text}»
                         </Text>
-                        <Text style={[styles.quoteAttribution, {color: muted}, typeface]}>
+                        <Text style={[styles.quoteAttribution, {color: muted}, cslText(12, 19)]}>
                           {quote.author} · {quote.work}
                         </Text>
                         {quote.translated && (
-                          <Text style={[styles.quoteAttribution, {color: muted}, typeface]}>
+                          <Text style={[styles.quoteAttribution, {color: muted}, cslText(12, 19)]}>
                             {t('learning.note')}
                           </Text>
                         )}
@@ -133,21 +135,21 @@ export const PrayerLearningScreen = ({navigation}) => {
 
                     {(lesson.teachings || []).map((teaching, teachingIndex) => (
                       <View style={styles.teaching} key={teachingIndex}>
-                        <Text style={[styles.teachingHeading, {color: accent}, typeface]}>
+                        <Text style={[styles.teachingHeading, {color: accent}, cslText(16, 23)]}>
                           {teaching.author}
                         </Text>
                         {(teaching.paragraphs || []).map((paragraph, paragraphIndex) => (
                           <Text
                             style={[
                               styles.paragraph,
-                              {color: ink, fontSize: textSize, lineHeight: Math.round(textSize * 1.52)}, typeface,
+                              {color: ink, fontSize: textSize, lineHeight: Math.round(textSize * 1.52)}, cslText(textSize, textSize * 1.52),
                             ]}
                             key={paragraphIndex}
                           >
                             {paragraph}
                           </Text>
                         ))}
-                        <Text style={[styles.teachingWork, {color: muted}, typeface]}>
+                        <Text style={[styles.teachingWork, {color: muted}, cslText(12, 19)]}>
                           {teaching.work} · {t('learning.note')}
                         </Text>
                       </View>
@@ -196,10 +198,10 @@ export const PrayerLearningScreen = ({navigation}) => {
                               </Text>
                             </View>
                             <View style={styles.detailBody}>
-                              <Text style={[styles.detailTitle, {color: ink}, typeface]}>
+                              <Text style={[styles.detailTitle, {color: ink}, cslText(17, 24)]}>
                                 {selectedLetter.name}
                               </Text>
-                              <Text style={[styles.detailText, {color: muted}, typeface]}>
+                              <Text style={[styles.detailText, {color: muted}, cslText(13, 20)]}>
                                 {t('learning.read', {sound: selectedLetter.sound})}
                               </Text>
                             </View>
