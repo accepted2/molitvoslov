@@ -40,7 +40,8 @@ for (const [id, members] of [
 }
 for (const relative of ['src/screens/ConfessionPreparationScreen.js',
   'src/screens/PrayerLearningScreen.js',
-  'src/screens/MenuScreen.js', 'src/navigation/AppNavigator.js']) {
+  'src/screens/MenuScreen.js', 'src/navigation/AppNavigator.js',
+  'App.js', 'src/components/navigation/SystemNavigationBackdrop.js']) {
   parse(read(relative),{sourceType:'module',plugins:['jsx']});
 }
 const confession = read('src/screens/ConfessionPreparationScreen.js');
@@ -50,17 +51,26 @@ assert(confession.includes('notes[item.id]'));
 const lessonSource = read('src/data/prayerLearningContent.js')
   .replace(/\bexport const /gu, 'const ');
 const content = new Function(lessonSource +
-  '\nreturn {PRAYER_LEARNING_SOURCES,PRAYER_LEARNING_LESSONS,'+
+  '\nreturn {PRAYER_LEARNING_LESSONS,'+
   'PRAYER_LEARNING_LETTERS,PRAYER_LEARNING_NUMBERS};')();
-assert.equal(content.PRAYER_LEARNING_LESSONS.length,7);
+assert.equal(content.PRAYER_LEARNING_LESSONS.length,6);
+assert(!content.PRAYER_LEARNING_LESSONS.some(l => l.id === 'practice'));
 assert(content.PRAYER_LEARNING_LETTERS.length >= 35);
 assert(content.PRAYER_LEARNING_NUMBERS.length >= 27);
-assert(content.PRAYER_LEARNING_LESSONS.every(l =>
-  l.sourceKeys?.every(k => content.PRAYER_LEARNING_SOURCES[k]?.startsWith('https://'))));
+assert(content.PRAYER_LEARNING_LETTERS.every(l => l.upper && l.lower && l.name));
+assert(content.PRAYER_LEARNING_LESSONS.every(l => !('sourceKeys' in l)));
+const learningScreen = read('src/screens/PrayerLearningScreen.js');
+assert(!learningScreen.includes('Linking.openURL'));
+assert(!learningScreen.includes('SourceLinks'));
+assert(learningScreen.includes("fontFamily: 'Ponomar'"));
+assert(learningScreen.includes('const COLUMNS = 5'));
+assert(learningScreen.includes('useScopedReaderAppearance'));
+const app = read('App.js');
+assert(app.includes('<SystemNavigationBackdrop />'));
 assert(read('src/navigation/AppNavigator.js').includes('name="PrayerLearning"'));
 assert(read('src/screens/MenuScreen.js').includes("key:'prayer-learning'"));
 console.log('PASS: 437 old fragments -> 366 coherent clickable phrases.');
 console.log('PASS: 47 contiguous groups; original text 100% preserved.');
 console.log('PASS: old saved IDs and note editor code remain addressable.');
-console.log('PASS: 7 lessons, Slavonic alphabet/numerals, cited sources.');
-console.log('PASS: four JS/JSX files parse; screen navigation registered.');
+console.log('PASS: 6 offline lessons, no external links or exercises.');
+console.log('PASS: traditional Ponomar glyphs, five-column grid and reader theme.');
