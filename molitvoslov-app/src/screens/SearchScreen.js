@@ -122,7 +122,7 @@ const SearchContent = ({navigation}) => {
   const searchDb = useSQLiteContext();
   const [seedReady, setSeedReady] = useState(false);
   const [paused, setPaused] = useState(false);
-  const { language } = useLanguage();
+  const { language,t } = useLanguage();
   const cslFont=language==='csl_traditional' ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
@@ -425,12 +425,12 @@ const SearchContent = ({navigation}) => {
               returnKeyType="search"
               onSubmitEditing={submitSearch}
               selectionColor="#A16E35"
-              style={styles.input}
+              style={[styles.input,cslFont]}
             />
             {!!query && (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Очистить поиск"
+                accessibilityLabel={t('favorites.clearSearch')}
                 onPress={() => setQuery('')}
                 hitSlop={8}
                 style={({pressed}) => [styles.clearButton, pressed && styles.pressed]}
@@ -463,7 +463,7 @@ const SearchContent = ({navigation}) => {
                     pressed && styles.pressed,
                   ]}
                 >
-                  <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
+                  <Text style={[styles.tabText, active && styles.tabTextActive,cslFont]}>{tab.label}</Text>
                 </Pressable>
               );
             })}
@@ -499,10 +499,10 @@ const SearchContent = ({navigation}) => {
               {indexLoading || (searchLoading && !paused) || (!resultsCurrent && !paused) ? (
                 <>
                   <ActivityIndicator size="small" color="#A16E35" />
-                  <Text style={styles.countText}>Ищем…</Text>
+                  <Text style={[styles.countText,cslFont]}>{t('searchUi.searching')}</Text>
                 </>
               ) : visibleResults.length > 0 ? (
-                <Text style={styles.countText}>
+                <Text style={[styles.countText,cslFont]}>
                   {copy.found(
                     hasMore && !calendarOnly
                       ? `${result.total + calendarResults.length}+`
@@ -515,17 +515,17 @@ const SearchContent = ({navigation}) => {
               {!paused && !!query && (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Остановить поиск"
+                  accessibilityLabel={t('searchUi.stop')}
                   onPress={() => {
                     setPaused(true);
                     setSearchLoading(false);
                   }}
                   hitSlop={8}
                 >
-                  <Text style={styles.stopText}>Остановить поиск</Text>
+                  <Text style={[styles.stopText,cslFont]}>{t('searchUi.stop')}</Text>
                 </Pressable>
               )}
-              {paused && <Text style={styles.countText}>Поиск остановлен</Text>}
+              {paused && <Text style={[styles.countText,cslFont]}>{t('searchUi.paused')}</Text>}
             </View>
           )}
         </View>
