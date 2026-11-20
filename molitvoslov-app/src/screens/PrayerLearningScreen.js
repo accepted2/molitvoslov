@@ -7,7 +7,7 @@ import {BottomNav} from '../components/navigation/BottomNav';
 import {AppBackground} from '../components/layout/AppBackground';
 import {useScopedReaderAppearance} from '../hooks/useScopedReaderAppearance';
 import {useLanguage} from '../context/LanguageContext';
-import {getLocalizedPrayerLessons} from '../data/prayerLearningLocalized';
+import {getLocalizedPrayerLessons, getLocalizedPrayerLetters} from '../data/prayerLearningLocalized';
 import {resolveReaderAppearance, isDarkReaderBackground} from '../services/scopedReaderAppearance';
 import {
   PRAYER_LEARNING_LETTERS,
@@ -22,6 +22,7 @@ export const PrayerLearningScreen = ({navigation}) => {
   const {language, t} = useLanguage();
   const traditional = language === 'csl_traditional';
   const lessons = getLocalizedPrayerLessons(language);
+  const letters = getLocalizedPrayerLetters(PRAYER_LEARNING_LETTERS, language);
   const typeface = traditional ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
   const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
   const [expanded, setExpanded] = useState({start: true});
@@ -40,7 +41,7 @@ export const PrayerLearningScreen = ({navigation}) => {
   const cellWidth = gridWidth > 0
     ? (gridWidth - (COLUMNS - 1) * GRID_GAP) / COLUMNS
     : undefined;
-  const selectedLetter = PRAYER_LEARNING_LETTERS.find(x => x.upper === letter);
+  const selectedLetter = letters.find(x => x.upper === letter);
 
   const toggleSection = id => {
     setExpanded(previous => ({...previous, [id]: !previous[id]}));
@@ -158,7 +159,7 @@ export const PrayerLearningScreen = ({navigation}) => {
                           onLayout={event => setGridWidth(event.nativeEvent.layout.width)}
                           style={styles.grid}
                         >
-                          {PRAYER_LEARNING_LETTERS.map(item => (
+                          {letters.map(item => (
                             <Pressable
                               key={item.upper}
                               accessibilityRole="button"
