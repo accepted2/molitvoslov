@@ -119,7 +119,7 @@ export const NotificationsScreen = ({navigation, route}) => {
       if (!forceDisabled && /уведомления запрещены/i.test(message)) {
         Alert.alert(
           t('notifications.permissionTitle'),
-          message,
+          t('notifications.permissionHelp'),
           [
             {text: t('notifications.backAction'), style: 'cancel'},
             {text: t('notifications.saveDisabled'), onPress: () => savePrayerReminder(
