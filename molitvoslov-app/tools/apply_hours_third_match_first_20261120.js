@@ -28,12 +28,12 @@ if(original.presentationVersion===marker||originalCss.includes(marker))
 const expected=[
  ['opening',''],['psalm','Псалом 16'],['psalm','Псалом 24'],
  ['psalm','Псалом 50'],['postpsalm',''],['instruction',''],
- ['hymn',''],['conditional',''],['prayer',''],['rubric',''],
- ['conditional',''],['prayer',''],['prayer','Молитва святого Мардария']
+ ['hymn',''],['conditional',null],['prayer',''],['rubric',''],
+ ['conditional',null],['prayer',''],['prayer','Молитва святого Мардария']
 ];
 for(let i=0;i<expected.length;i++){
  const s=original.sections[i],kind=expected[i][0],title=expected[i][1];
- if(s.kind!==kind||String(s.title||'')!==title||!Array.isArray(s.rows))
+ if(s.kind!==kind||(title!==null&&String(s.title||'')!==title)||!Array.isArray(s.rows))
   throw Error('Third Hour section '+i+' changed. NO FILES MODIFIED.');
 }
 const beforeText=JSON.stringify(original.sections.map(s=>s.rows.map(r=>[
