@@ -1,0 +1,2062 @@
+{
+  "version": 1,
+  "editorialSource": "App-bundled Synodal Bible, existing verified daily quotations; patristic excerpts cross-checked with works on azbyka.ru",
+  "count": 150,
+  "quotes": [
+    {
+      "id": 810001,
+      "kind": "bible",
+      "text": "Слава Божия — облекать тайною дело, а слава царей — исследовать дело.",
+      "reference": "Притч. 25:2",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 25,
+        "verse": 2
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810002,
+      "kind": "bible",
+      "text": "Кто хранит уста свои, тот бережет душу свою; а кто широко раскрывает свой рот, тому беда.",
+      "reference": "Притч. 13:3",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 13,
+        "verse": 3
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810003,
+      "kind": "father",
+      "text": "Заботиться о заключении ума в слова молитвы должно и при молении молитвой Иисусовой.",
+      "source": "свт. Игнатий Брянчанинов",
+      "reference": "свт. Игнатий Брянчанинов",
+      "work": "Письма к разным лицам",
+      "sourceUrl": "https://azbyka.ru/otechnik/Ignatij_Brjanchaninov/pisma-k-raznym-litsam/",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "id": 810004,
+      "kind": "bible",
+      "text": "Длань свою она открывает бедному, и руку свою подает нуждающемуся.",
+      "reference": "Притч. 31:20",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 31,
+        "verse": 20
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810005,
+      "kind": "bible",
+      "text": "Будьте же исполнители слова, а не слышатели только.",
+      "reference": "Иак. 1:22",
+      "source": "Послание Иакова",
+      "target": {
+        "type": "bible",
+        "bookCode": "JAS",
+        "chapter": 1,
+        "verse": 22
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810006,
+      "kind": "bible",
+      "text": "Радуйтесь всегда в Господе; и ещё говорю: радуйтесь.",
+      "reference": "Флп. 4:4",
+      "source": "Послание к Филиппийцам",
+      "target": {
+        "type": "bible",
+        "bookCode": "PHP",
+        "chapter": 4,
+        "verse": 4
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810007,
+      "kind": "bible",
+      "text": "Благоразумный видит беду и укрывается; а неопытные идут вперед и наказываются.",
+      "reference": "Притч. 22:3",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 22,
+        "verse": 3
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810008,
+      "kind": "bible",
+      "text": "Не прибавляй к словам Его, чтобы Он не обличил тебя и ты не оказался лжецом.",
+      "reference": "Притч. 30:6",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 30,
+        "verse": 6
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810009,
+      "kind": "bible",
+      "text": "А теперь пребывают сии три: вера, надежда, любовь; но любовь из них больше.",
+      "reference": "1 Кор. 13:13",
+      "source": "Первое послание к Коринфянам",
+      "target": {
+        "type": "bible",
+        "bookCode": "1CO",
+        "chapter": 13,
+        "verse": 13
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810010,
+      "kind": "bible",
+      "text": "Язык мудрых сообщает добрые знания, а уста глупых изрыгают глупость.",
+      "reference": "Притч. 15:2",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 15,
+        "verse": 2
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810011,
+      "kind": "bible",
+      "text": "Когда страна отступит от закона, тогда много в ней начальников; а при разумном и знающем муже она долговечна.",
+      "reference": "Притч. 28:2",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 28,
+        "verse": 2
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810012,
+      "kind": "bible",
+      "text": "Человек, который, будучи обличаем, ожесточает выю свою, внезапно сокрушится, и не будет ему исцеления.",
+      "reference": "Притч. 29:1",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 29,
+        "verse": 1
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810013,
+      "kind": "bible",
+      "text": "Господь просвещение мое и Спаситель мой: кого мне бояться?",
+      "reference": "Пс. 26:1",
+      "source": "Псалтирь",
+      "target": {
+        "type": "bible",
+        "bookCode": "PSA",
+        "chapter": 26,
+        "verse": 1
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810014,
+      "kind": "bible",
+      "text": "Не здоровые имеют нужду во враче, но больные.",
+      "reference": "Мк. 2:17",
+      "source": "Евангелие от Марка",
+      "target": {
+        "type": "bible",
+        "bookCode": "MRK",
+        "chapter": 2,
+        "verse": 17
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810015,
+      "kind": "bible",
+      "text": "Главное — мудрость: приобретай мудрость, и всем имением твоим приобретай разум.",
+      "reference": "Притч. 4:7",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 4,
+        "verse": 7
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810016,
+      "kind": "bible",
+      "text": "Надеющиеся на Господа обновятся в силе.",
+      "reference": "Ис. 40:31",
+      "source": "Книга пророка Исаии",
+      "target": {
+        "type": "bible",
+        "bookCode": "ISA",
+        "chapter": 40,
+        "verse": 31
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810017,
+      "kind": "bible",
+      "text": "Приложи сердце твое к учению и уши твои — к умным словам.",
+      "reference": "Притч. 23:12",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 23,
+        "verse": 12
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810018,
+      "kind": "bible",
+      "text": "Задумает она о поле, и приобретает его; от плодов рук своих насаждает виноградник.",
+      "reference": "Притч. 31:16",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 31,
+        "verse": 16
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810019,
+      "kind": "bible",
+      "text": "Непорочность прямодушных будет руководить их, а лукавство коварных погубит их.",
+      "reference": "Притч. 11:3",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 11,
+        "verse": 3
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810020,
+      "kind": "bible",
+      "text": "Кто приобретает разум, тот любит душу свою; кто наблюдает благоразумие, тот находит благо.",
+      "reference": "Притч. 19:8",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 19,
+        "verse": 8
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810021,
+      "kind": "bible",
+      "text": "Слова уст человеческих — глубокие воды; источник мудрости — струящийся поток.",
+      "reference": "Притч. 18:4",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 18,
+        "verse": 4
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810022,
+      "kind": "bible",
+      "text": "Всё возможно верующему.",
+      "reference": "Мк. 9:23",
+      "source": "Евангелие от Марка",
+      "target": {
+        "type": "bible",
+        "bookCode": "MRK",
+        "chapter": 9,
+        "verse": 23
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810023,
+      "kind": "bible",
+      "text": "Кто ходит переносчиком, тот открывает тайну; но верный человек таит дело.",
+      "reference": "Притч. 11:13",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 11,
+        "verse": 13
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810024,
+      "kind": "bible",
+      "text": "Ни о чём не заботьтесь, но всегда в молитве и прошении с благодарением открывайте свои желания пред Богом.",
+      "reference": "Флп. 4:6",
+      "source": "Послание к Филиппийцам",
+      "target": {
+        "type": "bible",
+        "bookCode": "PHP",
+        "chapter": 4,
+        "verse": 6
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810025,
+      "kind": "bible",
+      "text": "Носите бремена друг друга, и таким образом исполните закон Христов.",
+      "reference": "Гал. 6:2",
+      "source": "Послание к Галатам",
+      "target": {
+        "type": "bible",
+        "bookCode": "GAL",
+        "chapter": 6,
+        "verse": 2
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810026,
+      "kind": "bible",
+      "text": "Душа ленивого желает, но тщетно; а душа прилежных насытится.",
+      "reference": "Притч. 13:4",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 13,
+        "verse": 4
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810027,
+      "kind": "bible",
+      "text": "И всё, что делаете, делайте от души, как для Господа, а не для человеков.",
+      "reference": "Кол. 3:23",
+      "source": "Послание к Колоссянам",
+      "target": {
+        "type": "bible",
+        "bookCode": "COL",
+        "chapter": 3,
+        "verse": 23
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810028,
+      "kind": "father",
+      "text": "Умная молитва есть, когда кто, утвердившись вниманием в сердце, оттуда возносит к Богу молитву.",
+      "source": "свт. Феофан Затворник",
+      "reference": "свт. Феофан Затворник",
+      "work": "Письма о молитве",
+      "sourceUrl": "https://azbyka.ru/otechnik/Feofan_Zatvornik/pisma-o-molitve/",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "id": 810029,
+      "kind": "bible",
+      "text": "Будьте братолюбивы друг к другу с нежностью; в почтительности друг друга предупреждайте.",
+      "reference": "Рим. 12:10",
+      "source": "Послание к Римлянам",
+      "target": {
+        "type": "bible",
+        "bookCode": "ROM",
+        "chapter": 12,
+        "verse": 10
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810030,
+      "kind": "bible",
+      "text": "Верный свидетель не лжет, а свидетель ложный наговорит много лжи.",
+      "reference": "Притч. 14:5",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 14,
+        "verse": 5
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810031,
+      "kind": "bible",
+      "text": "Итак вера есть осуществление ожидаемого и уверенность в невидимом.",
+      "reference": "Евр. 11:1",
+      "source": "Послание к Евреям",
+      "target": {
+        "type": "bible",
+        "bookCode": "HEB",
+        "chapter": 11,
+        "verse": 1
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810032,
+      "kind": "bible",
+      "text": "На всяком месте очи Господни: они видят злых и добрых.",
+      "reference": "Притч. 15:3",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 15,
+        "verse": 3
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810033,
+      "kind": "bible",
+      "text": "Во всех путях твоих познавай Его, и Он направит стези твои.",
+      "reference": "Притч. 3:6",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 3,
+        "verse": 6
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810034,
+      "kind": "bible",
+      "text": "Собирающий во время лета — сын разумный, спящий же во время жатвы — сын беспутный.",
+      "reference": "Притч. 10:5",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 10,
+        "verse": 5
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810035,
+      "kind": "bible",
+      "text": "Слушай, сын мой, и будь мудр, и направляй сердце твое на прямой путь.",
+      "reference": "Притч. 23:19",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 23,
+        "verse": 19
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810036,
+      "kind": "bible",
+      "text": "Вечная любовь Я возлюбил тебя и потому простер к тебе благоволение.",
+      "reference": "Иер. 31:3",
+      "source": "Книга пророка Иеремии",
+      "target": {
+        "type": "bible",
+        "bookCode": "JER",
+        "chapter": 31,
+        "verse": 3
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810037,
+      "kind": "bible",
+      "text": "Нехорошо душе без знания, и торопливый ногами оступится.",
+      "reference": "Притч. 19:2",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 19,
+        "verse": 2
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810038,
+      "kind": "bible",
+      "text": "Помыслы в сердце человека — глубокие воды, но человек разумный вычерпывает их.",
+      "reference": "Притч. 20:5",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 20,
+        "verse": 5
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810039,
+      "kind": "bible",
+      "text": "Может ли кто взять себе огонь в пазуху, чтобы не прогорело платье его?",
+      "reference": "Притч. 6:27",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 6,
+        "verse": 27
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810040,
+      "kind": "bible",
+      "text": "Глупость человека извращает путь его, а сердце его негодует на Господа.",
+      "reference": "Притч. 19:3",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 19,
+        "verse": 3
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810041,
+      "kind": "bible",
+      "text": "Любовь долготерпит, милосердствует, любовь не завидует, любовь не превозносится, не гордится.",
+      "reference": "1 Кор. 13:4",
+      "source": "Первое послание к Коринфянам",
+      "target": {
+        "type": "bible",
+        "bookCode": "1CO",
+        "chapter": 13,
+        "verse": 4
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810042,
+      "kind": "father",
+      "text": "Обыкновенно ничто так не питает любви, как милостыня.",
+      "source": "свт. Иоанн Златоуст",
+      "reference": "свт. Иоанн Златоуст",
+      "work": "Беседы на Деяния Апостольские, 22",
+      "sourceUrl": "https://azbyka.ru/otechnik/Ioann_Zlatoust/besedy-na-dejanija-apostolskie/22",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "id": 810043,
+      "kind": "bible",
+      "text": "Плод же духа: любовь, радость, мир, долготерпение, благость, милосердие, вера.",
+      "reference": "Гал. 5:22",
+      "source": "Послание к Галатам",
+      "target": {
+        "type": "bible",
+        "bookCode": "GAL",
+        "chapter": 5,
+        "verse": 22
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810044,
+      "kind": "bible",
+      "text": "Человек, любящий мудрость, радует отца своего; а кто знается с блудницами, тот расточает имение.",
+      "reference": "Притч. 29:3",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 29,
+        "verse": 3
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810045,
+      "kind": "bible",
+      "text": "Не хвались завтрашним днем, потому что не знаешь, что родит тот день.",
+      "reference": "Притч. 27:1",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 27,
+        "verse": 1
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810046,
+      "kind": "bible",
+      "text": "Помышления прилежного стремятся к изобилию, а всякий торопливый терпит лишение.",
+      "reference": "Притч. 21:5",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 21,
+        "verse": 5
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810047,
+      "kind": "bible",
+      "text": "Видал ли ты человека, мудрого в глазах его? На глупого больше надежды, нежели на него.",
+      "reference": "Притч. 26:12",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 26,
+        "verse": 12
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810048,
+      "kind": "father",
+      "text": "Если мы, как немощные, не можем трудиться, то постараемся смириться.",
+      "source": "прп. авва Дорофей",
+      "reference": "прп. авва Дорофей",
+      "work": "Душеполезные поучения",
+      "sourceUrl": "https://azbyka.ru/otechnik/Dorofej/dushepoleznye-pouchenija-i-poslanija/1",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "id": 810049,
+      "kind": "bible",
+      "text": "Глаза твои пусть прямо смотрят, и ресницы твои да направлены будут прямо пред тобою.",
+      "reference": "Притч. 4:25",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 4,
+        "verse": 25
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810050,
+      "kind": "bible",
+      "text": "Сила Моя совершается в немощи.",
+      "reference": "2 Кор. 12:9",
+      "source": "Второе послание к Коринфянам",
+      "target": {
+        "type": "bible",
+        "bookCode": "2CO",
+        "chapter": 12,
+        "verse": 9
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810051,
+      "kind": "bible",
+      "text": "Все заботы ваши возложите на Него, ибо Он печется о вас.",
+      "reference": "1 Пет. 5:7",
+      "source": "Первое послание Петра",
+      "target": {
+        "type": "bible",
+        "bookCode": "1PE",
+        "chapter": 5,
+        "verse": 7
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810052,
+      "kind": "bible",
+      "text": "Человек мудрый силен, и человек разумный укрепляет силу свою.",
+      "reference": "Притч. 24:5",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 24,
+        "verse": 5
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810053,
+      "kind": "bible",
+      "text": "Прикрывающий проступок ищет любви; а кто снова напоминает о нем, тот удаляет друга.",
+      "reference": "Притч. 17:9",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 17,
+        "verse": 9
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810054,
+      "kind": "bible",
+      "text": "Доброе имя лучше большого богатства, и добрая слава лучше серебра и золота.",
+      "reference": "Притч. 22:1",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 22,
+        "verse": 1
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810055,
+      "kind": "bible",
+      "text": "Мудрая жена устроит дом свой, а глупая разрушит его своими руками.",
+      "reference": "Притч. 14:1",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 14,
+        "verse": 1
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810056,
+      "kind": "bible",
+      "text": "Бог гордым противится, а смиренным дает благодать.",
+      "reference": "Иак. 4:6",
+      "source": "Послание Иакова",
+      "target": {
+        "type": "bible",
+        "bookCode": "JAS",
+        "chapter": 4,
+        "verse": 6
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810057,
+      "kind": "bible",
+      "text": "Плавильня — для серебра, и горнило — для золота, а сердца испытывает Господь.",
+      "reference": "Притч. 17:3",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 17,
+        "verse": 3
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810058,
+      "kind": "bible",
+      "text": "Если Бог за нас, кто против нас?",
+      "reference": "Рим. 8:31",
+      "source": "Послание к Римлянам",
+      "target": {
+        "type": "bible",
+        "bookCode": "ROM",
+        "chapter": 8,
+        "verse": 31
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810059,
+      "kind": "bible",
+      "text": "Более же всего имейте усердную любовь друг ко другу, потому что любовь покрывает множество грехов.",
+      "reference": "1 Пет. 4:8",
+      "source": "Первое послание Петра",
+      "target": {
+        "type": "bible",
+        "bookCode": "1PE",
+        "chapter": 4,
+        "verse": 8
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810060,
+      "kind": "bible",
+      "text": "Более же всего облекитесь в любовь, которая есть совокупность совершенства.",
+      "reference": "Кол. 3:14",
+      "source": "Послание к Колоссянам",
+      "target": {
+        "type": "bible",
+        "bookCode": "COL",
+        "chapter": 3,
+        "verse": 14
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810061,
+      "kind": "bible",
+      "text": "Не судите, да не судимы будете.",
+      "reference": "Мф. 7:1",
+      "source": "Евангелие от Матфея",
+      "target": {
+        "type": "bible",
+        "bookCode": "MAT",
+        "chapter": 7,
+        "verse": 1
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810062,
+      "kind": "bible",
+      "text": "Всегда радуйтесь. Непрестанно молитесь. За всё благодарите.",
+      "reference": "1 Фес. 5:16–18",
+      "source": "Первое послание к Фессалоникийцам",
+      "target": {
+        "type": "bible",
+        "bookCode": "1TH",
+        "chapter": 5,
+        "verse": 16
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810063,
+      "kind": "bible",
+      "text": "Нечестивый бежит, когда никто не гонится за ним; а праведник смел, как лев.",
+      "reference": "Притч. 28:1",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 28,
+        "verse": 1
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810064,
+      "kind": "father",
+      "text": "Читай неспешно, вникай во всякое слово; мысль всякого слова доводи до сердца.",
+      "source": "свт. Феофан Затворник",
+      "reference": "свт. Феофан Затворник",
+      "work": "Наставления в духовной жизни",
+      "sourceUrl": "https://azbyka.ru/otechnik/Feofan_Zatvornik/nastavlenija-v-duhovnoj-zhizni/",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "id": 810065,
+      "kind": "father",
+      "text": "Молитва, по качеству своему, есть пребывание и соединение человека с Богом.",
+      "source": "прп. Иоанн Лествичник",
+      "reference": "прп. Иоанн Лествичник",
+      "work": "Лествица, слово 28",
+      "sourceUrl": "https://azbyka.ru/otechnik/Ioann_Lestvichnik/lestvitsa-ili-skrizhali-dukhovnye/33",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "id": 810066,
+      "kind": "bible",
+      "text": "Когда умножаются праведники, веселится народ, а когда господствует нечестивый, народ стенает.",
+      "reference": "Притч. 29:2",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 29,
+        "verse": 2
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810067,
+      "kind": "bible",
+      "text": "Итак, дети, послушайте меня; и блаженны те, которые хранят пути мои!",
+      "reference": "Притч. 8:32",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 8,
+        "verse": 32
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810068,
+      "kind": "bible",
+      "text": "Золотые яблоки в серебряных прозрачных сосудах — слово, сказанное прилично.",
+      "reference": "Притч. 25:11",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 25,
+        "verse": 11
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810069,
+      "kind": "father",
+      "text": "Когда человек придет в мирное устроение, тогда он может от себя и на прочих издавать свет просвещения разума.",
+      "source": "прп. Серафим Саровский",
+      "reference": "прп. Серафим Саровский",
+      "work": "Духовные наставления мирянам и инокам",
+      "sourceUrl": "https://azbyka.ru/otechnik/Serafim_Sarovskij/nastavlenia/",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "id": 810070,
+      "kind": "bible",
+      "text": "Тяжел камень, весок и песок; но гнев глупца тяжелее их обоих.",
+      "reference": "Притч. 27:3",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 27,
+        "verse": 3
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810071,
+      "kind": "bible",
+      "text": "Притчи Соломона. Сын мудрый радует отца, а сын глупый — огорчение для его матери.",
+      "reference": "Притч. 10:1",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 10,
+        "verse": 1
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810072,
+      "kind": "bible",
+      "text": "Хватает пса за уши, кто, проходя мимо, вмешивается в чужую ссору.",
+      "reference": "Притч. 26:17",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 26,
+        "verse": 17
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810073,
+      "kind": "bible",
+      "text": "Мудрый сердцем принимает заповеди, а глупый устами преткнется.",
+      "reference": "Притч. 10:8",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 10,
+        "verse": 8
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810074,
+      "kind": "bible",
+      "text": "Ибо пред очами Господа пути человека, и Он измеряет все стези его.",
+      "reference": "Притч. 5:21",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 5,
+        "verse": 21
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810075,
+      "kind": "bible",
+      "text": "Не вступай поспешно в тяжбу: иначе что будешь делать при окончании, когда соперник твой осрамит тебя?",
+      "reference": "Притч. 25:8",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 25,
+        "verse": 8
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810076,
+      "kind": "bible",
+      "text": "Не будь побежден злом, но побеждай зло добром.",
+      "reference": "Рим. 12:21",
+      "source": "Послание к Римлянам",
+      "target": {
+        "type": "bible",
+        "bookCode": "ROM",
+        "chapter": 12,
+        "verse": 21
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810077,
+      "kind": "bible",
+      "text": "Солнце да не зайдет во гневе вашем.",
+      "reference": "Еф. 4:26",
+      "source": "Послание к Ефесянам",
+      "target": {
+        "type": "bible",
+        "bookCode": "EPH",
+        "chapter": 4,
+        "verse": 26
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810078,
+      "kind": "bible",
+      "text": "Блажен человек, который слушает меня, бодрствуя каждый день у ворот моих и стоя на страже у дверей моих!",
+      "reference": "Притч. 8:34",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 8,
+        "verse": 34
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810079,
+      "kind": "bible",
+      "text": "Не злословь раба пред господином его, чтобы он не проклял тебя и ты не остался виноватым.",
+      "reference": "Притч. 30:10",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 30,
+        "verse": 10
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810080,
+      "kind": "bible",
+      "text": "Благословен человек, который надеется на Господа, и которого упование — Господь.",
+      "reference": "Иер. 17:7",
+      "source": "Книга пророка Иеремии",
+      "target": {
+        "type": "bible",
+        "bookCode": "JER",
+        "chapter": 17,
+        "verse": 7
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810081,
+      "kind": "bible",
+      "text": "Пойди к муравью, ленивец, посмотри на действия его, и будь мудрым.",
+      "reference": "Притч. 6:6",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 6,
+        "verse": 6
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810082,
+      "kind": "bible",
+      "text": "Будем любить Его, потому что Он прежде возлюбил нас.",
+      "reference": "1 Ин. 4:19",
+      "source": "Первое послание Иоанна",
+      "target": {
+        "type": "bible",
+        "bookCode": "1JN",
+        "chapter": 4,
+        "verse": 19
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810083,
+      "kind": "bible",
+      "text": "Если ты в день бедствия оказался слабым, то бедна сила твоя.",
+      "reference": "Притч. 24:10",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 24,
+        "verse": 10
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810084,
+      "kind": "bible",
+      "text": "Мир оставляю вам, мир Мой даю вам; не так, как мир дает, Я даю вам. Да не смущается сердце ваше и да не устрашается.",
+      "reference": "Ин. 14:27",
+      "source": "Евангелие от Иоанна",
+      "target": {
+        "type": "bible",
+        "bookCode": "JHN",
+        "chapter": 14,
+        "verse": 27
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810085,
+      "kind": "bible",
+      "text": "Лучше кусок сухого хлеба, и с ним мир, нежели дом, полный заколотого скота, с раздором.",
+      "reference": "Притч. 17:1",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 17,
+        "verse": 1
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810086,
+      "kind": "bible",
+      "text": "Праведник ненавидит ложное слово, а нечестивый срамит и бесчестит себя.",
+      "reference": "Притч. 13:5",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 13,
+        "verse": 5
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810087,
+      "kind": "bible",
+      "text": "Добродетельная жена — венец для мужа своего; а позорная — как гниль в костях его.",
+      "reference": "Притч. 12:4",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 12,
+        "verse": 4
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810088,
+      "kind": "father",
+      "text": "Отцы сказали, что хорошо говорить Бога ради и молчать Бога ради.",
+      "source": "прп. авва Дорофей",
+      "reference": "прп. авва Дорофей",
+      "work": "Душеполезные поучения и послания",
+      "sourceUrl": "https://azbyka.ru/otechnik/Dorofej/dushepoleznye-pouchenija-i-poslanija/3",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "id": 810089,
+      "kind": "bible",
+      "text": "Доколе ты, ленивец, будешь спать? когда ты встанешь от сна твоего?",
+      "reference": "Притч. 6:9",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 6,
+        "verse": 9
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810090,
+      "kind": "bible",
+      "text": "Приблизьтесь к Богу, и приблизится к вам.",
+      "reference": "Иак. 4:8",
+      "source": "Послание Иакова",
+      "target": {
+        "type": "bible",
+        "bookCode": "JAS",
+        "chapter": 4,
+        "verse": 8
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810091,
+      "kind": "bible",
+      "text": "Ленивая рука делает бедным, а рука прилежных обогащает.",
+      "reference": "Притч. 10:4",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 10,
+        "verse": 4
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810092,
+      "kind": "bible",
+      "text": "Отступники от закона хвалят нечестивых, а соблюдающие закон негодуют на них.",
+      "reference": "Притч. 28:4",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 28,
+        "verse": 4
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810093,
+      "kind": "bible",
+      "text": "В любви нет страха, но совершенная любовь изгоняет страх.",
+      "reference": "1 Ин. 4:18",
+      "source": "Первое послание Иоанна",
+      "target": {
+        "type": "bible",
+        "bookCode": "1JN",
+        "chapter": 4,
+        "verse": 18
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810094,
+      "kind": "bible",
+      "text": "Любовь никогда не перестает.",
+      "reference": "1 Кор. 13:8",
+      "source": "Первое послание к Коринфянам",
+      "target": {
+        "type": "bible",
+        "bookCode": "1CO",
+        "chapter": 13,
+        "verse": 8
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810095,
+      "kind": "bible",
+      "text": "Праведный печется и о жизни скота своего, сердце же нечестивых жестоко.",
+      "reference": "Притч. 12:10",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 12,
+        "verse": 10
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810096,
+      "kind": "bible",
+      "text": "Господь пасет меня; я ни в чем не буду нуждаться.",
+      "reference": "Пс. 22:1",
+      "source": "Псалтирь",
+      "target": {
+        "type": "bible",
+        "bookCode": "PSA",
+        "chapter": 22,
+        "verse": 1
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810097,
+      "kind": "bible",
+      "text": "Прощайте, и прощены будете.",
+      "reference": "Лк. 6:37",
+      "source": "Евангелие от Луки",
+      "target": {
+        "type": "bible",
+        "bookCode": "LUK",
+        "chapter": 6,
+        "verse": 37
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810098,
+      "kind": "bible",
+      "text": "Храни заповеди мои, и живи, и учение мое, как зрачок глаз твоих.",
+      "reference": "Притч. 7:2",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 7,
+        "verse": 2
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810099,
+      "kind": "bible",
+      "text": "Слушайся отца твоего: он родил тебя; и не пренебрегай матери твоей, когда она и состарится.",
+      "reference": "Притч. 23:22",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 23,
+        "verse": 22
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810100,
+      "kind": "bible",
+      "text": "Честь для человека — отстать от ссоры; а всякий глупец задорен.",
+      "reference": "Притч. 20:3",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 20,
+        "verse": 3
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810101,
+      "kind": "bible",
+      "text": "Двоим лучше, нежели одному.",
+      "reference": "Еккл. 4:9",
+      "source": "Книга Екклесиаста",
+      "target": {
+        "type": "bible",
+        "bookCode": "ECC",
+        "chapter": 4,
+        "verse": 9
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810102,
+      "kind": "bible",
+      "text": "Не обманывайтесь: Бог поругаем не бывает. Что посеет человек, то и пожнет.",
+      "reference": "Гал. 6:7",
+      "source": "Послание к Галатам",
+      "target": {
+        "type": "bible",
+        "bookCode": "GAL",
+        "chapter": 6,
+        "verse": 7
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810103,
+      "kind": "bible",
+      "text": "Ленивец зимою не пашет: поищет летом — и нет ничего.",
+      "reference": "Притч. 20:4",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 20,
+        "verse": 4
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810104,
+      "kind": "bible",
+      "text": "Соблюдение правды и правосудия более угодно Господу, нежели жертва.",
+      "reference": "Притч. 21:3",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 21,
+        "verse": 3
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810105,
+      "kind": "bible",
+      "text": "Имейте веру Божию.",
+      "reference": "Мк. 11:23",
+      "source": "Евангелие от Марка",
+      "target": {
+        "type": "bible",
+        "bookCode": "MRK",
+        "chapter": 11,
+        "verse": 23
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810106,
+      "kind": "bible",
+      "text": "Кто любит наставление, тот любит знание; а кто ненавидит обличение, тот невежда.",
+      "reference": "Притч. 12:1",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 12,
+        "verse": 1
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810107,
+      "kind": "father",
+      "text": "При умной молитве необходимо держать внимание в сердце пред Господом.",
+      "source": "свт. Феофан Затворник",
+      "reference": "свт. Феофан Затворник",
+      "work": "Как научиться молиться",
+      "sourceUrl": "https://azbyka.ru/otechnik/Feofan_Zatvornik/kak-nadobno-molitsja/",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "id": 810108,
+      "kind": "bible",
+      "text": "Надейся на Господа всем сердцем твоим, и не полагайся на разум твой.",
+      "reference": "Притч. 3:5",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 3,
+        "verse": 5
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810109,
+      "kind": "bible",
+      "text": "Предай Господу дела твои, и предприятия твои совершатся.",
+      "reference": "Притч. 16:3",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 16,
+        "verse": 3
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810110,
+      "kind": "bible",
+      "text": "Праведный своею верою жив будет.",
+      "reference": "Авв. 2:4",
+      "source": "Книга пророка Аввакума",
+      "target": {
+        "type": "bible",
+        "bookCode": "HAB",
+        "chapter": 2,
+        "verse": 4
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810111,
+      "kind": "bible",
+      "text": "Всё испытывайте, хорошего держитесь.",
+      "reference": "1 Фес. 5:21",
+      "source": "Первое послание к Фессалоникийцам",
+      "target": {
+        "type": "bible",
+        "bookCode": "1TH",
+        "chapter": 5,
+        "verse": 21
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810112,
+      "kind": "bible",
+      "text": "Я свет миру; кто последует за Мною, тот не будет ходить во тьме, но будет иметь свет жизни.",
+      "reference": "Ин. 8:12",
+      "source": "Евангелие от Иоанна",
+      "target": {
+        "type": "bible",
+        "bookCode": "JHN",
+        "chapter": 8,
+        "verse": 12
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810113,
+      "kind": "bible",
+      "text": "Кто верен в малом, и во многом верен.",
+      "reference": "Лк. 16:10",
+      "source": "Евангелие от Луки",
+      "target": {
+        "type": "bible",
+        "bookCode": "LUK",
+        "chapter": 16,
+        "verse": 10
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810114,
+      "kind": "bible",
+      "text": "Пусть хвалит тебя другой, а не уста твои, — чужой, а не язык твой.",
+      "reference": "Притч. 27:2",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 27,
+        "verse": 2
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810115,
+      "kind": "bible",
+      "text": "Послушайте наставления и будьте мудры, и не отступайте от него.",
+      "reference": "Притч. 8:33",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 8,
+        "verse": 33
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810116,
+      "kind": "bible",
+      "text": "Не ссорься с человеком без причины, когда он не сделал зла тебе.",
+      "reference": "Притч. 3:30",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 3,
+        "verse": 30
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810117,
+      "kind": "father",
+      "text": "Внимательная молитва, чуждая рассеянности и мечтательности, есть видение невидимого Бога.",
+      "source": "свт. Игнатий Брянчанинов",
+      "reference": "свт. Игнатий Брянчанинов",
+      "work": "О молитве",
+      "sourceUrl": "https://azbyka.ru/otechnik/Ignatij_Brjanchaninov/o-molitve/",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "id": 810118,
+      "kind": "father",
+      "text": "Молитва нуждается в неотлучном соприсутствии и содействии внимания.",
+      "source": "свт. Игнатий Брянчанинов",
+      "reference": "свт. Игнатий Брянчанинов",
+      "work": "Приношение современному монашеству",
+      "sourceUrl": "https://azbyka.ru/otechnik/Ignatij_Brjanchaninov/prinoshenie-sovremennomu-monashestvu/2_49",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "id": 810119,
+      "kind": "bible",
+      "text": "Ищите же прежде Царства Божия и правды Его, и это всё приложится вам.",
+      "reference": "Мф. 6:33",
+      "source": "Евангелие от Матфея",
+      "target": {
+        "type": "bible",
+        "bookCode": "MAT",
+        "chapter": 6,
+        "verse": 33
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810120,
+      "kind": "bible",
+      "text": "Всё могу в укрепляющем меня Иисусе Христе.",
+      "reference": "Флп. 4:13",
+      "source": "Послание к Филиппийцам",
+      "target": {
+        "type": "bible",
+        "bookCode": "PHP",
+        "chapter": 4,
+        "verse": 13
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810121,
+      "kind": "bible",
+      "text": "Не отказывай в благодеянии нуждающемуся, когда рука твоя в силе сделать его.",
+      "reference": "Притч. 3:27",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 3,
+        "verse": 27
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810122,
+      "kind": "bible",
+      "text": "Всякое слово Бога чисто; Он — щит уповающим на Него.",
+      "reference": "Притч. 30:5",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 30,
+        "verse": 5
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810123,
+      "kind": "bible",
+      "text": "Праведник спасается от беды, а вместо него попадает в нее нечестивый.",
+      "reference": "Притч. 11:8",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 11,
+        "verse": 8
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810124,
+      "kind": "bible",
+      "text": "Навяжи их на персты твои, напиши их на скрижали сердца твоего.",
+      "reference": "Притч. 7:3",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 7,
+        "verse": 3
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810125,
+      "kind": "bible",
+      "text": "Всему свое время, и время всякой вещи под небом.",
+      "reference": "Еккл. 3:1",
+      "source": "Книга Екклесиаста",
+      "target": {
+        "type": "bible",
+        "bookCode": "ECC",
+        "chapter": 3,
+        "verse": 1
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810126,
+      "kind": "father",
+      "text": "Душа всех упражнений о Господе — внимание.",
+      "source": "свт. Игнатий Брянчанинов",
+      "reference": "свт. Игнатий Брянчанинов",
+      "work": "О молитве",
+      "sourceUrl": "https://azbyka.ru/otechnik/Ignatij_Brjanchaninov/o-molitve/1",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "id": 810127,
+      "kind": "bible",
+      "text": "Иисус Христос вчера и сегодня и во веки Тот же.",
+      "reference": "Евр. 13:8",
+      "source": "Послание к Евреям",
+      "target": {
+        "type": "bible",
+        "bookCode": "HEB",
+        "chapter": 13,
+        "verse": 8
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810128,
+      "kind": "father",
+      "text": "Настоящая молитва есть возношение ума и сердца к Богу.",
+      "source": "свт. Феофан Затворник",
+      "reference": "свт. Феофан Затворник",
+      "work": "Письма о разных предметах веры и жизни",
+      "sourceUrl": "https://azbyka.ru/otechnik/Feofan_Zatvornik/Pisma-o-raznykh-predmetakh-very-i-zhizni/47",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "id": 810129,
+      "kind": "bible",
+      "text": "Поэтому с обдуманностью веди войну твою, и успех будет при множестве совещаний.",
+      "reference": "Притч. 24:6",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 24,
+        "verse": 6
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810130,
+      "kind": "father",
+      "text": "Молитва — это недоступная никаким ворам сокровищница всякого блага.",
+      "source": "свт. Иоанн Златоуст",
+      "reference": "свт. Иоанн Златоуст",
+      "work": "О молитве",
+      "sourceUrl": "https://azbyka.ru/otechnik/Ioann_Zlatoust/o-molitve/",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "id": 810131,
+      "kind": "bible",
+      "text": "Как пес возвращается на блевотину свою, так глупый повторяет глупость свою.",
+      "reference": "Притч. 26:11",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 26,
+        "verse": 11
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810132,
+      "kind": "bible",
+      "text": "Кроткий язык — древо жизни, но необузданный — сокрушение духа.",
+      "reference": "Притч. 15:4",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 15,
+        "verse": 4
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810133,
+      "kind": "bible",
+      "text": "Все пути человека чисты в его глазах, но Господь взвешивает души.",
+      "reference": "Притч. 16:2",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 16,
+        "verse": 2
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810134,
+      "kind": "bible",
+      "text": "Просите, и дано будет вам; ищите, и найдете; стучите, и отворят вам.",
+      "reference": "Мф. 7:7",
+      "source": "Евангелие от Матфея",
+      "target": {
+        "type": "bible",
+        "bookCode": "MAT",
+        "chapter": 7,
+        "verse": 7
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810135,
+      "kind": "bible",
+      "text": "Всякий путь человека прям в глазах его; но Господь взвешивает сердца.",
+      "reference": "Притч. 21:2",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 21,
+        "verse": 2
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810136,
+      "kind": "bible",
+      "text": "Скудоумный высказывает презрение к ближнему своему; но разумный человек молчит.",
+      "reference": "Притч. 11:12",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 11,
+        "verse": 12
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810137,
+      "kind": "bible",
+      "text": "Ибо у Бога не останется бессильным никакое слово.",
+      "reference": "Лк. 1:37",
+      "source": "Евангелие от Луки",
+      "target": {
+        "type": "bible",
+        "bookCode": "LUK",
+        "chapter": 1,
+        "verse": 37
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810138,
+      "kind": "bible",
+      "text": "Где Дух Господень, там свобода.",
+      "reference": "2 Кор. 3:17",
+      "source": "Второе послание к Коринфянам",
+      "target": {
+        "type": "bible",
+        "bookCode": "2CO",
+        "chapter": 3,
+        "verse": 17
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810139,
+      "kind": "bible",
+      "text": "За смирением следует страх Господень, богатство и слава и жизнь.",
+      "reference": "Притч. 22:4",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 22,
+        "verse": 4
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810140,
+      "kind": "bible",
+      "text": "Будьте друг ко другу добры, сострадательны, прощайте друг друга, как и Бог во Христе простил вас.",
+      "reference": "Еф. 4:32",
+      "source": "Послание к Ефесянам",
+      "target": {
+        "type": "bible",
+        "bookCode": "EPH",
+        "chapter": 4,
+        "verse": 32
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810141,
+      "kind": "father",
+      "text": "И молитва называется добродетелью, хотя она есть мать добродетелей.",
+      "source": "прп. Марк Подвижник",
+      "reference": "прп. Марк Подвижник",
+      "work": "О тех, которые думают оправдаться делами",
+      "sourceUrl": "https://azbyka.ru/otechnik/Mark_Podvizhnik/slovo-2-e-o-teh-kotorye-dumayut-opravdatsja-delami/",
+      "target": null,
+      "quote_date": null
+    },
+    {
+      "id": 810142,
+      "kind": "bible",
+      "text": "Больше всего хранимого храни сердце твое, потому что из него источники жизни.",
+      "reference": "Притч. 4:23",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 4,
+        "verse": 23
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810143,
+      "kind": "bible",
+      "text": "Таковы пути всякого, кто алчет чужого добра: оно отнимает жизнь у завладевшего им.",
+      "reference": "Притч. 1:19",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 1,
+        "verse": 19
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810144,
+      "kind": "bible",
+      "text": "Обратитесь к моему обличению: вот, я изолью на вас дух мой, возвещу вам слова мои.",
+      "reference": "Притч. 1:23",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 1,
+        "verse": 23
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810145,
+      "kind": "bible",
+      "text": "Я есмь путь и истина и жизнь; никто не приходит к Отцу, как только через Меня.",
+      "reference": "Ин. 14:6",
+      "source": "Евангелие от Иоанна",
+      "target": {
+        "type": "bible",
+        "bookCode": "JHN",
+        "chapter": 14,
+        "verse": 6
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810146,
+      "kind": "bible",
+      "text": "Препоясывает силою чресла свои и укрепляет мышцы свои.",
+      "reference": "Притч. 31:17",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 31,
+        "verse": 17
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810147,
+      "kind": "bible",
+      "text": "Не бойся, ибо Я с тобою; не смущайся, ибо Я Бог твой.",
+      "reference": "Ис. 41:10",
+      "source": "Книга пророка Исаии",
+      "target": {
+        "type": "bible",
+        "bookCode": "ISA",
+        "chapter": 41,
+        "verse": 10
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810148,
+      "kind": "bible",
+      "text": "Человеку принадлежат предположения сердца, но от Господа ответ языка.",
+      "reference": "Притч. 16:1",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 16,
+        "verse": 1
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810149,
+      "kind": "bible",
+      "text": "Идущий прямым путем боится Господа; но чьи пути кривы, тот небрежет о Нем.",
+      "reference": "Притч. 14:2",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 14,
+        "verse": 2
+      },
+      "quote_date": null
+    },
+    {
+      "id": 810150,
+      "kind": "bible",
+      "text": "Стезя праведных — как светило лучезарное, которое более и более светлеет до полного дня.",
+      "reference": "Притч. 4:18",
+      "source": "Книга Притчей Соломоновых",
+      "target": {
+        "type": "bible",
+        "bookCode": "PRO",
+        "chapter": 4,
+        "verse": 18
+      },
+      "quote_date": null
+    }
+  ]
+}
