@@ -556,7 +556,7 @@ const ReadingGroup = ({kind, readings, navigation, copy, language, translationCo
           onPress={() => setShowAll((value) => !value)}
           style={({pressed}) => [styles.readingMore, pressed && styles.pressed]}
         >
-          <Text style={styles.readingMoreText}>
+          <Text style={[styles.readingMoreText,cslFont]}>
             {showAll
               ? copy.hideExtraReadings
               : copy.moreReadings.replace('{count}', String(hiddenCount))}
@@ -831,7 +831,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
           <Text style={styles.monthArrow}>‹</Text>
         </Pressable>
 
-        <Text style={styles.monthTitle}>
+        <Text style={[styles.monthTitle,cslFont]}>
           {locale.nominative[visibleMonth - 1]} {visibleYear}
         </Text>
 
@@ -846,7 +846,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
       <View style={styles.weekRow}>
         {locale.miniWeekdays.map((weekday, index) => (
-          <Text key={weekday} style={[styles.weekday, index >= 5 && styles.weekendText]}>
+          <Text key={weekday} style={[styles.weekday, index >= 5 && styles.weekendText,cslFont]}>
             {weekday}
           </Text>
         ))}
@@ -943,7 +943,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
         </View>
       ) : dayData ? (
         <>
-          <Text style={styles.dayDate}>
+          <Text style={[styles.dayDate,cslFont]}>
             {formatCalendarDateLabel(dayData.date_gregorian, locale)}
           </Text>
           {!!liturgicalDayLabel && (
@@ -969,13 +969,13 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
               {!!formatMemorialDay(dayData, language) && (
                 <View style={styles.fastBadge}>
-                  <Text style={styles.fastBadgeText}>{formatMemorialDay(dayData, language)}</Text>
+                  <Text style={[styles.fastBadgeText,cslFont]}>{formatMemorialDay(dayData, language)}</Text>
                 </View>
               )}
 
               {!!formatFast(dayData, language) && (
                 <View style={styles.fastBadge}>
-                  <Text style={styles.fastBadgeText}>{formatFast(dayData, language)}</Text>
+                  <Text style={[styles.fastBadgeText,cslFont]}>{formatFast(dayData, language)}</Text>
                 </View>
               )}
             </View>
