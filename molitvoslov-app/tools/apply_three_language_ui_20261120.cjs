@@ -118,9 +118,12 @@ function insertHoursTitleTypography(source) {
 // Resolve selected translation UI in the existing local header without
 // replacing its custom animated chrome, scroll behavior or markup.
 function replaceHeaderTextNode(source, marker, update, description) {
-  if(source.split(marker).length!==2)
+  const expression=marker==='styles.headerActionText'
+    ? /\bstyles\.headerActionText\b/gu : /\bstyles\.languageDropdownText\b/gu;
+  const hits=[...source.matchAll(expression)];
+  if(hits.length!==1)
     throw Error('FixedSectionHeader: non-unique '+description+'. NO FILES MODIFIED.');
-  const at=source.indexOf(marker), begin=source.lastIndexOf('<Text',at);
+  const at=hits[0].index, begin=source.lastIndexOf('<Text',at);
   const end=source.indexOf('</Text>',at), openEnd=source.indexOf('>',at);
   if(begin<0||end<0||openEnd<0||begin>at||openEnd>end)
     throw Error('FixedSectionHeader: unusual '+description+' markup. NO FILES MODIFIED.');
@@ -138,9 +141,10 @@ function appendTraditionalStyle(section,styleName) {
 }
 function patchFixedHeaderLanguagePill(source) {
   const marker='styles.languagePill';
-  if(source.split(marker).length!==2)
+  const hits=[...source.matchAll(/\bstyles\.languagePill\b/gu)];
+  if(hits.length!==1)
     throw Error('FixedSectionHeader: language pill not unique. NO FILES MODIFIED.');
-  const at=source.indexOf(marker), begin=source.lastIndexOf('<Pressable',at);
+  const at=hits[0].index, begin=source.lastIndexOf('<Pressable',at);
   const end=source.indexOf('</Pressable>',at);
   if(begin<0||end<0)
     throw Error('FixedSectionHeader: language pill structure changed. NO FILES MODIFIED.');
