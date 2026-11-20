@@ -24,7 +24,8 @@ export const ReaderBookmarkMenu = ({
   onAppearanceReset,
 }) => {
   const insets = useSafeAreaInsets();
-  const {t} = useLanguage();
+  const {language,t} = useLanguage();
+  const cslFont=language==='csl_traditional'?{fontFamily:'Ponomar',fontWeight:'400'}:null;
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [appearanceVisible, setAppearanceVisible] = useState(false);
@@ -93,11 +94,11 @@ export const ReaderBookmarkMenu = ({
         >
           <View style={styles.handle} />
 
-          <Text style={styles.title}>{t('bookmarkMenu.title')}</Text>
+          <Text style={[styles.title,cslFont]}>{t('bookmarkMenu.title')}</Text>
 
           {!!languageOptions.length && (
             <View style={styles.languageSection}>
-              <Text style={styles.languageTitle}>{t('bookmarkMenu.text')}</Text>
+              <Text style={[styles.languageTitle,cslFont]}>{t('bookmarkMenu.text')}</Text>
 
               <View style={styles.languageRow}>
                 {languageOptions.map((option) => {
@@ -140,8 +141,8 @@ export const ReaderBookmarkMenu = ({
                 <Ionicons name="text-outline" size={22} color={colors.accent} />
               </View>
               <View style={styles.actionTextWrap}>
-                <Text style={styles.actionTitle}>Оформление чтения</Text>
-                <Text style={styles.actionSubtitle}>Размер шрифта и цвет страницы</Text>
+                <Text style={[styles.actionTitle,cslFont]}>{t('readerMenu.appearance')}</Text>
+                <Text style={[styles.actionSubtitle,cslFont]}>{t('readerMenu.appearanceHint')}</Text>
               </View>
             </Pressable>
           )}
@@ -159,8 +160,8 @@ export const ReaderBookmarkMenu = ({
                 <Ionicons name="share-social-outline" size={22} color={colors.accent}/>
               </View>
               <View style={styles.actionTextWrap}>
-                <Text style={styles.actionTitle}>Поделиться</Text>
-                <Text style={styles.actionSubtitle}>Переслать текст или ссылку</Text>
+                <Text style={[styles.actionTitle,cslFont]}>{t('readerMenu.share')}</Text>
+                <Text style={[styles.actionSubtitle,cslFont]}>{t('readerMenu.shareHint')}</Text>
               </View>
             </Pressable>
           )}
@@ -182,8 +183,8 @@ export const ReaderBookmarkMenu = ({
             </View>
 
             <View style={styles.actionTextWrap}>
-              <Text style={styles.actionTitle}>{t('bookmarkMenu.add')}</Text>
-              <Text style={styles.actionSubtitle}>
+              <Text style={[styles.actionTitle,cslFont]}>{t('bookmarkMenu.add')}</Text>
+              <Text style={[styles.actionSubtitle,cslFont]}>
                 {bookmark ? t('bookmarkMenu.savePlace') : t('bookmarkMenu.positionAfterStart')}
               </Text>
             </View>
@@ -199,8 +200,8 @@ export const ReaderBookmarkMenu = ({
               </View>
 
               <View style={styles.actionTextWrap}>
-                <Text style={styles.actionTitle}>{t('bookmarkMenu.returnToPlace')}</Text>
-                <Text style={styles.actionSubtitle}>{t('bookmarkMenu.returnToPlaceHint')}</Text>
+                <Text style={[styles.actionTitle,cslFont]}>{t('bookmarkMenu.returnToPlace')}</Text>
+                <Text style={[styles.actionSubtitle,cslFont]}>{t('bookmarkMenu.returnToPlaceHint')}</Text>
               </View>
             </Pressable>
           )}
@@ -214,12 +215,12 @@ export const ReaderBookmarkMenu = ({
             </View>
 
             <View style={styles.actionTextWrap}>
-              <Text style={styles.actionTitle}>{openBookmarksLabel || t('bookmarkMenu.openPlaces')}</Text>
-              <Text style={styles.actionSubtitle}>{t('bookmarkMenu.openPlacesHint')}</Text>
+              <Text style={[styles.actionTitle,cslFont]}>{openBookmarksLabel || t('bookmarkMenu.openPlaces')}</Text>
+              <Text style={[styles.actionSubtitle,cslFont]}>{t('bookmarkMenu.openPlacesHint')}</Text>
             </View>
           </Pressable>
 
-          {!!message && <Text style={styles.message}>{message}</Text>}
+          {!!message && <Text style={[styles.message,cslFont]}>{message}</Text>}
         </Pressable>
       </Pressable>
     </Modal>
