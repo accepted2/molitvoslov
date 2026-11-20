@@ -7,6 +7,7 @@ import {useFocusEffect} from '@react-navigation/native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 import Feather from '@expo/vector-icons/Feather';
+import {useLanguage} from '../context/LanguageContext';
 import {
   REMINDER_TARGETS, readPrayerReminders, savePrayerReminder,
   deletePrayerReminder, setPrayerReminderEnabled, reminderTimeValid,
@@ -17,27 +18,25 @@ import {
 const INK = '#49301D';
 const BORDER = '#E5CEAD';
 const ACCENT = '#875B38';
-const DAYS = [
-  {id: 1, text: 'Пн'}, {id: 2, text: 'Вт'}, {id: 3, text: 'Ср'},
-  {id: 4, text: 'Чт'}, {id: 5, text: 'Пт'}, {id: 6, text: 'Сб'},
-  {id: 7, text: 'Вс'},
-];
+const DAYS = [1,2,3,4,5,6,7].map(id => ({id}));
 const ALL_DAYS = DAYS.map(day => day.id);
 const preset = key => REMINDER_TARGETS.find(item => item.key === key) || REMINDER_TARGETS[0];
-const initialDraft = () => ({
-  id: null, target: 'morning', title: preset('morning').body,
+const initialDraft = t => ({
+  id: null, target: 'morning', title: t('notifications.defaultTitles.morning'),
   time: '07:00', days: [...ALL_DAYS], enabled: true,
 });
 
-const periodLabel = days => {
-  if (days.length === 7) return 'Ежедневно';
-  if (!days.length) return 'Дни не выбраны';
-  return DAYS.filter(day => days.includes(day.id)).map(day => day.text).join(', ');
+const periodLabel = (days,t) => {
+  if (days.length === 7) return t('notifications.daily');
+  if (!days.length) return t('notifications.noDays');
+  return DAYS.filter(day => days.includes(day.id)).map(day => t('notifications.days.'+(day.id-1))).join(', ');
 };
 const sortByTime = records => [...records].sort((a, b) => a.time.localeCompare(b.time));
 
 export const NotificationsScreen = ({navigation, route}) => {
   const insets = useSafeAreaInsets();
+  const {language,t}=useLanguage();
+  const cslFont=language==='csl_traditional' ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
   const [items, setItems] = useState([]);
   const [scheduleStatuses, setScheduleStatuses] = useState({});
   const [loading, setLoading] = useState(true);
@@ -55,11 +54,11 @@ export const NotificationsScreen = ({navigation, route}) => {
         console.warn('[reminders] schedule status:', error?.message || error);
       }
     } catch (error) {
-      Alert.alert('Напоминания', error?.message || 'Ошибка загрузки');
+      Alert.alert(t('notifications.title'), error?.message || t('notifications.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useFocusEffect(useCallback(() => {
     let active = true;
@@ -75,12 +74,12 @@ export const NotificationsScreen = ({navigation, route}) => {
   useEffect(() => {
     if (route.params?.createTarget && !draft) {
       const target = preset(route.params.createTarget);
-      setDraft({...initialDraft(), target: target.key, title: target.body});
+      setDraft({...initialDraft(t), target: target.key, title: t('notifications.defaultTitles.'+target.key)});
       navigation.setParams({createTarget: undefined});
     }
-  }, [route.params?.createTarget, draft, navigation]);
+  }, [route.params?.createTarget, draft, navigation, t]);
 
-  const openCreate = () => setDraft(initialDraft());
+  const openCreate = () => setDraft(initialDraft(t));
   const openEdit = item => setDraft({
     id: item.id, title: item.title, target: item.target, time: item.time,
     days: [...item.days], enabled: item.enabled,
@@ -88,7 +87,7 @@ export const NotificationsScreen = ({navigation, route}) => {
   const changeDraft = update => setDraft(previous => ({...previous, ...update}));
   const chooseTarget = key => {
     const target = preset(key);
-    changeDraft({target: key, title: target.body});
+    changeDraft({target: key, title: t('notifications.defaultTitles.'+key)});
   };
   const toggleDay = day => changeDraft({
     days: draft.days.includes(day)
@@ -99,15 +98,15 @@ export const NotificationsScreen = ({navigation, route}) => {
   const save = async (forceDisabled = false) => {
     if (!draft || busy) return;
     if (!draft.title.trim()) {
-      Alert.alert('Название', 'Введите название напоминания.');
+      Alert.alert(t('notifications.name'), t('notifications.enterName'));
       return;
     }
     if (!reminderTimeValid(draft.time)) {
-      Alert.alert('Время', 'Используйте формат 07:00 (от 00:00 до 23:59).');
+      Alert.alert(t('notifications.time'), t('notifications.invalidTime'));
       return;
     }
     if (!draft.days.length) {
-      Alert.alert('Расписание', 'Выберите хотя бы один день.');
+      Alert.alert(t('notifications.schedule'), t('notifications.selectDay'));
       return;
     }
     setBusy(true);
@@ -119,20 +118,20 @@ export const NotificationsScreen = ({navigation, route}) => {
       const message = String(error?.message || error);
       if (!forceDisabled && /уведомления запрещены/i.test(message)) {
         Alert.alert(
-          'Нет разрешения на уведомления',
+          t('notifications.permissionTitle'),
           message,
           [
-            {text: 'Назад', style: 'cancel'},
-            {text: 'Сохранить выключенным', onPress: () => savePrayerReminder(
+            {text: t('notifications.backAction'), style: 'cancel'},
+            {text: t('notifications.saveDisabled'), onPress: () => savePrayerReminder(
               {...draft, enabled: false}
             ).then(() => {
               setDraft(null);
               load();
-            }).catch(err => Alert.alert('Ошибка', String(err?.message || err)))},
+            }).catch(err => Alert.alert(t('notifications.error'), String(err?.message || err)))},
           ]
         );
       } else {
-        Alert.alert('Не удалось сохранить', message);
+        Alert.alert(t('notifications.saveFailed'), message);
       }
     } finally {
       setBusy(false);
@@ -146,7 +145,7 @@ export const NotificationsScreen = ({navigation, route}) => {
       await setPrayerReminderEnabled(item.id, !item.enabled);
       await load();
     } catch (error) {
-      Alert.alert('Напоминания', String(error?.message || error));
+      Alert.alert(t('notifications.title'), String(error?.message || error));
     } finally {
       setBusy(false);
     }
@@ -154,18 +153,18 @@ export const NotificationsScreen = ({navigation, route}) => {
 
   const remove = item => {
     Alert.alert(
-      'Удалить напоминание?',
+      t('notifications.deleteQuestion'),
       item.title,
       [
-        {text: 'Отмена', style: 'cancel'},
-        {text: 'Удалить', style: 'destructive', onPress: async () => {
+        {text: t('notifications.cancel'), style: 'cancel'},
+        {text: t('notifications.delete'), style: 'destructive', onPress: async () => {
           setBusy(true);
           try {
             await deletePrayerReminder(item.id);
             if (draft?.id === item.id) setDraft(null);
             await load();
           } catch (error) {
-            Alert.alert('Не удалось удалить', String(error?.message || error));
+            Alert.alert(t('notifications.deleteFailed'), String(error?.message || error));
           } finally {
             setBusy(false);
           }
@@ -179,9 +178,9 @@ export const NotificationsScreen = ({navigation, route}) => {
     setBusy(true);
     try {
       await previewPrayerReminder(item.id);
-      Alert.alert('Пробное уведомление', 'Уведомление появится приблизительно через 8 секунд.');
+      Alert.alert(t('notifications.previewTitle'), t('notifications.previewText'));
     } catch (error) {
-      Alert.alert('Не удалось проверить', String(error?.message || error));
+      Alert.alert(t('notifications.previewFailed'), String(error?.message || error));
     } finally {
       setBusy(false);
     }
@@ -196,11 +195,11 @@ export const NotificationsScreen = ({navigation, route}) => {
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       <StatusBar style="dark" />
       <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Назад"
+        <Pressable accessibilityRole="button" accessibilityLabel={t('notifications.back')}
           onPress={() => navigation.goBack()} style={styles.backButton}>
           <Feather name="chevron-left" size={25} color={INK} />
         </Pressable>
-        <Text style={styles.headerTitle}>Уведомления</Text>
+        <Text style={[styles.headerTitle,cslFont]}>{t('notifications.title')}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -210,59 +209,57 @@ export const NotificationsScreen = ({navigation, route}) => {
           <>
             <View style={styles.intro}>
               <Feather name="bell" size={22} color={ACCENT} />
-              <Text style={styles.introText}>
-                Личные напоминания о молитве и чтении. Работают без интернета.
-                Ничего не включается без вашего согласия.
+              <Text style={[styles.introText,cslFont]}>
+                {t('notifications.intro')}
               </Text>
             </View>
             <Pressable accessibilityRole="button" style={styles.primaryButton}
               onPress={openCreate}>
               <Feather name="plus" size={19} color="#FFF6E5" />
-              <Text style={styles.primaryButtonText}>Добавить напоминание</Text>
+              <Text style={[styles.primaryButtonText,cslFont]}>{t('notifications.add')}</Text>
             </Pressable>
 
-            <Text style={styles.sectionHeading}>Мои напоминания</Text>
+            <Text style={[styles.sectionHeading,cslFont]}>{t('notifications.my')}</Text>
             {loading ? (
               <ActivityIndicator color={ACCENT} style={{marginTop: 28}} />
             ) : items.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Feather name="clock" size={26} color="#AB8764" />
-                <Text style={styles.emptyTitle}>Напоминаний пока нет</Text>
-                <Text style={styles.muted}>Выберите молитву и время, в которое вам удобно читать.</Text>
+                <Text style={[styles.emptyTitle,cslFont]}>{t('notifications.emptyTitle')}</Text>
+                <Text style={[styles.muted,cslFont]}>{t('notifications.emptyText')}</Text>
               </View>
             ) : items.map(item => (
               <View key={item.id} style={styles.reminderCard}>
                 <View style={styles.reminderTop}>
                   <View style={{flex: 1, paddingRight: 8}}>
-                    <Text style={styles.reminderTime}>{item.time}</Text>
-                    <Text style={styles.reminderTitle}>{item.title}</Text>
-                    <Text style={styles.muted}>{periodLabel(item.days)}</Text>
+                    <Text style={[styles.reminderTime,cslFont]}>{item.time}</Text>
+                    <Text style={[styles.reminderTitle,cslFont]}>{item.title}</Text>
+                    <Text style={[styles.muted,cslFont]}>{periodLabel(item.days,t)}</Text>
                     {item.enabled && (() => {
                       const status = scheduleStatuses[item.id];
                       const next = status?.nextAt
-                        ? new Date(status.nextAt).toLocaleString('ru-RU', {
+                        ? new Date(status.nextAt).toLocaleString((language==='uk'?'uk-UA':'ru-RU'), {
                           weekday: 'short', day: 'numeric', month: 'short',
                           hour: '2-digit', minute: '2-digit',
                         }) : null;
-                      const message = !status ? 'Проверяем расписание…'
-                        : !status.permitted ? 'Уведомления запрещены в настройках Android'
-                          : !status.ready ? 'Расписание не подтверждено Android — откройте экран повторно'
+                      const message = !status ? t('notifications.checking')
+                        : !status.permitted ? t('notifications.denied')
+                          : !status.ready ? t('notifications.notConfirmed')
                             : 'Запланировано ' + status.registered + '/' + status.expected +
                               ' · Следующее: ' + next;
                       return <View>
-                        <Text style={[styles.scheduleStatus,
+                        <Text style={[styles.scheduleStatus,cslFont,
                           status && !status.ready && styles.scheduleWarning]}>{message}</Text>
                         {status?.ready && !status.channelAudible && (
-                          <Text style={[styles.scheduleStatus, styles.scheduleWarning]}>
-                            Android отключил звук канала. Проверьте звук уведомлений
-                            для "Молитвослова" в настройках телефона.
+                          <Text style={[styles.scheduleStatus,cslFont, styles.scheduleWarning]}>
+                            {t('notifications.sound')}
                           </Text>
                         )}
                       </View>;
                     })()}
                   </View>
                   <Switch
-                    accessibilityLabel={item.enabled ? 'Выключить напоминание' : 'Включить напоминание'}
+                    accessibilityLabel={item.enabled ? t('notifications.disable') : t('notifications.enable')}
                     value={item.enabled} onValueChange={() => toggle(item)}
                     disabled={busy}
                     trackColor={{false: '#D7C4AB', true: '#A37B50'}}
@@ -272,21 +269,21 @@ export const NotificationsScreen = ({navigation, route}) => {
                 <View style={styles.cardActions}>
                   <Pressable accessibilityRole="button" onPress={() => openEdit(item)} style={styles.linkAction}>
                     <Feather name="edit-2" size={15} color={ACCENT} />
-                    <Text style={styles.linkText}>Изменить</Text>
+                    <Text style={[styles.linkText,cslFont]}>{t('notifications.edit')}</Text>
                   </Pressable>
                   {item.target !== 'custom' && (
                     <Pressable accessibilityRole="button" onPress={() => openLinkedText(item)} style={styles.linkAction}>
                       <Feather name="book-open" size={15} color={ACCENT} />
-                      <Text style={styles.linkText}>Открыть</Text>
+                      <Text style={[styles.linkText,cslFont]}>{t('notifications.open')}</Text>
                     </Pressable>
                   )}
                   <Pressable accessibilityRole="button" onPress={() => preview(item)} style={styles.linkAction}>
                     <Feather name="bell" size={15} color={ACCENT} />
-                    <Text style={styles.linkText}>Проверить</Text>
+                    <Text style={[styles.linkText,cslFont]}>{t('notifications.check')}</Text>
                   </Pressable>
                   <Pressable accessibilityRole="button" onPress={() => remove(item)} style={styles.linkAction}>
                     <Feather name="trash-2" size={15} color="#9B5845" />
-                    <Text style={[styles.linkText, {color: '#9B5845'}]}>Удалить</Text>
+                    <Text style={[styles.linkText,cslFont, {color: '#9B5845'}]}>{t('notifications.delete')}</Text>
                   </Pressable>
                 </View>
               </View>
@@ -294,48 +291,48 @@ export const NotificationsScreen = ({navigation, route}) => {
           </>
         ) : (
           <>
-            <Text style={styles.sectionHeading}>
-              {draft.id ? 'Изменить напоминание' : 'Новое напоминание'}
+            <Text style={[styles.sectionHeading,cslFont]}>
+              {draft.id ? t('notifications.editTitle') : t('notifications.newTitle')}
             </Text>
-            <Text style={styles.fieldLabel}>О чём напомнить</Text>
+            <Text style={[styles.fieldLabel,cslFont]}>{t('notifications.subject')}</Text>
             <View style={styles.presetGrid}>
               {REMINDER_TARGETS.map(target => (
                 <Pressable key={target.key} accessibilityRole="button"
                   accessibilityState={{selected: draft.target === target.key}}
                   onPress={() => chooseTarget(target.key)}
                   style={[styles.preset, draft.target === target.key && styles.presetSelected]}>
-                  <Text style={[styles.presetText, draft.target === target.key && styles.presetTextSelected]}>
-                    {target.title}
+                  <Text style={[styles.presetText,cslFont, draft.target === target.key && styles.presetTextSelected]}>
+                    {t('notifications.presets.'+target.key)}
                   </Text>
                 </Pressable>
               ))}
             </View>
-            <Text style={styles.fieldLabel}>Текст уведомления</Text>
+            <Text style={[styles.fieldLabel,cslFont]}>{t('notifications.message')}</Text>
             <TextInput
-              accessibilityLabel="Текст напоминания"
+              accessibilityLabel={t('notifications.messageA11y')}
               style={styles.textInput} maxLength={110} value={draft.title}
-              placeholder="Например, время вечерней молитвы"
+              placeholder={t('notifications.messagePlaceholder')}
               placeholderTextColor="#9F846A"
               onChangeText={title => changeDraft({title})}
             />
-            <Text style={styles.fieldLabel}>Время</Text>
+            <Text style={[styles.fieldLabel,cslFont]}>Время</Text>
             <TextInput
-              accessibilityLabel="Время в формате часы двоеточие минуты"
+              accessibilityLabel={t('notifications.timeA11y')}
               style={[styles.textInput, {width: 124, textAlign: 'center'}]}
               value={draft.time}
               maxLength={5} keyboardType="numbers-and-punctuation"
               placeholder="07:00"
               onChangeText={time => changeDraft({time})}
             />
-            <Text style={styles.fieldLabel}>Дни недели</Text>
+            <Text style={[styles.fieldLabel,cslFont]}>{t('notifications.weekdays')}</Text>
             <View style={styles.dayRow}>
               {DAYS.map(day => (
                 <Pressable key={day.id} accessibilityRole="button"
                   accessibilityState={{selected: draft.days.includes(day.id)}}
                   onPress={() => toggleDay(day.id)}
                   style={[styles.dayPill, draft.days.includes(day.id) && styles.dayPillSelected]}>
-                  <Text style={[styles.dayText, draft.days.includes(day.id) && styles.dayTextSelected]}>
-                    {day.text}
+                  <Text style={[styles.dayText,cslFont, draft.days.includes(day.id) && styles.dayTextSelected]}>
+                    {t('notifications.days.'+(day.id-1))}
                   </Text>
                 </Pressable>
               ))}
@@ -343,29 +340,26 @@ export const NotificationsScreen = ({navigation, route}) => {
             <Pressable onPress={() => changeDraft({
               days: draft.days.length === 7 ? [] : [...ALL_DAYS],
             })}>
-              <Text style={[styles.linkText, {marginTop: 12}]}>
-                {draft.days.length === 7 ? 'Снять выделение дней' : 'Выбрать всю неделю'}
+              <Text style={[styles.linkText,cslFont, {marginTop: 12}]}>
+                {draft.days.length === 7 ? t('notifications.unselectWeek') : t('notifications.selectWeek')}
               </Text>
             </Pressable>
             <View style={styles.enabledRow}>
-              <Text style={styles.reminderTitle}>Напоминание включено</Text>
+              <Text style={[styles.reminderTitle,cslFont]}>{t('notifications.enabled')}</Text>
               <Switch value={draft.enabled} onValueChange={enabled => changeDraft({enabled})}
                 trackColor={{false: '#D7C4AB', true: '#A37B50'}} thumbColor="#FFF3DB" />
             </View>
-            <Text style={[styles.muted, {marginBottom: 18}]}>
-              При первом включении Android запросит разрешение. Нажатие на уведомление
-              открывает выбранный раздел приложения. Для "Своего напоминания" откроется список.
-              Звук использует системную громкость уведомлений; режим "Без звука",
-              "Не беспокоить" и энергосбережение могут ограничить доставку.
+            <Text style={[styles.muted,cslFont, {marginBottom: 18}]}>
+              {t('notifications.help')}
             </Text>
             <Pressable accessibilityRole="button" disabled={busy}
               onPress={() => save()} style={[styles.primaryButton, busy && {opacity: 0.6}]}>
               {busy ? <ActivityIndicator color="#FFF6E5" /> : <Feather name="check" size={19} color="#FFF6E5" />}
-              <Text style={styles.primaryButtonText}>Сохранить</Text>
+              <Text style={[styles.primaryButtonText,cslFont]}>{t('notifications.save')}</Text>
             </Pressable>
             <Pressable accessibilityRole="button" disabled={busy}
               onPress={() => setDraft(null)} style={styles.cancelButton}>
-              <Text style={styles.cancelText}>Отмена</Text>
+              <Text style={[styles.cancelText,cslFont]}>{t('notifications.cancel')}</Text>
             </Pressable>
           </>
         )}
