@@ -148,9 +148,9 @@ const introMark=ru.sections[0].rows[0].blocks[0].hoursMarks[0];
 assert.equal(introMark.kind,'speaker','Russian priest cue remains liturgical red');
 const psalmMark=ru.sections[1].rows[0].blocks[0].hoursMarks[0];
 assert.equal(psalmMark.kind,'initial','Russian psalms get first-letter red');
-assert(ru.sections[0].rows[7].blocks[0].hoursMarks.some(m=>
+assert(ru.sections[0].rows[8].blocks[0].hoursMarks.some(m=>
  m.kind==='devotional'),'Russian full Glory doxology red');
-assert(ru.sections[0].rows[6].blocks[0].hoursMarks.some(m=>
+assert(ru.sections[0].rows[7].blocks[0].hoursMarks.some(m=>
  m.kind==='repeat'),'Russian short mercy repeat marker separated');
 assert(ru.sections[11].rows[0].blocks[0].hoursMarks.some(m=>
  m.kind==='repeat'),'40 mercies use separate count');
