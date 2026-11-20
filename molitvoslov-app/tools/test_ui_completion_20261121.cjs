@@ -76,7 +76,7 @@ assert(home.includes('heroActionsBottom + 38'));
 assert(home.includes('insets.top + 95'));
 assert(!home.includes('insets.top + 49.5'));
 const calendar=read('src/screens/ChurchCalendarScreen.js');
-assert(calendar.includes('feast.life_content'));
+assert(calendar.includes('mainFeast?.life_content'));
 assert(calendar.includes("translate(language,'calendarUi.oldTestament')"));
 const csl=read('src/services/traditionalUiTypography.js');
 assert(csl.includes('1.18')&&csl.includes('1.12'));
