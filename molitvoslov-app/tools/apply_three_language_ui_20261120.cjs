@@ -11,7 +11,7 @@ const {parse}=require('@babel/parser');
 const root=path.resolve(__dirname,'../..');
 const app=path.join(root,'molitvoslov-app');
 const oldRef='6621b8cf1057221b56571b72d97ea902f8d5f260';
-const newRef='68534a06057b5ca31fa9be082dd49b8a4e8868b4';
+const newRef='a6a284eca3e80e438c08494917b78d885c553281';
 const dry=process.argv.includes('--dry-run');
 const paths=[
   'src/services/languagePreferences.js',
