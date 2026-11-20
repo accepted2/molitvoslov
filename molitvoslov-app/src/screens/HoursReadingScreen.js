@@ -33,7 +33,10 @@ export const HoursReadingScreen = ({route, navigation}) => {
   const {language, t} = useLanguage();
   const traditional = language === 'csl_traditional';
   const titleStyle = traditional ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
-  const entry = lookupLocalizedHoursEntry(route.params?.entryId, language);
+  const entry = useMemo(
+    () => lookupLocalizedHoursEntry(route.params?.entryId, language),
+    [route.params?.entryId, language]
+  );
   const entryId = entry?.id || null;
   const anchorId=Number(route.params?.anchorId);
   const linkFocusTarget=useMemo(() => Number.isInteger(anchorId)&&anchorId>0
