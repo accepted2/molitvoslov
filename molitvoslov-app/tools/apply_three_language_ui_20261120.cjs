@@ -115,6 +115,64 @@ function insertHoursTitleTypography(source) {
   return source.slice(0,headers[0].index)+updated+
     source.slice(headers[0].index+header.length);
 }
+// Resolve selected translation UI in the existing local header without
+// replacing its custom animated chrome, scroll behavior or markup.
+function replaceHeaderTextNode(source, marker, update, description) {
+  if(source.split(marker).length!==2)
+    throw Error('FixedSectionHeader: non-unique '+description+'. NO FILES MODIFIED.');
+  const at=source.indexOf(marker), begin=source.lastIndexOf('<Text',at);
+  const end=source.indexOf('</Text>',at), openEnd=source.indexOf('>',at);
+  if(begin<0||end<0||openEnd<0||begin>at||openEnd>end)
+    throw Error('FixedSectionHeader: unusual '+description+' markup. NO FILES MODIFIED.');
+  const section=source.slice(begin,end+7);
+  return source.slice(0,begin)+update(section)+source.slice(end+7);
+}
+function appendTraditionalStyle(section,styleName) {
+  if(section.includes('traditionalStyle'))return section;
+  const match=section.match(/style\s*=\s*\{\[([\s\S]*?)\]\}/u);
+  if(!match||!match[1].includes('styles.'+styleName))
+    throw Error('FixedSectionHeader: unusual '+styleName+' layout. NO FILES MODIFIED.');
+  const value=match[1];
+  const addition=value.trimEnd().endsWith(',')?' traditionalStyle':', traditionalStyle';
+  return section.replace(match[0],match[0].replace(/\]\}$/u,addition+']}'));
+}
+function patchFixedHeaderLanguagePill(source) {
+  const marker='styles.languagePill';
+  if(source.split(marker).length!==2)
+    throw Error('FixedSectionHeader: language pill not unique. NO FILES MODIFIED.');
+  const at=source.indexOf(marker), begin=source.lastIndexOf('<Pressable',at);
+  const end=source.indexOf('</Pressable>',at);
+  if(begin<0||end<0)
+    throw Error('FixedSectionHeader: language pill structure changed. NO FILES MODIFIED.');
+  let section=source.slice(begin,end+12);
+  if(!section.includes("accessibilityLabel={t('common.language')}"))
+    section=section.replace(/\baccessibilityLabel\s*=\s*(['"])[^'"]*\1/u,
+      "accessibilityLabel={t('common.language')}");
+  if(!section.includes('labelForReadingMode(selectedLanguage)')){
+    const expr=/\{\s*selectedLanguage(?:\?\.)?\.label\s*\}/gu;
+    if([...section.matchAll(expr)].length!==1)
+      throw Error('FixedSectionHeader: reading language pill text changed. NO FILES MODIFIED.');
+    section=section.replace(expr,'{labelForReadingMode(selectedLanguage)}');
+  }
+  return source.slice(0,begin)+section+source.slice(end+12);
+}
+function patchFixedHeaderAction(source) {
+  return replaceHeaderTextNode(source,'styles.headerActionText',
+    section=>appendTraditionalStyle(section,'headerActionText'),
+    'header action label');
+}
+function patchFixedHeaderDropdown(source) {
+  return replaceHeaderTextNode(source,'styles.languageDropdownText',section=>{
+    let result=appendTraditionalStyle(section,'languageDropdownText');
+    if(!result.includes('labelForReadingMode(option)')){
+      const expr=/\{\s*option\.label\s*\}/gu;
+      if([...result.matchAll(expr)].length!==1)
+        throw Error('FixedSectionHeader: dropdown text changed. NO FILES MODIFIED.');
+      result=result.replace(expr,'{labelForReadingMode(option)}');
+    }
+    return result;
+  },'language dropdown');
+}
 function patch(source,changes,relative){
   let output=source;
   changes.forEach((h,index)=>{
@@ -126,6 +184,16 @@ function patch(source,changes,relative){
     else if(relative==='src/screens/HoursReadingScreen.js' &&
       !h.coreOld && h.coreNew.trim()==='titleTextStyle={titleStyle}')
       output=insertHoursTitleTypography(output);
+    else if(relative==='src/components/navigation/FixedSectionHeader.js' &&
+      h.coreNew.includes('labelForReadingMode(selectedLanguage)'))
+      output=patchFixedHeaderLanguagePill(output);
+    else if(relative==='src/components/navigation/FixedSectionHeader.js' &&
+      h.coreNew.includes('styles.headerActionText') &&
+      h.coreNew.includes('traditionalStyle'))
+      output=patchFixedHeaderAction(output);
+    else if(relative==='src/components/navigation/FixedSectionHeader.js' &&
+      h.coreNew.includes('labelForReadingMode(option)'))
+      output=patchFixedHeaderDropdown(output);
     else throw Error(relative+' conflict at change '+(index+1)+'/'+changes.length+
       ' (old='+count(output,h.old)+', next='+count(output,h.next)+
       ', core='+count(output,h.coreOld)+'). '+
