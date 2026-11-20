@@ -2,6 +2,7 @@
 // historical RU/UK dictionary to reduce merge conflicts with local app edits.
 export const EXTRA_COPY = {
   ru: {
+    calendar:{oldTestamentReadings:'ВЕТХОЗАВЕТНЫЕ ЧТЕНИЯ'},
     menu: {
       hoursTitle:'Часы',hoursSubtitle:'Вседневные, великопостные, царские, пасхальные',
       learningTitle:'Учимся молиться',
@@ -75,6 +76,7 @@ export const EXTRA_COPY = {
     },
   },
   uk: {
+    calendar:{oldTestamentReadings:'СТАРОЗАВІТНІ ЧИТАННЯ'},
     menu:{
       hoursTitle:'Часи',hoursSubtitle:'Повсякденні, великопісні, царські, пасхальні',
       learningTitle:'Вчимося молитися',learningSubtitle:'Церковнослов’янська абетка, числа й настанови',
@@ -115,6 +117,7 @@ export const EXTRA_COPY = {
     },
   },
   csl_traditional: {
+    calendar:{oldTestamentReadings:'ЧТЕ́НЇѦ ВЕ́ТХАГѠ ЗАВѢ́ТА'},
     menu: {
       hoursTitle:'Часы̀',
       hoursSubtitle:'Вседне́вныѧ, великопо́стныѧ, ца́рскїѧ, па́схальныѧ',
