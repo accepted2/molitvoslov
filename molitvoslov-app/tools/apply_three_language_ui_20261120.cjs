@@ -92,6 +92,29 @@ function createHunks(a,b){
   });
 }
 const count=(s,chunk)=>chunk?s.split(chunk).length-1:0;
+// Formatting around <FixedSectionHeader> varies between the user's local
+// branches. This exact JSX attribute is a safe, optional insertion, not a
+// reason to reject all other localization edits. Work within the component.
+function insertHoursTitleTypography(source) {
+  const headers=[...source.matchAll(/<FixedSectionHeader\b[\s\S]*?\/>/gu)];
+  if(headers.length!==1) {
+    throw Error('HoursReadingScreen: expected exactly one FixedSectionHeader; found '+
+      headers.length+'. NO FILES MODIFIED.');
+  }
+  const header=headers[0][0];
+  if(/\btitleTextStyle\s*=/.test(header))return source; // already styled locally
+  const titleMatches=[...header.matchAll(/^([ \t]*)title\s*=\s*\{\s*entry\.title\s*\}[ \t]*$/gm)];
+  if(titleMatches.length!==1) {
+    throw Error('HoursReadingScreen: local header has an unrecognized title '+
+      'attribute. NO FILES MODIFIED.');
+  }
+  const match=titleMatches[0];
+  const updated=header.slice(0,match.index+match[0].length)+
+    '\n'+match[1]+'titleTextStyle={titleStyle}'+
+    header.slice(match.index+match[0].length);
+  return source.slice(0,headers[0].index)+updated+
+    source.slice(headers[0].index+header.length);
+}
 function patch(source,changes,relative){
   let output=source;
   changes.forEach((h,index)=>{
@@ -100,8 +123,13 @@ function patch(source,changes,relative){
     else if(count(output,h.old)===1)output=output.replace(h.old,h.next);
     else if(h.coreOld&&count(output,h.coreOld)===1)
       output=output.replace(h.coreOld,h.coreNew);
+    else if(relative==='src/screens/HoursReadingScreen.js' &&
+      !h.coreOld && h.coreNew.trim()==='titleTextStyle={titleStyle}')
+      output=insertHoursTitleTypography(output);
     else throw Error(relative+' conflict at change '+(index+1)+'/'+changes.length+
-      '. Existing edits preserved. NO FILES MODIFIED.');
+      ' (old='+count(output,h.old)+', next='+count(output,h.next)+
+      ', core='+count(output,h.coreOld)+'). '+
+      'Existing edits preserved. NO FILES MODIFIED.');
   });
   return output;
 }
