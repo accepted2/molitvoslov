@@ -5,6 +5,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useLanguage} from '../../context/LanguageContext';
 import {useInterfaceScale} from '../../context/InterfaceScaleContext';
+import {traditionalUiTextStyle} from '../../services/traditionalUiTypography';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 const ITEMS = [
@@ -39,10 +40,11 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
   }, [readingHidden, visibility]);
   const insets = useSafeAreaInsets();
   const {language,t} = useLanguage();
-  const traditionalStyle = language === 'csl_traditional' ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
   const uiScale = useInterfaceScale();
+  const traditional = language === 'csl_traditional';
+  const traditionalStyle = traditionalUiTextStyle(language, 10 * uiScale, 12 * uiScale);
   const iconSize = Math.round(17 * uiScale);
-  const rowHeight = Math.round(46 + (uiScale - 1) * 56);
+  const rowHeight = Math.round((traditional ? 72 : 46) + (uiScale - 1) * (traditional ? 82 : 56));
   const itemHeight = rowHeight - 5;
 
   const openRootTab = (route) => {
@@ -93,8 +95,8 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
                   </View>
 
                   <Text
-                    numberOfLines={uiScale === 1 ? 1 : 2}
-                    adjustsFontSizeToFit={uiScale === 1}
+                    numberOfLines={traditional ? 2 : uiScale === 1 ? 1 : 2}
+                    adjustsFontSizeToFit={!traditional && uiScale === 1}
                     minimumFontScale={0.8}
                     style={[styles.label, {
                       fontSize: 10 * uiScale,
