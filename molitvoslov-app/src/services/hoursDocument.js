@@ -12,6 +12,11 @@ import {
   getFirstHourRussianSections,
   pairFirstHourSections,
 } from './hoursFirstHourRussian';
+import {getThirdHourRussianSections} from './hoursThirdHourRussian';
+import {
+  getThirdHourTraditionalSections,
+  getThirdHourTraditionalMarks,
+} from './hoursThirdHourTraditional';
 
 const MISSING = {
   church: 'Церковнославянский текст этого часа пока не добавлен.',
@@ -137,6 +142,7 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
         section.rows?.some(row => isText(row.traditional))
       ),
     } : {}),
+    ...(isThirdHour ? {hasRussian: true, hasTraditional: true} : {}),
   };
   const options = buildReaderLanguageOptions({
     hasChurch: true,
@@ -176,15 +182,21 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
           russianSections: firstHourRussian,
         })
       : null;
-  const sourceSections = viewMode === READER_LANGUAGE_MODES.TRADITIONAL
-    ? (isFirstHour ? firstHourTraditional.sections : content?.traditionalSections)
-    : isFirstHour && viewMode === READER_LANGUAGE_MODES.RUSSIAN
-      ? firstHourRussian
-      : bilingualFirstHour?.every(Boolean)
-        ? bilingualFirstHour
-        : useFirstHourEdit
-          ? firstHourEdit.sections
-          : content?.sections;
+  const sourceSections = isThirdHour
+    ? viewMode === READER_LANGUAGE_MODES.TRADITIONAL
+      ? getThirdHourTraditionalSections()
+      : [READER_LANGUAGE_MODES.RUSSIAN, READER_LANGUAGE_MODES.BOTH].includes(viewMode)
+        ? getThirdHourRussianSections(viewMode)
+        : content?.sections
+    : viewMode === READER_LANGUAGE_MODES.TRADITIONAL
+      ? (isFirstHour ? firstHourTraditional.sections : content?.traditionalSections)
+      : isFirstHour && viewMode === READER_LANGUAGE_MODES.RUSSIAN
+        ? firstHourRussian
+        : bilingualFirstHour?.every(Boolean)
+          ? bilingualFirstHour
+          : useFirstHourEdit
+            ? firstHourEdit.sections
+            : content?.sections;
   // Only section headings lose their incidental underline/colon.
   // Punctuation inside prayers, verses and dialogue is never edited.
   const cleanHeading = value => String(value || '')
@@ -203,7 +215,7 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
       'comment', 'placeholder', 'rubric-label', 'liturgical-label',
       'liturgical-red', 'left-response', 'liturgical-prayers', 'plain-prayer',
       'choir-response', 'final-trinity', 'shared-doxology',
-      'shared-alleluia', 'shared-mercy', 'shared-heading',
+      'shared-alleluia', 'shared-mercy', 'shared-heading', 'tropar-intro',
     ].includes(presentation) ? presentation : '';
     // For the final choir doxology only the speaker cue is red.
     // Other full doxologies keep their normal liturgical red emphasis.
@@ -237,6 +249,10 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
       hoursMarks.splice(0, hoursMarks.length,
         ...getFirstHourTraditionalMarks(text, presentation));
     }
+    if (isThirdHour && language === 'traditional') {
+      hoursMarks.splice(0, hoursMarks.length,
+        ...getThirdHourTraditionalMarks(text, visualNote));
+    }
     if (isFirstHour && language === 'russian' &&
         viewMode === READER_LANGUAGE_MODES.RUSSIAN &&
         !isComment && visualNote !== 'plain-prayer' &&
@@ -250,6 +266,26 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
         hoursMarks.push(mark);
       }
       hoursMarks.sort((a, b) => a.start - b.start || a.end - b.end);
+    }
+    // Third Hour: the phrase introducing the daily troparion is a brown
+    // bold rubric. Other complete doxologies remain liturgical red, including
+    // the final "Аминь" (no text splitting or artificial extra line).
+    if (isThirdHour && (language === 'russian' || language === 'traditional')) {
+      if (visualNote === 'tropar-intro') {
+        hoursMarks.splice(0, hoursMarks.length, {
+          start: 0, end: text.length, kind: 'doxology',
+        });
+      } else if (['shared-doxology', 'shared-alleluia'].includes(visualNote)) {
+        const repeatMatch = /\s*\((?:3|г҃|Три́жды)\)\s*$/u.exec(text);
+        const end = repeatMatch ? repeatMatch.index : text.length;
+        hoursMarks.splice(0, hoursMarks.length);
+        if (end > 0) hoursMarks.push({
+          start: 0, end, kind: 'devotional',
+        });
+        if (repeatMatch) hoursMarks.push({
+          start: repeatMatch.index, end: text.length, kind: 'repeat',
+        });
+      }
     }
     // Only a specifically indicated cue is colored. Source punctuation,
     // paragraph text, and the original UTF-16 selection indices are unchanged.
@@ -341,11 +377,20 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
   const sections = [];
   let missingRussianRows = 0;
   for (const [sectionIndex, section] of sourceSections.entries()) {
-    const title = cleanHeading(section.title);
+    const localizedSectionTitle = viewMode === READER_LANGUAGE_MODES.TRADITIONAL
+      ? section.traditionalTitle || section.title
+      : viewMode === READER_LANGUAGE_MODES.RUSSIAN
+        ? section.russianTitle || section.title
+        : section.title;
+    const title = cleanHeading(localizedSectionTitle);
     const sectionKind = section.kind || classifyHoursSection(title);
     const rows = [];
     for (const [rowIndex, row] of (section.rows || []).entries()) {
-      const id = (sectionIndex + 1) * 10000 + (rowIndex + 1) * 10;
+      // Keep the source row anchors when Saint Ephrem's section is inserted.
+      const anchorSectionIndex = isThirdHour &&
+        Number.isInteger(section.originalSectionIndex)
+          ? section.originalSectionIndex : sectionIndex;
+      const id = (anchorSectionIndex + 1) * 10000 + (rowIndex + 1) * 10;
       const block = (field, suffix) => {
         if (!isText(row?.[field])) return null;
         return createBlock({
@@ -357,7 +402,9 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
           opening: rowIndex === 0,
           presentation: field === 'russian'
             ? (row.russianPresentation || row.presentation)
-            : row.presentation,
+            : field === 'traditional'
+              ? (row.traditionalPresentation || row.presentation)
+              : row.presentation,
           redInitial: field === 'russian'
             ? (row.russianRedInitial ?? (row.redInitial === true))
             : row.redInitial === true,
@@ -366,7 +413,9 @@ export const buildHoursDocument = ({entry, content, viewMode}) => {
             : row.accentPrefix || '',
           preserveLineBreaks: field === 'russian'
             ? (row.russianPreserveLineBreaks ?? (row.preserveLineBreaks === true))
-            : row.preserveLineBreaks === true,
+            : field === 'traditional'
+              ? (row.traditionalPreserveLineBreaks ?? (row.preserveLineBreaks === true))
+              : row.preserveLineBreaks === true,
           fallbackTraditional: field === 'church' && row.fallbackTraditional === true,
         });
       };
