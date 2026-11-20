@@ -20,6 +20,7 @@ import {StatusBar} from 'expo-status-bar';
 import {AppBackground} from '../components/layout/AppBackground';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useLanguage} from '../context/LanguageContext';
+import {traditionalUiTextStyle} from '../services/traditionalUiTypography';
 
 const CANON_ORDER = [
   'tri-sovmeshchennykh-kanona',
@@ -37,7 +38,7 @@ const PendingItem = ({title, subtitle}) => (
     <View style={styles.textContainer}>
       <Text style={[styles.title, styles.titlePending]}>{title}</Text>
 
-      {!!subtitle && <Text style={[styles.description,traditionalStyle]}>{subtitle}</Text>}
+      {!!subtitle && <Text style={styles.description}>{subtitle}</Text>}
     </View>
 
     <View style={styles.soonBadge}>
@@ -48,7 +49,7 @@ const PendingItem = ({title, subtitle}) => (
 
 export const CommunionPreparationScreen = ({navigation}) => {
   const {language,t} = useLanguage();
-  const traditionalStyle = language === 'csl_traditional' ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
+  const cslText = (size, lineHeight) => traditionalUiTextStyle(language, size, lineHeight);
   const [canons, setCanons] = useState([]);
 
   const [loading, setLoading] = useState(true);
@@ -144,7 +145,7 @@ export const CommunionPreparationScreen = ({navigation}) => {
           ]}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={[styles.sectionTitle,traditionalStyle]}>{t('communion.canons')}</Text>
+          <Text style={[styles.sectionTitle,cslText(18,26)]}>{t('communion.canons')}</Text>
 
           {communionCanons.map((canon) => (
             <TouchableOpacity
@@ -154,11 +155,11 @@ export const CommunionPreparationScreen = ({navigation}) => {
               onPress={() => openCanon(canon)}
             >
               <View style={styles.textContainer}>
-                <Text style={[styles.title,traditionalStyle]} numberOfLines={2}>
+                <Text style={[styles.title,cslText(16,23)]} numberOfLines={2}>
                   {canon.title}
                 </Text>
 
-                {!!canon.tone && <Text style={[styles.description,traditionalStyle]}>{canon.tone}</Text>}
+                {!!canon.tone && <Text style={[styles.description,cslText(12,18)]}>{canon.tone}</Text>}
               </View>
 
               <Text style={styles.arrow}>›</Text>
@@ -173,7 +174,7 @@ export const CommunionPreparationScreen = ({navigation}) => {
             </View>
           )}
 
-          <Text style={[styles.sectionTitle, styles.afterSectionTitle,traditionalStyle]}>
+          <Text style={[styles.sectionTitle, styles.afterSectionTitle,cslText(18,26)]}>
             {t('communion.sequenceAndPrayers')}
           </Text>
 
@@ -183,7 +184,7 @@ export const CommunionPreparationScreen = ({navigation}) => {
             onPress={() => openPrayerRule('posledovanie-ko-svyatomu-prichashcheniyu')}
           >
             <View style={styles.textContainer}>
-              <Text style={[styles.title,traditionalStyle]} numberOfLines={2}>
+              <Text style={[styles.title,cslText(16,23)]} numberOfLines={2}>
                 {t('communion.sequence')}
               </Text>
             </View>
@@ -197,7 +198,7 @@ export const CommunionPreparationScreen = ({navigation}) => {
             onPress={() => openPrayerRule('blagodarstvennye-molitvy-po-svyatom-prichashchenii')}
           >
             <View style={styles.textContainer}>
-              <Text style={[styles.title,traditionalStyle]} numberOfLines={2}>
+              <Text style={[styles.title,cslText(16,23)]} numberOfLines={2}>
                 {t('communion.thanksgiving')}
               </Text>
             </View>
@@ -205,7 +206,7 @@ export const CommunionPreparationScreen = ({navigation}) => {
             <Text style={styles.arrow}>›</Text>
           </TouchableOpacity>
 
-          <Text style={[styles.sectionTitle, styles.afterSectionTitle,traditionalStyle]}>
+          <Text style={[styles.sectionTitle, styles.afterSectionTitle,cslText(18,26)]}>
             {t('communion.confessionTitle')}
           </Text>
 
@@ -217,8 +218,8 @@ export const CommunionPreparationScreen = ({navigation}) => {
             accessibilityLabel={t('communion.confessionA11y')}
           >
             <View style={styles.textContainer}>
-              <Text style={[styles.title,traditionalStyle]}>{t('communion.confessionTitle')}</Text>
-              <Text style={[styles.description,traditionalStyle]}>
+              <Text style={[styles.title,cslText(16,23)]}>{t('communion.confessionTitle')}</Text>
+              <Text style={[styles.description,cslText(12,18)]}>
                 {t('communion.confessionSubtitle')}
               </Text>
             </View>
@@ -242,7 +243,7 @@ export const CommunionPreparationScreen = ({navigation}) => {
 
         <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
           title={t('communion.title')}
-          titleTextStyle={traditionalStyle}
+          titleTextStyle={cslText(21,30)}
           navigation={navigation}
           topInset={insets.top}
         />
