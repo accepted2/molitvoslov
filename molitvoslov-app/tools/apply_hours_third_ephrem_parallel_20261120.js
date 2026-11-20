@@ -75,7 +75,7 @@ const replacement = [
   '};',
   '',
 ].join('\n');
-if (!currentFunction.includes(marker)) {
+if (!helper.includes(marker) && !currentFunction.includes('firstHourChurchEphrem')) {
   check(currentFunction.includes('firstHourEphrem.rows.map(row => ({...row}))') &&
     currentFunction.includes("accordionId: 'third-hour-ephrem'") &&
     !currentFunction.includes('churchEphrem') &&
