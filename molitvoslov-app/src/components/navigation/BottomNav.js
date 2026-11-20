@@ -5,7 +5,6 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useLanguage} from '../../context/LanguageContext';
 import {useInterfaceScale} from '../../context/InterfaceScaleContext';
-import {traditionalUiTextStyle} from '../../services/traditionalUiTypography';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 const ITEMS = [
@@ -17,7 +16,7 @@ const ITEMS = [
 ];
 
 const NavIcon = ({type, active, size = 17}) => {
-  const color = active ? '#2C170B' : '#F5DCB5';
+  const color = active ? '#442818' : '#65452F';
 
   const iconNames = {
     home: 'home',
@@ -42,9 +41,9 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
   const {language,t} = useLanguage();
   const uiScale = useInterfaceScale();
   const traditional = language === 'csl_traditional';
-  const traditionalStyle = traditionalUiTextStyle(language, 10 * uiScale, 12 * uiScale);
+  const traditionalStyle = traditional ? {fontFamily:'Ponomar',fontWeight:'400',fontSize:12*uiScale,lineHeight:16*uiScale} : null;
   const iconSize = Math.round(17 * uiScale);
-  const rowHeight = Math.round((traditional ? 72 : 46) + (uiScale - 1) * (traditional ? 82 : 56));
+  const rowHeight = Math.round((traditional ? 54 : 46) + (uiScale - 1) * 54);
   const itemHeight = rowHeight - 5;
 
   const openRootTab = (route) => {
@@ -66,7 +65,7 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
       ]}
     >
       <LinearGradient
-        colors={['rgba(61, 36, 22, 0.98)', 'rgba(90, 52, 29, 0.98)']}
+        colors={['rgba(255, 246, 228, 0.93)', 'rgba(240, 224, 194, 0.88)']}
         start={{x: 0, y: 0}}
         end={{x: 1, y: 1}}
         style={styles.container}
@@ -95,15 +94,15 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
                   </View>
 
                   <Text
-                    numberOfLines={traditional ? 2 : uiScale === 1 ? 1 : 2}
-                    adjustsFontSizeToFit={!traditional && uiScale === 1}
-                    minimumFontScale={0.8}
+                    numberOfLines={uiScale > 1.15 ? 2 : 1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.92}
                     style={[styles.label, {
                       fontSize: 10 * uiScale,
                       lineHeight: 12 * uiScale,
                     }, isActive && styles.labelActive, traditionalStyle]}
                   >
-                    {t(item.labelKey)}
+                    {traditional ? t('navCompact.'+item.key) : t(item.labelKey)}
                   </Text>
                 </View>
               </Pressable>
@@ -131,7 +130,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: 'rgba(246, 216, 162, 0.16)',
+    borderColor: 'rgba(117, 83, 52, 0.28)',
     shadowColor: '#2C170B',
     shadowOffset: {width: 0, height: 5},
     shadowOpacity: 0.28,
@@ -170,7 +169,7 @@ const styles = StyleSheet.create({
   },
 
   itemActive: {
-    backgroundColor: 'rgb(244, 220, 168)',
+    backgroundColor: 'rgba(230, 202, 153, 0.72)',
     borderWidth: 1,
     borderColor: 'rgba(239, 199, 127, 0.14)',
     paddingHorizontal: 1,
@@ -261,7 +260,7 @@ const styles = StyleSheet.create({
 
   label: {
     marginTop: 2,
-    color: '#F5DCB5',
+    color: '#66452F',
     fontFamily: 'serif',
     paddingHorizontal: 1,
     fontSize: 10,
@@ -272,7 +271,7 @@ const styles = StyleSheet.create({
   },
 
   labelActive: {
-    color: '#2C170B',
+    color: '#3F2415',
     // fontWeight: '800',
     // paddingHorizontal: 1,
   },
