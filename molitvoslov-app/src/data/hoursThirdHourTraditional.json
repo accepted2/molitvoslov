@@ -109,11 +109,11 @@
     {
       "rows": [
         {
-          "traditional": "Сла́ва Ѻ҆ц҃ꙋ̀, и҆ Сн҃ꙋ, и҆ Ст҃о́мꙋ Дх҃ꙋ:",
-          "traditionalPresentation": "tropar-intro"
+          "traditional": "Сла́ва Ѻ҆ц҃ꙋ̀, и҆ Сн҃ꙋ, и҆ Ст҃о́мꙋ Дх҃ꙋ:"
         },
         {
-          "traditional": "Тропа́рь днѧ̀"
+          "traditional": "Тропа́рь днѧ̀",
+          "traditionalPresentation": "tropar-intro"
         },
         {
           "traditional": "И҆ ны́нѣ и҆ при́снѡ, и҆ во вѣ́ки вѣкѡ́въ. А҆м́инь"
