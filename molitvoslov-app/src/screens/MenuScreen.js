@@ -1103,6 +1103,7 @@ export const MenuScreen = ({navigation}) => {
 
   const latestReading = activeReadings[0] || null;
   const dailyQuoteBibleTarget = resolveDailyQuoteSource(dailyQuote);
+  const dailyQuoteText = String(getLocalizedField(dailyQuote, 'text', calendarLanguage) || '');
 
   const toggleDailyQuoteSaved = async () => {
     const quoteText = getLocalizedField(dailyQuote, 'text', calendarLanguage);
@@ -1271,15 +1272,22 @@ export const MenuScreen = ({navigation}) => {
                   style={styles.heroQuoteScrollShade}
                 />
                 <View style={styles.quoteStaircase}>
-                  {!!getLocalizedField(dailyQuote, 'text', calendarLanguage) && (
+                  {!!dailyQuoteText && (
                     <Text
-                      style={styles.heroQuoteText}
+                      style={[
+                        styles.heroQuoteText,
+                        dailyQuoteText.length <= 65
+                          ? styles.heroQuoteTextShort
+                          : dailyQuoteText.length <= 105
+                            ? styles.heroQuoteTextMedium
+                            : null,
+                      ]}
                       numberOfLines={7}
                       adjustsFontSizeToFit
                       minimumFontScale={0.78}
                       ellipsizeMode="tail"
                     >
-                      {getLocalizedField(dailyQuote, 'text', calendarLanguage)}
+                      {dailyQuoteText}
                     </Text>
                   )}
                 </View>
@@ -1862,8 +1870,12 @@ const styles = StyleSheet.create({
   },
 
   quoteStaircase: {
+    flex: 1,
+    minHeight: 0,
     width: '100%',
     alignItems: 'flex-start',
+    // Keep the quotation centered in the available upper banner area.
+    justifyContent: 'center',
   },
 
   quoteLine1: {
@@ -2888,7 +2900,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     // alignSelf: 'flex-start',
     // maxWidth: '89%',
-    paddingVertical: 7,
+    paddingVertical: 9,
     left: 18,
     right: 18,
     bottom: 32,
@@ -2918,6 +2930,16 @@ const styles = StyleSheet.create({
       height: 1,
     },
     textShadowRadius: 2,
+  },
+
+  heroQuoteTextShort: {
+    fontSize: 22,
+    lineHeight: 28,
+  },
+
+  heroQuoteTextMedium: {
+    fontSize: 20,
+    lineHeight: 26,
   },
 
   heroQuoteInitial: {
