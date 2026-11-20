@@ -14,6 +14,7 @@ import {
 import {requestPinWidget, requestWidgetUpdate} from 'react-native-android-widget';
 
 import {getDailyQuote} from '../services/dailyQuote';
+import {resolveDailyQuoteSource, openDailyQuoteSource} from '../services/dailyQuoteNavigation';
 import {QuoteOfDayWidget} from '../widgets/QuoteOfDayWidget';
 import {useFocusEffect} from '@react-navigation/native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -376,7 +377,7 @@ export const MenuScreen = ({navigation}) => {
   const [prayerRules, setPrayerRules] = useState([]);
   const [readingProgress, setReadingProgress] = useState([]);
 
-  const [dailyQuote, setDailyQuote] = useState(null);
+  const [dailyQuote, setDailyQuote] = useState(() => getDailyQuote());
   const [savedDailyQuote, setSavedDailyQuote] = useState(null);
   const [calendarToday, setCalendarToday] = useState(null);
   const [calendarMonthDays, setCalendarMonthDays] = useState([]);
@@ -473,13 +474,11 @@ export const MenuScreen = ({navigation}) => {
         akathistsResponse,
         canonsResponse,
         prayerRulesResponse,
-        quoteResponse,
       ] = await Promise.all([
         api.get('categories/'),
         api.get('akathists/'),
         api.get('canons/'),
         api.get('prayer-rules/'),
-        api.get('daily-quotes/today/'),
       ]);
 
       const sortedCategories = [...categoriesResponse.data].sort(
@@ -491,7 +490,7 @@ export const MenuScreen = ({navigation}) => {
       setCanons(canonsResponse.data);
       setPrayerRules(prayerRulesResponse.data);
 
-      const quote = quoteResponse.data;
+      const quote = getDailyQuote();
 
       setDailyQuote(quote);
 
@@ -629,6 +628,8 @@ export const MenuScreen = ({navigation}) => {
   useFocusEffect(
     useCallback(() => {
       loadProgress();
+      // Recalculate on returning to Home, including after midnight.
+      setDailyQuote(getDailyQuote());
 
       if (dailyQuote?.id) {
         getSavedItems({
@@ -1101,6 +1102,7 @@ export const MenuScreen = ({navigation}) => {
   };
 
   const latestReading = activeReadings[0] || null;
+  const dailyQuoteBibleTarget = resolveDailyQuoteSource(dailyQuote);
 
   const toggleDailyQuoteSaved = async () => {
     const quoteText = getLocalizedField(dailyQuote, 'text', calendarLanguage);
@@ -1136,6 +1138,8 @@ export const MenuScreen = ({navigation}) => {
           source: quoteSource,
           reference: quoteReference,
           quote_date: dailyQuote.quote_date || dailyQuote.date || '',
+          quote_target: dailyQuote.target || null,
+          work: dailyQuote.work || '',
         },
       });
 
@@ -1240,11 +1244,11 @@ export const MenuScreen = ({navigation}) => {
                 <LinearGradient
                   pointerEvents="none"
                   colors={[
-                    'rgba(52, 30, 17, 0)',
-                    'rgba(52, 30, 17, 0.48)',
-                    'rgba(52, 30, 17, 0.66)',
-                    'rgba(52, 30, 17, 0.48)',
-                    'rgba(52, 30, 17, 0)',
+                    'rgba(27, 18, 12, 0.08)',
+                    'rgba(27, 18, 12, 0.66)',
+                    'rgba(27, 18, 12, 0.78)',
+                    'rgba(27, 18, 12, 0.66)',
+                    'rgba(27, 18, 12, 0.08)',
                   ]}
                   locations={[0, 0.14, 0.5, 0.86, 1]}
                   start={{x: 0, y: 0.5}}
@@ -1255,11 +1259,11 @@ export const MenuScreen = ({navigation}) => {
                 <LinearGradient
                   pointerEvents="none"
                   colors={[
-                    'rgba(52, 30, 17, 0)',
-                    'rgba(52, 30, 17, 0.18)',
-                    'rgba(52, 30, 17, 0.28)',
-                    'rgba(52, 30, 17, 0.18)',
-                    'rgba(52, 30, 17, 0)',
+                    'rgba(27, 18, 12, 0.08)',
+                    'rgba(27, 18, 12, 0.52)',
+                    'rgba(27, 18, 12, 0.70)',
+                    'rgba(27, 18, 12, 0.55)',
+                    'rgba(27, 18, 12, 0.12)',
                   ]}
                   locations={[0, 0.18, 0.5, 0.82, 1]}
                   start={{x: 0.5, y: 0}}
@@ -1273,7 +1277,8 @@ export const MenuScreen = ({navigation}) => {
 
                 <View style={styles.quoteStaircase}>
                   {!!getLocalizedField(dailyQuote, 'text', calendarLanguage) && (
-                    <Text style={styles.heroQuoteText}>
+                    <Text style={styles.heroQuoteText} numberOfLines={5}
+                      adjustsFontSizeToFit minimumFontScale={0.84}>
                       {getLocalizedField(dailyQuote, 'text', calendarLanguage)}
                     </Text>
                   )}
@@ -1283,18 +1288,30 @@ export const MenuScreen = ({navigation}) => {
                   getLocalizedField(dailyQuote, 'reference', calendarLanguage) ||
                   getLocalizedField(dailyQuote, 'source', calendarLanguage)
                 ) && (
-                  <Text style={styles.heroQuoteSource}>
-                    {getLocalizedField(dailyQuote, 'reference', calendarLanguage) ||
-                      getLocalizedField(dailyQuote, 'source', calendarLanguage)}
-                  </Text>
+                  <Pressable
+                    accessibilityRole={dailyQuoteBibleTarget ? 'link' : undefined}
+                    accessibilityLabel={dailyQuoteBibleTarget ? 'Открыть источник цитаты в Библии' : undefined}
+                    disabled={!dailyQuoteBibleTarget}
+                    hitSlop={6}
+                    onPress={() => openDailyQuoteSource(navigation, dailyQuote)}
+                  >
+                    <Text style={[styles.heroQuoteSource,
+                      dailyQuoteBibleTarget && styles.heroQuoteSourceLink]}>
+                      {getLocalizedField(dailyQuote, 'reference', calendarLanguage) ||
+                        getLocalizedField(dailyQuote, 'source', calendarLanguage)}
+                    </Text>
+                  </Pressable>
                 )}
 
                 <View style={styles.heroQuoteActions}>
                   <Pressable
                     onPress={toggleDailyQuoteSaved}
+                    accessibilityRole="button"
+                    accessibilityLabel={savedDailyQuote ? 'Убрать цитату из избранного' : 'Сохранить цитату'}
+                    hitSlop={8}
                     style={({pressed}) => [styles.heroHeartButton, pressed && styles.pressed]}
                   >
-                    <SaveHeartIcon active={!!savedDailyQuote} size={20} tintColor="#F5DCA5" />
+                    <SaveHeartIcon active={!!savedDailyQuote} size={16} tintColor="#F5DCA5" />
                   </Pressable>
                   {/*  <Text style={styles.heroQuoteActionText}>*/}
                   {/*    {savedDailyQuote ? '' : ''}*/}
@@ -1745,7 +1762,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   hero: {
-    minHeight: 305,
+    minHeight: 330,
     justifyContent: 'flex-start',
     paddingHorizontal: 18,
     paddingBottom: 22,
@@ -1961,17 +1978,17 @@ const styles = StyleSheet.create({
   heroQuoteActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 9,
-    marginTop: 10,
+    gap: 7,
+    marginTop: 8,
   },
 
   heroQuoteActionButton: {
-    minHeight: 38,
+    minHeight: 30,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 5,
-    borderRadius: 10,
+    paddingHorizontal: 8,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#F7DFB4',
 
@@ -1984,22 +2001,23 @@ const styles = StyleSheet.create({
 
   heroQuoteActionText: {
     marginLeft: 0,
-    padding: 5,
+    paddingHorizontal: 3,
+    paddingVertical: 3,
     color: '#F7DFB4',
     fontFamily: 'serif',
-    fontSize: 13,
-    lineHeight: 17,
-    fontWeight: '800',
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: '700',
   },
   heroHeartButton: {
-    width: 42,
-    height: 38,
+    width: 32,
+    height: 30,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 0,
     paddingVertical: 0,
-    borderRadius: '50%',
-    borderWidth: 1.5,
+    borderRadius: 16,
+    borderWidth: 1,
     borderColor: 'rgba(255, 232, 190, 0.65)',
 
     backgroundColor: 'rgba(45, 25, 14, 0.28)',
@@ -2871,26 +2889,26 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     left: 18,
     right: 18,
-    bottom: 42,
-    paddingHorizontal: 5,
+    bottom: 32,
+    paddingHorizontal: 0,
     zIndex: 3,
   },
 
   heroQuoteScrollShade: {
     position: 'absolute',
-    top: -10,
-    bottom: -8,
-    left: -26,
-    right: -54,
-    borderRadius: 28,
+    top: -25,
+    bottom: -20,
+    left: -18,
+    right: -18,
+    borderRadius: 18,
   },
 
   heroQuoteText: {
     color: '#F8E7C5',
-
-    fontFamily: 'Ponomar',
-    fontSize: 19,
-    lineHeight: 24,
+    fontFamily: 'serif',
+    fontWeight: '500',
+    fontSize: 17,
+    lineHeight: 23,
 
     textShadowColor: 'rgba(28, 15, 8, 0.80)',
     textShadowOffset: {
@@ -2906,8 +2924,12 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
 
+  heroQuoteSourceLink: {
+    textDecorationLine: 'underline',
+    textDecorationColor: '#E5C58F',
+  },
   heroQuoteSource: {
-    marginTop: 5,
+    marginTop: 6,
 
     color: '#E5C58F',
     fontFamily: 'serif',
