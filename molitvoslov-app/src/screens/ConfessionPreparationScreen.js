@@ -18,6 +18,7 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {BottomNav} from '../components/navigation/BottomNav';
 import {useReadingChrome} from '../hooks/useReadingChrome';
 import {useLanguage} from '../context/LanguageContext';
+import {traditionalUiTextStyle} from '../services/traditionalUiTypography';
 import {translate} from '../i18n/translations';
 import {colors} from '../theme';
 import confessionCatalog from '../data/confessionCatalog.json';
@@ -123,8 +124,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
   latestLanguageRef.current = language;
   const onSaveError = useCallback(
     () => notifySaveError(latestLanguageRef.current), []);
-  const traditionalStyle = language === 'csl_traditional'
-    ? {fontFamily:'Ponomar',fontWeight:'400'} : null;
+  const cslText = (size, lineHeight) => traditionalUiTextStyle(language, size, lineHeight);
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = useState(insets.top + 56);
   const [viewMode, setViewMode] = useState('catalog');
@@ -355,7 +355,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
       {!item.isCustom && !!item.description && (
         <Text style={styles.selectedDescription}>{item.description}</Text>
       )}
-      <Text style={[styles.noteLabel,traditionalStyle]}>{t('confession.notesTitle')}</Text>
+      <Text style={[styles.noteLabel,cslText(13,20)]}>{t('confession.notesTitle')}</Text>
       <TextInput
         style={styles.noteInput}
         multiline
@@ -372,7 +372,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
 
   const listHeader = (
     <View style={styles.listHeader}>
-      <Text style={styles.title}>
+      <Text style={[styles.title,cslText(24,33)]}>
         {catalogMode ? t('confession.title') : t('confession.myList')}
       </Text>
       <View style={styles.tabs}>
@@ -382,7 +382,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
           accessibilityRole="tab"
           accessibilityState={{selected: catalogMode}}
         >
-          <Text style={[styles.tabText, catalogMode && styles.tabTextActive]}>
+          <Text style={[styles.tabText, catalogMode && styles.tabTextActive,cslText(14,21)]}>
             {t('confession.allSins')}
           </Text>
         </Pressable>
@@ -392,7 +392,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
           accessibilityRole="tab"
           accessibilityState={{selected: !catalogMode}}
         >
-          <Text style={[styles.tabText, !catalogMode && styles.tabTextActive]}>
+          <Text style={[styles.tabText, !catalogMode && styles.tabTextActive,cslText(14,21)]}>
             {t('confession.myListCount',{count:selectedIds.length})}
           </Text>
         </Pressable>
@@ -400,18 +400,18 @@ export const ConfessionPreparationScreen = ({navigation}) => {
       {catalogMode ? (
         <>
           <View style={styles.intro}>
-            <Text style={styles.introTitle}>{t('confession.whatIs')}</Text>
-            <Text style={[styles.introText,traditionalStyle]}>{t('confession.intro')}</Text>
-            <Text style={[styles.sourceNote,traditionalStyle]}>{t('confession.caution')}</Text>
+            <Text style={[styles.introTitle,cslText(18,26)]}>{t('confession.whatIs')}</Text>
+            <Text style={[styles.introText,cslText(15,23)]}>{t('confession.intro')}</Text>
+            <Text style={[styles.sourceNote,cslText(12,19)]}>{t('confession.caution')}</Text>
           </View>
-          <Text style={styles.heading}>{t('confession.explanationTitle')}</Text>
-          <Text style={[styles.explanation,traditionalStyle]}>
+          <Text style={[styles.heading,cslText(19,27)]}>{t('confession.explanationTitle')}</Text>
+          <Text style={[styles.explanation,cslText(13,21)]}>
             {t('confession.explanation')}
           </Text>
         </>
       ) : (
         <>
-          <Text style={[styles.explanation,traditionalStyle]}>
+          <Text style={[styles.explanation,cslText(13,21)]}>
             {t('confession.privateHint')}
           </Text>
           <View style={styles.personalActions}>
@@ -420,7 +420,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
               style={styles.smallButton}
               onPress={() => setAddingCustom(value => !value)}
             >
-              <Text style={styles.smallButtonText}>
+              <Text style={[styles.smallButtonText,cslText(13,20)]}>
                 {addingCustom ? t('confession.cancel') : t('confession.add')}
               </Text>
             </Pressable>
@@ -430,7 +430,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
                 style={styles.smallButton}
                 onPress={clearAll}
               >
-                <Text style={styles.smallButtonText}>{t('confession.clear')}</Text>
+                <Text style={[styles.smallButtonText,cslText(13,20)]}>{t('confession.clear')}</Text>
               </Pressable>
             )}
           </View>
@@ -450,7 +450,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
                 disabled={!customTitle.trim()}
                 onPress={addOwn}
               >
-                <Text style={styles.actionText}>{t('confession.addAction')}</Text>
+                <Text style={[styles.actionText,cslText(14,21)]}>{t('confession.addAction')}</Text>
               </Pressable>
             </View>
           )}
@@ -514,7 +514,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
         />
         <FixedSectionHeader
           title={t('confession.title')}
-          titleTextStyle={traditionalStyle}
+          titleTextStyle={cslText(21,29)}
           gradientColor="#FFF4DE"
           navigation={navigation}
           compactReading
@@ -548,7 +548,7 @@ export const ConfessionPreparationScreen = ({navigation}) => {
           />
           <View style={styles.sinMenuCard} accessibilityViewIsModal>
             <View style={styles.sinMenuAccent} />
-            <Text style={[styles.sinMenuCaption,traditionalStyle]}>{t('confession.title')}</Text>
+            <Text style={[styles.sinMenuCaption,cslText(12,19)]}>{t('confession.title')}</Text>
             <Text style={styles.sinMenuTitle}>{menuSin?.title}</Text>
             <Text style={styles.sinMenuDescription}>
               {menuAlreadySelected
