@@ -661,10 +661,10 @@ export const formatFast = (day, language = 'ru') => {
 
   const markers = getCalendarMarkers(day);
   const uk = language === 'uk';
-  const cu = language === 'cu';
-  const noFast = uk ? 'Посту немає' : cu ? 'Поста нѣсть' : 'Поста нет';
-  const solid = uk ? 'Суцільний тиждень' : 'Сплошная седмица';
-  const fasting = uk ? 'Пісний день' : 'Постный день';
+  const cu = language === 'cu' || language === 'csl_traditional';
+  const noFast = uk ? 'Посту немає' : cu ? 'По́ста нѣ́сть' : 'Поста нет';
+  const solid = uk ? 'Суцільний тиждень' : cu ? 'Сплошна́я седми́ца' : 'Сплошная седмица';
+  const fasting = uk ? 'Пісний день' : cu ? 'По́стный де́нь' : 'Постный день';
 
   // Lenacom imports carry the final dietary restriction for this date.
   // Do not let older Azbyka fasting markers override verified imported values.
