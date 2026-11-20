@@ -1103,7 +1103,12 @@ export const MenuScreen = ({navigation}) => {
 
   const latestReading = activeReadings[0] || null;
   const dailyQuoteBibleTarget = resolveDailyQuoteSource(dailyQuote);
-  const dailyQuoteText = String(getLocalizedField(dailyQuote, 'text', calendarLanguage) || '');
+  const dailyQuoteText = String(getLocalizedField(dailyQuote, 'text', calendarLanguage) || '').trim();
+  const dailyQuoteDisplayText = dailyQuoteText
+    ? dailyQuoteText.startsWith('«') && dailyQuoteText.endsWith('»')
+      ? dailyQuoteText
+      : `«${dailyQuoteText}»`
+    : '';
 
   const toggleDailyQuoteSaved = async () => {
     const quoteText = getLocalizedField(dailyQuote, 'text', calendarLanguage);
@@ -1211,12 +1216,13 @@ export const MenuScreen = ({navigation}) => {
               <LinearGradient
                 pointerEvents="none"
                 colors={[
-                  'rgba(255, 244, 222, 0)',
-                  'rgba(183, 138, 88, 0.18)',
-                  'rgba(183, 138, 88, 0.62)',
-                  '#D6B07C',
+                  'rgba(214, 176, 124, 0)',
+                  'rgba(214, 176, 124, 0.06)',
+                  'rgba(214, 176, 124, 0.16)',
+                  'rgba(214, 176, 124, 0.34)',
+                  'rgba(214, 176, 124, 0.68)',
                 ]}
-                locations={[0, 0.46, 0.76, 1]}
+                locations={[0, 0.35, 0.63, 0.84, 1]}
                 style={styles.heroBottomGradient}
               />
 
@@ -1241,7 +1247,7 @@ export const MenuScreen = ({navigation}) => {
                 </Pressable>
               </View>
 
-              <View style={[styles.heroQuoteContent, {top: Math.max(insets.top + 48, 76)}]}>
+              <View style={[styles.heroQuoteContent, {top: Math.max(insets.top + 49.5, 77.5)}]}>
                 <LinearGradient
                   pointerEvents="none"
                   colors={[
@@ -1287,7 +1293,7 @@ export const MenuScreen = ({navigation}) => {
                       minimumFontScale={0.72}
                       ellipsizeMode="tail"
                     >
-                      {dailyQuoteText}
+                      {dailyQuoteDisplayText}
                     </Text>
                   )}
                 </View>
@@ -1780,7 +1786,6 @@ const styles = StyleSheet.create({
 
   heroImage: {
     opacity: 1,
-    maxHeight: 320,
   },
 
   heroQuoteShade: {
@@ -1804,7 +1809,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: 92,
+    height: 142,
   },
 
   heroTopActions: {
@@ -2918,18 +2923,20 @@ const styles = StyleSheet.create({
   },
 
   heroQuoteText: {
-    color: '#F8E7C5',
+    color: '#FFF5E4',
     fontFamily: 'serif',
+    fontStyle: 'italic',
     fontWeight: '500',
     fontSize: 17,
-    lineHeight: 22,
+    lineHeight: 21,
+    letterSpacing: 0.1,
 
-    textShadowColor: 'rgba(28, 15, 8, 0.80)',
+    textShadowColor: 'rgba(16, 9, 6, 0.94)',
     textShadowOffset: {
       width: 0,
       height: 1,
     },
-    textShadowRadius: 2,
+    textShadowRadius: 2.7,
   },
 
   heroQuoteTextShort: {
