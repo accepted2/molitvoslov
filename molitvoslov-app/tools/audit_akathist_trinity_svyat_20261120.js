@@ -64,7 +64,8 @@ for(const [field,lang] of variants){
  const missing=expectations.filter(at=>!starts.has(at));
  const missingLines=expectations.filter(at=>at>0&&
   !breaks.has(at)&&!(/[\r\n][ \t]*$/u.test(source.slice(0,at))));
- const nonFirst=actual.filter(p=>source.slice(p.start,p.end).normalize('NFD')
+ const nonFirst=actual.filter(p=>expectations.includes(p.start)&&
+  source.slice(p.start,p.end).normalize('NFD')
   .replace(/[\u0300-\u036f\u0483-\u0489]/gu,'').toLowerCase()!=='свят');
  failures+=missing.length+missingLines.length+nonFirst.length;
  sections.push({language:lang,expectedResponseLines:expectations.length,
@@ -76,6 +77,8 @@ for(const [field,lang] of variants){
 }
 if(!sections.some(s=>s.language==='church'))
  throw Error('Trinity Ikos 1 has no Church Slavonic text');
+if((sections.find(s=>s.language==='church')?.expectedResponseLines||0)<3)
+ throw Error('Too few recurring Свят response lines detected; inspect actual Ikos source.');
 const result={generatedAt:new Date().toISOString(),slug,ikos:1,variants:sections,
  issues:failures};
 const filename=path.join(app,'reports','akathist-trinity-svyat-ikos1-audit-20261120.json');
