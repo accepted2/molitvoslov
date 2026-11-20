@@ -62,6 +62,7 @@ const ConfessionScrollThumb = ({
   scrollY, offsetRef, draggingRef, viewportHeight, contentHeight,
   topInset, bottomInset, scrollTo,
 }) => {
+  const {t}=useLanguage();
   const trackHeight = Math.max(0, viewportHeight - topInset - bottomInset);
   const maxScroll = Math.max(0, contentHeight - viewportHeight);
   const thumbHeight = Math.min(trackHeight, Math.max(46,
@@ -110,7 +111,7 @@ const ConfessionScrollThumb = ({
         }]}
         accessible
         accessibilityRole="adjustable"
-        accessibilityLabel="Прокрутка текста. Перетащите ползунок вверх или вниз."
+        accessibilityLabel={t('confession.scrollA11y')}
       >
         <View pointerEvents="none" style={styles.scrollThumb} />
       </Animated.View>
