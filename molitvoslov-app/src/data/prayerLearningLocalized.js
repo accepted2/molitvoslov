@@ -185,6 +185,28 @@ const TRADITIONAL = {
   },
 };
 
+const LETTER_LABEL_OVERRIDES = {
+  uk: {
+    'І':{name:'і десятеричне'},
+    'Ѧ':{name:'юс малий'},
+    'Ъ':{sound:'твердий знак'},
+    'Ь':{sound:'м’який знак'},
+    'Ѵ':{sound:'залежно від слова'},
+  },
+  csl_traditional: {
+    'І':{name:'і҆ десѧтери́чное'},
+    'Ѧ':{name:'ю҆́съ ма́лый'},
+    'Ъ':{sound:'ѥ҆́ръ'},
+    'Ь':{sound:'ѥ҆́рь'},
+    'Ѵ':{sound:'по ᲂу҆потребле́нїю'},
+  },
+};
+export const getLocalizedPrayerLetters = (letters, language) =>
+  letters.map(item => ({
+    ...item,
+    ...(LETTER_LABEL_OVERRIDES[language]?.[item.upper] || {}),
+  }));
+
 const MAP = {uk:UK, csl_traditional:TRADITIONAL};
 const mappedLesson = (base, locale) => {
   const value = locale?.[base.id];
