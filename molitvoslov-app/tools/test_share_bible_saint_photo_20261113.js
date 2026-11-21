@@ -43,7 +43,9 @@ async function main(){
   assert.match(saint,/onLongPress=\{\(\)=>actionsRef\.current\?\.openMenu\(\)\}/);
   assert.match(saved,/more-vertical/);
   assert.match(menu,/onSave/);
-  assert.match(menu,/Сохранить себе/);
+  assert.match(menu,/t\(saved\?'contextActions\.unsave':'contextActions\.save'\)/);
+  const completion=app('src/i18n/interfaceCompletion.js');
+  assert.match(completion,/"save": "Сохранить себе"/);
   assert.match(saint,/focusSection:section/);
 
   const privateApi=backend('shared_invitations.py');
