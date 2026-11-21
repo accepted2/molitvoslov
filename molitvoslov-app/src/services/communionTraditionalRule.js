@@ -54,13 +54,13 @@ const formatTraditionalBlock = (block, groupTitle, blockIndex) => {
   if(groupTitle==='Песнь 9' && blockIndex===9){
     const i=body.indexOf('\n');
     if(i<0)throw Error('Ninth ode penitential rubric not found');
-    note='Тропа́рь пра́здника. А҆́ще же нѣ́сть пра́здника — тропарѝ покаѧ́нныѧ.';
+    note='Тропа́рь пра́здника. А҆́ще же пра́здника нѣ́сть, тропарѝ покаѧ́нныѧ:';
     body=body.slice(i+1).trim();
   }
   if(groupTitle==='Песнь 9' && [15,16].includes(blockIndex)){
     const i=body.indexOf('\n');
     if(i>=0){
-      note=blockIndex===16?'И҆́ныѧ стїхѝ':'И҆ стїхѝ сїѧ̀';
+      note=blockIndex===16?'И҆́ныѧ стїхѝ:':'И҆ стїхѝ сїѧ̑:';
       body=body.slice(i+1).trim();
     }
   }
@@ -102,6 +102,7 @@ const buildTraditionalItems = () => {
       const lastTroparia=groupIndex===26&&k===4;
       const worshipInvocations=groupIndex===0&&k===10;
       const toneEightTroparion=groupIndex===4;
+      const penitentialTroparion=groupIndex===14&&k>=9&&k<=13;
       const tropar=(group.title==='Тропари, глас 8-й')||
         (group.title==='Песнь 9'&&k>=9&&k<=13)||lastTroparia;
       // The last troparion needs the divider after the WHOLE hymn group,
@@ -113,6 +114,7 @@ const buildTraditionalItems = () => {
         communionTraditionalTroparionBoundary:endOfTroparia,
         communionTraditionalMultiVerseInitials:lastTroparia||worshipInvocations,
         communionTraditionalToneEight:toneEightTroparion,
+        communionTraditionalPenitentialTroparion:penitentialTroparion,
         communionTraditionalInternalPrayerBoundary:lastTroparia,
         communionTraditionalDoxology:rubric==='Слава'||rubric==='И ныне',
         communionTraditionalRefrain:rubric==='Припев',
