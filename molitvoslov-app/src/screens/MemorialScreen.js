@@ -21,9 +21,11 @@ import {createMemorialBook, getMemorialBooks, syncMemorials} from '../services/m
 
 import {colors, radius, spacing} from '../theme';
 import {useLanguage} from '../context/LanguageContext';
+import {traditionalUiTextStyle} from '../services/traditionalUiTypography';
 
 export const MemorialScreen = ({navigation}) => {
-  const {t} = useLanguage();
+  const {t, language} = useLanguage();
+  const cslStyle = (size, height) => traditionalUiTextStyle(language, size, height);
   const insets = useSafeAreaInsets();
 
   const [headerHeight, setHeaderHeight] = React.useState(insets.top + 56);
@@ -128,14 +130,14 @@ export const MemorialScreen = ({navigation}) => {
               {item.title || t('memorial.my')}
             </Text>
 
-            <Text style={styles.cardMeta}>
+            <Text style={[styles.cardMeta, cslStyle(12, 19)]}>
               {t('memorial.health')}: {healthCount}
               {'  ·  '}
               {t('memorial.repose')}: {reposeCount}
             </Text>
 
             {!!photoCount && (
-              <Text style={styles.cardPhotos}>{t('memorial.photosCount', {count: photoCount})}</Text>
+              <Text style={[styles.cardPhotos, cslStyle(12, 19)]}>{t('memorial.photosCount', {count: photoCount})}</Text>
             )}
           </View>
           <Text style={styles.chevron}>›</Text>
@@ -180,9 +182,9 @@ export const MemorialScreen = ({navigation}) => {
             ListHeaderComponent={
               <View>
                 <View style={styles.intro}>
-                  <Text style={styles.introTitle}>{t('memorial.introTitle')}</Text>
+                  <Text style={[styles.introTitle, cslStyle(19, 27)]}>{t('memorial.introTitle')}</Text>
 
-                  <Text style={styles.introText}>{t('memorial.introText')}</Text>
+                  <Text style={[styles.introText, cslStyle(14, 22)]}>{t('memorial.introText')}</Text>
                 </View>
 
                 {!!error && <Text style={styles.error}>{error}</Text>}
@@ -198,19 +200,19 @@ export const MemorialScreen = ({navigation}) => {
                 >
                   <Text style={styles.createIcon}>+</Text>
 
-                  <Text style={styles.createText}>{t('memorial.newBook')}</Text>
+                  <Text style={[styles.createText, cslStyle(14, 21)]}>{t('memorial.newBook')}</Text>
                 </Pressable>
 
-                {!!books.length && <Text style={styles.sectionLabel}>{t('memorial.myBooks')}</Text>}
+                {!!books.length && <Text style={[styles.sectionLabel, cslStyle(12, 18)]}>{t('memorial.myBooks')}</Text>}
               </View>
             }
             ListEmptyComponent={
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyMark}>✦</Text>
 
-                <Text style={styles.emptyTitle}>{t('memorial.listEmptyTitle')}</Text>
+                <Text style={[styles.emptyTitle, cslStyle(16, 24)]}>{t('memorial.listEmptyTitle')}</Text>
 
-                <Text style={styles.emptyText}>{t('memorial.listEmptyText')}</Text>
+                <Text style={[styles.emptyText, cslStyle(14, 22)]}>{t('memorial.listEmptyText')}</Text>
               </View>
             }
           />
