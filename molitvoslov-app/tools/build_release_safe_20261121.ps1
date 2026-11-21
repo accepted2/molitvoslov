@@ -30,8 +30,16 @@ try {
   $jdk17 = $null
   foreach ($candidate in $candidateJdks) {
     $javaExe = Join-Path $candidate 'bin\java.exe'
-    $javaInfo = & $javaExe -version 2>&1 | Out-String
-    if ($LASTEXITCODE -eq 0 -and $javaInfo -match 'version "(?:1\.)?17\.') {
+    $info = New-Object System.Diagnostics.ProcessStartInfo
+    $info.FileName = $javaExe
+    $info.Arguments = '-version'
+    $info.UseShellExecute = $false
+    $info.RedirectStandardError = $true
+    $info.RedirectStandardOutput = $true
+    $proc = [System.Diagnostics.Process]::Start($info)
+    $javaInfo = $proc.StandardError.ReadToEnd() + $proc.StandardOutput.ReadToEnd()
+    $proc.WaitForExit()
+    if ($proc.ExitCode -eq 0 -and $javaInfo -match 'version "(?:1\.)?17\.') {
       $jdk17 = $candidate
       break
     }
@@ -107,6 +115,15 @@ try {
   $config = $json | ConvertFrom-Json
   $version = [string]$config.expo.version
   $code = [int]$config.expo.android.versionCode
+
+  # Read and validate native version BEFORE touching app.json.
+  $nativeBefore = [IO.File]::ReadAllText($gradlePath)
+  $nativeCodeMatch = [regex]::Matches($nativeBefore,'(?m)^\s*versionCode\s+(\d+)')
+  if ($nativeCodeMatch.Count -ne 1) {throw 'Native versionCode not found uniquely.'}
+  $plannedCode = if ($code -eq 31 -and $version -eq '1.0.30') {32} else {$code}
+  if ([int]$nativeCodeMatch[0].Groups[1].Value -gt $plannedCode) {
+    throw "Native app version is newer than the requested release. No files modified."
+  }
 
   $backupDir = Join-Path (Split-Path -Parent $root) ('build-backups\release-csl-'+(Get-Date -Format 'yyyyMMdd-HHmmss'))
   if ($code -eq 31 -and $version -eq '1.0.30') {
