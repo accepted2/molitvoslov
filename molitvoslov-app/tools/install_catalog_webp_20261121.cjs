@@ -18,24 +18,60 @@ function one(text,oldValue,newValue,tag){
   return text.replace(oldValue,newValue);
 }
 function patchArtwork(text){
-  const anchor="  psalter: require('../../assets/home/psalter.png'),";
-  const added=images.map(([key,name])=>"  "+key+": require('../../assets/home/"+name+"'),");
-  if(added.every(x=>text.includes(x)))return text;
-  check(added.every(x=>!text.includes(x)),'Partially installed artwork definitions');
-  check(count(text,anchor)===1,'Psalter artwork anchor missing');
-  return text.replace(anchor,anchor+'\n'+added.join('\n'));
+  // The user's local homeArtwork may have reordered or renamed existing
+  // images, so add new keys directly inside the artwork object.
+  const openings=[...text.matchAll(/\bexport\s+const\s+homeArtwork\s*=\s*\{/g)];
+  check(openings.length===1,'Expected one homeArtwork object');
+  const begin=openings[0].index+openings[0][0].length;
+  const tail=text.slice(begin),close=/^\s*\};/m.exec(tail);
+  check(!!close,'Cannot safely locate homeArtwork end');
+  const body=tail.slice(0,close.index),additions=[];
+  for(const [key,name] of images){
+    const declaration=new RegExp('(?:^|\\n)[ \\t]*'+key+'[ \\t]*:','g');
+    const found=[...body.matchAll(declaration)];
+    check(found.length<=1,'Duplicate artwork key '+key);
+    if(found.length){
+      const at=found[0].index;
+      const current=body.slice(at).split('\n').find(
+        line=>new RegExp('^[ \\t]*'+key+'[ \\t]*:').test(line))||'';
+      check(current.includes(name),
+        'Existing custom artwork key '+key+' must be reviewed');
+    }else{
+      additions.push("  "+key+": require('../../assets/home/"+name+"'),");
+    }
+  }
+  if(!additions.length)return text;
+  return text.slice(0,begin)+'\n'+additions.join('\n')+text.slice(begin);
 }
+
 function patchMenu(text){
-  const mappings=[
-    ["symbol:'✦',iconSource:CATEGORY_ICONS.canons,artwork:homeArtwork.canons,\n      onPress:()=>navigation.navigate('Hours')",
-     "symbol:'✦',iconSource:CATEGORY_ICONS.canons,artwork:homeArtwork.hours,\n      onPress:()=>navigation.navigate('Hours')"],
-    ["symbol:'Ѣ',iconSource:CATEGORY_ICONS.misc,artwork:homeArtwork.misc,\n      onPress:()=>navigation.navigate('PrayerLearning')",
-     "symbol:'Ѣ',iconSource:CATEGORY_ICONS.misc,artwork:homeArtwork.learning,\n      onPress:()=>navigation.navigate('PrayerLearning')"],
-    ["symbol:'✦',iconSource:CATEGORY_ICONS.misc,artwork:homeArtwork.misc,\n      onPress:()=>navigation.navigate('MiscPrayers')",
-     "symbol:'✦',iconSource:CATEGORY_ICONS.misc,artwork:homeArtwork.various,\n      onPress:()=>navigation.navigate('MiscPrayers')"]
+  // Select by card key and destination, not brittle symbols/spacing.
+  const targets=[
+    ['hours','Hours','hours'],
+    ['prayer-learning','PrayerLearning','learning'],
+    ['misc','MiscPrayers','various']
   ];
-  return mappings.reduce((s,[oldValue,newValue],i)=>one(s,oldValue,newValue,'card '+i),text);
+  let result=text;
+  for(const [key,route,artworkKey] of targets){
+    const keyPattern=new RegExp("\\{\\s*key\\s*:\\s*['\\\"]"+key+"['\\\"]",'g');
+    const found=[...result.matchAll(keyPattern)];
+    check(found.length===1,'Expected one catalog card key '+key);
+    const at=found[0].index,remainder=result.slice(at);
+    const routePattern=/onPress\s*:\s*\(\)\s*=>\s*navigation\.navigate\s*\(\s*['"]([^'"]+)['"][\s\S]*?\}\s*,?/;
+    const destination=routePattern.exec(remainder);
+    check(destination && destination[1]===route,
+      'Unexpected navigation target for '+key);
+    const card=remainder.slice(0,destination.index+destination[0].length);
+    const artworkPattern=/(\bartwork\s*:\s*)homeArtwork\.[A-Za-z_$][\w$]*/g;
+    const existing=[...card.matchAll(artworkPattern)];
+    check(existing.length===1,'Expected one artwork mapping for '+key);
+    const changed=card.replace(artworkPattern,
+      (_match,prefix)=>prefix+'homeArtwork.'+artworkKey);
+    result=result.slice(0,at)+changed+result.slice(at+card.length);
+  }
+  return result;
 }
+
 const mappings=[
   ['src/data/homeArtwork.js',patchArtwork],
   ['src/screens/MenuScreen.js',patchMenu]
@@ -59,8 +95,9 @@ try{
     code.push({file,name,old,after:old.includes('\r\n')?after.replace(/\n/g,'\r\n'):after,
       changed:after!==old.replace(/\r\n/g,'\n')});
   }
-  check(code[0].after.includes("misc: require('../../assets/home/misc_prayers.jpg')"),
-    'Existing fallback imagery was modified');
+  // Unrelated fallback artwork may be customized locally.
+  check(code[0].after.includes('export const homeArtwork'),
+    'Artworks map missing after patch');
 }catch(e){console.error('STOP:',e.message);console.error('NO FILES CHANGED');process.exit(1)}
 for(const x of assets)console.log(x.name,Math.round(x.bytes.length/1024)+' KiB');
 console.log('FILES TO CHANGE:',code.filter(x=>x.changed).map(x=>x.name).join(', ')||'none');
