@@ -165,16 +165,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // The two edge columns are mirror images. The three center columns
-  // share 54% of the row: centers at 32%, 50%, and 68% (equal 18% gaps).
-  // Home and Account remain 20.5% away from their neighboring center tab.
+  // Wider center group gives Prayerbooks enough room for its full label.
+  // Centers: 7.5%, 26.67%, 50%, 73.33%, 92.5%.
+  // Inner gaps: 23.33%; symmetric outer gaps: 19.17%.
   outerTab: {
-    width: '23%',
+    width: '15%',
     flexGrow: 0,
     flexShrink: 0,
   },
   centralTabs: {
-    width: '54%',
+    width: '70%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
