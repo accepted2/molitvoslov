@@ -158,7 +158,11 @@ const styles = StyleSheet.create({
   },
 
   item: {
-    flex: 1,
+    // Five fixed-width columns: visual centers stay equally spaced even
+    // when the active tab has a border or labels have different lengths.
+    width: '20%',
+    flexGrow: 0,
+    flexShrink: 0,
     minWidth: 0,
     height: 41,
     alignItems: 'center',
