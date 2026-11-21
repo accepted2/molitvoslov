@@ -137,8 +137,12 @@ try {
         [regex]::Matches($json,'"versionCode"\s*:\s*31').Count -ne 1) {
       throw 'Version 1.0.30 (31) is not unique; no automatic bump.'
     }
-    $json = [regex]::Replace($json,'("version"\s*:\s*")1\.0\.30(")','11.0.312')
-    $json = [regex]::Replace($json,'("versionCode"\s*:\s*)31\b','132')
+    $json = [regex]::Replace($json,'("version"\s*:\s*")1\.0\.30(")','${1}1.0.31${2}')
+    $json = [regex]::Replace($json,'("versionCode"\s*:\s*)31\b','${1}32')
+    $verifiedJson = $json | ConvertFrom-Json
+    if ($verifiedJson.expo.version -ne '1.0.31' -or [int]$verifiedJson.expo.android.versionCode -ne 32) {
+      throw 'Invalid version bump: app.json has NOT been modified.'
+    }
     [IO.File]::WriteAllText($jsonPath,$json,(New-Object System.Text.UTF8Encoding($false)))
     $version = '1.0.31'
     $code = 32
@@ -161,8 +165,12 @@ try {
   if ($nativeCode -gt $code) {
     throw "Native versionCode $nativeCode exceeds app.json $code. Refusing a version downgrade."
   }
-  $newGradle = [regex]::Replace($oldGradle,'(?m)^(\s*versionCode\s+)\d+','1'+$code)
-  $newGradle = [regex]::Replace($newGradle,'(?m)^(\s*versionName\s+)"[^"]+"','1"'+$version+'"')
+  $newGradle = [regex]::Replace($oldGradle,'(?m)^(\s*versionCode\s+)\d+','${1}'+$code)
+  $newGradle = [regex]::Replace($newGradle,'(?m)^(\s*versionName\s+)"[^"]+"','${1}"'+$version+'"')
+  if ([regex]::Matches($newGradle,'(?m)^\s*versionCode\s+'+[regex]::Escape([string]$code)+'\s*$').Count -ne 1 -or
+      [regex]::Matches($newGradle,'(?m)^\s*versionName\s+"'+[regex]::Escape($version)+'"\s*$').Count -ne 1) {
+    throw 'Native Android version replacement failed validation. Original Gradle file preserved.'
+  }
   if ($newGradle -cne $oldGradle) {
     New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
     Copy-Item $gradlePath (Join-Path $backupDir 'build.gradle')
@@ -172,6 +180,9 @@ try {
 
   # Never reuse a smoke bundle compiled before the latest translation edits.
   New-Item -ItemType Directory -Force -Path '.\reports' | Out-Null
+  if (Test-Path '.\reports\release-js-smoke') {
+    Remove-Item '.\reports\release-js-smoke' -Recurse -Force
+  }
   Write-Host 'Exporting fresh production JS/Hermes bundle...' -ForegroundColor Cyan
   & npx.cmd expo export --platform android --output-dir '.\reports\release-js-smoke'
   if ($LASTEXITCODE -ne 0) {throw 'Metro/Expo export failed: do not build a stale APK.'}
