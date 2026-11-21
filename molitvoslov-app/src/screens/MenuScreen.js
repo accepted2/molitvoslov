@@ -26,6 +26,7 @@ import {SaveHeartIcon} from '../components/icons/SaveHeartIcon';
 import {homeArtwork} from '../data/homeArtwork';
 import {contentApi as api} from '../services/contentApi';
 import {bibleContent} from '../services/bibleContent';
+import {getCslBibleBookName, formatBibleNumber} from '../services/bibleUi';
 import {deleteReadingProgress, getReadingProgress} from '../services/readingProgress';
 import {deleteSavedItem, getSavedItems, saveItem} from '../services/savedItems';
 import {
@@ -957,10 +958,10 @@ export const MenuScreen = ({navigation}) => {
         type: t('reading.bible'),
         symbol: '☷',
         imageSource: artwork?.icon || null,
-        title: bibleContent.getDisplayName(book),
+        title: calendarLanguage === 'csl_traditional' ? getCslBibleBookName(book) : bibleContent.getDisplayName(book),
         position: verseNumber
-          ? t('reading.chapterVerse', {chapter: chapterNumber, verse: verseNumber})
-          : t('reading.chapter', {chapter: chapterNumber}),
+          ? t('reading.chapterVerse', {chapter: formatBibleNumber(calendarLanguage, chapterNumber), verse: formatBibleNumber(calendarLanguage, verseNumber)})
+          : t('reading.chapter', {chapter: formatBibleNumber(calendarLanguage, chapterNumber)}),
         onPress: () =>
           navigation.navigate('BibleChapter', {
             bookId: book.id,
@@ -982,13 +983,13 @@ export const MenuScreen = ({navigation}) => {
         position: info
           ? info.verse_number
             ? t('reading.kathismaPsalmVerse', {
-                kathisma: info.kathisma_number,
-                psalm: info.psalm_number,
-                verse: info.verse_number,
+                kathisma: formatBibleNumber(calendarLanguage, info.kathisma_number),
+                psalm: formatBibleNumber(calendarLanguage, info.psalm_number),
+                verse: formatBibleNumber(calendarLanguage, info.verse_number),
               })
             : t('reading.kathismaPsalm', {
-                kathisma: info.kathisma_number,
-                psalm: info.psalm_number,
+                kathisma: formatBibleNumber(calendarLanguage, info.kathisma_number),
+                psalm: formatBibleNumber(calendarLanguage, info.psalm_number),
               })
           : t('reading.continueSaved'),
         onPress: () => navigation.navigate('Psalter'),
@@ -1040,7 +1041,7 @@ export const MenuScreen = ({navigation}) => {
 
       if (info) {
         const parts = [];
-        if (info.ode_number) parts.push(t('reading.ode', {number: info.ode_number}));
+        if (info.ode_number) parts.push(t('reading.ode', {number: formatBibleNumber(calendarLanguage, info.ode_number)}));
         if (info.heading) {
           parts.push(info.heading);
         } else if (info.section_type_display) {
