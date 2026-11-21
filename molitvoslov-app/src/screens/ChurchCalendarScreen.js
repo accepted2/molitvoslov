@@ -33,6 +33,7 @@ import {
   toCalendarDate,
 } from '../services/churchCalendar';
 import {CALENDAR_MONTHS, calendarText} from '../services/calendarPreferences';
+import {displayCalendarNumber, displayCalendarDateText} from '../services/calendarDisplayNumerals';
 import {useLanguage} from '../context/LanguageContext';
 import {translate} from '../i18n/translations';
 import {getCalendarDataLanguage} from '../services/languagePreferences';
@@ -832,8 +833,8 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
           <Text style={styles.monthArrow}>‹</Text>
         </Pressable>
 
-        <Text style={[styles.monthTitle,cslFont]}>
-          {locale.nominative[visibleMonth - 1]} {visibleYear}
+        <Text style={[styles.monthTitle,cslFont, language === 'csl_traditional' && styles.monthTitleTraditional]}>
+          {locale.nominative[visibleMonth - 1]} {displayCalendarNumber(visibleYear, language)}
         </Text>
 
         <Pressable
@@ -893,9 +894,10 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
                       weekend && !cell.outside && styles.weekendText,
                       appearance && styles.dayNumberMarked,
                       isToday && styles.dayNumberToday,
+                      language === 'csl_traditional' && styles.dayNumberTraditional,
                     ]}
                   >
-                    {cell.day}
+                    {displayCalendarNumber(cell.day, language)}
                   </Text>
                 </View>
               </Pressable>
@@ -945,7 +947,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
       ) : dayData ? (
         <>
           <Text style={[styles.dayDate,cslFont]}>
-            {formatCalendarDateLabel(dayData.date_gregorian, locale)}
+            {displayCalendarDateText(formatCalendarDateLabel(dayData.date_gregorian, locale), language)}
           </Text>
           {!!liturgicalDayLabel && (
             <Text style={styles.liturgicalDayLabel}>{liturgicalDayLabel}</Text>
@@ -1184,6 +1186,10 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '700',
   },
+  monthTitleTraditional: {
+    fontSize: 17, lineHeight: 28, fontWeight: '400',
+    includeFontPadding: false,
+  },
   weekRow: {
     flexDirection: 'row',
     paddingVertical: 4,
@@ -1238,6 +1244,10 @@ const styles = StyleSheet.create({
   dayNumber: {
     color: '#493225',
     fontSize: 13,
+  },
+  dayNumberTraditional: {
+    fontFamily: 'Ponomar', fontSize: 13, lineHeight: 19,
+    includeFontPadding: false,
   },
   dayNumberToday: {
     color: '#FFFFFF',
