@@ -118,13 +118,22 @@ function repair(merged,rel){
     merged=merged.replace(
       /const rowHeight = Math\.round\([^;\n]+\);/,
       "const rowHeight = Math.round((traditional ? 54 : 46) + (uiScale - 1) * 54);");
-    merged=merged.replace(
-      /accessibilityLabel=\{t\(item\.labelKey\)\}/,
+    // Normalize the single visible navigation-label line count. Existing
+    // local edits may use a different expression for numberOfLines.
+    const lineCountAttrs=[...merged.matchAll(/numberOfLines=\{[^}]+\}/g)];
+    assert(lineCountAttrs.length===1,
+      'BottomNav requires one visible label numberOfLines, found '+lineCountAttrs.length);
+    merged=merged.replace(/numberOfLines=\{[^}]+\}/,
+      'numberOfLines={uiScale > 1.15 ? 2 : 1}');
+    if(!merged.includes("t('navCompact.'+item.key)")){
+      const visibleLabel=/\{t\(item\.labelKey\)\}(?=\s*<\/Text>)/;
+      assert(visibleLabel.test(merged),'Cannot identify visible BottomNav label');
+      merged=merged.replace(visibleLabel,
+        "{traditional ? t('navCompact.'+item.key) : t(item.labelKey)}");
+    }
+    merged=merged.replace(/accessibilityLabel=\{t\(item\.labelKey\)\}/,
       "accessibilityLabel={traditional ? t('navCompact.'+item.key) : t(item.labelKey)}");
-    merged=merged.replace(
-      /const rowHeight = Math\.round\(\(traditional \? 72 : 46\) \+ \(uiScale - 1\) \* \(traditional \? 82 : 56\)\);/,
-      'const rowHeight = Math.round((traditional ? 54 : 46) + (uiScale - 1) * 54);');
-    assert(merged.includes('navCompact.'),'BottomNav translations missing');
+    assert(merged.includes("t('navCompact.'+item.key)"),'BottomNav translation missing');
     assert(merged.includes('numberOfLines={uiScale > 1.15 ? 2 : 1}'),
       'BottomNav compact labels missing');
     assert(!merged.includes('traditional ? 72 : 46'),'BottomNav oversized row not fixed');
@@ -143,6 +152,18 @@ function repair(merged,rel){
     assert(merged.includes('lastTitleLineWidth'),'Responsive title flow lost');
   }
   if(rel==='src/screens/MenuScreen.js'){
+    // The same helper can be imported both in local changes and upstream.
+    // Remove only duplicate identical imports; preserve the first occurrence.
+    const typographyImport="import {traditionalUiTextStyle} from '../services/traditionalUiTypography';";
+    let typographySeen=false, typographyCount=0;
+    merged=merged.split('\n').filter(line=>{
+      if(line.trim()!==typographyImport)return true;
+      typographyCount++;
+      if(typographySeen)return false;
+      typographySeen=true;
+      return true;
+    }).join('\n');
+    assert(typographyCount>0,'MenuScreen typography import missing');
     merged=merged.replace(/const cardHeight = \(traditional \? 116 : 80\) \* uiScale;/,
       'const cardHeight = (traditional ? 98 : 80) * uiScale;');
     if(!merged.includes('const [heroActionsBottom, setHeroActionsBottom] = useState(0);')){
