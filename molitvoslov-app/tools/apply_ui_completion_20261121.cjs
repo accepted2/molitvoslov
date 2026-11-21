@@ -45,6 +45,19 @@ const git=(ref,rel)=>{
       ' (fetch the branch first). NO FILES MODIFIED.');
   }
 };
+
+const allowed = {
+  'src/components/navigation/BottomNav.js': /traditionalStyle|rowHeight|traditional\s*=|navCompact/,
+  'src/components/navigation/FixedSectionHeader.js': /lastTitleLineWidth|titleLineWidth|flowLongTitleWithLanguage|traditionalStyle|languagePill|extraTitleHeight|headerHeight|titleLines/,
+  'src/screens/MenuScreen.js': /traditionalTitleStyle|traditionalSubtitleStyle|traditionalStyle|cardHeight|libraryCard/,
+  'src/screens/NotificationsScreen.js': /openCreate|openEdit|initialDraft|setTimePickerOpen|setDraft/,
+  'src/screens/PrayerBooksScreen.js': /actionsColumn|shareBook|shareButton|accessibilityLabel/,
+  'src/components/share/ContentContextMenu.js': /deleteLabel|contextActions\.delete|Удалить из избранного/,
+};
+const marker = /^<<<<<<< local\r?\n([\s\S]*?)^\|\|\|\|\|\|\| old\r?\n([\s\S]*?)^=======\r?\n([\s\S]*?)^>>>>>>> new\r?\n?/gm;
+const assert = (condition, message) => { if(!condition) throw Error(message); };
+const resolved = [];
+
 const jobs=[],conflicts=[];
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'molitvoslov-ui-merge-'));
 function mergeThreeWay(local,base,target,rel) {
@@ -59,14 +72,79 @@ function mergeThreeWay(local,base,target,rel) {
       ...filenames
     ],{cwd:root,encoding:'utf8',windowsHide:true,maxBuffer:25*1024*1024});
   }catch(error) {
-    const preview=String(error.stdout||'');
-    const blocks=preview.split('\n');
-    const first=blocks.findIndex(line=>line.startsWith('<<<<<<<'));
-    const excerpt=first>=0?blocks.slice(Math.max(0,first-3),Math.min(blocks.length,first+12)).join('\n'):'';
-    throw Error('Three-way conflict ('+rel+').\n'+excerpt+
-      '\nNO FILES MODIFIED. Local changes have priority.');
+    const output=String(error.stdout||'');
+    let n=0, rejected=0;
+    const merged=output.replace(marker,(full,ours,old,theirs)=>{
+      n++;
+      if(ours===old)return theirs;
+      if(theirs===old)return ours;
+      if(!allowed[rel] || !allowed[rel].test(ours+'\n'+theirs)){
+        rejected++;
+        return full;
+      }
+      // Keep known local UI behavior; repair applies compatible upstream changes below.
+      return ours;
+    });
+    assert(n>0 && !rejected &&
+      !/^(<<<<<<<|\|\|\|\|\|\|\||=======|>>>>>>>)/m.test(merged),
+      'Unknown or unresolved conflict ('+rel+', blocks='+n+', rejected='+rejected+').');
+    resolved.push(rel+': '+n+' block(s)');
+    return merged;
   }
 }
+
+// Narrow compatibility adjustments. Reject missing features rather than silently overwriting them.
+function repair(merged,rel){
+  if(rel==='src/components/navigation/BottomNav.js'){
+    merged=merged.replace(
+      /const rowHeight = Math\.round\(\(traditional \? 72 : 46\) \+ \(uiScale - 1\) \* \(traditional \? 82 : 56\)\);/,
+      'const rowHeight = Math.round((traditional ? 54 : 46) + (uiScale - 1) * 54);');
+    assert(merged.includes('navCompact.'),'BottomNav translations missing');
+    assert(merged.includes('numberOfLines={uiScale > 1.15 ? 2 : 1}'),
+      'BottomNav compact labels missing');
+    assert(!merged.includes('traditional ? 72 : 46'),'BottomNav oversized row not fixed');
+  }
+  if(rel==='src/components/navigation/FixedSectionHeader.js'){
+    if(/\btraditional\s*\?/.test(merged) &&
+       !/\b(?:const|let)\s+traditional\s*=/.test(merged)){
+      const at=merged.indexOf('  const traditionalStyle =');
+      assert(at>=0,'Cannot place traditional variable in FixedSectionHeader');
+      merged=merged.slice(0,at)+
+        "  const traditional = language === 'csl_traditional';\n"+merged.slice(at);
+    }
+    assert(merged.includes('traditionalUiTextStyle'),'Header typography missing');
+    assert(merged.includes('lastTitleLineWidth'),'Responsive title flow lost');
+  }
+  if(rel==='src/screens/MenuScreen.js'){
+    merged=merged.replace(/const cardHeight = \(traditional \? 116 : 80\) \* uiScale;/,
+      'const cardHeight = (traditional ? 98 : 80) * uiScale;');
+    assert(merged.includes('traditionalTitleStyle'),'MenuScreen title typography missing');
+    assert(merged.includes('heroActionsBottom + 38'),'Measured hero gradient missing');
+  }
+  if(rel==='src/screens/NotificationsScreen.js'){
+    merged=merged.replace(/\binitialDraft\(\)/g,'initialDraft(t)');
+    assert(merged.includes('const openCreate'),'NotificationsScreen create missing');
+    assert(merged.includes('setTimePickerOpen(false)'),'Time picker reset lost');
+    assert(merged.includes('notifications.title'),'Notifications translations missing');
+    assert(merged.includes('const initialDraft = t =>'),'Localized reminders missing');
+  }
+  if(rel==='src/screens/PrayerBooksScreen.js'){
+    merged=merged.replace(
+      /accessibilityLabel=\{'Поделиться молитвословом ' \+ \(item\.title \|\| ''\)\}/g,
+      "accessibilityLabel={t('contextActions.share') + ' ' + (item.title || '')}");
+    assert(merged.includes('actionsColumn') && merged.includes('shareBook(item)'),
+      'Local prayerbook share buttons lost');
+    assert(merged.includes('cslFont'),'PrayerBooks typography missing');
+    assert(merged.includes('titleTextStyle={cslFont}'),'PrayerBooks header style missing');
+    assert(merged.includes("t('contextActions.share')"),'PrayerBooks share label untranslated');
+  }
+  if(rel==='src/components/share/ContentContextMenu.js'){
+    assert(merged.includes('deleteLabel'),'Context-specific delete label lost');
+    assert(merged.includes('contextActions.cancel'),'Context menu localization missing');
+  }
+  return merged;
+}
+
 try {
   for(const rel of paths) {
     try {
@@ -77,7 +155,7 @@ try {
       const base=git(rel==='src/services/traditionalUiTypography.js'
         ? '952e8b736868073ac0bc99e0b516d05fc3466fbb' : baseRef,rel);
       const target=git(targetRef,rel);
-      const merged=mergeThreeWay(local,base,target,rel);
+      const merged=repair(mergeThreeWay(local,base,target,rel),rel);
       parse(merged,{sourceType:'module',plugins:['jsx']});
       const result=raw.includes('\r\n')?merged.replace(/\n/g,'\r\n'):merged;
       if(result!==raw)jobs.push({file,rel,result});
@@ -93,7 +171,8 @@ if(conflicts.length){
   for(const {rel,message} of conflicts)console.error('\n'+rel+'\n'+message);
   process.exit(1);
 }
-console.log('PASS: 18 interface files parsed and merged without conflict.');
+console.log('PASS: 18 interface files merged and parsed (including known local conflicts).');
+for(const item of resolved)console.log('RESOLVED:',item);
 console.log('TO UPDATE:',jobs.map(x=>x.rel).join(', ')||'none');
 if(dry){console.log('DRY RUN. NO FILES MODIFIED.');process.exit(0);}
 if(!jobs.length){console.log('ALREADY APPLIED. NO FILES MODIFIED.');process.exit(0);}
@@ -104,8 +183,15 @@ for(const job of jobs){
   fs.mkdirSync(path.dirname(dest),{recursive:true});
   fs.copyFileSync(job.file,dest);
 }
-for(const job of jobs){
-  fs.writeFileSync(job.file,job.result,'utf8');
-  console.log('UPDATED:',job.rel);
+try{
+  for(const job of jobs)fs.writeFileSync(job.file,job.result,'utf8');
+  execFileSync(process.execPath,[path.join(__dirname,'test_ui_completion_20261121.cjs')],
+    {cwd:app,stdio:'inherit',windowsHide:true});
+  execFileSync('git',['diff','--check'],{cwd:root,stdio:'inherit',windowsHide:true});
+}catch(error){
+  for(const job of jobs)fs.copyFileSync(path.join(backup,job.rel),job.file);
+  console.error('POST-APPLY TEST FAILED. Changed source files restored. BACKUP:',backup);
+  process.exit(1);
 }
-console.log('BACKUP:',backup);
+for(const job of jobs)console.log('UPDATED:',job.rel);
+console.log('SUCCESS. BACKUP:',backup);
