@@ -65,8 +65,12 @@ function patch(source){
  build=exactly(build,'    const items = rule?.items || [];',
    '    const items = traditionalReadingRule?.items || [];',
    'Traditional joined hymns');
- build=exactly(build,'    for (const item of rule?.items || []) {',
-   '    for (const item of traditionalReadingRule?.items || []) {',
+ // Scope this edit to the typographic metadata loop. Other local edits
+ // may contain another identical "for (const item of rule?.items || [])".
+ // Replacing an arbitrary first match could silently alter unrelated code.
+ build=exactly(build,
+   '    let followingTextIsPrayer = false;\n    for (const item of rule?.items || []) {',
+   '    let followingTextIsPrayer = false;\n    for (const item of traditionalReadingRule?.items || []) {',
    'Traditional typography metadata');
  build=exactly(build,
    '  const displayRule = communionKind && rule',
