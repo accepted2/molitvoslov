@@ -1419,7 +1419,7 @@ export const MenuScreen = ({navigation}) => {
                       ]}
                     >
                       <Text style={styles.calendarWidgetButtonIcon}>▣</Text>
-                      <Text style={styles.calendarWidgetButtonText}>{calendarCopy.onScreen}</Text>
+                      <Text style={[styles.heroQuoteActionText, styles.calendarWidgetButtonText]} numberOfLines={1}>{calendarCopy.onScreen}</Text>
                     </Pressable>
                   </View>
                 </View>
@@ -2219,7 +2219,7 @@ const styles = StyleSheet.create({
   },
 
   calendarWidgetButton: {
-    height: 30,
+    minHeight: 30,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2239,11 +2239,9 @@ const styles = StyleSheet.create({
   },
 
   calendarWidgetButtonText: {
+    // Reuse heroQuoteActionText typography (15px line height and padding)
+    // so Cyrillic descenders, particularly 'р', cannot be clipped.
     color: '#7B4F2A',
-    fontFamily: 'serif',
-    fontSize: 11,
-    lineHeight: 10,
-    fontWeight: '700',
   },
 
   calendarLanguageSwitch: {
