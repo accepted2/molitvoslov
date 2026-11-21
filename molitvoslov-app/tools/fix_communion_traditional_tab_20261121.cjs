@@ -31,17 +31,11 @@ function patch(s){
         'hasCommunionTraditionalEdition(rule) ||\n      ',
       'Uploaded edition availability');
   }
-  const optionGuard="hasCommunionTraditionalEdition(rule) && option.key === MODE_TRADITIONAL";
-  if(!s.includes(optionGuard)){
-    const options=/options:\s*buildReaderLanguageOptions\(\{([\s\S]*?)\}\),/g;
-    s=one(s,options,(full,config)=>
-      'options: buildReaderLanguageOptions({'+config+'}).map(option =>\n'+
-      '        hasCommunionTraditionalEdition(rule) && option.key === MODE_TRADITIONAL\n'+
-      '          ? {...option, disabled: false}\n'+
-      '          : option\n'+
-      '      ),',
-      'Enable traditional option for this Communion rule');
-  }
+  // The language options are already exposed by the existing reader switcher.
+  // They have no disabled flag in the source builder. The previous strict
+  // matching against options: buildReaderLanguageOptions({...}) failed for
+  // legitimate local versions and was unnecessary. Eligibility below is the
+  // scoped availability fix; preserve every user's local option layout.
   const directMarker="if (hasCommunionTraditionalEdition(rule)) {";
   if(!s.includes(directMarker)){
     s=one(s,
@@ -61,7 +55,6 @@ function verify(s){
   const expected=[
     "import {hasCommunionTraditionalEdition} from '../services/communionTraditionalRule';",
     marker,'hasCommunionTraditionalEdition(rule) ||',
-    'hasCommunionTraditionalEdition(rule) && option.key === MODE_TRADITIONAL',
     'if (hasCommunionTraditionalEdition(rule)) {',
     'handleViewModeChange(mode);',
     'readerRef.current?.changeViewMode(mode);'
@@ -94,7 +87,7 @@ try{
   console.error('STOP:',e.message);
   console.error('NO SOURCE FILES MODIFIED.');process.exit(1);
 }
-console.log('PASS: CS Traditional Communion tab enabled and header switch direct.');
+console.log('PASS: Communion CS Traditional availability + direct header mode switch.');
 console.log('TO UPDATE:',output===original?'none':screen);
 if(dry){console.log('DRY RUN. NO SOURCE FILES MODIFIED.');process.exit(0)}
 if(output===original){console.log('ALREADY APPLIED.');process.exit(0)}
