@@ -76,7 +76,13 @@ contains('src/screens/FavoritesScreen.js',/minWidth:32,minHeight:32/);
 
 // Build code is incremented, and the Windows build helper is present.
 const config=JSON.parse(read('app.json'));
-assert.equal(config.expo.version,'1.0.30');
-assert.equal(config.expo.android.versionCode,31);
+// The app may have been bumped by the current safe release builder.
+const parts=String(config.expo.version).split('.').map(Number);
+assert.equal(parts.length,3);
+assert.ok(parts.every(Number.isInteger));
+assert.equal(parts[0],1);
+assert.equal(parts[1],0);
+assert.ok(parts[2]>=30);
+assert.equal(config.expo.android.versionCode,parts[2]+1);
 assert.ok(fs.existsSync(path.join(__dirname,'build-release-and-smoke-20261113.ps1')));
 console.log('PASS: paired save/share controls, akathist header, Hours prayer-only menus, runtime syntax, APK build preparation');
