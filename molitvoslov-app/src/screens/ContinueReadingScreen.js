@@ -9,6 +9,11 @@ import {
   View,
 } from 'react-native';
 import {getBibleArtwork} from '../data/bibleArtwork';
+import {useLanguage} from '../context/LanguageContext';
+import {getLocalizedField} from '../services/localizedContent';
+import {getProgressEntityTitle, getProgressSectionTitle} from '../services/continueReadingDisplay';
+import {getCslBibleBookName, formatBibleNumber} from '../services/bibleUi';
+import {traditionalUiTextStyle} from '../services/traditionalUiTypography';
 import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
@@ -67,6 +72,9 @@ const resolveCategoryIcon = (...values) => {
 };
 
 export const ContinueReadingScreen = ({navigation}) => {
+  const {language, t} = useLanguage();
+  const cslStyle = (size, height) => traditionalUiTextStyle(language, size, height);
+  const displayNumber = number => formatBibleNumber(language, number);
   const [categories, setCategories] = useState([]);
   const [akathists, setAkathists] = useState([]);
   const [canons, setCanons] = useState([]);
@@ -128,13 +136,13 @@ export const ContinueReadingScreen = ({navigation}) => {
 
       return {
         id: progressItem.id,
-        type: 'Библия',
+        type: t('reading.bible'),
         glyph: '☷',
         imageSource: artwork?.icon || null,
-        title: bibleContent.getDisplayName(book),
+        title: language === 'csl_traditional' ? getCslBibleBookName(book) : bibleContent.getDisplayName(book),
         position: verseNumber
-          ? 'Глава ' + chapterNumber + ' · стих ' + verseNumber
-          : 'Глава ' + chapterNumber,
+          ? t('continueReading.bibleChapterVerse', {chapter: displayNumber(chapterNumber), verse: displayNumber(verseNumber)})
+          : t('continueReading.bibleChapter', {chapter: displayNumber(chapterNumber)}),
         percent,
         onPress: () =>
           navigation.navigate('BibleChapter', {
@@ -150,21 +158,24 @@ export const ContinueReadingScreen = ({navigation}) => {
 
       return {
         id: progressItem.id,
-        type: 'Псалтирь',
+        type: t('reading.psalter'),
         glyph: '¶',
         iconSource: CATEGORY_ICONS.psalter,
-        title: 'Псалтирь',
+        title: t('reading.psalter'),
         position: info?.kathisma_number
           ? info.psalm_number
-            ? `Кафизма ${info.kathisma_number} · Псалом ${info.psalm_number}`
-            : `Кафизма ${info.kathisma_number}`
-          : 'Продолжить с сохранённого места',
+            ? t('continueReading.psalterPosition', {
+                kathisma: displayNumber(info.kathisma_number),
+                psalm: displayNumber(info.psalm_number),
+              })
+            : t('psalter.kathisma', {number: displayNumber(info.kathisma_number)})
+          : t('continueReading.savedPlace'),
         percent,
         onPress: () => {
           if (info?.kathisma_number) {
             navigation.navigate('Kathisma', {
               kathismaNumber: info.kathisma_number,
-              kathismaTitle: `Кафизма ${info.kathisma_number}`,
+              kathismaTitle: t('psalter.kathisma', {number: displayNumber(info.kathisma_number)}),
             });
             return;
           }
@@ -181,17 +192,17 @@ export const ContinueReadingScreen = ({navigation}) => {
 
       return {
         id: progressItem.id,
-        type: 'Акафист',
+        type: t('reading.akathist'),
         glyph: '☦',
         iconSource: CATEGORY_ICONS.akathists,
-        title: akathist.title,
-        position: 'Продолжить акафист',
+        title: getLocalizedField(akathist, 'title', language),
+        position: t('reading.continueAkathist'),
         percent,
         onPress: () =>
           navigation.navigate('Akathist', {
             akathistId: akathist.id,
             slug: akathist.slug,
-            title: akathist.title,
+            title: getLocalizedField(akathist, 'title', language),
           }),
       };
     }
@@ -202,22 +213,22 @@ export const ContinueReadingScreen = ({navigation}) => {
 
       const info = progressItem.anchor_info;
       const position = info?.ode_number
-        ? `Песнь ${info.ode_number}${info.heading ? ` · ${info.heading}` : ''}`
-        : 'Продолжить канон';
+        ? `${t('reading.ode', {number: displayNumber(info.ode_number)})}${info.heading ? ` · ${info.heading}` : ''}`
+        : t('continueReading.continueCanon');
 
       return {
         id: progressItem.id,
-        type: 'Канон',
+        type: t('reading.canon'),
         glyph: '▤',
         iconSource: CATEGORY_ICONS.canons,
-        title: canon.title,
+        title: getLocalizedField(canon, 'title', language),
         position,
         percent,
         onPress: () =>
           navigation.navigate('Canon', {
             canonId: canon.id,
             slug: canon.slug,
-            title: canon.title,
+            title: getLocalizedField(canon, 'title', language),
           }),
       };
     }
@@ -232,11 +243,11 @@ export const ContinueReadingScreen = ({navigation}) => {
 
       return {
         id: progressItem.id,
-        type: 'Молитвенное правило',
+        type: t('reading.prayerRule'),
         glyph: '✦',
         iconSource: resolveCategoryIcon(rule.slug, rule.name) || CATEGORY_ICONS.canons,
-        title: rule.name,
-        position: ruleItem?.text?.title || ruleItem?.title || 'Продолжить правило',
+        title: getProgressEntityTitle(rule, 'name', language, t),
+        position: getProgressSectionTitle(ruleItem, language) || t('continueReading.continueRule'),
         percent,
         onPress: () => navigation.navigate('PrayerRule', {slug: rule.slug}),
       };
@@ -250,17 +261,17 @@ export const ContinueReadingScreen = ({navigation}) => {
 
       return {
         id: progressItem.id,
-        type: 'Молитвы',
+        type: t('continueReading.prayers'),
         glyph: '†',
         iconSource: resolveCategoryIcon(category.slug, category.name) || CATEGORY_ICONS.canons,
-        title: category.name,
-        position: 'Продолжить с сохранённого места',
+        title: getLocalizedField(category, 'name', language),
+        position: t('continueReading.savedPlace'),
         percent,
         onPress: () =>
           navigation.navigate('Book', {
             categoryId: category.id,
             categorySlug: category.slug,
-            categoryName: category.name,
+            categoryName: getLocalizedField(category, 'name', language),
           }),
       };
     }
@@ -270,7 +281,7 @@ export const ContinueReadingScreen = ({navigation}) => {
 
   const items = useMemo(
     () => progress.map(makeItem).filter(Boolean),
-    [progress, categories, akathists, canons, prayerRules]
+    [progress, categories, akathists, canons, prayerRules, language, t]
   );
 
   const removeItem = async (id) => {
@@ -329,11 +340,11 @@ export const ContinueReadingScreen = ({navigation}) => {
                   </View>
 
                   <View style={styles.cardText}>
-                    <Text style={styles.type}>{item.type}</Text>
-                    <Text style={styles.cardTitle} numberOfLines={2}>
+                    <Text style={[styles.type, cslStyle(10, 17)]}>{item.type}</Text>
+                    <Text style={[styles.cardTitle, cslStyle(17, 26)]} numberOfLines={2}>
                       {item.title}
                     </Text>
-                    <Text style={styles.position} numberOfLines={2}>
+                    <Text style={[styles.position, cslStyle(12, 20)]} numberOfLines={2}>
                       {item.position}
                     </Text>
 
@@ -365,17 +376,19 @@ export const ContinueReadingScreen = ({navigation}) => {
           ) : (
             <View style={styles.empty}>
               <Text style={styles.emptyCross}>☦</Text>
-              <Text style={styles.emptyTitle}>Начатых чтений пока нет</Text>
-              <Text style={styles.emptyText}>
-                Когда вы начнёте читать молитву, акафист, канон, Псалтирь или Библию, прогресс
-                появится здесь.
+              <Text style={[styles.emptyTitle, cslStyle(20, 30)]}>{t('continueReading.emptyTitle')}</Text>
+              <Text style={[styles.emptyText, cslStyle(13, 23)]}>
+                {t('continueReading.emptyText')}
               </Text>
             </View>
           )}
         </ScrollView>
       )}
 
-      <FixedSectionHeader onHeaderHeightChange={setHeaderHeight} title="Продолжить чтение" navigation={navigation} topInset={insets.top} />
+      <FixedSectionHeader onHeaderHeightChange={setHeaderHeight}
+        title={t('continueReading.title')}
+        titleTextStyle={cslStyle(22, 32)}
+        navigation={navigation} topInset={insets.top} />
 
       <BottomNav navigation={navigation} active={null} />
     </AppBackground>
