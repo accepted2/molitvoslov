@@ -66,7 +66,17 @@ assert.match(runtime,/Math\.min\(28, Number\(rawSize\)/);
 assert.match(bible,/isCurrentPlaceBookmarked/);
 assert.match(bible,/name=\{isCurrentPlaceBookmarked\?'bookmark':'bookmark-outline'\}/);
 assert.match(bible,/Number\(item\.anchor_id\)===displayedBookmarkAnchor/);
-assert.match(bible,/setSavedItems\(current=>\[saved,\.\.\.current\]\)/);
+// The bookmark action must persist a bookmark and refresh saved-item state.
+// Do not require one exact JSX/JS formatting of the state updater.
+const bookmarkStart=bible.indexOf('const addCurrentBookmark');
+assert.ok(bookmarkStart>=0,'Bible bookmark action is missing');
+const bookmarkEnd=bible.indexOf('const currentChapterIndex',bookmarkStart);
+assert.ok(bookmarkEnd>bookmarkStart,'Cannot isolate Bible bookmark action');
+const bookmarkAction=bible.slice(bookmarkStart,bookmarkEnd);
+assert.match(bookmarkAction,/await\s+saveReadingBookmark\s*\(/);
+assert.match(bookmarkAction,/\bsavedItemsRef\.current\b/);
+assert.match(bookmarkAction,/\bsetSavedItems\s*\(/,
+  'Saving a bookmark must refresh the saved-items state');
 assert.match(bible,/openBookmarksLabel="Открыть все закладки"/);
 assert.match(bookmarkMenu,/openBookmarksLabel \|\| t\('bookmarkMenu\.openPlaces'\)/);
 console.log('PASS: Bible crossref scroll/close, license relocation, palette/size, filled bookmark and menu label');
