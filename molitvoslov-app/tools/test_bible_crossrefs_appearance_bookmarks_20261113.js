@@ -30,11 +30,14 @@ assert.doesNotMatch(sheet,/Linking\.openURL/);
 assert.doesNotMatch(sheet,/<Text style=\{\[styles\.license/);
 
 // Source attribution remains accessible outside the reference modal.
-assert.match(account,/Источники и лицензии/);
+assert.match(account,/t\('accountSettings\.licenses'\)/);
+assert.match(account,/sourcesExpanded && \(/);
+const i18n=app('src/i18n/extraCopy.js');
+assert.match(i18n,/licenses:"Источники и лицензии"/);
 assert.match(account,/OpenBible\.info \(CC BY 4\.0\)/);
 assert.match(account,/Catholic Cross References/);
 assert.match(account,/STEP Bible \/ Tyndale House/);
-assert.match(account,/Церковнославянский'/);
+assert.match(account,/value: 'csl_traditional'/);
 assert.doesNotMatch(account,/Елизаветинская Библия/);
 assert.match(account,/privacy-policy\//);
 assert.match(account,/account-deletion\//);
