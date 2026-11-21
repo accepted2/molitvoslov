@@ -42,7 +42,56 @@ function apiPatch(original){
 }
 function readerPatch(original){
   let s=original;
-  const styles=[
+  // The helper has the reviewed RU additions and reconstructs lost rubric
+  // labels by reading the original Slavonic source, not translation guesses.
+  const rubricImport="import {getCommunionRussianRubric} from '../../services/communionRussianCompletion';";
+  if(!s.includes(rubricImport)){
+    s=replaceOnce(s,
+      "import {getCommunionRuleKind,",
+      rubricImport+"\nimport {getCommunionRuleKind,",
+      'Communion rubric helper import');
+  }
+
+  // Scope all color and spacing changes to this particular Communion rule.
+  // Do not affect morning/evening, other prayer books, or thanksgiving.
+  const visualStyles=[
+    '    /* Communion preparation: compact verses, brown headings and rubrics. */',
+    '    body.communion-preparation .rule-title,',
+    '    body.communion-preparation .section-title,',
+    '    body.communion-preparation .section-header .prayer-title {',
+    '      color: var(--reader-section-heading, var(--accent-dark, #5A3822)) !important;',
+    '    }',
+    '    body.communion-preparation .rule-item {',
+    '      margin-bottom: 5px;',
+    '      padding-bottom: 7px;',
+    '    }',
+    '    body.communion-preparation .rule-item.communion-heading-only {',
+    '      border-bottom: 0 !important;',
+    '      margin-bottom: 0 !important;',
+    '      padding-bottom: 0 !important;',
+    '    }',
+    '    body.communion-preparation .rule-item.communion-heading-only .section-title {',
+    '      margin-bottom: 4px;',
+    '    }',
+    '    body.communion-preparation .translation-text .communion-ru-rubric {',
+    '      display: inline;',
+    '      color: var(--liturgical) !important;',
+    '      font-weight: 700;',
+    '      font-style: italic;',
+    '      margin-right: 5px;',
+    '    }',
+    '',
+  ].join('\n');
+  if(!s.includes('/* Communion preparation: compact verses, brown headings and rubrics. */')){
+    s=replaceOnce(s,
+      '    /* The first "Слава..." text and next "И ныне..." text form one',
+      visualStyles+'    /* The first "Слава..." text and next "И ныне..." text form one',
+      'Scoped Communion compact typography');
+  }
+
+  // Keep the explicit newlines between the preceding doxology and prayers
+  // from the user's Russian translation, in both RU and CS+RU.
+  const lineBreakStyles=[
     '    /* Communion PREPARATION, Russian text only: preserve the explicit',
     '       newlines separating doxologies from the following hymn text. */',
     '    body.communion-preparation .reader-text.communion-russian-linebreaks,',
@@ -51,10 +100,98 @@ function readerPatch(original){
     '    }',
     '',
   ].join('\n');
-  s=replaceOnce(s,
-    '    /* The first "Слава..." text and next "И ныне..." text form one',
-    styles+'    /* The first "Слава..." text and next "И ныне..." text form one',
-    'Scoped Communion Russian line breaks');
+  if(!s.includes('/* Communion PREPARATION, Russian text only: preserve the explicit')){
+    s=replaceOnce(s,
+      '    /* The first "Слава..." text and next "И ныне..." text form one',
+      lineBreakStyles+'    /* The first "Слава..." text and next "И ныне..." text form one',
+      'Scoped Communion Russian line breaks');
+  }
+
+  // Heading-only sections (e.g. Psalm 22, Irmos, prayer titles) are separate
+  // items immediately before their contents in the imported Communion rule.
+  // Do not add a 24px blank border-and-margin between them.
+  const headingMap=[
+    '      const communionHeadingOnlyIds = new Set();',
+    "      if (DATA.communionKind === 'preparation') {",
+    '        for (let i = 0; i + 1 < allItems.length; i += 1) {',
+    '          const first=allItems[i], next=allItems[i+1];',
+    "          if (first?.item_type === 'section' &&",
+    "              next?.item_type === 'text' && next.text &&",
+    "              String(first.title || first.title_uk || '').trim() &&",
+    "              !String(first.content || first.content_uk || '').trim()) {",
+    '            communionHeadingOnlyIds.add(Number(first.id));',
+    '          }',
+    '        }',
+    '      }',
+    '',
+  ].join('\n');
+  if(!s.includes('const communionHeadingOnlyIds = new Set();')){
+    s=replaceOnce(s,
+      '      // "Ангел вопияше" and "Светися, светися" are consecutive Text',
+      headingMap+'      // "Ангел вопияше" and "Светися, светися" are consecutive Text',
+      'Communion heading/text adjacency');
+  }
+  const headingMark=[
+    "          if (DATA.communionKind === 'preparation' &&",
+    '              communionHeadingOnlyIds.has(Number(item.id))) {',
+    "            wrapper.classList.add('communion-heading-only');",
+    '          }',
+    '',
+  ].join('\n');
+  if(!s.includes("wrapper.classList.add('communion-heading-only')")){
+    s=replaceOnce(s,
+      '          if (paschalOpeningItemIds.has(Number(item.id))) {',
+      headingMark+'          if (paschalOpeningItemIds.has(Number(item.id))) {',
+      'Communion heading-only class');
+  }
+  // Precompute the rubric on the native side. The WebView has no access to
+  // imported JS helpers; its payload carries the labels by stable item ID.
+  const rubrics=[
+    '  const communionRussianRubricByItem = {};',
+    "  if (communionKind === 'preparation') {",
+    '    for (const item of rule?.items || []) {',
+    "      if (item?.item_type !== 'text' || !item.text) continue;",
+    '      const rubric=getCommunionRussianRubric(item.text.content, item.text.translation);',
+    '      if (rubric) communionRussianRubricByItem[String(item.id)] = rubric;',
+    '    }',
+    '  }',
+    '',
+  ].join('\n');
+  if(!s.includes('const communionRussianRubricByItem = {}')){
+    s=replaceOnce(s,
+      '  const communionTypographyByItem = {};',
+      rubrics+'  const communionTypographyByItem = {};',
+      'Communion RU rubrics by stable item ID');
+  }
+  if(!s.includes('    communionRussianRubricByItem,\n')){
+    s=replaceOnce(s,
+      '    communionJoinedTroparionIds,\n',
+      '    communionJoinedTroparionIds,\n    communionRussianRubricByItem,\n',
+      'Communion rubric payload');
+  }
+
+  const currentRubric=[
+    '            const communionRussianRubric =',
+    "              DATA.communionKind === 'preparation'",
+    "                ? (DATA.communionRussianRubricByItem?.[String(item.id)] || '')",
+    "                : '';",
+    '',
+  ].join('\n');
+  if(!s.includes('            const communionRussianRubric =')){
+    s=replaceOnce(s,
+      '            // The Communion service\'s Russian text needs the same rubric',
+      currentRubric+'            // The Communion service\'s Russian text needs the same rubric',
+      'Scoped Russian rubric variable');
+  }
+  // Preserve existing source rubrics in CS/CS traditional. Only the Russian
+  // tab needs the inferred heading before text; parallel gets its own span.
+  if(!s.includes("              (viewMode === 'russian' ? communionRussianRubric : '') ||")){
+    s=replaceOnce(s,
+      '            const inlineLabel =\n              getRuleInlineLabel(',
+      "            const inlineLabel =\n              (viewMode === 'russian' ? communionRussianRubric : '') ||\n              getRuleInlineLabel(",
+      'Restore RU inline rubric');
+  }
+
   const primary=[
     "            if (DATA.communionKind === 'preparation' &&",
     "                primaryLanguage === 'russian' && /\\n/u.test(russianText)) {",
@@ -62,21 +199,46 @@ function readerPatch(original){
     "            }",
     '',
   ].join('\n');
-  s=replaceOnce(s,
-    '            textElement.dataset.itemId =',
-    primary+'            textElement.dataset.itemId =',
-    'Standalone Russian text line breaks');
+  if(!s.includes("textElement.classList.add('communion-russian-linebreaks')")){
+    s=replaceOnce(s,
+      '            textElement.dataset.itemId =',
+      primary+'            textElement.dataset.itemId =',
+      'Standalone Russian text line breaks');
+  }
+
+  const parallelRubric=[
+    "              if (DATA.communionKind === 'preparation' &&",
+    '                  communionRussianRubric && russianText.trim()) {',
+    "                translationElement.insertBefore(",
+    "                  el('span','communion-ru-rubric',communionRussianRubric),",
+    '                  translationElement.firstChild',
+    '                );',
+    '              }',
+    '',
+  ].join('\n');
+  if(!s.includes("'communion-ru-rubric',communionRussianRubric")){
+    s=replaceOnce(s,
+      '              const isEveningKondakParallel =',
+      parallelRubric+'              const isEveningKondakParallel =',
+      'Restore RU rubrics in parallel translation');
+  }
   const parallel=[
     "              if (DATA.communionKind === 'preparation' && /\\n/u.test(russianText)) {",
     "                translationElement.classList.add('communion-russian-linebreaks');",
     "              }",
     '',
   ].join('\n');
-  s=replaceOnce(s,
-    '              const isEveningKondakParallel =',
-    parallel+'              const isEveningKondakParallel =',
-    'Parallel Russian translation line breaks');
-  assert(s.includes('communion-russian-linebreaks'),'Missing line break class');
+  if(!s.includes("translationElement.classList.add('communion-russian-linebreaks')")){
+    s=replaceOnce(s,
+      '              const isEveningKondakParallel =',
+      parallel+'              const isEveningKondakParallel =',
+      'Parallel Russian line breaks');
+  }
+  if(!s.includes('body.communion-preparation .section-title') ||
+     !s.includes('communionRussianRubricByItem') ||
+     !s.includes("el('span','communion-ru-rubric'")){
+    throw Error('Incomplete Communion presentation restoration');
+  }
   return s;
 }
 const helperPath=path.join(app,helper);
