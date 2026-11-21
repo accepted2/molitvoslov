@@ -19,6 +19,10 @@ try {
   if (!(Test-Path '.\tools\verify_continue_reading_i18n_20261121.cjs')) {
     throw 'Continue Reading verification script missing. Fetch it from GitHub.'
   }
+  if (!(Test-Path '.\src\services\calendarDisplayNumerals.js') -or
+      !(Test-Path '.\src\components\settings\ProjectSupportSection.js')) {
+    throw 'Previous calendar numerals / Account support patch is not installed. Apply the previous safe installer before building.'
+  }
 
   $candidateJdks = @(
     $env:JAVA_HOME,
