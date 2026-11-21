@@ -27,11 +27,21 @@ const TITLES = Object.freeze({
   'Молитва 10-я, прп. Иоанна Дамаскина':'Мл҃тва 10-я, преподо́бнагѡ І҆ѡа́нна Дамаски́на',
   'Молитва 11-я, свт. Иоанна Златоустого':'Мл҃тва 11-я, ст҃и́телѧ І҆ѡа́нна Златоꙋ́ста',
 });
+// Church Slavonic numeral letters with titlo: use only in this edition.
+const NUMERALS=Object.freeze({
+  1:'а҃',2:'в҃',3:'г҃',4:'д҃',5:'є҃',6:'ѕ҃',7:'з҃',8:'и҃',9:'ѳ҃',
+  10:'і҃',11:'а҃і',12:'в҃і',22:'к҃в',23:'к҃г',40:'м҃',50:'н҃',115:'рє҃і',
+});
+const csNumber = value => {
+  const result=NUMERALS[Number(value)];
+  if(!result)throw Error('Unsupported Communion numeral '+value);
+  return result;
+};
 const traditionalTitle = title => {
   const ode=/^Песнь ([1-9])$/u.exec(title);
-  if(ode)return 'Пѣ́снь '+ode[1];
+  if(ode)return 'Пѣ́снь '+csNumber(ode[1]);
   if(!TITLES[title])throw Error('Untranslated traditional heading: '+title);
-  return TITLES[title];
+  return TITLES[title].replace(/(\d+)(?:-[яй])?/gu,(_,num)=>csNumber(num));
 };
 // The user's bold labels are metadata, not literal text prefixes.
 const formatTraditionalBlock = (block, groupTitle, blockIndex) => {
@@ -40,6 +50,7 @@ const formatTraditionalBlock = (block, groupTitle, blockIndex) => {
   let note='';
   if(groupTitle==='Начальные молитвы' && blockIndex===0)
     body=body.replace(/^Моли́твами/u,'Мл҃твами');
+  body=body.replace(/\(\s*(12|40)\s+ра́зъ\s*\)/gu,(_,num)=>'('+csNumber(num)+' ра́зъ)');
   if(groupTitle==='Песнь 9' && blockIndex===9){
     const i=body.indexOf('\n');
     if(i<0)throw Error('Ninth ode penitential rubric not found');
@@ -49,7 +60,7 @@ const formatTraditionalBlock = (block, groupTitle, blockIndex) => {
   if(groupTitle==='Песнь 9' && [15,16].includes(blockIndex)){
     const i=body.indexOf('\n');
     if(i>=0){
-      note=blockIndex===16?'И҆́ныѧ стїхѝ:':'И҆ стїхѝ сїѧ̀:';
+      note=blockIndex===16?'И҆́ныѧ стїхѝ':'И҆ стїхѝ сїѧ̀';
       body=body.slice(i+1).trim();
     }
   }
@@ -123,7 +134,7 @@ export const getCommunionTraditionalCountRanges = source => {
   for(const hit of String(source||'').matchAll(/\([^)]{1,80}\)/gu)){
     const v=hit[0].slice(1,-1).normalize('NFD').replace(/\p{M}/gu,'')
       .toLowerCase().trim();
-    if(/^(?:12|40)\s+раз[ъь]?$/u.test(v) ||
+    if(/^(?:12|40|ві|м)\s+раз[ъь]?$/u.test(v) ||
        /^трижды(?:\s*,.*)?$/u.test(v) ||
        /^поклон[ъь]?$/u.test(v)){
       result.push({start:hit.index,end:hit.index+hit[0].length,kind:'note'});
