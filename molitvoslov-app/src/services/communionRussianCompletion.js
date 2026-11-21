@@ -20,6 +20,33 @@ const isSection = item => item?.item_type === 'section';
 const isText = item => item?.item_type === 'text' && !!item?.text;
 const source = item => withoutAccents(item?.text?.content);
 
+// The original Church Slavonic has these rubrics inline, while the Russian
+// translation often omits them. Only presentation labels are added; text IDs,
+// offsets and translations remain untouched.
+const COMMUNION_RUBRICS = Object.freeze([
+  ['ирмос', 'Ирмос:'],
+  ['припев', 'Припев:'],
+  ['богородичен', 'Богородичен:'],
+  ['троичен', 'Троичен:'],
+  ['крестобогородичен', 'Крестобогородичен:'],
+  ['седален', 'Седален:'],
+  ['кондак', 'Кондак:'],
+  ['икос', 'Икос:'],
+  ['светилен', 'Светилен:'],
+  ['тропарь', 'Тропарь:'],
+]);
+
+export const getCommunionRussianRubric = (churchText, russianText) => {
+  const church = withoutAccents(churchText);
+  const russian = withoutAccents(russianText);
+  for (const [token, label] of COMMUNION_RUBRICS) {
+    const prefix = new RegExp('^' + token + '\\s*[:：]', 'u');
+    if (!prefix.test(church)) continue;
+    return prefix.test(russian) ? '' : label;
+  }
+  return '';
+};
+
 const AFTER_PSALM_GLORY =
   'Сла́ва Отцу́, и Сы́ну, и Свято́му Ду́ху, и ны́не и при́сно, и во ве́ки веко́в. Ами́нь.';
 const AFTER_PSALM_ALLELUIA =
