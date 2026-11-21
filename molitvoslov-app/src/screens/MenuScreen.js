@@ -43,6 +43,7 @@ import {CALENDAR_MONTHS, calendarText} from '../services/calendarPreferences';
 import {useLanguage} from '../context/LanguageContext';
 import {useInterfaceScale} from '../context/InterfaceScaleContext';
 import {traditionalUiTextStyle} from '../services/traditionalUiTypography';
+import {displayCalendarNumber} from '../services/calendarDisplayNumerals';
 import {LANGUAGE_OPTIONS, getCalendarDataLanguage} from '../services/languagePreferences';
 import {getLocalizedField} from '../services/localizedContent';
 import {refreshCalendarWidgetsFromApp} from '../widgets/widgetCalendarRefresh';
@@ -178,8 +179,8 @@ const createCalendarSnapshot = (
   return {
     year,
     month,
-    monthTitle: `${locale.nominative[month]} ${year}`,
-    dayTitle: `${selectedDate.getDate()} ${locale.genitive[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`,
+    monthTitle: `${locale.nominative[month]} ${displayCalendarNumber(year, language)}`,
+    dayTitle: `${displayCalendarNumber(selectedDate.getDate(), language)} ${locale.genitive[selectedDate.getMonth()]} ${displayCalendarNumber(selectedDate.getFullYear(), language)}`,
     weekday: locale.weekdays[selectedDate.getDay()],
     miniWeekdays: locale.miniWeekdays,
     isSelectedToday: selectedKey === todayKey,
@@ -1393,7 +1394,7 @@ export const MenuScreen = ({navigation}) => {
                     <View style={styles.calendarTitleTextWrap}>
                       <View style={styles.calendarTitleLine}>
                         <Text
-                          style={styles.calendarTitle}
+                          style={[styles.calendarTitle, calendarLanguage === 'csl_traditional' && styles.calendarLabelTraditional]}
                           numberOfLines={1}
                           adjustsFontSizeToFit
                           minimumFontScale={0.82}
@@ -1405,7 +1406,7 @@ export const MenuScreen = ({navigation}) => {
                         <Text style={styles.calendarTitleArrow}>›</Text>
                       </View>
 
-                      <Text style={styles.calendarOpenHint}>{t('calendar.open')}</Text>
+                      <Text style={[styles.calendarOpenHint, calendarLanguage === 'csl_traditional' && styles.calendarHintTraditional]}>{t('calendar.open')}</Text>
                     </View>
                   </Pressable>
 
@@ -1565,7 +1566,7 @@ export const MenuScreen = ({navigation}) => {
                           pressed && styles.pressed,
                         ]}
                       >
-                        <Text style={styles.miniCalendarMonth} numberOfLines={1}>
+                        <Text style={[styles.miniCalendarMonth, calendarLanguage === 'csl_traditional' && styles.miniCalendarMonthTraditional]} numberOfLines={1}>
                           {calendarSnapshot.monthTitle}
                         </Text>
                       </Pressable>
@@ -1589,6 +1590,7 @@ export const MenuScreen = ({navigation}) => {
                           style={[
                             styles.miniCalendarWeekday,
                             index >= 5 && styles.miniCalendarWeekend,
+                            calendarLanguage === 'csl_traditional' && styles.miniCalendarWeekdayTraditional,
                           ]}
                         >
                           {weekday}
@@ -1633,9 +1635,10 @@ export const MenuScreen = ({navigation}) => {
                                   appearance && styles.miniCalendarDayMarked,
                                   cell.today && styles.miniCalendarDayToday,
                                   cell.selected && styles.miniCalendarDaySelected,
+                                  calendarLanguage === 'csl_traditional' && styles.miniCalendarDayTraditional,
                                 ]}
                               >
-                                {cell.day}
+                                {displayCalendarNumber(cell.day, calendarLanguage)}
                               </Text>
                             </View>
                           </Pressable>
@@ -2465,6 +2468,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
+  miniCalendarMonthTraditional: {
+    fontFamily: 'Ponomar', fontSize: 12, lineHeight: 18, fontWeight: '400',
+    includeFontPadding: false,
+  },
+  miniCalendarWeekdayTraditional: {
+    fontFamily: 'Ponomar', fontSize: 11, lineHeight: 16, fontWeight: '400',
+    includeFontPadding: false,
+  },
+  miniCalendarDayTraditional: {
+    fontFamily: 'Ponomar', fontSize: 11, lineHeight: 16,
+    includeFontPadding: false,
+  },
+  calendarLabelTraditional: {
+    fontFamily: 'Ponomar', fontSize: 16, lineHeight: 23, fontWeight: '400',
+    includeFontPadding: false,
+  },
+  calendarHintTraditional: {
+    fontFamily: 'Ponomar', fontSize: 11, lineHeight: 16,
+    includeFontPadding: false,
+  },
   miniCalendarWeekdays: {
     flexDirection: 'row',
 
