@@ -85,6 +85,53 @@ if(!fs.existsSync(helperPath) ||
   console.error('STOP: first restore src/services/communionRussianCompletion.js from GitHub.');
   console.error('NO SOURCE FILES MODIFIED.');process.exit(1);
 }
+function verifyBundledCommunionTexts(){
+  const bundlePath=path.join(app,'src/data/offlineContent.json');
+  assert(fs.existsSync(bundlePath),'Bundled offlineContent.json missing');
+  const bundle=JSON.parse(fs.readFileSync(bundlePath,'utf8'));
+  const helperSource=fs.readFileSync(helperPath,'utf8')
+    .replace(/^export const /gm,'const ');
+  const load=new Function(helperSource+
+    '\nreturn {completeCommunionRussian,COMMUNION_RU_SLUG};');
+  const {completeCommunionRussian,COMMUNION_RU_SLUG}=load();
+  const rule=bundle?.prayer_rules?.by_slug?.[COMMUNION_RU_SLUG];
+  assert(rule && Array.isArray(rule.items),
+    'Communion preparation rule not present in bundled offline content');
+  const completed=completeCommunionRussian(rule);
+  assert(completed!==rule,
+    'Cannot identify all five requested Communion Russian passages');
+  const modified=[];
+  completed.items.forEach((item,index)=>{
+    if(item?.text?.translation!==rule.items[index]?.text?.translation) {
+      modified.push({index,content:String(item?.text?.content||''),
+        translation:String(item?.text?.translation||'')});
+    }
+    assert(item?.text?.content===rule.items[index]?.text?.content,
+      'Church Slavonic source unexpectedly changed');
+  });
+  assert(modified.length===5,
+    'Expected exactly 5 modified Russian passages; found '+modified.length);
+  assert(modified.some(x=>x.translation.startsWith('Сла́ва Отцу́,')),
+    'Post-Psalm doxology missing');
+  assert(modified.some(x=>x.translation.includes('Бо́же. (Трижды)')),
+    'Post-Psalm Alleluia missing');
+  assert(modified.some(x=>x.translation.startsWith('Беззакония мои презри')),
+    'First troparion missing');
+  assert(modified.some(x=>x.translation.includes('\nНа причащение')),
+    'Second troparion missing');
+  assert(modified.some(x=>x.translation.includes('\nБесчисленно множество')),
+    'Third troparion missing');
+  assert(completeCommunionRussian(completed)===completed,
+    'Communion Russian completion is not idempotent');
+  console.log('VERIFIED: 5 matching Communion RU passages in offlineContent.json');
+}
+try{
+  verifyBundledCommunionTexts();
+}catch(error){
+  console.error('STOP:',error.message);
+  console.error('NO SOURCE FILES MODIFIED.');process.exit(1);
+}
+
 const jobs=[],problems=[];
 const patches=[apiPatch,readerPatch];
 for(let i=0;i<files.length;i++){
