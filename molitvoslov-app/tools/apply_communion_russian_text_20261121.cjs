@@ -109,21 +109,28 @@ function verifyBundledCommunionTexts(){
     assert(item?.text?.content===rule.items[index]?.text?.content,
       'Church Slavonic source unexpectedly changed');
   });
-  assert(modified.length===5,
-    'Expected exactly 5 modified Russian passages; found '+modified.length);
-  assert(modified.some(x=>x.translation.startsWith('Сла́ва Отцу́,')),
-    'Post-Psalm doxology missing');
-  assert(modified.some(x=>x.translation.includes('Бо́же. (Трижды)')),
-    'Post-Psalm Alleluia missing');
-  assert(modified.some(x=>x.translation.startsWith('Беззакония мои презри')),
-    'First troparion missing');
-  assert(modified.some(x=>x.translation.includes('\nНа причащение')),
-    'Second troparion missing');
-  assert(modified.some(x=>x.translation.includes('\nБесчисленно множество')),
-    'Third troparion missing');
+  // One or more source translations may already match the requested edition
+  // (notably the first troparion). Verify the five FINAL passages, not that
+  // exactly five fields had to change.
+  const finalRussian=(completed.items||[])
+    .filter(item=>item?.item_type==='text' && item.text)
+    .map(item=>String(item.text.translation||''));
+  const checks=[
+    ['Post-Psalm doxology',v=>v==='Сла́ва Отцу́, и Сы́ну, и Свято́му Ду́ху, и ны́не и при́сно, и во ве́ки веко́в. Ами́нь.'],
+    ['Post-Psalm Alleluia',v=>v==='Аллилу́иа, аллилу́иа, аллилу́иа,\nсла́ва Тебе́, Бо́же. (Трижды)'],
+    ['First troparion',v=>v.startsWith('Беззакония мои презри, Господи, от Девы рожденный,')],
+    ['Second troparion',v=>v.startsWith('Сла́ва Отцу, и Сы́ну, и Свято́му Ду́ху.\nНа причащение')],
+    ['Third troparion',v=>v.startsWith('И ны́не, и при́сно, и во ве́ки веко́в, ами́нь.\nБесчисленно множество')],
+  ];
+  for(const [name,test] of checks){
+    assert(finalRussian.filter(test).length===1,
+      name+' missing or duplicated in the completed Russian sequence');
+  }
+  assert(modified.length<=5,'Unrelated Russian translations were modified');
+  console.log('VERIFIED: all 5 requested RU passages; updated fields: '+modified.length);
   assert(completeCommunionRussian(completed)===completed,
     'Communion Russian completion is not idempotent');
-  console.log('VERIFIED: 5 matching Communion RU passages in offlineContent.json');
+  console.log('VERIFIED: the bundled Communion rule matches the targeted headings.');
 }
 try{
   verifyBundledCommunionTexts();
