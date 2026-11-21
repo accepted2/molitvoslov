@@ -99,10 +99,17 @@ const buildTraditionalItems = () => {
           content:note,communionTraditionalNote:true});
         notes++;
       }
+      const lastTroparia=groupIndex===26&&k===4;
       const tropar=(group.title==='Тропари, глас 8-й')||
-        (group.title==='Песнь 9'&&k>=9&&k<=13);
+        (group.title==='Песнь 9'&&k>=9&&k<=13)||lastTroparia;
+      // The last troparion needs the divider after the WHOLE hymn group,
+      // not after each verse. The closing two stanzas share one source row.
+      const endOfTroparia=(groupIndex===4&&k===4)||
+        (groupIndex===14&&k===13)||lastTroparia;
       items.push({id,item_type:'text',communionTraditionalText:true,
         communionTraditionalTroparionSet:tropar,
+        communionTraditionalTroparionBoundary:endOfTroparia,
+        communionTraditionalMultiVerseInitials:lastTroparia,
         communionTraditionalDoxology:rubric==='Слава'||rubric==='И ныне',
         communionTraditionalRefrain:rubric==='Припев',
         communionTraditionalInitialSmall:tropar,
