@@ -18,6 +18,27 @@ assert.match(sheet,/persistentScrollbar/);
 assert.match(sheet,/onStartShouldSetPanResponder: \(\) => true/);
 assert.match(sheet,/onPanResponderRelease:/);
 
+// Preserve separately clickable share controls, regardless of whether
+// the right-side actions are a single bordered button or a stacked column
+// containing share and delete buttons.
+const assertSeparateShareButton=(source,screen)=>{
+  assert.match(source,/shareButton\s*:\s*\{/,
+    screen+': missing share button style');
+  assert.match(source,/style=\{\(\{pressed\}\)\s*=>\s*\[styles\.shareButton/,
+    screen+': share action must have its own Pressable');
+  const oldSideBorder=/shareButton\s*:\s*\{[^}]*borderLeftWidth\s*:\s*1/s.test(source);
+  const stackedActions=/style=\{styles\.actionsColumn\}/.test(source);
+  if(stackedActions){
+    assert.match(source,/actionsColumn\s*:\s*\{/,
+      screen+': stacked actions column must have a style');
+    assert.match(source,/styles\.shareButton, styles\.deleteButton/,
+      screen+': stacked delete action must be independent');
+  }
+  assert.ok(oldSideBorder||stackedActions||
+    /styles\.cardMain, pressed && styles\.pressed/.test(source),
+    screen+': share action must be separate from the main card');
+};
+
 const personal=read('src/screens/PrayerBooksScreen.js');
 assert.match(personal,/styles\.cardMain, pressed && styles\.pressed/);
 assert.match(personal,/onPress=\{\(\) => shareBook\(item\)\}/);
@@ -26,7 +47,7 @@ assert.match(personal,/sourceSyncId:book\.sync_id/);
 assert.match(personal,/kind:'prayerbook'/);
 assert.doesNotMatch(personal,/fallbackText:/);
 assert.match(personal,/onShare=\{contextItem \? \(\)=>shareBook\(contextItem\) : null\}/);
-assert.match(personal,/shareButton:\{[^}]*borderLeftWidth:1/s);
+assertSeparateShareButton(personal,'PrayerBooksScreen');
 assert.match(personal,/onPress=\{\(\) => navigation\.navigate\('PrayerBook'/);
 
 const memorial=read('src/screens/MemorialScreen.js');
@@ -37,7 +58,7 @@ assert.match(memorial,/sourceSyncId:book\.sync_id/);
 assert.match(memorial,/kind:'memorial'/);
 assert.doesNotMatch(memorial,/fallbackText:/);
 assert.match(memorial,/onShare=\{contextItem \? \(\)=>shareMemorial\(contextItem\) : null\}/);
-assert.match(memorial,/shareButton:\{[^}]*borderLeftWidth:1/s);
+assertSeparateShareButton(memorial,'MemorialScreen');
 assert.match(memorial,/onPress=\{\(\) =>\s*navigation\.navigate\('MemorialBook'/);
 
 const invitations=read('src/services/shareInvitations.js');
