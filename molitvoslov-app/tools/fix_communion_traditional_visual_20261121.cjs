@@ -57,6 +57,41 @@ const css=[
  ''
 ].join('\n');
 
+const markupMarker='/* COMMUNION_TRAD_ODE_LABELS_V4 */';
+const markupCSS=[
+ '    '+markupMarker,
+ '    /* The editorial Church Slavonic rubric is shown once above its verse. */',
+ '    body.communion-preparation.traditional-mode.communion-traditional-source .communion-trad-rubric-name {',
+ "      font-family: 'Ponomar', Georgia, serif !important;",
+ '      color: var(--liturgical, #9B3B32) !important;',
+ '      font-size: 15px; line-height: 1.5; font-weight: 400 !important;',
+ '      text-align: left !important; margin: 2px 0 1px;',
+ '    }',
+ '    /* Refrain lyrics have normal ink: ONLY their first letter is red. */',
+ '    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-refrain .reader-text,',
+ '    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-refrain .reader-text span {',
+ '      color: var(--text) !important;',
+ '    }',
+ '    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-refrain .reader-text span.communion-initial,',
+ '    body.communion-preparation.traditional-mode.communion-traditional-source .reader-text span.communion-initial {',
+ '      color: var(--liturgical, #9B3B32) !important;',
+ '      font-weight: 400 !important; font-size: inherit !important;',
+ '    }',
+ '    /* The Church Slavonic instructions are a left-aligned civil-font note. */',
+ '    body.communion-preparation.traditional-mode.communion-traditional-source .rule-item.communion-trad-note .instruction {',
+ "      font-family: Georgia, 'Times New Roman', serif !important;",
+ '      text-align: left !important;',
+ '      font-style: italic; font-weight: 400 !important;',
+ '      margin-left: 0 !important; padding-left: 0 !important;',
+ '    }',
+ '    /* Cyrillic numerals with titlo must not be split across two lines. */',
+ '    body.communion-preparation.traditional-mode.communion-traditional-source .reader-text span.communion-note,',
+ '    body.communion-preparation.traditional-mode.communion-traditional-source .reader-text span.communion-count-note {',
+ '      color: var(--secondary, #5A3822) !important;',
+ '      font-weight: 700 !important; white-space: nowrap !important;',
+ '    }',
+ ''
+].join('\n');
 function patchReader(s){
   insist(s.includes('const traditionalReadingRule = completeCommunionTraditionalRule(rule, viewMode);'),
     'Traditional Communion full-text reader is not installed');
@@ -94,6 +129,34 @@ function patchReader(s){
       "        }");
     s=s.slice(0,begin)+build+s.slice(end);
   }
+  const odeLabels=[
+    '            if (DATA.rule?.communionTraditionalEdition) {',
+    '              const sourceRubric = String(item.communionTraditionalRubric || "");',
+    '              const labels = {',
+    "                'Ирмос': 'И҆рмо́съ',",
+    "                'Припев': 'Припѣ́въ',",
+    "                'Богородичен': 'Богоро́диченъ',",
+    "                'Троичен': 'Тро́иченъ',",
+    "                'Кондак, глас 2': 'Конда́къ',",
+    '              };',
+    '              if (labels[sourceRubric]) {',
+    "                wrapper.appendChild(el('div', 'communion-trad-rubric-name', labels[sourceRubric]));",
+    '              }',
+    '            }',
+    ''
+  ].join('\n');
+  if(!s.includes("wrapper.appendChild(el('div', 'communion-trad-rubric-name'")){
+    s=one(s,
+      '            const textElement =\n              el(',
+      odeLabels+'            const textElement =\n              el(',
+      'Inline Church Slavonic rubrics before ode verses');
+  }
+  if(!s.includes(markupMarker)){
+    s=one(s,
+      '    /* The first "Слава..." text and next "И ныне..." text form one',
+      markupCSS+'    /* The first "Слава..." text and next "И ныне..." text form one',
+      'Restore Church Slavonic ode labels and left-aligned notes');
+  }
   return s;
 }
 function patchScreen(s){
@@ -117,7 +180,9 @@ function patchScreen(s){
   return s;
 }
 function verify(reader,screen){
-  for(const part of [marker,"wrapper.classList.add('communion-trad-joined')",
+  for(const part of [marker,markupMarker,
+    "wrapper.appendChild(el('div', 'communion-trad-rubric-name'",
+    "wrapper.classList.add('communion-trad-joined')",
     'getCommunionTraditionalCountRanges(value)',"wrapper.classList.add('communion-trad-glory')"])
     insist(reader.includes(part),'Missing reader visual feature '+part);
   insist(reader.split(marker).length===2,'Duplicate CSS');
