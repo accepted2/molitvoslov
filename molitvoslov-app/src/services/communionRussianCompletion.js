@@ -69,9 +69,17 @@ export const FINAL_COMMUNION_RUSSIAN =
   'Ибо не поведаю я тайны врагам Твоим, не дам Тебе поцелуя, такого, как Иуда. ' +
   'Но как разбойник исповедаю Тебя: «Помяни меня, Господи, в Царстве Твоём!»';
 
+const lastTextIndex = items => {
+  if (!Array.isArray(items)) return -1;
+  for (let index = items.length - 1; index >= 0; index -= 1) {
+    if (isText(items[index])) return index;
+  }
+  return -1;
+};
+
 export const hasFinalCommunionInvocation = rule => {
   if (!Array.isArray(rule?.items)) return false;
-  const lastIndex = rule.items.findLastIndex(isText);
+  const lastIndex = lastTextIndex(rule.items);
   if (lastIndex < 0) return false;
   const last = source(rule.items[lastIndex]);
   // withoutAccents deliberately removes the breve from й -> и.
@@ -82,7 +90,7 @@ export const hasFinalCommunionInvocation = rule => {
 const completeFinalCommunionRussian = rule => {
   if (!hasFinalCommunionInvocation(rule)) return rule;
   const items = rule.items;
-  const index = items.findLastIndex(isText);
+  const index = lastTextIndex(items);
   const lastItem = items[index];
   if (lastItem.text.translation === FINAL_COMMUNION_RUSSIAN) return rule;
   const nextItems = [...items];
