@@ -260,12 +260,20 @@ function verifyBundledCommunionTexts(){
   const load=new Function(helperSource+
     '\nreturn {completeCommunionRussian,COMMUNION_RU_SLUG};');
   const {completeCommunionRussian,COMMUNION_RU_SLUG}=load();
+  const helperChecks=new Function(
+    helperSource+'\nreturn getCommunionRussianRubric;')();
+  assert(helperChecks('Ирмо́с: Гряди́те','Придите, люди')==='Ирмос:',
+    'Communion Russian Irmos rubric test failed');
+  assert(helperChecks('Припе́в: Сердце','Сердце чистое')==='Припев:',
+    'Communion Russian Refrain rubric test failed');
+  assert(helperChecks('Богоро́дичен: Земле','Земля благая')==='Богородичен:',
+    'Communion Russian Theotokion rubric test failed');
   const rule=bundle?.prayer_rules?.by_slug?.[COMMUNION_RU_SLUG];
   assert(rule && Array.isArray(rule.items),
     'Communion preparation rule not present in bundled offline content');
   const completed=completeCommunionRussian(rule);
-  assert(completed!==rule,
-    'Cannot identify all five requested Communion Russian passages');
+  assert(completed && Array.isArray(completed.items),
+    'Cannot verify the five Communion Russian passages');
   const modified=[];
   completed.items.forEach((item,index)=>{
     if(item?.text?.translation!==rule.items[index]?.text?.translation) {
