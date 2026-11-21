@@ -30,6 +30,9 @@ try{
  const lang=entries['src/i18n/translations.js'];
  const trad=entries['src/i18n/traditionalUi.js'];
  const helper=entries['src/services/continueReadingDisplay.js'];
+ assert(home.includes('getCslBibleBookName(book)') &&
+  home.includes('formatBibleNumber(calendarLanguage, chapterNumber)'),
+  'Home Bible title / chapter numerals not localized');
  assert(home.includes("getProgressEntityTitle(rule, 'name', calendarLanguage, t)"),
   'Home prayer rule title not localized');
  assert(home.includes("traditionalUiTextStyle(calendarLanguage, 17 * uiScale"),
