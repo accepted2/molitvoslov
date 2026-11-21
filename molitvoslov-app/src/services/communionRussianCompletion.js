@@ -61,19 +61,52 @@ const TROPAR_3 =
   'И ны́не, и при́сно, и во ве́ки веко́в, ами́нь.\n' +
   'Бесчисленно множество моих, Богородица, согрешений, — к Тебе я прибег, Чистая, нуждаясь в спасении. Воззри милостиво на немощную мою душу и ходатайствуй пред Сыном Твоим и Богом нашим, да будет мне дано прощение соделанных мною согрешений тяжких, Единая Благословенная.';
 
+// The final invocation ("И ещё:") repeats a Church Slavonic prayer from
+// earlier in the rule. Only the last occurrence needs this Russian text;
+// the earlier occurrence and all original IDs and content stay unchanged.
+export const FINAL_COMMUNION_RUSSIAN =
+  'Вечери Твоей таинственной участником в сей день, Сын Божий, меня прими. ' +
+  'Ибо не поведаю я тайны врагам Твоим, не дам Тебе поцелуя, такого, как Иуда. ' +
+  'Но как разбойник исповедаю Тебя: «Помяни меня, Господи, в Царстве Твоём!»';
+
+export const hasFinalCommunionInvocation = rule => {
+  if (!Array.isArray(rule?.items)) return false;
+  const lastIndex = rule.items.findLastIndex(isText);
+  if (lastIndex < 0) return false;
+  const last = source(rule.items[lastIndex]);
+  // withoutAccents deliberately removes the breve from й -> и.
+  return /^вечери твоея таиныя днесь[, ]+сыне божии[, ]+причастника мя приими/u.test(last) &&
+    /помяни мя[, ]+господи[, ]+во царствии твоем/u.test(last);
+};
+
+const completeFinalCommunionRussian = rule => {
+  if (!hasFinalCommunionInvocation(rule)) return rule;
+  const items = rule.items;
+  const index = items.findLastIndex(isText);
+  const lastItem = items[index];
+  if (lastItem.text.translation === FINAL_COMMUNION_RUSSIAN) return rule;
+  const nextItems = [...items];
+  nextItems[index] = {
+    ...lastItem,
+    text: {...lastItem.text, translation: FINAL_COMMUNION_RUSSIAN},
+  };
+  return {...rule, items: nextItems};
+};
+
 export const completeCommunionRussian = rule => {
   if (!rule || rule.slug !== COMMUNION_RU_SLUG || !Array.isArray(rule.items)) {
     return rule;
   }
 
-  const items = rule.items;
+  const withFinalPrayer = completeFinalCommunionRussian(rule);
+  const items = withFinalPrayer.items;
   const psalm = items.findIndex(item =>
     isSection(item) && /^псалом\s+115$/u.test(withoutAccents(item.title)));
   const troparia = items.findIndex((item, index) =>
     index > psalm && isSection(item) &&
     /^тропар/u.test(withoutAccents(item.title)) &&
     /\b8\b/u.test(withoutAccents(item.title)));
-  if (psalm < 0 || troparia <= psalm) return rule;
+  if (psalm < 0 || troparia <= psalm) return withFinalPrayer;
 
   // Require the exact order of original source blocks before changing RU.
   // Never attach a doxology to an unrelated psalm or hymn.
@@ -98,7 +131,7 @@ export const completeCommunionRussian = rule => {
   const indices = [glory, alleluia, first, second, third];
   if (indices.some(index => index < 0) ||
       !(glory < alleluia && first < second && second < third)) {
-    return rule;
+    return withFinalPrayer;
   }
 
   const translations = new Map([
@@ -115,5 +148,5 @@ export const completeCommunionRussian = rule => {
     changed = true;
     return {...item, text: {...item.text, translation: next}};
   });
-  return changed ? {...rule, items: completedItems} : rule;
+  return changed ? {...withFinalPrayer, items: completedItems} : withFinalPrayer;
 };
