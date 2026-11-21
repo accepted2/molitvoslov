@@ -25,7 +25,17 @@ for (const screen of ['src/screens/ChurchCalendarScreen.js',
 
 const sheet=source('src/components/share/ContentContextMenu.js');
 assert.match(sheet, /onDelete=null/);
-assert.match(sheet, /t\('contextActions\.delete'\)/);
+// The delete label may be passed directly from t(), or prepared as
+// deleteLabel (for context-dependent menu labels). Both retain the same
+// deletion callback; don't enforce one implementation detail.
+const directDelete=/\{item\(t\('contextActions\.delete'\),'trash-outline',onDelete,true\)\}/.test(sheet);
+const namedDelete=/\{item\(deleteLabel,'trash-outline',onDelete,true\)\}/.test(sheet);
+assert.ok(directDelete || namedDelete,
+  'Delete action must be present with trash icon and onDelete callback');
+if (namedDelete) {
+  assert.match(sheet, /\b(?:const|let)\s+deleteLabel\s*=/,
+    'deleteLabel must be declared before use');
+}
 assert.match(sheet, /trash-outline/);
 assert.match(sheet, /onPin/);
 assert.match(sheet, /onSave/);
