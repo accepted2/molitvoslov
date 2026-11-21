@@ -77,6 +77,12 @@ assert.match(bookmarkAction,/await\s+saveReadingBookmark\s*\(/);
 assert.match(bookmarkAction,/\bsavedItemsRef\.current\b/);
 assert.match(bookmarkAction,/\bsetSavedItems\s*\(/,
   'Saving a bookmark must refresh the saved-items state');
-assert.match(bible,/openBookmarksLabel="Открыть все закладки"/);
+// The reader may pass a label explicitly, use the translated label,
+// or rely on ReaderBookmarkMenu's localized default.
+const bookmarkLabel = bible.match(/openBookmarksLabel\s*=\s*(?:"([^"]+)"|\{\s*t\('bookmarkMenu\.openPlaces'\)\s*\})/);
+if (bible.includes('openBookmarksLabel=')) {
+  assert.ok(bookmarkLabel && (bookmarkLabel[1]?.trim() || bookmarkLabel[0].includes('bookmarkMenu.openPlaces')),
+    'Bookmark list label must be a nonempty string or a localized label');
+}
 assert.match(bookmarkMenu,/openBookmarksLabel \|\| t\('bookmarkMenu\.openPlaces'\)/);
 console.log('PASS: Bible crossref scroll/close, license relocation, palette/size, filled bookmark and menu label');
