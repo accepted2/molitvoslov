@@ -33,8 +33,12 @@ const namedDelete=/\{item\(deleteLabel,'trash-outline',onDelete,true\)\}/.test(s
 assert.ok(directDelete || namedDelete,
   'Delete action must be present with trash icon and onDelete callback');
 if (namedDelete) {
-  assert.match(sheet, /\b(?:const|let)\s+deleteLabel\s*=/,
-    'deleteLabel must be declared before use');
+  const declaredLocally=/\b(?:const|let)\s+deleteLabel\s*=/.test(sheet);
+  const receivedAsProp=/\bdeleteLabel\s*(?:=[^,}]*|,|\})/.test(
+    sheet.slice(sheet.indexOf('export const ContentContextMenu ='), sheet.indexOf('=> {'))
+  );
+  assert.ok(declaredLocally || receivedAsProp,
+    'deleteLabel must be declared or received as a prop before use');
 }
 assert.match(sheet, /trash-outline/);
 assert.match(sheet, /onPin/);
