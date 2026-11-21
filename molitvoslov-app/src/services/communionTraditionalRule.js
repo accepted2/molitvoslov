@@ -5,7 +5,7 @@
 import traditionalSource from '../data/communionTraditionalSource.json';
 
 const COMMUNION_SLUG = 'posledovanie-ko-svyatomu-prichashcheniyu';
-const TRADITIONAL_BASE = -6121000;
+const TRADITIONAL_BASE = 6121000;
 const SCOPED_RUBRICS = new Set([
   'Ирмос', 'Припев', 'Богородичен', 'Троичен',
   'Кондак', 'Икос', 'Седален', 'Тропарь', 'Тропари',
@@ -48,7 +48,7 @@ const buildTraditionalItems = () => {
     }
     // Empty section headings are valid: "Канон, глас 2", for example.
     // The original PrayerRuleItem identifiers are left untouched.
-    const headingId = TRADITIONAL_BASE - items.length;
+    const headingId = TRADITIONAL_BASE + items.length;
     items.push({
       id: headingId,
       item_type: 'section',
@@ -60,7 +60,7 @@ const buildTraditionalItems = () => {
     for (const block of group.blocks) {
       const content = formatTraditionalBlock(block);
       if (!content) throw Error('Empty Communion traditional text');
-      const id = TRADITIONAL_BASE - items.length;
+      const id = TRADITIONAL_BASE + items.length;
       items.push({
         id,
         item_type: 'text',
