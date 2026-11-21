@@ -53,28 +53,11 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
     }));
   };
 
-  return (
-    <Animated.View
-      pointerEvents={readingHidden ? 'none' : 'box-none'}
-      style={[
-        styles.wrapper,
-        {transform: [{translateY: visibility.interpolate({inputRange: [0, 1], outputRange: [0, 100 + rowHeight - 46]})}], opacity: visibility.interpolate({inputRange: [0, 1], outputRange: [1, 0]})},
-        {
-          bottom: Math.max(insets.bottom + 4, 7),
-        },
-      ]}
-    >
-      <LinearGradient
-        colors={['rgba(255, 246, 228, 0.93)', 'rgba(240, 224, 194, 0.88)']}
-        start={{x: 0, y: 0}}
-        end={{x: 1, y: 1}}
-        style={styles.container}
-      >
-        <View style={[styles.itemsRow, {height: rowHeight}]}>
-          {ITEMS.map((item) => {
-            const isActive = item.key === active;
-
-            return (
+  // Outer tabs are symmetric; the three reading tabs share one centered group.
+  // This keeps the three central icon centers at equal distances from each other.
+  const renderTab = (item, columnStyle) => {
+    const isActive = item.key === active;
+    return (
               <Pressable
                 key={item.key}
                 accessibilityRole="button"
@@ -83,6 +66,7 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
                 onPress={() => openRootTab(item.route)}
                 style={({pressed}) => [
                   styles.item,
+                  columnStyle,
                   {height: itemHeight},
                   isActive && styles.itemActive,
                   pressed && styles.pressed,
@@ -106,8 +90,32 @@ export const BottomNav = ({navigation, active, readingHidden = false}) => {
                   </Text>
                 </View>
               </Pressable>
-            );
-          })}
+    );
+  };
+
+  return (
+    <Animated.View
+      pointerEvents={readingHidden ? 'none' : 'box-none'}
+      style={[
+        styles.wrapper,
+        {transform: [{translateY: visibility.interpolate({inputRange: [0, 1], outputRange: [0, 100 + rowHeight - 46]})}], opacity: visibility.interpolate({inputRange: [0, 1], outputRange: [1, 0]})},
+        {
+          bottom: Math.max(insets.bottom + 4, 7),
+        },
+      ]}
+    >
+      <LinearGradient
+        colors={['rgba(255, 246, 228, 0.93)', 'rgba(240, 224, 194, 0.88)']}
+        start={{x: 0, y: 0}}
+        end={{x: 1, y: 1}}
+        style={styles.container}
+      >
+        <View style={[styles.itemsRow, {height: rowHeight}]}>
+          {renderTab(ITEMS[0], styles.outerTab)}
+          <View style={styles.centralTabs}>
+            {ITEMS.slice(1, 4).map(item => renderTab(item, styles.centralTab))}
+          </View>
+          {renderTab(ITEMS[4], styles.outerTab)}
         </View>
       </LinearGradient>
     </Animated.View>
@@ -157,12 +165,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  item: {
-    // Five fixed-width columns: visual centers stay equally spaced even
-    // when the active tab has a border or labels have different lengths.
-    width: '20%',
+  // The two edge columns are mirror images. The three center columns
+  // share 54% of the row: centers at 32%, 50%, and 68% (equal 18% gaps).
+  // Home and Account remain 20.5% away from their neighboring center tab.
+  outerTab: {
+    width: '23%',
     flexGrow: 0,
     flexShrink: 0,
+  },
+  centralTabs: {
+    width: '54%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centralTab: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  item: {
     minWidth: 0,
     height: 41,
     alignItems: 'center',
