@@ -100,6 +100,7 @@ try {
       'test_android_app_links_20261113.js',
       'test_crossrefs_private_list_sharing_20261113.js'
     )
+    $failedRegressionTests = @()
     foreach ($test in $tests) {
       $target = Join-Path '.\tools' $test
       if (!(Test-Path $target)) {
@@ -108,7 +109,14 @@ try {
       }
       Write-Host "Regression test: $test"
       & node $target
-      if ($LASTEXITCODE -ne 0) {throw "Regression test failed: $test"}
+      if ($LASTEXITCODE -ne 0) {
+        $failedRegressionTests += $test
+        Write-Warning "Regression test FAILED: $test"
+      }
+    }
+    if ($failedRegressionTests.Count -gt 0) {
+      throw ("Regression tests failed (" + $failedRegressionTests.Count +
+        "): " + ($failedRegressionTests -join ', ') + ". Gradle was not started.")
     }
   }
 
