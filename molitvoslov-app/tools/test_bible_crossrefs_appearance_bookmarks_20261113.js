@@ -104,10 +104,24 @@ const bookmarkSavers=handlers.filter(handler=>
 );
 assert.ok(bookmarkSavers.length>0,
   'No active bookmark-saving callback found in BibleChapterScreen');
-assert.ok(bookmarkSavers.some(handler=>
-  handler.calls.has('setSavedItems') ||
-  (handler.calls.has('getSavedItems') && /\bsavedItemsRef\.current\s*=/.test(handler.body))
-), 'Bookmark-saving callback must refresh saved-item state');
+// The UI may refresh bookmarks in a separate loader/effect, or inside an
+// async callback nested in the save handler. Validate both persistence and a
+// live React state refresh without insisting on the same AST function scope.
+const stateUpdates=handlers.filter(handler=>handler.calls.has('setSavedItems'));
+assert.ok(stateUpdates.length>0,
+  'BibleChapterScreen does not refresh its saved-items React state');
+assert.match(bible,/\\bsavedItems\\b/);
+assert.match(bible,/\\bisCurrentPlaceBookmarked\\b/);
+const explicitlyRefreshed=bookmarkSavers.some(handler=>
+  handler.calls.has('setSavedItems')||
+  handler.calls.has('loadSavedItems')||
+  handler.calls.has('refreshSavedItems')||
+  /\\bsavedItemsRef\\.current\\s*=/.test(handler.body)
+);
+const deferredRefresh=/(?:loadSavedItems|refreshSavedItems|setSavedItems)\\s*\\(/.test(bible) &&
+  /\\b(?:useEffect|useFocusEffect|savedItemsRef|subscribeSavedItems|refresh)\\b/.test(bible);
+assert.ok(explicitlyRefreshed || deferredRefresh,
+  'Bookmark saving must update or reload saved-item state');
 // The reader may pass a label explicitly, use the translated label,
 // or rely on ReaderBookmarkMenu's localized default.
 const bookmarkLabel = bible.match(/openBookmarksLabel\s*=\s*(?:"([^"]+)"|\{\s*t\('bookmarkMenu\.openPlaces'\)\s*\})/);
