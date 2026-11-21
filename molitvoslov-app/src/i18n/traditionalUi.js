@@ -31,6 +31,8 @@ export const TRADITIONAL_UI = {
     psalterPosition:'Каѳі́сма {kathisma} · Ѱало́мъ {psalm}',
     savedPlace:'Продолжи́ти съ сохране́ннагѡ мѣ́ста',
     continueCanon:'Продолжи́ти кано́нъ',continueRule:'Продолжи́ти пра́вило',prayers:'Моли́твы',
+    emptyTitle:'Нача́тыхъ чте́нїй ещѐ нѣ́сть',
+    emptyText:'Є҆гда̀ начне́те чти́ти моли́твꙋ, а҆ка́ѳистъ, кано́нъ, Ѱалти́рь и҆лѝ Бї́блїю, мѣ́сто чте́нїѧ ѧ҆ви́тсѧ здѣ̀.',
   },
   communion: {
     title:'Ко ст҃о́мꙋ причаще́нїю',canons:'Кано́ны',soon:'Вско́рѣ',
