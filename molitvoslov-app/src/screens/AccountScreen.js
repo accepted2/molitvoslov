@@ -639,11 +639,11 @@ export const AccountScreen = ({navigation}) => {
   borderColor: '#E2CCAA',
   gap: 10,
 }}>
-  <Text style={{
+  <Text style={[{
     fontSize: 17,
     fontWeight: '700',
     color: '#503524',
-  }}>
+  },cslText(17,26)]}>
     {t('accountSettings.calendarBibleTitle')}
   </Text>
 
@@ -677,18 +677,22 @@ export const AccountScreen = ({navigation}) => {
         },
       ]}
     >
-      <Text style={[{color: '#503524', fontSize: 14},cslText(14,21)]}>
-        {calendarBibleTranslationCode === option.value ? '●  ' : '○  '}
-        {option.label}
-      </Text>
+      <View style={{flexDirection: 'row', alignItems: 'center', gap: 8}}>
+        <Text style={{color: '#503524', fontSize: 14}}>
+          {calendarBibleTranslationCode === option.value ? '●' : '○'}
+        </Text>
+        <Text style={[{color: '#503524', fontSize: 14, flex: 1},cslText(14,23)]}>
+          {option.label}
+        </Text>
+      </View>
     </Pressable>
   ))}
 
-  <Text style={{
+  <Text style={[{
     fontSize: 12,
     lineHeight: 19,
     color: '#836A52',
-  }}>
+  },cslText(12,20)]}>
     {t('accountSettings.calendarBibleHint')}
   </Text>
 </View>
