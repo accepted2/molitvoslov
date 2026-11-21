@@ -48,6 +48,64 @@ function merge(current,baseline,updated,file){
     return r.stdout;
   }finally{fs.rmSync(temp,{recursive:true,force:true})}
 }
+// Apply only the Continue Reading edits in MenuScreen.js.
+// The home screen is edited independently by calendar, quotes and account work;
+// a whole-file three-way merge can conflict even though these edits are unrelated.
+function replaceOneOrKeep(source, oldText, newText, label) {
+  if (source.includes(newText)) return source;
+  const count = source.split(oldText).length - 1;
+  check(count === 1, 'Cannot safely locate ' + label + ' in MenuScreen.js. NO FILES CHANGED.');
+  return source.replace(oldText, newText);
+}
+function ensureReadingTextStyle(source, marker, extra, label) {
+  const lines = source.split('\n');
+  const indexes = lines.map((line, index) => line.includes(marker) && line.includes('<Text') ? index : -1).filter(index => index >= 0);
+  check(indexes.length === 1, 'Cannot safely locate ' + label + ' JSX. NO FILES CHANGED.');
+  const index = indexes[0];
+  if (lines[index].includes(extra)) return source;
+  // A complete single-line JSX style is required; never rewrite unfamiliar markup.
+  const pattern = /style=\{(\[[^\n]*\]|styles\.[\w.]+)\}/;
+  const match = lines[index].match(pattern);
+  check(match, 'Unrecognized style for ' + label + '. NO FILES CHANGED.');
+  const next = match[1].startsWith('[')
+    ? match[1].slice(0, -1) + ', ' + extra + ']'
+    : '[' + match[1] + ', ' + extra + ']';
+  lines[index] = lines[index].replace(pattern, 'style={' + next + '}');
+  return lines.join('\n');
+}
+function patchHome(current) {
+  let result = current;
+  result = replaceOneOrKeep(
+    result,
+    "import {getLocalizedField} from '../services/localizedContent';",
+    "import {getLocalizedField} from '../services/localizedContent';\nimport {getProgressEntityTitle, getProgressSectionTitle} from '../services/continueReadingDisplay';",
+    'localized display import'
+  );
+  result = replaceOneOrKeep(
+    result,
+    "const position = ruleItem?.text?.title || ruleItem?.title || t('reading.continueRule');",
+    "const position = getProgressSectionTitle(ruleItem, calendarLanguage) || t('reading.continueRule');",
+    'prayer rule position'
+  );
+  result = replaceOneOrKeep(
+    result,
+    "title: getLocalizedField(rule, 'name', calendarLanguage),",
+    "title: getProgressEntityTitle(rule, 'name', calendarLanguage, t),",
+    'prayer rule title'
+  );
+  const styles = [
+    ['styles.readingSectionTitle', 'traditionalUiTextStyle(calendarLanguage, 17 * uiScale, 25 * uiScale)', 'reading header'],
+    ['styles.openReadingsText', 'traditionalUiTextStyle(calendarLanguage, 13 * uiScale, 20 * uiScale)', 'open label'],
+    ['styles.latestReadingTitle', 'traditionalUiTextStyle(calendarLanguage, 16 * uiScale, 24 * uiScale)', 'last reading title'],
+    ['styles.latestReadingPosition', 'traditionalUiTextStyle(calendarLanguage, 12 * uiScale, 19 * uiScale)', 'last reading position'],
+    ['styles.emptyReadingTitle', 'traditionalUiTextStyle(calendarLanguage, 15 * uiScale, 22 * uiScale)', 'empty reading title'],
+    ['styles.emptyReadingText', 'traditionalUiTextStyle(calendarLanguage, 12 * uiScale, 20 * uiScale)', 'empty reading help'],
+  ];
+  for (const [marker, extra, label] of styles) {
+    result = ensureReadingTextStyle(result, marker, extra, label);
+  }
+  return result;
+}
 function verify(results){
   const get=file=>results.find(x=>x.name===file)?.after||'';
   const home=get('src/screens/MenuScreen.js');
@@ -87,8 +145,9 @@ try{
     let normalized;
     if(existingFiles.includes(name)){
       check(current!==null,'Missing project file: '+name);
-      normalized=merge(current.replace(/\r\n/g,'\n'),
-        gitShow(baseRef,name),target,name);
+      normalized=name==='src/screens/MenuScreen.js'
+        ?patchHome(current.replace(/\r\n/g,'\n'))
+        :merge(current.replace(/\r\n/g,'\n'),gitShow(baseRef,name),target,name);
     }else{
       check(current===null||current.replace(/\r\n/g,'\n')===target,
         'Unexpected existing file: '+name);
