@@ -57,6 +57,14 @@ function replaceOneOrKeep(source, oldText, newText, label) {
   check(count === 1, 'Cannot safely locate ' + label + ' in MenuScreen.js. NO FILES CHANGED.');
   return source.replace(oldText, newText);
 }
+function replaceNOrKeep(source, oldText, newText, n, label) {
+  const oldCount = source.split(oldText).length - 1;
+  const newCount = source.split(newText).length - 1;
+  if (oldCount === 0 && newCount === n) return source;
+  check(oldCount === n && newCount === 0,
+    'Cannot safely locate ' + label + ' in MenuScreen.js. NO FILES CHANGED.');
+  return source.split(oldText).join(newText);
+}
 function ensureReadingTextStyle(source, marker, extra, label) {
   const lines = source.split('\n');
   const indexes = lines.map((line, index) => line.includes(marker) && line.includes('<Text') ? index : -1).filter(index => index >= 0);
@@ -117,6 +125,32 @@ function patchHome(current) {
     "t('reading.chapter', {chapter: formatBibleNumber(calendarLanguage, chapterNumber)})",
     'Bible chapter numeral'
   );
+  result = replaceNOrKeep(
+    result,
+    'kathisma: info.kathisma_number,',
+    'kathisma: formatBibleNumber(calendarLanguage, info.kathisma_number),',
+    2,
+    'Psalter kathisma numbers'
+  );
+  result = replaceNOrKeep(
+    result,
+    'psalm: info.psalm_number,',
+    'psalm: formatBibleNumber(calendarLanguage, info.psalm_number),',
+    2,
+    'Psalter psalm numbers'
+  );
+  result = replaceOneOrKeep(
+    result,
+    'verse: info.verse_number,',
+    'verse: formatBibleNumber(calendarLanguage, info.verse_number),',
+    'Psalter verse number'
+  );
+  result = replaceOneOrKeep(
+    result,
+    "t('reading.ode', {number: info.ode_number})",
+    "t('reading.ode', {number: formatBibleNumber(calendarLanguage, info.ode_number)})",
+    'Canon ode numeral'
+  );
   const styles = [
     ['styles.readingSectionTitle', 'traditionalUiTextStyle(calendarLanguage, 17 * uiScale, 25 * uiScale)', 'reading header'],
     ['styles.openReadingsText', 'traditionalUiTextStyle(calendarLanguage, 13 * uiScale, 20 * uiScale)', 'open label'],
@@ -156,7 +190,9 @@ function verify(results){
         helper.includes("t('communion.sequence')"),
     'Localized Communion prayer rule title missing');
   check(home.includes("getCslBibleBookName(book)") &&
-        home.includes("formatBibleNumber(calendarLanguage, chapterNumber)"),
+        home.includes("formatBibleNumber(calendarLanguage, chapterNumber)") &&
+        home.includes("formatBibleNumber(calendarLanguage, info.kathisma_number)") &&
+        home.includes("formatBibleNumber(calendarLanguage, info.ode_number)"),
     "Home Bible titles or numerals not localized");
   check(home.includes("getReadingProgress()") &&
         inside.includes("getReadingProgress()") &&
