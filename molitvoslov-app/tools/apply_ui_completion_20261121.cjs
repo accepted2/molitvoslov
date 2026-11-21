@@ -57,6 +57,11 @@ const allowed = {
 const marker = /^<<<<<<< local\r?\n([\s\S]*?)^\|\|\|\|\|\|\| old\r?\n([\s\S]*?)^=======\r?\n([\s\S]*?)^>>>>>>> new\r?\n?/gm;
 const assert = (condition, message) => { if(!condition) throw Error(message); };
 const resolved = [];
+const preservedLocal = [];
+const safeLocalPreference = new Set([
+  'src/components/navigation/BottomNav.js',
+  'src/screens/MenuScreen.js',
+]);
 
 const jobs=[],conflicts=[];
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'molitvoslov-ui-merge-'));
@@ -79,8 +84,15 @@ function mergeThreeWay(local,base,target,rel) {
       if(ours===old)return theirs;
       if(theirs===old)return ours;
       if(!allowed[rel] || !allowed[rel].test(ours+'\n'+theirs)){
-        rejected++;
-        return full;
+        if(!safeLocalPreference.has(rel)){
+          rejected++;
+          return full;
+        }
+        // These two UI screens have existing local revisions. Never replace an
+        // unknown local block with GitHub content: retain it and reapply the
+        // known, reviewed interface requirements in repair() below.
+        preservedLocal.push(rel+': conflict block '+n);
+        return ours;
       }
       // Keep known local UI behavior; repair applies compatible upstream changes below.
       return ours;
@@ -96,6 +108,19 @@ function mergeThreeWay(local,base,target,rel) {
 // Narrow compatibility adjustments. Reject missing features rather than silently overwriting them.
 function repair(merged,rel){
   if(rel==='src/components/navigation/BottomNav.js'){
+    // Ensure both foreground and labels stay legible on the restored light bar.
+    merged=merged.replace(
+      /(<LinearGradient\s+colors=)\{\[[^\]]+\]\}/,
+      "$1{['rgba(255, 246, 228, 0.93)', 'rgba(240, 224, 194, 0.88)']}");
+    merged=merged.replace(
+      /const color = active \? '[^']+' : '[^']+';/,
+      "const color = active ? '#442818' : '#65452F';");
+    merged=merged.replace(
+      /const rowHeight = Math\.round\([^;\n]+\);/,
+      "const rowHeight = Math.round((traditional ? 54 : 46) + (uiScale - 1) * 54);");
+    merged=merged.replace(
+      /accessibilityLabel=\{t\(item\.labelKey\)\}/,
+      "accessibilityLabel={traditional ? t('navCompact.'+item.key) : t(item.labelKey)}");
     merged=merged.replace(
       /const rowHeight = Math\.round\(\(traditional \? 72 : 46\) \+ \(uiScale - 1\) \* \(traditional \? 82 : 56\)\);/,
       'const rowHeight = Math.round((traditional ? 54 : 46) + (uiScale - 1) * 54);');
@@ -103,6 +128,8 @@ function repair(merged,rel){
     assert(merged.includes('numberOfLines={uiScale > 1.15 ? 2 : 1}'),
       'BottomNav compact labels missing');
     assert(!merged.includes('traditional ? 72 : 46'),'BottomNav oversized row not fixed');
+    assert(merged.includes("colors={['rgba(255, 246, 228, 0.93)'"),'Light bar missing');
+    assert(merged.includes("const color = active ? '#442818' : '#65452F'"),'Nav icon contrast missing');
   }
   if(rel==='src/components/navigation/FixedSectionHeader.js'){
     if(/\btraditional\s*\?/.test(merged) &&
@@ -118,8 +145,34 @@ function repair(merged,rel){
   if(rel==='src/screens/MenuScreen.js'){
     merged=merged.replace(/const cardHeight = \(traditional \? 116 : 80\) \* uiScale;/,
       'const cardHeight = (traditional ? 98 : 80) * uiScale;');
+    if(!merged.includes('const [heroActionsBottom, setHeroActionsBottom] = useState(0);')){
+      const anchor='  const [dailyQuote, setDailyQuote] = useState(() => getDailyQuote());';
+      assert(merged.includes(anchor),'Cannot insert measured hero state safely');
+      merged=merged.replace(anchor,anchor+
+        '\n  const [heroActionsBottom, setHeroActionsBottom] = useState(0);');
+    }
+    if(!merged.includes('setHeroActionsBottom(current =>')){
+      const tag=/<View\s+style=\{(?:styles\.heroTopActions|\[styles\.heroTopActions,[^\n]+\])\}\s*>/;
+      assert(tag.test(merged),'Cannot find hero actions for layout measurement');
+      merged=merged.replace(tag,
+        '<View\n'+
+        '  style={[styles.heroTopActions, {top: Math.max(34, insets.top + 8)}]}\n'+
+        '  onLayout={event => {\n'+
+        '    const bottom = event.nativeEvent.layout.y + event.nativeEvent.layout.height;\n'+
+        '    setHeroActionsBottom(current => Math.abs(current - bottom) > 1 ? bottom : current);\n'+
+        '  }}\n'+
+        '>');
+    }
+    if(!merged.includes('heroActionsBottom + 38')){
+      const tag=/<View style=\{\[styles\.heroQuoteContent, \{top: [^\n]+\}\]\}>/;
+      assert(tag.test(merged),'Cannot find quote placement without discarding local changes');
+      merged=merged.replace(tag,
+        '<View style={[styles.heroQuoteContent, {top: Math.max(heroActionsBottom + 38, insets.top + 95)}]}>');
+    }
     assert(merged.includes('traditionalTitleStyle'),'MenuScreen title typography missing');
+    assert(merged.includes('setHeroActionsBottom(current =>'),'Quote header measured layout missing');
     assert(merged.includes('heroActionsBottom + 38'),'Measured hero gradient missing');
+    assert(merged.includes('insets.top + 95'),'Safe hero quote offset missing');
   }
   if(rel==='src/screens/NotificationsScreen.js'){
     merged=merged.replace(/\binitialDraft\(\)/g,'initialDraft(t)');
@@ -173,6 +226,7 @@ if(conflicts.length){
 }
 console.log('PASS: 18 interface files merged and parsed (including known local conflicts).');
 for(const item of resolved)console.log('RESOLVED:',item);
+for(const item of preservedLocal)console.log('LOCAL BLOCK PRESERVED:',item);
 console.log('TO UPDATE:',jobs.map(x=>x.rel).join(', ')||'none');
 if(dry){console.log('DRY RUN. NO FILES MODIFIED.');process.exit(0);}
 if(!jobs.length){console.log('ALREADY APPLIED. NO FILES MODIFIED.');process.exit(0);}
@@ -187,7 +241,8 @@ try{
   for(const job of jobs)fs.writeFileSync(job.file,job.result,'utf8');
   execFileSync(process.execPath,[path.join(__dirname,'test_ui_completion_20261121.cjs')],
     {cwd:app,stdio:'inherit',windowsHide:true});
-  execFileSync('git',['diff','--check'],{cwd:root,stdio:'inherit',windowsHide:true});
+  execFileSync('git',['diff','--check','--',...jobs.map(x=>'molitvoslov-app/'+x.rel)],
+    {cwd:root,stdio:'inherit',windowsHide:true});
 }catch(error){
   for(const job of jobs)fs.copyFileSync(path.join(backup,job.rel),job.file);
   console.error('POST-APPLY TEST FAILED. Changed source files restored. BACKUP:',backup);
