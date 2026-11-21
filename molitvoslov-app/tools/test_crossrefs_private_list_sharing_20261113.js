@@ -31,7 +31,7 @@ const assertSeparateShareButton=(source,screen)=>{
   if(stackedActions){
     assert.match(source,/actionsColumn\s*:\s*\{/,
       screen+': stacked actions column must have a style');
-    assert.match(source,/styles\.shareButton, styles\.deleteButton/,
+    assert.match(source,/styles\.shareButton\s*,\s*styles\.deleteButton/,
       screen+': stacked delete action must be independent');
   }
   assert.ok(oldSideBorder||stackedActions||
