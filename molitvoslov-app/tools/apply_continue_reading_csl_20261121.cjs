@@ -93,6 +93,30 @@ function patchHome(current) {
     "title: getProgressEntityTitle(rule, 'name', calendarLanguage, t),",
     'prayer rule title'
   );
+  result = replaceOneOrKeep(
+    result,
+    "import {bibleContent} from '../services/bibleContent';",
+    "import {bibleContent} from '../services/bibleContent';\nimport {getCslBibleBookName, formatBibleNumber} from '../services/bibleUi';",
+    'Bible presentation helpers'
+  );
+  result = replaceOneOrKeep(
+    result,
+    'title: bibleContent.getDisplayName(book),',
+    "title: calendarLanguage === 'csl_traditional' ? getCslBibleBookName(book) : bibleContent.getDisplayName(book),",
+    'Church Slavonic Bible book title'
+  );
+  result = replaceOneOrKeep(
+    result,
+    "t('reading.chapterVerse', {chapter: chapterNumber, verse: verseNumber})",
+    "t('reading.chapterVerse', {chapter: formatBibleNumber(calendarLanguage, chapterNumber), verse: formatBibleNumber(calendarLanguage, verseNumber)})",
+    'Bible chapter and verse numerals'
+  );
+  result = replaceOneOrKeep(
+    result,
+    "t('reading.chapter', {chapter: chapterNumber})",
+    "t('reading.chapter', {chapter: formatBibleNumber(calendarLanguage, chapterNumber)})",
+    'Bible chapter numeral'
+  );
   const styles = [
     ['styles.readingSectionTitle', 'traditionalUiTextStyle(calendarLanguage, 17 * uiScale, 25 * uiScale)', 'reading header'],
     ['styles.openReadingsText', 'traditionalUiTextStyle(calendarLanguage, 13 * uiScale, 20 * uiScale)', 'open label'],
@@ -131,6 +155,9 @@ function verify(results){
   check(helper.includes("posledovanie-ko-svyatomu-prichashcheniyu") &&
         helper.includes("t('communion.sequence')"),
     'Localized Communion prayer rule title missing');
+  check(home.includes("getCslBibleBookName(book)") &&
+        home.includes("formatBibleNumber(calendarLanguage, chapterNumber)"),
+    "Home Bible titles or numerals not localized");
   check(home.includes("getReadingProgress()") &&
         inside.includes("getReadingProgress()") &&
         inside.includes("navigation.navigate('PrayerRule', {slug: rule.slug})"),
