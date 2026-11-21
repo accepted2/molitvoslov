@@ -67,14 +67,21 @@ for(const [file,keys] of Object.entries({
 }
 const nav=read('src/components/navigation/BottomNav.js');
 assert(nav.includes('navCompact.'));
-assert(nav.includes('rgba(255, 246, 228'));
+assert(nav.includes('rgba(61, 36, 22, 0.98'));
 assert(nav.includes('numberOfLines={uiScale > 1.15 ? 2 : 1}'));
+assert(nav.includes('const rowHeight = Math.round(46 + (uiScale - 1) * 56);'));
 assert(!nav.includes('traditional ? 72 : 46'),'old oversized bar remains');
 const home=read('src/screens/MenuScreen.js');
-assert(home.includes('onLayout={event => {'));
-assert(home.includes('heroActionsBottom + 38'));
-assert(home.includes('insets.top + 95'));
-assert(!home.includes('insets.top + 49.5'));
+assert(home.includes('const cardHeight = 80 * uiScale;') ||
+       home.includes('minHeight: 80 * uiScale'));
+assert(home.includes('const categoryHeight=80*uiScale;') ||
+       home.includes('const categoryStride=80*uiScale+8;'));
+assert(home.includes('insets.top + 49.5'));
+assert(!home.includes('heroActionsBottom + 38'));
+assert(!home.includes('minHeight: Math.max(410, insets.top + 420)'));
+const header=read('src/components/navigation/FixedSectionHeader.js');
+assert(!header.includes(' + (traditional ? Math.ceil(10 * uiScale) : 0)'));
+assert(!home.includes('insets.top + 95'));
 const calendar=read('src/screens/ChurchCalendarScreen.js');
 assert(calendar.includes('mainFeast?.life_content'));
 assert(calendar.includes("translate(language,'calendarUi.oldTestament')"));
@@ -83,6 +90,7 @@ assert(csl.includes('1.18')&&csl.includes('1.12'));
 console.log('PASS: 3-language dictionary parity and interpolation, '+base.length+' top-level/leaf entries.');
 console.log('PASS: all '+files.length+' edited JavaScript/JSX modules parse.');
 console.log('PASS: search, notifications, reader menus and saved items use translated labels.');
-console.log('PASS: bottom bar no longer expands to 72px for CSL.');
-console.log('PASS: quote gradient starts below the measured search/bell row.');
+console.log('PASS: original brown BottomNav and compact 46px baseline restored.');
+console.log('PASS: compact 80px catalog rows and original top quote spacing.');
+console.log('PASS: no extra CSL header height.');
 console.log('PASS: calendar keeps original saint names and lives.');
