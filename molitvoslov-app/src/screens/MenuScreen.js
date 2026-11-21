@@ -46,6 +46,7 @@ import {traditionalUiTextStyle} from '../services/traditionalUiTypography';
 import {displayCalendarNumber} from '../services/calendarDisplayNumerals';
 import {LANGUAGE_OPTIONS, getCalendarDataLanguage} from '../services/languagePreferences';
 import {getLocalizedField} from '../services/localizedContent';
+import {getProgressEntityTitle, getProgressSectionTitle} from '../services/continueReadingDisplay';
 import {refreshCalendarWidgetsFromApp} from '../widgets/widgetCalendarRefresh';
 import {getOfflineCalendarDay, getOfflineCalendarMonth} from '../services/calendarOfflineStore';
 import {useCalendarTodayRollover, shouldAdvanceSelectedDay} from '../hooks/useCalendarTodayRollover';
@@ -1069,14 +1070,14 @@ export const MenuScreen = ({navigation}) => {
       if (!rule) return null;
 
       const ruleItem = rule.items?.find((item) => Number(item.id) === Number(progress.anchor_id));
-      const position = ruleItem?.text?.title || ruleItem?.title || t('reading.continueRule');
+      const position = getProgressSectionTitle(ruleItem, calendarLanguage) || t('reading.continueRule');
 
       return {
         id: progress.id,
         type: t('reading.prayerRule'),
         symbol: '✦',
         iconSource: resolveCategoryIcon(rule.slug, rule.name) || CATEGORY_ICONS.canons,
-        title: getLocalizedField(rule, 'name', calendarLanguage),
+        title: getProgressEntityTitle(rule, 'name', calendarLanguage, t),
         position,
         onPress: () => navigation.navigate('PrayerRule', {slug: rule.slug}),
       };
@@ -1115,7 +1116,7 @@ export const MenuScreen = ({navigation}) => {
           return {...item, progress: Number(progress.progress_percent || 0)};
         })
         .filter(Boolean),
-    [readingProgress, categories, akathists, canons, prayerRules, t]
+    [readingProgress, categories, akathists, canons, prayerRules, calendarLanguage, t]
   );
 
   const finishReading = async (progressId) => {
@@ -1656,7 +1657,7 @@ export const MenuScreen = ({navigation}) => {
                     style={({pressed}) => [styles.readingHeadingWrap, pressed && styles.pressed]}
                   >
                     <Text style={styles.readingBook}>▤</Text>
-                    <Text style={[styles.readingSectionTitle, {fontSize: 17 * uiScale}]}>{t('menu.continueReading')}</Text>
+                    <Text style={[styles.readingSectionTitle, {fontSize: 17 * uiScale}, traditionalUiTextStyle(calendarLanguage, 17 * uiScale, 25 * uiScale)]}>{t('menu.continueReading')}</Text>
                   </Pressable>
 
                   {!!activeReadings.length && (
@@ -1665,7 +1666,7 @@ export const MenuScreen = ({navigation}) => {
                       onPress={() => navigation.navigate('ContinueReading')}
                       style={({pressed}) => [styles.openReadings, pressed && styles.pressed]}
                     >
-                      <Text style={styles.openReadingsText}>{t('common.open')}</Text>
+                      <Text style={[styles.openReadingsText, traditionalUiTextStyle(calendarLanguage, 13 * uiScale, 20 * uiScale)]}>{t('common.open')}</Text>
                       <Text style={styles.openReadingsArrow}>›</Text>
                     </Pressable>
                   )}
@@ -1694,7 +1695,7 @@ export const MenuScreen = ({navigation}) => {
                       </View>
 
                       <View style={styles.latestReadingText}>
-                        <Text style={[styles.latestReadingTitle, {fontSize: 16 * uiScale}]} numberOfLines={2}>
+                        <Text style={[styles.latestReadingTitle, {fontSize: 16 * uiScale}, traditionalUiTextStyle(calendarLanguage, 16 * uiScale, 24 * uiScale)]} numberOfLines={2}>
                           {latestReading.title}
                         </Text>
 
@@ -1714,7 +1715,7 @@ export const MenuScreen = ({navigation}) => {
                           </Text>
                         </View>
 
-                        <Text style={styles.latestReadingPosition} numberOfLines={2}>
+                        <Text style={[styles.latestReadingPosition, traditionalUiTextStyle(calendarLanguage, 12 * uiScale, 19 * uiScale)]} numberOfLines={2}>
                           {latestReading.position}
                         </Text>
                       </View>
@@ -1730,8 +1731,8 @@ export const MenuScreen = ({navigation}) => {
                   </View>
                 ) : (
                   <View style={styles.emptyReading}>
-                    <Text style={styles.emptyReadingTitle}>{t('menu.lastReadingEmpty')}</Text>
-                    <Text style={styles.emptyReadingText}>{t('menu.lastReadingHint')}</Text>
+                    <Text style={[styles.emptyReadingTitle, traditionalUiTextStyle(calendarLanguage, 15 * uiScale, 22 * uiScale)]}>{t('menu.lastReadingEmpty')}</Text>
+                    <Text style={[styles.emptyReadingText, traditionalUiTextStyle(calendarLanguage, 12 * uiScale, 20 * uiScale)]}>{t('menu.lastReadingHint')}</Text>
                   </View>
                 )}
               </View>
