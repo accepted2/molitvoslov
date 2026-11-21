@@ -66,17 +66,48 @@ assert.match(runtime,/Math\.min\(28, Number\(rawSize\)/);
 assert.match(bible,/isCurrentPlaceBookmarked/);
 assert.match(bible,/name=\{isCurrentPlaceBookmarked\?'bookmark':'bookmark-outline'\}/);
 assert.match(bible,/Number\(item\.anchor_id\)===displayedBookmarkAnchor/);
-// The bookmark action must persist a bookmark and refresh saved-item state.
-// Do not require one exact JSX/JS formatting of the state updater.
-const bookmarkStart=bible.indexOf('const addCurrentBookmark');
-assert.ok(bookmarkStart>=0,'Bible bookmark action is missing');
-const bookmarkEnd=bible.indexOf('const currentChapterIndex',bookmarkStart);
-assert.ok(bookmarkEnd>bookmarkStart,'Cannot isolate Bible bookmark action');
-const bookmarkAction=bible.slice(bookmarkStart,bookmarkEnd);
-assert.match(bookmarkAction,/await\s+saveReadingBookmark\s*\(/);
-assert.match(bookmarkAction,/\bsavedItemsRef\.current\b/);
-assert.match(bookmarkAction,/\bsetSavedItems\s*\(/,
-  'Saving a bookmark must refresh the saved-items state');
+// Inspect the actual bookmark-saving callbacks, regardless of handler names.
+// A previous test required "const addCurrentBookmark" and rejected equivalent
+// local implementations even when the bookmark functionality was present.
+const {parse: parseJs}=require('@babel/parser');
+const bibleAst=parseJs(bible,{sourceType:'module',plugins:['jsx']});
+const functionTypes=new Set([
+  'FunctionDeclaration','FunctionExpression','ArrowFunctionExpression',
+  'ObjectMethod','ClassMethod'
+]);
+const handlers=[];
+const visit=(node,scope=null)=>{
+  if(!node||typeof node!=='object')return;
+  if(Array.isArray(node)){
+    for(const child of node)visit(child,scope);
+    return;
+  }
+  if(functionTypes.has(node.type)){
+    scope={calls:new Set(),body:bible.slice(node.start,node.end)};
+    handlers.push(scope);
+  }
+  if(node.type==='CallExpression'||node.type==='OptionalCallExpression'){
+    const callee=node.callee;
+    if(scope && callee?.type==='Identifier')scope.calls.add(callee.name);
+  }
+  for(const [key,value] of Object.entries(node)){
+    if(key==='loc'||key==='start'||key==='end'||key==='leadingComments'||
+       key==='trailingComments'||key==='extra'||key==='tokens')continue;
+    if(value&&typeof value==='object')visit(value,scope);
+  }
+};
+visit(bibleAst);
+const bookmarkSavers=handlers.filter(handler=>
+  handler.calls.has('saveReadingBookmark')||
+  (handler.calls.has('saveItem') &&
+   /save_type\s*:\s*['"]bookmark['"]/.test(handler.body))
+);
+assert.ok(bookmarkSavers.length>0,
+  'No active bookmark-saving callback found in BibleChapterScreen');
+assert.ok(bookmarkSavers.some(handler=>
+  handler.calls.has('setSavedItems') ||
+  (handler.calls.has('getSavedItems') && /\bsavedItemsRef\.current\s*=/.test(handler.body))
+), 'Bookmark-saving callback must refresh saved-item state');
 // The reader may pass a label explicitly, use the translated label,
 // or rely on ReaderBookmarkMenu's localized default.
 const bookmarkLabel = bible.match(/openBookmarksLabel\s*=\s*(?:"([^"]+)"|\{\s*t\('bookmarkMenu\.openPlaces'\)\s*\})/);
