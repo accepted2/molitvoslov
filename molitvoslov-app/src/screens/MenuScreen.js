@@ -1420,7 +1420,7 @@ export const MenuScreen = ({navigation}) => {
                       ]}
                     >
                       <Text style={styles.calendarWidgetButtonIcon}>▣</Text>
-                      <Text style={[styles.heroQuoteActionText, styles.calendarWidgetButtonText]} numberOfLines={1}>{calendarCopy.onScreen}</Text>
+                      <Text style={[styles.heroQuoteActionText, styles.calendarWidgetButtonText, calendarLanguage === 'csl_traditional' && styles.calendarWidgetTraditional]} numberOfLines={1}>{calendarCopy.onScreen}</Text>
                     </Pressable>
                   </View>
                 </View>
@@ -1449,7 +1449,7 @@ export const MenuScreen = ({navigation}) => {
                       )}
 
                       <View style={styles.calendarFeastTextWrap}>
-                        <Text style={styles.calendarFeastLabel}>{t('calendar.memory')}</Text>
+                        <Text style={[styles.calendarFeastLabel, calendarLanguage === 'csl_traditional' && styles.calendarQuickLabelTraditional]}>{t('calendar.memory')}</Text>
 
                         <Text style={styles.calendarFeastTitle} numberOfLines={6}>
                           {calendarToday?.main_feast?.title ||
@@ -1466,7 +1466,7 @@ export const MenuScreen = ({navigation}) => {
                         onPress={openFullCalendar}
                         style={({pressed}) => [styles.calendarQuickItem, pressed && styles.pressed]}
                       >
-                        <Text style={styles.calendarQuickLabel}>{t('calendar.fast')}</Text>
+                        <Text style={[styles.calendarQuickLabel, calendarLanguage === 'csl_traditional' && styles.calendarQuickLabelTraditional]}>{t('calendar.fast')}</Text>
 
                         <Text style={styles.calendarQuickText} >
                           {formatFast(calendarToday, calendarLanguage) || calendarCopy.noFastData}
@@ -1487,7 +1487,7 @@ export const MenuScreen = ({navigation}) => {
                             pressed && styles.pressed,
                           ]}
                         >
-                          <Text style={styles.calendarQuickLabel}>
+                          <Text style={[styles.calendarQuickLabel, calendarLanguage === 'csl_traditional' && styles.calendarQuickLabelTraditional]}>
                             {t('calendar.oldTestamentReadings')}
                           </Text>
                           <CalendarReadingText
@@ -1507,7 +1507,7 @@ export const MenuScreen = ({navigation}) => {
                           pressed && styles.pressed,
                         ]}
                       >
-                        <Text style={styles.calendarQuickLabel}>{t('calendar.gospel')}</Text>
+                        <Text style={[styles.calendarQuickLabel, calendarLanguage === 'csl_traditional' && styles.calendarQuickLabelTraditional]}>{t('calendar.gospel')}</Text>
 
                         <CalendarReadingText
                           key={`gospel-${toCalendarDate(calendarSelectedDate)}`}
@@ -1529,7 +1529,7 @@ export const MenuScreen = ({navigation}) => {
                           pressed && styles.pressed,
                         ]}
                       >
-                        <Text style={styles.calendarQuickLabel}>{t('calendar.apostle')}</Text>
+                        <Text style={[styles.calendarQuickLabel, calendarLanguage === 'csl_traditional' && styles.calendarQuickLabelTraditional]}>{t('calendar.apostle')}</Text>
 
                         <CalendarReadingText
                           key={`apostle-${toCalendarDate(calendarSelectedDate)}`}
@@ -2486,6 +2486,14 @@ const styles = StyleSheet.create({
   },
   calendarHintTraditional: {
     fontFamily: 'Ponomar', fontSize: 11, lineHeight: 16,
+    includeFontPadding: false,
+  },
+  calendarQuickLabelTraditional: {
+    fontFamily: 'Ponomar', fontSize: 11, lineHeight: 16, fontWeight: '400',
+    includeFontPadding: false,
+  },
+  calendarWidgetTraditional: {
+    fontFamily: 'Ponomar', fontSize: 12, lineHeight: 18, fontWeight: '400',
     includeFontPadding: false,
   },
   miniCalendarWeekdays: {
