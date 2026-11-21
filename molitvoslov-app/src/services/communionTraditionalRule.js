@@ -100,6 +100,8 @@ const buildTraditionalItems = () => {
         notes++;
       }
       const lastTroparia=groupIndex===26&&k===4;
+      const worshipInvocations=groupIndex===0&&k===10;
+      const toneEightTroparion=groupIndex===4;
       const tropar=(group.title==='Тропари, глас 8-й')||
         (group.title==='Песнь 9'&&k>=9&&k<=13)||lastTroparia;
       // The last troparion needs the divider after the WHOLE hymn group,
@@ -109,7 +111,9 @@ const buildTraditionalItems = () => {
       items.push({id,item_type:'text',communionTraditionalText:true,
         communionTraditionalTroparionSet:tropar,
         communionTraditionalTroparionBoundary:endOfTroparia,
-        communionTraditionalMultiVerseInitials:lastTroparia,
+        communionTraditionalMultiVerseInitials:lastTroparia||worshipInvocations,
+        communionTraditionalToneEight:toneEightTroparion,
+        communionTraditionalInternalPrayerBoundary:lastTroparia,
         communionTraditionalDoxology:rubric==='Слава'||rubric==='И ныне',
         communionTraditionalRefrain:rubric==='Припев',
         communionTraditionalInitialSmall:tropar,
