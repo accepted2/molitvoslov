@@ -64,23 +64,62 @@ function communion(s){
   return s;
 }
 function canon(s){
-  // Return immediately when already tagged, avoiding a second ternary rewrite.
-  if(s.includes('const isThreeCanonsClosingPrayer ='))return s;
-  const classify=multi(
-    '      // Display rules for prayers of the Three Combined Canons only.',
-    '      const isThreeCanonsClosingPrayer =',
-    "        canon.slug === 'tri-sovmeshchennykh-kanona' &&",
-    "        (effectiveSectionType === 'prayer' || section.grouped_prayer === true ||",
-    '         /^(?:молитв|его\s+же(?:,|\s))/u.test(normalizeCanonCue(effectiveHeading)));');
-  s=sub(s,"      sections.push({\n        className: canon.slug === 'tri-sovmeshchennykh-kanona'",
-    classify+"      sections.push({\n        className: canon.slug === 'tri-sovmeshchennykh-kanona'",
-    'Identify closing prayer');
-  s=sub(s,"        className: canon.slug === 'tri-sovmeshchennykh-kanona'",
-    "        className: (canon.slug === 'tri-sovmeshchennykh-kanona'",'Class expression');
-  s=sub(s,"          : 'canon-section',\n\n        progressAnchorId:",
-    "          : 'canon-section') +\n          (isThreeCanonsClosingPrayer ? ' three-combined-closing-prayer' : ''),\n\n        progressAnchorId:",
-    'Scoped closing-prayer class');
-  return s;
+  // An already-applied local patch needs no new modifications.
+  if(s.includes("' three-combined-closing-prayer'"))return s;
+
+  // Identify the actual canon section object by its AST rather than by
+  // whitespace or by the exact layout of the existing className ternary.
+  // Users can retain unrelated local edits to their CanonScreen.js.
+  const ast=parse(s,{sourceType:'module',plugins:['jsx']});
+  const candidates=[];
+  const propertyName=prop=>prop?.key?.name || prop?.key?.value || '';
+  const walk=node=>{
+    if(!node || typeof node!=='object')return;
+    if(Array.isArray(node)){node.forEach(walk);return;}
+    if(node.type==='CallExpression' &&
+       node.callee?.type==='MemberExpression' &&
+       node.callee.object?.type==='Identifier' &&
+       node.callee.object.name==='sections' &&
+       node.callee.property?.name==='push'){
+      const obj=node.arguments?.[0];
+      if(obj?.type==='ObjectExpression'){
+        const fields=obj.properties||[];
+        const has=key=>fields.some(prop=>propertyName(prop)===key);
+        const classField=fields.find(prop=>propertyName(prop)==='className');
+        if(classField?.value && has('progressAnchorId') && has('rows')){
+          const originalExpr=s.slice(classField.value.start,classField.value.end);
+          if(/tri-sovmeshchennykh-kanona|three-combined-canon/.test(originalExpr)){
+            candidates.push({start:classField.value.start,end:classField.value.end,
+              originalExpr});
+          }
+        }
+      }
+    }
+    for(const [key,value] of Object.entries(node)){
+      if(key==='loc' || key==='extra' || key.includes('Comments'))continue;
+      if(value && typeof value==='object')walk(value);
+    }
+  };
+  walk(ast);
+  if(candidates.length!==1)throw Error(
+    'CanonScreen: expected exactly one combined-canon section builder, found '+
+    candidates.length+'. Local edits preserved; NO FILES MODIFIED.');
+  const target=candidates[0];
+
+  // Use the existing section metadata, not the formatting or column order.
+  // This class affects only the combined canon's prayer sections. The separate
+  // CSS selectors cannot influence any other canon or prayer reader.
+  const onlyPrayer=String.raw`(canon?.slug === 'tri-sovmeshchennykh-kanona' && (
+    section?.section_type === 'prayer' ||
+    section?.display_section_type === 'prayer' ||
+    section?.grouped_prayer === true ||
+    /^(?:молитв|его\s+же(?:,|\s))/u.test(
+      String(section?.heading || '').normalize('NFD')
+        .replace(/\p{M}/gu,'').trim().toLowerCase()
+    )
+  ) ? ' three-combined-closing-prayer' : '')`;
+  const updated='('+target.originalExpr+') + '+onlyPrayer;
+  return s.slice(0,target.start)+updated+s.slice(target.end);
 }
 function canonCSS(s){
   const css=multi(
