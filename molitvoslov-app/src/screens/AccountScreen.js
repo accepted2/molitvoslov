@@ -31,6 +31,7 @@ import {queueAccountPreferencePatch, syncAccountPreferences} from '../services/a
 import {subscribeReadingSettings} from '../services/readerPreferences';
 import {useInterfaceScale} from '../context/InterfaceScaleContext';
 import {traditionalUiTextStyle} from '../services/traditionalUiTypography';
+import {ProjectSupportSection} from '../components/settings/ProjectSupportSection';
 
 const MODE_CHOICES = [
   {value: READER_LANGUAGE_MODES.CHURCH, labelKey: 'modeChurch'},
@@ -391,36 +392,36 @@ export const AccountScreen = ({navigation}) => {
             </View>
           ) : googleUser ? (
             <View style={styles.card}>
-              <Text style={styles.label}>{t('account.signedInGoogle')}</Text>
+              <Text style={[styles.label,cslText(14,22)]}>{t('account.signedInGoogle')}</Text>
 
               {!!googleUser.name && <Text style={styles.username}>{googleUser.name}</Text>}
 
               {!!googleUser.email && <Text style={styles.googleEmail}>{googleUser.email}</Text>}
               <Pressable onPress={verifyCloudSettings}
                 accessibilityRole="button" style={styles.settingOption}>
-                <Text style={styles.settingText}>{t('accountSettings.syncCheck')}</Text>
+                <Text style={[styles.settingText,cslText(14,22)]}>{t('accountSettings.syncCheck')}</Text>
               </Pressable>
               {!!settingsCloudStatus && (
-                <Text style={styles.settingHint}>{settingsCloudStatus}</Text>
+                <Text style={[styles.settingHint,cslText(12,19)]}>{settingsCloudStatus}</Text>
               )}
 
               <Pressable disabled={deletingAccount} onPress={deleteAccount} style={{paddingVertical: 12, marginTop: 14}}>
-                <Text style={{color: '#A33A32', fontWeight: '700'}}>{t('accountSettings.deleteAccount')}</Text>
+                <Text style={[{color: '#A33A32', fontWeight: '700'},cslText(14,22)]}>{t('accountSettings.deleteAccount')}</Text>
               </Pressable>
               <Pressable
                 onPress={googleLogout}
                 style={({pressed}) => [styles.button, pressed && styles.pressed]}
               >
-                <Text style={styles.buttonText}>{t('account.signOut')}</Text>
+                <Text style={[styles.buttonText,cslText(16,24)]}>{t('account.signOut')}</Text>
               </Pressable>
             </View>
           ) : (
             <View style={styles.card}>
-              <Text style={styles.loginDescription}>
+              <Text style={[styles.loginDescription,cslText(15,23)]}>
                 {t('account.loginDescription')}
               </Text>
 
-              <Text style={styles.loginHint}>
+              <Text style={[styles.loginHint,cslText(13,20)]}>
                 {t('account.loginHint')}
               </Text>
 
@@ -440,11 +441,12 @@ export const AccountScreen = ({navigation}) => {
                 {googleLoading ? (
                   <ActivityIndicator color={colors.text} />
                 ) : (
-                  <Text style={styles.googleButtonText}>{t('account.continueGoogle')}</Text>
+                  <Text style={[styles.googleButtonText,cslText(16,24)]}>{t('account.continueGoogle')}</Text>
                 )}
               </Pressable>
             </View>
           )}
+          <ProjectSupportSection />
           <View style={[styles.card, {marginTop: 16, gap: 12}]}>
             <Text style={[styles.sectionTitle, {fontSize:20*uiScale},cslText(20,28)]}>{t('accountSettings.settings')}</Text>
             <Text style={[styles.settingCaption, {fontSize:15*uiScale},cslText(15,22)]}>{t('accountSettings.interfaceLanguage')}</Text>
@@ -573,22 +575,22 @@ export const AccountScreen = ({navigation}) => {
           </View>
         <View style={{marginTop:16,padding:14,borderRadius:12,
           backgroundColor:'#F7E8CF',borderWidth:1,borderColor:'#E2CCAA',gap:12}}>
-          <Text style={[styles.settingCaption,{fontSize:15*uiScale}]}>
+          <Text style={[styles.settingCaption,{fontSize:15*uiScale},cslText(15,23)]}>
             {t('accountSettings.privacyHeading')}
           </Text>
           <Pressable accessibilityRole="link"
             onPress={()=>openPolicyPage('privacy-policy/')}>
-            <Text style={[styles.settingText,{textDecorationLine:'underline'}]}>
+            <Text style={[styles.settingText,{textDecorationLine:'underline'},cslText(14,22)]}>
               {t('accountSettings.privacyPolicy')}
             </Text>
           </Pressable>
           <Pressable accessibilityRole="link"
             onPress={()=>openPolicyPage('account-deletion/')}>
-            <Text style={[styles.settingText,{textDecorationLine:'underline'}]}>
+            <Text style={[styles.settingText,{textDecorationLine:'underline'},cslText(14,22)]}>
               {t('accountSettings.onlineDelete')}
             </Text>
           </Pressable>
-          <Text style={styles.settingHint}>
+          <Text style={[styles.settingHint,cslText(12,20)]}>
             {t('accountSettings.onlineDeleteHint')}
           </Text>
         </View>
@@ -599,7 +601,7 @@ export const AccountScreen = ({navigation}) => {
             onPress={()=>setSourcesExpanded(value=>!value)}
             style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center',
               minHeight:38}}>
-            <Text style={[styles.settingText,{fontWeight:'700'}]}>{t('accountSettings.licenses')}</Text>
+            <Text style={[styles.settingText,{fontWeight:'700'},cslText(14,23)]}>{t('accountSettings.licenses')}</Text>
             <Ionicons name={sourcesExpanded?'chevron-up':'chevron-down'}
               size={19} color="#875627"/>
           </Pressable>
