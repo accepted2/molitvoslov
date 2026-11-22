@@ -91,7 +91,8 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const {feast, date} = route.params || {};
   const {width, height} = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const uk = language === 'uk';
+  const uk = feast?.preview_card && feast?.preview_language
+    ? feast.preview_language === 'uk' : language === 'uk';
   const title = (uk && feast?.title_uk) || feast?.title || '';
   const bundled = getBundledCalendarIconSource(feast);
   const image = bundled || (feast?.icon_url ? {uri: feast.icon_url} : null);
