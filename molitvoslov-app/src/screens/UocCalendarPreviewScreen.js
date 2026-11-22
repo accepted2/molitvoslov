@@ -26,7 +26,7 @@ const loadJson = async (url) => {
   return response.json();
 };
 
-const buildFeast = (card) => {
+const buildFeast = (card, previewLanguage = 'uk') => {
   const selected = (kind) => {
     const hymns = (card.hymns || []).filter((h) => h.kind === kind);
     return hymns.find((h) => h.display_choice && h.language === 'uk')
@@ -57,12 +57,14 @@ const buildFeast = (card) => {
     magnification_content: magnification?.content || '',
     magnification_content_uk: magnification?.language === 'uk' ? magnification.content : '',
     preview_card: true,
+    preview_language: previewLanguage,
   };
 };
 
 export const UocCalendarPreviewScreen = ({navigation}) => {
   const insets = useSafeAreaInsets();
   const [dateValue, setDateValue] = useState('2026-11-22');
+  const [previewLanguage, setPreviewLanguage] = useState('uk');
   const [day, setDay] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -92,13 +94,13 @@ export const UocCalendarPreviewScreen = ({navigation}) => {
     setError('');
     try {
       const card = await loadJson(API + '/api/card/' + cardId);
-      navigation.navigate('SaintDetail', {feast: buildFeast(card), date: dateValue});
+      navigation.navigate('SaintDetail', {feast: buildFeast(card, previewLanguage), date: dateValue});
     } catch (e) {
       setError(e?.message || 'Не вдалося відкрити картку.');
     } finally {
       setLoading(false);
     }
-  }, [dateValue, navigation]);
+  }, [dateValue, navigation, previewLanguage]);
 
   return (
     <View style={styles.screen}>
@@ -108,6 +110,10 @@ export const UocCalendarPreviewScreen = ({navigation}) => {
           <Text style={styles.eyebrow}>УПЦ · ЮЛІАНСЬКИЙ КАЛЕНДАР · ТІЛЬКИ ПЕРЕГЛЯД</Text>
           <Text style={styles.heading}>Нові картки святих</Text>
           <Text style={styles.meta}>Стара база, читання та налаштування застосунку не змінюються.</Text>
+          <View style={styles.dateRow}>
+            <Pressable onPress={() => setPreviewLanguage('uk')} style={[styles.example, previewLanguage === 'uk' && styles.languageSelected]}><Text>UK</Text></Pressable>
+            <Pressable onPress={() => setPreviewLanguage('ru')} style={[styles.example, previewLanguage === 'ru' && styles.languageSelected]}><Text>RU</Text></Pressable>
+          </View>
           <View style={styles.dateRow}>
             <TextInput value={dateValue} onChangeText={setDateValue}
               autoCorrect={false} keyboardType="numbers-and-punctuation"
@@ -196,6 +202,7 @@ const styles = StyleSheet.create({
   buttonText: {color: '#FFF6E6', fontWeight: '700'},
   example: {paddingHorizontal: 12, paddingVertical: 10, borderRadius: 16, backgroundColor: '#EAD6B7', marginRight: 7},
   exampleText: {color: '#583C26', fontSize: 12},
+  languageSelected: {backgroundColor: '#D4AA79', borderColor: '#A87740', borderWidth: 1},
   listHeading: {fontFamily: 'serif', fontSize: 18, fontWeight: '700', marginTop: 12, marginBottom: 6, color: '#482E1B'},
   card: {borderWidth: 1, borderColor: '#E8D5B4', backgroundColor: '#FFF9EE', borderRadius: 15, padding: 12, flexDirection: 'row', gap: 12, marginVertical: 5, alignItems: 'center'},
   iconImage: {width: 68, height: 84, borderRadius: 6, backgroundColor: '#EFE0C6'},
