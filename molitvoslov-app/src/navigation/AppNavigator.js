@@ -33,6 +33,7 @@ import {PersonalPrayerEditorScreen} from '../screens/PersonalPrayerEditorScreen'
 import {PrayerBookReaderScreen} from '../screens/PrayerBookReaderScreen';
 import {ChurchCalendarScreen} from '../screens/ChurchCalendarScreen';
 import {SaintDetailScreen} from '../screens/SaintDetailScreen';
+import {UocCalendarPreviewScreen} from '../screens/UocCalendarPreviewScreen';
 
 import {colors} from '../theme';
 
@@ -45,6 +46,9 @@ const linking = {
     screens: {
       ChurchCalendar: {
         path: 'calendar/:date',
+      },
+      UocCalendarPreview: {
+        path: 'uoc-preview',
       },
     },
   },
@@ -274,6 +278,11 @@ export const AppNavigator = () => {
         <Stack.Screen
           name="SaintDetail"
           component={SaintDetailScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="UocCalendarPreview"
+          component={UocCalendarPreviewScreen}
           options={{headerShown: false}}
         />
 
