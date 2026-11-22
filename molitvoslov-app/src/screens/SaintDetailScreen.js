@@ -99,6 +99,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const troparion = (uk && feast?.troparion_content_uk) || feast?.troparion_content;
   const kontakion = (uk && feast?.kontakion_content_uk) || feast?.kontakion_content;
   const prayer = (uk && feast?.prayer_content_uk) || feast?.prayer_content;
+  const magnification = (uk && feast?.magnification_content_uk) || feast?.magnification_content;
   const large = width >= 560;
   const heroImageWidth = large ? 180 : Math.min(132, width * 0.34);
   const lifeHeight = Math.max(235, Math.min(390, height * 0.39));
@@ -150,7 +151,8 @@ export const SaintDetailScreen = ({route, navigation}) => {
           text={kontakion}
           subtitle={feast?.kontakion_echo ? 'Глас ' + feast.kontakion_echo : feast?.kontakion_title}
         />
-        {!!prayer && <Accordion title={uk ? 'Молитва' : 'Молитва'} icon="☦" text={prayer} />}
+        {!!prayer && <Accordion title="Молитва" icon="☦" text={prayer} />}
+        {!!magnification && <Accordion title={uk ? 'Величання' : 'Величание'} icon="♫" text={magnification} />}
         {!!date && (
           <View style={styles.dateCard}>
             <Text style={styles.dateIcon}>▣</Text>
@@ -160,7 +162,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
             </View>
           </View>
         )}
-        {!life && !troparion && !kontakion && !prayer && (
+        {!life && !troparion && !kontakion && !prayer && !magnification && (
           <Text style={styles.empty}>
             {uk ? 'Додаткових текстів поки немає.' : 'Дополнительных текстов пока нет.'}
           </Text>
@@ -170,10 +172,10 @@ export const SaintDetailScreen = ({route, navigation}) => {
         <Pressable
           style={styles.bottomButton}
           accessibilityRole="button"
-          onPress={() => navigation.navigate('ChurchCalendar', date ? {date} : {})}
+          onPress={() => navigation.navigate(feast?.preview_card ? 'UocCalendarPreview' : 'ChurchCalendar', date && !feast?.preview_card ? {date} : {})}
         >
           <Text style={styles.bottomButtonText}>
-            ▣ {uk ? 'Перейти до календаря' : 'Перейти в календарь'} ›
+            ▣ {feast?.preview_card ? (uk ? 'До перегляду УПЦ' : 'К просмотру УПЦ') : (uk ? 'Перейти до календаря' : 'Перейти в календарь')} ›
           </Text>
         </Pressable>
       </View>
