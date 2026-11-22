@@ -3,7 +3,7 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import {
   ActivityIndicator, Image, Pressable, ScrollView, StyleSheet,
-  Text, TextInput, View, useWindowDimensions,
+  Text, TextInput, View,
 } from 'react-native';
 import {StatusBar} from 'expo-status-bar';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -62,7 +62,6 @@ const buildFeast = (card) => {
 
 export const UocCalendarPreviewScreen = ({navigation}) => {
   const insets = useSafeAreaInsets();
-  const {width} = useWindowDimensions();
   const [dateValue, setDateValue] = useState('2026-11-22');
   const [day, setDay] = useState(null);
   const [loading, setLoading] = useState(false);
