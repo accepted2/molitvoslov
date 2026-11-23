@@ -72,14 +72,27 @@ const extraAccordions=[
 ""].join('\n');
 const prayerAccord="\n        {!!prayer && <Accordion";
 must(next.includes(prayerAccord),'Prayer accordion insertion missing');
-next=next.replace(prayerAccord,"\n"+extraAccordions+prayerAccord);
+const altSplit='        {!!kontakionAlt && <Accordion';
+const parts=extraAccordions.split(altSplit);
+must(parts.length===2,'Cannot separate the 2 alternative hymn blocks');
+const troparionBlock=parts[0].trimEnd();
+const kontakionBlock=altSplit+parts[1];
+const beforeKontakion='\n        <Accordion\n          title="Кондак"';
+must(next.includes(beforeKontakion),'Main kontakion Accordion anchor missing');
+next=next.replace(beforeKontakion,'\n'+troparionBlock+beforeKontakion);
+next=next.replace(prayerAccord,'\n'+kontakionBlock+prayerAccord);
+const subtitleStyle='style={styles.subtitle}';
+must(next.includes(subtitleStyle),'Subtitle style anchor missing');
+next=next.replace(subtitleStyle,
+  "style={[styles.subtitle, script === 'csl' && styles.ponomarSubtitle]}");
 const noContent="!life && !troparion && !kontakion && !prayer";
 must(next.includes(noContent),'Empty card expression missing');
 next=next.replace(noContent,"!life && !troparion && !kontakion && !troparionAlt && !kontakionAlt && !prayer");
 const fontStyle="  body: {\n    fontFamily: 'serif',";
 must(next.includes(fontStyle),'Body style declaration missing');
 next=next.replace(fontStyle,
-    "  ponomarBody: {fontFamily: 'Ponomar', fontSize: 19, lineHeight: 32},\n"+fontStyle);
+    "  ponomarBody: {fontFamily: 'Ponomar', fontSize: 19, lineHeight: 32},\n" +
+    "  ponomarSubtitle: {fontFamily: 'Ponomar', fontSize: 15, lineHeight: 24},\n" + fontStyle);
 parse(next);
 console.log('PREVIEW: SaintDetailScreen syntax PASS. '+old.length+' -> '+next.length+' characters.');
 if(!apply){console.log('CHECK mode. No changes made.');process.exit(0)}
