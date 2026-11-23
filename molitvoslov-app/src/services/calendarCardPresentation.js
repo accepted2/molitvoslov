@@ -74,7 +74,7 @@ export const getCalendarCardHymns = (feast, language = 'ru') => {
     const label = row.kind + ':' + row.variant;
     const readable = readableCivilHymn(row.text);
     const script = String(row.language).toLowerCase();
-    const rank = !readable ? 100
+    const rank = !readable || script === 'church' || script === 'csl' ? 100
       : script === 'uk' && uk ? 0
       : script === 'civil' || script === 'ru' ? 1
       : row.source === 'fields' ? 2
@@ -99,7 +99,9 @@ export const getCalendarCardHymns = (feast, language = 'ru') => {
       if (seen.has(normalized)) continue;
       seen.add(normalized);
       used += 1;
-      const first = used === 1;
+      // Variant >1 stays labelled "Иной..." even if the primary hymn
+      // has not yet passed civic conversion and is temporarily hidden.
+      const first = used === 1 && row.variant === 1;
       const title = kind === 'troparion'
         ? first ? (uk ? 'Тропар' : 'Тропарь')
           : (uk ? 'Інший тропар' : 'Иной тропарь')
