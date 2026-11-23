@@ -39,6 +39,7 @@ const toCivilLetters = (value) => {
   result=result.normalize('NFD')
     .replace(/[\u0300-\u036f\u0483\u0486\u0487\u2de0-\u2dff]/g, '');
   result=result.replace(/([А-Яа-яЁё])ъ(?=$|[\s.,;:!?—–)\]»])/gu,'$1');
+  result=result.replace(/ыи(?=$|[\s.,;:!?—–)\]»])/gu,'ый');
   result=result.replace(/(^|\n)(\s*)Ин\s+(тропарь|кондак)/giu, (_all,start,pad,kind) =>
     start+pad+'Иной '+kind);
   result=result.replace(/\u00a0/g,' ').replace(/[ \t]+(?=\n)/g,'')
