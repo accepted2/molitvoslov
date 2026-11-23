@@ -8,8 +8,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .calendar_import import ensure_day, ensure_month
-from .calendar_models import CalendarDay
-from .calendar_serializers import CalendarDaySerializer
+from .calendar_models import CalendarDay, CalendarFeast
+from .calendar_serializers import CalendarDaySerializer, CalendarFeastSerializer
 
 
 def request_language(request):
@@ -34,6 +34,24 @@ def serialize_day(day, request):
         day,
         context={"request": request},
     ).data
+
+
+class CalendarFeastDetailView(APIView):
+    """Read only one current canonical card without re-importing any year."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, source_id=None, pk=None):
+        filters = {"source_id": source_id} if source_id is not None else {"pk": pk}
+        feast = CalendarFeast.objects.filter(**filters).first()
+        if feast is None:
+            return Response(
+                {"detail": "Карточка святого не найдена."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        response = Response(CalendarFeastSerializer(feast, context={"request": request}).data)
+        response["Cache-Control"] = "no-store"
+        return response
 
 
 class CalendarDayView(APIView):

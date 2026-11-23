@@ -1,4 +1,7 @@
 from django.contrib import admin
+from django import forms
+from .calendar_editor_icon_upload import validate_icon_upload, upload_editor_icon
+from .calendar_icon_storage import cloudinary_configured
 
 from .models import (
     Category,
@@ -1072,8 +1075,30 @@ class PersonalPrayerPhotoAdmin(admin.ModelAdmin):
 # =========================================================
 
 
+class CalendarFeastAdminForm(forms.ModelForm):
+    icon_upload = forms.FileField(
+        required=False,
+        label="Загрузить икону (PNG, JPEG, WebP)",
+        validators=[validate_icon_upload],
+    )
+
+    class Meta:
+        model = CalendarFeast
+        fields = "__all__"
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("icon_upload"):
+            if not cleaned.get("icon_rights_note", "").strip():
+                self.add_error("icon_rights_note", "Укажите источник и права на изображение.")
+            if not cloudinary_configured():
+                self.add_error("icon_upload", "Cloudinary не настроен. Используйте URL иконы.")
+        return cleaned
+
+
 @admin.register(CalendarFeast)
 class CalendarFeastAdmin(admin.ModelAdmin):
+    form = CalendarFeastAdminForm
     list_display = [
         "source_id",
         "title_preview",
@@ -1164,7 +1189,9 @@ class CalendarFeastAdmin(admin.ModelAdmin):
             "Икона",
             {
                 "fields": [
+                    "icon_upload",
                     "icon_url",
+                    "icon_rights_note",
                     "icon_preview",
                 ]
             },
@@ -1234,6 +1261,39 @@ class CalendarFeastAdmin(admin.ModelAdmin):
             },
         ),
         (
+            "Молитва — русский / украинский",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "prayer_title", "prayer_content",
+                    "prayer_title_uk", "prayer_content_uk",
+                ],
+            },
+        ),
+        (
+            "Величание — русский / украинский",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "magnification_title", "magnification_content",
+                    "magnification_title_uk", "magnification_content_uk",
+                ],
+            },
+        ),
+        (
+            "Редакторская защита и источники",
+            {
+                "fields": [
+                    "source_reference",
+                    "manually_edited_fields",
+                ],
+                "description": (
+                    "Изменённые вручную поля автоматически защищаются от импорта. "
+                    "Чтобы снова разрешить их замену, удалите имена полей из списка."
+                ),
+            },
+        ),
+        (
             "Служебное",
             {
                 "fields": [
@@ -1242,6 +1302,38 @@ class CalendarFeastAdmin(admin.ModelAdmin):
             },
         ),
     ]
+
+    # Imported source identifiers are the permanent links from every year.
+    # Do not let an editor silently reassign existing cards to another saint.
+    def get_readonly_fields(self, request, obj=None):
+        fields = list(super().get_readonly_fields(request, obj))
+        if obj is not None:
+            fields.append("source_id")
+        return fields
+
+    def save_model(self, request, obj, form, change):
+        protected = {
+            "title", "short_title", "title_uk", "short_title_uk",
+            "icon_url", "julian_month", "julian_day", "easter_offset",
+            "date_type", "celebration_type", "celebration_rank",
+            "troparion_title", "troparion_content", "troparion_echo",
+            "troparion_title_uk", "troparion_content_uk",
+            "kontakion_title", "kontakion_content", "kontakion_echo",
+            "kontakion_title_uk", "kontakion_content_uk",
+            "life_title", "life_content", "life_title_uk", "life_content_uk",
+            "description", "description_uk", "all_dates",
+            "prayer_title", "prayer_content", "prayer_title_uk", "prayer_content_uk",
+            "magnification_title", "magnification_content",
+            "magnification_title_uk", "magnification_content_uk",
+        }
+        changed = set(form.changed_data or []) & protected
+        upload = (getattr(form, "cleaned_data", {}) or {}).get("icon_upload")
+        if upload:
+            obj.icon_url = upload_editor_icon(upload)
+            changed.add("icon_url")
+        # Respect edits to the lock list itself, including explicit removals.
+        obj.manually_edited_fields = sorted(set(obj.manually_edited_fields or []) | changed)
+        super().save_model(request, obj, form, change)
 
     def get_queryset(self, request):
         return (

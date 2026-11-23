@@ -120,10 +120,19 @@ def _localized_assignments(data, language):
         f"life_title{suffix}": data.get("life_title") or "",
         f"life_content{suffix}": data.get("life_content") or "",
         f"description{suffix}": data.get("description") or "",
+        f"prayer_title{suffix}": data.get("prayer_title") or "",
+        f"prayer_content{suffix}": data.get("prayer_content") or "",
+        f"magnification_title{suffix}": data.get("magnification_title") or "",
+        f"magnification_content{suffix}": data.get("magnification_content") or "",
     }
 
 
 def _assign_imported_value(obj, field, value, overwrite_existing=False):
+    # Django-admin edits always win, even over an explicit force-import.
+    # Preserve intentionally cleared fields as well as nonempty corrections.
+    if field in (getattr(obj, "manually_edited_fields", None) or []):
+        return False
+
     if value in [None, ""]:
         return False
 
