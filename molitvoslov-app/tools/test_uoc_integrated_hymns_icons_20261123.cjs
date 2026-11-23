@@ -137,8 +137,10 @@ const saintScreen=require('node:fs').readFileSync(
   path.join(root,'src/screens/SaintDetailScreen.js'),'utf8');
 const calendarScreen=require('node:fs').readFileSync(
   path.join(root,'src/screens/ChurchCalendarScreen.js'),'utf8');
-assert.ok(saintScreen.includes('subtitle={hymn.subtitle}\n            isHymn'));
-assert.ok(calendarScreen.includes('text={hymn.text}\n              isHymn'));
+assert.match(saintScreen, /subtitle=\{hymn\.subtitle\}\s+isHymn\b/,
+  'Saint hymn accordion must preserve its subtitle and hymn-specific formatting');
+assert.match(calendarScreen, /text=\{hymn\.text\}\s+isHymn\b/,
+  'Calendar hymn block must preserve its text and hymn-specific formatting');
 assert.ok(saintScreen.includes('hymnSectionLabel'));
 assert.ok(calendarScreen.includes('hymnSectionLabel'));
 
