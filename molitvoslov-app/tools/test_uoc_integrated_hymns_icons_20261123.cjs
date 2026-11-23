@@ -116,5 +116,26 @@ const blank=presenter.getCalendarCardHymns({
   troparion_content:'',protected_hymn_fields:['troparion_content'],
 },'ru');
 assert.ok(blank.sections.every(h=>h.kind!=='troparion'||h.variant!==1));
+const realOldCalendarPeterPaul=presenter.getCalendarCardHymns({
+  id:1593,
+  source_id:3069,
+  title:'Святых славных и всехвальных и первоверховных апостолов Петра и Павла',
+  icon_url:'',
+},'ru');
+assert.equal(realOldCalendarPeterPaul.sections.length,2,
+  'Old July calendar must resolve approved Peter/Paul feast alias');
+assert.ok(realOldCalendarPeterPaul.sections.every(
+  section=>section.origin==='canonical_catalogue'));
+assert.equal(icons.selectUocIcon({
+  id:1593,
+  source_id:3069,
+  title:'Святых славных и всехвальных и первоверховных апостолов Петра и Павла',
+}).includes('Slavni-i-vsekhvalni-pervoverkhovni-apostoly'),true);
+const similarlyNamedUnrelated=presenter.getCalendarCardHymns({
+  title:'Святого апостола Петра, ученика первоверховного апостола Павла',
+},'ru');
+assert.equal(similarlyNamedUnrelated.sections.length,0,
+  'Different individual saint must not inherit the feast hymns');
+
 console.log('PASS: 1267 cards, 2821 source hymns, 226 patched variants, '+
   tested+' readable rendered sections; 2734 unique icons, 598 quarantined; manual override and alternate fields.');
