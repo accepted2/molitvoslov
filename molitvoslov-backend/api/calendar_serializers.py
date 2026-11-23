@@ -40,6 +40,11 @@ class CalendarFeastSerializer(serializers.ModelSerializer):
     life_title = serializers.SerializerMethodField()
     life_content = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
+    prayer_title = serializers.SerializerMethodField()
+    prayer_content = serializers.SerializerMethodField()
+    magnification_title = serializers.SerializerMethodField()
+    magnification_content = serializers.SerializerMethodField()
+    missing_uk_fields = serializers.SerializerMethodField()
 
     class Meta:
         model = CalendarFeast
@@ -64,13 +69,21 @@ class CalendarFeastSerializer(serializers.ModelSerializer):
             "life_title",
             "life_content",
             "description",
+            "prayer_title",
+            "prayer_content",
+            "magnification_title",
+            "magnification_content",
+            "missing_uk_fields",
+            "source_reference",
+            "updated_at",
             "all_dates",
         ]
 
     def _get(self, obj, field):
         language = _language_from_context(self.context)
 
-        if language == "uk" and not same_feast_identity(obj.title, obj.title_uk):
+        manually_verified = f"{field}_uk" in (obj.manually_edited_fields or [])
+        if language == "uk" and not manually_verified and not same_feast_identity(obj.title, obj.title_uk):
             return getattr(obj, field, "")
 
         return _localized(obj, field, language)
@@ -101,6 +114,29 @@ class CalendarFeastSerializer(serializers.ModelSerializer):
 
     def get_description(self, obj):
         return self._get(obj, "description")
+
+    def get_prayer_title(self, obj):
+        return self._get(obj, "prayer_title")
+
+    def get_prayer_content(self, obj):
+        return self._get(obj, "prayer_content")
+
+    def get_magnification_title(self, obj):
+        return self._get(obj, "magnification_title")
+
+    def get_magnification_content(self, obj):
+        return self._get(obj, "magnification_content")
+
+    def get_missing_uk_fields(self, obj):
+        if _language_from_context(self.context) != "uk":
+            return []
+        return [
+            field for field in (
+                "title", "life_content", "troparion_content",
+                "kontakion_content", "prayer_content", "magnification_content",
+            )
+            if getattr(obj, field, "") and not getattr(obj, f"{field}_uk", "")
+        ]
 
 
 class CalendarReadingSerializer(serializers.ModelSerializer):
