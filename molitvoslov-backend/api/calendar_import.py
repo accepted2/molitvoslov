@@ -9,6 +9,7 @@ from urllib.request import Request, urlopen
 from django.db import transaction
 
 from .calendar_localization import same_feast_identity
+from .calendar_hymn_normalization import normalize_hymn_source_fields
 from .calendar_models import CalendarDay, CalendarFeast, CalendarReading
 
 
@@ -127,10 +128,14 @@ def _localized_assignments(data, language):
         f"magnification_title{suffix}": data.get("magnification_title") or "",
         f"magnification_content{suffix}": data.get("magnification_content") or "",
     }
-    return {
+    cleaned = {
         field: clean_source_field(field, value)
         for field, value in assignments.items()
     }
+    normalized, _review_issues = normalize_hymn_source_fields(cleaned)
+    # Any ambiguous extra hymn remains in its original source field for review.
+    # Editorial/admin fields are protected by _assign_imported_value.
+    return normalized
 
 
 def _assign_imported_value(obj, field, value, overwrite_existing=False):
