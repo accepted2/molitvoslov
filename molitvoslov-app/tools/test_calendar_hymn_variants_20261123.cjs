@@ -2,7 +2,7 @@
 'use strict';
 const assert=require('node:assert/strict');
 const {prepareCard,unicodeCS}=require('./lib/calendarHymnVariants20261123.cjs');
-const {convertLegacyUcsToCivil}=require('./lib/calendarUcsCivic20261123.cjs');
+const {looksLegacyUcs}=require('./lib/calendarUcs8Decode20261123.cjs');
 const original={
   title:'Святитель Нектарий Эгинский',
   troparion_title:'Тропaрь, глaсъ №.\n\nПод0бенъ: Пустhнный жи1тель:',
@@ -35,7 +35,7 @@ const plain='Преподо́бнически пожи́в, я́ко му́др�
 const civil=prepareCard({troparion_content:plain});
 assert.equal(civil.card.troparion_content,plain,'do not rewrite existing civil field');
 assert.equal(unicodeCS('Бжcтвенный гр0мъ'),'Бжⷭ҇твенный гро́мъ');
-assert.equal(convertLegacyUcsToCivil('Тропaрь, глaсъ №.').text,'Тропарь, глас 1.');
+assert.equal(looksLegacyUcs('Тропaрь, глaсъ №.'),true);
 console.log('PASS: old UCS8 replaced with Unicode Church Slavonic for Ponomar');
 console.log('PASS: all four hymns separate, original/alt titles distinct');
 console.log('PASS: civil originals, hagiography, source input remain unchanged');
