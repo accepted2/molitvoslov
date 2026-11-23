@@ -60,7 +60,7 @@ for (const shard of allCivilShards) {
 }
 const fullCivilRows = feast => {
   const id = canonicalId(feast);
-  if (id && civilById.has(id)) return civilById.get(id).hymns || [];
+  if (id) return civilById.get(id)?.hymns || [];
   for (const value of [feast?.title_ru, feast?.title_uk, feast?.title]) {
     const key = simpleTitle(value);
     if (!key || ambiguousNames.has(key)) continue;
@@ -74,7 +74,7 @@ const canonicalId = feast =>
   String(feast?.card_id || feast?.blagovist_card_id || feast?.article_key || '').trim();
 const correctedRows = feast => {
   const id = canonicalId(feast);
-  if (id && indexedId.has(id)) return indexedId.get(id);
+  if (id) return indexedId.get(id) || [];
   // Do not apply a hymn just because it is on the same calendar day.
   // Title-only fallback requires exact normalized same-person identity.
   const title = simpleTitle(feast?.title_ru || feast?.title || '');
@@ -136,6 +136,8 @@ export const uniqueCalendarCards = cards => {
 export const getCalendarCardHymns = (feast, language = 'ru') => {
   if (!feast) return {sections: [], missing: []};
   const options = [];
+  const protectedFields = new Set(feast.protected_hymn_fields || []);
+  const deliberatelyBlank = new Set();
   const add = (kind, variant, content, heading, script, origin, priority) => {
     if (!TYPES.includes(kind) || !content) return;
     const cleaned = civilize(content, script);
@@ -165,14 +167,17 @@ export const getCalendarCardHymns = (feast, language = 'ru') => {
       'api', lang === 'uk' && language === 'uk' ? 0 : lang === 'civil' ? 1 : 5);
   }
   for (const kind of TYPES) {
-    for (const [suffix, variant] of [['', 1], ['_alt', 2]]) {
-      const text = localized(feast, kind + suffix + '_content', language);
+    for (const [suffix, variant] of [['', 1], ['_alternate', 2], ['_alt', 2]]) {
+      const field = kind + suffix + '_content';
+      const text = localized(feast, field, language);
+      const manual = protectedFields.has(field) || protectedFields.has(field + '_uk');
+      if (manual && !text) deliberatelyBlank.add(kind + ':' + variant);
       const heading = localized(feast, kind + suffix + '_title', language);
       const script = localized(feast, kind + suffix + '_script', language);
       const isCivil = !!text && script !== 'csl' && script !== 'church'
         && !looksLegacyUcs(String(text)) && !OLD_LETTERS.test(String(text));
       add(kind, variant, text, heading, script, 'fields',
-        isCivil ? 2 : 7);
+        manual ? -2 : isCivil ? 2 : 7);
     }
   }
   // Canonical civil/UK texts for 1,267 cards (2,821 variants), including
@@ -187,7 +192,7 @@ export const getCalendarCardHymns = (feast, language = 'ru') => {
   // comparisons and can fill variants when a later shard is incomplete.
   for (const h of correctedRows(feast)) {
     const kind = h.kind === 'tropar' ? 'troparion' : 'kontakion';
-    add(kind, h.variant, h.content, h.heading, 'civil', 'uoc_210', 3);
+    add(kind, h.variant, h.content, h.heading, 'civil', 'uoc_210', 6);
   }
 
   const sections = [], missing = [], usedText = new Set();
@@ -195,6 +200,7 @@ export const getCalendarCardHymns = (feast, language = 'ru') => {
     const variants = [...new Set(options.filter(x => x.kind === kind)
       .map(x => x.variant))].sort((a,b) => a-b);
     for (const variant of variants) {
+      if (deliberatelyBlank.has(kind + ':' + variant)) continue;
       const set = options.filter(x => x.kind === kind && x.variant === variant)
         .sort((a,b) => a.priority - b.priority);
       const chosen = set.find(x => !!x.text);
