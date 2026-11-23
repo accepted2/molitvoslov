@@ -15,6 +15,7 @@ import {Feather} from '@expo/vector-icons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
+import {getCalendarCardHymns, selectedCalendarIcon} from '../services/calendarCardPresentation';
 import {useLanguage} from '../context/LanguageContext';
 import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
 import {findSaintForSharedLink} from '../services/saintShareResolver';
@@ -206,10 +207,10 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const uk = language === 'uk';
   const title = (uk && resolvedFeast?.title_uk) || resolvedFeast?.title || '';
   const bundled = getBundledCalendarIconSource(resolvedFeast);
-  const image = bundled || (resolvedFeast?.icon_url ? {uri: resolvedFeast.icon_url} : null);
+  const canonicalIcon = selectedCalendarIcon(resolvedFeast);
+  const image = bundled || (canonicalIcon ? {uri: canonicalIcon} : null);
   const life = (uk && resolvedFeast?.life_content_uk) || resolvedFeast?.life_content;
-  const troparion = (uk && resolvedFeast?.troparion_content_uk) || resolvedFeast?.troparion_content;
-  const kontakion = (uk && resolvedFeast?.kontakion_content_uk) || resolvedFeast?.kontakion_content;
+  const cardHymns = getCalendarCardHymns(resolvedFeast, language);
   const prayer = (uk && resolvedFeast?.prayer_content_uk) || resolvedFeast?.prayer_content;
   const large = width >= 560;
   const heroImageWidth = large ? 180 : Math.min(132, width * 0.34);
@@ -256,31 +257,29 @@ export const SaintDetailScreen = ({route, navigation}) => {
           innerScroll
           height={lifeHeight}
         />
-        <Accordion
-          title={uk ? 'Тропар' : 'Тропарь'}
-          feast={resolvedFeast}
-          date={date}
-          sourceTitle={title}
-          section="troparion"
-          focusHighlight={focusSection === 'troparion'}
-          icon="♪"
-          text={troparion}
-          subtitle={resolvedFeast?.troparion_echo ? 'Глас ' + resolvedFeast.troparion_echo : resolvedFeast?.troparion_title}
-        />
-        <Accordion
-          title="Кондак"
-          feast={resolvedFeast}
-          date={date}
-          sourceTitle={title}
-          section="kontakion"
-          focusHighlight={focusSection === "kontakion"}
-          icon="✧"
-          text={kontakion}
-          subtitle={resolvedFeast?.kontakion_echo ? 'Глас ' + resolvedFeast.kontakion_echo : resolvedFeast?.kontakion_title}
-        />
+        {cardHymns.sections.map((hymn) => (
+          <Accordion
+            key={hymn.key}
+            title={hymn.title}
+            feast={resolvedFeast}
+            date={date}
+            sourceTitle={title}
+            section={hymn.section}
+            focusHighlight={focusSection === hymn.section}
+            icon={hymn.kind === 'troparion' ? '♪' : '✧'}
+            text={hymn.text}
+            subtitle={hymn.subtitle}
+          />
+        ))}
+        {!!cardHymns.missing.length && (
+          <Text style={styles.empty}>
+            {uk ? 'Частина піснеспівів потребує перевіреного цивільного тексту.'
+              : 'Часть песнопений требует проверенного текста гражданским шрифтом.'}
+          </Text>
+        )}
         {!!prayer && <Accordion title={uk ? 'Молитва' : 'Молитва'} icon="✝" text={prayer}
           feast={resolvedFeast} date={date} sourceTitle={title} section="prayer" />}
-        {!life && !troparion && !kontakion && !prayer && (
+        {!life && !cardHymns.sections.length && !prayer && !cardHymns.missing.length && (
           <Text style={styles.empty}>
             {sharedCardLoading
               ? (uk ? 'Завантаження відомостей...' : 'Загружаем сведения...')
