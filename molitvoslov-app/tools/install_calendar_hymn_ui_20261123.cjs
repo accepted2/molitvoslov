@@ -56,6 +56,11 @@ function saint(original){
   "  const additionalTroparion = getLocalizedHymnField(resolvedFeast,'troparion_alternate_content',language);\n"+
   "  const additionalKontakion = getLocalizedHymnField(resolvedFeast,'kontakion_alternate_content',language);",
   'saint canonical feast');
+ for(const hymn of ['troparion','kontakion']){
+  const original="subtitle={resolvedFeast?."+hymn+"_echo ? 'Глас ' + resolvedFeast."+hymn+"_echo : resolvedFeast?."+hymn+"_title}";
+  const prefer="subtitle={getLocalizedHymnField(resolvedFeast,'"+hymn+"_title',language) || (resolvedFeast?."+hymn+"_echo ? 'Глас ' + resolvedFeast."+hymn+"_echo : '')}";
+  if(s.includes(original))s=s.replace(original,prefer);
+ }
  const edits=[];
  for(const kind of ['troparion','kontakion']){
   const found=getComponents(s,'Accordion',kind);
@@ -106,6 +111,19 @@ function calendar(original){
  s=replaceOne(s,/<Text style=\{styles\.textBlockSubtitle\}>\{subtitle\}<\/Text>/g,
    "<Text style={[styles.textBlockSubtitle,cslFont && {fontFamily:'Ponomar',fontSize:16,lineHeight:27}]}>{subtitle}</Text>",
    'calendar subtitle font');
+ for(const hymn of ['troparion','kontakion']){
+  const original=['subtitle={',
+    '                mainFeast.'+hymn+'_echo',
+    '                  ? '+String.fromCharCode(96)+'${copy.voice} ${mainFeast.'+hymn+'_echo}'+String.fromCharCode(96),
+    '                  : mainFeast.'+hymn+'_title',
+    '              }'].join('\n');
+  const prefer=['subtitle={getLocalizedHymnField(mainFeast,\''+hymn+'_title\',language) || (',
+    '                mainFeast.'+hymn+'_echo',
+    '                  ? '+String.fromCharCode(96)+'${copy.voice} ${mainFeast.'+hymn+'_echo}'+String.fromCharCode(96),
+    "                  : ''",
+    '              )}'].join('\n');
+  if(s.includes(original))s=s.replace(original,prefer);
+ }
  const edits=[];
  for(const kind of ['troparion','kontakion']){
   const found=getComponents(s,'ExpandableTextBlock',kind);
