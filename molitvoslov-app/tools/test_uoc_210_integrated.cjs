@@ -6,30 +6,37 @@
 const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
+const {createRequire}=require('node:module');
 const assert=require('node:assert/strict');
 const root=path.join(__dirname,'..');
 const manifest=require('../src/data/calendar/uocCivicHymns210.json');
 const shards=Array.from({length:8},(_,i)=>
   require('../src/data/calendar/uocAllCivilHymns'+i+'.json'));
-const decoderPath=path.join(root,'src/services/calendarCivicDecoder.js');
-const presentationPath=path.join(root,'src/services/calendarCardPresentation.js');
-const decoderSource=fs.readFileSync(decoderPath,'utf8')
-  .replace(/export \{[^}]+\};?/, 'module.exports={looksLegacyUcs,convertLegacyUcsToCivil,expandTitlos,toCivilLetters};');
-const decoderModule={exports:{}};
-vm.runInNewContext(decoderSource,{module:decoderModule}, {filename:decoderPath});
-const code=fs.readFileSync(presentationPath,'utf8')
-  .replace(/import \{[\s\S]*?\} from '\.\/calendarCivicDecoder';\n/, '')
-  .replace("const corrections = require('../data/calendar/uocCivicHymns210.json');",
-           'const corrections = data;')
-  .replace(/require\('\.\.\/data\/calendar\/uocAllCivilHymns([0-7])\.json'\)/g,
-           (_match,i) => 'SHARDS['+i+']')
-  .replace(/export const /g,'const ')
-  + '\nmodule.exports={getCalendarCardHymns,uniqueCalendarCards};';
-const mod={exports:{}};
-vm.runInNewContext(code,{
-  module:mod,data:manifest,SHARDS:shards,...decoderModule.exports,
-},{filename:presentationPath});
-const {getCalendarCardHymns,uniqueCalendarCards}=mod.exports;
+// Load the real calendar modules, rewriting only their ES module wrappers.
+// createRequire keeps JSON imports relative to each source file on Windows too.
+const load=(filename,dependencies={})=>{
+  const file=path.join(root,'src/services',filename);
+  let source=fs.readFileSync(file,'utf8');
+  if(filename==='calendarCivicDecoder.js')
+    source=source.replace(/export\s*\{[^}]+\}\s*;?/u,
+      'module.exports={looksLegacyUcs,convertLegacyUcsToCivil,expandTitlos,toCivilLetters};');
+  if(filename==='uocIconSelection.js')
+    source=source.replace(/\bexport\s+const\s+/gu,'const ')
+      +'\nmodule.exports={safeIconCandidateCount,selectUocIcon};';
+  if(filename==='calendarCardPresentation.js')
+    source=source.replace(/import\s*\{[\s\S]*?\}\s*from\s*['"]\.\/calendarCivicDecoder['"]\s*;?/u,'')
+      .replace(/import\s*\{\s*selectUocIcon\s*\}\s*from\s*['"]\.\/uocIconSelection['"]\s*;?/u,'')
+      .replace(/\bexport\s+const\s+/gu,'const ')
+      +'\nmodule.exports={getCalendarCardHymns,uniqueCalendarCards};';
+  const context={module:{exports:{}},require:createRequire(file),...dependencies};
+  vm.runInNewContext(source,context,{filename:file,timeout:15000});
+  return context.module.exports;
+};
+const decoder=load('calendarCivicDecoder.js');
+const icons=load('uocIconSelection.js');
+const {getCalendarCardHymns,uniqueCalendarCards}=
+  load('calendarCardPresentation.js',{...decoder,selectUocIcon:icons.selectUocIcon});
+
 assert.equal(manifest.entries.length,226);
 assert.equal(new Set(manifest.entries.map(x=>x.card_id+'|'+x.kind+'|'+x.source_variant)).size,210);
 assert.equal(new Set(manifest.entries.map(x=>x.card_id)).size,122);
@@ -42,7 +49,7 @@ for(const card of new Set(manifest.entries.map(x=>x.card_id))){
   rendered+=payload.sections.length;
   for(const field of payload.sections){
     assert.ok(field.text.trim());
-    assert.ok(!decoderModule.exports.looksLegacyUcs(field.text),field.key);
+    assert.ok(!decoder.looksLegacyUcs(field.text),field.key);
   }
 }
 assert.equal(rendered,226);
@@ -52,7 +59,7 @@ assert.equal(allCards.reduce((n,c)=>n+c.hymns.length,0),2821);
 const pp=allCards.find(x=>x.card_id==='blv-ca7f2ce407c66cc45b803749');
 assert.ok(pp);
 const feastWithNoCardId=getCalendarCardHymns({title:pp.title_ru},'ru');
-assert.deepEqual(feastWithNoCardId.sections.map(x=>x.title),
+assert.deepEqual(Array.from(feastWithNoCardId.sections,x=>x.title),
   ['Тропарь','Кондак']);
 assert.ok(feastWithNoCardId.sections.every(x=>x.origin==='canonical_catalogue'));
 
