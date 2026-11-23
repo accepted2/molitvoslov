@@ -11,8 +11,12 @@ const INVISIBLE = /[\u200b\u00ad\ufeff\u2060]/gu;
 const TYPES = ['troparion', 'kontakion'];
 
 const norm = value => String(value || '').normalize('NFC')
-  .replace(INVISIBLE, '').replace(/\s+/gu, ' ').trim();
-const simpleTitle = value => norm(value).toLocaleLowerCase()
+  .replace(INVISIBLE, '')
+  .replace(/\r\n?/gu, '\n')
+  .replace(/[ \t]+/gu, ' ')
+  .replace(/[ \t]*\n[ \t]*/gu, '\n')
+  .trim();
+const simpleTitle = value => norm(value).replace(/\s+/gu, ' ').toLocaleLowerCase()
   .replace(/ё/gu, 'е').replace(/\([^)]*(?:\d{3,4}|век|столет)[^)]*\)/gu, '')
   .replace(/[^а-яіїєґa-z0-9]+/gu, ' ').trim();
 
