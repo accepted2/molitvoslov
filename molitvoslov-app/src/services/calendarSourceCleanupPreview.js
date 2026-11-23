@@ -64,7 +64,9 @@ export const previewCleanCalendarFeast = (source) => {
 
 export const countPreviewChanges = (before, after, language = 'ru') => {
   const suffix = language === 'uk' ? '_uk' : '';
-  const keys = FIELDS.filter(key => key.endsWith('_uk') === Boolean(suffix));
+  const keys = ['life_content', 'troparion_content', 'kontakion_content',
+    'prayer_content', 'magnification_content'].map((key) =>
+    suffix && before?.[key + suffix] ? key + suffix : key);
   let fields = 0;
   let removed = 0;
   for (const key of keys) {
