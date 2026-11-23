@@ -59,9 +59,24 @@ for (const shard of allCivilShards) {
     }
   }
 }
+// The live 2026 July bundle calls the Apostles' feast "Святых славных...",
+// whereas the source catalogue begins "СЛАВНЫХ И ВСЕХВАЛЬНЫХ..." and adds
+// "(67)". This is a checked identity alias, not fuzzy saint matching.
+const approvedHymnAlias = feast => {
+  const titles = [feast?.title_ru, feast?.title_uk, feast?.title];
+  for (const raw of titles) {
+    const title = simpleTitle(raw);
+    if (/апостол/u.test(title) && /петр/u.test(title) &&
+        /павл/u.test(title) && /первоверховн/u.test(title))
+      return 'blv-ca7f2ce407c66cc45b803749';
+  }
+  return '';
+};
 const fullCivilRows = feast => {
   const id = canonicalId(feast);
   if (id) return civilById.get(id)?.hymns || [];
+  const alias = approvedHymnAlias(feast);
+  if (alias && civilById.has(alias)) return civilById.get(alias).hymns || [];
   for (const value of [feast?.title_ru, feast?.title_uk, feast?.title]) {
     const key = simpleTitle(value);
     if (!key || ambiguousNames.has(key)) continue;
