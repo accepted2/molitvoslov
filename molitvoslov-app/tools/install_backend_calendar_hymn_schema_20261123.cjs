@@ -119,8 +119,6 @@ if(protectionMatch){
 }
 admin=admin.slice(0,classStart)+adminClass+admin.slice(classEnd);
 console.log('CHECK CalendarFeastAdmin manual-edits protection: '+protectionMode);
-const adminFieldSet='        (\n            "Житие — русский",';
-if(!admin.includes(adminFieldSet))throw Error('Admin fieldsets differ; no writes');
 const altSets=[
 '        (',
 '            "Иной тропарь — русский / украинский",',
@@ -141,7 +139,32 @@ const altSets=[
 '            },',
 '        ),',
 ].join('\n')+'\n';
-admin=single(admin,adminFieldSet,altSets+adminFieldSet,'admin fields');
+// Use the CalendarFeastAdmin class boundaries; local fieldsets may be
+// formatted differently or have a renamed "Life" heading.
+const adminStart2=admin.search(/^class CalendarFeastAdmin\s*\([^)\n]*\)\s*:/m);
+if(adminStart2<0)throw Error('CalendarFeastAdmin missing during fieldset patch.');
+const following=/(?:^class |^@admin\.register\()/gm;
+following.lastIndex=adminStart2+1;
+const afterClass=following.exec(admin);
+const adminEnd2=afterClass?afterClass.index:admin.length;
+let currentAdmin=admin.slice(adminStart2,adminEnd2);
+const beforeLife=/(^[ ]{8}\(\s*\n[ ]{12}["']Житие\s*[-—]\s*русский["']\s*,)/m.exec(currentAdmin);
+let fieldsetAt=-1;
+if(beforeLife){
+  fieldsetAt=beforeLife.index;
+}else{
+  const fieldsets=/^[ ]{4}fieldsets\s*=\s*([\[(])/m.exec(currentAdmin);
+  if(!fieldsets)throw Error('CalendarFeastAdmin fieldsets not found; source preserved.');
+  const tail=currentAdmin.slice(fieldsets.index+fieldsets[0].length);
+  const endExp=fieldsets[1]==='[' ? /^    \]\s*,?\s*$/m : /^    \)\s*,?\s*$/m;
+  const close=endExp.exec(tail);
+  if(!close)throw Error('CalendarFeastAdmin fieldsets closing not found.');
+  fieldsetAt=fieldsets.index+fieldsets[0].length+close.index;
+}
+currentAdmin=currentAdmin.slice(0,fieldsetAt)+altSets+currentAdmin.slice(fieldsetAt);
+admin=admin.slice(0,adminStart2)+currentAdmin+admin.slice(adminEnd2);
+console.log('CHECK CalendarFeastAdmin alternate hymn fieldsets added.');
+
 let importer=original.importer;
 const localizedStart='def _localized_assignments(data, language):\n';
 if(!importer.includes(localizedStart))throw Error('Importer assignments start missing');
