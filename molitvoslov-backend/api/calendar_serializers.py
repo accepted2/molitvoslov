@@ -35,8 +35,16 @@ class CalendarFeastSerializer(serializers.ModelSerializer):
     short_title = serializers.SerializerMethodField()
     troparion_title = serializers.SerializerMethodField()
     troparion_content = serializers.SerializerMethodField()
+    troparion_alternate_title = serializers.SerializerMethodField()
+    troparion_alternate_content = serializers.SerializerMethodField()
+    troparion_script = serializers.SerializerMethodField()
+    troparion_alternate_script = serializers.SerializerMethodField()
     kontakion_title = serializers.SerializerMethodField()
     kontakion_content = serializers.SerializerMethodField()
+    kontakion_alternate_title = serializers.SerializerMethodField()
+    kontakion_alternate_content = serializers.SerializerMethodField()
+    kontakion_script = serializers.SerializerMethodField()
+    kontakion_alternate_script = serializers.SerializerMethodField()
     life_title = serializers.SerializerMethodField()
     life_content = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
@@ -62,9 +70,17 @@ class CalendarFeastSerializer(serializers.ModelSerializer):
             "icon_url",
             "troparion_title",
             "troparion_content",
+            "troparion_alternate_title",
+            "troparion_alternate_content",
+            "troparion_script",
+            "troparion_alternate_script",
             "troparion_echo",
             "kontakion_title",
             "kontakion_content",
+            "kontakion_alternate_title",
+            "kontakion_alternate_content",
+            "kontakion_script",
+            "kontakion_alternate_script",
             "kontakion_echo",
             "life_title",
             "life_content",
@@ -100,11 +116,35 @@ class CalendarFeastSerializer(serializers.ModelSerializer):
     def get_troparion_content(self, obj):
         return self._get(obj, "troparion_content")
 
+    def get_troparion_alternate_title(self, obj):
+        return self._get(obj, "troparion_alternate_title")
+
+    def get_troparion_alternate_content(self, obj):
+        return self._get(obj, "troparion_alternate_content")
+
+    def get_troparion_script(self, obj):
+        return self._get(obj, "troparion_script")
+
+    def get_troparion_alternate_script(self, obj):
+        return self._get(obj, "troparion_alternate_script")
+
     def get_kontakion_title(self, obj):
         return self._get(obj, "kontakion_title")
 
     def get_kontakion_content(self, obj):
         return self._get(obj, "kontakion_content")
+
+    def get_kontakion_alternate_title(self, obj):
+        return self._get(obj, "kontakion_alternate_title")
+
+    def get_kontakion_alternate_content(self, obj):
+        return self._get(obj, "kontakion_alternate_content")
+
+    def get_kontakion_script(self, obj):
+        return self._get(obj, "kontakion_script")
+
+    def get_kontakion_alternate_script(self, obj):
+        return self._get(obj, "kontakion_alternate_script")
 
     def get_life_title(self, obj):
         return self._get(obj, "life_title")
