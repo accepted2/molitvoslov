@@ -14,6 +14,16 @@ const iconShards = [
   require('../data/calendar/uocIconCandidates10.json'),
   require('../data/calendar/uocIconCandidates11.json'),
 ];
+// Links quarantined by the full icon audit: repeated assignments, inferred
+// unverified high-res addresses or small thumbnails. The 459 truly missing
+// source images need no entry in this quarantine.
+const quarantineShards = [
+  require('../data/calendar/uocIconQuarantine0.json'),
+  require('../data/calendar/uocIconQuarantine1.json'),
+];
+const quarantinedIds = new Set();
+const quarantinedNames = new Set();
+
 const iconById = new Map();
 const iconByName = new Map();
 const ambiguousNames = new Set();
@@ -26,6 +36,15 @@ const isHttps = url => typeof url === 'string' && /^https:\/\//i.test(url);
 const sourceId = card => String(
   card?.card_id || card?.blagovist_card_id || card?.canonical_card_id || ''
 );
+for (const shard of quarantineShards) {
+  for (const [id, titleRu, titleUk] of shard.items) {
+    quarantinedIds.add(id);
+    for (const name of [titleRu, titleUk]) {
+      const normalized = normalize(name);
+      if (normalized) quarantinedNames.add(normalized);
+    }
+  }
+}
 for (const shard of iconShards) {
   for (const [id, titleRu, titleUk, url] of shard.items) {
     if (!isHttps(url) || iconById.has(id) || urlOwners.has(url)) {
@@ -57,13 +76,20 @@ export const selectUocIcon = feast => {
   if (!selected && !id) {
     for (const title of [feast.title_ru, feast.title_uk, feast.title]) {
       const name = normalize(title);
-      if (!name || ambiguousNames.has(name)) continue;
+      if (!name || ambiguousNames.has(name) || quarantinedNames.has(name)) continue;
       const match = iconByName.get(name);
       if (match) { selected = match; break; }
     }
   }
   if (selected) return selected.url;
-  // Preserve existing locally curated images. A strict unknown source
-  // reference cannot be linked to someone else's Blagovist record by date.
+  // Never fall back to a Blagovist link that was explicitly quarantined.
+  // Existing manually curated icons and other source libraries are kept.
+  const suspected = id
+    ? quarantinedIds.has(id)
+    : [feast.title_ru, feast.title_uk, feast.title].some(
+        title => quarantinedNames.has(normalize(title))
+      );
+  if (suspected && /^https:\/\/(?:www\.)?blagovist\.info\//i.test(existing))
+    return '';
   return isHttps(existing) ? existing : '';
 };
