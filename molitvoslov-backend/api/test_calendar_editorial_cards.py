@@ -2,10 +2,13 @@
 from types import SimpleNamespace
 
 from django.contrib.admin.sites import AdminSite
+from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import RequestFactory, TestCase
 
 from .admin import CalendarFeastAdmin
 from .calendar_import import upsert_feast
+from .calendar_editor_icon_upload import validate_icon_upload
 from .calendar_models import CalendarFeast
 
 
@@ -68,3 +71,12 @@ class CalendarEditorialCardsTests(TestCase):
     def test_unknown_card_returns_404(self):
         response = self.client.get("/api/calendar/feast/99118845/?lang=ru")
         self.assertEqual(response.status_code, 404)
+
+    def test_icon_upload_rejects_disguised_non_image(self):
+        invalid = SimpleUploadedFile("icon.jpg", b"<svg><script>bad</script></svg>", content_type="image/jpeg")
+        with self.assertRaises(ValidationError):
+            validate_icon_upload(invalid)
+
+    def test_icon_upload_accepts_png_signature(self):
+        png = SimpleUploadedFile("icon.png", b"\\x89PNG\\r\\n\\x1a\\n" + b"01234567", content_type="image/png")
+        validate_icon_upload(png)
