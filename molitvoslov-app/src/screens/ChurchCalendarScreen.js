@@ -38,6 +38,7 @@ import {
   getOfflineCalendarMonth,
 } from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
+import {getCalendarCardHymns, uniqueCalendarCards} from '../services/calendarCardPresentation';
 import {colors} from '../theme';
 
 const buildCells = (year, month) => {
@@ -702,13 +703,18 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const cells = useMemo(() => buildCells(visibleYear, visibleMonth), [visibleMonth, visibleYear]);
 
   const today = toCalendarDate(new Date());
-  const regularFeasts = (dayData?.all_feasts || []).filter((feast) => !isMovableDayCard(feast));
+  const regularFeasts = uniqueCalendarCards(
+    (dayData?.all_feasts || []).filter((feast) => !isMovableDayCard(feast))
+  );
   const suggestedMain = dayData?.main_feast;
   const mainFeast =
     suggestedMain && !isMovableDayCard(suggestedMain)
       ? suggestedMain
       : regularFeasts.find((feast) => !!feast?.icon_url) || regularFeasts[0] || null;
-  const otherFeasts = regularFeasts.filter((feast) => Number(feast?.id) !== Number(mainFeast?.id));
+  const otherFeasts = mainFeast
+    ? uniqueCalendarCards([mainFeast, ...regularFeasts]).slice(1)
+    : regularFeasts;
+  const cardHymns = getCalendarCardHymns(mainFeast, dataLanguage);
   const liturgicalDayLabel = movableDayLabel(dayData?.date_gregorian, language);
 
   const moveMonth = (delta) => {
@@ -897,28 +903,20 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             />
           )}
 
-          {!!mainFeast?.troparion_content && (
+          {cardHymns.sections.map((hymn) => (
             <ExpandableTextBlock
-              title={copy.troparion}
-              subtitle={
-                mainFeast.troparion_echo
-                  ? `${copy.voice} ${mainFeast.troparion_echo}`
-                  : mainFeast.troparion_title
-              }
-              text={mainFeast.troparion_content}
+              key={hymn.key}
+              title={hymn.title}
+              subtitle={hymn.subtitle}
+              text={hymn.text}
             />
-          )}
-
-          {!!mainFeast?.kontakion_content && (
-            <ExpandableTextBlock
-              title={copy.kontakion}
-              subtitle={
-                mainFeast.kontakion_echo
-                  ? `${copy.voice} ${mainFeast.kontakion_echo}`
-                  : mainFeast.kontakion_title
-              }
-              text={mainFeast.kontakion_content}
-            />
+          ))}
+          {!!cardHymns.missing.length && (
+            <Text style={styles.sectionEyebrow}>
+              {dataLanguage === 'uk'
+                ? 'Деякі піснеспіви очікують перевірки тексту'
+                : 'Некоторые песнопения ожидают проверки текста'}
+            </Text>
           )}
 
           <View

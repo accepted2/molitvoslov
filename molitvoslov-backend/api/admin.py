@@ -1208,6 +1208,16 @@ class CalendarFeastAdmin(admin.ModelAdmin):
             },
         ),
         (
+            "Иной тропарь — русский / украинский",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "troparion_alt_title", "troparion_alt_content",
+                    "troparion_alt_title_uk", "troparion_alt_content_uk",
+                ],
+            },
+        ),
+        (
             "Тропарь — украинский",
             {
                 "classes": ["collapse"],
@@ -1225,6 +1235,16 @@ class CalendarFeastAdmin(admin.ModelAdmin):
                     "kontakion_title",
                     "kontakion_content",
                     "kontakion_echo",
+                ],
+            },
+        ),
+        (
+            "Иной кондак — русский / украинский",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "kontakion_alt_title", "kontakion_alt_content",
+                    "kontakion_alt_title_uk", "kontakion_alt_content_uk",
                 ],
             },
         ),
@@ -1318,8 +1338,12 @@ class CalendarFeastAdmin(admin.ModelAdmin):
             "date_type", "celebration_type", "celebration_rank",
             "troparion_title", "troparion_content", "troparion_echo",
             "troparion_title_uk", "troparion_content_uk",
+            "troparion_alt_title", "troparion_alt_content",
+            "troparion_alt_title_uk", "troparion_alt_content_uk",
             "kontakion_title", "kontakion_content", "kontakion_echo",
             "kontakion_title_uk", "kontakion_content_uk",
+            "kontakion_alt_title", "kontakion_alt_content",
+            "kontakion_alt_title_uk", "kontakion_alt_content_uk",
             "life_title", "life_content", "life_title_uk", "life_content_uk",
             "description", "description_uk", "all_dates",
             "prayer_title", "prayer_content", "prayer_title_uk", "prayer_content_uk",
