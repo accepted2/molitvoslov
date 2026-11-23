@@ -1,0 +1,58 @@
+name: Calendar hymn and icon integration checks
+
+on:
+  push:
+    branches:
+      - integration/calendar-hymns-icons-safe-20261123
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  calendar-node:
+    name: Node 24 calendar content and UI regression
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check 1267 cards and multiple hymn variants
+        working-directory: molitvoslov-app
+        run: node tools/test_calendar_hymn_multivariants_20261123.cjs
+      - name: Check integrated icons, legacy aliases and hymn UI
+        working-directory: molitvoslov-app
+        run: node tools/test_uoc_integrated_hymns_icons_20261123.cjs
+      - name: Check 210 repair groups and preserved variants
+        working-directory: molitvoslov-app
+        run: node tools/test_uoc_210_integrated.cjs
+
+  calendar-django:
+    name: Django 6.1 calendar API and migration checks
+    runs-on: ubuntu-latest
+    env:
+      DJANGO_ENV: test
+      SUPABASE_DB_PASSWORD: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install isolated local test dependencies
+        working-directory: molitvoslov-backend
+        run: python -m pip install -r requirements.txt
+      - name: Django system check (SQLite, no production credentials)
+        working-directory: molitvoslov-backend
+        run: python manage.py check
+      - name: Calendar API, hymn and imported text regression
+        working-directory: molitvoslov-backend
+        run: >-
+          python manage.py test
+          api.test_uoc_merged_calendar_20261123
+          api.test_calendar_editorial_cards
+          api.test_calendar_hymn_normalization
+          api.test_calendar_text_cleanup
+      - name: Ensure migrations match Django models
+        working-directory: molitvoslov-backend
+        run: python manage.py makemigrations --check --dry-run
