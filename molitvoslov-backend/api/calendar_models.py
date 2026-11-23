@@ -2,6 +2,12 @@ from django.db import models
 import uuid
 
 
+HYMN_SCRIPT_CHOICES = [
+    ("civil", "Гражданский текст"),
+    ("csl", "Церковнославянский (Ponomar)"),
+]
+
+
 class CalendarFeast(models.Model):
     """Одна календарная память/праздник, перенесённая из Church Site."""
 
@@ -43,10 +49,10 @@ class CalendarFeast(models.Model):
     troparion_alternate_content = models.TextField(blank=True, default="")
     troparion_alternate_title_uk = models.TextField(blank=True, default="")
     troparion_alternate_content_uk = models.TextField(blank=True, default="")
-    troparion_script = models.CharField(max_length=10, blank=True, default="civil")
-    troparion_script_uk = models.CharField(max_length=10, blank=True, default="civil")
-    troparion_alternate_script = models.CharField(max_length=10, blank=True, default="civil")
-    troparion_alternate_script_uk = models.CharField(max_length=10, blank=True, default="civil")
+    troparion_script = models.CharField(max_length=10, blank=True, default="civil", choices=HYMN_SCRIPT_CHOICES)
+    troparion_script_uk = models.CharField(max_length=10, blank=True, default="civil", choices=HYMN_SCRIPT_CHOICES)
+    troparion_alternate_script = models.CharField(max_length=10, blank=True, default="civil", choices=HYMN_SCRIPT_CHOICES)
+    troparion_alternate_script_uk = models.CharField(max_length=10, blank=True, default="civil", choices=HYMN_SCRIPT_CHOICES)
 
     kontakion_title = models.TextField(blank=True, default="")
     kontakion_content = models.TextField(blank=True, default="")
@@ -57,10 +63,10 @@ class CalendarFeast(models.Model):
     kontakion_alternate_content = models.TextField(blank=True, default="")
     kontakion_alternate_title_uk = models.TextField(blank=True, default="")
     kontakion_alternate_content_uk = models.TextField(blank=True, default="")
-    kontakion_script = models.CharField(max_length=10, blank=True, default="civil")
-    kontakion_script_uk = models.CharField(max_length=10, blank=True, default="civil")
-    kontakion_alternate_script = models.CharField(max_length=10, blank=True, default="civil")
-    kontakion_alternate_script_uk = models.CharField(max_length=10, blank=True, default="civil")
+    kontakion_script = models.CharField(max_length=10, blank=True, default="civil", choices=HYMN_SCRIPT_CHOICES)
+    kontakion_script_uk = models.CharField(max_length=10, blank=True, default="civil", choices=HYMN_SCRIPT_CHOICES)
+    kontakion_alternate_script = models.CharField(max_length=10, blank=True, default="civil", choices=HYMN_SCRIPT_CHOICES)
+    kontakion_alternate_script_uk = models.CharField(max_length=10, blank=True, default="civil", choices=HYMN_SCRIPT_CHOICES)
 
     life_title = models.TextField(blank=True, default="")
     life_content = models.TextField(blank=True, default="")
