@@ -103,11 +103,50 @@ assert.equal(icons.selectUocIcon({
   source_id:3069,
   title:'Святых славных и всехвальных и первоверховных апостолов Петра и Павла',
 }).includes('Slavni-i-vsekhvalni-pervoverkhovni-apostoly'),true);
+// Regression: old 2026 bundled numeric source IDs must access the exact
+// saint's canonical troparion + kontakion, not another day's hymns.
+const november = require('../src/data/calendar/2026-11.json');
+const oldOnesiphorus = november.days['2026-11-22'].ru.main_feast;
+assert.equal(oldOnesiphorus.source_id,3301);
+assert.ok(!oldOnesiphorus.troparion_content,
+  'Legacy November card must still be the old unmodified source');
+const onesiphorus = presenter.getCalendarCardHymns(oldOnesiphorus,'ru');
+assert.ok(onesiphorus.sections.some(x=>x.kind==='troparion'&&x.variant===1),
+  'Canonical Onesiphorus/Porphyrius troparion not attached to old calendar ID');
+assert.ok(onesiphorus.sections.some(x=>x.kind==='kontakion'&&x.variant===1),
+  'Onesiphorus/Porphyrius kontakion missing');
+const homonymGuard = presenter.getCalendarCardHymns({
+  source_id:3301,title:'Преподобный Онисифор Печерский',
+},'ru');
+assert.equal(homonymGuard.sections.length,0,
+  'Unrelated saints must not inherit hymns via reused number');
+
+const december = require('../src/data/calendar/2026-12.json');
+const oldNicholas = december.days['2026-12-19'].ru.main_feast;
+assert.equal(oldNicholas.source_id,3355);
+const nicholasHymns = presenter.getCalendarCardHymns(oldNicholas,'ru');
+assert.ok(nicholasHymns.sections.some(x=>x.kind==='troparion'));
+assert.ok(nicholasHymns.sections.some(x=>x.kind==='kontakion'));
+assert.equal(presenter.getCalendarCardHymns({
+  source_id:3355,title:'Николай Японский',
+},'ru').sections.length,0,
+  'Nicholas of Myra ID guard failed');
+// Visual structure must mark hymn cards separately; do not silently regress
+// to unstyled generic paragraphs even if data tests remain green.
+const saintScreen=require('node:fs').readFileSync(
+  path.join(root,'src/screens/SaintDetailScreen.js'),'utf8');
+const calendarScreen=require('node:fs').readFileSync(
+  path.join(root,'src/screens/ChurchCalendarScreen.js'),'utf8');
+assert.ok(saintScreen.includes('subtitle={hymn.subtitle}\n            isHymn'));
+assert.ok(calendarScreen.includes('text={hymn.text}\n              isHymn'));
+assert.ok(saintScreen.includes('hymnSectionLabel'));
+assert.ok(calendarScreen.includes('hymnSectionLabel'));
+
 const similarlyNamedUnrelated=presenter.getCalendarCardHymns({
   title:'Святого апостола Петра, ученика первоверховного апостола Павла',
 },'ru');
 assert.equal(similarlyNamedUnrelated.sections.length,0,
   'Different individual saint must not inherit the feast hymns');
 
-console.log('PASS: 1267 cards, 2821 source hymns, 226 patched variants, '+
+console.log('PASS: 2026 November/December legacy ID bridges + visual hymn formatting; 1267 cards, 2821 source hymns, 226 patched variants, '+
   tested+' readable rendered sections; 2734 unique icons, 598 quarantined; manual override and alternate fields.');
