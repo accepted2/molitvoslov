@@ -1234,6 +1234,40 @@ class CalendarFeastAdmin(admin.ModelAdmin):
             },
         ),
         (
+            "Молитва — русский / украинский",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "prayer_title", "prayer_content",
+                    "prayer_title_uk", "prayer_content_uk",
+                ],
+            },
+        ),
+        (
+            "Величание — русский / украинский",
+            {
+                "classes": ["collapse"],
+                "fields": [
+                    "magnification_title", "magnification_content",
+                    "magnification_title_uk", "magnification_content_uk",
+                ],
+            },
+        ),
+        (
+            "Редакторская защита и источники",
+            {
+                "fields": [
+                    "source_reference",
+                    "icon_rights_note",
+                    "manually_edited_fields",
+                ],
+                "description": (
+                    "Изменённые вручную поля автоматически защищаются от импорта. "
+                    "Чтобы снова разрешить их замену, удалите имена полей из списка."
+                ),
+            },
+        ),
+        (
             "Служебное",
             {
                 "fields": [
@@ -1242,6 +1276,34 @@ class CalendarFeastAdmin(admin.ModelAdmin):
             },
         ),
     ]
+
+    # Imported source identifiers are the permanent links from every year.
+    # Do not let an editor silently reassign existing cards to another saint.
+    def get_readonly_fields(self, request, obj=None):
+        fields = list(super().get_readonly_fields(request, obj))
+        if obj is not None:
+            fields.append("source_id")
+        return fields
+
+    def save_model(self, request, obj, form, change):
+        protected = {
+            "title", "short_title", "title_uk", "short_title_uk",
+            "icon_url", "julian_month", "julian_day", "easter_offset",
+            "date_type", "celebration_type", "celebration_rank",
+            "troparion_title", "troparion_content", "troparion_echo",
+            "troparion_title_uk", "troparion_content_uk",
+            "kontakion_title", "kontakion_content", "kontakion_echo",
+            "kontakion_title_uk", "kontakion_content_uk",
+            "life_title", "life_content", "life_title_uk", "life_content_uk",
+            "description", "description_uk", "all_dates",
+            "prayer_title", "prayer_content", "prayer_title_uk", "prayer_content_uk",
+            "magnification_title", "magnification_content",
+            "magnification_title_uk", "magnification_content_uk",
+        }
+        changed = set(form.changed_data or []) & protected
+        # Respect edits to the lock list itself, including explicit removals.
+        obj.manually_edited_fields = sorted(set(obj.manually_edited_fields or []) | changed)
+        super().save_model(request, obj, form, change)
 
     def get_queryset(self, request):
         return (
