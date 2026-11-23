@@ -18,7 +18,7 @@ const isBlagovest=card=>/^(?:uoc-)?blv[-_:]/i.test(canonicalKey(card));
 const uniqueId=(card)=>canonicalKey(card)+'|'+String(card.source_id??'');
 const changes=[],warnings=[],canonical=new Map(),monthRecords=[];
 const summary={months:0,dayLocales:0,newCardOccurrences:0,uniqueNewCards:0,
-  otherLegacyCardOccurrences:0,changedFields:0,splitTroparia:0,splitKontakia:0,
+  otherLegacyCardOccurrences:0,dayLocalesWithoutBlagovest:0,changedFields:0,splitTroparia:0,splitKontakia:0,
   unsafeCases:0,conflictingCanonicalRecords:0,rawHymnBytes:0};
 fs.mkdirSync(reports,{recursive:true});
 if(mode!=='check')fs.mkdirSync(stageDir,{recursive:true});
@@ -29,7 +29,7 @@ function convertCard(card,date,lang) {
     return card;
   }
   summary.newCardOccurrences++;
-  const identity=uniqueId(card);
+  const identity=uniqueId(card)+'|'+lang;
   const transformed=transformFeast(card);
   const localChanges=transformed.changes;
   if(localChanges.length){
@@ -83,14 +83,28 @@ for(let year=2025;year<=2027;year++){
       summary.dayLocales++;
       const main=day.main_feast;
       const list=Array.isArray(day.all_feasts)?day.all_feasts:[];
-      const mapping=new Map();
-      const mapped=card=>{
-        if(!card)return card;
-        const id=uniqueId(card);
-        if(!mapping.has(id))mapping.set(id,convertCard(card,date,lang));
-        return mapping.get(id);
-      };
-      normalized.days[date][lang]={...day,main_feast:mapped(main),all_feasts:list.map(mapped)};
+      const original=[main,...list].filter(Boolean);
+      const oldCards=original.filter(card=>!isBlagovest(card));
+      summary.otherLegacyCardOccurrences+=new Set(oldCards.map(uniqueId)).size;
+      const fresh=new Map();
+      for(const card of original)if(isBlagovest(card)){
+        const key=uniqueId(card);
+        if(!fresh.has(key))fresh.set(key,card);
+      }
+      if(!fresh.size){
+        summary.dayLocalesWithoutBlagovest++;
+        if(warnings.length<4000)warnings.push({date,lang,
+          issue:'no Blagovest replacement card; cannot remove old source for this locale'});
+        normalized.days[date][lang]=day;
+        continue;
+      }
+      const replacements=[...fresh.values()].map(card=>convertCard(card,date,lang));
+      const byId=new Map(replacements.map(card=>[uniqueId(card),card]));
+      const oldMainId=isBlagovest(main)?uniqueId(main):null;
+      const finalMain=(oldMainId&&byId.get(oldMainId))||
+        replacements.find(card=>card.is_main===true||card.date_type==='main')||
+        replacements[0];
+      normalized.days[date][lang]={...day,main_feast:finalMain,all_feasts:replacements};
     }
   }
   const text=JSON.stringify(normalized)+'\n';
@@ -103,7 +117,7 @@ for(let year=2025;year<=2027;year++){
 }
 summary.uniqueNewCards=canonical.size;
 const report={generated_at:new Date().toISOString(),mode,summary,months:monthRecords,
-  warning:'Old non-Blagovest cards are reported but NOT dropped without a verified identity/coverage mapping.',
+  warning:'Staged locale removes old cards when Blagovest exists. Full --apply blocks if ANY locale has no Blagovest source or a split conflict.',
   changes,warnings};
 const reportPath=path.join(reports,'calendar-hymns-ponomar-report-20261123.json');
 fs.writeFileSync(reportPath,JSON.stringify(report,null,2)+'\n','utf8');
@@ -113,8 +127,8 @@ console.log('Report: '+reportPath);
 if(mode==='check'){console.log('No calendar files modified.');process.exit(0);}
 console.log('Staged 36 candidates: '+stageDir);
 if(mode==='stage'){console.log('Original calendar files unchanged.');process.exit(0);}
-if(summary.unsafeCases||summary.conflictingCanonicalRecords)
- throw Error('Unsafe hymn split or conflicting canonical hymns. Refusing apply; inspect report.');
+if(summary.unsafeCases||summary.conflictingCanonicalRecords||summary.dayLocalesWithoutBlagovest)
+ throw Error('Unsafe hymn split, missing Blagovest coverage or conflicting hymns. Refusing apply; inspect report.');
 const backupDir=path.join(root,'..','build-backups','calendar-hymns-ponomar-'+new Date().toISOString().replace(/[:.]/g,'-'));
 fs.mkdirSync(backupDir,{recursive:true});
 for(const item of monthRecords){
