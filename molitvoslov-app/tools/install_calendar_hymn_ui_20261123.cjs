@@ -1,103 +1,214 @@
 #!/usr/bin/env node
 'use strict';
-// Reversible installer for the LOCAL SaintDetailScreen, preserving unrelated changes.
-const fs=require('node:fs'),path=require('node:path');
+/*
+ * Reversible, structure-aware patch for the USER'S LOCAL SaintDetailScreen.
+ * Older installer assumed exact whitespace in Accordion's props and failed.
+ * This version uses Babel AST positions, preserving all unrelated UI changes.
+ * --check: parse and prepare only; --apply: backup and apply atomically.
+ * No calendar JSON, backend, icons, search database or APK is modified.
+ */
+const fs=require('node:fs');
+const path=require('node:path');
 const parser=require('@babel/parser');
 const target=path.resolve(__dirname,'../src/screens/SaintDetailScreen.js');
-const old=fs.readFileSync(target,'utf8');
-const apply=process.argv.includes('--apply');
 const backup=target+'.before-hymn-variants-20261123.bak';
+const apply=process.argv.includes('--apply');
+const original=fs.readFileSync(target,'utf8');
 const marker='BLAGOVEST_HYMN_VARIANTS_20261123';
-const must=(condition,message)=>{if(!condition)throw Error(message+' — file preserved');};
-const parse=s=>parser.parse(s,{sourceType:'module',plugins:['jsx']});
-parse(old);
-must(!old.includes(marker),'Hymn variants patch already installed');
-let next=old;
-const langImport="import {useLanguage} from '../context/LanguageContext';";
-must(next.includes(langImport),'Language import missing');
-next=next.replace(langImport,langImport+"\nimport {isChurchSlavonicHymn} from '../services/calendarHymnDisplay';");
-const accordionProp=/(\n  sourceTitle,\n)(\}\)\s*=>\s*\{)/;
-must(accordionProp.test(next),'Accordion prop declaration not located');
-next=next.replace(accordionProp,'$1  script = \'civil\',\n$2');
-const contextFont="    fontFamily: styles.body.fontFamily,";
-must(next.includes(contextFont),'Accordion context font line missing');
-next=next.replace(contextFont,
-    "    fontFamily: script === 'csl' ? 'Ponomar' : styles.body.fontFamily,");
-const anchor="  const content = (\n    <View style={styles.readingContent}>";
-must(next.includes(anchor),'Accordion content anchor missing');
-next=next.replace(anchor,
-    "  if (script === 'csl') saveContext.metadata.language = 'traditional';\n" +
-    "  if (section === 'troparion_alt') saveContext.anchorId = 6;\n" +
-    "  if (section === 'kontakion_alt') saveContext.anchorId = 7;\n" + anchor);
-const textStyle="textStyle={styles.body}";
-must(next.includes(textStyle),'Selectable body style missing');
-next=next.replace(textStyle,"textStyle={[styles.body, script === 'csl' && styles.ponomarBody]}");
-const oldData = "  const prayer = (uk && resolvedFeast?.prayer_content_uk) || resolvedFeast?.prayer_content;";
-must(next.includes(oldData),'Prayer line not located');
-const newData=[
-"  // BLAGOVEST_HYMN_VARIANTS_20261123",
-"  const hymnLocalized = (base) =>",
-"    (uk && resolvedFeast?.[base + '_uk']) || resolvedFeast?.[base] || '';",
-"  const troparionAlt = hymnLocalized('troparion_alt_content');",
-"  const kontakionAlt = hymnLocalized('kontakion_alt_content');",
-"  const troparionAltTitle = hymnLocalized('troparion_alt_title');",
-"  const kontakionAltTitle = hymnLocalized('kontakion_alt_title');",
-"  const hymnScript = (kind, text, alternative = false) =>",
-"    isChurchSlavonicHymn(text,",
-"      hymnLocalized(kind + (alternative ? '_alt' : '') + '_script')) ? 'csl' : 'civil';",
-""].join('\n');
-next=next.replace(oldData,newData+oldData);
-for(const [kind,variable] of [['troparion','troparion'],['kontakion','kontakion']]){
-  const snippet="          text={"+variable+"}\n";
-  must(next.includes(snippet),'Cannot locate '+kind+' Accordion text');
-  next=next.replace(snippet,snippet+"          script={hymnScript('"+kind+"', "+variable+")}\n");
+const moduleImport="import {isChurchSlavonicHymn} from '../services/calendarHymnDisplay';";
+function parse(s){return parser.parse(s,{sourceType:'module',plugins:['jsx']});}
+function fail(message){throw Error(message+'; local SaintDetailScreen left unchanged');}
+const ast=parse(original);
+if(original.includes(marker)||original.includes('const troparionAlt = hymnLocalized(')) {
+  fail('Hymn UI patch already installed or partially installed');
 }
-const extraAccordions=[
-"        {!!troparionAlt && <Accordion",
-"          title={uk ? 'Інший тропар' : 'Иной тропарь'}",
-"          feast={resolvedFeast} date={date} sourceTitle={title}",
-"          section=\"troparion_alt\" icon=\"♪\"",
-"          text={troparionAlt} subtitle={troparionAltTitle}",
-"          script={hymnScript('troparion', troparionAlt, true)}",
-"          focusHighlight={focusSection === 'troparion_alt'}",
-"        />}",
-"        {!!kontakionAlt && <Accordion",
-"          title={uk ? 'Інший кондак' : 'Иной кондак'}",
-"          feast={resolvedFeast} date={date} sourceTitle={title}",
-"          section=\"kontakion_alt\" icon=\"✧\"",
-"          text={kontakionAlt} subtitle={kontakionAltTitle}",
-"          script={hymnScript('kontakion', kontakionAlt, true)}",
-"          focusHighlight={focusSection === 'kontakion_alt'}",
-"        />}",
-""].join('\n');
-const prayerAccord="\n        {!!prayer && <Accordion";
-must(next.includes(prayerAccord),'Prayer accordion insertion missing');
-const altSplit='        {!!kontakionAlt && <Accordion';
-const parts=extraAccordions.split(altSplit);
-must(parts.length===2,'Cannot separate the 2 alternative hymn blocks');
-const troparionBlock=parts[0].trimEnd();
-const kontakionBlock=altSplit+parts[1];
-const beforeKontakion='\n        <Accordion\n          title="Кондак"';
-must(next.includes(beforeKontakion),'Main kontakion Accordion anchor missing');
-next=next.replace(beforeKontakion,'\n'+troparionBlock+beforeKontakion);
-next=next.replace(prayerAccord,'\n'+kontakionBlock+prayerAccord);
-const subtitleStyle='style={styles.subtitle}';
-must(next.includes(subtitleStyle),'Subtitle style anchor missing');
-next=next.replace(subtitleStyle,
-  "style={[styles.subtitle, script === 'csl' && styles.ponomarSubtitle]}");
-const noContent="!life && !troparion && !kontakion && !prayer";
-must(next.includes(noContent),'Empty card expression missing');
-next=next.replace(noContent,"!life && !troparion && !kontakion && !troparionAlt && !kontakionAlt && !prayer");
-const fontStyle="  body: {\n    fontFamily: 'serif',";
-must(next.includes(fontStyle),'Body style declaration missing');
-next=next.replace(fontStyle,
-    "  ponomarBody: {fontFamily: 'Ponomar', fontSize: 19, lineHeight: 32},\n" +
-    "  ponomarSubtitle: {fontFamily: 'Ponomar', fontSize: 15, lineHeight: 24},\n" + fontStyle);
+const edits=[];
+function put(start,end,text,reason){
+  if(start<0||end<start||end>original.length)fail('Invalid replacement at '+reason);
+  for(const item of edits)if(start<item.end&&item.start<end)fail('Overlapping patches: '+reason+'/'+item.reason);
+  edits.push({start,end,text,reason});
+}
+function walk(node,visit){
+ if(!node||typeof node!=='object')return;
+ if(!node.type)return;
+ visit(node);
+ for(const [key,value] of Object.entries(node)){
+   if(['loc','comments','tokens','leadingComments','innerComments','trailingComments','extra'].includes(key))continue;
+   if(Array.isArray(value)){
+     for(const item of value)if(item&&typeof item==='object'&&item.type)walk(item,visit);
+   }else if(value&&typeof value==='object'&&value.type)walk(value,visit);
+ }
+}
+const declarations=[];
+walk(ast.program,(node)=>{if(node.type==='VariableDeclarator')declarations.push(node);});
+const accordion=declarations.find(node=>node.id?.type==='Identifier'&&node.id.name==='Accordion'
+  &&node.init?.type==='ArrowFunctionExpression');
+if(!accordion)fail('Could not locate Accordion arrow component (inspect its declaration)');
+const accordionFn=accordion.init;
+const props=accordionFn.params[0];
+if(props?.type!=='ObjectPattern')fail('Accordion parameter is not an object pattern');
+const importDecl=ast.program.body.find(node=>node.type==='ImportDeclaration'
+  &&node.source.value==='../context/LanguageContext');
+if(!importDecl)fail('LanguageContext import not found');
+if(original.includes(moduleImport))fail('Hymn display import already present');
+put(importDecl.end,importDecl.end,'\n'+moduleImport,'import');
+const paramSource=original.slice(props.start,props.end);
+const last=props.properties.at(-1);
+if(!last)fail('Accordion has no component properties');
+const tail=original.slice(last.end,props.end-1);
+const scriptParam=tail.includes(',')
+  ? "\n  script = 'civil',"
+  : ",\n  script = 'civil',";
+put(props.end-1,props.end-1,scriptParam,'Accordion script prop');
+
+// Patch only the body of the Accordion component. Avoid global replacements.
+let bodyStyled=0;
+let subtitleStyled=0;
+let saveFontStyled=0;
+walk(accordionFn.body,(node)=>{
+  if(node.type==='JSXAttribute'&&['style','textStyle'].includes(node.name?.name)
+    &&node.value?.type==='JSXExpressionContainer'){
+    const exp=node.value.expression;
+    if(exp?.type==='MemberExpression'&&exp.object?.name==='styles'&&exp.property?.name==='body'){
+      put(node.value.start,node.value.end,
+        "{[styles.body, script === 'csl' && styles.ponomarBody]}",
+        'Ponomar body');
+      bodyStyled++;
+    }
+    if(exp?.type==='MemberExpression'&&exp.object?.name==='styles'&&exp.property?.name==='subtitle'){
+      put(node.value.start,node.value.end,
+        "{[styles.subtitle, script === 'csl' && styles.ponomarSubtitle]}",
+        'Ponomar subtitle');
+      subtitleStyled++;
+    }
+  }
+  if(node.type==='ObjectProperty'&&
+    (node.key?.name==='fontFamily'||node.key?.value==='fontFamily')){
+    const current=original.slice(node.value.start,node.value.end);
+    if(current.includes('styles.body.fontFamily')){
+      put(node.value.start,node.value.end,
+        "script === 'csl' ? 'Ponomar' : styles.body.fontFamily",
+        'Saved selection font');
+      saveFontStyled++;
+    }
+  }
+});
+if(bodyStyled===0)fail('Could not locate text body in Accordion for Ponomar');
+if(subtitleStyled===0)fail('Could not locate subtitle in Accordion for Ponomar');
+if(saveFontStyled>1)fail('Multiple save font assignments in Accordion');
+if(original.includes('ponomarBody:')||original.includes('ponomarSubtitle:')){
+  fail('Ponomar styles already exist; manual check needed');
+}
+const bodyStyle=/\bbody:\s*\{/g;
+const bodyMatches=[...original.matchAll(bodyStyle)];
+if(bodyMatches.length!==1)fail('Cannot identify a unique StyleSheet body definition');
+put(bodyMatches[0].index,bodyMatches[0].index,
+  "ponomarBody: {fontFamily:'Ponomar',fontSize:19,lineHeight:33,fontWeight:'400'},\n  "+
+  "ponomarSubtitle: {fontFamily:'Ponomar',fontSize:16,lineHeight:27,fontWeight:'400'},\n  ",
+  'Ponomar styles');
+
+// Resolve the local saint record variable and insert localized hymn helpers
+// after the existing "kontakion" declaration, regardless of spacing or
+// whether the source is "resolvedFeast", "calendarFeast" or "feast".
+const screen=declarations.find(node=>node.id?.type==='Identifier'&&node.id.name==='SaintDetailScreen'
+  &&node.init?.type==='ArrowFunctionExpression');
+if(!screen)fail('SaintDetailScreen is not a component variable');
+const locals=screen.init.body.body.filter(node=>node.type==='VariableDeclaration');
+const localNames=new Set();
+for(const statement of locals)
+  for(const decl of statement.declarations)
+    if(decl.id?.type==='Identifier')localNames.add(decl.id.name);
+const feastName=['resolvedFeast','calendarFeast','feast'].find(name=>localNames.has(name));
+if(!feastName)fail('No current feast object variable detected');
+const hymnVars=['troparion','kontakion'];
+for(const name of hymnVars)if(!localNames.has(name))fail('Missing hymn variable: '+name);
+const hymnDecl=locals.find(node=>node.declarations.some(d=>d.id?.name==='kontakion'));
+if(!hymnDecl)fail('Cannot identify the kontakion data declaration');
+const helpers=[
+ '',
+ '  // '+marker,
+ "  const hymnLocalized = (key) =>",
+ "    (language === 'uk' && "+feastName+"?.[key + '_uk']) || "+feastName+"?.[key] || '';",
+ "  const troparionAlt = hymnLocalized('troparion_alt_content');",
+ "  const kontakionAlt = hymnLocalized('kontakion_alt_content');",
+ "  const troparionAltTitle = hymnLocalized('troparion_alt_title');",
+ "  const kontakionAltTitle = hymnLocalized('kontakion_alt_title');",
+ "  const hymnScript = (kind, value, alternative = false) =>",
+ "    isChurchSlavonicHymn(value, hymnLocalized(kind + (alternative ? '_alt' : '') + '_script')) ? 'csl' : 'civil';",
+].join('\n')+'\n';
+put(hymnDecl.end,hymnDecl.end,helpers,'Localized alternate fields');
+
+// Find the two existing accordion components by their text prop, independent
+// of field order, whitespace, and the presence/absence of "section".
+const accordions=[];
+walk(screen.init.body,(node)=>{
+ if(node.type!=='JSXElement'||node.openingElement?.name?.name!=='Accordion')return;
+ const textAttr=node.openingElement.attributes.find(attribute=>
+   attribute.type==='JSXAttribute'&&attribute.name?.name==='text');
+ const expression=textAttr?.value?.expression;
+ if(expression?.type==='Identifier'&&hymnVars.includes(expression.name)){
+   accordions.push({node,kind:expression.name});
+ }
+});
+for(const kind of hymnVars){
+ const matches=accordions.filter(item=>item.kind===kind);
+ if(matches.length!==1)fail('Expected one '+kind+' Accordion, found '+matches.length);
+ const elem=matches[0].node;
+ const opening=elem.openingElement;
+ if(!opening.selfClosing)fail(kind+' accordion must be a self-closing component');
+ if(opening.attributes.some(attr=>attr.type==='JSXAttribute'&&attr.name?.name==='script')){
+   fail(kind+' already has a script prop');
+ }
+ put(opening.end-2,opening.end-2,
+  "\n          script={hymnScript('"+kind+"', "+kind+")}",
+  kind+' script prop');
+ const alt=kind==='troparion'?'troparionAlt':'kontakionAlt';
+ const altTitle=kind==='troparion'?'troparionAltTitle':'kontakionAltTitle';
+ const label=kind==='troparion'
+   ? "{language === 'uk' ? 'Інший тропар' : 'Иной тропарь'}"
+   : "{language === 'uk' ? 'Інший кондак' : 'Иной кондак'}";
+ const icon=kind==='troparion'?'♪':'✧';
+ const extra=[
+   '',
+   '        {!!'+alt+' && (',
+   '          <Accordion',
+   '            title='+label,
+   '            feast={'+feastName+'} date={date} sourceTitle={title}',
+   '            section="'+kind+'_alt" icon="'+icon+'"',
+   '            text={'+alt+'} subtitle={'+altTitle+'}',
+   "            script={hymnScript('"+kind+"', "+alt+", true)}",
+   "            focusHighlight={false}",
+   '          />',
+   '        )}',
+ ].join('\n');
+ let end=elem.end;
+ // If existing hymn JSX is wrapped in an "{condition && (...)}" expression,
+ // insert after the wrapper, not inside that expression.
+ const conditional=original.slice(end).match(/^\s*\)\}/);
+ if(conditional)end+=conditional[0].length;
+ put(end,end,extra,'Separate '+kind+' accordion');
+}
+const emptyFlag='!life && !troparion && !kontakion';
+if(original.includes(emptyFlag)){
+ const at=original.indexOf(emptyFlag)+emptyFlag.length;
+ put(at,at,' && !troparionAlt && !kontakionAlt','Empty-card fallback');
+}
+edits.sort((a,b)=>b.start-a.start||b.end-a.end);
+let next=original;
+for(const change of edits)
+  next=next.slice(0,change.start)+change.text+next.slice(change.end);
 parse(next);
-console.log('PREVIEW: SaintDetailScreen syntax PASS. '+old.length+' -> '+next.length+' characters.');
-if(!apply){console.log('CHECK mode. No changes made.');process.exit(0)}
-if(fs.existsSync(backup))throw Error('Backup already exists. Do not overwrite it.');
+console.log('PASS: AST-aware hymn UI patch checks.');
+console.log('Feast record: '+feastName+'; Ponomar text styles: '+bodyStyled+'; subtitle styles: '+subtitleStyled);
+console.log('Prepared '+edits.length+' localized changes to SaintDetailScreen.');
+console.log('Other screens, calendar JSON and Django database are unchanged.');
+if(!apply){
+ console.log('CHECK mode — source files preserved. Use --apply to install.');
+ process.exit(0);
+}
+if(fs.existsSync(backup))fail('Existing backup; refusing overwrite: '+backup);
 fs.copyFileSync(target,backup);
-fs.writeFileSync(target,next,'utf8');
-console.log('INSTALLED: independent alternative hymns and Ponomar presentation.');
+try{fs.writeFileSync(target,next,'utf8');}
+catch(error){fs.copyFileSync(backup,target);throw error;}
+console.log('INSTALLED: separate alternative hymns + Ponomar for decoded CSL.');
 console.log('BACKUP: '+backup);
