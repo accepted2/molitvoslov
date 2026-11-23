@@ -65,7 +65,11 @@ node tools/test_uoc_210_integrated.cjs
 ```powershell
 python manage.py check
 python manage.py test api.test_uoc_merged_calendar_20261123
-python manage.py makemigrations --check --dry-run
+python tools/check_calendar_migration_drift_20261123.py
+# NOTE: a strict makemigrations --check --dry-run currently reports exactly
+# api.CalendarReading.kind and api.Text.content. These changes PRE-DATE this
+# calendar branch and are already represented in the WIP branch migration
+# 0047_align_content_models.py; do not create a duplicate 0048 here.
 ```
 
 Важно: проверка Android-эмулятора и локальной Django БД на Windows пока не
