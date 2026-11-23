@@ -69,13 +69,13 @@ const approvedHymnAlias = feast => {
   // to canonical catalogue IDs. Match BOTH the source ID and commemoration
   // title so an accidental numeric collision cannot transplant hymns.
   if ((sourceId === 3301 || sourceId === 4260) &&
-      titles.some(value => /онисифор[а-я]*\\s+и\\s+порфир/i.test(
+      titles.some(value => /онисифор[а-я]*\s+и\s+порфир/i.test(
         String(value || '').toLocaleLowerCase('ru-RU')))) {
     return 'blv-d8aea6d1a8b6379590a8bed9';
   }
   if (sourceId === 3355 &&
       titles.some(value => /никола/i.test(String(value || '')) &&
-        /мир[\\s-]*лики/i.test(String(value || '').toLocaleLowerCase('ru-RU')))) {
+        /мир[\s-]*лики/i.test(String(value || '').toLocaleLowerCase('ru-RU')))) {
     return 'blv-839dc39617bdf40503d594dd';
   }
   for (const raw of titles) {
