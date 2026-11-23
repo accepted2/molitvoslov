@@ -101,8 +101,27 @@ const june=require('../src/data/calendar/2026-06.json');
 const feast=june.days['2026-06-05'].ru.all_feasts
   .find(x=>x.source_id===3797);
 assert.ok(feast,'Old Euphrosyne of Polotsk source card not found');
-assert.deepEqual(Array.from(presenter.getCalendarCardHymns(feast,'ru').sections,s=>s.title),
+const legacyOutput=presenter.getCalendarCardHymns(feast,'ru');
+assert.deepEqual(Array.from(legacyOutput.sections,s=>s.title),
   examples[1].expected,'Legacy calendar must render all 5 independent hymns');
+const legacyCanonical=byId.get(examples[1].id);
+for(const section of legacyOutput.sections){
+  const source=legacyCanonical.hymns.find(row=>
+    row.kind===(section.kind==='troparion'?'tropar':'kondak')
+    && row.variant===section.variant && row.language!=='uk');
+  assert.ok(source,'Missing independent source record for '+section.key);
+  assert.equal(section.text,source.content,'Legacy card did not select corrected hymn text');
+  assert.equal(section.subtitle,source.heading,'Legacy card lost the glas or title');
+  assert.equal(section.origin,'canonical_catalogue',
+    'Stale legacy text unexpectedly overrides audited catalogue');
+}
+const handwritten=presenter.getCalendarCardHymns({
+  ...feast,
+  troparion_content:'Ручная правка тропаря',
+  protected_hymn_fields:['troparion_content'],
+},'ru');
+assert.equal(handwritten.sections.find(s=>s.key==='troparion:1').text,
+  'Ручная правка тропаря','Protected manual edits must remain top priority');
 assert.equal(presenter.getCalendarCardHymns({
   source_id:3797,title:'Преподобная Евфросиния Суздальская',
 },'ru').sections.length,0,
