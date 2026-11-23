@@ -241,7 +241,7 @@ const normalizeCalendarText = (value) =>
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 
-const FormattedCalendarText = ({text}) => {
+const FormattedCalendarText = ({text, isHymn = false}) => {
   const normalized = normalizeCalendarText(text);
 
   if (!normalized) {
@@ -260,6 +260,7 @@ const FormattedCalendarText = ({text}) => {
           key={`${index}-${paragraph.slice(0, 24)}`}
           style={[
             styles.textBlockParagraph,
+            isHymn && styles.hymnParagraph,
             index === paragraphs.length - 1 && styles.textBlockParagraphLast,
           ]}
           selectable
@@ -271,26 +272,26 @@ const FormattedCalendarText = ({text}) => {
   );
 };
 
-const ExpandableTextBlock = ({title, subtitle, text}) => {
+const ExpandableTextBlock = ({title, subtitle, text, isHymn = false}) => {
   const [expanded, setExpanded] = useState(false);
 
   if (!text) return null;
 
   return (
-    <View style={styles.textBlock}>
+    <View style={[styles.textBlock, isHymn && styles.hymnTextBlock]}>
       <Pressable
         onPress={() => setExpanded((value) => !value)}
         style={({pressed}) => [styles.textBlockHeader, pressed && styles.pressed]}
       >
         <View style={styles.textBlockHeaderText}>
-          <Text style={styles.textBlockTitle}>{title}</Text>
-          {!!subtitle && <Text style={styles.textBlockSubtitle}>{subtitle}</Text>}
+          <Text style={[styles.textBlockTitle, isHymn && styles.hymnTextBlockTitle]}>{title}</Text>
+          {!!subtitle && <Text style={[styles.textBlockSubtitle, isHymn && styles.hymnTextBlockSubtitle]}>{subtitle}</Text>}
         </View>
 
         <SoftChevron expanded={expanded} />
       </Pressable>
 
-      {expanded && <FormattedCalendarText text={text} />}
+      {expanded && <FormattedCalendarText text={text} isHymn={isHymn} />}
     </View>
   );
 };
@@ -905,12 +906,18 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             />
           )}
 
+          {!!cardHymns.sections.length && (
+            <Text style={[styles.sectionEyebrow, styles.hymnSectionLabel]}>
+              {dataLanguage === 'uk' ? 'ПІСНЕСПІВИ' : 'ПЕСНОПЕНИЯ'}
+            </Text>
+          )}
           {cardHymns.sections.map((hymn) => (
             <ExpandableTextBlock
               key={hymn.key}
               title={hymn.title}
               subtitle={hymn.subtitle}
               text={hymn.text}
+              isHymn
             />
           ))}
           {!!cardHymns.missing.length && (
@@ -1279,6 +1286,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#EAD7B8',
     overflow: 'hidden',
   },
+  hymnSectionLabel: {marginTop: 17, marginBottom: 3, letterSpacing: 1.1},
+  hymnTextBlock: {
+    borderColor: '#C5A380',
+    borderLeftWidth: 3,
+    borderLeftColor: '#9C6547',
+    backgroundColor: '#F5E5CD',
+  },
+  hymnTextBlockTitle: {color: '#623527'},
+  hymnTextBlockSubtitle: {color: '#974F3A', fontSize: 12},
+  hymnParagraph: {fontSize: 16, lineHeight: 28, color: '#3E2A1D'},
   textBlockHeader: {
     minHeight: 56,
     paddingLeft: 14,
