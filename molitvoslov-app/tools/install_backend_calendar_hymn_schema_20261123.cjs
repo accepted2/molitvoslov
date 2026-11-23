@@ -83,9 +83,10 @@ const modelBody=[
 
 // No dependency on existing get_troparion_content implementation/format.
 // These declarations will be collected normally by SerializerMetaclass.
+const localizedWireFields=alternateFields.filter(field=>!field.endsWith('_uk'));
 const serializerBody=[
   '    # '+marker,
-  ...alternateFields.map(field=>
+  ...localizedWireFields.map(field=>
     '    '+field+' = serializers.SerializerMethodField()'),
   '',
   '    def _blagovest_alt_text(self, obj, key):',
@@ -99,7 +100,7 @@ const serializerBody=[
   '            return getattr(obj, key + "_uk", "") or getattr(obj, key, "")',
   '        return getattr(obj, key, "")',
   '',
-  ...alternateFields.flatMap(field=>[
+  ...localizedWireFields.flatMap(field=>[
     '    def get_'+field+'(self, obj):',
     '        return self._blagovest_alt_text(obj, "'+
       (field.endsWith('_uk')?field.slice(0,-3):field)+'")',
@@ -112,7 +113,6 @@ const serializerBody=[
 ].join('\n');
 // Serializer explicitly returns localized single-field values to each client.
 // Do not create duplicate _uk wire keys when Meta.fields is localized.
-const localizedWireFields=alternateFields.filter(field=>!field.endsWith('_uk'));
 const serializerFixed=serializerBody.replace(
   '    if isinstance(Meta.fields, (list, tuple)):\n'+
   '        Meta.fields = list(Meta.fields) + [\n'+
@@ -181,10 +181,12 @@ function verify(parts,output){
   for(const field of alternateFields){
     if(!output.model.includes('    '+field+' = models.TextField'))
       throw Error('Missing model field '+field);
-    if(!output.serializer.includes('    '+field+' = serializers.SerializerMethodField()'))
-      throw Error('Missing serializer declaration '+field);
     if(!output.admin.includes('"'+field+'"'))
       throw Error('Missing admin form field '+field);
+  }
+  for(const field of localizedWireFields){
+    if(!output.serializer.includes('    '+field+' = serializers.SerializerMethodField()'))
+      throw Error('Missing serializer wire field '+field);
   }
   for(const wire of localizedWireFields)
     if(!output.serializer.includes('            "'+wire+'",'))
@@ -200,8 +202,16 @@ function verify(parts,output){
   for(const name of Object.keys(parts)){
     if(output[name].length<=parts[name].length)
       throw Error('Unexpected source shrinkage: '+name);
-    if(!output[name].includes(parts[name].trim()))
-      throw Error('Existing content not preserved in '+name);
+    // Patching classes inserts text inside the file. Preserve all original
+    // nonempty source lines in their original order, not as one substring.
+    const beforeLines=parts[name].split('\n').filter(line=>line.trim());
+    const afterLines=output[name].split('\n');
+    let matched=0;
+    for(const line of afterLines)
+      if(line===beforeLines[matched])matched++;
+    if(matched!==beforeLines.length)
+      throw Error('Original source line lost/reordered in '+name+' at '+matched+
+        ' of '+beforeLines.length);
     pythonSyntax(name+'.py',output[name]);
   }
 }
