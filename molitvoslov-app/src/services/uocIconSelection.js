@@ -113,12 +113,12 @@ export const selectUocIcon = feast => {
   if (selected) return selected.url;
   // Never fall back to a Blagovist link that was explicitly quarantined.
   // Existing manually curated icons and other source libraries are kept.
-  const suspected = id
-    ? quarantinedIds.has(id)
-    : [feast.title_ru, feast.title_uk, feast.title].some(
-        title => quarantinedNames.has(normalize(title))
-      );
-  if (suspected && /^https:\/\/(?:www\.)?blagovist\.info\//i.test(existing))
-    return '';
+  // A generic old Blagovist URL is not a curated match. Even if this
+  // specific card was not in the quarantine list, do not silently reuse it:
+  // source-page thumbnails and unrelated sidebar icons caused the original
+  // cross-saint contamination. Explicit admin edits were handled above.
+  if (/^https:\/\/(?:www\.)?blagovist\.info\//i.test(existing)) return '';
+  // Preserve separately supplied non-Blagovist images from the app's
+  // existing library, unless an administrator clears them manually.
   return isHttps(existing) ? existing : '';
 };
