@@ -100,8 +100,20 @@ assert.match(calendar,/const calendarTodayKey = useCalendarTodayRollover\(/);
 assert.match(calendar,/setSelectedDate\(currentToday\)/);
 assert.match(calendar,/const today = calendarTodayKey/);
 assert.match(calendar,/selectedDateRef\.current, previousToday/);
-assert.match(home,/day\?\.date_gregorian === todayKey/);
-assert.match(home,/getOfflineCalendarDay\(todayKey, getCalendarDataLanguage\(language\)\)/);
+// The home widget has had two equivalent implementations. In both cases it
+// must show the actual local "today", not a manually browsed calendar date.
+const validTodaySelection = [
+  /day\?\.date_gregorian === todayKey/,
+  /selectedKey === todayKey\s*\?\s*day\s*:\s*await getOfflineCalendarDay\(new Date\(\), dataLanguage\)/,
+];
+const validTodayLookup = [
+  /getOfflineCalendarDay\(todayKey,\s*getCalendarDataLanguage\(language\)\)/,
+  /getOfflineCalendarDay\(new Date\(\),\s*dataLanguage\)/,
+];
+assert.ok(validTodaySelection.some(pattern => pattern.test(home)),
+  'Home widget must select the real current date');
+assert.ok(validTodayLookup.some(pattern => pattern.test(home)),
+  'Home widget must load the real current date if another date is selected');
 console.log('PASS: automatic date rollover at midnight, foreground resume and screen refocus');
 console.log('PASS: no duplicate rollover, preserve manually selected dates and refresh today ring');
 console.log('PASS: local calendar month/year boundaries and always-current-day Android widget');
