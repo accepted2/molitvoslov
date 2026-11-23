@@ -3,38 +3,10 @@
 // Run with: node tools/test_uoc_integrated_hymns_icons_20261123.cjs
 // No network, database writes or Android environment.
 const assert=require('node:assert/strict');
-const fs=require('node:fs');
 const path=require('node:path');
-const vm=require('node:vm');
-const {createRequire}=require('node:module');
+const {loadCalendarPresentationForNode}=require('./lib/loadCalendarPresentationForNode.cjs');
 const root=path.resolve(__dirname,'..');
-const modules=path.join(root,'src/services');
-const ctxFor=file=>({module:{exports:{}},require:createRequire(file)});
-const load= (filename,exports) => {
-  const file=path.join(modules,filename);
-  let source=fs.readFileSync(file,'utf8');
-  if(filename==='calendarCivicDecoder.js')
-    source=source.replace(/export \{[^}]+\};?/u,
-      'module.exports={looksLegacyUcs,convertLegacyUcsToCivil,expandTitlos,toCivilLetters};');
-  if(filename==='uocIconSelection.js')
-    source=source.replace(/export const /gu,'const ')
-      +'\nmodule.exports={safeIconCandidateCount,selectUocIcon};';
-  const context=ctxFor(file);
-  if(filename==='calendarCardPresentation.js'){
-    source=source.replace(/import \{[\s\S]*?\} from '\.\/calendarCivicDecoder';\n/u,'')
-      .replace(/import \{selectUocIcon\} from '\.\/uocIconSelection';\n/u,'')
-      .replace(/export const /gu,'const ')
-      +'\nmodule.exports={getCalendarCardHymns,uniqueCalendarCards};';
-    Object.assign(context,exports);
-  }
-  vm.runInNewContext(source,context,{filename:file,timeout:15000});
-  return context.module.exports;
-};
-const decoder=load('calendarCivicDecoder.js',{});
-const icons=load('uocIconSelection.js',{});
-const presenter=load('calendarCardPresentation.js',{
-  ...decoder,selectUocIcon:icons.selectUocIcon,
-});
+const {decoder,icons,presenter}=loadCalendarPresentationForNode(root);
 assert.equal(icons.safeIconCandidateCount,2734);
 const iconShards=Array.from({length:12},(_,i)=>
   require(path.join(root,'src/data/calendar/uocIconCandidates'+i+'.json')));
