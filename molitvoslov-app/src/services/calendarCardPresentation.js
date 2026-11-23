@@ -6,6 +6,16 @@ import {
 } from './calendarCivicDecoder';
 
 const corrections = require('../data/calendar/uocCivicHymns210.json');
+const allCivilShards = [
+  require('../data/calendar/uocAllCivilHymns0.json'),
+  require('../data/calendar/uocAllCivilHymns1.json'),
+  require('../data/calendar/uocAllCivilHymns2.json'),
+  require('../data/calendar/uocAllCivilHymns3.json'),
+  require('../data/calendar/uocAllCivilHymns4.json'),
+  require('../data/calendar/uocAllCivilHymns5.json'),
+  require('../data/calendar/uocAllCivilHymns6.json'),
+  require('../data/calendar/uocAllCivilHymns7.json'),
+];
 const OLD_LETTERS = /[ѣѢѡѠѻѺѿѾѧѦѵѴѳѲѯѮѱѰꙋꙊꙗꙖ\u0483\u0486\u0487\u2de0-\u2dff]/u;
 const INVISIBLE = /[\u200b\u00ad\ufeff\u2060]/gu;
 const TYPES = ['troparion', 'kontakion'];
@@ -30,6 +40,35 @@ for (const item of corrections.entries) {
     else if (indexedName.get(title) !== item.card_id) namesWithConflict.add(title);
   }
 }
+
+// Exactly one canonical card's texts may be associated with a displayed saint.
+// A date alone is NEVER a sufficient join key: prevents a saint receiving
+// an unrelated holiday's troparion or kontakion.
+const civilById = new Map(), civilByName = new Map(), ambiguousNames = new Set();
+for (const shard of allCivilShards) {
+  for (const card of shard.cards || []) {
+    if (civilById.has(card.card_id)) throw Error('Duplicate canonical hymn ID');
+    civilById.set(card.card_id, card);
+    for (const title of [card.title_ru, card.title_uk]) {
+      const key = simpleTitle(title);
+      if (!key) continue;
+      if (civilByName.has(key) && civilByName.get(key) !== card.card_id)
+        ambiguousNames.add(key);
+      else civilByName.set(key, card.card_id);
+    }
+  }
+}
+const fullCivilRows = feast => {
+  const id = canonicalId(feast);
+  if (id && civilById.has(id)) return civilById.get(id).hymns || [];
+  for (const value of [feast?.title_ru, feast?.title_uk, feast?.title]) {
+    const key = simpleTitle(value);
+    if (!key || ambiguousNames.has(key)) continue;
+    const match = civilById.get(civilByName.get(key));
+    if (match) return match.hymns || [];
+  }
+  return [];
+};
 
 const canonicalId = feast =>
   String(feast?.card_id || feast?.blagovist_card_id || feast?.article_key || '').trim();
@@ -136,7 +175,16 @@ export const getCalendarCardHymns = (feast, language = 'ru') => {
         isCivil ? 2 : 7);
     }
   }
-  // The 226 corrected variants are baked into Git; no ZIP or downloads.
+  // Canonical civil/UK texts for 1,267 cards (2,821 variants), including
+  // Peter & Paul and the 210 corrected source groups, are shipped in the APK.
+  for (const h of fullCivilRows(feast)) {
+    const kind = h.kind === 'tropar' ? 'troparion' : 'kontakion';
+    add(kind, Number(h.variant) || 1, h.content, h.heading,
+      h.language === 'civil' || h.language === 'uk' ? '' : h.language,
+      'canonical_catalogue', h.language === 'uk' && language === 'uk' ? 3 : 4);
+  }
+  // The original 210 repair package remains committed with exact before/after
+  // comparisons and can fill variants when a later shard is incomplete.
   for (const h of correctedRows(feast)) {
     const kind = h.kind === 'tropar' ? 'troparion' : 'kontakion';
     add(kind, h.variant, h.content, h.heading, 'civil', 'uoc_210', 3);
