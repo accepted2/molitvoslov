@@ -86,9 +86,17 @@ let svcNext = exportBodyReplacements(svc.original, {
   getCalendarDay: '{\n  // Release-only calendar: ignore force/skipOffline/server arguments.\n  return getBundledCalendarDay(value, language);\n}',
   getCalendarMonth: '{\n  // New calendar years arrive in a new app release, never by HTTP refresh.\n  return getBundledCalendarMonth(year, month, language);\n}',
 });
-const bundledImport =
-  "import {getBundledCalendarDay, getBundledCalendarMonth} from './calendarOfflineStore';\n";
-if (!svcNext.includes(bundledImport)) svcNext = bundledImport + svcNext;
+const storeImports = parse(svcNext).program.body
+  .filter(node => node.type === 'ImportDeclaration' &&
+    node.source.value === './calendarOfflineStore');
+const localBindings = new Set(storeImports.flatMap(node =>
+  node.specifiers.map(specifier => specifier.local.name)));
+const missingImports = ['getBundledCalendarDay', 'getBundledCalendarMonth']
+  .filter(name => !localBindings.has(name));
+if (missingImports.length) {
+  svcNext = "import {" + missingImports.join(', ') +
+    "} from './calendarOfflineStore';\n" + svcNext;
+}
 parse(svcNext);
 operations.push({source: svc, updated: svcNext});
 
