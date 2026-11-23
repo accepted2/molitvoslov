@@ -43,6 +43,20 @@ export const getCalendarFeast = async ({sourceId, id, language = 'ru', signal} =
 
 const monthCache = new Map();
 const dayCache = new Map();
+// A small TTL prevents published admin changes from being stuck in RAM until
+// Android kills the process. Offline fallback remains available indefinitely.
+const calendarCacheSavedAt = new Map();
+const CALENDAR_CACHE_TTL_MS = 5 * 60 * 1000;
+const isFreshCalendarCache = (kind, key) =>
+  Date.now() - (calendarCacheSavedAt.get(`${kind}:${key}`) || 0) < CALENDAR_CACHE_TTL_MS;
+const cacheCalendarDay = (key, value) => {
+  dayCache.set(key, value);
+  calendarCacheSavedAt.set(`day:${key}`, Date.now());
+};
+const cacheCalendarMonth = (key, value) => {
+  monthCache.set(key, value);
+  calendarCacheSavedAt.set(`month:${key}`, Date.now());
+};
 
 const pad = (value) => String(value).padStart(2, '0');
 
@@ -107,7 +121,7 @@ export const getCalendarDay = async (
   const lang = language === 'uk' ? 'uk' : 'ru';
   const key = `${lang}:${dateKey}`;
 
-  if (!force && dayCache.has(key)) {
+  if (!force && dayCache.has(key) && isFreshCalendarCache('day', key)) {
     return dayCache.get(key);
   }
 
@@ -115,7 +129,7 @@ export const getCalendarDay = async (
   const online = await canReachNetwork();
 
   if (!online && offline) {
-    dayCache.set(key, offline);
+    cacheCalendarDay(key, offline);
     return offline;
   }
 
@@ -132,7 +146,7 @@ export const getCalendarDay = async (
     }
 
     const enriched = applyYearMarkers(data, await loadYearMarkers(Number(dateKey.slice(0, 4))));
-    dayCache.set(key, enriched);
+    cacheCalendarDay(key, enriched);
     await storeCalendarDay(dateKey, lang, enriched);
 
     return enriched;
@@ -142,7 +156,7 @@ export const getCalendarDay = async (
     }
 
     if (offline) {
-      dayCache.set(key, offline);
+      cacheCalendarDay(key, offline);
       return offline;
     }
 
@@ -158,7 +172,7 @@ export const getCalendarMonth = async (
   const lang = language === 'uk' ? 'uk' : 'ru';
   const key = `${lang}:${year}-${month}`;
 
-  if (!force && monthCache.has(key)) {
+  if (!force && monthCache.has(key) && isFreshCalendarCache('month', key)) {
     return monthCache.get(key);
   }
 
@@ -166,11 +180,11 @@ export const getCalendarMonth = async (
   const online = await canReachNetwork();
 
   if (!online && offline) {
-    monthCache.set(key, offline);
+    cacheCalendarMonth(key, offline);
 
     (offline.days || []).forEach((day) => {
       if (day?.date_gregorian) {
-        dayCache.set(`${lang}:${day.date_gregorian}`, day);
+        cacheCalendarDay(`${lang}:${day.date_gregorian}`, day);
       }
     });
 
@@ -190,12 +204,12 @@ export const getCalendarMonth = async (
     }
 
     const enriched = applyYearMarkersToMonth(data, await loadYearMarkers(year));
-    monthCache.set(key, enriched);
+    cacheCalendarMonth(key, enriched);
     await storeCalendarMonth(enriched, lang);
 
     (enriched?.days || []).forEach((day) => {
       if (day?.date_gregorian) {
-        dayCache.set(`${lang}:${day.date_gregorian}`, day);
+        cacheCalendarDay(`${lang}:${day.date_gregorian}`, day);
       }
     });
 
@@ -206,11 +220,11 @@ export const getCalendarMonth = async (
     }
 
     if (offline) {
-      monthCache.set(key, offline);
+      cacheCalendarMonth(key, offline);
 
       (offline.days || []).forEach((day) => {
         if (day?.date_gregorian) {
-          dayCache.set(`${lang}:${day.date_gregorian}`, day);
+          cacheCalendarDay(`${lang}:${day.date_gregorian}`, day);
         }
       });
 
