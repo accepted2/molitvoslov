@@ -216,7 +216,10 @@ if (screen.original.includes('const loadDay = async') &&
     matches.day !== 1) {
   throw new Error('Cannot safely identify calendar day network refresh effect');
 }
-const screenNext = applyReplacements(screen.original, screenEdits);
+const screenNext = applyReplacements(screen.original, screenEdits)
+  // Removing the reconnect effect can leave whitespace-only lines.
+  // Clean just these blank lines, preserving existing line endings.
+  .replace(/^[ \t]+(?=\r?$)/gm, '');
 operations.push({source: screen, updated: screenNext});
 
 const altered = operations.filter(item => item.updated !== item.source.original);
