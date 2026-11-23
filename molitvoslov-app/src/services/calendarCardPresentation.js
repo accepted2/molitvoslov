@@ -73,6 +73,15 @@ const approvedHymnAlias = feast => {
         String(value || '').toLocaleLowerCase('ru-RU')))) {
     return 'blv-d8aea6d1a8b6379590a8bed9';
   }
+  if (sourceId === 3797 && titles.some(value => {
+    const normalized = String(value || '').normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('ru-RU');
+    return /евфросин/.test(normalized) && /полоцк/.test(normalized);
+  })) {
+    // 2026-06-05 bundled source: verified Euphrosyne of Polotsk has
+    // 2 independent troparia and 3 kontakia. No fuzzy-name matching.
+    return 'blv-01c20f48d726643027c330eb';
+  }
   if (sourceId === 3355 &&
       titles.some(value => /никола/i.test(String(value || '')) &&
         /мир[\s-]*лики/i.test(String(value || '').toLocaleLowerCase('ru-RU')))) {
