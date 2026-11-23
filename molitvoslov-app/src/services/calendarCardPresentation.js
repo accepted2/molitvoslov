@@ -104,7 +104,8 @@ export const getCalendarCardHymns = (feast, language = 'ru') => {
       const text = localized(feast, kind + suffix + '_content', language);
       const heading = localized(feast, kind + suffix + '_title', language);
       const script = localized(feast, kind + suffix + '_script', language);
-      const isCivil = !!civilize(text, script) && script !== 'csl';
+      const isCivil = !!text && script !== 'csl' && script !== 'church'
+        && !looksLegacyUcs(String(text)) && !OLD_LETTERS.test(String(text));
       add(kind, variant, text, heading, script, 'fields',
         isCivil ? 2 : 7);
     }
