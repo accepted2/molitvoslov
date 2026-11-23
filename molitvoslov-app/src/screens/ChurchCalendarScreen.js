@@ -39,6 +39,7 @@ import {
 } from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {getCalendarCardHymns, uniqueCalendarCards} from '../services/calendarCardPresentation';
+import {selectUocIcon} from '../services/uocIconSelection';
 import {colors} from '../theme';
 
 const buildCells = (year, month) => {
@@ -176,7 +177,8 @@ const FeastImage = ({feast}) => {
   const [failed, setFailed] = useState(false);
   const [imageHeight, setImageHeight] = useState(120);
 
-  const source = getBundledCalendarIconSource(feast);
+  const preferredUrl = selectUocIcon(feast);
+  const source = preferredUrl ? {uri: preferredUrl} : getBundledCalendarIconSource(feast);
   const imageWidth = 98;
 
   useEffect(() => {
@@ -195,7 +197,7 @@ const FeastImage = ({feast}) => {
     } else {
       setImageHeight(120);
     }
-  }, [feast?.icon_url, feast?.source_id]);
+  }, [feast?.icon_url, feast?.source_id, preferredUrl]);
 
   if (!source || failed) {
     return (
