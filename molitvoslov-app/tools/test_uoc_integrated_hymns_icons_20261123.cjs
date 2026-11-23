@@ -55,6 +55,21 @@ assert.equal(icons.selectUocIcon({title_ru:first[1]}),first[3]);
 assert.equal(icons.selectUocIcon({card_id:first[0],icon_url:'https://example.org/editor.jpg',icon_is_manual:true}),
   'https://example.org/editor.jpg');
 assert.equal(icons.selectUocIcon({card_id:'blv-unknown',title_ru:first[1],icon_url:''}),'');
+assert.equal(icons.selectUocIcon({
+  card_id:'blv-unknown',
+  icon_url:'https://blagovist.info/wp-content/uploads/old-unverified.jpg',
+}), '', 'Old source icon must not bypass the curated icon whitelist');
+assert.equal(icons.selectUocIcon({
+  card_id:'blv-unknown',icon_url:'https://molitvoslov.example/legacy-library.jpg',
+}), 'https://molitvoslov.example/legacy-library.jpg',
+'Unrelated existing image libraries must not be discarded');
+assert.equal(icons.selectUocIcon({
+  card_id:'blv-unknown',
+  icon_url:'https://blagovist.info/wp-content/uploads/manually-selected.jpg',
+  icon_is_manual:true,
+}), 'https://blagovist.info/wp-content/uploads/manually-selected.jpg',
+'Administrator icon selection must win');
+
 assert.ok(icons.selectUocIcon({
   title_ru:'Славных и всехвальных первоверховных апостолов Петра и Павла'
 }).endsWith('/Slavni-i-vsekhvalni-pervoverkhovni-apostoly-Petro-i-Pavlo_8.png'));
