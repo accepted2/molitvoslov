@@ -15,6 +15,7 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {useLanguage} from '../context/LanguageContext';
 import {getCalendarFeast} from '../services/churchCalendar';
+import {getCalendarCardHymns} from '../services/calendarCardPresentation';
 
 const formatDate = (value, language) => {
   if (!value) return '';
@@ -124,8 +125,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const image = (serverFeast?.icon_url ? {uri: serverFeast.icon_url} : null)
     || bundled || (feast?.icon_url ? {uri: feast.icon_url} : null);
   const life = (uk && feast?.life_content_uk) || feast?.life_content;
-  const troparion = (uk && feast?.troparion_content_uk) || feast?.troparion_content;
-  const kontakion = (uk && feast?.kontakion_content_uk) || feast?.kontakion_content;
+  const cardHymns = getCalendarCardHymns(feast, language);
   const prayer = (uk && feast?.prayer_content_uk) || feast?.prayer_content;
   const magnification = (uk && feast?.magnification_content_uk) || feast?.magnification_content;
   const translationMissing = uk && Array.isArray(feast?.missing_uk_fields)
@@ -172,18 +172,21 @@ export const SaintDetailScreen = ({route, navigation}) => {
           innerScroll={String(life || '').length > 550}
           height={lifeHeight}
         />
-        <Accordion
-          title={uk ? 'Тропар' : 'Тропарь'}
-          icon="♫"
-          text={troparion}
-          subtitle={feast?.troparion_echo ? 'Глас ' + feast.troparion_echo : feast?.troparion_title}
-        />
-        <Accordion
-          title="Кондак"
-          icon="▦"
-          text={kontakion}
-          subtitle={feast?.kontakion_echo ? 'Глас ' + feast.kontakion_echo : feast?.kontakion_title}
-        />
+        {cardHymns.sections.map((hymn) => (
+          <Accordion
+            key={hymn.key}
+            title={hymn.title}
+            icon={hymn.kind === 'troparion' ? '♫' : '▦'}
+            text={hymn.text}
+            subtitle={hymn.subtitle}
+          />
+        ))}
+        {!!cardHymns.missing.length && (
+          <Text style={styles.empty}>
+            {uk ? 'Деякі піснеспіви потребують перевірки тексту.'
+              : 'Некоторые песнопения ожидают проверки текста.'}
+          </Text>
+        )}
         {!!prayer && <Accordion title="Молитва" icon="☦" text={prayer} />}
         {!!magnification && <Accordion title={uk ? 'Величання' : 'Величание'} icon="♫" text={magnification} />}
         {!!date && (
@@ -195,7 +198,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
             </View>
           </View>
         )}
-        {!life && !troparion && !kontakion && !prayer && !magnification && (
+        {!life && !cardHymns.sections.length && !cardHymns.missing.length && !prayer && !magnification && (
           <Text style={styles.empty}>
             {uk ? 'Додаткових текстів поки немає.' : 'Дополнительных текстов пока нет.'}
           </Text>
