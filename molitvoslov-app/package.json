@@ -38,7 +38,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "test:uoc210": "node tools/test_uoc_210_integrated.cjs"
   },
   "private": true,
   "devDependencies": {
