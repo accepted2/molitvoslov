@@ -53,6 +53,21 @@ class CalendarFeast(models.Model):
     life_content_uk = models.TextField(blank=True, default="")
     description_uk = models.TextField(blank=True, default="")
 
+    # Manually edited fields must survive any future source re-import, including
+    # an intentional edit to an empty string. The admin populates this list.
+    manually_edited_fields = models.JSONField(default=list, blank=True)
+
+    prayer_title = models.TextField(blank=True, default="")
+    prayer_content = models.TextField(blank=True, default="")
+    prayer_title_uk = models.TextField(blank=True, default="")
+    prayer_content_uk = models.TextField(blank=True, default="")
+    magnification_title = models.TextField(blank=True, default="")
+    magnification_content = models.TextField(blank=True, default="")
+    magnification_title_uk = models.TextField(blank=True, default="")
+    magnification_content_uk = models.TextField(blank=True, default="")
+    source_reference = models.TextField(blank=True, default="")
+    icon_rights_note = models.TextField(blank=True, default="")
+
     all_dates = models.JSONField(default=list, blank=True)
 
     updated_at = models.DateTimeField(auto_now=True)
