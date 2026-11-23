@@ -11,9 +11,16 @@ function exportedBody(file, name) {
   const source = read(file);
   const ast = parser.parse(source, {sourceType: 'module', plugins: ['jsx']});
   for (const n of ast.program.body) {
-    if (n.type !== 'ExportNamedDeclaration' || n.declaration?.type !== 'VariableDeclaration') continue;
+    if (n.type !== 'ExportNamedDeclaration') continue;
+    if (n.declaration?.type === 'FunctionDeclaration' &&
+        n.declaration.id?.name === name) {
+      return source.slice(n.declaration.body.start, n.declaration.body.end);
+    }
+    if (n.declaration?.type !== 'VariableDeclaration') continue;
     for (const d of n.declaration.declarations) {
-      if (d.id?.name === name) return source.slice(d.init.body.start, d.init.body.end);
+      if (d.id?.name === name && d.init?.body) {
+        return source.slice(d.init.body.start, d.init.body.end);
+      }
     }
   }
   throw new Error('Missing exported function: ' + name + ' in ' + file);
