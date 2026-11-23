@@ -9,10 +9,12 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import {StatusBar} from 'expo-status-bar';
+import {useFocusEffect} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {useLanguage} from '../context/LanguageContext';
+import {getCalendarFeast} from '../services/churchCalendar';
 
 const formatDate = (value, language) => {
   if (!value) return '';
@@ -88,17 +90,41 @@ const Accordion = ({
 
 export const SaintDetailScreen = ({route, navigation}) => {
   const {language} = useLanguage();
-  const {feast, date} = route.params || {};
+  const {feast: initialFeast, date} = route.params || {};
+  const [serverFeast, setServerFeast] = useState(null);
+  // Keep displaying the bundled card immediately; replace it with the edited
+  // canonical version on focus. No whole-year re-download is needed.
+  useFocusEffect(React.useCallback(() => {
+    let active = true;
+    const controller = new AbortController();
+    setServerFeast(null);
+    if (initialFeast?.source_id != null || initialFeast?.id != null) {
+      getCalendarFeast({
+        sourceId: initialFeast?.source_id,
+        id: initialFeast?.id,
+        language,
+        signal: controller.signal,
+      })
+        .then((updated) => {if (active && updated) setServerFeast(updated);})
+        .catch(() => {}); // Offline fallback is the bundled card.
+    }
+    return () => {active = false; controller.abort();};
+  }, [initialFeast?.source_id, initialFeast?.id, language]));
+  const feast = serverFeast || initialFeast;
   const {width, height} = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const uk = language === 'uk';
   const title = (uk && feast?.title_uk) || feast?.title || '';
   const bundled = getBundledCalendarIconSource(feast);
-  const image = bundled || (feast?.icon_url ? {uri: feast.icon_url} : null);
+  const image = (serverFeast?.icon_url ? {uri: serverFeast.icon_url} : null)
+    || bundled || (feast?.icon_url ? {uri: feast.icon_url} : null);
   const life = (uk && feast?.life_content_uk) || feast?.life_content;
   const troparion = (uk && feast?.troparion_content_uk) || feast?.troparion_content;
   const kontakion = (uk && feast?.kontakion_content_uk) || feast?.kontakion_content;
   const prayer = (uk && feast?.prayer_content_uk) || feast?.prayer_content;
+  const magnification = (uk && feast?.magnification_content_uk) || feast?.magnification_content;
+  const translationMissing = uk && Array.isArray(feast?.missing_uk_fields)
+    && feast.missing_uk_fields.some((field) => ['life_content', 'troparion_content', 'kontakion_content', 'prayer_content', 'magnification_content'].includes(field));
   const large = width >= 560;
   const heroImageWidth = large ? 180 : Math.min(132, width * 0.34);
   const lifeHeight = Math.max(235, Math.min(390, height * 0.39));
@@ -130,6 +156,9 @@ export const SaintDetailScreen = ({route, navigation}) => {
           </View>
         </View>
 
+        {translationMissing && (
+          <Text style={styles.empty}>Частина текстів ще не перекладена українською. Показано наявний російський текст.</Text>
+        )}
         <Accordion
           title={uk ? 'Житіє' : 'Житие'}
           icon="▤"
@@ -150,7 +179,8 @@ export const SaintDetailScreen = ({route, navigation}) => {
           text={kontakion}
           subtitle={feast?.kontakion_echo ? 'Глас ' + feast.kontakion_echo : feast?.kontakion_title}
         />
-        {!!prayer && <Accordion title={uk ? 'Молитва' : 'Молитва'} icon="☦" text={prayer} />}
+        {!!prayer && <Accordion title="Молитва" icon="☦" text={prayer} />}
+        {!!magnification && <Accordion title={uk ? 'Величання' : 'Величание'} icon="♫" text={magnification} />}
         {!!date && (
           <View style={styles.dateCard}>
             <Text style={styles.dateIcon}>▣</Text>
@@ -160,7 +190,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
             </View>
           </View>
         )}
-        {!life && !troparion && !kontakion && !prayer && (
+        {!life && !troparion && !kontakion && !prayer && !magnification && (
           <Text style={styles.empty}>
             {uk ? 'Додаткових текстів поки немає.' : 'Дополнительных текстов пока нет.'}
           </Text>
