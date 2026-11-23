@@ -15,6 +15,8 @@ import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {useLanguage} from '../context/LanguageContext';
 import {getCalendarFeast} from '../services/churchCalendar';
+import {getCalendarCardHymns} from '../services/calendarCardPresentation';
+import {selectUocIcon} from '../services/uocIconSelection';
 
 const formatDate = (value, language) => {
   if (!value) return '';
@@ -34,11 +36,12 @@ const Accordion = ({
   initialOpen = false,
   innerScroll = false,
   height = 320,
+  isHymn = false,
 }) => {
   const [open, setOpen] = useState(initialOpen);
   if (!text) return null;
   return (
-    <View style={styles.accordion}>
+    <View style={[styles.accordion, isHymn && styles.hymnAccordion]}>
       <Pressable
         onPress={() => setOpen((value) => !value)}
         accessibilityRole="button"
@@ -49,7 +52,7 @@ const Accordion = ({
           <Text style={styles.accordionIconText}>{icon}</Text>
         </View>
         <View style={styles.accordionHeading}>
-          <Text style={styles.accordionTitle}>{title}</Text>
+          <Text style={[styles.accordionTitle, isHymn && styles.hymnTitle]}>{title}</Text>
           {!open && !!subtitle && (
             <Text style={styles.preview} numberOfLines={1}>
               {subtitle}
@@ -65,7 +68,8 @@ const Accordion = ({
       </Pressable>
       {open && (
         <>
-          {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+          {!!subtitle && <Text style={[styles.subtitle, isHymn && styles.hymnSubtitle]}>{subtitle}</Text>}
+          {isHymn && <View style={styles.hymnDivider} />}
           {innerScroll ? (
             <ScrollView
               nestedScrollEnabled
@@ -73,12 +77,12 @@ const Accordion = ({
               style={[styles.lifeScroll, {height}]}
               contentContainerStyle={styles.lifeScrollContent}
             >
-              <Text selectable style={styles.body}>
+              <Text selectable style={[styles.body, isHymn && styles.hymnBody]}>
                 {text}
               </Text>
             </ScrollView>
           ) : (
-            <Text selectable style={styles.body}>
+            <Text selectable style={[styles.body, isHymn && styles.hymnBody]}>
               {text}
             </Text>
           )}
@@ -120,12 +124,11 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const insets = useSafeAreaInsets();
   const uk = language === 'uk';
   const title = (uk && feast?.title_uk) || feast?.title || '';
+  const selectedIconUrl = selectUocIcon(feast);
   const bundled = getBundledCalendarIconSource(feast);
-  const image = (serverFeast?.icon_url ? {uri: serverFeast.icon_url} : null)
-    || bundled || (feast?.icon_url ? {uri: feast.icon_url} : null);
+  const image = selectedIconUrl ? {uri: selectedIconUrl} : bundled;
   const life = (uk && feast?.life_content_uk) || feast?.life_content;
-  const troparion = (uk && feast?.troparion_content_uk) || feast?.troparion_content;
-  const kontakion = (uk && feast?.kontakion_content_uk) || feast?.kontakion_content;
+  const cardHymns = getCalendarCardHymns(feast, language);
   const prayer = (uk && feast?.prayer_content_uk) || feast?.prayer_content;
   const magnification = (uk && feast?.magnification_content_uk) || feast?.magnification_content;
   const translationMissing = uk && Array.isArray(feast?.missing_uk_fields)
@@ -172,18 +175,27 @@ export const SaintDetailScreen = ({route, navigation}) => {
           innerScroll={String(life || '').length > 550}
           height={lifeHeight}
         />
-        <Accordion
-          title={uk ? 'Тропар' : 'Тропарь'}
-          icon="♫"
-          text={troparion}
-          subtitle={feast?.troparion_echo ? 'Глас ' + feast.troparion_echo : feast?.troparion_title}
-        />
-        <Accordion
-          title="Кондак"
-          icon="▦"
-          text={kontakion}
-          subtitle={feast?.kontakion_echo ? 'Глас ' + feast.kontakion_echo : feast?.kontakion_title}
-        />
+        {!!cardHymns.sections.length && (
+          <Text style={styles.hymnSectionLabel}>
+            {uk ? 'ПІСНЕСПІВИ' : 'ПЕСНОПЕНИЯ'}
+          </Text>
+        )}
+        {cardHymns.sections.map((hymn) => (
+          <Accordion
+            key={hymn.key}
+            title={hymn.title}
+            icon={hymn.kind === 'troparion' ? '♫' : '▦'}
+            text={hymn.text}
+            subtitle={hymn.subtitle}
+            isHymn
+          />
+        ))}
+        {!!cardHymns.missing.length && (
+          <Text style={styles.empty}>
+            {uk ? 'Деякі піснеспіви потребують перевірки тексту.'
+              : 'Некоторые песнопения ожидают проверки текста.'}
+          </Text>
+        )}
         {!!prayer && <Accordion title="Молитва" icon="☦" text={prayer} />}
         {!!magnification && <Accordion title={uk ? 'Величання' : 'Величание'} icon="♫" text={magnification} />}
         {!!date && (
@@ -195,7 +207,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
             </View>
           </View>
         )}
-        {!life && !troparion && !kontakion && !prayer && !magnification && (
+        {!life && !cardHymns.sections.length && !cardHymns.missing.length && !prayer && !magnification && (
           <Text style={styles.empty}>
             {uk ? 'Додаткових текстів поки немає.' : 'Дополнительных текстов пока нет.'}
           </Text>
@@ -274,6 +286,23 @@ const styles = StyleSheet.create({
     shadowRadius: 7,
     elevation: 1,
   },
+  hymnSectionLabel: {
+    marginTop: 5, marginHorizontal: 8, color: '#81512C', fontSize: 11,
+    fontWeight: '800', letterSpacing: 1.1,
+  },
+  hymnAccordion: {
+    backgroundColor: '#FFFAF1',
+    borderColor: '#CBB494',
+    borderLeftWidth: 3,
+    borderLeftColor: '#9C6547',
+  },
+  hymnTitle: {color: '#623527'},
+  hymnSubtitle: {color: '#974F3A', fontSize: 14},
+  hymnDivider: {
+    marginTop: 12, borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#C9A985',
+  },
+  hymnBody: {textAlign: 'justify', lineHeight: 28, marginTop: 14},
   accordionHeader: {flexDirection: 'row', alignItems: 'center', minHeight: 44},
   accordionIcon: {
     width: 38,

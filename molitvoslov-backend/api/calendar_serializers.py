@@ -32,6 +32,11 @@ def _localized(obj, field, language):
 
 class CalendarFeastSerializer(serializers.ModelSerializer):
     title = serializers.SerializerMethodField()
+    title_ru = serializers.SerializerMethodField()
+    title_uk = serializers.SerializerMethodField()
+    icon_is_manual = serializers.SerializerMethodField()
+    protected_hymn_fields = serializers.SerializerMethodField()
+    hymns = serializers.SerializerMethodField()
     short_title = serializers.SerializerMethodField()
     troparion_title = serializers.SerializerMethodField()
     troparion_content = serializers.SerializerMethodField()
@@ -63,11 +68,16 @@ class CalendarFeastSerializer(serializers.ModelSerializer):
             "celebration_type",
             "celebration_rank",
             "title",
+            "title_ru",
+            "title_uk",
             "short_title",
             "julian_month",
             "julian_day",
             "easter_offset",
             "icon_url",
+            "icon_is_manual",
+            "protected_hymn_fields",
+            "hymns",
             "troparion_title",
             "troparion_content",
             "troparion_alternate_title",
@@ -106,6 +116,38 @@ class CalendarFeastSerializer(serializers.ModelSerializer):
 
     def get_title(self, obj):
         return self._get(obj, "title")
+
+    def get_title_ru(self, obj):
+        return obj.title
+
+    def get_title_uk(self, obj):
+        return obj.title_uk
+
+    def get_icon_is_manual(self, obj):
+        return "icon_url" in set(obj.manually_edited_fields or [])
+
+    def get_protected_hymn_fields(self, obj):
+        return [
+            field for field in (obj.manually_edited_fields or [])
+            if field.startswith(("troparion_", "kontakion_"))
+        ]
+
+    def get_hymns(self, obj):
+        result = []
+        for kind, hymn in (("troparion", "tropar"), ("kontakion", "kondak")):
+            for variant, suffix in ((1, ""), (2, "_alternate")):
+                body = self._get(obj, kind + suffix + "_content")
+                if not body:
+                    continue
+                script = self._get(obj, kind + suffix + "_script") or "civil"
+                result.append({
+                    "kind": hymn,
+                    "variant": variant,
+                    "language": "church" if script == "csl" else "civil",
+                    "heading": self._get(obj, kind + suffix + "_title"),
+                    "content": body,
+                })
+        return result
 
     def get_short_title(self, obj):
         return self._get(obj, "short_title")

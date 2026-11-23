@@ -38,6 +38,8 @@ import {
   getOfflineCalendarMonth,
 } from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
+import {getCalendarCardHymns, uniqueCalendarCards} from '../services/calendarCardPresentation';
+import {selectUocIcon} from '../services/uocIconSelection';
 import {colors} from '../theme';
 
 const buildCells = (year, month) => {
@@ -175,7 +177,8 @@ const FeastImage = ({feast}) => {
   const [failed, setFailed] = useState(false);
   const [imageHeight, setImageHeight] = useState(120);
 
-  const source = getBundledCalendarIconSource(feast);
+  const preferredUrl = selectUocIcon(feast);
+  const source = preferredUrl ? {uri: preferredUrl} : getBundledCalendarIconSource(feast);
   const imageWidth = 98;
 
   useEffect(() => {
@@ -194,7 +197,7 @@ const FeastImage = ({feast}) => {
     } else {
       setImageHeight(120);
     }
-  }, [feast?.icon_url, feast?.source_id]);
+  }, [feast?.icon_url, feast?.source_id, preferredUrl]);
 
   if (!source || failed) {
     return (
@@ -238,7 +241,7 @@ const normalizeCalendarText = (value) =>
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 
-const FormattedCalendarText = ({text}) => {
+const FormattedCalendarText = ({text, isHymn = false}) => {
   const normalized = normalizeCalendarText(text);
 
   if (!normalized) {
@@ -257,6 +260,7 @@ const FormattedCalendarText = ({text}) => {
           key={`${index}-${paragraph.slice(0, 24)}`}
           style={[
             styles.textBlockParagraph,
+            isHymn && styles.hymnParagraph,
             index === paragraphs.length - 1 && styles.textBlockParagraphLast,
           ]}
           selectable
@@ -268,26 +272,26 @@ const FormattedCalendarText = ({text}) => {
   );
 };
 
-const ExpandableTextBlock = ({title, subtitle, text}) => {
+const ExpandableTextBlock = ({title, subtitle, text, isHymn = false}) => {
   const [expanded, setExpanded] = useState(false);
 
   if (!text) return null;
 
   return (
-    <View style={styles.textBlock}>
+    <View style={[styles.textBlock, isHymn && styles.hymnTextBlock]}>
       <Pressable
         onPress={() => setExpanded((value) => !value)}
         style={({pressed}) => [styles.textBlockHeader, pressed && styles.pressed]}
       >
         <View style={styles.textBlockHeaderText}>
-          <Text style={styles.textBlockTitle}>{title}</Text>
-          {!!subtitle && <Text style={styles.textBlockSubtitle}>{subtitle}</Text>}
+          <Text style={[styles.textBlockTitle, isHymn && styles.hymnTextBlockTitle]}>{title}</Text>
+          {!!subtitle && <Text style={[styles.textBlockSubtitle, isHymn && styles.hymnTextBlockSubtitle]}>{subtitle}</Text>}
         </View>
 
         <SoftChevron expanded={expanded} />
       </Pressable>
 
-      {expanded && <FormattedCalendarText text={text} />}
+      {expanded && <FormattedCalendarText text={text} isHymn={isHymn} />}
     </View>
   );
 };
@@ -702,13 +706,18 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const cells = useMemo(() => buildCells(visibleYear, visibleMonth), [visibleMonth, visibleYear]);
 
   const today = toCalendarDate(new Date());
-  const regularFeasts = (dayData?.all_feasts || []).filter((feast) => !isMovableDayCard(feast));
+  const regularFeasts = uniqueCalendarCards(
+    (dayData?.all_feasts || []).filter((feast) => !isMovableDayCard(feast))
+  );
   const suggestedMain = dayData?.main_feast;
   const mainFeast =
     suggestedMain && !isMovableDayCard(suggestedMain)
       ? suggestedMain
       : regularFeasts.find((feast) => !!feast?.icon_url) || regularFeasts[0] || null;
-  const otherFeasts = regularFeasts.filter((feast) => Number(feast?.id) !== Number(mainFeast?.id));
+  const otherFeasts = mainFeast
+    ? uniqueCalendarCards([mainFeast, ...regularFeasts]).slice(1)
+    : regularFeasts;
+  const cardHymns = getCalendarCardHymns(mainFeast, dataLanguage);
   const liturgicalDayLabel = movableDayLabel(dayData?.date_gregorian, language);
 
   const moveMonth = (delta) => {
@@ -897,28 +906,26 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             />
           )}
 
-          {!!mainFeast?.troparion_content && (
-            <ExpandableTextBlock
-              title={copy.troparion}
-              subtitle={
-                mainFeast.troparion_echo
-                  ? `${copy.voice} ${mainFeast.troparion_echo}`
-                  : mainFeast.troparion_title
-              }
-              text={mainFeast.troparion_content}
-            />
+          {!!cardHymns.sections.length && (
+            <Text style={[styles.sectionEyebrow, styles.hymnSectionLabel]}>
+              {dataLanguage === 'uk' ? 'ПІСНЕСПІВИ' : 'ПЕСНОПЕНИЯ'}
+            </Text>
           )}
-
-          {!!mainFeast?.kontakion_content && (
+          {cardHymns.sections.map((hymn) => (
             <ExpandableTextBlock
-              title={copy.kontakion}
-              subtitle={
-                mainFeast.kontakion_echo
-                  ? `${copy.voice} ${mainFeast.kontakion_echo}`
-                  : mainFeast.kontakion_title
-              }
-              text={mainFeast.kontakion_content}
+              key={hymn.key}
+              title={hymn.title}
+              subtitle={hymn.subtitle}
+              text={hymn.text}
+              isHymn
             />
+          ))}
+          {!!cardHymns.missing.length && (
+            <Text style={styles.sectionEyebrow}>
+              {dataLanguage === 'uk'
+                ? 'Деякі піснеспіви очікують перевірки тексту'
+                : 'Некоторые песнопения ожидают проверки текста'}
+            </Text>
           )}
 
           <View
@@ -1279,6 +1286,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#EAD7B8',
     overflow: 'hidden',
   },
+  hymnSectionLabel: {marginTop: 17, marginBottom: 3, letterSpacing: 1.1},
+  hymnTextBlock: {
+    borderColor: '#C5A380',
+    borderLeftWidth: 3,
+    borderLeftColor: '#9C6547',
+    backgroundColor: '#F5E5CD',
+  },
+  hymnTextBlockTitle: {color: '#623527'},
+  hymnTextBlockSubtitle: {color: '#974F3A', fontSize: 12},
+  hymnParagraph: {fontSize: 16, lineHeight: 28, color: '#3E2A1D'},
   textBlockHeader: {
     minHeight: 56,
     paddingLeft: 14,
