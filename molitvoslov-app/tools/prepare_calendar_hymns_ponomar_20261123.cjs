@@ -16,9 +16,35 @@ const sha=s=>crypto.createHash('sha256').update(s).digest('hex');
 const canonicalKey=card=>String(card.sync_uid||card.card_uid||card.source_uid||card.id||card.source_id||'');
 const isBlagovest=card=>/^(?:uoc-)?blv[-_:]/i.test(canonicalKey(card));
 const uniqueId=(card)=>canonicalKey(card)+'|'+String(card.source_id??'');
+const stopWords=new Set(['свят','святи','свт','муче','препо','прп','свящ','митро','митр',
+ 'еписк','чудо','памят','житие','жития','житіе','блаж','блажен','церко','праве',
+ 'собор','отцов','отці','отца','отец','госпо','иконы','икон','свяще']);
+const identityStems=card=>{
+ const title=[card.title,card.short_title,card.title_uk].filter(Boolean).join(' ');
+ const normalized=title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .replace(/[іії]/g,'и').replace(/є/g,'е').replace(/ґ/g,'г')
+  .replace(/э/g,'е').replace(/ё/g,'е').replace(/[^а-я0-9]+/g,' ');
+ const stems=new Set();
+ for(const word of normalized.split(/\s+/)){
+  if(word.length<5)continue;
+  const stem=word.slice(0,5);
+  if(!stopWords.has(stem))stems.add(stem);
+ }
+ return stems;
+};
+const matchedLegacy=(oldCard,newCards)=>{
+ const oldStems=identityStems(oldCard);
+ if(oldStems.size<2)return false; // Do not auto-match one common name.
+ return newCards.some(fresh=>{
+  const theirs=identityStems(fresh);
+  let shared=0;
+  for(const stem of oldStems)if(theirs.has(stem))shared++;
+  return shared>=2;
+ });
+};
 const changes=[],warnings=[],canonical=new Map(),monthRecords=[];
 const summary={months:0,dayLocales:0,newCardOccurrences:0,uniqueNewCards:0,
-  otherLegacyCardOccurrences:0,dayLocalesWithoutBlagovest:0,missingDayLocales:0,changedFields:0,splitTroparia:0,splitKontakia:0,
+  otherLegacyCardOccurrences:0,unmatchedLegacyCards:0,dayLocalesWithoutBlagovest:0,missingDayLocales:0,changedFields:0,splitTroparia:0,splitKontakia:0,
   unsafeCases:0,conflictingCanonicalRecords:0,rawHymnBytes:0};
 fs.mkdirSync(reports,{recursive:true});
 if(mode!=='check')fs.mkdirSync(stageDir,{recursive:true});
@@ -102,7 +128,16 @@ for(let year=2025;year<=2027;year++){
         normalized.days[date][lang]=day;
         continue;
       }
-      const replacements=[...fresh.values()].map(card=>convertCard(card,date,lang));
+      const replacementSources=[...fresh.values()];
+      for(const legacy of new Map(oldCards.map(c=>[uniqueId(c),c])).values()){
+        if(!matchedLegacy(legacy,replacementSources)){
+          summary.unmatchedLegacyCards++;
+          if(warnings.length<4000)warnings.push({date,lang,old_id:uniqueId(legacy),
+            title:String(legacy.title||'').slice(0,140),
+            issue:'old feast has no reliably matching Blagovest identity; do not remove'});
+        }
+      }
+      const replacements=replacementSources.map(card=>convertCard(card,date,lang));
       const byId=new Map(replacements.map(card=>[uniqueId(card),card]));
       const oldMainId=isBlagovest(main)?uniqueId(main):null;
       const finalMain=(oldMainId&&byId.get(oldMainId))||
@@ -131,8 +166,8 @@ console.log('Report: '+reportPath);
 if(mode==='check'){console.log('No calendar files modified.');process.exit(0);}
 console.log('Staged 36 candidates: '+stageDir);
 if(mode==='stage'){console.log('Original calendar files unchanged.');process.exit(0);}
-if(summary.unsafeCases||summary.conflictingCanonicalRecords||summary.dayLocalesWithoutBlagovest||summary.missingDayLocales)
- throw Error('Unsafe hymn split, missing Blagovest coverage or conflicting hymns. Refusing apply; inspect report.');
+if(summary.unsafeCases||summary.conflictingCanonicalRecords||summary.dayLocalesWithoutBlagovest||summary.missingDayLocales||summary.unmatchedLegacyCards)
+ throw Error('Unsafe hymn split, unmatched old saints, missing Blagovest coverage or conflicting hymns. Refusing apply; inspect report.');
 const backupDir=path.join(root,'..','build-backups','calendar-hymns-ponomar-'+new Date().toISOString().replace(/[:.]/g,'-'));
 fs.mkdirSync(backupDir,{recursive:true});
 for(const item of monthRecords){
