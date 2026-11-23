@@ -38,6 +38,14 @@ const iconShards=Array.from({length:12},(_,i)=>
 const allIcons=iconShards.flatMap(s=>s.items);
 assert.equal(allIcons.length,2734);
 assert.equal(new Set(allIcons.map(x=>x[3])).size,2734);
+const quarantine=[0,1].flatMap(i=>
+  require(path.join(root,'src/data/calendar/uocIconQuarantine'+i+'.json')).items);
+assert.equal(quarantine.length,598);
+const suspect=quarantine[0];
+assert.equal(icons.selectUocIcon({
+  card_id:suspect[0],
+  icon_url:'https://blagovist.info/wp-content/uploads/unverified.jpg',
+}), '');
 const first=allIcons[0];
 assert.equal(icons.selectUocIcon({card_id:first[0]}),first[3]);
 assert.equal(icons.selectUocIcon({title_ru:first[1]}),first[3]);
@@ -78,4 +86,4 @@ const blank=presenter.getCalendarCardHymns({
 },'ru');
 assert.ok(blank.sections.every(h=>h.kind!=='troparion'||h.variant!==1));
 console.log('PASS: 1267 cards, 2821 source hymns, 226 patched variants, '+
-  tested+' readable rendered sections; 2734 unique images; admin override and alternate fields.');
+  tested+' readable rendered sections; 2734 unique icons, 598 quarantined; manual override and alternate fields.');
