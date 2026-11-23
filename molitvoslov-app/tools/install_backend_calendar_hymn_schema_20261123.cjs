@@ -198,6 +198,31 @@ for(const kind of ['troparion','kontakion']){
  ].join('\n');
  serializer=single(serializer,getter,getter+altGetters,'serializer getters '+kind);
 }
+// Validate generated Python syntax without importing Django or executing any
+// backend code. Run this in CHECK as well as APPLY, before writing any file.
+const {spawnSync}=require('node:child_process');
+function checkPython(name,content){
+  const check='import ast,sys;ast.parse(sys.stdin.buffer.read().decode("utf-8"),filename=sys.argv[1])';
+  const interpreters=[['py',['-3']],['python',[]],['python3',[]]];
+  for(const [command,prefix] of interpreters){
+    const result=spawnSync(command,[...prefix,'-c',check,name],{
+      input:content,encoding:'utf8',timeout:20000,windowsHide:true,maxBuffer:1024*1024,
+    });
+    if(result.error&&result.error.code==='ENOENT')continue;
+    if(result.error)throw Error('Python syntax checker failed: '+result.error.message);
+    if(result.status!==0)throw Error(
+      'Generated Python syntax invalid for '+name+': '+(result.stderr||result.stdout||'').trim()
+    );
+    console.log('PYTHON SYNTAX PASS '+name);
+    return;
+  }
+  console.log('WARNING: Python unavailable on PATH; syntax validation skipped for '+name);
+}
+checkPython('calendar_models.py',model);
+checkPython('admin.py',admin);
+checkPython('calendar_import.py',importer);
+checkPython('calendar_serializers.py',serializer);
+
 const outputs={model,admin,importer,serializer};
 for(const [key,source] of Object.entries(outputs)){
  console.log('CHECK '+map[key]+': '+original[key].length+' -> '+source.length+' chars');
