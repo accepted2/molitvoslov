@@ -37,6 +37,12 @@ class CalendarFeastSerializer(serializers.ModelSerializer):
     troparion_content = serializers.SerializerMethodField()
     kontakion_title = serializers.SerializerMethodField()
     kontakion_content = serializers.SerializerMethodField()
+    title_ru = serializers.SerializerMethodField()
+    troparion_alt_title = serializers.SerializerMethodField()
+    troparion_alt_content = serializers.SerializerMethodField()
+    kontakion_alt_title = serializers.SerializerMethodField()
+    kontakion_alt_content = serializers.SerializerMethodField()
+    hymns = serializers.SerializerMethodField()
     life_title = serializers.SerializerMethodField()
     life_content = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
@@ -55,6 +61,7 @@ class CalendarFeastSerializer(serializers.ModelSerializer):
             "celebration_type",
             "celebration_rank",
             "title",
+            "title_ru",
             "short_title",
             "julian_month",
             "julian_day",
@@ -66,6 +73,11 @@ class CalendarFeastSerializer(serializers.ModelSerializer):
             "kontakion_title",
             "kontakion_content",
             "kontakion_echo",
+            "troparion_alt_title",
+            "troparion_alt_content",
+            "kontakion_alt_title",
+            "kontakion_alt_content",
+            "hymns",
             "life_title",
             "life_content",
             "description",
@@ -87,6 +99,45 @@ class CalendarFeastSerializer(serializers.ModelSerializer):
             return getattr(obj, field, "")
 
         return _localized(obj, field, language)
+
+    def get_title_ru(self, obj):
+        return obj.title
+
+    def get_troparion_alt_title(self, obj):
+        return self._get(obj, "troparion_alt_title")
+
+    def get_troparion_alt_content(self, obj):
+        return self._get(obj, "troparion_alt_content")
+
+    def get_kontakion_alt_title(self, obj):
+        return self._get(obj, "kontakion_alt_title")
+
+    def get_kontakion_alt_content(self, obj):
+        return self._get(obj, "kontakion_alt_content")
+
+    def get_hymns(self, obj):
+        from .calendar_hymn_variants import LEGACY_RE, MIXED_LETTERS_RE
+        import re
+        csl = re.compile(r"[ѣѢѡѠѻѺѿѾѧѦѵѴѳѲꙋꙊꙗꙖ]|[\u0483\u0486\u0487\u2de0-\u2dff]")
+        result = []
+        for kind, api_kind in (("troparion", "tropar"), ("kontakion", "kondak")):
+            for variant, marker in ((1, ""), (2, "_alt")):
+                content = self._get(obj, kind + marker + "_content")
+                if not content:
+                    continue
+                title = self._get(obj, kind + marker + "_title")
+                language = "church" if (
+                    csl.search(content) or LEGACY_RE.search(content)
+                    or MIXED_LETTERS_RE.search(content)
+                ) else "civil"
+                result.append({
+                    "kind": api_kind,
+                    "variant": variant,
+                    "language": language,
+                    "heading": title,
+                    "content": content,
+                })
+        return result
 
     def get_title(self, obj):
         return self._get(obj, "title")
