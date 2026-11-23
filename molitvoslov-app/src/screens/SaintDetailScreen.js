@@ -98,10 +98,15 @@ export const SaintDetailScreen = ({route, navigation}) => {
     let active = true;
     const controller = new AbortController();
     setServerFeast(null);
-    if (initialFeast?.source_id != null || initialFeast?.id != null) {
+    // Older bundled JSON may use "id" for the external source ID, while
+    // API objects have both Django "id" and "source_id". Never confuse them.
+    const hasSourceKey = Object.prototype.hasOwnProperty.call(initialFeast || {}, 'source_id');
+    const sourceId = hasSourceKey ? initialFeast?.source_id : initialFeast?.id;
+    const id = hasSourceKey ? initialFeast?.id : null;
+    if (sourceId != null || id != null) {
       getCalendarFeast({
-        sourceId: initialFeast?.source_id,
-        id: initialFeast?.id,
+        sourceId,
+        id,
         language,
         signal: controller.signal,
       })
