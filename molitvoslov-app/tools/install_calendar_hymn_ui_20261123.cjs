@@ -26,7 +26,9 @@ next=next.replace(contextFont,
 const anchor="  const content = (\n    <View style={styles.readingContent}>";
 must(next.includes(anchor),'Accordion content anchor missing');
 next=next.replace(anchor,
-    "  if (script === 'csl') saveContext.metadata.language = 'traditional';\n"+anchor);
+    "  if (script === 'csl') saveContext.metadata.language = 'traditional';\n" +
+    "  if (section === 'troparion_alt') saveContext.anchorId = 6;\n" +
+    "  if (section === 'kontakion_alt') saveContext.anchorId = 7;\n" + anchor);
 const textStyle="textStyle={styles.body}";
 must(next.includes(textStyle),'Selectable body style missing');
 next=next.replace(textStyle,"textStyle={[styles.body, script === 'csl' && styles.ponomarBody]}");
