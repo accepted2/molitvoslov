@@ -44,10 +44,15 @@ changes = MigrationAutodetector(
     loader.project_state(),
     ProjectState.from_apps(apps),
     NonInteractiveMigrationQuestioner(),
-).changes(graph=loader.graph)
+).changes(graph=loader.graph, trim_to_apps={"api"})
 
+# Scope the drift gate to our application's migration state. Django's
+# contributing apps (admin/auth/sessions/authtoken) have separate migrations
+# and were mistakenly reported as unexpected changes by the first version.
 detected = set()
 for app_label, migrations in changes.items():
+    if app_label != "api":
+        continue
     for migration in migrations:
         for operation in migration.operations:
             if isinstance(operation, AlterField):
