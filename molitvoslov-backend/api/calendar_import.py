@@ -109,6 +109,7 @@ def _icon_url(data):
 
 def _localized_assignments(data, language):
     from .calendar_text_cleanup import clean_source_field
+    from .calendar_hymn_variants import prepare_imported_hymn_fields
 
     suffix = "_uk" if language == "uk" else ""
 
@@ -127,10 +128,13 @@ def _localized_assignments(data, language):
         f"magnification_title{suffix}": data.get("magnification_title") or "",
         f"magnification_content{suffix}": data.get("magnification_content") or "",
     }
-    return {
+    cleaned = {
         field: clean_source_field(field, value)
         for field, value in assignments.items()
     }
+    # Decode legacy glyphs and split the first "Иной..." into separate
+    # model fields before Django's per-field manual-edit protection runs.
+    return prepare_imported_hymn_fields(cleaned)
 
 
 def _assign_imported_value(obj, field, value, overwrite_existing=False):
