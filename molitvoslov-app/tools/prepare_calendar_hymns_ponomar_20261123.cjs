@@ -18,7 +18,7 @@ const isBlagovest=card=>/^(?:uoc-)?blv[-_:]/i.test(canonicalKey(card));
 const uniqueId=(card)=>canonicalKey(card)+'|'+String(card.source_id??'');
 const changes=[],warnings=[],canonical=new Map(),monthRecords=[];
 const summary={months:0,dayLocales:0,newCardOccurrences:0,uniqueNewCards:0,
-  otherLegacyCardOccurrences:0,dayLocalesWithoutBlagovest:0,changedFields:0,splitTroparia:0,splitKontakia:0,
+  otherLegacyCardOccurrences:0,dayLocalesWithoutBlagovest:0,missingDayLocales:0,changedFields:0,splitTroparia:0,splitKontakia:0,
   unsafeCases:0,conflictingCanonicalRecords:0,rawHymnBytes:0};
 fs.mkdirSync(reports,{recursive:true});
 if(mode!=='check')fs.mkdirSync(stageDir,{recursive:true});
@@ -79,7 +79,11 @@ for(let year=2025;year<=2027;year++){
     normalized.days[date]={...locales};
     for(const lang of ['ru','uk']){
       const day=locales?.[lang];
-      if(!day)continue;
+      if(!day){
+        summary.missingDayLocales++;
+        if(warnings.length<4000)warnings.push({date,lang,issue:'missing language locale'});
+        continue;
+      }
       summary.dayLocales++;
       const main=day.main_feast;
       const list=Array.isArray(day.all_feasts)?day.all_feasts:[];
@@ -127,7 +131,7 @@ console.log('Report: '+reportPath);
 if(mode==='check'){console.log('No calendar files modified.');process.exit(0);}
 console.log('Staged 36 candidates: '+stageDir);
 if(mode==='stage'){console.log('Original calendar files unchanged.');process.exit(0);}
-if(summary.unsafeCases||summary.conflictingCanonicalRecords||summary.dayLocalesWithoutBlagovest)
+if(summary.unsafeCases||summary.conflictingCanonicalRecords||summary.dayLocalesWithoutBlagovest||summary.missingDayLocales)
  throw Error('Unsafe hymn split, missing Blagovest coverage or conflicting hymns. Refusing apply; inspect report.');
 const backupDir=path.join(root,'..','build-backups','calendar-hymns-ponomar-'+new Date().toISOString().replace(/[:.]/g,'-'));
 fs.mkdirSync(backupDir,{recursive:true});
