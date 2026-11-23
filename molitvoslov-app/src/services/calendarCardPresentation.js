@@ -59,10 +59,20 @@ const civilize = (value, script = '') => {
 // Source API may still return old combined stanzas until the migration is
 // applied. Detect "Иной..." after conversion, without discarding either stanza.
 const embeddedAlternative = (text, kind) => {
-  const label = kind === 'troparion' ? 'тропар' : 'кондак';
-  const matcher = new RegExp(
-    '^(?:Иной|Інший|Инъ|И\\u0301нъ)\\s+' + label +
-    '[а-яёіїєґ\\s,.:0-9-]*
+  const marker = kind === 'troparion'
+    ? /^(?:Иной|Інший|Инъ)\s+тропар/u
+    : /^(?:Иной|Інший|Инъ)\s+кондак/u;
+  const lines = String(text || '').split(/\r?\n/u);
+  const at = lines.findIndex((line, index) =>
+    index > 0 && marker.test(line.trim()));
+  if (at < 1) return null;
+  const first = lines.slice(0, at).join('\n').trim();
+  const second = lines.slice(at + 1).join('\n').trim();
+  if (!first || !second) return null;
+  return {first, second, heading: lines[at].trim()};
+};
+
+const localized = (card, key, language) => (
   (language === 'uk' && card?.[key + '_uk']) || card?.[key] || ''
 );
 
