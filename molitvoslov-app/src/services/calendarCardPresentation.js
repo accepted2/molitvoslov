@@ -14,14 +14,19 @@ const keyOf = card => String(card?.card_id || card?.sync_uid ||
   card?.source_uid || card?.source_id || card?.id || '').trim();
 
 export const uniqueCalendarCards = (cards = []) => {
-  const visited = new Set();
+  const visitedIds = new Set();
+  const visitedNames = new Set();
   return (Array.isArray(cards) ? cards : []).filter(card => {
     if (!card) return false;
     const id = keyOf(card);
-    const normalizedName = textId(card.title_uk || card.title || '').toLocaleLowerCase();
-    const key = id ? 'id:' + id : 'name:' + normalizedName;
-    if (visited.has(key)) return false;
-    visited.add(key);
+    const normalizedName = textId(card.title_uk || card.title || '')
+      .toLocaleLowerCase().replace(/[.\s]+/gu, ' ').trim();
+    // Imported articles can have different IDs for the SAME named saint.
+    // A day must not show that same full title a second time.
+    if ((id && visitedIds.has(id)) ||
+        (normalizedName && visitedNames.has(normalizedName))) return false;
+    if (id) visitedIds.add(id);
+    if (normalizedName) visitedNames.add(normalizedName);
     return true;
   });
 };
