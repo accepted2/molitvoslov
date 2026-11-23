@@ -124,6 +124,11 @@ def _localized_assignments(data, language):
 
 
 def _assign_imported_value(obj, field, value, overwrite_existing=False):
+    # Django-admin edits always win, even over an explicit force-import.
+    # Preserve intentionally cleared fields as well as nonempty corrections.
+    if field in (getattr(obj, "manually_edited_fields", None) or []):
+        return False
+
     if value in [None, ""]:
         return False
 
