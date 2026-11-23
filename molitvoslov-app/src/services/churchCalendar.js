@@ -29,6 +29,18 @@ const fetchCalendarJson = async (path, {signal} = {}) => {
   return data;
 };
 
+// A saint's canonical card can be edited in Django independently from any
+// calendar month. Fetch only this card when its details are opened.
+export const getCalendarFeast = async ({sourceId, id, language = 'ru', signal} = {}) => {
+  const source = sourceId !== undefined && sourceId !== null ? Number(sourceId) : null;
+  const pk = id !== undefined && id !== null ? Number(id) : null;
+  const identity = Number.isInteger(source) && source > 0 ? source : pk;
+  if (!Number.isInteger(identity) || identity <= 0) return null;
+  const slug = source && source > 0 ? 'feast' : 'feast-id';
+  const lang = language === 'uk' ? 'uk' : 'ru';
+  return fetchCalendarJson(`/api/calendar/${slug}/${identity}/?lang=${lang}`, {signal});
+};
+
 const monthCache = new Map();
 const dayCache = new Map();
 
