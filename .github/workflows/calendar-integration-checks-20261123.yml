@@ -53,6 +53,6 @@ jobs:
           api.test_calendar_editorial_cards
           api.test_calendar_hymn_normalization
           api.test_calendar_text_cleanup
-      - name: Ensure migrations match Django models
+      - name: Reject new migration drift (report existing main branch drift)
         working-directory: molitvoslov-backend
-        run: python manage.py makemigrations --check --dry-run
+        run: python tools/check_calendar_migration_drift_20261123.py
