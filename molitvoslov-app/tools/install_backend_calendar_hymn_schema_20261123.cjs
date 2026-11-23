@@ -166,23 +166,21 @@ admin=admin.slice(0,adminStart2)+currentAdmin+admin.slice(adminEnd2);
 console.log('CHECK CalendarFeastAdmin alternate hymn fieldsets added.');
 
 let importer=original.importer;
-const localizedStart='def _localized_assignments(data, language):\n';
-if(!importer.includes(localizedStart))throw Error('Importer assignments start missing');
-importer=single(importer,localizedStart,
-  localizedStart+'    from .calendar_hymn_variants import prepare_imported_hymn_fields\n',
-  'importer helper');
-for(const kind of ['troparion','kontakion']){
- const contentAnchor='        f"'+kind+'_content{suffix}": data.get("'+kind+'_content") or "",';
- const lines=[
- '        f"'+kind+'_alt_title{suffix}": data.get("'+kind+'_alt_title") or "",',
- '        f"'+kind+'_alt_content{suffix}": data.get("'+kind+'_alt_content") or "",',
- ].join('\n');
- importer=single(importer,contentAnchor,contentAnchor+'\n'+lines,'importer '+kind);
+// Do not try to infer the user's importer formatting. The existing
+// upsert_feast body may have been customized extensively; leave it intact.
+if(importer.includes('BLAGOVEST_HYMN_IMPORT_HOOK_20261123'))
+  throw Error('Importer hymn integration already installed. No files changed.');
+const candidates=[...importer.matchAll(/^def[ \t]+upsert_feast[ \t]*\(/gm)];
+if(candidates.length!==1){
+  const functions=[...importer.matchAll(/^def[ \t]+([A-Za-z_][A-Za-z_0-9]*)[ \t]*\(/gm)]
+    .map(x=>x[1]).filter(x=>/feast|import|sync|upsert/i.test(x));
+  throw Error('Cannot safely hook importer: expected one upsert_feast function, found '+
+    candidates.length+'. Candidate functions: '+functions.slice(0,30).join(', ')+
+    '. No files changed.');
 }
-importer=single(importer,
-  '        for field, value in assignments.items()\n',
-  '        for field, value in prepare_imported_hymn_fields(assignments).items()\n',
-  'importer prepare call');
+const importHook = "\n# BLAGOVEST_HYMN_IMPORT_HOOK_20261123\n# Additive integration: retain the existing upsert function unchanged.\n# The wrapper passes already-normalized primary hymns into the old importer,\n# then persists independent alternate hymn fields if their source is safe.\nfrom functools import wraps as _blagovest_wraps\nfrom .calendar_hymn_variants import (\n    prepare_imported_hymn_fields as _blagovest_prepare_hymns,\n)\n\n_blagovest_original_upsert_feast = upsert_feast\n\n@_blagovest_wraps(_blagovest_original_upsert_feast)\ndef upsert_feast(*args, **kwargs):\n    source = args[0] if args else kwargs.get(\"data\")\n    if not isinstance(source, dict):\n        return _blagovest_original_upsert_feast(*args, **kwargs)\n\n    normalized = _blagovest_prepare_hymns(source)\n    if args:\n        feast = _blagovest_original_upsert_feast(\n            normalized, *args[1:], **kwargs\n        )\n    else:\n        forwarded = dict(kwargs)\n        forwarded[\"data\"] = normalized\n        feast = _blagovest_original_upsert_feast(**forwarded)\n\n    if feast is None:\n        return feast\n\n    language = kwargs.get(\"language\", args[1] if len(args) > 1 else \"ru\")\n    overwrite_existing = bool(\n        kwargs.get(\"overwrite_existing\", args[2] if len(args) > 2 else False)\n    )\n    suffix = \"_uk\" if language == \"uk\" else \"\"\n    manually_edited = set(getattr(feast, \"manually_edited_fields\", []) or [])\n    changed = []\n\n    for hymn in (\"troparion\", \"kontakion\"):\n        raw_main = source.get(hymn + \"_content\")\n        new_main = normalized.get(hymn + \"_content\")\n        persisted_main = getattr(feast, hymn + \"_content\" + suffix, \"\")\n        # Do not create an alternate stanza if the original importer did\n        # not accept the normalized first stanza (e.g. manual edit, or\n        # overwrite_existing=False against a different old hymn).\n        if raw_main != new_main and persisted_main != new_main:\n            continue\n\n        for fragment in (\"alt_title\", \"alt_content\"):\n            field_name = hymn + \"_\" + fragment + suffix\n            value = normalized.get(hymn + \"_\" + fragment)\n            if not isinstance(value, str) or not value:\n                continue\n            if field_name in manually_edited:\n                continue\n            current = getattr(feast, field_name, None)\n            if current not in (None, \"\") and not overwrite_existing:\n                continue\n            if current == value:\n                continue\n            setattr(feast, field_name, value)\n            changed.append(field_name)\n\n    if changed:\n        feast.save(update_fields=sorted(set(changed)) + [\"updated_at\"])\n    return feast\n";
+importer=importer.replace(/\s*$/,'')+'\n\n'+importHook.trimStart();
+console.log('CHECK existing importer preserved; only an additive hymn wrapper is appended.');
 let serializer=original.serializer;
 for(const kind of ['troparion','kontakion']){
  const methodField='    '+kind+'_content = serializers.SerializerMethodField()';
