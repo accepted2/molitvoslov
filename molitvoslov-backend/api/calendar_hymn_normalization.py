@@ -145,7 +145,10 @@ def normalize_hymn_source_fields(source):
                     issues.append(f"{content_key}: alternate marker without safe paragraph break")
             if content_key not in values or values[content_key] == original:
                 values[content_key] = decoded
-            values[title_key] = decoded_title
+            # Leave absent title fields absent: readable source data must be lossless.
+            # Existing titles (including intentionally empty ones) stay editable.
+            if title_key in values:
+                values[title_key] = decoded_title
             if legacy_content or legacy_title or _uses_ponomar(values[content_key]):
                 values[script_key] = "csl"
     return values, issues
