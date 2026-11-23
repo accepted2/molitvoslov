@@ -65,7 +65,7 @@ def clean_source_field(field: str, value: str) -> str:
     footer_index = None
     for i, block in enumerate(blocks):
         if (_OTHER_SAINTS.fullmatch(block.strip())
-                and len("\n\n".join(blocks[:i]).strip()) >= 90):
+                and len("\n\n".join(blocks[:i]).strip()) >= 35):
             footer_index = i
             break
     if footer_index is not None:
