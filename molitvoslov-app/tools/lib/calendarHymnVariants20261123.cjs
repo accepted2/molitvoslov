@@ -68,6 +68,9 @@ const prepareCard=(source)=> {
         card[titleKey]=newTitle;changed++;
       }
       if(split){
+        if(parseAlternative(split.alt_content,kind)) {
+          issues.push({field:contentKey,issue:'more than two hymn variants: manual review required'});
+        }
         card[altTitleKey]=toCslTitle(split.alt_title);
         card[altContentKey]=unicodeCS(split.alt_content);
         changed+=2;
