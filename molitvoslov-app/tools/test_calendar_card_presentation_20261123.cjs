@@ -38,7 +38,9 @@ const path=require('node:path');
   assert.equal(output.sections[3].text,'Твердыя и боговещанныя');
   assert.ok(output.sections.every(x=>!/[Ґ™]/.test(x.text)));
   assert.equal(selectedCalendarIcon(feast),'https://blagovist.info/icons/peter-paul.jpg');
-  assert.equal(uniqueCalendarCards([feast, {...feast}, {id:'other',title:'Другой святой'}]).length,2);
+  assert.equal(uniqueCalendarCards([
+    feast, {...feast}, {...feast,id:'duplicate-article'}, {id:'other',title:'Другой святой'}
+  ]).length,2);
   const blocked=getCalendarCardHymns({troparion_content:'Ґпcлwвъ первопрест0льницы'},'ru');
   assert.equal(blocked.sections.length,0);
   assert.equal(blocked.missing.length,1);
