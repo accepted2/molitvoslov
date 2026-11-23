@@ -16,7 +16,7 @@ const isSimilarHymnHeading=(value,kind)=>{
   return new RegExp('^(?:'+key+'|инъ?\\s+'+key+'|иной\\s+'+key+')','iu').test(folded(value).trim());
 };
 const isPodoben=s=>/^(?:подобенъ?|подобный)(?:\s|:|$)/iu.test(folded(s).trim());
-const needsPonomar=s=>/[\u0300-\u036f\u0483\u0486\u0487\u2de0-\u2dffѣѡѻѿꙋꙗѧѵѳѯѱ]/iu.test(String(s||''));
+const needsPonomar=s=>/[\u0483\u0486\u0487\u2de0-\u2dffѣѡѻѿꙋꙗѧѵѳѯѱ]/iu.test(String(s||''));
 const normalizeHeadingText=s=>normalizeLines(s);
 const convertedField=(text)=>{
   if(!text||typeof text!=='string')return{text:text||'',converted:false};
