@@ -257,5 +257,24 @@ for(const file of Object.values(map)){
 }
 for(const [key,file] of Object.entries(map))
  fs.copyFileSync(file,file+'.before-alt-hymns-20261123.bak');
-for(const [key,file] of Object.entries(map))fs.writeFileSync(file,outputs[key],'utf8');
-console.log('INSTALLED backend models, admin fields, serializer, and importer. Generate migrations in local backend only after review.');
+const installed=[];
+const temporary=[];
+try {
+ for(const [key,file] of Object.entries(map)){
+  const tmp=file+'.calendar-hymns-install-20261123.tmp';
+  fs.writeFileSync(tmp,outputs[key],'utf8');
+  temporary.push(tmp);
+  fs.renameSync(tmp,file);
+  installed.push(file);
+ }
+}catch(error){
+ for(const file of installed){
+  fs.copyFileSync(file+'.before-alt-hymns-20261123.bak',file);
+ }
+ for(const tmp of temporary){
+  if(fs.existsSync(tmp))fs.unlinkSync(tmp);
+ }
+ throw Error('Backend installation aborted and previously written files restored: '+error.message);
+}
+console.log('INSTALLED backend models, admin fields, serializer, and importer. Backups preserved.');
+console.log('Django migrations were NOT created or run. The database remains untouched.');
