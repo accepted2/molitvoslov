@@ -15,7 +15,7 @@ import {Feather} from '@expo/vector-icons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
-import {getCalendarCardHymns} from '../services/calendarCardPresentation';
+import {getCalendarCardHymns, selectedCalendarIcon} from '../services/calendarCardPresentation';
 import {useLanguage} from '../context/LanguageContext';
 import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
 import {findSaintForSharedLink} from '../services/saintShareResolver';
@@ -207,7 +207,8 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const uk = language === 'uk';
   const title = (uk && resolvedFeast?.title_uk) || resolvedFeast?.title || '';
   const bundled = getBundledCalendarIconSource(resolvedFeast);
-  const image = bundled || (resolvedFeast?.icon_url ? {uri: resolvedFeast.icon_url} : null);
+  const canonicalIcon = selectedCalendarIcon(resolvedFeast);
+  const image = bundled || (canonicalIcon ? {uri: canonicalIcon} : null);
   const life = (uk && resolvedFeast?.life_content_uk) || resolvedFeast?.life_content;
   const cardHymns = getCalendarCardHymns(resolvedFeast, language);
   const prayer = (uk && resolvedFeast?.prayer_content_uk) || resolvedFeast?.prayer_content;
