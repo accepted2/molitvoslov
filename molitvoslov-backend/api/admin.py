@@ -1,4 +1,7 @@
 from django.contrib import admin
+from django import forms
+from .calendar_editor_icon_upload import validate_icon_upload, upload_editor_icon
+from .calendar_icon_storage import cloudinary_configured
 
 from .models import (
     Category,
@@ -1072,8 +1075,30 @@ class PersonalPrayerPhotoAdmin(admin.ModelAdmin):
 # =========================================================
 
 
+class CalendarFeastAdminForm(forms.ModelForm):
+    icon_upload = forms.FileField(
+        required=False,
+        label="Загрузить икону (PNG, JPEG, WebP)",
+        validators=[validate_icon_upload],
+    )
+
+    class Meta:
+        model = CalendarFeast
+        fields = "__all__"
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("icon_upload"):
+            if not cleaned.get("icon_rights_note", "").strip():
+                self.add_error("icon_rights_note", "Укажите источник и права на изображение.")
+            if not cloudinary_configured():
+                self.add_error("icon_upload", "Cloudinary не настроен. Используйте URL иконы.")
+        return cleaned
+
+
 @admin.register(CalendarFeast)
 class CalendarFeastAdmin(admin.ModelAdmin):
+    form = CalendarFeastAdminForm
     list_display = [
         "source_id",
         "title_preview",
@@ -1164,7 +1189,9 @@ class CalendarFeastAdmin(admin.ModelAdmin):
             "Икона",
             {
                 "fields": [
+                    "icon_upload",
                     "icon_url",
+                    "icon_rights_note",
                     "icon_preview",
                 ]
             },
@@ -1258,7 +1285,6 @@ class CalendarFeastAdmin(admin.ModelAdmin):
             {
                 "fields": [
                     "source_reference",
-                    "icon_rights_note",
                     "manually_edited_fields",
                 ],
                 "description": (
@@ -1301,6 +1327,10 @@ class CalendarFeastAdmin(admin.ModelAdmin):
             "magnification_title_uk", "magnification_content_uk",
         }
         changed = set(form.changed_data or []) & protected
+        upload = (getattr(form, "cleaned_data", {}) or {}).get("icon_upload")
+        if upload:
+            obj.icon_url = upload_editor_icon(upload)
+            changed.add("icon_url")
         # Respect edits to the lock list itself, including explicit removals.
         obj.manually_edited_fields = sorted(set(obj.manually_edited_fields or []) | changed)
         super().save_model(request, obj, form, change)
