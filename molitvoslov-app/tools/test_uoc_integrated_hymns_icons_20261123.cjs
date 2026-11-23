@@ -1,0 +1,81 @@
+#!/usr/bin/env node
+'use strict';
+// Run with: node tools/test_uoc_integrated_hymns_icons_20261123.cjs
+// No network, database writes or Android environment.
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const vm=require('node:vm');
+const {createRequire}=require('node:module');
+const root=path.resolve(__dirname,'..');
+const modules=path.join(root,'src/services');
+const ctxFor=file=>({module:{exports:{}},require:createRequire(file)});
+const load= (filename,exports) => {
+  const file=path.join(modules,filename);
+  let source=fs.readFileSync(file,'utf8');
+  if(filename==='calendarCivicDecoder.js')
+    source=source.replace(/export \{[^}]+\};?/u,
+      'module.exports={looksLegacyUcs,convertLegacyUcsToCivil,expandTitlos,toCivilLetters};');
+  if(filename==='uocIconSelection.js')
+    source=source.replace(/export const /gu,'const ')
+      +'\nmodule.exports={safeIconCandidateCount,selectUocIcon};';
+  const context=ctxFor(file);
+  if(filename==='calendarCardPresentation.js'){
+    source=source.replace(/import \{[\s\S]*?\} from '\.\/calendarCivicDecoder';\n/u,'')
+      .replace(/export const /gu,'const ')
+      +'\nmodule.exports={getCalendarCardHymns,uniqueCalendarCards};';
+    Object.assign(context,exports);
+  }
+  vm.runInNewContext(source,context,{filename:file,timeout:15000});
+  return context.module.exports;
+};
+const decoder=load('calendarCivicDecoder.js',{});
+const presenter=load('calendarCardPresentation.js',decoder);
+const icons=load('uocIconSelection.js',{});
+assert.equal(icons.safeIconCandidateCount,2734);
+const iconShards=Array.from({length:12},(_,i)=>
+  require(path.join(root,'src/data/calendar/uocIconCandidates'+i+'.json')));
+const allIcons=iconShards.flatMap(s=>s.items);
+assert.equal(allIcons.length,2734);
+assert.equal(new Set(allIcons.map(x=>x[3])).size,2734);
+const first=allIcons[0];
+assert.equal(icons.selectUocIcon({card_id:first[0]}),first[3]);
+assert.equal(icons.selectUocIcon({title_ru:first[1]}),first[3]);
+assert.equal(icons.selectUocIcon({card_id:first[0],icon_url:'https://example.org/editor.jpg',icon_is_manual:true}),
+  'https://example.org/editor.jpg');
+assert.equal(icons.selectUocIcon({card_id:'blv-unknown',title_ru:first[1],icon_url:''}),'');
+const allCivil=Array.from({length:8},(_,i)=>
+  require(path.join(root,'src/data/calendar/uocAllCivilHymns'+i+'.json')))
+  .flatMap(shard=>shard.cards);
+assert.equal(allCivil.length,1267);
+const hymnCount=allCivil.reduce((sum,card)=>sum+card.hymns.length,0);
+assert.equal(hymnCount,2821);
+const patches=require('../src/data/calendar/uocCivicHymns210.json').entries;
+assert.equal(patches.length,226);
+let tested=0;
+for(const card of allCivil){
+  const result=presenter.getCalendarCardHymns({card_id:card.card_id,title_ru:card.title_ru},'ru');
+  assert.ok(result.sections.length>0,card.card_id);
+  for(const part of result.sections){
+    assert.ok(part.text.trim());
+    assert.ok(!decoder.looksLegacyUcs(part.text),card.card_id+':'+part.key);
+    tested++;
+  }
+}
+const alt=presenter.getCalendarCardHymns({
+  title_ru:'Тестовая память',
+  troparion_content:'Гражданский основной тропарь',
+  troparion_alternate_content:'Гражданский иной тропарь',
+  troparion_alternate_script:'civil',
+  kontakion_content:'Гражданский основной кондак',
+  kontakion_alternate_content:'Гражданский иной кондак',
+},'ru');
+assert.deepEqual(Array.from(alt.sections,x=>x.title),
+  ['Тропарь','Иной тропарь','Кондак','Иной кондак']);
+const blank=presenter.getCalendarCardHymns({
+  title_ru:allCivil[0].title_ru,card_id:allCivil[0].card_id,
+  troparion_content:'',protected_hymn_fields:['troparion_content'],
+},'ru');
+assert.ok(blank.sections.every(h=>h.kind!=='troparion'||h.variant!==1));
+console.log('PASS: 1267 cards, 2821 source hymns, 226 patched variants, '+
+  tested+' readable rendered sections; 2734 unique images; admin override and alternate fields.');
