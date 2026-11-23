@@ -66,8 +66,8 @@ const approvedHymnAlias = feast => {
   const titles = [feast?.title_ru, feast?.title_uk, feast?.title];
   for (const raw of titles) {
     const title = simpleTitle(raw);
-    if (/апостол/u.test(title) && /петр/u.test(title) &&
-        /павл/u.test(title) && /первоверховн/u.test(title))
+    if (/(?:апостолов|апостолів) петра (?:и|і) павла/u.test(title)
+        && /первоверховн/u.test(title))
       return 'blv-ca7f2ce407c66cc45b803749';
   }
   return '';
