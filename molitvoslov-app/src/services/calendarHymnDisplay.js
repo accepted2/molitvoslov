@@ -3,7 +3,8 @@
 // converted during offline export. Never force civilian text through Ponomar.
 export const isCalendarHymnCsl = (text, script) => {
   if (script === 'csl') return true;
-  if (script === 'civil') return false;
+  // Historical records may still have the default 'civil' marker despite
+  // containing Church Slavonic glyphs. Detect those glyphs as a safe fallback.
   return /[\u0483\u0486\u0487\u2de0-\u2dffѣѡѻѿꙋꙗѧѵѳѯѱ]/iu.test(String(text || ''));
 };
 
