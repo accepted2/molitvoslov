@@ -796,7 +796,9 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
     suggestedMain && !isMovableDayCard(suggestedMain)
       ? suggestedMain
       : regularFeasts.find((feast) => !!feast?.icon_url) || regularFeasts[0] || null;
-  const otherFeasts = regularFeasts.filter((feast) => Number(feast?.id) !== Number(mainFeast?.id));
+  const otherFeasts = mainFeast
+    ? uniqueCalendarCards([mainFeast, ...regularFeasts]).slice(1)
+    : regularFeasts;
   const cardHymns = getCalendarCardHymns(mainFeast, dataLanguage);
   const liturgicalDayLabel = movableDayLabel(dayData?.date_gregorian, language);
 
