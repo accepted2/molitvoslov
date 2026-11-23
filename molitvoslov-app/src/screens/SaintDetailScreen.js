@@ -36,11 +36,12 @@ const Accordion = ({
   initialOpen = false,
   innerScroll = false,
   height = 320,
+  isHymn = false,
 }) => {
   const [open, setOpen] = useState(initialOpen);
   if (!text) return null;
   return (
-    <View style={styles.accordion}>
+    <View style={[styles.accordion, isHymn && styles.hymnAccordion]}>
       <Pressable
         onPress={() => setOpen((value) => !value)}
         accessibilityRole="button"
@@ -51,7 +52,7 @@ const Accordion = ({
           <Text style={styles.accordionIconText}>{icon}</Text>
         </View>
         <View style={styles.accordionHeading}>
-          <Text style={styles.accordionTitle}>{title}</Text>
+          <Text style={[styles.accordionTitle, isHymn && styles.hymnTitle]}>{title}</Text>
           {!open && !!subtitle && (
             <Text style={styles.preview} numberOfLines={1}>
               {subtitle}
@@ -67,7 +68,8 @@ const Accordion = ({
       </Pressable>
       {open && (
         <>
-          {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+          {!!subtitle && <Text style={[styles.subtitle, isHymn && styles.hymnSubtitle]}>{subtitle}</Text>}
+          {isHymn && <View style={styles.hymnDivider} />}
           {innerScroll ? (
             <ScrollView
               nestedScrollEnabled
@@ -75,12 +77,12 @@ const Accordion = ({
               style={[styles.lifeScroll, {height}]}
               contentContainerStyle={styles.lifeScrollContent}
             >
-              <Text selectable style={styles.body}>
+              <Text selectable style={[styles.body, isHymn && styles.hymnBody]}>
                 {text}
               </Text>
             </ScrollView>
           ) : (
-            <Text selectable style={styles.body}>
+            <Text selectable style={[styles.body, isHymn && styles.hymnBody]}>
               {text}
             </Text>
           )}
@@ -173,6 +175,11 @@ export const SaintDetailScreen = ({route, navigation}) => {
           innerScroll={String(life || '').length > 550}
           height={lifeHeight}
         />
+        {!!cardHymns.sections.length && (
+          <Text style={styles.hymnSectionLabel}>
+            {uk ? 'ПІСНЕСПІВИ' : 'ПЕСНОПЕНИЯ'}
+          </Text>
+        )}
         {cardHymns.sections.map((hymn) => (
           <Accordion
             key={hymn.key}
@@ -180,6 +187,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
             icon={hymn.kind === 'troparion' ? '♫' : '▦'}
             text={hymn.text}
             subtitle={hymn.subtitle}
+            isHymn
           />
         ))}
         {!!cardHymns.missing.length && (
@@ -278,6 +286,23 @@ const styles = StyleSheet.create({
     shadowRadius: 7,
     elevation: 1,
   },
+  hymnSectionLabel: {
+    marginTop: 5, marginHorizontal: 8, color: '#81512C', fontSize: 11,
+    fontWeight: '800', letterSpacing: 1.1,
+  },
+  hymnAccordion: {
+    backgroundColor: '#FFFAF1',
+    borderColor: '#CBB494',
+    borderLeftWidth: 3,
+    borderLeftColor: '#9C6547',
+  },
+  hymnTitle: {color: '#623527'},
+  hymnSubtitle: {color: '#974F3A', fontSize: 14},
+  hymnDivider: {
+    marginTop: 12, borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#C9A985',
+  },
+  hymnBody: {textAlign: 'justify', lineHeight: 28, marginTop: 14},
   accordionHeader: {flexDirection: 'row', alignItems: 'center', minHeight: 44},
   accordionIcon: {
     width: 38,
