@@ -108,9 +108,11 @@ def _icon_url(data):
 
 
 def _localized_assignments(data, language):
+    from .calendar_text_cleanup import clean_source_field
+
     suffix = "_uk" if language == "uk" else ""
 
-    return {
+    assignments = {
         f"title{suffix}": data.get("title") or data.get("short_title") or "",
         f"short_title{suffix}": data.get("short_title") or "",
         f"troparion_title{suffix}": data.get("troparion_title") or "",
@@ -124,6 +126,10 @@ def _localized_assignments(data, language):
         f"prayer_content{suffix}": data.get("prayer_content") or "",
         f"magnification_title{suffix}": data.get("magnification_title") or "",
         f"magnification_content{suffix}": data.get("magnification_content") or "",
+    }
+    return {
+        field: clean_source_field(field, value)
+        for field, value in assignments.items()
     }
 
 
