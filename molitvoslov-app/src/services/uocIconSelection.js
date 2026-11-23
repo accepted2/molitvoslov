@@ -21,6 +21,13 @@ const quarantineShards = [
   require('../data/calendar/uocIconQuarantine0.json'),
   require('../data/calendar/uocIconQuarantine1.json'),
 ];
+const curated = require('../data/calendar/uocIconCuratedExceptions.json');
+const curatedById = new Map();
+const curatedByName = new Map();
+const curatedFor = {
+  peterAndPaul: curated.items[0][3],
+  nicholas: curated.items[1][3],
+};
 const quarantinedIds = new Set();
 const quarantinedNames = new Set();
 
@@ -30,12 +37,19 @@ const ambiguousNames = new Set();
 const urlOwners = new Map();
 const normalize = value => String(value || '').normalize('NFC').toLowerCase()
   .replace(/ё/g, 'е').replace(/і/g, 'и').replace(/ї/g, 'и')
-  .replace(/\([^)]*(?:\d{3,4}|век|столет)[^)]*\)/g, '')
+  .replace(/\([^)]*(?:\d{1,4}|век|столет|близько)[^)]*\)/g, '')
   .replace(/[^a-zа-я0-9]+/g, ' ').trim();
 const isHttps = url => typeof url === 'string' && /^https:\/\//i.test(url);
 const sourceId = card => String(
   card?.card_id || card?.blagovist_card_id || card?.canonical_card_id || ''
 );
+for (const [cardId, titleRu, titleUk, url] of curated.items) {
+  curatedById.set(cardId, url);
+  for (const title of [titleRu, titleUk]) {
+    const key = normalize(title);
+    if (key) curatedByName.set(key, url);
+  }
+}
 for (const shard of quarantineShards) {
   for (const [id, titleRu, titleUk] of shard.items) {
     quarantinedIds.add(id);
@@ -68,8 +82,23 @@ export const selectUocIcon = feast => {
   if (!feast) return '';
   const existing = String(feast.icon_url || '').trim();
   // The editor's explicitly selected icon must remain the highest priority.
-  if (feast.icon_is_manual && isHttps(existing)) return existing;
+  if (feast.icon_is_manual) return isHttps(existing) ? existing : '';
   const id = sourceId(feast);
+  const explicit = id ? curatedById.get(id) : null;
+  if (explicit) return explicit;
+  if (!id) {
+    for (const label of [feast.title_ru, feast.title_uk, feast.title]) {
+      const key = normalize(label);
+      if (!key) continue;
+      if (curatedByName.has(key)) return curatedByName.get(key);
+      if (/петр.*павл|павл.*петр/u.test(key) &&
+          /апостол/u.test(key) && /первоверховн/u.test(key))
+        return curatedFor.peterAndPaul;
+      if (/никол/u.test(key) && /чудотвор/u.test(key) &&
+          /мир.?лик/u.test(key))
+        return curatedFor.nicholas;
+    }
+  }
   let selected = id ? iconById.get(id) : null;
   // If the incoming card has a canonical ID but it failed verification,
   // NEVER match it to a different person's icon by title.
