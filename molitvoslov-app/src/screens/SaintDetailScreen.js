@@ -16,6 +16,7 @@ import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {useLanguage} from '../context/LanguageContext';
 import {getCalendarFeast} from '../services/churchCalendar';
 import {getCalendarCardHymns} from '../services/calendarCardPresentation';
+import {selectUocIcon} from '../services/uocIconSelection';
 
 const formatDate = (value, language) => {
   if (!value) return '';
@@ -121,9 +122,9 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const insets = useSafeAreaInsets();
   const uk = language === 'uk';
   const title = (uk && feast?.title_uk) || feast?.title || '';
+  const selectedIconUrl = selectUocIcon(feast);
   const bundled = getBundledCalendarIconSource(feast);
-  const image = (serverFeast?.icon_url ? {uri: serverFeast.icon_url} : null)
-    || bundled || (feast?.icon_url ? {uri: feast.icon_url} : null);
+  const image = selectedIconUrl ? {uri: selectedIconUrl} : bundled;
   const life = (uk && feast?.life_content_uk) || feast?.life_content;
   const cardHymns = getCalendarCardHymns(feast, language);
   const prayer = (uk && feast?.prayer_content_uk) || feast?.prayer_content;
