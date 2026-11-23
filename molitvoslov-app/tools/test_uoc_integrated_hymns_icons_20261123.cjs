@@ -22,6 +22,7 @@ const load= (filename,exports) => {
   const context=ctxFor(file);
   if(filename==='calendarCardPresentation.js'){
     source=source.replace(/import \{[\s\S]*?\} from '\.\/calendarCivicDecoder';\n/u,'')
+      .replace(/import \{selectUocIcon\} from '\.\/uocIconSelection';\n/u,'')
       .replace(/export const /gu,'const ')
       +'\nmodule.exports={getCalendarCardHymns,uniqueCalendarCards};';
     Object.assign(context,exports);
@@ -30,8 +31,10 @@ const load= (filename,exports) => {
   return context.module.exports;
 };
 const decoder=load('calendarCivicDecoder.js',{});
-const presenter=load('calendarCardPresentation.js',decoder);
 const icons=load('uocIconSelection.js',{});
+const presenter=load('calendarCardPresentation.js',{
+  ...decoder,selectUocIcon:icons.selectUocIcon,
+});
 assert.equal(icons.safeIconCandidateCount,2734);
 const iconShards=Array.from({length:12},(_,i)=>
   require(path.join(root,'src/data/calendar/uocIconCandidates'+i+'.json')));
