@@ -4,6 +4,7 @@
 import {
   looksLegacyUcs, convertLegacyUcsToCivil, expandTitlos, toCivilLetters,
 } from './calendarCivicDecoder';
+import {selectUocIcon} from './uocIconSelection';
 
 const corrections = require('../data/calendar/uocCivicHymns210.json');
 const allCivilShards = [
@@ -122,13 +123,26 @@ const localized = (card, key, language) => (
 export const uniqueCalendarCards = cards => {
   const ids = new Set();
   const titles = new Set();
+  const chosen = [];
+  const stems = title => new Set(simpleTitle(title).split(' ')
+    .filter(word => word.length >= 5 && !/^(?:свят|препод|апост|памят|праздн)/u.test(word))
+    .map(word => word.slice(0, 5)));
+  const sameSubject = (one, two) => {
+    const left = stems(one), right = stems(two);
+    const shared = [...left].filter(token => right.has(token));
+    return shared.length >= 2 && shared.length >= Math.min(left.size, right.size) * 0.6;
+  };
   return (Array.isArray(cards) ? cards : []).filter(card => {
     if (!card) return false;
     const id = canonicalId(card) || String(card.sync_uid || card.source_id || card.id || '');
     const title = simpleTitle(card.title_ru || card.title_uk || card.title);
     if ((id && ids.has(id)) || (title && titles.has(title))) return false;
+    const icon = selectUocIcon(card);
+    if (icon && chosen.some(existing =>
+        existing.icon === icon && sameSubject(existing.title, title))) return false;
     if (id) ids.add(id);
     if (title) titles.add(title);
+    chosen.push({title, icon});
     return true;
   });
 };
