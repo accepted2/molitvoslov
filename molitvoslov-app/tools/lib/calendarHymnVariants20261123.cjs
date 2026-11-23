@@ -3,7 +3,7 @@
 // UCS8 font-encoded text -> proper Church-Slavonic Unicode, NOT civil/RU text.
 // One hymn per slot; "Иной тропарь/кондак" gets its own fields.
 // No network, no writes, no external dependencies.
-const {fromUcs8,looksLegacyUcs} = require('./calendarUcsCivic20261123.cjs');
+const {fromUcs8,looksLegacyUcs} = require('./calendarUcs8Decode20261123.cjs');
 
 const suffixes = ['', '_uk'];
 const KINDS = ['troparion','kontakion'];
