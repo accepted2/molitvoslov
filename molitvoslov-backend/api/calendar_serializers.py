@@ -37,6 +37,14 @@ class CalendarFeastSerializer(serializers.ModelSerializer):
     troparion_content = serializers.SerializerMethodField()
     kontakion_title = serializers.SerializerMethodField()
     kontakion_content = serializers.SerializerMethodField()
+    # Optional alternative hymn slots are compatible with old deployments.
+    # Their Django model columns may be added by the independent hymn-import
+    # branch; older installations return empty strings rather than 500.
+    troparion_alt_title = serializers.SerializerMethodField()
+    troparion_alt_content = serializers.SerializerMethodField()
+    kontakion_alt_title = serializers.SerializerMethodField()
+    kontakion_alt_content = serializers.SerializerMethodField()
+    hymns = serializers.SerializerMethodField()
     life_title = serializers.SerializerMethodField()
     life_content = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
@@ -61,6 +69,11 @@ class CalendarFeastSerializer(serializers.ModelSerializer):
             "kontakion_title",
             "kontakion_content",
             "kontakion_echo",
+            "troparion_alt_title",
+            "troparion_alt_content",
+            "kontakion_alt_title",
+            "kontakion_alt_content",
+            "hymns",
             "life_title",
             "life_content",
             "description",
@@ -92,6 +105,44 @@ class CalendarFeastSerializer(serializers.ModelSerializer):
 
     def get_kontakion_content(self, obj):
         return self._get(obj, "kontakion_content")
+
+    def get_troparion_alt_title(self, obj):
+        return self._get(obj, "troparion_alt_title")
+
+    def get_troparion_alt_content(self, obj):
+        return self._get(obj, "troparion_alt_content")
+
+    def get_kontakion_alt_title(self, obj):
+        return self._get(obj, "kontakion_alt_title")
+
+    def get_kontakion_alt_content(self, obj):
+        return self._get(obj, "kontakion_alt_content")
+
+    def get_hymns(self, obj):
+        """Publish every independent canonical hymn variant, if available.
+
+        New importer can attach structured hymns (variant 1..N) without
+        forcing old source databases to migrate on GET requests. The mobile
+        reader chooses civil script over UCS-8 and rejects garbled text.
+        """
+        raw = getattr(obj, "hymns", None)
+        if not isinstance(raw, (list, tuple)):
+            return []
+        result = []
+        for item in raw:
+            if not isinstance(item, dict):
+                continue
+            if item.get("kind") not in ("tropar", "kondak", "troparion", "kontakion"):
+                continue
+            if not isinstance(item.get("content"), str) or not item["content"].strip():
+                continue
+            result.append({
+                "kind": item["kind"], "language": item.get("language", ""),
+                "variant": int(item.get("variant") or 1),
+                "heading": str(item.get("heading") or ""),
+                "content": item["content"],
+            })
+        return result
 
     def get_life_title(self, obj):
         return self._get(obj, "life_title")
