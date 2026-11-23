@@ -3,33 +3,16 @@
 // Pure Node verification; does not require Metro, Android or backend access.
 // The test executes the same pure ES-module logic used in RN via vm, replacing
 // only ES export/import wrappers. The 210 UTF-8 JSON is loaded from Git.
-const fs=require('node:fs');
-const path=require('node:path');
-const vm=require('node:vm');
 const assert=require('node:assert/strict');
-const root=path.join(__dirname,'..');
+const path=require('node:path');
+const root=path.resolve(__dirname,'..');
+const {loadCalendarPresentationForNode}=require('./lib/loadCalendarPresentationForNode.cjs');
+const {decoder,presenter}=loadCalendarPresentationForNode(root);
+const decoderModule={exports:decoder};
+const {getCalendarCardHymns,uniqueCalendarCards}=presenter;
 const manifest=require('../src/data/calendar/uocCivicHymns210.json');
 const shards=Array.from({length:8},(_,i)=>
   require('../src/data/calendar/uocAllCivilHymns'+i+'.json'));
-const decoderPath=path.join(root,'src/services/calendarCivicDecoder.js');
-const presentationPath=path.join(root,'src/services/calendarCardPresentation.js');
-const decoderSource=fs.readFileSync(decoderPath,'utf8')
-  .replace(/export \{[^}]+\};?/, 'module.exports={looksLegacyUcs,convertLegacyUcsToCivil,expandTitlos,toCivilLetters};');
-const decoderModule={exports:{}};
-vm.runInNewContext(decoderSource,{module:decoderModule}, {filename:decoderPath});
-const code=fs.readFileSync(presentationPath,'utf8')
-  .replace(/import \{[\s\S]*?\} from '\.\/calendarCivicDecoder';\n/, '')
-  .replace("const corrections = require('../data/calendar/uocCivicHymns210.json');",
-           'const corrections = data;')
-  .replace(/require\('\.\.\/data\/calendar\/uocAllCivilHymns([0-7])\.json'\)/g,
-           (_match,i) => 'SHARDS['+i+']')
-  .replace(/export const /g,'const ')
-  + '\nmodule.exports={getCalendarCardHymns,uniqueCalendarCards};';
-const mod={exports:{}};
-vm.runInNewContext(code,{
-  module:mod,data:manifest,SHARDS:shards,...decoderModule.exports,
-},{filename:presentationPath});
-const {getCalendarCardHymns,uniqueCalendarCards}=mod.exports;
 assert.equal(manifest.entries.length,226);
 assert.equal(new Set(manifest.entries.map(x=>x.card_id+'|'+x.kind+'|'+x.source_variant)).size,210);
 assert.equal(new Set(manifest.entries.map(x=>x.card_id)).size,122);
@@ -52,7 +35,7 @@ assert.equal(allCards.reduce((n,c)=>n+c.hymns.length,0),2821);
 const pp=allCards.find(x=>x.card_id==='blv-ca7f2ce407c66cc45b803749');
 assert.ok(pp);
 const feastWithNoCardId=getCalendarCardHymns({title:pp.title_ru},'ru');
-assert.deepEqual(feastWithNoCardId.sections.map(x=>x.title),
+assert.deepEqual(Array.from(feastWithNoCardId.sections,x=>x.title),
   ['Тропарь','Кондак']);
 assert.ok(feastWithNoCardId.sections.every(x=>x.origin==='canonical_catalogue'));
 
