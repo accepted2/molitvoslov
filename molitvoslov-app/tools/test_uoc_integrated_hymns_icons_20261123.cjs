@@ -55,6 +55,19 @@ assert.equal(icons.selectUocIcon({title_ru:first[1]}),first[3]);
 assert.equal(icons.selectUocIcon({card_id:first[0],icon_url:'https://example.org/editor.jpg',icon_is_manual:true}),
   'https://example.org/editor.jpg');
 assert.equal(icons.selectUocIcon({card_id:'blv-unknown',title_ru:first[1],icon_url:''}),'');
+assert.ok(icons.selectUocIcon({
+  title_ru:'Славных и всехвальных первоверховных апостолов Петра и Павла'
+}).endsWith('/Slavni-i-vsekhvalni-pervoverkhovni-apostoly-Petro-i-Pavlo_8.png'));
+assert.ok(icons.selectUocIcon({
+  title_ru:'Святитель Николай, архиепископ Мирликийский, чудотворец'
+}).includes('Sviatytel-Mykolay-arkhiiepyskop'));
+const nicholas=[
+ {card_id:'blv-839dc39617bdf40503d594dd',
+  title_ru:'Святителя Николая, архиеп. Мир Ликийских, чудотворца (около 345)'},
+ {card_id:'blv-72fd8ac45d16938f68eb7306',
+  title_ru:'Святитель Николай, архиепископ Мир Ликийских, чудотворец'}
+];
+assert.equal(presenter.uniqueCalendarCards(nicholas).length,1);
 const allCivil=Array.from({length:8},(_,i)=>
   require(path.join(root,'src/data/calendar/uocAllCivilHymns'+i+'.json')))
   .flatMap(shard=>shard.cards);
