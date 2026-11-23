@@ -21,9 +21,11 @@ const load= (filename,exports) => {
       +'\nmodule.exports={safeIconCandidateCount,selectUocIcon};';
   const context=ctxFor(file);
   if(filename==='calendarCardPresentation.js'){
-    source=source.replace(/import \{[\s\S]*?\} from '\.\/calendarCivicDecoder';\n/u,'')
-      .replace(/import \{selectUocIcon\} from '\.\/uocIconSelection';\n/u,'')
-      .replace(/export const /gu,'const ')
+    // Metro accepts ES modules, but this standalone Node test runs in a CJS VM.
+    // Match both LF and Windows CRLF without changing production source files.
+    source=source.replace(/import\s*\{[\s\S]*?\}\s*from\s*['"]\.\/calendarCivicDecoder['"]\s*;?/u,'')
+      .replace(/import\s*\{\s*selectUocIcon\s*\}\s*from\s*['"]\.\/uocIconSelection['"]\s*;?/u,'')
+      .replace(/\bexport\s+const\s+/gu,'const ')
       +'\nmodule.exports={getCalendarCardHymns,uniqueCalendarCards};';
     Object.assign(context,exports);
   }
