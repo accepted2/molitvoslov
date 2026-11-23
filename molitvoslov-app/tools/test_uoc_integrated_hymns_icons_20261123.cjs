@@ -70,8 +70,8 @@ const alt=presenter.getCalendarCardHymns({
   kontakion_content:'Гражданский основной кондак',
   kontakion_alternate_content:'Гражданский иной кондак',
 },'ru');
-assert.deepEqual(Array.from(alt.sections,x=>x.title),
-  ['Тропарь','Иной тропарь','Кондак','Иной кондак']);
+assert.equal(JSON.stringify(Array.from(alt.sections,x=>x.title)),
+  JSON.stringify(['Тропарь','Иной тропарь','Кондак','Иной кондак']));
 const blank=presenter.getCalendarCardHymns({
   title_ru:allCivil[0].title_ru,card_id:allCivil[0].card_id,
   troparion_content:'',protected_hymn_fields:['troparion_content'],
