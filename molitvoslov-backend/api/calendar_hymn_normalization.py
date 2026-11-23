@@ -34,7 +34,7 @@ _LETTERS = re.compile(
     re.IGNORECASE,
 )
 _CHURCH_UNICODE = re.compile(
-    r"[\u0300-\u036f\u0483\u0486\u0487\u2de0-\u2dffѣѡѻѿꙋꙗѧѵѳѯѱ]",
+    r"[\u0483\u0486\u0487\u2de0-\u2dffѣѡѻѿꙋꙗѧѵѳѯѱ]",
     re.IGNORECASE,
 )
 
