@@ -188,8 +188,15 @@ export const uniqueCalendarCards = cards => {
 export const getCalendarCardHymns = (feast, language = 'ru') => {
   if (!feast) return {sections: [], missing: []};
   const options = [];
-  const protectedFields = new Set(feast.protected_hymn_fields || []);
+  const protectedFields = new Set([
+    ...(feast.protected_hymn_fields || []),
+    ...(feast.manually_edited_fields || []),
+  ]);
   const deliberatelyBlank = new Set();
+  // A confirmed legacy-ID bridge means the old bundled fields may predate
+  // the corrected canonical stanzas. Preserve manual edits, but do not let
+  // stale unedited fields replace checked text or its glas/heading.
+  const verifiedLegacyAlias = !canonicalId(feast) && !!approvedHymnAlias(feast);
   const add = (kind, variant, content, heading, script, origin, priority) => {
     if (!TYPES.includes(kind) || !content) return;
     const cleaned = civilize(content, script);
@@ -238,7 +245,10 @@ export const getCalendarCardHymns = (feast, language = 'ru') => {
     const kind = h.kind === 'tropar' ? 'troparion' : 'kontakion';
     add(kind, Number(h.variant) || 1, h.content, h.heading,
       h.language === 'civil' || h.language === 'uk' ? '' : h.language,
-      'canonical_catalogue', h.language === 'uk' && language === 'uk' ? 3 : 4);
+      'canonical_catalogue',
+      verifiedLegacyAlias
+        ? (h.language === 'uk' && language === 'uk' ? 0 : h.language === 'civil' ? 1 : 4)
+        : (h.language === 'uk' && language === 'uk' ? 3 : 4));
   }
   // The original 210 repair package remains committed with exact before/after
   // comparisons and can fill variants when a later shard is incomplete.
