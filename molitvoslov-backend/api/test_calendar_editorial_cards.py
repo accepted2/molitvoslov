@@ -78,5 +78,5 @@ class CalendarEditorialCardsTests(TestCase):
             validate_icon_upload(invalid)
 
     def test_icon_upload_accepts_png_signature(self):
-        png = SimpleUploadedFile("icon.png", b"\\x89PNG\\r\\n\\x1a\\n" + b"01234567", content_type="image/png")
+        png = SimpleUploadedFile("icon.png", b"\x89PNG\r\n\x1a\n" + b"01234567", content_type="image/png")
         validate_icon_upload(png)
