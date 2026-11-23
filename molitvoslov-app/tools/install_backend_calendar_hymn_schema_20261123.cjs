@@ -167,11 +167,25 @@ for(const kind of ['troparion','kontakion']){
   '    '+kind+'_alt_title = serializers.SerializerMethodField()',
   '    '+kind+'_alt_content = serializers.SerializerMethodField()',
  ].join('\n'), 'serializer declaration '+kind);
+ // Limit field-list edit to CalendarFeastSerializer.Meta only. The same
+ // "kontakion_content" name also occurs in get_missing_uk_fields().
+ const metaStart=serializer.indexOf('class CalendarFeastSerializer(');
+ if(metaStart<0)throw Error('CalendarFeastSerializer not found. No files changed.');
+ const feastEnd=serializer.indexOf('class CalendarReadingSerializer(',metaStart);
+ if(feastEnd<0)throw Error('End of CalendarFeastSerializer not found. No files changed.');
+ const feastChunk=serializer.slice(metaStart,feastEnd);
+ const fieldStart=feastChunk.search(/^\s+fields\s*=\s*\[/m);
+ if(fieldStart<0)throw Error('CalendarFeastSerializer Meta.fields not found.');
+ const fieldEnd=feastChunk.indexOf(']',fieldStart);
+ if(fieldEnd<0)throw Error('CalendarFeastSerializer Meta.fields has no end.');
+ const metaFields=feastChunk.slice(fieldStart,fieldEnd+1);
  const listAnchor='            "'+kind+'_content",';
- serializer=single(serializer,listAnchor,listAnchor+'\n'+[
+ const fixedFields=single(metaFields,listAnchor,listAnchor+'\n'+[
   '            "'+kind+'_alt_title",',
   '            "'+kind+'_alt_content",',
- ].join('\n'),'serializer field list '+kind);
+ ].join('\n'),'serializer Meta.fields '+kind);
+ serializer=serializer.slice(0,metaStart+fieldStart)+fixedFields+
+  serializer.slice(metaStart+fieldEnd+1);
  const getter='    def get_'+kind+'_content(self, obj):\n        return self._get(obj, "'+kind+'_content")\n';
  const altGetters=[
   '',
