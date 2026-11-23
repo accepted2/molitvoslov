@@ -64,6 +64,20 @@ for (const shard of allCivilShards) {
 // "(67)". This is a checked identity alias, not fuzzy saint matching.
 const approvedHymnAlias = feast => {
   const titles = [feast?.title_ru, feast?.title_uk, feast?.title];
+  const sourceId = Number(feast?.source_id);
+  // Audited bridge from the 2026 bundled CalendarFeast external source IDs
+  // to canonical catalogue IDs. Match BOTH the source ID and commemoration
+  // title so an accidental numeric collision cannot transplant hymns.
+  if ((sourceId === 3301 || sourceId === 4260) &&
+      titles.some(value => /онисифор[а-я]*\\s+и\\s+порфир/i.test(
+        String(value || '').toLocaleLowerCase('ru-RU')))) {
+    return 'blv-d8aea6d1a8b6379590a8bed9';
+  }
+  if (sourceId === 3355 &&
+      titles.some(value => /никола/i.test(String(value || '')) &&
+        /мир[\\s-]*лики/i.test(String(value || '').toLocaleLowerCase('ru-RU')))) {
+    return 'blv-839dc39617bdf40503d594dd';
+  }
   for (const raw of titles) {
     const title = simpleTitle(raw);
     if (/(?:апостолов|апостолів) петра (?:и|і) павла/u.test(title)
