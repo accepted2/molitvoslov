@@ -52,7 +52,9 @@ export const selectUocIcon = feast => {
   if (feast.icon_is_manual && isHttps(existing)) return existing;
   const id = sourceId(feast);
   let selected = id ? iconById.get(id) : null;
-  if (!selected) {
+  // If the incoming card has a canonical ID but it failed verification,
+  // NEVER match it to a different person's icon by title.
+  if (!selected && !id) {
     for (const title of [feast.title_ru, feast.title_uk, feast.title]) {
       const name = normalize(title);
       if (!name || ambiguousNames.has(name)) continue;
