@@ -60,7 +60,7 @@ const Accordion = ({
   date,
   section,
   sourceTitle,
-
+  isHymn = false,
   script = 'civil',}) => {
   const [open, setOpen] = useState(initialOpen || focusHighlight);
   const [wholeSaved, setWholeSaved] = useState(false);
@@ -76,12 +76,12 @@ const Accordion = ({
   });
   const content = (
     <View style={styles.readingContent}>
-      {!!subtitle && <Text style={[styles.subtitle, script === 'csl' && styles.ponomarSubtitle]}>{subtitle}</Text>}
-      <CalendarSelectableBody text={text} saveContext={saveContext} textStyle={[styles.body, script === 'csl' && styles.ponomarBody]} />
+      {!!subtitle && <Text style={[styles.subtitle, isHymn && styles.hymnSubtitle, script === 'csl' && styles.ponomarSubtitle]}>{subtitle}</Text>}
+      <CalendarSelectableBody text={text} saveContext={saveContext} textStyle={[styles.body, isHymn && styles.hymnBody, script === 'csl' && styles.ponomarBody]} />
     </View>
   );
   return (
-    <View style={[styles.accordion, focusHighlight && styles.accordionFocused]}>
+    <View style={[styles.accordion, isHymn && styles.hymnAccordion, focusHighlight && styles.accordionFocused]}>
       <View style={styles.accordionHeaderRow}>
         <Pressable
           onPress={() => setOpen((value) => !value)}
@@ -95,7 +95,7 @@ const Accordion = ({
           {icon === 'life' ? <Feather name="book-open" size={22} color="#7A4F2D" /> : <Text style={styles.accordionIconText}>{icon}</Text>}
         </View>
         <View style={styles.accordionHeading}>
-          <Text style={styles.accordionTitle}>{title}</Text>
+          <Text style={[styles.accordionTitle, isHymn && styles.hymnTitle]}>{title}</Text>
           {!open && !!subtitle && <Text style={styles.preview} numberOfLines={1}>{subtitle}</Text>}
         </View>
         <View style={[styles.chevron, open && styles.chevronOpen]} />
@@ -281,7 +281,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
           height={lifeHeight}
         />
         {!!cardHymns.sections.length && (
-          <Text style={styles.eyebrow}>
+          <Text style={[styles.eyebrow, styles.hymnSectionLabel]}>
             {uk ? 'ПІСНЕСПІВИ' : 'ПЕСНОПЕНИЯ'}
           </Text>
         )}
@@ -297,6 +297,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
             icon={hymn.kind === 'troparion' ? '♪' : '✧'}
             text={hymn.text}
             subtitle={hymn.subtitle}
+            isHymn
             script={isChurchSlavonicHymn(hymn.text) ? 'csl' : 'civil'}
           />
         ))}
@@ -397,6 +398,11 @@ const styles = StyleSheet.create({
     borderRadius: 14, borderWidth: 1, borderColor: '#D3B68B',
     backgroundColor: '#EAD7B8', overflow: 'hidden',
   },
+  hymnSectionLabel: {marginTop: 5, marginHorizontal: 8, letterSpacing: 1.1},
+  hymnAccordion: {borderLeftWidth: 3, borderLeftColor: '#9C6547', borderColor: '#CBB494'},
+  hymnTitle: {color: '#623527'},
+  hymnSubtitle: {color: '#974F3A', fontSize: 14},
+  hymnBody: {textAlign: 'justify', lineHeight: 28},
   accordionFocused: {borderColor: '#A16E35', borderWidth: 2},
   accordionSaved: {borderColor: 'rgba(123, 79, 36, 0.18)'}, 
   accordionHeaderRow: {flexDirection: 'row', alignItems: 'center', paddingRight: 9},
