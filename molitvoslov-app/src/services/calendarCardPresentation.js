@@ -109,8 +109,14 @@ const fullCivilRows = feast => {
   return [];
 };
 
-const canonicalId = feast =>
-  String(feast?.card_id || feast?.blagovist_card_id || feast?.article_key || '').trim();
+// The 2025-2027 release-only calendar uses canonical "blv-..." strings
+// in source_id, whereas legacy calendar years used numeric source IDs.
+const canonicalId = feast => {
+  const source = typeof feast?.source_id === 'string' ? feast.source_id.trim() : '';
+  const fromSource = /^blv-[a-z0-9-]+$/i.test(source) ? source : '';
+  return String(feast?.card_id || feast?.blagovist_card_id ||
+    feast?.article_key || fromSource || '').trim();
+};
 const correctedRows = feast => {
   const id = canonicalId(feast);
   if (id) return indexedId.get(id) || [];
