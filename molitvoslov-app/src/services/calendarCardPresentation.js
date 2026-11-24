@@ -163,12 +163,20 @@ const localized = (card, key, language) => (
   (language === 'uk' && card?.[key + '_uk']) || card?.[key] || ''
 );
 
+// Two vetted Blagovist source articles describe the same saint of Myra.
+// Collapse only confirmed aliases, never saints inferred from sharing an icon.
+const SAME_SAINT_ALIAS = new Map([
+  ['blv-839dc39617bdf40503d594dd', 'st-nicholas-myra'],
+  ['blv-72fd8ac45d16938f68eb7306', 'st-nicholas-myra'],
+]);
 export const uniqueCalendarCards = cards => {
   const ids = new Set();
   const titles = new Set();
   return (Array.isArray(cards) ? cards : []).filter(card => {
     if (!card) return false;
-    const id = canonicalId(card) || String(card.sync_uid || card.source_id || card.id || '');
+    const canonical = canonicalId(card);
+    const id = SAME_SAINT_ALIAS.get(canonical) ||
+      canonical || String(card.sync_uid || card.source_id || card.id || '');
     const title = simpleTitle(card.title_ru || card.title_uk || card.title);
     if ((id && ids.has(id)) || (title && titles.has(title))) return false;
     if (id) ids.add(id);
