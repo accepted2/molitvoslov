@@ -1,0 +1,73 @@
+name: Reconcile legacy main feast references with Blagovist canonicals
+
+on:
+  push:
+    branches: [integration/snapshot-calendar-20261124]
+    paths:
+      - .github/scripts/reconcile_blagovist_main_cards_20261124.py
+      - .github/workflows/reconcile-main-calendar-20261124.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: reconcile-calendar-main
+  cancel-in-progress: false
+
+jobs:
+  reconcile-main:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          lfs: false
+          persist-credentials: true
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Validate Python and calculate exact same-saint matches
+        run: |
+          python -m py_compile .github/scripts/reconcile_blagovist_main_cards_20261124.py
+          python .github/scripts/reconcile_blagovist_main_cards_20261124.py
+      - name: Replace only verified main_feast references in 36 existing calendar months
+        run: python .github/scripts/reconcile_blagovist_main_cards_20261124.py --apply
+      - name: Confirm month coverage and original day identity
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from calendar import monthrange
+          folder = Path('molitvoslov-app/src/data/calendar')
+          count = 0
+          for year in (2025, 2026, 2027):
+              for month in range(1,13):
+                  file = folder / f'{year:04d}-{month:02d}.json'
+                  data = json.loads(file.read_text(encoding='utf-8'))
+                  assert len(data['days']) == monthrange(year,month)[1]
+                  for date, languages in data['days'].items():
+                      assert date.startswith(f'{year:04d}-{month:02d}-')
+                      for lang in ('ru','uk'):
+                          obj = languages.get(lang)
+                          if obj:
+                              assert obj['date_gregorian'] == date
+                  count += 1
+          assert count == 36
+          print('PASS: 36 months, calendar dates and language cards intact')
+          PY
+      - name: Commit corrected records without touching lectionary or icon assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- molitvoslov-app/src/data/calendar/2025-??.json molitvoslov-app/src/data/calendar/2026-??.json molitvoslov-app/src/data/calendar/2027-??.json molitvoslov-app/src/data/calendarMainCardReconciliationAudit.json
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "No legacy main feast links needed replacement"
+          else
+            git commit -m "data(calendar): use verified Blagovist main cards in existing 2025-27 months"
+            git fetch origin integration/snapshot-calendar-20261124
+            git rebase origin/integration/snapshot-calendar-20261124
+            git push origin HEAD:integration/snapshot-calendar-20261124
+          fi
