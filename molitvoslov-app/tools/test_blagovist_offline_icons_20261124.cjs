@@ -17,8 +17,8 @@ assert.deepEqual(files, uniqueFiles, 'Unused/old image files must be absent');
 assert.equal(files.length, audit.unique_webp);
 assert.ok(code.includes('export const getBundledCalendarIconSource'));
 assert.doesNotMatch(code, /\bbyUrl\b|\{uri\s*:/, 'Runtime must never fetch icons');
-assert.doesNotMatch(code, /azbyka|cloudinary\.com|blagovist\.info/i,
-  'Runtime mapping must not contain external URLs or legacy icon sources');
+assert.doesNotMatch(code, /https?:\/\//i,
+  'Runtime icon module must contain no external URLs');
 const seenHashes = new Set();
 for (const [id, entry] of mapped) {
   assert.match(id, /^blv-[a-z0-9-]+$/);
