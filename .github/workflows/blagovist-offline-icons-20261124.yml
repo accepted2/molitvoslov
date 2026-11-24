@@ -49,5 +49,9 @@ jobs:
             echo "Icon library already up to date"
           else
             git commit -m "assets(calendar): replace Azbyka icon files with deduplicated offline Blagovist WebP"
+            # Work on the isolated CI checkout, not on the user's dirty worktree.
+            # Carry the icon-only commit onto any newer frontend commits.
+            git fetch origin integration/snapshot-calendar-20261124
+            git rebase origin/integration/snapshot-calendar-20261124
             git push origin HEAD:integration/snapshot-calendar-20261124
           fi
