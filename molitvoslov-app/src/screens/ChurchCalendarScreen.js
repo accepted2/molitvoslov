@@ -287,7 +287,7 @@ const FormattedCalendarText = ({text}) => {
   );
 };
 
-const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, section, sourceTitle}) => {
+const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, section, sourceTitle, isHymn = false}) => {
   const {language} = useLanguage();
   const cslFont=language==='csl_traditional'?{fontFamily:'Ponomar',fontWeight:'400'}:null;
   const [expanded, setExpanded] = useState(false);
@@ -305,7 +305,7 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, 
     fontFamily: styles.textBlockParagraph.fontFamily,
   });
   return (
-    <View style={styles.textBlock}>
+    <View style={[styles.textBlock, isHymn && styles.hymnTextBlock]}>
       <View style={styles.textBlockHeaderRow}>
         <Pressable
           onPress={() => setExpanded((value) => !value)}
@@ -316,8 +316,8 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, 
           style={({pressed}) => [styles.textBlockHeader, styles.textBlockHeaderTap, pressed && styles.pressed]}
         >
         <View style={styles.textBlockHeaderText}>
-          <Text style={[styles.textBlockTitle,cslFont]}>{title}</Text>
-          {!!subtitle && <Text style={styles.textBlockSubtitle}>{subtitle}</Text>}
+          <Text style={[styles.textBlockTitle, isHymn && styles.hymnTextBlockTitle, cslFont]}>{title}</Text>
+          {!!subtitle && <Text style={[styles.textBlockSubtitle, isHymn && styles.hymnTextBlockSubtitle]}>{subtitle}</Text>}
         </View>
         <SoftChevron expanded={expanded} />
         </Pressable>
@@ -373,7 +373,7 @@ const ExpandableTextBlock = ({title, subtitle, text, life = false, feast, date, 
           <CalendarSelectableBody
             text={normalizeCalendarText(text)}
             saveContext={saveContext}
-            textStyle={styles.textBlockParagraph}
+            textStyle={[styles.textBlockParagraph, isHymn && styles.hymnParagraph]}
           />
         </View>
       ))}
@@ -997,7 +997,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
           )}
 
           {!!cardHymns.sections.length && (
-            <Text style={[styles.sectionEyebrow, cslFont]}>
+            <Text style={[styles.sectionEyebrow, styles.hymnSectionLabel, cslFont]}>
               {dataLanguage === 'uk' ? 'ПІСНЕСПІВИ' : 'ПЕСНОПЕНИЯ'}
             </Text>
           )}
@@ -1011,6 +1011,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
               title={hymn.title}
               subtitle={hymn.subtitle}
               text={hymn.text}
+              isHymn
             />
           ))}
           {!!cardHymns.missing.length && (
@@ -1396,6 +1397,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#EAD7B8',
     overflow: 'hidden',
   },
+  hymnSectionLabel: {marginTop: 16, marginBottom: 3, letterSpacing: 1.1},
+  hymnTextBlock: {borderLeftWidth: 3, borderLeftColor: '#9C6547', borderColor: '#C5A380'},
+  hymnTextBlockTitle: {color: '#623527'},
+  hymnTextBlockSubtitle: {color: '#974F3A', fontSize: 12},
+  hymnParagraph: {fontSize: 16, lineHeight: 28, color: '#3E2A1D'},
   calendarSavedBlock: {
     borderColor: 'rgba(123, 79, 36, 0.18)',
     backgroundColor: '#EAD7B8',
