@@ -216,7 +216,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const uk = language === 'uk';
   const title = (uk && resolvedFeast?.title_uk) || resolvedFeast?.title || '';
   const bundled = getBundledCalendarIconSource(resolvedFeast);
-  const image = bundled || (resolvedFeast?.icon_url ? {uri: resolvedFeast.icon_url} : null);
+  const image = bundled; // Icons must be packaged locally; never fetch a URL.
   const life = (uk && resolvedFeast?.life_content_uk) || resolvedFeast?.life_content;
   // Preserve the local Blagovest alternate fields and render all independently
   // reviewed canonical hymn variants, without replacing other reader features.
