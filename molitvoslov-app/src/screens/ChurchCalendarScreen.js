@@ -43,6 +43,8 @@ import {
   getOfflineCalendarMonth,
 } from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
+import {getCalendarCardHymns, uniqueCalendarCards} from '../services/calendarCardPresentation';
+import {selectUocIcon} from '../services/uocIconSelection';
 import {colors} from '../theme';
 import {CalendarSaveWholeButton, CalendarSelectableBody, makeCalendarSaveContext} from '../components/reader/CalendarSaveText';
 import {getCalendarBibleTranslation} from '../services/bibleTranslationPreference';
@@ -183,13 +185,17 @@ const formatCalendarDateLabel = (value, locale) => {
 
 const FeastImage = ({feast}) => {
   const [failed, setFailed] = useState(false);
+  const [remoteFailed, setRemoteFailed] = useState(false);
   const [imageHeight, setImageHeight] = useState(120);
 
-  const source = getBundledCalendarIconSource(feast);
+  const bundledSource = getBundledCalendarIconSource(feast);
+  const preferredUrl = selectUocIcon(feast);
+  const source = preferredUrl && !remoteFailed ? {uri: preferredUrl} : bundledSource;
   const imageWidth = 98;
 
   useEffect(() => {
     setFailed(false);
+    setRemoteFailed(false);
 
     if (!source) {
       return;
@@ -204,7 +210,7 @@ const FeastImage = ({feast}) => {
     } else {
       setImageHeight(120);
     }
-  }, [feast?.icon_url, feast?.source_id]);
+  }, [feast?.icon_url, feast?.source_id, preferredUrl]);
 
   if (!source || failed) {
     return (
@@ -234,7 +240,10 @@ const FeastImage = ({feast}) => {
           height: imageHeight,
         },
       ]}
-      onError={() => setFailed(true)}
+      onError={() => {
+        if (preferredUrl && !remoteFailed && bundledSource) setRemoteFailed(true);
+        else setFailed(true);
+      }}
     />
   );
 };
@@ -779,13 +788,18 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const cells = useMemo(() => buildCells(visibleYear, visibleMonth), [visibleMonth, visibleYear]);
 
   const today = calendarTodayKey;
-  const regularFeasts = (dayData?.all_feasts || []).filter((feast) => !isMovableDayCard(feast));
+  const regularFeasts = uniqueCalendarCards(
+    (dayData?.all_feasts || []).filter((feast) => !isMovableDayCard(feast))
+  );
   const suggestedMain = dayData?.main_feast;
   const mainFeast =
     suggestedMain && !isMovableDayCard(suggestedMain)
       ? suggestedMain
       : regularFeasts.find((feast) => !!feast?.icon_url) || regularFeasts[0] || null;
-  const otherFeasts = regularFeasts.filter((feast) => Number(feast?.id) !== Number(mainFeast?.id));
+  const otherFeasts = mainFeast
+    ? uniqueCalendarCards([mainFeast, ...regularFeasts]).slice(1)
+    : regularFeasts;
+  const cardHymns = getCalendarCardHymns(mainFeast, dataLanguage);
   const liturgicalDayLabel = movableDayLabel(dayData?.date_gregorian, language);
 
   const moveMonth = (delta) => {
@@ -982,36 +996,29 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             />
           )}
 
-          {!!mainFeast?.troparion_content && (
-            <ExpandableTextBlock
-              feast={mainFeast}
-              date={dayData?.date_gregorian || selectedDate}
-              section="troparion"
-              sourceTitle={displayTitle(mainFeast, copy)}
-              title={copy.troparion}
-              subtitle={
-                mainFeast.troparion_echo
-                  ? `${copy.voice} ${mainFeast.troparion_echo}`
-                  : mainFeast.troparion_title
-              }
-              text={mainFeast.troparion_content}
-            />
+          {!!cardHymns.sections.length && (
+            <Text style={[styles.sectionEyebrow, cslFont]}>
+              {dataLanguage === 'uk' ? 'ПІСНЕСПІВИ' : 'ПЕСНОПЕНИЯ'}
+            </Text>
           )}
-
-          {!!mainFeast?.kontakion_content && (
+          {cardHymns.sections.map((hymn) => (
             <ExpandableTextBlock
+              key={hymn.key}
               feast={mainFeast}
               date={dayData?.date_gregorian || selectedDate}
-              section="kontakion"
+              section={hymn.variant === 1 ? hymn.kind : `${hymn.kind}_alt`}
               sourceTitle={displayTitle(mainFeast, copy)}
-              title={copy.kontakion}
-              subtitle={
-                mainFeast.kontakion_echo
-                  ? `${copy.voice} ${mainFeast.kontakion_echo}`
-                  : mainFeast.kontakion_title
-              }
-              text={mainFeast.kontakion_content}
+              title={hymn.title}
+              subtitle={hymn.subtitle}
+              text={hymn.text}
             />
+          ))}
+          {!!cardHymns.missing.length && (
+            <Text style={styles.sectionEyebrow}>
+              {dataLanguage === 'uk'
+                ? 'Деякі піснеспіви очікують перевірки тексту'
+                : 'Некоторые песнопения ожидают проверки текста'}
+            </Text>
           )}
 
           <View
