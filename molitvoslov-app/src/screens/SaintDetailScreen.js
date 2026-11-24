@@ -15,6 +15,8 @@ import {Feather} from '@expo/vector-icons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
+import {getCalendarCardHymns} from '../services/calendarCardPresentation';
+import {selectUocIcon} from '../services/uocIconSelection';
 import {useLanguage} from '../context/LanguageContext';
 import {isChurchSlavonicHymn} from '../services/calendarHymnDisplay';
 import {previewCleanCalendarFeast, countPreviewChanges} from '../services/calendarSourceCleanupPreview';
@@ -210,26 +212,24 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const cleanupPreviewStats = countPreviewChanges(originalFeast, cleanedPreviewFeast, language === 'uk' ? 'uk' : 'ru');
   const resolvedFeast = cleanupComparisonEnabled && cleanupPreviewActive ? cleanedPreviewFeast : originalFeast;
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [preferredImageFailed, setPreferredImageFailed] = useState(false);
   const {width, height} = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const uk = language === 'uk';
   const title = (uk && resolvedFeast?.title_uk) || resolvedFeast?.title || '';
   const bundled = getBundledCalendarIconSource(resolvedFeast);
-  const image = bundled || (resolvedFeast?.icon_url ? {uri: resolvedFeast.icon_url} : null);
+  const preferredIconUrl = selectUocIcon(resolvedFeast);
+  useEffect(() => setPreferredImageFailed(false), [preferredIconUrl]);
+  const image = preferredIconUrl && !preferredImageFailed
+    ? {uri: preferredIconUrl}
+    : bundled || (resolvedFeast?.icon_url ? {uri: resolvedFeast.icon_url} : null);
   const life = (uk && resolvedFeast?.life_content_uk) || resolvedFeast?.life_content;
-  const troparion = (uk && resolvedFeast?.troparion_content_uk) || resolvedFeast?.troparion_content;
-  const kontakion = (uk && resolvedFeast?.kontakion_content_uk) || resolvedFeast?.kontakion_content;
-  // BLAGOVEST_HYMN_VARIANTS_20261123
-  const hymnLocalized = (key) =>
-    (language === 'uk' && resolvedFeast?.[key + '_uk']) || resolvedFeast?.[key] || '';
-  const troparionAlt = hymnLocalized('troparion_alt_content');
-  const kontakionAlt = hymnLocalized('kontakion_alt_content');
-  const troparionAltTitle = hymnLocalized('troparion_alt_title');
-  const kontakionAltTitle = hymnLocalized('kontakion_alt_title');
-  const hymnScript = (kind, value, alternative = false) =>
-    isChurchSlavonicHymn(value, hymnLocalized(kind + (alternative ? '_alt' : '') + '_script')) ? 'csl' : 'civil';
+  // Preserve the local Blagovest alternate fields and render all independently
+  // reviewed canonical hymn variants, without replacing other reader features.
+  const cardHymns = getCalendarCardHymns(resolvedFeast, uk ? 'uk' : 'ru');
 
   const prayer = (uk && resolvedFeast?.prayer_content_uk) || resolvedFeast?.prayer_content;
+  const magnification = (uk && resolvedFeast?.magnification_content_uk) || resolvedFeast?.magnification_content;
   const large = width >= 560;
   const heroImageWidth = large ? 180 : Math.min(132, width * 0.34);
   const lifeHeight = Math.min(420, height * 0.78);
@@ -252,7 +252,7 @@ export const SaintDetailScreen = ({route, navigation}) => {
               accessibilityLabel={uk ? 'Збільшити ікону' : 'Увеличить икону'}>
               <Image source={image}
                 style={[styles.image, {width: heroImageWidth, height: heroImageWidth * 1.24}]}
-                resizeMode="contain" />
+                resizeMode="contain" onError={() => setPreferredImageFailed(true)} />
 
             </Pressable>
           )}
@@ -280,53 +280,36 @@ export const SaintDetailScreen = ({route, navigation}) => {
           innerScroll
           height={lifeHeight}
         />
-        <Accordion
-          title={uk ? 'Тропар' : 'Тропарь'}
-          feast={resolvedFeast}
-          date={date}
-          sourceTitle={title}
-          section="troparion"
-          focusHighlight={focusSection === 'troparion'}
-          icon="♪"
-          text={troparion}
-          subtitle={resolvedFeast?.troparion_echo ? 'Глас ' + resolvedFeast.troparion_echo : resolvedFeast?.troparion_title}
-        
-          script={hymnScript('troparion', troparion)}/>
-        {!!troparionAlt && (
-          <Accordion
-            title={language === 'uk' ? 'Інший тропар' : 'Иной тропарь'}
-            feast={resolvedFeast} date={date} sourceTitle={title}
-            section="troparion_alt" icon="♪"
-            text={troparionAlt} subtitle={troparionAltTitle}
-            script={hymnScript('troparion', troparionAlt, true)}
-            focusHighlight={false}
-          />
+        {!!cardHymns.sections.length && (
+          <Text style={styles.eyebrow}>
+            {uk ? 'ПІСНЕСПІВИ' : 'ПЕСНОПЕНИЯ'}
+          </Text>
         )}
-        <Accordion
-          title="Кондак"
-          feast={resolvedFeast}
-          date={date}
-          sourceTitle={title}
-          section="kontakion"
-          focusHighlight={focusSection === "kontakion"}
-          icon="✧"
-          text={kontakion}
-          subtitle={resolvedFeast?.kontakion_echo ? 'Глас ' + resolvedFeast.kontakion_echo : resolvedFeast?.kontakion_title}
-        
-          script={hymnScript('kontakion', kontakion)}/>
-        {!!kontakionAlt && (
+        {cardHymns.sections.map((hymn) => (
           <Accordion
-            title={language === 'uk' ? 'Інший кондак' : 'Иной кондак'}
-            feast={resolvedFeast} date={date} sourceTitle={title}
-            section="kontakion_alt" icon="✧"
-            text={kontakionAlt} subtitle={kontakionAltTitle}
-            script={hymnScript('kontakion', kontakionAlt, true)}
-            focusHighlight={false}
+            key={hymn.key}
+            title={hymn.title}
+            feast={resolvedFeast}
+            date={date}
+            sourceTitle={title}
+            section={hymn.variant === 1 ? hymn.kind : `${hymn.kind}_alt`}
+            focusHighlight={focusSection === (hymn.variant === 1 ? hymn.kind : `${hymn.kind}_alt`)}
+            icon={hymn.kind === 'troparion' ? '♪' : '✧'}
+            text={hymn.text}
+            subtitle={hymn.subtitle}
+            script={isChurchSlavonicHymn(hymn.text) ? 'csl' : 'civil'}
           />
+        ))}
+        {!!cardHymns.missing.length && (
+          <Text style={styles.empty}>
+            {uk ? 'Деякі піснеспіви потребують перевірки тексту.' : 'Некоторые песнопения ожидают проверки текста.'}
+          </Text>
         )}
         {!!prayer && <Accordion title={uk ? 'Молитва' : 'Молитва'} icon="✝" text={prayer}
           feast={resolvedFeast} date={date} sourceTitle={title} section="prayer" />}
-        {!life && !troparion && !kontakion && !troparionAlt && !kontakionAlt && !prayer && (
+        {!!magnification && <Accordion title={uk ? 'Величання' : 'Величание'} icon="♪" text={magnification}
+          feast={resolvedFeast} date={date} sourceTitle={title} section="magnification" />}
+        {!life && !cardHymns.sections.length && !cardHymns.missing.length && !prayer && !magnification && (
           <Text style={styles.empty}>
             {sharedCardLoading
               ? (uk ? 'Завантаження відомостей...' : 'Загружаем сведения...')
