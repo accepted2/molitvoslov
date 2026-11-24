@@ -1,0 +1,50 @@
+name: Snapshot + calendar integration validation
+
+on:
+  push:
+    branches:
+      - integration/snapshot-calendar-20261124
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  calendar-content:
+    name: UOC icons and 2821 hymns
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          lfs: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+      - name: Multi-variant presentation and source normalization
+        working-directory: molitvoslov-app
+        run: node tools/test_calendar_hymn_multivariants_20261123.cjs
+      - name: Full icon selection and visual regression
+        working-directory: molitvoslov-app
+        run: node tools/test_uoc_integrated_hymns_icons_20261123.cjs
+      - name: Verify repaired subsets and preserve extra variants
+        working-directory: molitvoslov-app
+        run: node tools/test_uoc_210_integrated.cjs
+
+  snapshot-compatibility:
+    name: Snapshot functionality and JSX syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          lfs: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: molitvoslov-app/package-lock.json
+      - name: Install JS dependencies without native hooks
+        working-directory: molitvoslov-app
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Parse JSX and protect prior reading, sharing and icon features
+        working-directory: molitvoslov-app
+        run: node tools/test_snapshot_calendar_merge_20261124.cjs
