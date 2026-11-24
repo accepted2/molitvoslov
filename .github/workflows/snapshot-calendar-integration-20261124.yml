@@ -32,6 +32,9 @@ jobs:
       - name: Verify all packaged WebP, deduplication and no HTTP icon fallback
         working-directory: molitvoslov-app
         run: node tools/test_blagovist_offline_icons_20261124.cjs
+      - name: Verify all 36 years/months, reviewed main feasts and canonical icon bindings
+        working-directory: molitvoslov-app
+        run: node tools/test_blagovist_main_cards_20261124.cjs
 
   snapshot-compatibility:
     name: Snapshot functionality and JSX syntax
