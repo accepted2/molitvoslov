@@ -1,0 +1,28 @@
+{
+  "schema": "uoc-icon-curated-exceptions-v1",
+  "status": "source-gallery-exact-match_not-pixel-or-rights-verified",
+  "notes": "Reviewed identity; one icon per memory. Duplicate source articles about Nicholas intentionally share a single image.",
+  "items": [
+    [
+      "blv-ca7f2ce407c66cc45b803749",
+      "СЛАВНЫХ И ВСЕХВАЛЬНЫХ ПЕРВОВЕРХОВНЫХ АПОСТОЛОВ ПЕТРА И ПАВЛА (67)",
+      "СЛАВНИХ І ВСЕХВАЛЬНИХ ПЕРВОВЕРХОВНИХ АПОСТОЛІВ ПЕТРА І ПАВЛА (67)",
+      "https://blagovist.info/wp-content/uploads/2024/07/Slavni-i-vsekhvalni-pervoverkhovni-apostoly-Petro-i-Pavlo_8.png",
+      "source_gallery_fullsize_of_selected_342x450_thumbnail"
+    ],
+    [
+      "blv-839dc39617bdf40503d594dd",
+      "Святителя Николая, архиеп. Мир Ликийских, чудотворца (около 345)",
+      "Святителя Миколая, архієп. Мир Лікійських, чудотворця (близько 345)",
+      "https://blagovist.info/wp-content/uploads/2024/12/Sviatytel-Mykolay-arkhiiepyskop-Myr-Likiyskykh-chudotvorets_7.jpg",
+      "same_saint_alias_card"
+    ],
+    [
+      "blv-72fd8ac45d16938f68eb7306",
+      "Святитель Николай, архиепископ Мир Ликийских, чудотворец",
+      "Святитель Миколай, архієпископ Мир Лікійських, чудотворець",
+      "https://blagovist.info/wp-content/uploads/2024/12/Sviatytel-Mykolay-arkhiiepyskop-Myr-Likiyskykh-chudotvorets_7.jpg",
+      "same_saint_alias_card"
+    ]
+  ]
+}
