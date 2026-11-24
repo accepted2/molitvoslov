@@ -1,0 +1,2781 @@
+{
+  "counts": {
+    "canonical_kept": 384,
+    "legacy_replaced": 220,
+    "legacy_unmatched": 491,
+    "missing_main": 0,
+    "by_year": {
+      "2025": {
+        "matched": 116,
+        "unmatched": 206
+      },
+      "2026": {
+        "matched": 52,
+        "unmatched": 140
+      },
+      "2027": {
+        "matched": 52,
+        "unmatched": 145
+      }
+    }
+  },
+  "examples": [
+    {
+      "date": "2025-01-20",
+      "old": "Пророк, Предтеча и Креститель Господень Иоанн",
+      "new": "Собор святого славного Пророка, Предтечи и Крестителя Господня Иоанна",
+      "id": "blv-12c25d2a480a9bdd5c21a54a"
+    },
+    {
+      "date": "2025-01-22",
+      "old": "Святитель Филипп II (Колычев), митрополит Московский и всея Руси",
+      "new": "Филиппа, митр. Московского и всея Руси, чудотворца",
+      "id": "blv-ac9faae27b0d5b9419798af1"
+    },
+    {
+      "date": "2025-01-27",
+      "old": "Равноапостольная Нина, просветительница Грузии",
+      "new": "Равноап. Нины, просветительницы Грузии (335)",
+      "id": "blv-1a072536abf4e2831c79196d"
+    },
+    {
+      "date": "2025-02-12",
+      "old": "Собор вселенских учителей и святителей Василия Великого, Григория Богослова и Иоанна Златоустого",
+      "new": "Собор вселенских учителей и святителей Василия Великого, Григория Богослова и Иоанна Златоуста",
+      "id": "blv-7accea2aa3804ed83782d8e2"
+    },
+    {
+      "date": "2025-02-13",
+      "old": "Мученики-бессребреники Кир и Иоанн Александрийские, врачи безмездные и с ними Афанасия и дщери ее Феодотия, Феоктиста и Евдоксия",
+      "new": "Бессребреников мчч. Кира и Иоанна и с ними мцц. Афанасии и дочерей её Феодотии, Феоктисты и Евдоксии (311)",
+      "id": "blv-7d0b832da21e27b4ea24d588"
+    },
+    {
+      "date": "2025-02-16",
+      "old": "Равноапостольный Николай (Касаткин), архиепископ Японский",
+      "new": "Равноап. Николая, архиеп. Японского (1912)",
+      "id": "blv-09ef0ff47403348b6d1775e0"
+    },
+    {
+      "date": "2025-02-18",
+      "old": "Святитель Феодосий, архиепископ Черниговский",
+      "new": "Свт. Феодосия, архиеп. Черниговского (1696)",
+      "id": "blv-79b0810c87b31b5fa194caed"
+    },
+    {
+      "date": "2025-02-20",
+      "old": "Прп. Парфения, епископа Лампсакийского (IV), прп. Луки Елладского (X)",
+      "new": "Прп. Парфения, еп. Лампсакийского (IV)",
+      "id": "blv-a3570d7ce76e89656d009b12"
+    },
+    {
+      "date": "2025-02-23",
+      "old": "Сщмч. Харалампий, епископ Магнезийский и с ним мчч. Порфирий, Ваптос и три мученицы",
+      "new": "Сщмч. Харалампия и с ним мчч. Порфирия, Ваптоса и трёх мучениц (202)",
+      "id": "blv-8e63eb9f08ac6e59b7798674"
+    },
+    {
+      "date": "2025-02-24",
+      "old": "Преподобный Димитрий Прилуцкий, Вологодский, игумен",
+      "new": "Прп. Димитрия Прилуцкого, Вологодского (1392)",
+      "id": "blv-15924351144811e33408f49d"
+    },
+    {
+      "date": "2025-02-26",
+      "old": "Святитель Серафим (Соболев), архиепископ Богучарский",
+      "new": "Свт. Серафима (Соболева), архиеп. Богучарского (1950)",
+      "id": "blv-57518972ce64cf4a13014e64"
+    },
+    {
+      "date": "2025-03-02",
+      "old": "Священномученик Ермоген, патриарх Московский и всея Руси",
+      "new": "Сщмч. Ермогена, патр. Московского и всея Руси, чудотворца (1612)",
+      "id": "blv-971bc3731d665a877d538a6a"
+    },
+    {
+      "date": "2025-03-04",
+      "old": "Апостолы от 70-ти Архипп, епископ Колосский, Филимон, епископ Газский и мц. равноап. Апфия",
+      "new": "Апостолы от 70-ти Архипп, Филимон и мученица Апфия",
+      "id": "blv-27ae00253ae73612d8618e6c"
+    },
+    {
+      "date": "2025-03-09",
+      "old": "Первое (IV) и второе (452) обретение главы Пророка, Предтечи и Крестителя Господня Иоанна",
+      "new": "Первое (IV) и второе (452) обретение честной главы святого славного Пророка, Предтечи и Крестителя Господня Иоанна",
+      "id": "blv-b85b73561877b3f80802e64c"
+    },
+    {
+      "date": "2025-03-10",
+      "old": "Святитель Тарасий, архиепископ Константинопольский",
+      "new": "Свт. Тарасия, архиеп. Константинопольского (806)",
+      "id": "blv-078c5308f1f704408b72825e"
+    },
+    {
+      "date": "2025-03-11",
+      "old": "Святитель Порфирий, архиепископ Газский",
+      "new": "Свт. Порфирия, архиеп. Газского (420)",
+      "id": "blv-26808a4209f04cf099374bf2"
+    },
+    {
+      "date": "2025-03-13",
+      "old": "Преподобный Василий Декаполит, исповедник",
+      "new": "Прп. Василия, испов. (750)",
+      "id": "blv-c5919e265df8a9004e23fb75"
+    },
+    {
+      "date": "2025-03-15",
+      "old": "Святитель Арсений, епископ Тверской",
+      "new": "Свт. Арсения, еп. Тверского (1409)",
+      "id": "blv-e63bd2f69f12b4dd4a25c6ea"
+    },
+    {
+      "date": "2025-03-17",
+      "old": "Благоверный князь Даниил Московский",
+      "new": "Блгв. кн. Даниила Московского (1303)",
+      "id": "blv-676c1b4859dadff184e89280"
+    },
+    {
+      "date": "2025-03-19",
+      "old": "Мчч. 42 во Амморее: Константин, Аетий, Феофил, Феодор, Мелиссен, Каллист, Васой и прочие с ними",
+      "new": "Мчч. 42-х в Амморее: Константина, Аетия, Феофила, Феодора, Мелиссена, Каллиста, Васоя и других с ними (около 845)",
+      "id": "blv-2ccdcafb59b90212c10c65c0"
+    },
+    {
+      "date": "2025-03-23",
+      "old": "Мученики Кодрат и иже с ним: Киприан, Дионисий, Анект, Павел, Крискент, Дионисий, Викторин, Виктор, Никифор, Клавдий, Диодор, Серафион, Папий, Леонид и Хариесса, Нунехия, Василисса, Ника, Гали Коринфские",
+      "new": "Мчч. Кодрата и с ним Киприана, Дионисия, Анекта, Павла, Крискента, Дионисия (другого), Викторина, Виктора, Никифора, Клавдия, Диодора, Серапиона, Папия, Леонида и мцц. Хариессы, Нунехии, Василиссы, Ники, Гали, Галины, Феодоры и многих других (258)",
+      "id": "blv-4bbc508a50e6811e1a513a74"
+    },
+    {
+      "date": "2025-04-07",
+      "old": "Благовещение Пресвятой Богородицы",
+      "new": "БЛАГОВЕЩЕНИЕ ПРЕСВЯТОЙ ВЛАДЫЧИЦЫ НАШЕЙ БОГОРОДИЦЫ И ПРИСНОДЕВЫ МАРИИ",
+      "id": "blv-95a7758b2b9f4d869c42ffeb"
+    },
+    {
+      "date": "2025-04-08",
+      "old": "Гавриил, Архангел",
+      "new": "Собор Архангела Гавриила",
+      "id": "blv-debe2eb8b80566d7b0a81fcf"
+    },
+    {
+      "date": "2025-04-09",
+      "old": "Мученица Матрона Солунская (Фессалоникийская)",
+      "new": "Мц. Матроны Солунской (III–IV)",
+      "id": "blv-dc18daf20ac31d7f94fd7606"
+    },
+    {
+      "date": "2025-04-19",
+      "old": "Святитель Евтихий, архиепископ Константинопольский",
+      "new": "Свт. Евтихия, архиеп. Константинопольского (582)",
+      "id": "blv-aedaac37abc532e81642c299"
+    },
+    {
+      "date": "2025-04-20",
+      "old": "Светлое Христово Воскресение",
+      "new": "СВЕТЛОЕ ХРИСТОВО ВОСКРЕСЕНИЕ. ПАСХА",
+      "id": "blv-427ded601dc671c97e29eef1"
+    },
+    {
+      "date": "2025-04-21",
+      "old": "Апп. от 70-ти Родиона (Иродиона), Агава, Асинкрита, Руфа, Флегонта, Ерма, епископов, и иже с ними (I)",
+      "new": "Агава, Руфа, Асинкрита, Флегонта",
+      "id": "blv-65b7ddd7d8f5b884486c406d"
+    },
+    {
+      "date": "2025-04-23",
+      "old": "Мученики Терентий, Помпий, Африкан, Максим, Зинон, Александр и Феодор",
+      "new": "Мчч. Терентия, Помпия, Африкана, Максима, Зинона, Александра, Феодора и других 33-х (около 249–251)",
+      "id": "blv-16746058d384f5fa7d656128"
+    },
+    {
+      "date": "2025-04-28",
+      "old": "Апп. от 70-ти Аристарха, Пуда и Трофима (ок. 67)",
+      "new": "Пуда, Трофима",
+      "id": "blv-ebeccb3fbad5958881c8cc41"
+    },
+    {
+      "date": "2025-04-30",
+      "old": "Преподобный Зосима Соловецкий, игумен",
+      "new": "Прп. Зосимы, игумена Соловецкого (1478)",
+      "id": "blv-5d2a3f47b1dd7641cc4e1a36"
+    },
+    {
+      "date": "2025-05-03",
+      "old": "Святитель Николай (Велимирович), епископ Сербский, Охридский и Жичский",
+      "new": "Свт. Николая (Велимировича), еп. Охридского и Жичского (1956) (Серб.)",
+      "id": "blv-4389731374f736d9637081d5"
+    },
+    {
+      "date": "2025-05-04",
+      "old": "Сщмч. Ианнуарий, епископ Беневентский, и с ним мчч. Прокул, диакон, Соссий, диакон и Фавст, диакон, Дисидерий, чтец, Евтихий и Акутион",
+      "new": "Сщмч. Ианнуария еп. и с ним мчч. Прокула, Сосия и Фавста диаконов, Дисидерия чтеца, Евтихия и Акутиона (около 305)",
+      "id": "blv-8b27b6d101a6552cc85d55c8"
+    },
+    {
+      "date": "2025-05-05",
+      "old": "Преподобный Феодор Сикеот, Анастасиупольский, епископ",
+      "new": "Прп. Феодора Сикеота, еп. Анастасиупольского (613)",
+      "id": "blv-4c3fdf0f2cde70a0f9946944"
+    },
+    {
+      "date": "2025-05-06",
+      "old": "Великомученик Георгий Победоносец",
+      "new": "Вмч. Георгия Победоносца (303)",
+      "id": "blv-d0b73f336d204f04442f99ca"
+    },
+    {
+      "date": "2025-05-10",
+      "old": "Апостол от 70-ти Симеон Иерусалимский, сродник Господень по плоти, епископ",
+      "new": "Ап. и сщмч. Симеона, сродника Господня (107)",
+      "id": "blv-5bf736368a85bc47665024ea"
+    },
+    {
+      "date": "2025-05-11",
+      "old": "Апп. от 70-ти Иасона и Сосипатра, мц. Керкиры девы и иных, с ними пострадавших (I)",
+      "new": "Керкиры девы и других, с ними пострадавших (I)",
+      "id": "blv-6f7095a61bf478c9fd4565c6"
+    },
+    {
+      "date": "2025-05-12",
+      "old": "Девять мучеников Кизических: Феогнид, Руф, Антипатр, Феостих, Артема, Магн, Феодот, Фавмасий и Филимон",
+      "new": "Девяти мчч. Кизических: Феогнида, Руфа, Антипатра, Феостиха, Артемы, Магна, Феодота, Фавмасия и Филимона (286–299)",
+      "id": "blv-5430e16593b1d09c02fab55a"
+    },
+    {
+      "date": "2025-05-15",
+      "old": "Перенесение мощей блгвв. кнн. Российских Бориса и Глеба, во Святом Крещении Романа и Давида (1072 и 1115)",
+      "new": "Перенесение мощей блгвв. кнн. страстотерпцев Бориса и Глеба, во Святом Крещении Романа и Давида (1072 и 1115)",
+      "id": "blv-7d5a72c92ca8a06648e23814"
+    },
+    {
+      "date": "2025-05-16",
+      "old": "Преподобный Феодосий Печерский, игумен",
+      "new": "Прп. Феодосия, игумена Киево-Печерского (1074)",
+      "id": "blv-d6a0df6f7a0e5cfffc14db93"
+    },
+    {
+      "date": "2025-05-24",
+      "old": "равноапп. Мефодия, архиепископа (885) и Кирилла (869), учителей Словенских",
+      "new": "Равноапп. Мефодия (885) и Кирилла (869), учителей Словенских",
+      "id": "blv-a158bffa763d60009fdb1682"
+    },
+    {
+      "date": "2025-05-25",
+      "old": "Священномученик Ермоген, патриарх Московский и всея Руси",
+      "new": "Сщмч. Ермогена, патр. Московского и всея Руси, чудотворца (1612)",
+      "id": "blv-971bc3731d665a877d538a6a"
+    },
+    {
+      "date": "2025-05-28",
+      "old": "Благоверный Димитрий Угличский и Московский, царевич",
+      "new": "Блгв. царевича Димитрия, Угличского и Московского (1591)",
+      "id": "blv-f2fdf5e0b212a5b85e18bb60"
+    },
+    {
+      "date": "2025-05-29",
+      "old": "Отдание праздника Вознесения Господня",
+      "new": "ВОЗНЕСЕНИЕ ГОСПОДНЕ",
+      "id": "blv-5c13951bc50226c68a2ebcc6"
+    },
+    {
+      "date": "2025-05-30",
+      "old": "Ап. от 70-ти Андроника, епископа и св. Иунии (I)",
+      "new": "Ап. от 70-ти Андроника и св. Иунии (I)",
+      "id": "blv-097126858bfd9a5337c2a06e"
+    },
+    {
+      "date": "2025-06-03",
+      "old": "равноапп. царя Константина (337) и матери его, св. царицы Елены (327)",
+      "new": "Равноапп. царя Константина (337) и матери его царицы Елены (327)",
+      "id": "blv-2cce9f92301d1aa79aab326e"
+    },
+    {
+      "date": "2025-06-09",
+      "old": "Праведный Иоанн Русский",
+      "new": "Прав. Иоанна Русского, испов. (1730)",
+      "id": "blv-6b6306c03cb6b89b7b21ff6a"
+    },
+    {
+      "date": "2025-06-14",
+      "old": "Праведный Иоанн Кронштадтский, пресвитер",
+      "new": "Прав. Иоанна Кронштадтского (1908)",
+      "id": "blv-b65a09371b0b02e455bfe1b0"
+    },
+    {
+      "date": "2025-06-16",
+      "old": "Мученики Лукиллиан, Клавдий, Ипатий, Павел, Дионисий и Павла",
+      "new": "Мчч. Лукилиана, Клавдия, Ипатия, Павла, Дионисия и мц. Павлы девы (270–275)",
+      "id": "blv-f904466f572cc8438c3805d5"
+    },
+    {
+      "date": "2025-06-24",
+      "old": "Апп. Варфоломея (Нафанаила) и Варнавы (I)",
+      "new": "Апп. Нафанаила",
+      "id": "blv-194a4f7a6ea4cb234b2ee100"
+    },
+    {
+      "date": "2025-06-27",
+      "old": "Преподобный Мефодий Пешношский, игумен",
+      "new": "Прп. Мефодия, игумена Пешношского (1392)",
+      "id": "blv-5a193f5c6178ed76e8fbcfc9"
+    }
+  ],
+  "unresolved": [
+    {
+      "date": "2025-01-03",
+      "old_title": "Святитель Петр Московский, митрополит Киевский и всея Руси, чудотворец",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-04",
+      "old_title": "Предпразднство Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-05",
+      "old_title": "Предпразднство Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-06",
+      "old_title": "Предпразднство Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-07",
+      "old_title": "Рождество Господа Бога и Спаса нашего Иисуса Христа",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-08",
+      "old_title": "Собор Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-09",
+      "old_title": "Попразднство Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-10",
+      "old_title": "Попразднство Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-11",
+      "old_title": "Попразднство Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-13",
+      "old_title": "Отдание праздника Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-15",
+      "old_title": "Преподобный Серафим Саровский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-16",
+      "old_title": "Предпразднство Богоявления",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-17",
+      "old_title": "Предпразднство Богоявления",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-18",
+      "old_title": "Навечерие Богоявления (Крещенский сочельник)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-21",
+      "old_title": "Попразднство Богоявления",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-23",
+      "old_title": "Святитель Феофан Затворник Вышенский, епископ Тамбовский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-25",
+      "old_title": "Святитель Савва I, архиепископ Сербский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-26",
+      "old_title": "Попразднство Богоявления",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-28",
+      "old_title": "Прпп. Павла Фивейского (341) и Иоанна Кущника (V)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-29",
+      "old_title": "Поклонение честным веригам ап. Петра",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-01-31",
+      "old_title": "Свтт. Афанасия Великого (373) и Кирилла (444), архиепископов Александрийских",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-02-03",
+      "old_title": "Преподобный Максим Грек",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-02-04",
+      "old_title": "Апостол от 70-ти Тимофей Ефесский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-02-05",
+      "old_title": "Собор святых Костромской митрополии",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-02-06",
+      "old_title": "Блаженная Ксения Петербургская, Христа ради юродивая",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-02-08",
+      "old_title": "Собор новомучеников и исповедников Церкви Русской",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-02-09",
+      "old_title": "Перенесение мощей свт. Иоанна Златоуста (438)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-02-10",
+      "old_title": "Преподобный Ефрем Сирин, Едесский, иеродиакон",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-02-11",
+      "old_title": "Собор Коми святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-02-14",
+      "old_title": "Предпразднство Сретения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-02-17",
+      "old_title": "Попразднство Сретения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-02-19",
+      "old_title": "Отдание праздника Сретения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-02-21",
+      "old_title": "Собор всех преподобных отцов, в подвиге просиявших",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-02-22",
+      "old_title": "Святитель Иннокентий (Кульчицкий), епископ Иркутский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-02-27",
+      "old_title": "Равноапостольный Кирилл (Константин) Философ, Моравский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-02-28",
+      "old_title": "Великомученик Феодор Тирон",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-03-01",
+      "old_title": "Собор святых Новосибирской митрополии",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-03-03",
+      "old_title": "Святитель Лев I, папа Римский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-03-05",
+      "old_title": "Преподобный Лев, епископ Катанский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-03-06",
+      "old_title": "Прп. Тимофея в Символех (795), свт. Евстафия, архиепископа Антиохийского (337)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-03-07",
+      "old_title": "Мученики, иже во Евгении",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-03-08",
+      "old_title": "Блаженная Матрона Московская (Никонова)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-03-12",
+      "old_title": "Преподобный Прокопий Декаполит, исповедник",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-03-14",
+      "old_title": "Преподобномученица Евдокия Илиопольская, игумения",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-03-16",
+      "old_title": "Мчч. Евтропия, Клеоника и Василиска Команского (ок. 308)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-03-18",
+      "old_title": "Благоверные князья Феодор Ростиславич Черный, Смоленский, Ярославский и чада его Давид и Константин, Ярославские чудотворцы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-03-21",
+      "old_title": "Преподобный Феофилакт Исповедник, Никомидийский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-03-22",
+      "old_title": "Преподобный Иоанн Лествичник, Синайский, игумен",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-03-24",
+      "old_title": "Святитель Софроний, патриарх Иерусалимский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-03-25",
+      "old_title": "Святитель Григорий Двоеслов, Великий",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-03-26",
+      "old_title": "Святитель Никифор I, патриарх Константинопольский, исповедник",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-03-28",
+      "old_title": "Похвала Пресвятой Богородицы (Суббота Акафиста)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-03-29",
+      "old_title": "Преподобная Мария Египетская",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-03-30",
+      "old_title": "Преподобный Алексий, человек Божий",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-04-01",
+      "old_title": "Мчч. Хрисанф и Дария и с ними мчч. Клавдий, Илария, Иасон и Мавр, Диодор, пресвитер и Мариан, диакон",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-04-02",
+      "old_title": "Преподобные Иоанн, Сергий, Патрикий и прочие, во обители св. Саввы убиенные",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-04-03",
+      "old_title": "Преподобный Серафим Вырицкий (Муравьев), иеросхимонах",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-04-04",
+      "old_title": "Лазарева суббота",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-04-05",
+      "old_title": "Вход Господень в Иерусалим",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-04-06",
+      "old_title": "Преподобный Захария Отверстый, затворник",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-04-10",
+      "old_title": "Преподобный Иларион Новый, Пеликитский, игумен",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-04-11",
+      "old_title": "Священномученики Марк, епископ Арефусийский, Кирилл, диакон, и иные многие",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-04-13",
+      "old_title": "Священномученик Ипатий Гангрский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-04-14",
+      "old_title": "Иверской иконы Божией Матери (переходящее празднование во вторник Светлой седмицы)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-04-15",
+      "old_title": "Преподобный Тит чудотворец, иеромонах",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-04-17",
+      "old_title": "Икона Богородицы Живоносный Источник",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-04-18",
+      "old_title": "Святитель Иов, патриарх Московский и всея Руси",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-04-22",
+      "old_title": "Мученик Евпсихий Кесарийский (Каппадокийский)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-04-24",
+      "old_title": "Священномученик Антипа Пергамский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-04-25",
+      "old_title": "Преподобный Василий Парийский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-04-26",
+      "old_title": "Святых жен-мироносиц: Марии Магдалины, Марии Клеоповой, Саломии, Иоанны, Марфы и Марии, Сусанны и иных; правв. Иосифа Аримафейского и Никодима (переходящее празднование в Неделю 3-ю по Пасхе)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-04-27",
+      "old_title": "Святитель Мартин I",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-04-29",
+      "old_title": "Мученицы Агапия, Ирина и Хиония Аквилейские",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-05-01",
+      "old_title": "Преподобный Иоанн Солунский (Фессалоникийский)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-05-07",
+      "old_title": "Мученик Савва Стратилат, Римский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-05-08",
+      "old_title": "Апостол от 70-ти и евангелист Марк Александрийский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-05-09",
+      "old_title": "Святитель Стефан (Великопермский), епископ Пермский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-05-13",
+      "old_title": "Отдание праздника Преполовения Пятидесятницы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-05-14",
+      "old_title": "Пророк Иеремия",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-05-17",
+      "old_title": "Мученица Пелагия Тарсийская, дева",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-05-18",
+      "old_title": "Великомученица Ирина Македонская",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-05-19",
+      "old_title": "Праведный Иов Многострадальный",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-05-20",
+      "old_title": "Собор преподобных отец Русского на Афоне Свято-Пантелеимонова монастыря",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-05-21",
+      "old_title": "Вознесение Господне",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-05-26",
+      "old_title": "Попразднство Вознесения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-05-27",
+      "old_title": "Попразднство Вознесения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-05-31",
+      "old_title": "День Святой Троицы. Пятидесятница",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-01",
+      "old_title": "День Святого Духа",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-02",
+      "old_title": "Святитель Алексий Московский, митрополит Киевский и всея Руси, чудотворец",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-04",
+      "old_title": "Мученик Василиск Команский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-05",
+      "old_title": "Святитель Леонтий, епископ Ростовский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-06",
+      "old_title": "Отдание праздника Пятидесятницы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-07",
+      "old_title": "Всех святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-08",
+      "old_title": "Апп. от 70-ти Карпа и Алфея (I)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-11",
+      "old_title": "Святитель Лука (Войно-Ясенецкий), архиепископ Симферопольский, Крымский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-12",
+      "old_title": "Преподобный Варлаам Хутынский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-13",
+      "old_title": "Апостол от 70-ти Ерм (Ермий), епископ Далматский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-15",
+      "old_title": "Святитель Никифор I, патриарх Константинопольский, исповедник",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-18",
+      "old_title": "Священномученик Дорофей Тирский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-19",
+      "old_title": "Прп. Виссариона Египетского, чудотворца (IV–V), прп. Илариона Нового, игумена (845)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-20",
+      "old_title": "Мученик Феодот Анкирский, корчемник",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-21",
+      "old_title": "Собор Вологодских святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-22",
+      "old_title": "Преподобный Кирилл Белоезерский, игумен",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-23",
+      "old_title": "Святитель Василий, епископ Рязанский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-25",
+      "old_title": "Прп. Онуфрия Великого (IV), прп. Петра Афонского (734)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-26",
+      "old_title": "Мученица Акилина Старшая, Библосская (Финикийская)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-28",
+      "old_title": "Святитель Иона Московский, митрополит Киевский и всея Руси",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-06-29",
+      "old_title": "Святитель Феофан Затворник Вышенский, епископ Тамбовский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-07-01",
+      "old_title": "Икона Богородицы Боголюбская",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-07-02",
+      "old_title": "Апостол Иуда Иаковлев (Леввей, Фаддей), брат Господень",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-07-04",
+      "old_title": "Преподобный Максим Грек",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-07-06",
+      "old_title": "Собор Владимирских святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-07-08",
+      "old_title": "Преподобномученица Феврония Сирская, дева",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-07-13",
+      "old_title": "Собор славных и всехвальных 12-ти апостолов",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-07-19",
+      "old_title": "Собор Радонежских святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-07-23",
+      "old_title": "Преподобный Антоний Печерский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-07-24",
+      "old_title": "Равноапостольная Ольга (в Крещении Елена)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-07-25",
+      "old_title": "Икона Богородицы Троеручица",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-07-26",
+      "old_title": "Память святых отцов шести Вселенских Соборов",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-07-28",
+      "old_title": "Равноапостольный Владимир (в Крещении Василий), великий князь",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-07-29",
+      "old_title": "Священномученик Афиноген Пидахфойский, Севастийский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-07-31",
+      "old_title": "Собор Калужских святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-08-01",
+      "old_title": "Преподобный Серафим Саровский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-08-02",
+      "old_title": "Пророк Илия Фесвитянин",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-08-03",
+      "old_title": "Пророк Иезекииль",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-08-05",
+      "old_title": "Праведный Феодор Ушаков, воин",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-08-11",
+      "old_title": "Мученик Каллиник Киликийский, Гангрский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-08-12",
+      "old_title": "Мученик Иоанн Воин",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-08-13",
+      "old_title": "Сщмч. Вениамина (Казанского), митрополита Петроградского, и с ним прмч. Сергия (Шеина), архимандрита и мчч. Юрия Новицкого и Иоанна Ковшарова (1922)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-08-18",
+      "old_title": "Предпразднство Преображения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-08-20",
+      "old_title": "Святитель Митрофан (в схиме Макарий), епископ Воронежский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-08-23",
+      "old_title": "Собор Валаамских святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-08-24",
+      "old_title": "Попразднство Преображения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-08-25",
+      "old_title": "Попразднство Преображения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-08-28",
+      "old_title": "Успение Пресвятой Владычицы нашей Богородицы и Приснодевы Марии",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-08-30",
+      "old_title": "Собор Кузбасских святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-08-31",
+      "old_title": "Икона Богородицы Всецарица (Пантанасса)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-09-01",
+      "old_title": "Попразднство Успения Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-09-02",
+      "old_title": "Попразднство Успения Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-09-03",
+      "old_title": "Попразднство Успения Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-09-04",
+      "old_title": "Попразднство Успения Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-09-05",
+      "old_title": "Отдание праздника Успения Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-09-06",
+      "old_title": "Святитель Петр Московский, митрополит Киевский и всея Руси, чудотворец",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-09-07",
+      "old_title": "Перенесение мощей апостола Варфоломея (VI)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-09-08",
+      "old_title": "Сретение Владимирской иконы Пресвятой Богородицы (празднество установлено в память спасения Москвы от нашествия Тамерлана в 1395 году)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-09-09",
+      "old_title": "Преподобный Пимен Великий, Египетский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-09-10",
+      "old_title": "Преподобный Иов Почаевский, игумен",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-09-14",
+      "old_title": "Начало индикта – церковное новолетие",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-09-15",
+      "old_title": "прпп. Антония (1073) и Феодосия (1074) Печерских",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-09-17",
+      "old_title": "Святитель Иоасаф, епископ Белгородский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-09-19",
+      "old_title": "Воспоминание чуда Архистратига Михаила, бывшего в Хонех (Колоссах) (IV)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-09-20",
+      "old_title": "Предпразднство Рождества Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-09-22",
+      "old_title": "Преподобный Иосиф Волоцкий (Волоколамский), игумен",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-09-23",
+      "old_title": "Попразднство Рождества Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-09-29",
+      "old_title": "Попразднство Воздвижения Честного и Животворящего Креста Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-09-30",
+      "old_title": "Попразднство Воздвижения Честного и Животворящего Креста Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-10-01",
+      "old_title": "Преподобный Евме́ний, епископ Гортинский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-10-03",
+      "old_title": "Мученики Михаил Всеволодович, Черниговский и боярин его Феодор Черниговский, чудотворцы",
+      "reason": "localizations do not share the canonical identity"
+    },
+    {
+      "date": "2025-10-04",
+      "old_title": "Апостол от 70-ти Кодрат Афинский и Магнезийский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-10-09",
+      "old_title": "Святитель Тихон (Беллавин), патриарх Московский и всея России",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-10-10",
+      "old_title": "Священномученик Петр (Полянский), митрополит Крутицкий",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-10-11",
+      "old_title": "Преподобный Харитон Исповедник, епископ Иконийский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-10-13",
+      "old_title": "Святитель Михаил, митрополит Киевский и всея Руси",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-10-15",
+      "old_title": "Праведный Феодор Ушаков, воин",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-10-16",
+      "old_title": "Вмч. Евстафия Плакиды, жены его мц. Феопистии и чад их мчч. Агапия и Феописта",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-10-18",
+      "old_title": "Мученица Харитина Амисийская (Понтийская)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-10-19",
+      "old_title": "Апостол Фома Дидим (Близнец)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-10-20",
+      "old_title": "Мученики Сергий Римлянин, Росафский и Вакх Римлянин",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-10-21",
+      "old_title": "Преподобная Пелагия Антиохийская, Елеонская, Палестинская",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-10-24",
+      "old_title": "Апостол от 70-ти Филипп, диакон",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-10-26",
+      "old_title": "Иверской иконы Божией Матери",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-10-28",
+      "old_title": "Святитель Афанасий (Сахаров), епископ Ковровский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-10-29",
+      "old_title": "Святитель Иоанн (Максимович), митрополит Тобольский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-10-30",
+      "old_title": "Пророк Осия",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-10-31",
+      "old_title": "Апостол от 70-ти и евангелист Лука, иконописец",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-11-02",
+      "old_title": "Преподобный Гавриил (Ургебадзе) Самтаврийский, архимандрит",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-11-05",
+      "old_title": "Апостол от 70-ти Иаков, брат Господень по плоти, епископ Иерусалимский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-11-07",
+      "old_title": "Димитриевская родительская суббота",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-11-10",
+      "old_title": "Преподобный Иов Почаевский, игумен",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-11-11",
+      "old_title": "Преподобномученица Анастасия Римляныня, Солунская (Фессалоникийская)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-11-18",
+      "old_title": "Святитель Иона, архиепископ Новгородский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-11-22",
+      "old_title": "Святитель Нектарий, митрополит Эгинский, Пентапольский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-11-23",
+      "old_title": "Апп. от 70-ти Ераста, Олимпа (Олимпана), Родиона (Иродиона), Сосипатра, Куарта (Кварта) и Тертия (Терентия) (I)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-11-24",
+      "old_title": "Великомученик Мина Котуанский (Фригийский)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-11-25",
+      "old_title": "Святитель Иоанн Милостивый, патриарх Александрийский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-11-26",
+      "old_title": "Святитель Иоанн Златоуст, архиепископ Константинопольский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-11-27",
+      "old_title": "Апостол Филипп",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-12-01",
+      "old_title": "Мученик Платон Анкирский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-12-03",
+      "old_title": "Предпразднство Введения во Храм Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-12-05",
+      "old_title": "Попразднство Введения",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-12-06",
+      "old_title": "Благоверный великий князь Александр (в схиме Алексий) Невский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-12-08",
+      "old_title": "Отдание праздника Введения во Храм Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-12-11",
+      "old_title": "Священномученик Серафим (Чичагов), Петроградский, митрополит",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-12-12",
+      "old_title": "Мученик Парамон Вифинский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-12-13",
+      "old_title": "Апостол Андрей Первозванный",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-12-15",
+      "old_title": "Пророк Аввакум",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-12-16",
+      "old_title": "Пророк Софония",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-12-17",
+      "old_title": "Вмц. Варвара, и мц. Иулиания Илиопольские",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-12-20",
+      "old_title": "Святитель Амвросий, епископ Медиоланский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-12-21",
+      "old_title": "Преподобный Патапий Фивский, Константинопольский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-12-22",
+      "old_title": "Зачатие прав. Анною Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-12-23",
+      "old_title": "Святитель Иоасаф, епископ Белгородский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-12-24",
+      "old_title": "Преподобный Даниил Столпник",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-12-26",
+      "old_title": "Мученики Евстратий, Авксентий, Евгений, Мардарий и Орест Севастийские",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-12-27",
+      "old_title": "Мученики Фирс, Левкий и Каллиник Кесарийские",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2025-12-29",
+      "old_title": "Пророк Аггей",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-01-04",
+      "old_title": "Предпразднство Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-01-05",
+      "old_title": "Предпразднство Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-01-06",
+      "old_title": "Предпразднство Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-01-09",
+      "old_title": "Попразднство Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-01-10",
+      "old_title": "Попразднство Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-01-11",
+      "old_title": "Попразднство Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-01-13",
+      "old_title": "Отдание праздника Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-01-15",
+      "old_title": "Преподобный Серафим Саровский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-01-16",
+      "old_title": "Предпразднство Богоявления",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-01-17",
+      "old_title": "Предпразднство Богоявления",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-01-18",
+      "old_title": "Навечерие Богоявления (Крещенский сочельник)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-01-21",
+      "old_title": "Попразднство Богоявления",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-01-26",
+      "old_title": "Попразднство Богоявления",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-01-28",
+      "old_title": "Прпп. Павла Фивейского (341) и Иоанна Кущника (V)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-01-31",
+      "old_title": "Свтт. Афанасия Великого (373) и Кирилла (444), архиепископов Александрийских",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-02-04",
+      "old_title": "Апостол от 70-ти Тимофей Ефесский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-02-05",
+      "old_title": "Собор святых Костромской митрополии",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-02-06",
+      "old_title": "Блаженная Ксения Петербургская, Христа ради юродивая",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-02-09",
+      "old_title": "Перенесение мощей свт. Иоанна Златоуста (438)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-02-10",
+      "old_title": "Преподобный Ефрем Сирин, Едесский, иеродиакон",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-02-11",
+      "old_title": "Собор Коми святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-02-14",
+      "old_title": "Предпразднство Сретения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-02-17",
+      "old_title": "Попразднство Сретения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-02-19",
+      "old_title": "Отдание праздника Сретения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-02-27",
+      "old_title": "Равноапостольный Кирилл (Константин) Философ, Моравский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-02-28",
+      "old_title": "Великомученик Феодор Тирон",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-03-01",
+      "old_title": "Собор святых Новосибирской митрополии",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-03-03",
+      "old_title": "Святитель Лев I, папа Римский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-03-05",
+      "old_title": "Преподобный Лев, епископ Катанский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-03-06",
+      "old_title": "Прп. Тимофея в Символех (795), свт. Евстафия, архиепископа Антиохийского (337)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-03-07",
+      "old_title": "Мученики, иже во Евгении",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-03-14",
+      "old_title": "Преподобномученица Евдокия Илиопольская, игумения",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-03-16",
+      "old_title": "Мчч. Евтропия, Клеоника и Василиска Команского (ок. 308)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-03-18",
+      "old_title": "Благоверные князья Феодор Ростиславич Черный, Смоленский, Ярославский и чада его Давид и Константин, Ярославские чудотворцы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-03-22",
+      "old_title": "Преподобный Иоанн Лествичник, Синайский, игумен",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-03-26",
+      "old_title": "Святитель Никифор I, патриарх Константинопольский, исповедник",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-03-28",
+      "old_title": "Похвала Пресвятой Богородицы (Суббота Акафиста)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-04-01",
+      "old_title": "Мчч. Хрисанф и Дария и с ними мчч. Клавдий, Илария, Иасон и Мавр, Диодор, пресвитер и Мариан, диакон",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-04-02",
+      "old_title": "Преподобные Иоанн, Сергий, Патрикий и прочие, во обители св. Саввы убиенные",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-04-03",
+      "old_title": "Преподобный Серафим Вырицкий (Муравьев), иеросхимонах",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-04-04",
+      "old_title": "Лазарева суббота",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-04-06",
+      "old_title": "Преподобный Захария Отверстый, затворник",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-04-11",
+      "old_title": "Священномученики Марк, епископ Арефусийский, Кирилл, диакон, и иные многие",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-04-13",
+      "old_title": "Священномученик Ипатий Гангрский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-04-15",
+      "old_title": "Преподобный Тит чудотворец, иеромонах",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-04-22",
+      "old_title": "Мученик Евпсихий Кесарийский (Каппадокийский)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-04-24",
+      "old_title": "Священномученик Антипа Пергамский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-04-26",
+      "old_title": "Святых жен-мироносиц: Марии Магдалины, Марии Клеоповой, Саломии, Иоанны, Марфы и Марии, Сусанны и иных; правв. Иосифа Аримафейского и Никодима (переходящее празднование в Неделю 3-ю по Пасхе)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-04-27",
+      "old_title": "Святитель Мартин I",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-04-29",
+      "old_title": "Мученицы Агапия, Ирина и Хиония Аквилейские",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-05-01",
+      "old_title": "Преподобный Иоанн Солунский (Фессалоникийский)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-05-08",
+      "old_title": "Апостол от 70-ти и евангелист Марк Александрийский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-05-13",
+      "old_title": "Отдание праздника Преполовения Пятидесятницы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-05-14",
+      "old_title": "Пророк Иеремия",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-05-18",
+      "old_title": "Великомученица Ирина Македонская",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-05-19",
+      "old_title": "Праведный Иов Многострадальный",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-05-20",
+      "old_title": "Собор преподобных отец Русского на Афоне Свято-Пантелеимонова монастыря",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-05-26",
+      "old_title": "Попразднство Вознесения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-05-27",
+      "old_title": "Попразднство Вознесения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-05-29",
+      "old_title": "Отдание праздника Вознесения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-06-01",
+      "old_title": "День Святого Духа",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-06-02",
+      "old_title": "Святитель Алексий Московский, митрополит Киевский и всея Руси, чудотворец",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-06-04",
+      "old_title": "Мученик Василиск Команский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-06-06",
+      "old_title": "Отдание праздника Пятидесятницы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-06-07",
+      "old_title": "Всех святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-06-08",
+      "old_title": "Апп. от 70-ти Карпа и Алфея (I)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-06-11",
+      "old_title": "Святитель Лука (Войно-Ясенецкий), архиепископ Симферопольский, Крымский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-06-13",
+      "old_title": "Апостол от 70-ти Ерм (Ермий), епископ Далматский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-06-15",
+      "old_title": "Святитель Никифор I, патриарх Константинопольский, исповедник",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-06-18",
+      "old_title": "Священномученик Дорофей Тирский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-06-19",
+      "old_title": "Прп. Виссариона Египетского, чудотворца (IV–V), прп. Илариона Нового, игумена (845)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-06-20",
+      "old_title": "Мученик Феодот Анкирский, корчемник",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-06-21",
+      "old_title": "Собор Вологодских святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-06-22",
+      "old_title": "Преподобный Кирилл Белоезерский, игумен",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-06-25",
+      "old_title": "Прп. Онуфрия Великого (IV), прп. Петра Афонского (734)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-06-26",
+      "old_title": "Мученица Акилина Старшая, Библосская (Финикийская)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-06-28",
+      "old_title": "Святитель Иона Московский, митрополит Киевский и всея Руси",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-07-01",
+      "old_title": "Икона Богородицы Боголюбская",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-07-02",
+      "old_title": "Апостол Иуда Иаковлев (Леввей, Фаддей), брат Господень",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-07-06",
+      "old_title": "Собор Владимирских святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-07-08",
+      "old_title": "Преподобномученица Феврония Сирская, дева",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-07-13",
+      "old_title": "Собор славных и всехвальных 12-ти апостолов",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-07-19",
+      "old_title": "Собор Радонежских святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-07-23",
+      "old_title": "Преподобный Антоний Печерский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-07-25",
+      "old_title": "Икона Богородицы Троеручица",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-07-29",
+      "old_title": "Священномученик Афиноген Пидахфойский, Севастийский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-07-31",
+      "old_title": "Собор Калужских святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-08-01",
+      "old_title": "Преподобный Серафим Саровский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-08-02",
+      "old_title": "Пророк Илия Фесвитянин",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-08-03",
+      "old_title": "Пророк Иезекииль",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-08-11",
+      "old_title": "Мученик Каллиник Киликийский, Гангрский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-08-12",
+      "old_title": "Мученик Иоанн Воин",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-08-13",
+      "old_title": "Сщмч. Вениамина (Казанского), митрополита Петроградского, и с ним прмч. Сергия (Шеина), архимандрита и мчч. Юрия Новицкого и Иоанна Ковшарова (1922)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-08-20",
+      "old_title": "Святитель Митрофан (в схиме Макарий), епископ Воронежский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-08-23",
+      "old_title": "Собор Валаамских святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-08-24",
+      "old_title": "Попразднство Преображения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-08-25",
+      "old_title": "Попразднство Преображения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-08-30",
+      "old_title": "Собор Кузбасских святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-08-31",
+      "old_title": "Икона Богородицы Всецарица (Пантанасса)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-09-01",
+      "old_title": "Попразднство Успения Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-09-02",
+      "old_title": "Попразднство Успения Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-09-03",
+      "old_title": "Попразднство Успения Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-09-04",
+      "old_title": "Попразднство Успения Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-09-05",
+      "old_title": "Отдание праздника Успения Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-09-07",
+      "old_title": "Перенесение мощей апостола Варфоломея (VI)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-09-08",
+      "old_title": "Сретение Владимирской иконы Пресвятой Богородицы (празднество установлено в память спасения Москвы от нашествия Тамерлана в 1395 году)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-09-09",
+      "old_title": "Преподобный Пимен Великий, Египетский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-09-10",
+      "old_title": "Преподобный Иов Почаевский, игумен",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-09-15",
+      "old_title": "прпп. Антония (1073) и Феодосия (1074) Печерских",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-09-17",
+      "old_title": "Святитель Иоасаф, епископ Белгородский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-09-19",
+      "old_title": "Воспоминание чуда Архистратига Михаила, бывшего в Хонех (Колоссах) (IV)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-09-22",
+      "old_title": "Преподобный Иосиф Волоцкий (Волоколамский), игумен",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-09-23",
+      "old_title": "Попразднство Рождества Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-09-29",
+      "old_title": "Попразднство Воздвижения Честного и Животворящего Креста Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-09-30",
+      "old_title": "Попразднство Воздвижения Честного и Животворящего Креста Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-10-04",
+      "old_title": "Апостол от 70-ти Кодрат Афинский и Магнезийский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-10-09",
+      "old_title": "Святитель Тихон (Беллавин), патриарх Московский и всея России",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-10-11",
+      "old_title": "Преподобный Харитон Исповедник, епископ Иконийский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-10-13",
+      "old_title": "Святитель Михаил, митрополит Киевский и всея Руси",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-10-16",
+      "old_title": "Сщмчч. Дионисий Ареопагит, Афинский, епископ, Рустик Парижский, пресвитер, и Елевферий Парижский, диакон",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-10-18",
+      "old_title": "Мученица Харитина Амисийская (Понтийская)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-10-19",
+      "old_title": "Апостол Фома Дидим (Близнец)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-10-20",
+      "old_title": "Мученики Сергий Римлянин, Росафский и Вакх Римлянин",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-10-21",
+      "old_title": "Преподобная Пелагия Антиохийская, Елеонская, Палестинская",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-10-24",
+      "old_title": "Апостол от 70-ти Филипп, диакон",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-10-29",
+      "old_title": "Святитель Иоанн (Максимович), митрополит Тобольский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-10-30",
+      "old_title": "Пророк Осия",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-10-31",
+      "old_title": "Апостол от 70-ти и евангелист Лука, иконописец",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-11-02",
+      "old_title": "Преподобный Гавриил (Ургебадзе) Самтаврийский, архимандрит",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-11-05",
+      "old_title": "Апостол от 70-ти Иаков, брат Господень по плоти, епископ Иерусалимский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-11-07",
+      "old_title": "Димитриевская родительская суббота",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-11-10",
+      "old_title": "Преподобный Иов Почаевский, игумен",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-11-11",
+      "old_title": "Преподобномученица Анастасия Римляныня, Солунская (Фессалоникийская)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-11-23",
+      "old_title": "Апп. от 70-ти Ераста, Олимпа (Олимпана), Родиона (Иродиона), Сосипатра, Куарта (Кварта) и Тертия (Терентия) (I)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-11-24",
+      "old_title": "Великомученик Мина Котуанский (Фригийский)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-12-05",
+      "old_title": "Попразднство Введения",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-12-06",
+      "old_title": "Благоверный великий князь Александр (в схиме Алексий) Невский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-12-08",
+      "old_title": "Отдание праздника Введения во Храм Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-12-22",
+      "old_title": "Зачатие прав. Анною Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2026-12-23",
+      "old_title": "Святитель Иоасаф, епископ Белгородский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-01-04",
+      "old_title": "Предпразднство Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-01-05",
+      "old_title": "Предпразднство Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-01-06",
+      "old_title": "Предпразднство Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-01-09",
+      "old_title": "Попразднство Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-01-10",
+      "old_title": "Попразднство Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-01-11",
+      "old_title": "Попразднство Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-01-13",
+      "old_title": "Отдание праздника Рождества Христова",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-01-15",
+      "old_title": "Преподобный Серафим Саровский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-01-16",
+      "old_title": "Предпразднство Богоявления",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-01-17",
+      "old_title": "Предпразднство Богоявления",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-01-18",
+      "old_title": "Навечерие Богоявления (Крещенский сочельник)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-01-21",
+      "old_title": "Попразднство Богоявления",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-01-26",
+      "old_title": "Попразднство Богоявления",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-01-28",
+      "old_title": "Прпп. Павла Фивейского (341) и Иоанна Кущника (V)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-01-31",
+      "old_title": "Свтт. Афанасия Великого (373) и Кирилла (444), архиепископов Александрийских",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-02-04",
+      "old_title": "Апостол от 70-ти Тимофей Ефесский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-02-05",
+      "old_title": "Собор святых Костромской митрополии",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-02-06",
+      "old_title": "Блаженная Ксения Петербургская, Христа ради юродивая",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-02-09",
+      "old_title": "Перенесение мощей свт. Иоанна Златоуста (438)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-02-10",
+      "old_title": "Преподобный Ефрем Сирин, Едесский, иеродиакон",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-02-11",
+      "old_title": "Собор Коми святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-02-14",
+      "old_title": "Предпразднство Сретения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-02-17",
+      "old_title": "Попразднство Сретения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-02-19",
+      "old_title": "Отдание праздника Сретения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-02-21",
+      "old_title": "Собор всех преподобных отцов, в подвиге просиявших",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-02-27",
+      "old_title": "Равноапостольный Кирилл (Константин) Философ, Моравский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-02-28",
+      "old_title": "Великомученик Феодор Тирон",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-03-01",
+      "old_title": "Собор святых Новосибирской митрополии",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-03-03",
+      "old_title": "Святитель Лев I, папа Римский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-03-05",
+      "old_title": "Преподобный Лев, епископ Катанский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-03-06",
+      "old_title": "Прп. Тимофея в Символех (795), свт. Евстафия, архиепископа Антиохийского (337)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-03-07",
+      "old_title": "Мученики, иже во Евгении",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-03-14",
+      "old_title": "Преподобномученица Евдокия Илиопольская, игумения",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-03-16",
+      "old_title": "Мчч. Евтропия, Клеоника и Василиска Команского (ок. 308)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-03-18",
+      "old_title": "Благоверные князья Феодор Ростиславич Черный, Смоленский, Ярославский и чада его Давид и Константин, Ярославские чудотворцы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-03-22",
+      "old_title": "Преподобный Иоанн Лествичник, Синайский, игумен",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-03-26",
+      "old_title": "Святитель Никифор I, патриарх Константинопольский, исповедник",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-03-29",
+      "old_title": "Преподобная Мария Египетская",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-04-01",
+      "old_title": "Мчч. Хрисанф и Дария и с ними мчч. Клавдий, Илария, Иасон и Мавр, Диодор, пресвитер и Мариан, диакон",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-04-02",
+      "old_title": "Преподобные Иоанн, Сергий, Патрикий и прочие, во обители св. Саввы убиенные",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-04-03",
+      "old_title": "Преподобный Серафим Вырицкий (Муравьев), иеросхимонах",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-04-04",
+      "old_title": "Мученица Дросида Римская",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-04-05",
+      "old_title": "Исповедник Сергий (Сребрянский), архимандрит",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-04-06",
+      "old_title": "Преподобный Захария Отверстый, затворник",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-04-11",
+      "old_title": "Священномученики Марк, епископ Арефусийский, Кирилл, диакон, и иные многие",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-04-13",
+      "old_title": "Священномученик Ипатий Гангрский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-04-15",
+      "old_title": "Преподобный Тит чудотворец, иеромонах",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-04-17",
+      "old_title": "Похвала Пресвятой Богородицы (Суббота Акафиста)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-04-22",
+      "old_title": "Мученик Евпсихий Кесарийский (Каппадокийский)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-04-24",
+      "old_title": "Лазарева суббота",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-04-26",
+      "old_title": "Благоверная Тамара Грузинская, царица",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-04-27",
+      "old_title": "Святитель Мартин I",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-04-29",
+      "old_title": "Мученицы Агапия, Ирина и Хиония Аквилейские",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-05-01",
+      "old_title": "Преподобный Иоанн Солунский (Фессалоникийский)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-05-08",
+      "old_title": "Апостол от 70-ти и евангелист Марк Александрийский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-05-14",
+      "old_title": "Пророк Иеремия",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-05-16",
+      "old_title": "Святых жен-мироносиц: Марии Магдалины, Марии Клеоповой, Саломии, Иоанны, Марфы и Марии, Сусанны и иных; правв. Иосифа Аримафейского и Никодима (переходящее празднование в Неделю 3-ю по Пасхе)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-05-18",
+      "old_title": "Великомученица Ирина Македонская",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-05-19",
+      "old_title": "Праведный Иов Многострадальный",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-05-20",
+      "old_title": "Собор преподобных отец Русского на Афоне Свято-Пантелеимонова монастыря",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-05-26",
+      "old_title": "104 Мученика Черкасских",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-05-29",
+      "old_title": "Блаженная Муза Римляныня, отроковица",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-05-31",
+      "old_title": "Мученики Давид и Тиричан Грузинские",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-06-02",
+      "old_title": "Отдание праздника Преполовения Пятидесятницы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-06-04",
+      "old_title": "Мученик Василиск Команский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-06-06",
+      "old_title": "Блаженная Ксения Петербургская, Христа ради юродивая",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-06-07",
+      "old_title": "Икона Богородицы Нерушимая Стена",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-06-08",
+      "old_title": "Апп. от 70-ти Карпа и Алфея (I)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-06-11",
+      "old_title": "Святитель Лука (Войно-Ясенецкий), архиепископ Симферопольский, Крымский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-06-12",
+      "old_title": "Преподобный Варлаам Хутынский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-06-13",
+      "old_title": "Апостол от 70-ти Ерм (Ермий), епископ Далматский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-06-15",
+      "old_title": "Попразднство Вознесения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-06-16",
+      "old_title": "Попразднство Вознесения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-06-18",
+      "old_title": "Отдание праздника Вознесения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-06-19",
+      "old_title": "Прп. Виссариона Египетского, чудотворца (IV–V), прп. Илариона Нового, игумена (845)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-06-21",
+      "old_title": "День Святого Духа",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-06-22",
+      "old_title": "Преподобный Кирилл Белоезерский, игумен",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-06-25",
+      "old_title": "Прп. Онуфрия Великого (IV), прп. Петра Афонского (734)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-06-26",
+      "old_title": "Отдание праздника Пятидесятницы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-06-27",
+      "old_title": "Всех святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-06-28",
+      "old_title": "Святитель Иона Московский, митрополит Киевский и всея Руси",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-07-01",
+      "old_title": "Икона Богородицы Боголюбская",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-07-02",
+      "old_title": "Апостол Иуда Иаковлев (Леввей, Фаддей), брат Господень",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-07-06",
+      "old_title": "Собор Владимирских святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-07-08",
+      "old_title": "Преподобномученица Феврония Сирская, дева",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-07-13",
+      "old_title": "Собор славных и всехвальных 12-ти апостолов",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-07-19",
+      "old_title": "Собор Радонежских святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-07-23",
+      "old_title": "Преподобный Антоний Печерский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-07-25",
+      "old_title": "Икона Богородицы Троеручица",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-07-26",
+      "old_title": "Память святых отцов шести Вселенских Соборов",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-07-29",
+      "old_title": "Священномученик Афиноген Пидахфойский, Севастийский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-07-31",
+      "old_title": "Собор Калужских святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-08-01",
+      "old_title": "Преподобный Серафим Саровский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-08-02",
+      "old_title": "Пророк Илия Фесвитянин",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-08-03",
+      "old_title": "Пророк Иезекииль",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-08-11",
+      "old_title": "Мученик Каллиник Киликийский, Гангрский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-08-12",
+      "old_title": "Мученик Иоанн Воин",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-08-13",
+      "old_title": "Сщмч. Вениамина (Казанского), митрополита Петроградского, и с ним прмч. Сергия (Шеина), архимандрита и мчч. Юрия Новицкого и Иоанна Ковшарова (1922)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-08-20",
+      "old_title": "Святитель Митрофан (в схиме Макарий), епископ Воронежский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-08-23",
+      "old_title": "Собор Валаамских святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-08-24",
+      "old_title": "Попразднство Преображения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-08-25",
+      "old_title": "Попразднство Преображения Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-08-30",
+      "old_title": "Собор Кузбасских святых",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-08-31",
+      "old_title": "Икона Богородицы Всецарица (Пантанасса)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-09-01",
+      "old_title": "Попразднство Успения Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-09-02",
+      "old_title": "Попразднство Успения Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-09-03",
+      "old_title": "Попразднство Успения Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-09-04",
+      "old_title": "Попразднство Успения Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-09-05",
+      "old_title": "Отдание праздника Успения Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-09-07",
+      "old_title": "Перенесение мощей апостола Варфоломея (VI)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-09-08",
+      "old_title": "Сретение Владимирской иконы Пресвятой Богородицы (празднество установлено в память спасения Москвы от нашествия Тамерлана в 1395 году)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-09-09",
+      "old_title": "Преподобный Пимен Великий, Египетский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-09-10",
+      "old_title": "Преподобный Иов Почаевский, игумен",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-09-15",
+      "old_title": "прпп. Антония (1073) и Феодосия (1074) Печерских",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-09-19",
+      "old_title": "Воспоминание чуда Архистратига Михаила, бывшего в Хонех (Колоссах) (IV)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-09-22",
+      "old_title": "Преподобный Иосиф Волоцкий (Волоколамский), игумен",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-09-23",
+      "old_title": "Попразднство Рождества Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-09-29",
+      "old_title": "Попразднство Воздвижения Честного и Животворящего Креста Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-09-30",
+      "old_title": "Попразднство Воздвижения Честного и Животворящего Креста Господня",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-10-04",
+      "old_title": "Апостол от 70-ти Кодрат Афинский и Магнезийский, епископ",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-10-09",
+      "old_title": "Святитель Тихон (Беллавин), патриарх Московский и всея России",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-10-11",
+      "old_title": "Преподобный Харитон Исповедник, епископ Иконийский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-10-13",
+      "old_title": "Святитель Михаил, митрополит Киевский и всея Руси",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-10-16",
+      "old_title": "Сщмчч. Дионисий Ареопагит, Афинский, епископ, Рустик Парижский, пресвитер, и Елевферий Парижский, диакон",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-10-18",
+      "old_title": "Мученица Харитина Амисийская (Понтийская)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-10-19",
+      "old_title": "Апостол Фома Дидим (Близнец)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-10-20",
+      "old_title": "Мученики Сергий Римлянин, Росафский и Вакх Римлянин",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-10-21",
+      "old_title": "Преподобная Пелагия Антиохийская, Елеонская, Палестинская",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-10-24",
+      "old_title": "Апостол от 70-ти Филипп, диакон",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-10-29",
+      "old_title": "Святитель Иоанн (Максимович), митрополит Тобольский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-10-30",
+      "old_title": "Пророк Осия",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-10-31",
+      "old_title": "Апостол от 70-ти и евангелист Лука, иконописец",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-11-02",
+      "old_title": "Преподобный Гавриил (Ургебадзе) Самтаврийский, архимандрит",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-11-05",
+      "old_title": "Апостол от 70-ти Иаков, брат Господень по плоти, епископ Иерусалимский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-11-07",
+      "old_title": "Димитриевская родительская суббота",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-11-10",
+      "old_title": "Преподобный Иов Почаевский, игумен",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-11-11",
+      "old_title": "Преподобномученица Анастасия Римляныня, Солунская (Фессалоникийская)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-11-23",
+      "old_title": "Апп. от 70-ти Ераста, Олимпа (Олимпана), Родиона (Иродиона), Сосипатра, Куарта (Кварта) и Тертия (Терентия) (I)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-11-24",
+      "old_title": "Великомученик Мина Котуанский (Фригийский)",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-11-27",
+      "old_title": "Апостол Филипп",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-12-05",
+      "old_title": "Попразднство Введения",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-12-06",
+      "old_title": "Благоверный великий князь Александр (в схиме Алексий) Невский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-12-08",
+      "old_title": "Отдание праздника Введения во Храм Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-12-12",
+      "old_title": "Мученик Парамон Вифинский",
+      "reason": "no uniquely verified same-saint candidate"
+    },
+    {
+      "date": "2027-12-22",
+      "old_title": "Зачатие прав. Анною Пресвятой Богородицы",
+      "reason": "no uniquely verified same-saint candidate"
+    }
+  ]
+}
