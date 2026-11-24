@@ -24,8 +24,8 @@ for(const year of [2025,2026,2027]){
         if(!day)continue;
         if(day.date_gregorian)assert.equal(day.date_gregorian,date);
         const f=day.main_feast;
-        if(f?.source_id?.startsWith('blv-')) canonical++;
-        if(f && f.source_id?.startsWith('blv-')){
+        if(String(f?.source_id || '').startsWith('blv-')) canonical++;
+        if(f && String(f?.source_id || '').startsWith('blv-')){
           assert.ok(typeof f.title==='string' && f.title.trim(),date+': canonical main card lacks title');
         }
       }
