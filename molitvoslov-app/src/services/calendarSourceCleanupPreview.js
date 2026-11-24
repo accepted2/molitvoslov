@@ -1,4 +1,4 @@
-// Temporary local preview of the conservative Django source-cleaning rules.
+// Production reader cleanup: conservative Django source-cleaning rules.
 // Ported from api/calendar_text_cleanup.py, audit/calendar-text-cleanup-20261123.
 // No network calls, no persistent writes, no import/migration side effects.
 // Only remove isolated source page headers/footers, not narrative content.
@@ -49,13 +49,21 @@ const FIELDS = [
   'kontakion_content', 'kontakion_content_uk',
   'prayer_content', 'prayer_content_uk',
   'magnification_content', 'magnification_content_uk',
+  ...['troparion', 'kontakion'].flatMap(kind =>
+    ['', '_alt'].flatMap(variant =>
+      ['title', 'content'].flatMap(field =>
+        ['', '_uk'].map(lang => kind + variant + '_' + field + lang)))),
 ];
 
 export const previewCleanCalendarFeast = (source) => {
   if (!source || typeof source !== 'object') return source;
   const result = {...source};
-  for (const field of FIELDS) {
-    if (typeof source[field] === 'string') {
+  const protectedFields = new Set([
+    ...(source.manually_edited_fields || []),
+    ...(source.protected_hymn_fields || []),
+  ]);
+  for (const field of new Set(FIELDS)) {
+    if (!protectedFields.has(field) && typeof source[field] === 'string') {
       result[field] = cleanCalendarSourceFieldPreview(field, source[field]);
     }
   }

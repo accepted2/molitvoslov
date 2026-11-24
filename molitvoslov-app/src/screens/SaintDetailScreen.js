@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
   Image,
   Modal,
@@ -18,8 +18,7 @@ import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {getCalendarCardHymns} from '../services/calendarCardPresentation';
 import {useLanguage} from '../context/LanguageContext';
 import {isChurchSlavonicHymn} from '../services/calendarHymnDisplay';
-import {previewCleanCalendarFeast, countPreviewChanges} from '../services/calendarSourceCleanupPreview';
-import {CalendarCleanupPreviewPanel} from '../components/reader/CalendarCleanupPreviewPanel';
+import {previewCleanCalendarFeast} from '../services/calendarSourceCleanupPreview';
 import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
 import {findSaintForSharedLink} from '../services/saintShareResolver';
 import {CalendarSaveWholeButton, CalendarSelectableBody, makeCalendarSaveContext} from '../components/reader/CalendarSaveText';
@@ -204,12 +203,10 @@ export const SaintDetailScreen = ({route, navigation}) => {
       });
     return () => {active = false;};
   }, [date, feastId, feastUid, feastTitle, focusSection, language, feast]);
-  const cleanupComparisonEnabled = process.env.EXPO_PUBLIC_CALENDAR_CLEANUP_PREVIEW === '1';
-  const [cleanupPreviewActive, setCleanupPreviewActive] = useState(false);
-  const originalFeast = calendarFeast || feast || {};
-  const cleanedPreviewFeast = previewCleanCalendarFeast(originalFeast);
-  const cleanupPreviewStats = countPreviewChanges(originalFeast, cleanedPreviewFeast, language === 'uk' ? 'uk' : 'ru');
-  const resolvedFeast = cleanupComparisonEnabled && cleanupPreviewActive ? cleanedPreviewFeast : originalFeast;
+  const resolvedFeast = useMemo(
+    () => previewCleanCalendarFeast(calendarFeast || feast || {}),
+    [calendarFeast, feast],
+  );
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const {width, height} = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -235,11 +232,6 @@ export const SaintDetailScreen = ({route, navigation}) => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.content, {paddingTop: insets.top + 78, paddingBottom: 26}]}
       >
-        {cleanupComparisonEnabled && (
-          <CalendarCleanupPreviewPanel language={language}
-            active={cleanupPreviewActive} onChange={setCleanupPreviewActive}
-            stats={cleanupPreviewStats} />
-        )}
         <View style={[styles.heroCard, large && styles.heroCardWide]}>
           {!!image && (
             <Pressable onPress={() => setImageViewerOpen(true)} accessibilityRole="button"

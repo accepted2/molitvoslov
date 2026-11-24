@@ -44,6 +44,7 @@ import {
 } from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
 import {getCalendarCardHymns, uniqueCalendarCards} from '../services/calendarCardPresentation';
+import {previewCleanCalendarFeast} from '../services/calendarSourceCleanupPreview';
 import {colors} from '../theme';
 import {CalendarSaveWholeButton, CalendarSelectableBody, makeCalendarSaveContext} from '../components/reader/CalendarSaveText';
 import {getCalendarBibleTranslation} from '../services/bibleTranslationPreference';
@@ -780,14 +781,17 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const cells = useMemo(() => buildCells(visibleYear, visibleMonth), [visibleMonth, visibleYear]);
 
   const today = calendarTodayKey;
-  const regularFeasts = uniqueCalendarCards(
+  const regularFeasts = useMemo(() => uniqueCalendarCards(
     (dayData?.all_feasts || []).filter((feast) => !isMovableDayCard(feast))
+      .map(previewCleanCalendarFeast)
+  ), [dayData]);
+  const suggestedMain = useMemo(
+    () => previewCleanCalendarFeast(dayData?.main_feast), [dayData]
   );
-  const suggestedMain = dayData?.main_feast;
   const mainFeast =
     suggestedMain && !isMovableDayCard(suggestedMain)
       ? suggestedMain
-      : regularFeasts.find((feast) => !!feast?.icon_url) || regularFeasts[0] || null;
+      : regularFeasts.find((feast) => !!getBundledCalendarIconSource(feast)) || regularFeasts[0] || null;
   const otherFeasts = mainFeast
     ? uniqueCalendarCards([mainFeast, ...regularFeasts]).slice(1)
     : regularFeasts;
