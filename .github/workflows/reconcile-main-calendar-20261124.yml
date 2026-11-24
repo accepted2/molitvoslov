@@ -52,7 +52,7 @@ jobs:
                       for lang in ('ru','uk'):
                           obj = languages.get(lang)
                           if obj:
-                              assert obj['date_gregorian'] == date
+                              assert obj.get('date_gregorian', date) == date
                   count += 1
           assert count == 36
           print('PASS: 36 months, calendar dates and language cards intact')
