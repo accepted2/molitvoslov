@@ -202,7 +202,10 @@ export const getCalendarCardHymns = (feast, language = 'ru') => {
   // A confirmed legacy-ID bridge means the old bundled fields may predate
   // the corrected canonical stanzas. Preserve manual edits, but do not let
   // stale unedited fields replace checked text or its glas/heading.
+  // For an exact source_id/card_id, reviewed canonical verses outrank
+  // stale imported fields. Explicit editor overrides retain priority.
   const verifiedLegacyAlias = !canonicalId(feast) && !!approvedHymnAlias(feast);
+  const preferReviewed = verifiedLegacyAlias || civilById.has(canonicalId(feast));
   const add = (kind, variant, content, heading, script, origin, priority) => {
     if (!TYPES.includes(kind) || !content) return;
     const cleaned = civilize(content, script);
@@ -252,7 +255,7 @@ export const getCalendarCardHymns = (feast, language = 'ru') => {
     add(kind, Number(h.variant) || 1, h.content, h.heading,
       h.language === 'civil' || h.language === 'uk' ? '' : h.language,
       'canonical_catalogue',
-      verifiedLegacyAlias
+      preferReviewed
         ? (h.language === 'uk' && language === 'uk' ? 0 : h.language === 'civil' ? 1 : 4)
         : (h.language === 'uk' && language === 'uk' ? 3 : 4));
   }
