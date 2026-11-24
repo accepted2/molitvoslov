@@ -66,3 +66,21 @@ assert.ok(icon.includes('bySourceId'), 'Exact canonical icon mapping was lost');
 assert.ok(!icon.includes('byUrl'), 'Old URL-indexed icon mapping still present');
 assert.ok(!icon.includes('{uri:'), 'Runtime remote icon fallback still present');
 console.log('PASS: Snapshot UI, read/save/share, release-only calendar and offline Blagovist icons preserved.');
+
+// Compact UI only: no editorial notices or extra hymn header; preserve reading order.
+for (const screen of [day, saint]) {
+  assert.doesNotMatch(screen, /hymnSectionLabel|cardHymns\.missing|ПЕСНОПЕНИЯ|ПІСНЕСПІВИ/);
+}
+assert.match(day, /const OTHER_SAINTS_VISIBLE_LIMIT = 10;/);
+assert.match(day, /feasts\.length <= OTHER_SAINTS_VISIBLE_LIMIT/);
+assert.match(day, /feasts\.slice\(0, OTHER_SAINTS_VISIBLE_LIMIT\)\.map\(renderFeast\)/);
+assert.match(day, /feasts\.slice\(OTHER_SAINTS_VISIBLE_LIMIT\)\.map\(renderFeast\)/);
+assert.match(day, /maxHeight: firstRowsHeight \|\| 300/);
+assert.match(day, /nestedScrollEnabled/);
+assert.match(day, /renderReading\(readings\[0\], 0\)/);
+assert.match(day, /hiddenCount = Math\.max\(0, readings\.length - 1\)/);
+assert.match(day, /showAll && readings\.slice\(1\)\.map/);
+assert.doesNotMatch(day, /readings\.slice\(0, 2\)|readings\.length > 2/);
+assert.match(day, /key=\{selectedDate \+ ':gospel:' \+ dataLanguage\}/);
+assert.match(day, /key=\{selectedDate \+ ':apostle:' \+ dataLanguage\}/);
+console.log('PASS: compact saints scroll, single initial reading per kind, silent missing hymns.');

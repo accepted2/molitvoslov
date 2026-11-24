@@ -266,11 +266,6 @@ export const SaintDetailScreen = ({route, navigation}) => {
           innerScroll
           height={lifeHeight}
         />
-        {!!cardHymns.sections.length && (
-          <Text style={[styles.eyebrow, styles.hymnSectionLabel]}>
-            {uk ? 'ПІСНЕСПІВИ' : 'ПЕСНОПЕНИЯ'}
-          </Text>
-        )}
         {cardHymns.sections.map((hymn) => (
           <Accordion
             key={hymn.key}
@@ -287,23 +282,17 @@ export const SaintDetailScreen = ({route, navigation}) => {
             script={isCalendarHymnCsl(hymn.text) ? 'csl' : 'civil'}
           />
         ))}
-        {!!cardHymns.missing.length && (
-          <Text style={styles.empty}>
-            {uk ? 'Деякі піснеспіви потребують перевірки тексту.' : 'Некоторые песнопения ожидают проверки текста.'}
-          </Text>
-        )}
         {!!prayer && <Accordion title={uk ? 'Молитва' : 'Молитва'} icon="✝" text={prayer}
           feast={resolvedFeast} date={date} sourceTitle={title} section="prayer" />}
         {!!magnification && <Accordion title={uk ? 'Величання' : 'Величание'} icon="♪" text={magnification}
           feast={resolvedFeast} date={date} sourceTitle={title} section="magnification" />}
-        {!life && !cardHymns.sections.length && !cardHymns.missing.length && !prayer && !magnification && (
+        {!life && !cardHymns.sections.length && !prayer && !magnification &&
+          (sharedCardLoading || sharedCardNotFound) && (
           <Text style={styles.empty}>
             {sharedCardLoading
               ? (uk ? 'Завантаження відомостей...' : 'Загружаем сведения...')
-              : sharedCardNotFound
-                ? (uk ? 'Не вдалося знайти цю пам’ять. Відкрийте календар на вибрану дату.'
-                  : 'Не удалось найти эту запись. Откройте календарь на выбранную дату.')
-                : (uk ? 'Додаткових текстів поки немає.' : 'Дополнительных текстов пока нет.')}
+              : (uk ? 'Не вдалося знайти цю пам’ять. Відкрийте календар на вибрану дату.'
+                : 'Не удалось найти эту запись. Откройте календарь на выбранную дату.')}
           </Text>
         )}
       </ScrollView>
@@ -384,7 +373,6 @@ const styles = StyleSheet.create({
     borderRadius: 14, borderWidth: 1, borderColor: '#D3B68B',
     backgroundColor: '#EAD7B8', overflow: 'hidden',
   },
-  hymnSectionLabel: {marginTop: 5, marginHorizontal: 8, letterSpacing: 1.1},
   hymnAccordion: {borderLeftWidth: 3, borderLeftColor: '#9C6547', borderColor: '#CBB494'},
   hymnTitle: {color: '#623527'},
   hymnSubtitle: {color: '#974F3A', fontSize: 14},

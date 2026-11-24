@@ -528,37 +528,37 @@ const ReadingLink = ({kind, title, label, sequence, navigation, copy, language, 
   );
 };
 
+// Keep the original reading order: first reading stays visible, extras expand below.
 const ReadingGroup = ({kind, readings, navigation, copy, language, translationCode = 'rst', onLayout, expandFirst = false}) => {
   const cslFont=language==='csl_traditional'?{fontFamily:'Ponomar',fontWeight:'400'}:null;
   const [showAll, setShowAll] = useState(false);
 
-  if (!readings.length) {
-    return null;
-  }
+  if (!readings.length) return null;
 
-  const visibleReadings = showAll ? readings : readings.slice(0, 2);
-  const hiddenCount = Math.max(0, readings.length - visibleReadings.length);
+  const hiddenCount = Math.max(0, readings.length - 1);
+  const renderReading = (reading, index) => (
+    <ReadingLink
+      key={reading.id || reading.sync_uid || `${kind}-${index}-${reading.title}`}
+      kind={kind}
+      initiallyExpanded={expandFirst && index === 0}
+      title={reading.title}
+      label={reading.label}
+      sequence={readings.length > 1 ? `${index + 1}/${readings.length}` : ''}
+      navigation={navigation}
+      copy={copy}
+      language={language}
+      translationCode={translationCode}
+    />
+  );
 
   return (
     <View onLayout={onLayout}>
-      {visibleReadings.map((reading, index) => (
-        <ReadingLink
-          key={reading.id || reading.sync_uid || `${kind}-${index}-${reading.title}`}
-          kind={kind}
-          initiallyExpanded={expandFirst && index === 0}
-          title={reading.title}
-          label={reading.label}
-          sequence={readings.length > 1 ? `${index + 1}/${readings.length}` : ''}
-          navigation={navigation}
-          copy={copy}
-          language={language}
-          translationCode={translationCode}
-        />
-      ))}
-
-      {readings.length > 2 && (
+      {renderReading(readings[0], 0)}
+      {hiddenCount > 0 && (
         <Pressable
           onPress={() => setShowAll((value) => !value)}
+          accessibilityRole="button"
+          accessibilityState={{expanded: showAll}}
           style={({pressed}) => [styles.readingMore, pressed && styles.pressed]}
         >
           <Text style={[styles.readingMoreText,cslFont]}>
@@ -568,6 +568,53 @@ const ReadingGroup = ({kind, readings, navigation, copy, language, translationCo
           </Text>
           <SoftChevron expanded={showAll} />
         </Pressable>
+      )}
+      {showAll && readings.slice(1).map((reading, index) => renderReading(reading, index + 1))}
+    </View>
+  );
+};
+
+const OTHER_SAINTS_VISIBLE_LIMIT = 10;
+
+// Measure the first ten actual rows instead of fixing a line height: long
+// saint names and larger accessibility fonts must not be clipped.
+const OtherSaintsList = ({feasts, date, navigation, copy, cslFont}) => {
+  const [firstRowsHeight, setFirstRowsHeight] = useState(0);
+  const renderFeast = (feast) => (
+    <Pressable
+      key={feast.id ?? feast.source_id ?? feast.title}
+      onPress={() => navigation.navigate('SaintDetail', {feast, date})}
+      style={styles.otherSaintRow}
+      accessibilityRole="button"
+    >
+      <View style={styles.otherSaintDot} />
+      <Text style={styles.otherSaintText}>{displayCompactTitle(feast, copy)}</Text>
+      <Text style={styles.otherSaintArrow}>›</Text>
+    </Pressable>
+  );
+
+  return (
+    <View style={styles.otherSaintsCard}>
+      <Text style={[styles.sectionEyebrow,cslFont]}>{copy.alsoToday}</Text>
+      {!feasts.length ? (
+        <Text style={[styles.otherSaintEmpty,cslFont]}>{copy.noOtherMemories}</Text>
+      ) : feasts.length <= OTHER_SAINTS_VISIBLE_LIMIT ? (
+        feasts.map(renderFeast)
+      ) : (
+        <ScrollView
+          style={{maxHeight: firstRowsHeight || 300}}
+          nestedScrollEnabled
+          showsVerticalScrollIndicator
+          persistentScrollbar
+        >
+          <View onLayout={({nativeEvent}) => {
+            const height = Math.ceil(nativeEvent.layout.height);
+            if (height > 0) setFirstRowsHeight(height);
+          }}>
+            {feasts.slice(0, OTHER_SAINTS_VISIBLE_LIMIT).map(renderFeast)}
+          </View>
+          {feasts.slice(OTHER_SAINTS_VISIBLE_LIMIT).map(renderFeast)}
+        </ScrollView>
       )}
     </View>
   );
@@ -904,30 +951,14 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   );
 
   const feastList = (
-    <View style={styles.otherSaintsCard}>
-      <Text style={[styles.sectionEyebrow,cslFont]}>{copy.alsoToday}</Text>
-
-      {otherFeasts.length ? (
-        otherFeasts.map((feast) => (
-          <Pressable
-            key={feast.id ?? feast.source_id ?? feast.title}
-            onPress={() =>
-              navigation.navigate('SaintDetail', {feast, date: dayData?.date_gregorian})
-            }
-            style={styles.otherSaintRow}
-            accessibilityRole="button"
-          >
-            <View style={styles.otherSaintDot} />
-
-            <Text style={styles.otherSaintText}>{displayCompactTitle(feast, copy)}</Text>
-
-            <Text style={styles.otherSaintArrow}>›</Text>
-          </Pressable>
-        ))
-      ) : (
-        <Text style={[styles.otherSaintEmpty,cslFont]}>{copy.noOtherMemories}</Text>
-      )}
-    </View>
+    <OtherSaintsList
+      key={selectedDate + ':' + dataLanguage}
+      feasts={otherFeasts}
+      date={dayData?.date_gregorian}
+      navigation={navigation}
+      copy={copy}
+      cslFont={cslFont}
+    />
   );
 
   const dayContent = (
@@ -992,11 +1023,6 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             />
           )}
 
-          {!!cardHymns.sections.length && (
-            <Text style={[styles.sectionEyebrow, styles.hymnSectionLabel, cslFont]}>
-              {dataLanguage === 'uk' ? 'ПІСНЕСПІВИ' : 'ПЕСНОПЕНИЯ'}
-            </Text>
-          )}
           {cardHymns.sections.map((hymn) => (
             <ExpandableTextBlock
               key={hymn.key}
@@ -1010,13 +1036,6 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
               isHymn
             />
           ))}
-          {!!cardHymns.missing.length && (
-            <Text style={styles.sectionEyebrow}>
-              {dataLanguage === 'uk'
-                ? 'Деякі піснеспіви очікують перевірки тексту'
-                : 'Некоторые песнопения ожидают проверки текста'}
-            </Text>
-          )}
 
           <View
             style={styles.readingsSection}
@@ -1025,6 +1044,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             <Text style={[styles.sectionEyebrow,cslFont]}>{copy.readings}</Text>
 
             <ReadingGroup
+              key={selectedDate + ':gospel:' + dataLanguage}
               kind="gospel"
               expandFirst={route.params?.section === "gospel"}
               readings={gospelReadings}
@@ -1036,6 +1056,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             />
 
             <ReadingGroup
+              key={selectedDate + ':apostle:' + dataLanguage}
               kind="apostle"
               expandFirst={route.params?.section === "apostle"}
               readings={apostleReadings}
@@ -1047,6 +1068,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
             />
 
             <ReadingGroup
+              key={selectedDate + ':old_testament:' + dataLanguage}
               kind="old_testament"
               readings={oldTestamentReadings}
               navigation={navigation}
@@ -1072,6 +1094,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
 
       <ScrollView
         ref={scrollRef}
+        nestedScrollEnabled
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.content,
@@ -1393,7 +1416,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#EAD7B8',
     overflow: 'hidden',
   },
-  hymnSectionLabel: {marginTop: 16, marginBottom: 3, letterSpacing: 1.1},
   hymnTextBlock: {borderLeftWidth: 3, borderLeftColor: '#9C6547', borderColor: '#C5A380'},
   hymnTextBlockTitle: {color: '#623527'},
   hymnTextBlockSubtitle: {color: '#974F3A', fontSize: 12},
