@@ -63,10 +63,10 @@ function loadCalendarPresentationForNode(root) {
   if (/from\s*['"]\.\/uocIconSelection['"]/.test(presenterSource)) {
     presenterSource=removeImport(presenterSource,'uocIconSelection');
   }
-  assert.equal((presenterSource.match(/^export[ \t]+const /gm)||[]).length,2,
+  assert.equal((presenterSource.match(/^export[ \t]+const /gm)||[]).length,3,
     'Calendar card presentation exports changed');
   presenterSource=presenterSource.replace(/^export[ \t]+const /gm,'const ') +
-    '\nmodule.exports={getCalendarCardHymns,uniqueCalendarCards};';
+    '\nmodule.exports={getCalendarCardHymns,getPrimaryCalendarCardHymns,uniqueCalendarCards};';
   assert.ok(!/^\s*import[ \t\{]/m.test(presenterSource),
     'An ESM import remains in test-only presentation source');
   const presenter=runModule(file('presenter'),presenterSource,{

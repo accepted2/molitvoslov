@@ -15,9 +15,9 @@ import {Feather} from '@expo/vector-icons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {FixedSectionHeader} from '../components/navigation/FixedSectionHeader';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
-import {getCalendarCardHymns} from '../services/calendarCardPresentation';
+import {getPrimaryCalendarCardHymns} from '../services/calendarCardPresentation';
 import {useLanguage} from '../context/LanguageContext';
-import {isChurchSlavonicHymn} from '../services/calendarHymnDisplay';
+import {isCalendarHymnCsl} from '../services/calendarHymnDisplay';
 import {previewCleanCalendarFeast} from '../services/calendarSourceCleanupPreview';
 import {getOfflineCalendarDay} from '../services/calendarOfflineStore';
 import {findSaintForSharedLink} from '../services/saintShareResolver';
@@ -215,9 +215,9 @@ export const SaintDetailScreen = ({route, navigation}) => {
   const bundled = getBundledCalendarIconSource(resolvedFeast);
   const image = bundled; // Icons must be packaged locally; never fetch a URL.
   const life = (uk && resolvedFeast?.life_content_uk) || resolvedFeast?.life_content;
-  // Preserve the local Blagovest alternate fields and render all independently
-  // reviewed canonical hymn variants, without replacing other reader features.
-  const cardHymns = getCalendarCardHymns(resolvedFeast, uk ? 'uk' : 'ru');
+  // Display the primary troparion and kontakion only. The source catalogue
+  // remains intact until the new parser's data is integrated.
+  const cardHymns = getPrimaryCalendarCardHymns(resolvedFeast, uk ? 'uk' : 'ru');
 
   const prayer = (uk && resolvedFeast?.prayer_content_uk) || resolvedFeast?.prayer_content;
   const magnification = (uk && resolvedFeast?.magnification_content_uk) || resolvedFeast?.magnification_content;
@@ -278,13 +278,13 @@ export const SaintDetailScreen = ({route, navigation}) => {
             feast={resolvedFeast}
             date={date}
             sourceTitle={title}
-            section={hymn.variant === 1 ? hymn.kind : `${hymn.kind}_alt`}
-            focusHighlight={focusSection === (hymn.variant === 1 ? hymn.kind : `${hymn.kind}_alt`)}
+            section={hymn.kind}
+            focusHighlight={focusSection === hymn.kind}
             icon={hymn.kind === 'troparion' ? '♪' : '✧'}
             text={hymn.text}
             subtitle={hymn.subtitle}
             isHymn
-            script={isChurchSlavonicHymn(hymn.text) ? 'csl' : 'civil'}
+            script={isCalendarHymnCsl(hymn.text) ? 'csl' : 'civil'}
           />
         ))}
         {!!cardHymns.missing.length && (

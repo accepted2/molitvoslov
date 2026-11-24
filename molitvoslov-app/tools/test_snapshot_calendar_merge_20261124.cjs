@@ -24,7 +24,8 @@ const service = read('src/services/churchCalendar.js');
 const icon = read('src/data/calendarIconAssets.js');
 for (const [name, screen] of [['Day',day],['Saint',saint]]) {
   assert.match(screen, /cardHymns\.sections\.map\(/,name+': multiple hymn sections not rendered');
-  assert.match(screen, /getCalendarCardHymns\(/,name+': canonical hymn selection missing');
+  assert.match(screen, /getPrimaryCalendarCardHymns\(/,name+': primary hymn selection missing');
+  assert.doesNotMatch(screen, /getCalendarCardHymns\(/,name+': alternate hymn display still active');
   // Reviewed remote icon candidates must not be activated until their
   // corresponding WebP files are packaged locally and independently verified.
   assert.doesNotMatch(screen, /selectUocIcon\(/,name+': remote icon selection enabled without local assets');
@@ -35,6 +36,11 @@ for (const [name, screen] of [['Day',day],['Saint',saint]]) {
 assert.match(day, /useCalendarTodayRollover/, 'Local day rollover was lost');
 assert.match(day, /displayCalendarNumber/, 'Traditional calendar numbers were lost');
 assert.match(saint, /focusSection/, 'Deep link section highlighting was lost');
+const hymnDisplay = read('src/services/calendarHymnDisplay.js');
+assert.match(hymnDisplay, /export const isCalendarHymnCsl\s*=/);
+assert.match(saint, /import \{isCalendarHymnCsl\} from '\.\.\/services\/calendarHymnDisplay'/);
+assert.match(saint, /isCalendarHymnCsl\(hymn\.text\)/);
+assert.doesNotMatch(saint, /isChurchSlavonicHymn/, 'Undefined render helper must not return');
 assert.match(saint, /findSaintForSharedLink/, 'Shared card recovery was lost');
 assert.doesNotMatch(saint, /CalendarCleanupPreviewPanel|cleanupPreviewActive|EXPO_PUBLIC_CALENDAR_CLEANUP_PREVIEW/, 'Editorial comparison must not be visible');
 assert.match(saint, /previewCleanCalendarFeast\(calendarFeast \|\| feast \|\| \{\}\)/, 'Saint must always show cleaned text');

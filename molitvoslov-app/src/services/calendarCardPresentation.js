@@ -290,3 +290,14 @@ export const getCalendarCardHymns = (feast, language = 'ru') => {
   }
   return {sections, missing};
 };
+
+// The application now shows at most one primary hymn of each kind. Keep the
+// complete source/audit pipeline intact until the replacement parser is ready.
+// Never promote a secondary hymn into a missing primary slot.
+export const getPrimaryCalendarCardHymns = (feast, language = 'ru') => {
+  const {sections, missing} = getCalendarCardHymns(feast, language);
+  return {
+    sections: sections.filter(hymn => hymn.variant === 1),
+    missing: missing.filter(hymn => hymn.variant === 1),
+  };
+};

@@ -127,15 +127,47 @@ assert.equal(presenter.getCalendarCardHymns({
   source_id:3797,title:'Преподобная Евфросиния Суздальская',
 },'ru').sections.length,0,
 'Source ID match alone must never borrow another saint’s hymns');
-// Check the screens actually use the same hymn pipeline and distinct styling.
+// The full catalogue above is an audit, not the public display policy.
+// Verify both languages for all source cards and never substitute an alt-only row.
+let publicCount=0;
+for (const card of cards) for (const lang of ['ru','uk']) {
+  const input={card_id:card.card_id};
+  const complete=presenter.getCalendarCardHymns(input,lang);
+  const primary=presenter.getPrimaryCalendarCardHymns(input,lang);
+  assert.equal(primary.sections.length,complete.sections.filter(s=>s.variant===1).length);
+  assert.ok(primary.sections.length<=2,card.card_id+': too many public hymns');
+  assert.equal(new Set(primary.sections.map(s=>s.kind)).size,primary.sections.length);
+  for(const s of primary.sections) {
+    assert.equal(s.variant,1);
+    assert.equal(s.text,complete.sections.find(h=>h.key===s.key).text);
+    assert.equal(s.subtitle,complete.sections.find(h=>h.key===s.key).subtitle);
+  }
+  assert.ok(primary.missing.every(s=>s.variant===1));
+  publicCount+=primary.sections.length;
+}
+const embedded=presenter.getPrimaryCalendarCardHymns({
+  troparion_content:'Первый текст тропаря.\nИной тропарь\nВторой текст тропаря.',
+  kontakion_alt_content:'Только альтернативный кондак.',
+},'ru');
+assert.equal(embedded.sections.length,1);
+assert.equal(embedded.sections[0].text,'Первый текст тропаря.');
+assert.equal(embedded.sections[0].title,'Тропарь');
+assert.equal(presenter.getPrimaryCalendarCardHymns({
+  ...feast,troparion_content:'Ручная правка тропаря',
+  protected_hymn_fields:['troparion_content'],
+},'ru').sections.find(s=>s.kind==='troparion').text,'Ручная правка тропаря');
+// Check the screens actually use the same primary pipeline and distinct styling.
 for(const [name,call] of [
   ['SaintDetailScreen.js','isHymn'],
   ['ChurchCalendarScreen.js','isHymn'],
 ]){
   const text=fs.readFileSync(path.join(root,'src/screens',name),'utf8');
   assert.ok(text.includes('cardHymns.sections.map'),name+': hymn list not rendered');
+  assert.ok(text.includes('getPrimaryCalendarCardHymns('),name+': public primary policy missing');
   assert.ok(text.includes(call),name+': hymn-specific layout absent');
 }
-console.log('PASS: 1267 cards / 2821 sources / 2815 visible sections; '+
+console.log('PASS: 1267 cards / 2821 sources / 2815 audited source sections; '+
   '256 multi-row cards, 254 with distinct variants; all headings and text readable.');
 console.log('PASS: Nektarios 4, Euphrosyne 5 (including 2026-06-05 legacy card), Charalambos 6; independent titles, glases and text.');
+
+console.log('PASS: '+publicCount+' primary sections across both locales; public display at most one troparion and one kontakion per card; source variants retained.');

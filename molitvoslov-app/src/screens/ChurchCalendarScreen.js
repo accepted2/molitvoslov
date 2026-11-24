@@ -43,7 +43,7 @@ import {
   getOfflineCalendarMonth,
 } from '../services/calendarOfflineStore';
 import {getBundledCalendarIconSource} from '../data/calendarIconAssets';
-import {getCalendarCardHymns, uniqueCalendarCards} from '../services/calendarCardPresentation';
+import {getPrimaryCalendarCardHymns, uniqueCalendarCards} from '../services/calendarCardPresentation';
 import {previewCleanCalendarFeast} from '../services/calendarSourceCleanupPreview';
 import {colors} from '../theme';
 import {CalendarSaveWholeButton, CalendarSelectableBody, makeCalendarSaveContext} from '../components/reader/CalendarSaveText';
@@ -795,7 +795,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
   const otherFeasts = mainFeast
     ? uniqueCalendarCards([mainFeast, ...regularFeasts]).slice(1)
     : regularFeasts;
-  const cardHymns = getCalendarCardHymns(mainFeast, dataLanguage);
+  const cardHymns = getPrimaryCalendarCardHymns(mainFeast, dataLanguage);
   const liturgicalDayLabel = movableDayLabel(dayData?.date_gregorian, language);
 
   const moveMonth = (delta) => {
@@ -1002,7 +1002,7 @@ export const ChurchCalendarScreen = ({route, navigation}) => {
               key={hymn.key}
               feast={mainFeast}
               date={dayData?.date_gregorian || selectedDate}
-              section={hymn.variant === 1 ? hymn.kind : `${hymn.kind}_alt`}
+              section={hymn.kind}
               sourceTitle={displayTitle(mainFeast, copy)}
               title={hymn.title}
               subtitle={hymn.subtitle}
