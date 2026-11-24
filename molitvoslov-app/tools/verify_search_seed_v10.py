@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Validate v10 bundle and source versions; does not mutate any files."""
+import argparse
 import json
 import sqlite3
 import sys
@@ -9,9 +10,10 @@ ROOT=Path(__file__).resolve().parents[1]
 P=ROOT/'src/data/search_seed_v10.db'
 CONTENT=ROOT/'src/data/offlineContent.json'
 BIBLE=ROOT/'src/data/offlineBible.json'
-def main():
-    if not P.exists(): raise RuntimeError('Missing v10 prebuilt seed: '+str(P))
-    db=sqlite3.connect(f'file:{P.resolve().as_posix()}?mode=ro', uri=True)
+def main(seed=P):
+    seed = Path(seed)
+    if not seed.is_file(): raise RuntimeError('Missing v10 prebuilt seed: '+str(seed))
+    db=sqlite3.connect(seed.resolve().as_uri()+'?mode=ro', uri=True)
     try:
         meta=dict(db.execute('SELECT k,v FROM meta'))
         if meta.get('schema')!=SCHEMA: raise RuntimeError('Schema mismatch')
@@ -45,8 +47,12 @@ def main():
             n=db.execute('SELECT COUNT(*) FROM fts WHERE fts MATCH ?', (query,)).fetchone()[0]
             print(phrase, n)
             if n<1: raise RuntimeError('No matches for '+phrase)
-        print(f'VERIFIED schema={SCHEMA} docs={count} sizeMiB={P.stat().st_size/1048576:.2f}')
+        print(f'VERIFIED schema={SCHEMA} docs={count} sizeMiB={seed.stat().st_size/1048576:.2f}')
     finally: db.close()
 if __name__=='__main__':
-    try: main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--seed', type=Path, default=P,
+                        help='SQLite database to verify (default: intermediate v10 seed)')
+    args = parser.parse_args()
+    try: main(args.seed)
     except Exception as e: sys.exit('INVALID SEARCH SEED: '+str(e))

@@ -8,7 +8,7 @@ const dest = path.join(root, 'android', 'app', 'src', 'main', 'assets', 'search_
 const checker = path.join(root, 'tools', 'verify_search_seed_v10.py');
 
 if (!fs.existsSync(src)) throw new Error('Missing search_seed.db. Generate it with tools/build_search_seed.py');
-if (!fs.existsSync(checker)) throw new Error('Missing tools/verify_search_seed.py');
+if (!fs.existsSync(checker)) throw new Error('Missing tools/verify_search_seed_v10.py');
 
 const candidates = [
   process.env.MOLITVOSLOV_PYTHON,
@@ -20,7 +20,9 @@ const candidates = [
 
 let checked = false;
 for (const exe of candidates) {
-  const result = spawnSync(exe, [checker], {cwd: root, encoding: 'utf8'});
+  // The build preflight can reuse the verified packaged DB without creating
+  // the intermediate search_seed_v10.db. Validate the actual Metro asset.
+  const result = spawnSync(exe, ['-X', 'utf8', checker, '--seed', src], {cwd: root, encoding: 'utf8'});
   if (result.error?.code === 'ENOENT' || result.error?.code === 'EACCES' || result.error?.code === 'UNKNOWN') continue;
   if (result.stdout) process.stdout.write(result.stdout);
   if (result.stderr) process.stderr.write(result.stderr);
